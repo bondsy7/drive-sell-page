@@ -72,6 +72,7 @@ export interface VehicleData {
     annualMileage: string;
     specialPayment: string;
     residualValue: string;
+    interestRate: string;
   };
   dealer: DealerData;
   consumption: ConsumptionData;

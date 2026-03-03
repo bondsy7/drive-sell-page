@@ -84,7 +84,8 @@ JSON-Schema:
     "totalPrice": "string mit € (Gesamtpreis / Fahrzeugpreis brutto)",
     "annualMileage": "string (z.B. '10.000 km/Jahr')",
     "specialPayment": "string mit € (Sonderzahlung / Leasing-Sonderzahlung)",
-    "residualValue": "string mit € (Restwert / Schlussrate)"
+    "residualValue": "string mit € (Restwert / Schlussrate)",
+    "interestRate": "string (eff. Jahreszins, z.B. '3,99 %')"
   },
   "dealer": {
     "name": "string (Autohaus-Name)",
@@ -283,7 +284,7 @@ Gib das Ergebnis als JSON zurück.`,
 
     // Ensure finance fields exist
     if (!parsed.finance) parsed.finance = {};
-    const finFields = ['monthlyRate', 'downPayment', 'duration', 'totalPrice', 'annualMileage', 'specialPayment', 'residualValue'];
+    const finFields = ['monthlyRate', 'downPayment', 'duration', 'totalPrice', 'annualMileage', 'specialPayment', 'residualValue', 'interestRate'];
     for (const f of finFields) {
       parsed.finance[f] = parsed.finance[f] || '';
     }
