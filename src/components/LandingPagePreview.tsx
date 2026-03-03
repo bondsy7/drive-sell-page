@@ -63,6 +63,7 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
     consumptionCombinedDischarged: '', electricRange: '', consumptionElectric: '',
   };
 
+  const cat = (data.category || '').toLowerCase();
   const allImages = [imageBase64, ...galleryImages].filter(Boolean) as string[];
 
   const updateVehicle = (key: keyof VehicleData['vehicle'], val: string) => {
@@ -258,13 +259,19 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
           {getFinanceSectionTitle(data)}
         </h3>
         <div className="grid sm:grid-cols-3 gap-4">
-          {([
+          <div className="bg-muted/50 rounded-xl p-3">
+            <div className="text-xs text-muted-foreground mb-0.5">Gesamtpreis</div>
+            <EditableField value={data.finance.totalPrice} onChange={(v) => updateFinance('totalPrice', v)} className="text-sm font-semibold text-foreground" />
+          </div>
+          {!cat.includes('barkauf') && !cat.includes('neuwagen') && !cat.includes('gebrauchtwagen') && !cat.includes('tageszulassung') && ([
             ['Monatliche Rate', data.finance.monthlyRate, (v: string) => updateFinance('monthlyRate', v)],
             ['Anzahlung', data.finance.downPayment, (v: string) => updateFinance('downPayment', v)],
             ['Laufzeit', data.finance.duration, (v: string) => updateFinance('duration', v)],
             ['Jahresfahrleistung', data.finance.annualMileage, (v: string) => updateFinance('annualMileage', v)],
-            ['Sonderzahlung', data.finance.specialPayment, (v: string) => updateFinance('specialPayment', v)],
-            ['Restwert', data.finance.residualValue, (v: string) => updateFinance('residualValue', v)],
+            ...(cat.includes('leasing')
+              ? [['Restwert', data.finance.residualValue, (v: string) => updateFinance('residualValue', v)]]
+              : [['Sonderzahlung', data.finance.specialPayment, (v: string) => updateFinance('specialPayment', v)]]
+            ),
           ] as [string, string, (v: string) => void][]).map(([label, value, onChange]) => (
             <div key={label} className="bg-muted/50 rounded-xl p-3">
               <div className="text-xs text-muted-foreground mb-0.5">{label}</div>

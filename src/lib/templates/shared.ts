@@ -113,14 +113,24 @@ export function buildCostRows(consumption: ConsumptionData, rowClass = 'cons-row
 }
 
 export function buildFinanceItems(data: VehicleData, itemClass = 'fin-item', labelClass = 'fin-label', valueClass = 'fin-value'): string {
-  return [
-    ['Monatliche Rate', data.finance.monthlyRate],
-    ['Anzahlung', data.finance.downPayment],
-    ['Laufzeit', data.finance.duration],
-    ['Jahresfahrleistung', data.finance.annualMileage],
-    ['Sonderzahlung', data.finance.specialPayment],
-    ['Restwert', data.finance.residualValue],
-  ].filter(([, v]) => v).map(([l, v]) => `
+  const cat = (data.category || '').toLowerCase();
+  const isBuy = cat.includes('barkauf') || cat.includes('neuwagen') || cat.includes('gebrauchtwagen') || cat.includes('tageszulassung');
+
+  const items: [string, string][] = [];
+
+  if (!isBuy) {
+    items.push(['Monatliche Rate', data.finance.monthlyRate]);
+    items.push(['Anzahlung', data.finance.downPayment]);
+    items.push(['Laufzeit', data.finance.duration]);
+    items.push(['Jahresfahrleistung', data.finance.annualMileage]);
+    if (cat.includes('leasing')) {
+      items.push(['Restwert', data.finance.residualValue]);
+    } else {
+      items.push(['Sonderzahlung', data.finance.specialPayment]);
+    }
+  }
+
+  return items.filter(([, v]) => v).map(([l, v]) => `
     <div class="${itemClass}">
       <div class="${labelClass}">${l}</div>
       <div class="${valueClass}">${v}</div>
