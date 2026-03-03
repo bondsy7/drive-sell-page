@@ -48,7 +48,20 @@ const EditableField: React.FC<EditableFieldProps> = ({ value, onChange, classNam
   const [draft, setDraft] = useState(numericPart);
 
   const handleSave = () => {
-    const newValue = unit ? `${draft} ${unit}` : draft;
+    let newValue: string;
+    if (unit) {
+      // Special case: kW (XX PS) — recalculate PS from kW
+      const kwPsMatch = unit.match(/^kW\s*\(\d+\s*PS\)$/i);
+      if (kwPsMatch) {
+        const kw = parseFloat(draft.replace(',', '.'));
+        const ps = isNaN(kw) ? 0 : Math.round(kw * 1.35962);
+        newValue = `${draft} kW (${ps} PS)`;
+      } else {
+        newValue = `${draft} ${unit}`;
+      }
+    } else {
+      newValue = draft;
+    }
     onChange(newValue);
     setEditing(false);
   };
