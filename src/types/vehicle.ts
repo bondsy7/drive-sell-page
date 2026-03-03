@@ -18,6 +18,13 @@ export interface ConsumptionData {
   co2CostLow: string;
   co2CostHigh: string;
   vehicleTax: string;
+  // PHEV-specific fields
+  isPluginHybrid: boolean;
+  co2EmissionsDischarged: string;      // CO₂ bei entladener Batterie
+  co2ClassDischarged: string;          // CO₂-Klasse bei entladener Batterie
+  consumptionCombinedDischarged: string; // Verbrauch (komb.) bei entladener Batterie
+  electricRange: string;               // Elektrische Reichweite (EAER)
+  consumptionElectric: string;         // Stromverbrauch (komb.)
 }
 
 export interface VehicleData {
