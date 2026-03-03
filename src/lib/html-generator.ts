@@ -1,7 +1,25 @@
-import { VehicleData } from "@/types/vehicle";
+import { VehicleData, ConsumptionData } from "@/types/vehicle";
 
-export function generateLandingPageHTML(data: VehicleData, imageBase64: string | null): string {
+function generateCO2LabelHTML(co2Class: string): string {
+  const classes = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+  const colors = ['#3a9b42', '#4ca84a', '#6dbf47', '#b5c327', '#f5a623', '#e8651a', '#c0392b'];
+  const activeIndex = classes.indexOf(co2Class.toUpperCase());
+
+  return classes.map((cls, i) => {
+    const w = 40 + i * 9;
+    const indicator = i === activeIndex
+      ? `<span style="background:#1a1a1a;color:#fff;font-size:11px;font-weight:700;padding:2px 10px 2px 14px;border-radius:2px;clip-path:polygon(8px 0,100% 0,100% 100%,8px 100%,0 50%);margin-left:6px">${cls}</span>`
+      : '';
+    return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+      <span style="display:inline-flex;align-items:center;width:${w}%;background:${colors[i]};color:#fff;font-size:10px;font-weight:700;padding:2px 8px;clip-path:polygon(0 0,calc(100% - 8px) 0,100% 50%,calc(100% - 8px) 100%,0 100%);min-height:18px">${cls}</span>
+      ${indicator}
+    </div>`;
+  }).join('');
+}
+
+export function generateLandingPageHTML(data: VehicleData, imageBase64: string | null, galleryImages: string[] = []): string {
   const features = data.vehicle.features?.map(f => `<span class="tag">${f}</span>`).join('\n            ') || '';
+  const consumption: ConsumptionData = data.consumption || {} as ConsumptionData;
 
   const financeItems = [
     ['Monatliche Rate', data.finance.monthlyRate],
@@ -15,6 +33,42 @@ export function generateLandingPageHTML(data: VehicleData, imageBase64: string |
                 <div class="fin-label">${l}</div>
                 <div class="fin-value">${v}</div>
               </div>`).join('');
+
+  const allImages = [imageBase64, ...galleryImages].filter(Boolean);
+  const galleryHTML = allImages.length > 1 ? `
+    <div class="gallery">
+      ${allImages.map((img, i) => `<img src="${img}" alt="Bild ${i + 1}" class="gallery-thumb" onclick="document.getElementById('mainImg').src=this.src" />`).join('')}
+    </div>` : '';
+
+  const consumptionRows = [
+    ['Herkunft', consumption.origin],
+    ['Kilometerstand', consumption.mileage],
+    ['Hubraum', consumption.displacement],
+    ['Leistung', consumption.power],
+    ['Antriebsart', consumption.driveType],
+    ['Kraftstoffart', consumption.fuelType],
+    ['Verbrauch (komb.)', consumption.consumptionCombined],
+    ['CO₂-Emissionen (komb.)', consumption.co2Emissions],
+  ].filter(([, v]) => v).map(([l, v]) => `<div class="cons-row"><span class="cons-label">${l}</span><span class="cons-value">${v}</span></div>`).join('');
+
+  const detailedConsumption = [
+    ['Kombiniert', consumption.consumptionCombined],
+    ['Innenstadt', consumption.consumptionCity],
+    ['Stadtrand', consumption.consumptionSuburban],
+    ['Landstraße', consumption.consumptionRural],
+    ['Autobahn', consumption.consumptionHighway],
+  ].filter(([, v]) => v).map(([l, v]) => `<div class="cons-row"><span class="cons-label">${l}</span><span class="cons-value">${v}</span></div>`).join('');
+
+  const costRows = [
+    ['Energiekosten/Jahr', consumption.energyCostPerYear],
+    ['Kraftstoffpreis', consumption.fuelPrice],
+    ['CO₂-Kosten (mittel, 10J)', consumption.co2CostMedium],
+    ['CO₂-Kosten (niedrig, 10J)', consumption.co2CostLow],
+    ['CO₂-Kosten (hoch, 10J)', consumption.co2CostHigh],
+    ['Kfz-Steuer', consumption.vehicleTax],
+  ].filter(([, v]) => v).map(([l, v]) => `<div class="cons-row"><span class="cons-label">${l}</span><span class="cons-value">${v}</span></div>`).join('');
+
+  const hasConsumption = consumptionRows || detailedConsumption || costRows;
 
   return `<!DOCTYPE html>
 <html lang="de">
@@ -36,10 +90,13 @@ export function generateLandingPageHTML(data: VehicleData, imageBase64: string |
     @media (max-width: 768px) { .main-card { grid-template-columns: 1fr; } }
     
     .image-side {
-      background: #f4f5f7; display: flex; align-items: center; justify-content: center;
+      background: #f4f5f7; display: flex; flex-direction: column;
       min-height: 320px; padding: 16px;
     }
-    .image-side img { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; }
+    .image-side img#mainImg { width: 100%; height: auto; max-height: 350px; object-fit: cover; border-radius: 12px; }
+    .gallery { display: flex; gap: 8px; margin-top: 12px; overflow-x: auto; }
+    .gallery-thumb { width: 64px; height: 48px; object-fit: cover; border-radius: 8px; cursor: pointer; border: 2px solid transparent; transition: border-color 0.2s; }
+    .gallery-thumb:hover { border-color: #e8a308; }
     
     .info-side { padding: 28px; display: flex; flex-direction: column; }
     .category { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #6b7280; margin-bottom: 4px; }
@@ -65,6 +122,15 @@ export function generateLandingPageHTML(data: VehicleData, imageBase64: string |
     .tags { display: flex; flex-wrap: wrap; gap: 8px; }
     .tag { font-size: 12px; border: 1px solid #e8eaee; padding: 6px 14px; border-radius: 100px; color: #374151; }
     
+    .cons-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    @media (max-width: 600px) { .cons-grid { grid-template-columns: 1fr; } }
+    .cons-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #f0f0f0; }
+    .cons-row:last-child { border-bottom: none; }
+    .cons-label { font-size: 11px; color: #6b7280; }
+    .cons-value { font-size: 12px; font-weight: 600; }
+    .cons-sub { margin-top: 16px; padding-top: 16px; border-top: 1px solid #e8eaee; }
+    .cons-sub-title { font-size: 12px; font-weight: 600; margin-bottom: 8px; }
+    
     .dealer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
     @media (max-width: 600px) { .dealer-grid { grid-template-columns: 1fr; } }
     .dealer-info { font-size: 13px; line-height: 1.8; }
@@ -85,7 +151,8 @@ export function generateLandingPageHTML(data: VehicleData, imageBase64: string |
   <div class="container">
     <div class="main-card">
       <div class="image-side">
-        ${imageBase64 ? `<img src="${imageBase64}" alt="${data.vehicle.brand} ${data.vehicle.model}" />` : `<div style="color:#9ca3af;text-align:center">Kein Bild</div>`}
+        ${imageBase64 ? `<img id="mainImg" src="${imageBase64}" alt="${data.vehicle.brand} ${data.vehicle.model}" />` : `<div style="color:#9ca3af;text-align:center;padding:60px">Kein Bild</div>`}
+        ${galleryHTML}
       </div>
       <div class="info-side">
         <div class="category">${data.category || 'Angebot'}</div>
@@ -107,6 +174,20 @@ export function generateLandingPageHTML(data: VehicleData, imageBase64: string |
       <h3>💰 Finanzierung</h3>
       <div class="fin-grid">${financeItems}</div>
     </div>
+
+    ${hasConsumption ? `
+    <div class="section">
+      <h3>⛽ Verbrauch & Emissionen</h3>
+      <div class="cons-grid">
+        <div>${consumptionRows}</div>
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center">
+          <div style="font-size:12px;font-weight:600;margin-bottom:8px">CO₂-Effizienz</div>
+          ${generateCO2LabelHTML(consumption.co2Class || 'A')}
+        </div>
+      </div>
+      ${detailedConsumption ? `<div class="cons-sub"><div class="cons-sub-title">Kraftstoffverbrauch im Detail</div><div class="cons-grid"><div>${detailedConsumption}</div><div></div></div></div>` : ''}
+      ${costRows ? `<div class="cons-sub"><div class="cons-sub-title">Kosten</div><div class="cons-grid"><div>${costRows}</div><div></div></div></div>` : ''}
+    </div>` : ''}
 
     ${features ? `
     <div class="section">

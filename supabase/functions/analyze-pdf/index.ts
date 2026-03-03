@@ -39,10 +39,33 @@ JSON-Schema:
     "email": "string",
     "website": "string"
   },
+  "consumption": {
+    "origin": "string (z.B. 'Deutsche Ausführung')",
+    "mileage": "string (z.B. '10 km')",
+    "displacement": "string (z.B. '1.598 cm³')",
+    "power": "string (z.B. '110 kW (150 PS)')",
+    "driveType": "string (z.B. 'Verbrennungsmotor')",
+    "fuelType": "string (z.B. 'Benzin')",
+    "consumptionCombined": "string (z.B. '7,0 l/100km')",
+    "co2Emissions": "string (z.B. '162 g/km')",
+    "co2Class": "string (A-G oder A+)",
+    "consumptionCity": "string (z.B. '9,4 l/100km')",
+    "consumptionSuburban": "string (z.B. '6,5 l/100km')",
+    "consumptionRural": "string (z.B. '5,8 l/100km')",
+    "consumptionHighway": "string (z.B. '7,3 l/100km')",
+    "energyCostPerYear": "string (z.B. '1.886 €/Jahr')",
+    "fuelPrice": "string (z.B. '1,80 €/l')",
+    "co2CostMedium": "string (z.B. '3.086 €')",
+    "co2CostLow": "string (z.B. '1.458 €')",
+    "co2CostHigh": "string (z.B. '4.860 €')",
+    "vehicleTax": "string (z.B. '186 €/Jahr')"
+  },
   "imagePrompt": "Ein detaillierter englischsprachiger Prompt für fotorealistische Bildgenerierung des Fahrzeugs in einem luxuriösen Autohaus-Showroom"
 }
 
-Für den imagePrompt: Erstelle einen detaillierten englischen Prompt, der das exakte Fahrzeugmodell (Marke, Modell, Farbe) fotorealistisch in einem modernen, hellen, luxuriösen Autohaus-Showroom zeigt. Beschreibe Licht, Reflexionen, Boden, und Atmosphäre.`;
+Für den imagePrompt: Erstelle einen detaillierten englischen Prompt, der das exakte Fahrzeugmodell (Marke, Modell, Farbe) fotorealistisch in einem modernen, hellen, luxuriösen Autohaus-Showroom zeigt. Beschreibe Licht, Reflexionen, Boden, und Atmosphäre.
+
+WICHTIG: Extrahiere ALLE Verbrauchswerte, CO2-Emissionen, CO2-Klasse, Energiekosten und Kfz-Steuer aus dem PDF falls vorhanden. Wenn Werte nicht gefunden werden, setze leere Strings "".`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -69,7 +92,7 @@ serve(async (req) => {
             content: [
               {
                 type: "text",
-                text: "Analysiere dieses PDF-Dokument und extrahiere alle Fahrzeugdaten gemäß dem Schema.",
+                text: "Analysiere dieses PDF-Dokument und extrahiere alle Fahrzeugdaten inkl. Verbrauchswerte, CO2-Emissionen und Kosten gemäß dem Schema.",
               },
               {
                 type: "image_url",
@@ -102,10 +125,20 @@ serve(async (req) => {
     const data = await response.json();
     let content = data.choices?.[0]?.message?.content || "";
     
-    // Strip markdown code blocks if present
     content = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
     
     const parsed = JSON.parse(content);
+
+    // Ensure consumption object exists
+    if (!parsed.consumption) {
+      parsed.consumption = {
+        origin: '', mileage: '', displacement: '', power: '', driveType: '',
+        fuelType: '', consumptionCombined: '', co2Emissions: '', co2Class: '',
+        consumptionCity: '', consumptionSuburban: '', consumptionRural: '',
+        consumptionHighway: '', energyCostPerYear: '', fuelPrice: '',
+        co2CostMedium: '', co2CostLow: '', co2CostHigh: '', vehicleTax: '',
+      };
+    }
 
     return new Response(JSON.stringify(parsed), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
