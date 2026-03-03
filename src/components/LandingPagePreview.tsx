@@ -7,6 +7,7 @@ import { generateHTML, downloadHTML } from '@/lib/templates';
 import { Button } from '@/components/ui/button';
 import EditableField from '@/components/EditableField';
 import CO2LabelSelector from '@/components/CO2LabelSelector';
+import FuelTypeDropdown from '@/components/FuelTypeDropdown';
 
 interface LandingPagePreviewProps {
   vehicleData: VehicleData;
@@ -73,6 +74,18 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
   };
   const updateConsumption = (key: keyof ConsumptionData, val: string) => {
     onDataChange({ ...data, consumption: { ...consumption, [key]: val } });
+  };
+  const updateFuelType = (val: string) => {
+    const isPhev = val.toLowerCase().includes('plug-in');
+    onDataChange({
+      ...data,
+      vehicle: { ...data.vehicle, fuelType: val },
+      consumption: {
+        ...consumption,
+        fuelType: val,
+        isPluginHybrid: isPhev,
+      },
+    });
   };
 
   const addFeature = () => {
@@ -216,7 +229,13 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
               <SpecItem icon={<Car className="w-4 h-4" />} label="Fahrzeugtyp" value={data.category || '–'} onChange={() => {}} />
               <SpecItem icon={<Cog className="w-4 h-4" />} label="Getriebe" value={data.vehicle.transmission} onChange={(v) => updateVehicle('transmission', v)} />
               <SpecItem icon={<Zap className="w-4 h-4" />} label="Leistung" value={data.vehicle.power} onChange={(v) => updateVehicle('power', v)} />
-              <SpecItem icon={<Fuel className="w-4 h-4" />} label="Kraftstoff" value={data.vehicle.fuelType} onChange={(v) => updateVehicle('fuelType', v)} />
+              <div className="flex items-start gap-2.5 py-2">
+                <span className="text-muted-foreground mt-0.5"><Fuel className="w-4 h-4" /></span>
+                <div className="flex flex-col">
+                  <span className="text-xs text-muted-foreground">Kraftstoff</span>
+                  <FuelTypeDropdown value={data.vehicle.fuelType} onChange={updateFuelType} />
+                </div>
+              </div>
               <SpecItem icon={<Palette className="w-4 h-4" />} label="Farbe" value={data.vehicle.color} onChange={(v) => updateVehicle('color', v)} />
               <SpecItem icon={<Calendar className="w-4 h-4" />} label="Baujahr" value={String(data.vehicle.year || '–')} onChange={() => {}} />
             </div>
@@ -261,7 +280,10 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
             <ConsumptionRow label="Hubraum" value={consumption.displacement} onChange={(v) => updateConsumption('displacement', v)} />
             <ConsumptionRow label="Leistung" value={consumption.power} onChange={(v) => updateConsumption('power', v)} />
             <ConsumptionRow label="Antriebsart" value={consumption.driveType} onChange={(v) => updateConsumption('driveType', v)} />
-            <ConsumptionRow label="Kraftstoffart" value={consumption.fuelType} onChange={(v) => updateConsumption('fuelType', v)} />
+            <div className="flex justify-between items-center py-1.5 border-b border-border/50">
+              <span className="text-xs text-muted-foreground">Kraftstoffart</span>
+              <FuelTypeDropdown value={consumption.fuelType} onChange={updateFuelType} />
+            </div>
             <ConsumptionRow label="Verbrauch (komb.)" value={consumption.consumptionCombined} onChange={(v) => updateConsumption('consumptionCombined', v)} />
             <ConsumptionRow label="CO₂-Emissionen (komb.)" value={consumption.co2Emissions} onChange={(v) => updateConsumption('co2Emissions', v)} />
             {isPluginHybrid(consumption) && (
