@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Download, RotateCcw, Car, Fuel, Gauge, Calendar, Palette, Cog, Zap, MapPin, Phone, Mail, Globe, Plus, Trash2, ChevronLeft, ChevronRight, Eye, Pencil } from 'lucide-react';
 import type { VehicleData, ConsumptionData } from '@/types/vehicle';
+import { getCO2ClassFromEmissions } from '@/lib/co2-utils';
 import type { TemplateId } from '@/types/template';
 import { generateHTML, downloadHTML } from '@/lib/templates';
 import { Button } from '@/components/ui/button';
@@ -265,10 +266,10 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
 
           {/* Right: CO2 Label */}
           <div className="flex flex-col items-center justify-center">
-            <CO2Label co2Class={consumption.co2Class || 'A'} />
+            <CO2Label co2Class={consumption.co2Class || getCO2ClassFromEmissions(consumption.co2Emissions) || 'A'} />
             <div className="mt-2 text-center">
               <span className="text-xs text-muted-foreground">CO₂-Klasse: </span>
-              <EditableField value={consumption.co2Class || '–'} onChange={(v) => updateConsumption('co2Class', v)} className="text-xs font-semibold text-foreground" />
+              <EditableField value={consumption.co2Class || getCO2ClassFromEmissions(consumption.co2Emissions) || '–'} onChange={(v) => updateConsumption('co2Class', v)} className="text-xs font-semibold text-foreground" />
             </div>
           </div>
         </div>

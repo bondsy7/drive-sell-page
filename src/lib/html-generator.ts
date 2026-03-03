@@ -1,20 +1,9 @@
 import { VehicleData, ConsumptionData } from "@/types/vehicle";
+import { getCO2ClassFromEmissions } from "@/lib/co2-utils";
 
 function generateCO2LabelHTML(co2Class: string): string {
-  const classes = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
-  const colors = ['#3a9b42', '#4ca84a', '#6dbf47', '#b5c327', '#f5a623', '#e8651a', '#c0392b'];
-  const activeIndex = classes.indexOf(co2Class.toUpperCase());
-
-  return classes.map((cls, i) => {
-    const w = 40 + i * 9;
-    const indicator = i === activeIndex
-      ? `<span style="background:#1a1a1a;color:#fff;font-size:11px;font-weight:700;padding:2px 10px 2px 14px;border-radius:2px;clip-path:polygon(8px 0,100% 0,100% 100%,8px 100%,0 50%);margin-left:6px">${cls}</span>`
-      : '';
-    return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
-      <span style="display:inline-flex;align-items:center;width:${w}%;background:${colors[i]};color:#fff;font-size:10px;font-weight:700;padding:2px 8px;clip-path:polygon(0 0,calc(100% - 8px) 0,100% 50%,calc(100% - 8px) 100%,0 100%);min-height:18px">${cls}</span>
-      ${indicator}
-    </div>`;
-  }).join('');
+  const cls = co2Class?.toUpperCase() || 'A';
+  return `<img src="/images/co2/${cls}.jpg" alt="CO₂-Klasse ${cls}" style="max-width:280px;width:100%;height:auto" />`;
 }
 
 export function generateLandingPageHTML(data: VehicleData, imageBase64: string | null, galleryImages: string[] = []): string {
@@ -182,7 +171,7 @@ export function generateLandingPageHTML(data: VehicleData, imageBase64: string |
         <div>${consumptionRows}</div>
         <div style="display:flex;flex-direction:column;align-items:center;justify-content:center">
           <div style="font-size:12px;font-weight:600;margin-bottom:8px">CO₂-Effizienz</div>
-          ${generateCO2LabelHTML(consumption.co2Class || 'A')}
+          ${generateCO2LabelHTML(consumption.co2Class || getCO2ClassFromEmissions(consumption.co2Emissions) || 'A')}
         </div>
       </div>
       ${detailedConsumption ? `<div class="cons-sub"><div class="cons-sub-title">Kraftstoffverbrauch im Detail</div><div class="cons-grid"><div>${detailedConsumption}</div><div></div></div></div>` : ''}

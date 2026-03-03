@@ -1,22 +1,39 @@
 import { VehicleData, ConsumptionData } from "@/types/vehicle";
+import { getCO2ClassFromEmissions } from "@/lib/co2-utils";
 
-export function getCO2LabelHTML(co2Class: string, darkBg = false): string {
-  const classes = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
-  const colors = ['#3a9b42', '#4ca84a', '#6dbf47', '#b5c327', '#f5a623', '#e8651a', '#c0392b'];
-  const activeIndex = classes.indexOf(co2Class.toUpperCase());
-  const indicatorBg = darkBg ? '#ffffff' : '#1a1a1a';
-  const indicatorColor = darkBg ? '#1a1a1a' : '#ffffff';
+/**
+ * Converts a public image path to a base64 data URL for embedding in exported HTML.
+ */
+async function imageToBase64(path: string): Promise<string> {
+  try {
+    const resp = await fetch(path);
+    const blob = await resp.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return '';
+  }
+}
 
-  return classes.map((cls, i) => {
-    const w = 40 + i * 9;
-    const indicator = i === activeIndex
-      ? `<span style="background:${indicatorBg};color:${indicatorColor};font-size:11px;font-weight:700;padding:2px 10px 2px 14px;border-radius:2px;clip-path:polygon(8px 0,100% 0,100% 100%,8px 100%,0 50%);margin-left:6px">${cls}</span>`
-      : '';
-    return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
-      <span style="display:inline-flex;align-items:center;width:${w}%;background:${colors[i]};color:#fff;font-size:10px;font-weight:700;padding:2px 8px;clip-path:polygon(0 0,calc(100% - 8px) 0,100% 50%,calc(100% - 8px) 100%,0 100%);min-height:18px">${cls}</span>
-      ${indicator}
-    </div>`;
-  }).join('');
+/**
+ * Get the CO2 label as an <img> tag with base64-embedded image for HTML export.
+ */
+export async function getCO2LabelImgHTML(co2Class: string): Promise<string> {
+  const cls = co2Class?.toUpperCase() || 'A';
+  const path = `/images/co2/${cls}.jpg`;
+  const base64 = await imageToBase64(path);
+  if (!base64) return `<div style="font-size:12px;font-weight:600">CO₂-Klasse: ${cls}</div>`;
+  return `<img src="${base64}" alt="CO₂-Klasse ${cls}" style="max-width:280px;width:100%;height:auto" />`;
+}
+
+/** Synchronous version using direct path (for iframe preview) */
+export function getCO2LabelHTML(co2Class: string, _darkBg = false): string {
+  const cls = co2Class?.toUpperCase() || 'A';
+  return `<img src="/images/co2/${cls}.jpg" alt="CO₂-Klasse ${cls}" style="max-width:280px;width:100%;height:auto" />`;
 }
 
 export function getGalleryHTML(allImages: string[]): string {
@@ -28,6 +45,12 @@ export function getGalleryHTML(allImages: string[]): string {
 
 export function getConsumptionData(data: VehicleData): ConsumptionData {
   return data.consumption || {} as ConsumptionData;
+}
+
+export function determineCO2Class(consumption: ConsumptionData): string {
+  if (consumption.co2Class) return consumption.co2Class;
+  const derived = getCO2ClassFromEmissions(consumption.co2Emissions);
+  return derived || 'A';
 }
 
 export function buildConsumptionRows(consumption: ConsumptionData, rowClass = 'cons-row', labelClass = 'cons-label', valueClass = 'cons-value'): string {
