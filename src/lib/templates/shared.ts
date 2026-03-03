@@ -1,6 +1,13 @@
 import { VehicleData, ConsumptionData } from "@/types/vehicle";
 import { getCO2ClassFromEmissions, getCO2LabelPath, isPluginHybrid } from "@/lib/co2-utils";
 
+export function getFinanceSectionTitle(data: VehicleData): string {
+  const cat = (data.category || '').toLowerCase();
+  if (cat.includes('leasing')) return 'Leasing';
+  if (cat.includes('kauf') || cat.includes('barkauf') || cat.includes('tageszulassung') || cat.includes('gebrauchtwagen') || cat.includes('neuwagen')) return 'Kaufpreis';
+  return 'Finanzierung';
+}
+
 /**
  * Converts a public image path to a base64 data URL for embedding in exported HTML.
  */
