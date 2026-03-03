@@ -9,51 +9,36 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { imagePrompt } = await req.json();
-    if (!imagePrompt) throw new Error("No image prompt provided");
-
+    const { imagePrompt, imagePrompts } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash-image",
-        messages: [
-          { role: "user", content: imagePrompt },
-        ],
-        modalities: ["image", "text"],
-      }),
-    });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error("Image generation error:", response.status, errText);
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit erreicht." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "AI Credits aufgebraucht." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      throw new Error(`Image gen error: ${response.status}`);
+    // Single image mode (backward compat)
+    if (imagePrompt && !imagePrompts) {
+      const result = await generateImage(imagePrompt, LOVABLE_API_KEY);
+      return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    const data = await response.json();
-    const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    // Multi image mode
+    if (imagePrompts && Array.isArray(imagePrompts)) {
+      const results: { imageBase64: string | null; error?: string }[] = [];
+      for (const prompt of imagePrompts) {
+        try {
+          const result = await generateImage(prompt, LOVABLE_API_KEY);
+          results.push(result);
+        } catch (e) {
+          console.error("Image gen error for prompt:", e);
+          results.push({ imageBase64: null, error: e instanceof Error ? e.message : "Unknown error" });
+        }
+      }
+      return new Response(JSON.stringify({ images: results }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-    if (!imageUrl) throw new Error("No image generated");
-
-    return new Response(JSON.stringify({ imageBase64: imageUrl }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    throw new Error("No image prompt(s) provided");
   } catch (e) {
     console.error("generate-vehicle-image error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
@@ -61,3 +46,32 @@ serve(async (req) => {
     });
   }
 });
+
+async function generateImage(prompt: string, apiKey: string): Promise<{ imageBase64: string | null; error?: string }> {
+  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "google/gemini-2.5-flash-image",
+      messages: [{ role: "user", content: prompt }],
+      modalities: ["image", "text"],
+    }),
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    console.error("Image generation error:", response.status, errText);
+    if (response.status === 429) throw new Error("Rate limit erreicht. Bitte warte kurz.");
+    if (response.status === 402) throw new Error("AI Credits aufgebraucht.");
+    throw new Error(`Image gen error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+  if (!imageUrl) throw new Error("No image generated");
+
+  return { imageBase64: imageUrl };
+}
