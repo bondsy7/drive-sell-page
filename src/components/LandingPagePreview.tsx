@@ -80,6 +80,13 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
   const updateConsumption = (key: keyof ConsumptionData, val: string) => {
     onDataChange({ ...data, consumption: { ...consumption, [key]: val } });
   };
+  const updatePower = (val: string) => {
+    onDataChange({
+      ...data,
+      vehicle: { ...data.vehicle, power: val },
+      consumption: { ...consumption, power: val },
+    });
+  };
   const updateFuelType = (val: string) => {
     const isPhev = val.toLowerCase().includes('plug-in');
     onDataChange({
@@ -257,7 +264,7 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
                 </div>
               </div>
               <SpecItem icon={<Cog className="w-4 h-4" />} label="Getriebe" value={data.vehicle.transmission} onChange={(v) => updateVehicle('transmission', v)} />
-              <SpecItem icon={<Zap className="w-4 h-4" />} label="Leistung" value={data.vehicle.power} onChange={(v) => updateVehicle('power', v)} />
+              <SpecItem icon={<Zap className="w-4 h-4" />} label="Leistung" value={data.vehicle.power} onChange={updatePower} />
               <div className="flex items-start gap-2.5 py-2">
                 <span className="text-muted-foreground mt-0.5"><Fuel className="w-4 h-4" /></span>
                 <div className="flex flex-col">
@@ -323,7 +330,7 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
             <ConsumptionRow label="Herkunft" value={consumption.origin} onChange={(v) => updateConsumption('origin', v)} />
             <ConsumptionRow label="Kilometerstand" value={consumption.mileage} onChange={(v) => updateConsumption('mileage', v)} suffix="km" />
             <ConsumptionRow label="Hubraum" value={consumption.displacement} onChange={(v) => updateConsumption('displacement', v)} suffix="cm³" />
-            <ConsumptionRow label="Leistung" value={consumption.power} onChange={(v) => updateConsumption('power', v)} suffix="kW" />
+            <ConsumptionRow label="Leistung" value={consumption.power} onChange={updatePower} />
             <ConsumptionRow label="Antriebsart" value={consumption.driveType} onChange={(v) => updateConsumption('driveType', v)} />
             <div className="flex justify-between items-center py-1.5 border-b border-border/50">
               <span className="text-xs text-muted-foreground">Kraftstoffart</span>
