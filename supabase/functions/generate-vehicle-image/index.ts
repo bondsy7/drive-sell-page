@@ -47,31 +47,58 @@ serve(async (req) => {
   }
 });
 
-async function generateImage(prompt: string, apiKey: string): Promise<{ imageBase64: string | null; error?: string }> {
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "google/gemini-2.5-flash-image",
-      messages: [{ role: "user", content: prompt }],
-      modalities: ["image", "text"],
-    }),
-  });
+async function generateImage(prompt: string, apiKey: string, retries = 2): Promise<{ imageBase64: string | null; error?: string }> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash-image",
+          messages: [{ role: "user", content: prompt }],
+          modalities: ["image", "text"],
+        }),
+      });
 
-  if (!response.ok) {
-    const errText = await response.text();
-    console.error("Image generation error:", response.status, errText);
-    if (response.status === 429) throw new Error("Rate limit erreicht. Bitte warte kurz.");
-    if (response.status === 402) throw new Error("AI Credits aufgebraucht.");
-    throw new Error(`Image gen error: ${response.status}`);
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error(`Attempt ${attempt + 1}: Image generation error:`, response.status, errText);
+        if (response.status === 429) {
+          // Rate limit - wait before retry
+          if (attempt < retries) {
+            await new Promise(r => setTimeout(r, 3000 * (attempt + 1)));
+            continue;
+          }
+          throw new Error("Rate limit erreicht. Bitte warte kurz.");
+        }
+        if (response.status === 402) throw new Error("AI Credits aufgebraucht.");
+        if (attempt < retries) {
+          await new Promise(r => setTimeout(r, 2000));
+          continue;
+        }
+        throw new Error(`Image gen error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+      if (!imageUrl) {
+        console.warn(`Attempt ${attempt + 1}: No image in response, content:`, JSON.stringify(data.choices?.[0]?.message?.content || '').substring(0, 200));
+        if (attempt < retries) {
+          await new Promise(r => setTimeout(r, 2000));
+          continue;
+        }
+        throw new Error("No image generated after retries");
+      }
+
+      return { imageBase64: imageUrl };
+    } catch (e) {
+      if (attempt >= retries) throw e;
+      console.warn(`Attempt ${attempt + 1} failed, retrying...`);
+      await new Promise(r => setTimeout(r, 2000));
+    }
   }
-
-  const data = await response.json();
-  const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-  if (!imageUrl) throw new Error("No image generated");
-
-  return { imageBase64: imageUrl };
+  throw new Error("No image generated after retries");
 }
