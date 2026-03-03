@@ -1,3 +1,25 @@
+export interface ConsumptionData {
+  origin: string;
+  mileage: string;
+  displacement: string;
+  power: string;
+  driveType: string;
+  fuelType: string;
+  consumptionCombined: string;
+  co2Emissions: string;
+  co2Class: string;
+  consumptionCity: string;
+  consumptionSuburban: string;
+  consumptionRural: string;
+  consumptionHighway: string;
+  energyCostPerYear: string;
+  fuelPrice: string;
+  co2CostMedium: string;
+  co2CostLow: string;
+  co2CostHigh: string;
+  vehicleTax: string;
+}
+
 export interface VehicleData {
   category: string;
   vehicle: {
@@ -27,6 +49,7 @@ export interface VehicleData {
     email: string;
     website: string;
   };
+  consumption: ConsumptionData;
 }
 
 export interface GenerationResult {

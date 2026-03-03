@@ -1,58 +1,18 @@
 import React, { useState } from 'react';
-import { Download, RotateCcw, Pencil, X, Check, Car, Fuel, Gauge, Calendar, Palette, Cog, Zap, MapPin, Phone, Mail, Globe } from 'lucide-react';
-import type { VehicleData } from '@/types/vehicle';
+import { Download, RotateCcw, Car, Fuel, Gauge, Calendar, Palette, Cog, Zap, MapPin, Phone, Mail, Globe, Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import type { VehicleData, ConsumptionData } from '@/types/vehicle';
 import { generateLandingPageHTML, downloadHTML } from '@/lib/html-generator';
 import { Button } from '@/components/ui/button';
+import EditableField from '@/components/EditableField';
+import CO2Label from '@/components/CO2Label';
 
 interface LandingPagePreviewProps {
   vehicleData: VehicleData;
   imageBase64: string | null;
+  galleryImages?: string[];
   onReset: () => void;
   onDataChange: (data: VehicleData) => void;
 }
-
-const EditableField: React.FC<{
-  value: string;
-  onChange: (val: string) => void;
-  className?: string;
-}> = ({ value, onChange, className = '' }) => {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(value);
-
-  if (editing) {
-    return (
-      <span className="inline-flex items-center gap-1">
-        <input
-          className="bg-background border border-border rounded px-2 py-0.5 text-sm w-auto min-w-[80px]"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          autoFocus
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') { onChange(draft); setEditing(false); }
-            if (e.key === 'Escape') { setDraft(value); setEditing(false); }
-          }}
-        />
-        <button onClick={() => { onChange(draft); setEditing(false); }} className="text-accent hover:text-accent/80">
-          <Check className="w-3.5 h-3.5" />
-        </button>
-        <button onClick={() => { setDraft(value); setEditing(false); }} className="text-muted-foreground hover:text-foreground">
-          <X className="w-3.5 h-3.5" />
-        </button>
-      </span>
-    );
-  }
-
-  return (
-    <span
-      className={`group cursor-pointer hover:text-accent transition-colors ${className}`}
-      onClick={() => setEditing(true)}
-      title="Klicken zum Bearbeiten"
-    >
-      {value || '–'}
-      <Pencil className="w-3 h-3 ml-1 inline opacity-0 group-hover:opacity-60 transition-opacity" />
-    </span>
-  );
-};
 
 const SpecItem: React.FC<{
   icon: React.ReactNode;
@@ -69,8 +29,27 @@ const SpecItem: React.FC<{
   </div>
 );
 
-const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, imageBase64, onReset, onDataChange }) => {
+const ConsumptionRow: React.FC<{ label: string; value: string; onChange: (v: string) => void }> = ({ label, value, onChange }) => (
+  <div className="flex justify-between items-center py-1.5 border-b border-border/50 last:border-0">
+    <span className="text-xs text-muted-foreground">{label}</span>
+    <EditableField value={value} onChange={onChange} className="text-xs font-semibold text-foreground" />
+  </div>
+);
+
+const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, imageBase64, galleryImages = [], onReset, onDataChange }) => {
   const data = vehicleData;
+  const [selectedImage, setSelectedImage] = useState(0);
+
+  // Ensure consumption exists with defaults
+  const consumption: ConsumptionData = data.consumption || {
+    origin: '', mileage: '', displacement: '', power: '', driveType: '',
+    fuelType: '', consumptionCombined: '', co2Emissions: '', co2Class: '',
+    consumptionCity: '', consumptionSuburban: '', consumptionRural: '',
+    consumptionHighway: '', energyCostPerYear: '', fuelPrice: '',
+    co2CostMedium: '', co2CostLow: '', co2CostHigh: '', vehicleTax: '',
+  };
+
+  const allImages = [imageBase64, ...galleryImages].filter(Boolean) as string[];
 
   const updateVehicle = (key: keyof VehicleData['vehicle'], val: string) => {
     onDataChange({ ...data, vehicle: { ...data.vehicle, [key]: val } });
@@ -81,9 +60,26 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
   const updateDealer = (key: keyof VehicleData['dealer'], val: string) => {
     onDataChange({ ...data, dealer: { ...data.dealer, [key]: val } });
   };
+  const updateConsumption = (key: keyof ConsumptionData, val: string) => {
+    onDataChange({ ...data, consumption: { ...consumption, [key]: val } });
+  };
+
+  const addFeature = () => {
+    const features = [...(data.vehicle.features || []), 'Neue Ausstattung'];
+    onDataChange({ ...data, vehicle: { ...data.vehicle, features } });
+  };
+  const updateFeature = (index: number, val: string) => {
+    const features = [...(data.vehicle.features || [])];
+    features[index] = val;
+    onDataChange({ ...data, vehicle: { ...data.vehicle, features } });
+  };
+  const removeFeature = (index: number) => {
+    const features = (data.vehicle.features || []).filter((_, i) => i !== index);
+    onDataChange({ ...data, vehicle: { ...data.vehicle, features } });
+  };
 
   const handleExport = () => {
-    const html = generateLandingPageHTML(data, imageBase64);
+    const html = generateLandingPageHTML(data, imageBase64, galleryImages);
     const filename = `${data.vehicle.brand}_${data.vehicle.model}_Angebot.html`.replace(/\s+/g, '_');
     downloadHTML(html, filename);
   };
@@ -105,18 +101,57 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
       {/* Main two-column layout */}
       <div className="bg-card rounded-2xl border border-border shadow-card overflow-hidden">
         <div className="grid md:grid-cols-2 gap-0">
-          {/* Left: Image */}
-          <div className="bg-muted flex items-center justify-center p-4 min-h-[300px]">
-            {imageBase64 ? (
-              <img
-                src={imageBase64}
-                alt={`${data.vehicle.brand} ${data.vehicle.model}`}
-                className="w-full h-full object-cover rounded-xl"
-              />
-            ) : (
-              <div className="text-muted-foreground flex flex-col items-center gap-2">
-                <Car className="w-12 h-12" />
-                <span className="text-sm">Kein Bild verfügbar</span>
+          {/* Left: Image + Gallery */}
+          <div className="bg-muted flex flex-col p-4 min-h-[300px]">
+            {/* Main image */}
+            <div className="flex-1 flex items-center justify-center relative">
+              {allImages.length > 0 ? (
+                <>
+                  <img
+                    src={allImages[selectedImage] || allImages[0]}
+                    alt={`${data.vehicle.brand} ${data.vehicle.model}`}
+                    className="w-full h-full object-cover rounded-xl max-h-[350px]"
+                  />
+                  {allImages.length > 1 && (
+                    <>
+                      <button
+                        onClick={() => setSelectedImage(Math.max(0, selectedImage - 1))}
+                        className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background rounded-full p-1.5 shadow-elevated"
+                        disabled={selectedImage === 0}
+                      >
+                        <ChevronLeft className="w-4 h-4 text-foreground" />
+                      </button>
+                      <button
+                        onClick={() => setSelectedImage(Math.min(allImages.length - 1, selectedImage + 1))}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background rounded-full p-1.5 shadow-elevated"
+                        disabled={selectedImage === allImages.length - 1}
+                      >
+                        <ChevronRight className="w-4 h-4 text-foreground" />
+                      </button>
+                    </>
+                  )}
+                </>
+              ) : (
+                <div className="text-muted-foreground flex flex-col items-center gap-2">
+                  <Car className="w-12 h-12" />
+                  <span className="text-sm">Kein Bild verfügbar</span>
+                </div>
+              )}
+            </div>
+            {/* Thumbnail gallery */}
+            {allImages.length > 1 && (
+              <div className="flex gap-2 mt-3 overflow-x-auto pb-1">
+                {allImages.map((img, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setSelectedImage(i)}
+                    className={`shrink-0 w-16 h-12 rounded-lg overflow-hidden border-2 transition-colors ${
+                      i === selectedImage ? 'border-accent' : 'border-transparent hover:border-border'
+                    }`}
+                  >
+                    <img src={img} alt={`Bild ${i + 1}`} className="w-full h-full object-cover" />
+                  </button>
+                ))}
               </div>
             )}
           </div>
@@ -131,12 +166,10 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
             </h1>
             <p className="text-sm text-muted-foreground mb-3">{data.vehicle.variant}</p>
 
-            {/* Price */}
             <div className="font-display text-2xl font-bold text-foreground mb-4">
               <EditableField value={data.finance.totalPrice} onChange={(v) => updateFinance('totalPrice', v)} />
             </div>
 
-            {/* Specs grid */}
             <div className="grid grid-cols-2 gap-x-4 gap-y-0 border-t border-border pt-3">
               <SpecItem icon={<Car className="w-4 h-4" />} label="Fahrzeugtyp" value={data.category || '–'} onChange={() => {}} />
               <SpecItem icon={<Cog className="w-4 h-4" />} label="Getriebe" value={data.vehicle.transmission} onChange={(v) => updateVehicle('transmission', v)} />
@@ -156,35 +189,100 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
           Finanzierung
         </h3>
         <div className="grid sm:grid-cols-3 gap-4">
-          {[
+          {([
             ['Monatliche Rate', data.finance.monthlyRate, (v: string) => updateFinance('monthlyRate', v)],
             ['Anzahlung', data.finance.downPayment, (v: string) => updateFinance('downPayment', v)],
             ['Laufzeit', data.finance.duration, (v: string) => updateFinance('duration', v)],
             ['Jahresfahrleistung', data.finance.annualMileage, (v: string) => updateFinance('annualMileage', v)],
             ['Sonderzahlung', data.finance.specialPayment, (v: string) => updateFinance('specialPayment', v)],
             ['Restwert', data.finance.residualValue, (v: string) => updateFinance('residualValue', v)],
-          ].map(([label, value, onChange]) => (
-            <div key={label as string} className="bg-muted/50 rounded-xl p-3">
-              <div className="text-xs text-muted-foreground mb-0.5">{label as string}</div>
-              <EditableField value={value as string} onChange={onChange as (v: string) => void} className="text-sm font-semibold text-foreground" />
+          ] as [string, string, (v: string) => void][]).map(([label, value, onChange]) => (
+            <div key={label} className="bg-muted/50 rounded-xl p-3">
+              <div className="text-xs text-muted-foreground mb-0.5">{label}</div>
+              <EditableField value={value} onChange={onChange} className="text-sm font-semibold text-foreground" />
             </div>
           ))}
         </div>
       </div>
 
-      {/* Features / Ausstattung */}
-      {data.vehicle.features?.length > 0 && (
-        <div className="bg-card rounded-2xl border border-border shadow-card p-6">
-          <h3 className="font-display text-base font-semibold mb-4">Ausstattung</h3>
-          <div className="flex flex-wrap gap-2">
-            {data.vehicle.features.map((f, i) => (
-              <span key={i} className="text-xs border border-border text-foreground px-3 py-1.5 rounded-full hover:bg-muted transition-colors">
-                {f}
-              </span>
-            ))}
+      {/* Consumption / Verbrauchswerte */}
+      <div className="bg-card rounded-2xl border border-border shadow-card p-6">
+        <h3 className="font-display text-base font-semibold mb-4 flex items-center gap-2">
+          <span className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-base">⛽</span>
+          Verbrauch & Emissionen
+        </h3>
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Left: Data rows */}
+          <div className="space-y-0">
+            <ConsumptionRow label="Herkunft" value={consumption.origin} onChange={(v) => updateConsumption('origin', v)} />
+            <ConsumptionRow label="Kilometerstand" value={consumption.mileage} onChange={(v) => updateConsumption('mileage', v)} />
+            <ConsumptionRow label="Hubraum" value={consumption.displacement} onChange={(v) => updateConsumption('displacement', v)} />
+            <ConsumptionRow label="Leistung" value={consumption.power} onChange={(v) => updateConsumption('power', v)} />
+            <ConsumptionRow label="Antriebsart" value={consumption.driveType} onChange={(v) => updateConsumption('driveType', v)} />
+            <ConsumptionRow label="Kraftstoffart" value={consumption.fuelType} onChange={(v) => updateConsumption('fuelType', v)} />
+            <ConsumptionRow label="Verbrauch (komb.)" value={consumption.consumptionCombined} onChange={(v) => updateConsumption('consumptionCombined', v)} />
+            <ConsumptionRow label="CO₂-Emissionen (komb.)" value={consumption.co2Emissions} onChange={(v) => updateConsumption('co2Emissions', v)} />
+          </div>
+
+          {/* Right: CO2 Label */}
+          <div className="flex flex-col items-center justify-center">
+            <CO2Label co2Class={consumption.co2Class || 'A'} />
+            <div className="mt-2 text-center">
+              <span className="text-xs text-muted-foreground">CO₂-Klasse: </span>
+              <EditableField value={consumption.co2Class || '–'} onChange={(v) => updateConsumption('co2Class', v)} className="text-xs font-semibold text-foreground" />
+            </div>
           </div>
         </div>
-      )}
+
+        {/* Detailed consumption */}
+        <div className="mt-4 pt-4 border-t border-border">
+          <div className="text-xs font-semibold text-foreground mb-2">Kraftstoffverbrauch im Detail</div>
+          <div className="grid sm:grid-cols-2 gap-x-6 gap-y-0">
+            <ConsumptionRow label="Kombiniert" value={consumption.consumptionCombined} onChange={(v) => updateConsumption('consumptionCombined', v)} />
+            <ConsumptionRow label="Innenstadt" value={consumption.consumptionCity} onChange={(v) => updateConsumption('consumptionCity', v)} />
+            <ConsumptionRow label="Stadtrand" value={consumption.consumptionSuburban} onChange={(v) => updateConsumption('consumptionSuburban', v)} />
+            <ConsumptionRow label="Landstraße" value={consumption.consumptionRural} onChange={(v) => updateConsumption('consumptionRural', v)} />
+            <ConsumptionRow label="Autobahn" value={consumption.consumptionHighway} onChange={(v) => updateConsumption('consumptionHighway', v)} />
+          </div>
+        </div>
+
+        {/* Cost section */}
+        <div className="mt-4 pt-4 border-t border-border">
+          <div className="text-xs font-semibold text-foreground mb-2">Kosten</div>
+          <div className="grid sm:grid-cols-2 gap-x-6 gap-y-0">
+            <ConsumptionRow label="Energiekosten/Jahr" value={consumption.energyCostPerYear} onChange={(v) => updateConsumption('energyCostPerYear', v)} />
+            <ConsumptionRow label="Kraftstoffpreis" value={consumption.fuelPrice} onChange={(v) => updateConsumption('fuelPrice', v)} />
+            <ConsumptionRow label="CO₂-Kosten (mittel, 10J)" value={consumption.co2CostMedium} onChange={(v) => updateConsumption('co2CostMedium', v)} />
+            <ConsumptionRow label="CO₂-Kosten (niedrig, 10J)" value={consumption.co2CostLow} onChange={(v) => updateConsumption('co2CostLow', v)} />
+            <ConsumptionRow label="CO₂-Kosten (hoch, 10J)" value={consumption.co2CostHigh} onChange={(v) => updateConsumption('co2CostHigh', v)} />
+            <ConsumptionRow label="Kfz-Steuer" value={consumption.vehicleTax} onChange={(v) => updateConsumption('vehicleTax', v)} />
+          </div>
+        </div>
+      </div>
+
+      {/* Features / Ausstattung */}
+      <div className="bg-card rounded-2xl border border-border shadow-card p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-display text-base font-semibold">Ausstattung</h3>
+          <Button variant="outline" size="sm" onClick={addFeature} className="gap-1 text-xs">
+            <Plus className="w-3.5 h-3.5" />
+            Hinzufügen
+          </Button>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {(data.vehicle.features || []).map((f, i) => (
+            <span key={i} className="group text-xs border border-border text-foreground px-3 py-1.5 rounded-full hover:bg-muted transition-colors inline-flex items-center gap-1.5">
+              <EditableField value={f} onChange={(v) => updateFeature(i, v)} className="text-foreground" />
+              <button onClick={() => removeFeature(i)} className="opacity-0 group-hover:opacity-60 hover:opacity-100 text-destructive transition-opacity">
+                <Trash2 className="w-3 h-3" />
+              </button>
+            </span>
+          ))}
+          {(!data.vehicle.features || data.vehicle.features.length === 0) && (
+            <span className="text-xs text-muted-foreground">Keine Ausstattung vorhanden. Klicke "Hinzufügen" um Merkmale zu ergänzen.</span>
+          )}
+        </div>
+      </div>
 
       {/* Dealer / Contact */}
       <div className="bg-card rounded-2xl border border-border shadow-card p-6">
