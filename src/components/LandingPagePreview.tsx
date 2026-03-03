@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { Download, RotateCcw, Car, Fuel, Gauge, Calendar, Palette, Cog, Zap, MapPin, Phone, Mail, Globe, Plus, Trash2, ChevronLeft, ChevronRight, Eye, Pencil } from 'lucide-react';
+import React, { useState, useMemo, useCallback } from 'react';
+import { Download, RotateCcw, Car, Fuel, Gauge, Calendar, Palette, Cog, Zap, MapPin, Phone, Mail, Globe, Plus, Trash2, ChevronLeft, ChevronRight, Eye, Pencil, Calculator } from 'lucide-react';
 import type { VehicleData, ConsumptionData, DealerData } from '@/types/vehicle';
 import { isPluginHybrid } from '@/lib/co2-utils';
 import type { TemplateId } from '@/types/template';
@@ -10,6 +10,7 @@ import CO2LabelSelector from '@/components/CO2LabelSelector';
 import FuelTypeDropdown from '@/components/FuelTypeDropdown';
 import CategoryDropdown from '@/components/CategoryDropdown';
 import { getFinanceSectionTitle } from '@/lib/templates/shared';
+import { parsePrice, parseDuration, parseInterestRate, formatPrice, calculateFinancingRate, calculateLeasingRate } from '@/lib/finance-utils';
 
 interface LandingPagePreviewProps {
   vehicleData: VehicleData;
@@ -64,6 +65,7 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
   };
 
   const cat = (data.category || '').toLowerCase();
+  const isBuyCategory = cat.includes('barkauf') || cat.includes('neuwagen') || cat.includes('gebrauchtwagen') || cat.includes('tageszulassung');
   const allImages = [imageBase64, ...galleryImages].filter(Boolean) as string[];
 
   const updateVehicle = (key: keyof VehicleData['vehicle'], val: string) => {
@@ -90,6 +92,24 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
       },
     });
   };
+
+  const recalculateRate = useCallback(() => {
+    const price = parsePrice(data.finance.totalPrice);
+    const months = parseDuration(data.finance.duration);
+    const rate = parseInterestRate(data.finance.interestRate || '');
+    let monthly = 0;
+    if (cat.includes('leasing')) {
+      const sp = parsePrice(data.finance.specialPayment);
+      const rv = parsePrice(data.finance.residualValue);
+      monthly = calculateLeasingRate(price, sp, rv, rate, months);
+    } else {
+      const dp = parsePrice(data.finance.downPayment);
+      monthly = calculateFinancingRate(price, dp, rate, months);
+    }
+    if (monthly > 0) {
+      updateFinance('monthlyRate', formatPrice(monthly));
+    }
+  }, [data.finance, cat]);
 
   const addFeature = () => {
     const features = [...(data.vehicle.features || []), 'Neue Ausstattung'];
@@ -263,13 +283,14 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
             <div className="text-xs text-muted-foreground mb-0.5">Gesamtpreis</div>
             <EditableField value={data.finance.totalPrice} onChange={(v) => updateFinance('totalPrice', v)} className="text-sm font-semibold text-foreground" />
           </div>
-          {!cat.includes('barkauf') && !cat.includes('neuwagen') && !cat.includes('gebrauchtwagen') && !cat.includes('tageszulassung') && ([
+          {!isBuyCategory && ([
             ['Monatliche Rate', data.finance.monthlyRate, (v: string) => updateFinance('monthlyRate', v)],
             ...(cat.includes('leasing')
               ? [['Sonderzahlung', data.finance.specialPayment, (v: string) => updateFinance('specialPayment', v)]]
               : [['Anzahlung', data.finance.downPayment, (v: string) => updateFinance('downPayment', v)]]
             ),
             ['Laufzeit', data.finance.duration, (v: string) => updateFinance('duration', v)],
+            ['Eff. Jahreszins', data.finance.interestRate || '', (v: string) => updateFinance('interestRate', v)],
             ['Jahresfahrleistung', data.finance.annualMileage, (v: string) => updateFinance('annualMileage', v)],
             ...(cat.includes('leasing')
               ? [['Restwert', data.finance.residualValue, (v: string) => updateFinance('residualValue', v)]]
@@ -282,6 +303,12 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
             </div>
           ))}
         </div>
+        {!isBuyCategory && (
+          <Button variant="outline" size="sm" className="mt-4 gap-2" onClick={recalculateRate}>
+            <Calculator className="w-3.5 h-3.5" />
+            Rate neu berechnen
+          </Button>
+        )}
       </div>
 
       {/* Consumption / Verbrauchswerte */}
