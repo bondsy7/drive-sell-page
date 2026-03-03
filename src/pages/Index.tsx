@@ -5,6 +5,8 @@ import PDFUpload from '@/components/PDFUpload';
 import ProcessingStatus from '@/components/ProcessingStatus';
 import LandingPagePreview from '@/components/LandingPagePreview';
 import TemplateSidebar from '@/components/TemplateSidebar';
+import ImageSourceChoice from '@/components/ImageSourceChoice';
+import ImageUploadRemaster from '@/components/ImageUploadRemaster';
 import { extractPDFAsBase64 } from '@/lib/pdf-utils';
 import { supabase } from '@/integrations/supabase/client';
 import type { AppState, VehicleData } from '@/types/vehicle';
@@ -61,52 +63,61 @@ const Index = () => {
       const { imagePrompt: basePrompt, ...vehicleInfo } = analysisData;
       setVehicleData(vehicleInfo as VehicleData);
 
-      // Step 3: Generate multiple images from different perspectives
-      setAppState('generating-image');
-      const total = PERSPECTIVES.length;
-      setImageProgress({ current: 0, total });
-
-      const showroomBase = `Photorealistic image of a ${vehicleInfo.vehicle?.brand || ''} ${vehicleInfo.vehicle?.model || ''} ${vehicleInfo.vehicle?.variant || ''} in ${vehicleInfo.vehicle?.color || 'the original color'}. The car is in a modern, bright, luxurious car dealership showroom with polished floors and soft lighting. `;
-
-      const generatedImages: string[] = [];
-
-      for (let i = 0; i < PERSPECTIVES.length; i++) {
-        const perspective = PERSPECTIVES[i];
-        setImageProgress({ current: i + 1, total });
-
-        try {
-          const { data: imageData, error: imageError } = await supabase.functions.invoke('generate-vehicle-image', {
-            body: { imagePrompt: showroomBase + perspective.prompt },
-          });
-
-          if (!imageError && imageData?.imageBase64) {
-            generatedImages.push(imageData.imageBase64);
-            // Set first image as main image immediately
-            if (i === 0) {
-              setImageBase64(imageData.imageBase64);
-            }
-            // Update gallery progressively
-            setGalleryImages([...generatedImages]);
-          } else {
-            console.warn(`Image generation failed for ${perspective.key}`);
-          }
-        } catch {
-          console.warn(`Image generation failed for ${perspective.key}`);
-        }
-      }
-
-      if (generatedImages.length === 0) {
-        toast.warning('Bilder konnten nicht generiert werden. Die Landing Page wird ohne Bilder erstellt.');
-      } else {
-        toast.success(`${generatedImages.length} von ${total} Bilder erfolgreich generiert.`);
-      }
-
-      setAppState('preview');
+      // Step 3: Show image source choice
+      setAppState('choosing-image-source');
     } catch (err) {
       console.error('Processing error:', err);
       toast.error('Ein Fehler ist aufgetreten. Bitte versuche es erneut.');
       setAppState('idle');
     }
+  }, []);
+
+  const handleChooseGenerate = useCallback(async () => {
+    if (!vehicleData) return;
+
+    setAppState('generating-image');
+    const total = PERSPECTIVES.length;
+    setImageProgress({ current: 0, total });
+
+    const showroomBase = `Photorealistic image of a ${vehicleData.vehicle?.brand || ''} ${vehicleData.vehicle?.model || ''} ${vehicleData.vehicle?.variant || ''} in ${vehicleData.vehicle?.color || 'the original color'}. The car is in a modern, bright, luxurious car dealership showroom with polished floors and soft lighting. `;
+
+    const generatedImages: string[] = [];
+
+    for (let i = 0; i < PERSPECTIVES.length; i++) {
+      const perspective = PERSPECTIVES[i];
+      setImageProgress({ current: i + 1, total });
+
+      try {
+        const { data: imageData, error: imageError } = await supabase.functions.invoke('generate-vehicle-image', {
+          body: { imagePrompt: showroomBase + perspective.prompt },
+        });
+
+        if (!imageError && imageData?.imageBase64) {
+          generatedImages.push(imageData.imageBase64);
+          if (i === 0) setImageBase64(imageData.imageBase64);
+          setGalleryImages([...generatedImages]);
+        }
+      } catch {
+        console.warn(`Image generation failed for ${perspective.key}`);
+      }
+    }
+
+    if (generatedImages.length === 0) {
+      toast.warning('Bilder konnten nicht generiert werden.');
+    } else {
+      toast.success(`${generatedImages.length} von ${total} Bilder generiert.`);
+    }
+    setAppState('preview');
+  }, [vehicleData]);
+
+  const handleChooseUpload = useCallback(() => {
+    setAppState('uploading-images');
+  }, []);
+
+  const handleRemasterComplete = useCallback((mainImage: string, gallery: string[]) => {
+    setImageBase64(mainImage);
+    setGalleryImages(gallery);
+    setAppState('preview');
   }, []);
 
   const handleReset = useCallback(() => {
@@ -119,6 +130,10 @@ const Index = () => {
   }, []);
 
   const isProcessing = appState === 'uploading' || appState === 'analyzing' || appState === 'generating-image';
+
+  const vehicleDescription = vehicleData
+    ? `${vehicleData.vehicle.brand} ${vehicleData.vehicle.model} ${vehicleData.vehicle.variant}, ${vehicleData.vehicle.color}, ${vehicleData.vehicle.fuelType}`
+    : '';
 
   return (
     <div className="min-h-screen bg-background">
@@ -170,6 +185,25 @@ const Index = () => {
           {isProcessing && (
             <div className="mt-16">
               <ProcessingStatus state={appState} fileName={fileName} imageProgress={imageProgress} />
+            </div>
+          )}
+
+          {appState === 'choosing-image-source' && (
+            <div className="mt-16">
+              <ImageSourceChoice
+                onChooseGenerate={handleChooseGenerate}
+                onChooseUpload={handleChooseUpload}
+              />
+            </div>
+          )}
+
+          {appState === 'uploading-images' && (
+            <div className="mt-16">
+              <ImageUploadRemaster
+                vehicleDescription={vehicleDescription}
+                onComplete={handleRemasterComplete}
+                onBack={() => setAppState('choosing-image-source')}
+              />
             </div>
           )}
         </main>
