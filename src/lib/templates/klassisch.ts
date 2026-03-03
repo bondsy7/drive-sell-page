@@ -1,5 +1,5 @@
 import { VehicleData } from "@/types/vehicle";
-import { getCO2LabelHTML, getGalleryHTML, getConsumptionData, buildConsumptionRows, buildDetailedConsumption, buildCostRows, buildFinanceItems, buildFeatures } from "./shared";
+import { getCO2LabelHTML, getGalleryHTML, getConsumptionData, buildConsumptionRows, buildDetailedConsumption, buildCostRows, buildFinanceItems, buildFeatures, buildSocialLinksHTML, buildLegalTextHTML, buildDealerAddressHTML, buildDealerFooterHTML } from "./shared";
 
 export function generateKlassischHTML(data: VehicleData, imageBase64: string | null, galleryImages: string[] = []): string {
   const consumption = getConsumptionData(data);
@@ -95,10 +95,16 @@ export function generateKlassischHTML(data: VehicleData, imageBase64: string | n
     ${features ? `<div class="section"><h3>Ausstattung</h3><div class="tags">${features}</div></div>` : ''}
     <div class="section"><h3>Händler & Kontakt</h3>
       <div class="dealer-grid">
-        <div class="dealer-info"><strong>${data.dealer.name||'–'}</strong>${data.dealer.address||''}<br/>${data.dealer.phone||''}<br/>${data.dealer.email||''}<br/>${data.dealer.website||''}</div>
+        <div class="dealer-info">
+          ${data.dealer.logoUrl ? `<img src="${data.dealer.logoUrl}" alt="${data.dealer.name}" style="max-height:44px;margin-bottom:8px" />` : ''}
+          <strong>${data.dealer.name||'–'}</strong>${buildDealerAddressHTML(data.dealer)}<br/>${data.dealer.phone||''}<br/>${data.dealer.email||''}<br/>${data.dealer.website||''}
+          ${buildDealerFooterHTML(data.dealer)}
+          ${buildSocialLinksHTML(data.dealer)}
+        </div>
         <div class="rate-box"><div class="rate-label">Monatliche Rate</div><div class="rate-amount">${data.finance.monthlyRate||'–'}</div><div class="rate-period">pro Monat</div></div>
       </div>
     </div>
+    ${buildLegalTextHTML(data)}
   </div>
   <div class="footer">Alle Angaben ohne Gewähr. Irrtümer und Änderungen vorbehalten.</div>
 </body></html>`;

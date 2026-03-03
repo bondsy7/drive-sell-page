@@ -16,34 +16,76 @@ export type Database = {
     Tables: {
       profiles: {
         Row: {
+          address: string | null
+          city: string | null
           company_name: string | null
           contact_name: string | null
           created_at: string
+          default_legal_text: string | null
           email: string | null
+          facebook_url: string | null
+          financing_bank: string | null
+          financing_legal_text: string | null
           id: string
+          instagram_url: string | null
+          leasing_bank: string | null
+          leasing_legal_text: string | null
           logo_url: string | null
           phone: string | null
+          postal_code: string | null
+          tax_id: string | null
+          tiktok_url: string | null
           updated_at: string
+          x_url: string | null
+          youtube_url: string | null
         }
         Insert: {
+          address?: string | null
+          city?: string | null
           company_name?: string | null
           contact_name?: string | null
           created_at?: string
+          default_legal_text?: string | null
           email?: string | null
+          facebook_url?: string | null
+          financing_bank?: string | null
+          financing_legal_text?: string | null
           id: string
+          instagram_url?: string | null
+          leasing_bank?: string | null
+          leasing_legal_text?: string | null
           logo_url?: string | null
           phone?: string | null
+          postal_code?: string | null
+          tax_id?: string | null
+          tiktok_url?: string | null
           updated_at?: string
+          x_url?: string | null
+          youtube_url?: string | null
         }
         Update: {
+          address?: string | null
+          city?: string | null
           company_name?: string | null
           contact_name?: string | null
           created_at?: string
+          default_legal_text?: string | null
           email?: string | null
+          facebook_url?: string | null
+          financing_bank?: string | null
+          financing_legal_text?: string | null
           id?: string
+          instagram_url?: string | null
+          leasing_bank?: string | null
+          leasing_legal_text?: string | null
           logo_url?: string | null
           phone?: string | null
+          postal_code?: string | null
+          tax_id?: string | null
+          tiktok_url?: string | null
           updated_at?: string
+          x_url?: string | null
+          youtube_url?: string | null
         }
         Relationships: []
       }

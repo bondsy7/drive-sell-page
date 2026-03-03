@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Download, RotateCcw, Car, Fuel, Gauge, Calendar, Palette, Cog, Zap, MapPin, Phone, Mail, Globe, Plus, Trash2, ChevronLeft, ChevronRight, Eye, Pencil } from 'lucide-react';
-import type { VehicleData, ConsumptionData } from '@/types/vehicle';
+import type { VehicleData, ConsumptionData, DealerData } from '@/types/vehicle';
 import { isPluginHybrid } from '@/lib/co2-utils';
 import type { TemplateId } from '@/types/template';
 import { generateHTML, downloadHTML } from '@/lib/templates';
@@ -68,7 +68,7 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
   const updateFinance = (key: keyof VehicleData['finance'], val: string) => {
     onDataChange({ ...data, finance: { ...data.finance, [key]: val } });
   };
-  const updateDealer = (key: keyof VehicleData['dealer'], val: string) => {
+  const updateDealer = (key: keyof DealerData, val: string) => {
     onDataChange({ ...data, dealer: { ...data.dealer, [key]: val } });
   };
   const updateConsumption = (key: keyof ConsumptionData, val: string) => {

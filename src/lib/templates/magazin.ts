@@ -1,5 +1,5 @@
 import { VehicleData } from "@/types/vehicle";
-import { getCO2LabelHTML, getGalleryHTML, getConsumptionData, buildConsumptionRows, buildDetailedConsumption, buildCostRows, buildFinanceItems, buildFeatures } from "./shared";
+import { getCO2LabelHTML, getGalleryHTML, getConsumptionData, buildConsumptionRows, buildDetailedConsumption, buildCostRows, buildFinanceItems, buildFeatures, buildSocialLinksHTML, buildLegalTextHTML, buildDealerAddressHTML, buildDealerFooterHTML } from "./shared";
 
 export function generateMagazinHTML(data: VehicleData, imageBase64: string | null, galleryImages: string[] = []): string {
   const consumption = getConsumptionData(data);
@@ -113,10 +113,16 @@ export function generateMagazinHTML(data: VehicleData, imageBase64: string | nul
     ${features ? `<div class="full-card"><h3>Ausstattung</h3><div class="tags">${features}</div></div>` : ''}
     <div class="full-card"><h3>Händler & Kontakt</h3>
       <div class="dealer-grid">
-        <div class="dealer-info"><strong>${data.dealer.name||'–'}</strong>${data.dealer.address||''}<br/>${data.dealer.phone||''}<br/>${data.dealer.email||''}<br/>${data.dealer.website||''}</div>
+        <div class="dealer-info">
+          ${data.dealer.logoUrl ? `<img src="${data.dealer.logoUrl}" alt="${data.dealer.name}" style="max-height:40px;margin-bottom:8px" />` : ''}
+          <strong>${data.dealer.name||'–'}</strong>${buildDealerAddressHTML(data.dealer)}<br/>${data.dealer.phone||''}<br/>${data.dealer.email||''}<br/>${data.dealer.website||''}
+          ${buildDealerFooterHTML(data.dealer)}
+          ${buildSocialLinksHTML(data.dealer)}
+        </div>
         <div class="rate-badge"><div class="amount">${data.finance.monthlyRate||'–'}</div><div class="period">pro Monat</div></div>
       </div>
     </div>
+    ${buildLegalTextHTML(data)}
   </div>
   <div class="footer">Alle Angaben ohne Gewähr. Irrtümer und Änderungen vorbehalten.</div>
 </body></html>`;
