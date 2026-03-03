@@ -20,48 +20,48 @@ export function generateKlassischHTML(data: VehicleData, imageBase64: string | n
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Source+Sans+3:wght@300;400;500;600&display=swap');
     *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:'Source Sans 3',sans-serif;background:#faf9f6;color:#2c2c2c}
+    body{font-family:'Source Sans 3',sans-serif;background:#f8f6f3;color:#2c3040}
     .container{max-width:900px;margin:0 auto;padding:32px}
-    .header{text-align:center;margin-bottom:32px;padding-bottom:24px;border-bottom:2px solid #1e3a5f}
-    .header .cat{font-size:12px;text-transform:uppercase;letter-spacing:3px;color:#1e3a5f;margin-bottom:8px}
-    .header h1{font-family:'Playfair Display',serif;font-size:36px;font-weight:700;color:#1e3a5f}
-    .header .variant{font-size:15px;color:#777;margin-top:4px;font-style:italic}
-    .header .price{font-family:'Playfair Display',serif;font-size:28px;color:#1e3a5f;margin-top:12px}
-    .img-block{margin-bottom:28px;text-align:center}
-    .img-block img#mainImg{width:100%;max-height:400px;object-fit:cover;border-radius:4px;border:1px solid #ddd}
+    .header{text-align:center;margin-bottom:32px;padding-bottom:28px;border-bottom:1px solid #d4cfc7}
+    .header .cat{font-size:11px;text-transform:uppercase;letter-spacing:4px;color:#1a365d;margin-bottom:10px;font-weight:500}
+    .header h1{font-family:'Playfair Display',serif;font-size:34px;font-weight:700;color:#1a2332}
+    .header .variant{font-size:14px;color:#7a7e8a;margin-top:6px;font-style:italic}
+    .header .price{font-family:'Playfair Display',serif;font-size:28px;color:#1a365d;margin-top:14px;font-weight:600}
+    .img-block{margin-bottom:32px;text-align:center}
+    .img-block img#mainImg{width:100%;max-height:420px;object-fit:cover;border-radius:8px}
     .gallery{display:flex;gap:8px;margin-top:12px;justify-content:center}
-    .gallery-thumb{width:64px;height:48px;object-fit:cover;border-radius:4px;cursor:pointer;border:2px solid transparent}
-    .gallery-thumb:hover{border-color:#1e3a5f}
-    .section{margin-bottom:28px;padding:24px;background:#fff;border:1px solid #e5e2db;border-radius:4px}
-    .section h3{font-family:'Playfair Display',serif;font-size:18px;color:#1e3a5f;margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid #e5e2db}
+    .gallery-thumb{width:68px;height:50px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid transparent;transition:all .2s}
+    .gallery-thumb:hover{border-color:#1a365d}
+    .section{margin-bottom:24px;padding:28px;background:#fff;border:1px solid #e8e4de;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,0.03)}
+    .section h3{font-family:'Playfair Display',serif;font-size:18px;color:#1a2332;margin-bottom:18px;padding-bottom:10px;border-bottom:2px solid #1a365d}
     .specs-table{width:100%;border-collapse:collapse}
-    .specs-table td{padding:8px 12px;font-size:13px;border-bottom:1px solid #f0ede8}
-    .specs-table td:first-child{color:#888;width:40%}
-    .specs-table td:last-child{font-weight:600}
+    .specs-table td{padding:10px 14px;font-size:13px;border-bottom:1px solid #f0ede8}
+    .specs-table td:first-child{color:#7a7e8a;width:40%}
+    .specs-table td:last-child{font-weight:600;color:#1a2332}
     .fin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
     @media(max-width:600px){.fin-grid{grid-template-columns:1fr 1fr}}
-    .fin-item{padding:12px;border:1px solid #e5e2db;border-radius:4px}
-    .fin-label{font-size:11px;color:#888}
-    .fin-value{font-size:14px;font-weight:600;color:#1e3a5f}
+    .fin-item{padding:14px;border:1px solid #e8e4de;border-radius:8px;background:#faf9f6}
+    .fin-label{font-size:10px;color:#7a7e8a;text-transform:uppercase;letter-spacing:0.5px}
+    .fin-value{font-size:14px;font-weight:600;color:#1a365d}
     .tags{display:flex;flex-wrap:wrap;gap:8px}
-    .tag{font-size:12px;border:1px solid #ccc;padding:5px 14px;border-radius:2px;color:#555}
+    .tag{font-size:12px;border:1px solid #d4cfc7;padding:5px 14px;border-radius:4px;color:#4a5060;background:#faf9f6}
     .cons-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
     @media(max-width:600px){.cons-grid{grid-template-columns:1fr}}
-    .cons-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f0ede8}
+    .cons-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0ede8}
     .cons-row:last-child{border-bottom:none}
-    .cons-label{font-size:11px;color:#888}
-    .cons-value{font-size:12px;font-weight:600}
-    .cons-sub{margin-top:16px;padding-top:16px;border-top:1px solid #e5e2db}
-    .cons-sub-title{font-size:13px;font-weight:600;color:#1e3a5f;margin-bottom:8px}
+    .cons-label{font-size:11px;color:#7a7e8a}
+    .cons-value{font-size:12px;font-weight:600;color:#1a2332}
+    .cons-sub{margin-top:16px;padding-top:16px;border-top:1px solid #e8e4de}
+    .cons-sub-title{font-size:13px;font-weight:600;color:#1a365d;margin-bottom:8px}
     .dealer-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
     @media(max-width:600px){.dealer-grid{grid-template-columns:1fr}}
-    .dealer-info{font-size:13px;line-height:1.8}
-    .dealer-info strong{display:block;font-family:'Playfair Display',serif;font-size:16px;color:#1e3a5f}
-    .rate-box{background:#1e3a5f;color:#fff;border-radius:4px;padding:20px;text-align:center}
+    .dealer-info{font-size:13px;line-height:1.8;color:#5a5e6a}
+    .dealer-info strong{display:block;font-family:'Playfair Display',serif;font-size:16px;color:#1a2332}
+    .rate-box{background:#1a365d;color:#fff;border-radius:10px;padding:24px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center}
     .rate-label{font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.7}
-    .rate-amount{font-family:'Playfair Display',serif;font-size:28px;font-weight:700}
+    .rate-amount{font-family:'Playfair Display',serif;font-size:30px;font-weight:700;margin:4px 0}
     .rate-period{font-size:12px;opacity:0.7}
-    .footer{text-align:center;padding:24px;font-size:11px;color:#aaa;border-top:1px solid #e5e2db;margin-top:12px}
+    .footer{text-align:center;padding:24px;font-size:11px;color:#a0a4ae;border-top:1px solid #e8e4de;margin-top:12px}
   </style>
 </head>
 <body>
@@ -88,7 +88,7 @@ export function generateKlassischHTML(data: VehicleData, imageBase64: string | n
     </div>
     <div class="section"><h3>${getFinanceSectionTitle(data)}</h3><div class="fin-grid">${financeItems}</div></div>
     ${hasConsumption ? `<div class="section"><h3>Verbrauch & Emissionen</h3>
-      <div class="cons-grid"><div>${consumptionRows}</div><div style="display:flex;flex-direction:column;align-items:center;justify-content:center"><div class="cons-grid"><div>${consumptionRows}</div><div style="display:flex;flex-direction:column;align-items:center;justify-content:center">${getCO2LabelHTML(consumption)}</div></div></div></div>
+      <div class="cons-grid"><div>${consumptionRows}</div><div style="display:flex;flex-direction:column;align-items:center;justify-content:center">${getCO2LabelHTML(consumption)}</div></div>
       ${detailedConsumption ? `<div class="cons-sub"><div class="cons-sub-title">Verbrauch im Detail</div><div class="cons-grid"><div>${detailedConsumption}</div><div></div></div></div>` : ''}
       ${costRows ? `<div class="cons-sub"><div class="cons-sub-title">Kosten</div><div class="cons-grid"><div>${costRows}</div><div></div></div></div>` : ''}
     </div>` : ''}
@@ -106,6 +106,6 @@ export function generateKlassischHTML(data: VehicleData, imageBase64: string | n
     </div>
     ${buildLegalTextHTML(data)}
   </div>
-  <div class="footer">Alle Angaben ohne Gewähr. Irrtümer und Änderungen vorbehalten.</div>
+  <div class="footer">Alle Angaben ohne Gewähr.</div>
 </body></html>`;
 }

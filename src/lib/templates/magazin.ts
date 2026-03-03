@@ -20,57 +20,57 @@ export function generateMagazinHTML(data: VehicleData, imageBase64: string | nul
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Newsreader:wght@400;500;600;700&display=swap');
     *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:'Outfit',sans-serif;background:#fafafa;color:#1a1a1a}
+    body{font-family:'Outfit',sans-serif;background:#f8fafc;color:#1e293b}
     .container{max-width:960px;margin:0 auto;padding:24px}
-    .masthead{display:flex;justify-content:space-between;align-items:center;padding:12px 0;margin-bottom:24px;border-bottom:3px solid #c026d3}
-    .masthead .logo{font-family:'Newsreader',serif;font-size:20px;font-weight:700}
-    .masthead .issue{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:2px}
-    .hero-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:0;margin-bottom:28px;background:#fff;overflow:hidden;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.06)}
+    .masthead{display:flex;justify-content:space-between;align-items:center;padding:14px 0;margin-bottom:24px;border-bottom:3px solid #2563eb}
+    .masthead .logo{font-family:'Newsreader',serif;font-size:20px;font-weight:700;color:#1e293b}
+    .masthead .issue{font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:2px}
+    .hero-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:0;margin-bottom:28px;background:#fff;overflow:hidden;border-radius:12px;box-shadow:0 2px 16px rgba(30,41,59,0.06);border:1px solid #e2e8f0}
     @media(max-width:768px){.hero-grid{grid-template-columns:1fr}}
     .hero-img{position:relative}
     .hero-img img#mainImg{width:100%;height:100%;min-height:360px;object-fit:cover}
     .hero-info{padding:32px;display:flex;flex-direction:column;justify-content:center}
-    .hero-info .cat{font-size:10px;text-transform:uppercase;letter-spacing:3px;color:#c026d3;font-weight:700;margin-bottom:8px}
-    .hero-info h1{font-family:'Newsreader',serif;font-size:30px;font-weight:700;line-height:1.2}
-    .hero-info .variant{font-size:13px;color:#888;margin:6px 0 16px;font-style:italic}
-    .hero-info .price{font-size:28px;font-weight:800;color:#c026d3}
-    .hero-info .rate-inline{display:inline-flex;align-items:baseline;gap:6px;margin-top:8px;font-size:13px;color:#666}
-    .hero-info .rate-inline strong{font-size:18px;color:#1a1a1a}
-    .gallery{display:flex;gap:6px;padding:12px;background:rgba(0,0,0,0.03)}
-    .gallery-thumb{width:72px;height:54px;object-fit:cover;border-radius:4px;cursor:pointer;opacity:0.6;transition:opacity .2s}
+    .hero-info .cat{font-size:10px;text-transform:uppercase;letter-spacing:3px;color:#2563eb;font-weight:700;margin-bottom:8px}
+    .hero-info h1{font-family:'Newsreader',serif;font-size:28px;font-weight:700;line-height:1.2;color:#1e293b}
+    .hero-info .variant{font-size:13px;color:#94a3b8;margin:6px 0 16px;font-style:italic}
+    .hero-info .price{font-size:26px;font-weight:800;color:#2563eb}
+    .hero-info .rate-inline{display:inline-flex;align-items:baseline;gap:6px;margin-top:8px;font-size:13px;color:#64748b}
+    .hero-info .rate-inline strong{font-size:18px;color:#1e293b}
+    .gallery{display:flex;gap:6px;padding:12px;background:#f1f5f9}
+    .gallery-thumb{width:72px;height:54px;object-fit:cover;border-radius:6px;cursor:pointer;opacity:0.5;transition:all .2s}
     .gallery-thumb:hover{opacity:1}
-    .columns{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px}
+    .columns{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px}
     @media(max-width:768px){.columns{grid-template-columns:1fr}}
-    .col-card{background:#fff;border-radius:8px;padding:24px;box-shadow:0 1px 4px rgba(0,0,0,0.04)}
-    .col-card h3{font-family:'Newsreader',serif;font-size:16px;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #c026d3;display:inline-block}
-    .specs-list .item{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f0f0;font-size:13px}
+    .col-card{background:#fff;border-radius:12px;padding:24px;box-shadow:0 1px 6px rgba(30,41,59,0.04);border:1px solid #e2e8f0}
+    .col-card h3{font-family:'Newsreader',serif;font-size:16px;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #2563eb;display:inline-block;color:#1e293b}
+    .specs-list .item{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f1f5f9;font-size:13px}
     .specs-list .item:last-child{border-bottom:none}
-    .specs-list .item .lbl{color:#888}
-    .specs-list .item .val{font-weight:600}
+    .specs-list .item .lbl{color:#94a3b8}
+    .specs-list .item .val{font-weight:600;color:#1e293b}
     .fin-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .fin-item{padding:10px;background:#faf5ff;border-radius:6px}
-    .fin-label{font-size:10px;color:#999}
-    .fin-value{font-size:13px;font-weight:600;color:#7e22ce}
-    .full-card{background:#fff;border-radius:8px;padding:24px;margin-bottom:24px;box-shadow:0 1px 4px rgba(0,0,0,0.04)}
-    .full-card h3{font-family:'Newsreader',serif;font-size:16px;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #c026d3;display:inline-block}
+    .fin-item{padding:10px;background:#eff6ff;border-radius:8px;border:1px solid #dbeafe}
+    .fin-label{font-size:10px;color:#94a3b8}
+    .fin-value{font-size:13px;font-weight:600;color:#1e40af}
+    .full-card{background:#fff;border-radius:12px;padding:24px;margin-bottom:20px;box-shadow:0 1px 6px rgba(30,41,59,0.04);border:1px solid #e2e8f0}
+    .full-card h3{font-family:'Newsreader',serif;font-size:16px;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #2563eb;display:inline-block;color:#1e293b}
     .tags{display:flex;flex-wrap:wrap;gap:6px}
-    .tag{font-size:11px;padding:5px 12px;border:1px solid #e8e8e8;border-radius:100px;color:#666;background:#fafafa}
+    .tag{font-size:11px;padding:5px 12px;border:1px solid #e2e8f0;border-radius:100px;color:#475569;background:#f8fafc}
     .cons-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
     @media(max-width:600px){.cons-grid{grid-template-columns:1fr}}
-    .cons-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f5f5f5}
+    .cons-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f1f5f9}
     .cons-row:last-child{border-bottom:none}
-    .cons-label{font-size:11px;color:#888}
-    .cons-value{font-size:12px;font-weight:600}
-    .cons-sub{margin-top:16px;padding-top:16px;border-top:1px solid #eee}
-    .cons-sub-title{font-size:11px;font-weight:600;color:#c026d3;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+    .cons-label{font-size:11px;color:#94a3b8}
+    .cons-value{font-size:12px;font-weight:600;color:#1e293b}
+    .cons-sub{margin-top:16px;padding-top:16px;border-top:1px solid #e2e8f0}
+    .cons-sub-title{font-size:11px;font-weight:600;color:#2563eb;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
     .dealer-grid{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:start}
     @media(max-width:600px){.dealer-grid{grid-template-columns:1fr}}
-    .dealer-info{font-size:13px;line-height:1.8;color:#666}
-    .dealer-info strong{display:block;font-family:'Newsreader',serif;font-size:16px;color:#1a1a1a}
-    .rate-badge{background:linear-gradient(135deg,#c026d3,#7e22ce);color:#fff;padding:20px 28px;border-radius:8px;text-align:center}
+    .dealer-info{font-size:13px;line-height:1.8;color:#64748b}
+    .dealer-info strong{display:block;font-family:'Newsreader',serif;font-size:16px;color:#1e293b}
+    .rate-badge{background:linear-gradient(135deg,#2563eb,#1e40af);color:#fff;padding:24px 28px;border-radius:12px;text-align:center}
     .rate-badge .amount{font-size:28px;font-weight:700}
-    .rate-badge .period{font-size:11px;opacity:0.8}
-    .footer{text-align:center;padding:24px;font-size:11px;color:#bbb;border-top:1px solid #eee}
+    .rate-badge .period{font-size:11px;opacity:0.8;margin-top:2px}
+    .footer{text-align:center;padding:24px;font-size:11px;color:#cbd5e1;border-top:1px solid #e2e8f0}
   </style>
 </head>
 <body>
@@ -106,7 +106,7 @@ export function generateMagazinHTML(data: VehicleData, imageBase64: string | nul
       <div class="col-card"><h3>${getFinanceSectionTitle(data)}</h3><div class="fin-grid">${financeItems}</div></div>
     </div>
     ${hasConsumption ? `<div class="full-card"><h3>Verbrauch & Emissionen</h3>
-      <div class="cons-grid"><div>${consumptionRows}</div><div style="display:flex;flex-direction:column;align-items:center;justify-content:center"><div class="cons-grid"><div>${consumptionRows}</div><div style="display:flex;flex-direction:column;align-items:center;justify-content:center">${getCO2LabelHTML(consumption)}</div></div></div></div>
+      <div class="cons-grid"><div>${consumptionRows}</div><div style="display:flex;flex-direction:column;align-items:center;justify-content:center">${getCO2LabelHTML(consumption)}</div></div>
       ${detailedConsumption ? `<div class="cons-sub"><div class="cons-sub-title">Verbrauch im Detail</div><div class="cons-grid"><div>${detailedConsumption}</div><div></div></div></div>` : ''}
       ${costRows ? `<div class="cons-sub"><div class="cons-sub-title">Kosten</div><div class="cons-grid"><div>${costRows}</div><div></div></div></div>` : ''}
     </div>` : ''}
@@ -124,6 +124,6 @@ export function generateMagazinHTML(data: VehicleData, imageBase64: string | nul
     </div>
     ${buildLegalTextHTML(data)}
   </div>
-  <div class="footer">Alle Angaben ohne Gewähr. Irrtümer und Änderungen vorbehalten.</div>
+  <div class="footer">Alle Angaben ohne Gewähr.</div>
 </body></html>`;
 }
