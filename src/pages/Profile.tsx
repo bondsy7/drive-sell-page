@@ -14,6 +14,7 @@ interface ProfileData {
   contact_name: string;
   phone: string;
   email: string;
+  website: string;
   address: string;
   postal_code: string;
   city: string;
@@ -32,7 +33,7 @@ interface ProfileData {
 }
 
 const emptyProfile: ProfileData = {
-  company_name: '', contact_name: '', phone: '', email: '',
+  company_name: '', contact_name: '', phone: '', email: '', website: '',
   address: '', postal_code: '', city: '', tax_id: '', logo_url: '',
   facebook_url: '', instagram_url: '', x_url: '', tiktok_url: '', youtube_url: '',
   leasing_bank: '', leasing_legal_text: '', financing_bank: '', financing_legal_text: '', default_legal_text: '',
@@ -64,6 +65,7 @@ const Profile = () => {
           contact_name: data.contact_name || '',
           phone: data.phone || '',
           email: data.email || '',
+          website: (data as any).website || '',
           address: data.address || '',
           postal_code: data.postal_code || '',
           city: data.city || '',
@@ -116,6 +118,7 @@ const Profile = () => {
       contact_name: profile.contact_name,
       phone: profile.phone,
       email: profile.email,
+      website: profile.website || null,
       address: profile.address,
       postal_code: profile.postal_code,
       city: profile.city,
@@ -229,6 +232,10 @@ const Profile = () => {
             <div className="space-y-1.5">
               <Label>E-Mail</Label>
               <Input type="email" value={profile.email} onChange={e => update('email', e.target.value)} placeholder="info@autohaus.de" />
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label className="flex items-center gap-1.5"><Globe className="w-3.5 h-3.5" /> Webseite</Label>
+              <Input value={profile.website} onChange={e => update('website', e.target.value)} placeholder="https://www.autohaus-mustermann.de" />
             </div>
           </div>
         </Section>

@@ -80,7 +80,7 @@ const Index = () => {
         city: pr.city || vData.dealer?.city || '',
         phone: vData.dealer?.phone || pr.phone || '',
         email: vData.dealer?.email || pr.email || '',
-        website: vData.dealer?.website || '',
+        website: pr.website || vData.dealer?.website || '',
         taxId: pr.tax_id || '',
         logoUrl: pr.logo_url || '',
         facebookUrl: pr.facebook_url || '',
