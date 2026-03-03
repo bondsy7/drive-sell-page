@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Download, RotateCcw, Car, Fuel, Gauge, Calendar, Palette, Cog, Zap, MapPin, Phone, Mail, Globe, Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { VehicleData, ConsumptionData } from '@/types/vehicle';
-import { generateLandingPageHTML, downloadHTML } from '@/lib/html-generator';
+import type { TemplateId } from '@/types/template';
+import { generateHTML, downloadHTML } from '@/lib/templates';
 import { Button } from '@/components/ui/button';
 import EditableField from '@/components/EditableField';
 import CO2Label from '@/components/CO2Label';
@@ -12,6 +13,7 @@ interface LandingPagePreviewProps {
   galleryImages?: string[];
   onReset: () => void;
   onDataChange: (data: VehicleData) => void;
+  selectedTemplate: TemplateId;
 }
 
 const SpecItem: React.FC<{
@@ -36,7 +38,7 @@ const ConsumptionRow: React.FC<{ label: string; value: string; onChange: (v: str
   </div>
 );
 
-const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, imageBase64, galleryImages = [], onReset, onDataChange }) => {
+const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, imageBase64, galleryImages = [], onReset, onDataChange, selectedTemplate }) => {
   const data = vehicleData;
   const [selectedImage, setSelectedImage] = useState(0);
 
@@ -79,7 +81,7 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
   };
 
   const handleExport = () => {
-    const html = generateLandingPageHTML(data, imageBase64, galleryImages);
+    const html = generateHTML(selectedTemplate, data, imageBase64, galleryImages);
     const filename = `${data.vehicle.brand}_${data.vehicle.model}_Angebot.html`.replace(/\s+/g, '_');
     downloadHTML(html, filename);
   };
