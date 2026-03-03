@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import EditableField from '@/components/EditableField';
 import CO2LabelSelector from '@/components/CO2LabelSelector';
 import FuelTypeDropdown from '@/components/FuelTypeDropdown';
+import CategoryDropdown from '@/components/CategoryDropdown';
+import { getFinanceSectionTitle } from '@/lib/templates/shared';
 
 interface LandingPagePreviewProps {
   vehicleData: VehicleData;
@@ -226,7 +228,13 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
             </div>
 
             <div className="grid grid-cols-2 gap-x-4 gap-y-0 border-t border-border pt-3">
-              <SpecItem icon={<Car className="w-4 h-4" />} label="Fahrzeugtyp" value={data.category || '–'} onChange={() => {}} />
+              <div className="flex items-start gap-2.5 py-2">
+                <span className="text-muted-foreground mt-0.5"><Car className="w-4 h-4" /></span>
+                <div className="flex flex-col">
+                  <span className="text-xs text-muted-foreground">Fahrzeugtyp</span>
+                  <CategoryDropdown value={data.category || ''} onChange={(v) => onDataChange({ ...data, category: v })} />
+                </div>
+              </div>
               <SpecItem icon={<Cog className="w-4 h-4" />} label="Getriebe" value={data.vehicle.transmission} onChange={(v) => updateVehicle('transmission', v)} />
               <SpecItem icon={<Zap className="w-4 h-4" />} label="Leistung" value={data.vehicle.power} onChange={(v) => updateVehicle('power', v)} />
               <div className="flex items-start gap-2.5 py-2">
@@ -247,7 +255,7 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
       <div className="bg-card rounded-2xl border border-border shadow-card p-6">
         <h3 className="font-display text-base font-semibold mb-4 flex items-center gap-2">
           <span className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-base">💰</span>
-          Finanzierung
+          {getFinanceSectionTitle(data)}
         </h3>
         <div className="grid sm:grid-cols-3 gap-4">
           {([
