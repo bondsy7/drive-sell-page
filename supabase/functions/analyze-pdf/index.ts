@@ -5,80 +5,134 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SYSTEM_PROMPT = `Du bist ein Experte für die Analyse von Fahrzeug-Angebots-PDFs. Extrahiere die Daten und gib sie als JSON zurück.
+const SYSTEM_PROMPT = `Du bist ein Experte für die Analyse von Fahrzeug-Angebots-PDFs deutscher Autohäuser. Deine Aufgabe: Extrahiere ALLE verfügbaren Daten so vollständig und präzise wie möglich. Lasse NICHTS aus.
 
 WICHTIG: Antworte NUR mit validem JSON, kein Markdown, keine Erklärungen.
 
+EXTRAKTIONS-STRATEGIE:
+1. Lies das GESAMTE Dokument Seite für Seite durch
+2. Suche nach ALLEN Tabellen, Fußnoten, Kleingedrucktem, Seitenleisten
+3. Fahrzeugdaten stehen oft in strukturierten Tabellen oder als Key-Value-Paare
+4. Verbrauchswerte und CO₂-Daten stehen häufig im Kleingedruckten oder in Pflichtangaben am Ende
+5. Händlerdaten stehen oft im Kopf/Fuß oder auf der letzten Seite
+6. Finanzierungsdaten können in Tabellen, Hervorhebungen oder separaten Abschnitten stehen
+7. Ausstattungsmerkmale stehen oft als Aufzählungen, Listen oder in Paketen
+
+CO₂-KLASSE ABLEITUNG (AUTOFILL):
+Wenn die CO₂-Klasse NICHT explizit im PDF steht, aber CO₂-Emissionen vorhanden sind, leite die Klasse automatisch ab:
+- 0 g/km → A
+- 1–95 g/km → B  
+- 96–115 g/km → C
+- 116–135 g/km → D
+- 136–155 g/km → E
+- 156–175 g/km → F
+- >175 g/km → G
+
+PLUGIN-HYBRID (PHEV) ERKENNUNG:
+Erkenne PHEVs anhand folgender Hinweise:
+- Begriffe: "Plug-in-Hybrid", "PHEV", "extern aufladbar", "Hybridelektrofahrzeug"
+- Kraftstoffart enthält "Strom" oder "Elektro" zusammen mit Benzin/Diesel
+- Es gibt ZWEI verschiedene Verbrauchs-/Emissionswerte (gewichtet + entladen)
+- Begriffe wie "gewichtet, kombiniert", "bei entladener Batterie", "EAER", "elektrische Reichweite"
+PHEVs haben:
+- Gewichtete kombinierte Werte (co2Emissions, consumptionCombined, co2Class)
+- Werte bei entladener Batterie (co2EmissionsDischarged, consumptionCombinedDischarged, co2ClassDischarged)
+- Stromverbrauch und elektrische Reichweite
+
+LEISTUNG:
+- Kombiniere PS und kW wenn beide vorhanden, z.B. "110 kW (150 PS)"
+- Suche nach "PS", "kW", "Nennleistung", "Systemleistung"
+
+FEATURES/AUSSTATTUNG:
+- Extrahiere ALLE genannten Ausstattungsmerkmale, Pakete, Extras
+- Auch Standardausstattung wenn aufgelistet
+- Typische Kategorien: Sicherheit, Komfort, Infotainment, Exterieur, Interieur, Assistenzsysteme
+- Paket-Namen aufnehmen (z.B. "Business Paket", "AMG Line")
+
+FINANZIERUNG:
+- Achte auf: Brutto vs. Netto, MwSt-Hinweise
+- "Sonderzahlung" = "Anzahlung" bei manchen Händlern
+- "Schlussrate" = "Restwert" bei manchen Angeboten
+- Leasingfaktor, eff. Jahreszins wenn vorhanden
+
+VERBRAUCH - Suche nach ALLEN dieser Werte:
+- Kombiniert, Innerorts/Innenstadt, Außerorts/Stadtrand, Landstraße, Autobahn
+- WLTP vs NEFZ (bevorzuge WLTP)
+- Energiekosten pro Jahr, Kraftstoffpreis (Berechnungsgrundlage)
+- CO₂-Kosten: niedrig, mittel, hoch (jeweils über 10 Jahre)
+- Kfz-Steuer pro Jahr
+- Bei Elektro/PHEV: Stromverbrauch in kWh/100km
+
 JSON-Schema:
 {
-  "category": "Leasing|Finanzierung|Kauf",
+  "category": "Leasing|Finanzierung|Kauf|Barkauf",
   "vehicle": {
-    "brand": "string",
-    "model": "string (volles Modell inkl. Variante)",
-    "variant": "string",
-    "year": number,
-    "color": "string",
+    "brand": "string (Marke, z.B. 'BMW', 'Mercedes-Benz', 'Volkswagen')",
+    "model": "string (volles Modell, z.B. 'X3 xDrive30e')",
+    "variant": "string (Ausstattungslinie/Variante, z.B. 'M Sport, xLine')",
+    "year": "number (Modelljahr oder EZ-Jahr)",
+    "color": "string (Außenfarbe, z.B. 'Alpinweiß uni')",
     "fuelType": "Benzin|Diesel|Elektro|Hybrid|Plug-in-Hybrid",
-    "transmission": "Automatik|Manuell",
-    "power": "string (z.B. '150 PS / 110 kW')",
-    "features": ["string array der wichtigsten Ausstattungsmerkmale"]
+    "transmission": "Automatik|Manuell|Doppelkupplungsgetriebe|CVT",
+    "power": "string (z.B. '150 PS / 110 kW' oder Systemleistung bei Hybrid)",
+    "features": ["ALLE Ausstattungsmerkmale als Array - so viele wie möglich"]
   },
   "finance": {
-    "monthlyRate": "string (z.B. '299,00 €')",
-    "downPayment": "string",
+    "monthlyRate": "string mit € (z.B. '299,00 €')",
+    "downPayment": "string mit € (Anzahlung)",
     "duration": "string (z.B. '48 Monate')",
-    "totalPrice": "string",
-    "annualMileage": "string (z.B. '10.000 km')",
-    "specialPayment": "string",
-    "residualValue": "string"
+    "totalPrice": "string mit € (Gesamtpreis / Fahrzeugpreis brutto)",
+    "annualMileage": "string (z.B. '10.000 km/Jahr')",
+    "specialPayment": "string mit € (Sonderzahlung / Leasing-Sonderzahlung)",
+    "residualValue": "string mit € (Restwert / Schlussrate)"
   },
   "dealer": {
-    "name": "string",
-    "address": "string",
-    "phone": "string",
-    "email": "string",
-    "website": "string"
+    "name": "string (Autohaus-Name)",
+    "address": "string (vollständige Adresse mit PLZ und Ort)",
+    "phone": "string (Telefonnummer)",
+    "email": "string (E-Mail-Adresse)",
+    "website": "string (Webseite)"
   },
   "consumption": {
-    "origin": "string (z.B. 'Deutsche Ausführung')",
-    "mileage": "string (z.B. '10 km')",
-    "displacement": "string (z.B. '1.598 cm³')",
+    "origin": "string (z.B. 'Deutsche Ausführung', 'EU-Import')",
+    "mileage": "string (Kilometerstand, z.B. '10 km')",
+    "displacement": "string (Hubraum, z.B. '1.998 cm³')",
     "power": "string (z.B. '110 kW (150 PS)')",
-    "driveType": "string (z.B. 'Verbrennungsmotor' oder 'Plug-in-Hybrid')",
-    "fuelType": "string (z.B. 'Benzin' oder 'Benzin/Strom')",
-    "consumptionCombined": "string (z.B. '7,0 l/100km' oder bei PHEV der gewichtete kombinierte Wert)",
-    "co2Emissions": "string (z.B. '162 g/km' oder bei PHEV die gewichteten kombinierten CO₂-Emissionen)",
-    "co2Class": "string (A-G, bei PHEV die CO₂-Klasse für gewichtet kombiniert)",
-    "consumptionCity": "string",
-    "consumptionSuburban": "string",
-    "consumptionRural": "string",
-    "consumptionHighway": "string",
-    "energyCostPerYear": "string (z.B. '1.886 €/Jahr')",
-    "fuelPrice": "string (z.B. '1,80 €/l')",
-    "co2CostMedium": "string (z.B. '3.086 €')",
-    "co2CostLow": "string (z.B. '1.458 €')",
-    "co2CostHigh": "string (z.B. '4.860 €')",
-    "vehicleTax": "string (z.B. '186 €/Jahr')",
-    "isPluginHybrid": "boolean (true wenn Plug-in-Hybrid / extern aufladbares Hybridelektrofahrzeug)",
-    "co2EmissionsDischarged": "string (nur PHEV: CO₂-Emissionen bei entladener Batterie, z.B. '180 g/km')",
-    "co2ClassDischarged": "string (nur PHEV: CO₂-Klasse bei entladener Batterie, A-G)",
-    "consumptionCombinedDischarged": "string (nur PHEV: Kraftstoffverbrauch kombiniert bei entladener Batterie)",
-    "electricRange": "string (nur PHEV: elektrische Reichweite EAER, z.B. '60 km')",
-    "consumptionElectric": "string (nur PHEV: Stromverbrauch kombiniert, z.B. '18,5 kWh/100km')"
+    "driveType": "string (z.B. 'Verbrennungsmotor', 'Plug-in-Hybrid', 'Elektro', 'Allrad')",
+    "fuelType": "string (z.B. 'Super (E10)', 'Diesel', 'Super Plus', 'Benzin/Strom')",
+    "consumptionCombined": "string (z.B. '7,0 l/100km', bei PHEV gewichtet kombiniert z.B. '1,8 l/100km')",
+    "co2Emissions": "string (z.B. '162 g/km', bei PHEV gewichtet kombiniert)",
+    "co2Class": "string (A-G, ableiten wenn nicht explizit angegeben!)",
+    "consumptionCity": "string (Innerorts/Innenstadt)",
+    "consumptionSuburban": "string (Stadtrand/Außerorts niedrig)",
+    "consumptionRural": "string (Landstraße/Außerorts hoch)",
+    "consumptionHighway": "string (Autobahn)",
+    "energyCostPerYear": "string mit € (z.B. '1.886 €/Jahr')",
+    "fuelPrice": "string (Berechnungsgrundlage, z.B. '1,82 €/l Super')",
+    "co2CostMedium": "string mit € (CO₂-Kosten mittel über 10 Jahre)",
+    "co2CostLow": "string mit € (CO₂-Kosten niedrig über 10 Jahre)",
+    "co2CostHigh": "string mit € (CO₂-Kosten hoch über 10 Jahre)",
+    "vehicleTax": "string mit € (Kfz-Steuer/Jahr)",
+    "isPluginHybrid": "boolean (true wenn PHEV erkannt)",
+    "co2EmissionsDischarged": "string (nur PHEV: CO₂ bei entladener Batterie)",
+    "co2ClassDischarged": "string (nur PHEV: CO₂-Klasse bei entladener Batterie, ableiten!)",
+    "consumptionCombinedDischarged": "string (nur PHEV: Verbrauch kombiniert bei entladener Batterie)",
+    "electricRange": "string (nur PHEV/BEV: elektrische Reichweite EAER)",
+    "consumptionElectric": "string (nur PHEV/BEV: Stromverbrauch komb. in kWh/100km)"
   },
-  "imagePrompt": "Ein detaillierter englischsprachiger Prompt für fotorealistische Bildgenerierung des Fahrzeugs in einem luxuriösen Autohaus-Showroom"
+  "imagePrompt": "Detaillierter englischer Prompt für fotorealistische Fahrzeug-Bildgenerierung"
 }
 
-PLUGIN-HYBRID ERKENNUNG:
-- Wenn das Fahrzeug ein Plug-in-Hybrid (PHEV) / extern aufladbares Hybridelektrofahrzeug ist, setze "isPluginHybrid": true
-- PHEVs haben ZWEI CO₂-Klassen: eine für "gewichtet kombiniert" und eine für "bei entladener Batterie"
-- PHEVs haben auch separate Verbrauchs- und Emissionswerte bei entladener Batterie
-- Die CO₂-Klassen folgen denselben Grenzwerten: A=0, B=1-95, C=96-115, D=116-135, E=136-155, F=156-175, G=>175 g/km
-- Achte besonders auf Begriffe wie "gewichtet, kombiniert", "bei entladener Batterie", "EAER", "Stromverbrauch"
+Für den imagePrompt: Erstelle einen detaillierten englischen Prompt mit exaktem Fahrzeugmodell (Marke, Modell, Farbe, Karosserieform) in einem modernen, hellen Autohaus-Showroom. Beschreibe Licht, Reflexionen, Boden und Atmosphäre.
 
-Für den imagePrompt: Erstelle einen detaillierten englischen Prompt, der das exakte Fahrzeugmodell (Marke, Modell, Farbe) fotorealistisch in einem modernen, hellen, luxuriösen Autohaus-Showroom zeigt. Beschreibe Licht, Reflexionen, Boden, und Atmosphäre.
-
-WICHTIG: Extrahiere ALLE Verbrauchswerte, CO2-Emissionen, CO2-Klasse, Energiekosten und Kfz-Steuer aus dem PDF falls vorhanden. Wenn Werte nicht gefunden werden, setze leere Strings "". Bei boolean-Feldern setze false als Default.`;
+ABSOLUTE REGELN:
+1. Extrahiere JEDEN Wert der im PDF steht - lieber zu viel als zu wenig
+2. Leite co2Class und co2ClassDischarged IMMER aus den g/km-Werten ab wenn nicht explizit angegeben
+3. Setze isPluginHybrid=true sobald irgendein PHEV-Hinweis erkannt wird
+4. Features: Extrahiere ALLE - auch 50+ Einträge sind OK
+5. Einheiten IMMER mit angeben (€, km, l/100km, g/km, kW, PS, cm³, kWh/100km)
+6. Fehlende Werte = leerer String "", fehlende booleans = false
+7. Antworte NUR mit JSON`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -105,7 +159,18 @@ serve(async (req) => {
             content: [
               {
                 type: "text",
-                text: "Analysiere dieses PDF-Dokument und extrahiere alle Fahrzeugdaten inkl. Verbrauchswerte, CO2-Emissionen und Kosten gemäß dem Schema. Prüfe besonders ob es sich um ein Plug-in-Hybrid handelt und extrahiere ggf. beide CO₂-Klassen.",
+                text: `Analysiere dieses Fahrzeug-PDF vollständig. Extrahiere ALLE verfügbaren Daten:
+- Fahrzeugdaten (Marke, Modell, Variante, Farbe, Leistung, Getriebe, Baujahr)
+- Finanzierung/Leasing (Rate, Laufzeit, Anzahlung, Sonderzahlung, Restwert, Preis)
+- Händler (Name, Adresse, Telefon, E-Mail, Website)
+- ALLE Verbrauchswerte (kombiniert, Stadt, Landstraße, Autobahn)
+- CO₂-Emissionen und CO₂-Klasse (bei PHEV: BEIDE Klassen!)
+- Energiekosten, Kraftstoffpreis, CO₂-Kosten, Kfz-Steuer
+- ALLE Ausstattungsmerkmale und Extras (so viele wie möglich!)
+- Bei Plug-in-Hybrid: gewichtete UND entladene Werte, Stromverbrauch, E-Reichweite
+
+Wenn CO₂-Klasse nicht angegeben aber g/km-Wert vorhanden: Klasse ableiten!
+Gib das Ergebnis als JSON zurück.`,
               },
               {
                 type: "image_url",
@@ -142,25 +207,92 @@ serve(async (req) => {
     
     const parsed = JSON.parse(content);
 
-    // Ensure consumption object exists with all fields
+    // === AUTO-FILL / POST-PROCESSING ===
+    
+    // Ensure consumption object exists
     if (!parsed.consumption) {
-      parsed.consumption = {
-        origin: '', mileage: '', displacement: '', power: '', driveType: '',
-        fuelType: '', consumptionCombined: '', co2Emissions: '', co2Class: '',
-        consumptionCity: '', consumptionSuburban: '', consumptionRural: '',
-        consumptionHighway: '', energyCostPerYear: '', fuelPrice: '',
-        co2CostMedium: '', co2CostLow: '', co2CostHigh: '', vehicleTax: '',
-        isPluginHybrid: false, co2EmissionsDischarged: '', co2ClassDischarged: '',
-        consumptionCombinedDischarged: '', electricRange: '', consumptionElectric: '',
-      };
-    } else {
-      // Ensure PHEV fields have defaults
-      parsed.consumption.isPluginHybrid = parsed.consumption.isPluginHybrid || false;
-      parsed.consumption.co2EmissionsDischarged = parsed.consumption.co2EmissionsDischarged || '';
-      parsed.consumption.co2ClassDischarged = parsed.consumption.co2ClassDischarged || '';
-      parsed.consumption.consumptionCombinedDischarged = parsed.consumption.consumptionCombinedDischarged || '';
-      parsed.consumption.electricRange = parsed.consumption.electricRange || '';
-      parsed.consumption.consumptionElectric = parsed.consumption.consumptionElectric || '';
+      parsed.consumption = {};
+    }
+    const c = parsed.consumption;
+
+    // Default all missing string fields to ""
+    const stringFields = [
+      'origin', 'mileage', 'displacement', 'power', 'driveType', 'fuelType',
+      'consumptionCombined', 'co2Emissions', 'co2Class',
+      'consumptionCity', 'consumptionSuburban', 'consumptionRural', 'consumptionHighway',
+      'energyCostPerYear', 'fuelPrice', 'co2CostMedium', 'co2CostLow', 'co2CostHigh',
+      'vehicleTax', 'co2EmissionsDischarged', 'co2ClassDischarged',
+      'consumptionCombinedDischarged', 'electricRange', 'consumptionElectric',
+    ];
+    for (const f of stringFields) {
+      c[f] = c[f] || '';
+    }
+    c.isPluginHybrid = c.isPluginHybrid || false;
+
+    // Auto-detect PHEV from driveType/fuelType if not set
+    const dtLower = (c.driveType || '').toLowerCase();
+    const ftLower = (c.fuelType || '').toLowerCase();
+    const vftLower = (parsed.vehicle?.fuelType || '').toLowerCase();
+    if (!c.isPluginHybrid) {
+      if (dtLower.includes('plug') || dtLower.includes('phev') ||
+          ftLower.includes('plug') || ftLower.includes('phev') ||
+          vftLower.includes('plug-in') || vftLower === 'plug-in-hybrid' ||
+          (ftLower.includes('strom') && (ftLower.includes('benzin') || ftLower.includes('diesel'))) ||
+          c.co2EmissionsDischarged || c.consumptionCombinedDischarged) {
+        c.isPluginHybrid = true;
+      }
+    }
+
+    // Auto-derive CO₂ classes from g/km values
+    function deriveCO2Class(emissionsStr: string): string {
+      const match = emissionsStr?.match(/(\d+)/);
+      if (!match) return '';
+      const gkm = parseInt(match[1], 10);
+      if (gkm === 0) return 'A';
+      if (gkm <= 95) return 'B';
+      if (gkm <= 115) return 'C';
+      if (gkm <= 135) return 'D';
+      if (gkm <= 155) return 'E';
+      if (gkm <= 175) return 'F';
+      return 'G';
+    }
+
+    // Auto-fill co2Class from co2Emissions
+    if (!c.co2Class && c.co2Emissions) {
+      c.co2Class = deriveCO2Class(c.co2Emissions);
+    }
+    // Auto-fill co2ClassDischarged from co2EmissionsDischarged
+    if (!c.co2ClassDischarged && c.co2EmissionsDischarged) {
+      c.co2ClassDischarged = deriveCO2Class(c.co2EmissionsDischarged);
+    }
+
+    // Copy power from vehicle to consumption if missing
+    if (!c.power && parsed.vehicle?.power) {
+      c.power = parsed.vehicle.power;
+    }
+
+    // Copy fuelType from vehicle to consumption if missing
+    if (!c.fuelType && parsed.vehicle?.fuelType) {
+      c.fuelType = parsed.vehicle.fuelType;
+    }
+
+    // Ensure vehicle features is an array
+    if (parsed.vehicle && !Array.isArray(parsed.vehicle.features)) {
+      parsed.vehicle.features = [];
+    }
+
+    // Ensure finance fields exist
+    if (!parsed.finance) parsed.finance = {};
+    const finFields = ['monthlyRate', 'downPayment', 'duration', 'totalPrice', 'annualMileage', 'specialPayment', 'residualValue'];
+    for (const f of finFields) {
+      parsed.finance[f] = parsed.finance[f] || '';
+    }
+
+    // Ensure dealer fields exist
+    if (!parsed.dealer) parsed.dealer = {};
+    const dealerFields = ['name', 'address', 'phone', 'email', 'website'];
+    for (const f of dealerFields) {
+      parsed.dealer[f] = parsed.dealer[f] || '';
     }
 
     return new Response(JSON.stringify(parsed), {
