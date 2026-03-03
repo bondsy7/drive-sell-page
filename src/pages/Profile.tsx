@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Car, ArrowLeft, Save, Building2, MapPin, Phone, Mail, Globe, Facebook, Instagram, Youtube, FileText, Landmark } from 'lucide-react';
+import { Car, ArrowLeft, Save, Building2, MapPin, Phone, Globe, Facebook, Instagram, Youtube, FileText, Landmark, Upload, X, Image } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ProfileData {
@@ -52,6 +52,8 @@ const Profile = () => {
   const { user } = useAuth();
   const [profile, setProfile] = useState<ProfileData>(emptyProfile);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -62,27 +64,49 @@ const Profile = () => {
           contact_name: data.contact_name || '',
           phone: data.phone || '',
           email: data.email || '',
-          address: (data as any).address || '',
-          postal_code: (data as any).postal_code || '',
-          city: (data as any).city || '',
-          tax_id: (data as any).tax_id || '',
+          address: data.address || '',
+          postal_code: data.postal_code || '',
+          city: data.city || '',
+          tax_id: data.tax_id || '',
           logo_url: data.logo_url || '',
-          facebook_url: (data as any).facebook_url || '',
-          instagram_url: (data as any).instagram_url || '',
-          x_url: (data as any).x_url || '',
-          tiktok_url: (data as any).tiktok_url || '',
-          youtube_url: (data as any).youtube_url || '',
-          leasing_bank: (data as any).leasing_bank || '',
-          leasing_legal_text: (data as any).leasing_legal_text || '',
-          financing_bank: (data as any).financing_bank || '',
-          financing_legal_text: (data as any).financing_legal_text || '',
-          default_legal_text: (data as any).default_legal_text || '',
+          facebook_url: data.facebook_url || '',
+          instagram_url: data.instagram_url || '',
+          x_url: data.x_url || '',
+          tiktok_url: data.tiktok_url || '',
+          youtube_url: data.youtube_url || '',
+          leasing_bank: data.leasing_bank || '',
+          leasing_legal_text: data.leasing_legal_text || '',
+          financing_bank: data.financing_bank || '',
+          financing_legal_text: data.financing_legal_text || '',
+          default_legal_text: data.default_legal_text || '',
         });
       }
     });
   }, [user]);
 
   const update = (key: keyof ProfileData, val: string) => setProfile(p => ({ ...p, [key]: val }));
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (!file.type.startsWith('image/')) { toast.error('Bitte nur Bilddateien hochladen'); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error('Maximale Dateigröße: 5 MB'); return; }
+
+    setUploading(true);
+    const ext = file.name.split('.').pop();
+    const path = `${user.id}/logo.${ext}`;
+
+    const { error: uploadError } = await supabase.storage.from('logos').upload(path, file, { upsert: true });
+    if (uploadError) { toast.error('Upload fehlgeschlagen'); setUploading(false); return; }
+
+    const { data: urlData } = supabase.storage.from('logos').getPublicUrl(path);
+    const logoUrl = urlData.publicUrl + '?t=' + Date.now(); // cache bust
+    update('logo_url', logoUrl);
+    setUploading(false);
+    toast.success('Logo hochgeladen!');
+  };
+
+  const removeLogo = () => update('logo_url', '');
 
   const handleSave = async () => {
     if (!user) return;
@@ -92,15 +116,23 @@ const Profile = () => {
       contact_name: profile.contact_name,
       phone: profile.phone,
       email: profile.email,
+      address: profile.address,
+      postal_code: profile.postal_code,
+      city: profile.city,
+      tax_id: profile.tax_id,
+      logo_url: profile.logo_url,
+      facebook_url: profile.facebook_url || null,
+      instagram_url: profile.instagram_url || null,
+      x_url: profile.x_url || null,
+      tiktok_url: profile.tiktok_url || null,
+      youtube_url: profile.youtube_url || null,
+      leasing_bank: profile.leasing_bank || null,
+      leasing_legal_text: profile.leasing_legal_text || null,
+      financing_bank: profile.financing_bank || null,
+      financing_legal_text: profile.financing_legal_text || null,
+      default_legal_text: profile.default_legal_text || null,
       updated_at: new Date().toISOString(),
-      // New fields via raw update since types may not be regenerated yet
-      ...Object.fromEntries(
-        ['address', 'postal_code', 'city', 'tax_id', 'logo_url',
-         'facebook_url', 'instagram_url', 'x_url', 'tiktok_url', 'youtube_url',
-         'leasing_bank', 'leasing_legal_text', 'financing_bank', 'financing_legal_text', 'default_legal_text',
-        ].map(k => [k, (profile as any)[k] || null])
-      ),
-    } as any).eq('id', user.id);
+    }).eq('id', user.id);
     setSaving(false);
     if (error) { toast.error('Fehler beim Speichern'); console.error(error); return; }
     toast.success('Profil gespeichert!');
@@ -126,6 +158,31 @@ const Profile = () => {
       </header>
 
       <main className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+        {/* Logo Upload */}
+        <Section icon={<Image className="w-4 h-4" />} title="Firmenlogo">
+          <div className="flex items-center gap-6">
+            {profile.logo_url ? (
+              <div className="relative group">
+                <img src={profile.logo_url} alt="Logo" className="h-20 max-w-[200px] object-contain rounded-lg border border-border bg-muted p-2" />
+                <button onClick={removeLogo} className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ) : (
+              <div className="h-20 w-[200px] border-2 border-dashed border-border rounded-lg flex items-center justify-center text-muted-foreground text-xs">
+                Kein Logo
+              </div>
+            )}
+            <div className="space-y-2">
+              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+              <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploading} className="gap-1.5">
+                <Upload className="w-3.5 h-3.5" /> {uploading ? 'Hochladen...' : 'Logo hochladen'}
+              </Button>
+              <p className="text-xs text-muted-foreground">PNG, JPG oder SVG · max. 5 MB</p>
+            </div>
+          </div>
+        </Section>
+
         {/* Company info */}
         <Section icon={<Building2 className="w-4 h-4" />} title="Firmendaten">
           <div className="grid sm:grid-cols-2 gap-4">
@@ -140,10 +197,6 @@ const Profile = () => {
             <div className="space-y-1.5">
               <Label>USt-IdNr.</Label>
               <Input value={profile.tax_id} onChange={e => update('tax_id', e.target.value)} placeholder="DE123456789" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Logo URL</Label>
-              <Input value={profile.logo_url} onChange={e => update('logo_url', e.target.value)} placeholder="https://..." />
             </div>
           </div>
         </Section>
