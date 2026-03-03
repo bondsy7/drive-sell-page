@@ -1,5 +1,5 @@
 import { VehicleData, ConsumptionData } from "@/types/vehicle";
-import { getCO2ClassFromEmissions } from "@/lib/co2-utils";
+import { getCO2ClassFromEmissions, getCO2LabelPath, isPluginHybrid } from "@/lib/co2-utils";
 
 /**
  * Converts a public image path to a base64 data URL for embedding in exported HTML.
@@ -21,19 +21,19 @@ async function imageToBase64(path: string): Promise<string> {
 
 /**
  * Get the CO2 label as an <img> tag with base64-embedded image for HTML export.
+ * Automatically picks PHEV dual-class or standard label.
  */
-export async function getCO2LabelImgHTML(co2Class: string): Promise<string> {
-  const cls = co2Class?.toUpperCase() || 'A';
-  const path = `/images/co2/${cls}.jpg`;
+export async function getCO2LabelImgHTML(consumption: ConsumptionData): Promise<string> {
+  const path = getCO2LabelPath(consumption);
   const base64 = await imageToBase64(path);
-  if (!base64) return `<div style="font-size:12px;font-weight:600">CO₂-Klasse: ${cls}</div>`;
-  return `<img src="${base64}" alt="CO₂-Klasse ${cls}" style="max-width:280px;width:100%;height:auto" />`;
+  if (!base64) return `<div style="font-size:12px;font-weight:600">CO₂-Klasse</div>`;
+  return `<img src="${base64}" alt="CO₂-Klasse" style="max-width:280px;width:100%;height:auto" />`;
 }
 
 /** Synchronous version using direct path (for iframe preview) */
-export function getCO2LabelHTML(co2Class: string, _darkBg = false): string {
-  const cls = co2Class?.toUpperCase() || 'A';
-  return `<img src="/images/co2/${cls}.jpg" alt="CO₂-Klasse ${cls}" style="max-width:280px;width:100%;height:auto" />`;
+export function getCO2LabelHTML(consumption: ConsumptionData): string {
+  const path = getCO2LabelPath(consumption);
+  return `<img src="${path}" alt="CO₂-Klasse" style="max-width:280px;width:100%;height:auto" />`;
 }
 
 export function getGalleryHTML(allImages: string[]): string {
@@ -54,7 +54,7 @@ export function determineCO2Class(consumption: ConsumptionData): string {
 }
 
 export function buildConsumptionRows(consumption: ConsumptionData, rowClass = 'cons-row', labelClass = 'cons-label', valueClass = 'cons-value'): string {
-  return [
+  const rows = [
     ['Herkunft', consumption.origin],
     ['Kilometerstand', consumption.mileage],
     ['Hubraum', consumption.displacement],
@@ -63,7 +63,25 @@ export function buildConsumptionRows(consumption: ConsumptionData, rowClass = 'c
     ['Kraftstoffart', consumption.fuelType],
     ['Verbrauch (komb.)', consumption.consumptionCombined],
     ['CO₂-Emissionen (komb.)', consumption.co2Emissions],
-  ].filter(([, v]) => v).map(([l, v]) => `<div class="${rowClass}"><span class="${labelClass}">${l}</span><span class="${valueClass}">${v}</span></div>`).join('');
+  ];
+
+  // Add PHEV-specific rows
+  if (isPluginHybrid(consumption)) {
+    if (consumption.consumptionCombinedDischarged) {
+      rows.push(['Verbrauch (komb., entladen)', consumption.consumptionCombinedDischarged]);
+    }
+    if (consumption.co2EmissionsDischarged) {
+      rows.push(['CO₂-Emissionen (entladen)', consumption.co2EmissionsDischarged]);
+    }
+    if (consumption.consumptionElectric) {
+      rows.push(['Stromverbrauch (komb.)', consumption.consumptionElectric]);
+    }
+    if (consumption.electricRange) {
+      rows.push(['Elektrische Reichweite', consumption.electricRange]);
+    }
+  }
+
+  return rows.filter(([, v]) => v).map(([l, v]) => `<div class="${rowClass}"><span class="${labelClass}">${l}</span><span class="${valueClass}">${v}</span></div>`).join('');
 }
 
 export function buildDetailedConsumption(consumption: ConsumptionData, rowClass = 'cons-row', labelClass = 'cons-label', valueClass = 'cons-value'): string {

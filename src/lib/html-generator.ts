@@ -1,9 +1,9 @@
 import { VehicleData, ConsumptionData } from "@/types/vehicle";
-import { getCO2ClassFromEmissions } from "@/lib/co2-utils";
+import { getCO2LabelPath } from "@/lib/co2-utils";
 
-function generateCO2LabelHTML(co2Class: string): string {
-  const cls = co2Class?.toUpperCase() || 'A';
-  return `<img src="/images/co2/${cls}.jpg" alt="CO₂-Klasse ${cls}" style="max-width:280px;width:100%;height:auto" />`;
+function generateCO2LabelHTML(consumption: ConsumptionData): string {
+  const path = getCO2LabelPath(consumption);
+  return `<img src="${path}" alt="CO₂-Klasse" style="max-width:280px;width:100%;height:auto" />`;
 }
 
 export function generateLandingPageHTML(data: VehicleData, imageBase64: string | null, galleryImages: string[] = []): string {
@@ -171,7 +171,7 @@ export function generateLandingPageHTML(data: VehicleData, imageBase64: string |
         <div>${consumptionRows}</div>
         <div style="display:flex;flex-direction:column;align-items:center;justify-content:center">
           <div style="font-size:12px;font-weight:600;margin-bottom:8px">CO₂-Effizienz</div>
-          ${generateCO2LabelHTML(consumption.co2Class || getCO2ClassFromEmissions(consumption.co2Emissions) || 'A')}
+          ${generateCO2LabelHTML(consumption)}
         </div>
       </div>
       ${detailedConsumption ? `<div class="cons-sub"><div class="cons-sub-title">Kraftstoffverbrauch im Detail</div><div class="cons-grid"><div>${detailedConsumption}</div><div></div></div></div>` : ''}

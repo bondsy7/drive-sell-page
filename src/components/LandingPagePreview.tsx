@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Download, RotateCcw, Car, Fuel, Gauge, Calendar, Palette, Cog, Zap, MapPin, Phone, Mail, Globe, Plus, Trash2, ChevronLeft, ChevronRight, Eye, Pencil } from 'lucide-react';
 import type { VehicleData, ConsumptionData } from '@/types/vehicle';
-import { getCO2ClassFromEmissions } from '@/lib/co2-utils';
+import { isPluginHybrid } from '@/lib/co2-utils';
 import type { TemplateId } from '@/types/template';
 import { generateHTML, downloadHTML } from '@/lib/templates';
 import { Button } from '@/components/ui/button';
@@ -56,6 +56,8 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
     consumptionCity: '', consumptionSuburban: '', consumptionRural: '',
     consumptionHighway: '', energyCostPerYear: '', fuelPrice: '',
     co2CostMedium: '', co2CostLow: '', co2CostHigh: '', vehicleTax: '',
+    isPluginHybrid: false, co2EmissionsDischarged: '', co2ClassDischarged: '',
+    consumptionCombinedDischarged: '', electricRange: '', consumptionElectric: '',
   };
 
   const allImages = [imageBase64, ...galleryImages].filter(Boolean) as string[];
@@ -262,15 +264,29 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
             <ConsumptionRow label="Kraftstoffart" value={consumption.fuelType} onChange={(v) => updateConsumption('fuelType', v)} />
             <ConsumptionRow label="Verbrauch (komb.)" value={consumption.consumptionCombined} onChange={(v) => updateConsumption('consumptionCombined', v)} />
             <ConsumptionRow label="CO₂-Emissionen (komb.)" value={consumption.co2Emissions} onChange={(v) => updateConsumption('co2Emissions', v)} />
+            {isPluginHybrid(consumption) && (
+              <>
+                <ConsumptionRow label="Verbrauch (komb., entladen)" value={consumption.consumptionCombinedDischarged} onChange={(v) => updateConsumption('consumptionCombinedDischarged', v)} />
+                <ConsumptionRow label="CO₂-Emissionen (entladen)" value={consumption.co2EmissionsDischarged} onChange={(v) => updateConsumption('co2EmissionsDischarged', v)} />
+                <ConsumptionRow label="Stromverbrauch (komb.)" value={consumption.consumptionElectric} onChange={(v) => updateConsumption('consumptionElectric', v)} />
+                <ConsumptionRow label="Elektrische Reichweite" value={consumption.electricRange} onChange={(v) => updateConsumption('electricRange', v)} />
+              </>
+            )}
           </div>
 
           {/* Right: CO2 Label */}
           <div className="flex flex-col items-center justify-center">
-            <CO2Label co2Class={consumption.co2Class || getCO2ClassFromEmissions(consumption.co2Emissions) || 'A'} />
+            <CO2Label consumption={consumption} />
             <div className="mt-2 text-center">
               <span className="text-xs text-muted-foreground">CO₂-Klasse: </span>
-              <EditableField value={consumption.co2Class || getCO2ClassFromEmissions(consumption.co2Emissions) || '–'} onChange={(v) => updateConsumption('co2Class', v)} className="text-xs font-semibold text-foreground" />
+              <EditableField value={consumption.co2Class || '–'} onChange={(v) => updateConsumption('co2Class', v)} className="text-xs font-semibold text-foreground" />
             </div>
+            {isPluginHybrid(consumption) && (
+              <div className="mt-1 text-center">
+                <span className="text-xs text-muted-foreground">CO₂-Klasse (entladen): </span>
+                <EditableField value={consumption.co2ClassDischarged || '–'} onChange={(v) => updateConsumption('co2ClassDischarged', v)} className="text-xs font-semibold text-foreground" />
+              </div>
+            )}
           </div>
         </div>
 
