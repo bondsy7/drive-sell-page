@@ -4,7 +4,7 @@ import { Car } from 'lucide-react';
 import PDFUpload from '@/components/PDFUpload';
 import ProcessingStatus from '@/components/ProcessingStatus';
 import LandingPagePreview from '@/components/LandingPagePreview';
-import { extractTextFromPDF } from '@/lib/pdf-utils';
+import { extractPDFAsBase64 } from '@/lib/pdf-utils';
 import { supabase } from '@/integrations/supabase/client';
 import type { AppState, VehicleData } from '@/types/vehicle';
 
@@ -20,18 +20,12 @@ const Index = () => {
     try {
       // Step 1: Extract text
       setAppState('uploading');
-      const pdfText = await extractTextFromPDF(file);
-
-      if (!pdfText || pdfText.length < 20) {
-        toast.error('Der PDF-Text konnte nicht extrahiert werden. Bitte versuche eine andere Datei.');
-        setAppState('idle');
-        return;
-      }
+      const pdfBase64 = await extractPDFAsBase64(file);
 
       // Step 2: Analyze with AI
       setAppState('analyzing');
       const { data: analysisData, error: analysisError } = await supabase.functions.invoke('analyze-pdf', {
-        body: { pdfText },
+        body: { pdfBase64 },
       });
 
       if (analysisError) {
