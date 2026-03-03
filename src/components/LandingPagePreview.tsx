@@ -265,12 +265,15 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
           </div>
           {!cat.includes('barkauf') && !cat.includes('neuwagen') && !cat.includes('gebrauchtwagen') && !cat.includes('tageszulassung') && ([
             ['Monatliche Rate', data.finance.monthlyRate, (v: string) => updateFinance('monthlyRate', v)],
-            ['Anzahlung', data.finance.downPayment, (v: string) => updateFinance('downPayment', v)],
+            ...(cat.includes('leasing')
+              ? [['Sonderzahlung', data.finance.specialPayment, (v: string) => updateFinance('specialPayment', v)]]
+              : [['Anzahlung', data.finance.downPayment, (v: string) => updateFinance('downPayment', v)]]
+            ),
             ['Laufzeit', data.finance.duration, (v: string) => updateFinance('duration', v)],
             ['Jahresfahrleistung', data.finance.annualMileage, (v: string) => updateFinance('annualMileage', v)],
             ...(cat.includes('leasing')
               ? [['Restwert', data.finance.residualValue, (v: string) => updateFinance('residualValue', v)]]
-              : [['Sonderzahlung', data.finance.specialPayment, (v: string) => updateFinance('specialPayment', v)]]
+              : []
             ),
           ] as [string, string, (v: string) => void][]).map(([label, value, onChange]) => (
             <div key={label} className="bg-muted/50 rounded-xl p-3">
