@@ -120,13 +120,15 @@ export function buildFinanceItems(data: VehicleData, itemClass = 'fin-item', lab
 
   if (!isBuy) {
     items.push(['Monatliche Rate', data.finance.monthlyRate]);
-    items.push(['Anzahlung', data.finance.downPayment]);
+    if (cat.includes('leasing')) {
+      items.push(['Sonderzahlung', data.finance.specialPayment]);
+    } else {
+      items.push(['Anzahlung', data.finance.downPayment]);
+    }
     items.push(['Laufzeit', data.finance.duration]);
     items.push(['Jahresfahrleistung', data.finance.annualMileage]);
     if (cat.includes('leasing')) {
       items.push(['Restwert', data.finance.residualValue]);
-    } else {
-      items.push(['Sonderzahlung', data.finance.specialPayment]);
     }
   }
 
