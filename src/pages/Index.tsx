@@ -1,6 +1,8 @@
 import React, { useState, useCallback } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Car } from 'lucide-react';
+import { Car, LayoutDashboard, LogOut, User } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import PDFUpload from '@/components/PDFUpload';
 import ProcessingStatus from '@/components/ProcessingStatus';
 import LandingPagePreview from '@/components/LandingPagePreview';
@@ -9,6 +11,7 @@ import ImageSourceChoice from '@/components/ImageSourceChoice';
 import ImageUploadRemaster from '@/components/ImageUploadRemaster';
 import { extractPDFAsBase64 } from '@/lib/pdf-utils';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import type { AppState, VehicleData } from '@/types/vehicle';
 import type { TemplateId } from '@/types/template';
 
@@ -23,6 +26,8 @@ const PERSPECTIVES = [
 ];
 
 const Index = () => {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const [appState, setAppState] = useState<AppState>('idle');
   const [fileName, setFileName] = useState<string>('');
   const [vehicleData, setVehicleData] = useState<VehicleData | null>(null);
@@ -30,18 +35,46 @@ const Index = () => {
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
   const [imageProgress, setImageProgress] = useState({ current: 0, total: 0 });
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>('modern');
+  const [savedProjectId, setSavedProjectId] = useState<string | null>(null);
+
+  const saveProject = useCallback(async (vData: VehicleData, mainImg: string | null, allImages: string[], templateId: TemplateId) => {
+    if (!user) return null;
+    const title = `${vData.vehicle.brand} ${vData.vehicle.model} ${vData.vehicle.variant || ''}`.trim();
+    const { data: project, error } = await supabase.from('projects').insert({
+      user_id: user.id,
+      title,
+      vehicle_data: vData as any,
+      template_id: templateId,
+      main_image_base64: mainImg,
+    }).select('id').single();
+
+    if (error || !project) { console.error('Save project error:', error); return null; }
+
+    // Save images
+    if (allImages.length > 0) {
+      const imageRows = allImages.map((img, i) => ({
+        project_id: project.id,
+        user_id: user.id,
+        image_base64: img,
+        perspective: PERSPECTIVES[i]?.label || `Bild ${i + 1}`,
+        sort_order: i,
+      }));
+      await supabase.from('project_images').insert(imageRows);
+    }
+
+    return project.id;
+  }, [user]);
 
   const handleFileSelected = useCallback(async (file: File) => {
     setFileName(file.name);
     setGalleryImages([]);
     setImageBase64(null);
+    setSavedProjectId(null);
 
     try {
-      // Step 1: Extract PDF
       setAppState('uploading');
       const pdfBase64 = await extractPDFAsBase64(file);
 
-      // Step 2: Analyze with AI
       setAppState('analyzing');
       const { data: analysisData, error: analysisError } = await supabase.functions.invoke('analyze-pdf', {
         body: { pdfBase64 },
@@ -62,8 +95,6 @@ const Index = () => {
 
       const { imagePrompt: basePrompt, ...vehicleInfo } = analysisData;
       setVehicleData(vehicleInfo as VehicleData);
-
-      // Step 3: Show image source choice
       setAppState('choosing-image-source');
     } catch (err) {
       console.error('Processing error:', err);
@@ -107,18 +138,31 @@ const Index = () => {
     } else {
       toast.success(`${generatedImages.length} von ${total} Bilder generiert.`);
     }
+
+    // Auto-save project
+    const projectId = await saveProject(vehicleData, generatedImages[0] || null, generatedImages, selectedTemplate);
+    if (projectId) setSavedProjectId(projectId);
+
     setAppState('preview');
-  }, [vehicleData]);
+  }, [vehicleData, saveProject, selectedTemplate]);
 
   const handleChooseUpload = useCallback(() => {
     setAppState('uploading-images');
   }, []);
 
-  const handleRemasterComplete = useCallback((mainImage: string, gallery: string[]) => {
+  const handleRemasterComplete = useCallback(async (mainImage: string, gallery: string[]) => {
     setImageBase64(mainImage);
     setGalleryImages(gallery);
+
+    // Auto-save project
+    if (vehicleData) {
+      const allImgs = [mainImage, ...gallery];
+      const projectId = await saveProject(vehicleData, mainImage, allImgs, selectedTemplate);
+      if (projectId) setSavedProjectId(projectId);
+    }
+
     setAppState('preview');
-  }, []);
+  }, [vehicleData, saveProject, selectedTemplate]);
 
   const handleReset = useCallback(() => {
     setAppState('idle');
@@ -127,6 +171,7 @@ const Index = () => {
     setGalleryImages([]);
     setImageProgress({ current: 0, total: 0 });
     setFileName('');
+    setSavedProjectId(null);
   }, []);
 
   const isProcessing = appState === 'uploading' || appState === 'analyzing' || appState === 'generating-image';
@@ -145,7 +190,15 @@ const Index = () => {
             </div>
             <span className="font-display font-bold text-foreground text-sm">AutoPage</span>
           </div>
-          <span className="text-xs text-muted-foreground">Landing Page Generator</span>
+          <div className="flex items-center gap-3">
+            <Link to="/dashboard">
+              <Button variant="ghost" size="sm" className="gap-1.5"><LayoutDashboard className="w-3.5 h-3.5" /> Dashboard</Button>
+            </Link>
+            <Link to="/profile">
+              <Button variant="ghost" size="icon"><User className="w-4 h-4" /></Button>
+            </Link>
+            <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="w-4 h-4" /></Button>
+          </div>
         </div>
       </header>
 
