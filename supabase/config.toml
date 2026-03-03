@@ -1,0 +1,7 @@
+project_id = "rauzclzphdnhzflovrya"
+
+[functions.analyze-pdf]
+verify_jwt = false
+
+[functions.generate-vehicle-image]
+verify_jwt = false
