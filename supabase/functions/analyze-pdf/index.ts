@@ -48,8 +48,8 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { pdfText } = await req.json();
-    if (!pdfText) throw new Error("No PDF text provided");
+    const { pdfBase64 } = await req.json();
+    if (!pdfBase64) throw new Error("No PDF data provided");
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
@@ -64,7 +64,21 @@ serve(async (req) => {
         model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: `Analysiere folgenden PDF-Text und extrahiere die Fahrzeugdaten:\n\n${pdfText}` },
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: "Analysiere dieses PDF-Dokument und extrahiere alle Fahrzeugdaten gemäß dem Schema.",
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:application/pdf;base64,${pdfBase64}`,
+                },
+              },
+            ],
+          },
         ],
       }),
     });
@@ -82,7 +96,7 @@ serve(async (req) => {
           status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      throw new Error(`AI error: ${response.status}`);
+      throw new Error(`AI error: ${response.status} - ${errText}`);
     }
 
     const data = await response.json();
