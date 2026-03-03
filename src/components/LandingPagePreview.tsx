@@ -6,7 +6,7 @@ import type { TemplateId } from '@/types/template';
 import { generateHTML, downloadHTML } from '@/lib/templates';
 import { Button } from '@/components/ui/button';
 import EditableField from '@/components/EditableField';
-import CO2Label from '@/components/CO2Label';
+import CO2LabelSelector from '@/components/CO2LabelSelector';
 
 interface LandingPagePreviewProps {
   vehicleData: VehicleData;
@@ -274,19 +274,13 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
             )}
           </div>
 
-          {/* Right: CO2 Label */}
+          {/* Right: CO2 Label Selector */}
           <div className="flex flex-col items-center justify-center">
-            <CO2Label consumption={consumption} />
-            <div className="mt-2 text-center">
-              <span className="text-xs text-muted-foreground">CO₂-Klasse: </span>
-              <EditableField value={consumption.co2Class || '–'} onChange={(v) => updateConsumption('co2Class', v)} className="text-xs font-semibold text-foreground" />
-            </div>
-            {isPluginHybrid(consumption) && (
-              <div className="mt-1 text-center">
-                <span className="text-xs text-muted-foreground">CO₂-Klasse (entladen): </span>
-                <EditableField value={consumption.co2ClassDischarged || '–'} onChange={(v) => updateConsumption('co2ClassDischarged', v)} className="text-xs font-semibold text-foreground" />
-              </div>
-            )}
+            <CO2LabelSelector
+              consumption={consumption}
+              onClassChange={(cls) => updateConsumption('co2Class', cls)}
+              onDischargedClassChange={isPluginHybrid(consumption) ? (cls) => updateConsumption('co2ClassDischarged', cls) : undefined}
+            />
           </div>
         </div>
 
