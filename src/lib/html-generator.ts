@@ -1,8 +1,21 @@
 import { VehicleData } from "@/types/vehicle";
 
 export function generateLandingPageHTML(data: VehicleData, imageBase64: string | null): string {
-  const features = data.vehicle.features?.map(f => `<li>${f}</li>`).join('\n            ') || '';
-  
+  const features = data.vehicle.features?.map(f => `<span class="tag">${f}</span>`).join('\n            ') || '';
+
+  const financeItems = [
+    ['Monatliche Rate', data.finance.monthlyRate],
+    ['Anzahlung', data.finance.downPayment],
+    ['Laufzeit', data.finance.duration],
+    ['Jahresfahrleistung', data.finance.annualMileage],
+    ['Sonderzahlung', data.finance.specialPayment],
+    ['Restwert', data.finance.residualValue],
+  ].filter(([, v]) => v).map(([l, v]) => `
+              <div class="fin-item">
+                <div class="fin-label">${l}</div>
+                <div class="fin-value">${v}</div>
+              </div>`).join('');
+
   return `<!DOCTYPE html>
 <html lang="de">
 <head>
@@ -11,224 +24,115 @@ export function generateLandingPageHTML(data: VehicleData, imageBase64: string |
   <title>${data.vehicle.brand} ${data.vehicle.model} – Angebot</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
-    
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Inter', sans-serif; background: #f4f5f7; color: #1a1f2e; }
+    .container { max-width: 960px; margin: 0 auto; padding: 24px; }
     
-    .hero {
-      position: relative;
-      background: linear-gradient(135deg, #1a1f2e 0%, #2a3142 100%);
-      padding: 60px 24px 80px;
-      text-align: center;
-      color: white;
-      overflow: hidden;
+    .main-card {
+      background: white; border-radius: 16px; overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid #e8eaee;
+      display: grid; grid-template-columns: 1fr 1fr;
     }
-    .hero::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 80px;
-      background: linear-gradient(to top, #f4f5f7, transparent);
-    }
-    .hero-badge {
-      display: inline-block;
-      background: rgba(255,255,255,0.1);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255,255,255,0.15);
-      padding: 6px 16px;
-      border-radius: 100px;
-      font-size: 13px;
-      font-weight: 500;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-      margin-bottom: 16px;
-    }
-    .hero h1 {
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: clamp(28px, 5vw, 48px);
-      font-weight: 700;
-      margin-bottom: 8px;
-    }
-    .hero .variant {
-      font-size: 18px;
-      opacity: 0.7;
-      font-weight: 300;
-    }
-    .hero-image {
-      max-width: 800px;
-      width: 100%;
-      margin: 32px auto 0;
-      border-radius: 16px;
-      position: relative;
-      z-index: 1;
-    }
-    .hero-image img {
-      width: 100%;
-      border-radius: 16px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-    }
-    .price-badge {
-      position: absolute;
-      bottom: 24px;
-      right: 24px;
-      background: linear-gradient(135deg, #e8a308, #ca8a04);
-      color: #1a1f2e;
-      padding: 12px 24px;
-      border-radius: 12px;
-      z-index: 2;
-      box-shadow: 0 8px 24px rgba(232,163,8,0.4);
-    }
-    .price-badge .label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
-    .price-badge .amount { font-family: 'Space Grotesk', sans-serif; font-size: 28px; font-weight: 700; }
-    .price-badge .period { font-size: 13px; font-weight: 500; }
+    @media (max-width: 768px) { .main-card { grid-template-columns: 1fr; } }
     
-    .container { max-width: 1000px; margin: 0 auto; padding: 0 24px; }
+    .image-side {
+      background: #f4f5f7; display: flex; align-items: center; justify-content: center;
+      min-height: 320px; padding: 16px;
+    }
+    .image-side img { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; }
     
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-top: -40px; position: relative; z-index: 2; }
+    .info-side { padding: 28px; display: flex; flex-direction: column; }
+    .category { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #6b7280; margin-bottom: 4px; }
+    .info-side h1 { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700; margin-bottom: 2px; }
+    .variant { font-size: 13px; color: #6b7280; margin-bottom: 12px; }
+    .price { font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 700; margin-bottom: 16px; }
     
-    .card {
-      background: white;
-      border-radius: 16px;
-      padding: 28px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-      border: 1px solid #e8eaee;
-    }
-    .card h3 {
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 16px;
-      font-weight: 600;
-      margin-bottom: 20px;
-      color: #1a1f2e;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .card h3 .icon {
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
-      background: #f4f5f7;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 16px;
-    }
+    .specs { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border-top: 1px solid #e8eaee; padding-top: 12px; }
+    .spec { padding: 8px 0; }
+    .spec-label { font-size: 11px; color: #6b7280; }
+    .spec-value { font-size: 13px; font-weight: 600; }
     
-    .detail-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 10px 0;
-      border-bottom: 1px solid #f4f5f7;
-      font-size: 14px;
-    }
-    .detail-row:last-child { border-bottom: none; }
-    .detail-row .label { color: #6b7280; }
-    .detail-row .value { font-weight: 600; }
+    .section { background: white; border-radius: 16px; padding: 24px; margin-top: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid #e8eaee; }
+    .section h3 { font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 600; margin-bottom: 16px; }
     
-    .features-list {
-      list-style: none;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-    .features-list li {
-      font-size: 13px;
-      padding: 6px 10px;
-      background: #f4f5f7;
-      border-radius: 6px;
-      color: #374151;
-    }
+    .fin-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    @media (max-width: 600px) { .fin-grid { grid-template-columns: 1fr 1fr; } }
+    .fin-item { background: #f9fafb; border-radius: 12px; padding: 12px; }
+    .fin-label { font-size: 11px; color: #6b7280; margin-bottom: 2px; }
+    .fin-value { font-size: 14px; font-weight: 600; }
     
-    .dealer-section {
-      margin-top: 24px;
-      margin-bottom: 48px;
-    }
-    .dealer-card {
-      background: linear-gradient(135deg, #1a1f2e, #2a3142);
-      color: white;
-      border-radius: 16px;
-      padding: 32px;
-    }
-    .dealer-card h3 { color: white; }
-    .dealer-card .detail-row { border-color: rgba(255,255,255,0.1); }
-    .dealer-card .detail-row .label { color: rgba(255,255,255,0.6); }
-    .dealer-card .detail-row .value { color: white; }
+    .tags { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tag { font-size: 12px; border: 1px solid #e8eaee; padding: 6px 14px; border-radius: 100px; color: #374151; }
     
-    .footer {
-      text-align: center;
-      padding: 24px;
-      font-size: 12px;
-      color: #9ca3af;
-      border-top: 1px solid #e8eaee;
+    .dealer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 600px) { .dealer-grid { grid-template-columns: 1fr; } }
+    .dealer-info { font-size: 13px; line-height: 1.8; }
+    .dealer-info strong { display: block; font-size: 15px; margin-bottom: 4px; }
+    .rate-box {
+      background: linear-gradient(135deg, #e8a308, #ca8a04); color: #1a1f2e;
+      border-radius: 12px; padding: 20px; text-align: center;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
     }
+    .rate-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; }
+    .rate-amount { font-family: 'Space Grotesk', sans-serif; font-size: 28px; font-weight: 700; }
+    .rate-period { font-size: 12px; font-weight: 500; opacity: 0.8; }
+    
+    .footer { text-align: center; padding: 20px; font-size: 11px; color: #9ca3af; }
   </style>
 </head>
 <body>
-  <div class="hero">
-    <div class="hero-badge">${data.category || 'Angebot'}</div>
-    <h1>${data.vehicle.brand} ${data.vehicle.model}</h1>
-    <p class="variant">${data.vehicle.variant || ''}</p>
-    ${imageBase64 ? `
-    <div class="hero-image">
-      <img src="${imageBase64}" alt="${data.vehicle.brand} ${data.vehicle.model}" />
-      <div class="price-badge">
-        <div class="label">Monatliche Rate</div>
-        <div class="amount">${data.finance.monthlyRate || '–'}</div>
-        <div class="period">pro Monat</div>
-      </div>
-    </div>
-    ` : ''}
-  </div>
-
   <div class="container">
-    <div class="grid">
-      <div class="card">
-        <h3><span class="icon">🚗</span> Fahrzeugdaten</h3>
-        <div class="detail-row"><span class="label">Marke</span><span class="value">${data.vehicle.brand}</span></div>
-        <div class="detail-row"><span class="label">Modell</span><span class="value">${data.vehicle.model}</span></div>
-        <div class="detail-row"><span class="label">Farbe</span><span class="value">${data.vehicle.color || '–'}</span></div>
-        <div class="detail-row"><span class="label">Antrieb</span><span class="value">${data.vehicle.fuelType || '–'}</span></div>
-        <div class="detail-row"><span class="label">Getriebe</span><span class="value">${data.vehicle.transmission || '–'}</span></div>
-        <div class="detail-row"><span class="label">Leistung</span><span class="value">${data.vehicle.power || '–'}</span></div>
+    <div class="main-card">
+      <div class="image-side">
+        ${imageBase64 ? `<img src="${imageBase64}" alt="${data.vehicle.brand} ${data.vehicle.model}" />` : `<div style="color:#9ca3af;text-align:center">Kein Bild</div>`}
       </div>
-
-      <div class="card">
-        <h3><span class="icon">💰</span> Finanzierung</h3>
-        <div class="detail-row"><span class="label">Monatliche Rate</span><span class="value">${data.finance.monthlyRate || '–'}</span></div>
-        <div class="detail-row"><span class="label">Anzahlung</span><span class="value">${data.finance.downPayment || '–'}</span></div>
-        <div class="detail-row"><span class="label">Laufzeit</span><span class="value">${data.finance.duration || '–'}</span></div>
-        <div class="detail-row"><span class="label">Gesamtpreis</span><span class="value">${data.finance.totalPrice || '–'}</span></div>
-        <div class="detail-row"><span class="label">Jahresfahrleistung</span><span class="value">${data.finance.annualMileage || '–'}</span></div>
-        <div class="detail-row"><span class="label">Sonderzahlung</span><span class="value">${data.finance.specialPayment || '–'}</span></div>
+      <div class="info-side">
+        <div class="category">${data.category || 'Angebot'}</div>
+        <h1>${data.vehicle.brand} ${data.vehicle.model}</h1>
+        <p class="variant">${data.vehicle.variant || ''}</p>
+        <div class="price">${data.finance.totalPrice || '–'}</div>
+        <div class="specs">
+          <div class="spec"><div class="spec-label">Fahrzeugtyp</div><div class="spec-value">${data.category || '–'}</div></div>
+          <div class="spec"><div class="spec-label">Getriebe</div><div class="spec-value">${data.vehicle.transmission || '–'}</div></div>
+          <div class="spec"><div class="spec-label">Leistung</div><div class="spec-value">${data.vehicle.power || '–'}</div></div>
+          <div class="spec"><div class="spec-label">Kraftstoff</div><div class="spec-value">${data.vehicle.fuelType || '–'}</div></div>
+          <div class="spec"><div class="spec-label">Farbe</div><div class="spec-value">${data.vehicle.color || '–'}</div></div>
+          <div class="spec"><div class="spec-label">Baujahr</div><div class="spec-value">${data.vehicle.year || '–'}</div></div>
+        </div>
       </div>
-
-      ${features ? `
-      <div class="card" style="grid-column: 1 / -1;">
-        <h3><span class="icon">✨</span> Ausstattung</h3>
-        <ul class="features-list">
-            ${features}
-        </ul>
-      </div>
-      ` : ''}
     </div>
 
-    <div class="dealer-section">
-      <div class="dealer-card">
-        <h3><span class="icon">📍</span> Ihr Ansprechpartner</h3>
-        <div class="detail-row"><span class="label">Autohaus</span><span class="value">${data.dealer.name || '–'}</span></div>
-        <div class="detail-row"><span class="label">Adresse</span><span class="value">${data.dealer.address || '–'}</span></div>
-        <div class="detail-row"><span class="label">Telefon</span><span class="value">${data.dealer.phone || '–'}</span></div>
-        <div class="detail-row"><span class="label">E-Mail</span><span class="value">${data.dealer.email || '–'}</span></div>
-        <div class="detail-row"><span class="label">Website</span><span class="value">${data.dealer.website || '–'}</span></div>
+    <div class="section">
+      <h3>💰 Finanzierung</h3>
+      <div class="fin-grid">${financeItems}</div>
+    </div>
+
+    ${features ? `
+    <div class="section">
+      <h3>Ausstattung</h3>
+      <div class="tags">${features}</div>
+    </div>` : ''}
+
+    <div class="section">
+      <h3>📍 Händler & Kontakt</h3>
+      <div class="dealer-grid">
+        <div class="dealer-info">
+          <strong>${data.dealer.name || '–'}</strong>
+          ${data.dealer.address || ''}<br/>
+          ${data.dealer.phone || ''}<br/>
+          ${data.dealer.email || ''}<br/>
+          ${data.dealer.website || ''}
+        </div>
+        <div class="rate-box">
+          <div class="rate-label">Monatliche Rate</div>
+          <div class="rate-amount">${data.finance.monthlyRate || '–'}</div>
+          <div class="rate-period">pro Monat</div>
+        </div>
       </div>
     </div>
   </div>
-
-  <div class="footer">
-    Alle Angaben ohne Gewähr. Irrtümer und Änderungen vorbehalten.
-  </div>
+  <div class="footer">Alle Angaben ohne Gewähr. Irrtümer und Änderungen vorbehalten.</div>
 </body>
 </html>`;
 }
