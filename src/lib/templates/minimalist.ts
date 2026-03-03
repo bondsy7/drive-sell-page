@@ -1,5 +1,5 @@
 import { VehicleData } from "@/types/vehicle";
-import { getCO2LabelHTML, getGalleryHTML, getConsumptionData, buildConsumptionRows, buildDetailedConsumption, buildCostRows, buildFinanceItems, buildFeatures, buildSocialLinksHTML, buildLegalTextHTML, buildDealerAddressHTML, buildDealerFooterHTML, buildWebsiteLinkHTML } from "./shared";
+import { getCO2LabelHTML, getGalleryHTML, getConsumptionData, buildConsumptionRows, buildDetailedConsumption, buildCostRows, buildFinanceItems, buildFeatures, buildSocialLinksHTML, buildLegalTextHTML, buildDealerAddressHTML, buildDealerFooterHTML, buildWebsiteLinkHTML, getFinanceSectionTitle } from "./shared";
 
 export function generateMinimalistHTML(data: VehicleData, imageBase64: string | null, galleryImages: string[] = []): string {
   const consumption = getConsumptionData(data);
@@ -84,7 +84,7 @@ export function generateMinimalistHTML(data: VehicleData, imageBase64: string | 
     <div class="data-row"><span class="lbl">Farbe</span><span class="val">${data.vehicle.color||'–'}</span></div>
     <div class="data-row"><span class="lbl">Baujahr</span><span class="val">${data.vehicle.year||'–'}</span></div>
     <div class="divider"></div>
-    <div class="section-title">Finanzierung</div>
+    <div class="section-title">${getFinanceSectionTitle(data)}</div>
     <div class="fin-grid">${financeItems}</div>
     ${hasConsumption ? `<div class="divider"></div>
     <div class="section-title">Verbrauch & Emissionen</div>

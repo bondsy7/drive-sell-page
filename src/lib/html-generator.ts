@@ -1,6 +1,6 @@
 import { VehicleData, ConsumptionData } from "@/types/vehicle";
 import { getCO2LabelPath } from "@/lib/co2-utils";
-import { buildSocialLinksHTML, buildLegalTextHTML, buildDealerAddressHTML, buildDealerFooterHTML, buildWebsiteLinkHTML } from "@/lib/templates/shared";
+import { buildSocialLinksHTML, buildLegalTextHTML, buildDealerAddressHTML, buildDealerFooterHTML, buildWebsiteLinkHTML, getFinanceSectionTitle } from "@/lib/templates/shared";
 
 function generateCO2LabelHTML(consumption: ConsumptionData): string {
   const path = getCO2LabelPath(consumption);
@@ -161,7 +161,7 @@ export function generateLandingPageHTML(data: VehicleData, imageBase64: string |
     </div>
 
     <div class="section">
-      <h3>💰 Finanzierung</h3>
+      <h3>💰 ${getFinanceSectionTitle(data)}</h3>
       <div class="fin-grid">${financeItems}</div>
     </div>
 
