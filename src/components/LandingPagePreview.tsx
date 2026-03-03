@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Download, RotateCcw, Car, Fuel, Gauge, Calendar, Palette, Cog, Zap, MapPin, Phone, Mail, Globe, Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Download, RotateCcw, Car, Fuel, Gauge, Calendar, Palette, Cog, Zap, MapPin, Phone, Mail, Globe, Plus, Trash2, ChevronLeft, ChevronRight, Eye, Pencil } from 'lucide-react';
 import type { VehicleData, ConsumptionData } from '@/types/vehicle';
 import type { TemplateId } from '@/types/template';
 import { generateHTML, downloadHTML } from '@/lib/templates';
@@ -41,6 +41,12 @@ const ConsumptionRow: React.FC<{ label: string; value: string; onChange: (v: str
 const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, imageBase64, galleryImages = [], onReset, onDataChange, selectedTemplate }) => {
   const data = vehicleData;
   const [selectedImage, setSelectedImage] = useState(0);
+  const [viewMode, setViewMode] = useState<'preview' | 'edit'>('preview');
+
+  const liveHTML = useMemo(
+    () => generateHTML(selectedTemplate, data, imageBase64, galleryImages),
+    [selectedTemplate, data, imageBase64, galleryImages]
+  );
 
   // Ensure consumption exists with defaults
   const consumption: ConsumptionData = data.consumption || {
@@ -90,16 +96,47 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
     <div className="w-full max-w-5xl mx-auto space-y-6">
       {/* Action bar */}
       <div className="flex items-center justify-between">
-        <Button variant="outline" size="sm" onClick={onReset} className="gap-2">
-          <RotateCcw className="w-4 h-4" />
-          Neues PDF
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={onReset} className="gap-2">
+            <RotateCcw className="w-4 h-4" />
+            Neues PDF
+          </Button>
+          <div className="flex items-center bg-muted rounded-lg p-0.5 ml-2">
+            <button
+              onClick={() => setViewMode('preview')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                viewMode === 'preview' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Eye className="w-3.5 h-3.5" /> Vorschau
+            </button>
+            <button
+              onClick={() => setViewMode('edit')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                viewMode === 'edit' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Pencil className="w-3.5 h-3.5" /> Bearbeiten
+            </button>
+          </div>
+        </div>
         <Button onClick={handleExport} className="gap-2 gradient-accent text-accent-foreground font-semibold shadow-glow hover:opacity-90 transition-opacity">
           <Download className="w-4 h-4" />
           Als HTML herunterladen
         </Button>
       </div>
 
+      {viewMode === 'preview' ? (
+        <div className="bg-card rounded-2xl border border-border shadow-card overflow-hidden">
+          <iframe
+            srcDoc={liveHTML}
+            className="w-full border-0 rounded-2xl"
+            style={{ minHeight: '80vh' }}
+            title="Template-Vorschau"
+          />
+        </div>
+      ) : (
+        <>
       {/* Main two-column layout */}
       <div className="bg-card rounded-2xl border border-border shadow-card overflow-hidden">
         <div className="grid md:grid-cols-2 gap-0">
@@ -324,6 +361,8 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
           </div>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 };
