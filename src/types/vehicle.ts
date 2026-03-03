@@ -65,4 +65,4 @@ export interface GenerationResult {
   imageBase64: string | null;
 }
 
-export type AppState = 'idle' | 'uploading' | 'analyzing' | 'generating-image' | 'preview';
+export type AppState = 'idle' | 'uploading' | 'analyzing' | 'choosing-image-source' | 'generating-image' | 'uploading-images' | 'preview';
