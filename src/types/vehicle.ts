@@ -20,11 +20,35 @@ export interface ConsumptionData {
   vehicleTax: string;
   // PHEV-specific fields
   isPluginHybrid: boolean;
-  co2EmissionsDischarged: string;      // CO₂ bei entladener Batterie
-  co2ClassDischarged: string;          // CO₂-Klasse bei entladener Batterie
-  consumptionCombinedDischarged: string; // Verbrauch (komb.) bei entladener Batterie
-  electricRange: string;               // Elektrische Reichweite (EAER)
-  consumptionElectric: string;         // Stromverbrauch (komb.)
+  co2EmissionsDischarged: string;
+  co2ClassDischarged: string;
+  consumptionCombinedDischarged: string;
+  electricRange: string;
+  consumptionElectric: string;
+}
+
+export interface DealerData {
+  name: string;
+  address: string;
+  postalCode: string;
+  city: string;
+  phone: string;
+  email: string;
+  website: string;
+  taxId: string;
+  logoUrl: string;
+  // Social media links
+  facebookUrl: string;
+  instagramUrl: string;
+  xUrl: string;
+  tiktokUrl: string;
+  youtubeUrl: string;
+  // Banking & legal
+  leasingBank: string;
+  leasingLegalText: string;
+  financingBank: string;
+  financingLegalText: string;
+  defaultLegalText: string;
 }
 
 export interface VehicleData {
@@ -49,13 +73,7 @@ export interface VehicleData {
     specialPayment: string;
     residualValue: string;
   };
-  dealer: {
-    name: string;
-    address: string;
-    phone: string;
-    email: string;
-    website: string;
-  };
+  dealer: DealerData;
   consumption: ConsumptionData;
 }
 

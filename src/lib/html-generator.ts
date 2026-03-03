@@ -1,5 +1,6 @@
 import { VehicleData, ConsumptionData } from "@/types/vehicle";
 import { getCO2LabelPath } from "@/lib/co2-utils";
+import { buildSocialLinksHTML, buildLegalTextHTML, buildDealerAddressHTML, buildDealerFooterHTML } from "@/lib/templates/shared";
 
 function generateCO2LabelHTML(consumption: ConsumptionData): string {
   const path = getCO2LabelPath(consumption);
@@ -188,11 +189,12 @@ export function generateLandingPageHTML(data: VehicleData, imageBase64: string |
       <h3>📍 Händler & Kontakt</h3>
       <div class="dealer-grid">
         <div class="dealer-info">
+          ${data.dealer.logoUrl ? `<img src="${data.dealer.logoUrl}" alt="${data.dealer.name}" style="max-height:48px;margin-bottom:8px" />` : ''}
           <strong>${data.dealer.name || '–'}</strong>
-          ${data.dealer.address || ''}<br/>
-          ${data.dealer.phone || ''}<br/>
-          ${data.dealer.email || ''}<br/>
-          ${data.dealer.website || ''}
+          ${buildDealerAddressHTML(data.dealer)}
+          <br/>${data.dealer.phone || ''}<br/>${data.dealer.email || ''}<br/>${data.dealer.website || ''}
+          ${buildDealerFooterHTML(data.dealer)}
+          ${buildSocialLinksHTML(data.dealer)}
         </div>
         <div class="rate-box">
           <div class="rate-label">Monatliche Rate</div>
@@ -201,6 +203,7 @@ export function generateLandingPageHTML(data: VehicleData, imageBase64: string |
         </div>
       </div>
     </div>
+    ${buildLegalTextHTML(data)}
   </div>
   <div class="footer">Alle Angaben ohne Gewähr. Irrtümer und Änderungen vorbehalten.</div>
 </body>

@@ -65,6 +65,38 @@ const Index = () => {
     return project.id;
   }, [user]);
 
+  const loadProfileIntoDealer = useCallback(async (vData: VehicleData): Promise<VehicleData> => {
+    if (!user) return vData;
+    const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+    if (!p) return vData;
+    const pr = p as any;
+    return {
+      ...vData,
+      dealer: {
+        ...vData.dealer,
+        name: vData.dealer?.name || pr.company_name || '',
+        address: vData.dealer?.address || pr.address || '',
+        postalCode: pr.postal_code || vData.dealer?.postalCode || '',
+        city: pr.city || vData.dealer?.city || '',
+        phone: vData.dealer?.phone || pr.phone || '',
+        email: vData.dealer?.email || pr.email || '',
+        website: vData.dealer?.website || '',
+        taxId: pr.tax_id || '',
+        logoUrl: pr.logo_url || '',
+        facebookUrl: pr.facebook_url || '',
+        instagramUrl: pr.instagram_url || '',
+        xUrl: pr.x_url || '',
+        tiktokUrl: pr.tiktok_url || '',
+        youtubeUrl: pr.youtube_url || '',
+        leasingBank: pr.leasing_bank || '',
+        leasingLegalText: pr.leasing_legal_text || '',
+        financingBank: pr.financing_bank || '',
+        financingLegalText: pr.financing_legal_text || '',
+        defaultLegalText: pr.default_legal_text || '',
+      },
+    };
+  }, [user]);
+
   const handleFileSelected = useCallback(async (file: File) => {
     setFileName(file.name);
     setGalleryImages([]);
@@ -94,14 +126,15 @@ const Index = () => {
       }
 
       const { imagePrompt: basePrompt, ...vehicleInfo } = analysisData;
-      setVehicleData(vehicleInfo as VehicleData);
+      const enriched = await loadProfileIntoDealer(vehicleInfo as VehicleData);
+      setVehicleData(enriched);
       setAppState('choosing-image-source');
     } catch (err) {
       console.error('Processing error:', err);
       toast.error('Ein Fehler ist aufgetreten. Bitte versuche es erneut.');
       setAppState('idle');
     }
-  }, []);
+  }, [loadProfileIntoDealer]);
 
   const handleChooseGenerate = useCallback(async () => {
     if (!vehicleData) return;
