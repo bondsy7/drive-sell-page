@@ -174,6 +174,13 @@ export function buildDealerAddressHTML(dealer: VehicleData['dealer']): string {
   return parts.filter(Boolean).join('<br/>');
 }
 
+export function buildWebsiteLinkHTML(dealer: VehicleData['dealer']): string {
+  if (!dealer.website) return '';
+  const url = dealer.website.startsWith('http') ? dealer.website : `https://${dealer.website}`;
+  const display = dealer.website.replace(/^https?:\/\//, '');
+  return `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color:#2563eb;text-decoration:none">${display}</a>`;
+}
+
 export function buildDealerFooterHTML(dealer: VehicleData['dealer']): string {
   const parts: string[] = [];
   if (dealer.taxId) parts.push(`USt-IdNr.: ${dealer.taxId}`);

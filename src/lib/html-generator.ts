@@ -1,6 +1,6 @@
 import { VehicleData, ConsumptionData } from "@/types/vehicle";
 import { getCO2LabelPath } from "@/lib/co2-utils";
-import { buildSocialLinksHTML, buildLegalTextHTML, buildDealerAddressHTML, buildDealerFooterHTML } from "@/lib/templates/shared";
+import { buildSocialLinksHTML, buildLegalTextHTML, buildDealerAddressHTML, buildDealerFooterHTML, buildWebsiteLinkHTML } from "@/lib/templates/shared";
 
 function generateCO2LabelHTML(consumption: ConsumptionData): string {
   const path = getCO2LabelPath(consumption);
@@ -192,7 +192,7 @@ export function generateLandingPageHTML(data: VehicleData, imageBase64: string |
           ${data.dealer.logoUrl ? `<img src="${data.dealer.logoUrl}" alt="${data.dealer.name}" style="max-height:48px;margin-bottom:8px" />` : ''}
           <strong>${data.dealer.name || '–'}</strong>
           ${buildDealerAddressHTML(data.dealer)}
-          <br/>${data.dealer.phone || ''}<br/>${data.dealer.email || ''}<br/>${data.dealer.website || ''}
+          <br/>${data.dealer.phone || ''}<br/>${data.dealer.email || ''}<br/>${buildWebsiteLinkHTML(data.dealer)}
           ${buildDealerFooterHTML(data.dealer)}
           ${buildSocialLinksHTML(data.dealer)}
         </div>
