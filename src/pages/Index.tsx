@@ -4,9 +4,11 @@ import { Car } from 'lucide-react';
 import PDFUpload from '@/components/PDFUpload';
 import ProcessingStatus from '@/components/ProcessingStatus';
 import LandingPagePreview from '@/components/LandingPagePreview';
+import TemplateSidebar from '@/components/TemplateSidebar';
 import { extractPDFAsBase64 } from '@/lib/pdf-utils';
 import { supabase } from '@/integrations/supabase/client';
 import type { AppState, VehicleData } from '@/types/vehicle';
+import type { TemplateId } from '@/types/template';
 
 const PERSPECTIVES = [
   { key: 'front', label: 'Frontansicht', prompt: 'Front view, straight on, symmetrical composition' },
@@ -25,6 +27,7 @@ const Index = () => {
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
   const [imageProgress, setImageProgress] = useState({ current: 0, total: 0 });
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>('modern');
 
   const handleFileSelected = useCallback(async (file: File) => {
     setFileName(file.name);
@@ -120,7 +123,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg gradient-accent flex items-center justify-center">
               <Car className="w-4 h-4 text-accent-foreground" />
@@ -131,38 +134,46 @@ const Index = () => {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-10">
-        {appState === 'idle' && (
-          <div className="space-y-8">
-            <div className="text-center max-w-lg mx-auto">
-              <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-3">
-                PDF hochladen,<br />
-                <span className="text-accent">Landing Page generieren</span>
-              </h1>
-              <p className="text-muted-foreground text-sm">
-                Lade ein Fahrzeugangebot als PDF hoch. Die KI erstellt automatisch eine professionelle Verkaufsseite mit generierten Fahrzeugbildern aus 7 Perspektiven.
-              </p>
+      {appState === 'preview' && vehicleData ? (
+        <div className="flex h-[calc(100vh-56px)]">
+          <TemplateSidebar selectedTemplate={selectedTemplate} onSelectTemplate={setSelectedTemplate} />
+          <main className="flex-1 overflow-y-auto px-4 py-10">
+            <div className="max-w-5xl mx-auto">
+              <LandingPagePreview
+                vehicleData={vehicleData}
+                imageBase64={imageBase64}
+                galleryImages={galleryImages.slice(1)}
+                onReset={handleReset}
+                onDataChange={setVehicleData}
+                selectedTemplate={selectedTemplate}
+              />
             </div>
-            <PDFUpload onFileSelected={handleFileSelected} isProcessing={false} />
-          </div>
-        )}
+          </main>
+        </div>
+      ) : (
+        <main className="max-w-5xl mx-auto px-4 py-10">
+          {appState === 'idle' && (
+            <div className="space-y-8">
+              <div className="text-center max-w-lg mx-auto">
+                <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-3">
+                  PDF hochladen,<br />
+                  <span className="text-accent">Landing Page generieren</span>
+                </h1>
+                <p className="text-muted-foreground text-sm">
+                  Lade ein Fahrzeugangebot als PDF hoch. Die KI erstellt automatisch eine professionelle Verkaufsseite mit generierten Fahrzeugbildern aus 7 Perspektiven.
+                </p>
+              </div>
+              <PDFUpload onFileSelected={handleFileSelected} isProcessing={false} />
+            </div>
+          )}
 
-        {isProcessing && (
-          <div className="mt-16">
-            <ProcessingStatus state={appState} fileName={fileName} imageProgress={imageProgress} />
-          </div>
-        )}
-
-        {appState === 'preview' && vehicleData && (
-          <LandingPagePreview
-            vehicleData={vehicleData}
-            imageBase64={imageBase64}
-            galleryImages={galleryImages.slice(1)}
-            onReset={handleReset}
-            onDataChange={setVehicleData}
-          />
-        )}
-      </main>
+          {isProcessing && (
+            <div className="mt-16">
+              <ProcessingStatus state={appState} fileName={fileName} imageProgress={imageProgress} />
+            </div>
+          )}
+        </main>
+      )}
     </div>
   );
 };
