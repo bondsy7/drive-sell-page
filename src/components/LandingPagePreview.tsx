@@ -36,10 +36,10 @@ const SpecItem: React.FC<{
   </div>
 );
 
-const ConsumptionRow: React.FC<{ label: string; value: string; onChange: (v: string) => void }> = ({ label, value, onChange }) => (
+const ConsumptionRow: React.FC<{ label: string; value: string; onChange: (v: string) => void; suffix?: string }> = ({ label, value, onChange, suffix }) => (
   <div className="flex justify-between items-center py-1.5 border-b border-border/50 last:border-0">
     <span className="text-xs text-muted-foreground">{label}</span>
-    <EditableField value={value} onChange={onChange} className="text-xs font-semibold text-foreground" />
+    <EditableField value={value} onChange={onChange} className="text-xs font-semibold text-foreground" suffix={suffix} />
   </div>
 );
 
@@ -281,25 +281,25 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
         <div className="grid sm:grid-cols-3 gap-4">
           <div className="bg-muted/50 rounded-xl p-3">
             <div className="text-xs text-muted-foreground mb-0.5">Gesamtpreis</div>
-            <EditableField value={data.finance.totalPrice} onChange={(v) => updateFinance('totalPrice', v)} className="text-sm font-semibold text-foreground" />
+            <EditableField value={data.finance.totalPrice} onChange={(v) => updateFinance('totalPrice', v)} className="text-sm font-semibold text-foreground" suffix="€" />
           </div>
           {!isBuyCategory && ([
-            ['Monatliche Rate', data.finance.monthlyRate, (v: string) => updateFinance('monthlyRate', v)],
+            ['Monatliche Rate', data.finance.monthlyRate, (v: string) => updateFinance('monthlyRate', v), '€'],
             ...(cat.includes('leasing')
-              ? [['Sonderzahlung', data.finance.specialPayment, (v: string) => updateFinance('specialPayment', v)]]
-              : [['Anzahlung', data.finance.downPayment, (v: string) => updateFinance('downPayment', v)]]
+              ? [['Sonderzahlung', data.finance.specialPayment, (v: string) => updateFinance('specialPayment', v), '€']]
+              : [['Anzahlung', data.finance.downPayment, (v: string) => updateFinance('downPayment', v), '€']]
             ),
-            ['Laufzeit', data.finance.duration, (v: string) => updateFinance('duration', v)],
-            ['Eff. Jahreszins', data.finance.interestRate || '', (v: string) => updateFinance('interestRate', v)],
-            ['Jahresfahrleistung', data.finance.annualMileage, (v: string) => updateFinance('annualMileage', v)],
+            ['Laufzeit', data.finance.duration, (v: string) => updateFinance('duration', v), 'Monate'],
+            ['Eff. Jahreszins', data.finance.interestRate || '', (v: string) => updateFinance('interestRate', v), '%'],
+            ['Jahresfahrleistung', data.finance.annualMileage, (v: string) => updateFinance('annualMileage', v), 'km/Jahr'],
             ...(cat.includes('leasing')
-              ? [['Restwert', data.finance.residualValue, (v: string) => updateFinance('residualValue', v)]]
+              ? [['Restwert', data.finance.residualValue, (v: string) => updateFinance('residualValue', v), '€']]
               : []
             ),
-          ] as [string, string, (v: string) => void][]).map(([label, value, onChange]) => (
+          ] as [string, string, (v: string) => void, string][]).map(([label, value, onChange, sfx]) => (
             <div key={label} className="bg-muted/50 rounded-xl p-3">
               <div className="text-xs text-muted-foreground mb-0.5">{label}</div>
-              <EditableField value={value} onChange={onChange} className="text-sm font-semibold text-foreground" />
+              <EditableField value={value} onChange={onChange} className="text-sm font-semibold text-foreground" suffix={sfx} />
             </div>
           ))}
         </div>
@@ -321,22 +321,22 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
           {/* Left: Data rows */}
           <div className="space-y-0">
             <ConsumptionRow label="Herkunft" value={consumption.origin} onChange={(v) => updateConsumption('origin', v)} />
-            <ConsumptionRow label="Kilometerstand" value={consumption.mileage} onChange={(v) => updateConsumption('mileage', v)} />
-            <ConsumptionRow label="Hubraum" value={consumption.displacement} onChange={(v) => updateConsumption('displacement', v)} />
-            <ConsumptionRow label="Leistung" value={consumption.power} onChange={(v) => updateConsumption('power', v)} />
+            <ConsumptionRow label="Kilometerstand" value={consumption.mileage} onChange={(v) => updateConsumption('mileage', v)} suffix="km" />
+            <ConsumptionRow label="Hubraum" value={consumption.displacement} onChange={(v) => updateConsumption('displacement', v)} suffix="cm³" />
+            <ConsumptionRow label="Leistung" value={consumption.power} onChange={(v) => updateConsumption('power', v)} suffix="kW" />
             <ConsumptionRow label="Antriebsart" value={consumption.driveType} onChange={(v) => updateConsumption('driveType', v)} />
             <div className="flex justify-between items-center py-1.5 border-b border-border/50">
               <span className="text-xs text-muted-foreground">Kraftstoffart</span>
               <FuelTypeDropdown value={consumption.fuelType} onChange={updateFuelType} />
             </div>
-            <ConsumptionRow label="Verbrauch (komb.)" value={consumption.consumptionCombined} onChange={(v) => updateConsumption('consumptionCombined', v)} />
-            <ConsumptionRow label="CO₂-Emissionen (komb.)" value={consumption.co2Emissions} onChange={(v) => updateConsumption('co2Emissions', v)} />
+            <ConsumptionRow label="Verbrauch (komb.)" value={consumption.consumptionCombined} onChange={(v) => updateConsumption('consumptionCombined', v)} suffix="l/100 km" />
+            <ConsumptionRow label="CO₂-Emissionen (komb.)" value={consumption.co2Emissions} onChange={(v) => updateConsumption('co2Emissions', v)} suffix="g/km" />
             {isPluginHybrid(consumption) && (
               <>
-                <ConsumptionRow label="Verbrauch (komb., entladen)" value={consumption.consumptionCombinedDischarged} onChange={(v) => updateConsumption('consumptionCombinedDischarged', v)} />
-                <ConsumptionRow label="CO₂-Emissionen (entladen)" value={consumption.co2EmissionsDischarged} onChange={(v) => updateConsumption('co2EmissionsDischarged', v)} />
-                <ConsumptionRow label="Stromverbrauch (komb.)" value={consumption.consumptionElectric} onChange={(v) => updateConsumption('consumptionElectric', v)} />
-                <ConsumptionRow label="Elektrische Reichweite" value={consumption.electricRange} onChange={(v) => updateConsumption('electricRange', v)} />
+                <ConsumptionRow label="Verbrauch (komb., entladen)" value={consumption.consumptionCombinedDischarged} onChange={(v) => updateConsumption('consumptionCombinedDischarged', v)} suffix="l/100 km" />
+                <ConsumptionRow label="CO₂-Emissionen (entladen)" value={consumption.co2EmissionsDischarged} onChange={(v) => updateConsumption('co2EmissionsDischarged', v)} suffix="g/km" />
+                <ConsumptionRow label="Stromverbrauch (komb.)" value={consumption.consumptionElectric} onChange={(v) => updateConsumption('consumptionElectric', v)} suffix="kWh/100 km" />
+                <ConsumptionRow label="Elektrische Reichweite" value={consumption.electricRange} onChange={(v) => updateConsumption('electricRange', v)} suffix="km" />
               </>
             )}
           </div>
@@ -355,11 +355,11 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
         <div className="mt-4 pt-4 border-t border-border">
           <div className="text-xs font-semibold text-foreground mb-2">Kraftstoffverbrauch im Detail</div>
           <div className="grid sm:grid-cols-2 gap-x-6 gap-y-0">
-            <ConsumptionRow label="Kombiniert" value={consumption.consumptionCombined} onChange={(v) => updateConsumption('consumptionCombined', v)} />
-            <ConsumptionRow label="Innenstadt" value={consumption.consumptionCity} onChange={(v) => updateConsumption('consumptionCity', v)} />
-            <ConsumptionRow label="Stadtrand" value={consumption.consumptionSuburban} onChange={(v) => updateConsumption('consumptionSuburban', v)} />
-            <ConsumptionRow label="Landstraße" value={consumption.consumptionRural} onChange={(v) => updateConsumption('consumptionRural', v)} />
-            <ConsumptionRow label="Autobahn" value={consumption.consumptionHighway} onChange={(v) => updateConsumption('consumptionHighway', v)} />
+            <ConsumptionRow label="Kombiniert" value={consumption.consumptionCombined} onChange={(v) => updateConsumption('consumptionCombined', v)} suffix="l/100 km" />
+            <ConsumptionRow label="Innenstadt" value={consumption.consumptionCity} onChange={(v) => updateConsumption('consumptionCity', v)} suffix="l/100 km" />
+            <ConsumptionRow label="Stadtrand" value={consumption.consumptionSuburban} onChange={(v) => updateConsumption('consumptionSuburban', v)} suffix="l/100 km" />
+            <ConsumptionRow label="Landstraße" value={consumption.consumptionRural} onChange={(v) => updateConsumption('consumptionRural', v)} suffix="l/100 km" />
+            <ConsumptionRow label="Autobahn" value={consumption.consumptionHighway} onChange={(v) => updateConsumption('consumptionHighway', v)} suffix="l/100 km" />
           </div>
         </div>
 
@@ -367,12 +367,12 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
         <div className="mt-4 pt-4 border-t border-border">
           <div className="text-xs font-semibold text-foreground mb-2">Kosten</div>
           <div className="grid sm:grid-cols-2 gap-x-6 gap-y-0">
-            <ConsumptionRow label="Energiekosten/Jahr" value={consumption.energyCostPerYear} onChange={(v) => updateConsumption('energyCostPerYear', v)} />
-            <ConsumptionRow label="Kraftstoffpreis" value={consumption.fuelPrice} onChange={(v) => updateConsumption('fuelPrice', v)} />
-            <ConsumptionRow label="CO₂-Kosten (mittel, 10J)" value={consumption.co2CostMedium} onChange={(v) => updateConsumption('co2CostMedium', v)} />
-            <ConsumptionRow label="CO₂-Kosten (niedrig, 10J)" value={consumption.co2CostLow} onChange={(v) => updateConsumption('co2CostLow', v)} />
-            <ConsumptionRow label="CO₂-Kosten (hoch, 10J)" value={consumption.co2CostHigh} onChange={(v) => updateConsumption('co2CostHigh', v)} />
-            <ConsumptionRow label="Kfz-Steuer" value={consumption.vehicleTax} onChange={(v) => updateConsumption('vehicleTax', v)} />
+            <ConsumptionRow label="Energiekosten/Jahr" value={consumption.energyCostPerYear} onChange={(v) => updateConsumption('energyCostPerYear', v)} suffix="€/Jahr" />
+            <ConsumptionRow label="Kraftstoffpreis" value={consumption.fuelPrice} onChange={(v) => updateConsumption('fuelPrice', v)} suffix="€/l" />
+            <ConsumptionRow label="CO₂-Kosten (mittel, 10J)" value={consumption.co2CostMedium} onChange={(v) => updateConsumption('co2CostMedium', v)} suffix="€" />
+            <ConsumptionRow label="CO₂-Kosten (niedrig, 10J)" value={consumption.co2CostLow} onChange={(v) => updateConsumption('co2CostLow', v)} suffix="€" />
+            <ConsumptionRow label="CO₂-Kosten (hoch, 10J)" value={consumption.co2CostHigh} onChange={(v) => updateConsumption('co2CostHigh', v)} suffix="€" />
+            <ConsumptionRow label="Kfz-Steuer" value={consumption.vehicleTax} onChange={(v) => updateConsumption('vehicleTax', v)} suffix="€/Jahr" />
           </div>
         </div>
       </div>
