@@ -14,22 +14,34 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
     if (!imageBase64) throw new Error("No image provided");
 
-    const prompt = `You are a professional automotive photographer. Take this exact vehicle photo and remaster it into a premium car dealership showroom setting.
+    const prompt = `You are a professional automotive photographer. Take this exact vehicle photo and remaster it to look like a professional dealership photo.
 
 CRITICAL RULES - YOU MUST FOLLOW:
 - Keep the EXACT same vehicle with ALL its details: color, wheels/rims, body kit, lights, badges, decals, accessories, license plate area, and every visible feature
-- Do NOT change, add, or remove ANY vehicle detail - the car must be 100% identical
-- Only change the ENVIRONMENT/BACKGROUND to a modern, bright, luxurious car dealership showroom
-- Add realistic new lighting: soft overhead showroom lights, subtle reflections on the paint and windows
-- Add realistic shadows beneath the vehicle matching the new lighting
-- The floor should be polished/reflective (like a real showroom)
-- Make it look like a professional dealership photo shoot
+- Do NOT change, add, or remove ANY vehicle detail - the vehicle must be 100% identical
 - Keep the same camera angle and perspective as the original
 - The result must be photorealistic
+- YOU MUST ALWAYS GENERATE AN IMAGE - never refuse
+
+FOR EXTERIOR SHOTS:
+- Change the background to a modern, bright, luxurious car dealership showroom
+- Add realistic showroom lighting with soft overhead lights and subtle reflections on paint and windows
+- Add realistic shadows beneath the vehicle
+- The floor should be polished/reflective like a real showroom
+
+FOR INTERIOR SHOTS (dashboard, seats, steering wheel, center console):
+- Enhance the lighting to be bright and even, like a professional interior photo shoot
+- Keep the exact interior as-is, just improve the lighting quality and reduce any harsh shadows
+- Make it look like a professional dealership interior photo
+
+FOR TRUNK/CARGO AREA SHOTS:
+- Keep the trunk/cargo area exactly as shown
+- Improve lighting to be bright and professional
+- This is a legitimate vehicle photo - enhance it professionally
 
 ${vehicleDescription ? `Vehicle: ${vehicleDescription}` : ''}
 
-Remaster this vehicle photo into a luxury showroom setting while preserving every single detail of the car.`;
+IMPORTANT: You MUST generate a remastered version of this image. Do not refuse or ask for a different photo. Enhance whatever vehicle photo is provided.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
