@@ -72,10 +72,29 @@ Remaster this vehicle photo into a luxury showroom setting while preserving ever
     }
 
     const data = await response.json();
-    const resultImage = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    console.log("Remaster response structure:", JSON.stringify({
+      hasChoices: !!data.choices,
+      messageKeys: data.choices?.[0]?.message ? Object.keys(data.choices[0].message) : [],
+      contentType: typeof data.choices?.[0]?.message?.content,
+      contentPreview: typeof data.choices?.[0]?.message?.content === 'string' 
+        ? data.choices[0].message.content.substring(0, 200) 
+        : Array.isArray(data.choices?.[0]?.message?.content)
+          ? JSON.stringify(data.choices[0].message.content.map((p: any) => ({ type: p.type })))
+          : 'unknown',
+      hasImages: !!data.choices?.[0]?.message?.images,
+    }));
+
+    // Try multiple response structures
+    let resultImage = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    
+    // Fallback: check if image is in content array
+    if (!resultImage && Array.isArray(data.choices?.[0]?.message?.content)) {
+      const imgPart = data.choices[0].message.content.find((p: any) => p.type === 'image_url');
+      resultImage = imgPart?.image_url?.url;
+    }
 
     if (!resultImage) {
-      console.warn("No image in remaster response");
+      console.error("No image found in remaster response. Full response:", JSON.stringify(data).substring(0, 1000));
       throw new Error("Kein Bild generiert. Bitte versuche es erneut.");
     }
 
