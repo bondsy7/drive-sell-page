@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { Car, Plus, Image, FileText, Download, ExternalLink, Trash2, LogOut, User, MessageSquare, Mail, Phone, Calculator } from 'lucide-react';
+import { Car, Plus, Image, FileText, Download, ExternalLink, Trash2, LogOut, User, MessageSquare, Mail, Phone, Calculator, Receipt } from 'lucide-react';
 import { toast } from 'sonner';
 import { downloadHTML } from '@/lib/templates/download';
 import { embedCO2LabelsInHTML } from '@/lib/templates/shared';
@@ -189,6 +189,9 @@ const Dashboard = () => {
             </Link>
             <Link to="/finanzierungsrechner">
               <Button variant="outline" size="sm" className="gap-1.5"><Calculator className="w-3.5 h-3.5" /> Finanzierungsrechner</Button>
+            </Link>
+            <Link to="/kfz-steuer-rechner">
+              <Button variant="outline" size="sm" className="gap-1.5"><Receipt className="w-3.5 h-3.5" /> Kfz-Steuer</Button>
             </Link>
             <Link to="/profile">
               <Button variant="ghost" size="icon"><User className="w-4 h-4" /></Button>

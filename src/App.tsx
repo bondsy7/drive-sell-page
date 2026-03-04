@@ -11,6 +11,7 @@ import Profile from "./pages/Profile";
 import ProjectView from "./pages/ProjectView";
 import LeasingCalculator from "./pages/LeasingCalculator";
 import FinancingCalculator from "./pages/FinancingCalculator";
+import KfzSteuerRechner from "./pages/KfzSteuerRechner";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/project/:id" element={<ProtectedRoute><ProjectView /></ProtectedRoute>} />
             <Route path="/leasing-rechner" element={<ProtectedRoute><LeasingCalculator /></ProtectedRoute>} />
             <Route path="/finanzierungsrechner" element={<ProtectedRoute><FinancingCalculator /></ProtectedRoute>} />
+            <Route path="/kfz-steuer-rechner" element={<ProtectedRoute><KfzSteuerRechner /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
