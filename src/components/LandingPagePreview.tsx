@@ -264,7 +264,16 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
                 </div>
               </div>
               <SpecItem icon={<Cog className="w-4 h-4" />} label="Getriebe" value={data.vehicle.transmission} onChange={(v) => updateVehicle('transmission', v)} />
-              <SpecItem icon={<Zap className="w-4 h-4" />} label="Leistung" value={data.vehicle.power} onChange={updatePower} />
+              <div className="flex items-start gap-2.5 py-2">
+                <span className="text-muted-foreground mt-0.5"><Zap className="w-4 h-4" /></span>
+                <div className="flex flex-col">
+                  <span className="text-xs text-muted-foreground">Leistung</span>
+                  <span className="text-sm font-semibold text-foreground flex items-center gap-1">
+                    <EditableField value={(() => { const m = data.vehicle.power?.match(/^([\d.,]+)/); return m ? m[1] : data.vehicle.power || ''; })()} onChange={(v) => { const kw = parseFloat(v.replace(',', '.')); const ps = isNaN(kw) ? '' : String(Math.round(kw * 1.36)); updatePower(v && !isNaN(kw) ? `${v} kW (${ps} PS)` : v); }} className="text-sm font-semibold text-foreground" suffix="kW" />
+                    {(() => { const m = data.vehicle.power?.match(/^([\d.,]+)/); const kw = m ? parseFloat(m[1].replace(',', '.')) : NaN; return !isNaN(kw) ? <span className="text-xs text-muted-foreground">({Math.round(kw * 1.36)} PS)</span> : null; })()}
+                  </span>
+                </div>
+              </div>
               <div className="flex items-start gap-2.5 py-2">
                 <span className="text-muted-foreground mt-0.5"><Fuel className="w-4 h-4" /></span>
                 <div className="flex flex-col">
@@ -330,7 +339,13 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
             <ConsumptionRow label="Herkunft" value={consumption.origin} onChange={(v) => updateConsumption('origin', v)} />
             <ConsumptionRow label="Kilometerstand" value={consumption.mileage} onChange={(v) => updateConsumption('mileage', v)} suffix="km" />
             <ConsumptionRow label="Hubraum" value={consumption.displacement} onChange={(v) => updateConsumption('displacement', v)} suffix="cm³" />
-            <ConsumptionRow label="Leistung" value={consumption.power} onChange={updatePower} />
+            <div className="flex justify-between items-center py-1.5 border-b border-border/50">
+              <span className="text-xs text-muted-foreground">Leistung</span>
+              <span className="text-xs font-semibold text-foreground flex items-center gap-1">
+                <EditableField value={(() => { const m = consumption.power?.match(/^([\d.,]+)/); return m ? m[1] : consumption.power || ''; })()} onChange={(v) => { const kw = parseFloat(v.replace(',', '.')); const ps = isNaN(kw) ? '' : String(Math.round(kw * 1.36)); updatePower(v && !isNaN(kw) ? `${v} kW (${ps} PS)` : v); }} className="text-xs font-semibold text-foreground" suffix="kW" />
+                {(() => { const m = consumption.power?.match(/^([\d.,]+)/); const kw = m ? parseFloat(m[1].replace(',', '.')) : NaN; return !isNaN(kw) ? <span className="text-xs text-muted-foreground">({Math.round(kw * 1.36)} PS)</span> : null; })()}
+              </span>
+            </div>
             <ConsumptionRow label="Antriebsart" value={consumption.driveType} onChange={(v) => updateConsumption('driveType', v)} />
             <div className="flex justify-between items-center py-1.5 border-b border-border/50">
               <span className="text-xs text-muted-foreground">Kraftstoffart</span>
