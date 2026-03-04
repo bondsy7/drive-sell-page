@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { Car, Plus, Image, FileText, Download, ExternalLink, Trash2, LogOut, User, MessageSquare, Mail, Phone } from 'lucide-react';
+import { Car, Plus, Image, FileText, Download, ExternalLink, Trash2, LogOut, User, MessageSquare, Mail, Phone, Calculator } from 'lucide-react';
 import { toast } from 'sonner';
 import { downloadHTML } from '@/lib/templates/download';
 
@@ -142,6 +142,9 @@ const Dashboard = () => {
           <div className="flex items-center gap-3">
             <Link to="/">
               <Button size="sm" className="gap-1.5"><Plus className="w-3.5 h-3.5" /> Neues Projekt</Button>
+            </Link>
+            <Link to="/leasing-rechner">
+              <Button variant="outline" size="sm" className="gap-1.5"><Calculator className="w-3.5 h-3.5" /> Leasing-Rechner</Button>
             </Link>
             <Link to="/profile">
               <Button variant="ghost" size="icon"><User className="w-4 h-4" /></Button>
