@@ -215,7 +215,7 @@ const Index = () => {
             <div className="max-w-5xl mx-auto">
               <LandingPagePreview
                 vehicleData={vehicleData} imageBase64={imageBase64}
-                galleryImages={galleryImages.slice(1)} onReset={handleReset}
+                galleryImages={galleryImages} onReset={handleReset}
                 onDataChange={setVehicleData} selectedTemplate={selectedTemplate}
                 projectId={savedProjectId}
               />
