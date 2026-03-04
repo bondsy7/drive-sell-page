@@ -1,11 +1,12 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { urlToBase64, urlsToBase64 } from '@/lib/storage-utils';
+import { urlToBase64, urlsToBase64, compressToWebP, compressAllToWebP } from '@/lib/storage-utils';
 import { Download, RotateCcw, Car, Fuel, Gauge, Calendar, Palette, Cog, Zap, MapPin, Phone, Mail, Globe, Plus, Trash2, ChevronLeft, ChevronRight, Eye, Pencil, Calculator } from 'lucide-react';
 import type { VehicleData, ConsumptionData, DealerData } from '@/types/vehicle';
 import { isPluginHybrid } from '@/lib/co2-utils';
 import type { TemplateId } from '@/types/template';
 import { generateHTML, downloadHTML, type GenerateHTMLOptions } from '@/lib/templates';
 import { embedCO2LabelsInHTML } from '@/lib/templates/shared';
+import ExportChoiceDialog, { type ExportMode } from '@/components/ExportChoiceDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import EditableField from '@/components/EditableField';
@@ -150,16 +151,35 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
     onDataChange({ ...data, vehicle: { ...data.vehicle, features } });
   };
 
-  const handleExport = async () => {
-    // Convert URLs to base64 for offline-capable HTML
-    const [mainB64, galleryB64] = await Promise.all([
-      imageBase64 ? urlToBase64(imageBase64) : Promise.resolve(null),
-      urlsToBase64(galleryImages),
-    ]);
-    let html = generateHTML(selectedTemplate, data, mainB64, galleryB64, htmlOptions);
-    html = await embedCO2LabelsInHTML(html);
-    const filename = `${data.vehicle.brand}_${data.vehicle.model}_Angebot.html`.replace(/\s+/g, '_');
-    downloadHTML(html, filename);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
+
+  const handleExportClick = () => setExportDialogOpen(true);
+
+  const handleExport = async (mode: ExportMode) => {
+    setExportLoading(true);
+    try {
+      const filename = `${data.vehicle.brand}_${data.vehicle.model}_Angebot.html`.replace(/\s+/g, '_');
+
+      if (mode === 'lightweight') {
+        // Use storage URLs directly – no base64 conversion
+        let html = generateHTML(selectedTemplate, data, imageBase64, galleryImages, htmlOptions);
+        html = await embedCO2LabelsInHTML(html);
+        downloadHTML(html, filename);
+      } else {
+        // Offline: convert to compressed WebP base64
+        const [mainWebP, galleryWebP] = await Promise.all([
+          imageBase64 ? compressToWebP(imageBase64) : Promise.resolve(null),
+          compressAllToWebP(galleryImages),
+        ]);
+        let html = generateHTML(selectedTemplate, data, mainWebP, galleryWebP, htmlOptions);
+        html = await embedCO2LabelsInHTML(html);
+        downloadHTML(html, filename);
+      }
+    } finally {
+      setExportLoading(false);
+      setExportDialogOpen(false);
+    }
   };
 
   return (
@@ -190,7 +210,7 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
             </button>
           </div>
         </div>
-        <Button onClick={handleExport} className="gap-2 gradient-accent text-accent-foreground font-semibold shadow-glow hover:opacity-90 transition-opacity">
+        <Button onClick={handleExportClick} className="gap-2 gradient-accent text-accent-foreground font-semibold shadow-glow hover:opacity-90 transition-opacity">
           <Download className="w-4 h-4" />
           Als HTML herunterladen
         </Button>
@@ -494,6 +514,7 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
       </div>
         </>
       )}
+      <ExportChoiceDialog open={exportDialogOpen} onOpenChange={setExportDialogOpen} onChoose={handleExport} loading={exportLoading} />
     </div>
   );
 };
