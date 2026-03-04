@@ -55,6 +55,7 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
   const [selectedImage, setSelectedImage] = useState(0);
   const [viewMode, setViewMode] = useState<'preview' | 'edit'>('preview');
   const [costCalculating, setCostCalculating] = useState(false);
+  const [costMissingFields, setCostMissingFields] = useState<string[]>([]);
 
   const vehicleTitle = `${data.vehicle.brand} ${data.vehicle.model} ${data.vehicle.variant || ''}`.trim();
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -140,13 +141,29 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
   }, [data.finance, cat]);
 
   const calculateCosts = useCallback(async () => {
+    // Check required fields
+    const missing: string[] = [];
+    const fuelType = consumption.fuelType || data.vehicle.fuelType || '';
+    const isElectric = fuelType.toLowerCase().match(/elektro|electric|strom|^ev$|^bev$/);
+    
+    if (!consumption.consumptionCombined) missing.push('Verbrauch (komb.)');
+    if (!fuelType) missing.push('Kraftstoffart');
+    if (!consumption.displacement && !isElectric) missing.push('Hubraum');
+    if (!consumption.co2Emissions && !isElectric) missing.push('CO₂-Emissionen');
+    
+    if (missing.length > 0) {
+      setCostMissingFields(missing);
+      return;
+    }
+    
+    setCostMissingFields([]);
     setCostCalculating(true);
     try {
       const annualMileage = data.finance.annualMileage || '15.000 km';
       const costs = await calculateAllCosts(
         consumption.consumptionCombined,
         annualMileage,
-        consumption.fuelType || data.vehicle.fuelType,
+        fuelType,
         consumption.displacement,
         consumption.co2Emissions,
         data.vehicle.year || 2024,
@@ -547,6 +564,15 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
             <ConsumptionRow label="CO₂-Kosten (hoch, 10J)" value={consumption.co2CostHigh} onChange={(v) => updateConsumption('co2CostHigh', v)} suffix="€" />
             <ConsumptionRow label="Kfz-Steuer" value={consumption.vehicleTax} onChange={(v) => updateConsumption('vehicleTax', v)} suffix="€/Jahr" />
           </div>
+          {costMissingFields.length > 0 && (
+            <div className="mt-2 p-3 bg-destructive/10 border border-destructive/30 rounded-lg">
+              <p className="text-xs font-semibold text-destructive mb-1">Fehlende Pflichtangaben:</p>
+              <ul className="text-xs text-destructive/80 list-disc list-inside">
+                {costMissingFields.map(f => <li key={f}>{f}</li>)}
+              </ul>
+              <p className="text-xs text-muted-foreground mt-1">Bitte oben im Bereich „Verbrauch & Emissionen" ergänzen.</p>
+            </div>
+          )}
         </div>
       </div>
 
