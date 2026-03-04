@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { urlToBase64, urlsToBase64, compressToWebP, compressAllToWebP } from '@/lib/storage-utils';
-import { Download, RotateCcw, Car, Fuel, Gauge, Calendar, Palette, Cog, Zap, MapPin, Phone, Mail, Globe, Plus, Trash2, ChevronLeft, ChevronRight, Eye, Pencil, Calculator } from 'lucide-react';
+import { Download, RotateCcw, Car, Fuel, Gauge, Calendar, Palette, Cog, Zap, MapPin, Phone, Mail, Globe, Plus, Trash2, ChevronLeft, ChevronRight, Eye, Pencil, Calculator, Loader2 } from 'lucide-react';
 import type { VehicleData, ConsumptionData, DealerData } from '@/types/vehicle';
 import { isPluginHybrid } from '@/lib/co2-utils';
 import type { TemplateId } from '@/types/template';
@@ -15,6 +15,7 @@ import FuelTypeDropdown from '@/components/FuelTypeDropdown';
 import CategoryDropdown from '@/components/CategoryDropdown';
 import { getFinanceSectionTitle } from '@/lib/templates/shared';
 import { parsePrice, parseDuration, parseInterestRate, formatPrice, calculateFinancingRate, calculateLeasingRate } from '@/lib/finance-utils';
+import { calculateAllCosts } from '@/lib/cost-utils';
 
 interface LandingPagePreviewProps {
   vehicleData: VehicleData;
@@ -53,6 +54,7 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
   const { user } = useAuth();
   const [selectedImage, setSelectedImage] = useState(0);
   const [viewMode, setViewMode] = useState<'preview' | 'edit'>('preview');
+  const [costCalculating, setCostCalculating] = useState(false);
 
   const vehicleTitle = `${data.vehicle.brand} ${data.vehicle.model} ${data.vehicle.variant || ''}`.trim();
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -136,6 +138,36 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
       updateFinance('monthlyRate', formatPrice(monthly));
     }
   }, [data.finance, cat]);
+
+  const calculateCosts = useCallback(async () => {
+    setCostCalculating(true);
+    try {
+      const annualMileage = data.finance.annualMileage || '15.000 km';
+      const costs = await calculateAllCosts(
+        consumption.consumptionCombined,
+        annualMileage,
+        consumption.fuelType || data.vehicle.fuelType,
+        consumption.displacement,
+        consumption.co2Emissions,
+        data.vehicle.year || 2024,
+        consumption.fuelPrice
+      );
+      
+      const updatedConsumption = { ...consumption };
+      if (costs.fuelPrice && !consumption.fuelPrice) updatedConsumption.fuelPrice = costs.fuelPrice;
+      if (costs.energyCostPerYear) updatedConsumption.energyCostPerYear = costs.energyCostPerYear;
+      if (costs.co2CostLow) updatedConsumption.co2CostLow = costs.co2CostLow;
+      if (costs.co2CostMedium) updatedConsumption.co2CostMedium = costs.co2CostMedium;
+      if (costs.co2CostHigh) updatedConsumption.co2CostHigh = costs.co2CostHigh;
+      if (costs.vehicleTax) updatedConsumption.vehicleTax = costs.vehicleTax;
+      
+      onDataChange({ ...data, consumption: updatedConsumption });
+    } catch (e) {
+      console.error('Kostenberechnung fehlgeschlagen:', e);
+    } finally {
+      setCostCalculating(false);
+    }
+  }, [data, consumption]);
 
   const addFeature = () => {
     const features = [...(data.vehicle.features || []), 'Neue Ausstattung'];
@@ -494,7 +526,19 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
 
         {/* Cost section */}
         <div className="mt-4 pt-4 border-t border-border">
-          <div className="text-xs font-semibold text-foreground mb-2">Kosten</div>
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-xs font-semibold text-foreground">Kosten</div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 text-xs"
+              onClick={calculateCosts}
+              disabled={costCalculating}
+            >
+              {costCalculating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Calculator className="w-3.5 h-3.5" />}
+              Kosten berechnen
+            </Button>
+          </div>
           <div className="grid sm:grid-cols-2 gap-x-6 gap-y-0">
             <ConsumptionRow label="Energiekosten/Jahr" value={consumption.energyCostPerYear} onChange={(v) => updateConsumption('energyCostPerYear', v)} suffix="€/Jahr" />
             <ConsumptionRow label="Kraftstoffpreis" value={consumption.fuelPrice} onChange={(v) => updateConsumption('fuelPrice', v)} suffix="€/l" />
