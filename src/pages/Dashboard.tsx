@@ -146,6 +146,9 @@ const Dashboard = () => {
             <Link to="/leasing-rechner">
               <Button variant="outline" size="sm" className="gap-1.5"><Calculator className="w-3.5 h-3.5" /> Leasing-Rechner</Button>
             </Link>
+            <Link to="/finanzierungsrechner">
+              <Button variant="outline" size="sm" className="gap-1.5"><Calculator className="w-3.5 h-3.5" /> Finanzierungsrechner</Button>
+            </Link>
             <Link to="/profile">
               <Button variant="ghost" size="icon"><User className="w-4 h-4" /></Button>
             </Link>

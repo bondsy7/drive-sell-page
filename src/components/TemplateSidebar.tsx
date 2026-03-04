@@ -2,6 +2,7 @@ import React from 'react';
 import { TEMPLATES, TemplateId, TemplateInfo } from '@/types/template';
 import { Layout } from 'lucide-react';
 import LeasingCalculatorPanel from '@/components/LeasingCalculatorPanel';
+import FinancingCalculatorPanel from '@/components/FinancingCalculatorPanel';
 import type { VehicleData } from '@/types/vehicle';
 
 interface TemplateSidebarProps {
@@ -50,6 +51,7 @@ const TemplateSidebar: React.FC<TemplateSidebarProps> = ({ selectedTemplate, onS
         ))}
       </div>
       {vehicleData && <LeasingCalculatorPanel vehicleData={vehicleData} />}
+      {vehicleData && <FinancingCalculatorPanel vehicleData={vehicleData} />}
     </div>
   );
 };
