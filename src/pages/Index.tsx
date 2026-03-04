@@ -99,6 +99,7 @@ const Index = () => {
         xUrl: d.xUrl || pr.x_url || '',
         tiktokUrl: d.tiktokUrl || pr.tiktok_url || '',
         youtubeUrl: d.youtubeUrl || pr.youtube_url || '',
+        whatsappNumber: d.whatsappNumber || pr.whatsapp_number || '',
         leasingBank: d.leasingBank || pr.leasing_bank || '',
         leasingLegalText: d.leasingLegalText || pr.leasing_legal_text || '',
         financingBank: d.financingBank || pr.financing_bank || '',
