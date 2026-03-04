@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
+import { urlToBase64, urlsToBase64 } from '@/lib/storage-utils';
 import { Download, RotateCcw, Car, Fuel, Gauge, Calendar, Palette, Cog, Zap, MapPin, Phone, Mail, Globe, Plus, Trash2, ChevronLeft, ChevronRight, Eye, Pencil, Calculator } from 'lucide-react';
 import type { VehicleData, ConsumptionData, DealerData } from '@/types/vehicle';
 import { isPluginHybrid } from '@/lib/co2-utils';
@@ -148,8 +149,13 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
     onDataChange({ ...data, vehicle: { ...data.vehicle, features } });
   };
 
-  const handleExport = () => {
-    const html = generateHTML(selectedTemplate, data, imageBase64, galleryImages, htmlOptions);
+  const handleExport = async () => {
+    // Convert URLs to base64 for offline-capable HTML
+    const [mainB64, galleryB64] = await Promise.all([
+      imageBase64 ? urlToBase64(imageBase64) : Promise.resolve(null),
+      urlsToBase64(galleryImages),
+    ]);
+    const html = generateHTML(selectedTemplate, data, mainB64, galleryB64, htmlOptions);
     const filename = `${data.vehicle.brand}_${data.vehicle.model}_Angebot.html`.replace(/\s+/g, '_');
     downloadHTML(html, filename);
   };

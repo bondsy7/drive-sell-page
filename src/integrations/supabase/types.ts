@@ -141,6 +141,7 @@ export type Database = {
           created_at: string
           id: string
           image_base64: string
+          image_url: string | null
           perspective: string | null
           project_id: string
           sort_order: number | null
@@ -150,6 +151,7 @@ export type Database = {
           created_at?: string
           id?: string
           image_base64: string
+          image_url?: string | null
           perspective?: string | null
           project_id: string
           sort_order?: number | null
@@ -159,6 +161,7 @@ export type Database = {
           created_at?: string
           id?: string
           image_base64?: string
+          image_url?: string | null
           perspective?: string | null
           project_id?: string
           sort_order?: number | null
@@ -180,6 +183,7 @@ export type Database = {
           html_content: string | null
           id: string
           main_image_base64: string | null
+          main_image_url: string | null
           template_id: string
           title: string
           updated_at: string
@@ -191,6 +195,7 @@ export type Database = {
           html_content?: string | null
           id?: string
           main_image_base64?: string | null
+          main_image_url?: string | null
           template_id?: string
           title?: string
           updated_at?: string
@@ -202,6 +207,7 @@ export type Database = {
           html_content?: string | null
           id?: string
           main_image_base64?: string | null
+          main_image_url?: string | null
           template_id?: string
           title?: string
           updated_at?: string
