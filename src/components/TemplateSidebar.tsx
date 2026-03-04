@@ -1,10 +1,13 @@
 import React from 'react';
 import { TEMPLATES, TemplateId, TemplateInfo } from '@/types/template';
 import { Layout } from 'lucide-react';
+import LeasingCalculatorPanel from '@/components/LeasingCalculatorPanel';
+import type { VehicleData } from '@/types/vehicle';
 
 interface TemplateSidebarProps {
   selectedTemplate: TemplateId;
   onSelectTemplate: (id: TemplateId) => void;
+  vehicleData?: VehicleData | null;
 }
 
 const TemplateCard: React.FC<{ template: TemplateInfo; isSelected: boolean; onClick: () => void }> = ({ template, isSelected, onClick }) => (
@@ -34,7 +37,7 @@ const TemplateCard: React.FC<{ template: TemplateInfo; isSelected: boolean; onCl
   </button>
 );
 
-const TemplateSidebar: React.FC<TemplateSidebarProps> = ({ selectedTemplate, onSelectTemplate }) => {
+const TemplateSidebar: React.FC<TemplateSidebarProps> = ({ selectedTemplate, onSelectTemplate, vehicleData }) => {
   return (
     <div className="w-56 shrink-0 bg-sidebar border-r border-sidebar-border p-4 overflow-y-auto h-full">
       <div className="flex items-center gap-2 mb-4">
@@ -46,6 +49,7 @@ const TemplateSidebar: React.FC<TemplateSidebarProps> = ({ selectedTemplate, onS
           <TemplateCard key={t.id} template={t} isSelected={selectedTemplate === t.id} onClick={() => onSelectTemplate(t.id)} />
         ))}
       </div>
+      {vehicleData && <LeasingCalculatorPanel vehicleData={vehicleData} />}
     </div>
   );
 };

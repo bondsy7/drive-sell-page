@@ -197,7 +197,7 @@ const Index = () => {
 
       {appState === 'preview' && vehicleData ? (
         <div className="flex h-[calc(100vh-56px)]">
-          <TemplateSidebar selectedTemplate={selectedTemplate} onSelectTemplate={setSelectedTemplate} />
+          <TemplateSidebar selectedTemplate={selectedTemplate} onSelectTemplate={setSelectedTemplate} vehicleData={vehicleData} />
           <main className="flex-1 overflow-y-auto px-4 py-10">
             <div className="max-w-5xl mx-auto">
               <LandingPagePreview
