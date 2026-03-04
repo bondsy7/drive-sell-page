@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Car, Plus, Image, FileText, Download, ExternalLink, Trash2, LogOut, User, MessageSquare, Mail, Phone, Calculator } from 'lucide-react';
 import { toast } from 'sonner';
 import { downloadHTML } from '@/lib/templates/download';
+import { embedCO2LabelsInHTML } from '@/lib/templates/shared';
 
 interface Project {
   id: string;
@@ -125,11 +126,12 @@ const Dashboard = () => {
     a.click();
   };
 
-  const handleExportHTML = (project: Project) => {
+  const handleExportHTML = async (project: Project) => {
     if (!project.html_content) { toast.error('Keine HTML-Daten vorhanden'); return; }
     const vd = project.vehicle_data as any;
     const filename = `${vd?.vehicle?.brand || 'fahrzeug'}-${vd?.vehicle?.model || 'page'}.html`;
-    downloadHTML(project.html_content, filename);
+    const html = await embedCO2LabelsInHTML(project.html_content);
+    downloadHTML(html, filename);
   };
 
   return (

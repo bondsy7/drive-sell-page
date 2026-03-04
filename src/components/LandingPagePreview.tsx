@@ -5,6 +5,7 @@ import type { VehicleData, ConsumptionData, DealerData } from '@/types/vehicle';
 import { isPluginHybrid } from '@/lib/co2-utils';
 import type { TemplateId } from '@/types/template';
 import { generateHTML, downloadHTML, type GenerateHTMLOptions } from '@/lib/templates';
+import { embedCO2LabelsInHTML } from '@/lib/templates/shared';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import EditableField from '@/components/EditableField';
@@ -155,7 +156,8 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
       imageBase64 ? urlToBase64(imageBase64) : Promise.resolve(null),
       urlsToBase64(galleryImages),
     ]);
-    const html = generateHTML(selectedTemplate, data, mainB64, galleryB64, htmlOptions);
+    let html = generateHTML(selectedTemplate, data, mainB64, galleryB64, htmlOptions);
+    html = await embedCO2LabelsInHTML(html);
     const filename = `${data.vehicle.brand}_${data.vehicle.model}_Angebot.html`.replace(/\s+/g, '_');
     downloadHTML(html, filename);
   };
