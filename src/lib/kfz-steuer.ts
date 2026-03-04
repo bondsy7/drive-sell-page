@@ -269,9 +269,21 @@ export async function berechneKfzSteuerAusVerbrauchsdaten(
   if (ft.includes('diesel')) antriebsart = 'Diesel';
   else if (ft.includes('elektro') || ft.includes('electric') || ft === 'ev' || ft === 'bev' || ft === 'strom') antriebsart = 'Elektro';
   
-  if (hubraum <= 0 && antriebsart !== 'Elektro') {
-    return { steuerProJahr: 0, hinweis: 'Hubraum fehlt für die Berechnung.' };
+  // If both hubraum and CO2 are missing, we can't calculate
+  if (hubraum <= 0 && co2 <= 0 && antriebsart !== 'Elektro') {
+    return { steuerProJahr: 0, hinweis: 'Hubraum und CO₂-Wert fehlen für die Berechnung.' };
   }
   
-  return berechneKfzSteuer({ hubraum, co2Wert: co2, antriebsart, erstzulassungJahr: year });
+  // If only hubraum is missing but CO2 is available, still calculate (CO2 portion only)
+  // The hubraum portion will simply be 0, result is a minimum estimate
+  const result = await berechneKfzSteuer({ hubraum, co2Wert: co2, antriebsart, erstzulassungJahr: year });
+  
+  if (hubraum <= 0 && result.steuerProJahr > 0) {
+    return {
+      ...result,
+      hinweis: 'Mindestbetrag – Hubraum fehlt, nur CO₂-Anteil berechnet.',
+    };
+  }
+  
+  return result;
 }
