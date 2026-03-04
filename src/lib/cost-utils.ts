@@ -87,7 +87,12 @@ export interface ParsedConsumption {
 
 function parseNumber(str: string): number {
   if (!str) return 0;
-  const cleaned = str.replace(/[^\d,.\-]/g, '').replace(/\./g, '').replace(',', '.');
+  // Extract the first number group from the string
+  // Handles: "6,5 l/100 km" → 6.5, "15.000 km" → 15000, "1.498 cm³" → 1498, "130 g/km" → 130
+  const match = str.match(/([\d]+(?:\.[\d]{3})*(?:,[\d]+)?)/);
+  if (!match) return 0;
+  // German format: dots are thousands separators, comma is decimal
+  const cleaned = match[1].replace(/\./g, '').replace(',', '.');
   return parseFloat(cleaned) || 0;
 }
 
@@ -180,6 +185,8 @@ export async function calculateAllCosts(
   vehicleYear: number,
   existingFuelPrice?: string
 ): Promise<CalculatedCosts> {
+  console.log('[Kostenberechnung] Eingaben:', { consumptionCombined, annualMileage, fuelType, displacement, co2Emissions, vehicleYear, existingFuelPrice });
+  
   // Fuel price: use existing or default
   let fuelPriceNum = parseNumber(existingFuelPrice || '');
   if (fuelPriceNum <= 0) {
@@ -188,17 +195,18 @@ export async function calculateAllCosts(
   const fuelPriceStr = fuelPriceNum.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   
   // Energy cost per year
-  const energyCost = calculateEnergyCostPerYear(
-    consumptionCombined,
-    annualMileage,
-    fuelPriceStr,
-    fuelType
-  );
+  const consumptionNum = parseNumber(consumptionCombined);
+  const mileageNum = parseNumber(annualMileage) || 15000;
+  const energyCost = consumptionNum > 0 ? (mileageNum / 100) * consumptionNum * fuelPriceNum : 0;
+  
+  console.log('[Kostenberechnung] Parsed:', { consumptionNum, mileageNum, fuelPriceNum, energyCost });
   
   // CO₂ costs (10 years)
   const co2Low = calculateCO2Cost10Years(consumptionCombined, annualMileage, fuelType, 'low');
   const co2Med = calculateCO2Cost10Years(consumptionCombined, annualMileage, fuelType, 'medium');
   const co2High = calculateCO2Cost10Years(consumptionCombined, annualMileage, fuelType, 'high');
+  
+  console.log('[Kostenberechnung] CO2:', { co2Low, co2Med, co2High });
   
   // Kfz-Steuer
   let taxResult: KfzSteuerResult = { steuerProJahr: 0 };
@@ -209,6 +217,7 @@ export async function calculateAllCosts(
       fuelType,
       vehicleYear || 2024
     );
+    console.log('[Kostenberechnung] Kfz-Steuer:', taxResult);
   } catch (e) {
     console.warn('Kfz-Steuer Berechnung fehlgeschlagen:', e);
   }

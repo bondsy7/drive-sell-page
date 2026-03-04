@@ -154,7 +154,7 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
       );
       
       const updatedConsumption = { ...consumption };
-      if (costs.fuelPrice && !consumption.fuelPrice) updatedConsumption.fuelPrice = costs.fuelPrice;
+      if (costs.fuelPrice) updatedConsumption.fuelPrice = costs.fuelPrice;
       if (costs.energyCostPerYear) updatedConsumption.energyCostPerYear = costs.energyCostPerYear;
       if (costs.co2CostLow) updatedConsumption.co2CostLow = costs.co2CostLow;
       if (costs.co2CostMedium) updatedConsumption.co2CostMedium = costs.co2CostMedium;
