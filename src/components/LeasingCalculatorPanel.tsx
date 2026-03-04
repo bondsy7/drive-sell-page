@@ -15,6 +15,13 @@ function formatEuro(num: number): string {
   return num.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
 }
 
+function formatEuroInput(str: string): string {
+  if (!str.trim()) return '';
+  const num = parseGermanNumber(str);
+  if (num === 0) return '0,00';
+  return num.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 function rateFactor(f: number) {
   if (f <= 0) return { label: '–', color: 'text-muted-foreground', icon: <Minus className="w-3 h-3" /> };
   if (f < 0.7) return { label: 'Sehr gut', color: 'text-green-600', icon: <TrendingDown className="w-3 h-3" /> };
@@ -82,9 +89,9 @@ const LeasingCalculatorPanel: React.FC<Props> = ({ vehicleData }) => {
 
       {open && (
         <div className="mt-3 space-y-2.5">
-          <Field label="Preis (brutto)" value={price} onChange={setPrice} suffix="€" />
-          <Field label="Restwert" value={residualValue} onChange={setResidualValue} suffix="€" />
-          <Field label="Sonderzahlung" value={specialPayment} onChange={setSpecialPayment} suffix="€" />
+          <Field label="Preis (brutto)" value={price} onChange={setPrice} onBlur={() => setPrice(formatEuroInput(price))} suffix="€" />
+          <Field label="Restwert" value={residualValue} onChange={setResidualValue} onBlur={() => setResidualValue(formatEuroInput(residualValue))} suffix="€" />
+          <Field label="Sonderzahlung" value={specialPayment} onChange={setSpecialPayment} onBlur={() => setSpecialPayment(formatEuroInput(specialPayment))} suffix="€" />
           <Field label="Laufzeit" value={months} onChange={setMonths} suffix="Mo." />
           <Field label="Zinssatz (p.a.)" value={interestRate} onChange={setInterestRate} suffix="%" />
 
@@ -122,13 +129,14 @@ const LeasingCalculatorPanel: React.FC<Props> = ({ vehicleData }) => {
   );
 };
 
-const Field: React.FC<{ label: string; value: string; onChange: (v: string) => void; suffix: string }> = ({ label, value, onChange, suffix }) => (
+const Field: React.FC<{ label: string; value: string; onChange: (v: string) => void; onBlur?: () => void; suffix: string }> = ({ label, value, onChange, onBlur, suffix }) => (
   <div className="space-y-0.5">
     <Label className="text-[11px] text-sidebar-foreground/60">{label}</Label>
     <div className="relative">
       <Input
         value={value}
         onChange={e => onChange(e.target.value)}
+        onBlur={onBlur}
         className="h-7 text-xs pr-8 bg-sidebar-accent/50 border-sidebar-border"
       />
       <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-sidebar-foreground/40">{suffix}</span>

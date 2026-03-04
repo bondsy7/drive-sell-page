@@ -17,6 +17,13 @@ function formatEuro(num: number): string {
   return num.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
 }
 
+function formatEuroInput(str: string): string {
+  if (!str.trim()) return '';
+  const num = parseGermanNumber(str);
+  if (num === 0) return '0,00';
+  return num.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 const FinancingCalculator = () => {
   const [price, setPrice] = useState('');
   const [downPayment, setDownPayment] = useState('');
@@ -81,14 +88,14 @@ const FinancingCalculator = () => {
               <div className="space-y-1.5">
                 <Label htmlFor="fp-price">Fahrzeugpreis</Label>
                 <div className="relative">
-                  <Input id="fp-price" placeholder="z.B. 52.990" value={price} onChange={e => setPrice(e.target.value)} className="pr-8" />
+                  <Input id="fp-price" placeholder="z.B. 52.990" value={price} onChange={e => setPrice(e.target.value)} onBlur={() => setPrice(formatEuroInput(price))} className="pr-8" />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">€</span>
                 </div>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="fp-down">Anzahlung</Label>
                 <div className="relative">
-                  <Input id="fp-down" placeholder="z.B. 5.000" value={downPayment} onChange={e => setDownPayment(e.target.value)} className="pr-8" />
+                  <Input id="fp-down" placeholder="z.B. 5.000" value={downPayment} onChange={e => setDownPayment(e.target.value)} onBlur={() => setDownPayment(formatEuroInput(downPayment))} className="pr-8" />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">€</span>
                 </div>
               </div>
@@ -103,7 +110,7 @@ const FinancingCalculator = () => {
                   </Tooltip>
                 </div>
                 <div className="relative">
-                  <Input id="fp-final" placeholder="optional" value={finalPayment} onChange={e => setFinalPayment(e.target.value)} className="pr-8" />
+                  <Input id="fp-final" placeholder="optional" value={finalPayment} onChange={e => setFinalPayment(e.target.value)} onBlur={() => setFinalPayment(formatEuroInput(finalPayment))} className="pr-8" />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">€</span>
                 </div>
               </div>
