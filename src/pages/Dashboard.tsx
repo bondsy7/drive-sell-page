@@ -13,6 +13,7 @@ interface Project {
   template_id: string;
   vehicle_data: any;
   main_image_base64: string | null;
+  main_image_url: string | null;
   html_content: string | null;
   created_at: string;
   updated_at: string;
@@ -22,6 +23,7 @@ interface ProjectImage {
   id: string;
   project_id: string;
   image_base64: string;
+  image_url: string | null;
   perspective: string | null;
   created_at: string;
 }
@@ -65,7 +67,7 @@ const Dashboard = () => {
     setLoading(true);
     const { data: p } = await supabase
       .from('projects')
-      .select('id, title, template_id, vehicle_data, main_image_base64, created_at, updated_at')
+      .select('id, title, template_id, vehicle_data, main_image_base64, main_image_url, html_content, created_at, updated_at')
       .order('updated_at', { ascending: false });
     setProjects((p as Project[]) || []);
     setLoading(false);
@@ -75,7 +77,7 @@ const Dashboard = () => {
     setLoading(true);
     const { data: img } = await supabase
       .from('project_images')
-      .select('id, project_id, image_base64, perspective, created_at')
+      .select('id, project_id, image_base64, image_url, perspective, created_at')
       .order('created_at', { ascending: false })
       .limit(50);
     setAllImages((img as ProjectImage[]) || []);
@@ -115,10 +117,11 @@ const Dashboard = () => {
     setLeads(prev => prev.filter(l => l.id !== id));
   };
 
-  const downloadImage = (base64: string, name: string) => {
+  const downloadImage = (img: ProjectImage) => {
+    const src = img.image_url || img.image_base64;
     const a = document.createElement('a');
-    a.href = base64.startsWith('data:') ? base64 : `data:image/png;base64,${base64}`;
-    a.download = name;
+    a.href = src.startsWith('data:') ? src : src.startsWith('http') ? src : `data:image/png;base64,${src}`;
+    a.download = `${img.perspective || 'bild'}.png`;
     a.click();
   };
 
@@ -185,9 +188,9 @@ const Dashboard = () => {
                 const vd = p.vehicle_data as any;
                 return (
                   <div key={p.id} className="bg-card rounded-xl border border-border overflow-hidden group">
-                    {p.main_image_base64 && (
+                    {(p.main_image_url || p.main_image_base64) && (
                       <div className="aspect-video bg-muted overflow-hidden">
-                        <img src={p.main_image_base64.startsWith('data:') ? p.main_image_base64 : `data:image/png;base64,${p.main_image_base64}`} alt={p.title} className="w-full h-full object-cover" />
+                        <img src={p.main_image_url || (p.main_image_base64!.startsWith('data:') ? p.main_image_base64! : `data:image/png;base64,${p.main_image_base64}`)} alt={p.title} className="w-full h-full object-cover" />
                       </div>
                     )}
                     <div className="p-4 space-y-2">
@@ -213,19 +216,22 @@ const Dashboard = () => {
             </div>
           ) : (
             <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
-              {allImages.map(img => (
+              {allImages.map(img => {
+                const imgSrc = img.image_url || (img.image_base64.startsWith('data:') ? img.image_base64 : `data:image/png;base64,${img.image_base64}`);
+                return (
                 <div key={img.id} className="bg-card rounded-lg border border-border overflow-hidden group relative">
                   <div className="aspect-video bg-muted">
-                    <img src={img.image_base64.startsWith('data:') ? img.image_base64 : `data:image/png;base64,${img.image_base64}`} alt={img.perspective || 'Fahrzeugbild'} className="w-full h-full object-cover" />
+                    <img src={imgSrc} alt={img.perspective || 'Fahrzeugbild'} className="w-full h-full object-cover" />
                   </div>
                   <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                    <Button size="sm" variant="secondary" onClick={() => downloadImage(img.image_base64, `${img.perspective || 'bild'}.png`)}>
+                    <Button size="sm" variant="secondary" onClick={() => downloadImage(img)}>
                       <Download className="w-3.5 h-3.5 mr-1" /> Download
                     </Button>
                   </div>
                   {img.perspective && <p className="text-xs text-muted-foreground p-2">{img.perspective}</p>}
                 </div>
-              ))}
+                );
+              })}
             </div>
           )
         ) : (

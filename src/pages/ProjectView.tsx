@@ -30,7 +30,7 @@ const ProjectView = () => {
         setVehicleData(p.vehicle_data as unknown as VehicleData);
         setSelectedTemplate((p.template_id || 'modern') as TemplateId);
       }
-      if (imgs) setImages(imgs.map((i: any) => i.image_base64));
+      if (imgs) setImages(imgs.map((i: any) => i.image_url || i.image_base64));
       setLoading(false);
     });
   }, [id]);
@@ -55,7 +55,7 @@ const ProjectView = () => {
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-background"><div className="animate-spin w-8 h-8 border-2 border-accent border-t-transparent rounded-full" /></div>;
   if (!project || !vehicleData) return <div className="min-h-screen flex items-center justify-center bg-background"><p className="text-muted-foreground">Projekt nicht gefunden</p></div>;
 
-  const mainImage = project.main_image_base64 || images[0] || null;
+  const mainImage = (project as any).main_image_url || project.main_image_base64 || images[0] || null;
   const galleryImages = images.length > 1 ? images.slice(1) : [];
 
   return (

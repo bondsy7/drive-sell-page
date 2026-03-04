@@ -12,6 +12,7 @@ import ImageUploadRemaster from '@/components/ImageUploadRemaster';
 import { extractPDFAsBase64 } from '@/lib/pdf-utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { uploadImagesToStorage } from '@/lib/storage-utils';
 import type { AppState, VehicleData } from '@/types/vehicle';
 import type { TemplateId } from '@/types/template';
 
@@ -48,13 +49,25 @@ const Index = () => {
   const saveProject = useCallback(async (vData: VehicleData, mainImg: string | null, allImages: string[], templateId: TemplateId) => {
     if (!user) return null;
     const title = `${vData.vehicle.brand} ${vData.vehicle.model} ${vData.vehicle.variant || ''}`.trim();
+
+    // Create project first (without images)
     const { data: project, error } = await supabase.from('projects').insert({
-      user_id: user.id, title, vehicle_data: vData as any, template_id: templateId, main_image_base64: mainImg,
+      user_id: user.id, title, vehicle_data: vData as any, template_id: templateId,
     }).select('id').single();
     if (error || !project) { console.error('Save project error:', error); return null; }
+
+    // Upload images to storage
     if (allImages.length > 0) {
-      const imageRows = allImages.map((img, i) => ({
-        project_id: project.id, user_id: user.id, image_base64: img,
+      const urls = await uploadImagesToStorage(allImages, user.id, project.id);
+
+      // Save main image URL
+      if (urls.length > 0) {
+        await supabase.from('projects').update({ main_image_url: urls[0] }).eq('id', project.id);
+      }
+
+      // Save image references
+      const imageRows = urls.map((url, i) => ({
+        project_id: project.id, user_id: user.id, image_url: url, image_base64: '', // empty, kept for schema compat
         perspective: PERSPECTIVES[i]?.label || `Bild ${i + 1}`, sort_order: i,
       }));
       await supabase.from('project_images').insert(imageRows);
