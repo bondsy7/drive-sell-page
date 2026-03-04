@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { Car, Plus, Image, FileText, Download, ExternalLink, Trash2, LogOut, User } from 'lucide-react';
+import { Car, Plus, Image, FileText, Download, ExternalLink, Trash2, LogOut, User, MessageSquare, Mail, Phone } from 'lucide-react';
 import { toast } from 'sonner';
 import { downloadHTML } from '@/lib/templates/download';
 
@@ -26,11 +26,23 @@ interface ProjectImage {
   created_at: string;
 }
 
+interface Lead {
+  id: string;
+  project_id: string | null;
+  name: string;
+  email: string;
+  phone: string | null;
+  message: string | null;
+  vehicle_title: string | null;
+  created_at: string;
+}
+
 const Dashboard = () => {
   const { user, signOut } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [allImages, setAllImages] = useState<ProjectImage[]>([]);
-  const [tab, setTab] = useState<'projects' | 'gallery'>('projects');
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [tab, setTab] = useState<'projects' | 'gallery' | 'leads'>('projects');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -41,9 +53,13 @@ const Dashboard = () => {
     if (tab === 'gallery' && allImages.length === 0 && !galleryLoaded) {
       loadGallery();
     }
+    if (tab === 'leads' && leads.length === 0 && !leadsLoaded) {
+      loadLeads();
+    }
   }, [tab]);
 
   const [galleryLoaded, setGalleryLoaded] = useState(false);
+  const [leadsLoaded, setLeadsLoaded] = useState(false);
 
   const loadProjects = async () => {
     setLoading(true);
@@ -67,6 +83,18 @@ const Dashboard = () => {
     setLoading(false);
   };
 
+  const loadLeads = async () => {
+    setLoading(true);
+    const { data: l } = await supabase
+      .from('leads')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(100);
+    setLeads((l as Lead[]) || []);
+    setLeadsLoaded(true);
+    setLoading(false);
+  };
+
   const loadData = async () => {
     await loadProjects();
     if (tab === 'gallery') await loadGallery();
@@ -78,6 +106,13 @@ const Dashboard = () => {
     toast.success('Projekt gelöscht');
     setProjects(prev => prev.filter(p => p.id !== id));
     setAllImages(prev => prev.filter(i => i.project_id !== id));
+  };
+
+  const deleteLead = async (id: string) => {
+    const { error } = await supabase.from('leads').delete().eq('id', id);
+    if (error) { toast.error('Fehler beim Löschen'); return; }
+    toast.success('Anfrage gelöscht');
+    setLeads(prev => prev.filter(l => l.id !== id));
   };
 
   const downloadImage = (base64: string, name: string) => {
@@ -124,6 +159,9 @@ const Dashboard = () => {
           <Button variant={tab === 'gallery' ? 'default' : 'outline'} size="sm" onClick={() => setTab('gallery')}>
             <Image className="w-4 h-4 mr-1.5" /> Bildergalerie ({allImages.length})
           </Button>
+          <Button variant={tab === 'leads' ? 'default' : 'outline'} size="sm" onClick={() => setTab('leads')}>
+            <MessageSquare className="w-4 h-4 mr-1.5" /> Anfragen ({leads.length})
+          </Button>
         </div>
 
         {loading ? (
@@ -161,7 +199,7 @@ const Dashboard = () => {
               })}
             </div>
           )
-        ) : (
+        ) : tab === 'gallery' ? (
           allImages.length === 0 ? (
             <div className="text-center py-20 space-y-3">
               <Image className="w-12 h-12 text-muted-foreground mx-auto" />
@@ -180,6 +218,50 @@ const Dashboard = () => {
                     </Button>
                   </div>
                   {img.perspective && <p className="text-xs text-muted-foreground p-2">{img.perspective}</p>}
+                </div>
+              ))}
+            </div>
+          )
+        ) : (
+          leads.length === 0 ? (
+            <div className="text-center py-20 space-y-3">
+              <MessageSquare className="w-12 h-12 text-muted-foreground mx-auto" />
+              <p className="text-muted-foreground">Noch keine Anfragen eingegangen.</p>
+              <p className="text-xs text-muted-foreground max-w-md mx-auto">Sobald ein Interessent das Kontaktformular auf einer Ihrer Angebotsseiten ausfüllt, erscheint die Anfrage hier.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {leads.map(lead => (
+                <div key={lead.id} className="bg-card rounded-xl border border-border p-5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-display font-semibold text-foreground text-sm">{lead.name}</h3>
+                        {lead.vehicle_title && (
+                          <span className="text-[10px] font-medium bg-accent/10 text-accent px-2 py-0.5 rounded-full truncate max-w-[200px]">
+                            {lead.vehicle_title}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-3 text-xs text-muted-foreground mb-2">
+                        <a href={`mailto:${lead.email}`} className="flex items-center gap-1 hover:text-foreground transition-colors">
+                          <Mail className="w-3 h-3" /> {lead.email}
+                        </a>
+                        {lead.phone && (
+                          <a href={`tel:${lead.phone}`} className="flex items-center gap-1 hover:text-foreground transition-colors">
+                            <Phone className="w-3 h-3" /> {lead.phone}
+                          </a>
+                        )}
+                        <span>{new Date(lead.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+                      {lead.message && (
+                        <p className="text-sm text-muted-foreground bg-muted/50 rounded-lg p-3 mt-2">{lead.message}</p>
+                      )}
+                    </div>
+                    <Button variant="ghost" size="icon" onClick={() => deleteLead(lead.id)} className="shrink-0">
+                      <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>

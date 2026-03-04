@@ -3,7 +3,8 @@ import { Download, RotateCcw, Car, Fuel, Gauge, Calendar, Palette, Cog, Zap, Map
 import type { VehicleData, ConsumptionData, DealerData } from '@/types/vehicle';
 import { isPluginHybrid } from '@/lib/co2-utils';
 import type { TemplateId } from '@/types/template';
-import { generateHTML, downloadHTML } from '@/lib/templates';
+import { generateHTML, downloadHTML, type GenerateHTMLOptions } from '@/lib/templates';
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import EditableField from '@/components/EditableField';
 import CO2LabelSelector from '@/components/CO2LabelSelector';
@@ -19,6 +20,7 @@ interface LandingPagePreviewProps {
   onReset: () => void;
   onDataChange: (data: VehicleData) => void;
   selectedTemplate: TemplateId;
+  projectId?: string | null;
 }
 
 const SpecItem: React.FC<{
@@ -43,14 +45,27 @@ const ConsumptionRow: React.FC<{ label: string; value: string; onChange: (v: str
   </div>
 );
 
-const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, imageBase64, galleryImages = [], onReset, onDataChange, selectedTemplate }) => {
+const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, imageBase64, galleryImages = [], onReset, onDataChange, selectedTemplate, projectId }) => {
   const data = vehicleData;
+  const { user } = useAuth();
   const [selectedImage, setSelectedImage] = useState(0);
   const [viewMode, setViewMode] = useState<'preview' | 'edit'>('preview');
 
+  const vehicleTitle = `${data.vehicle.brand} ${data.vehicle.model} ${data.vehicle.variant || ''}`.trim();
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+
+  const htmlOptions: GenerateHTMLOptions | undefined = user ? {
+    contactForm: {
+      dealerUserId: user.id,
+      projectId: projectId || undefined,
+      supabaseUrl,
+      vehicleTitle,
+    }
+  } : undefined;
+
   const liveHTML = useMemo(
-    () => generateHTML(selectedTemplate, data, imageBase64, galleryImages),
-    [selectedTemplate, data, imageBase64, galleryImages]
+    () => generateHTML(selectedTemplate, data, imageBase64, galleryImages, htmlOptions),
+    [selectedTemplate, data, imageBase64, galleryImages, user?.id, projectId]
   );
 
   // Ensure consumption exists with defaults
@@ -133,7 +148,7 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
   };
 
   const handleExport = () => {
-    const html = generateHTML(selectedTemplate, data, imageBase64, galleryImages);
+    const html = generateHTML(selectedTemplate, data, imageBase64, galleryImages, htmlOptions);
     const filename = `${data.vehicle.brand}_${data.vehicle.model}_Angebot.html`.replace(/\s+/g, '_');
     downloadHTML(html, filename);
   };
