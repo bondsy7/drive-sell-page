@@ -1,5 +1,18 @@
 import { VehicleData, ConsumptionData } from "@/types/vehicle";
 import { getCO2ClassFromEmissions, getCO2LabelPath, isPluginHybrid } from "@/lib/co2-utils";
+import { parsePrice } from "@/lib/finance-utils";
+
+/**
+ * Calculate leasing factor: (monthlyRate / totalPrice) * 100
+ * Returns formatted string or empty if not determinable.
+ */
+export function calculateLeasingFactor(data: VehicleData): string {
+  const rate = parsePrice(data.finance.monthlyRate);
+  const price = parsePrice(data.finance.totalPrice);
+  if (rate <= 0 || price <= 0) return '';
+  const factor = (rate / price) * 100;
+  return factor.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
 
 export function getFinanceSectionTitle(data: VehicleData): string {
   const cat = (data.category || '').toLowerCase();
@@ -154,6 +167,12 @@ export function buildFinanceItems(data: VehicleData, itemClass = 'fin-item', lab
     items.push(['Jahresfahrleistung', data.finance.annualMileage]);
     if (cat.includes('leasing')) {
       items.push(['Restwert', data.finance.residualValue]);
+    }
+
+    // Leasingfaktor for leasing
+    if (cat.includes('leasing')) {
+      const lf = calculateLeasingFactor(data);
+      if (lf) items.push(['Leasingfaktor', lf]);
     }
   }
 

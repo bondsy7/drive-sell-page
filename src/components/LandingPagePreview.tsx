@@ -5,7 +5,7 @@ import type { VehicleData, ConsumptionData, DealerData } from '@/types/vehicle';
 import { isPluginHybrid } from '@/lib/co2-utils';
 import type { TemplateId } from '@/types/template';
 import { generateHTML, downloadHTML, type GenerateHTMLOptions } from '@/lib/templates';
-import { embedCO2LabelsInHTML } from '@/lib/templates/shared';
+import { embedCO2LabelsInHTML, calculateLeasingFactor } from '@/lib/templates/shared';
 import ExportChoiceDialog, { type ExportMode } from '@/components/ExportChoiceDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -369,6 +369,21 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
               <EditableField value={value} onChange={onChange} className="text-sm font-semibold text-foreground" suffix={sfx} />
             </div>
           ))}
+          {cat.includes('leasing') && (() => {
+            const lf = calculateLeasingFactor(data);
+            if (!lf) return null;
+            const val = parseFloat(lf.replace(',', '.'));
+            const rating = val <= 0 ? null : val < 0.7 ? { label: 'Sehr gut', color: 'text-green-600' } : val <= 1.0 ? { label: 'Gut', color: 'text-emerald-600' } : val <= 1.3 ? { label: 'OK', color: 'text-yellow-600' } : { label: 'Teuer', color: 'text-red-600' };
+            return (
+              <div className="sm:col-span-3 bg-accent/30 rounded-xl p-3 flex items-center justify-between">
+                <div>
+                  <div className="text-xs text-muted-foreground mb-0.5">Leasingfaktor</div>
+                  <span className="text-sm font-bold text-foreground">{lf}</span>
+                </div>
+                {rating && <span className={`text-xs font-semibold ${rating.color}`}>{rating.label}</span>}
+              </div>
+            );
+          })()}
         </div>
         {!isBuyCategory && (
           <Button variant="outline" size="sm" className="mt-4 gap-2" onClick={recalculateRate}>
