@@ -34,18 +34,42 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadData();
+    loadProjects();
   }, []);
 
-  const loadData = async () => {
+  useEffect(() => {
+    if (tab === 'gallery' && allImages.length === 0 && !galleryLoaded) {
+      loadGallery();
+    }
+  }, [tab]);
+
+  const [galleryLoaded, setGalleryLoaded] = useState(false);
+
+  const loadProjects = async () => {
     setLoading(true);
-    const [{ data: p }, { data: img }] = await Promise.all([
-      supabase.from('projects').select('*').order('updated_at', { ascending: false }),
-      supabase.from('project_images').select('*').order('created_at', { ascending: false }),
-    ]);
+    const { data: p } = await supabase
+      .from('projects')
+      .select('id, title, template_id, vehicle_data, main_image_base64, created_at, updated_at')
+      .order('updated_at', { ascending: false });
     setProjects((p as Project[]) || []);
-    setAllImages((img as ProjectImage[]) || []);
     setLoading(false);
+  };
+
+  const loadGallery = async () => {
+    setLoading(true);
+    const { data: img } = await supabase
+      .from('project_images')
+      .select('id, project_id, image_base64, perspective, created_at')
+      .order('created_at', { ascending: false })
+      .limit(50);
+    setAllImages((img as ProjectImage[]) || []);
+    setGalleryLoaded(true);
+    setLoading(false);
+  };
+
+  const loadData = async () => {
+    await loadProjects();
+    if (tab === 'gallery') await loadGallery();
   };
 
   const deleteProject = async (id: string) => {
