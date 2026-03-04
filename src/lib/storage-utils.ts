@@ -96,3 +96,37 @@ export async function urlToBase64(url: string): Promise<string> {
 export async function urlsToBase64(urls: string[]): Promise<string[]> {
   return Promise.all(urls.map(urlToBase64));
 }
+
+/**
+ * Compress an image (URL or base64) to WebP using canvas.
+ * Returns a data:image/webp;base64,... string.
+ */
+export async function compressToWebP(src: string, quality = 0.75, maxWidth = 1600): Promise<string> {
+  // Ensure we have a usable src
+  const imgSrc = src.startsWith('http') || src.startsWith('data:') ? src : `data:image/png;base64,${src}`;
+  
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const scale = img.width > maxWidth ? maxWidth / img.width : 1;
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/webp', quality));
+    };
+    img.onerror = () => resolve(imgSrc); // fallback to original
+    img.src = imgSrc;
+  });
+}
+
+/**
+ * Compress multiple images to WebP.
+ */
+export async function compressAllToWebP(srcs: string[], quality = 0.75): Promise<string[]> {
+  return Promise.all(srcs.map(s => compressToWebP(s, quality)));
+}

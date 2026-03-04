@@ -7,6 +7,8 @@ import { Car, Plus, Image, FileText, Download, ExternalLink, Trash2, LogOut, Use
 import { toast } from 'sonner';
 import { downloadHTML } from '@/lib/templates/download';
 import { embedCO2LabelsInHTML } from '@/lib/templates/shared';
+import { compressToWebP } from '@/lib/storage-utils';
+import ExportChoiceDialog, { type ExportMode } from '@/components/ExportChoiceDialog';
 
 interface Project {
   id: string;
@@ -126,12 +128,46 @@ const Dashboard = () => {
     a.click();
   };
 
-  const handleExportHTML = async (project: Project) => {
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
+  const [exportProject, setExportProject] = useState<Project | null>(null);
+
+  const openExportDialog = (project: Project) => {
     if (!project.html_content) { toast.error('Keine HTML-Daten vorhanden'); return; }
-    const vd = project.vehicle_data as any;
-    const filename = `${vd?.vehicle?.brand || 'fahrzeug'}-${vd?.vehicle?.model || 'page'}.html`;
-    const html = await embedCO2LabelsInHTML(project.html_content);
-    downloadHTML(html, filename);
+    setExportProject(project);
+    setExportDialogOpen(true);
+  };
+
+  const handleExportHTML = async (mode: ExportMode) => {
+    if (!exportProject?.html_content) return;
+    setExportLoading(true);
+    try {
+      const vd = exportProject.vehicle_data as any;
+      const filename = `${vd?.vehicle?.brand || 'fahrzeug'}-${vd?.vehicle?.model || 'page'}.html`;
+      let html = exportProject.html_content;
+
+      if (mode === 'offline') {
+        // Compress all inline images to WebP
+        const imgRegex = /<img\s+[^>]*src="(https?:\/\/[^"]+)"[^>]*>/g;
+        const matches = [...html.matchAll(imgRegex)];
+        const uniqueUrls = [...new Set(matches.map(m => m[1]))];
+        const urlMap = new Map<string, string>();
+        await Promise.all(uniqueUrls.map(async (url) => {
+          const webp = await compressToWebP(url);
+          urlMap.set(url, webp);
+        }));
+        for (const [url, webp] of urlMap) {
+          html = html.split(`src="${url}"`).join(`src="${webp}"`);
+        }
+      }
+
+      html = await embedCO2LabelsInHTML(html);
+      downloadHTML(html, filename);
+    } finally {
+      setExportLoading(false);
+      setExportDialogOpen(false);
+      setExportProject(null);
+    }
   };
 
   return (
@@ -201,7 +237,7 @@ const Dashboard = () => {
                       <p className="text-xs text-muted-foreground">{new Date(p.updated_at).toLocaleDateString('de-DE')}</p>
                       <div className="flex gap-1.5 pt-1">
                         <Link to={`/project/${p.id}`}><Button variant="outline" size="sm"><ExternalLink className="w-3.5 h-3.5" /></Button></Link>
-                        <Button variant="outline" size="sm" onClick={() => handleExportHTML(p)}><Download className="w-3.5 h-3.5" /></Button>
+                        <Button variant="outline" size="sm" onClick={() => openExportDialog(p)}><Download className="w-3.5 h-3.5" /></Button>
                         <Button variant="outline" size="sm" onClick={() => deleteProject(p.id)}><Trash2 className="w-3.5 h-3.5 text-destructive" /></Button>
                       </div>
                     </div>
@@ -282,6 +318,7 @@ const Dashboard = () => {
           )
         )}
       </main>
+      <ExportChoiceDialog open={exportDialogOpen} onOpenChange={setExportDialogOpen} onChoose={handleExportHTML} loading={exportLoading} />
     </div>
   );
 };
