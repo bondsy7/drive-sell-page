@@ -41,12 +41,18 @@ export function formatPrice(num: number): string {
  * Annuity formula: R = (P * r * (1+r)^n) / ((1+r)^n - 1)
  * where P = principal, r = monthly rate, n = months
  */
-export function calculateFinancingRate(totalPrice: number, downPayment: number, annualRate: number, months: number): number {
+export function calculateFinancingRate(totalPrice: number, downPayment: number, annualRate: number, months: number, finalPayment: number = 0): number {
   if (months <= 0) return 0;
   const principal = totalPrice - downPayment;
   if (principal <= 0) return 0;
-  if (annualRate <= 0) return principal / months; // 0% financing
+  if (annualRate <= 0) return (principal - finalPayment) / months; // 0% financing
   const r = annualRate / 12;
+  if (finalPayment > 0) {
+    // Balloon financing: subtract PV of final payment from principal
+    const pvFinal = finalPayment / Math.pow(1 + r, months);
+    const adjusted = principal - pvFinal;
+    return (adjusted * r) / (1 - Math.pow(1 + r, -months));
+  }
   const factor = Math.pow(1 + r, months);
   return (principal * r * factor) / (factor - 1);
 }

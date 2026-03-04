@@ -126,7 +126,8 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
       monthly = calculateLeasingRate(price, sp, rv, rate, months);
     } else {
       const dp = parsePrice(data.finance.downPayment);
-      monthly = calculateFinancingRate(price, dp, rate, months);
+      const fp = parsePrice(data.finance.residualValue); // Schlussrate for balloon financing
+      monthly = calculateFinancingRate(price, dp, rate, months, fp);
     }
     if (monthly > 0) {
       updateFinance('monthlyRate', formatPrice(monthly));
@@ -317,8 +318,13 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
           {!isBuyCategory && ([
             ['Monatliche Rate', data.finance.monthlyRate, (v: string) => updateFinance('monthlyRate', v), '€'],
             ...(cat.includes('leasing')
-              ? [['Sonderzahlung', data.finance.specialPayment, (v: string) => updateFinance('specialPayment', v), '€']]
-              : [['Anzahlung', data.finance.downPayment, (v: string) => updateFinance('downPayment', v), '€']]
+              ? [
+                  ['Sonderzahlung', data.finance.specialPayment, (v: string) => updateFinance('specialPayment', v), '€'],
+                ]
+              : [
+                  ['Anzahlung', data.finance.downPayment, (v: string) => updateFinance('downPayment', v), '€'],
+                  ['Schlussrate', data.finance.residualValue, (v: string) => updateFinance('residualValue', v), '€'],
+                ]
             ),
             ['Laufzeit', data.finance.duration, (v: string) => updateFinance('duration', v), 'Monate'],
             ['Eff. Jahreszins', data.finance.interestRate || '', (v: string) => updateFinance('interestRate', v), '%'],
