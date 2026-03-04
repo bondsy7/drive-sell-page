@@ -232,8 +232,20 @@ const Dashboard = () => {
                       </div>
                     )}
                     <div className="p-4 space-y-2">
-                      <h3 className="font-display font-semibold text-foreground text-sm truncate">{vd?.vehicle?.brand} {vd?.vehicle?.model}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-display font-semibold text-foreground text-sm truncate">{vd?.vehicle?.brand} {vd?.vehicle?.model}</h3>
+                        {(() => {
+                          const cat = (vd?.category || '').toLowerCase();
+                          if (cat.includes('leasing')) return <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 whitespace-nowrap">Leasing</span>;
+                          if (cat.includes('finanzierung') || cat.includes('kredit')) return <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 whitespace-nowrap">Finanzierung</span>;
+                          if (cat.includes('barkauf') || cat.includes('kauf') || cat.includes('neuwagen') || cat.includes('gebrauchtwagen') || cat.includes('tageszulassung')) return <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 whitespace-nowrap">Kauf</span>;
+                          return null;
+                        })()}
+                      </div>
                       <p className="text-xs text-muted-foreground">{vd?.vehicle?.variant}</p>
+                      {vd?.finance?.monthlyRate && (
+                        <p className="text-sm font-semibold text-foreground">{vd.finance.monthlyRate} <span className="text-xs font-normal text-muted-foreground">/ Monat</span></p>
+                      )}
                       <p className="text-xs text-muted-foreground">{new Date(p.updated_at).toLocaleDateString('de-DE')}</p>
                       <div className="flex gap-1.5 pt-1">
                         <Link to={`/project/${p.id}`}><Button variant="outline" size="sm"><ExternalLink className="w-3.5 h-3.5" /></Button></Link>
