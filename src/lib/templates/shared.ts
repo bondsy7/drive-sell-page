@@ -43,6 +43,31 @@ export function getCO2LabelHTML(consumption: ConsumptionData): string {
   return `<img src="${path}" alt="CO₂-Klasse" style="max-width:280px;width:100%;height:auto" />`;
 }
 
+/**
+ * Post-processes generated HTML to embed all CO2 label images as base64.
+ * Replaces <img src="/images/co2/..."> with base64 data URLs for offline-capable exports.
+ */
+export async function embedCO2LabelsInHTML(html: string): Promise<string> {
+  const regex = /<img\s+src="(\/images\/co2\/[^"]+)"/g;
+  const matches = [...html.matchAll(regex)];
+  if (matches.length === 0) return html;
+
+  // Deduplicate paths
+  const uniquePaths = [...new Set(matches.map(m => m[1]))];
+  const base64Map = new Map<string, string>();
+
+  await Promise.all(uniquePaths.map(async (path) => {
+    const b64 = await imageToBase64(path);
+    if (b64) base64Map.set(path, b64);
+  }));
+
+  let result = html;
+  for (const [path, b64] of base64Map) {
+    result = result.split(`src="${path}"`).join(`src="${b64}"`);
+  }
+  return result;
+}
+
 export function getGalleryHTML(allImages: string[]): string {
   if (allImages.length <= 1) return '';
   return `<div class="gallery">
