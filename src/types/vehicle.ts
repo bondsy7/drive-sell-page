@@ -43,6 +43,7 @@ export interface DealerData {
   xUrl: string;
   tiktokUrl: string;
   youtubeUrl: string;
+  whatsappNumber: string;
   // Banking & legal
   leasingBank: string;
   leasingLegalText: string;
