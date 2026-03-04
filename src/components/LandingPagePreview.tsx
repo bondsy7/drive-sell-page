@@ -376,6 +376,47 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
             Rate neu berechnen
           </Button>
         )}
+
+        {/* Bank & Legal Text – project-level only */}
+        {!isBuyCategory && (
+          <div className="mt-4 pt-4 border-t border-border space-y-3">
+            <div className="text-xs font-semibold text-foreground mb-2">
+              {cat.includes('leasing') ? 'Leasingpartner' : 'Finanzierungspartner'}
+            </div>
+            <div className="bg-muted/50 rounded-xl p-3">
+              <div className="text-xs text-muted-foreground mb-0.5">
+                {cat.includes('leasing') ? 'Leasingbank' : 'Finanzierungsbank'}
+              </div>
+              <EditableField
+                value={cat.includes('leasing') ? (data.dealer.leasingBank || '') : (data.dealer.financingBank || '')}
+                onChange={(v) => updateDealer(cat.includes('leasing') ? 'leasingBank' : 'financingBank', v)}
+                className="text-sm font-semibold text-foreground"
+              />
+            </div>
+            <div className="bg-muted/50 rounded-xl p-3">
+              <div className="text-xs text-muted-foreground mb-1">Rechtstext</div>
+              <textarea
+                value={cat.includes('leasing') ? (data.dealer.leasingLegalText || '') : (data.dealer.financingLegalText || '')}
+                onChange={(e) => updateDealer(cat.includes('leasing') ? 'leasingLegalText' : 'financingLegalText', e.target.value)}
+                className="w-full text-xs text-foreground bg-transparent border border-border/50 rounded-lg p-2 min-h-[60px] resize-y focus:outline-none focus:ring-1 focus:ring-accent"
+                placeholder="Rechtstext eingeben…"
+              />
+            </div>
+          </div>
+        )}
+        {isBuyCategory && data.dealer.defaultLegalText && (
+          <div className="mt-4 pt-4 border-t border-border space-y-3">
+            <div className="text-xs font-semibold text-foreground mb-2">Rechtshinweis</div>
+            <div className="bg-muted/50 rounded-xl p-3">
+              <textarea
+                value={data.dealer.defaultLegalText || ''}
+                onChange={(e) => updateDealer('defaultLegalText', e.target.value)}
+                className="w-full text-xs text-foreground bg-transparent border border-border/50 rounded-lg p-2 min-h-[60px] resize-y focus:outline-none focus:ring-1 focus:ring-accent"
+                placeholder="Rechtstext eingeben…"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Consumption / Verbrauchswerte */}
