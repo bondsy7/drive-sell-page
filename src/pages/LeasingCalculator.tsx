@@ -18,6 +18,13 @@ function formatEuro(num: number): string {
   return num.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
 }
 
+function formatEuroInput(str: string): string {
+  if (!str.trim()) return '';
+  const num = parseGermanNumber(str);
+  if (num === 0) return '0,00';
+  return num.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 interface LeasingFactorRating {
   label: string;
   color: string;
@@ -97,6 +104,7 @@ const LeasingCalculator = () => {
                     placeholder="z.B. 52.990"
                     value={price}
                     onChange={e => setPrice(e.target.value)}
+                    onBlur={() => setPrice(formatEuroInput(price))}
                     className="pr-8"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">€</span>
@@ -119,6 +127,7 @@ const LeasingCalculator = () => {
                     placeholder="z.B. 20.000"
                     value={residualValue}
                     onChange={e => setResidualValue(e.target.value)}
+                    onBlur={() => setResidualValue(formatEuroInput(residualValue))}
                     className="pr-8"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">€</span>
@@ -133,6 +142,7 @@ const LeasingCalculator = () => {
                     placeholder="z.B. 0"
                     value={specialPayment}
                     onChange={e => setSpecialPayment(e.target.value)}
+                    onBlur={() => setSpecialPayment(formatEuroInput(specialPayment))}
                     className="pr-8"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">€</span>

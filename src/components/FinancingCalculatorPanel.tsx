@@ -15,6 +15,13 @@ function formatEuro(num: number): string {
   return num.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
 }
 
+function formatEuroInput(str: string): string {
+  if (!str.trim()) return '';
+  const num = parseGermanNumber(str);
+  if (num === 0) return '0,00';
+  return num.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 interface Props {
   vehicleData: VehicleData | null;
 }
@@ -100,8 +107,8 @@ const FinancingCalculatorPanel: React.FC<Props> = ({ vehicleData }) => {
 
       {open && (
         <div className="mt-3 space-y-2.5">
-          <Field label="Fahrzeugpreis" value={price} onChange={setPrice} suffix="€" />
-          <Field label="Anzahlung" value={downPayment} onChange={setDownPayment} suffix="€" />
+          <Field label="Fahrzeugpreis" value={price} onChange={setPrice} onBlur={() => setPrice(formatEuroInput(price))} suffix="€" />
+          <Field label="Anzahlung" value={downPayment} onChange={setDownPayment} onBlur={() => setDownPayment(formatEuroInput(downPayment))} suffix="€" />
           <div className="space-y-0.5">
             <div className="flex items-center gap-1">
               <Label className="text-[11px] text-sidebar-foreground/60">Schlussrate</Label>
@@ -116,6 +123,7 @@ const FinancingCalculatorPanel: React.FC<Props> = ({ vehicleData }) => {
               <Input
                 value={finalPayment}
                 onChange={e => setFinalPayment(e.target.value)}
+                onBlur={() => setFinalPayment(formatEuroInput(finalPayment))}
                 className="h-7 text-xs pr-8 bg-sidebar-accent/50 border-sidebar-border"
                 placeholder="optional"
               />
@@ -144,13 +152,14 @@ const FinancingCalculatorPanel: React.FC<Props> = ({ vehicleData }) => {
   );
 };
 
-const Field: React.FC<{ label: string; value: string; onChange: (v: string) => void; suffix: string }> = ({ label, value, onChange, suffix }) => (
+const Field: React.FC<{ label: string; value: string; onChange: (v: string) => void; onBlur?: () => void; suffix: string }> = ({ label, value, onChange, onBlur, suffix }) => (
   <div className="space-y-0.5">
     <Label className="text-[11px] text-sidebar-foreground/60">{label}</Label>
     <div className="relative">
       <Input
         value={value}
         onChange={e => onChange(e.target.value)}
+        onBlur={onBlur}
         className="h-7 text-xs pr-8 bg-sidebar-accent/50 border-sidebar-border"
       />
       <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-sidebar-foreground/40">{suffix}</span>
