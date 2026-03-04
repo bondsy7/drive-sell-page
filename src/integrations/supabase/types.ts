@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      leads: {
+        Row: {
+          created_at: string
+          dealer_user_id: string
+          email: string
+          id: string
+          message: string | null
+          name: string
+          phone: string | null
+          project_id: string | null
+          vehicle_title: string | null
+        }
+        Insert: {
+          created_at?: string
+          dealer_user_id: string
+          email: string
+          id?: string
+          message?: string | null
+          name: string
+          phone?: string | null
+          project_id?: string | null
+          vehicle_title?: string | null
+        }
+        Update: {
+          created_at?: string
+          dealer_user_id?: string
+          email?: string
+          id?: string
+          message?: string | null
+          name?: string
+          phone?: string | null
+          project_id?: string | null
+          vehicle_title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           address: string | null

@@ -204,6 +204,7 @@ const Index = () => {
                 vehicleData={vehicleData} imageBase64={imageBase64}
                 galleryImages={galleryImages.slice(1)} onReset={handleReset}
                 onDataChange={setVehicleData} selectedTemplate={selectedTemplate}
+                projectId={savedProjectId}
               />
             </div>
           </main>

@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.generate-vehicle-image]
 verify_jwt = false
+
+[functions.submit-lead]
+verify_jwt = false

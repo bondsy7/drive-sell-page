@@ -205,3 +205,101 @@ export function buildDealerFooterHTML(dealer: VehicleData['dealer']): string {
   if (dealer.taxId) parts.push(`USt-IdNr.: ${dealer.taxId}`);
   return parts.length ? `<div style="font-size:10px;color:#9ca3af;margin-top:6px">${parts.join(' · ')}</div>` : '';
 }
+
+export interface ContactFormOptions {
+  dealerUserId: string;
+  projectId?: string;
+  supabaseUrl: string;
+  vehicleTitle: string;
+}
+
+export function buildContactFormHTML(options: ContactFormOptions): string {
+  const { dealerUserId, projectId, supabaseUrl, vehicleTitle } = options;
+
+  return `
+  <!-- Sticky CTA -->
+  <div id="leadCta" style="position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+    <button onclick="document.getElementById('leadModal').style.display='flex'" style="
+      background:linear-gradient(135deg,#3366cc,#2952a3);color:#fff;border:none;cursor:pointer;
+      padding:14px 28px;border-radius:50px;font-size:15px;font-weight:700;font-family:'Inter',sans-serif;
+      box-shadow:0 4px 24px rgba(51,102,204,0.4);transition:all .2s;display:flex;align-items:center;gap:8px;
+    " onmouseover="this.style.transform='scale(1.05)';this.style.boxShadow='0 6px 32px rgba(51,102,204,0.5)'"
+       onmouseout="this.style.transform='scale(1)';this.style.boxShadow='0 4px 24px rgba(51,102,204,0.4)'">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      Jetzt anfragen
+    </button>
+  </div>
+
+  <!-- Lead Modal -->
+  <div id="leadModal" style="display:none;position:fixed;inset:0;z-index:10000;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px)" onclick="if(event.target===this)this.style.display='none'">
+    <div style="background:#fff;border-radius:20px;padding:32px;max-width:460px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.15);position:relative;animation:leadSlideIn .3s ease">
+      <button onclick="document.getElementById('leadModal').style.display='none'" style="position:absolute;top:16px;right:16px;background:none;border:none;cursor:pointer;color:#9ca3af;font-size:20px">✕</button>
+      <div style="margin-bottom:20px">
+        <h3 style="font-family:'Space Grotesk','Inter',sans-serif;font-size:20px;font-weight:700;color:#1a2332;margin-bottom:4px">Interesse an diesem Fahrzeug?</h3>
+        <p style="font-size:13px;color:#6b7a8d">${vehicleTitle}</p>
+      </div>
+      <form id="leadForm" onsubmit="return submitLead(event)">
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <input name="name" placeholder="Ihr Name *" required style="padding:12px 16px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:border .2s" onfocus="this.style.borderColor='#3366cc'" onblur="this.style.borderColor='#e2e8f0'" />
+          <input name="email" type="email" placeholder="Ihre E-Mail *" required style="padding:12px 16px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:border .2s" onfocus="this.style.borderColor='#3366cc'" onblur="this.style.borderColor='#e2e8f0'" />
+          <input name="phone" type="tel" placeholder="Telefonnummer (optional)" style="padding:12px 16px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:border .2s" onfocus="this.style.borderColor='#3366cc'" onblur="this.style.borderColor='#e2e8f0'" />
+          <textarea name="message" placeholder="Ihre Nachricht (optional)" rows="3" style="padding:12px 16px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;outline:none;resize:vertical;transition:border .2s" onfocus="this.style.borderColor='#3366cc'" onblur="this.style.borderColor='#e2e8f0'"></textarea>
+          <button type="submit" id="leadSubmitBtn" style="
+            background:linear-gradient(135deg,#3366cc,#2952a3);color:#fff;border:none;cursor:pointer;
+            padding:14px;border-radius:10px;font-size:15px;font-weight:700;font-family:'Inter',sans-serif;
+            transition:all .2s;
+          " onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+            Anfrage senden
+          </button>
+        </div>
+      </form>
+      <div id="leadSuccess" style="display:none;text-align:center;padding:20px 0">
+        <div style="font-size:48px;margin-bottom:12px">✓</div>
+        <h4 style="font-family:'Space Grotesk','Inter',sans-serif;font-size:18px;font-weight:700;color:#1a2332;margin-bottom:8px">Anfrage gesendet!</h4>
+        <p style="font-size:13px;color:#6b7a8d">Vielen Dank für Ihr Interesse. Wir melden uns in Kürze bei Ihnen.</p>
+      </div>
+      <p style="font-size:10px;color:#9ca3af;margin-top:12px;text-align:center">Ihre Daten werden vertraulich behandelt und nicht an Dritte weitergegeben.</p>
+    </div>
+  </div>
+
+  <style>
+    @keyframes leadSlideIn { from { opacity:0; transform:translateY(20px) } to { opacity:1; transform:translateY(0) } }
+  </style>
+
+  <script>
+    async function submitLead(e) {
+      e.preventDefault();
+      var btn = document.getElementById('leadSubmitBtn');
+      btn.disabled = true;
+      btn.textContent = 'Wird gesendet...';
+      var form = document.getElementById('leadForm');
+      var fd = new FormData(form);
+      try {
+        var res = await fetch('${supabaseUrl}/functions/v1/submit-lead', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            dealerUserId: '${dealerUserId}',
+            projectId: ${projectId ? `'${projectId}'` : 'null'},
+            name: fd.get('name'),
+            email: fd.get('email'),
+            phone: fd.get('phone') || null,
+            message: fd.get('message') || null,
+            vehicleTitle: '${vehicleTitle.replace(/'/g, "\\'")}'
+          })
+        });
+        if (res.ok) {
+          form.style.display = 'none';
+          document.getElementById('leadSuccess').style.display = 'block';
+        } else {
+          btn.textContent = 'Fehler – erneut versuchen';
+          btn.disabled = false;
+        }
+      } catch(err) {
+        btn.textContent = 'Fehler – erneut versuchen';
+        btn.disabled = false;
+      }
+      return false;
+    }
+  </script>`;
+}

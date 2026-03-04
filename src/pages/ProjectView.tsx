@@ -85,6 +85,7 @@ const ProjectView = () => {
               onReset={() => {}}
               onDataChange={handleDataChange}
               selectedTemplate={selectedTemplate}
+              projectId={id}
             />
           </div>
         </main>
