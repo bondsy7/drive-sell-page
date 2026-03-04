@@ -328,9 +328,11 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
             ),
             ['Laufzeit', data.finance.duration, (v: string) => updateFinance('duration', v), 'Monate'],
             ['Eff. Jahreszins', data.finance.interestRate || '', (v: string) => updateFinance('interestRate', v), '%'],
-            ['Jahresfahrleistung', data.finance.annualMileage, (v: string) => updateFinance('annualMileage', v), 'km/Jahr'],
             ...(cat.includes('leasing')
-              ? [['Restwert', data.finance.residualValue, (v: string) => updateFinance('residualValue', v), '€']]
+              ? [
+                  ['Jahresfahrleistung', data.finance.annualMileage, (v: string) => updateFinance('annualMileage', v), 'km/Jahr'],
+                  ['Restwert', data.finance.residualValue, (v: string) => updateFinance('residualValue', v), '€'],
+                ]
               : []
             ),
           ] as [string, string, (v: string) => void, string][]).map(([label, value, onChange, sfx]) => (
