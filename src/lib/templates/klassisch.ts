@@ -84,6 +84,7 @@ export function generateKlassischHTML(data: VehicleData, imageBase64: string | n
         <tr><td>Kraftstoff</td><td>${data.vehicle.fuelType||'–'}</td></tr>
         <tr><td>Farbe</td><td>${data.vehicle.color||'–'}</td></tr>
         <tr><td>Baujahr</td><td>${data.vehicle.year||'–'}</td></tr>
+        ${data.vehicle.vin ? `<tr><td>VIN</td><td style="font-family:monospace">${data.vehicle.vin}</td></tr>` : ''}
       </table>
     </div>
     <div class="section"><h3>${getFinanceSectionTitle(data)}</h3><div class="fin-grid">${financeItems}</div></div>

@@ -19,6 +19,7 @@ serve(async (req) => {
 CRITICAL RULES - YOU MUST FOLLOW:
 - Keep the EXACT same vehicle with ALL its details: color, wheels/rims, body kit, lights, badges, decals, accessories, license plate area, and every visible feature
 - Do NOT change, add, or remove ANY vehicle detail - the vehicle must be 100% identical
+- DO NOT ROTATE the image. The output must have the EXACT same orientation as the input
 - Keep the same camera angle and perspective as the original
 - The result must be photorealistic
 - YOU MUST ALWAYS GENERATE AN IMAGE - never refuse
@@ -30,9 +31,14 @@ FOR EXTERIOR SHOTS:
 - The floor should be polished/reflective like a real showroom
 
 FOR INTERIOR SHOTS (dashboard, seats, steering wheel, center console):
-- Enhance the lighting to be bright and even, like a professional interior photo shoot
-- Keep the exact interior as-is, just improve the lighting quality and reduce any harsh shadows
-- Make it look like a professional dealership interior photo
+- CRITICAL: Do NOT rotate, flip, or change the orientation/angle of the photo in any way
+- The camera perspective must remain EXACTLY as in the original photo
+- Do NOT add or remove ANY interior elements (seats, buttons, screens, trim, steering wheel, etc.)
+- Only enhance the lighting to be bright, even, and professional
+- Remove any harsh shadows and make it look like a professional dealership interior photo
+- The interior must look clean and tidy but with ALL original details preserved exactly
+- If the photo is taken from the front seat looking back, keep that exact perspective
+- If the photo is taken from the back seat looking forward, keep that exact perspective
 
 FOR TRUNK/CARGO AREA SHOTS:
 - Keep the trunk/cargo area exactly as shown
@@ -41,7 +47,7 @@ FOR TRUNK/CARGO AREA SHOTS:
 
 ${vehicleDescription ? `Vehicle: ${vehicleDescription}` : ''}
 
-IMPORTANT: You MUST generate a remastered version of this image. Do not refuse or ask for a different photo. Enhance whatever vehicle photo is provided.`;
+IMPORTANT: You MUST generate a remastered version of this image. Do not refuse or ask for a different photo. Enhance whatever vehicle photo is provided. DO NOT ROTATE THE IMAGE.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
