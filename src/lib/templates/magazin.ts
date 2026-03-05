@@ -101,6 +101,7 @@ export function generateMagazinHTML(data: VehicleData, imageBase64: string | nul
           <div class="item"><span class="lbl">Kraftstoff</span><span class="val">${data.vehicle.fuelType||'–'}</span></div>
           <div class="item"><span class="lbl">Farbe</span><span class="val">${data.vehicle.color||'–'}</span></div>
           <div class="item"><span class="lbl">Baujahr</span><span class="val">${data.vehicle.year||'–'}</span></div>
+          ${data.vehicle.vin ? `<div class="item"><span class="lbl">VIN</span><span class="val" style="font-family:monospace">${data.vehicle.vin}</span></div>` : ''}
         </div>
       </div>
       <div class="col-card"><h3>${getFinanceSectionTitle(data)}</h3><div class="fin-grid">${financeItems}</div></div>

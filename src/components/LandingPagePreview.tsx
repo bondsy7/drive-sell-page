@@ -376,6 +376,7 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
               </div>
               <SpecItem icon={<Palette className="w-4 h-4" />} label="Farbe" value={data.vehicle.color} onChange={(v) => updateVehicle('color', v)} />
               <SpecItem icon={<Calendar className="w-4 h-4" />} label="Baujahr" value={String(data.vehicle.year || '–')} onChange={() => {}} />
+              <SpecItem icon={<Car className="w-4 h-4" />} label="VIN" value={data.vehicle.vin || ''} onChange={(v) => updateVehicle('vin', v)} />
             </div>
           </div>
         </div>

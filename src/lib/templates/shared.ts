@@ -254,6 +254,12 @@ export function buildWebsiteLinkHTML(dealer: VehicleData['dealer']): string {
   return `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color:#2563eb;text-decoration:none">${display}</a>`;
 }
 
+export function buildVinHTML(data: VehicleData): string {
+  const vin = data.vehicle.vin;
+  if (!vin) return '';
+  return `<div class="vin-row" style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #e2e8f0"><span style="font-size:10px;color:#8896a6;text-transform:uppercase;letter-spacing:0.5px">VIN</span><span style="font-size:12px;font-weight:600;font-family:monospace;color:#1a2332">${vin}</span></div>`;
+}
+
 export function buildDealerFooterHTML(dealer: VehicleData['dealer']): string {
   const parts: string[] = [];
   if (dealer.taxId) parts.push(`USt-IdNr.: ${dealer.taxId}`);

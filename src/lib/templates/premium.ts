@@ -86,6 +86,7 @@ export function generatePremiumHTML(data: VehicleData, imageBase64: string | nul
         <div class="spec-card"><div class="label">Kraftstoff</div><div class="val">${data.vehicle.fuelType||'–'}</div></div>
         <div class="spec-card"><div class="label">Farbe</div><div class="val">${data.vehicle.color||'–'}</div></div>
         <div class="spec-card"><div class="label">Baujahr</div><div class="val">${data.vehicle.year||'–'}</div></div>
+        ${data.vehicle.vin ? `<div class="spec-card" style="grid-column:1/-1"><div class="label">VIN</div><div class="val" style="font-family:monospace">${data.vehicle.vin}</div></div>` : ''}
       </div>
     </div>
     <div class="section"><h3>${getFinanceSectionTitle(data)}</h3><div class="fin-grid">${financeItems}</div></div>

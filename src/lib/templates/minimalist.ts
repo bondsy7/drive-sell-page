@@ -83,6 +83,7 @@ export function generateMinimalistHTML(data: VehicleData, imageBase64: string | 
     <div class="data-row"><span class="lbl">Kraftstoff</span><span class="val">${data.vehicle.fuelType||'–'}</span></div>
     <div class="data-row"><span class="lbl">Farbe</span><span class="val">${data.vehicle.color||'–'}</span></div>
     <div class="data-row"><span class="lbl">Baujahr</span><span class="val">${data.vehicle.year||'–'}</span></div>
+    ${data.vehicle.vin ? `<div class="data-row"><span class="lbl">VIN</span><span class="val" style="font-family:monospace">${data.vehicle.vin}</span></div>` : ''}
     <div class="divider"></div>
     <div class="section-title">${getFinanceSectionTitle(data)}</div>
     <div class="fin-grid">${financeItems}</div>
