@@ -1,12 +1,11 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Car, ArrowLeft, Download } from 'lucide-react';
+import { Car, ArrowLeft, Layout } from 'lucide-react';
 import { toast } from 'sonner';
 import LandingPagePreview from '@/components/LandingPagePreview';
 import TemplateSidebar from '@/components/TemplateSidebar';
-import { downloadHTML } from '@/lib/templates/download';
 
 import type { VehicleData } from '@/types/vehicle';
 import type { TemplateId } from '@/types/template';
@@ -18,6 +17,7 @@ const ProjectView = () => {
   const [vehicleData, setVehicleData] = useState<VehicleData | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>('modern');
   const [loading, setLoading] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -60,23 +60,33 @@ const ProjectView = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link to="/dashboard"><Button variant="ghost" size="icon"><ArrowLeft className="w-4 h-4" /></Button></Link>
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg gradient-accent flex items-center justify-center">
+      <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-30">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <Link to="/dashboard"><Button variant="ghost" size="icon" className="shrink-0"><ArrowLeft className="w-4 h-4" /></Button></Link>
+            {/* Mobile sidebar toggle */}
+            <Button variant="ghost" size="icon" className="lg:hidden shrink-0" onClick={() => setSidebarOpen(true)}>
+              <Layout className="w-4 h-4" />
+            </Button>
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-8 h-8 rounded-lg gradient-accent flex items-center justify-center shrink-0">
                 <Car className="w-4 h-4 text-accent-foreground" />
               </div>
-              <span className="font-display font-bold text-foreground text-sm">{vehicleData.vehicle.brand} {vehicleData.vehicle.model}</span>
+              <span className="font-display font-bold text-foreground text-sm truncate">{vehicleData.vehicle.brand} {vehicleData.vehicle.model}</span>
             </div>
           </div>
         </div>
       </header>
 
       <div className="flex h-[calc(100vh-56px)]">
-        <TemplateSidebar selectedTemplate={selectedTemplate} onSelectTemplate={handleTemplateChange} vehicleData={vehicleData} />
-        <main className="flex-1 overflow-y-auto px-4 py-10">
+        <TemplateSidebar
+          selectedTemplate={selectedTemplate}
+          onSelectTemplate={handleTemplateChange}
+          vehicleData={vehicleData}
+          open={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+        />
+        <main className="flex-1 overflow-y-auto px-3 sm:px-4 py-6 sm:py-10">
           <div className="max-w-5xl mx-auto">
             <LandingPagePreview
               vehicleData={vehicleData}

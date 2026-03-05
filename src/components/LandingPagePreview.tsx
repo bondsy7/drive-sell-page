@@ -234,20 +234,21 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
   return (
     <div className="w-full max-w-5xl mx-auto space-y-6">
       {/* Action bar */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
           <Button variant="outline" size="sm" onClick={onReset} className="gap-2">
             <RotateCcw className="w-4 h-4" />
-            Neues PDF
+            <span className="hidden sm:inline">Neues PDF</span>
+            <span className="sm:hidden">Neu</span>
           </Button>
-          <div className="flex items-center bg-muted rounded-lg p-0.5 ml-2">
+          <div className="flex items-center bg-muted rounded-lg p-0.5">
             <button
               onClick={() => setViewMode('preview')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
                 viewMode === 'preview' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <Eye className="w-3.5 h-3.5" /> Vorschau
+              <Eye className="w-3.5 h-3.5" /> <span className="hidden xs:inline">Vorschau</span>
             </button>
             <button
               onClick={() => setViewMode('edit')}
@@ -255,13 +256,14 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
                 viewMode === 'edit' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <Pencil className="w-3.5 h-3.5" /> Bearbeiten
+              <Pencil className="w-3.5 h-3.5" /> <span className="hidden xs:inline">Bearbeiten</span>
             </button>
           </div>
         </div>
-        <Button onClick={handleExportClick} className="gap-2 gradient-accent text-accent-foreground font-semibold shadow-glow hover:opacity-90 transition-opacity">
+        <Button onClick={handleExportClick} size="sm" className="gap-2 gradient-accent text-accent-foreground font-semibold shadow-glow hover:opacity-90 transition-opacity w-full sm:w-auto">
           <Download className="w-4 h-4" />
-          Als HTML herunterladen
+          <span className="hidden sm:inline">Als HTML herunterladen</span>
+          <span className="sm:hidden">Export</span>
         </Button>
       </div>
 

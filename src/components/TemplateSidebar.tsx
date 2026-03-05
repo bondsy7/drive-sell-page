@@ -1,6 +1,6 @@
 import React from 'react';
 import { TEMPLATES, TemplateId, TemplateInfo } from '@/types/template';
-import { Layout } from 'lucide-react';
+import { Layout, X } from 'lucide-react';
 import LeasingCalculatorPanel from '@/components/LeasingCalculatorPanel';
 import FinancingCalculatorPanel from '@/components/FinancingCalculatorPanel';
 import KfzSteuerPanel from '@/components/KfzSteuerPanel';
@@ -10,6 +10,8 @@ interface TemplateSidebarProps {
   selectedTemplate: TemplateId;
   onSelectTemplate: (id: TemplateId) => void;
   vehicleData?: VehicleData | null;
+  open?: boolean;
+  onClose?: () => void;
 }
 
 const TemplateCard: React.FC<{ template: TemplateInfo; isSelected: boolean; onClick: () => void }> = ({ template, isSelected, onClick }) => (
@@ -39,22 +41,48 @@ const TemplateCard: React.FC<{ template: TemplateInfo; isSelected: boolean; onCl
   </button>
 );
 
-const TemplateSidebar: React.FC<TemplateSidebarProps> = ({ selectedTemplate, onSelectTemplate, vehicleData }) => {
-  return (
-    <div className="w-56 shrink-0 bg-sidebar border-r border-sidebar-border p-4 overflow-y-auto h-full">
-      <div className="flex items-center gap-2 mb-4">
+const SidebarContent: React.FC<Omit<TemplateSidebarProps, 'open'>> = ({ selectedTemplate, onSelectTemplate, vehicleData, onClose }) => (
+  <div className="p-4 overflow-y-auto h-full">
+    <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center gap-2">
         <Layout className="w-4 h-4 text-sidebar-primary" />
         <span className="font-display font-semibold text-sm text-sidebar-foreground">Templates</span>
       </div>
-      <div className="space-y-3">
-        {TEMPLATES.map((t) => (
-          <TemplateCard key={t.id} template={t} isSelected={selectedTemplate === t.id} onClick={() => onSelectTemplate(t.id)} />
-        ))}
-      </div>
-      {vehicleData && <LeasingCalculatorPanel vehicleData={vehicleData} />}
-      {vehicleData && <FinancingCalculatorPanel vehicleData={vehicleData} />}
-      {vehicleData && <KfzSteuerPanel vehicleData={vehicleData} />}
+      {onClose && (
+        <button onClick={onClose} className="lg:hidden p-1.5 rounded-lg hover:bg-sidebar-accent text-sidebar-foreground/60">
+          <X className="w-4 h-4" />
+        </button>
+      )}
     </div>
+    <div className="space-y-3">
+      {TEMPLATES.map((t) => (
+        <TemplateCard key={t.id} template={t} isSelected={selectedTemplate === t.id} onClick={() => { onSelectTemplate(t.id); onClose?.(); }} />
+      ))}
+    </div>
+    {vehicleData && <LeasingCalculatorPanel vehicleData={vehicleData} />}
+    {vehicleData && <FinancingCalculatorPanel vehicleData={vehicleData} />}
+    {vehicleData && <KfzSteuerPanel vehicleData={vehicleData} />}
+  </div>
+);
+
+const TemplateSidebar: React.FC<TemplateSidebarProps> = ({ selectedTemplate, onSelectTemplate, vehicleData, open, onClose }) => {
+  return (
+    <>
+      {/* Desktop sidebar - always visible */}
+      <div className="hidden lg:block w-56 shrink-0 bg-sidebar border-r border-sidebar-border h-full">
+        <SidebarContent selectedTemplate={selectedTemplate} onSelectTemplate={onSelectTemplate} vehicleData={vehicleData} />
+      </div>
+
+      {/* Mobile overlay sidebar */}
+      {open && (
+        <>
+          <div className="fixed inset-0 bg-background/60 backdrop-blur-sm z-40 lg:hidden" onClick={onClose} />
+          <div className="fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-sidebar border-r border-sidebar-border z-50 lg:hidden shadow-xl animate-in slide-in-from-left duration-200">
+            <SidebarContent selectedTemplate={selectedTemplate} onSelectTemplate={onSelectTemplate} vehicleData={vehicleData} onClose={onClose} />
+          </div>
+        </>
+      )}
+    </>
   );
 };
 
