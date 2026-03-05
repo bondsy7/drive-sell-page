@@ -8,3 +8,12 @@ verify_jwt = false
 
 [functions.submit-lead]
 verify_jwt = false
+
+[functions.ocr-vin]
+verify_jwt = false
+
+[functions.remaster-vehicle-image]
+verify_jwt = false
+
+[functions.lookup-vin]
+verify_jwt = false

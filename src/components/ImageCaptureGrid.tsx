@@ -1,13 +1,18 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { Camera, Upload, X, Loader2, Check, AlertCircle } from 'lucide-react';
+import { Camera, Upload, X, Loader2, Check, AlertCircle, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useVinLookup } from '@/hooks/useVinLookup';
+import VinDataDialog from '@/components/VinDataDialog';
+import type { VehicleData } from '@/types/vehicle';
 
 interface ImageCaptureGridProps {
   vehicleDescription: string;
+  vehicleData?: VehicleData;
   onComplete: (mainImage: string, galleryImages: string[], vin?: string) => void;
+  onVehicleDataChange?: (data: VehicleData) => void;
   onBack: () => void;
 }
 
@@ -44,11 +49,12 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
-const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription, onComplete, onBack }) => {
+const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription, vehicleData, onComplete, onVehicleDataChange, onBack }) => {
   const [captures, setCaptures] = useState<Record<string, CapturedImage>>({});
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [detectedVin, setDetectedVin] = useState<string | null>(null);
+  const vinLookup = useVinLookup();
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const capturedCount = Object.keys(captures).length;
@@ -74,6 +80,10 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         if (!error && data?.vin) {
           setDetectedVin(data.vin);
           toast.success(`VIN erkannt: ${data.vin}`);
+          // Auto-trigger OutVin lookup
+          if (vehicleData) {
+            vinLookup.lookup(data.vin, vehicleData);
+          }
         } else {
           toast.warning('VIN konnte nicht erkannt werden. Bitte prüfe das Foto.');
         }
@@ -81,7 +91,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         toast.warning('VIN-Erkennung fehlgeschlagen.');
       }
     }
-  }, []);
+  }, [vehicleData, vinLookup]);
 
   const removeCapture = (key: string) => {
     setCaptures(prev => {
@@ -231,6 +241,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         <div className="flex items-center gap-2 bg-accent/10 text-accent px-4 py-2.5 rounded-xl text-sm font-medium">
           <Check className="w-4 h-4" />
           VIN erkannt: <span className="font-mono font-bold">{detectedVin}</span>
+          {vinLookup.loading && <Loader2 className="w-4 h-4 animate-spin ml-auto" />}
         </div>
       )}
 
@@ -278,6 +289,20 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
           )}
         </div>
       </div>
+
+      {/* VIN Data Dialog */}
+      {vehicleData && (
+        <VinDataDialog
+          open={vinLookup.dialogOpen}
+          onClose={() => vinLookup.setDialogOpen(false)}
+          diffs={vinLookup.diffs}
+          vin={detectedVin || ''}
+          onApply={(fields) => {
+            const updated = vinLookup.applyFields(fields, vehicleData);
+            onVehicleDataChange?.(updated);
+          }}
+        />
+      )}
     </div>
   );
 };
