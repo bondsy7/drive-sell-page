@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { urlToBase64, urlsToBase64, compressToWebP, compressAllToWebP } from '@/lib/storage-utils';
-import { Download, RotateCcw, Car, Fuel, Gauge, Calendar, Palette, Cog, Zap, MapPin, Phone, Mail, Globe, Plus, Trash2, ChevronLeft, ChevronRight, Eye, Pencil, Calculator, Loader2 } from 'lucide-react';
+import { Download, RotateCcw, Car, Fuel, Gauge, Calendar, Palette, Cog, Zap, MapPin, Phone, Mail, Globe, Plus, Trash2, ChevronLeft, ChevronRight, Eye, Pencil, Calculator, Loader2, Search } from 'lucide-react';
 import type { VehicleData, ConsumptionData, DealerData } from '@/types/vehicle';
 import { isPluginHybrid } from '@/lib/co2-utils';
 import type { TemplateId } from '@/types/template';
@@ -16,6 +16,8 @@ import CategoryDropdown from '@/components/CategoryDropdown';
 import { getFinanceSectionTitle } from '@/lib/templates/shared';
 import { parsePrice, parseDuration, parseInterestRate, formatPrice, calculateFinancingRate, calculateLeasingRate } from '@/lib/finance-utils';
 import { calculateAllCosts } from '@/lib/cost-utils';
+import { useVinLookup } from '@/hooks/useVinLookup';
+import VinDataDialog from '@/components/VinDataDialog';
 
 interface LandingPagePreviewProps {
   vehicleData: VehicleData;
@@ -56,6 +58,7 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
   const [viewMode, setViewMode] = useState<'preview' | 'edit'>('preview');
   const [costCalculating, setCostCalculating] = useState(false);
   const [costMissingFields, setCostMissingFields] = useState<string[]>([]);
+  const vinLookup = useVinLookup();
 
   const vehicleTitle = `${data.vehicle.brand} ${data.vehicle.model} ${data.vehicle.variant || ''}`.trim();
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -378,7 +381,25 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
               </div>
               <SpecItem icon={<Palette className="w-4 h-4" />} label="Farbe" value={data.vehicle.color} onChange={(v) => updateVehicle('color', v)} />
               <SpecItem icon={<Calendar className="w-4 h-4" />} label="Baujahr" value={String(data.vehicle.year || '–')} onChange={() => {}} />
-              <SpecItem icon={<Car className="w-4 h-4" />} label="VIN" value={data.vehicle.vin || ''} onChange={(v) => updateVehicle('vin', v)} />
+              <div className="flex items-start gap-2.5 py-2">
+                <span className="text-muted-foreground mt-0.5"><Car className="w-4 h-4" /></span>
+                <div className="flex flex-col flex-1">
+                  <span className="text-xs text-muted-foreground">VIN</span>
+                  <div className="flex items-center gap-1.5">
+                    <EditableField value={data.vehicle.vin || ''} onChange={(v) => updateVehicle('vin', v)} className="text-sm font-semibold text-foreground font-mono" />
+                    {data.vehicle.vin && data.vehicle.vin.length === 17 && (
+                      <button
+                        onClick={() => vinLookup.lookup(data.vehicle.vin!, data)}
+                        disabled={vinLookup.loading}
+                        className="shrink-0 w-6 h-6 rounded-md bg-accent/10 hover:bg-accent/20 flex items-center justify-center text-accent transition-colors"
+                        title="VIN-Daten abrufen (OutVin)"
+                      >
+                        {vinLookup.loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Search className="w-3 h-3" />}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -650,6 +671,16 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
         </>
       )}
       <ExportChoiceDialog open={exportDialogOpen} onOpenChange={setExportDialogOpen} onChoose={handleExport} loading={exportLoading} />
+      <VinDataDialog
+        open={vinLookup.dialogOpen}
+        onClose={() => vinLookup.setDialogOpen(false)}
+        diffs={vinLookup.diffs}
+        vin={data.vehicle.vin || ''}
+        onApply={(fields) => {
+          const updated = vinLookup.applyFields(fields, data);
+          onDataChange(updated);
+        }}
+      />
     </div>
   );
 };
