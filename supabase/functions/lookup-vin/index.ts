@@ -34,22 +34,35 @@ serve(async (req) => {
     const data = await response.json();
     console.log("OutVin response keys:", Object.keys(data));
 
-    // Map OutVin response to our internal format
+    const vehicleNode = data?.data?.vehicle ?? {};
+    const streamMap = vehicleNode?.stream_map ?? {};
+
+    const getStreamText = (key: string): string => {
+      const node = streamMap?.[key]?.stream_result;
+      if (!node) return "";
+      if (typeof node === "string" || typeof node === "number") return String(node);
+      if (typeof node === "object") {
+        const first = Object.values(node)[0] as Record<string, unknown> | undefined;
+        if (!first) return "";
+        return String(first.translation?.translationCurrent || first.description || first.code || "");
+      }
+      return "";
+    };
+
     const mapped = {
-      brand: data.make || data.brand || "",
-      model: data.model || "",
-      variant: data.variant || data.trim || data.version || "",
-      year: data.year || data.modelYear || data.model_year || null,
-      fuelType: data.fuelType || data.fuel_type || data.fuel || "",
-      transmission: data.transmission || data.gearbox || "",
-      power: data.power || data.kw ? `${data.kw || data.power} kW` : "",
-      color: data.color || data.exteriorColor || "",
-      displacement: data.displacement || data.engineDisplacement || data.engine_displacement || "",
-      driveType: data.driveType || data.drive_type || data.drivetrain || "",
-      bodyType: data.bodyType || data.body_type || data.body || "",
-      doors: data.doors || data.numberOfDoors || null,
-      seats: data.seats || data.numberOfSeats || null,
-      // Raw data for debugging
+      brand: vehicleNode?.make?.make || "",
+      model: getStreamText("model"),
+      variant: getStreamText("variant"),
+      year: Number(getStreamText("model_year")) || null,
+      fuelType: getStreamText("fuel_type"),
+      transmission: getStreamText("transmission"),
+      power: getStreamText("power_kw") ? `${getStreamText("power_kw")} kW` : "",
+      color: getStreamText("color_code"),
+      displacement: getStreamText("displacement"),
+      driveType: getStreamText("drive_type"),
+      bodyType: getStreamText("body_type"),
+      doors: Number(getStreamText("number_of_doors")) || null,
+      seats: Number(getStreamText("number_of_seats")) || null,
       _raw: data,
     };
 
