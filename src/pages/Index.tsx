@@ -9,11 +9,15 @@ import LandingPagePreview from '@/components/LandingPagePreview';
 import TemplateSidebar from '@/components/TemplateSidebar';
 import ImageSourceChoice from '@/components/ImageSourceChoice';
 import ImageUploadRemaster from '@/components/ImageUploadRemaster';
+import ImageCaptureGrid from '@/components/ImageCaptureGrid';
 import { extractPDFAsBase64 } from '@/lib/pdf-utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { uploadImagesToStorage } from '@/lib/storage-utils';
 import type { AppState, VehicleData } from '@/types/vehicle';
+
+// Extend AppState locally to include 'capturing-images'
+type ExtendedAppState = AppState | 'capturing-images';
 import type { TemplateId } from '@/types/template';
 
 const PERSPECTIVES = [
@@ -35,7 +39,7 @@ const STEPS = [
 const Index = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const [appState, setAppState] = useState<AppState>('idle');
+  const [appState, setAppState] = useState<ExtendedAppState>('idle');
   const [fileName, setFileName] = useState<string>('');
   const [vehicleData, setVehicleData] = useState<VehicleData | null>(null);
   const [imageBase64, setImageBase64] = useState<string | null>(null);
@@ -159,6 +163,24 @@ const Index = () => {
   }, [vehicleData, saveProject, selectedTemplate]);
 
   const handleChooseUpload = useCallback(() => { setAppState('uploading-images'); }, []);
+  const handleChooseCapture = useCallback(() => { setAppState('capturing-images' as any); }, []);
+
+  const handleCaptureComplete = useCallback(async (mainImage: string, gallery: string[], vin?: string) => {
+    setImageBase64(mainImage);
+    setGalleryImages(gallery);
+    if (vehicleData) {
+      // Add VIN to vehicle data if detected
+      const updatedData = vin ? {
+        ...vehicleData,
+        vehicle: { ...vehicleData.vehicle, vin },
+      } : vehicleData;
+      if (vin) setVehicleData(updatedData);
+      const allImgs = [mainImage, ...gallery];
+      const projectId = await saveProject(updatedData, mainImage, allImgs, selectedTemplate);
+      if (projectId) setSavedProjectId(projectId);
+    }
+    setAppState('preview');
+  }, [vehicleData, saveProject, selectedTemplate]);
 
   const handleRemasterComplete = useCallback(async (mainImage: string, gallery: string[]) => {
     setImageBase64(mainImage);
@@ -288,7 +310,13 @@ const Index = () => {
 
           {appState === 'choosing-image-source' && (
             <div className="mt-8">
-              <ImageSourceChoice onChooseGenerate={handleChooseGenerate} onChooseUpload={handleChooseUpload} />
+              <ImageSourceChoice onChooseGenerate={handleChooseGenerate} onChooseUpload={handleChooseUpload} onChooseCapture={handleChooseCapture} />
+            </div>
+          )}
+
+          {appState === 'capturing-images' && (
+            <div className="mt-8">
+              <ImageCaptureGrid vehicleDescription={vehicleDescription} onComplete={handleCaptureComplete} onBack={() => setAppState('choosing-image-source')} />
             </div>
           )}
 
