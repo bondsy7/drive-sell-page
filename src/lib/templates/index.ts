@@ -1,22 +1,16 @@
 import { TemplateId } from "@/types/template";
 import { VehicleData } from "@/types/vehicle";
 import { generateModernHTML } from "./modern";
-import { generateSportlichHTML } from "./sportlich";
 import { generateKlassischHTML } from "./klassisch";
-import { generatePremiumHTML } from "./premium";
 import { generateMinimalistHTML } from "./minimalist";
-import { generateMagazinHTML } from "./magazin";
 import { buildContactFormHTML, ContactFormOptions } from "./shared";
 
 type GeneratorFn = (data: VehicleData, imageBase64: string | null, galleryImages?: string[]) => string;
 
 const generators: Record<TemplateId, GeneratorFn> = {
   modern: generateModernHTML,
-  sportlich: generateSportlichHTML,
   klassisch: generateKlassischHTML,
-  premium: generatePremiumHTML,
   minimalist: generateMinimalistHTML,
-  magazin: generateMagazinHTML,
 };
 
 export interface GenerateHTMLOptions {
