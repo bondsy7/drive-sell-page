@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import logoDark from '@/assets/logo-dark.png';
 import logoLight from '@/assets/logo-light.png';
+import heroBg from '@/assets/hero-bg.png';
 
 const FEATURES = [
   {
@@ -106,13 +107,20 @@ const Landing = () => {
       </header>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 gradient-hero" />
-        <div className="absolute inset-0 opacity-[0.03]" style={{
+      <section className="relative overflow-hidden min-h-[60vh] md:min-h-[70vh] flex items-center">
+        {/* Background image */}
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: `url(${heroBg})` }}
+        />
+        {/* Dark overlay for text readability */}
+        <div className="absolute inset-0 bg-primary/75" />
+        {/* Subtle accent dots */}
+        <div className="absolute inset-0 opacity-[0.04]" style={{
           backgroundImage: `radial-gradient(circle at 1px 1px, hsl(var(--accent)) 1px, transparent 0)`,
           backgroundSize: '32px 32px',
         }} />
-        <div className="relative max-w-7xl mx-auto px-4 py-24 md:py-36">
+        <div className="relative max-w-7xl mx-auto px-4 py-24 md:py-36 w-full">
           <div className="max-w-3xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/15 border border-accent/20 text-accent text-xs font-semibold mb-8 backdrop-blur-sm">
               <Zap className="w-3.5 h-3.5" />
@@ -124,7 +132,7 @@ const Landing = () => {
                 Sekunden erstellen
               </span>
             </h1>
-            <p className="text-lg md:text-xl text-primary-foreground/70 mb-10 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-lg md:text-xl text-primary-foreground/80 mb-10 max-w-2xl mx-auto leading-relaxed">
               Lade ein Fahrzeugangebot als PDF hoch – unsere KI erstellt daraus eine
               professionelle Verkaufsseite mit Bildern, Finanzierung und CO₂-Label.
             </p>
