@@ -175,28 +175,28 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-3 sm:px-4 h-14 flex items-center justify-between">
           <Link to="/" className="flex items-center">
-            <img src={logoLight} alt="Autohaus.AI" className="h-8" />
+            <img src={logoLight} alt="Autohaus.AI" className="h-7 sm:h-8" />
           </Link>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3">
             <CreditBadge />
             <Link to="/generator">
-              <Button size="sm" className="gap-1.5"><Plus className="w-3.5 h-3.5" /> Neues Projekt</Button>
+              <Button size="sm" className="gap-1.5 text-xs sm:text-sm"><Plus className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Neues Projekt</span><span className="sm:hidden">Neu</span></Button>
             </Link>
-            <Link to="/leasing-rechner">
-              <Button variant="outline" size="sm" className="gap-1.5"><Calculator className="w-3.5 h-3.5" /> Leasing-Rechner</Button>
+            <Link to="/leasing-rechner" className="hidden lg:inline-flex">
+              <Button variant="outline" size="sm" className="gap-1.5"><Calculator className="w-3.5 h-3.5" /> Leasing</Button>
             </Link>
-            <Link to="/finanzierungsrechner">
-              <Button variant="outline" size="sm" className="gap-1.5"><Calculator className="w-3.5 h-3.5" /> Finanzierungsrechner</Button>
+            <Link to="/finanzierungsrechner" className="hidden lg:inline-flex">
+              <Button variant="outline" size="sm" className="gap-1.5"><Calculator className="w-3.5 h-3.5" /> Finanzierung</Button>
             </Link>
-            <Link to="/kfz-steuer-rechner">
+            <Link to="/kfz-steuer-rechner" className="hidden xl:inline-flex">
               <Button variant="outline" size="sm" className="gap-1.5"><Receipt className="w-3.5 h-3.5" /> Kfz-Steuer</Button>
             </Link>
-            <Link to="/profile">
+            <Link to="/profile" className="hidden sm:inline-flex">
               <Button variant="ghost" size="icon"><User className="w-4 h-4" /></Button>
             </Link>
-            <Link to="/integrations">
+            <Link to="/integrations" className="hidden sm:inline-flex">
               <Button variant="ghost" size="icon" title="Schnittstellen"><Plug className="w-4 h-4" /></Button>
             </Link>
             <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="w-4 h-4" /></Button>
@@ -204,15 +204,23 @@ const Dashboard = () => {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 py-8">
-        <div className="flex gap-2 mb-6">
-          <Button variant={tab === 'projects' ? 'default' : 'outline'} size="sm" onClick={() => setTab('projects')}>
+      <main className="max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
+        {/* Mobile quick links */}
+        <div className="flex gap-2 mb-4 overflow-x-auto pb-1 sm:hidden">
+          <Link to="/leasing-rechner"><Button variant="outline" size="sm" className="gap-1 text-xs whitespace-nowrap"><Calculator className="w-3 h-3" /> Leasing</Button></Link>
+          <Link to="/finanzierungsrechner"><Button variant="outline" size="sm" className="gap-1 text-xs whitespace-nowrap"><Calculator className="w-3 h-3" /> Finanzierung</Button></Link>
+          <Link to="/profile"><Button variant="outline" size="sm" className="gap-1 text-xs whitespace-nowrap"><User className="w-3 h-3" /> Profil</Button></Link>
+          <Link to="/integrations"><Button variant="outline" size="sm" className="gap-1 text-xs whitespace-nowrap"><Plug className="w-3 h-3" /> API</Button></Link>
+        </div>
+
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
+          <Button variant={tab === 'projects' ? 'default' : 'outline'} size="sm" onClick={() => setTab('projects')} className="whitespace-nowrap">
             <FileText className="w-4 h-4 mr-1.5" /> Projekte ({projects.length})
           </Button>
-          <Button variant={tab === 'gallery' ? 'default' : 'outline'} size="sm" onClick={() => setTab('gallery')}>
-            <Image className="w-4 h-4 mr-1.5" /> Bildergalerie ({allImages.length})
+          <Button variant={tab === 'gallery' ? 'default' : 'outline'} size="sm" onClick={() => setTab('gallery')} className="whitespace-nowrap">
+            <Image className="w-4 h-4 mr-1.5" /> Galerie ({allImages.length})
           </Button>
-          <Button variant={tab === 'leads' ? 'default' : 'outline'} size="sm" onClick={() => setTab('leads')}>
+          <Button variant={tab === 'leads' ? 'default' : 'outline'} size="sm" onClick={() => setTab('leads')} className="whitespace-nowrap">
             <MessageSquare className="w-4 h-4 mr-1.5" /> Anfragen ({leads.length})
           </Button>
         </div>

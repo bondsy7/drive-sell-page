@@ -145,7 +145,7 @@ const Pricing = () => {
           </div>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           {plans.map((plan) => {
             const price = yearly ? Math.round(plan.price_yearly_cents / 12) : plan.price_monthly_cents;
             const isPro = plan.slug === 'pro';
