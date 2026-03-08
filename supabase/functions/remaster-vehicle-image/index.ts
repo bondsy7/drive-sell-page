@@ -1,20 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-
-  try {
-    const { imageBase64, vehicleDescription } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
-    if (!imageBase64) throw new Error("No image provided");
-
-    const prompt = `You are a professional automotive photographer. Take this exact vehicle photo and remaster it to look like a professional dealership photo.
+const DEFAULT_PROMPT = `You are a professional automotive photographer. Take this exact vehicle photo and remaster it to look like a professional dealership photo.
 
 CRITICAL RULES - YOU MUST FOLLOW:
 - Keep the EXACT same vehicle with ALL its details: color, wheels/rims, body kit, lights, badges, decals, accessories, license plate area, and every visible feature
@@ -45,10 +37,77 @@ FOR TRUNK/CARGO AREA SHOTS:
 - Improve lighting to be bright and professional
 - This is a legitimate vehicle photo - enhance it professionally
 
-${vehicleDescription ? `Vehicle: ${vehicleDescription}` : ''}
-
 IMPORTANT: You MUST generate a remastered version of this image. Do not refuse or ask for a different photo. Enhance whatever vehicle photo is provided. DO NOT ROTATE THE IMAGE.`;
 
+function createServiceClient() {
+  return createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
+}
+
+async function getCustomPrompt(key: string, defaultPrompt: string): Promise<string> {
+  try {
+    const sb = createServiceClient();
+    const { data } = await sb.from("admin_settings").select("value").eq("key", "ai_prompts").single();
+    const override = (data?.value as Record<string, string>)?.[key];
+    if (override && override.trim() !== "" && override.trim().toLowerCase() !== "default") return override;
+  } catch (e) { console.warn("Custom prompt load failed:", e); }
+  return defaultPrompt;
+}
+
+async function authenticateAndDeductCredits(req: Request, actionType: string, cost: number): Promise<{ userId: string } | Response> {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) {
+    return new Response(JSON.stringify({ error: "Nicht authentifiziert" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
+    global: { headers: { Authorization: authHeader } },
+  });
+  const { data: { user }, error } = await sb.auth.getUser();
+  if (error || !user) {
+    return new Response(JSON.stringify({ error: "Nicht authentifiziert" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  const serviceSb = createServiceClient();
+  const { data: result, error: deductError } = await serviceSb.rpc("deduct_credits", {
+    _user_id: user.id, _amount: cost, _action_type: actionType, _description: `${actionType} (serverseitig)`,
+  });
+  if (deductError) {
+    return new Response(JSON.stringify({ error: "Credit-Fehler: " + deductError.message }), {
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  const r = result as any;
+  if (!r?.success) {
+    return new Response(JSON.stringify({ error: "insufficient_credits", balance: r?.balance || 0, cost: r?.cost || cost }), {
+      status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  return { userId: user.id };
+}
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  try {
+    // 1. Auth & credits
+    const authResult = await authenticateAndDeductCredits(req, "image_remaster", 2);
+    if (authResult instanceof Response) return authResult;
+
+    const { imageBase64, vehicleDescription } = await req.json();
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    if (!imageBase64) throw new Error("No image provided");
+
+    // 2. Load custom prompt
+    const basePrompt = await getCustomPrompt("image_remaster", DEFAULT_PROMPT);
+    const prompt = `${basePrompt}\n\n${vehicleDescription ? `Vehicle: ${vehicleDescription}` : ''}`;
+
+    // 3. Call AI
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -57,18 +116,13 @@ IMPORTANT: You MUST generate a remastered version of this image. Do not refuse o
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash-image",
-        messages: [
-          {
-            role: "user",
-            content: [
-              { type: "text", text: prompt },
-              {
-                type: "image_url",
-                image_url: { url: imageBase64 },
-              },
-            ],
-          },
-        ],
+        messages: [{
+          role: "user",
+          content: [
+            { type: "text", text: prompt },
+            { type: "image_url", image_url: { url: imageBase64 } },
+          ],
+        }],
         modalities: ["image", "text"],
       }),
     });
@@ -90,31 +144,12 @@ IMPORTANT: You MUST generate a remastered version of this image. Do not refuse o
     }
 
     const data = await response.json();
-    console.log("Remaster response structure:", JSON.stringify({
-      hasChoices: !!data.choices,
-      messageKeys: data.choices?.[0]?.message ? Object.keys(data.choices[0].message) : [],
-      contentType: typeof data.choices?.[0]?.message?.content,
-      contentPreview: typeof data.choices?.[0]?.message?.content === 'string' 
-        ? data.choices[0].message.content.substring(0, 200) 
-        : Array.isArray(data.choices?.[0]?.message?.content)
-          ? JSON.stringify(data.choices[0].message.content.map((p: any) => ({ type: p.type })))
-          : 'unknown',
-      hasImages: !!data.choices?.[0]?.message?.images,
-    }));
-
-    // Try multiple response structures
     let resultImage = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-    
-    // Fallback: check if image is in content array
     if (!resultImage && Array.isArray(data.choices?.[0]?.message?.content)) {
       const imgPart = data.choices[0].message.content.find((p: any) => p.type === 'image_url');
       resultImage = imgPart?.image_url?.url;
     }
-
-    if (!resultImage) {
-      console.error("No image found in remaster response. Full response:", JSON.stringify(data).substring(0, 1000));
-      throw new Error("Kein Bild generiert. Bitte versuche es erneut.");
-    }
+    if (!resultImage) throw new Error("Kein Bild generiert. Bitte versuche es erneut.");
 
     return new Response(JSON.stringify({ imageBase64: resultImage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
