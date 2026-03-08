@@ -69,34 +69,85 @@ JSON-Schema:
 {
   "category": "Leasing|Finanzierung|Kauf|Barkauf",
   "vehicle": {
-    "brand": "string",
-    "model": "string",
-    "variant": "string",
-    "year": "number",
-    "color": "string",
+    "brand": "string (Marke, z.B. 'BMW', 'Mercedes-Benz', 'Volkswagen')",
+    "model": "string (volles Modell, z.B. 'X3 xDrive30e')",
+    "variant": "string (Ausstattungslinie/Variante, z.B. 'M Sport, xLine')",
+    "year": "number (Modelljahr oder EZ-Jahr)",
+    "color": "string (Außenfarbe, z.B. 'Alpinweiß uni')",
     "fuelType": "Benzin|Diesel|Elektro|Hybrid|Plug-in-Hybrid",
     "transmission": "Automatik|Manuell|Doppelkupplungsgetriebe|CVT",
-    "power": "string",
-    "features": ["Array"]
+    "power": "string (z.B. '150 PS / 110 kW' oder Systemleistung bei Hybrid)",
+    "features": ["ALLE Ausstattungsmerkmale als Array - so viele wie möglich"]
   },
-  "finance": { ... },
-  "dealer": { ... },
-  "consumption": { ... },
+  "finance": {
+    "monthlyRate": "string mit € (z.B. '299,00 €')",
+    "downPayment": "string mit € (Anzahlung)",
+    "duration": "string (z.B. '48 Monate')",
+    "totalPrice": "string mit € (Gesamtpreis / Fahrzeugpreis brutto)",
+    "annualMileage": "string (z.B. '10.000 km/Jahr')",
+    "specialPayment": "string mit € (Sonderzahlung / Leasing-Sonderzahlung)",
+    "residualValue": "string mit € (Restwert / Schlussrate)",
+    "interestRate": "string (eff. Jahreszins, z.B. '3,99 %')"
+  },
+  "dealer": {
+    "name": "string (Autohaus-Name)",
+    "address": "string (vollständige Adresse mit PLZ und Ort)",
+    "phone": "string (Telefonnummer)",
+    "email": "string (E-Mail-Adresse)",
+    "website": "string (Webseite)"
+  },
+  "consumption": {
+    "origin": "string (z.B. 'Deutsche Ausführung', 'EU-Import')",
+    "mileage": "string (Kilometerstand, z.B. '10 km')",
+    "displacement": "string (Hubraum, z.B. '1.998 cm³')",
+    "power": "string (z.B. '110 kW (150 PS)')",
+    "driveType": "string (z.B. 'Verbrennungsmotor', 'Plug-in-Hybrid', 'Elektro', 'Allrad')",
+    "fuelType": "string (z.B. 'Super (E10)', 'Diesel', 'Super Plus', 'Benzin/Strom')",
+    "consumptionCombined": "string (z.B. '7,0 l/100km', bei PHEV gewichtet kombiniert z.B. '1,8 l/100km')",
+    "co2Emissions": "string (z.B. '162 g/km', bei PHEV gewichtet kombiniert)",
+    "co2Class": "string (A-G, ableiten wenn nicht explizit angegeben!)",
+    "consumptionCity": "string (Innerorts/Innenstadt)",
+    "consumptionSuburban": "string (Stadtrand/Außerorts niedrig)",
+    "consumptionRural": "string (Landstraße/Außerorts hoch)",
+    "consumptionHighway": "string (Autobahn)",
+    "energyCostPerYear": "string mit € (z.B. '1.886 €/Jahr')",
+    "fuelPrice": "string (Berechnungsgrundlage, z.B. '1,82 €/l Super')",
+    "co2CostMedium": "string mit € (CO₂-Kosten mittel über 10 Jahre)",
+    "co2CostLow": "string mit € (CO₂-Kosten niedrig über 10 Jahre)",
+    "co2CostHigh": "string mit € (CO₂-Kosten hoch über 10 Jahre)",
+    "vehicleTax": "string mit € (Kfz-Steuer/Jahr)",
+    "isPluginHybrid": "boolean (true wenn PHEV erkannt)",
+    "co2EmissionsDischarged": "string (nur PHEV: CO₂ bei entladener Batterie)",
+    "co2ClassDischarged": "string (nur PHEV: CO₂-Klasse bei entladener Batterie, ableiten!)",
+    "consumptionCombinedDischarged": "string (nur PHEV: Verbrauch kombiniert bei entladener Batterie)",
+    "electricRange": "string (nur PHEV/BEV: elektrische Reichweite EAER)",
+    "consumptionElectric": "string (nur PHEV/BEV: Stromverbrauch komb. in kWh/100km)"
+  },
   "imagePrompt": "Detaillierter englischer Prompt für fotorealistische Fahrzeug-Bildgenerierung"
 }
 
+Für den imagePrompt: Erstelle einen detaillierten englischen Prompt mit exaktem Fahrzeugmodell (Marke, Modell, Farbe, Karosserieform) in einem modernen, hellen Autohaus-Showroom. Beschreibe Licht, Reflexionen, Boden und Atmosphäre.
+
 DOKUMENTTYP-ERKENNUNG (WICHTIG!):
-Prüfe ZUERST, ob es sich um ein Fahrzeug-Angebot handelt.
-Wenn KEIN Fahrzeugangebot: { "isVehicleOffer": false, "documentType": "..." }
+Prüfe ZUERST, ob es sich um ein Fahrzeug-Angebot handelt (Leasing, Finanzierung, Kauf, Barkauf).
+Wenn das Dokument KEIN Fahrzeugangebot ist (z.B. Rechnung, Versicherung, Werkstattrechnung, Mietvertrag, 
+Bewerbung, Steuerbescheid, beliebiges anderes Dokument), antworte mit:
+{
+  "isVehicleOffer": false,
+  "documentType": "string (was das Dokument tatsächlich ist, z.B. 'Werkstattrechnung', 'Versicherungspolice')"
+}
+und NICHTS weiter.
+
+Wenn es ein Fahrzeugangebot IST, setze "isVehicleOffer": true im Root-Objekt und fahre mit der Extraktion fort.
 
 ABSOLUTE REGELN:
-1. ZUERST prüfen ob Fahrzeugangebot
-2. Extrahiere JEDEN Wert der im PDF steht
-3. Leite co2Class IMMER aus g/km-Werten ab wenn nicht explizit angegeben
-4. Setze isPluginHybrid=true sobald PHEV-Hinweis erkannt
-5. Features: Extrahiere ALLE
-6. Einheiten IMMER mit angeben
-7. Fehlende Werte = leerer String ""
+1. ZUERST prüfen ob Fahrzeugangebot - wenn nicht, sofort ablehnen
+2. Extrahiere JEDEN Wert der im PDF steht - lieber zu viel als zu wenig
+3. Leite co2Class und co2ClassDischarged IMMER aus den g/km-Werten ab wenn nicht explizit angegeben
+4. Setze isPluginHybrid=true sobald irgendein PHEV-Hinweis erkannt wird
+5. Features: Extrahiere ALLE - auch 50+ Einträge sind OK
+6. Einheiten IMMER mit angeben (€, km, l/100km, g/km, kW, PS, cm³, kWh/100km)
+7. Fehlende Werte = leerer String "", fehlende booleans = false
 8. Antworte NUR mit JSON`,
 
   image_remaster: `You are a professional automotive photographer. Take this exact vehicle photo and remaster it to look like a professional dealership photo.
@@ -118,16 +169,19 @@ FOR EXTERIOR SHOTS:
 FOR INTERIOR SHOTS (dashboard, seats, steering wheel, center console):
 - CRITICAL: Do NOT rotate, flip, or change the orientation/angle of the photo in any way
 - The camera perspective must remain EXACTLY as in the original photo
-- Do NOT add or remove ANY interior elements
+- Do NOT add or remove ANY interior elements (seats, buttons, screens, trim, steering wheel, etc.)
 - Only enhance the lighting to be bright, even, and professional
 - Remove any harsh shadows and make it look like a professional dealership interior photo
 - The interior must look clean and tidy but with ALL original details preserved exactly
+- If the photo is taken from the front seat looking back, keep that exact perspective
+- If the photo is taken from the back seat looking forward, keep that exact perspective
 
 FOR TRUNK/CARGO AREA SHOTS:
 - Keep the trunk/cargo area exactly as shown
 - Improve lighting to be bright and professional
+- This is a legitimate vehicle photo - enhance it professionally
 
-IMPORTANT: You MUST generate a remastered version of this image. Do not refuse. DO NOT ROTATE THE IMAGE.`,
+IMPORTANT: You MUST generate a remastered version of this image. Do not refuse or ask for a different photo. Enhance whatever vehicle photo is provided. DO NOT ROTATE THE IMAGE.`,
 
   vin_ocr: `You are a VIN (Vehicle Identification Number) OCR expert. Analyze this image and extract the VIN number.
 
@@ -138,7 +192,15 @@ RULES:
 - If you cannot find a valid VIN, respond with exactly: NO_VIN_FOUND
 - Do NOT guess or make up a VIN`,
 
-  image_generate: `(Kein System-Prompt — der Bildgenerator erhält den imagePrompt direkt aus der PDF-Analyse als User-Nachricht. Dieser Prompt wird im Feld "imagePrompt" des PDF-Analyse-Ergebnisses automatisch generiert.)`,
+  image_generate: `(Kein System-Prompt — der Bildgenerator erhält den imagePrompt direkt aus der PDF-Analyse als User-Nachricht. Dieser Prompt wird im Feld "imagePrompt" des PDF-Analyse-Ergebnisses automatisch generiert.
+
+Der User-Prompt an das Modell lautet:
+"Generate a photorealistic image of this vehicle based on the following description: {imagePrompt}"
+
+Der imagePrompt selbst wird von der PDF-Analyse generiert und enthält typischerweise:
+- Exaktes Fahrzeugmodell (Marke, Modell, Farbe, Karosserieform)
+- Moderner, heller Autohaus-Showroom als Hintergrund
+- Beschreibung von Licht, Reflexionen, Boden und Atmosphäre)`,
 };
 
 const PROMPT_META: Record<string, { label: string; description: string; model: string; edgeFunction: string }> = {
