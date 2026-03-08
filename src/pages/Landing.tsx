@@ -6,6 +6,7 @@ import {
   Zap, ArrowRight, Shield, Clock, Globe, ChevronRight,
   Bot, Palette, BarChart3, Car, Users, LogOut, User
 } from 'lucide-react';
+import logoDark from '@/assets/logo-dark.png';
 import logoLight from '@/assets/logo-light.png';
 
 const FEATURES = [

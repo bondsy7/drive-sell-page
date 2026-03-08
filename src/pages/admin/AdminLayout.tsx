@@ -1,6 +1,6 @@
 import { NavLink, Outlet, Link } from 'react-router-dom';
 import { LayoutDashboard, Users, Receipt, MessageSquare, Settings, CreditCard, ArrowLeft } from 'lucide-react';
-import logoDark from '@/assets/logo-dark.png';
+import logoLight from '@/assets/logo-light.png';
 
 const NAV = [
   { to: '/admin', icon: LayoutDashboard, label: 'Übersicht', end: true },

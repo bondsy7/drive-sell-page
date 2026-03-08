@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Plus, Image, FileText, Download, ExternalLink, Trash2, LogOut, User, MessageSquare, Mail, Phone, Calculator, Receipt } from 'lucide-react';
-import logoDark from '@/assets/logo-dark.png';
+import logoLight from '@/assets/logo-light.png';
 import CreditBadge from '@/components/CreditBadge';
 import { toast } from 'sonner';
 import { downloadHTML } from '@/lib/templates/download';
