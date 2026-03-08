@@ -19,7 +19,7 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
   return (
     <>
       <div className="p-4 border-b border-border">
-        <Link to="/" className="flex items-center gap-2">
+        <Link to="/dashboard" className="flex items-center gap-2">
           <img src={logoLight} alt="Autohaus.AI" className="h-7" />
           <span className="font-display font-bold text-foreground text-xs bg-accent/10 text-accent px-2 py-0.5 rounded">Admin</span>
         </Link>
@@ -63,7 +63,7 @@ export default function AdminLayout() {
 
       {/* Mobile header */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 h-14 border-b border-border bg-card/95 backdrop-blur-sm flex items-center justify-between px-3">
-        <Link to="/" className="flex items-center gap-2">
+        <Link to="/dashboard" className="flex items-center gap-2">
           <img src={logoLight} alt="Autohaus.AI" className="h-6" />
           <span className="font-display font-bold text-foreground text-[10px] bg-accent/10 text-accent px-1.5 py-0.5 rounded">Admin</span>
         </Link>
