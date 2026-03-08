@@ -357,7 +357,7 @@ export default function AdminPrompts() {
                         )}
                       </div>
                       <textarea
-                        value={overrides[key] ?? DEFAULT_PROMPTS[key]}
+                        value={isMeaningfulOverride(overrides[key]) ? overrides[key] : DEFAULT_PROMPTS[key]}
                         onChange={e => setOverrides(p => ({ ...p, [key]: e.target.value }))}
                         className="w-full min-h-[200px] p-3 rounded-lg border border-border bg-background text-foreground text-xs resize-y font-mono leading-relaxed"
                       />
