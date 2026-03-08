@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, Copy, RefreshCw, Key, Code, Globe, Plug } from "lucide-react";
-import { CreditBadge } from "@/components/CreditBadge";
+import CreditBadge from "@/components/CreditBadge";
 import logoLight from "@/assets/logo-light.png";
 
 export default function Integrations() {
