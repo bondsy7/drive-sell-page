@@ -53,11 +53,34 @@ const Section: React.FC<{ icon: React.ReactNode; title: string; children: React.
   </div>
 );
 
+const ACTION_LABELS: Record<string, string> = {
+  pdf_analysis: 'PDF-Analyse',
+  image_generate: 'Bildgenerierung',
+  image_remaster: 'Bild-Remastering',
+  vin_ocr: 'VIN-Erkennung',
+  credit_purchase: 'Credit-Kauf',
+  subscription_reset: 'Abo-Gutschrift',
+  admin_adjustment: 'Admin-Anpassung',
+  landing_page_export: 'Seiten-Export',
+};
+
+interface CreditTransaction {
+  id: string;
+  amount: number;
+  action_type: string;
+  model_used: string | null;
+  description: string | null;
+  created_at: string;
+}
+
 const Profile = () => {
   const { user } = useAuth();
+  const { balance, lifetimeUsed, loading: creditsLoading } = useCredits();
   const [profile, setProfile] = useState<ProfileData>(emptyProfile);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [transactions, setTransactions] = useState<CreditTransaction[]>([]);
+  const [txLoading, setTxLoading] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
