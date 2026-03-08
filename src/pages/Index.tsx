@@ -6,6 +6,7 @@ import logoDark from '@/assets/logo-dark.png';
 import CreditBadge from '@/components/CreditBadge';
 import { Button } from '@/components/ui/button';
 import PDFUpload from '@/components/PDFUpload';
+import SamplePdfGallery from '@/components/SamplePdfGallery';
 import ProcessingStatus from '@/components/ProcessingStatus';
 import LandingPagePreview from '@/components/LandingPagePreview';
 import TemplateSidebar from '@/components/TemplateSidebar';
