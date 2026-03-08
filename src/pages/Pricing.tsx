@@ -249,7 +249,7 @@ const Pricing = () => {
           </div>
         </div>
 
-
+        {Object.keys(costs).length > 0 && (
           <div className="mt-16">
             <h2 className="font-display text-xl font-bold text-foreground text-center mb-6">Credit-Kosten pro Aktion</h2>
             <div className="max-w-lg mx-auto bg-card rounded-xl border border-border overflow-hidden">
