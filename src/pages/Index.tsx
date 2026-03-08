@@ -160,6 +160,14 @@ const Index = () => {
       setImageProgress({ current: i + 1, total });
       try {
         const { data: imageData, error: imageError } = await supabase.functions.invoke('generate-vehicle-image', { body: { imagePrompt: showroomBase + perspective.prompt } });
+        if (imageData?.error === 'insufficient_credits') {
+          toast.error(`Nicht genügend Credits für die Bildgenerierung. Guthaben: ${imageData.balance}`, { duration: 8000 });
+          break;
+        }
+        if (imageData?.error === 'Nicht authentifiziert') {
+          toast.error('Bitte melde dich an, um Bilder zu generieren.');
+          break;
+        }
         if (!imageError && imageData?.imageBase64) {
           generatedImages.push(imageData.imageBase64);
           if (i === 0) setImageBase64(imageData.imageBase64);
