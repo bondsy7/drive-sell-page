@@ -1,11 +1,13 @@
 import { NavLink, Outlet, Link } from 'react-router-dom';
-import { LayoutDashboard, Users, Receipt, MessageSquare, Settings, CreditCard, ArrowLeft } from 'lucide-react';
+import { LayoutDashboard, Users, Receipt, MessageSquare, Settings, CreditCard, ArrowLeft, FileText, Mail } from 'lucide-react';
 import logoLight from '@/assets/logo-light.png';
 
 const NAV = [
   { to: '/admin', icon: LayoutDashboard, label: 'Übersicht', end: true },
   { to: '/admin/users', icon: Users, label: 'Nutzer' },
   { to: '/admin/transactions', icon: Receipt, label: 'Transaktionen' },
+  { to: '/admin/leads', icon: Mail, label: 'Leads' },
+  { to: '/admin/pdf-gallery', icon: FileText, label: 'PDF-Galerie' },
   { to: '/admin/prompts', icon: MessageSquare, label: 'Prompts' },
   { to: '/admin/pricing', icon: CreditCard, label: 'Preise' },
   { to: '/admin/settings', icon: Settings, label: 'Einstellungen' },
