@@ -1,12 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowLeft, FileText, Info } from 'lucide-react';
+import { Info } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import AppHeader from '@/components/AppHeader';
 
 function formatEuro(num: number): string {
   return Math.floor(num).toLocaleString('de-DE') + ' €';
@@ -94,15 +93,7 @@ const KfzSteuerRechner = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-card">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-3">
-          <Link to="/dashboard">
-            <Button variant="ghost" size="icon"><ArrowLeft className="w-5 h-5" /></Button>
-          </Link>
-          <FileText className="w-6 h-6 text-accent" />
-          <h1 className="text-xl font-bold text-foreground font-['Space_Grotesk']">Kfz-Steuer-Rechner</h1>
-        </div>
-      </header>
+      <AppHeader />
 
       <main className="max-w-4xl mx-auto px-4 py-8 space-y-6">
         <Card>

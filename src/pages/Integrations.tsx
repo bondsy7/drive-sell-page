@@ -12,8 +12,7 @@ import {
   ArrowLeft, Copy, RefreshCw, Key, Code, Globe, Plug,
   Upload, Server, CheckCircle, XCircle, Loader2, Download
 } from "lucide-react";
-import CreditBadge from "@/components/CreditBadge";
-import logoLight from "@/assets/logo-light.png";
+import AppHeader from "@/components/AppHeader";
 import { downloadWordPressPlugin } from "@/lib/wordpress-plugin";
 
 interface FtpConfig {
@@ -159,18 +158,7 @@ export default function Integrations() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
-          <Link to="/" className="flex items-center">
-            <img src={logoLight} alt="Autohaus.AI" className="h-8" />
-          </Link>
-          <div className="flex items-center gap-3">
-            <CreditBadge />
-            <Link to="/dashboard"><Button variant="ghost" size="sm">Dashboard</Button></Link>
-            <Link to="/profile"><Button variant="ghost" size="sm">Profil</Button></Link>
-          </div>
-        </div>
-      </header>
+      <AppHeader />
 
       <main className="max-w-4xl mx-auto px-4 py-8 space-y-6">
         <div className="flex items-center gap-3">

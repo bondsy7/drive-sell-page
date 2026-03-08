@@ -5,9 +5,8 @@ import { useCredits } from '@/hooks/useCredits';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { Button } from '@/components/ui/button';
-import { Check, Zap, ArrowLeft, Loader2, Plus, Crown } from 'lucide-react';
-import logoDark from '@/assets/logo-dark.png';
-import CreditBadge from '@/components/CreditBadge';
+import { Check, Zap, Loader2, Plus, Crown, Calendar, AlertTriangle, RefreshCw } from 'lucide-react';
+import AppHeader from '@/components/AppHeader';
 import { STRIPE_PRICES, CREDIT_PACKS } from '@/lib/stripe-plans';
 import { toast } from 'sonner';
 
@@ -30,7 +29,7 @@ const Pricing = () => {
   const [loadingSlug, setLoadingSlug] = useState<string | null>(null);
   const { balance, costs } = useCredits();
   const { user } = useAuth();
-  const { planSlug: activePlanSlug, planName: activePlanName, loading: subLoading } = useSubscription();
+  const { planSlug: activePlanSlug, planName: activePlanName, billingCycle, periodEnd, loading: subLoading } = useSubscription();
 
   useEffect(() => {
     supabase
@@ -113,17 +112,7 @@ const Pricing = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-primary sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
-          <Link to="/" className="flex items-center">
-            <img src={logoDark} alt="Autohaus.AI" className="h-8" />
-          </Link>
-          <div className="flex items-center gap-3">
-            <CreditBadge />
-            <Link to="/"><Button variant="ghost" size="sm" className="text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10"><ArrowLeft className="w-3.5 h-3.5 mr-1" /> Zurück</Button></Link>
-          </div>
-        </div>
-      </header>
+      <AppHeader />
 
       <main className="max-w-5xl mx-auto px-3 sm:px-4 py-8 sm:py-16">
         <div className="text-center mb-8 sm:mb-12">
@@ -223,11 +212,72 @@ const Pricing = () => {
           })}
         </div>
 
-        {user && (
-          <div className="text-center mt-8">
-            <Button variant="ghost" size="sm" onClick={handleManage} className="text-muted-foreground">
-              Bestehendes Abo verwalten
-            </Button>
+        {/* Subscription Management */}
+        {user && activePlanSlug && activePlanSlug !== 'free' && (
+          <div className="mt-10 max-w-lg mx-auto">
+            <div className="rounded-2xl border border-border bg-card p-6 space-y-4">
+              <div className="flex items-center gap-2 mb-1">
+                <Crown className="w-5 h-5 text-accent" />
+                <h3 className="font-display font-bold text-foreground text-lg">Dein Abo</h3>
+              </div>
+
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Aktueller Plan</span>
+                  <span className="font-semibold text-foreground">{activePlanName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Abrechnungszyklus</span>
+                  <span className="font-medium text-foreground">{billingCycle === 'yearly' ? 'Jährlich' : 'Monatlich'}</span>
+                </div>
+                {periodEnd && (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Laufzeit bis</span>
+                      <span className="font-medium text-foreground">
+                        {new Date(periodEnd).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Automatische Verlängerung</span>
+                      <span className="font-medium text-foreground flex items-center gap-1">
+                        <RefreshCw className="w-3.5 h-3.5 text-accent" />
+                        {billingCycle === 'yearly' ? 'um 1 Jahr' : 'um 1 Monat'}
+                      </span>
+                    </div>
+                  </>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Credits verfügbar</span>
+                  <span className="font-semibold text-accent">{balance}</span>
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-border space-y-2">
+                <div className="flex items-start gap-2 text-xs text-muted-foreground">
+                  <Calendar className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                  <p>
+                    {periodEnd
+                      ? `Dein Abo verlängert sich automatisch am ${new Date(periodEnd).toLocaleDateString('de-DE')}. Du kannst bis dahin kündigen oder deinen Plan ändern.`
+                      : 'Dein Abo verlängert sich automatisch. Du kannst jederzeit kündigen oder deinen Plan ändern.'}
+                  </p>
+                </div>
+                <div className="flex items-start gap-2 text-xs text-muted-foreground">
+                  <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                  <p>Ein Downgrade wird erst zum Ende der aktuellen Laufzeit wirksam. Du behältst bis dahin alle Vorteile deines aktuellen Plans.</p>
+                </div>
+              </div>
+
+              <Button variant="outline" size="sm" onClick={handleManage} className="w-full gap-1.5">
+                Abo verwalten · Kündigen · Plan wechseln
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {user && (!activePlanSlug || activePlanSlug === 'free') && (
+          <div className="text-center mt-8 text-xs text-muted-foreground">
+            Du nutzt den kostenlosen Plan. Upgrade für monatliche Credits und mehr Features.
           </div>
         )}
 
