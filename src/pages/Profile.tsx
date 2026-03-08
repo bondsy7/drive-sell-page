@@ -206,20 +206,20 @@ const Profile = () => {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
+        <div className="max-w-3xl mx-auto px-3 sm:px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link to="/dashboard"><Button variant="ghost" size="icon"><ArrowLeft className="w-4 h-4" /></Button></Link>
             <Link to="/">
               <img src={logoLight} alt="Autohaus.AI" className="h-7" />
             </Link>
           </div>
-          <Button onClick={handleSave} disabled={saving} className="gap-1.5">
-            <Save className="w-4 h-4" /> {saving ? 'Speichern...' : 'Speichern'}
+          <Button onClick={handleSave} disabled={saving} className="gap-1.5 text-xs sm:text-sm">
+            <Save className="w-4 h-4" /> <span className="hidden sm:inline">{saving ? 'Speichern...' : 'Speichern'}</span><span className="sm:hidden">{saving ? '...' : 'Save'}</span>
           </Button>
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+      <main className="max-w-3xl mx-auto px-3 sm:px-4 py-6 sm:py-8 space-y-6">
         {/* Logo Upload */}
         <Section icon={<Image className="w-4 h-4" />} title="Firmenlogo">
           <div className="flex items-center gap-6">
