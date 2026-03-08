@@ -124,8 +124,15 @@ const Index = () => {
       setAppState('analyzing');
       const { data: analysisData, error: analysisError } = await supabase.functions.invoke('analyze-pdf', { body: { pdfBase64 } });
       if (analysisError) { console.error('Analysis error:', analysisError); toast.error('Fehler bei der Analyse.'); setAppState('idle'); return; }
-      if (analysisData?.error) { toast.error(analysisData.error); setAppState('idle'); return; }
-      const { imagePrompt: basePrompt, ...vehicleInfo } = analysisData;
+      if (analysisData?.error) {
+        if (analysisData.error === 'not_vehicle_offer') {
+          toast.error(`Das hochgeladene Dokument ist kein Fahrzeugangebot, sondern eine "${analysisData.documentType}". Bitte lade ein Fahrzeugangebot (Leasing, Finanzierung oder Kaufangebot) als PDF hoch.`, { duration: 8000 });
+        } else {
+          toast.error(analysisData.error);
+        }
+        setAppState('idle'); return;
+      }
+      const { imagePrompt: basePrompt, isVehicleOffer, ...vehicleInfo } = analysisData;
       const enriched = await loadProfileIntoDealer(vehicleInfo as VehicleData);
       setVehicleData(enriched);
       setAppState('choosing-image-source');
