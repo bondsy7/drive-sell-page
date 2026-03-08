@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { Navigate, Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable/index';
@@ -14,7 +14,7 @@ import logoLight from '@/assets/logo-light.png';
 const Auth = () => {
   const { user, loading } = useAuth();
   const [searchParams] = useSearchParams();
-  const plan = searchParams.get('plan'); // e.g. starter, pro, enterprise
+  const plan = searchParams.get('plan'); // e.g. free, starter, pro, enterprise
   const cycle = searchParams.get('cycle') || 'monthly';
 
   // Only allow registration if a plan is selected
@@ -23,47 +23,43 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const justRegistered = useRef(false);
-
-  // After registration + auth state resolves, trigger Stripe checkout
-  useEffect(() => {
-    if (user && justRegistered.current && plan) {
-      justRegistered.current = false;
-      startCheckout();
-    }
-  }, [user]);
-
-  const startCheckout = async () => {
-    if (!plan || plan === 'free') {
-      window.location.href = '/generator';
-      return;
-    }
-    const prices = STRIPE_PRICES[plan];
-    if (!prices) {
-      window.location.href = '/generator';
-      return;
-    }
-    const priceId = cycle === 'yearly' ? prices.yearly : prices.monthly;
-    try {
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { priceId },
-      });
-      if (error) throw error;
-      if (data?.url) {
-        window.location.href = data.url;
-      } else {
-        window.location.href = '/generator';
-      }
-    } catch {
-      toast.error('Checkout konnte nicht gestartet werden. Bitte versuche es unter Preise erneut.');
-      window.location.href = '/pricing';
-    }
-  };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-background"><div className="animate-spin w-8 h-8 border-2 border-accent border-t-transparent rounded-full" /></div>;
   
-  // If already logged in and no pending plan, redirect
-  if (user && !justRegistered.current) return <Navigate to="/generator" replace />;
+  // If already logged in, redirect
+  if (user) return <Navigate to="/generator" replace />;
+
+  const startCheckoutWithEmail = async (userEmail: string, userId?: string) => {
+    if (!plan || plan === 'free') {
+      // Free plan: no Stripe needed, just tell user to confirm email
+      return;
+    }
+    const prices = STRIPE_PRICES[plan];
+    if (!prices) return;
+
+    const priceId = cycle === 'yearly' ? prices.yearly : prices.monthly;
+    try {
+      // Call create-checkout WITHOUT auth, passing email directly
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({ priceId, email: userEmail, userId }),
+        }
+      );
+      const data = await response.json();
+      if (data?.url) {
+        window.location.href = data.url;
+        return;
+      }
+    } catch {
+      // Fallback: user can pay later from pricing page
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,14 +70,23 @@ const Auth = () => {
         if (error) throw error;
         toast.success('Erfolgreich angemeldet!');
       } else {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: { data: { full_name: name }, emailRedirectTo: window.location.origin },
+          options: { data: { full_name: name, selected_plan: plan, selected_cycle: cycle }, emailRedirectTo: window.location.origin },
         });
         if (error) throw error;
-        justRegistered.current = true;
-        toast.success('Registrierung erfolgreich! Du wirst zum Checkout weitergeleitet…');
+
+        // Signup succeeded — user needs to confirm email
+        // But first redirect to Stripe checkout if paid plan
+        if (plan && plan !== 'free') {
+          toast.success('Registrierung erfolgreich! Du wirst zum Checkout weitergeleitet…');
+          await startCheckoutWithEmail(email, data.user?.id);
+          // If we get here, checkout redirect didn't work
+          toast.info('Bitte bestätige deine E-Mail-Adresse und melde dich an, um den Checkout abzuschließen.');
+        } else {
+          toast.success('Registrierung erfolgreich! Bitte bestätige deine E-Mail-Adresse über den Link in deinem Postfach.');
+        }
       }
     } catch (err: any) {
       toast.error(err.message || 'Ein Fehler ist aufgetreten');
@@ -149,7 +154,7 @@ const Auth = () => {
             </div>
           </div>
           <Button type="submit" className="w-full" disabled={submitting}>
-            {submitting ? 'Laden...' : isLogin ? 'Anmelden' : 'Registrieren & zum Checkout'}
+            {submitting ? 'Laden...' : isLogin ? 'Anmelden' : plan && plan !== 'free' ? 'Registrieren & zum Checkout' : 'Kostenlos registrieren'}
           </Button>
         </form>
 
