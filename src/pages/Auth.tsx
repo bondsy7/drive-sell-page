@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable/index';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Car, Mail, Lock, User, Chrome } from 'lucide-react';
+import { Mail, Lock, User, Chrome } from 'lucide-react';
 import { toast } from 'sonner';
+import logoDark from '@/assets/logo-dark.png';
 
 const Auth = () => {
   const { user, loading } = useAuth();
@@ -18,7 +19,7 @@ const Auth = () => {
   const [submitting, setSubmitting] = useState(false);
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-background"><div className="animate-spin w-8 h-8 border-2 border-accent border-t-transparent rounded-full" /></div>;
-  if (user) return <Navigate to="/" replace />;
+  if (user) return <Navigate to="/generator" replace />;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,11 +55,10 @@ const Auth = () => {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="w-full max-w-sm space-y-6">
-        <div className="text-center space-y-2">
-          <div className="w-12 h-12 rounded-xl gradient-accent flex items-center justify-center mx-auto">
-            <Car className="w-6 h-6 text-accent-foreground" />
-          </div>
-          <h1 className="font-display text-2xl font-bold text-foreground">AutoPage</h1>
+        <div className="text-center space-y-4">
+          <Link to="/">
+            <img src={logoDark} alt="Autohaus.AI" className="h-14 mx-auto" />
+          </Link>
           <p className="text-sm text-muted-foreground">{isLogin ? 'Melde dich an' : 'Erstelle deinen Account'}</p>
         </div>
 
