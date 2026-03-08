@@ -5,7 +5,8 @@ import { useCredits } from '@/hooks/useCredits';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { Button } from '@/components/ui/button';
-import { Check, Zap, Loader2, Plus, Crown, Calendar, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Check, Zap, Loader2, Plus, Crown, Calendar, AlertTriangle, RefreshCw, CreditCard, ArrowUpDown, XCircle } from 'lucide-react';
+import CancelSubscriptionDialog from '@/components/CancelSubscriptionDialog';
 import AppHeader from '@/components/AppHeader';
 import { STRIPE_PRICES, CREDIT_PACKS } from '@/lib/stripe-plans';
 import { toast } from 'sonner';
@@ -78,12 +79,13 @@ const Pricing = () => {
   };
 
   const handleManage = async () => {
+    setManageError(null);
     try {
       const { data, error } = await supabase.functions.invoke('customer-portal');
       if (error) throw error;
       if (data?.error) {
         if (data.error.includes('Kein Stripe-Kunde')) {
-          toast.info('Du hast noch kein Abo über Stripe abgeschlossen. Wähle zuerst einen Plan.');
+          setManageError('Du hast noch kein Abo über Stripe abgeschlossen. Wähle zuerst einen Plan oben.');
           return;
         }
         throw new Error(data.error);
@@ -92,12 +94,36 @@ const Pricing = () => {
         window.open(data.url, '_blank');
       }
     } catch (err: any) {
-      toast.error('Fehler: ' + (err.message || 'Unbekannter Fehler'));
+      setManageError(err.message || 'Unbekannter Fehler');
+    }
+  };
+
+  const handleCancel = async () => {
+    setManageError(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('customer-portal');
+      if (error) throw error;
+      if (data?.error) {
+        if (data.error.includes('Kein Stripe-Kunde')) {
+          setManageError('Kein aktives Stripe-Abo gefunden. Kontaktiere den Support, falls du Hilfe benötigst.');
+          setCancelOpen(false);
+          return;
+        }
+        throw new Error(data.error);
+      }
+      if (data?.url) {
+        window.open(data.url, '_blank');
+        setCancelOpen(false);
+      }
+    } catch (err: any) {
+      setManageError(err.message || 'Unbekannter Fehler');
+      setCancelOpen(false);
     }
   };
 
   const [loadingCredit, setLoadingCredit] = useState<string | null>(null);
-
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [manageError, setManageError] = useState<string | null>(null);
   const handleBuyCredits = async (priceId: string) => {
     if (!user) {
       toast.error('Bitte melde dich zuerst an.');
@@ -275,9 +301,40 @@ const Pricing = () => {
                 </div>
               </div>
 
-              <Button variant="outline" size="sm" onClick={handleManage} className="w-full gap-1.5">
-                Abo verwalten · Kündigen · Plan wechseln
-              </Button>
+              {manageError && (
+                <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                  <p>{manageError}</p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-3 gap-2">
+                <Button variant="outline" size="sm" onClick={handleManage} className="gap-1.5">
+                  <CreditCard className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Abo verwalten</span>
+                  <span className="sm:hidden">Verwalten</span>
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => {
+                  const plansSection = document.querySelector('.grid.gap-4');
+                  plansSection?.scrollIntoView({ behavior: 'smooth' });
+                }} className="gap-1.5">
+                  <ArrowUpDown className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Plan wechseln</span>
+                  <span className="sm:hidden">Wechseln</span>
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setCancelOpen(true)} className="gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10 hover:border-destructive/30">
+                  <XCircle className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Kündigen</span>
+                  <span className="sm:hidden">Kündigen</span>
+                </Button>
+              </div>
+
+              <CancelSubscriptionDialog
+                open={cancelOpen}
+                onOpenChange={setCancelOpen}
+                onConfirm={handleCancel}
+                periodEnd={periodEnd}
+              />
             </div>
           </div>
         )}
