@@ -61,7 +61,7 @@ export default function AdminTransactions() {
         <Input placeholder="Suchen…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
       </div>
 
-      <div className="bg-card rounded-xl border border-border overflow-hidden">
+      <div className="bg-card rounded-xl border border-border overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-muted/50">
