@@ -14,7 +14,18 @@ const ProjectView = lazy(() => import("./pages/ProjectView"));
 const LeasingCalculator = lazy(() => import("./pages/LeasingCalculator"));
 const FinancingCalculator = lazy(() => import("./pages/FinancingCalculator"));
 const KfzSteuerRechner = lazy(() => import("./pages/KfzSteuerRechner"));
+const Pricing = lazy(() => import("./pages/Pricing"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+
+// Admin pages
+const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
+const AdminTransactions = lazy(() => import("./pages/admin/AdminTransactions"));
+const AdminPrompts = lazy(() => import("./pages/admin/AdminPrompts"));
+const AdminPricing = lazy(() => import("./pages/admin/AdminPricing"));
+const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
+const AdminRoute = lazy(() => import("./components/AdminRoute"));
 
 const queryClient = new QueryClient();
 
@@ -48,6 +59,15 @@ const App = () => (
               <Route path="/leasing-rechner" element={<ProtectedRoute><LeasingCalculator /></ProtectedRoute>} />
               <Route path="/finanzierungsrechner" element={<ProtectedRoute><FinancingCalculator /></ProtectedRoute>} />
               <Route path="/kfz-steuer-rechner" element={<ProtectedRoute><KfzSteuerRechner /></ProtectedRoute>} />
+              <Route path="/pricing" element={<ProtectedRoute><Pricing /></ProtectedRoute>} />
+              <Route path="/admin" element={<ProtectedRoute><AdminRoute><AdminLayout /></AdminRoute></ProtectedRoute>}>
+                <Route index element={<AdminDashboard />} />
+                <Route path="users" element={<AdminUsers />} />
+                <Route path="transactions" element={<AdminTransactions />} />
+                <Route path="prompts" element={<AdminPrompts />} />
+                <Route path="pricing" element={<AdminPricing />} />
+                <Route path="settings" element={<AdminSettings />} />
+              </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
