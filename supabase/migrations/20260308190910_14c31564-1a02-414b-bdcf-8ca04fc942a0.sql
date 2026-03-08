@@ -1,0 +1,1 @@
+UPDATE admin_settings SET value = '{"pdf_analysis":{"standard":1,"pro":1},"image_generate":{"standard":3,"pro":8},"image_remaster":{"standard":2,"pro":5},"vin_ocr":{"standard":1,"pro":1},"landing_page_export":{"standard":1,"pro":1}}'::jsonb, updated_at = now() WHERE key = 'credit_costs';
