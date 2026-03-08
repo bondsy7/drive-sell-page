@@ -77,10 +77,11 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     if (slot.isVin) {
       try {
         const { data, error } = await supabase.functions.invoke('ocr-vin', { body: { imageBase64: base64 } });
-        if (!error && data?.vin) {
+        if (data?.error === 'insufficient_credits') {
+          toast.error('Nicht genügend Credits für VIN-Erkennung.');
+        } else if (!error && data?.vin) {
           setDetectedVin(data.vin);
           toast.success(`VIN erkannt: ${data.vin}`);
-          // Auto-trigger OutVin lookup
           if (vehicleData) {
             vinLookup.lookup(data.vin, vehicleData);
           }

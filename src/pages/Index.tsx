@@ -126,8 +126,12 @@ const Index = () => {
       const { data: analysisData, error: analysisError } = await supabase.functions.invoke('analyze-pdf', { body: { pdfBase64 } });
       if (analysisError) { console.error('Analysis error:', analysisError); toast.error('Fehler bei der Analyse.'); setAppState('idle'); return; }
       if (analysisData?.error) {
-        if (analysisData.error === 'not_vehicle_offer') {
+        if (analysisData.error === 'insufficient_credits') {
+          toast.error(`Nicht genügend Credits. Guthaben: ${analysisData.balance}, benötigt: ${analysisData.cost}. Bitte lade Credits nach.`, { duration: 8000 });
+        } else if (analysisData.error === 'not_vehicle_offer') {
           toast.error(`Das hochgeladene Dokument ist kein Fahrzeugangebot, sondern eine "${analysisData.documentType}". Bitte lade ein Fahrzeugangebot (Leasing, Finanzierung oder Kaufangebot) als PDF hoch.`, { duration: 8000 });
+        } else if (analysisData.error === 'Nicht authentifiziert') {
+          toast.error('Bitte melde dich an, um diese Funktion zu nutzen.');
         } else {
           toast.error(analysisData.error);
         }
@@ -156,6 +160,14 @@ const Index = () => {
       setImageProgress({ current: i + 1, total });
       try {
         const { data: imageData, error: imageError } = await supabase.functions.invoke('generate-vehicle-image', { body: { imagePrompt: showroomBase + perspective.prompt } });
+        if (imageData?.error === 'insufficient_credits') {
+          toast.error(`Nicht genügend Credits für die Bildgenerierung. Guthaben: ${imageData.balance}`, { duration: 8000 });
+          break;
+        }
+        if (imageData?.error === 'Nicht authentifiziert') {
+          toast.error('Bitte melde dich an, um Bilder zu generieren.');
+          break;
+        }
         if (!imageError && imageData?.imageBase64) {
           generatedImages.push(imageData.imageBase64);
           if (i === 0) setImageBase64(imageData.imageBase64);

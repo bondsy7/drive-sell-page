@@ -1,9 +1,51 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+function createServiceClient() {
+  return createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
+}
+
+async function authenticateAndDeductCredits(req: Request, actionType: string, cost: number): Promise<{ userId: string } | Response> {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) {
+    return new Response(JSON.stringify({ error: "Nicht authentifiziert" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
+    global: { headers: { Authorization: authHeader } },
+  });
+  const { data: { user }, error } = await sb.auth.getUser();
+  if (error || !user) {
+    return new Response(JSON.stringify({ error: "Nicht authentifiziert" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  const serviceSb = createServiceClient();
+  const { data: result, error: deductError } = await serviceSb.rpc("deduct_credits", {
+    _user_id: user.id, _amount: cost, _action_type: actionType, _description: `${actionType} (serverseitig)`,
+  });
+  if (deductError) {
+    return new Response(JSON.stringify({ error: "Credit-Fehler: " + deductError.message }), {
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  const r = result as any;
+  if (!r?.success) {
+    return new Response(JSON.stringify({ error: "insufficient_credits", balance: r?.balance || 0, cost: r?.cost || cost }), {
+      status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  return { userId: user.id };
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -12,6 +54,15 @@ serve(async (req) => {
     const { imagePrompt, imagePrompts } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+
+    // Calculate total cost based on number of images
+    const totalImages = imagePrompts ? imagePrompts.length : 1;
+    const costPerImage = 2;
+    const totalCost = totalImages * costPerImage;
+
+    // Auth & credits
+    const authResult = await authenticateAndDeductCredits(req, "image_generate", totalCost);
+    if (authResult instanceof Response) return authResult;
 
     // Single image mode (backward compat)
     if (imagePrompt && !imagePrompts) {
@@ -67,7 +118,6 @@ async function generateImage(prompt: string, apiKey: string, retries = 2): Promi
         const errText = await response.text();
         console.error(`Attempt ${attempt + 1}: Image generation error:`, response.status, errText);
         if (response.status === 429) {
-          // Rate limit - wait before retry
           if (attempt < retries) {
             await new Promise(r => setTimeout(r, 3000 * (attempt + 1)));
             continue;
@@ -85,7 +135,7 @@ async function generateImage(prompt: string, apiKey: string, retries = 2): Promi
       const data = await response.json();
       const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
       if (!imageUrl) {
-        console.warn(`Attempt ${attempt + 1}: No image in response, content:`, JSON.stringify(data.choices?.[0]?.message?.content || '').substring(0, 200));
+        console.warn(`Attempt ${attempt + 1}: No image in response`);
         if (attempt < retries) {
           await new Promise(r => setTimeout(r, 2000));
           continue;

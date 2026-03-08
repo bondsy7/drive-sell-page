@@ -1,11 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SYSTEM_PROMPT = `Du bist ein Experte für die Analyse von Fahrzeug-Angebots-PDFs deutscher Autohäuser. Deine Aufgabe: Extrahiere ALLE verfügbaren Daten so vollständig und präzise wie möglich. Lasse NICHTS aus.
+const DEFAULT_SYSTEM_PROMPT = `Du bist ein Experte für die Analyse von Fahrzeug-Angebots-PDFs deutscher Autohäuser. Deine Aufgabe: Extrahiere ALLE verfügbaren Daten so vollständig und präzise wie möglich. Lasse NICHTS aus.
 
 WICHTIG: Antworte NUR mit validem JSON, kein Markdown, keine Erklärungen.
 
@@ -148,16 +149,118 @@ ABSOLUTE REGELN:
 7. Fehlende Werte = leerer String "", fehlende booleans = false
 8. Antworte NUR mit JSON`;
 
+// ── Helpers ──
+
+function createServiceClient() {
+  return createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
+}
+
+async function getCustomPrompt(key: string, defaultPrompt: string): Promise<string> {
+  try {
+    const sb = createServiceClient();
+    const { data } = await sb
+      .from("admin_settings")
+      .select("value")
+      .eq("key", "ai_prompts")
+      .single();
+    const overrides = data?.value as Record<string, string> | null;
+    const override = overrides?.[key];
+    if (override && override.trim() !== "" && override.trim().toLowerCase() !== "default") {
+      return override;
+    }
+  } catch (e) {
+    console.warn("Could not load custom prompts, using default:", e);
+  }
+  return defaultPrompt;
+}
+
+async function authenticateAndDeductCredits(req: Request, actionType: string, cost: number): Promise<{ userId: string } | Response> {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) {
+    return new Response(JSON.stringify({ error: "Nicht authentifiziert" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const sb = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!,
+    { global: { headers: { Authorization: authHeader } } },
+  );
+
+  const { data: { user }, error } = await sb.auth.getUser();
+  if (error || !user) {
+    return new Response(JSON.stringify({ error: "Nicht authentifiziert" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  // Deduct credits using service role client
+  const serviceSb = createServiceClient();
+  const { data: result, error: deductError } = await serviceSb.rpc("deduct_credits", {
+    _user_id: user.id,
+    _amount: cost,
+    _action_type: actionType,
+    _description: `${actionType} (serverseitig)`,
+  });
+
+  if (deductError) {
+    console.error("Credit deduction error:", deductError);
+    return new Response(JSON.stringify({ error: "Credit-Fehler: " + deductError.message }), {
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const r = result as any;
+  if (!r?.success) {
+    return new Response(JSON.stringify({ 
+      error: "insufficient_credits",
+      balance: r?.balance || 0,
+      cost: r?.cost || cost,
+    }), {
+      status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  return { userId: user.id };
+}
+
+function deriveCO2Class(emissionsStr: string): string {
+  const match = emissionsStr?.match(/(\d+)/);
+  if (!match) return '';
+  const gkm = parseInt(match[1], 10);
+  if (gkm === 0) return 'A';
+  if (gkm <= 95) return 'B';
+  if (gkm <= 115) return 'C';
+  if (gkm <= 135) return 'D';
+  if (gkm <= 155) return 'E';
+  if (gkm <= 175) return 'F';
+  return 'G';
+}
+
+// ── Main Handler ──
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    // 1. Authenticate & deduct credits
+    const authResult = await authenticateAndDeductCredits(req, "pdf_analysis", 1);
+    if (authResult instanceof Response) return authResult;
+
     const { pdfBase64 } = await req.json();
     if (!pdfBase64) throw new Error("No PDF data provided");
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
+    // 2. Load custom prompt
+    const systemPrompt = await getCustomPrompt("pdf_analysis", DEFAULT_SYSTEM_PROMPT);
+
+    // 3. Call AI
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -167,7 +270,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { role: "system", content: SYSTEM_PROMPT },
+          { role: "system", content: systemPrompt },
           {
             role: "user",
             content: [
@@ -188,9 +291,7 @@ Gib das Ergebnis als JSON zurück.`,
               },
               {
                 type: "image_url",
-                image_url: {
-                  url: `data:application/pdf;base64,${pdfBase64}`,
-                },
+                image_url: { url: `data:application/pdf;base64,${pdfBase64}` },
               },
             ],
           },
@@ -216,31 +317,23 @@ Gib das Ergebnis als JSON zurück.`,
 
     const data = await response.json();
     let content = data.choices?.[0]?.message?.content || "";
-    
     content = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-    
     const parsed = JSON.parse(content);
 
     // === DOCUMENT TYPE CHECK ===
     if (parsed.isVehicleOffer === false) {
-      const docType = parsed.documentType || 'unbekanntes Dokument';
       return new Response(JSON.stringify({ 
         error: "not_vehicle_offer",
-        documentType: docType,
+        documentType: parsed.documentType || 'unbekanntes Dokument',
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // === AUTO-FILL / POST-PROCESSING ===
-    
-    // Ensure consumption object exists
-    if (!parsed.consumption) {
-      parsed.consumption = {};
-    }
+    // === POST-PROCESSING ===
+    if (!parsed.consumption) parsed.consumption = {};
     const c = parsed.consumption;
 
-    // Default all missing string fields to ""
     const stringFields = [
       'origin', 'mileage', 'displacement', 'power', 'driveType', 'fuelType',
       'consumptionCombined', 'co2Emissions', 'co2Class',
@@ -249,12 +342,10 @@ Gib das Ergebnis als JSON zurück.`,
       'vehicleTax', 'co2EmissionsDischarged', 'co2ClassDischarged',
       'consumptionCombinedDischarged', 'electricRange', 'consumptionElectric',
     ];
-    for (const f of stringFields) {
-      c[f] = c[f] || '';
-    }
+    for (const f of stringFields) { c[f] = c[f] || ''; }
     c.isPluginHybrid = c.isPluginHybrid || false;
 
-    // Auto-detect PHEV from driveType/fuelType if not set
+    // Auto-detect PHEV
     const dtLower = (c.driveType || '').toLowerCase();
     const ftLower = (c.fuelType || '').toLowerCase();
     const vftLower = (parsed.vehicle?.fuelType || '').toLowerCase();
@@ -268,55 +359,22 @@ Gib das Ergebnis als JSON zurück.`,
       }
     }
 
-    // Auto-derive CO₂ classes from g/km values
-    function deriveCO2Class(emissionsStr: string): string {
-      const match = emissionsStr?.match(/(\d+)/);
-      if (!match) return '';
-      const gkm = parseInt(match[1], 10);
-      if (gkm === 0) return 'A';
-      if (gkm <= 95) return 'B';
-      if (gkm <= 115) return 'C';
-      if (gkm <= 135) return 'D';
-      if (gkm <= 155) return 'E';
-      if (gkm <= 175) return 'F';
-      return 'G';
-    }
+    // Auto-derive CO₂ classes
+    if (!c.co2Class && c.co2Emissions) c.co2Class = deriveCO2Class(c.co2Emissions);
+    if (!c.co2ClassDischarged && c.co2EmissionsDischarged) c.co2ClassDischarged = deriveCO2Class(c.co2EmissionsDischarged);
 
-    // Auto-fill co2Class from co2Emissions
-    if (!c.co2Class && c.co2Emissions) {
-      c.co2Class = deriveCO2Class(c.co2Emissions);
-    }
-    // Auto-fill co2ClassDischarged from co2EmissionsDischarged
-    if (!c.co2ClassDischarged && c.co2EmissionsDischarged) {
-      c.co2ClassDischarged = deriveCO2Class(c.co2EmissionsDischarged);
-    }
+    // Copy power/fuelType from vehicle to consumption if missing
+    if (!c.power && parsed.vehicle?.power) c.power = parsed.vehicle.power;
+    if (!c.fuelType && parsed.vehicle?.fuelType) c.fuelType = parsed.vehicle.fuelType;
 
-    // Copy power from vehicle to consumption if missing
-    if (!c.power && parsed.vehicle?.power) {
-      c.power = parsed.vehicle.power;
-    }
-
-    // Copy fuelType from vehicle to consumption if missing
-    if (!c.fuelType && parsed.vehicle?.fuelType) {
-      c.fuelType = parsed.vehicle.fuelType;
-    }
-
-    // Ensure vehicle features is an array
-    if (parsed.vehicle && !Array.isArray(parsed.vehicle.features)) {
-      parsed.vehicle.features = [];
-    }
-
-    // Ensure finance fields exist
+    // Ensure arrays/objects exist
+    if (parsed.vehicle && !Array.isArray(parsed.vehicle.features)) parsed.vehicle.features = [];
     if (!parsed.finance) parsed.finance = {};
-    const finFields = ['monthlyRate', 'downPayment', 'duration', 'totalPrice', 'annualMileage', 'specialPayment', 'residualValue', 'interestRate'];
-    for (const f of finFields) {
+    for (const f of ['monthlyRate', 'downPayment', 'duration', 'totalPrice', 'annualMileage', 'specialPayment', 'residualValue', 'interestRate']) {
       parsed.finance[f] = parsed.finance[f] || '';
     }
-
-    // Ensure dealer fields exist
     if (!parsed.dealer) parsed.dealer = {};
-    const dealerFields = ['name', 'address', 'phone', 'email', 'website'];
-    for (const f of dealerFields) {
+    for (const f of ['name', 'address', 'phone', 'email', 'website']) {
       parsed.dealer[f] = parsed.dealer[f] || '';
     }
 
