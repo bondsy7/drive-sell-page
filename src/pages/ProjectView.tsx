@@ -75,8 +75,8 @@ const ProjectView = () => {
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
         />
-        <main className="flex-1 overflow-y-auto px-3 sm:px-4 py-6 sm:py-10">
-          <div className="max-w-5xl mx-auto">
+        <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 sm:py-10">
+          <div className="max-w-7xl mx-auto">
             <LandingPagePreview
               vehicleData={vehicleData}
               imageBase64={mainImage}
