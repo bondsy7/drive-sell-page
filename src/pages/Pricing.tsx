@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useCredits } from '@/hooks/useCredits';
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { Car, Check, Zap, ArrowLeft } from 'lucide-react';
+import { Car, Check, Zap, ArrowLeft, Loader2 } from 'lucide-react';
 import CreditBadge from '@/components/CreditBadge';
+import { STRIPE_PRICES } from '@/lib/stripe-plans';
+import { toast } from 'sonner';
 
 interface Plan {
   id: string;
@@ -21,11 +24,14 @@ interface Plan {
 const Pricing = () => {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [yearly, setYearly] = useState(false);
+  const [searchParams] = useSearchParams();
+  const [loadingSlug, setLoadingSlug] = useState<string | null>(null);
   const { balance, costs } = useCredits();
+  const { user } = useAuth();
 
   useEffect(() => {
     supabase
-      .from('subscription_plans' as any)
+      .from('subscription_plans')
       .select('*')
       .eq('active', true)
       .order('sort_order')
@@ -33,6 +39,51 @@ const Pricing = () => {
         if (data) setPlans(data as any);
       });
   }, []);
+
+  useEffect(() => {
+    if (searchParams.get('success') === 'true') {
+      toast.success('Abo erfolgreich abgeschlossen! Deine Credits werden in Kürze gutgeschrieben.');
+    } else if (searchParams.get('canceled') === 'true') {
+      toast.info('Checkout abgebrochen.');
+    }
+  }, [searchParams]);
+
+  const handleCheckout = async (slug: string) => {
+    if (!user) {
+      toast.error('Bitte melde dich zuerst an.');
+      return;
+    }
+    const prices = STRIPE_PRICES[slug];
+    if (!prices) return;
+
+    setLoadingSlug(slug);
+    try {
+      const priceId = yearly ? prices.yearly : prices.monthly;
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: { priceId },
+      });
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      }
+    } catch (err: any) {
+      toast.error('Fehler beim Checkout: ' + (err.message || 'Unbekannter Fehler'));
+    } finally {
+      setLoadingSlug(null);
+    }
+  };
+
+  const handleManage = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('customer-portal');
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      }
+    } catch (err: any) {
+      toast.error('Fehler: ' + (err.message || 'Unbekannter Fehler'));
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -75,6 +126,8 @@ const Pricing = () => {
           {plans.map((plan) => {
             const price = yearly ? Math.round(plan.price_yearly_cents / 12) : plan.price_monthly_cents;
             const isPro = plan.slug === 'pro';
+            const isFree = plan.slug === 'free';
+            const isLoading = loadingSlug === plan.slug;
             return (
               <div
                 key={plan.id}
@@ -111,19 +164,35 @@ const Pricing = () => {
                     </li>
                   ))}
                 </ul>
-                <Button
-                  className={isPro ? 'gradient-accent text-accent-foreground' : ''}
-                  variant={isPro ? 'default' : 'outline'}
-                  size="sm"
-                >
-                  {plan.slug === 'free' ? 'Aktueller Plan' : 'Upgrade'}
-                </Button>
+                {isFree ? (
+                  <Button variant="outline" size="sm" disabled>
+                    Aktueller Plan
+                  </Button>
+                ) : (
+                  <Button
+                    className={isPro ? 'gradient-accent text-accent-foreground' : ''}
+                    variant={isPro ? 'default' : 'outline'}
+                    size="sm"
+                    disabled={isLoading}
+                    onClick={() => handleCheckout(plan.slug)}
+                  >
+                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                    {isLoading ? 'Weiterleitung…' : 'Upgrade'}
+                  </Button>
+                )}
               </div>
             );
           })}
         </div>
 
-        {/* Credit costs table */}
+        {user && (
+          <div className="text-center mt-8">
+            <Button variant="ghost" size="sm" onClick={handleManage} className="text-muted-foreground">
+              Bestehendes Abo verwalten
+            </Button>
+          </div>
+        )}
+
         {Object.keys(costs).length > 0 && (
           <div className="mt-16">
             <h2 className="font-display text-xl font-bold text-foreground text-center mb-6">Credit-Kosten pro Aktion</h2>
