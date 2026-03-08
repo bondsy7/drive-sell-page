@@ -3,9 +3,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { Search, Plus, Minus, Shield, ShieldCheck, User } from 'lucide-react';
+import { Search, Plus, Minus, Shield, ShieldCheck, User, Crown } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+
+interface PlanInfo {
+  id: string;
+  name: string;
+  slug: string;
+  status: string;
+  billing_cycle: string;
+}
 
 interface UserRow {
   id: string;
@@ -15,6 +23,13 @@ interface UserRow {
   balance?: number;
   lifetime_used?: number;
   roles?: string[];
+  plan?: PlanInfo | null;
+}
+
+interface AvailablePlan {
+  id: string;
+  name: string;
+  slug: string;
 }
 
 const ROLE_LABELS: Record<string, { label: string; icon: typeof Shield; color: string }> = {
@@ -23,8 +38,23 @@ const ROLE_LABELS: Record<string, { label: string; icon: typeof Shield; color: s
   user: { label: 'User', icon: User, color: 'bg-muted text-muted-foreground border-border' },
 };
 
+const PLAN_COLORS: Record<string, string> = {
+  free: 'bg-muted text-muted-foreground border-border',
+  starter: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
+  pro: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
+  enterprise: 'bg-purple-500/10 text-purple-600 border-purple-500/20',
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  active: 'Aktiv',
+  cancelled: 'Gekündigt',
+  past_due: 'Überfällig',
+  trialing: 'Testphase',
+};
+
 export default function AdminUsers() {
   const [users, setUsers] = useState<UserRow[]>([]);
+  const [plans, setPlans] = useState<AvailablePlan[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [adjusting, setAdjusting] = useState<string | null>(null);
@@ -34,11 +64,15 @@ export default function AdminUsers() {
 
   const loadUsers = async () => {
     setLoading(true);
-    const [{ data: profiles }, { data: balances }, { data: roles }] = await Promise.all([
+    const [{ data: profiles }, { data: balances }, { data: roles }, { data: subscriptions }, { data: availablePlans }] = await Promise.all([
       supabase.from('profiles').select('id, email, company_name, created_at').order('created_at', { ascending: false }),
       supabase.from('credit_balances').select('user_id, balance, lifetime_used'),
       supabase.from('user_roles').select('user_id, role'),
+      supabase.from('user_subscriptions').select('user_id, plan_id, status, billing_cycle, subscription_plans(id, name, slug)'),
+      supabase.from('subscription_plans').select('id, name, slug').eq('active', true).order('sort_order'),
     ]);
+
+    setPlans((availablePlans as any[]) || []);
 
     const balanceMap: Record<string, { balance: number; lifetime_used: number }> = {};
     for (const b of (balances as any[]) || []) {
@@ -51,11 +85,26 @@ export default function AdminUsers() {
       roleMap[r.user_id].push(r.role);
     }
 
+    const subMap: Record<string, PlanInfo> = {};
+    for (const s of (subscriptions as any[]) || []) {
+      const plan = s.subscription_plans;
+      if (plan) {
+        subMap[s.user_id] = {
+          id: plan.id,
+          name: plan.name,
+          slug: plan.slug,
+          status: s.status,
+          billing_cycle: s.billing_cycle,
+        };
+      }
+    }
+
     const merged = ((profiles as any[]) || []).map(p => ({
       ...p,
       balance: balanceMap[p.id]?.balance ?? 0,
       lifetime_used: balanceMap[p.id]?.lifetime_used ?? 0,
       roles: roleMap[p.id] || [],
+      plan: subMap[p.id] || null,
     }));
     setUsers(merged);
     setLoading(false);
@@ -79,30 +128,57 @@ export default function AdminUsers() {
   };
 
   const assignRole = async (userId: string, role: string) => {
-    // First check current roles
     const user = users.find(u => u.id === userId);
     const currentRoles = user?.roles || [];
 
     if (role === 'none') {
-      // Remove all roles
-      const { error } = await supabase
-        .from('user_roles')
-        .delete()
-        .eq('user_id', userId);
+      const { error } = await supabase.from('user_roles').delete().eq('user_id', userId);
       if (error) { toast.error('Fehler: ' + error.message); return; }
       toast.success('Alle Rollen entfernt');
     } else if (currentRoles.includes(role)) {
-      // Already has this role
       toast.info('Nutzer hat diese Rolle bereits');
       return;
     } else {
-      // Remove existing roles and assign new one
       await supabase.from('user_roles').delete().eq('user_id', userId);
-      const { error } = await supabase
-        .from('user_roles')
-        .insert({ user_id: userId, role: role as any });
+      const { error } = await supabase.from('user_roles').insert({ user_id: userId, role: role as any });
       if (error) { toast.error('Fehler: ' + error.message); return; }
       toast.success(`Rolle "${ROLE_LABELS[role]?.label || role}" zugewiesen`);
+    }
+    loadUsers();
+  };
+
+  const assignPlan = async (userId: string, planId: string) => {
+    const user = users.find(u => u.id === userId);
+
+    if (planId === 'none') {
+      // Remove subscription
+      if (user?.plan) {
+        const { error } = await supabase.from('user_subscriptions').delete().eq('user_id', userId);
+        if (error) { toast.error('Fehler: ' + error.message); return; }
+        toast.success('Plan entfernt');
+      }
+    } else {
+      const selectedPlan = plans.find(p => p.id === planId);
+      if (user?.plan) {
+        // Update existing subscription
+        const { error } = await supabase
+          .from('user_subscriptions')
+          .update({ plan_id: planId, status: 'active' as any })
+          .eq('user_id', userId);
+        if (error) { toast.error('Fehler: ' + error.message); return; }
+      } else {
+        // Create new subscription
+        const { error } = await supabase
+          .from('user_subscriptions')
+          .insert({
+            user_id: userId,
+            plan_id: planId,
+            status: 'active' as any,
+            billing_cycle: 'monthly' as any,
+          });
+        if (error) { toast.error('Fehler: ' + error.message); return; }
+      }
+      toast.success(`Plan "${selectedPlan?.name || planId}" zugewiesen`);
     }
     loadUsers();
   };
@@ -126,13 +202,14 @@ export default function AdminUsers() {
         <Input placeholder="Suchen…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
       </div>
 
-      <div className="bg-card rounded-xl border border-border overflow-hidden">
+      <div className="bg-card rounded-xl border border-border overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-muted/50">
               <th className="text-left p-3 font-medium text-muted-foreground">E-Mail</th>
               <th className="text-left p-3 font-medium text-muted-foreground">Firma</th>
               <th className="text-center p-3 font-medium text-muted-foreground">Rolle</th>
+              <th className="text-center p-3 font-medium text-muted-foreground">Plan</th>
               <th className="text-center p-3 font-medium text-muted-foreground">Credits</th>
               <th className="text-center p-3 font-medium text-muted-foreground">Verbraucht</th>
               <th className="text-left p-3 font-medium text-muted-foreground">Registriert</th>
@@ -143,22 +220,18 @@ export default function AdminUsers() {
             {filtered.map(u => {
               const primaryRole = u.roles?.[0] || null;
               const roleInfo = primaryRole ? ROLE_LABELS[primaryRole] : null;
+              const planColor = u.plan ? (PLAN_COLORS[u.plan.slug] || PLAN_COLORS.starter) : '';
 
               return (
                 <tr key={u.id} className="border-b border-border last:border-0">
                   <td className="p-3 text-foreground truncate max-w-[200px]">{u.email || '—'}</td>
                   <td className="p-3 text-muted-foreground truncate max-w-[150px]">{u.company_name || '—'}</td>
                   <td className="p-3 text-center">
-                    <Select
-                      value={primaryRole || 'none'}
-                      onValueChange={(val) => assignRole(u.id, val)}
-                    >
+                    <Select value={primaryRole || 'none'} onValueChange={(val) => assignRole(u.id, val)}>
                       <SelectTrigger className="h-7 w-[130px] text-xs mx-auto">
                         <SelectValue>
                           {roleInfo ? (
-                            <Badge variant="outline" className={`text-xs ${roleInfo.color}`}>
-                              {roleInfo.label}
-                            </Badge>
+                            <Badge variant="outline" className={`text-xs ${roleInfo.color}`}>{roleInfo.label}</Badge>
                           ) : (
                             <span className="text-muted-foreground">Keine Rolle</span>
                           )}
@@ -172,19 +245,40 @@ export default function AdminUsers() {
                       </SelectContent>
                     </Select>
                   </td>
+                  <td className="p-3 text-center">
+                    <Select value={u.plan?.id || 'none'} onValueChange={(val) => assignPlan(u.id, val)}>
+                      <SelectTrigger className="h-7 w-[150px] text-xs mx-auto">
+                        <SelectValue>
+                          {u.plan ? (
+                            <div className="flex items-center gap-1">
+                              <Badge variant="outline" className={`text-xs ${planColor}`}>
+                                <Crown className="w-3 h-3 mr-1" />
+                                {u.plan.name}
+                              </Badge>
+                              {u.plan.status !== 'active' && (
+                                <span className="text-[10px] text-destructive">({STATUS_LABELS[u.plan.status] || u.plan.status})</span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">Kein Plan</span>
+                          )}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Kein Plan</SelectItem>
+                        {plans.map(p => (
+                          <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </td>
                   <td className="p-3 text-center font-semibold text-foreground">{u.balance}</td>
                   <td className="p-3 text-center text-muted-foreground">{u.lifetime_used}</td>
                   <td className="p-3 text-muted-foreground">{new Date(u.created_at).toLocaleDateString('de-DE')}</td>
                   <td className="p-3">
                     {adjusting === u.id ? (
                       <div className="flex items-center gap-1">
-                        <Input
-                          type="number"
-                          value={adjustAmount}
-                          onChange={e => setAdjustAmount(e.target.value)}
-                          className="w-20 h-7 text-xs"
-                          placeholder="±10"
-                        />
+                        <Input type="number" value={adjustAmount} onChange={e => setAdjustAmount(e.target.value)} className="w-20 h-7 text-xs" placeholder="±10" />
                         <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => adjustCredits(u.id, parseInt(adjustAmount) || 0)}>OK</Button>
                         <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => { setAdjusting(null); setAdjustAmount(''); }}>✕</Button>
                       </div>
