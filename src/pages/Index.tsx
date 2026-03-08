@@ -53,6 +53,7 @@ const Index = () => {
   const [imageProgress, setImageProgress] = useState({ current: 0, total: 0 });
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>('autohaus');
   const [savedProjectId, setSavedProjectId] = useState<string | null>(null);
+  const [selectedModelTier, setSelectedModelTier] = useState<'standard' | 'pro'>('standard');
   const [creditDialog, setCreditDialog] = useState<{ open: boolean; cost: number; label: string; onConfirm: () => void }>({
     open: false, cost: 0, label: '', onConfirm: () => {},
   });
@@ -172,22 +173,23 @@ const Index = () => {
     }
   }, [loadProfileIntoDealer]);
 
-  const handleChooseGenerate = useCallback(async () => {
+  const handleChooseGenerate = useCallback(async (modelTier: 'standard' | 'pro' = 'standard') => {
     if (!vehicleData) return;
-    const costPerImage = getCost('image_generate', 'standard') || 2;
+    setSelectedModelTier(modelTier);
+    const costPerImage = getCost('image_generate', modelTier) || 2;
     const totalCost = costPerImage * PERSPECTIVES.length;
     setCreditDialog({
       open: true,
       cost: totalCost,
-      label: `${PERSPECTIVES.length} Bilder generieren`,
+      label: `${PERSPECTIVES.length} Bilder generieren (${modelTier === 'pro' ? 'Pro' : 'Basic'})`,
       onConfirm: () => {
         setCreditDialog(prev => ({ ...prev, open: false }));
-        doGenerate();
+        doGenerate(modelTier);
       },
     });
   }, [vehicleData, getCost]);
 
-  const doGenerate = useCallback(async () => {
+  const doGenerate = useCallback(async (modelTier: 'standard' | 'pro' = 'standard') => {
     if (!vehicleData) return;
     setAppState('generating-image');
     const total = PERSPECTIVES.length;
@@ -198,7 +200,9 @@ const Index = () => {
       const perspective = PERSPECTIVES[i];
       setImageProgress({ current: i + 1, total });
       try {
-        const { data: imageData, error: imageError } = await supabase.functions.invoke('generate-vehicle-image', { body: { imagePrompt: showroomBase + perspective.prompt } });
+        const { data: imageData, error: imageError } = await supabase.functions.invoke('generate-vehicle-image', {
+          body: { imagePrompt: showroomBase + perspective.prompt, modelTier },
+        });
         if (imageData?.error === 'insufficient_credits') {
           toast.error(`Nicht genügend Credits für die Bildgenerierung. Guthaben: ${imageData.balance}`, { duration: 8000 });
           break;
@@ -221,8 +225,14 @@ const Index = () => {
     setAppState('preview');
   }, [vehicleData, saveProject, selectedTemplate]);
 
-  const handleChooseUpload = useCallback(() => { setAppState('uploading-images'); }, []);
-  const handleChooseCapture = useCallback(() => { setAppState('capturing-images' as any); }, []);
+  const handleChooseUpload = useCallback((modelTier: 'standard' | 'pro' = 'standard') => {
+    setSelectedModelTier(modelTier);
+    setAppState('uploading-images');
+  }, []);
+  const handleChooseCapture = useCallback((modelTier: 'standard' | 'pro' = 'standard') => {
+    setSelectedModelTier(modelTier);
+    setAppState('capturing-images' as any);
+  }, []);
 
   const handleCaptureComplete = useCallback(async (mainImage: string, gallery: string[], vin?: string) => {
     setImageBase64(mainImage);
