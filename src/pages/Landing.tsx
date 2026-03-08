@@ -57,29 +57,29 @@ const Landing = () => {
     <div className="min-h-screen bg-background">
       {/* Navigation */}
       <header className="border-b border-border/50 bg-primary/95 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 h-14 sm:h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center">
-            <img src={logoDark} alt="Autohaus.AI" className="h-10" />
+            <img src={logoDark} alt="Autohaus.AI" className="h-8 sm:h-10" />
           </Link>
           <nav className="hidden md:flex items-center gap-6">
             <a href="#features" className="text-primary-foreground/70 hover:text-primary-foreground text-sm font-medium transition-colors">Features</a>
             <a href="#workflow" className="text-primary-foreground/70 hover:text-primary-foreground text-sm font-medium transition-colors">So funktioniert's</a>
             <Link to="/pricing" className="text-primary-foreground/70 hover:text-primary-foreground text-sm font-medium transition-colors">Preise</Link>
           </nav>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             {user ? (
               <>
                 <Link to="/generator">
-                  <Button size="sm" className="gradient-accent text-accent-foreground gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5" /> Generator
+                  <Button size="sm" className="gradient-accent text-accent-foreground gap-1.5 text-xs sm:text-sm">
+                    <Sparkles className="w-3.5 h-3.5" /> <span className="hidden xs:inline">Generator</span>
                   </Button>
                 </Link>
-                <Link to="/dashboard">
+                <Link to="/dashboard" className="hidden sm:inline-flex">
                   <Button variant="ghost" size="sm" className="text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10 gap-1.5">
-                    <LayoutDashboard className="w-3.5 h-3.5" /> Dashboard
+                    <LayoutDashboard className="w-3.5 h-3.5" /> <span className="hidden md:inline">Dashboard</span>
                   </Button>
                 </Link>
-                <Link to="/profile">
+                <Link to="/profile" className="hidden sm:inline-flex">
                   <Button variant="ghost" size="icon" className="text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10">
                     <User className="w-4 h-4" />
                   </Button>
@@ -90,13 +90,13 @@ const Landing = () => {
               </>
             ) : (
               <>
-                <Link to="/auth">
+                <Link to="/auth" className="hidden sm:inline-flex">
                   <Button variant="ghost" size="sm" className="text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10">
                     Anmelden
                   </Button>
                 </Link>
                 <Link to="/auth">
-                  <Button size="sm" className="gradient-accent text-accent-foreground">
+                  <Button size="sm" className="gradient-accent text-accent-foreground text-xs sm:text-sm">
                     Kostenlos starten
                   </Button>
                 </Link>
@@ -126,7 +126,7 @@ const Landing = () => {
               <Zap className="w-3.5 h-3.5" />
               Powered by Automotive Intelligence
             </div>
-            <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-bold text-primary-foreground mb-6 leading-[1.1] tracking-tight">
+            <h1 className="font-display text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold text-primary-foreground mb-6 leading-[1.1] tracking-tight">
               Fahrzeugangebote in
               <span className="block bg-gradient-to-r from-accent to-blue-400 bg-clip-text text-transparent">
                 Sekunden erstellen

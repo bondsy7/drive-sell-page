@@ -107,7 +107,7 @@ export default function AdminDashboard() {
   const maxCreditTrend = Math.max(...stats.creditTrend.map(d => d.amount), 1);
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
       <h1 className="font-display text-2xl font-bold text-foreground">Admin-Übersicht</h1>
 
       {/* KPI Cards */}

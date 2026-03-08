@@ -125,27 +125,27 @@ const Pricing = () => {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-16">
-        <div className="text-center mb-12">
-          <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-3">
+      <main className="max-w-5xl mx-auto px-3 sm:px-4 py-8 sm:py-16">
+        <div className="text-center mb-8 sm:mb-12">
+          <h1 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-3">
             Wähle deinen Plan
           </h1>
-          <p className="text-muted-foreground max-w-md mx-auto mb-6">
+          <p className="text-muted-foreground max-w-md mx-auto mb-6 text-sm sm:text-base">
             Starte kostenlos mit 10 Credits. Upgrade jederzeit für mehr Power.
           </p>
           <div className="inline-flex items-center gap-2 p-1 rounded-lg bg-muted">
             <button
               onClick={() => setYearly(false)}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${!yearly ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}
+              className={`px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors ${!yearly ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}
             >Monatlich</button>
             <button
               onClick={() => setYearly(true)}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${yearly ? 'bg-accent text-accent-foreground shadow-sm' : 'text-muted-foreground'}`}
+              className={`px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors ${yearly ? 'bg-accent text-accent-foreground shadow-sm' : 'text-muted-foreground'}`}
             >Jährlich <span className="text-[10px] font-bold ml-1">-20%</span></button>
           </div>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           {plans.map((plan) => {
             const price = yearly ? Math.round(plan.price_yearly_cents / 12) : plan.price_monthly_cents;
             const isPro = plan.slug === 'pro';

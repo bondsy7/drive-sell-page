@@ -275,18 +275,18 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border bg-primary sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 h-14 flex items-center justify-between">
           <Link to="/" className="flex items-center">
-            <img src={logoDark} alt="Autohaus.AI" className="h-8" />
+            <img src={logoDark} alt="Autohaus.AI" className="h-7 sm:h-8" />
           </Link>
           <div className="flex items-center gap-1">
             <CreditBadge />
-            <Link to="/dashboard">
+            <Link to="/dashboard" className="hidden sm:inline-flex">
               <Button variant="ghost" size="sm" className="gap-1.5 text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10">
-                <LayoutDashboard className="w-3.5 h-3.5" /> Dashboard
+                <LayoutDashboard className="w-3.5 h-3.5" /> <span className="hidden md:inline">Dashboard</span>
               </Button>
             </Link>
-            <Link to="/profile">
+            <Link to="/profile" className="hidden sm:inline-flex">
               <Button variant="ghost" size="icon" className="text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10">
                 <User className="w-4 h-4" />
               </Button>
