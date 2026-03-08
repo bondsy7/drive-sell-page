@@ -151,14 +151,25 @@ const Pricing = () => {
             const isPro = plan.slug === 'pro';
             const isFree = plan.slug === 'free';
             const isLoading = loadingSlug === plan.slug;
+            const isActivePlan = activePlanSlug === plan.slug;
+            const isUpgrade = !isActivePlan && !isFree;
             return (
               <div
                 key={plan.id}
-                className={`relative rounded-2xl border p-6 flex flex-col ${
-                  isPro ? 'border-accent shadow-glow bg-card' : 'border-border bg-card'
+                className={`relative rounded-2xl border-2 p-6 flex flex-col transition-all ${
+                  isActivePlan
+                    ? 'border-accent shadow-glow bg-card ring-2 ring-accent/20'
+                    : isPro
+                      ? 'border-accent/50 shadow-glow/50 bg-card'
+                      : 'border-border bg-card'
                 }`}
               >
-                {isPro && (
+                {isActivePlan && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-accent text-accent-foreground text-[10px] font-bold uppercase tracking-wide flex items-center gap-1">
+                    <Crown className="w-3 h-3" /> Dein Plan
+                  </div>
+                )}
+                {isPro && !isActivePlan && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-accent text-accent-foreground text-[10px] font-bold uppercase tracking-wide">
                     Beliebt
                   </div>
@@ -187,9 +198,13 @@ const Pricing = () => {
                     </li>
                   ))}
                 </ul>
-                {isFree ? (
-                  <Button variant="outline" size="sm" disabled>
-                    Aktueller Plan
+                {isActivePlan ? (
+                  <Button variant="outline" size="sm" disabled className="border-accent/30 text-accent">
+                    <Crown className="w-3.5 h-3.5 mr-1" /> Aktueller Plan
+                  </Button>
+                ) : isFree ? (
+                  <Button variant="outline" size="sm" disabled className="opacity-50">
+                    Kostenlos
                   </Button>
                 ) : (
                   <Button
