@@ -43,7 +43,7 @@ serve(async (req) => {
   // If webhook secret is configured, verify signature; otherwise parse directly
   if (webhookSecret && sig) {
     try {
-      event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
+      event = await stripe.webhooks.constructEventAsync(body, sig, webhookSecret);
     } catch (err) {
       log("Signature verification failed", { error: (err as Error).message });
       return new Response("Webhook signature verification failed", { status: 400 });
