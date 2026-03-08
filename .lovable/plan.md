@@ -1,104 +1,157 @@
+# Monetarisierung & Admin-Panel — Implementierungsplan
 
+## Architektur-Prinzip
+**Additive Architektur**: Alle neuen Features werden als NEUE Dateien/Komponenten hinzugefügt. Bestehende Dateien werden nur minimal erweitert (Import + Route + Credit-Check). Keine Refactors an existierendem Code.
 
-## Integration & Distribution: Fahrzeug-Landingpages auf Kundenwebsites bringen
+---
 
-### Problemstellung
+## Phase 1: Datenbank-Schema (Migration)
 
-Die generierten HTML-Angebotsseiten sind aktuell nur als Download verfügbar. Autohäuser brauchen Wege, diese Inhalte auf ihre bestehenden Websites zu bekommen -- idealerweise SEO-freundlich und in das vorhandene Design integriert.
+### Neue Tabellen:
 
-### Vorgeschlagene Integrationswege
+1. **`subscription_plans`** — Tier-Definitionen (seed data)
+   - id, name, slug, monthly_credits, price_monthly_cents, price_yearly_cents, extra_credit_price_cents, features (jsonb), sort_order, active
 
-#### 1. REST API (Kernstück)
-Eine neue Edge Function `api/vehicles` die pro Projekt strukturierte JSON-Daten ausliefert (Fahrzeugdaten, Bilder-URLs, Verbrauch, Finanzierung). Damit kann jedes System die Daten abrufen und selbst rendern.
+2. **`user_subscriptions`** — Aktives Abo pro User
+   - id, user_id (ref auth.users), plan_id (ref subscription_plans), status (enum: active/cancelled/past_due/trialing), billing_cycle (monthly/yearly), current_period_start, current_period_end, stripe_subscription_id, created_at, updated_at
 
-- **Authentifizierung**: API-Key pro Nutzer (neues Feld `api_key` in `profiles`, auto-generiert)
-- **Endpunkte**:
-  - `GET /vehicles` -- Liste aller Projekte des Nutzers
-  - `GET /vehicles/:id` -- Einzelnes Projekt als JSON
-  - `GET /vehicles/:id/html` -- Fertiges HTML-Fragment (ohne `<html>`/`<body>`, nur der Content-Block)
-- **Vorteil**: Universell einsetzbar, jedes CMS/Framework kann die Daten konsumieren
+3. **`credit_balances`** — Credit-Stand pro User
+   - id, user_id (unique, ref auth.users), balance (int default 10), lifetime_used (int default 0), last_reset_at (timestamptz), created_at
 
-#### 2. FTP-Upload
-Eine Edge Function die das generierte HTML per FTP auf den Kundenserver hochlädt.
+4. **`credit_transactions`** — Jede Buchung
+   - id, user_id, amount (int, negativ=Verbrauch, positiv=Aufladung), action_type (enum: pdf_analysis, image_generate, image_remaster, vin_ocr, credit_purchase, subscription_reset, admin_adjustment, landing_page_export), model_used (text nullable), description (text), reference_id (text nullable), created_at
 
-- **Konfiguration im Profil**: FTP-Host, Port, Benutzer, Passwort, Zielverzeichnis
-- **Ablauf**: Button "Auf Server hochladen" im Export-Dialog, sendet HTML an Edge Function die per FTP hochlädt
-- **Nachteil** (dem Nutzer kommunizieren): Standalone-Seite ohne Menü-Integration
+5. **`admin_settings`** — Key-Value für Prompts, Preise etc.
+   - id, key (unique), value (jsonb), updated_at, updated_by
 
-#### 3. Embed-Script / iFrame (Einfachste SEO-Variante)
-Ein JavaScript-Snippet das der Kunde auf seiner Website einbindet. Das Script lädt die Fahrzeugdaten per REST API und rendert sie direkt in die Seite.
+6. **`user_roles`** — Admin-Rollen (Security-Best-Practice)
+   - id, user_id (ref auth.users), role (enum: admin, moderator, user), unique(user_id, role)
 
-- `<script src="https://autohaus.ai/embed.js" data-dealer="USER_ID"></script>`
-- Rendert eine Fahrzeugliste oder Einzelansicht
-- Erbt teilweise das CSS der Host-Seite
-- Besser als iFrame für SEO, da der Content im DOM liegt
+### DB Functions:
+- `has_role(user_id, role)` — SECURITY DEFINER für RLS
+- `deduct_credits(user_id, amount, action_type, model, description)` — Atomic credit deduction + transaction log
+- `add_credits(user_id, amount, action_type, description)` — Atomic credit addition
 
-#### 4. WordPress Plugin (Wichtigster Kanal)
-Ein WordPress-Plugin das die REST API nutzt und native WordPress-Inhalte erzeugt.
+### RLS:
+- credit_balances: User sieht nur eigene
+- credit_transactions: User sieht nur eigene
+- user_subscriptions: User sieht nur eigene
+- subscription_plans: Alle können lesen (public)
+- admin_settings: Nur admin kann schreiben, alle lesen
+- user_roles: Nur admin sieht alle, user sieht eigene
 
-- Erstellt Custom Post Type `fahrzeug_angebot`
-- Synchronisiert automatisch per Cron oder manuell
-- Nutzt das aktive Theme-Layout (Menü, Footer, Sidebar)
-- SEO-freundlich: echte WordPress-Seiten mit Schema.org Markup
-- **Umsetzung**: Plugin-Code als Download im Profil bereitstellen (PHP-Datei)
+### Seed Data (subscription_plans):
+- Free: 0€, 10 Credits einmalig
+- Starter: 2900 cents/mo, 50 Credits
+- Pro: 7900 cents/mo, 200 Credits
+- Enterprise: 19900 cents/mo, 600 Credits
 
-### UI-Konzept: Neue "Schnittstellen"-Seite
-
-Neue geschützte Route `/integrations` (erreichbar über Profil oder Dashboard-Navigation):
-
-```text
-┌──────────────────────────────────────────────┐
-│  Schnittstellen & Integration                │
-├──────────────────────────────────────────────┤
-│                                              │
-│  🔑 API-Zugang                               │
-│  ┌──────────────────────────────────────┐    │
-│  │ API-Key: ak_xxxx...  [Kopieren][Neu] │    │
-│  │ Endpunkt: .../api/vehicles           │    │
-│  │ [Dokumentation anzeigen]             │    │
-│  └──────────────────────────────────────┘    │
-│                                              │
-│  📡 FTP-Upload                               │
-│  ┌──────────────────────────────────────┐    │
-│  │ Host: ___  Port: ___  User: ___     │    │
-│  │ Passwort: ___  Verzeichnis: ___     │    │
-│  │ [Verbindung testen] [Speichern]      │    │
-│  └──────────────────────────────────────┘    │
-│                                              │
-│  🔗 Embed-Code                               │
-│  ┌──────────────────────────────────────┐    │
-│  │ <script src="..."></script>          │    │
-│  │ [Kopieren]                            │    │
-│  └──────────────────────────────────────┘    │
-│                                              │
-│  🔌 WordPress Plugin                         │
-│  ┌──────────────────────────────────────┐    │
-│  │ Plugin herunterladen (.zip)           │    │
-│  │ Anleitung: 1. Plugin hochladen...    │    │
-│  └──────────────────────────────────────┘    │
-│                                              │
-└──────────────────────────────────────────────┘
+### Credit-Kosten (admin_settings, key='credit_costs'):
+```json
+{
+  "pdf_analysis": { "standard": 1, "pro": 1 },
+  "image_generate": { "standard": 3, "pro": 8 },
+  "image_remaster": { "standard": 2, "pro": 5 },
+  "vin_ocr": { "standard": 1, "pro": 1 },
+  "landing_page_export": { "standard": 0, "pro": 0 }
+}
 ```
 
-### Technische Umsetzung
+---
 
-**Phase 1 -- REST API + UI (jetzt)**
-1. DB-Migration: `api_key` Feld in `profiles` + RLS
-2. Edge Function `api-vehicles/index.ts` mit API-Key Auth
-3. Neue Seite `src/pages/Integrations.tsx` mit API-Key-Management und Dokumentation
-4. Navigation in Dashboard/Profil erweitern (Link zu `/integrations`)
-5. Export-Dialog um "Auf Server hochladen" erweitern
+## Phase 2: Credit-System (Backend)
 
-**Phase 2 -- FTP + Embed (danach)**
-6. FTP-Konfiguration in DB (neue Tabelle `ftp_configs`)
-7. Edge Function `ftp-upload/index.ts`
-8. Embed-Script als statische JS-Datei in `public/embed.js`
+### Edge Function: `check-credits`
+- Input: { action_type, model_tier }
+- Prüft balance >= cost
+- Returns: { allowed, balance, cost }
 
-**Phase 3 -- WordPress Plugin (separat)**
-9. WordPress-Plugin-PHP generieren und als Download bereitstellen
-10. Anleitungs-Sektion auf der Integrations-Seite
+### Bestehende Edge Functions erweitern (minimal):
+- `analyze-pdf`: Credit-Check + Deduction am Anfang/Ende
+- `generate-vehicle-image`: Credit-Check + Deduction
+- `remaster-vehicle-image`: Credit-Check + Deduction
+- `ocr-vin`: Credit-Check + Deduction
 
-### Empfehlung
+**Ansatz**: Neues Shared-Modul `_shared/credits.ts` mit `checkAndDeductCredits()` — wird von allen Edge Functions importiert.
 
-Ich würde mit **Phase 1** starten: REST API + Integrations-Seite. Das ist die Grundlage für alles andere (FTP, Embed und WordPress Plugin nutzen alle die gleiche API). Soll ich damit beginnen?
+---
 
+## Phase 3: UI — Credit-Anzeige & Modell-Switcher
+
+### Neue Komponenten:
+- `src/components/CreditBadge.tsx` — Permanenter Badge in Nav (⚡ 42)
+- `src/components/ModelSelector.tsx` — Toggle Standard/Pro mit Credit-Kosten
+- `src/components/CreditConfirmDialog.tsx` — "Kostet X Credits. Fortfahren?"
+- `src/components/PricingPage.tsx` — Tier-Vergleich
+
+### Hooks:
+- `src/hooks/useCredits.ts` — Credit-Balance laden, realtime subscription
+- `src/hooks/useCreditCheck.ts` — Pre-Action Credit-Check + Confirm
+
+### Bestehende Dateien (minimal):
+- `Index.tsx`: Import CreditBadge in Header, Credit-Check vor AI-Aktionen
+- `Dashboard.tsx`: Import CreditBadge in Header
+- `App.tsx`: Route `/pricing` hinzufügen
+
+---
+
+## Phase 4: Admin-Panel
+
+### Neue Seiten:
+- `src/pages/admin/AdminLayout.tsx` — Sidebar + Outlet
+- `src/pages/admin/AdminDashboard.tsx` — Übersicht/Statistiken
+- `src/pages/admin/AdminUsers.tsx` — Nutzerverwaltung (Liste, Credits anpassen, Abo ändern)
+- `src/pages/admin/AdminTransactions.tsx` — Alle Credit-Transaktionen
+- `src/pages/admin/AdminPrompts.tsx` — Prompt-Verwaltung (alle Edge Function Prompts)
+- `src/pages/admin/AdminPricing.tsx` — Credit-Kosten & Tier-Preise anpassen
+- `src/pages/admin/AdminSettings.tsx` — Allgemeine Einstellungen
+
+### Admin-Guard:
+- `src/components/AdminRoute.tsx` — Prüft `has_role(uid, 'admin')` via RPC
+
+### Statistiken (AdminDashboard):
+- Gesamt-Nutzer, aktive Abos pro Tier
+- Credits verbraucht (heute/Woche/Monat)
+- Top-Aktionen (Chart)
+- Revenue (wenn Stripe integriert)
+- Neueste Registrierungen
+
+### Edge Functions (Admin):
+- `admin-users` — CRUD auf user_subscriptions, credit_balances (admin-only)
+- `admin-settings` — CRUD auf admin_settings (admin-only)
+
+---
+
+## Phase 5: Stripe-Integration
+
+- Stripe Products/Prices für Tiers
+- Checkout Sessions für Abo-Start
+- Customer Portal für Abo-Verwaltung
+- Webhooks: subscription.created/updated/deleted → user_subscriptions + credit_balances
+
+---
+
+## Implementierungsreihenfolge (Tasks)
+
+| # | Task | Dateien | Risiko |
+|---|------|---------|--------|
+| 1 | DB Migration: Alle Tabellen + Functions + RLS + Seed | migration.sql | Kein (additiv) |
+| 2 | `_shared/credits.ts` + Edge Function `check-credits` | supabase/functions/ | Kein |
+| 3 | Credit-Check in bestehende Edge Functions einbauen | 4 bestehende functions | Niedrig (Guard am Anfang) |
+| 4 | `useCredits` Hook + `CreditBadge` Komponente | src/hooks, src/components | Kein |
+| 5 | `ModelSelector` + `CreditConfirmDialog` | src/components | Kein |
+| 6 | Credit-Badge in Index.tsx + Dashboard.tsx Header | 2 Dateien, je 1-2 Zeilen | Minimal |
+| 7 | Pricing-Seite | src/pages/Pricing.tsx + Route | Kein |
+| 8 | Admin-Guard + AdminLayout | src/components, src/pages/admin | Kein |
+| 9 | AdminDashboard + AdminUsers | src/pages/admin | Kein |
+| 10 | AdminTransactions + AdminPrompts + AdminPricing | src/pages/admin | Kein |
+| 11 | Admin-Edge-Functions | supabase/functions | Kein |
+| 12 | Stripe-Integration | Separat, Phase 5 | Mittel |
+
+---
+
+## Sicherheit
+- Admin-Check IMMER serverseitig via `has_role()` DB-Function
+- Nie localStorage/Client-Check für Admin
+- Credit-Deduction atomar via DB-Function (kein Race Condition)
+- RLS auf allen neuen Tabellen

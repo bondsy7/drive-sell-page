@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { Plus, Image, FileText, Download, ExternalLink, Trash2, LogOut, User, MessageSquare, Mail, Phone, Calculator, Receipt } from 'lucide-react';
+import { Plus, Image, FileText, Download, ExternalLink, Trash2, LogOut, User, MessageSquare, Mail, Phone, Calculator, Receipt, Plug } from 'lucide-react';
 import logoLight from '@/assets/logo-light.png';
 import CreditBadge from '@/components/CreditBadge';
 import { toast } from 'sonner';
@@ -195,6 +195,9 @@ const Dashboard = () => {
             </Link>
             <Link to="/profile">
               <Button variant="ghost" size="icon"><User className="w-4 h-4" /></Button>
+            </Link>
+            <Link to="/integrations">
+              <Button variant="ghost" size="icon" title="Schnittstellen"><Plug className="w-4 h-4" /></Button>
             </Link>
             <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="w-4 h-4" /></Button>
           </div>

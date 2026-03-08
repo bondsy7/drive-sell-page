@@ -145,6 +145,7 @@ export type Database = {
       profiles: {
         Row: {
           address: string | null
+          api_key: string | null
           city: string | null
           company_name: string | null
           contact_name: string | null
@@ -171,6 +172,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          api_key?: string | null
           city?: string | null
           company_name?: string | null
           contact_name?: string | null
@@ -197,6 +199,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          api_key?: string | null
           city?: string | null
           company_name?: string | null
           contact_name?: string | null
@@ -434,6 +437,7 @@ export type Database = {
         }
         Returns: Json
       }
+      generate_api_key: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
