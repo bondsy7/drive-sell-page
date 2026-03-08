@@ -4,7 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useCredits } from '@/hooks/useCredits';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { Car, Check, Zap, ArrowLeft, Loader2, Plus } from 'lucide-react';
+import { Check, Zap, ArrowLeft, Loader2, Plus } from 'lucide-react';
+import logoLight from '@/assets/logo-light.png';
 import CreditBadge from '@/components/CreditBadge';
 import { STRIPE_PRICES, CREDIT_PACKS } from '@/lib/stripe-plans';
 import { toast } from 'sonner';
@@ -112,11 +113,8 @@ const Pricing = () => {
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-primary sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg gradient-accent flex items-center justify-center">
-              <Car className="w-4 h-4 text-accent-foreground" />
-            </div>
-            <span className="font-display font-bold text-primary-foreground text-sm">AutoPage</span>
+          <Link to="/" className="flex items-center">
+            <img src={logoLight} alt="Autohaus.AI" className="h-8" />
           </Link>
           <div className="flex items-center gap-3">
             <CreditBadge />

@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Car, ArrowLeft, Save, Building2, MapPin, Phone, Globe, Facebook, Instagram, Youtube, FileText, Landmark, Upload, X, Image } from 'lucide-react';
+import { ArrowLeft, Save, Building2, MapPin, Phone, Globe, Facebook, Instagram, Youtube, FileText, Landmark, Upload, X, Image } from 'lucide-react';
+import logoDark from '@/assets/logo-dark.png';
 import { toast } from 'sonner';
 
 interface ProfileData {
@@ -150,12 +151,9 @@ const Profile = () => {
         <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link to="/dashboard"><Button variant="ghost" size="icon"><ArrowLeft className="w-4 h-4" /></Button></Link>
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg gradient-accent flex items-center justify-center">
-                <Car className="w-4 h-4 text-accent-foreground" />
-              </div>
-              <span className="font-display font-bold text-foreground text-sm">Firmenprofil</span>
-            </div>
+            <Link to="/">
+              <img src={logoDark} alt="Autohaus.AI" className="h-7" />
+            </Link>
           </div>
           <Button onClick={handleSave} disabled={saving} className="gap-1.5">
             <Save className="w-4 h-4" /> {saving ? 'Speichern...' : 'Speichern'}
