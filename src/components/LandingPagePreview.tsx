@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { urlToBase64, urlsToBase64, compressToWebP, compressAllToWebP } from '@/lib/storage-utils';
 import { Download, RotateCcw, Car, Fuel, Gauge, Calendar, Palette, Cog, Zap, MapPin, Phone, Mail, Globe, Plus, Trash2, ChevronLeft, ChevronRight, Eye, Pencil, Calculator, Loader2, Search } from 'lucide-react';
+import AutohausEditor from '@/components/template-editors/AutohausEditor';
 import type { VehicleData, ConsumptionData, DealerData } from '@/types/vehicle';
 import { isPluginHybrid } from '@/lib/co2-utils';
 import type { TemplateId } from '@/types/template';
@@ -235,7 +236,7 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto space-y-6">
+    <div className="w-full mx-auto space-y-6">
       {/* Action bar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2 flex-wrap">
@@ -279,6 +280,31 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
             title="Template-Vorschau"
           />
         </div>
+      ) : selectedTemplate === 'autohaus' ? (
+          <AutohausEditor
+            data={data}
+            consumption={consumption}
+            imageBase64={imageBase64}
+            galleryImages={galleryImages}
+            allImages={allImages}
+            isBuyCategory={isBuyCategory}
+            category={cat}
+            updateVehicle={updateVehicle}
+            updateFinance={updateFinance}
+            updateDealer={updateDealer}
+            updateConsumption={updateConsumption}
+            updatePower={updatePower}
+            updateFuelType={updateFuelType}
+            onDataChange={onDataChange}
+            recalculateRate={recalculateRate}
+            calculateCosts={calculateCosts}
+            costCalculating={costCalculating}
+            costMissingFields={costMissingFields}
+            addFeature={addFeature}
+            updateFeature={updateFeature}
+            removeFeature={removeFeature}
+            vinLookup={vinLookup}
+          />
       ) : (
         <>
       {/* Main two-column layout */}
