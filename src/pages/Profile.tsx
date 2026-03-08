@@ -1,12 +1,14 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useCredits } from '@/hooks/useCredits';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Save, Building2, MapPin, Phone, Globe, Facebook, Instagram, Youtube, FileText, Landmark, Upload, X, Image } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { ArrowLeft, Save, Building2, MapPin, Phone, Globe, Facebook, Instagram, Youtube, FileText, Landmark, Upload, X, Image, Zap, History, TrendingDown, TrendingUp } from 'lucide-react';
 import logoLight from '@/assets/logo-light.png';
 import { toast } from 'sonner';
 
@@ -51,11 +53,34 @@ const Section: React.FC<{ icon: React.ReactNode; title: string; children: React.
   </div>
 );
 
+const ACTION_LABELS: Record<string, string> = {
+  pdf_analysis: 'PDF-Analyse',
+  image_generate: 'Bildgenerierung',
+  image_remaster: 'Bild-Remastering',
+  vin_ocr: 'VIN-Erkennung',
+  credit_purchase: 'Credit-Kauf',
+  subscription_reset: 'Abo-Gutschrift',
+  admin_adjustment: 'Admin-Anpassung',
+  landing_page_export: 'Seiten-Export',
+};
+
+interface CreditTransaction {
+  id: string;
+  amount: number;
+  action_type: string;
+  model_used: string | null;
+  description: string | null;
+  created_at: string;
+}
+
 const Profile = () => {
   const { user } = useAuth();
+  const { balance, lifetimeUsed, loading: creditsLoading } = useCredits();
   const [profile, setProfile] = useState<ProfileData>(emptyProfile);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [transactions, setTransactions] = useState<CreditTransaction[]>([]);
+  const [txLoading, setTxLoading] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -88,6 +113,39 @@ const Profile = () => {
       }
     });
   }, [user]);
+
+  // Load transactions and subscribe to realtime
+  const loadTransactions = useCallback(async () => {
+    if (!user) return;
+    setTxLoading(true);
+    const { data } = await supabase
+      .from('credit_transactions' as any)
+      .select('id, amount, action_type, model_used, description, created_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(100);
+    setTransactions((data as any) || []);
+    setTxLoading(false);
+  }, [user]);
+
+  useEffect(() => {
+    loadTransactions();
+    if (!user) return;
+    const channel = supabase
+      .channel('profile-transactions')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'credit_transactions',
+        filter: `user_id=eq.${user.id}`,
+      }, (payload: any) => {
+        if (payload.new) {
+          setTransactions(prev => [payload.new as CreditTransaction, ...prev]);
+        }
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, loadTransactions]);
 
   const update = (key: keyof ProfileData, val: string) => setProfile(p => ({ ...p, [key]: val }));
 
@@ -301,6 +359,75 @@ const Profile = () => {
           <div className="space-y-1.5">
             <Label className="flex items-center gap-1.5"><FileText className="w-3.5 h-3.5" /> Standard-Rechtstext</Label>
             <Textarea value={profile.default_legal_text} onChange={e => update('default_legal_text', e.target.value)} placeholder="Allgemeiner Rechtstext / Haftungsausschluss..." rows={4} />
+          </div>
+        </Section>
+
+        {/* Credit Overview & Transaction History */}
+        <Section icon={<Zap className="w-4 h-4" />} title="Credits & Verlauf">
+          <div className="grid sm:grid-cols-3 gap-4 mb-4">
+            <div className="bg-muted/50 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-foreground">{creditsLoading ? '...' : balance}</div>
+              <div className="text-xs text-muted-foreground mt-1">Verfügbare Credits</div>
+            </div>
+            <div className="bg-muted/50 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-foreground">{creditsLoading ? '...' : lifetimeUsed}</div>
+              <div className="text-xs text-muted-foreground mt-1">Verbrauchte Credits</div>
+            </div>
+            <div className="bg-muted/50 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-foreground">{transactions.length}</div>
+              <div className="text-xs text-muted-foreground mt-1">Transaktionen</div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 mb-3">
+            <History className="w-4 h-4 text-muted-foreground" />
+            <h3 className="text-sm font-medium text-foreground">Transaktionsverlauf</h3>
+          </div>
+
+          {txLoading ? (
+            <div className="text-center py-6 text-muted-foreground text-sm">Lade Verlauf...</div>
+          ) : transactions.length === 0 ? (
+            <div className="text-center py-6 text-muted-foreground text-sm">Noch keine Transaktionen.</div>
+          ) : (
+            <div className="space-y-1 max-h-[400px] overflow-y-auto">
+              {transactions.map(tx => {
+                const isPositive = tx.amount > 0;
+                const date = new Date(tx.created_at);
+                const dateStr = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' });
+                const timeStr = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+                return (
+                  <div key={tx.id} className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center ${isPositive ? 'bg-green-500/15 text-green-600' : 'bg-red-500/15 text-red-500'}`}>
+                        {isPositive ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+                      </span>
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium text-foreground truncate">
+                          {ACTION_LABELS[tx.action_type] || tx.action_type}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {dateStr} · {timeStr}
+                          {tx.model_used && tx.model_used !== 'standard' && (
+                            <Badge variant="outline" className="ml-1.5 text-[10px] px-1 py-0">Pro</Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <span className={`text-sm font-semibold tabular-nums ${isPositive ? 'text-green-600' : 'text-red-500'}`}>
+                      {isPositive ? '+' : ''}{tx.amount}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="mt-3 pt-3 border-t border-border">
+            <Link to="/pricing">
+              <Button variant="outline" size="sm" className="gap-1.5 w-full">
+                <Zap className="w-3.5 h-3.5" /> Credits kaufen
+              </Button>
+            </Link>
           </div>
         </Section>
       </main>
