@@ -114,6 +114,39 @@ const Profile = () => {
     });
   }, [user]);
 
+  // Load transactions and subscribe to realtime
+  const loadTransactions = useCallback(async () => {
+    if (!user) return;
+    setTxLoading(true);
+    const { data } = await supabase
+      .from('credit_transactions' as any)
+      .select('id, amount, action_type, model_used, description, created_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(100);
+    setTransactions((data as any) || []);
+    setTxLoading(false);
+  }, [user]);
+
+  useEffect(() => {
+    loadTransactions();
+    if (!user) return;
+    const channel = supabase
+      .channel('profile-transactions')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'credit_transactions',
+        filter: `user_id=eq.${user.id}`,
+      }, (payload: any) => {
+        if (payload.new) {
+          setTransactions(prev => [payload.new as CreditTransaction, ...prev]);
+        }
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, loadTransactions]);
+
   const update = (key: keyof ProfileData, val: string) => setProfile(p => ({ ...p, [key]: val }));
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
