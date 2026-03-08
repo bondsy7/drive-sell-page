@@ -1,12 +1,14 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useCredits } from '@/hooks/useCredits';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Save, Building2, MapPin, Phone, Globe, Facebook, Instagram, Youtube, FileText, Landmark, Upload, X, Image } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { ArrowLeft, Save, Building2, MapPin, Phone, Globe, Facebook, Instagram, Youtube, FileText, Landmark, Upload, X, Image, Zap, History, TrendingDown, TrendingUp } from 'lucide-react';
 import logoLight from '@/assets/logo-light.png';
 import { toast } from 'sonner';
 
