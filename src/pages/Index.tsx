@@ -400,13 +400,13 @@ const Index = () => {
 
           {appState === 'capturing-images' && (
             <div className="mt-8">
-              <ImageCaptureGrid vehicleDescription={vehicleDescription} vehicleData={vehicleData || undefined} onComplete={handleCaptureComplete} onVehicleDataChange={setVehicleData} onBack={() => setAppState('choosing-image-source')} />
+              <ImageCaptureGrid vehicleDescription={vehicleDescription} vehicleData={vehicleData || undefined} modelTier={selectedModelTier} onComplete={handleCaptureComplete} onVehicleDataChange={setVehicleData} onBack={() => setAppState('choosing-image-source')} />
             </div>
           )}
 
           {appState === 'uploading-images' && (
             <div className="mt-8">
-              <ImageUploadRemaster vehicleDescription={vehicleDescription} onComplete={handleRemasterComplete} onBack={() => setAppState('choosing-image-source')} />
+              <ImageUploadRemaster vehicleDescription={vehicleDescription} modelTier={selectedModelTier} onComplete={handleRemasterComplete} onBack={() => setAppState('choosing-image-source')} />
             </div>
           )}
         </main>
