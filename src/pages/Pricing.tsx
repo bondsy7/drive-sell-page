@@ -87,6 +87,27 @@ const Pricing = () => {
     }
   };
 
+  const [loadingCredit, setLoadingCredit] = useState<string | null>(null);
+
+  const handleBuyCredits = async (priceId: string) => {
+    if (!user) {
+      toast.error('Bitte melde dich zuerst an.');
+      return;
+    }
+    setLoadingCredit(priceId);
+    try {
+      const { data, error } = await supabase.functions.invoke('buy-credits', {
+        body: { priceId },
+      });
+      if (error) throw error;
+      if (data?.url) window.open(data.url, '_blank');
+    } catch (err: any) {
+      toast.error('Fehler: ' + (err.message || 'Unbekannter Fehler'));
+    } finally {
+      setLoadingCredit(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-primary sticky top-0 z-50">
@@ -195,7 +216,40 @@ const Pricing = () => {
           </div>
         )}
 
-        {Object.keys(costs).length > 0 && (
+        {/* Credit Packs */}
+        <div className="mt-16">
+          <h2 className="font-display text-xl font-bold text-foreground text-center mb-2">Credits nachkaufen</h2>
+          <p className="text-muted-foreground text-center text-sm mb-6">Einmalig – kein Abo nötig</p>
+          <div className="grid gap-4 md:grid-cols-3 max-w-2xl mx-auto">
+            {CREDIT_PACKS.map((pack) => (
+              <div key={pack.priceId} className="relative rounded-xl border border-border bg-card p-5 flex flex-col items-center text-center">
+                {pack.badge && (
+                  <span className="absolute -top-2.5 right-3 px-2 py-0.5 rounded-full bg-accent text-accent-foreground text-[10px] font-bold">
+                    {pack.badge}
+                  </span>
+                )}
+                <Zap className="w-6 h-6 text-accent mb-2" />
+                <span className="font-display font-bold text-foreground text-lg">{pack.label}</span>
+                <span className="text-2xl font-bold text-foreground mt-1">{(pack.priceCents / 100).toFixed(0)}€</span>
+                <span className="text-xs text-muted-foreground mb-4">
+                  {(pack.priceCents / pack.credits / 100).toFixed(2)}€ / Credit
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  disabled={loadingCredit === pack.priceId}
+                  onClick={() => handleBuyCredits(pack.priceId)}
+                >
+                  {loadingCredit === pack.priceId ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Plus className="w-4 h-4 mr-1" />}
+                  Kaufen
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+
           <div className="mt-16">
             <h2 className="font-display text-xl font-bold text-foreground text-center mb-6">Credit-Kosten pro Aktion</h2>
             <div className="max-w-lg mx-auto bg-card rounded-xl border border-border overflow-hidden">
