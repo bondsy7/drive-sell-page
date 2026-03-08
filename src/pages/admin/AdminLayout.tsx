@@ -1,5 +1,6 @@
 import { NavLink, Outlet, Link } from 'react-router-dom';
-import { Car, LayoutDashboard, Users, Receipt, MessageSquare, Settings, CreditCard, ArrowLeft } from 'lucide-react';
+import { LayoutDashboard, Users, Receipt, MessageSquare, Settings, CreditCard, ArrowLeft } from 'lucide-react';
+import logoDark from '@/assets/logo-dark.png';
 
 const NAV = [
   { to: '/admin', icon: LayoutDashboard, label: 'Übersicht', end: true },
@@ -16,10 +17,8 @@ export default function AdminLayout() {
       <aside className="w-56 border-r border-border bg-card shrink-0 flex flex-col">
         <div className="p-4 border-b border-border">
           <Link to="/" className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg gradient-accent flex items-center justify-center">
-              <Car className="w-3.5 h-3.5 text-accent-foreground" />
-            </div>
-            <span className="font-display font-bold text-foreground text-sm">Admin</span>
+            <img src={logoDark} alt="Autohaus.AI" className="h-7" />
+            <span className="font-display font-bold text-foreground text-xs bg-accent/10 text-accent px-2 py-0.5 rounded">Admin</span>
           </Link>
         </div>
         <nav className="flex-1 p-2 space-y-0.5">
