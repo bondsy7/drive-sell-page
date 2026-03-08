@@ -45,7 +45,7 @@ const Index = () => {
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
   const [imageProgress, setImageProgress] = useState({ current: 0, total: 0 });
-  const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>('modern');
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>('autohaus');
   const [savedProjectId, setSavedProjectId] = useState<string | null>(null);
 
   const currentStep = appState === 'idle' ? 1 : appState === 'preview' ? 3 : 2;
