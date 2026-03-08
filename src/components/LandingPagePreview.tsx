@@ -670,7 +670,7 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
       </div>
         </>
       )}
-      <ExportChoiceDialog open={exportDialogOpen} onOpenChange={setExportDialogOpen} onChoose={handleExport} loading={exportLoading} />
+      <ExportChoiceDialog open={exportDialogOpen} onOpenChange={setExportDialogOpen} onChoose={handleExport} loading={exportLoading} projectId={projectId} />
       <VinDataDialog
         open={vinLookup.dialogOpen}
         onClose={() => vinLookup.setDialogOpen(false)}

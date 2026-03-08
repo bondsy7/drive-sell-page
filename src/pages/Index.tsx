@@ -12,9 +12,11 @@ import TemplateSidebar from '@/components/TemplateSidebar';
 import ImageSourceChoice from '@/components/ImageSourceChoice';
 import ImageUploadRemaster from '@/components/ImageUploadRemaster';
 import ImageCaptureGrid from '@/components/ImageCaptureGrid';
+import CreditConfirmDialog from '@/components/CreditConfirmDialog';
 import { extractPDFAsBase64 } from '@/lib/pdf-utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useCredits } from '@/hooks/useCredits';
 import { uploadImagesToStorage } from '@/lib/storage-utils';
 import type { AppState, VehicleData } from '@/types/vehicle';
 
@@ -40,6 +42,7 @@ const STEPS = [
 
 const Index = () => {
   const { user, signOut } = useAuth();
+  const { balance, getCost } = useCredits();
   const navigate = useNavigate();
   const [appState, setAppState] = useState<ExtendedAppState>('idle');
   const [fileName, setFileName] = useState<string>('');
@@ -49,6 +52,10 @@ const Index = () => {
   const [imageProgress, setImageProgress] = useState({ current: 0, total: 0 });
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>('autohaus');
   const [savedProjectId, setSavedProjectId] = useState<string | null>(null);
+  const [creditDialog, setCreditDialog] = useState<{ open: boolean; cost: number; label: string; onConfirm: () => void }>({
+    open: false, cost: 0, label: '', onConfirm: () => {},
+  });
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
 
   const currentStep = appState === 'idle' ? 1 : appState === 'preview' ? 3 : 2;
 
@@ -116,6 +123,21 @@ const Index = () => {
   }, [user]);
 
   const handleFileSelected = useCallback(async (file: File) => {
+    const pdfCost = getCost('pdf_analysis', 'standard') || 1;
+    setPendingFile(file);
+    setCreditDialog({
+      open: true,
+      cost: pdfCost,
+      label: 'PDF analysieren',
+      onConfirm: () => {
+        setPendingFile(null);
+        setCreditDialog(prev => ({ ...prev, open: false }));
+        processFile(file);
+      },
+    });
+  }, [getCost]);
+
+  const processFile = useCallback(async (file: File) => {
     setFileName(file.name);
     setGalleryImages([]);
     setImageBase64(null);
@@ -150,6 +172,21 @@ const Index = () => {
   }, [loadProfileIntoDealer]);
 
   const handleChooseGenerate = useCallback(async () => {
+    if (!vehicleData) return;
+    const costPerImage = getCost('image_generate', 'standard') || 2;
+    const totalCost = costPerImage * PERSPECTIVES.length;
+    setCreditDialog({
+      open: true,
+      cost: totalCost,
+      label: `${PERSPECTIVES.length} Bilder generieren`,
+      onConfirm: () => {
+        setCreditDialog(prev => ({ ...prev, open: false }));
+        doGenerate();
+      },
+    });
+  }, [vehicleData, getCost]);
+
+  const doGenerate = useCallback(async () => {
     if (!vehicleData) return;
     setAppState('generating-image');
     const total = PERSPECTIVES.length;
@@ -307,7 +344,7 @@ const Index = () => {
               <div className="flex items-center justify-center gap-1 text-accent">
                 <Sparkles className="w-4 h-4" />
                 <span className="text-xs font-medium text-muted-foreground">
-                  KI-Analyse starten & Angebotsseite erstellen
+                  KI-Analyse kostet <strong className="text-accent">{getCost('pdf_analysis', 'standard') || 1} Credit</strong> — Guthaben: <strong className="text-foreground">{balance} Credits</strong>
                 </span>
               </div>
               <p className="text-center text-[11px] text-muted-foreground">
@@ -346,6 +383,19 @@ const Index = () => {
           )}
         </main>
       )}
+
+      {/* Credit Confirmation Dialog */}
+      <CreditConfirmDialog
+        open={creditDialog.open}
+        cost={creditDialog.cost}
+        balance={balance}
+        actionLabel={creditDialog.label}
+        onConfirm={creditDialog.onConfirm}
+        onCancel={() => {
+          setCreditDialog(prev => ({ ...prev, open: false }));
+          setPendingFile(null);
+        }}
+      />
     </div>
   );
 };

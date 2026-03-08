@@ -359,7 +359,24 @@ export default function Integrations() {
           </CardContent>
         </Card>
 
-        {/* ============ API Response Example ============ */}
+        {/* ============ API Documentation Link ============ */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Code className="w-5 h-5" /> API-Dokumentation</CardTitle>
+            <CardDescription>Ausführliche Dokumentation mit interaktiven Beispielen für Entwickler</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-3">
+              Die vollständige API-Dokumentation enthält Endpunkt-Beschreibungen, Code-Beispiele in cURL, JavaScript, PHP und Python sowie Antwort-Schemas.
+            </p>
+            <Link to="/docs">
+              <Button variant="outline" size="sm">
+                <Globe className="w-3 h-3 mr-1" /> API-Dokumentation öffnen
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><Code className="w-5 h-5" /> API-Antwort Beispiel</CardTitle>

@@ -1,6 +1,6 @@
 import React from 'react';
-import { Wand2, Upload, Camera } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Wand2, Upload, Camera, Zap } from 'lucide-react';
+import { useCredits } from '@/hooks/useCredits';
 
 interface ImageSourceChoiceProps {
   onChooseGenerate: () => void;
@@ -9,11 +9,29 @@ interface ImageSourceChoiceProps {
 }
 
 const ImageSourceChoice: React.FC<ImageSourceChoiceProps> = ({ onChooseGenerate, onChooseUpload, onChooseCapture }) => {
+  const { getCost, balance } = useCredits();
+
+  const generateCost = getCost('image_generate', 'standard') * 7; // 7 perspectives
+  const remasterCost = getCost('image_remaster', 'standard');
+  const vinOcrCost = getCost('vin_ocr', 'standard');
+
+  const CostBadge = ({ cost, extra }: { cost: number; extra?: string }) => (
+    <div className="flex items-center gap-1 mt-3 pt-3 border-t border-border">
+      <Zap className="w-3 h-3 text-accent" />
+      <span className="text-[11px] font-semibold text-accent">{cost} Credits</span>
+      {extra && <span className="text-[11px] text-muted-foreground">({extra})</span>}
+    </div>
+  );
+
   return (
     <div className="w-full max-w-2xl mx-auto">
       <div className="text-center mb-6">
         <h2 className="font-display text-xl font-bold text-foreground mb-2">Fahrzeugbilder erstellen</h2>
         <p className="text-sm text-muted-foreground">Wähle wie die Bilder für deine Landing Page erstellt werden sollen.</p>
+        <div className="flex items-center justify-center gap-1.5 mt-2 text-xs text-muted-foreground">
+          <Zap className="w-3 h-3 text-accent" />
+          <span>Dein Guthaben: <strong className="text-foreground">{balance} Credits</strong></span>
+        </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Option 1: AI Generate */}
@@ -28,6 +46,7 @@ const ImageSourceChoice: React.FC<ImageSourceChoiceProps> = ({ onChooseGenerate,
           <p className="text-xs text-muted-foreground leading-relaxed">
             7 fotorealistische Perspektiven im Showroom-Setting. Komplett automatisch.
           </p>
+          <CostBadge cost={generateCost} extra={`${getCost('image_generate', 'standard')} pro Bild`} />
         </button>
 
         {/* Option 2: Smartphone/Camera Capture */}
@@ -42,6 +61,7 @@ const ImageSourceChoice: React.FC<ImageSourceChoiceProps> = ({ onChooseGenerate,
           <p className="text-xs text-muted-foreground leading-relaxed">
             Fotografiere das Fahrzeug mit dem Smartphone. KI-Remastering + automatische VIN-Erkennung.
           </p>
+          <CostBadge cost={remasterCost} extra={`pro Bild + ${vinOcrCost} für VIN`} />
         </button>
 
         {/* Option 3: Upload & Remaster */}
@@ -56,6 +76,7 @@ const ImageSourceChoice: React.FC<ImageSourceChoiceProps> = ({ onChooseGenerate,
           <p className="text-xs text-muted-foreground leading-relaxed">
             Eigene Fahrzeugfotos hochladen. Die KI setzt sie in einen professionellen Showroom.
           </p>
+          <CostBadge cost={remasterCost} extra="pro Bild" />
         </button>
       </div>
     </div>
