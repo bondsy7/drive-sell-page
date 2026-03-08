@@ -280,6 +280,31 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
             title="Template-Vorschau"
           />
         </div>
+      ) : selectedTemplate === 'autohaus' ? (
+          <AutohausEditor
+            data={data}
+            consumption={consumption}
+            imageBase64={imageBase64}
+            galleryImages={galleryImages}
+            allImages={allImages}
+            isBuyCategory={isBuyCategory}
+            category={cat}
+            updateVehicle={updateVehicle}
+            updateFinance={updateFinance}
+            updateDealer={updateDealer}
+            updateConsumption={updateConsumption}
+            updatePower={updatePower}
+            updateFuelType={updateFuelType}
+            onDataChange={onDataChange}
+            recalculateRate={recalculateRate}
+            calculateCosts={calculateCosts}
+            costCalculating={costCalculating}
+            costMissingFields={costMissingFields}
+            addFeature={addFeature}
+            updateFeature={updateFeature}
+            removeFeature={removeFeature}
+            vinLookup={vinLookup}
+          />
       ) : (
         <>
       {/* Main two-column layout */}
