@@ -224,10 +224,26 @@ const Pricing = () => {
                   <Button variant="outline" size="sm" disabled className="border-accent/30 text-accent">
                     <Crown className="w-3.5 h-3.5 mr-1" /> Aktueller Plan
                   </Button>
+                ) : isFree && !user ? (
+                  <Link to="/auth">
+                    <Button variant="outline" size="sm" className="w-full">
+                      Kostenlos starten
+                    </Button>
+                  </Link>
                 ) : isFree ? (
                   <Button variant="outline" size="sm" disabled className="opacity-50">
                     Kostenlos
                   </Button>
+                ) : !user ? (
+                  <Link to="/auth">
+                    <Button
+                      className={isPro ? 'gradient-accent text-accent-foreground w-full' : 'w-full'}
+                      variant={isPro ? 'default' : 'outline'}
+                      size="sm"
+                    >
+                      Jetzt buchen
+                    </Button>
+                  </Link>
                 ) : (
                   <Button
                     className={isPro ? 'gradient-accent text-accent-foreground' : ''}
