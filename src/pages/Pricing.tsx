@@ -301,9 +301,40 @@ const Pricing = () => {
                 </div>
               </div>
 
-              <Button variant="outline" size="sm" onClick={handleManage} className="w-full gap-1.5">
-                Abo verwalten · Kündigen · Plan wechseln
-              </Button>
+              {manageError && (
+                <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                  <p>{manageError}</p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-3 gap-2">
+                <Button variant="outline" size="sm" onClick={handleManage} className="gap-1.5">
+                  <CreditCard className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Abo verwalten</span>
+                  <span className="sm:hidden">Verwalten</span>
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => {
+                  const plansSection = document.querySelector('.grid.gap-4');
+                  plansSection?.scrollIntoView({ behavior: 'smooth' });
+                }} className="gap-1.5">
+                  <ArrowUpDown className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Plan wechseln</span>
+                  <span className="sm:hidden">Wechseln</span>
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setCancelOpen(true)} className="gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10 hover:border-destructive/30">
+                  <XCircle className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Kündigen</span>
+                  <span className="sm:hidden">Kündigen</span>
+                </Button>
+              </div>
+
+              <CancelSubscriptionDialog
+                open={cancelOpen}
+                onOpenChange={setCancelOpen}
+                onConfirm={handleCancel}
+                periodEnd={periodEnd}
+              />
             </div>
           </div>
         )}
