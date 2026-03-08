@@ -17,6 +17,7 @@ const FinancingCalculator = lazy(() => import("./pages/FinancingCalculator"));
 const KfzSteuerRechner = lazy(() => import("./pages/KfzSteuerRechner"));
 const Pricing = lazy(() => import("./pages/Pricing"));
 const Integrations = lazy(() => import("./pages/Integrations"));
+const ApiDocs = lazy(() => import("./pages/ApiDocs"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Admin pages
