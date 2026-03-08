@@ -1,25 +1,66 @@
-import React, { useState } from 'react';
-import { Navigate, Link } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { Navigate, Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable/index';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Mail, Lock, User, Chrome } from 'lucide-react';
+import { Mail, Lock, User, Chrome, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
+import { STRIPE_PRICES } from '@/lib/stripe-plans';
 import logoLight from '@/assets/logo-light.png';
 
 const Auth = () => {
   const { user, loading } = useAuth();
-  const [isLogin, setIsLogin] = useState(true);
+  const [searchParams] = useSearchParams();
+  const plan = searchParams.get('plan'); // e.g. starter, pro, enterprise
+  const cycle = searchParams.get('cycle') || 'monthly';
+
+  // Only allow registration if a plan is selected
+  const [isLogin, setIsLogin] = useState(!plan);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const justRegistered = useRef(false);
+
+  // After registration + auth state resolves, trigger Stripe checkout
+  useEffect(() => {
+    if (user && justRegistered.current && plan) {
+      justRegistered.current = false;
+      startCheckout();
+    }
+  }, [user]);
+
+  const startCheckout = async () => {
+    const prices = STRIPE_PRICES[plan!];
+    if (!prices) {
+      // Plan doesn't have stripe prices (e.g. free) — just redirect
+      window.location.href = '/generator';
+      return;
+    }
+    const priceId = cycle === 'yearly' ? prices.yearly : prices.monthly;
+    try {
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: { priceId },
+      });
+      if (error) throw error;
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        window.location.href = '/generator';
+      }
+    } catch {
+      toast.error('Checkout konnte nicht gestartet werden. Bitte versuche es unter Preise erneut.');
+      window.location.href = '/pricing';
+    }
+  };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-background"><div className="animate-spin w-8 h-8 border-2 border-accent border-t-transparent rounded-full" /></div>;
-  if (user) return <Navigate to="/generator" replace />;
+  
+  // If already logged in and no pending plan, redirect
+  if (user && !justRegistered.current) return <Navigate to="/generator" replace />;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,7 +77,8 @@ const Auth = () => {
           options: { data: { full_name: name }, emailRedirectTo: window.location.origin },
         });
         if (error) throw error;
-        toast.success('Registrierung erfolgreich! Bitte bestätige deine E-Mail.');
+        justRegistered.current = true;
+        toast.success('Registrierung erfolgreich! Du wirst zum Checkout weitergeleitet…');
       }
     } catch (err: any) {
       toast.error(err.message || 'Ein Fehler ist aufgetreten');
@@ -47,9 +89,17 @@ const Auth = () => {
 
   const handleGoogle = async () => {
     const { error } = await lovable.auth.signInWithOAuth('google', {
-      redirect_uri: window.location.origin,
+      redirect_uri: plan
+        ? `${window.location.origin}/auth?plan=${plan}&cycle=${cycle}`
+        : window.location.origin,
     });
     if (error) toast.error('Google Login fehlgeschlagen');
+  };
+
+  const PLAN_LABELS: Record<string, string> = {
+    starter: 'Starter',
+    pro: 'Pro',
+    enterprise: 'Enterprise',
   };
 
   return (
@@ -59,7 +109,15 @@ const Auth = () => {
           <Link to="/">
             <img src={logoLight} alt="Autohaus.AI" className="h-14 mx-auto" />
           </Link>
-          <p className="text-sm text-muted-foreground">{isLogin ? 'Melde dich an' : 'Erstelle deinen Account'}</p>
+          <p className="text-sm text-muted-foreground">
+            {isLogin ? 'Melde dich an' : 'Erstelle deinen Account'}
+          </p>
+          {!isLogin && plan && PLAN_LABELS[plan] && (
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/10 text-accent text-xs font-semibold">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              Gewählter Plan: {PLAN_LABELS[plan]} ({cycle === 'yearly' ? 'Jährlich' : 'Monatlich'})
+            </div>
+          )}
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -87,7 +145,7 @@ const Auth = () => {
             </div>
           </div>
           <Button type="submit" className="w-full" disabled={submitting}>
-            {submitting ? 'Laden...' : isLogin ? 'Anmelden' : 'Registrieren'}
+            {submitting ? 'Laden...' : isLogin ? 'Anmelden' : 'Registrieren & zum Checkout'}
           </Button>
         </form>
 
@@ -97,14 +155,31 @@ const Auth = () => {
         </div>
 
         <Button variant="outline" className="w-full" onClick={handleGoogle}>
-          <Chrome className="w-4 h-4 mr-2" /> Mit Google anmelden
+          <Chrome className="w-4 h-4 mr-2" /> Mit Google {isLogin ? 'anmelden' : 'registrieren'}
         </Button>
 
         <p className="text-center text-sm text-muted-foreground">
-          {isLogin ? 'Noch kein Account?' : 'Bereits registriert?'}{' '}
-          <button className="text-accent font-medium hover:underline" onClick={() => setIsLogin(!isLogin)}>
-            {isLogin ? 'Registrieren' : 'Anmelden'}
-          </button>
+          {isLogin ? (
+            <>
+              Noch kein Account?{' '}
+              {plan ? (
+                <button className="text-accent font-medium hover:underline" onClick={() => setIsLogin(false)}>
+                  Registrieren
+                </button>
+              ) : (
+                <Link to="/pricing" className="text-accent font-medium hover:underline">
+                  Plan wählen & registrieren
+                </Link>
+              )}
+            </>
+          ) : (
+            <>
+              Bereits registriert?{' '}
+              <button className="text-accent font-medium hover:underline" onClick={() => setIsLogin(true)}>
+                Anmelden
+              </button>
+            </>
+          )}
         </p>
       </div>
     </div>
