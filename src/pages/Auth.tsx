@@ -97,6 +97,7 @@ const Auth = () => {
   };
 
   const PLAN_LABELS: Record<string, string> = {
+    free: 'Free',
     starter: 'Starter',
     pro: 'Pro',
     enterprise: 'Enterprise',
