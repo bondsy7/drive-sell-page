@@ -3,8 +3,9 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useCredits } from '@/hooks/useCredits';
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
 import { Button } from '@/components/ui/button';
-import { Check, Zap, ArrowLeft, Loader2, Plus } from 'lucide-react';
+import { Check, Zap, ArrowLeft, Loader2, Plus, Crown } from 'lucide-react';
 import logoDark from '@/assets/logo-dark.png';
 import CreditBadge from '@/components/CreditBadge';
 import { STRIPE_PRICES, CREDIT_PACKS } from '@/lib/stripe-plans';
@@ -29,6 +30,7 @@ const Pricing = () => {
   const [loadingSlug, setLoadingSlug] = useState<string | null>(null);
   const { balance, costs } = useCredits();
   const { user } = useAuth();
+  const { planSlug: activePlanSlug, planName: activePlanName, loading: subLoading } = useSubscription();
 
   useEffect(() => {
     supabase
