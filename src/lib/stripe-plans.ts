@@ -20,3 +20,10 @@ export const STRIPE_PRODUCTS: Record<string, string> = {
   pro: 'prod_U6vMFLF7W8nh43',
   enterprise: 'prod_U6vQHQJucwwipk',
 };
+
+// Credit packs for one-time purchase
+export const CREDIT_PACKS = [
+  { priceId: 'price_1T8kL9P3eWRHEALNnK3GQmXI', credits: 10, priceCents: 500, label: '10 Credits' },
+  { priceId: 'price_1T8kLAP3eWRHEALN1wl28rEl', credits: 50, priceCents: 1500, label: '50 Credits', badge: '-40%' },
+  { priceId: 'price_1T8kLBP3eWRHEALNZCqMlh0N', credits: 200, priceCents: 4500, label: '200 Credits', badge: '-55%' },
+];
