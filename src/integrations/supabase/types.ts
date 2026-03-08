@@ -98,6 +98,45 @@ export type Database = {
         }
         Relationships: []
       }
+      ftp_configs: {
+        Row: {
+          created_at: string
+          directory: string
+          host: string
+          id: string
+          is_sftp: boolean
+          password: string
+          port: number
+          updated_at: string
+          user_id: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          directory?: string
+          host?: string
+          id?: string
+          is_sftp?: boolean
+          password?: string
+          port?: number
+          updated_at?: string
+          user_id: string
+          username?: string
+        }
+        Update: {
+          created_at?: string
+          directory?: string
+          host?: string
+          id?: string
+          is_sftp?: boolean
+          password?: string
+          port?: number
+          updated_at?: string
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           created_at: string
