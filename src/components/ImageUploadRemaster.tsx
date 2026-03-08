@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 
 interface ImageUploadRemasterProps {
   vehicleDescription: string;
+  modelTier?: 'standard' | 'pro';
   onComplete: (mainImage: string, galleryImages: string[]) => void;
   onBack: () => void;
 }
@@ -94,7 +95,7 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
 
       try {
         const { data, error } = await supabase.functions.invoke('remaster-vehicle-image', {
-          body: { imageBase64: img.originalBase64, vehicleDescription },
+          body: { imageBase64: img.originalBase64, vehicleDescription, modelTier: props.modelTier || 'standard' },
         });
 
         if (error || !data?.imageBase64) {

@@ -11,6 +11,7 @@ import type { VehicleData } from '@/types/vehicle';
 interface ImageCaptureGridProps {
   vehicleDescription: string;
   vehicleData?: VehicleData;
+  modelTier?: 'standard' | 'pro';
   onComplete: (mainImage: string, galleryImages: string[], vin?: string) => void;
   onVehicleDataChange?: (data: VehicleData) => void;
   onBack: () => void;
@@ -120,7 +121,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
 
       try {
         const { data, error } = await supabase.functions.invoke('remaster-vehicle-image', {
-          body: { imageBase64: captures[slot.key].base64, vehicleDescription },
+          body: { imageBase64: captures[slot.key].base64, vehicleDescription, modelTier: props.modelTier || 'standard' },
         });
 
         if (error || !data?.imageBase64) {
