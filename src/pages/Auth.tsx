@@ -34,9 +34,12 @@ const Auth = () => {
   }, [user]);
 
   const startCheckout = async () => {
-    const prices = STRIPE_PRICES[plan!];
+    if (!plan || plan === 'free') {
+      window.location.href = '/generator';
+      return;
+    }
+    const prices = STRIPE_PRICES[plan];
     if (!prices) {
-      // Plan doesn't have stripe prices (e.g. free) — just redirect
       window.location.href = '/generator';
       return;
     }
