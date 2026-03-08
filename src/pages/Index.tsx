@@ -344,7 +344,7 @@ const Index = () => {
               <div className="flex items-center justify-center gap-1 text-accent">
                 <Sparkles className="w-4 h-4" />
                 <span className="text-xs font-medium text-muted-foreground">
-                  KI-Analyse starten & Angebotsseite erstellen
+                  KI-Analyse kostet <strong className="text-accent">{getCost('pdf_analysis', 'standard') || 1} Credit</strong> — Guthaben: <strong className="text-foreground">{balance} Credits</strong>
                 </span>
               </div>
               <p className="text-center text-[11px] text-muted-foreground">
@@ -383,6 +383,19 @@ const Index = () => {
           )}
         </main>
       )}
+
+      {/* Credit Confirmation Dialog */}
+      <CreditConfirmDialog
+        open={creditDialog.open}
+        cost={creditDialog.cost}
+        balance={balance}
+        actionLabel={creditDialog.label}
+        onConfirm={creditDialog.onConfirm}
+        onCancel={() => {
+          setCreditDialog(prev => ({ ...prev, open: false }));
+          setPendingFile(null);
+        }}
+      />
     </div>
   );
 };
