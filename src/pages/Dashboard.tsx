@@ -222,7 +222,7 @@ const Dashboard = () => {
             </Link>
             {isAdmin && (
               <Link to="/admin">
-                <Button variant="ghost" size="icon" title="Admin-Bereich"><ShieldCheck className="w-4 h-4 text-accent" /></Button>
+                <Button variant="ghost" size="icon" title="Admin-Bereich" className="hover:bg-accent group"><ShieldCheck className="w-4 h-4 text-accent group-hover:text-accent-foreground transition-colors" /></Button>
               </Link>
             )}
             <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="w-4 h-4" /></Button>
