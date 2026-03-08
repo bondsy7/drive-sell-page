@@ -1,18 +1,21 @@
-import React from 'react';
-import { Wand2, Upload, Camera, Zap } from 'lucide-react';
+import React, { useState } from 'react';
+import { Wand2, Upload, Camera, Zap, Sparkles } from 'lucide-react';
 import { useCredits } from '@/hooks/useCredits';
 
+type ModelTier = 'standard' | 'pro';
+
 interface ImageSourceChoiceProps {
-  onChooseGenerate: () => void;
-  onChooseUpload: () => void;
-  onChooseCapture: () => void;
+  onChooseGenerate: (modelTier: ModelTier) => void;
+  onChooseUpload: (modelTier: ModelTier) => void;
+  onChooseCapture: (modelTier: ModelTier) => void;
 }
 
 const ImageSourceChoice: React.FC<ImageSourceChoiceProps> = ({ onChooseGenerate, onChooseUpload, onChooseCapture }) => {
   const { getCost, balance } = useCredits();
+  const [modelTier, setModelTier] = useState<ModelTier>('standard');
 
-  const generateCost = getCost('image_generate', 'standard') * 7; // 7 perspectives
-  const remasterCost = getCost('image_remaster', 'standard');
+  const generateCost = getCost('image_generate', modelTier) * 7;
+  const remasterCost = getCost('image_remaster', modelTier);
   const vinOcrCost = getCost('vin_ocr', 'standard');
 
   const CostBadge = ({ cost, extra }: { cost: number; extra?: string }) => (
@@ -32,11 +35,38 @@ const ImageSourceChoice: React.FC<ImageSourceChoiceProps> = ({ onChooseGenerate,
           <Zap className="w-3 h-3 text-accent" />
           <span>Dein Guthaben: <strong className="text-foreground">{balance} Credits</strong></span>
         </div>
+
+        {/* Model Tier Selector */}
+        <div className="flex items-center justify-center gap-1.5 mt-4 p-1 rounded-lg bg-muted inline-flex">
+          <button
+            onClick={() => setModelTier('standard')}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-xs font-medium transition-colors ${
+              modelTier === 'standard'
+                ? 'bg-card text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Basic
+            <span className="text-[10px] text-muted-foreground">(schneller)</span>
+          </button>
+          <button
+            onClick={() => setModelTier('pro')}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-xs font-medium transition-colors ${
+              modelTier === 'pro'
+                ? 'bg-accent text-accent-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Sparkles className="w-3 h-3" />
+            Pro
+            <span className="text-[10px] opacity-80">(höhere Qualität)</span>
+          </button>
+        </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Option 1: AI Generate */}
         <button
-          onClick={onChooseGenerate}
+          onClick={() => onChooseGenerate(modelTier)}
           className="group bg-card rounded-2xl border-2 border-border hover:border-accent p-6 text-left transition-all hover:shadow-card"
         >
           <div className="w-12 h-12 rounded-xl bg-accent/10 text-accent flex items-center justify-center mb-4 group-hover:bg-accent group-hover:text-accent-foreground transition-colors">
@@ -46,12 +76,12 @@ const ImageSourceChoice: React.FC<ImageSourceChoiceProps> = ({ onChooseGenerate,
           <p className="text-xs text-muted-foreground leading-relaxed">
             7 fotorealistische Perspektiven im Showroom-Setting. Komplett automatisch.
           </p>
-          <CostBadge cost={generateCost} extra={`${getCost('image_generate', 'standard')} pro Bild`} />
+          <CostBadge cost={generateCost} extra={`${getCost('image_generate', modelTier)} pro Bild`} />
         </button>
 
         {/* Option 2: Smartphone/Camera Capture */}
         <button
-          onClick={onChooseCapture}
+          onClick={() => onChooseCapture(modelTier)}
           className="group bg-card rounded-2xl border-2 border-border hover:border-accent p-6 text-left transition-all hover:shadow-card"
         >
           <div className="w-12 h-12 rounded-xl bg-accent/10 text-accent flex items-center justify-center mb-4 group-hover:bg-accent group-hover:text-accent-foreground transition-colors">
@@ -66,7 +96,7 @@ const ImageSourceChoice: React.FC<ImageSourceChoiceProps> = ({ onChooseGenerate,
 
         {/* Option 3: Upload & Remaster */}
         <button
-          onClick={onChooseUpload}
+          onClick={() => onChooseUpload(modelTier)}
           className="group bg-card rounded-2xl border-2 border-border hover:border-accent p-6 text-left transition-all hover:shadow-card"
         >
           <div className="w-12 h-12 rounded-xl bg-accent/10 text-accent flex items-center justify-center mb-4 group-hover:bg-accent group-hover:text-accent-foreground transition-colors">
