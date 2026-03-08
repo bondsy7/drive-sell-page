@@ -361,6 +361,75 @@ const Profile = () => {
             <Textarea value={profile.default_legal_text} onChange={e => update('default_legal_text', e.target.value)} placeholder="Allgemeiner Rechtstext / Haftungsausschluss..." rows={4} />
           </div>
         </Section>
+
+        {/* Credit Overview & Transaction History */}
+        <Section icon={<Zap className="w-4 h-4" />} title="Credits & Verlauf">
+          <div className="grid sm:grid-cols-3 gap-4 mb-4">
+            <div className="bg-muted/50 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-foreground">{creditsLoading ? '...' : balance}</div>
+              <div className="text-xs text-muted-foreground mt-1">Verfügbare Credits</div>
+            </div>
+            <div className="bg-muted/50 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-foreground">{creditsLoading ? '...' : lifetimeUsed}</div>
+              <div className="text-xs text-muted-foreground mt-1">Verbrauchte Credits</div>
+            </div>
+            <div className="bg-muted/50 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-foreground">{transactions.length}</div>
+              <div className="text-xs text-muted-foreground mt-1">Transaktionen</div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 mb-3">
+            <History className="w-4 h-4 text-muted-foreground" />
+            <h3 className="text-sm font-medium text-foreground">Transaktionsverlauf</h3>
+          </div>
+
+          {txLoading ? (
+            <div className="text-center py-6 text-muted-foreground text-sm">Lade Verlauf...</div>
+          ) : transactions.length === 0 ? (
+            <div className="text-center py-6 text-muted-foreground text-sm">Noch keine Transaktionen.</div>
+          ) : (
+            <div className="space-y-1 max-h-[400px] overflow-y-auto">
+              {transactions.map(tx => {
+                const isPositive = tx.amount > 0;
+                const date = new Date(tx.created_at);
+                const dateStr = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' });
+                const timeStr = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+                return (
+                  <div key={tx.id} className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center ${isPositive ? 'bg-green-500/15 text-green-600' : 'bg-red-500/15 text-red-500'}`}>
+                        {isPositive ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+                      </span>
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium text-foreground truncate">
+                          {ACTION_LABELS[tx.action_type] || tx.action_type}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {dateStr} · {timeStr}
+                          {tx.model_used && tx.model_used !== 'standard' && (
+                            <Badge variant="outline" className="ml-1.5 text-[10px] px-1 py-0">Pro</Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <span className={`text-sm font-semibold tabular-nums ${isPositive ? 'text-green-600' : 'text-red-500'}`}>
+                      {isPositive ? '+' : ''}{tx.amount}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="mt-3 pt-3 border-t border-border">
+            <Link to="/pricing">
+              <Button variant="outline" size="sm" className="gap-1.5 w-full">
+                <Zap className="w-3.5 h-3.5" /> Credits kaufen
+              </Button>
+            </Link>
+          </div>
+        </Section>
       </main>
     </div>
   );
