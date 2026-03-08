@@ -79,12 +79,13 @@ const Pricing = () => {
   };
 
   const handleManage = async () => {
+    setManageError(null);
     try {
       const { data, error } = await supabase.functions.invoke('customer-portal');
       if (error) throw error;
       if (data?.error) {
         if (data.error.includes('Kein Stripe-Kunde')) {
-          toast.info('Du hast noch kein Abo über Stripe abgeschlossen. Wähle zuerst einen Plan.');
+          setManageError('Du hast noch kein Abo über Stripe abgeschlossen. Wähle zuerst einen Plan oben.');
           return;
         }
         throw new Error(data.error);
@@ -93,12 +94,36 @@ const Pricing = () => {
         window.open(data.url, '_blank');
       }
     } catch (err: any) {
-      toast.error('Fehler: ' + (err.message || 'Unbekannter Fehler'));
+      setManageError(err.message || 'Unbekannter Fehler');
+    }
+  };
+
+  const handleCancel = async () => {
+    setManageError(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('customer-portal');
+      if (error) throw error;
+      if (data?.error) {
+        if (data.error.includes('Kein Stripe-Kunde')) {
+          setManageError('Kein aktives Stripe-Abo gefunden. Kontaktiere den Support, falls du Hilfe benötigst.');
+          setCancelOpen(false);
+          return;
+        }
+        throw new Error(data.error);
+      }
+      if (data?.url) {
+        window.open(data.url, '_blank');
+        setCancelOpen(false);
+      }
+    } catch (err: any) {
+      setManageError(err.message || 'Unbekannter Fehler');
+      setCancelOpen(false);
     }
   };
 
   const [loadingCredit, setLoadingCredit] = useState<string | null>(null);
-
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [manageError, setManageError] = useState<string | null>(null);
   const handleBuyCredits = async (priceId: string) => {
     if (!user) {
       toast.error('Bitte melde dich zuerst an.');
