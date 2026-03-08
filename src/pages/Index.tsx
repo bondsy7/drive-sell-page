@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Car, LayoutDashboard, LogOut, User, Sparkles } from 'lucide-react';
+import CreditBadge from '@/components/CreditBadge';
 import { Button } from '@/components/ui/button';
 import PDFUpload from '@/components/PDFUpload';
 import ProcessingStatus from '@/components/ProcessingStatus';
@@ -221,6 +222,7 @@ const Index = () => {
             <span className="font-display font-bold text-primary-foreground text-sm">AutoPage</span>
           </div>
           <div className="flex items-center gap-1">
+            <CreditBadge />
             <Link to="/dashboard">
               <Button variant="ghost" size="sm" className="gap-1.5 text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10">
                 <LayoutDashboard className="w-3.5 h-3.5" /> Dashboard

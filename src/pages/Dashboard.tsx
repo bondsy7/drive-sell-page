@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Car, Plus, Image, FileText, Download, ExternalLink, Trash2, LogOut, User, MessageSquare, Mail, Phone, Calculator, Receipt } from 'lucide-react';
+import CreditBadge from '@/components/CreditBadge';
 import { toast } from 'sonner';
 import { downloadHTML } from '@/lib/templates/download';
 import { embedCO2LabelsInHTML } from '@/lib/templates/shared';
@@ -181,6 +182,7 @@ const Dashboard = () => {
             <span className="font-display font-bold text-foreground text-sm">AutoPage</span>
           </Link>
           <div className="flex items-center gap-3">
+            <CreditBadge />
             <Link to="/">
               <Button size="sm" className="gap-1.5"><Plus className="w-3.5 h-3.5" /> Neues Projekt</Button>
             </Link>

@@ -14,6 +14,90 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_settings: {
+        Row: {
+          id: string
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          id?: string
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Update: {
+          id?: string
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
+      credit_balances: {
+        Row: {
+          balance: number
+          created_at: string
+          id: string
+          last_reset_at: string | null
+          lifetime_used: number
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          id?: string
+          last_reset_at?: string | null
+          lifetime_used?: number
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          id?: string
+          last_reset_at?: string | null
+          lifetime_used?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      credit_transactions: {
+        Row: {
+          action_type: Database["public"]["Enums"]["credit_action_type"]
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          model_used: string | null
+          reference_id: string | null
+          user_id: string
+        }
+        Insert: {
+          action_type: Database["public"]["Enums"]["credit_action_type"]
+          amount: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          model_used?: string | null
+          reference_id?: string | null
+          user_id: string
+        }
+        Update: {
+          action_type?: Database["public"]["Enums"]["credit_action_type"]
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          model_used?: string | null
+          reference_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           created_at: string
@@ -219,15 +303,158 @@ export type Database = {
         }
         Relationships: []
       }
+      subscription_plans: {
+        Row: {
+          active: boolean
+          created_at: string
+          extra_credit_price_cents: number
+          features: Json
+          id: string
+          monthly_credits: number
+          name: string
+          price_monthly_cents: number
+          price_yearly_cents: number
+          slug: string
+          sort_order: number
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          extra_credit_price_cents?: number
+          features?: Json
+          id?: string
+          monthly_credits?: number
+          name: string
+          price_monthly_cents?: number
+          price_yearly_cents?: number
+          slug: string
+          sort_order?: number
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          extra_credit_price_cents?: number
+          features?: Json
+          id?: string
+          monthly_credits?: number
+          name?: string
+          price_monthly_cents?: number
+          price_yearly_cents?: number
+          slug?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_subscriptions: {
+        Row: {
+          billing_cycle: Database["public"]["Enums"]["billing_cycle"]
+          created_at: string
+          current_period_end: string
+          current_period_start: string
+          id: string
+          plan_id: string
+          status: Database["public"]["Enums"]["subscription_status"]
+          stripe_subscription_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          billing_cycle?: Database["public"]["Enums"]["billing_cycle"]
+          created_at?: string
+          current_period_end?: string
+          current_period_start?: string
+          id?: string
+          plan_id: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          billing_cycle?: Database["public"]["Enums"]["billing_cycle"]
+          created_at?: string
+          current_period_end?: string
+          current_period_start?: string
+          id?: string
+          plan_id?: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      add_credits: {
+        Args: {
+          _action_type: Database["public"]["Enums"]["credit_action_type"]
+          _amount: number
+          _description?: string
+          _user_id: string
+        }
+        Returns: Json
+      }
+      deduct_credits: {
+        Args: {
+          _action_type: Database["public"]["Enums"]["credit_action_type"]
+          _amount: number
+          _description?: string
+          _model?: string
+          _user_id: string
+        }
+        Returns: Json
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
+      billing_cycle: "monthly" | "yearly"
+      credit_action_type:
+        | "pdf_analysis"
+        | "image_generate"
+        | "image_remaster"
+        | "vin_ocr"
+        | "credit_purchase"
+        | "subscription_reset"
+        | "admin_adjustment"
+        | "landing_page_export"
+      subscription_status: "active" | "cancelled" | "past_due" | "trialing"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -354,6 +581,20 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+      billing_cycle: ["monthly", "yearly"],
+      credit_action_type: [
+        "pdf_analysis",
+        "image_generate",
+        "image_remaster",
+        "vin_ocr",
+        "credit_purchase",
+        "subscription_reset",
+        "admin_adjustment",
+        "landing_page_export",
+      ],
+      subscription_status: ["active", "cancelled", "past_due", "trialing"],
+    },
   },
 } as const
