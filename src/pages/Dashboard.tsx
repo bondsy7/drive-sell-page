@@ -177,7 +177,7 @@ const Dashboard = () => {
       <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
           <Link to="/" className="flex items-center">
-            <img src={logoDark} alt="Autohaus.AI" className="h-8" />
+            <img src={logoLight} alt="Autohaus.AI" className="h-8" />
           </Link>
           <div className="flex items-center gap-3">
             <CreditBadge />

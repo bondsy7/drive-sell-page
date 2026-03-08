@@ -152,7 +152,7 @@ const Profile = () => {
           <div className="flex items-center gap-3">
             <Link to="/dashboard"><Button variant="ghost" size="icon"><ArrowLeft className="w-4 h-4" /></Button></Link>
             <Link to="/">
-              <img src={logoDark} alt="Autohaus.AI" className="h-7" />
+              <img src={logoLight} alt="Autohaus.AI" className="h-7" />
             </Link>
           </div>
           <Button onClick={handleSave} disabled={saving} className="gap-1.5">
