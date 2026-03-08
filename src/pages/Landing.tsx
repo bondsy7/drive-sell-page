@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import logoDark from '@/assets/logo-dark.png';
 import logoLight from '@/assets/logo-light.png';
+import heroBg from '@/assets/hero-bg.png';
 
 const FEATURES = [
   {
