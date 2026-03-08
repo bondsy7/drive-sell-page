@@ -236,7 +236,7 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto space-y-6">
+    <div className="w-full mx-auto space-y-6">
       {/* Action bar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2 flex-wrap">
