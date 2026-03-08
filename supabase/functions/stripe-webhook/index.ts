@@ -59,10 +59,25 @@ serve(async (req) => {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
-        if (session.mode !== "subscription") break;
-
         const userId = session.metadata?.user_id;
         if (!userId) { log("No user_id in metadata"); break; }
+
+        // Handle one-time credit purchase
+        if (session.mode === "payment") {
+          const credits = parseInt(session.metadata?.credits || "0");
+          if (credits > 0) {
+            await supabase.rpc("add_credits", {
+              _user_id: userId,
+              _amount: credits,
+              _action_type: "credit_purchase",
+              _description: `${credits} Credits gekauft`,
+            });
+            log("Credits purchased", { userId, credits });
+          }
+          break;
+        }
+
+        if (session.mode !== "subscription") break;
 
         const subscriptionId = session.subscription as string;
         const subscription = await stripe.subscriptions.retrieve(subscriptionId);
