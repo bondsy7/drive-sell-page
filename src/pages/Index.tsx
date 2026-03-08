@@ -126,8 +126,12 @@ const Index = () => {
       const { data: analysisData, error: analysisError } = await supabase.functions.invoke('analyze-pdf', { body: { pdfBase64 } });
       if (analysisError) { console.error('Analysis error:', analysisError); toast.error('Fehler bei der Analyse.'); setAppState('idle'); return; }
       if (analysisData?.error) {
-        if (analysisData.error === 'not_vehicle_offer') {
+        if (analysisData.error === 'insufficient_credits') {
+          toast.error(`Nicht genügend Credits. Guthaben: ${analysisData.balance}, benötigt: ${analysisData.cost}. Bitte lade Credits nach.`, { duration: 8000 });
+        } else if (analysisData.error === 'not_vehicle_offer') {
           toast.error(`Das hochgeladene Dokument ist kein Fahrzeugangebot, sondern eine "${analysisData.documentType}". Bitte lade ein Fahrzeugangebot (Leasing, Finanzierung oder Kaufangebot) als PDF hoch.`, { duration: 8000 });
+        } else if (analysisData.error === 'Nicht authentifiziert') {
+          toast.error('Bitte melde dich an, um diese Funktion zu nutzen.');
         } else {
           toast.error(analysisData.error);
         }
