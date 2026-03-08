@@ -126,14 +126,27 @@ JSON-Schema:
 
 Für den imagePrompt: Erstelle einen detaillierten englischen Prompt mit exaktem Fahrzeugmodell (Marke, Modell, Farbe, Karosserieform) in einem modernen, hellen Autohaus-Showroom. Beschreibe Licht, Reflexionen, Boden und Atmosphäre.
 
+DOKUMENTTYP-ERKENNUNG (WICHTIG!):
+Prüfe ZUERST, ob es sich um ein Fahrzeug-Angebot handelt (Leasing, Finanzierung, Kauf, Barkauf).
+Wenn das Dokument KEIN Fahrzeugangebot ist (z.B. Rechnung, Versicherung, Werkstattrechnung, Mietvertrag, 
+Bewerbung, Steuerbescheid, beliebiges anderes Dokument), antworte mit:
+{
+  "isVehicleOffer": false,
+  "documentType": "string (was das Dokument tatsächlich ist, z.B. 'Werkstattrechnung', 'Versicherungspolice')"
+}
+und NICHTS weiter.
+
+Wenn es ein Fahrzeugangebot IST, setze "isVehicleOffer": true im Root-Objekt und fahre mit der Extraktion fort.
+
 ABSOLUTE REGELN:
-1. Extrahiere JEDEN Wert der im PDF steht - lieber zu viel als zu wenig
-2. Leite co2Class und co2ClassDischarged IMMER aus den g/km-Werten ab wenn nicht explizit angegeben
-3. Setze isPluginHybrid=true sobald irgendein PHEV-Hinweis erkannt wird
-4. Features: Extrahiere ALLE - auch 50+ Einträge sind OK
-5. Einheiten IMMER mit angeben (€, km, l/100km, g/km, kW, PS, cm³, kWh/100km)
-6. Fehlende Werte = leerer String "", fehlende booleans = false
-7. Antworte NUR mit JSON`;
+1. ZUERST prüfen ob Fahrzeugangebot - wenn nicht, sofort ablehnen
+2. Extrahiere JEDEN Wert der im PDF steht - lieber zu viel als zu wenig
+3. Leite co2Class und co2ClassDischarged IMMER aus den g/km-Werten ab wenn nicht explizit angegeben
+4. Setze isPluginHybrid=true sobald irgendein PHEV-Hinweis erkannt wird
+5. Features: Extrahiere ALLE - auch 50+ Einträge sind OK
+6. Einheiten IMMER mit angeben (€, km, l/100km, g/km, kW, PS, cm³, kWh/100km)
+7. Fehlende Werte = leerer String "", fehlende booleans = false
+8. Antworte NUR mit JSON`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -207,6 +220,17 @@ Gib das Ergebnis als JSON zurück.`,
     content = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
     
     const parsed = JSON.parse(content);
+
+    // === DOCUMENT TYPE CHECK ===
+    if (parsed.isVehicleOffer === false) {
+      const docType = parsed.documentType || 'unbekanntes Dokument';
+      return new Response(JSON.stringify({ 
+        error: "not_vehicle_offer",
+        documentType: docType,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // === AUTO-FILL / POST-PROCESSING ===
     
