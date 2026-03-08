@@ -18,20 +18,36 @@ serve(async (req) => {
   );
 
   try {
-    const authHeader = req.headers.get("Authorization")!;
-    const token = authHeader.replace("Bearer ", "");
-    const { data } = await supabaseClient.auth.getUser(token);
-    const user = data.user;
-    if (!user?.email) throw new Error("Nicht authentifiziert");
-
-    const { priceId } = await req.json();
+    const { priceId, email: bodyEmail, userId: bodyUserId } = await req.json();
     if (!priceId) throw new Error("priceId fehlt");
+
+    let userEmail: string | undefined;
+    let userId: string | undefined;
+
+    // Try auth header first (logged-in users upgrading)
+    const authHeader = req.headers.get("Authorization");
+    if (authHeader && authHeader !== "Bearer ") {
+      const token = authHeader.replace("Bearer ", "");
+      const { data } = await supabaseClient.auth.getUser(token);
+      if (data.user?.email) {
+        userEmail = data.user.email;
+        userId = data.user.id;
+      }
+    }
+
+    // Fallback: accept email from body (registration flow, no session yet)
+    if (!userEmail && bodyEmail) {
+      userEmail = bodyEmail;
+      userId = bodyUserId;
+    }
+
+    if (!userEmail) throw new Error("Nicht authentifiziert und keine E-Mail angegeben");
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
     });
 
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+    const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
     let customerId: string | undefined;
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
@@ -39,12 +55,12 @@ serve(async (req) => {
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
-      customer_email: customerId ? undefined : user.email,
+      customer_email: customerId ? undefined : userEmail,
       line_items: [{ price: priceId, quantity: 1 }],
       mode: "subscription",
       success_url: `${req.headers.get("origin")}/pricing?success=true`,
       cancel_url: `${req.headers.get("origin")}/pricing?canceled=true`,
-      metadata: { user_id: user.id },
+      metadata: { user_id: userId || "" },
     });
 
     return new Response(JSON.stringify({ url: session.url }), {
