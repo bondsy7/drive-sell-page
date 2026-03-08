@@ -15,7 +15,7 @@ const ProjectView = () => {
   const [project, setProject] = useState<any>(null);
   const [images, setImages] = useState<string[]>([]);
   const [vehicleData, setVehicleData] = useState<VehicleData | null>(null);
-  const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>('modern');
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>('autohaus');
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -28,7 +28,7 @@ const ProjectView = () => {
       if (p) {
         setProject(p);
         setVehicleData(p.vehicle_data as unknown as VehicleData);
-        setSelectedTemplate((p.template_id || 'modern') as TemplateId);
+        setSelectedTemplate((p.template_id || 'autohaus') as TemplateId);
       }
       if (imgs) setImages(imgs.map((i: any) => i.image_url || i.image_base64));
       setLoading(false);
