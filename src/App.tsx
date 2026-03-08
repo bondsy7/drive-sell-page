@@ -16,6 +16,7 @@ const LeasingCalculator = lazy(() => import("./pages/LeasingCalculator"));
 const FinancingCalculator = lazy(() => import("./pages/FinancingCalculator"));
 const KfzSteuerRechner = lazy(() => import("./pages/KfzSteuerRechner"));
 const Pricing = lazy(() => import("./pages/Pricing"));
+const Integrations = lazy(() => import("./pages/Integrations"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Admin pages
@@ -62,6 +63,7 @@ const App = () => (
               <Route path="/finanzierungsrechner" element={<ProtectedRoute><FinancingCalculator /></ProtectedRoute>} />
               <Route path="/kfz-steuer-rechner" element={<ProtectedRoute><KfzSteuerRechner /></ProtectedRoute>} />
               <Route path="/pricing" element={<Pricing />} />
+              <Route path="/integrations" element={<ProtectedRoute><Integrations /></ProtectedRoute>} />
               <Route path="/admin" element={<ProtectedRoute><AdminRoute><AdminLayout /></AdminRoute></ProtectedRoute>}>
                 <Route index element={<AdminDashboard />} />
                 <Route path="users" element={<AdminUsers />} />
