@@ -5,7 +5,7 @@ import { useCredits } from '@/hooks/useCredits';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { Button } from '@/components/ui/button';
-import { Check, Zap, ArrowLeft, Loader2, Plus, Crown } from 'lucide-react';
+import { Check, Zap, Loader2, Plus, Crown, Calendar, AlertTriangle, RefreshCw } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
 import { STRIPE_PRICES, CREDIT_PACKS } from '@/lib/stripe-plans';
 import { toast } from 'sonner';
@@ -29,7 +29,7 @@ const Pricing = () => {
   const [loadingSlug, setLoadingSlug] = useState<string | null>(null);
   const { balance, costs } = useCredits();
   const { user } = useAuth();
-  const { planSlug: activePlanSlug, planName: activePlanName, loading: subLoading } = useSubscription();
+  const { planSlug: activePlanSlug, planName: activePlanName, billingCycle, periodEnd, loading: subLoading } = useSubscription();
 
   useEffect(() => {
     supabase
