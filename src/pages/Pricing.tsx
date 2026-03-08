@@ -4,9 +4,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useCredits } from '@/hooks/useCredits';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { Car, Check, Zap, ArrowLeft, Loader2 } from 'lucide-react';
+import { Car, Check, Zap, ArrowLeft, Loader2, Plus } from 'lucide-react';
 import CreditBadge from '@/components/CreditBadge';
-import { STRIPE_PRICES } from '@/lib/stripe-plans';
+import { STRIPE_PRICES, CREDIT_PACKS } from '@/lib/stripe-plans';
 import { toast } from 'sonner';
 
 interface Plan {
