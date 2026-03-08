@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, Save, Building2, MapPin, Phone, Globe, Facebook, Instagram, Youtube, FileText, Landmark, Upload, X, Image } from 'lucide-react';
-import logoDark from '@/assets/logo-dark.png';
+import logoLight from '@/assets/logo-light.png';
 import { toast } from 'sonner';
 
 interface ProfileData {
@@ -152,7 +152,7 @@ const Profile = () => {
           <div className="flex items-center gap-3">
             <Link to="/dashboard"><Button variant="ghost" size="icon"><ArrowLeft className="w-4 h-4" /></Button></Link>
             <Link to="/">
-              <img src={logoDark} alt="Autohaus.AI" className="h-7" />
+              <img src={logoLight} alt="Autohaus.AI" className="h-7" />
             </Link>
           </div>
           <Button onClick={handleSave} disabled={saving} className="gap-1.5">

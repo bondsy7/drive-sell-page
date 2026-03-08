@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { LayoutDashboard, LogOut, User, Sparkles } from 'lucide-react';
-import logoLight from '@/assets/logo-light.png';
+import logoDark from '@/assets/logo-dark.png';
 import CreditBadge from '@/components/CreditBadge';
 import { Button } from '@/components/ui/button';
 import PDFUpload from '@/components/PDFUpload';
@@ -229,7 +229,7 @@ const Index = () => {
       <header className="border-b border-border bg-primary sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
           <Link to="/" className="flex items-center">
-            <img src={logoLight} alt="Autohaus.AI" className="h-8" />
+            <img src={logoDark} alt="Autohaus.AI" className="h-8" />
           </Link>
           <div className="flex items-center gap-1">
             <CreditBadge />

@@ -5,7 +5,7 @@ import { useCredits } from '@/hooks/useCredits';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Check, Zap, ArrowLeft, Loader2, Plus } from 'lucide-react';
-import logoLight from '@/assets/logo-light.png';
+import logoDark from '@/assets/logo-dark.png';
 import CreditBadge from '@/components/CreditBadge';
 import { STRIPE_PRICES, CREDIT_PACKS } from '@/lib/stripe-plans';
 import { toast } from 'sonner';
@@ -114,7 +114,7 @@ const Pricing = () => {
       <header className="border-b border-border bg-primary sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
           <Link to="/" className="flex items-center">
-            <img src={logoLight} alt="Autohaus.AI" className="h-8" />
+            <img src={logoDark} alt="Autohaus.AI" className="h-8" />
           </Link>
           <div className="flex items-center gap-3">
             <CreditBadge />

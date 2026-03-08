@@ -6,6 +6,7 @@ import {
   Zap, ArrowRight, Shield, Clock, Globe, ChevronRight,
   Bot, Palette, BarChart3, Car, Users, LogOut, User
 } from 'lucide-react';
+import logoDark from '@/assets/logo-dark.png';
 import logoLight from '@/assets/logo-light.png';
 
 const FEATURES = [
@@ -57,7 +58,7 @@ const Landing = () => {
       <header className="border-b border-border/50 bg-primary/95 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center">
-            <img src={logoLight} alt="Autohaus.AI" className="h-10" />
+            <img src={logoDark} alt="Autohaus.AI" className="h-10" />
           </Link>
           <nav className="hidden md:flex items-center gap-6">
             <a href="#features" className="text-primary-foreground/70 hover:text-primary-foreground text-sm font-medium transition-colors">Features</a>
@@ -289,7 +290,7 @@ const Landing = () => {
       <footer className="border-t border-border bg-card py-10">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <img src={logoLight} alt="Autohaus.AI" className="h-8 invert opacity-70" />
+            <img src={logoLight} alt="Autohaus.AI" className="h-8 opacity-70" />
             <div className="flex items-center gap-6 text-sm text-muted-foreground">
               <Link to="/pricing" className="hover:text-foreground transition-colors">Preise</Link>
               <Link to="/auth" className="hover:text-foreground transition-colors">Anmelden</Link>
