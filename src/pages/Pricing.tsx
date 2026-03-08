@@ -81,6 +81,13 @@ const Pricing = () => {
     try {
       const { data, error } = await supabase.functions.invoke('customer-portal');
       if (error) throw error;
+      if (data?.error) {
+        if (data.error.includes('Kein Stripe-Kunde')) {
+          toast.info('Du hast noch kein Abo über Stripe abgeschlossen. Wähle zuerst einen Plan.');
+          return;
+        }
+        throw new Error(data.error);
+      }
       if (data?.url) {
         window.open(data.url, '_blank');
       }
