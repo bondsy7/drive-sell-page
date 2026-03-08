@@ -51,13 +51,15 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { imagePrompt, imagePrompts } = await req.json();
+    const { imagePrompt, imagePrompts, modelTier } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
+    const model = modelTier === 'pro' ? 'google/gemini-3-pro-image-preview' : 'google/gemini-2.5-flash-image';
+
     // Calculate total cost based on number of images
     const totalImages = imagePrompts ? imagePrompts.length : 1;
-    const costPerImage = 2;
+    const costPerImage = modelTier === 'pro' ? 8 : 3;
     const totalCost = totalImages * costPerImage;
 
     // Auth & credits
@@ -66,7 +68,7 @@ serve(async (req) => {
 
     // Single image mode (backward compat)
     if (imagePrompt && !imagePrompts) {
-      const result = await generateImage(imagePrompt, LOVABLE_API_KEY);
+      const result = await generateImage(imagePrompt, LOVABLE_API_KEY, model);
       return new Response(JSON.stringify(result), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -77,7 +79,7 @@ serve(async (req) => {
       const results: { imageBase64: string | null; error?: string }[] = [];
       for (const prompt of imagePrompts) {
         try {
-          const result = await generateImage(prompt, LOVABLE_API_KEY);
+          const result = await generateImage(prompt, LOVABLE_API_KEY, model);
           results.push(result);
         } catch (e) {
           console.error("Image gen error for prompt:", e);
@@ -98,7 +100,7 @@ serve(async (req) => {
   }
 });
 
-async function generateImage(prompt: string, apiKey: string, retries = 2): Promise<{ imageBase64: string | null; error?: string }> {
+async function generateImage(prompt: string, apiKey: string, model: string = "google/gemini-2.5-flash-image", retries = 2): Promise<{ imageBase64: string | null; error?: string }> {
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -108,7 +110,7 @@ async function generateImage(prompt: string, apiKey: string, retries = 2): Promi
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash-image",
+          model,
           messages: [{ role: "user", content: prompt }],
           modalities: ["image", "text"],
         }),
