@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.buy-credits]
 verify_jwt = false
+
+[functions.api-vehicles]
+verify_jwt = false
