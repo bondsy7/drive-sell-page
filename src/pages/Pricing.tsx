@@ -43,6 +43,8 @@ const Pricing = () => {
   useEffect(() => {
     if (searchParams.get('success') === 'true') {
       toast.success('Abo erfolgreich abgeschlossen! Deine Credits werden in Kürze gutgeschrieben.');
+    } else if (searchParams.get('credit_success') === 'true') {
+      toast.success('Credits wurden deinem Konto gutgeschrieben!');
     } else if (searchParams.get('canceled') === 'true') {
       toast.info('Checkout abgebrochen.');
     }
