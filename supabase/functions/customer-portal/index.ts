@@ -30,7 +30,12 @@ serve(async (req) => {
     });
 
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-    if (customers.data.length === 0) throw new Error("Kein Stripe-Kunde gefunden");
+    if (customers.data.length === 0) {
+      return new Response(JSON.stringify({ error: "Kein Stripe-Kunde gefunden" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
 
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: customers.data[0].id,
