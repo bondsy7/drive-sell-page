@@ -56,7 +56,7 @@ export default function AdminPricing() {
   if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin w-8 h-8 border-2 border-accent border-t-transparent rounded-full" /></div>;
 
   return (
-    <div className="p-8 space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="font-display text-2xl font-bold text-foreground">Credit-Preise</h1>
         <Button onClick={saveCosts} disabled={saving} className="gap-1.5">
