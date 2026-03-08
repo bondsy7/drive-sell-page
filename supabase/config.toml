@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.api-vehicles]
 verify_jwt = false
+
+[functions.ftp-upload]
+verify_jwt = false
