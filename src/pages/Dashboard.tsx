@@ -336,7 +336,7 @@ const Dashboard = () => {
           )
         )}
       </main>
-      <ExportChoiceDialog open={exportDialogOpen} onOpenChange={setExportDialogOpen} onChoose={handleExportHTML} loading={exportLoading} />
+      <ExportChoiceDialog open={exportDialogOpen} onOpenChange={setExportDialogOpen} onChoose={handleExportHTML} loading={exportLoading} projectId={exportProject?.id} />
     </div>
   );
 };
