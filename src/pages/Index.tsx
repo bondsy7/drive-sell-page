@@ -1,7 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Car, LayoutDashboard, LogOut, User, Sparkles } from 'lucide-react';
+import { LayoutDashboard, LogOut, User, Sparkles } from 'lucide-react';
+import logoLight from '@/assets/logo-light.png';
 import CreditBadge from '@/components/CreditBadge';
 import { Button } from '@/components/ui/button';
 import PDFUpload from '@/components/PDFUpload';
@@ -227,12 +228,9 @@ const Index = () => {
       {/* Header */}
       <header className="border-b border-border bg-primary sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg gradient-accent flex items-center justify-center">
-              <Car className="w-4 h-4 text-accent-foreground" />
-            </div>
-            <span className="font-display font-bold text-primary-foreground text-sm">AutoPage</span>
-          </div>
+          <Link to="/" className="flex items-center">
+            <img src={logoLight} alt="Autohaus.AI" className="h-8" />
+          </Link>
           <div className="flex items-center gap-1">
             <CreditBadge />
             <Link to="/dashboard">
