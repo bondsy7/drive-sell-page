@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 
 interface ImageUploadRemasterProps {
   vehicleDescription: string;
+  modelTier?: 'standard' | 'pro';
   onComplete: (mainImage: string, galleryImages: string[]) => void;
   onBack: () => void;
 }
@@ -31,7 +32,7 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
-const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescription, onComplete, onBack }) => {
+const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescription, modelTier, onComplete, onBack }) => {
   const [images, setImages] = useState<UploadedImage[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
@@ -94,7 +95,7 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
 
       try {
         const { data, error } = await supabase.functions.invoke('remaster-vehicle-image', {
-          body: { imageBase64: img.originalBase64, vehicleDescription },
+          body: { imageBase64: img.originalBase64, vehicleDescription, modelTier: modelTier || 'standard' },
         });
 
         if (error || !data?.imageBase64) {

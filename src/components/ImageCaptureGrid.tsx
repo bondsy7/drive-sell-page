@@ -11,6 +11,7 @@ import type { VehicleData } from '@/types/vehicle';
 interface ImageCaptureGridProps {
   vehicleDescription: string;
   vehicleData?: VehicleData;
+  modelTier?: 'standard' | 'pro';
   onComplete: (mainImage: string, galleryImages: string[], vin?: string) => void;
   onVehicleDataChange?: (data: VehicleData) => void;
   onBack: () => void;
@@ -49,7 +50,7 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
-const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription, vehicleData, onComplete, onVehicleDataChange, onBack }) => {
+const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription, vehicleData, modelTier, onComplete, onVehicleDataChange, onBack }) => {
   const [captures, setCaptures] = useState<Record<string, CapturedImage>>({});
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
@@ -120,7 +121,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
 
       try {
         const { data, error } = await supabase.functions.invoke('remaster-vehicle-image', {
-          body: { imageBase64: captures[slot.key].base64, vehicleDescription },
+          body: { imageBase64: captures[slot.key].base64, vehicleDescription, modelTier: modelTier || 'standard' },
         });
 
         if (error || !data?.imageBase64) {

@@ -95,10 +95,13 @@ serve(async (req) => {
 
   try {
     // 1. Auth & credits
-    const authResult = await authenticateAndDeductCredits(req, "image_remaster", 2);
+    const bodyText = await req.text();
+    const { imageBase64, vehicleDescription, modelTier } = JSON.parse(bodyText);
+    const cost = modelTier === 'pro' ? 5 : 2;
+    const authResult = await authenticateAndDeductCredits(req, "image_remaster", cost);
     if (authResult instanceof Response) return authResult;
 
-    const { imageBase64, vehicleDescription } = await req.json();
+    const model = modelTier === 'pro' ? 'google/gemini-3-pro-image-preview' : 'google/gemini-2.5-flash-image';
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
     if (!imageBase64) throw new Error("No image provided");
@@ -115,7 +118,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-image",
+        model,
         messages: [{
           role: "user",
           content: [
