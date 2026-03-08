@@ -6,8 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { Button } from '@/components/ui/button';
 import { Check, Zap, ArrowLeft, Loader2, Plus, Crown } from 'lucide-react';
-import logoDark from '@/assets/logo-dark.png';
-import CreditBadge from '@/components/CreditBadge';
+import AppHeader from '@/components/AppHeader';
 import { STRIPE_PRICES, CREDIT_PACKS } from '@/lib/stripe-plans';
 import { toast } from 'sonner';
 
@@ -113,17 +112,7 @@ const Pricing = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-primary sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
-          <Link to="/" className="flex items-center">
-            <img src={logoDark} alt="Autohaus.AI" className="h-8" />
-          </Link>
-          <div className="flex items-center gap-3">
-            <CreditBadge />
-            <Link to="/"><Button variant="ghost" size="sm" className="text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10"><ArrowLeft className="w-3.5 h-3.5 mr-1" /> Zurück</Button></Link>
-          </div>
-        </div>
-      </header>
+      <AppHeader />
 
       <main className="max-w-5xl mx-auto px-3 sm:px-4 py-8 sm:py-16">
         <div className="text-center mb-8 sm:mb-12">

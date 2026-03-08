@@ -1,11 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowLeft, Calculator, TrendingDown, TrendingUp, Minus, Info } from 'lucide-react';
+import { Calculator, TrendingDown, TrendingUp, Minus, Info } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import AppHeader from '@/components/AppHeader';
 
 function parseGermanNumber(str: string): number {
   if (!str) return 0;
@@ -76,17 +75,7 @@ const LeasingCalculator = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-card">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-3">
-          <Link to="/dashboard">
-            <Button variant="ghost" size="icon">
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-          </Link>
-          <Calculator className="w-6 h-6 text-accent" />
-          <h1 className="text-xl font-bold text-foreground font-['Space_Grotesk']">Leasing-Rechner</h1>
-        </div>
-      </header>
+      <AppHeader />
 
       <main className="max-w-4xl mx-auto px-4 py-8 space-y-6">
         {/* Input Card */}

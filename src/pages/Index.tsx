@@ -1,10 +1,9 @@
 import React, { useState, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { LayoutDashboard, LogOut, User, Sparkles } from 'lucide-react';
-import logoDark from '@/assets/logo-dark.png';
-import CreditBadge from '@/components/CreditBadge';
+import { Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import AppHeader from '@/components/AppHeader';
 import PDFUpload from '@/components/PDFUpload';
 import SamplePdfGallery from '@/components/SamplePdfGallery';
 import ProcessingStatus from '@/components/ProcessingStatus';
@@ -273,30 +272,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-primary sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 h-14 flex items-center justify-between">
-          <Link to="/" className="flex items-center">
-            <img src={logoDark} alt="Autohaus.AI" className="h-7 sm:h-8" />
-          </Link>
-          <div className="flex items-center gap-1">
-            <CreditBadge />
-            <Link to="/dashboard" className="hidden sm:inline-flex">
-              <Button variant="ghost" size="sm" className="gap-1.5 text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10">
-                <LayoutDashboard className="w-3.5 h-3.5" /> <span className="hidden md:inline">Dashboard</span>
-              </Button>
-            </Link>
-            <Link to="/profile" className="hidden sm:inline-flex">
-              <Button variant="ghost" size="icon" className="text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10">
-                <User className="w-4 h-4" />
-              </Button>
-            </Link>
-            <Button variant="ghost" size="icon" onClick={signOut} className="text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10">
-              <LogOut className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-      </header>
+      <AppHeader />
 
       {appState === 'preview' && vehicleData ? (
         <div className="flex h-[calc(100vh-56px)]">

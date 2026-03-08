@@ -8,8 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Save, Building2, MapPin, Phone, Globe, Facebook, Instagram, Youtube, FileText, Landmark, Upload, X, Image, Zap, History, TrendingDown, TrendingUp } from 'lucide-react';
-import logoLight from '@/assets/logo-light.png';
+import { Save, Building2, MapPin, Phone, Globe, Facebook, Instagram, Youtube, FileText, Landmark, Upload, X, Image, Zap, History, TrendingDown, TrendingUp } from 'lucide-react';
+import AppHeader from '@/components/AppHeader';
 import { toast } from 'sonner';
 
 interface ProfileData {
@@ -205,19 +205,11 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-3xl mx-auto px-3 sm:px-4 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link to="/dashboard"><Button variant="ghost" size="icon"><ArrowLeft className="w-4 h-4" /></Button></Link>
-            <Link to="/">
-              <img src={logoLight} alt="Autohaus.AI" className="h-7" />
-            </Link>
-          </div>
-          <Button onClick={handleSave} disabled={saving} className="gap-1.5 text-xs sm:text-sm">
-            <Save className="w-4 h-4" /> <span className="hidden sm:inline">{saving ? 'Speichern...' : 'Speichern'}</span><span className="sm:hidden">{saving ? '...' : 'Save'}</span>
-          </Button>
-        </div>
-      </header>
+      <AppHeader leftActions={
+        <Button onClick={handleSave} disabled={saving} size="sm" className="gap-1.5 text-xs sm:text-sm">
+          <Save className="w-4 h-4" /> <span className="hidden sm:inline">{saving ? 'Speichern...' : 'Speichern'}</span><span className="sm:hidden">{saving ? '...' : 'Save'}</span>
+        </Button>
+      } />
 
       <main className="max-w-3xl mx-auto px-3 sm:px-4 py-6 sm:py-8 space-y-6">
         {/* Logo Upload */}
