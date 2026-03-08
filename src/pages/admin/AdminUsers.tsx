@@ -24,6 +24,9 @@ interface UserRow {
   lifetime_used?: number;
   roles?: string[];
   plan?: PlanInfo | null;
+  project_count?: number;
+  lead_count?: number;
+  last_transaction?: string | null;
 }
 
 interface AvailablePlan {
@@ -64,12 +67,15 @@ export default function AdminUsers() {
 
   const loadUsers = async () => {
     setLoading(true);
-    const [{ data: profiles }, { data: balances }, { data: roles }, { data: subscriptions }, { data: availablePlans }] = await Promise.all([
+    const [{ data: profiles }, { data: balances }, { data: roles }, { data: subscriptions }, { data: availablePlans }, { data: projects }, { data: leadsData }, { data: lastTransactions }] = await Promise.all([
       supabase.from('profiles').select('id, email, company_name, created_at').order('created_at', { ascending: false }),
       supabase.from('credit_balances').select('user_id, balance, lifetime_used'),
       supabase.from('user_roles').select('user_id, role'),
       supabase.from('user_subscriptions').select('user_id, plan_id, status, billing_cycle, subscription_plans(id, name, slug)'),
       supabase.from('subscription_plans').select('id, name, slug').eq('active', true).order('sort_order'),
+      supabase.from('projects').select('id, user_id'),
+      supabase.from('leads').select('id, dealer_user_id'),
+      supabase.from('credit_transactions').select('user_id, created_at').order('created_at', { ascending: false }),
     ]);
 
     setPlans((availablePlans as any[]) || []);
@@ -99,12 +105,33 @@ export default function AdminUsers() {
       }
     }
 
+    // Project counts per user
+    const projectCountMap: Record<string, number> = {};
+    for (const p of (projects as any[]) || []) {
+      projectCountMap[p.user_id] = (projectCountMap[p.user_id] || 0) + 1;
+    }
+
+    // Lead counts per dealer
+    const leadCountMap: Record<string, number> = {};
+    for (const l of (leadsData as any[]) || []) {
+      leadCountMap[l.dealer_user_id] = (leadCountMap[l.dealer_user_id] || 0) + 1;
+    }
+
+    // Last transaction per user
+    const lastTxMap: Record<string, string> = {};
+    for (const t of (lastTransactions as any[]) || []) {
+      if (!lastTxMap[t.user_id]) lastTxMap[t.user_id] = t.created_at;
+    }
+
     const merged = ((profiles as any[]) || []).map(p => ({
       ...p,
       balance: balanceMap[p.id]?.balance ?? 0,
       lifetime_used: balanceMap[p.id]?.lifetime_used ?? 0,
       roles: roleMap[p.id] || [],
       plan: subMap[p.id] || null,
+      project_count: projectCountMap[p.id] || 0,
+      lead_count: leadCountMap[p.id] || 0,
+      last_transaction: lastTxMap[p.id] || null,
     }));
     setUsers(merged);
     setLoading(false);
@@ -212,6 +239,9 @@ export default function AdminUsers() {
               <th className="text-center p-3 font-medium text-muted-foreground">Plan</th>
               <th className="text-center p-3 font-medium text-muted-foreground">Credits</th>
               <th className="text-center p-3 font-medium text-muted-foreground">Verbraucht</th>
+              <th className="text-center p-3 font-medium text-muted-foreground">Projekte</th>
+              <th className="text-center p-3 font-medium text-muted-foreground">Leads</th>
+              <th className="text-left p-3 font-medium text-muted-foreground">Letzte Aktivität</th>
               <th className="text-left p-3 font-medium text-muted-foreground">Registriert</th>
               <th className="p-3"></th>
             </tr>
@@ -274,6 +304,11 @@ export default function AdminUsers() {
                   </td>
                   <td className="p-3 text-center font-semibold text-foreground">{u.balance}</td>
                   <td className="p-3 text-center text-muted-foreground">{u.lifetime_used}</td>
+                  <td className="p-3 text-center text-muted-foreground">{u.project_count}</td>
+                  <td className="p-3 text-center text-muted-foreground">{u.lead_count}</td>
+                  <td className="p-3 text-muted-foreground text-xs">
+                    {u.last_transaction ? new Date(u.last_transaction).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '—'}
+                  </td>
                   <td className="p-3 text-muted-foreground">{new Date(u.created_at).toLocaleDateString('de-DE')}</td>
                   <td className="p-3">
                     {adjusting === u.id ? (
