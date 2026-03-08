@@ -6,6 +6,7 @@ import logoDark from '@/assets/logo-dark.png';
 import CreditBadge from '@/components/CreditBadge';
 import { Button } from '@/components/ui/button';
 import PDFUpload from '@/components/PDFUpload';
+import SamplePdfGallery from '@/components/SamplePdfGallery';
 import ProcessingStatus from '@/components/ProcessingStatus';
 import LandingPagePreview from '@/components/LandingPagePreview';
 import TemplateSidebar from '@/components/TemplateSidebar';
@@ -347,6 +348,23 @@ const Index = () => {
                   KI-Analyse kostet <strong className="text-accent">{getCost('pdf_analysis', 'standard') || 1} Credit</strong> — Guthaben: <strong className="text-foreground">{balance} Credits</strong>
                 </span>
               </div>
+
+              {/* Sample PDF Gallery */}
+              <SamplePdfGallery
+                onSelect={async (pdfUrl, title) => {
+                  // Download PDF from URL and convert to File
+                  try {
+                    const response = await fetch(pdfUrl);
+                    const blob = await response.blob();
+                    const file = new File([blob], `${title}.pdf`, { type: 'application/pdf' });
+                    handleFileSelected(file);
+                  } catch {
+                    toast.error('Fehler beim Laden des Beispiel-PDFs');
+                  }
+                }}
+                isProcessing={false}
+              />
+
               <p className="text-center text-[11px] text-muted-foreground">
                 Die KI erkennt automatisch Leasing, Kauf oder Finanzierung und füllt alle Felder vor.
               </p>
