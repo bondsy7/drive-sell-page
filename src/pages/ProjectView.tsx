@@ -73,6 +73,7 @@ const ProjectView = () => {
           onSelectTemplate={handleTemplateChange}
           vehicleData={vehicleData}
           open={sidebarOpen}
+          onOpen={() => setSidebarOpen(true)}
           onClose={() => setSidebarOpen(false)}
         />
         <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 sm:py-10">
