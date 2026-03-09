@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import { TEMPLATES, TemplateId, TemplateInfo } from '@/types/template';
 import { Layout, X } from 'lucide-react';
 import LeasingCalculatorPanel from '@/components/LeasingCalculatorPanel';
@@ -11,6 +11,7 @@ interface TemplateSidebarProps {
   onSelectTemplate: (id: TemplateId) => void;
   vehicleData?: VehicleData | null;
   open?: boolean;
+  onOpen?: () => void;
   onClose?: () => void;
 }
 
