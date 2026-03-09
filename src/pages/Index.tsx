@@ -1,9 +1,8 @@
 import React, { useState, useCallback } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Sparkles } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import AppHeader from '@/components/AppHeader';
+import ActionHub, { HubAction } from '@/components/ActionHub';
 import PDFUpload from '@/components/PDFUpload';
 import SamplePdfGallery from '@/components/SamplePdfGallery';
 import ProcessingStatus from '@/components/ProcessingStatus';
@@ -19,10 +18,11 @@ import { useAuth } from '@/hooks/useAuth';
 import { useCredits } from '@/hooks/useCredits';
 import { uploadImagesToStorage } from '@/lib/storage-utils';
 import type { AppState, VehicleData } from '@/types/vehicle';
-
-// Extend AppState locally to include 'capturing-images'
-type ExtendedAppState = AppState | 'capturing-images';
 import type { TemplateId } from '@/types/template';
+import { ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+
+type ExtendedAppState = AppState | 'capturing-images' | 'hub' | 'standalone-photo-choice' | 'standalone-capture' | 'standalone-upload';
 
 const PERSPECTIVES = [
   { key: 'front', label: 'Frontansicht', prompt: 'Front view, straight on, symmetrical composition' },
@@ -34,18 +34,11 @@ const PERSPECTIVES = [
   { key: 'interior', label: 'Interieur', prompt: 'Interior view from driver door, showing dashboard, steering wheel, seats, and center console' },
 ];
 
-const STEPS = [
-  { num: 1, label: 'PDF hochladen' },
-  { num: 2, label: 'KI analysiert' },
-  { num: 3, label: 'Bearbeiten & Download' },
-];
-
 const Index = () => {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const { balance, getCost } = useCredits();
-  const navigate = useNavigate();
-  const [appState, setAppState] = useState<ExtendedAppState>('idle');
-  const [fileName, setFileName] = useState<string>('');
+  const [appState, setAppState] = useState<ExtendedAppState>('hub');
+  const [fileName, setFileName] = useState('');
   const [vehicleData, setVehicleData] = useState<VehicleData | null>(null);
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
@@ -58,30 +51,25 @@ const Index = () => {
   });
   const [pendingFile, setPendingFile] = useState<File | null>(null);
 
-  const currentStep = appState === 'idle' ? 1 : appState === 'preview' ? 3 : 2;
+  // For standalone photo results
+  const [standalonePhotoResults, setStandalonePhotoResults] = useState<string[]>([]);
+
+  const currentStep = appState === 'hub' || appState === 'idle' ? 1 : appState === 'preview' ? 3 : 2;
 
   const saveProject = useCallback(async (vData: VehicleData, mainImg: string | null, allImages: string[], templateId: TemplateId) => {
     if (!user) return null;
     const title = `${vData.vehicle.brand} ${vData.vehicle.model} ${vData.vehicle.variant || ''}`.trim();
-
-    // Create project first (without images)
     const { data: project, error } = await supabase.from('projects').insert({
       user_id: user.id, title, vehicle_data: vData as any, template_id: templateId,
     }).select('id').single();
     if (error || !project) { console.error('Save project error:', error); return null; }
-
-    // Upload images to storage
     if (allImages.length > 0) {
       const urls = await uploadImagesToStorage(allImages, user.id, project.id);
-
-      // Save main image URL
       if (urls.length > 0) {
         await supabase.from('projects').update({ main_image_url: urls[0] }).eq('id', project.id);
       }
-
-      // Save image references
       const imageRows = urls.map((url, i) => ({
-        project_id: project.id, user_id: user.id, image_url: url, image_base64: '', // empty, kept for schema compat
+        project_id: project.id, user_id: user.id, image_url: url, image_base64: '',
         perspective: PERSPECTIVES[i]?.label || `Bild ${i + 1}`, sort_order: i,
       }));
       await supabase.from('project_images').insert(imageRows);
@@ -123,68 +111,66 @@ const Index = () => {
     };
   }, [user]);
 
+  // ─── PDF → Landing Page Flow ───
   const handleFileSelected = useCallback(async (file: File) => {
     const pdfCost = getCost('pdf_analysis', 'standard') || 1;
     setPendingFile(file);
     setCreditDialog({
-      open: true,
-      cost: pdfCost,
-      label: 'PDF analysieren',
-      onConfirm: () => {
-        setPendingFile(null);
-        setCreditDialog(prev => ({ ...prev, open: false }));
-        processFile(file);
-      },
+      open: true, cost: pdfCost, label: 'PDF analysieren',
+      onConfirm: () => { setPendingFile(null); setCreditDialog(prev => ({ ...prev, open: false })); processFile(file); },
     });
   }, [getCost]);
 
   const processFile = useCallback(async (file: File) => {
     setFileName(file.name);
-    setGalleryImages([]);
-    setImageBase64(null);
-    setSavedProjectId(null);
+    setGalleryImages([]); setImageBase64(null); setSavedProjectId(null);
     try {
       setAppState('uploading');
       const pdfBase64 = await extractPDFAsBase64(file);
       setAppState('analyzing');
       const { data: analysisData, error: analysisError } = await supabase.functions.invoke('analyze-pdf', { body: { pdfBase64 } });
-      if (analysisError) { console.error('Analysis error:', analysisError); toast.error('Fehler bei der Analyse.'); setAppState('idle'); return; }
+      if (analysisError) { toast.error('Fehler bei der Analyse.'); setAppState('idle'); return; }
       if (analysisData?.error) {
         if (analysisData.error === 'insufficient_credits') {
-          toast.error(`Nicht genügend Credits. Guthaben: ${analysisData.balance}, benötigt: ${analysisData.cost}. Bitte lade Credits nach.`, { duration: 8000 });
+          toast.error(`Nicht genügend Credits. Guthaben: ${analysisData.balance}, benötigt: ${analysisData.cost}.`, { duration: 8000 });
         } else if (analysisData.error === 'not_vehicle_offer') {
-          toast.error(`Das hochgeladene Dokument ist kein Fahrzeugangebot, sondern eine "${analysisData.documentType}". Bitte lade ein Fahrzeugangebot (Leasing, Finanzierung oder Kaufangebot) als PDF hoch.`, { duration: 8000 });
+          toast.error(`Kein Fahrzeugangebot, sondern "${analysisData.documentType}".`, { duration: 8000 });
         } else if (analysisData.error === 'Nicht authentifiziert') {
-          toast.error('Bitte melde dich an, um diese Funktion zu nutzen.');
-        } else {
-          toast.error(analysisData.error);
-        }
+          toast.error('Bitte melde dich an.');
+        } else { toast.error(analysisData.error); }
         setAppState('idle'); return;
       }
-      const { imagePrompt: basePrompt, isVehicleOffer, ...vehicleInfo } = analysisData;
+      const { imagePrompt: _bp, isVehicleOffer: _iv, ...vehicleInfo } = analysisData;
       const enriched = await loadProfileIntoDealer(vehicleInfo as VehicleData);
       setVehicleData(enriched);
-      setAppState('choosing-image-source');
+      // If we have standalone photos already, skip image source choice and go straight to preview
+      if (standalonePhotoResults.length > 0) {
+        setImageBase64(standalonePhotoResults[0]);
+        setGalleryImages(standalonePhotoResults.slice(1));
+        const projectId = await saveProject(enriched, standalonePhotoResults[0], standalonePhotoResults, selectedTemplate);
+        if (projectId) setSavedProjectId(projectId);
+        setAppState('preview');
+        toast.success('Vorhandene Fotos wurden automatisch verknüpft!');
+      } else {
+        setAppState('choosing-image-source');
+      }
     } catch (err) {
       console.error('Processing error:', err);
       toast.error('Ein Fehler ist aufgetreten.');
       setAppState('idle');
     }
-  }, [loadProfileIntoDealer]);
+  }, [loadProfileIntoDealer, standalonePhotoResults, saveProject, selectedTemplate]);
 
+  // ─── Image Generation (within PDF flow) ───
   const handleChooseGenerate = useCallback(async (modelTier: 'standard' | 'pro' = 'standard') => {
     if (!vehicleData) return;
     setSelectedModelTier(modelTier);
     const costPerImage = getCost('image_generate', modelTier) || 2;
     const totalCost = costPerImage * PERSPECTIVES.length;
     setCreditDialog({
-      open: true,
-      cost: totalCost,
+      open: true, cost: totalCost,
       label: `${PERSPECTIVES.length} Bilder generieren (${modelTier === 'pro' ? 'Pro' : 'Basic'})`,
-      onConfirm: () => {
-        setCreditDialog(prev => ({ ...prev, open: false }));
-        doGenerate(modelTier);
-      },
+      onConfirm: () => { setCreditDialog(prev => ({ ...prev, open: false })); doGenerate(modelTier); },
     });
   }, [vehicleData, getCost]);
 
@@ -196,29 +182,22 @@ const Index = () => {
     const showroomBase = `Photorealistic image of a ${vehicleData.vehicle?.brand || ''} ${vehicleData.vehicle?.model || ''} ${vehicleData.vehicle?.variant || ''} in ${vehicleData.vehicle?.color || 'the original color'}. The car is in a modern, bright, luxurious car dealership showroom with polished floors and soft lighting. `;
     const generatedImages: string[] = [];
     for (let i = 0; i < PERSPECTIVES.length; i++) {
-      const perspective = PERSPECTIVES[i];
       setImageProgress({ current: i + 1, total });
       try {
         const { data: imageData, error: imageError } = await supabase.functions.invoke('generate-vehicle-image', {
-          body: { imagePrompt: showroomBase + perspective.prompt, modelTier },
+          body: { imagePrompt: showroomBase + PERSPECTIVES[i].prompt, modelTier },
         });
-        if (imageData?.error === 'insufficient_credits') {
-          toast.error(`Nicht genügend Credits für die Bildgenerierung. Guthaben: ${imageData.balance}`, { duration: 8000 });
-          break;
-        }
-        if (imageData?.error === 'Nicht authentifiziert') {
-          toast.error('Bitte melde dich an, um Bilder zu generieren.');
-          break;
-        }
+        if (imageData?.error === 'insufficient_credits') { toast.error(`Nicht genügend Credits.`, { duration: 8000 }); break; }
+        if (imageData?.error === 'Nicht authentifiziert') { toast.error('Bitte melde dich an.'); break; }
         if (!imageError && imageData?.imageBase64) {
           generatedImages.push(imageData.imageBase64);
           if (i === 0) setImageBase64(imageData.imageBase64);
           setGalleryImages([...generatedImages]);
         }
-      } catch { console.warn(`Image generation failed for ${perspective.key}`); }
+      } catch { console.warn(`Image generation failed for ${PERSPECTIVES[i].key}`); }
     }
-    if (generatedImages.length === 0) { toast.warning('Bilder konnten nicht generiert werden.'); }
-    else { toast.success(`${generatedImages.length} von ${total} Bilder generiert.`); }
+    if (generatedImages.length === 0) toast.warning('Bilder konnten nicht generiert werden.');
+    else toast.success(`${generatedImages.length} von ${total} Bilder generiert.`);
     const projectId = await saveProject(vehicleData, generatedImages[0] || null, generatedImages, selectedTemplate);
     if (projectId) setSavedProjectId(projectId);
     setAppState('preview');
@@ -228,6 +207,7 @@ const Index = () => {
     setSelectedModelTier(modelTier);
     setAppState('uploading-images');
   }, []);
+
   const handleChooseCapture = useCallback((modelTier: 'standard' | 'pro' = 'standard') => {
     setSelectedModelTier(modelTier);
     setAppState('capturing-images' as any);
@@ -237,11 +217,7 @@ const Index = () => {
     setImageBase64(mainImage);
     setGalleryImages(gallery);
     if (vehicleData) {
-      // Add VIN to vehicle data if detected
-      const updatedData = vin ? {
-        ...vehicleData,
-        vehicle: { ...vehicleData.vehicle, vin },
-      } : vehicleData;
+      const updatedData = vin ? { ...vehicleData, vehicle: { ...vehicleData.vehicle, vin } } : vehicleData;
       if (vin) setVehicleData(updatedData);
       const allImgs = [mainImage, ...gallery];
       const projectId = await saveProject(updatedData, mainImage, allImgs, selectedTemplate);
@@ -261,8 +237,37 @@ const Index = () => {
     setAppState('preview');
   }, [vehicleData, saveProject, selectedTemplate]);
 
+  // ─── Standalone Photo Flow ───
+  const handleStandaloneCaptureComplete = useCallback((mainImage: string, gallery: string[], _vin?: string) => {
+    const allImages = [mainImage, ...gallery];
+    setStandalonePhotoResults(allImages);
+    toast.success(`${allImages.length} Showroom-Bilder erstellt! Du kannst sie jetzt für eine Landing Page verwenden.`);
+    setAppState('hub');
+  }, []);
+
+  const handleStandaloneRemasterComplete = useCallback((mainImage: string, gallery: string[]) => {
+    const allImages = [mainImage, ...gallery];
+    setStandalonePhotoResults(allImages);
+    toast.success(`${allImages.length} Showroom-Bilder erstellt! Du kannst sie jetzt für eine Landing Page verwenden.`);
+    setAppState('hub');
+  }, []);
+
+  // ─── Hub Action Handler ───
+  const handleHubAction = useCallback((action: HubAction) => {
+    switch (action) {
+      case 'photos':
+        setAppState('standalone-photo-choice');
+        break;
+      case 'pdf-landing':
+        setAppState('idle');
+        break;
+      default:
+        toast.info('Diese Funktion ist bald verfügbar!');
+    }
+  }, []);
+
   const handleReset = useCallback(() => {
-    setAppState('idle'); setVehicleData(null); setImageBase64(null);
+    setAppState('hub'); setVehicleData(null); setImageBase64(null);
     setGalleryImages([]); setImageProgress({ current: 0, total: 0 }); setFileName(''); setSavedProjectId(null);
   }, []);
 
@@ -290,43 +295,101 @@ const Index = () => {
         </div>
       ) : (
         <main className="max-w-3xl mx-auto px-4 py-12">
-          {/* Hero Section */}
-          <div className="text-center mb-10">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/10 text-accent text-xs font-semibold mb-4">
-              <Sparkles className="w-3.5 h-3.5" />
-              KI-Angebotsgenerator
-            </div>
-            <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-3">
-              Angebotsseite erstellen
-            </h1>
-            <p className="text-muted-foreground text-sm max-w-md mx-auto">
-              PDF hochladen → KI liest aus → fertige Angebotsseite bearbeiten & herunterladen
-            </p>
-          </div>
-
-          {/* Step Indicator */}
-          <div className="flex items-center justify-center gap-2 mb-10">
-            {STEPS.map((step, i) => (
-              <React.Fragment key={step.num}>
-                {i > 0 && <div className={`w-8 h-px ${currentStep > i ? 'bg-accent' : 'bg-border'}`} />}
-                <div className="flex items-center gap-1.5">
-                  <div className={`w-6 h-6 rounded-full text-[11px] font-bold flex items-center justify-center transition-colors ${
-                    currentStep >= step.num
-                      ? 'bg-accent text-accent-foreground'
-                      : 'bg-muted text-muted-foreground'
-                  }`}>
-                    {step.num}
-                  </div>
-                  <span className={`text-xs font-medium ${currentStep >= step.num ? 'text-foreground' : 'text-muted-foreground'}`}>
-                    {step.label}
-                  </span>
+          {/* ─── Hub ─── */}
+          {appState === 'hub' && (
+            <>
+              <ActionHub onSelect={handleHubAction} />
+              {standalonePhotoResults.length > 0 && (
+                <div className="mt-6 p-4 rounded-xl border border-accent/30 bg-accent/5 text-center">
+                  <p className="text-sm text-foreground font-medium">
+                    ✅ {standalonePhotoResults.length} Showroom-Bilder bereit
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Starte "PDF → Angebotsseite" um sie automatisch zu verknüpfen.
+                  </p>
                 </div>
-              </React.Fragment>
-            ))}
-          </div>
+              )}
+            </>
+          )}
 
+          {/* ─── Standalone Photo Choice ─── */}
+          {appState === 'standalone-photo-choice' && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-3 mb-4">
+                <Button variant="ghost" size="icon" onClick={() => setAppState('hub')}>
+                  <ArrowLeft className="w-4 h-4" />
+                </Button>
+                <div>
+                  <h2 className="font-display text-2xl font-bold text-foreground">Fotos & Remastering</h2>
+                  <p className="text-sm text-muted-foreground">Wähle wie du Bilder bereitstellen möchtest</p>
+                </div>
+              </div>
+              <ImageSourceChoice
+                onChooseGenerate={() => toast.info('Bildgenerierung benötigt Fahrzeugdaten. Nutze dafür "PDF → Angebotsseite".')}
+                onChooseUpload={(tier) => { setSelectedModelTier(tier); setAppState('standalone-upload'); }}
+                onChooseCapture={(tier) => { setSelectedModelTier(tier); setAppState('standalone-capture'); }}
+              />
+            </div>
+          )}
+
+          {/* ─── Standalone Capture ─── */}
+          {appState === 'standalone-capture' && (
+            <div className="mt-4">
+              <ImageCaptureGrid
+                vehicleDescription=""
+                vehicleData={undefined}
+                modelTier={selectedModelTier}
+                onComplete={handleStandaloneCaptureComplete}
+                onVehicleDataChange={setVehicleData}
+                onBack={() => setAppState('standalone-photo-choice')}
+              />
+            </div>
+          )}
+
+          {/* ─── Standalone Upload ─── */}
+          {appState === 'standalone-upload' && (
+            <div className="mt-4">
+              <ImageUploadRemaster
+                vehicleDescription=""
+                modelTier={selectedModelTier}
+                onComplete={handleStandaloneRemasterComplete}
+                onBack={() => setAppState('standalone-photo-choice')}
+              />
+            </div>
+          )}
+
+          {/* ─── PDF Upload (idle) ─── */}
           {appState === 'idle' && (
             <div className="space-y-8">
+              <div className="flex items-center gap-3 mb-4">
+                <Button variant="ghost" size="icon" onClick={() => setAppState('hub')}>
+                  <ArrowLeft className="w-4 h-4" />
+                </Button>
+                <div>
+                  <h2 className="font-display text-2xl font-bold text-foreground">PDF → Angebotsseite</h2>
+                  <p className="text-sm text-muted-foreground">
+                    PDF hochladen → KI liest aus → fertige Angebotsseite
+                  </p>
+                </div>
+              </div>
+
+              {/* Step Indicator */}
+              <div className="flex items-center justify-center gap-2 mb-6">
+                {[{ num: 1, label: 'PDF hochladen' }, { num: 2, label: 'KI analysiert' }, { num: 3, label: 'Bearbeiten & Download' }].map((step, i) => (
+                  <React.Fragment key={step.num}>
+                    {i > 0 && <div className={`w-8 h-px ${currentStep > i ? 'bg-accent' : 'bg-border'}`} />}
+                    <div className="flex items-center gap-1.5">
+                      <div className={`w-6 h-6 rounded-full text-[11px] font-bold flex items-center justify-center transition-colors ${
+                        currentStep >= step.num ? 'bg-accent text-accent-foreground' : 'bg-muted text-muted-foreground'
+                      }`}>{step.num}</div>
+                      <span className={`text-xs font-medium ${currentStep >= step.num ? 'text-foreground' : 'text-muted-foreground'}`}>
+                        {step.label}
+                      </span>
+                    </div>
+                  </React.Fragment>
+                ))}
+              </div>
+
               <PDFUpload onFileSelected={handleFileSelected} isProcessing={false} />
               <div className="flex items-center justify-center gap-1 text-accent">
                 <Sparkles className="w-4 h-4" />
@@ -334,37 +397,30 @@ const Index = () => {
                   KI-Analyse kostet <strong className="text-accent">{getCost('pdf_analysis', 'standard') || 1} Credit</strong> — Guthaben: <strong className="text-foreground">{balance} Credits</strong>
                 </span>
               </div>
-
-              {/* Sample PDF Gallery */}
               <SamplePdfGallery
                 onSelect={async (pdfUrl, title) => {
-                  // Download PDF from URL and convert to File
                   try {
                     const response = await fetch(pdfUrl);
                     const blob = await response.blob();
                     const file = new File([blob], `${title}.pdf`, { type: 'application/pdf' });
                     handleFileSelected(file);
-                  } catch {
-                    toast.error('Fehler beim Laden des Beispiel-PDFs');
-                  }
+                  } catch { toast.error('Fehler beim Laden des Beispiel-PDFs'); }
                 }}
                 isProcessing={false}
               />
-
-              <p className="text-center text-[11px] text-muted-foreground">
-                Die KI erkennt automatisch Leasing, Kauf oder Finanzierung und füllt alle Felder vor.
-              </p>
-              <div className="flex items-center justify-center gap-6 text-xs text-muted-foreground pt-2">
-                <span>📄 Leasing</span>
-                <span>💰 Kauf</span>
-                <span>🏦 Finanzierung</span>
-              </div>
+              {standalonePhotoResults.length > 0 && (
+                <div className="p-3 rounded-lg border border-accent/30 bg-accent/5 text-center">
+                  <p className="text-xs text-muted-foreground">
+                    ✅ {standalonePhotoResults.length} Showroom-Bilder werden nach Analyse automatisch verknüpft
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
           {isProcessing && (
             <div className="mt-8">
-              <ProcessingStatus state={appState} fileName={fileName} imageProgress={imageProgress} />
+              <ProcessingStatus state={appState as AppState} fileName={fileName} imageProgress={imageProgress} />
             </div>
           )}
 
@@ -388,17 +444,13 @@ const Index = () => {
         </main>
       )}
 
-      {/* Credit Confirmation Dialog */}
       <CreditConfirmDialog
         open={creditDialog.open}
         cost={creditDialog.cost}
         balance={balance}
         actionLabel={creditDialog.label}
         onConfirm={creditDialog.onConfirm}
-        onCancel={() => {
-          setCreditDialog(prev => ({ ...prev, open: false }));
-          setPendingFile(null);
-        }}
+        onCancel={() => { setCreditDialog(prev => ({ ...prev, open: false })); setPendingFile(null); }}
       />
     </div>
   );
