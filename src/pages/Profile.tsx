@@ -82,6 +82,25 @@ const Profile = () => {
   const [transactions, setTransactions] = useState<CreditTransaction[]>([]);
   const [txLoading, setTxLoading] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
+
+  // Determine login method
+  const loginProvider = user?.app_metadata?.provider || 'email';
+  const isGoogleLogin = loginProvider === 'google';
+
+  const handlePasswordChange = async () => {
+    if (newPassword.length < 6) { toast.error('Passwort muss mindestens 6 Zeichen lang sein'); return; }
+    if (newPassword !== confirmPassword) { toast.error('Passwörter stimmen nicht überein'); return; }
+    setChangingPassword(true);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setChangingPassword(false);
+    if (error) { toast.error('Fehler: ' + error.message); return; }
+    toast.success('Passwort erfolgreich geändert!');
+    setNewPassword('');
+    setConfirmPassword('');
+  };
 
   useEffect(() => {
     if (!user) return;
