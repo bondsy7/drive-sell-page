@@ -45,10 +45,12 @@ LEISTUNG:
 - Suche nach "PS", "kW", "Nennleistung", "Systemleistung"
 
 FEATURES/AUSSTATTUNG:
-- Extrahiere ALLE genannten Ausstattungsmerkmale, Pakete, Extras
-- Auch Standardausstattung wenn aufgelistet
-- Typische Kategorien: Sicherheit, Komfort, Infotainment, Exterieur, Interieur, Assistenzsysteme
-- Paket-Namen aufnehmen (z.B. "Business Paket", "AMG Line")
+- Extrahiere NUR die HIGHLIGHTS der Ausstattung (max. 15-20 Einträge)
+- Fokus auf: Pakete (z.B. "Business Paket", "AMG Line"), besondere Extras, Assistenzsysteme, Infotainment-Highlights
+- KEINE trivialen Standardausstattungen (z.B. "Warndreieck", "Verbandskasten", "Fußmatten")
+- KEINE Einträge die mit "Ohne" oder "Kein" beginnen (z.B. "Ohne Fußmatten", "Keine Metallic-Lackierung")
+- Wenn das PDF MEHRERE Fahrzeugvarianten enthält, extrahiere NUR die Ausstattung des ERSTEN/HAUPT-Angebots
+- Keine Duplikate, keine redundanten Einträge
 
 FINANZIERUNG:
 - Achte auf: Brutto vs. Netto, MwSt-Hinweise
@@ -76,7 +78,7 @@ JSON-Schema:
     "fuelType": "Benzin|Diesel|Elektro|Hybrid|Plug-in-Hybrid",
     "transmission": "Automatik|Manuell|Doppelkupplungsgetriebe|CVT",
     "power": "string (z.B. '150 PS / 110 kW' oder Systemleistung bei Hybrid)",
-    "features": ["ALLE Ausstattungsmerkmale als Array - so viele wie möglich"]
+    "features": ["NUR Highlights, max 15-20, keine 'Ohne'-Einträge, keine Trivialausstattung"]
   },
   "finance": {
     "monthlyRate": "string mit € (z.B. '299,00 €')",
@@ -144,7 +146,7 @@ ABSOLUTE REGELN:
 2. Extrahiere JEDEN Wert der im PDF steht - lieber zu viel als zu wenig
 3. Leite co2Class und co2ClassDischarged IMMER aus den g/km-Werten ab wenn nicht explizit angegeben
 4. Setze isPluginHybrid=true sobald irgendein PHEV-Hinweis erkannt wird
-5. Features: Extrahiere ALLE - auch 50+ Einträge sind OK
+5. Features: NUR Highlights (max 15-20), keine "Ohne/Kein"-Einträge, keine Trivialausstattung
 6. Einheiten IMMER mit angeben (€, km, l/100km, g/km, kW, PS, cm³, kWh/100km)
 7. Fehlende Werte = leerer String "", fehlende booleans = false
 8. Antworte NUR mit JSON`;
@@ -283,7 +285,7 @@ serve(async (req) => {
 - ALLE Verbrauchswerte (kombiniert, Stadt, Landstraße, Autobahn)
 - CO₂-Emissionen und CO₂-Klasse (bei PHEV: BEIDE Klassen!)
 - Energiekosten, Kraftstoffpreis, CO₂-Kosten, Kfz-Steuer
-- ALLE Ausstattungsmerkmale und Extras (so viele wie möglich!)
+- Ausstattungs-HIGHLIGHTS (max 15-20, keine "Ohne"-Einträge, keine Trivialausstattung, NUR vom Hauptfahrzeug!)
 - Bei Plug-in-Hybrid: gewichtete UND entladene Werte, Stromverbrauch, E-Reichweite
 
 Wenn CO₂-Klasse nicht angegeben aber g/km-Wert vorhanden: Klasse ableiten!
@@ -369,6 +371,31 @@ Gib das Ergebnis als JSON zurück.`,
 
     // Ensure arrays/objects exist
     if (parsed.vehicle && !Array.isArray(parsed.vehicle.features)) parsed.vehicle.features = [];
+
+    // Post-process features: remove "Ohne/Kein" entries, duplicates, trivial items, limit to 20
+    if (parsed.vehicle?.features?.length) {
+      const trivialKeywords = [
+        'warndreieck', 'verbandskasten', 'bordwerkzeug', 'wagenheber',
+        'reifenreparaturset', 'pannenset', 'abschlepphaken', 'fußmatte',
+        'fussmatten', 'fußmatten', 'gummimatte', 'gummimatten',
+        'erste-hilfe', 'warnweste',
+      ];
+      const seen = new Set<string>();
+      parsed.vehicle.features = parsed.vehicle.features
+        .filter((f: string) => {
+          if (!f || typeof f !== 'string') return false;
+          const lower = f.trim().toLowerCase();
+          // Remove "Ohne..." and "Kein..." entries
+          if (lower.startsWith('ohne ') || lower.startsWith('kein ') || lower.startsWith('keine ')) return false;
+          // Remove trivial items
+          if (trivialKeywords.some(kw => lower.includes(kw))) return false;
+          // Remove duplicates (case-insensitive)
+          if (seen.has(lower)) return false;
+          seen.add(lower);
+          return true;
+        })
+        .slice(0, 20);
+    }
     if (!parsed.finance) parsed.finance = {};
     for (const f of ['monthlyRate', 'downPayment', 'duration', 'totalPrice', 'annualMileage', 'specialPayment', 'residualValue', 'interestRate']) {
       parsed.finance[f] = parsed.finance[f] || '';

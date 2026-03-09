@@ -222,7 +222,7 @@ const MinimalistEditor: React.FC<TemplateEditorProps> = ({
           <AccordionContent>
             <div className="flex flex-wrap gap-1.5">
               {(data.vehicle.features || []).map((f, i) => (
-                <span key={i} className="group text-[11px] border border-border/40 text-foreground px-3 py-1.5 rounded inline-flex items-center gap-1.5 hover:bg-muted/50 transition-colors">
+                <span key={i} className="group text-[11px] leading-none border border-border/40 text-foreground px-3 py-1.5 rounded inline-flex items-center gap-1.5 hover:bg-muted/50 transition-colors">
                   <EditableField value={f} onChange={(v) => updateFeature(i, v)} className="text-foreground" />
                   <button onClick={() => removeFeature(i)} className="opacity-0 group-hover:opacity-60 hover:!opacity-100 text-destructive transition-opacity"><Trash2 className="w-3 h-3" /></button>
                 </span>
