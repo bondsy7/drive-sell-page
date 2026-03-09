@@ -119,8 +119,8 @@ serve(async (req) => {
             status: "active",
             billing_cycle: priceInterval === "year" ? "yearly" : "monthly",
             stripe_subscription_id: subscriptionId,
-            current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-            current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+            current_period_start: toISO(subscription.current_period_start),
+            current_period_end: toISO(subscription.current_period_end),
             updated_at: new Date().toISOString(),
           }, { onConflict: "user_id" });
 
@@ -169,8 +169,8 @@ serve(async (req) => {
         await supabase
           .from("user_subscriptions")
           .update({
-            current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-            current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+            current_period_start: toISO(subscription.current_period_start),
+            current_period_end: toISO(subscription.current_period_end),
             updated_at: new Date().toISOString(),
           })
           .eq("user_id", profile.id);
