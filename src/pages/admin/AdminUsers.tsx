@@ -93,7 +93,7 @@ export default function AdminUsers() {
       roleMap[r.user_id].push(r.role);
     }
 
-    const subMap: Record<string, PlanInfo> = {};
+    const subMap: Record<string, PlanInfo & { stripe_subscription_id?: string | null }> = {};
     for (const s of (subscriptions as any[]) || []) {
       const plan = s.subscription_plans;
       if (plan) {
@@ -103,6 +103,7 @@ export default function AdminUsers() {
           slug: plan.slug,
           status: s.status,
           billing_cycle: s.billing_cycle,
+          stripe_subscription_id: s.stripe_subscription_id,
         };
       }
     }
