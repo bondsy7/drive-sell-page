@@ -25,6 +25,7 @@ interface UserRow {
   lifetime_used?: number;
   roles?: string[];
   plan?: PlanInfo | null;
+  stripe_subscription_id?: string | null;
   project_count?: number;
   lead_count?: number;
   last_transaction?: string | null;
