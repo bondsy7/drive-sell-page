@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Save, Building2, MapPin, Phone, Globe, Facebook, Instagram, Youtube, FileText, Landmark, Upload, X, Image, Zap, History, TrendingDown, TrendingUp } from 'lucide-react';
+import { Save, Building2, MapPin, Phone, Globe, Facebook, Instagram, Youtube, FileText, Landmark, Upload, X, Image, Zap, History, TrendingDown, TrendingUp, Lock, KeyRound, Chrome } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
 import { toast } from 'sonner';
 
@@ -82,6 +82,25 @@ const Profile = () => {
   const [transactions, setTransactions] = useState<CreditTransaction[]>([]);
   const [txLoading, setTxLoading] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
+
+  // Determine login method
+  const loginProvider = user?.app_metadata?.provider || 'email';
+  const isGoogleLogin = loginProvider === 'google';
+
+  const handlePasswordChange = async () => {
+    if (newPassword.length < 6) { toast.error('Passwort muss mindestens 6 Zeichen lang sein'); return; }
+    if (newPassword !== confirmPassword) { toast.error('Passwörter stimmen nicht überein'); return; }
+    setChangingPassword(true);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setChangingPassword(false);
+    if (error) { toast.error('Fehler: ' + error.message); return; }
+    toast.success('Passwort erfolgreich geändert!');
+    setNewPassword('');
+    setConfirmPassword('');
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -351,6 +370,51 @@ const Profile = () => {
           <div className="space-y-1.5">
             <Label className="flex items-center gap-1.5"><FileText className="w-3.5 h-3.5" /> Standard-Rechtstext</Label>
             <Textarea value={profile.default_legal_text} onChange={e => update('default_legal_text', e.target.value)} placeholder="Allgemeiner Rechtstext / Haftungsausschluss..." rows={4} />
+          </div>
+        </Section>
+
+        {/* Account & Sicherheit */}
+        <Section icon={<KeyRound className="w-4 h-4" />} title="Konto & Sicherheit">
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground">Anmeldemethode:</span>
+              <Badge variant="outline" className="gap-1.5">
+                {isGoogleLogin ? (
+                  <><Chrome className="w-3.5 h-3.5" /> Google</>
+                ) : (
+                  <><Lock className="w-3.5 h-3.5" /> E-Mail / Passwort</>
+                )}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground">E-Mail:</span>
+              <span className="text-sm text-foreground">{user?.email}</span>
+            </div>
+
+            {!isGoogleLogin && (
+              <div className="border-t border-border pt-4 space-y-3">
+                <h3 className="text-sm font-medium text-foreground">Passwort ändern</h3>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label>Neues Passwort</Label>
+                    <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="••••••••" minLength={6} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Passwort bestätigen</Label>
+                    <Input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="••••••••" />
+                  </div>
+                </div>
+                <Button onClick={handlePasswordChange} disabled={changingPassword || !newPassword} size="sm" variant="outline" className="gap-1.5">
+                  <Lock className="w-3.5 h-3.5" /> {changingPassword ? 'Wird geändert...' : 'Passwort ändern'}
+                </Button>
+              </div>
+            )}
+
+            {isGoogleLogin && (
+              <p className="text-xs text-muted-foreground">
+                Du bist über Google angemeldet. Das Passwort wird über dein Google-Konto verwaltet.
+              </p>
+            )}
           </div>
         </Section>
 

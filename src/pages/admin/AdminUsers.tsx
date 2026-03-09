@@ -3,9 +3,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { Search, Plus, Minus, Shield, ShieldCheck, User, Crown } from 'lucide-react';
+import { Search, Plus, Minus, Shield, ShieldCheck, User, Crown, Trash2, XCircle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface PlanInfo {
   id: string;
@@ -24,6 +25,7 @@ interface UserRow {
   lifetime_used?: number;
   roles?: string[];
   plan?: PlanInfo | null;
+  stripe_subscription_id?: string | null;
   project_count?: number;
   lead_count?: number;
   last_transaction?: string | null;
@@ -71,7 +73,7 @@ export default function AdminUsers() {
       supabase.from('profiles').select('id, email, company_name, created_at').order('created_at', { ascending: false }),
       supabase.from('credit_balances').select('user_id, balance, lifetime_used'),
       supabase.from('user_roles').select('user_id, role'),
-      supabase.from('user_subscriptions').select('user_id, plan_id, status, billing_cycle, subscription_plans(id, name, slug)'),
+      supabase.from('user_subscriptions').select('user_id, plan_id, status, billing_cycle, stripe_subscription_id, subscription_plans(id, name, slug)'),
       supabase.from('subscription_plans').select('id, name, slug').eq('active', true).order('sort_order'),
       supabase.from('projects').select('id, user_id'),
       supabase.from('leads').select('id, dealer_user_id'),
@@ -91,7 +93,7 @@ export default function AdminUsers() {
       roleMap[r.user_id].push(r.role);
     }
 
-    const subMap: Record<string, PlanInfo> = {};
+    const subMap: Record<string, PlanInfo & { stripe_subscription_id?: string | null }> = {};
     for (const s of (subscriptions as any[]) || []) {
       const plan = s.subscription_plans;
       if (plan) {
@@ -101,6 +103,7 @@ export default function AdminUsers() {
           slug: plan.slug,
           status: s.status,
           billing_cycle: s.billing_cycle,
+          stripe_subscription_id: s.stripe_subscription_id,
         };
       }
     }
@@ -129,6 +132,7 @@ export default function AdminUsers() {
       lifetime_used: balanceMap[p.id]?.lifetime_used ?? 0,
       roles: roleMap[p.id] || [],
       plan: subMap[p.id] || null,
+      stripe_subscription_id: (subMap[p.id] as any)?.stripe_subscription_id || null,
       project_count: projectCountMap[p.id] || 0,
       lead_count: leadCountMap[p.id] || 0,
       last_transaction: lastTxMap[p.id] || null,
@@ -208,6 +212,48 @@ export default function AdminUsers() {
       toast.success(`Plan "${selectedPlan?.name || planId}" zugewiesen`);
     }
     loadUsers();
+  };
+
+  const cancelStripeSubscription = async (userId: string, stripeSubId: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-delete-user`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({ action: 'cancel_subscription', userId, subscriptionId: stripeSubId }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
+      toast.success('Stripe-Subscription gekündigt');
+      loadUsers();
+    } catch (err: any) {
+      toast.error('Fehler: ' + err.message);
+    }
+  };
+
+  const deleteUser = async (userId: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-delete-user`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({ action: 'delete_user', userId }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
+      toast.success('Nutzer gelöscht');
+      loadUsers();
+    } catch (err: any) {
+      toast.error('Fehler: ' + err.message);
+    }
   };
 
   const filtered = users.filter(u =>
@@ -311,17 +357,61 @@ export default function AdminUsers() {
                   </td>
                   <td className="p-3 text-muted-foreground">{new Date(u.created_at).toLocaleDateString('de-DE')}</td>
                   <td className="p-3">
-                    {adjusting === u.id ? (
-                      <div className="flex items-center gap-1">
-                        <Input type="number" value={adjustAmount} onChange={e => setAdjustAmount(e.target.value)} className="w-20 h-7 text-xs" placeholder="±10" />
-                        <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => adjustCredits(u.id, parseInt(adjustAmount) || 0)}>OK</Button>
-                        <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => { setAdjusting(null); setAdjustAmount(''); }}>✕</Button>
-                      </div>
-                    ) : (
-                      <Button size="sm" variant="outline" className="h-7 gap-1" onClick={() => setAdjusting(u.id)}>
-                        <Plus className="w-3 h-3" /><Minus className="w-3 h-3" />
-                      </Button>
-                    )}
+                    <div className="flex items-center gap-1">
+                      {adjusting === u.id ? (
+                        <>
+                          <Input type="number" value={adjustAmount} onChange={e => setAdjustAmount(e.target.value)} className="w-20 h-7 text-xs" placeholder="±10" />
+                          <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => adjustCredits(u.id, parseInt(adjustAmount) || 0)}>OK</Button>
+                          <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => { setAdjusting(null); setAdjustAmount(''); }}>✕</Button>
+                        </>
+                      ) : (
+                        <Button size="sm" variant="outline" className="h-7 gap-1" onClick={() => setAdjusting(u.id)}>
+                          <Plus className="w-3 h-3" /><Minus className="w-3 h-3" />
+                        </Button>
+                      )}
+
+                      {u.stripe_subscription_id && u.plan?.status === 'active' && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button size="sm" variant="outline" className="h-7 px-2 text-amber-600 hover:text-amber-700" title="Abo kündigen">
+                              <XCircle className="w-3.5 h-3.5" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Abo kündigen?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Das Stripe-Abo von {u.email} ({u.plan?.name}) wird sofort gekündigt. Credits bleiben erhalten.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => cancelStripeSubscription(u.id, u.stripe_subscription_id!)}>Abo kündigen</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
+
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button size="sm" variant="outline" className="h-7 px-2 text-destructive hover:text-destructive" title="Nutzer löschen">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Nutzer endgültig löschen?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              {u.email} wird unwiderruflich gelöscht inkl. aller Projekte, Credits und ggf. Stripe-Abos. Diese Aktion kann nicht rückgängig gemacht werden.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteUser(u.id)}>Endgültig löschen</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </td>
                 </tr>
               );
