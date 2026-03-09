@@ -9,6 +9,8 @@ export interface SubscriptionInfo {
   status: string | null;
   billingCycle: string | null;
   periodEnd: string | null;
+  stripeSubscriptionId: string | null;
+  cancelAtPeriodEnd: boolean;
 }
 
 const PLAN_COLORS: Record<string, string> = {
@@ -25,33 +27,33 @@ const PLAN_BG: Record<string, string> = {
   enterprise: 'bg-amber-500/15 text-amber-600',
 };
 
+const FREE_SUB: SubscriptionInfo = {
+  planSlug: 'free', planName: 'Free', planId: null, status: null,
+  billingCycle: null, periodEnd: null, stripeSubscriptionId: null, cancelAtPeriodEnd: false,
+};
+
 export function useSubscription() {
   const { user } = useAuth();
-  const [sub, setSub] = useState<SubscriptionInfo>({
-    planSlug: null, planName: null, planId: null, status: null, billingCycle: null, periodEnd: null,
-  });
+  const [sub, setSub] = useState<SubscriptionInfo>(FREE_SUB);
   const [loading, setLoading] = useState(true);
 
   const fetchSubscription = useCallback(async () => {
     if (!user) { setLoading(false); return; }
 
-    // Get user subscription with plan info
     const { data: userSub } = await supabase
       .from('user_subscriptions' as any)
-      .select('plan_id, status, billing_cycle, current_period_end')
+      .select('plan_id, status, billing_cycle, current_period_end, stripe_subscription_id')
       .eq('user_id', user.id)
-      .eq('status', 'active')
       .order('created_at', { ascending: false })
       .limit(1)
       .single();
 
-    if (!userSub) {
-      setSub({ planSlug: 'free', planName: 'Free', planId: null, status: null, billingCycle: null, periodEnd: null });
+    if (!userSub || (userSub as any).status === 'cancelled') {
+      setSub(FREE_SUB);
       setLoading(false);
       return;
     }
 
-    // Get plan details
     const { data: plan } = await supabase
       .from('subscription_plans' as any)
       .select('name, slug')
@@ -65,6 +67,8 @@ export function useSubscription() {
       status: (userSub as any).status,
       billingCycle: (userSub as any).billing_cycle,
       periodEnd: (userSub as any).current_period_end,
+      stripeSubscriptionId: (userSub as any).stripe_subscription_id || null,
+      cancelAtPeriodEnd: false, // will be overridden by Stripe webhook if needed
     });
     setLoading(false);
   }, [user]);
@@ -73,10 +77,32 @@ export function useSubscription() {
     fetchSubscription();
   }, [fetchSubscription]);
 
+  // Listen for realtime changes to user_subscriptions
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('subscription-sync')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'user_subscriptions',
+        filter: `user_id=eq.${user.id}`,
+      }, () => {
+        // Re-fetch on any change (UPDATE, INSERT, DELETE)
+        fetchSubscription();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user, fetchSubscription]);
+
   return {
     ...sub,
     loading,
     isFreePlan: !sub.planSlug || sub.planSlug === 'free',
+    isCancelled: sub.status === 'cancelled',
+    isPastDue: sub.status === 'past_due',
     planColor: PLAN_COLORS[sub.planSlug || 'free'] || PLAN_COLORS.free,
     planBg: PLAN_BG[sub.planSlug || 'free'] || PLAN_BG.free,
     refresh: fetchSubscription,
