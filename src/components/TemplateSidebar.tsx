@@ -66,7 +66,61 @@ const SidebarContent: React.FC<Omit<TemplateSidebarProps, 'open'>> = ({ selected
   </div>
 );
 
-const TemplateSidebar: React.FC<TemplateSidebarProps> = ({ selectedTemplate, onSelectTemplate, vehicleData, open, onClose }) => {
+const TemplateSidebar: React.FC<TemplateSidebarProps> = ({ selectedTemplate, onSelectTemplate, vehicleData, open, onOpen, onClose }) => {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+
+  // Swipe from left edge to open
+  useEffect(() => {
+    if (!onOpen) return;
+    const handleTouchStart = (e: TouchEvent) => {
+      const x = e.touches[0].clientX;
+      if (x < 24 && !open) {
+        touchStartX.current = x;
+        touchStartY.current = e.touches[0].clientY;
+      }
+    };
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (touchStartX.current === null) return;
+      const dx = e.changedTouches[0].clientX - touchStartX.current;
+      const dy = Math.abs(e.changedTouches[0].clientY - (touchStartY.current || 0));
+      if (dx > 50 && dy < 100) onOpen();
+      touchStartX.current = null;
+      touchStartY.current = null;
+    };
+    // Only on mobile
+    const mql = window.matchMedia('(max-width: 1023px)');
+    if (!mql.matches) return;
+    document.addEventListener('touchstart', handleTouchStart, { passive: true });
+    document.addEventListener('touchend', handleTouchEnd, { passive: true });
+    return () => {
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [onOpen, open]);
+
+  // Swipe left on panel to close
+  useEffect(() => {
+    if (!open || !onClose) return;
+    const panel = panelRef.current;
+    if (!panel) return;
+    let sx: number | null = null;
+    const onStart = (e: TouchEvent) => { sx = e.touches[0].clientX; };
+    const onEnd = (e: TouchEvent) => {
+      if (sx === null) return;
+      const dx = e.changedTouches[0].clientX - sx;
+      if (dx < -60) onClose();
+      sx = null;
+    };
+    panel.addEventListener('touchstart', onStart, { passive: true });
+    panel.addEventListener('touchend', onEnd, { passive: true });
+    return () => {
+      panel.removeEventListener('touchstart', onStart);
+      panel.removeEventListener('touchend', onEnd);
+    };
+  }, [open, onClose]);
+
   return (
     <>
       {/* Desktop sidebar - always visible */}
@@ -78,7 +132,10 @@ const TemplateSidebar: React.FC<TemplateSidebarProps> = ({ selectedTemplate, onS
       {open && (
         <>
           <div className="fixed inset-0 bg-background/60 backdrop-blur-sm z-40 lg:hidden" onClick={onClose} />
-          <div className="fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-sidebar border-r border-sidebar-border z-50 lg:hidden shadow-xl animate-in slide-in-from-left duration-200">
+          <div
+            ref={panelRef}
+            className="fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-sidebar border-r border-sidebar-border z-50 lg:hidden shadow-xl animate-in slide-in-from-left duration-200"
+          >
             <SidebarContent selectedTemplate={selectedTemplate} onSelectTemplate={onSelectTemplate} vehicleData={vehicleData} onClose={onClose} />
           </div>
         </>
