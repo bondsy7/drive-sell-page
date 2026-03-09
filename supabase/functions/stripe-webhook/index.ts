@@ -6,6 +6,16 @@ const log = (step: string, details?: any) => {
   console.log(`[STRIPE-WEBHOOK] ${step}${details ? ` - ${JSON.stringify(details)}` : ''}`);
 };
 
+// Safe timestamp → ISO string conversion (handles unix seconds, milliseconds, or already-string values)
+const toISO = (val: any): string => {
+  if (!val) return new Date().toISOString();
+  if (typeof val === 'string') return val;
+  // Unix seconds (< 1e12) vs milliseconds
+  const ms = typeof val === 'number' && val < 1e12 ? val * 1000 : val;
+  const d = new Date(ms);
+  return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
+};
+
 // Plan slug mapping by Stripe product ID (monthly + yearly products)
 const PRODUCT_TO_PLAN: Record<string, string> = {
   'prod_U6vMgZiKJOuEph': 'starter',
