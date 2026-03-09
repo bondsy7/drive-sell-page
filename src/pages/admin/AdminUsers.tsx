@@ -214,6 +214,48 @@ export default function AdminUsers() {
     loadUsers();
   };
 
+  const cancelStripeSubscription = async (userId: string, stripeSubId: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-delete-user`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({ action: 'cancel_subscription', userId, subscriptionId: stripeSubId }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
+      toast.success('Stripe-Subscription gekündigt');
+      loadUsers();
+    } catch (err: any) {
+      toast.error('Fehler: ' + err.message);
+    }
+  };
+
+  const deleteUser = async (userId: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-delete-user`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({ action: 'delete_user', userId }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
+      toast.success('Nutzer gelöscht');
+      loadUsers();
+    } catch (err: any) {
+      toast.error('Fehler: ' + err.message);
+    }
+  };
+
   const filtered = users.filter(u =>
     !search || (u.email || '').toLowerCase().includes(search.toLowerCase()) ||
     (u.company_name || '').toLowerCase().includes(search.toLowerCase())
