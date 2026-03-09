@@ -6,11 +6,10 @@ const log = (step: string, details?: any) => {
   console.log(`[STRIPE-WEBHOOK] ${step}${details ? ` - ${JSON.stringify(details)}` : ''}`);
 };
 
-// Safe timestamp → ISO string conversion (handles unix seconds, milliseconds, or already-string values)
+// Safe timestamp → ISO string conversion
 const toISO = (val: any): string => {
   if (!val) return new Date().toISOString();
   if (typeof val === 'string') return val;
-  // Unix seconds (< 1e12) vs milliseconds
   const ms = typeof val === 'number' && val < 1e12 ? val * 1000 : val;
   const d = new Date(ms);
   return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
@@ -21,7 +20,6 @@ const PRODUCT_TO_PLAN: Record<string, string> = {
   'prod_U6vMgZiKJOuEph': 'starter',
   'prod_U6vMFLF7W8nh43': 'pro',
   'prod_U6vQHQJucwwipk': 'enterprise',
-  // Yearly products
   'prod_U6xgJe3nEY2OOS': 'starter',
   'prod_U6yCFgnOHMFzqW': 'pro',
   'prod_U6yDWJrKKBCYF2': 'enterprise',
@@ -32,6 +30,82 @@ const PLAN_CREDITS: Record<string, number> = {
   pro: 200,
   enterprise: 600,
 };
+
+// Helper: find user by Stripe customer email
+async function findUserByCustomerEmail(supabase: any, stripe: Stripe, customerId: string) {
+  const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
+  if (!customer.email) return null;
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("email", customer.email)
+    .single();
+  return profile ? { userId: profile.id, email: customer.email } : null;
+}
+
+// Helper: find user by stripe_subscription_id in DB
+async function findUserByStripeSubId(supabase: any, stripeSubId: string) {
+  const { data } = await supabase
+    .from("user_subscriptions")
+    .select("user_id")
+    .eq("stripe_subscription_id", stripeSubId)
+    .limit(1)
+    .single();
+  return data?.user_id || null;
+}
+
+// Helper: sync subscription state from Stripe to DB
+async function syncSubscriptionToDb(supabase: any, stripe: Stripe, subscription: Stripe.Subscription, status: string) {
+  const stripeSubId = subscription.id;
+  const customerId = subscription.customer as string;
+
+  // Try to find user by stripe_subscription_id first, then by email
+  let userId = await findUserByStripeSubId(supabase, stripeSubId);
+  if (!userId) {
+    const found = await findUserByCustomerEmail(supabase, stripe, customerId);
+    if (found) userId = found.userId;
+  }
+  if (!userId) {
+    log("User not found for subscription sync", { stripeSubId, customerId });
+    return null;
+  }
+
+  const productId = subscription.items.data[0]?.price?.product as string;
+  const planSlug = PRODUCT_TO_PLAN[productId];
+  const priceInterval = subscription.items.data[0]?.price?.recurring?.interval;
+
+  const updateData: any = {
+    status,
+    stripe_subscription_id: stripeSubId,
+    current_period_start: toISO(subscription.current_period_start),
+    current_period_end: toISO(subscription.current_period_end),
+    updated_at: new Date().toISOString(),
+  };
+
+  // If we know the plan, also update plan_id and billing_cycle
+  if (planSlug) {
+    const { data: planData } = await supabase
+      .from("subscription_plans")
+      .select("id")
+      .eq("slug", planSlug)
+      .single();
+    if (planData) {
+      updateData.plan_id = planData.id;
+      updateData.billing_cycle = priceInterval === "year" ? "yearly" : "monthly";
+    }
+  }
+
+  const { error } = await supabase
+    .from("user_subscriptions")
+    .update(updateData)
+    .eq("user_id", userId);
+
+  if (error) {
+    log("Error updating subscription", { error: error.message, userId });
+  }
+
+  return { userId, planSlug };
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -54,7 +128,6 @@ serve(async (req) => {
 
   let event: Stripe.Event;
 
-  // If webhook secret is configured, verify signature; otherwise parse directly
   if (webhookSecret && sig) {
     try {
       event = await stripe.webhooks.constructEventAsync(body, sig, webhookSecret);
@@ -71,6 +144,7 @@ serve(async (req) => {
 
   try {
     switch (event.type) {
+      // ─── New subscription via checkout ─────────────────────────────────
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
         const userId = session.metadata?.user_id;
@@ -101,7 +175,6 @@ serve(async (req) => {
 
         if (!planSlug) { log("Unknown product", { productId }); break; }
 
-        // Get plan ID from DB
         const { data: planData } = await supabase
           .from("subscription_plans")
           .select("id")
@@ -110,7 +183,6 @@ serve(async (req) => {
 
         if (!planData) { log("Plan not found", { planSlug }); break; }
 
-        // Upsert subscription
         const { error: subError } = await supabase
           .from("user_subscriptions")
           .upsert({
@@ -126,7 +198,6 @@ serve(async (req) => {
 
         if (subError) log("Error upserting subscription", { error: subError.message });
 
-        // Add credits
         const credits = PLAN_CREDITS[planSlug] || 0;
         if (credits > 0) {
           await supabase.rpc("add_credits", {
@@ -141,11 +212,70 @@ serve(async (req) => {
         break;
       }
 
+      // ─── Subscription updated (plan change, cancel_at_period_end, etc.) ─
+      case "customer.subscription.updated": {
+        const subscription = event.data.object as Stripe.Subscription;
+        const previousAttrs = (event.data as any).previous_attributes || {};
+
+        // Determine new status
+        let dbStatus = "active";
+        if (subscription.status === "canceled" || subscription.status === "unpaid") {
+          dbStatus = "cancelled";
+        } else if (subscription.status === "past_due") {
+          dbStatus = "past_due";
+        } else if (subscription.status === "trialing") {
+          dbStatus = "trialing";
+        } else if (subscription.cancel_at_period_end) {
+          // Still active but scheduled to cancel
+          dbStatus = "active";
+        }
+
+        const result = await syncSubscriptionToDb(supabase, stripe, subscription, dbStatus);
+        
+        // Log what changed
+        const changes: string[] = [];
+        if (previousAttrs.status) changes.push(`status: ${previousAttrs.status} → ${subscription.status}`);
+        if (previousAttrs.cancel_at_period_end !== undefined) changes.push(`cancel_at_period_end: ${subscription.cancel_at_period_end}`);
+        if (previousAttrs.items) changes.push("plan changed");
+        
+        log("Subscription updated", { 
+          userId: result?.userId, 
+          stripeSubId: subscription.id,
+          stripeStatus: subscription.status,
+          dbStatus,
+          cancelAtPeriodEnd: subscription.cancel_at_period_end,
+          changes,
+        });
+        break;
+      }
+
+      // ─── Subscription fully deleted/cancelled ─────────────────────────
+      case "customer.subscription.deleted": {
+        const subscription = event.data.object as Stripe.Subscription;
+        
+        // Try DB lookup first, then email
+        let userId = await findUserByStripeSubId(supabase, subscription.id);
+        if (!userId) {
+          const found = await findUserByCustomerEmail(supabase, stripe, subscription.customer as string);
+          if (found) userId = found.userId;
+        }
+
+        if (userId) {
+          await supabase
+            .from("user_subscriptions")
+            .update({ status: "cancelled", updated_at: new Date().toISOString() })
+            .eq("user_id", userId);
+          log("Subscription cancelled (deleted)", { userId, stripeSubId: subscription.id });
+        } else {
+          log("User not found for cancelled subscription", { stripeSubId: subscription.id });
+        }
+        break;
+      }
+
+      // ─── Invoice paid (renewal) ───────────────────────────────────────
       case "invoice.paid": {
         const invoice = event.data.object as Stripe.Invoice;
         if (!invoice.subscription) break;
-
-        // Skip first invoice (handled by checkout.session.completed)
         if (invoice.billing_reason === "subscription_create") break;
 
         const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string);
@@ -153,61 +283,57 @@ serve(async (req) => {
         const planSlug = PRODUCT_TO_PLAN[productId];
         if (!planSlug) break;
 
-        // Find user by stripe customer email
-        const customer = await stripe.customers.retrieve(invoice.customer as string) as Stripe.Customer;
-        if (!customer.email) break;
+        const found = await findUserByCustomerEmail(supabase, stripe, invoice.customer as string);
+        if (!found) { log("Profile not found for invoice", { customer: invoice.customer }); break; }
 
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("id")
-          .eq("email", customer.email)
-          .single();
-
-        if (!profile) { log("Profile not found", { email: customer.email }); break; }
-
-        // Update period
         await supabase
           .from("user_subscriptions")
           .update({
+            status: "active",
             current_period_start: toISO(subscription.current_period_start),
             current_period_end: toISO(subscription.current_period_end),
             updated_at: new Date().toISOString(),
           })
-          .eq("user_id", profile.id);
+          .eq("user_id", found.userId);
 
-        // Reset credits for renewal
         const credits = PLAN_CREDITS[planSlug] || 0;
         if (credits > 0) {
           await supabase.rpc("add_credits", {
-            _user_id: profile.id,
+            _user_id: found.userId,
             _amount: credits,
             _action_type: "subscription_reset",
             _description: `${planSlug} Abo verlängert – ${credits} Credits`,
           });
         }
 
-        log("Subscription renewed", { userId: profile.id, planSlug, credits });
+        log("Subscription renewed", { userId: found.userId, planSlug, credits });
         break;
       }
 
-      case "customer.subscription.deleted": {
-        const subscription = event.data.object as Stripe.Subscription;
-        const customer = await stripe.customers.retrieve(subscription.customer as string) as Stripe.Customer;
-        if (!customer.email) break;
+      // ─── Invoice payment failed ───────────────────────────────────────
+      case "invoice.payment_failed": {
+        const invoice = event.data.object as Stripe.Invoice;
+        if (!invoice.subscription) break;
 
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("id")
-          .eq("email", customer.email)
-          .single();
-
-        if (profile) {
+        const found = await findUserByCustomerEmail(supabase, stripe, invoice.customer as string);
+        if (found) {
           await supabase
             .from("user_subscriptions")
-            .update({ status: "cancelled", updated_at: new Date().toISOString() })
-            .eq("user_id", profile.id);
-          log("Subscription cancelled", { userId: profile.id });
+            .update({ status: "past_due", updated_at: new Date().toISOString() })
+            .eq("user_id", found.userId);
+          log("Subscription past_due (payment failed)", { userId: found.userId });
         }
+        break;
+      }
+
+      // ─── Refund events (for admin visibility) ─────────────────────────
+      case "charge.refunded": {
+        const charge = event.data.object as Stripe.Charge;
+        log("Charge refunded", { 
+          chargeId: charge.id, 
+          amount: charge.amount_refunded,
+          customer: charge.customer,
+        });
         break;
       }
 
@@ -215,7 +341,7 @@ serve(async (req) => {
         log("Unhandled event type", { type: event.type });
     }
   } catch (error) {
-    log("Error processing event", { error: (error as Error).message });
+    log("Error processing event", { error: (error as Error).message, stack: (error as Error).stack });
     return new Response(JSON.stringify({ error: (error as Error).message }), { status: 500 });
   }
 
