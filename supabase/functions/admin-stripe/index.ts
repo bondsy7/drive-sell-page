@@ -106,26 +106,37 @@ serve(async (req) => {
         const status = params.status || "all";
         const listParams: any = {
           limit: params.limit || 50,
-          expand: ["data.customer", "data.items.data.price.product"],
+          expand: ["data.customer"],
         };
         if (status !== "all") listParams.status = status;
         if (params.starting_after) listParams.starting_after = params.starting_after;
 
         const subs = await stripe.subscriptions.list(listParams);
-        const items = subs.data.map((sub: any) => ({
-          id: sub.id,
-          status: sub.status,
-          created: sub.created,
-          current_period_start: sub.current_period_start,
-          current_period_end: sub.current_period_end,
-          cancel_at_period_end: sub.cancel_at_period_end,
-          customer_email: sub.customer?.email || null,
-          customer_name: sub.customer?.name || null,
-          plan_name: sub.items.data[0]?.price?.product?.name || "Unknown",
-          plan_interval: sub.items.data[0]?.price?.recurring?.interval || null,
-          plan_amount: sub.items.data[0]?.price?.unit_amount || 0,
-          currency: sub.items.data[0]?.price?.currency || "eur",
-          metadata: sub.metadata,
+        const items = await Promise.all(subs.data.map(async (sub: any) => {
+          // Fetch product name separately to avoid deep expand
+          let planName = "Unknown";
+          const priceItem = sub.items?.data?.[0];
+          if (priceItem?.price?.product) {
+            try {
+              const product = await stripe.products.retrieve(priceItem.price.product as string);
+              planName = product.name;
+            } catch { /* ignore */ }
+          }
+          return {
+            id: sub.id,
+            status: sub.status,
+            created: sub.created,
+            current_period_start: sub.current_period_start,
+            current_period_end: sub.current_period_end,
+            cancel_at_period_end: sub.cancel_at_period_end,
+            customer_email: sub.customer?.email || null,
+            customer_name: sub.customer?.name || null,
+            plan_name: planName,
+            plan_interval: priceItem?.price?.recurring?.interval || null,
+            plan_amount: priceItem?.price?.unit_amount || 0,
+            currency: priceItem?.price?.currency || "eur",
+            metadata: sub.metadata,
+          };
         }));
 
         return new Response(JSON.stringify({ subscriptions: items, has_more: subs.has_more }), {
