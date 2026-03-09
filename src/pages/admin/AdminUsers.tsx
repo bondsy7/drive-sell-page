@@ -132,6 +132,7 @@ export default function AdminUsers() {
       lifetime_used: balanceMap[p.id]?.lifetime_used ?? 0,
       roles: roleMap[p.id] || [],
       plan: subMap[p.id] || null,
+      stripe_subscription_id: (subMap[p.id] as any)?.stripe_subscription_id || null,
       project_count: projectCountMap[p.id] || 0,
       lead_count: leadCountMap[p.id] || 0,
       last_transaction: lastTxMap[p.id] || null,
