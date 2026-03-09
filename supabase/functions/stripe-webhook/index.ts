@@ -6,6 +6,16 @@ const log = (step: string, details?: any) => {
   console.log(`[STRIPE-WEBHOOK] ${step}${details ? ` - ${JSON.stringify(details)}` : ''}`);
 };
 
+// Safe timestamp → ISO string conversion (handles unix seconds, milliseconds, or already-string values)
+const toISO = (val: any): string => {
+  if (!val) return new Date().toISOString();
+  if (typeof val === 'string') return val;
+  // Unix seconds (< 1e12) vs milliseconds
+  const ms = typeof val === 'number' && val < 1e12 ? val * 1000 : val;
+  const d = new Date(ms);
+  return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
+};
+
 // Plan slug mapping by Stripe product ID (monthly + yearly products)
 const PRODUCT_TO_PLAN: Record<string, string> = {
   'prod_U6vMgZiKJOuEph': 'starter',
@@ -109,8 +119,8 @@ serve(async (req) => {
             status: "active",
             billing_cycle: priceInterval === "year" ? "yearly" : "monthly",
             stripe_subscription_id: subscriptionId,
-            current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-            current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+            current_period_start: toISO(subscription.current_period_start),
+            current_period_end: toISO(subscription.current_period_end),
             updated_at: new Date().toISOString(),
           }, { onConflict: "user_id" });
 
@@ -159,8 +169,8 @@ serve(async (req) => {
         await supabase
           .from("user_subscriptions")
           .update({
-            current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-            current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+            current_period_start: toISO(subscription.current_period_start),
+            current_period_end: toISO(subscription.current_period_end),
             updated_at: new Date().toISOString(),
           })
           .eq("user_id", profile.id);
