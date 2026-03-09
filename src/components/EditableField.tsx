@@ -100,7 +100,7 @@ const EditableField: React.FC<EditableFieldProps> = ({ value, onChange, classNam
       <span className="inline-flex items-center gap-1">
         {multiline ? (
           <textarea
-            className="bg-background border border-border rounded px-2 py-0.5 text-sm w-full min-w-[120px] min-h-[60px]"
+            className="bg-background border border-border rounded px-2 py-0.5 text-[inherit] w-full min-w-[120px] min-h-[60px]"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             autoFocus
@@ -110,7 +110,7 @@ const EditableField: React.FC<EditableFieldProps> = ({ value, onChange, classNam
           />
         ) : (
           <input
-            className="bg-background border border-border rounded px-2 py-0.5 text-sm w-auto min-w-[60px]"
+            className="bg-background border border-border rounded px-2 py-0.5 text-[inherit] w-auto min-w-[60px]"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             autoFocus
