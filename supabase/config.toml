@@ -26,3 +26,9 @@ verify_jwt = false
 
 [functions.ftp-upload]
 verify_jwt = false
+
+[functions.admin-delete-user]
+verify_jwt = false
+
+[functions.admin-stripe]
+verify_jwt = false
