@@ -373,6 +373,51 @@ const Profile = () => {
           </div>
         </Section>
 
+        {/* Account & Sicherheit */}
+        <Section icon={<KeyRound className="w-4 h-4" />} title="Konto & Sicherheit">
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground">Anmeldemethode:</span>
+              <Badge variant="outline" className="gap-1.5">
+                {isGoogleLogin ? (
+                  <><Chrome className="w-3.5 h-3.5" /> Google</>
+                ) : (
+                  <><Lock className="w-3.5 h-3.5" /> E-Mail / Passwort</>
+                )}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground">E-Mail:</span>
+              <span className="text-sm text-foreground">{user?.email}</span>
+            </div>
+
+            {!isGoogleLogin && (
+              <div className="border-t border-border pt-4 space-y-3">
+                <h3 className="text-sm font-medium text-foreground">Passwort ändern</h3>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label>Neues Passwort</Label>
+                    <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="••••••••" minLength={6} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Passwort bestätigen</Label>
+                    <Input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="••••••••" />
+                  </div>
+                </div>
+                <Button onClick={handlePasswordChange} disabled={changingPassword || !newPassword} size="sm" variant="outline" className="gap-1.5">
+                  <Lock className="w-3.5 h-3.5" /> {changingPassword ? 'Wird geändert...' : 'Passwort ändern'}
+                </Button>
+              </div>
+            )}
+
+            {isGoogleLogin && (
+              <p className="text-xs text-muted-foreground">
+                Du bist über Google angemeldet. Das Passwort wird über dein Google-Konto verwaltet.
+              </p>
+            )}
+          </div>
+        </Section>
+
         {/* Credit Overview & Transaction History */}
         <Section icon={<Zap className="w-4 h-4" />} title="Credits & Verlauf">
           <div className="grid sm:grid-cols-3 gap-4 mb-4">
