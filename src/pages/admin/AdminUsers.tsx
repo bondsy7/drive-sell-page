@@ -73,7 +73,7 @@ export default function AdminUsers() {
       supabase.from('profiles').select('id, email, company_name, created_at').order('created_at', { ascending: false }),
       supabase.from('credit_balances').select('user_id, balance, lifetime_used'),
       supabase.from('user_roles').select('user_id, role'),
-      supabase.from('user_subscriptions').select('user_id, plan_id, status, billing_cycle, subscription_plans(id, name, slug)'),
+      supabase.from('user_subscriptions').select('user_id, plan_id, status, billing_cycle, stripe_subscription_id, subscription_plans(id, name, slug)'),
       supabase.from('subscription_plans').select('id, name, slug').eq('active', true).order('sort_order'),
       supabase.from('projects').select('id, user_id'),
       supabase.from('leads').select('id, dealer_user_id'),
