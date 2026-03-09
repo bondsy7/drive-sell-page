@@ -357,17 +357,61 @@ export default function AdminUsers() {
                   </td>
                   <td className="p-3 text-muted-foreground">{new Date(u.created_at).toLocaleDateString('de-DE')}</td>
                   <td className="p-3">
-                    {adjusting === u.id ? (
-                      <div className="flex items-center gap-1">
-                        <Input type="number" value={adjustAmount} onChange={e => setAdjustAmount(e.target.value)} className="w-20 h-7 text-xs" placeholder="±10" />
-                        <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => adjustCredits(u.id, parseInt(adjustAmount) || 0)}>OK</Button>
-                        <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => { setAdjusting(null); setAdjustAmount(''); }}>✕</Button>
-                      </div>
-                    ) : (
-                      <Button size="sm" variant="outline" className="h-7 gap-1" onClick={() => setAdjusting(u.id)}>
-                        <Plus className="w-3 h-3" /><Minus className="w-3 h-3" />
-                      </Button>
-                    )}
+                    <div className="flex items-center gap-1">
+                      {adjusting === u.id ? (
+                        <>
+                          <Input type="number" value={adjustAmount} onChange={e => setAdjustAmount(e.target.value)} className="w-20 h-7 text-xs" placeholder="±10" />
+                          <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => adjustCredits(u.id, parseInt(adjustAmount) || 0)}>OK</Button>
+                          <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => { setAdjusting(null); setAdjustAmount(''); }}>✕</Button>
+                        </>
+                      ) : (
+                        <Button size="sm" variant="outline" className="h-7 gap-1" onClick={() => setAdjusting(u.id)}>
+                          <Plus className="w-3 h-3" /><Minus className="w-3 h-3" />
+                        </Button>
+                      )}
+
+                      {u.stripe_subscription_id && u.plan?.status === 'active' && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button size="sm" variant="outline" className="h-7 px-2 text-amber-600 hover:text-amber-700" title="Abo kündigen">
+                              <XCircle className="w-3.5 h-3.5" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Abo kündigen?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Das Stripe-Abo von {u.email} ({u.plan?.name}) wird sofort gekündigt. Credits bleiben erhalten.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => cancelStripeSubscription(u.id, u.stripe_subscription_id!)}>Abo kündigen</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
+
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button size="sm" variant="outline" className="h-7 px-2 text-destructive hover:text-destructive" title="Nutzer löschen">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Nutzer endgültig löschen?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              {u.email} wird unwiderruflich gelöscht inkl. aller Projekte, Credits und ggf. Stripe-Abos. Diese Aktion kann nicht rückgängig gemacht werden.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteUser(u.id)}>Endgültig löschen</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </td>
                 </tr>
               );
