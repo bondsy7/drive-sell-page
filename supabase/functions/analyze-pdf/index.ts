@@ -285,7 +285,7 @@ serve(async (req) => {
 - ALLE Verbrauchswerte (kombiniert, Stadt, Landstraße, Autobahn)
 - CO₂-Emissionen und CO₂-Klasse (bei PHEV: BEIDE Klassen!)
 - Energiekosten, Kraftstoffpreis, CO₂-Kosten, Kfz-Steuer
-- ALLE Ausstattungsmerkmale und Extras (so viele wie möglich!)
+- Ausstattungs-HIGHLIGHTS (max 15-20, keine "Ohne"-Einträge, keine Trivialausstattung, NUR vom Hauptfahrzeug!)
 - Bei Plug-in-Hybrid: gewichtete UND entladene Werte, Stromverbrauch, E-Reichweite
 
 Wenn CO₂-Klasse nicht angegeben aber g/km-Wert vorhanden: Klasse ableiten!
@@ -371,6 +371,31 @@ Gib das Ergebnis als JSON zurück.`,
 
     // Ensure arrays/objects exist
     if (parsed.vehicle && !Array.isArray(parsed.vehicle.features)) parsed.vehicle.features = [];
+
+    // Post-process features: remove "Ohne/Kein" entries, duplicates, trivial items, limit to 20
+    if (parsed.vehicle?.features?.length) {
+      const trivialKeywords = [
+        'warndreieck', 'verbandskasten', 'bordwerkzeug', 'wagenheber',
+        'reifenreparaturset', 'pannenset', 'abschlepphaken', 'fußmatte',
+        'fussmatten', 'fußmatten', 'gummimatte', 'gummimatten',
+        'erste-hilfe', 'warnweste',
+      ];
+      const seen = new Set<string>();
+      parsed.vehicle.features = parsed.vehicle.features
+        .filter((f: string) => {
+          if (!f || typeof f !== 'string') return false;
+          const lower = f.trim().toLowerCase();
+          // Remove "Ohne..." and "Kein..." entries
+          if (lower.startsWith('ohne ') || lower.startsWith('kein ') || lower.startsWith('keine ')) return false;
+          // Remove trivial items
+          if (trivialKeywords.some(kw => lower.includes(kw))) return false;
+          // Remove duplicates (case-insensitive)
+          if (seen.has(lower)) return false;
+          seen.add(lower);
+          return true;
+        })
+        .slice(0, 20);
+    }
     if (!parsed.finance) parsed.finance = {};
     for (const f of ['monthlyRate', 'downPayment', 'duration', 'totalPrice', 'annualMileage', 'specialPayment', 'residualValue', 'interestRate']) {
       parsed.finance[f] = parsed.finance[f] || '';

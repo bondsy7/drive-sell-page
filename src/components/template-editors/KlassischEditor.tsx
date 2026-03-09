@@ -224,7 +224,7 @@ const KlassischEditor: React.FC<TemplateEditorProps> = ({
           <AccordionContent className="pb-5 pt-3">
             <div className="flex flex-wrap gap-2">
               {(data.vehicle.features || []).map((f, i) => (
-                <span key={i} className="group text-xs border border-border bg-muted/30 text-foreground px-3.5 py-2 rounded inline-flex items-center gap-1.5 hover:bg-muted transition-colors">
+                <span key={i} className="group text-[11px] leading-none border border-border bg-muted/30 text-foreground px-3.5 py-2 rounded inline-flex items-center gap-1.5 hover:bg-muted transition-colors">
                   <EditableField value={f} onChange={(v) => updateFeature(i, v)} className="text-foreground" />
                   <button onClick={() => removeFeature(i)} className="opacity-0 group-hover:opacity-60 hover:!opacity-100 text-destructive transition-opacity"><Trash2 className="w-3 h-3" /></button>
                 </span>
