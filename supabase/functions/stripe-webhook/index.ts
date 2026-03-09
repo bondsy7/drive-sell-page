@@ -6,11 +6,15 @@ const log = (step: string, details?: any) => {
   console.log(`[STRIPE-WEBHOOK] ${step}${details ? ` - ${JSON.stringify(details)}` : ''}`);
 };
 
-// Plan slug mapping by Stripe product ID
+// Plan slug mapping by Stripe product ID (monthly + yearly products)
 const PRODUCT_TO_PLAN: Record<string, string> = {
   'prod_U6vMgZiKJOuEph': 'starter',
   'prod_U6vMFLF7W8nh43': 'pro',
   'prod_U6vQHQJucwwipk': 'enterprise',
+  // Yearly products
+  'prod_U6xgJe3nEY2OOS': 'starter',
+  'prod_U6yCFgnOHMFzqW': 'pro',
+  'prod_U6yDWJrKKBCYF2': 'enterprise',
 };
 
 const PLAN_CREDITS: Record<string, number> = {
