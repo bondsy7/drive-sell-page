@@ -175,16 +175,23 @@ async function generateOpenAI(prompt: string, imageBase64: string | null, model:
   const size = getOpenAISize(width, height);
   const url = "https://api.openai.com/v1/images/generations";
 
-  // For OpenAI, we can include the vehicle image reference in the prompt
-  const fullPrompt = imageBase64
-    ? `${prompt}\n\nIMPORTANT: Incorporate the provided vehicle exactly as shown.`
-    : prompt;
+  // Build prompt: if image provided, use array format to pass image inline
+  let promptPayload: any;
+  if (imageBase64) {
+    const base64Data = imageBase64.includes(",") ? imageBase64 : `data:image/png;base64,${imageBase64}`;
+    promptPayload = [
+      { type: "text", text: `${prompt}\n\nIMPORTANT: Use the provided vehicle image as the central hero element. Keep it 100% identical.` },
+      { type: "image_url", image_url: { url: base64Data } },
+    ];
+  } else {
+    promptPayload = prompt;
+  }
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const body: any = {
         model,
-        prompt: fullPrompt,
+        prompt: promptPayload,
         n: 1,
         size,
       };
