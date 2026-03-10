@@ -2,41 +2,46 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Upload, Trash2, Image, Loader2 } from 'lucide-react';
+import { Upload, Trash2, Image, Loader2, FileCode } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface LogoFile {
   name: string;
   url: string;
+  folder: string; // '' (root) or 'svg'
 }
+
+const BUCKET = 'manufacturer-logos';
 
 export default function AdminLogos() {
   const [logos, setLogos] = useState<LogoFile[]>([]);
+  const [svgs, setSvgs] = useState<LogoFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
 
-  const loadLogos = useCallback(async () => {
+  const loadAll = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase.storage.from('manufacturer-logos').list('', {
-      limit: 500,
-      sortBy: { column: 'name', order: 'asc' },
-    });
-    if (error) {
-      toast.error('Fehler beim Laden: ' + error.message);
-      setLoading(false);
-      return;
-    }
-    const items: LogoFile[] = (data || [])
-      .filter(f => f.name && !f.name.startsWith('.'))
-      .map(f => ({
-        name: f.name,
-        url: supabase.storage.from('manufacturer-logos').getPublicUrl(f.name).data.publicUrl,
-      }));
-    setLogos(items);
+    const [rootRes, svgRes] = await Promise.all([
+      supabase.storage.from(BUCKET).list('', { limit: 500, sortBy: { column: 'name', order: 'asc' } }),
+      supabase.storage.from(BUCKET).list('svg', { limit: 500, sortBy: { column: 'name', order: 'asc' } }),
+    ]);
+
+    const mapFiles = (files: any[] | null, folder: string): LogoFile[] =>
+      (files || [])
+        .filter((f: any) => f.name && !f.name.startsWith('.') && f.id)
+        .map((f: any) => ({
+          name: f.name,
+          folder,
+          url: supabase.storage.from(BUCKET).getPublicUrl(folder ? `${folder}/${f.name}` : f.name).data.publicUrl,
+        }));
+
+    setLogos(mapFiles(rootRes.data, ''));
+    setSvgs(mapFiles(svgRes.data, 'svg'));
     setLoading(false);
   }, []);
 
-  useEffect(() => { loadLogos(); }, [loadLogos]);
+  useEffect(() => { loadAll(); }, [loadAll]);
 
   const uploadFiles = async (files: FileList | File[]) => {
     const imageFiles = Array.from(files).filter(f =>
@@ -47,39 +52,57 @@ export default function AdminLogos() {
       return;
     }
 
+    // Split by type: SVGs go to svg/ folder, rest to root
+    const svgFiles = imageFiles.filter(f => f.name.toLowerCase().endsWith('.svg'));
+    const rasterFiles = imageFiles.filter(f => !f.name.toLowerCase().endsWith('.svg'));
+
     setUploading(true);
     let successCount = 0;
     let errorCount = 0;
 
-    // Upload in batches of 5
-    for (let i = 0; i < imageFiles.length; i += 5) {
-      const batch = imageFiles.slice(i, i + 5);
+    const uploadBatch = async (batch: File[], folder: string) => {
       const results = await Promise.allSettled(
         batch.map(file => {
           const safeName = file.name.toLowerCase().replace(/\s+/g, '-');
-          return supabase.storage
-            .from('manufacturer-logos')
-            .upload(safeName, file, { upsert: true });
+          const path = folder ? `${folder}/${safeName}` : safeName;
+          return supabase.storage.from(BUCKET).upload(path, file, { upsert: true });
         })
       );
       results.forEach(r => {
         if (r.status === 'fulfilled' && !r.value.error) successCount++;
         else errorCount++;
       });
+    };
+
+    // Upload in batches of 5
+    for (let i = 0; i < rasterFiles.length; i += 5) {
+      await uploadBatch(rasterFiles.slice(i, i + 5), '');
+    }
+    for (let i = 0; i < svgFiles.length; i += 5) {
+      await uploadBatch(svgFiles.slice(i, i + 5), 'svg');
     }
 
     setUploading(false);
-    if (successCount > 0) toast.success(`${successCount} Logo(s) hochgeladen`);
+    const svgCount = svgFiles.length;
+    const rasterCount = rasterFiles.length;
+    if (successCount > 0) {
+      const parts: string[] = [];
+      if (rasterCount > 0) parts.push(`${Math.min(rasterCount, successCount)} Bild-Logo(s)`);
+      if (svgCount > 0) parts.push(`${Math.min(svgCount, successCount)} SVG(s)`);
+      toast.success(`${parts.join(' + ')} hochgeladen`);
+    }
     if (errorCount > 0) toast.error(`${errorCount} Fehler beim Upload`);
-    loadLogos();
+    loadAll();
   };
 
-  const deleteLogo = async (name: string) => {
-    const { error } = await supabase.storage.from('manufacturer-logos').remove([name]);
+  const deleteFile = async (folder: string, name: string) => {
+    const path = folder ? `${folder}/${name}` : name;
+    const { error } = await supabase.storage.from(BUCKET).remove([path]);
     if (error) toast.error('Fehler: ' + error.message);
     else {
       toast.success('Gelöscht');
-      setLogos(prev => prev.filter(l => l.name !== name));
+      if (folder === 'svg') setSvgs(prev => prev.filter(l => l.name !== name));
+      else setLogos(prev => prev.filter(l => l.name !== name));
     }
   };
 
@@ -89,13 +112,42 @@ export default function AdminLogos() {
     if (e.dataTransfer.files.length) uploadFiles(e.dataTransfer.files);
   };
 
+  const renderGrid = (items: LogoFile[], folder: string) => {
+    if (loading) return (
+      <div className="flex items-center justify-center h-32">
+        <div className="animate-spin w-6 h-6 border-2 border-accent border-t-transparent rounded-full" />
+      </div>
+    );
+    if (items.length === 0) return (
+      <p className="text-sm text-muted-foreground text-center py-12">Noch keine Dateien vorhanden.</p>
+    );
+    return (
+      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
+        {items.map(logo => (
+          <div key={logo.name} className="group relative bg-card border border-border rounded-lg p-3 flex flex-col items-center gap-2">
+            <img src={logo.url} alt={logo.name} className="w-14 h-14 object-contain" loading="lazy" />
+            <span className="text-[10px] text-muted-foreground truncate w-full text-center" title={logo.name}>
+              {logo.name.replace(/\.[^.]+$/, '')}
+            </span>
+            <button
+              onClick={() => deleteFile(folder, logo.name)}
+              className="absolute top-1 right-1 w-5 h-5 rounded-full bg-destructive/80 text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <Trash2 className="w-3 h-3" />
+            </button>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-2xl font-bold text-foreground">Hersteller-Logos</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {logos.length} Logo(s) gespeichert. Lade SVG, PNG oder WebP Dateien hoch.
+            {logos.length} Bild-Logo(s), {svgs.length} SVG(s). SVGs werden automatisch in den SVG-Ordner sortiert.
           </p>
         </div>
         <label className="cursor-pointer">
@@ -119,9 +171,7 @@ export default function AdminLogos() {
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
         className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
-          dragOver
-            ? 'border-accent bg-accent/5'
-            : 'border-border hover:border-muted-foreground/40 bg-muted/20'
+          dragOver ? 'border-accent bg-accent/5' : 'border-border hover:border-muted-foreground/40 bg-muted/20'
         }`}
       >
         {uploading ? (
@@ -136,42 +186,29 @@ export default function AdminLogos() {
               Alle Logo-Dateien hierher ziehen oder oben klicken
             </p>
             <p className="text-xs text-muted-foreground/60">
-              SVG, PNG, WebP – beliebig viele gleichzeitig
+              SVG → automatisch in SVG-Ordner · PNG/WebP → Hersteller-Logos
             </p>
           </div>
         )}
       </div>
 
-      {/* Logo Grid */}
-      {loading ? (
-        <div className="flex items-center justify-center h-32">
-          <div className="animate-spin w-6 h-6 border-2 border-accent border-t-transparent rounded-full" />
-        </div>
-      ) : logos.length === 0 ? (
-        <p className="text-sm text-muted-foreground text-center py-12">Noch keine Logos vorhanden.</p>
-      ) : (
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
-          {logos.map(logo => (
-            <div key={logo.name} className="group relative bg-card border border-border rounded-lg p-3 flex flex-col items-center gap-2">
-              <img
-                src={logo.url}
-                alt={logo.name}
-                className="w-14 h-14 object-contain"
-                loading="lazy"
-              />
-              <span className="text-[10px] text-muted-foreground truncate w-full text-center" title={logo.name}>
-                {logo.name.replace(/\.[^.]+$/, '')}
-              </span>
-              <button
-                onClick={() => deleteLogo(logo.name)}
-                className="absolute top-1 right-1 w-5 h-5 rounded-full bg-destructive/80 text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <Trash2 className="w-3 h-3" />
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Tabs for Logos vs SVGs */}
+      <Tabs defaultValue="logos">
+        <TabsList>
+          <TabsTrigger value="logos" className="gap-1.5">
+            <Image className="w-3.5 h-3.5" /> Bild-Logos ({logos.length})
+          </TabsTrigger>
+          <TabsTrigger value="svgs" className="gap-1.5">
+            <FileCode className="w-3.5 h-3.5" /> SVGs ({svgs.length})
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="logos" className="mt-4">
+          {renderGrid(logos, '')}
+        </TabsContent>
+        <TabsContent value="svgs" className="mt-4">
+          {renderGrid(svgs, 'svg')}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
