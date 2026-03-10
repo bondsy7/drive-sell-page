@@ -164,19 +164,20 @@ const Index = () => {
   }, [loadProfileIntoDealer, standalonePhotoResults, saveProject, selectedTemplate]);
 
   // ─── Image Generation (within PDF flow) ───
-  const handleChooseGenerate = useCallback(async (modelTier: 'standard' | 'pro' = 'standard') => {
+  const handleChooseGenerate = useCallback(async (modelTier: ModelTier = 'schnell') => {
     if (!vehicleData) return;
     setSelectedModelTier(modelTier);
     const costPerImage = getCost('image_generate', modelTier) || 2;
     const totalCost = costPerImage * PERSPECTIVES.length;
+    const tierLabels: Record<ModelTier, string> = { schnell: 'Schnell', qualitaet: 'Qualität', premium: 'Premium' };
     setCreditDialog({
       open: true, cost: totalCost,
-      label: `${PERSPECTIVES.length} Bilder generieren (${modelTier === 'pro' ? 'Pro' : 'Basic'})`,
+      label: `${PERSPECTIVES.length} Bilder generieren (${tierLabels[modelTier]})`,
       onConfirm: () => { setCreditDialog(prev => ({ ...prev, open: false })); doGenerate(modelTier); },
     });
   }, [vehicleData, getCost]);
 
-  const doGenerate = useCallback(async (modelTier: 'standard' | 'pro' = 'standard') => {
+  const doGenerate = useCallback(async (modelTier: ModelTier = 'schnell') => {
     if (!vehicleData) return;
     setAppState('generating-image');
     const total = PERSPECTIVES.length;
