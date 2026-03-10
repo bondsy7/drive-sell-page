@@ -220,6 +220,21 @@ const Dashboard = () => {
     setVideos(prev => prev.filter(v => v.name !== name));
   };
 
+  const deleteBanner = async (fullPath: string, name: string) => {
+    const { error } = await supabase.storage.from('banners').remove([fullPath]);
+    if (error) { toast.error('Fehler beim Löschen'); return; }
+    toast.success('Banner gelöscht');
+    setBanners(prev => prev.filter(b => b.name !== name));
+  };
+
+  const downloadBanner = (banner: BannerFile) => {
+    const a = document.createElement('a');
+    a.href = banner.url;
+    a.download = banner.name;
+    a.target = '_blank';
+    a.click();
+  };
+
   const downloadImage = (img: ProjectImage) => {
     const src = img.image_url || img.image_base64;
     const a = document.createElement('a');
