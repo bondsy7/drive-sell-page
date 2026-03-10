@@ -7,10 +7,11 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  Plus, Calculator, Receipt, User, Plug, ShieldCheck, LogOut, ChevronDown, CreditCard, LogIn,
+  Plus, Calculator, Receipt, User, Plug, ShieldCheck, LogOut, ChevronDown, CreditCard, LogIn, LayoutDashboard, MoreVertical,
 } from 'lucide-react';
 import logoLight from '@/assets/logo-light.png';
 import CreditBadge from '@/components/CreditBadge';
