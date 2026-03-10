@@ -105,8 +105,17 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
       setImages(prev => prev.map(x => x.id === img.id ? { ...x, status: 'processing' } : x));
 
       try {
+        const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription);
         const { data, error } = await supabase.functions.invoke('remaster-vehicle-image', {
-          body: { imageBase64: img.originalBase64, vehicleDescription, modelTier: modelTier || 'standard' },
+          body: {
+            imageBase64: img.originalBase64,
+            vehicleDescription,
+            modelTier: modelTier || 'standard',
+            dynamicPrompt,
+            customShowroomBase64: remasterConfig.customShowroomBase64 || null,
+            customPlateImageBase64: remasterConfig.customPlateImageBase64 || null,
+            dealerLogoUrl: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null,
+          },
         });
 
         if (error || !data?.imageBase64) {
