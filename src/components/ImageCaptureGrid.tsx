@@ -131,8 +131,17 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       setCaptures(prev => ({ ...prev, [slot.key]: { ...prev[slot.key], status: 'processing' } }));
 
       try {
+        const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription);
         const { data, error } = await supabase.functions.invoke('remaster-vehicle-image', {
-          body: { imageBase64: captures[slot.key].base64, vehicleDescription, modelTier: modelTier || 'standard' },
+          body: {
+            imageBase64: captures[slot.key].base64,
+            vehicleDescription,
+            modelTier: modelTier || 'standard',
+            dynamicPrompt,
+            customShowroomBase64: remasterConfig.customShowroomBase64 || null,
+            customPlateImageBase64: remasterConfig.customPlateImageBase64 || null,
+            dealerLogoUrl: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null,
+          },
         });
 
         if (error || !data?.imageBase64) {
