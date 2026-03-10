@@ -414,6 +414,14 @@ const Index = () => {
             />
           )}
 
+          {/* ─── Banner Generator ─── */}
+          {appState === 'banner' && (
+            <BannerGenerator
+              onBack={() => setAppState('hub')}
+              preloadedImage={standalonePhotoResults.length > 0 ? standalonePhotoResults[0] : undefined}
+            />
+          )}
+
           {appState === 'idle' && (
             <div className="space-y-8">
               <div className="flex items-center gap-3 mb-4">
