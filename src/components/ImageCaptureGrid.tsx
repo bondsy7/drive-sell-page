@@ -18,6 +18,7 @@ interface ImageCaptureGridProps {
   onComplete: (mainImage: string, galleryImages: string[], vin?: string) => void;
   onVehicleDataChange?: (data: VehicleData) => void;
   onBack: () => void;
+  onPipelineComplete?: () => void;
 }
 
 interface PerspectiveSlot {
