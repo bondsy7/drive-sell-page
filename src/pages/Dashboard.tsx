@@ -196,6 +196,7 @@ const Dashboard = () => {
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
   const [exportProject, setExportProject] = useState<Project | null>(null);
+  const [playerVideo, setPlayerVideo] = useState<VideoFile | null>(null);
 
   const openExportDialog = (project: Project) => {
     if (!project.html_content) { toast.error('Keine HTML-Daten vorhanden'); return; }
