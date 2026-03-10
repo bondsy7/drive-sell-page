@@ -1,3 +1,4 @@
+import React from 'react';
 import { useCredits } from '@/hooks/useCredits';
 import { Sparkles, Zap, Crown, Rocket, Diamond } from 'lucide-react';
 
@@ -51,5 +52,3 @@ export default function ModelSelector({ actionType, value, onChange }: ModelSele
     </div>
   );
 }
-
-import React from 'react';
