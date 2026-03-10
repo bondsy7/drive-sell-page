@@ -315,17 +315,15 @@ const Dashboard = () => {
             </div>
           ) : (
             <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
-              {allImages.map(img => {
+              {allImages.map((img, idx) => {
                 const imgSrc = img.image_url || (img.image_base64.startsWith('data:') ? img.image_base64 : `data:image/png;base64,${img.image_base64}`);
                 return (
-                <div key={img.id} className="bg-card rounded-lg border border-border overflow-hidden group relative">
+                <div key={img.id} className="bg-card rounded-lg border border-border overflow-hidden group relative cursor-pointer" onClick={() => setLightboxIndex(idx)}>
                   <div className="aspect-video bg-muted">
                     <img src={imgSrc} alt={img.perspective || 'Fahrzeugbild'} className="w-full h-full object-cover" />
                   </div>
                   <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                    <Button size="sm" variant="secondary" onClick={() => downloadImage(img)}>
-                      <Download className="w-3.5 h-3.5 mr-1" /> Download
-                    </Button>
+                    <span className="text-sm font-medium text-background">Öffnen</span>
                   </div>
                   {img.perspective && <p className="text-xs text-muted-foreground p-2">{img.perspective}</p>}
                 </div>
