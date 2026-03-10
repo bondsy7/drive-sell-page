@@ -96,7 +96,7 @@ serve(async (req) => {
   try {
     // 1. Auth & credits
     const bodyText = await req.text();
-    const { imageBase64, vehicleDescription, modelTier, dynamicPrompt, customShowroomBase64, customPlateImageBase64, dealerLogoUrl } = JSON.parse(bodyText);
+    const { imageBase64, additionalImages, vehicleDescription, modelTier, dynamicPrompt, customShowroomBase64, customPlateImageBase64, dealerLogoUrl } = JSON.parse(bodyText);
     const cost = modelTier === 'pro' ? 5 : 2;
     const authResult = await authenticateAndDeductCredits(req, "image_remaster", cost);
     if (authResult instanceof Response) return authResult;
@@ -109,6 +109,22 @@ serve(async (req) => {
     // 2. Use dynamic prompt if provided, otherwise fall back to default
     const prompt = dynamicPrompt || `${await getCustomPrompt("image_remaster", DEFAULT_PROMPT)}\n\n${vehicleDescription ? `Vehicle: ${vehicleDescription}` : ''}`;
 
+    // Build content array with all reference images
+    const contentParts: any[] = [
+      { type: "text", text: prompt },
+      { type: "image_url", image_url: { url: imageBase64 } },
+    ];
+    // Add additional reference images (other perspectives of the same vehicle)
+    if (Array.isArray(additionalImages)) {
+      for (const img of additionalImages.slice(0, 4)) { // max 4 extra to avoid token limits
+        contentParts.push({ type: "image_url", image_url: { url: img } });
+      }
+    }
+    // Add showroom, plate, logo references
+    if (customShowroomBase64) contentParts.push({ type: "image_url", image_url: { url: customShowroomBase64 } });
+    if (customPlateImageBase64) contentParts.push({ type: "image_url", image_url: { url: customPlateImageBase64 } });
+    if (dealerLogoUrl) contentParts.push({ type: "image_url", image_url: { url: dealerLogoUrl } });
+
     // 3. Call AI with retry logic
     const maxRetries = 3;
     let resultImage: string | null = null;
@@ -116,7 +132,7 @@ serve(async (req) => {
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        console.log(`Remaster attempt ${attempt + 1}/${maxRetries}`);
+        console.log(`Remaster attempt ${attempt + 1}/${maxRetries}, content parts: ${contentParts.length}`);
         const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
           headers: {
@@ -127,12 +143,7 @@ serve(async (req) => {
             model,
             messages: [{
               role: "user",
-              content: [
-                { type: "text", text: prompt },
-                { type: "image_url", image_url: { url: imageBase64 } },
-                ...(customShowroomBase64 ? [{ type: "image_url", image_url: { url: customShowroomBase64 } }] : []),
-                ...(customPlateImageBase64 ? [{ type: "image_url", image_url: { url: customPlateImageBase64 } }] : []),
-                ...(dealerLogoUrl ? [{ type: "image_url", image_url: { url: dealerLogoUrl } }] : []),
+              content: contentParts,
               ],
             }],
             modalities: ["image", "text"],
