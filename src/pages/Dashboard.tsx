@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { Image, FileText, Download, ExternalLink, Trash2, MessageSquare, Mail, Phone, Video } from 'lucide-react';
+import { Image, FileText, Download, ExternalLink, Trash2, MessageSquare, Mail, Phone, Video, Play, X } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
 import { toast } from 'sonner';
 import { downloadHTML } from '@/lib/templates/download';
@@ -196,6 +196,7 @@ const Dashboard = () => {
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
   const [exportProject, setExportProject] = useState<Project | null>(null);
+  const [playerVideo, setPlayerVideo] = useState<VideoFile | null>(null);
 
   const openExportDialog = (project: Project) => {
     if (!project.html_content) { toast.error('Keine HTML-Daten vorhanden'); return; }
@@ -338,7 +339,7 @@ const Dashboard = () => {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {videos.map(video => (
                 <div key={video.name} className="bg-card rounded-xl border border-border overflow-hidden group">
-                  <div className="aspect-video bg-muted">
+                  <div className="aspect-video bg-muted relative cursor-pointer" onClick={() => setPlayerVideo(video)}>
                     <video
                       src={video.url}
                       className="w-full h-full object-cover"
@@ -348,6 +349,11 @@ const Dashboard = () => {
                       onMouseEnter={(e) => (e.target as HTMLVideoElement).play()}
                       onMouseLeave={(e) => { const v = e.target as HTMLVideoElement; v.pause(); v.currentTime = 0; }}
                     />
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-foreground/20">
+                      <div className="bg-background/80 backdrop-blur rounded-full p-3">
+                        <Play className="w-6 h-6 text-foreground" />
+                      </div>
+                    </div>
                   </div>
                   <div className="p-3 flex items-center justify-between">
                     <p className="text-xs text-muted-foreground">
@@ -413,6 +419,34 @@ const Dashboard = () => {
         )}
       </main>
       <ExportChoiceDialog open={exportDialogOpen} onOpenChange={setExportDialogOpen} onChoose={handleExportHTML} loading={exportLoading} projectId={exportProject?.id} />
+
+      {/* Video Player Modal */}
+      {playerVideo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/60 backdrop-blur-sm" onClick={() => setPlayerVideo(null)}>
+          <div className="relative w-full max-w-3xl mx-4" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setPlayerVideo(null)}
+              className="absolute -top-10 right-0 text-background hover:text-background/80 transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <video
+              src={playerVideo.url}
+              controls
+              autoPlay
+              className="w-full rounded-xl shadow-2xl"
+            />
+            <div className="flex items-center justify-between mt-3">
+              <p className="text-xs text-background/70">
+                {playerVideo.created_at ? new Date(playerVideo.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
+              </p>
+              <Button variant="secondary" size="sm" onClick={() => downloadVideo(playerVideo)} className="gap-1.5">
+                <Download className="w-3.5 h-3.5" /> Herunterladen
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
