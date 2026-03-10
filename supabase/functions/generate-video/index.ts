@@ -189,11 +189,9 @@ Deno.serve(async (req) => {
         // Helper: convert ArrayBuffer to base64 without stack overflow
         function arrayBufferToBase64(buffer: ArrayBuffer): string {
           const bytes = new Uint8Array(buffer);
-          const chunkSize = 8192;
           let binary = "";
-          for (let i = 0; i < bytes.length; i += chunkSize) {
-            const chunk = bytes.subarray(i, i + chunkSize);
-            binary += String.fromCharCode(...chunk);
+          for (let i = 0; i < bytes.length; i++) {
+            binary += String.fromCharCode(bytes[i]);
           }
           return btoa(binary);
         }
