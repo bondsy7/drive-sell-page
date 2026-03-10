@@ -423,6 +423,20 @@ const Dashboard = () => {
       </main>
       <ExportChoiceDialog open={exportDialogOpen} onOpenChange={setExportDialogOpen} onChoose={handleExportHTML} loading={exportLoading} projectId={exportProject?.id} />
 
+      {/* Gallery Lightbox */}
+      <GalleryLightbox
+        images={allImages.map(img => ({
+          id: img.id,
+          src: img.image_url || (img.image_base64.startsWith('data:') ? img.image_base64 : `data:image/png;base64,${img.image_base64}`),
+          perspective: img.perspective,
+          project_id: img.project_id,
+        }))}
+        initialIndex={lightboxIndex}
+        open={lightboxIndex >= 0}
+        onClose={() => setLightboxIndex(-1)}
+        onAssigned={() => loadGallery()}
+      />
+
       {/* Video Player Modal */}
       {playerVideo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/60 backdrop-blur-sm" onClick={() => setPlayerVideo(null)}>

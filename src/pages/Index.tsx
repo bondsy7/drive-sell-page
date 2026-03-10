@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Sparkles } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
