@@ -53,12 +53,15 @@ interface VideoFile {
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [projects, setProjects] = useState<Project[]>([]);
   const [allImages, setAllImages] = useState<ProjectImage[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [videos, setVideos] = useState<VideoFile[]>([]);
-  const [tab, setTab] = useState<'projects' | 'gallery' | 'videos' | 'leads'>('projects');
+  const initialTab = (searchParams.get('tab') as any) || 'projects';
+  const [tab, setTab] = useState<'projects' | 'gallery' | 'videos' | 'leads'>(initialTab);
   const [loading, setLoading] = useState(true);
+  const [lightboxIndex, setLightboxIndex] = useState(-1);
 
   const [galleryLoaded, setGalleryLoaded] = useState(false);
   const [leadsLoaded, setLeadsLoaded] = useState(false);
