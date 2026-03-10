@@ -12,6 +12,7 @@ import ImageSourceChoice from '@/components/ImageSourceChoice';
 import ImageUploadRemaster from '@/components/ImageUploadRemaster';
 import ImageCaptureGrid from '@/components/ImageCaptureGrid';
 import CreditConfirmDialog from '@/components/CreditConfirmDialog';
+import VideoGenerator from '@/components/VideoGenerator';
 import { extractPDFAsBase64 } from '@/lib/pdf-utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -22,7 +23,7 @@ import type { TemplateId } from '@/types/template';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-type ExtendedAppState = AppState | 'capturing-images' | 'hub' | 'standalone-photo-choice' | 'standalone-capture' | 'standalone-upload';
+type ExtendedAppState = AppState | 'capturing-images' | 'hub' | 'standalone-photo-choice' | 'standalone-capture' | 'standalone-upload' | 'video';
 
 const PERSPECTIVES = [
   { key: 'front', label: 'Frontansicht', prompt: 'Front view, straight on, symmetrical composition' },
