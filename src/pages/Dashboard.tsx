@@ -10,6 +10,8 @@ import { downloadHTML } from '@/lib/templates/download';
 import { embedCO2LabelsInHTML } from '@/lib/templates/shared';
 import { compressToWebP } from '@/lib/storage-utils';
 import ExportChoiceDialog, { type ExportMode } from '@/components/ExportChoiceDialog';
+import GalleryLightbox from '@/components/GalleryLightbox';
+import { useSearchParams } from 'react-router-dom';
 
 interface Project {
   id: string;
