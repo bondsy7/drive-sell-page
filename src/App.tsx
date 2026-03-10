@@ -103,6 +103,7 @@ const App = () => (
                 <Route path="settings" element={<AdminSettings />} />
                 <Route path="logos" element={<AdminLogos />} />
               </Route>
+              <Route path="/architecture" element={<ProtectedRoute><ArchitectureDoc /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
