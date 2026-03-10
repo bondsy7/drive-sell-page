@@ -6,6 +6,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const MODEL_MAP: Record<string, string> = {
+  schnell: "gemini-2.5-flash-image",
+  qualitaet: "gemini-3.1-flash-image-preview",
+  premium: "gemini-3-pro-image-preview",
+  // Legacy fallbacks
+  standard: "gemini-2.5-flash-image",
+  pro: "gemini-3-pro-image-preview",
+};
+
 function createServiceClient() {
   return createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -52,14 +61,15 @@ serve(async (req) => {
 
   try {
     const { imagePrompt, imagePrompts, modelTier } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
 
-    const model = modelTier === 'pro' ? 'google/gemini-3-pro-image-preview' : 'google/gemini-2.5-flash-image';
+    const modelName = MODEL_MAP[modelTier] || MODEL_MAP["schnell"];
 
-    // Calculate total cost based on number of images
+    // Calculate total cost based on number of images and tier
     const totalImages = imagePrompts ? imagePrompts.length : 1;
-    const costPerImage = modelTier === 'pro' ? 8 : 3;
+    const costMap: Record<string, number> = { schnell: 3, qualitaet: 5, premium: 8, standard: 3, pro: 8 };
+    const costPerImage = costMap[modelTier] || 3;
     const totalCost = totalImages * costPerImage;
 
     // Auth & credits
@@ -68,7 +78,7 @@ serve(async (req) => {
 
     // Single image mode (backward compat)
     if (imagePrompt && !imagePrompts) {
-      const result = await generateImage(imagePrompt, LOVABLE_API_KEY, model);
+      const result = await generateImage(imagePrompt, GEMINI_API_KEY, modelName);
       return new Response(JSON.stringify(result), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -79,7 +89,7 @@ serve(async (req) => {
       const results: { imageBase64: string | null; error?: string }[] = [];
       for (const prompt of imagePrompts) {
         try {
-          const result = await generateImage(prompt, LOVABLE_API_KEY, model);
+          const result = await generateImage(prompt, GEMINI_API_KEY, modelName);
           results.push(result);
         } catch (e) {
           console.error("Image gen error for prompt:", e);
@@ -100,19 +110,22 @@ serve(async (req) => {
   }
 });
 
-async function generateImage(prompt: string, apiKey: string, model: string = "google/gemini-2.5-flash-image", retries = 2): Promise<{ imageBase64: string | null; error?: string }> {
+async function generateImage(prompt: string, apiKey: string, model: string = "gemini-2.5-flash-image", retries = 2): Promise<{ imageBase64: string | null; error?: string }> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const response = await fetch(url, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${apiKey}`,
+          "x-goog-api-key": apiKey,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model,
-          messages: [{ role: "user", content: prompt }],
-          modalities: ["image", "text"],
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            responseModalities: ["TEXT", "IMAGE"],
+          },
         }),
       });
 
@@ -126,7 +139,6 @@ async function generateImage(prompt: string, apiKey: string, model: string = "go
           }
           throw new Error("Rate limit erreicht. Bitte warte kurz.");
         }
-        if (response.status === 402) throw new Error("AI Credits aufgebraucht.");
         if (attempt < retries) {
           await new Promise(r => setTimeout(r, 2000));
           continue;
@@ -135,9 +147,11 @@ async function generateImage(prompt: string, apiKey: string, model: string = "go
       }
 
       const data = await response.json();
-      const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-      if (!imageUrl) {
-        console.warn(`Attempt ${attempt + 1}: No image in response`);
+      
+      // Native Gemini API response format: candidates[0].content.parts[]
+      const parts = data.candidates?.[0]?.content?.parts;
+      if (!parts) {
+        console.warn(`Attempt ${attempt + 1}: No parts in response`);
         if (attempt < retries) {
           await new Promise(r => setTimeout(r, 2000));
           continue;
@@ -145,7 +159,21 @@ async function generateImage(prompt: string, apiKey: string, model: string = "go
         throw new Error("No image generated after retries");
       }
 
-      return { imageBase64: imageUrl };
+      // Find the image part (inlineData)
+      for (const part of parts) {
+        if (part.inlineData?.data) {
+          const mimeType = part.inlineData.mimeType || "image/png";
+          const base64DataUrl = `data:${mimeType};base64,${part.inlineData.data}`;
+          return { imageBase64: base64DataUrl };
+        }
+      }
+
+      console.warn(`Attempt ${attempt + 1}: No image data in parts`);
+      if (attempt < retries) {
+        await new Promise(r => setTimeout(r, 2000));
+        continue;
+      }
+      throw new Error("No image generated after retries");
     } catch (e) {
       if (attempt >= retries) throw e;
       console.warn(`Attempt ${attempt + 1} failed, retrying...`);
