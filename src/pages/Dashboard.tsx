@@ -168,6 +168,31 @@ const Dashboard = () => {
     setLoading(false);
   };
 
+  const loadBanners = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const { data: files, error } = await supabase.storage
+        .from('banners')
+        .list(user.id, { limit: 100, sortBy: { column: 'created_at', order: 'desc' } });
+      if (error || !files) {
+        setBanners([]);
+      } else {
+        const bannerFiles: BannerFile[] = files
+          .filter(f => f.name.endsWith('.png'))
+          .map(f => {
+            const { data: urlData } = supabase.storage.from('banners').getPublicUrl(`${user.id}/${f.name}`);
+            return { name: f.name, url: urlData.publicUrl, created_at: f.created_at, fullPath: `${user.id}/${f.name}` };
+          });
+        setBanners(bannerFiles);
+      }
+    } catch {
+      setBanners([]);
+    }
+    setBannersLoaded(true);
+    setLoading(false);
+  };
+
   const loadData = async () => {
     await loadProjects();
     if (tab === 'gallery') await loadGallery();
