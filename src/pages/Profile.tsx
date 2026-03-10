@@ -83,6 +83,8 @@ const Profile = () => {
   const [transactions, setTransactions] = useState<CreditTransaction[]>([]);
   const [txLoading, setTxLoading] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const showroomInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingShowroom, setUploadingShowroom] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [changingPassword, setChangingPassword] = useState(false);
