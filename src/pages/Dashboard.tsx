@@ -338,7 +338,7 @@ const Dashboard = () => {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {videos.map(video => (
                 <div key={video.name} className="bg-card rounded-xl border border-border overflow-hidden group">
-                  <div className="aspect-video bg-muted">
+                  <div className="aspect-video bg-muted relative cursor-pointer" onClick={() => setPlayerVideo(video)}>
                     <video
                       src={video.url}
                       className="w-full h-full object-cover"
@@ -348,6 +348,11 @@ const Dashboard = () => {
                       onMouseEnter={(e) => (e.target as HTMLVideoElement).play()}
                       onMouseLeave={(e) => { const v = e.target as HTMLVideoElement; v.pause(); v.currentTime = 0; }}
                     />
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-foreground/20">
+                      <div className="bg-background/80 backdrop-blur rounded-full p-3">
+                        <Play className="w-6 h-6 text-foreground" />
+                      </div>
+                    </div>
                   </div>
                   <div className="p-3 flex items-center justify-between">
                     <p className="text-xs text-muted-foreground">
