@@ -20,6 +20,7 @@ import { useCredits } from '@/hooks/useCredits';
 import { uploadImagesToStorage } from '@/lib/storage-utils';
 import type { AppState, VehicleData } from '@/types/vehicle';
 import type { TemplateId } from '@/types/template';
+import type { ModelTier } from '@/components/ModelSelector';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
