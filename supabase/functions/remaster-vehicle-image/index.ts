@@ -144,7 +144,6 @@ serve(async (req) => {
             messages: [{
               role: "user",
               content: contentParts,
-              ],
             }],
             modalities: ["image", "text"],
           }),
