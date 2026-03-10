@@ -173,35 +173,46 @@ async function generateOpenAI(prompt: string, imageBase64: string | null, model:
   if (!apiKey) throw new Error("OPENAI_API_KEY not configured");
 
   const size = getOpenAISize(width, height);
-  const url = "https://api.openai.com/v1/images/generations";
-
-  // Build prompt: if image provided, use array format to pass image inline
-  let promptPayload: any;
-  if (imageBase64) {
-    const base64Data = imageBase64.includes(",") ? imageBase64 : `data:image/png;base64,${imageBase64}`;
-    promptPayload = [
-      { type: "text", text: `${prompt}\n\nIMPORTANT: Use the provided vehicle image as the central hero element. Keep it 100% identical.` },
-      { type: "image_url", image_url: { url: base64Data } },
-    ];
-  } else {
-    promptPayload = prompt;
-  }
+  const useEdits = !!imageBase64;
+  const url = useEdits
+    ? "https://api.openai.com/v1/images/edits"
+    : "https://api.openai.com/v1/images/generations";
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const body: any = {
-        model,
-        prompt: promptPayload,
-        n: 1,
-        size,
-      };
-      if (isUltra) body.quality = "high";
+      let response: Response;
 
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
+      if (useEdits) {
+        // Convert base64 to Blob for multipart upload
+        const raw = imageBase64!.includes(",") ? imageBase64!.split(",")[1] : imageBase64!;
+        const binaryStr = atob(raw);
+        const bytes = new Uint8Array(binaryStr.length);
+        for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+        const blob = new Blob([bytes], { type: "image/png" });
+
+        const form = new FormData();
+        form.append("model", model);
+        form.append("image", blob, "vehicle.png");
+        form.append("prompt", `${prompt}\n\nIMPORTANT: Use the provided vehicle image as the central hero element. Keep it 100% identical.`);
+        form.append("n", "1");
+        form.append("size", size);
+        if (isUltra) form.append("quality", "high");
+
+        response = await fetch(url, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${apiKey}` },
+          body: form,
+        });
+      } else {
+        const body: any = { model, prompt, n: 1, size };
+        if (isUltra) body.quality = "high";
+
+        response = await fetch(url, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+      }
 
       if (!response.ok) {
         const errText = await response.text();
