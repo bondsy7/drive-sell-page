@@ -311,6 +311,9 @@ const Index = () => {
       case 'banner':
         setAppState('banner');
         break;
+      case 'manual-landing':
+        setAppState('manual-landing');
+        break;
       default:
         toast.info('Diese Funktion ist bald verfügbar!');
     }
