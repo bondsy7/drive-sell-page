@@ -40,6 +40,7 @@ const PERSPECTIVES = [
 const Index = () => {
   const { user } = useAuth();
   const { balance, getCost } = useCredits();
+  const navigate = useNavigate();
   const [appState, setAppState] = useState<ExtendedAppState>('hub');
   const [fileName, setFileName] = useState('');
   const [vehicleData, setVehicleData] = useState<VehicleData | null>(null);
