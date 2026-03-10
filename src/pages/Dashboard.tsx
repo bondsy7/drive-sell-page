@@ -308,6 +308,9 @@ const Dashboard = () => {
           <Button variant={tab === 'videos' ? 'default' : 'outline'} size="sm" onClick={() => setTab('videos')} className="whitespace-nowrap">
             <Video className="w-4 h-4 mr-1.5" /> Videos ({videosLoaded ? videos.length : counts.videos})
           </Button>
+          <Button variant={tab === 'banners' ? 'default' : 'outline'} size="sm" onClick={() => setTab('banners')} className="whitespace-nowrap">
+            <LayoutGrid className="w-4 h-4 mr-1.5" /> Banner ({bannersLoaded ? banners.length : counts.banners})
+          </Button>
           <Button variant={tab === 'leads' ? 'default' : 'outline'} size="sm" onClick={() => setTab('leads')} className="whitespace-nowrap">
             <MessageSquare className="w-4 h-4 mr-1.5" /> Anfragen ({leadsLoaded ? leads.length : counts.leads})
           </Button>
