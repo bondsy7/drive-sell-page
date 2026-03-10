@@ -47,7 +47,7 @@ const Index = () => {
   const [imageProgress, setImageProgress] = useState({ current: 0, total: 0 });
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>('autohaus');
   const [savedProjectId, setSavedProjectId] = useState<string | null>(null);
-  const [selectedModelTier, setSelectedModelTier] = useState<'standard' | 'pro'>('standard');
+  const [selectedModelTier, setSelectedModelTier] = useState<ModelTier>('schnell');
   const [creditDialog, setCreditDialog] = useState<{ open: boolean; cost: number; label: string; onConfirm: () => void }>({
     open: false, cost: 0, label: '', onConfirm: () => {},
   });
