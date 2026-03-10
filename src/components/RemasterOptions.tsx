@@ -12,7 +12,8 @@ import {
   type RemasterConfig,
   SCENE_OPTIONS,
   LICENSE_PLATE_OPTIONS,
-  MANUFACTURER_LOGOS,
+  fetchManufacturerLogos,
+  type DynamicLogo,
 } from '@/lib/remaster-prompt';
 
 interface RemasterOptionsProps {
