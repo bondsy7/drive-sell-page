@@ -34,6 +34,7 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange }) =
   const { user } = useAuth();
   const [profileShowroomUrl, setProfileShowroomUrl] = useState<string | null>(null);
   const [profileLogoUrl, setProfileLogoUrl] = useState<string | null>(null);
+  const [dynamicLogos, setDynamicLogos] = useState<DynamicLogo[]>([]);
   const showroomInputRef = useRef<HTMLInputElement>(null);
   const plateImageRef = useRef<HTMLInputElement>(null);
 
