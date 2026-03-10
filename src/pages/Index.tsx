@@ -240,20 +240,54 @@ const Index = () => {
     setAppState('preview');
   }, [vehicleData, saveProject, selectedTemplate]);
 
+  // ─── Save standalone images to storage + DB ───
+  const saveStandaloneImages = useCallback(async (allImages: string[]) => {
+    if (!user || allImages.length === 0) return;
+    try {
+      // Upload to storage
+      const urls = await uploadImagesToStorage(allImages, user.id, `standalone-${Date.now()}`);
+      if (urls.length === 0) return;
+      // Save to project_images (without a project_id – we use a placeholder project)
+      // Create a lightweight project to hold these images
+      const { data: project } = await supabase.from('projects').insert({
+        user_id: user.id,
+        title: 'Showroom-Fotos',
+        vehicle_data: { vehicle: { brand: 'Showroom', model: 'Fotos' } } as any,
+        template_id: 'modern',
+      }).select('id').single();
+      if (!project) return;
+      const imageRows = urls.map((url, i) => ({
+        project_id: project.id,
+        user_id: user.id,
+        image_url: url,
+        image_base64: '',
+        perspective: PERSPECTIVES[i]?.label || `Bild ${i + 1}`,
+        sort_order: i,
+      }));
+      await supabase.from('project_images').insert(imageRows);
+      // Set main image
+      await supabase.from('projects').update({ main_image_url: urls[0] }).eq('id', project.id);
+    } catch (e) {
+      console.error('Error saving standalone images:', e);
+    }
+  }, [user]);
+
   // ─── Standalone Photo Flow ───
   const handleStandaloneCaptureComplete = useCallback((mainImage: string, gallery: string[], _vin?: string) => {
     const allImages = [mainImage, ...gallery];
     setStandalonePhotoResults(allImages);
-    toast.success(`${allImages.length} Showroom-Bilder erstellt! Du kannst sie jetzt für eine Landing Page verwenden.`);
+    saveStandaloneImages(allImages);
+    toast.success(`${allImages.length} Showroom-Bilder erstellt und im Dashboard gespeichert!`);
     setAppState('hub');
-  }, []);
+  }, [saveStandaloneImages]);
 
   const handleStandaloneRemasterComplete = useCallback((mainImage: string, gallery: string[]) => {
     const allImages = [mainImage, ...gallery];
     setStandalonePhotoResults(allImages);
-    toast.success(`${allImages.length} Showroom-Bilder erstellt! Du kannst sie jetzt für eine Landing Page verwenden.`);
+    saveStandaloneImages(allImages);
+    toast.success(`${allImages.length} Showroom-Bilder erstellt und im Dashboard gespeichert!`);
     setAppState('hub');
-  }, []);
+  }, [saveStandaloneImages]);
 
   // ─── Hub Action Handler ───
   const handleHubAction = useCallback((action: HubAction) => {
