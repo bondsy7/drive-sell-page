@@ -14,6 +14,7 @@ import ImageUploadRemaster from '@/components/ImageUploadRemaster';
 import ImageCaptureGrid from '@/components/ImageCaptureGrid';
 import CreditConfirmDialog from '@/components/CreditConfirmDialog';
 import VideoGenerator from '@/components/VideoGenerator';
+import BannerGenerator from '@/components/BannerGenerator';
 import { extractPDFAsBase64 } from '@/lib/pdf-utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
