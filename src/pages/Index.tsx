@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Sparkles } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
@@ -39,6 +40,7 @@ const PERSPECTIVES = [
 const Index = () => {
   const { user } = useAuth();
   const { balance, getCost } = useCredits();
+  const navigate = useNavigate();
   const [appState, setAppState] = useState<ExtendedAppState>('hub');
   const [fileName, setFileName] = useState('');
   const [vehicleData, setVehicleData] = useState<VehicleData | null>(null);
@@ -279,16 +281,16 @@ const Index = () => {
     setStandalonePhotoResults(allImages);
     saveStandaloneImages(allImages);
     toast.success(`${allImages.length} Showroom-Bilder erstellt und im Dashboard gespeichert!`);
-    setAppState('hub');
-  }, [saveStandaloneImages]);
+    navigate('/dashboard?tab=gallery');
+  }, [saveStandaloneImages, navigate]);
 
   const handleStandaloneRemasterComplete = useCallback((mainImage: string, gallery: string[]) => {
     const allImages = [mainImage, ...gallery];
     setStandalonePhotoResults(allImages);
     saveStandaloneImages(allImages);
     toast.success(`${allImages.length} Showroom-Bilder erstellt und im Dashboard gespeichert!`);
-    setAppState('hub');
-  }, [saveStandaloneImages]);
+    navigate('/dashboard?tab=gallery');
+  }, [saveStandaloneImages, navigate]);
 
   // ─── Hub Action Handler ───
   const handleHubAction = useCallback((action: HubAction) => {

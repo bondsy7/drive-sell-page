@@ -10,6 +10,8 @@ import { downloadHTML } from '@/lib/templates/download';
 import { embedCO2LabelsInHTML } from '@/lib/templates/shared';
 import { compressToWebP } from '@/lib/storage-utils';
 import ExportChoiceDialog, { type ExportMode } from '@/components/ExportChoiceDialog';
+import GalleryLightbox from '@/components/GalleryLightbox';
+import { useSearchParams } from 'react-router-dom';
 
 interface Project {
   id: string;
@@ -51,12 +53,15 @@ interface VideoFile {
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [projects, setProjects] = useState<Project[]>([]);
   const [allImages, setAllImages] = useState<ProjectImage[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [videos, setVideos] = useState<VideoFile[]>([]);
-  const [tab, setTab] = useState<'projects' | 'gallery' | 'videos' | 'leads'>('projects');
+  const initialTab = (searchParams.get('tab') as any) || 'projects';
+  const [tab, setTab] = useState<'projects' | 'gallery' | 'videos' | 'leads'>(initialTab);
   const [loading, setLoading] = useState(true);
+  const [lightboxIndex, setLightboxIndex] = useState(-1);
 
   const [galleryLoaded, setGalleryLoaded] = useState(false);
   const [leadsLoaded, setLeadsLoaded] = useState(false);
@@ -310,17 +315,15 @@ const Dashboard = () => {
             </div>
           ) : (
             <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
-              {allImages.map(img => {
+              {allImages.map((img, idx) => {
                 const imgSrc = img.image_url || (img.image_base64.startsWith('data:') ? img.image_base64 : `data:image/png;base64,${img.image_base64}`);
                 return (
-                <div key={img.id} className="bg-card rounded-lg border border-border overflow-hidden group relative">
+                <div key={img.id} className="bg-card rounded-lg border border-border overflow-hidden group relative cursor-pointer" onClick={() => setLightboxIndex(idx)}>
                   <div className="aspect-video bg-muted">
                     <img src={imgSrc} alt={img.perspective || 'Fahrzeugbild'} className="w-full h-full object-cover" />
                   </div>
                   <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                    <Button size="sm" variant="secondary" onClick={() => downloadImage(img)}>
-                      <Download className="w-3.5 h-3.5 mr-1" /> Download
-                    </Button>
+                    <span className="text-sm font-medium text-background">Öffnen</span>
                   </div>
                   {img.perspective && <p className="text-xs text-muted-foreground p-2">{img.perspective}</p>}
                 </div>
@@ -419,6 +422,20 @@ const Dashboard = () => {
         )}
       </main>
       <ExportChoiceDialog open={exportDialogOpen} onOpenChange={setExportDialogOpen} onChoose={handleExportHTML} loading={exportLoading} projectId={exportProject?.id} />
+
+      {/* Gallery Lightbox */}
+      <GalleryLightbox
+        images={allImages.map(img => ({
+          id: img.id,
+          src: img.image_url || (img.image_base64.startsWith('data:') ? img.image_base64 : `data:image/png;base64,${img.image_base64}`),
+          perspective: img.perspective,
+          project_id: img.project_id,
+        }))}
+        initialIndex={lightboxIndex}
+        open={lightboxIndex >= 0}
+        onClose={() => setLightboxIndex(-1)}
+        onAssigned={() => loadGallery()}
+      />
 
       {/* Video Player Modal */}
       {playerVideo && (
