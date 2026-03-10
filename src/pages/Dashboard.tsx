@@ -77,6 +77,9 @@ const Dashboard = () => {
   const [bannersLoaded, setBannersLoaded] = useState(false);
   const [counts, setCounts] = useState({ gallery: 0, videos: 0, leads: 0, banners: 0 });
 
+  const regularProjects = projects.filter(p => p.template_id !== 'landing-page');
+  const landingProjects = projects.filter(p => p.template_id === 'landing-page');
+
   useEffect(() => {
     loadProjects();
     loadCounts();
