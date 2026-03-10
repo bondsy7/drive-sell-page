@@ -116,3 +116,27 @@
     box-shadow: var(--shadow-glow);
   }
 }
+
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 11pt;
+  }
+  .print\:hidden {
+    display: none !important;
+  }
+  .break-after-page {
+    break-after: page;
+  }
+  .break-inside-avoid {
+    break-inside: avoid;
+  }
+  .break-inside-avoid-page {
+    break-inside: avoid-page;
+  }
+  @page {
+    margin: 1.5cm 2cm;
+    size: A4;
+  }
+}

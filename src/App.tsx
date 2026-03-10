@@ -19,6 +19,7 @@ const Pricing = lazy(() => import("./pages/Pricing"));
 const Integrations = lazy(() => import("./pages/Integrations"));
 const ApiDocs = lazy(() => import("./pages/ApiDocs"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const ArchitectureDoc = lazy(() => import("./pages/ArchitectureDoc"));
 
 // Admin pages
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
@@ -102,6 +103,7 @@ const App = () => (
                 <Route path="settings" element={<AdminSettings />} />
                 <Route path="logos" element={<AdminLogos />} />
               </Route>
+              <Route path="/architecture" element={<ProtectedRoute><ArchitectureDoc /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
