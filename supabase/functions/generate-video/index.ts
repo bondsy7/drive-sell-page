@@ -186,11 +186,22 @@ Deno.serve(async (req) => {
           });
         }
 
+        // Helper: convert ArrayBuffer to base64 without stack overflow
+        function arrayBufferToBase64(buffer: ArrayBuffer): string {
+          const bytes = new Uint8Array(buffer);
+          const chunkSize = 8192;
+          let binary = "";
+          for (let i = 0; i < bytes.length; i += chunkSize) {
+            const chunk = bytes.subarray(i, i + chunkSize);
+            binary += String.fromCharCode(...chunk);
+          }
+          return btoa(binary);
+        }
+
         // Download video and convert to base64
         const videoResponse = await fetch(`${videoUri}&key=${GEMINI_API_KEY}`, { redirect: "follow" });
         
         if (!videoResponse.ok) {
-          // Try without appending key (might already be in URI)
           const videoResponse2 = await fetch(videoUri, {
             headers: { "x-goog-api-key": GEMINI_API_KEY },
             redirect: "follow",
@@ -201,8 +212,7 @@ Deno.serve(async (req) => {
             });
           }
           const videoBytes = await videoResponse2.arrayBuffer();
-          const base64 = btoa(String.fromCharCode(...new Uint8Array(videoBytes)));
-          const videoBase64 = `data:video/mp4;base64,${base64}`;
+          const videoBase64 = `data:video/mp4;base64,${arrayBufferToBase64(videoBytes)}`;
 
           return new Response(JSON.stringify({ done: true, videoBase64 }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -210,8 +220,7 @@ Deno.serve(async (req) => {
         }
 
         const videoBytes = await videoResponse.arrayBuffer();
-        const base64 = btoa(String.fromCharCode(...new Uint8Array(videoBytes)));
-        const videoBase64 = `data:video/mp4;base64,${base64}`;
+        const videoBase64 = `data:video/mp4;base64,${arrayBufferToBase64(videoBytes)}`;
 
         return new Response(JSON.stringify({ done: true, videoBase64 }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
