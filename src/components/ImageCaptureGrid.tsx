@@ -182,10 +182,16 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     .filter(s => captures[s.key])
     .map(s => captures[s.key].remasteredBase64 || captures[s.key].base64);
 
+  // Collect original (pre-remaster) images for AI reference
+  const allOriginalBase64 = vehicleSlots
+    .filter(s => captures[s.key])
+    .map(s => captures[s.key].base64);
+
   if (showPipeline) {
     return (
       <PipelineRunner
         inputImages={allCapturedBase64}
+        originalImages={allOriginalBase64}
         vehicleDescription={vehicleDescription}
         remasterConfig={remasterConfig}
         modelTier={modelTier}
