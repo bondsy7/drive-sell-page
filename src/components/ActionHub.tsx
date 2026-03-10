@@ -44,8 +44,6 @@ const TILES: ActionTile[] = [
     icon: <Image className="w-7 h-7" />,
     title: 'Banner Generator',
     description: 'Werbebanner für Social Media & Anzeigen aus Fahrzeugdaten erstellen.',
-    badge: 'Bald verfügbar',
-    disabled: true,
   },
   {
     id: 'video',

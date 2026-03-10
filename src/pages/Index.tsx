@@ -14,6 +14,7 @@ import ImageUploadRemaster from '@/components/ImageUploadRemaster';
 import ImageCaptureGrid from '@/components/ImageCaptureGrid';
 import CreditConfirmDialog from '@/components/CreditConfirmDialog';
 import VideoGenerator from '@/components/VideoGenerator';
+import BannerGenerator from '@/components/BannerGenerator';
 import { extractPDFAsBase64 } from '@/lib/pdf-utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -25,7 +26,7 @@ import type { ModelTier } from '@/components/ModelSelector';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-type ExtendedAppState = AppState | 'capturing-images' | 'hub' | 'standalone-photo-choice' | 'standalone-capture' | 'standalone-upload' | 'video';
+type ExtendedAppState = AppState | 'capturing-images' | 'hub' | 'standalone-photo-choice' | 'standalone-capture' | 'standalone-upload' | 'video' | 'banner';
 
 const PERSPECTIVES = [
   { key: 'front', label: 'Frontansicht', prompt: 'Front view, straight on, symmetrical composition' },
@@ -304,6 +305,9 @@ const Index = () => {
       case 'video':
         setAppState('video');
         break;
+      case 'banner':
+        setAppState('banner');
+        break;
       default:
         toast.info('Diese Funktion ist bald verfügbar!');
     }
@@ -405,6 +409,14 @@ const Index = () => {
           {/* ─── Video Generator ─── */}
           {appState === 'video' && (
             <VideoGenerator
+              onBack={() => setAppState('hub')}
+              preloadedImage={standalonePhotoResults.length > 0 ? standalonePhotoResults[0] : undefined}
+            />
+          )}
+
+          {/* ─── Banner Generator ─── */}
+          {appState === 'banner' && (
+            <BannerGenerator
               onBack={() => setAppState('hub')}
               preloadedImage={standalonePhotoResults.length > 0 ? standalonePhotoResults[0] : undefined}
             />
