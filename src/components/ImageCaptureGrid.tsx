@@ -11,7 +11,7 @@ import type { VehicleData } from '@/types/vehicle';
 interface ImageCaptureGridProps {
   vehicleDescription: string;
   vehicleData?: VehicleData;
-  modelTier?: 'standard' | 'pro';
+  modelTier?: string;
   onComplete: (mainImage: string, galleryImages: string[], vin?: string) => void;
   onVehicleDataChange?: (data: VehicleData) => void;
   onBack: () => void;

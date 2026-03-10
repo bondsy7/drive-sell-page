@@ -20,6 +20,7 @@ import { useCredits } from '@/hooks/useCredits';
 import { uploadImagesToStorage } from '@/lib/storage-utils';
 import type { AppState, VehicleData } from '@/types/vehicle';
 import type { TemplateId } from '@/types/template';
+import type { ModelTier } from '@/components/ModelSelector';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -46,7 +47,7 @@ const Index = () => {
   const [imageProgress, setImageProgress] = useState({ current: 0, total: 0 });
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>('autohaus');
   const [savedProjectId, setSavedProjectId] = useState<string | null>(null);
-  const [selectedModelTier, setSelectedModelTier] = useState<'standard' | 'pro'>('standard');
+  const [selectedModelTier, setSelectedModelTier] = useState<ModelTier>('schnell');
   const [creditDialog, setCreditDialog] = useState<{ open: boolean; cost: number; label: string; onConfirm: () => void }>({
     open: false, cost: 0, label: '', onConfirm: () => {},
   });
@@ -163,19 +164,20 @@ const Index = () => {
   }, [loadProfileIntoDealer, standalonePhotoResults, saveProject, selectedTemplate]);
 
   // ─── Image Generation (within PDF flow) ───
-  const handleChooseGenerate = useCallback(async (modelTier: 'standard' | 'pro' = 'standard') => {
+  const handleChooseGenerate = useCallback(async (modelTier: ModelTier = 'schnell') => {
     if (!vehicleData) return;
     setSelectedModelTier(modelTier);
     const costPerImage = getCost('image_generate', modelTier) || 2;
     const totalCost = costPerImage * PERSPECTIVES.length;
+    const tierLabels: Record<ModelTier, string> = { schnell: 'Schnell', qualitaet: 'Qualität', premium: 'Premium' };
     setCreditDialog({
       open: true, cost: totalCost,
-      label: `${PERSPECTIVES.length} Bilder generieren (${modelTier === 'pro' ? 'Pro' : 'Basic'})`,
+      label: `${PERSPECTIVES.length} Bilder generieren (${tierLabels[modelTier]})`,
       onConfirm: () => { setCreditDialog(prev => ({ ...prev, open: false })); doGenerate(modelTier); },
     });
   }, [vehicleData, getCost]);
 
-  const doGenerate = useCallback(async (modelTier: 'standard' | 'pro' = 'standard') => {
+  const doGenerate = useCallback(async (modelTier: ModelTier = 'schnell') => {
     if (!vehicleData) return;
     setAppState('generating-image');
     const total = PERSPECTIVES.length;
@@ -204,12 +206,12 @@ const Index = () => {
     setAppState('preview');
   }, [vehicleData, saveProject, selectedTemplate]);
 
-  const handleChooseUpload = useCallback((modelTier: 'standard' | 'pro' = 'standard') => {
+  const handleChooseUpload = useCallback((modelTier: ModelTier = 'schnell') => {
     setSelectedModelTier(modelTier);
     setAppState('uploading-images');
   }, []);
 
-  const handleChooseCapture = useCallback((modelTier: 'standard' | 'pro' = 'standard') => {
+  const handleChooseCapture = useCallback((modelTier: ModelTier = 'schnell') => {
     setSelectedModelTier(modelTier);
     setAppState('capturing-images' as any);
   }, []);

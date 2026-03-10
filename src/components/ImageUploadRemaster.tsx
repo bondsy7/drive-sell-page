@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 
 interface ImageUploadRemasterProps {
   vehicleDescription: string;
-  modelTier?: 'standard' | 'pro';
+  modelTier?: string;
   onComplete: (mainImage: string, galleryImages: string[]) => void;
   onBack: () => void;
 }
