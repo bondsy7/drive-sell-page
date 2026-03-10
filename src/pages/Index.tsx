@@ -206,12 +206,12 @@ const Index = () => {
     setAppState('preview');
   }, [vehicleData, saveProject, selectedTemplate]);
 
-  const handleChooseUpload = useCallback((modelTier: 'standard' | 'pro' = 'standard') => {
+  const handleChooseUpload = useCallback((modelTier: ModelTier = 'schnell') => {
     setSelectedModelTier(modelTier);
     setAppState('uploading-images');
   }, []);
 
-  const handleChooseCapture = useCallback((modelTier: 'standard' | 'pro' = 'standard') => {
+  const handleChooseCapture = useCallback((modelTier: ModelTier = 'schnell') => {
     setSelectedModelTier(modelTier);
     setAppState('capturing-images' as any);
   }, []);
