@@ -216,21 +216,28 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
     setExportLoading(true);
     try {
       const filename = `${data.vehicle.brand}_${data.vehicle.model}_Angebot.html`.replace(/\s+/g, '_');
+      let html: string;
 
       if (mode === 'lightweight') {
-        // Use storage URLs directly – no base64 conversion
-        let html = generateHTML(selectedTemplate, data, imageBase64, galleryImages, htmlOptions);
+        html = generateHTML(selectedTemplate, data, imageBase64, galleryImages, htmlOptions);
         html = await embedCO2LabelsInHTML(html);
         downloadHTML(html, filename);
       } else {
-        // Offline: convert to compressed WebP base64
         const [mainWebP, galleryWebP] = await Promise.all([
           imageBase64 ? compressToWebP(imageBase64) : Promise.resolve(null),
           compressAllToWebP(galleryImages),
         ]);
-        let html = generateHTML(selectedTemplate, data, mainWebP, galleryWebP, htmlOptions);
+        html = generateHTML(selectedTemplate, data, mainWebP, galleryWebP, htmlOptions);
         html = await embedCO2LabelsInHTML(html);
         downloadHTML(html, filename);
+      }
+
+      // Persist HTML to project so it's re-downloadable from dashboard
+      if (projectId) {
+        await supabase.from('projects').update({
+          html_content: html,
+          updated_at: new Date().toISOString(),
+        }).eq('id', projectId);
       }
     } finally {
       setExportLoading(false);
