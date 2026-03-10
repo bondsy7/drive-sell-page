@@ -38,8 +38,9 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange }) =
   const showroomInputRef = useRef<HTMLInputElement>(null);
   const plateImageRef = useRef<HTMLInputElement>(null);
 
-  // Load profile data for custom showroom & logo
+  // Load profile data & dynamic logos
   useEffect(() => {
+    fetchManufacturerLogos().then(setDynamicLogos);
     if (!user) return;
     supabase.from('profiles').select('custom_showroom_url, logo_url').eq('id', user.id).single()
       .then(({ data }) => {
