@@ -244,13 +244,13 @@ const Dashboard = () => {
             <FileText className="w-4 h-4 mr-1.5" /> Projekte ({projects.length})
           </Button>
           <Button variant={tab === 'gallery' ? 'default' : 'outline'} size="sm" onClick={() => setTab('gallery')} className="whitespace-nowrap">
-            <Image className="w-4 h-4 mr-1.5" /> Galerie ({allImages.length})
+            <Image className="w-4 h-4 mr-1.5" /> Galerie ({galleryLoaded ? allImages.length : counts.gallery})
           </Button>
           <Button variant={tab === 'videos' ? 'default' : 'outline'} size="sm" onClick={() => setTab('videos')} className="whitespace-nowrap">
-            <Video className="w-4 h-4 mr-1.5" /> Videos ({videos.length})
+            <Video className="w-4 h-4 mr-1.5" /> Videos ({videosLoaded ? videos.length : counts.videos})
           </Button>
           <Button variant={tab === 'leads' ? 'default' : 'outline'} size="sm" onClick={() => setTab('leads')} className="whitespace-nowrap">
-            <MessageSquare className="w-4 h-4 mr-1.5" /> Anfragen ({leads.length})
+            <MessageSquare className="w-4 h-4 mr-1.5" /> Anfragen ({leadsLoaded ? leads.length : counts.leads})
           </Button>
         </div>
 
