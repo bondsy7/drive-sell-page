@@ -59,6 +59,8 @@ const Index = () => {
 
   // For standalone photo results
   const [standalonePhotoResults, setStandalonePhotoResults] = useState<string[]>([]);
+  // For manual landing page HTML
+  const [manualLandingHTML, setManualLandingHTML] = useState<string | null>(null);
 
   const currentStep = appState === 'hub' || appState === 'idle' ? 1 : appState === 'preview' ? 3 : 2;
 
