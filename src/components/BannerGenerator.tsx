@@ -248,10 +248,33 @@ CRITICAL RULES:
       }
     }
 
+    // Auto-save to storage
+    if (generated.length > 0 && user) {
+      const saved: string[] = [];
+      for (let i = 0; i < generated.length; i++) {
+        try {
+          const base64 = generated[i];
+          const base64Data = base64.includes(',') ? base64.split(',')[1] : base64;
+          const byteArray = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+          const blob = new Blob([byteArray], { type: 'image/png' });
+          const fileName = `${user.id}/${Date.now()}-${format}-${i}.png`;
+          const { error: uploadErr } = await supabase.storage.from('banners').upload(fileName, blob, { contentType: 'image/png' });
+          if (!uploadErr) {
+            const { data: urlData } = supabase.storage.from('banners').getPublicUrl(fileName);
+            saved.push(urlData.publicUrl);
+          }
+        } catch (e) {
+          console.error('Banner save error:', e);
+        }
+      }
+      if (saved.length > 0) toast.success(`${generated.length} Banner erstellt & gespeichert!`);
+      else toast.success(`${generated.length} Banner erstellt!`);
+    } else if (generated.length === 0) {
+      toast.error('Keine Banner generiert.');
+    }
+
     setGenerating(false);
-    if (generated.length > 0) toast.success(`${generated.length} Banner erstellt!`);
-    else toast.error('Keine Banner generiert.');
-  }, [buildPrompt, format, variantCount, vehicleImage, modelTier]);
+  }, [buildPrompt, format, variantCount, vehicleImage, modelTier, user]);
 
   // Download banner
   const downloadBanner = useCallback((base64: string, index: number) => {

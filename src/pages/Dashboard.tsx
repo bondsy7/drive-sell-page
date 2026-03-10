@@ -90,15 +90,18 @@ const Dashboard = () => {
   }, [tab]);
 
   const loadCounts = async () => {
-    const [imgRes, leadsRes, videosRes] = await Promise.all([
+    const userId = user?.id;
+    const [imgRes, leadsRes, videosRes, bannersRes] = await Promise.all([
       supabase.from('project_images').select('id', { count: 'exact', head: true }),
       supabase.from('leads').select('id', { count: 'exact', head: true }),
       supabase.storage.from('vehicle-images').list('videos', { limit: 200 }),
+      userId ? supabase.storage.from('banners').list(userId, { limit: 200 }) : Promise.resolve({ data: null }),
     ]);
     setCounts({
       gallery: imgRes.count ?? 0,
       leads: leadsRes.count ?? 0,
       videos: videosRes.data?.filter(f => f.name.endsWith('.mp4')).length ?? 0,
+      banners: bannersRes.data?.filter(f => f.name.endsWith('.png')).length ?? 0,
     });
   };
 
