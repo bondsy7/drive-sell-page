@@ -101,8 +101,12 @@ export function buildMasterPrompt(config: RemasterConfig, vehicleDescription?: s
   return parts.join('\n\n');
 }
 
-// Placeholder for future manufacturer logo assets
-export const MANUFACTURER_LOGOS: Record<string, string> = {
-  // Will be populated with SVG/PNG URLs in next iteration
-  // e.g. 'bmw': '/images/logos/bmw.svg',
+// Manufacturer logo assets (SVG preferred, WebP fallback)
+export const MANUFACTURER_LOGOS: Record<string, { svg?: string; webp?: string; label: string }> = {
+  abarth: { svg: '/images/logos/abarth.svg', webp: '/images/logos/abarth.webp', label: 'Abarth' },
+  aiways: { webp: '/images/logos/aiways.webp', label: 'Aiways' },
+  'alfa-romeo': { svg: '/images/logos/alfaromeo.svg', webp: '/images/logos/alfa-romeo.webp', label: 'Alfa Romeo' },
+  alpine: { svg: '/images/logos/alpine.svg', webp: '/images/logos/alpine.webp', label: 'Alpine' },
+  amphicar: { webp: '/images/logos/amphicar.webp', label: 'Amphicar' },
+  'aston-martin': { svg: '/images/logos/astonmartin.svg', webp: '/images/logos/aston-martin.webp', label: 'Aston Martin' },
 };
