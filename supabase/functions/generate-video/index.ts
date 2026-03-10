@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -36,7 +36,6 @@ async function authenticateUser(req: Request): Promise<{ userId: string } | Resp
       status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-
   const anonClient = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_ANON_KEY")!,
@@ -51,13 +50,13 @@ async function authenticateUser(req: Request): Promise<{ userId: string } | Resp
   return { userId: user.id };
 }
 
-async function deductCredits(userId: string, amount: number, actionType: string): Promise<{ success: boolean; balance?: number; error?: string }> {
+async function deductCredits(userId: string, amount: number): Promise<{ success: boolean; balance?: number; error?: string }> {
   const sb = createServiceClient();
   const { data, error } = await sb.rpc("deduct_credits", {
     _user_id: userId,
     _amount: amount,
-    _action_type: actionType,
-    _description: `Video-Generierung (Veo)`,
+    _action_type: "image_generate",
+    _description: "Video-Generierung (Veo)",
     _model: "veo-3.1-generate-preview",
   });
   if (error) return { success: false, error: error.message };
@@ -67,6 +66,15 @@ async function deductCredits(userId: string, amount: number, actionType: string)
 }
 
 const DEFAULT_VIDEO_PROMPT = `Erstelle ein professionelles 8-Sekunden Showroom-Video des Fahrzeugs. Das Auto dreht sich langsam auf einer Drehscheibe in einem modernen, hell beleuchteten Autohaus-Showroom. Weiche Beleuchtung, Reflexionen auf dem Lack, polierter Boden. Cinematische Kamerafahrt. Professionelle Autohaus-Atmosphäre.`;
+
+function encodeBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -83,14 +91,12 @@ Deno.serve(async (req) => {
   try {
     const { action, imageBase64, prompt: userPrompt, operationName } = await req.json();
 
-    // ─── ACTION: start ───
     if (action === "start") {
-      // Auth + credits
       const authResult = await authenticateUser(req);
       if (authResult instanceof Response) return authResult;
       const { userId } = authResult;
 
-      const creditResult = await deductCredits(userId, 10, "image_generate");
+      const creditResult = await deductCredits(userId, 10);
       if (!creditResult.success) {
         return new Response(JSON.stringify({
           error: creditResult.error === "insufficient_credits" ? "insufficient_credits" : creditResult.error,
@@ -99,38 +105,22 @@ Deno.serve(async (req) => {
         }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
-      // Get prompt
       const systemPrompt = await getCustomPrompt("video_generate", DEFAULT_VIDEO_PROMPT);
       const finalPrompt = userPrompt || systemPrompt;
 
       let requestBody: any;
-
       if (imageBase64) {
-        // Image-to-video: use inline image data
         const imageData = imageBase64.replace(/^data:image\/\w+;base64,/, "");
-        
-        // Detect mime type
         let mimeType = "image/jpeg";
         if (imageBase64.startsWith("data:image/png")) mimeType = "image/png";
         else if (imageBase64.startsWith("data:image/webp")) mimeType = "image/webp";
-
         requestBody = {
-          instances: [{
-            prompt: finalPrompt,
-            image: {
-              bytesBase64Encoded: imageData,
-              mimeType,
-            },
-          }],
+          instances: [{ prompt: finalPrompt, image: { bytesBase64Encoded: imageData, mimeType } }],
         };
       } else {
-        // Text-to-video
-        requestBody = {
-          instances: [{ prompt: finalPrompt }],
-        };
+        requestBody = { instances: [{ prompt: finalPrompt }] };
       }
 
-      // Start video generation
       const genUrl = `${BASE_URL}/models/veo-3.1-generate-preview:predictLongRunning?key=${GEMINI_API_KEY}`;
       const genResponse = await fetch(genUrl, {
         method: "POST",
@@ -147,14 +137,11 @@ Deno.serve(async (req) => {
       }
 
       const genData = await genResponse.json();
-      const opName = genData.name;
-
-      return new Response(JSON.stringify({ operationName: opName, status: "started" }), {
+      return new Response(JSON.stringify({ operationName: genData.name, status: "started" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // ─── ACTION: poll ───
     if (action === "poll") {
       if (!operationName) {
         return new Response(JSON.stringify({ error: "operationName fehlt" }), {
@@ -164,7 +151,7 @@ Deno.serve(async (req) => {
 
       const pollUrl = `${BASE_URL}/${operationName}?key=${GEMINI_API_KEY}`;
       const pollResponse = await fetch(pollUrl);
-      
+
       if (!pollResponse.ok) {
         const errBody = await pollResponse.text();
         return new Response(JSON.stringify({ error: "Poll fehlgeschlagen", details: errBody }), {
@@ -175,7 +162,6 @@ Deno.serve(async (req) => {
       const pollData = await pollResponse.json();
 
       if (pollData.done) {
-        // Extract video URI
         const videoUri =
           pollData.response?.generateVideoResponse?.generatedSamples?.[0]?.video?.uri ||
           pollData.response?.generatedVideos?.[0]?.video?.uri;
@@ -186,46 +172,48 @@ Deno.serve(async (req) => {
           });
         }
 
-        // Helper: convert ArrayBuffer to base64 without stack overflow
-        function arrayBufferToBase64(buffer: ArrayBuffer): string {
-          const bytes = new Uint8Array(buffer);
-          let binary = "";
-          for (let i = 0; i < bytes.length; i++) {
-            binary += String.fromCharCode(bytes[i]);
-          }
-          return btoa(binary);
-        }
-
-        // Download video and convert to base64
-        const videoResponse = await fetch(`${videoUri}&key=${GEMINI_API_KEY}`, { redirect: "follow" });
+        // Try downloading the video and upload to Supabase Storage
+        let downloadUrl = `${videoUri}&key=${GEMINI_API_KEY}`;
+        let videoResponse = await fetch(downloadUrl, { redirect: "follow" });
         
         if (!videoResponse.ok) {
-          const videoResponse2 = await fetch(videoUri, {
+          videoResponse = await fetch(videoUri, {
             headers: { "x-goog-api-key": GEMINI_API_KEY },
             redirect: "follow",
           });
-          if (!videoResponse2.ok) {
-            return new Response(JSON.stringify({ done: true, videoUri, error: "Video-Download fehlgeschlagen" }), {
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-            });
-          }
-          const videoBytes = await videoResponse2.arrayBuffer();
-          const videoBase64 = `data:video/mp4;base64,${arrayBufferToBase64(videoBytes)}`;
+        }
 
+        if (!videoResponse.ok) {
+          return new Response(JSON.stringify({ done: true, videoUri, error: "Video-Download fehlgeschlagen" }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        // Upload to Supabase Storage instead of returning base64
+        const videoBytes = await videoResponse.arrayBuffer();
+        const sb = createServiceClient();
+        const fileName = `videos/${crypto.randomUUID()}.mp4`;
+        
+        const { error: uploadError } = await sb.storage
+          .from("vehicle-images")
+          .upload(fileName, videoBytes, { contentType: "video/mp4", upsert: true });
+
+        if (uploadError) {
+          console.error("Storage upload error:", uploadError);
+          // Fallback to base64 for small videos
+          const videoBase64 = `data:video/mp4;base64,${encodeBase64(videoBytes)}`;
           return new Response(JSON.stringify({ done: true, videoBase64 }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
 
-        const videoBytes = await videoResponse.arrayBuffer();
-        const videoBase64 = `data:video/mp4;base64,${arrayBufferToBase64(videoBytes)}`;
+        const { data: publicUrlData } = sb.storage.from("vehicle-images").getPublicUrl(fileName);
 
-        return new Response(JSON.stringify({ done: true, videoBase64 }), {
+        return new Response(JSON.stringify({ done: true, videoUrl: publicUrlData.publicUrl }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      // Not done yet
       return new Response(JSON.stringify({ done: false, status: "processing" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
