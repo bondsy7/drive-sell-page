@@ -109,53 +109,78 @@ serve(async (req) => {
     // 2. Use dynamic prompt if provided, otherwise fall back to default
     const prompt = dynamicPrompt || `${await getCustomPrompt("image_remaster", DEFAULT_PROMPT)}\n\n${vehicleDescription ? `Vehicle: ${vehicleDescription}` : ''}`;
 
-    // 3. Call AI
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        messages: [{
-          role: "user",
-          content: [
-            { type: "text", text: prompt },
-            { type: "image_url", image_url: { url: imageBase64 } },
-            // Pass additional reference images if provided
-            ...(customShowroomBase64 ? [{ type: "image_url", image_url: { url: customShowroomBase64 } }] : []),
-            ...(customPlateImageBase64 ? [{ type: "image_url", image_url: { url: customPlateImageBase64 } }] : []),
-            ...(dealerLogoUrl ? [{ type: "image_url", image_url: { url: dealerLogoUrl } }] : []),
-          ],
-        }],
-        modalities: ["image", "text"],
-      }),
-    });
+    // 3. Call AI with retry logic
+    const maxRetries = 3;
+    let resultImage: string | null = null;
+    let lastError = "";
 
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error("Remaster error:", response.status, errText);
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit erreicht. Bitte warte kurz." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        console.log(`Remaster attempt ${attempt + 1}/${maxRetries}`);
+        const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model,
+            messages: [{
+              role: "user",
+              content: [
+                { type: "text", text: prompt },
+                { type: "image_url", image_url: { url: imageBase64 } },
+                ...(customShowroomBase64 ? [{ type: "image_url", image_url: { url: customShowroomBase64 } }] : []),
+                ...(customPlateImageBase64 ? [{ type: "image_url", image_url: { url: customPlateImageBase64 } }] : []),
+                ...(dealerLogoUrl ? [{ type: "image_url", image_url: { url: dealerLogoUrl } }] : []),
+              ],
+            }],
+            modalities: ["image", "text"],
+          }),
         });
+
+        if (!response.ok) {
+          const errText = await response.text();
+          console.error("Remaster error:", response.status, errText);
+          if (response.status === 429) {
+            if (attempt < maxRetries - 1) {
+              await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
+              continue;
+            }
+            return new Response(JSON.stringify({ error: "Rate limit erreicht. Bitte warte kurz." }), {
+              status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+          if (response.status === 402) {
+            return new Response(JSON.stringify({ error: "AI Credits aufgebraucht." }), {
+              status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+          lastError = `Remaster error: ${response.status}`;
+          continue;
+        }
+
+        const data = await response.json();
+        resultImage = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+        if (!resultImage && Array.isArray(data.choices?.[0]?.message?.content)) {
+          const imgPart = data.choices[0].message.content.find((p: any) => p.type === 'image_url');
+          resultImage = imgPart?.image_url?.url;
+        }
+
+        if (resultImage) break;
+
+        console.warn(`Attempt ${attempt + 1}: No image in response, retrying...`);
+        lastError = "Kein Bild generiert";
+        if (attempt < maxRetries - 1) {
+          await new Promise(r => setTimeout(r, 1500));
+        }
+      } catch (retryErr) {
+        console.error(`Attempt ${attempt + 1} failed:`, retryErr);
+        lastError = retryErr instanceof Error ? retryErr.message : "Unknown error";
       }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "AI Credits aufgebraucht." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      throw new Error(`Remaster error: ${response.status}`);
     }
 
-    const data = await response.json();
-    let resultImage = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-    if (!resultImage && Array.isArray(data.choices?.[0]?.message?.content)) {
-      const imgPart = data.choices[0].message.content.find((p: any) => p.type === 'image_url');
-      resultImage = imgPart?.image_url?.url;
-    }
-    if (!resultImage) throw new Error("Kein Bild generiert. Bitte versuche es erneut.");
+    if (!resultImage) throw new Error(lastError || "Kein Bild generiert. Bitte versuche es erneut.");
 
     return new Response(JSON.stringify({ imageBase64: resultImage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
