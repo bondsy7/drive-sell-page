@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Loader2, Check, AlertCircle, Zap, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -10,8 +10,10 @@ import { PIPELINE_JOBS, type PipelineJob } from '@/lib/pipeline-jobs';
 import type { RemasterConfig } from '@/lib/remaster-prompt';
 
 interface PipelineRunnerProps {
-  /** Base64 images captured/uploaded by the user */
+  /** Base64 images captured/uploaded by the user (remastered) */
   inputImages: string[];
+  /** Original (pre-remaster) base64 images for reference */
+  originalImages?: string[];
   vehicleDescription: string;
   remasterConfig: RemasterConfig;
   modelTier?: string;
@@ -29,6 +31,7 @@ interface JobState {
 
 const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   inputImages,
+  originalImages,
   vehicleDescription,
   remasterConfig,
   modelTier = 'standard',
@@ -44,15 +47,66 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   const [running, setRunning] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [finished, setFinished] = useState(false);
+  const [savedProjectId, setSavedProjectId] = useState<string | null>(null);
 
   const totalJobs = PIPELINE_JOBS.length;
   const doneCount = Object.values(jobs).filter(j => j.status === 'done').length;
-  const errorCount = Object.values(jobs).filter(j => j.status === 'error').length;
+
+  // Save the remastered input images to storage+DB on mount
+  useEffect(() => {
+    if (!user || inputImages.length === 0 || savedProjectId) return;
+    (async () => {
+      try {
+        const dateStr = new Date().toLocaleDateString('de-DE', {
+          day: '2-digit', month: '2-digit', year: 'numeric',
+          hour: '2-digit', minute: '2-digit',
+        });
+        const { data: project } = await supabase.from('projects').insert({
+          user_id: user.id,
+          title: `Showroom ${dateStr}`,
+          vehicle_data: { vehicle: { brand: vehicleDescription || 'Showroom' } } as any,
+          template_id: 'modern',
+        }).select('id').single();
+
+        if (!project) return;
+        setSavedProjectId(project.id);
+
+        const urls: string[] = [];
+        for (let i = 0; i < inputImages.length; i++) {
+          const url = await uploadImageToStorage(
+            inputImages[i],
+            user.id,
+            `${project.id}/remaster_${i}.png`,
+          );
+          if (url) urls.push(url);
+        }
+
+        if (urls.length > 0) {
+          await supabase.from('projects').update({ main_image_url: urls[0] }).eq('id', project.id);
+          const perspectives = ['3/4 Front', 'Seite', 'Hinten', 'Interieur Fahrersitz', 'Interieur Rücksitz'];
+          const imageRows = urls.map((url, i) => ({
+            project_id: project.id,
+            user_id: user.id,
+            image_url: url,
+            image_base64: '',
+            perspective: perspectives[i] || `Bild ${i + 1}`,
+            sort_order: i,
+          }));
+          await supabase.from('project_images').insert(imageRows);
+        }
+      } catch (e) {
+        console.error('Error saving remastered images:', e);
+      }
+    })();
+  }, [user, inputImages, vehicleDescription, savedProjectId]);
 
   const runPipeline = useCallback(async () => {
     if (!user) { toast.error('Bitte melde dich an.'); return; }
     setRunning(true);
     const results: { key: string; base64: string }[] = [];
+
+    // Use original (pre-remaster) images as reference if available, otherwise remastered
+    const referenceImages = originalImages && originalImages.length > 0 ? originalImages : inputImages;
 
     for (let i = 0; i < PIPELINE_JOBS.length; i++) {
       const job = PIPELINE_JOBS[i];
@@ -60,12 +114,11 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       setJobs(prev => ({ ...prev, [job.key]: { status: 'running' } }));
 
       try {
-        // Use the first input image as reference
-        const referenceImage = inputImages[0];
-
+        // Send all reference images to the edge function
         const { data, error } = await supabase.functions.invoke('remaster-vehicle-image', {
           body: {
-            imageBase64: referenceImage,
+            imageBase64: referenceImages[0],
+            additionalImages: referenceImages.slice(1),
             vehicleDescription,
             modelTier,
             dynamicPrompt: job.prompt,
@@ -87,44 +140,54 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       }
     }
 
-    // Save all results to storage + DB
+    // Save pipeline results to existing project or create new one
     if (results.length > 0 && user) {
       try {
-        const dateStr = new Date().toLocaleDateString('de-DE', {
-          day: '2-digit', month: '2-digit', year: 'numeric',
-          hour: '2-digit', minute: '2-digit',
-        });
-        const { data: project } = await supabase.from('projects').insert({
-          user_id: user.id,
-          title: `Pipeline ${dateStr}`,
-          vehicle_data: { vehicle: { brand: vehicleDescription || 'Pipeline' } } as any,
-          template_id: 'modern',
-        }).select('id').single();
+        const projectId = savedProjectId || crypto.randomUUID();
 
-        if (project) {
-          const urls: string[] = [];
-          for (let i = 0; i < results.length; i++) {
-            const url = await uploadImageToStorage(
-              results[i].base64,
-              user.id,
-              `${project.id}/${results[i].key}.png`,
-            );
-            if (url) urls.push(url);
-          }
+        if (!savedProjectId) {
+          const dateStr = new Date().toLocaleDateString('de-DE', {
+            day: '2-digit', month: '2-digit', year: 'numeric',
+            hour: '2-digit', minute: '2-digit',
+          });
+          await supabase.from('projects').insert({
+            id: projectId,
+            user_id: user.id,
+            title: `Pipeline ${dateStr}`,
+            vehicle_data: { vehicle: { brand: vehicleDescription || 'Pipeline' } } as any,
+            template_id: 'modern',
+          });
+        }
 
-          if (urls.length > 0) {
-            await supabase.from('projects').update({ main_image_url: urls[0] }).eq('id', project.id);
+        // Get current max sort_order
+        const { data: existingImages } = await supabase
+          .from('project_images')
+          .select('sort_order')
+          .eq('project_id', projectId)
+          .order('sort_order', { ascending: false })
+          .limit(1);
+        const startOrder = (existingImages?.[0]?.sort_order ?? -1) + 1;
 
-            const imageRows = urls.map((url, i) => ({
-              project_id: project.id,
-              user_id: user.id,
-              image_url: url,
-              image_base64: '',
-              perspective: PIPELINE_JOBS[i]?.labelDe || `Bild ${i + 1}`,
-              sort_order: i,
-            }));
-            await supabase.from('project_images').insert(imageRows);
-          }
+        const urls: string[] = [];
+        for (let i = 0; i < results.length; i++) {
+          const url = await uploadImageToStorage(
+            results[i].base64,
+            user.id,
+            `${projectId}/${results[i].key}.png`,
+          );
+          if (url) urls.push(url);
+        }
+
+        if (urls.length > 0) {
+          const imageRows = urls.map((url, i) => ({
+            project_id: projectId,
+            user_id: user.id,
+            image_url: url,
+            image_base64: '',
+            perspective: `Pipeline: ${PIPELINE_JOBS[i]?.labelDe || `Bild ${i + 1}`}`,
+            sort_order: startOrder + i,
+          }));
+          await supabase.from('project_images').insert(imageRows);
         }
 
         toast.success(`${results.length} Pipeline-Bilder erstellt und gespeichert!`);
@@ -136,7 +199,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
 
     setRunning(false);
     setFinished(true);
-  }, [inputImages, vehicleDescription, remasterConfig, modelTier, user]);
+  }, [inputImages, originalImages, vehicleDescription, remasterConfig, modelTier, user, savedProjectId]);
 
   const progressPercent = running ? ((currentIndex + 1) / totalJobs) * 100 : finished ? 100 : 0;
 
