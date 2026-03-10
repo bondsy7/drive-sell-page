@@ -187,7 +187,7 @@ async function generateOpenAI(prompt: string, imageBase64: string | null, model:
         prompt: fullPrompt,
         n: 1,
         size,
-        output_format: "b64_json",
+        response_format: "b64_json",
       };
       if (isUltra) body.quality = "high";
 
