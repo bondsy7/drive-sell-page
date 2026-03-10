@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { Image, FileText, Download, ExternalLink, Trash2, MessageSquare, Mail, Phone, Video, Play, X } from 'lucide-react';
+import { Image, FileText, Download, ExternalLink, Trash2, MessageSquare, Mail, Phone, Video, Play, X, LayoutGrid } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
 import { toast } from 'sonner';
 import { downloadHTML } from '@/lib/templates/download';
@@ -51,6 +51,13 @@ interface VideoFile {
   created_at: string;
 }
 
+interface BannerFile {
+  name: string;
+  url: string;
+  created_at: string;
+  fullPath: string;
+}
+
 const Dashboard = () => {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -58,15 +65,17 @@ const Dashboard = () => {
   const [allImages, setAllImages] = useState<ProjectImage[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [videos, setVideos] = useState<VideoFile[]>([]);
+  const [banners, setBanners] = useState<BannerFile[]>([]);
   const initialTab = (searchParams.get('tab') as any) || 'projects';
-  const [tab, setTab] = useState<'projects' | 'gallery' | 'videos' | 'leads'>(initialTab);
+  const [tab, setTab] = useState<'projects' | 'gallery' | 'banners' | 'videos' | 'leads'>(initialTab);
   const [loading, setLoading] = useState(true);
   const [lightboxIndex, setLightboxIndex] = useState(-1);
 
   const [galleryLoaded, setGalleryLoaded] = useState(false);
   const [leadsLoaded, setLeadsLoaded] = useState(false);
   const [videosLoaded, setVideosLoaded] = useState(false);
-  const [counts, setCounts] = useState({ gallery: 0, videos: 0, leads: 0 });
+  const [bannersLoaded, setBannersLoaded] = useState(false);
+  const [counts, setCounts] = useState({ gallery: 0, videos: 0, leads: 0, banners: 0 });
 
   useEffect(() => {
     loadProjects();
@@ -77,18 +86,22 @@ const Dashboard = () => {
     if (tab === 'gallery' && !galleryLoaded) loadGallery();
     if (tab === 'leads' && !leadsLoaded) loadLeads();
     if (tab === 'videos' && !videosLoaded) loadVideos();
+    if (tab === 'banners' && !bannersLoaded) loadBanners();
   }, [tab]);
 
   const loadCounts = async () => {
-    const [imgRes, leadsRes, videosRes] = await Promise.all([
+    const userId = user?.id;
+    const [imgRes, leadsRes, videosRes, bannersRes] = await Promise.all([
       supabase.from('project_images').select('id', { count: 'exact', head: true }),
       supabase.from('leads').select('id', { count: 'exact', head: true }),
       supabase.storage.from('vehicle-images').list('videos', { limit: 200 }),
+      userId ? supabase.storage.from('banners').list(userId, { limit: 200 }) : Promise.resolve({ data: null }),
     ]);
     setCounts({
       gallery: imgRes.count ?? 0,
       leads: leadsRes.count ?? 0,
       videos: videosRes.data?.filter(f => f.name.endsWith('.mp4')).length ?? 0,
+      banners: bannersRes.data?.filter(f => f.name.endsWith('.png')).length ?? 0,
     });
   };
 
@@ -155,6 +168,31 @@ const Dashboard = () => {
     setLoading(false);
   };
 
+  const loadBanners = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const { data: files, error } = await supabase.storage
+        .from('banners')
+        .list(user.id, { limit: 100, sortBy: { column: 'created_at', order: 'desc' } });
+      if (error || !files) {
+        setBanners([]);
+      } else {
+        const bannerFiles: BannerFile[] = files
+          .filter(f => f.name.endsWith('.png'))
+          .map(f => {
+            const { data: urlData } = supabase.storage.from('banners').getPublicUrl(`${user.id}/${f.name}`);
+            return { name: f.name, url: urlData.publicUrl, created_at: f.created_at, fullPath: `${user.id}/${f.name}` };
+          });
+        setBanners(bannerFiles);
+      }
+    } catch {
+      setBanners([]);
+    }
+    setBannersLoaded(true);
+    setLoading(false);
+  };
+
   const loadData = async () => {
     await loadProjects();
     if (tab === 'gallery') await loadGallery();
@@ -180,6 +218,21 @@ const Dashboard = () => {
     if (error) { toast.error('Fehler beim Löschen'); return; }
     toast.success('Video gelöscht');
     setVideos(prev => prev.filter(v => v.name !== name));
+  };
+
+  const deleteBanner = async (fullPath: string, name: string) => {
+    const { error } = await supabase.storage.from('banners').remove([fullPath]);
+    if (error) { toast.error('Fehler beim Löschen'); return; }
+    toast.success('Banner gelöscht');
+    setBanners(prev => prev.filter(b => b.name !== name));
+  };
+
+  const downloadBanner = (banner: BannerFile) => {
+    const a = document.createElement('a');
+    a.href = banner.url;
+    a.download = banner.name;
+    a.target = '_blank';
+    a.click();
   };
 
   const downloadImage = (img: ProjectImage) => {
@@ -254,6 +307,9 @@ const Dashboard = () => {
           </Button>
           <Button variant={tab === 'videos' ? 'default' : 'outline'} size="sm" onClick={() => setTab('videos')} className="whitespace-nowrap">
             <Video className="w-4 h-4 mr-1.5" /> Videos ({videosLoaded ? videos.length : counts.videos})
+          </Button>
+          <Button variant={tab === 'banners' ? 'default' : 'outline'} size="sm" onClick={() => setTab('banners')} className="whitespace-nowrap">
+            <LayoutGrid className="w-4 h-4 mr-1.5" /> Banner ({bannersLoaded ? banners.length : counts.banners})
           </Button>
           <Button variant={tab === 'leads' ? 'default' : 'outline'} size="sm" onClick={() => setTab('leads')} className="whitespace-nowrap">
             <MessageSquare className="w-4 h-4 mr-1.5" /> Anfragen ({leadsLoaded ? leads.length : counts.leads})
@@ -367,6 +423,37 @@ const Dashboard = () => {
                         <Download className="w-3.5 h-3.5" />
                       </Button>
                       <Button variant="outline" size="sm" onClick={() => deleteVideo(video.name)}>
+                        <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        ) : tab === 'banners' ? (
+          banners.length === 0 ? (
+            <div className="text-center py-20 space-y-3">
+              <LayoutGrid className="w-12 h-12 text-muted-foreground mx-auto" />
+              <p className="text-muted-foreground">Noch keine Banner generiert.</p>
+              <p className="text-xs text-muted-foreground max-w-md mx-auto">Generierte Banner aus dem Banner Generator werden hier automatisch gespeichert.</p>
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {banners.map(banner => (
+                <div key={banner.name} className="bg-card rounded-xl border border-border overflow-hidden group">
+                  <div className="aspect-video bg-muted overflow-hidden">
+                    <img src={banner.url} alt={banner.name} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="p-3 flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">
+                      {banner.created_at ? new Date(banner.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Banner'}
+                    </p>
+                    <div className="flex gap-1.5">
+                      <Button variant="outline" size="sm" onClick={() => downloadBanner(banner)}>
+                        <Download className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => deleteBanner(banner.fullPath, banner.name)}>
                         <Trash2 className="w-3.5 h-3.5 text-destructive" />
                       </Button>
                     </div>
