@@ -106,6 +106,23 @@ export default function AdminLogos() {
     }
   };
 
+  const deleteAll = async () => {
+    if (!confirm('Wirklich ALLE Logos löschen? Dies kann nicht rückgängig gemacht werden.')) return;
+    setUploading(true);
+    const allFiles = [
+      ...logos.map(l => l.name),
+      ...svgs.map(l => `svg/${l.name}`),
+    ];
+    // Delete in batches of 20
+    for (let i = 0; i < allFiles.length; i += 20) {
+      await supabase.storage.from(BUCKET).remove(allFiles.slice(i, i + 20));
+    }
+    setLogos([]);
+    setSvgs([]);
+    setUploading(false);
+    toast.success(`${allFiles.length} Datei(en) gelöscht`);
+  };
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
@@ -150,19 +167,26 @@ export default function AdminLogos() {
             {logos.length} Bild-Logo(s), {svgs.length} SVG(s). SVGs werden automatisch in den SVG-Ordner sortiert.
           </p>
         </div>
-        <label className="cursor-pointer">
-          <Button disabled={uploading} className="gap-2">
-            {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-            Logos hochladen
-          </Button>
-          <input
-            type="file"
-            accept="image/*,.svg"
-            multiple
-            className="hidden"
-            onChange={e => { if (e.target.files?.length) uploadFiles(e.target.files); e.target.value = ''; }}
-          />
-        </label>
+        <div className="flex gap-2">
+          {(logos.length > 0 || svgs.length > 0) && (
+            <Button variant="destructive" size="sm" disabled={uploading} onClick={deleteAll} className="gap-2">
+              <Trash2 className="w-4 h-4" /> Alle löschen
+            </Button>
+          )}
+          <label className="cursor-pointer">
+            <Button disabled={uploading} className="gap-2">
+              {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+              Logos hochladen
+            </Button>
+            <input
+              type="file"
+              accept="image/*,.svg"
+              multiple
+              className="hidden"
+              onChange={e => { if (e.target.files?.length) uploadFiles(e.target.files); e.target.value = ''; }}
+            />
+          </label>
+        </div>
       </div>
 
       {/* Drag & Drop Zone */}
