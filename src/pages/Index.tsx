@@ -12,6 +12,7 @@ import TemplateSidebar from '@/components/TemplateSidebar';
 import ImageSourceChoice from '@/components/ImageSourceChoice';
 import ImageUploadRemaster from '@/components/ImageUploadRemaster';
 import ImageCaptureGrid from '@/components/ImageCaptureGrid';
+import ManualLandingGenerator from '@/components/ManualLandingGenerator';
 import CreditConfirmDialog from '@/components/CreditConfirmDialog';
 import VideoGenerator from '@/components/VideoGenerator';
 import BannerGenerator from '@/components/BannerGenerator';
