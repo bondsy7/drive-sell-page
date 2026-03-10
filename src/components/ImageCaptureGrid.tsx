@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { Camera, Upload, X, Loader2, Check, AlertCircle, Search } from 'lucide-react';
+import { Camera, Upload, X, Loader2, Check, AlertCircle, Search, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,6 +8,7 @@ import { useVinLookup } from '@/hooks/useVinLookup';
 import VinDataDialog from '@/components/VinDataDialog';
 import RemasterOptions from '@/components/RemasterOptions';
 import { type RemasterConfig, buildMasterPrompt } from '@/lib/remaster-prompt';
+import PipelineRunner from '@/components/PipelineRunner';
 import type { VehicleData } from '@/types/vehicle';
 
 interface ImageCaptureGridProps {
@@ -17,6 +18,7 @@ interface ImageCaptureGridProps {
   onComplete: (mainImage: string, galleryImages: string[], vin?: string) => void;
   onVehicleDataChange?: (data: VehicleData) => void;
   onBack: () => void;
+  onPipelineComplete?: () => void;
 }
 
 interface PerspectiveSlot {
@@ -60,7 +62,8 @@ const DEFAULT_CONFIG: RemasterConfig = {
   showDealerLogo: false,
 };
 
-const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription, vehicleData, modelTier, onComplete, onVehicleDataChange, onBack }) => {
+const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription, vehicleData, modelTier, onComplete, onVehicleDataChange, onBack, onPipelineComplete }) => {
+  const [showPipeline, setShowPipeline] = useState(false);
   const [captures, setCaptures] = useState<Record<string, CapturedImage>>({});
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
@@ -174,6 +177,30 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     capturedVehicleImages.every(s => captures[s.key].status === 'done' || captures[s.key].status === 'error') &&
     !isProcessing;
 
+  // Collect all captured base64 images for pipeline input
+  const allCapturedBase64 = vehicleSlots
+    .filter(s => captures[s.key])
+    .map(s => captures[s.key].remasteredBase64 || captures[s.key].base64);
+
+  if (showPipeline) {
+    return (
+      <PipelineRunner
+        inputImages={allCapturedBase64}
+        vehicleDescription={vehicleDescription}
+        remasterConfig={remasterConfig}
+        modelTier={modelTier}
+        onComplete={() => {
+          if (onPipelineComplete) {
+            onPipelineComplete();
+          } else {
+            finishUp();
+          }
+        }}
+        onBack={() => setShowPipeline(false)}
+      />
+    );
+  }
+
   return (
     <div className="w-full max-w-2xl mx-auto space-y-6">
       <div className="text-center">
@@ -196,14 +223,12 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
               className="relative group rounded-2xl border-2 border-dashed border-border hover:border-accent bg-card transition-all overflow-hidden"
             >
               {cap ? (
-                // Captured state
                 <div className="aspect-[4/3] relative">
                   <img
                     src={cap.remasteredBase64 || cap.base64}
                     alt={slot.label}
                     className="w-full h-full object-cover"
                   />
-                  {/* Status overlay */}
                   {cap.status === 'processing' && (
                     <div className="absolute inset-0 bg-background/70 flex items-center justify-center">
                       <Loader2 className="w-6 h-6 text-accent animate-spin" />
@@ -219,7 +244,6 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                       Remastered
                     </div>
                   )}
-                  {/* Remove */}
                   {!isProcessing && (
                     <button
                       onClick={() => removeCapture(slot.key)}
@@ -230,7 +254,6 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                   )}
                 </div>
               ) : (
-                // Empty slot - click to capture
                 <button
                   onClick={() => fileRefs.current[slot.key]?.click()}
                   className="w-full aspect-[4/3] flex flex-col items-center justify-center gap-2 p-3 hover:bg-muted/50 transition-colors"
@@ -305,12 +328,21 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
               )}
             </Button>
           ) : (
-            <Button
-              onClick={finishUp}
-              className="gap-2 gradient-accent text-accent-foreground font-semibold"
-            >
-              <Check className="w-4 h-4" /> Weiter zur Landing Page
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={finishUp}
+              >
+                <Check className="w-4 h-4 mr-1" /> Weiter zur Landing Page
+              </Button>
+              <Button
+                onClick={() => setShowPipeline(true)}
+                className="gap-2 gradient-accent text-accent-foreground font-semibold"
+              >
+                <Zap className="w-4 h-4" /> Pipeline starten
+              </Button>
+            </div>
           )}
         </div>
       </div>

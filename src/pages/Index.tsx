@@ -385,6 +385,7 @@ const Index = () => {
                 onComplete={handleStandaloneCaptureComplete}
                 onVehicleDataChange={setVehicleData}
                 onBack={() => setAppState('standalone-photo-choice')}
+                onPipelineComplete={() => navigate('/dashboard?tab=gallery')}
               />
             </div>
           )}
@@ -482,7 +483,7 @@ const Index = () => {
 
           {appState === 'capturing-images' && (
             <div className="mt-8">
-              <ImageCaptureGrid vehicleDescription={vehicleDescription} vehicleData={vehicleData || undefined} modelTier={selectedModelTier} onComplete={handleCaptureComplete} onVehicleDataChange={setVehicleData} onBack={() => setAppState('choosing-image-source')} />
+              <ImageCaptureGrid vehicleDescription={vehicleDescription} vehicleData={vehicleData || undefined} modelTier={selectedModelTier} onComplete={handleCaptureComplete} onVehicleDataChange={setVehicleData} onBack={() => setAppState('choosing-image-source')} onPipelineComplete={() => navigate('/dashboard?tab=gallery')} />
             </div>
           )}
 
