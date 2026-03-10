@@ -23,6 +23,7 @@ interface ProfileData {
   city: string;
   tax_id: string;
   logo_url: string;
+  custom_showroom_url: string;
   facebook_url: string;
   instagram_url: string;
   x_url: string;
