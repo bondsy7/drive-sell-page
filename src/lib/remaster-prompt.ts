@@ -101,7 +101,8 @@ export function buildMasterPrompt(config: RemasterConfig, vehicleDescription?: s
   return parts.join('\n\n');
 }
 
-// Manufacturer logo assets (SVG preferred, WebP fallback)
+// Dynamic manufacturer logos loaded from storage bucket 'manufacturer-logos'
+// Legacy static map kept for fallback – new logos are managed via Admin > Hersteller-Logos
 export const MANUFACTURER_LOGOS: Record<string, { svg?: string; webp?: string; label: string }> = {
   abarth: { svg: '/images/logos/abarth.svg', webp: '/images/logos/abarth.webp', label: 'Abarth' },
   aiways: { webp: '/images/logos/aiways.webp', label: 'Aiways' },
@@ -110,3 +111,25 @@ export const MANUFACTURER_LOGOS: Record<string, { svg?: string; webp?: string; l
   amphicar: { webp: '/images/logos/amphicar.webp', label: 'Amphicar' },
   'aston-martin': { svg: '/images/logos/astonmartin.svg', webp: '/images/logos/aston-martin.webp', label: 'Aston Martin' },
 };
+
+// Fetch all logos from dynamic storage bucket
+import { supabase } from '@/integrations/supabase/client';
+
+export interface DynamicLogo {
+  name: string;  // filename without extension
+  url: string;
+}
+
+export async function fetchManufacturerLogos(): Promise<DynamicLogo[]> {
+  const { data, error } = await supabase.storage.from('manufacturer-logos').list('', {
+    limit: 500,
+    sortBy: { column: 'name', order: 'asc' },
+  });
+  if (error || !data) return [];
+  return data
+    .filter(f => f.name && !f.name.startsWith('.'))
+    .map(f => ({
+      name: f.name.replace(/\.[^.]+$/, ''),
+      url: supabase.storage.from('manufacturer-logos').getPublicUrl(f.name).data.publicUrl,
+    }));
+}
