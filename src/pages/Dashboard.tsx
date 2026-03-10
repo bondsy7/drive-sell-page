@@ -303,7 +303,10 @@ const Dashboard = () => {
       <main className="max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
         <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
           <Button variant={tab === 'projects' ? 'default' : 'outline'} size="sm" onClick={() => setTab('projects')} className="whitespace-nowrap">
-            <FileText className="w-4 h-4 mr-1.5" /> Projekte ({projects.length})
+            <FileText className="w-4 h-4 mr-1.5" /> Projekte ({regularProjects.length})
+          </Button>
+          <Button variant={tab === 'landings' ? 'default' : 'outline'} size="sm" onClick={() => setTab('landings')} className="whitespace-nowrap">
+            <Layout className="w-4 h-4 mr-1.5" /> Landing Pages ({landingProjects.length})
           </Button>
           <Button variant={tab === 'gallery' ? 'default' : 'outline'} size="sm" onClick={() => setTab('gallery')} className="whitespace-nowrap">
             <Image className="w-4 h-4 mr-1.5" /> Galerie ({galleryLoaded ? allImages.length : counts.gallery})
