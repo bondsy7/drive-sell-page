@@ -472,7 +472,7 @@ const Index = () => {
                 />
               </div>
             </div>
-          )
+          )}
 
           {/* ─── Banner Generator ─── */}
           {appState === 'banner' && (
