@@ -58,19 +58,34 @@ const Dashboard = () => {
   const [tab, setTab] = useState<'projects' | 'gallery' | 'videos' | 'leads'>('projects');
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadProjects();
-  }, []);
-
   const [galleryLoaded, setGalleryLoaded] = useState(false);
   const [leadsLoaded, setLeadsLoaded] = useState(false);
   const [videosLoaded, setVideosLoaded] = useState(false);
+  const [counts, setCounts] = useState({ gallery: 0, videos: 0, leads: 0 });
+
+  useEffect(() => {
+    loadProjects();
+    loadCounts();
+  }, []);
 
   useEffect(() => {
     if (tab === 'gallery' && !galleryLoaded) loadGallery();
     if (tab === 'leads' && !leadsLoaded) loadLeads();
     if (tab === 'videos' && !videosLoaded) loadVideos();
   }, [tab]);
+
+  const loadCounts = async () => {
+    const [imgRes, leadsRes, videosRes] = await Promise.all([
+      supabase.from('project_images').select('id', { count: 'exact', head: true }),
+      supabase.from('leads').select('id', { count: 'exact', head: true }),
+      supabase.storage.from('vehicle-images').list('videos', { limit: 200 }),
+    ]);
+    setCounts({
+      gallery: imgRes.count ?? 0,
+      leads: leadsRes.count ?? 0,
+      videos: videosRes.data?.filter(f => f.name.endsWith('.mp4')).length ?? 0,
+    });
+  };
 
   const loadProjects = async () => {
     setLoading(true);
