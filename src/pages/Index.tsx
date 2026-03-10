@@ -12,6 +12,7 @@ import TemplateSidebar from '@/components/TemplateSidebar';
 import ImageSourceChoice from '@/components/ImageSourceChoice';
 import ImageUploadRemaster from '@/components/ImageUploadRemaster';
 import ImageCaptureGrid from '@/components/ImageCaptureGrid';
+import ManualLandingGenerator from '@/components/ManualLandingGenerator';
 import CreditConfirmDialog from '@/components/CreditConfirmDialog';
 import VideoGenerator from '@/components/VideoGenerator';
 import BannerGenerator from '@/components/BannerGenerator';
@@ -26,7 +27,7 @@ import type { ModelTier } from '@/components/ModelSelector';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-type ExtendedAppState = AppState | 'capturing-images' | 'hub' | 'standalone-photo-choice' | 'standalone-capture' | 'standalone-upload' | 'video' | 'banner';
+type ExtendedAppState = AppState | 'capturing-images' | 'hub' | 'standalone-photo-choice' | 'standalone-capture' | 'standalone-upload' | 'video' | 'banner' | 'manual-landing' | 'manual-landing-preview';
 
 const PERSPECTIVES = [
   { key: 'front', label: 'Frontansicht', prompt: 'Front view, straight on, symmetrical composition' },
@@ -58,6 +59,8 @@ const Index = () => {
 
   // For standalone photo results
   const [standalonePhotoResults, setStandalonePhotoResults] = useState<string[]>([]);
+  // For manual landing page HTML
+  const [manualLandingHTML, setManualLandingHTML] = useState<string | null>(null);
 
   const currentStep = appState === 'hub' || appState === 'idle' ? 1 : appState === 'preview' ? 3 : 2;
 
@@ -308,6 +311,9 @@ const Index = () => {
       case 'banner':
         setAppState('banner');
         break;
+      case 'manual-landing':
+        setAppState('manual-landing');
+        break;
       default:
         toast.info('Diese Funktion ist bald verfügbar!');
     }
@@ -316,6 +322,7 @@ const Index = () => {
   const handleReset = useCallback(() => {
     setAppState('hub'); setVehicleData(null); setImageBase64(null);
     setGalleryImages([]); setImageProgress({ current: 0, total: 0 }); setFileName(''); setSavedProjectId(null);
+    setManualLandingHTML(null);
   }, []);
 
   const isProcessing = appState === 'uploading' || appState === 'analyzing' || appState === 'generating-image';
@@ -412,6 +419,59 @@ const Index = () => {
               onBack={() => setAppState('hub')}
               preloadedImage={standalonePhotoResults.length > 0 ? standalonePhotoResults[0] : undefined}
             />
+          )}
+
+          {/* ─── Manual Landing Generator ─── */}
+          {appState === 'manual-landing' && (
+            <ManualLandingGenerator
+              onBack={() => setAppState('hub')}
+              onComplete={(html) => {
+                setManualLandingHTML(html);
+                setAppState('manual-landing-preview');
+              }}
+            />
+          )}
+
+          {/* ─── Manual Landing Preview ─── */}
+          {appState === 'manual-landing-preview' && manualLandingHTML && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <Button variant="ghost" size="icon" onClick={() => setAppState('manual-landing')}>
+                  <ArrowLeft className="w-4 h-4" />
+                </Button>
+                <div>
+                  <h2 className="font-display text-2xl font-bold text-foreground">Vorschau</h2>
+                  <p className="text-sm text-muted-foreground">Deine generierte Landing Page</p>
+                </div>
+                <div className="ml-auto flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setAppState('manual-landing')}>
+                    Zurück
+                  </Button>
+                  <Button size="sm" onClick={() => {
+                    const blob = new Blob([manualLandingHTML], { type: 'text/html' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'landing-page.html';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    toast.success('HTML heruntergeladen!');
+                  }}>
+                    HTML herunterladen
+                  </Button>
+                </div>
+              </div>
+              <div className="rounded-xl border border-border overflow-hidden bg-white" style={{ height: 'calc(100vh - 220px)' }}>
+                <iframe
+                  srcDoc={manualLandingHTML}
+                  className="w-full h-full border-0"
+                  title="Landing Page Preview"
+                  sandbox="allow-scripts"
+                />
+              </div>
+            </div>
           )}
 
           {/* ─── Banner Generator ─── */}
