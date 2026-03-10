@@ -159,6 +159,8 @@ export default function AppHeader({ leftActions, variant = 'card' }: AppHeaderPr
               </Link>
             </>
           )}
+        </div>
+      </div>
     </header>
   );
 }
