@@ -67,7 +67,7 @@ const Dashboard = () => {
   const [videos, setVideos] = useState<VideoFile[]>([]);
   const [banners, setBanners] = useState<BannerFile[]>([]);
   const initialTab = (searchParams.get('tab') as any) || 'projects';
-  const [tab, setTab] = useState<'projects' | 'gallery' | 'banners' | 'videos' | 'leads'>(initialTab);
+  const [tab, setTab] = useState<'projects' | 'landings' | 'gallery' | 'banners' | 'videos' | 'leads'>(initialTab);
   const [loading, setLoading] = useState(true);
   const [lightboxIndex, setLightboxIndex] = useState(-1);
 
