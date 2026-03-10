@@ -189,6 +189,7 @@ export type Database = {
           company_name: string | null
           contact_name: string | null
           created_at: string
+          custom_showroom_url: string | null
           default_legal_text: string | null
           email: string | null
           facebook_url: string | null
@@ -216,6 +217,7 @@ export type Database = {
           company_name?: string | null
           contact_name?: string | null
           created_at?: string
+          custom_showroom_url?: string | null
           default_legal_text?: string | null
           email?: string | null
           facebook_url?: string | null
@@ -243,6 +245,7 @@ export type Database = {
           company_name?: string | null
           contact_name?: string | null
           created_at?: string
+          custom_showroom_url?: string | null
           default_legal_text?: string | null
           email?: string | null
           facebook_url?: string | null

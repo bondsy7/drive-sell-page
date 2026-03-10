@@ -96,7 +96,7 @@ serve(async (req) => {
   try {
     // 1. Auth & credits
     const bodyText = await req.text();
-    const { imageBase64, vehicleDescription, modelTier } = JSON.parse(bodyText);
+    const { imageBase64, vehicleDescription, modelTier, dynamicPrompt, customShowroomBase64, customPlateImageBase64, dealerLogoUrl } = JSON.parse(bodyText);
     const cost = modelTier === 'pro' ? 5 : 2;
     const authResult = await authenticateAndDeductCredits(req, "image_remaster", cost);
     if (authResult instanceof Response) return authResult;
@@ -106,9 +106,8 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
     if (!imageBase64) throw new Error("No image provided");
 
-    // 2. Load custom prompt
-    const basePrompt = await getCustomPrompt("image_remaster", DEFAULT_PROMPT);
-    const prompt = `${basePrompt}\n\n${vehicleDescription ? `Vehicle: ${vehicleDescription}` : ''}`;
+    // 2. Use dynamic prompt if provided, otherwise fall back to default
+    const prompt = dynamicPrompt || `${await getCustomPrompt("image_remaster", DEFAULT_PROMPT)}\n\n${vehicleDescription ? `Vehicle: ${vehicleDescription}` : ''}`;
 
     // 3. Call AI
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -124,6 +123,10 @@ serve(async (req) => {
           content: [
             { type: "text", text: prompt },
             { type: "image_url", image_url: { url: imageBase64 } },
+            // Pass additional reference images if provided
+            ...(customShowroomBase64 ? [{ type: "image_url", image_url: { url: customShowroomBase64 } }] : []),
+            ...(customPlateImageBase64 ? [{ type: "image_url", image_url: { url: customPlateImageBase64 } }] : []),
+            ...(dealerLogoUrl ? [{ type: "image_url", image_url: { url: dealerLogoUrl } }] : []),
           ],
         }],
         modalities: ["image", "text"],

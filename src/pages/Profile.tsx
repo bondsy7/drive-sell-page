@@ -23,6 +23,7 @@ interface ProfileData {
   city: string;
   tax_id: string;
   logo_url: string;
+  custom_showroom_url: string;
   facebook_url: string;
   instagram_url: string;
   x_url: string;
@@ -38,7 +39,7 @@ interface ProfileData {
 
 const emptyProfile: ProfileData = {
   company_name: '', contact_name: '', phone: '', email: '', website: '',
-  address: '', postal_code: '', city: '', tax_id: '', logo_url: '',
+  address: '', postal_code: '', city: '', tax_id: '', logo_url: '', custom_showroom_url: '',
   facebook_url: '', instagram_url: '', x_url: '', tiktok_url: '', youtube_url: '', whatsapp_number: '',
   leasing_bank: '', leasing_legal_text: '', financing_bank: '', financing_legal_text: '', default_legal_text: '',
 };
@@ -82,6 +83,8 @@ const Profile = () => {
   const [transactions, setTransactions] = useState<CreditTransaction[]>([]);
   const [txLoading, setTxLoading] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const showroomInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingShowroom, setUploadingShowroom] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [changingPassword, setChangingPassword] = useState(false);
@@ -117,6 +120,7 @@ const Profile = () => {
           city: data.city || '',
           tax_id: data.tax_id || '',
           logo_url: data.logo_url || '',
+          custom_showroom_url: (data as any).custom_showroom_url || '',
           facebook_url: data.facebook_url || '',
           instagram_url: data.instagram_url || '',
           x_url: data.x_url || '',
@@ -204,6 +208,7 @@ const Profile = () => {
       city: profile.city,
       tax_id: profile.tax_id,
       logo_url: profile.logo_url,
+      custom_showroom_url: profile.custom_showroom_url || null,
       facebook_url: profile.facebook_url || null,
       instagram_url: profile.instagram_url || null,
       x_url: profile.x_url || null,
@@ -252,6 +257,49 @@ const Profile = () => {
                 <Upload className="w-3.5 h-3.5" /> {uploading ? 'Hochladen...' : 'Logo hochladen'}
               </Button>
               <p className="text-xs text-muted-foreground">PNG, JPG oder SVG · max. 5 MB</p>
+            </div>
+          </div>
+        </Section>
+
+        {/* Showroom Upload */}
+        <Section icon={<Image className="w-4 h-4" />} title="Showroom-Hintergrund">
+          <p className="text-xs text-muted-foreground -mt-2 mb-2">
+            Lade ein Foto deines Showrooms hoch. Deine Fahrzeuge werden beim Remastering automatisch darin platziert.
+          </p>
+          <div className="flex items-center gap-6">
+            {profile.custom_showroom_url ? (
+              <div className="relative group">
+                <img src={profile.custom_showroom_url} alt="Showroom" className="h-24 max-w-[300px] object-cover rounded-lg border border-border" />
+                <button onClick={() => update('custom_showroom_url', '')} className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ) : (
+              <div className="h-24 w-[300px] border-2 border-dashed border-border rounded-lg flex items-center justify-center text-muted-foreground text-xs">
+                Kein Showroom-Bild
+              </div>
+            )}
+            <div className="space-y-2">
+              <input ref={showroomInputRef} type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file || !user) return;
+                if (!file.type.startsWith('image/')) { toast.error('Bitte nur Bilddateien hochladen'); return; }
+                if (file.size > 10 * 1024 * 1024) { toast.error('Maximale Dateigröße: 10 MB'); return; }
+                setUploadingShowroom(true);
+                const ext = file.name.split('.').pop();
+                const path = `${user.id}/showroom.${ext}`;
+                const { error: uploadError } = await supabase.storage.from('vehicle-images').upload(path, file, { upsert: true });
+                if (uploadError) { toast.error('Upload fehlgeschlagen'); setUploadingShowroom(false); return; }
+                const { data: urlData } = supabase.storage.from('vehicle-images').getPublicUrl(path);
+                const showroomUrl = urlData.publicUrl + '?t=' + Date.now();
+                update('custom_showroom_url', showroomUrl);
+                setUploadingShowroom(false);
+                toast.success('Showroom-Bild hochgeladen!');
+              }} />
+              <Button variant="outline" size="sm" onClick={() => showroomInputRef.current?.click()} disabled={uploadingShowroom} className="gap-1.5">
+                <Upload className="w-3.5 h-3.5" /> {uploadingShowroom ? 'Hochladen...' : 'Showroom hochladen'}
+              </Button>
+              <p className="text-xs text-muted-foreground">PNG, JPG oder WebP · max. 10 MB</p>
             </div>
           </div>
         </Section>

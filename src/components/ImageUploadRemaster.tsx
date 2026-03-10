@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import RemasterOptions from '@/components/RemasterOptions';
+import { type RemasterConfig, buildMasterPrompt } from '@/lib/remaster-prompt';
 
 interface ImageUploadRemasterProps {
   vehicleDescription: string;
@@ -32,10 +34,19 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
+const DEFAULT_CONFIG: RemasterConfig = {
+  scene: 'none',
+  licensePlate: 'keep',
+  changeColor: false,
+  showManufacturerLogo: false,
+  showDealerLogo: false,
+};
+
 const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescription, modelTier, onComplete, onBack }) => {
   const [images, setImages] = useState<UploadedImage[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
+  const [remasterConfig, setRemasterConfig] = useState<RemasterConfig>(DEFAULT_CONFIG);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFiles = useCallback(async (files: FileList | File[]) => {
@@ -94,8 +105,17 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
       setImages(prev => prev.map(x => x.id === img.id ? { ...x, status: 'processing' } : x));
 
       try {
+        const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription);
         const { data, error } = await supabase.functions.invoke('remaster-vehicle-image', {
-          body: { imageBase64: img.originalBase64, vehicleDescription, modelTier: modelTier || 'standard' },
+          body: {
+            imageBase64: img.originalBase64,
+            vehicleDescription,
+            modelTier: modelTier || 'standard',
+            dynamicPrompt,
+            customShowroomBase64: remasterConfig.customShowroomBase64 || null,
+            customPlateImageBase64: remasterConfig.customPlateImageBase64 || null,
+            dealerLogoUrl: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null,
+          },
         });
 
         if (error || !data?.imageBase64) {
@@ -135,6 +155,9 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
           Lade deine Fahrzeugfotos hoch. Die KI setzt das Auto in einen professionellen Showroom – alle Details bleiben erhalten.
         </p>
       </div>
+
+      {/* Remaster Options */}
+      <RemasterOptions config={remasterConfig} onChange={setRemasterConfig} />
 
       {/* Drop zone */}
       {images.length < MAX_IMAGES && !isProcessing && (

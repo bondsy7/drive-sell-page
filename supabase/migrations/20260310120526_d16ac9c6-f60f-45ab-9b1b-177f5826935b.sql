@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS custom_showroom_url TEXT DEFAULT NULL;

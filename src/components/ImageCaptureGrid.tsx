@@ -6,6 +6,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useVinLookup } from '@/hooks/useVinLookup';
 import VinDataDialog from '@/components/VinDataDialog';
+import RemasterOptions from '@/components/RemasterOptions';
+import { type RemasterConfig, buildMasterPrompt } from '@/lib/remaster-prompt';
 import type { VehicleData } from '@/types/vehicle';
 
 interface ImageCaptureGridProps {
@@ -50,11 +52,20 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
+const DEFAULT_CONFIG: RemasterConfig = {
+  scene: 'none',
+  licensePlate: 'keep',
+  changeColor: false,
+  showManufacturerLogo: false,
+  showDealerLogo: false,
+};
+
 const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription, vehicleData, modelTier, onComplete, onVehicleDataChange, onBack }) => {
   const [captures, setCaptures] = useState<Record<string, CapturedImage>>({});
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [detectedVin, setDetectedVin] = useState<string | null>(null);
+  const [remasterConfig, setRemasterConfig] = useState<RemasterConfig>(DEFAULT_CONFIG);
   const vinLookup = useVinLookup();
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
@@ -120,8 +131,17 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       setCaptures(prev => ({ ...prev, [slot.key]: { ...prev[slot.key], status: 'processing' } }));
 
       try {
+        const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription);
         const { data, error } = await supabase.functions.invoke('remaster-vehicle-image', {
-          body: { imageBase64: captures[slot.key].base64, vehicleDescription, modelTier: modelTier || 'standard' },
+          body: {
+            imageBase64: captures[slot.key].base64,
+            vehicleDescription,
+            modelTier: modelTier || 'standard',
+            dynamicPrompt,
+            customShowroomBase64: remasterConfig.customShowroomBase64 || null,
+            customPlateImageBase64: remasterConfig.customPlateImageBase64 || null,
+            dealerLogoUrl: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null,
+          },
         });
 
         if (error || !data?.imageBase64) {
@@ -162,6 +182,9 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
           Fotografiere das Fahrzeug aus den vorgegebenen Perspektiven. Die KI setzt es in einen professionellen Showroom.
         </p>
       </div>
+
+      {/* Remaster Options */}
+      <RemasterOptions config={remasterConfig} onChange={setRemasterConfig} />
 
       {/* Grid of perspective slots */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
