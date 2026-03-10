@@ -52,11 +52,20 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
+const DEFAULT_CONFIG: RemasterConfig = {
+  scene: 'none',
+  licensePlate: 'keep',
+  changeColor: false,
+  showManufacturerLogo: false,
+  showDealerLogo: false,
+};
+
 const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription, vehicleData, modelTier, onComplete, onVehicleDataChange, onBack }) => {
   const [captures, setCaptures] = useState<Record<string, CapturedImage>>({});
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [detectedVin, setDetectedVin] = useState<string | null>(null);
+  const [remasterConfig, setRemasterConfig] = useState<RemasterConfig>(DEFAULT_CONFIG);
   const vinLookup = useVinLookup();
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
