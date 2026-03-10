@@ -183,6 +183,9 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         </p>
       </div>
 
+      {/* Remaster Options */}
+      <RemasterOptions config={remasterConfig} onChange={setRemasterConfig} />
+
       {/* Grid of perspective slots */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {SLOTS.map((slot) => {
