@@ -1,4 +1,4 @@
-// generate-landing-page v1 – AI-powered landing page generator
+// generate-landing-page v2 – AI landing page generator with brand logos + storage upload
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -42,7 +42,7 @@ async function authenticateAndDeductCredits(
     _amount: cost,
     _action_type: "landing_page_export",
     _model: "gemini",
-    _description: `Landing Page Generator`,
+    _description: "Landing Page Generator",
   });
   if (error) {
     return new Response(JSON.stringify({ error: error.message }), {
@@ -51,12 +51,79 @@ async function authenticateAndDeductCredits(
     });
   }
   if (!data?.success) {
-    return new Response(JSON.stringify({ error: "insufficient_credits", balance: data?.balance, cost }), {
-      status: 402,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: "insufficient_credits", balance: data?.balance, cost }),
+      { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   }
   return { userId: user.id };
+}
+
+// ─── Brand logo lookup ───
+async function findBrandLogo(supabase: any, brand: string): Promise<string> {
+  try {
+    const brandLower = brand.toLowerCase().replace(/\s+/g, "-").replace(/é/g, "e");
+    // Check root folder (webp/png)
+    const { data: rootFiles } = await supabase.storage
+      .from("manufacturer-logos")
+      .list("", { limit: 500 });
+    if (rootFiles) {
+      const match = rootFiles.find(
+        (f: any) =>
+          f.name.toLowerCase().replace(/\.(svg|png|webp|jpg)$/, "") === brandLower
+      );
+      if (match) {
+        const { data } = supabase.storage
+          .from("manufacturer-logos")
+          .getPublicUrl(match.name);
+        return data.publicUrl;
+      }
+    }
+    // Check svg folder
+    const { data: svgFiles } = await supabase.storage
+      .from("manufacturer-logos")
+      .list("svg", { limit: 500 });
+    if (svgFiles) {
+      const match = svgFiles.find(
+        (f: any) => f.name.toLowerCase().replace(/\.svg$/, "") === brandLower
+      );
+      if (match) {
+        const { data } = supabase.storage
+          .from("manufacturer-logos")
+          .getPublicUrl(`svg/${match.name}`);
+        return data.publicUrl;
+      }
+    }
+  } catch (e) {
+    console.error("Brand logo lookup error:", e);
+  }
+  return "";
+}
+
+// ─── Upload generated image to storage ───
+async function uploadGeneratedImage(
+  supabase: any,
+  base64: string,
+  userId: string,
+  key: string
+): Promise<string | null> {
+  try {
+    const raw = base64.includes(",") ? base64.split(",")[1] : base64;
+    const bytes = Uint8Array.from(atob(raw), (c) => c.charCodeAt(0));
+    const path = `${userId}/landing/${Date.now()}-${key}.png`;
+    const { error } = await supabase.storage
+      .from("vehicle-images")
+      .upload(path, bytes, { contentType: "image/png", upsert: true });
+    if (error) {
+      console.error("Upload error:", error);
+      return null;
+    }
+    const { data } = supabase.storage.from("vehicle-images").getPublicUrl(path);
+    return data.publicUrl;
+  } catch (e) {
+    console.error("Upload failed:", e);
+    return null;
+  }
 }
 
 // ─── Page type configurations ───
@@ -72,43 +139,50 @@ const PAGE_TYPES: Record<string, PageTypeConfig> = {
     label: "Leasing-Angebot",
     sectionCount: 6,
     imageCount: 4,
-    systemInstruction: `Du erstellst eine überzeugende Leasing-Landingpage. Fokus auf: niedrige monatliche Rate, Flexibilität, Steuervorteile für Gewerbetreibende, Kilometerpakete, Rückgabe-Optionen. Strukturiere mit: Hero → Vorteile Leasing → Fahrzeug-Highlights → Leasing-Konditionen → FAQ → CTA.`,
+    systemInstruction:
+      "Du erstellst eine überzeugende Leasing-Landingpage. Fokus auf: niedrige monatliche Rate, Flexibilität, Steuervorteile für Gewerbetreibende, Kilometerpakete, Rückgabe-Optionen. Strukturiere mit: Hero → Vorteile Leasing → Fahrzeug-Highlights → Leasing-Konditionen → FAQ → CTA.",
   },
   finanzierung: {
     label: "Finanzierung",
     sectionCount: 6,
     imageCount: 4,
-    systemInstruction: `Du erstellst eine überzeugende Finanzierungs-Landingpage. Fokus auf: Eigentumsübergang, flexible Raten, niedrige Zinsen, Anzahlung/Schlussrate-Optionen. Strukturiere mit: Hero → Warum Finanzieren → Fahrzeug-Details → Finanzierungsrechnung → Kundenstimmen → CTA.`,
+    systemInstruction:
+      "Du erstellst eine überzeugende Finanzierungs-Landingpage. Fokus auf: Eigentumsübergang, flexible Raten, niedrige Zinsen, Anzahlung/Schlussrate-Optionen. Strukturiere mit: Hero → Warum Finanzieren → Fahrzeug-Details → Finanzierungsrechnung → Kundenstimmen → CTA.",
   },
   barkauf: {
     label: "Barkauf / Neuwagen",
     sectionCount: 5,
     imageCount: 4,
-    systemInstruction: `Du erstellst eine Premium-Verkaufsseite für Barkauf/Neuwagen. Fokus auf: Sofort-Preisvorteil, Ausstattungshighlights, Verfügbarkeit, Garantie. Strukturiere mit: Hero → Ausstattung & Technik → Preisvorteil → Warum bei uns → CTA.`,
+    systemInstruction:
+      "Du erstellst eine Premium-Verkaufsseite für Barkauf/Neuwagen. Fokus auf: Sofort-Preisvorteil, Ausstattungshighlights, Verfügbarkeit, Garantie. Strukturiere mit: Hero → Ausstattung & Technik → Preisvorteil → Warum bei uns → CTA.",
   },
   massenangebot: {
     label: "Massenangebot / Aktionsseite",
     sectionCount: 7,
     imageCount: 5,
-    systemInstruction: `Du erstellst eine dringliche Aktionsseite/Massenangebot. Fokus auf: zeitlich begrenzt, Stückzahl limitiert, Sonderkonditionen, FOMO-Elemente, Vergleich mit Normalpreis. Strukturiere mit: Hero mit Countdown → Angebots-Übersicht → Einzelne Modell-Highlights → Warum jetzt → Vergleichstabelle → Testimonials → CTA.`,
+    systemInstruction:
+      "Du erstellst eine dringliche Aktionsseite/Massenangebot. Fokus auf: zeitlich begrenzt, Stückzahl limitiert, Sonderkonditionen, FOMO-Elemente, Vergleich mit Normalpreis. Strukturiere mit: Hero mit Countdown → Angebots-Übersicht → Einzelne Modell-Highlights → Warum jetzt → Vergleichstabelle → Testimonials → CTA.",
   },
   autoabo: {
     label: "Auto-Abo",
     sectionCount: 6,
     imageCount: 4,
-    systemInstruction: `Du erstellst eine moderne Auto-Abo-Landingpage. Fokus auf: All-inclusive (Versicherung, Wartung, Reifen), Flexibilität, kurze Laufzeiten, keine versteckten Kosten, digitaler Prozess. Strukturiere mit: Hero → So funktioniert's (3 Schritte) → Was ist inklusive → Fahrzeug-Details → Preisvergleich Abo vs. Leasing → CTA.`,
+    systemInstruction:
+      "Du erstellst eine moderne Auto-Abo-Landingpage. Fokus auf: All-inclusive (Versicherung, Wartung, Reifen), Flexibilität, kurze Laufzeiten, keine versteckten Kosten, digitaler Prozess. Strukturiere mit: Hero → So funktioniert's (3 Schritte) → Was ist inklusive → Fahrzeug-Details → Preisvergleich Abo vs. Leasing → CTA.",
   },
   event: {
     label: "Event im Autohaus",
     sectionCount: 6,
     imageCount: 4,
-    systemInstruction: `Du erstellst eine einladende Event-Landingpage für ein Autohaus. Fokus auf: Event-Datum/Uhrzeit, exklusive Vorteile für Teilnehmer, Programm, Registrierung. Strukturiere mit: Hero mit Datum → Event-Programm → Highlights & Sonderangebote → Über das Autohaus → Anfahrt → Anmeldung/CTA.`,
+    systemInstruction:
+      "Du erstellst eine einladende Event-Landingpage für ein Autohaus. Fokus auf: Event-Datum/Uhrzeit, exklusive Vorteile für Teilnehmer, Programm, Registrierung. Strukturiere mit: Hero mit Datum → Event-Programm → Highlights & Sonderangebote → Über das Autohaus → Anfahrt → Anmeldung/CTA.",
   },
   release: {
     label: "Fahrzeug-Release / Premiere",
     sectionCount: 7,
     imageCount: 5,
-    systemInstruction: `Du erstellst eine spektakuläre Release/Premiere-Seite für ein neues Fahrzeugmodell. Fokus auf: Innovation, Design, Technik-Highlights, Emotionen, Vorbestellmöglichkeit. Strukturiere mit: Hero (cinematic) → Design-Philosophie → Technische Innovation → Interieur-Erlebnis → Performance-Daten → Konfiguration/Vorbestellung → CTA.`,
+    systemInstruction:
+      "Du erstellst eine spektakuläre Release/Premiere-Seite für ein neues Fahrzeugmodell. Fokus auf: Innovation, Design, Technik-Highlights, Emotionen, Vorbestellmöglichkeit. Strukturiere mit: Hero (cinematic) → Design-Philosophie → Technische Innovation → Interieur-Erlebnis → Performance-Daten → Konfiguration/Vorbestellung → CTA.",
   },
 };
 
@@ -135,7 +209,6 @@ serve(async (req) => {
       );
     }
 
-    // Cost: 3 credits (1 for content + ~2 for images)
     const totalCost = 3;
     const authResult = await authenticateAndDeductCredits(req, totalCost);
     if (authResult instanceof Response) return authResult;
@@ -148,20 +221,18 @@ serve(async (req) => {
       });
     }
 
+    const supabase = createServiceClient();
+
+    // ─── Find brand logo ───
+    const brandLogoUrl = await findBrandLogo(supabase, brand);
+    console.log("Brand logo:", brandLogoUrl ? "found" : "not found");
+
     // ─── Step 1: Generate page content via AI ───
     const dealerInfo = dealer
-      ? `
-Händler-Informationen:
-- Name: ${dealer.name || ""}
-- Adresse: ${dealer.address || ""}, ${dealer.postalCode || ""} ${dealer.city || ""}
-- Telefon: ${dealer.phone || ""}
-- E-Mail: ${dealer.email || ""}
-- Website: ${dealer.website || ""}
-- WhatsApp: ${dealer.whatsappNumber || ""}
-`
+      ? `\nHändler-Informationen:\n- Name: ${dealer.name || ""}\n- Adresse: ${dealer.address || ""}, ${dealer.postalCode || ""} ${dealer.city || ""}\n- Telefon: ${dealer.phone || ""}\n- E-Mail: ${dealer.email || ""}\n- Website: ${dealer.website || ""}\n- WhatsApp: ${dealer.whatsappNumber || ""}\n`
       : "";
 
-    const systemPrompt = `Du bist ein professioneller Automotive-Marketing-Texter und Webdesigner. 
+    const systemPrompt = `Du bist ein professioneller Automotive-Marketing-Texter und Webdesigner.
 ${config.systemInstruction}
 
 WICHTIG:
@@ -205,10 +276,7 @@ Antworte AUSSCHLIESSLICH als JSON mit folgender Struktur:
 
 Erstelle genau ${config.sectionCount} sections. Davon sollen ${config.imageCount} ein imagePrompt haben, der Rest null.`;
 
-    const userPrompt = `Erstelle eine ${config.label}-Landingpage für:
-Marke: ${brand}
-Modell: ${model}
-${additionalInfo ? `Zusätzliche Informationen: ${additionalInfo}` : ""}`;
+    const userPrompt = `Erstelle eine ${config.label}-Landingpage für:\nMarke: ${brand}\nModell: ${model}\n${additionalInfo ? `Zusätzliche Informationen: ${additionalInfo}` : ""}`;
 
     console.log("Generating content for:", brand, model, pageType);
 
@@ -234,20 +302,19 @@ ${additionalInfo ? `Zusätzliche Informationen: ${additionalInfo}` : ""}`;
       const errText = await contentResponse.text();
       console.error("AI content error:", contentResponse.status, errText);
       if (contentResponse.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit erreicht. Bitte versuche es in einer Minute erneut." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({ error: "Rate limit erreicht. Bitte versuche es in einer Minute erneut." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
-      return new Response(JSON.stringify({ error: "KI-Fehler bei Content-Generierung" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "KI-Fehler bei Content-Generierung" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const contentData = await contentResponse.json();
     let rawContent = contentData.choices?.[0]?.message?.content || "";
-    // Strip markdown code fences
     rawContent = rawContent.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
 
     let pageContent;
@@ -255,13 +322,13 @@ ${additionalInfo ? `Zusätzliche Informationen: ${additionalInfo}` : ""}`;
       pageContent = JSON.parse(rawContent);
     } catch (e) {
       console.error("JSON parse error:", e, "Raw:", rawContent.substring(0, 500));
-      return new Response(JSON.stringify({ error: "KI-Antwort konnte nicht verarbeitet werden" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "KI-Antwort konnte nicht verarbeitet werden" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    // ─── Step 2: Generate images in parallel ───
+    // ─── Step 2: Generate images and upload to storage ───
     const imagePrompts: { key: string; prompt: string }[] = [];
     if (pageContent.hero?.imagePrompt) {
       imagePrompts.push({ key: "hero", prompt: pageContent.hero.imagePrompt });
@@ -275,7 +342,6 @@ ${additionalInfo ? `Zusätzliche Informationen: ${additionalInfo}` : ""}`;
     console.log(`Generating ${imagePrompts.length} images...`);
 
     const imageResults: Record<string, string> = {};
-    // Generate images 2 at a time
     for (let i = 0; i < imagePrompts.length; i += 2) {
       const batch = imagePrompts.slice(i, i + 2);
       const results = await Promise.allSettled(
@@ -303,44 +369,64 @@ ${additionalInfo ? `Zusätzliche Informationen: ${additionalInfo}` : ""}`;
             );
             if (!imgResp.ok) {
               console.error(`Image gen failed for ${key}:`, imgResp.status);
-              return { key, base64: null };
+              return { key, url: null };
             }
             const imgData = await imgResp.json();
             const base64 =
               imgData.choices?.[0]?.message?.images?.[0]?.image_url?.url || null;
-            return { key, base64 };
+            if (base64) {
+              const url = await uploadGeneratedImage(
+                supabase,
+                base64,
+                authResult.userId,
+                key
+              );
+              return { key, url: url || base64 };
+            }
+            return { key, url: null };
           } catch (e) {
             console.error(`Image gen error for ${key}:`, e);
-            return { key, base64: null };
+            return { key, url: null };
           }
         })
       );
       for (const r of results) {
-        if (r.status === "fulfilled" && r.value.base64) {
-          imageResults[r.value.key] = r.value.base64;
+        if (r.status === "fulfilled" && r.value.url) {
+          imageResults[r.value.key] = r.value.url;
         }
       }
     }
 
-    console.log(`Generated ${Object.keys(imageResults).length}/${imagePrompts.length} images`);
+    console.log(
+      `Generated ${Object.keys(imageResults).length}/${imagePrompts.length} images`
+    );
 
     // ─── Step 3: Assemble HTML ───
-    const html = buildHTML(pageContent, imageResults, dealer, brand, model, pageType);
+    const html = buildHTML(
+      pageContent,
+      imageResults,
+      dealer,
+      brand,
+      model,
+      brandLogoUrl
+    );
 
     return new Response(
       JSON.stringify({
         html,
         pageContent,
+        imageMap: imageResults,
+        brandLogoUrl,
         imageCount: Object.keys(imageResults).length,
       }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
     console.error("generate-landing-page error:", e);
     return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unbekannter Fehler" }),
+      JSON.stringify({
+        error: e instanceof Error ? e.message : "Unbekannter Fehler",
+      }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -356,7 +442,7 @@ function buildHTML(
   dealer: any,
   brand: string,
   model: string,
-  pageType: string
+  brandLogoUrl: string
 ): string {
   const meta = content.meta || {};
   const hero = content.hero || {};
@@ -370,23 +456,40 @@ function buildHTML(
   const email = dealer?.email || "";
   const website = dealer?.website || "";
   const whatsapp = dealer?.whatsappNumber || "";
-  const address = [dealer?.address, dealer?.postalCode, dealer?.city].filter(Boolean).join(", ");
+  const address = [dealer?.address, dealer?.postalCode, dealer?.city]
+    .filter(Boolean)
+    .join(", ");
 
-  // Social links
   const socials = [
-    dealer?.facebookUrl && `<a href="${dealer.facebookUrl}" target="_blank" style="color:#94a3b8;text-decoration:none">Facebook</a>`,
-    dealer?.instagramUrl && `<a href="${dealer.instagramUrl}" target="_blank" style="color:#94a3b8;text-decoration:none">Instagram</a>`,
-    dealer?.youtubeUrl && `<a href="${dealer.youtubeUrl}" target="_blank" style="color:#94a3b8;text-decoration:none">YouTube</a>`,
-    dealer?.tiktokUrl && `<a href="${dealer.tiktokUrl}" target="_blank" style="color:#94a3b8;text-decoration:none">TikTok</a>`,
-  ].filter(Boolean).join(" · ");
+    dealer?.facebookUrl &&
+      `<a href="${dealer.facebookUrl}" target="_blank" style="color:#94a3b8;text-decoration:none">Facebook</a>`,
+    dealer?.instagramUrl &&
+      `<a href="${dealer.instagramUrl}" target="_blank" style="color:#94a3b8;text-decoration:none">Instagram</a>`,
+    dealer?.youtubeUrl &&
+      `<a href="${dealer.youtubeUrl}" target="_blank" style="color:#94a3b8;text-decoration:none">YouTube</a>`,
+    dealer?.tiktokUrl &&
+      `<a href="${dealer.tiktokUrl}" target="_blank" style="color:#94a3b8;text-decoration:none">TikTok</a>`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
-  // JSON-LD
   const jsonLd = seo.structuredData
     ? `<script type="application/ld+json">${JSON.stringify(seo.structuredData)}</script>`
     : "";
 
+  const logoHeader = [
+    brandLogoUrl
+      ? `<img src="${brandLogoUrl}" alt="${brand}" style="max-height:32px" />`
+      : "",
+    dealerLogo
+      ? `<img src="${dealerLogo}" alt="${dealerName}" style="max-height:40px" />`
+      : "",
+  ]
+    .filter(Boolean)
+    .join("");
+
   const sectionBlocks = sections
-    .map((s: any) => {
+    .map((s: any, idx: number) => {
       const img = images[s.id] || "";
       const bgMap: Record<string, string> = {
         white: "background:#ffffff",
@@ -428,9 +531,8 @@ function buildHTML(
         </section>`;
       }
 
-      // Standard content/features/pricing/comparison/testimonials section
       const hasImage = !!img;
-      const imageOnLeft = sections.indexOf(s) % 2 === 0;
+      const imageOnLeft = idx % 2 === 0;
 
       if (hasImage) {
         const imgBlock = `<div style="flex:1;min-width:280px"><img src="${img}" alt="${s.headline}" style="width:100%;border-radius:12px;object-fit:cover;max-height:400px" loading="lazy" /></div>`;
@@ -481,16 +583,14 @@ function buildHTML(
   </style>
 </head>
 <body>
-  <!-- Header -->
   <header style="background:#ffffff;border-bottom:1px solid #e2e8f0;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100">
     <div style="display:flex;align-items:center;gap:12px">
-      ${dealerLogo ? `<img src="${dealerLogo}" alt="${dealerName}" style="max-height:40px" />` : ""}
+      ${logoHeader}
       <span style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px;color:#0f172a">${dealerName}</span>
     </div>
     ${phone ? `<a href="tel:${phone}" style="background:#3b82f6;color:#fff;padding:8px 20px;border-radius:6px;text-decoration:none;font-size:13px;font-weight:600">Jetzt anfragen</a>` : ""}
   </header>
 
-  <!-- Hero -->
   <section style="position:relative;min-height:480px;display:flex;align-items:center;overflow:hidden;${heroImage ? `background:url('${heroImage}') center/cover no-repeat` : "background:linear-gradient(135deg,#0f172a,#1e3a5f)"}">
     <div style="position:absolute;inset:0;background:linear-gradient(to right,rgba(15,23,42,0.85) 0%,rgba(15,23,42,0.4) 100%)"></div>
     <div class="hero-content" style="position:relative;z-index:1;max-width:640px;padding:80px 48px;color:#ffffff">
@@ -500,10 +600,8 @@ function buildHTML(
     </div>
   </section>
 
-  <!-- Sections -->
   ${sectionBlocks}
 
-  <!-- Dealer / Contact -->
   <section id="kontakt" style="background:#f8fafc;padding:64px 24px;border-top:1px solid #e2e8f0">
     <div style="max-width:760px;margin:0 auto;text-align:center">
       ${dealerLogo ? `<img src="${dealerLogo}" alt="${dealerName}" style="max-height:56px;margin-bottom:16px" />` : ""}
@@ -519,7 +617,6 @@ function buildHTML(
     </div>
   </section>
 
-  <!-- Footer -->
   <footer style="background:#0f172a;color:#94a3b8;padding:32px 24px;text-align:center;font-size:12px">
     <p>&copy; ${new Date().getFullYear()} ${dealerName}. Alle Angaben ohne Gewähr.</p>
     ${dealer?.defaultLegalText ? `<p style="margin-top:8px;max-width:640px;margin-left:auto;margin-right:auto;line-height:1.6">${dealer.defaultLegalText}</p>` : ""}

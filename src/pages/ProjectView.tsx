@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Car, Layout } from 'lucide-react';
+import { Layout } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
-import { toast } from 'sonner';
 import LandingPagePreview from '@/components/LandingPagePreview';
+import LandingPageEditor from '@/components/LandingPageEditor';
 import TemplateSidebar from '@/components/TemplateSidebar';
 
 import type { VehicleData } from '@/types/vehicle';
@@ -13,6 +13,7 @@ import type { TemplateId } from '@/types/template';
 
 const ProjectView = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [project, setProject] = useState<any>(null);
   const [images, setImages] = useState<string[]>([]);
   const [vehicleData, setVehicleData] = useState<VehicleData | null>(null);
@@ -56,6 +57,31 @@ const ProjectView = () => {
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-background"><div className="animate-spin w-8 h-8 border-2 border-accent border-t-transparent rounded-full" /></div>;
   if (!project || !vehicleData) return <div className="min-h-screen flex items-center justify-center bg-background"><p className="text-muted-foreground">Projekt nicht gefunden</p></div>;
 
+  // ─── Landing Page type → show dedicated editor ───
+  const vd = project.vehicle_data as any;
+  const isLandingPage = project.template_id === 'landing-page' && vd?.type === 'landing-page';
+
+  if (isLandingPage) {
+    return (
+      <div className="min-h-screen bg-background">
+        <AppHeader />
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+          <LandingPageEditor
+            projectId={id!}
+            initialContent={vd.pageContent}
+            initialImages={vd.imageMap || {}}
+            dealer={vd.dealer || {}}
+            brand={vd.brand || ''}
+            model={vd.model || ''}
+            brandLogoUrl={vd.brandLogoUrl}
+            onBack={() => navigate('/dashboard?tab=landings')}
+          />
+        </main>
+      </div>
+    );
+  }
+
+  // ─── Regular project → template-based preview ───
   const mainImage = (project as any).main_image_url || project.main_image_base64 || images[0] || null;
   const galleryImages = images.length > 1 ? images.slice(1) : [];
 
