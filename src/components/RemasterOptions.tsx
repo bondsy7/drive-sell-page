@@ -238,14 +238,14 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange }) =
           <div className="flex items-center gap-2">
             <Car className="w-3.5 h-3.5 text-muted-foreground" />
             <span className="text-xs text-foreground">Hersteller-Logo einblenden</span>
-            {Object.keys(MANUFACTURER_LOGOS).length === 0 && (
-              <span className="text-[10px] text-muted-foreground/60">(bald verfügbar)</span>
+            {dynamicLogos.length === 0 && (
+              <span className="text-[10px] text-muted-foreground/60">(keine Logos vorhanden)</span>
             )}
           </div>
           <Switch
             checked={config.showManufacturerLogo}
             onCheckedChange={(v) => update({ showManufacturerLogo: v })}
-            disabled={Object.keys(MANUFACTURER_LOGOS).length === 0}
+            disabled={dynamicLogos.length === 0}
           />
         </div>
 
