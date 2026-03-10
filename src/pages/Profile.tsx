@@ -39,7 +39,7 @@ interface ProfileData {
 
 const emptyProfile: ProfileData = {
   company_name: '', contact_name: '', phone: '', email: '', website: '',
-  address: '', postal_code: '', city: '', tax_id: '', logo_url: '',
+  address: '', postal_code: '', city: '', tax_id: '', logo_url: '', custom_showroom_url: '',
   facebook_url: '', instagram_url: '', x_url: '', tiktok_url: '', youtube_url: '', whatsapp_number: '',
   leasing_bank: '', leasing_legal_text: '', financing_bank: '', financing_legal_text: '', default_legal_text: '',
 };
