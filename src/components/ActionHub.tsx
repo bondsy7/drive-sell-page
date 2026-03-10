@@ -36,8 +36,6 @@ const TILES: ActionTile[] = [
     icon: <Layout className="w-7 h-7" />,
     title: 'Landing Page manuell',
     description: 'Fahrzeugdaten selbst eingeben und eine Angebotsseite ohne PDF erstellen.',
-    badge: 'Bald verfügbar',
-    disabled: true,
   },
   {
     id: 'banner',
