@@ -106,6 +106,23 @@ export default function AdminLogos() {
     }
   };
 
+  const deleteAll = async () => {
+    if (!confirm('Wirklich ALLE Logos löschen? Dies kann nicht rückgängig gemacht werden.')) return;
+    setUploading(true);
+    const allFiles = [
+      ...logos.map(l => l.name),
+      ...svgs.map(l => `svg/${l.name}`),
+    ];
+    // Delete in batches of 20
+    for (let i = 0; i < allFiles.length; i += 20) {
+      await supabase.storage.from(BUCKET).remove(allFiles.slice(i, i + 20));
+    }
+    setLogos([]);
+    setSvgs([]);
+    setUploading(false);
+    toast.success(`${allFiles.length} Datei(en) gelöscht`);
+  };
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
