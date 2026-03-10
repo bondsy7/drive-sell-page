@@ -74,7 +74,8 @@ const Dashboard = () => {
   const [galleryLoaded, setGalleryLoaded] = useState(false);
   const [leadsLoaded, setLeadsLoaded] = useState(false);
   const [videosLoaded, setVideosLoaded] = useState(false);
-  const [counts, setCounts] = useState({ gallery: 0, videos: 0, leads: 0 });
+  const [bannersLoaded, setBannersLoaded] = useState(false);
+  const [counts, setCounts] = useState({ gallery: 0, videos: 0, leads: 0, banners: 0 });
 
   useEffect(() => {
     loadProjects();
