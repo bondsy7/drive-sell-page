@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { Image, FileText, Download, ExternalLink, Trash2, MessageSquare, Mail, Phone } from 'lucide-react';
+import { Image, FileText, Download, ExternalLink, Trash2, MessageSquare, Mail, Phone, Video } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
 import { toast } from 'sonner';
 import { downloadHTML } from '@/lib/templates/download';
@@ -43,29 +43,34 @@ interface Lead {
   created_at: string;
 }
 
+interface VideoFile {
+  name: string;
+  url: string;
+  created_at: string;
+}
+
 const Dashboard = () => {
   const { user } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [allImages, setAllImages] = useState<ProjectImage[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
-  const [tab, setTab] = useState<'projects' | 'gallery' | 'leads'>('projects');
+  const [videos, setVideos] = useState<VideoFile[]>([]);
+  const [tab, setTab] = useState<'projects' | 'gallery' | 'videos' | 'leads'>('projects');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadProjects();
   }, []);
 
-  useEffect(() => {
-    if (tab === 'gallery' && allImages.length === 0 && !galleryLoaded) {
-      loadGallery();
-    }
-    if (tab === 'leads' && leads.length === 0 && !leadsLoaded) {
-      loadLeads();
-    }
-  }, [tab]);
-
   const [galleryLoaded, setGalleryLoaded] = useState(false);
   const [leadsLoaded, setLeadsLoaded] = useState(false);
+  const [videosLoaded, setVideosLoaded] = useState(false);
+
+  useEffect(() => {
+    if (tab === 'gallery' && !galleryLoaded) loadGallery();
+    if (tab === 'leads' && !leadsLoaded) loadLeads();
+    if (tab === 'videos' && !videosLoaded) loadVideos();
+  }, [tab]);
 
   const loadProjects = async () => {
     setLoading(true);
@@ -101,6 +106,35 @@ const Dashboard = () => {
     setLoading(false);
   };
 
+  const loadVideos = async () => {
+    setLoading(true);
+    try {
+      const { data: files, error } = await supabase.storage
+        .from('vehicle-images')
+        .list('videos', { limit: 50, sortBy: { column: 'created_at', order: 'desc' } });
+
+      if (error || !files) {
+        setVideos([]);
+      } else {
+        const videoFiles: VideoFile[] = files
+          .filter(f => f.name.endsWith('.mp4'))
+          .map(f => {
+            const { data: urlData } = supabase.storage.from('vehicle-images').getPublicUrl(`videos/${f.name}`);
+            return {
+              name: f.name,
+              url: urlData.publicUrl,
+              created_at: f.created_at,
+            };
+          });
+        setVideos(videoFiles);
+      }
+    } catch {
+      setVideos([]);
+    }
+    setVideosLoaded(true);
+    setLoading(false);
+  };
+
   const loadData = async () => {
     await loadProjects();
     if (tab === 'gallery') await loadGallery();
@@ -121,11 +155,26 @@ const Dashboard = () => {
     setLeads(prev => prev.filter(l => l.id !== id));
   };
 
+  const deleteVideo = async (name: string) => {
+    const { error } = await supabase.storage.from('vehicle-images').remove([`videos/${name}`]);
+    if (error) { toast.error('Fehler beim Löschen'); return; }
+    toast.success('Video gelöscht');
+    setVideos(prev => prev.filter(v => v.name !== name));
+  };
+
   const downloadImage = (img: ProjectImage) => {
     const src = img.image_url || img.image_base64;
     const a = document.createElement('a');
     a.href = src.startsWith('data:') ? src : src.startsWith('http') ? src : `data:image/png;base64,${src}`;
     a.download = `${img.perspective || 'bild'}.png`;
+    a.click();
+  };
+
+  const downloadVideo = (video: VideoFile) => {
+    const a = document.createElement('a');
+    a.href = video.url;
+    a.download = video.name;
+    a.target = '_blank';
     a.click();
   };
 
@@ -148,7 +197,6 @@ const Dashboard = () => {
       let html = exportProject.html_content;
 
       if (mode === 'offline') {
-        // Compress all inline images to WebP
         const imgRegex = /<img\s+[^>]*src="(https?:\/\/[^"]+)"[^>]*>/g;
         const matches = [...html.matchAll(imgRegex)];
         const uniqueUrls = [...new Set(matches.map(m => m[1]))];
@@ -182,6 +230,9 @@ const Dashboard = () => {
           </Button>
           <Button variant={tab === 'gallery' ? 'default' : 'outline'} size="sm" onClick={() => setTab('gallery')} className="whitespace-nowrap">
             <Image className="w-4 h-4 mr-1.5" /> Galerie ({allImages.length})
+          </Button>
+          <Button variant={tab === 'videos' ? 'default' : 'outline'} size="sm" onClick={() => setTab('videos')} className="whitespace-nowrap">
+            <Video className="w-4 h-4 mr-1.5" /> Videos ({videos.length})
           </Button>
           <Button variant={tab === 'leads' ? 'default' : 'outline'} size="sm" onClick={() => setTab('leads')} className="whitespace-nowrap">
             <MessageSquare className="w-4 h-4 mr-1.5" /> Anfragen ({leads.length})
@@ -259,6 +310,45 @@ const Dashboard = () => {
                 </div>
                 );
               })}
+            </div>
+          )
+        ) : tab === 'videos' ? (
+          videos.length === 0 ? (
+            <div className="text-center py-20 space-y-3">
+              <Video className="w-12 h-12 text-muted-foreground mx-auto" />
+              <p className="text-muted-foreground">Noch keine Videos generiert.</p>
+              <p className="text-xs text-muted-foreground max-w-md mx-auto">Generierte Videos aus dem Video-Generator erscheinen hier automatisch.</p>
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {videos.map(video => (
+                <div key={video.name} className="bg-card rounded-xl border border-border overflow-hidden group">
+                  <div className="aspect-video bg-muted">
+                    <video
+                      src={video.url}
+                      className="w-full h-full object-cover"
+                      muted
+                      loop
+                      playsInline
+                      onMouseEnter={(e) => (e.target as HTMLVideoElement).play()}
+                      onMouseLeave={(e) => { const v = e.target as HTMLVideoElement; v.pause(); v.currentTime = 0; }}
+                    />
+                  </div>
+                  <div className="p-3 flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">
+                      {video.created_at ? new Date(video.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Video'}
+                    </p>
+                    <div className="flex gap-1.5">
+                      <Button variant="outline" size="sm" onClick={() => downloadVideo(video)}>
+                        <Download className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => deleteVideo(video.name)}>
+                        <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )
         ) : (
