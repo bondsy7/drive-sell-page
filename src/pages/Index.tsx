@@ -262,6 +262,9 @@ const Index = () => {
       case 'pdf-landing':
         setAppState('idle');
         break;
+      case 'video':
+        setAppState('video');
+        break;
       default:
         toast.info('Diese Funktion ist bald verfügbar!');
     }

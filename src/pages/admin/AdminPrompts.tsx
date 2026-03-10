@@ -230,9 +230,15 @@ const PROMPT_META: Record<string, { label: string; description: string; model: s
     model: 'google/gemini-2.5-flash-image',
     edgeFunction: 'generate-vehicle-image',
   },
+  video_generate: {
+    label: 'Video-Generierung',
+    description: 'Prompt für die Erstellung von Showroom-Videos aus Fahrzeugbildern via Google Veo',
+    model: 'veo-3.1-generate-preview',
+    edgeFunction: 'generate-video',
+  },
 };
 
-const PROMPT_ORDER = ['pdf_analysis', 'image_remaster', 'vin_ocr', 'image_generate'];
+const PROMPT_ORDER = ['pdf_analysis', 'image_remaster', 'vin_ocr', 'image_generate', 'video_generate'];
 
 interface PromptOverrides {
   [key: string]: string;
