@@ -86,6 +86,7 @@ const Dashboard = () => {
     if (tab === 'gallery' && !galleryLoaded) loadGallery();
     if (tab === 'leads' && !leadsLoaded) loadLeads();
     if (tab === 'videos' && !videosLoaded) loadVideos();
+    if (tab === 'banners' && !bannersLoaded) loadBanners();
   }, [tab]);
 
   const loadCounts = async () => {
