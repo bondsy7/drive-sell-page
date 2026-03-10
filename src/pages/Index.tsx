@@ -385,6 +385,7 @@ const Index = () => {
                 onComplete={handleStandaloneCaptureComplete}
                 onVehicleDataChange={setVehicleData}
                 onBack={() => setAppState('standalone-photo-choice')}
+                onPipelineComplete={() => navigate('/dashboard?tab=gallery')}
               />
             </div>
           )}
