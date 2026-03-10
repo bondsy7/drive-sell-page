@@ -118,6 +118,7 @@ const Profile = () => {
           city: data.city || '',
           tax_id: data.tax_id || '',
           logo_url: data.logo_url || '',
+          custom_showroom_url: (data as any).custom_showroom_url || '',
           facebook_url: data.facebook_url || '',
           instagram_url: data.instagram_url || '',
           x_url: data.x_url || '',
