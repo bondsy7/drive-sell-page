@@ -12,7 +12,8 @@ import {
   type RemasterConfig,
   SCENE_OPTIONS,
   LICENSE_PLATE_OPTIONS,
-  MANUFACTURER_LOGOS,
+  fetchManufacturerLogos,
+  type DynamicLogo,
 } from '@/lib/remaster-prompt';
 
 interface RemasterOptionsProps {
@@ -33,11 +34,13 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange }) =
   const { user } = useAuth();
   const [profileShowroomUrl, setProfileShowroomUrl] = useState<string | null>(null);
   const [profileLogoUrl, setProfileLogoUrl] = useState<string | null>(null);
+  const [dynamicLogos, setDynamicLogos] = useState<DynamicLogo[]>([]);
   const showroomInputRef = useRef<HTMLInputElement>(null);
   const plateImageRef = useRef<HTMLInputElement>(null);
 
-  // Load profile data for custom showroom & logo
+  // Load profile data & dynamic logos
   useEffect(() => {
+    fetchManufacturerLogos().then(setDynamicLogos);
     if (!user) return;
     supabase.from('profiles').select('custom_showroom_url, logo_url').eq('id', user.id).single()
       .then(({ data }) => {
@@ -235,14 +238,14 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange }) =
           <div className="flex items-center gap-2">
             <Car className="w-3.5 h-3.5 text-muted-foreground" />
             <span className="text-xs text-foreground">Hersteller-Logo einblenden</span>
-            {Object.keys(MANUFACTURER_LOGOS).length === 0 && (
-              <span className="text-[10px] text-muted-foreground/60">(bald verfügbar)</span>
+            {dynamicLogos.length === 0 && (
+              <span className="text-[10px] text-muted-foreground/60">(keine Logos vorhanden)</span>
             )}
           </div>
           <Switch
             checked={config.showManufacturerLogo}
             onCheckedChange={(v) => update({ showManufacturerLogo: v })}
-            disabled={Object.keys(MANUFACTURER_LOGOS).length === 0}
+            disabled={dynamicLogos.length === 0}
           />
         </div>
 

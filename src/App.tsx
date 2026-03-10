@@ -30,6 +30,7 @@ const AdminPdfGallery = lazy(() => import("./pages/admin/AdminPdfGallery"));
 const AdminPrompts = lazy(() => import("./pages/admin/AdminPrompts"));
 const AdminPricing = lazy(() => import("./pages/admin/AdminPricing"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
+const AdminLogos = lazy(() => import("./pages/admin/AdminLogos"));
 const AdminRoute = lazy(() => import("./components/AdminRoute"));
 
 const queryClient = new QueryClient();
@@ -99,6 +100,7 @@ const App = () => (
                 <Route path="prompts" element={<AdminPrompts />} />
                 <Route path="pricing" element={<AdminPricing />} />
                 <Route path="settings" element={<AdminSettings />} />
+                <Route path="logos" element={<AdminLogos />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
