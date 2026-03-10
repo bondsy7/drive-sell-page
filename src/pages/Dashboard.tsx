@@ -51,6 +51,13 @@ interface VideoFile {
   created_at: string;
 }
 
+interface BannerFile {
+  name: string;
+  url: string;
+  created_at: string;
+  fullPath: string;
+}
+
 const Dashboard = () => {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
