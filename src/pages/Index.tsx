@@ -305,6 +305,9 @@ const Index = () => {
       case 'video':
         setAppState('video');
         break;
+      case 'banner':
+        setAppState('banner');
+        break;
       default:
         toast.info('Diese Funktion ist bald verfügbar!');
     }
