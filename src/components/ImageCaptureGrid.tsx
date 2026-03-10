@@ -6,6 +6,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useVinLookup } from '@/hooks/useVinLookup';
 import VinDataDialog from '@/components/VinDataDialog';
+import RemasterOptions from '@/components/RemasterOptions';
+import { type RemasterConfig, buildMasterPrompt } from '@/lib/remaster-prompt';
 import type { VehicleData } from '@/types/vehicle';
 
 interface ImageCaptureGridProps {

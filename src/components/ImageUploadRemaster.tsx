@@ -156,6 +156,9 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
         </p>
       </div>
 
+      {/* Remaster Options */}
+      <RemasterOptions config={remasterConfig} onChange={setRemasterConfig} />
+
       {/* Drop zone */}
       {images.length < MAX_IMAGES && !isProcessing && (
         <div
