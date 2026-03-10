@@ -62,7 +62,8 @@ const DEFAULT_CONFIG: RemasterConfig = {
   showDealerLogo: false,
 };
 
-const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription, vehicleData, modelTier, onComplete, onVehicleDataChange, onBack }) => {
+const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription, vehicleData, modelTier, onComplete, onVehicleDataChange, onBack, onPipelineComplete }) => {
+  const [showPipeline, setShowPipeline] = useState(false);
   const [captures, setCaptures] = useState<Record<string, CapturedImage>>({});
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
