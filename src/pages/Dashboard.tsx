@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { Image, FileText, Download, ExternalLink, Trash2, MessageSquare, Mail, Phone, Video, Play, X, LayoutGrid } from 'lucide-react';
+import { Image, FileText, Download, ExternalLink, Trash2, MessageSquare, Mail, Phone, Video, Play, X, LayoutGrid, Layout } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
 import { toast } from 'sonner';
 import { downloadHTML } from '@/lib/templates/download';
@@ -67,7 +67,7 @@ const Dashboard = () => {
   const [videos, setVideos] = useState<VideoFile[]>([]);
   const [banners, setBanners] = useState<BannerFile[]>([]);
   const initialTab = (searchParams.get('tab') as any) || 'projects';
-  const [tab, setTab] = useState<'projects' | 'gallery' | 'banners' | 'videos' | 'leads'>(initialTab);
+  const [tab, setTab] = useState<'projects' | 'landings' | 'gallery' | 'banners' | 'videos' | 'leads'>(initialTab);
   const [loading, setLoading] = useState(true);
   const [lightboxIndex, setLightboxIndex] = useState(-1);
 
@@ -76,6 +76,9 @@ const Dashboard = () => {
   const [videosLoaded, setVideosLoaded] = useState(false);
   const [bannersLoaded, setBannersLoaded] = useState(false);
   const [counts, setCounts] = useState({ gallery: 0, videos: 0, leads: 0, banners: 0 });
+
+  const regularProjects = projects.filter(p => p.template_id !== 'landing-page');
+  const landingProjects = projects.filter(p => p.template_id === 'landing-page');
 
   useEffect(() => {
     loadProjects();
@@ -300,7 +303,10 @@ const Dashboard = () => {
       <main className="max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
         <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
           <Button variant={tab === 'projects' ? 'default' : 'outline'} size="sm" onClick={() => setTab('projects')} className="whitespace-nowrap">
-            <FileText className="w-4 h-4 mr-1.5" /> Projekte ({projects.length})
+            <FileText className="w-4 h-4 mr-1.5" /> Projekte ({regularProjects.length})
+          </Button>
+          <Button variant={tab === 'landings' ? 'default' : 'outline'} size="sm" onClick={() => setTab('landings')} className="whitespace-nowrap">
+            <Layout className="w-4 h-4 mr-1.5" /> Landing Pages ({landingProjects.length})
           </Button>
           <Button variant={tab === 'gallery' ? 'default' : 'outline'} size="sm" onClick={() => setTab('gallery')} className="whitespace-nowrap">
             <Image className="w-4 h-4 mr-1.5" /> Galerie ({galleryLoaded ? allImages.length : counts.gallery})
@@ -319,7 +325,7 @@ const Dashboard = () => {
         {loading ? (
           <div className="flex justify-center py-20"><div className="animate-spin w-8 h-8 border-2 border-accent border-t-transparent rounded-full" /></div>
         ) : tab === 'projects' ? (
-          projects.length === 0 ? (
+          regularProjects.length === 0 ? (
             <div className="text-center py-20 space-y-3">
               <FileText className="w-12 h-12 text-muted-foreground mx-auto" />
               <p className="text-muted-foreground">Noch keine Projekte erstellt.</p>
@@ -327,7 +333,7 @@ const Dashboard = () => {
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {projects.map(p => {
+              {regularProjects.map(p => {
                 const vd = p.vehicle_data as any;
                 return (
                   <div key={p.id} className="bg-card rounded-xl border border-border overflow-hidden group">
@@ -351,6 +357,42 @@ const Dashboard = () => {
                       {vd?.finance?.monthlyRate && (
                         <p className="text-sm font-semibold text-foreground">{vd.finance.monthlyRate} <span className="text-xs font-normal text-muted-foreground">/ Monat</span></p>
                       )}
+                      <p className="text-xs text-muted-foreground">{new Date(p.updated_at).toLocaleDateString('de-DE')}</p>
+                      <div className="flex gap-1.5 pt-1">
+                        <Link to={`/project/${p.id}`}><Button variant="outline" size="sm"><ExternalLink className="w-3.5 h-3.5" /></Button></Link>
+                        <Button variant="outline" size="sm" onClick={() => openExportDialog(p)}><Download className="w-3.5 h-3.5" /></Button>
+                        <Button variant="outline" size="sm" onClick={() => deleteProject(p.id)}><Trash2 className="w-3.5 h-3.5 text-destructive" /></Button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )
+        ) : tab === 'landings' ? (
+          landingProjects.length === 0 ? (
+            <div className="text-center py-20 space-y-3">
+              <Layout className="w-12 h-12 text-muted-foreground mx-auto" />
+              <p className="text-muted-foreground">Noch keine Landing Pages erstellt.</p>
+              <Link to="/"><Button>Erste Landing Page erstellen</Button></Link>
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {landingProjects.map(p => {
+                const vd = p.vehicle_data as any;
+                const pageTypeLabels: Record<string, string> = {
+                  leasing: 'Leasing', finanzierung: 'Finanzierung', barkauf: 'Barkauf',
+                  massenangebot: 'Aktion', autoabo: 'Auto-Abo', event: 'Event', release: 'Release',
+                };
+                return (
+                  <div key={p.id} className="bg-card rounded-xl border border-border overflow-hidden group">
+                    <div className="p-4 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-display font-semibold text-foreground text-sm truncate">{vd?.brand} {vd?.model}</h3>
+                        <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300 whitespace-nowrap">
+                          {pageTypeLabels[vd?.pageType] || 'Landing Page'}
+                        </span>
+                      </div>
                       <p className="text-xs text-muted-foreground">{new Date(p.updated_at).toLocaleDateString('de-DE')}</p>
                       <div className="flex gap-1.5 pt-1">
                         <Link to={`/project/${p.id}`}><Button variant="outline" size="sm"><ExternalLink className="w-3.5 h-3.5" /></Button></Link>

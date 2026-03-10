@@ -21,7 +21,7 @@ const PAGE_TYPES = [
 
 interface ManualLandingGeneratorProps {
   onBack: () => void;
-  onComplete: (html: string) => void;
+  onComplete: (projectId: string) => void;
 }
 
 const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack, onComplete }) => {
@@ -49,7 +49,6 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
     setProgress('Lade Händlerprofil...');
 
     try {
-      // Load dealer profile
       const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
       const dealer = profile ? {
         name: (profile as any).company_name || '',
@@ -83,8 +82,6 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
       if (data?.error) {
         if (data.error === 'insufficient_credits') {
           toast.error(`Nicht genügend Credits. Guthaben: ${data.balance}, benötigt: ${data.cost}`);
-        } else if (data.error.includes('Rate limit')) {
-          toast.error(data.error);
         } else {
           toast.error(data.error);
         }
@@ -92,8 +89,32 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
       }
 
       if (data?.html) {
+        // Save as project
+        const { data: project, error: saveError } = await supabase.from('projects').insert({
+          user_id: user.id,
+          title: `${brand} ${model} – Landing Page`,
+          vehicle_data: {
+            type: 'landing-page',
+            brand,
+            model,
+            pageType,
+            pageContent: data.pageContent,
+            imageMap: data.imageMap || {},
+            dealer,
+            brandLogoUrl: data.brandLogoUrl || '',
+          } as any,
+          template_id: 'landing-page',
+          html_content: data.html,
+        }).select('id').single();
+
+        if (saveError || !project) {
+          console.error('Save project error:', saveError);
+          toast.error('Projekt konnte nicht gespeichert werden.');
+          return;
+        }
+
         toast.success(`Landing Page erstellt! ${data.imageCount || 0} Bilder generiert.`);
-        onComplete(data.html);
+        onComplete(project.id);
       } else {
         toast.error('Keine HTML-Daten erhalten.');
       }
@@ -110,7 +131,6 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={onBack}>
           <ArrowLeft className="w-4 h-4" />
@@ -121,41 +141,26 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
         </div>
       </div>
 
-      {/* Form Card */}
       <div className="rounded-xl border border-border bg-card p-6 space-y-5">
-        {/* Brand & Model */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
               <Car className="w-3.5 h-3.5" /> Marke
             </label>
-            <Input
-              placeholder="z.B. BMW, Mercedes, VW..."
-              value={brand}
-              onChange={e => setBrand(e.target.value)}
-              disabled={loading}
-            />
+            <Input placeholder="z.B. BMW, Mercedes, VW..." value={brand} onChange={e => setBrand(e.target.value)} disabled={loading} />
           </div>
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-muted-foreground">Modell</label>
-            <Input
-              placeholder="z.B. 3er, C-Klasse, Golf..."
-              value={model}
-              onChange={e => setModel(e.target.value)}
-              disabled={loading}
-            />
+            <Input placeholder="z.B. 3er, C-Klasse, Golf..." value={model} onChange={e => setModel(e.target.value)} disabled={loading} />
           </div>
         </div>
 
-        {/* Page Type */}
         <div className="space-y-1.5">
           <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
             <Target className="w-3.5 h-3.5" /> Seitentyp
           </label>
           <Select value={pageType} onValueChange={setPageType} disabled={loading}>
-            <SelectTrigger>
-              <SelectValue placeholder="Wofür ist die Seite?" />
-            </SelectTrigger>
+            <SelectTrigger><SelectValue placeholder="Wofür ist die Seite?" /></SelectTrigger>
             <SelectContent>
               {PAGE_TYPES.map(t => (
                 <SelectItem key={t.value} value={t.value}>
@@ -170,7 +175,6 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
           </Select>
         </div>
 
-        {/* Additional Info */}
         <div className="space-y-1.5">
           <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
             <FileText className="w-3.5 h-3.5" /> Zusätzliche Infos
@@ -178,14 +182,11 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
           </label>
           <Textarea
             placeholder="z.B. Preis, besondere Ausstattung, Aktionszeitraum, Zielgruppe..."
-            value={additionalInfo}
-            onChange={e => setAdditionalInfo(e.target.value)}
-            disabled={loading}
-            rows={3}
+            value={additionalInfo} onChange={e => setAdditionalInfo(e.target.value)}
+            disabled={loading} rows={3}
           />
         </div>
 
-        {/* Preview of selected type */}
         {selectedType && (
           <div className="rounded-lg bg-accent/5 border border-accent/20 p-3 flex items-start gap-3">
             <span className="text-2xl">{selectedType.icon}</span>
@@ -196,23 +197,12 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
           </div>
         )}
 
-        {/* Generate Button */}
         <div className="pt-2">
-          <Button
-            onClick={handleGenerate}
-            disabled={!canGenerate || loading}
-            className="w-full h-12 text-base font-semibold"
-          >
+          <Button onClick={handleGenerate} disabled={!canGenerate || loading} className="w-full h-12 text-base font-semibold">
             {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                {progress}
-              </>
+              <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{progress}</>
             ) : (
-              <>
-                <Sparkles className="w-4 h-4 mr-2" />
-                Landing Page generieren
-              </>
+              <><Sparkles className="w-4 h-4 mr-2" />Landing Page generieren</>
             )}
           </Button>
           <div className="flex items-center justify-center gap-1 mt-2">
@@ -223,7 +213,6 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
         </div>
       </div>
 
-      {/* What gets generated */}
       <div className="rounded-xl border border-border bg-card/50 p-5">
         <h3 className="text-sm font-semibold text-foreground mb-3">Was wird generiert?</h3>
         <div className="grid grid-cols-2 gap-3">
@@ -236,8 +225,7 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
             { icon: '📞', text: 'Kontakt-CTAs (Telefon, WhatsApp)' },
           ].map(item => (
             <div key={item.text} className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span>{item.icon}</span>
-              <span>{item.text}</span>
+              <span>{item.icon}</span><span>{item.text}</span>
             </div>
           ))}
         </div>
