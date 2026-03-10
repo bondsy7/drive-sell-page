@@ -100,6 +100,7 @@ const App = () => (
                 <Route path="prompts" element={<AdminPrompts />} />
                 <Route path="pricing" element={<AdminPricing />} />
                 <Route path="settings" element={<AdminSettings />} />
+                <Route path="logos" element={<AdminLogos />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
