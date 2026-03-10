@@ -208,6 +208,7 @@ const Profile = () => {
       city: profile.city,
       tax_id: profile.tax_id,
       logo_url: profile.logo_url,
+      custom_showroom_url: profile.custom_showroom_url || null,
       facebook_url: profile.facebook_url || null,
       instagram_url: profile.instagram_url || null,
       x_url: profile.x_url || null,
