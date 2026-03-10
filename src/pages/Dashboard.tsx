@@ -419,6 +419,34 @@ const Dashboard = () => {
         )}
       </main>
       <ExportChoiceDialog open={exportDialogOpen} onOpenChange={setExportDialogOpen} onChoose={handleExportHTML} loading={exportLoading} projectId={exportProject?.id} />
+
+      {/* Video Player Modal */}
+      {playerVideo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/60 backdrop-blur-sm" onClick={() => setPlayerVideo(null)}>
+          <div className="relative w-full max-w-3xl mx-4" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setPlayerVideo(null)}
+              className="absolute -top-10 right-0 text-background hover:text-background/80 transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <video
+              src={playerVideo.url}
+              controls
+              autoPlay
+              className="w-full rounded-xl shadow-2xl"
+            />
+            <div className="flex items-center justify-between mt-3">
+              <p className="text-xs text-background/70">
+                {playerVideo.created_at ? new Date(playerVideo.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
+              </p>
+              <Button variant="secondary" size="sm" onClick={() => downloadVideo(playerVideo)} className="gap-1.5">
+                <Download className="w-3.5 h-3.5" /> Herunterladen
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
