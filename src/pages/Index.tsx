@@ -267,8 +267,7 @@ const Index = () => {
         sort_order: i,
       }));
       await supabase.from('project_images').insert(imageRows);
-      // Set main image
-      await supabase.from('projects').update({ main_image_url: urls[0] }).eq('id', project.id);
+      // main_image_url already set in insert above
     } catch (e) {
       console.error('Error saving standalone images:', e);
     }
