@@ -201,6 +201,8 @@ Der imagePrompt selbst wird von der PDF-Analyse generiert und enthält typischer
 - Exaktes Fahrzeugmodell (Marke, Modell, Farbe, Karosserieform)
 - Moderner, heller Autohaus-Showroom als Hintergrund
 - Beschreibung von Licht, Reflexionen, Boden und Atmosphäre)`,
+
+  video_generate: `Erstelle ein professionelles 8-Sekunden Showroom-Video des Fahrzeugs. Das Auto dreht sich langsam auf einer Drehscheibe in einem modernen, hell beleuchteten Autohaus-Showroom. Weiche Beleuchtung, Reflexionen auf dem Lack, polierter Boden. Cinematische Kamerafahrt. Professionelle Autohaus-Atmosphäre.`,
 };
 
 const PROMPT_META: Record<string, { label: string; description: string; model: string; edgeFunction: string }> = {
