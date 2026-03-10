@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import RemasterOptions from '@/components/RemasterOptions';
+import { type RemasterConfig, buildMasterPrompt } from '@/lib/remaster-prompt';
 
 interface ImageUploadRemasterProps {
   vehicleDescription: string;
@@ -32,10 +34,19 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
+const DEFAULT_CONFIG: RemasterConfig = {
+  scene: 'none',
+  licensePlate: 'keep',
+  changeColor: false,
+  showManufacturerLogo: false,
+  showDealerLogo: false,
+};
+
 const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescription, modelTier, onComplete, onBack }) => {
   const [images, setImages] = useState<UploadedImage[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
+  const [remasterConfig, setRemasterConfig] = useState<RemasterConfig>(DEFAULT_CONFIG);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFiles = useCallback(async (files: FileList | File[]) => {
