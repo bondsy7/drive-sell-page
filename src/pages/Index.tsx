@@ -322,6 +322,7 @@ const Index = () => {
   const handleReset = useCallback(() => {
     setAppState('hub'); setVehicleData(null); setImageBase64(null);
     setGalleryImages([]); setImageProgress({ current: 0, total: 0 }); setFileName(''); setSavedProjectId(null);
+    setManualLandingHTML(null);
   }, []);
 
   const isProcessing = appState === 'uploading' || appState === 'analyzing' || appState === 'generating-image';
