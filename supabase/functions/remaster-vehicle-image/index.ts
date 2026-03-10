@@ -123,6 +123,10 @@ serve(async (req) => {
           content: [
             { type: "text", text: prompt },
             { type: "image_url", image_url: { url: imageBase64 } },
+            // Pass additional reference images if provided
+            ...(customShowroomBase64 ? [{ type: "image_url", image_url: { url: customShowroomBase64 } }] : []),
+            ...(customPlateImageBase64 ? [{ type: "image_url", image_url: { url: customPlateImageBase64 } }] : []),
+            ...(dealerLogoUrl ? [{ type: "image_url", image_url: { url: dealerLogoUrl } }] : []),
           ],
         }],
         modalities: ["image", "text"],
