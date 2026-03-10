@@ -55,6 +55,13 @@ export default function AppHeader({ leftActions, variant = 'card' }: AppHeaderPr
 
           {user ? (
             <>
+              {/* Dashboard */}
+              <Link to="/dashboard">
+                <Button variant="ghost" size="icon" className={ghostClass} title="Dashboard">
+                  <LayoutDashboard className={iconClass} />
+                </Button>
+              </Link>
+
               {/* New Project */}
               <Link to="/generator">
                 <Button size="sm" className="gap-1.5 text-xs sm:text-sm">
@@ -64,13 +71,11 @@ export default function AppHeader({ leftActions, variant = 'card' }: AppHeaderPr
                 </Button>
               </Link>
 
-              {/* Rechner Dropdown */}
+              {/* Rechner Dropdown – icon only */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className={`gap-1.5 hidden sm:inline-flex ${ghostClass}`}>
-                    <Calculator className="w-3.5 h-3.5" />
-                    <span className="hidden md:inline">Rechner</span>
-                    <ChevronDown className="w-3 h-3" />
+                  <Button variant="ghost" size="icon" className={`hidden sm:inline-flex ${ghostClass}`} title="Rechner">
+                    <Calculator className={iconClass} />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -92,43 +97,48 @@ export default function AppHeader({ leftActions, variant = 'card' }: AppHeaderPr
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {/* Profile */}
-              <Link to="/profile" className="hidden sm:inline-flex">
-                <Button variant="ghost" size="icon" className={ghostClass} title="Profil">
-                  <User className={iconClass} />
-                </Button>
-              </Link>
-
-              {/* Integrations */}
-              <Link to="/integrations" className="hidden sm:inline-flex">
-                <Button variant="ghost" size="icon" className={ghostClass} title="Schnittstellen">
-                  <Plug className={iconClass} />
-                </Button>
-              </Link>
-
-              {/* Pricing */}
-              <Link to="/pricing">
-                <Button variant="ghost" size="icon" className={ghostClass} title="Credits & Pläne">
-                  <CreditCard className={iconClass} />
-                </Button>
-              </Link>
-
-              {/* Admin */}
-              {isAdmin && (
-                <Link to="/admin">
-                  <Button variant="ghost" size="icon" title="Admin-Bereich" className={`hover:bg-accent group ${ghostClass}`}>
-                    <ShieldCheck className="w-4 h-4 text-accent group-hover:text-accent-foreground transition-colors" />
-                  </Button>
-                </Link>
-              )}
-
               {/* Credits */}
               <CreditBadge />
 
-              {/* Logout */}
-              <Button variant="ghost" size="icon" onClick={signOut} className={ghostClass} title="Abmelden">
-                <LogOut className={iconClass} />
-              </Button>
+              {/* More menu dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className={ghostClass} title="Menü">
+                    <MoreVertical className={iconClass} />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile" className="flex items-center gap-2">
+                      <User className="w-4 h-4" /> Profil
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/integrations" className="flex items-center gap-2">
+                      <Plug className="w-4 h-4" /> Schnittstellen
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/pricing" className="flex items-center gap-2">
+                      <CreditCard className="w-4 h-4" /> Credits & Pläne
+                    </Link>
+                  </DropdownMenuItem>
+                  {isAdmin && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin" className="flex items-center gap-2">
+                          <ShieldCheck className="w-4 h-4 text-accent" /> Admin-Bereich
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={signOut} className="flex items-center gap-2 text-destructive focus:text-destructive">
+                    <LogOut className="w-4 h-4" /> Abmelden
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </>
           ) : (
             <>
@@ -149,28 +159,6 @@ export default function AppHeader({ leftActions, variant = 'card' }: AppHeaderPr
               </Link>
             </>
           )}
-        </div>
-      </div>
-
-      {/* Mobile quick links – only for logged-in users */}
-      {user && (
-        <div className="flex gap-2 px-3 pb-2 overflow-x-auto sm:hidden">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-1 text-xs whitespace-nowrap">
-                <Calculator className="w-3 h-3" /> Rechner <ChevronDown className="w-3 h-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuItem asChild><Link to="/leasing-rechner" className="flex items-center gap-2"><Calculator className="w-4 h-4" /> Leasing</Link></DropdownMenuItem>
-              <DropdownMenuItem asChild><Link to="/finanzierungsrechner" className="flex items-center gap-2"><Calculator className="w-4 h-4" /> Finanzierung</Link></DropdownMenuItem>
-              <DropdownMenuItem asChild><Link to="/kfz-steuer-rechner" className="flex items-center gap-2"><Receipt className="w-4 h-4" /> Kfz-Steuer</Link></DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Link to="/profile"><Button variant="outline" size="sm" className="gap-1 text-xs whitespace-nowrap"><User className="w-3 h-3" /> Profil</Button></Link>
-          <Link to="/integrations"><Button variant="outline" size="sm" className="gap-1 text-xs whitespace-nowrap"><Plug className="w-3 h-3" /> API</Button></Link>
-        </div>
-      )}
     </header>
   );
 }
