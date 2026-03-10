@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { urlToBase64, urlsToBase64, compressToWebP, compressAllToWebP } from '@/lib/storage-utils';
 import { Download, RotateCcw, Car, Fuel, Gauge, Calendar, Palette, Cog, Zap, MapPin, Phone, Mail, Globe, Plus, Trash2, ChevronLeft, ChevronRight, Eye, Pencil, Calculator, Loader2, Search } from 'lucide-react';
 import AutohausEditor from '@/components/template-editors/AutohausEditor';
@@ -216,21 +217,28 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
     setExportLoading(true);
     try {
       const filename = `${data.vehicle.brand}_${data.vehicle.model}_Angebot.html`.replace(/\s+/g, '_');
+      let html: string;
 
       if (mode === 'lightweight') {
-        // Use storage URLs directly – no base64 conversion
-        let html = generateHTML(selectedTemplate, data, imageBase64, galleryImages, htmlOptions);
+        html = generateHTML(selectedTemplate, data, imageBase64, galleryImages, htmlOptions);
         html = await embedCO2LabelsInHTML(html);
         downloadHTML(html, filename);
       } else {
-        // Offline: convert to compressed WebP base64
         const [mainWebP, galleryWebP] = await Promise.all([
           imageBase64 ? compressToWebP(imageBase64) : Promise.resolve(null),
           compressAllToWebP(galleryImages),
         ]);
-        let html = generateHTML(selectedTemplate, data, mainWebP, galleryWebP, htmlOptions);
+        html = generateHTML(selectedTemplate, data, mainWebP, galleryWebP, htmlOptions);
         html = await embedCO2LabelsInHTML(html);
         downloadHTML(html, filename);
+      }
+
+      // Persist HTML to project so it's re-downloadable from dashboard
+      if (projectId) {
+        await supabase.from('projects').update({
+          html_content: html,
+          updated_at: new Date().toISOString(),
+        }).eq('id', projectId);
       }
     } finally {
       setExportLoading(false);

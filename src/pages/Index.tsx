@@ -249,11 +249,13 @@ const Index = () => {
       if (urls.length === 0) return;
       // Save to project_images (without a project_id – we use a placeholder project)
       // Create a lightweight project to hold these images
+      const dateStr = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
       const { data: project } = await supabase.from('projects').insert({
         user_id: user.id,
-        title: 'Showroom-Fotos',
+        title: `Showroom-Fotos ${dateStr}`,
         vehicle_data: { vehicle: { brand: 'Showroom', model: 'Fotos' } } as any,
         template_id: 'modern',
+        main_image_url: urls[0],
       }).select('id').single();
       if (!project) return;
       const imageRows = urls.map((url, i) => ({
@@ -265,8 +267,7 @@ const Index = () => {
         sort_order: i,
       }));
       await supabase.from('project_images').insert(imageRows);
-      // Set main image
-      await supabase.from('projects').update({ main_image_url: urls[0] }).eq('id', project.id);
+      // main_image_url already set in insert above
     } catch (e) {
       console.error('Error saving standalone images:', e);
     }
