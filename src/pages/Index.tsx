@@ -421,6 +421,59 @@ const Index = () => {
             />
           )}
 
+          {/* ─── Manual Landing Generator ─── */}
+          {appState === 'manual-landing' && (
+            <ManualLandingGenerator
+              onBack={() => setAppState('hub')}
+              onComplete={(html) => {
+                setManualLandingHTML(html);
+                setAppState('manual-landing-preview');
+              }}
+            />
+          )}
+
+          {/* ─── Manual Landing Preview ─── */}
+          {appState === 'manual-landing-preview' && manualLandingHTML && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <Button variant="ghost" size="icon" onClick={() => setAppState('manual-landing')}>
+                  <ArrowLeft className="w-4 h-4" />
+                </Button>
+                <div>
+                  <h2 className="font-display text-2xl font-bold text-foreground">Vorschau</h2>
+                  <p className="text-sm text-muted-foreground">Deine generierte Landing Page</p>
+                </div>
+                <div className="ml-auto flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setAppState('manual-landing')}>
+                    Zurück
+                  </Button>
+                  <Button size="sm" onClick={() => {
+                    const blob = new Blob([manualLandingHTML], { type: 'text/html' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'landing-page.html';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    toast.success('HTML heruntergeladen!');
+                  }}>
+                    HTML herunterladen
+                  </Button>
+                </div>
+              </div>
+              <div className="rounded-xl border border-border overflow-hidden bg-white" style={{ height: 'calc(100vh - 220px)' }}>
+                <iframe
+                  srcDoc={manualLandingHTML}
+                  className="w-full h-full border-0"
+                  title="Landing Page Preview"
+                  sandbox="allow-scripts"
+                />
+              </div>
+            </div>
+          )
+
           {/* ─── Banner Generator ─── */}
           {appState === 'banner' && (
             <BannerGenerator
