@@ -51,9 +51,7 @@ const TILES: ActionTile[] = [
     id: 'video',
     icon: <Video className="w-7 h-7" />,
     title: 'Video Erstellung',
-    description: 'Professionelle Fahrzeugvideos per KI generieren.',
-    badge: 'Bald verfügbar',
-    disabled: true,
+    description: 'Fahrzeugbild hochladen und ein professionelles Showroom-Video per KI erstellen.',
   },
 ];
 

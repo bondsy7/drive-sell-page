@@ -12,6 +12,7 @@ import ImageSourceChoice from '@/components/ImageSourceChoice';
 import ImageUploadRemaster from '@/components/ImageUploadRemaster';
 import ImageCaptureGrid from '@/components/ImageCaptureGrid';
 import CreditConfirmDialog from '@/components/CreditConfirmDialog';
+import VideoGenerator from '@/components/VideoGenerator';
 import { extractPDFAsBase64 } from '@/lib/pdf-utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -22,7 +23,7 @@ import type { TemplateId } from '@/types/template';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-type ExtendedAppState = AppState | 'capturing-images' | 'hub' | 'standalone-photo-choice' | 'standalone-capture' | 'standalone-upload';
+type ExtendedAppState = AppState | 'capturing-images' | 'hub' | 'standalone-photo-choice' | 'standalone-capture' | 'standalone-upload' | 'video';
 
 const PERSPECTIVES = [
   { key: 'front', label: 'Frontansicht', prompt: 'Front view, straight on, symmetrical composition' },
@@ -261,6 +262,9 @@ const Index = () => {
       case 'pdf-landing':
         setAppState('idle');
         break;
+      case 'video':
+        setAppState('video');
+        break;
       default:
         toast.info('Diese Funktion ist bald verfügbar!');
     }
@@ -358,7 +362,14 @@ const Index = () => {
             </div>
           )}
 
-          {/* ─── PDF Upload (idle) ─── */}
+          {/* ─── Video Generator ─── */}
+          {appState === 'video' && (
+            <VideoGenerator
+              onBack={() => setAppState('hub')}
+              preloadedImage={standalonePhotoResults.length > 0 ? standalonePhotoResults[0] : undefined}
+            />
+          )}
+
           {appState === 'idle' && (
             <div className="space-y-8">
               <div className="flex items-center gap-3 mb-4">
