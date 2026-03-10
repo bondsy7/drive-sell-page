@@ -104,17 +104,12 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onBack, preloadedImage 
           if (pollData?.done) {
             if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
 
-            if (pollData.videoBase64) {
-              setVideoBase64(pollData.videoBase64);
+            const videoSrc = pollData.videoUrl || pollData.videoBase64 || pollData.videoUri;
+            if (videoSrc) {
+              setVideoBase64(videoSrc);
               setVideoState('done');
               setPollProgress(100);
               toast.success('Video erfolgreich erstellt!');
-            } else if (pollData.videoUri) {
-              // Fallback: provide URI directly
-              setVideoBase64(pollData.videoUri);
-              setVideoState('done');
-              setPollProgress(100);
-              toast.success('Video erstellt!');
             } else {
               setVideoState('error');
               setErrorMessage(pollData.error || 'Unbekannter Fehler');
