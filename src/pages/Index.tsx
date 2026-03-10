@@ -281,16 +281,16 @@ const Index = () => {
     setStandalonePhotoResults(allImages);
     saveStandaloneImages(allImages);
     toast.success(`${allImages.length} Showroom-Bilder erstellt und im Dashboard gespeichert!`);
-    setAppState('hub');
-  }, [saveStandaloneImages]);
+    navigate('/dashboard?tab=gallery');
+  }, [saveStandaloneImages, navigate]);
 
   const handleStandaloneRemasterComplete = useCallback((mainImage: string, gallery: string[]) => {
     const allImages = [mainImage, ...gallery];
     setStandalonePhotoResults(allImages);
     saveStandaloneImages(allImages);
     toast.success(`${allImages.length} Showroom-Bilder erstellt und im Dashboard gespeichert!`);
-    setAppState('hub');
-  }, [saveStandaloneImages]);
+    navigate('/dashboard?tab=gallery');
+  }, [saveStandaloneImages, navigate]);
 
   // ─── Hub Action Handler ───
   const handleHubAction = useCallback((action: HubAction) => {
