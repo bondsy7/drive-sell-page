@@ -6,13 +6,22 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const MODEL_MAP: Record<string, string> = {
-  schnell: "gemini-2.5-flash-image",
-  qualitaet: "gemini-3.1-flash-image-preview",
-  premium: "gemini-3-pro-image-preview",
+// Engine: "gemini" or "openai"
+interface ModelConfig {
+  engine: "gemini" | "openai";
+  model: string;
+  cost: number;
+}
+
+const MODEL_MAP: Record<string, ModelConfig> = {
+  schnell:   { engine: "gemini", model: "gemini-2.5-flash-image", cost: 3 },
+  qualitaet: { engine: "gemini", model: "gemini-3.1-flash-image-preview", cost: 5 },
+  premium:   { engine: "gemini", model: "gemini-3-pro-image-preview", cost: 8 },
+  turbo:     { engine: "openai", model: "gpt-image-1", cost: 6 },
+  ultra:     { engine: "openai", model: "gpt-image-1", cost: 10 },
   // Legacy fallbacks
-  standard: "gemini-2.5-flash-image",
-  pro: "gemini-3-pro-image-preview",
+  standard:  { engine: "gemini", model: "gemini-2.5-flash-image", cost: 3 },
+  pro:       { engine: "gemini", model: "gemini-3-pro-image-preview", cost: 8 },
 };
 
 function createServiceClient() {
@@ -61,16 +70,12 @@ serve(async (req) => {
 
   try {
     const { imagePrompt, imagePrompts, modelTier } = await req.json();
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
+    
+    const config = MODEL_MAP[modelTier] || MODEL_MAP["schnell"];
 
-    const modelName = MODEL_MAP[modelTier] || MODEL_MAP["schnell"];
-
-    // Calculate total cost based on number of images and tier
+    // Calculate total cost
     const totalImages = imagePrompts ? imagePrompts.length : 1;
-    const costMap: Record<string, number> = { schnell: 3, qualitaet: 5, premium: 8, standard: 3, pro: 8 };
-    const costPerImage = costMap[modelTier] || 3;
-    const totalCost = totalImages * costPerImage;
+    const totalCost = totalImages * config.cost;
 
     // Auth & credits
     const authResult = await authenticateAndDeductCredits(req, "image_generate", totalCost);
@@ -78,7 +83,7 @@ serve(async (req) => {
 
     // Single image mode (backward compat)
     if (imagePrompt && !imagePrompts) {
-      const result = await generateImage(imagePrompt, GEMINI_API_KEY, modelName);
+      const result = await generateImage(imagePrompt, config);
       return new Response(JSON.stringify(result), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -89,7 +94,7 @@ serve(async (req) => {
       const results: { imageBase64: string | null; error?: string }[] = [];
       for (const prompt of imagePrompts) {
         try {
-          const result = await generateImage(prompt, GEMINI_API_KEY, modelName);
+          const result = await generateImage(prompt, config);
           results.push(result);
         } catch (e) {
           console.error("Image gen error for prompt:", e);
@@ -110,7 +115,18 @@ serve(async (req) => {
   }
 });
 
-async function generateImage(prompt: string, apiKey: string, model: string = "gemini-2.5-flash-image", retries = 2): Promise<{ imageBase64: string | null; error?: string }> {
+async function generateImage(prompt: string, config: ModelConfig, retries = 2): Promise<{ imageBase64: string | null; error?: string }> {
+  if (config.engine === "openai") {
+    return generateImageOpenAI(prompt, config.model, retries);
+  }
+  return generateImageGemini(prompt, config.model, retries);
+}
+
+// ─── Gemini Engine ───
+async function generateImageGemini(prompt: string, model: string, retries: number): Promise<{ imageBase64: string | null; error?: string }> {
+  const apiKey = Deno.env.get("GEMINI_API_KEY");
+  if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
+
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
   for (let attempt = 0; attempt <= retries; attempt++) {
@@ -123,62 +139,92 @@ async function generateImage(prompt: string, apiKey: string, model: string = "ge
         },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            responseModalities: ["TEXT", "IMAGE"],
-          },
+          generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
         }),
       });
 
       if (!response.ok) {
         const errText = await response.text();
-        console.error(`Attempt ${attempt + 1}: Image generation error:`, response.status, errText);
-        if (response.status === 429) {
-          if (attempt < retries) {
-            await new Promise(r => setTimeout(r, 3000 * (attempt + 1)));
-            continue;
-          }
-          throw new Error("Rate limit erreicht. Bitte warte kurz.");
-        }
-        if (attempt < retries) {
-          await new Promise(r => setTimeout(r, 2000));
+        console.error(`Gemini attempt ${attempt + 1}:`, response.status, errText);
+        if (response.status === 429 && attempt < retries) {
+          await new Promise(r => setTimeout(r, 3000 * (attempt + 1)));
           continue;
         }
-        throw new Error(`Image gen error: ${response.status}`);
+        if (attempt < retries) { await new Promise(r => setTimeout(r, 2000)); continue; }
+        throw new Error(`Gemini error: ${response.status}`);
       }
 
       const data = await response.json();
-      
-      // Native Gemini API response format: candidates[0].content.parts[]
       const parts = data.candidates?.[0]?.content?.parts;
       if (!parts) {
-        console.warn(`Attempt ${attempt + 1}: No parts in response`);
-        if (attempt < retries) {
-          await new Promise(r => setTimeout(r, 2000));
-          continue;
-        }
-        throw new Error("No image generated after retries");
+        if (attempt < retries) { await new Promise(r => setTimeout(r, 2000)); continue; }
+        throw new Error("No image generated (Gemini)");
       }
 
-      // Find the image part (inlineData)
       for (const part of parts) {
         if (part.inlineData?.data) {
           const mimeType = part.inlineData.mimeType || "image/png";
-          const base64DataUrl = `data:${mimeType};base64,${part.inlineData.data}`;
-          return { imageBase64: base64DataUrl };
+          return { imageBase64: `data:${mimeType};base64,${part.inlineData.data}` };
         }
       }
 
-      console.warn(`Attempt ${attempt + 1}: No image data in parts`);
-      if (attempt < retries) {
-        await new Promise(r => setTimeout(r, 2000));
-        continue;
-      }
-      throw new Error("No image generated after retries");
+      if (attempt < retries) { await new Promise(r => setTimeout(r, 2000)); continue; }
+      throw new Error("No image data in Gemini response");
     } catch (e) {
       if (attempt >= retries) throw e;
-      console.warn(`Attempt ${attempt + 1} failed, retrying...`);
       await new Promise(r => setTimeout(r, 2000));
     }
   }
-  throw new Error("No image generated after retries");
+  throw new Error("No image generated after retries (Gemini)");
+}
+
+// ─── OpenAI Engine ───
+async function generateImageOpenAI(prompt: string, model: string, retries: number): Promise<{ imageBase64: string | null; error?: string }> {
+  const apiKey = Deno.env.get("OPENAI_API_KEY");
+  if (!apiKey) throw new Error("OPENAI_API_KEY not configured");
+
+  const url = "https://api.openai.com/v1/images/generations";
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model,
+          prompt,
+          n: 1,
+          size: "1024x1024",
+          output_format: "b64_json",
+        }),
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error(`OpenAI attempt ${attempt + 1}:`, response.status, errText);
+        if (response.status === 429 && attempt < retries) {
+          await new Promise(r => setTimeout(r, 3000 * (attempt + 1)));
+          continue;
+        }
+        if (attempt < retries) { await new Promise(r => setTimeout(r, 2000)); continue; }
+        throw new Error(`OpenAI error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const b64 = data.data?.[0]?.b64_json;
+      if (!b64) {
+        if (attempt < retries) { await new Promise(r => setTimeout(r, 2000)); continue; }
+        throw new Error("No image data in OpenAI response");
+      }
+
+      return { imageBase64: `data:image/png;base64,${b64}` };
+    } catch (e) {
+      if (attempt >= retries) throw e;
+      await new Promise(r => setTimeout(r, 2000));
+    }
+  }
+  throw new Error("No image generated after retries (OpenAI)");
 }

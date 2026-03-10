@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Wand2, Upload, Camera, Zap, Sparkles, Crown } from 'lucide-react';
+import { Wand2, Upload, Camera, Zap, Sparkles, Crown, Rocket, Diamond } from 'lucide-react';
 import { useCredits } from '@/hooks/useCredits';
 import type { ModelTier } from '@/components/ModelSelector';
 
@@ -9,10 +9,12 @@ interface ImageSourceChoiceProps {
   onChooseCapture: (modelTier: ModelTier) => void;
 }
 
-const TIERS: { id: ModelTier; label: string; sublabel: string; icon: React.ReactNode }[] = [
-  { id: 'schnell', label: 'Schnell', sublabel: 'schnell & günstig', icon: <Zap className="w-3 h-3" /> },
-  { id: 'qualitaet', label: 'Qualität', sublabel: 'ausgewogen', icon: <Sparkles className="w-3 h-3" /> },
-  { id: 'premium', label: 'Premium', sublabel: 'beste Ergebnisse', icon: <Crown className="w-3 h-3" /> },
+const TIERS: { id: ModelTier; label: string; sublabel: string; icon: React.ReactNode; group: string }[] = [
+  { id: 'schnell', label: 'Schnell', sublabel: 'schnell & günstig', icon: <Zap className="w-3 h-3" />, group: 'A' },
+  { id: 'qualitaet', label: 'Qualität', sublabel: 'ausgewogen', icon: <Sparkles className="w-3 h-3" />, group: 'A' },
+  { id: 'premium', label: 'Premium', sublabel: 'beste Ergebnisse', icon: <Crown className="w-3 h-3" />, group: 'A' },
+  { id: 'turbo', label: 'Turbo', sublabel: 'schnell & kreativ', icon: <Rocket className="w-3 h-3" />, group: 'B' },
+  { id: 'ultra', label: 'Ultra', sublabel: 'höchste Qualität', icon: <Diamond className="w-3 h-3" />, group: 'B' },
 ];
 
 const ImageSourceChoice: React.FC<ImageSourceChoiceProps> = ({ onChooseGenerate, onChooseUpload, onChooseCapture }) => {
@@ -42,24 +44,29 @@ const ImageSourceChoice: React.FC<ImageSourceChoiceProps> = ({ onChooseGenerate,
         </div>
 
         {/* Model Tier Selector */}
-        <div className="flex items-center justify-center gap-1 mt-4 p-1 rounded-lg bg-muted inline-flex">
-          {TIERS.map((tier) => (
-            <button
-              key={tier.id}
-              onClick={() => setModelTier(tier.id)}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-xs font-medium transition-colors ${
-                modelTier === tier.id
-                  ? tier.id === 'premium'
-                    ? 'bg-accent text-accent-foreground shadow-sm'
-                    : 'bg-card text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {tier.icon}
-              {tier.label}
-              <span className="text-[10px] opacity-70">({tier.sublabel})</span>
-            </button>
-          ))}
+        <div className="flex items-center justify-center gap-1 mt-4 p-1 rounded-lg bg-muted inline-flex flex-wrap">
+          {TIERS.map((tier, i) => {
+            const showDivider = i > 0 && TIERS[i - 1].group !== tier.group;
+            return (
+              <React.Fragment key={tier.id}>
+                {showDivider && <div className="w-px h-5 bg-border mx-0.5" />}
+                <button
+                  onClick={() => setModelTier(tier.id)}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-xs font-medium transition-colors ${
+                    modelTier === tier.id
+                      ? tier.id === 'premium' || tier.id === 'ultra'
+                        ? 'bg-accent text-accent-foreground shadow-sm'
+                        : 'bg-card text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {tier.icon}
+                  {tier.label}
+                  <span className="text-[10px] opacity-70">({tier.sublabel})</span>
+                </button>
+              </React.Fragment>
+            );
+          })}
         </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
