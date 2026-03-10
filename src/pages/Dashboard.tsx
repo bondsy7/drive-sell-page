@@ -58,19 +58,34 @@ const Dashboard = () => {
   const [tab, setTab] = useState<'projects' | 'gallery' | 'videos' | 'leads'>('projects');
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadProjects();
-  }, []);
-
   const [galleryLoaded, setGalleryLoaded] = useState(false);
   const [leadsLoaded, setLeadsLoaded] = useState(false);
   const [videosLoaded, setVideosLoaded] = useState(false);
+  const [counts, setCounts] = useState({ gallery: 0, videos: 0, leads: 0 });
+
+  useEffect(() => {
+    loadProjects();
+    loadCounts();
+  }, []);
 
   useEffect(() => {
     if (tab === 'gallery' && !galleryLoaded) loadGallery();
     if (tab === 'leads' && !leadsLoaded) loadLeads();
     if (tab === 'videos' && !videosLoaded) loadVideos();
   }, [tab]);
+
+  const loadCounts = async () => {
+    const [imgRes, leadsRes, videosRes] = await Promise.all([
+      supabase.from('project_images').select('id', { count: 'exact', head: true }),
+      supabase.from('leads').select('id', { count: 'exact', head: true }),
+      supabase.storage.from('vehicle-images').list('videos', { limit: 200 }),
+    ]);
+    setCounts({
+      gallery: imgRes.count ?? 0,
+      leads: leadsRes.count ?? 0,
+      videos: videosRes.data?.filter(f => f.name.endsWith('.mp4')).length ?? 0,
+    });
+  };
 
   const loadProjects = async () => {
     setLoading(true);
@@ -229,13 +244,13 @@ const Dashboard = () => {
             <FileText className="w-4 h-4 mr-1.5" /> Projekte ({projects.length})
           </Button>
           <Button variant={tab === 'gallery' ? 'default' : 'outline'} size="sm" onClick={() => setTab('gallery')} className="whitespace-nowrap">
-            <Image className="w-4 h-4 mr-1.5" /> Galerie ({allImages.length})
+            <Image className="w-4 h-4 mr-1.5" /> Galerie ({galleryLoaded ? allImages.length : counts.gallery})
           </Button>
           <Button variant={tab === 'videos' ? 'default' : 'outline'} size="sm" onClick={() => setTab('videos')} className="whitespace-nowrap">
-            <Video className="w-4 h-4 mr-1.5" /> Videos ({videos.length})
+            <Video className="w-4 h-4 mr-1.5" /> Videos ({videosLoaded ? videos.length : counts.videos})
           </Button>
           <Button variant={tab === 'leads' ? 'default' : 'outline'} size="sm" onClick={() => setTab('leads')} className="whitespace-nowrap">
-            <MessageSquare className="w-4 h-4 mr-1.5" /> Anfragen ({leads.length})
+            <MessageSquare className="w-4 h-4 mr-1.5" /> Anfragen ({leadsLoaded ? leads.length : counts.leads})
           </Button>
         </div>
 
