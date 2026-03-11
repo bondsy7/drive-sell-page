@@ -20,6 +20,7 @@ const Integrations = lazy(() => import("./pages/Integrations"));
 const ApiDocs = lazy(() => import("./pages/ApiDocs"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const ArchitectureDoc = lazy(() => import("./pages/ArchitectureDoc"));
+const SalesAssistant = lazy(() => import("./pages/SalesAssistant"));
 
 // Admin pages
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
