@@ -102,7 +102,7 @@ ${profile?.assistant_name ? `Du heißt "${profile.assistant_name}".` : ''}`;
       }
     }
 
-    // Stream response from AI
+    // Non-streaming response from AI
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -110,16 +110,18 @@ ${profile?.assistant_name ? `Du heißt "${profile.assistant_name}".` : ''}`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
           ...messages,
         ],
-        stream: true,
+        stream: false,
       }),
     });
 
     if (!response.ok) {
+      const t = await response.text();
+      console.error("AI gateway error:", response.status, t);
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit erreicht, bitte versuche es gleich nochmal." }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -130,13 +132,20 @@ ${profile?.assistant_name ? `Du heißt "${profile.assistant_name}".` : ''}`;
           status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
       throw new Error("AI gateway error");
     }
 
-    return new Response(response.body, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+    const aiResult = await response.json();
+    const assistantContent = aiResult.choices?.[0]?.message?.content || "Keine Antwort erhalten.";
+    console.log("AI response length:", assistantContent.length);
+
+    // Save assistant message
+    await supabase.from('sales_chat_messages').insert({
+      user_id: user.id, role: 'assistant', content: assistantContent,
+    });
+
+    return new Response(JSON.stringify({ content: assistantContent }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("sales-chat error:", e);
