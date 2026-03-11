@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Plus, Car, TrendingDown, TrendingUp, Trash2 } from 'lucide-react';
+import { Plus, Car, TrendingDown, TrendingUp, Trash2, Sparkles, Loader2 } from 'lucide-react';
 
 interface Valuation {
   id: string;
@@ -48,6 +48,51 @@ export default function SalesTradeInTab() {
   const [createOpen, setCreateOpen] = useState(false);
   const [form, setForm] = useState({ vehicle_make: '', vehicle_model: '', vehicle_year: '', mileage_km: '', condition: 'good', estimated_value_min: '', estimated_value_max: '', notes: '' });
   const [saving, setSaving] = useState(false);
+  const [estimating, setEstimating] = useState(false);
+
+  const aiEstimate = async () => {
+    if (!form.vehicle_make || !form.vehicle_model) {
+      toast.error('Bitte Marke und Modell angeben');
+      return;
+    }
+    setEstimating(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('Nicht eingeloggt');
+
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sales-chat`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({
+            messages: [{
+              role: 'user',
+              content: `Schätze den Inzahlungnahme-Wert für: ${form.vehicle_make} ${form.vehicle_model}, Baujahr ${form.vehicle_year || 'unbekannt'}, ${form.mileage_km || 'unbekannt'} km, Zustand: ${form.condition}. Erstelle eine Bewertung.`,
+            }],
+          }),
+        }
+      );
+      const data = await resp.json();
+      if (data.actions?.length > 0) {
+        toast.success('KI-Bewertung erstellt');
+        setCreateOpen(false);
+        setForm({ vehicle_make: '', vehicle_model: '', vehicle_year: '', mileage_km: '', condition: 'good', estimated_value_min: '', estimated_value_max: '', notes: '' });
+        load();
+      } else {
+        toast.info('KI konnte keine Bewertung erstellen. Versuche es manuell.');
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error('Fehler bei der KI-Schätzung');
+    } finally {
+      setEstimating(false);
+    }
+  };
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -117,7 +162,13 @@ export default function SalesTradeInTab() {
                 <div><Label>Wert bis (€)</Label><Input type="number" value={form.estimated_value_max} onChange={e => setForm(p => ({ ...p, estimated_value_max: e.target.value }))} /></div>
               </div>
               <div><Label>Notizen</Label><Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} rows={2} /></div>
-              <Button onClick={create} disabled={saving} className="w-full">Bewertung erstellen</Button>
+              <div className="flex gap-2">
+                <Button onClick={create} disabled={saving || estimating} className="flex-1">Bewertung erstellen</Button>
+                <Button variant="outline" onClick={aiEstimate} disabled={estimating || saving || !form.vehicle_make || !form.vehicle_model} className="flex-1">
+                  {estimating ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1" />}
+                  KI-Schätzung
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
