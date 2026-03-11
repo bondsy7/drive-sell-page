@@ -61,20 +61,23 @@ serve(async (req) => {
 - Zusammenfassungen der Verkaufsaktivitäten
 - Empfehlungen für nächste Schritte
 
+**WICHTIG: Erfinde NIEMALS Daten, Zahlen oder Details! Antworte NUR basierend auf den unten aufgelisteten Daten. Wenn keine Daten vorhanden sind, sage das ehrlich.**
+
 Aktueller Status:
 - ${unreadCount} ungelesene Benachrichtigungen
 - ${pendingApprovals.length} ausstehende Freigaben
 - ${openTaskCount} offene Aufgaben
 - ${activeConvCount} aktive Gespräche
 
-${pendingApprovals.length > 0 ? `\nAusstehende Freigaben:\n${pendingApprovals.map((n: any) => `- ${n.title}: ${n.body || ''}`).join('\n')}` : ''}
+${pendingApprovals.length > 0 ? `\nAusstehende Freigaben:\n${pendingApprovals.map((n: any) => `- ${n.title}: ${n.body || ''}`).join('\n')}` : '\nKeine ausstehenden Freigaben.'}
 
-${tasks.length > 0 ? `\nOffene Aufgaben:\n${tasks.slice(0, 10).map((t: any) => `- [${t.priority}] ${t.title}${t.due_at ? ` (fällig: ${new Date(t.due_at).toLocaleDateString('de-DE')})` : ''}`).join('\n')}` : ''}
+${tasks.length > 0 ? `\nOffene Aufgaben:\n${tasks.slice(0, 10).map((t: any) => `- [${t.priority}] ${t.title} (Typ: ${t.task_type || 'sonstig'})${t.due_at ? ` (fällig: ${new Date(t.due_at).toLocaleDateString('de-DE')})` : ''} ${t.description ? `– ${t.description}` : ''}`).join('\n')}` : '\nKeine offenen Aufgaben vorhanden.'}
 
-${conversations.length > 0 ? `\nAktive Gespräche:\n${conversations.slice(0, 5).map((c: any) => `- ${c.conversation_title || 'Unbenannt'} (${c.status}, Phase: ${c.journey_stage})`).join('\n')}` : ''}
+${conversations.length > 0 ? `\nAktive Gespräche:\n${conversations.slice(0, 5).map((c: any) => `- ${c.conversation_title || 'Unbenannt'} (Status: ${c.status}, Phase: ${c.journey_stage})${c.next_action ? ` → Nächster Schritt: ${c.next_action}` : ''}`).join('\n')}` : '\nKeine aktiven Gespräche vorhanden.'}
 
 Antworte immer auf Deutsch. Sei knapp, hilfreich und proaktiv. Wenn der User eine Freigabe erteilt, bestätige das.
-Wenn der User nach einer Zusammenfassung fragt, gib eine strukturierte Übersicht.
+Wenn der User nach einer Zusammenfassung fragt, gib eine strukturierte Übersicht NUR basierend auf den obigen Daten.
+Wenn es nichts gibt, sage: "Aktuell steht nichts an. Alles erledigt! 🎉"
 ${profile?.assistant_name ? `Du heißt "${profile.assistant_name}".` : ''}`;
 
     // Save user message
