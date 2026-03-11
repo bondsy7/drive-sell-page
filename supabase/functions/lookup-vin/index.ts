@@ -49,6 +49,32 @@ serve(async (req) => {
       return "";
     };
 
+    // Extract equipment/options list from stream_map
+    const extractEquipment = (): string[] => {
+      const items: string[] = [];
+      const equipKeys = ["equipment", "options", "standard_equipment", "optional_equipment", "special_equipment", "packages"];
+      for (const key of equipKeys) {
+        const node = streamMap?.[key]?.stream_result;
+        if (!node || typeof node !== "object") continue;
+        for (const entry of Object.values(node) as any[]) {
+          const desc = entry?.translation?.translationCurrent || entry?.description || entry?.text || "";
+          if (desc && typeof desc === "string" && desc.length > 1) {
+            items.push(desc);
+          }
+        }
+      }
+      // Also check top-level equipment arrays
+      if (Array.isArray(vehicleNode?.equipment)) {
+        for (const e of vehicleNode.equipment) {
+          const desc = typeof e === "string" ? e : (e?.description || e?.name || e?.text || "");
+          if (desc && !items.includes(desc)) items.push(desc);
+        }
+      }
+      return [...new Set(items)];
+    };
+
+    const equipment = extractEquipment();
+
     const mapped = {
       brand: vehicleNode?.make?.make || "",
       model: getStreamText("model"),
@@ -63,6 +89,7 @@ serve(async (req) => {
       bodyType: getStreamText("body_type"),
       doors: Number(getStreamText("number_of_doors")) || null,
       seats: Number(getStreamText("number_of_seats")) || null,
+      equipment,
       _raw: data,
     };
 
