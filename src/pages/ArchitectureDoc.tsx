@@ -414,11 +414,11 @@ Globale Tabellen:
 
         {/* 7. KI-Services */}
         <Section id="s7" title="7. KI-Services & Modelle">
-          <SubSection title="Lovable AI Gateway">
-            <CodeBlock>{`Endpoint:  https://ai.gateway.lovable.dev/v1/chat/completions
-Auth:      Bearer LOVABLE_API_KEY
-Format:    OpenAI-kompatibel
-Modelle:   google/gemini-*, openai/gpt-*`}</CodeBlock>
+          <SubSection title="Google Gemini API (direkt)">
+            <CodeBlock>{`Endpoint:  https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent
+Auth:      x-goog-api-key: GEMINI_API_KEY
+Format:    Google Gemini REST API
+Modelle:   gemini-2.5-flash, gemini-3-pro-image-preview, gemini-3.1-flash-image-preview`}</CodeBlock>
           </SubSection>
           <SubSection title="Modell-Tiers (Bildgenerierung)">
             <Table
