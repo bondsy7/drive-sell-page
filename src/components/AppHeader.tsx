@@ -3,16 +3,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  Plus, Calculator, Receipt, User, Plug, ShieldCheck, LogOut, ChevronDown, CreditCard, LogIn, LayoutDashboard, MoreVertical,
-} from 'lucide-react';
+import { Plus, CreditCard, LogIn } from 'lucide-react';
 import logoLight from '@/assets/logo-light.png';
 import CreditBadge from '@/components/CreditBadge';
 import UserMenuSheet from '@/components/UserMenuSheet';
