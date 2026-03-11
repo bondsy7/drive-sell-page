@@ -9,7 +9,7 @@ import SalesHistoryTab from '@/components/sales/SalesHistoryTab';
 import SalesTasksTab from '@/components/sales/SalesTasksTab';
 import SalesChatPage from '@/components/sales/SalesChatPage';
 import SalesAutopilotSettings from '@/components/sales/SalesAutopilotSettings';
-import SalesChatWidget from '@/components/sales/SalesChatWidget';
+
 
 export default function SalesAssistant() {
   return (
