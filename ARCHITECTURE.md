@@ -815,32 +815,23 @@ Klasse G: >175 g/km
 
 ## 11. Externe APIs & Abhängigkeiten
 
-### 11.1 Lovable AI Gateway
-
-```
-URL:     https://ai.gateway.lovable.dev/v1/chat/completions
-Auth:    Bearer LOVABLE_API_KEY
-Format:  OpenAI-kompatibel
-Models:  google/gemini-*, openai/gpt-*
-```
-
-**Besonderheit Bildgenerierung:** Response enthält `images[]` Array mit Base64-URLs:
-```json
-{
-  "choices": [{
-    "message": {
-      "images": [{ "image_url": { "url": "data:image/png;base64,..." } }]
-    }
-  }]
-}
-```
-
-### 11.2 Google Gemini (Direkt-API)
+### 11.1 Google Gemini API
 
 ```
 URL:     https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent
-Auth:    ?key=GEMINI_API_KEY
-Modelle: gemini-2.5-flash-preview-native-audio-dialog (für Bilder), veo-3.1-generate-preview (für Video)
+Auth:    x-goog-api-key: GEMINI_API_KEY
+Modelle: gemini-2.5-flash (Text/PDF/OCR), gemini-3-pro-image-preview (Bild), gemini-3.1-flash-image-preview (Bild), veo-3.1-generate-preview (Video)
+```
+
+**Bild-Response:** Enthält `inlineData` in den `candidates.content.parts`:
+```json
+{
+  "candidates": [{
+    "content": {
+      "parts": [{ "inlineData": { "mimeType": "image/png", "data": "base64..." } }]
+    }
+  }]
+}
 ```
 
 ### 11.3 OpenAI
