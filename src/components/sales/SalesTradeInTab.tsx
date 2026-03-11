@@ -162,7 +162,13 @@ export default function SalesTradeInTab() {
                 <div><Label>Wert bis (€)</Label><Input type="number" value={form.estimated_value_max} onChange={e => setForm(p => ({ ...p, estimated_value_max: e.target.value }))} /></div>
               </div>
               <div><Label>Notizen</Label><Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} rows={2} /></div>
-              <Button onClick={create} disabled={saving} className="w-full">Bewertung erstellen</Button>
+              <div className="flex gap-2">
+                <Button onClick={create} disabled={saving || estimating} className="flex-1">Bewertung erstellen</Button>
+                <Button variant="outline" onClick={aiEstimate} disabled={estimating || saving || !form.vehicle_make || !form.vehicle_model} className="flex-1">
+                  {estimating ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1" />}
+                  KI-Schätzung
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
