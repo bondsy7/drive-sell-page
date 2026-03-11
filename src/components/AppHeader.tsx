@@ -3,18 +3,10 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  Plus, Calculator, Receipt, User, Plug, ShieldCheck, LogOut, ChevronDown, CreditCard, LogIn, LayoutDashboard, MoreVertical,
-} from 'lucide-react';
+import { Plus, CreditCard, LogIn } from 'lucide-react';
 import logoLight from '@/assets/logo-light.png';
 import CreditBadge from '@/components/CreditBadge';
+import UserMenuSheet from '@/components/UserMenuSheet';
 
 interface AppHeaderProps {
   leftActions?: React.ReactNode;
@@ -55,13 +47,6 @@ export default function AppHeader({ leftActions, variant = 'card' }: AppHeaderPr
 
           {user ? (
             <>
-              {/* Dashboard */}
-              <Link to="/dashboard">
-                <Button variant="ghost" size="icon" className={ghostClass} title="Dashboard">
-                  <LayoutDashboard className={iconClass} />
-                </Button>
-              </Link>
-
               {/* New Project */}
               <Link to="/generator">
                 <Button size="sm" className="gap-1.5 text-xs sm:text-sm">
@@ -71,74 +56,16 @@ export default function AppHeader({ leftActions, variant = 'card' }: AppHeaderPr
                 </Button>
               </Link>
 
-              {/* Rechner Dropdown – icon only */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className={`hidden sm:inline-flex ${ghostClass}`} title="Rechner">
-                    <Calculator className={iconClass} />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem asChild>
-                    <Link to="/leasing-rechner" className="flex items-center gap-2">
-                      <Calculator className="w-4 h-4" /> Leasing-Rechner
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/finanzierungsrechner" className="flex items-center gap-2">
-                      <Calculator className="w-4 h-4" /> Finanzierungsrechner
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/kfz-steuer-rechner" className="flex items-center gap-2">
-                      <Receipt className="w-4 h-4" /> Kfz-Steuer-Rechner
-                    </Link>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
               {/* Credits */}
               <CreditBadge />
 
-              {/* More menu dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className={ghostClass} title="Menü">
-                    <MoreVertical className={iconClass} />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem asChild>
-                    <Link to="/profile" className="flex items-center gap-2">
-                      <User className="w-4 h-4" /> Profil
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/integrations" className="flex items-center gap-2">
-                      <Plug className="w-4 h-4" /> Schnittstellen
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/pricing" className="flex items-center gap-2">
-                      <CreditCard className="w-4 h-4" /> Credits & Pläne
-                    </Link>
-                  </DropdownMenuItem>
-                  {isAdmin && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem asChild>
-                        <Link to="/admin" className="flex items-center gap-2">
-                          <ShieldCheck className="w-4 h-4 text-accent" /> Admin-Bereich
-                        </Link>
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={signOut} className="flex items-center gap-2 text-destructive focus:text-destructive">
-                    <LogOut className="w-4 h-4" /> Abmelden
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {/* Tabbed user menu */}
+              <UserMenuSheet
+                isAdmin={isAdmin}
+                ghostClass={ghostClass}
+                iconClass={iconClass}
+                onSignOut={signOut}
+              />
             </>
           ) : (
             <>
