@@ -518,7 +518,7 @@ const Index = () => {
 
           {appState === 'uploading-images' && (
             <div className="mt-8">
-              <ImageUploadRemaster vehicleDescription={vehicleDescription} modelTier={selectedModelTier} onComplete={handleRemasterComplete} onBack={() => setAppState('choosing-image-source')} />
+              <ImageUploadRemaster vehicleDescription={vehicleDescription} vehicleBrand={vehicleData?.vehicle?.brand} modelTier={selectedModelTier} onComplete={handleRemasterComplete} onBack={() => setAppState('choosing-image-source')} />
             </div>
           )}
         </main>
