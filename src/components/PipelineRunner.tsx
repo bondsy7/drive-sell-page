@@ -94,6 +94,35 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
     });
   }, [detectedBrand, availableJobs]);
 
+  // Auto-fetch manufacturer logo based on detected brand
+  const [resolvedManufacturerLogoUrl, setResolvedManufacturerLogoUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (!remasterConfig.showManufacturerLogo || !detectedBrand) {
+      setResolvedManufacturerLogoUrl(null);
+      return;
+    }
+    // If already set manually in config, use that
+    if (remasterConfig.manufacturerLogoUrl) {
+      setResolvedManufacturerLogoUrl(remasterConfig.manufacturerLogoUrl);
+      return;
+    }
+    // Fetch from storage and match by brand name
+    fetchManufacturerLogos().then(logos => {
+      const brandLower = detectedBrand.toLowerCase();
+      // Try exact match, then partial match
+      const match = logos.find(l => l.name.toLowerCase() === brandLower)
+        || logos.find(l => l.name.toLowerCase().includes(brandLower))
+        || logos.find(l => brandLower.includes(l.name.toLowerCase()));
+      if (match) {
+        console.log(`[Pipeline] Manufacturer logo found for "${detectedBrand}": ${match.name} → ${match.url}`);
+        setResolvedManufacturerLogoUrl(match.url);
+      } else {
+        console.warn(`[Pipeline] No manufacturer logo found for brand "${detectedBrand}" in ${logos.length} logos:`, logos.map(l => l.name));
+        setResolvedManufacturerLogoUrl(null);
+      }
+    });
+  }, [detectedBrand, remasterConfig.showManufacturerLogo, remasterConfig.manufacturerLogoUrl]);
+
   const [jobs, setJobs] = useState<Record<string, JobState>>({});
   const [running, setRunning] = useState(false);
   const [finished, setFinished] = useState(false);
