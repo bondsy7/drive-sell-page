@@ -16,6 +16,7 @@ import ManualLandingGenerator from '@/components/ManualLandingGenerator';
 import CreditConfirmDialog from '@/components/CreditConfirmDialog';
 import VideoGenerator from '@/components/VideoGenerator';
 import BannerGenerator from '@/components/BannerGenerator';
+import VehicleSelectBeforeGenerate from '@/components/VehicleSelectBeforeGenerate';
 import { extractPDFAsBase64 } from '@/lib/pdf-utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -27,7 +28,7 @@ import type { ModelTier } from '@/components/ModelSelector';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-type ExtendedAppState = AppState | 'capturing-images' | 'hub' | 'standalone-photo-choice' | 'standalone-capture' | 'standalone-upload' | 'video' | 'banner' | 'manual-landing' | 'manual-landing-preview';
+type ExtendedAppState = AppState | 'capturing-images' | 'hub' | 'standalone-photo-choice' | 'standalone-capture' | 'standalone-upload' | 'standalone-generate-select' | 'standalone-generating' | 'video' | 'banner' | 'manual-landing' | 'manual-landing-preview';
 
 const PERSPECTIVES = [
   { key: 'front', label: 'Frontansicht', prompt: 'Front view, straight on, symmetrical composition' },
@@ -296,6 +297,37 @@ const Index = () => {
     navigate('/dashboard?tab=gallery');
   }, [saveStandaloneImages, navigate]);
 
+  // ─── Standalone AI Generate (without PDF) ───
+  const doStandaloneGenerate = useCallback(async (vData: VehicleData) => {
+    setAppState('standalone-generating' as any);
+    const total = PERSPECTIVES.length;
+    setImageProgress({ current: 0, total });
+    const showroomBase = `Photorealistic image of a ${vData.vehicle?.brand || ''} ${vData.vehicle?.model || ''} ${vData.vehicle?.variant || ''} in ${vData.vehicle?.color || 'the original color'}. The car is in a modern, bright, luxurious car dealership showroom with polished floors and soft lighting. `;
+    const generatedImages: string[] = [];
+    for (let i = 0; i < PERSPECTIVES.length; i++) {
+      setImageProgress({ current: i + 1, total });
+      try {
+        const { data: imageData, error: imageError } = await supabase.functions.invoke('generate-vehicle-image', {
+          body: { imagePrompt: showroomBase + PERSPECTIVES[i].prompt, modelTier: selectedModelTier },
+        });
+        if (imageData?.error === 'insufficient_credits') { toast.error('Nicht genügend Credits.'); break; }
+        if (!imageError && imageData?.imageBase64) {
+          generatedImages.push(imageData.imageBase64);
+          if (i === 0) setImageBase64(imageData.imageBase64);
+          setGalleryImages([...generatedImages]);
+        }
+      } catch { console.warn(`Image generation failed for ${PERSPECTIVES[i].key}`); }
+    }
+    if (generatedImages.length === 0) { toast.warning('Bilder konnten nicht generiert werden.'); setAppState('standalone-photo-choice'); return; }
+    toast.success(`${generatedImages.length} von ${total} Bilder generiert.`);
+    // Save as standalone project
+    const allImages = generatedImages;
+    setStandalonePhotoResults(allImages);
+    await saveStandaloneImages(allImages);
+    navigate('/dashboard?tab=gallery');
+  }, [selectedModelTier, saveStandaloneImages, navigate]);
+
+
   // ─── Hub Action Handler ───
   const handleHubAction = useCallback((action: HubAction) => {
     switch (action) {
@@ -325,7 +357,7 @@ const Index = () => {
     setManualLandingHTML(null);
   }, []);
 
-  const isProcessing = appState === 'uploading' || appState === 'analyzing' || appState === 'generating-image';
+  const isProcessing = appState === 'uploading' || appState === 'analyzing' || appState === 'generating-image' || appState === 'standalone-generating';
   const vehicleDescription = vehicleData
     ? `${vehicleData.vehicle.brand} ${vehicleData.vehicle.model} ${vehicleData.vehicle.variant}, ${vehicleData.vehicle.color}, ${vehicleData.vehicle.fuelType}` : '';
 
@@ -379,11 +411,43 @@ const Index = () => {
                 </div>
               </div>
               <ImageSourceChoice
-                onChooseGenerate={() => toast.info('Bildgenerierung benötigt Fahrzeugdaten. Nutze dafür "PDF → Angebotsseite".')}
+                onChooseGenerate={(tier) => { setSelectedModelTier(tier); setAppState('standalone-generate-select' as any); }}
                 onChooseUpload={(tier) => { setSelectedModelTier(tier); setAppState('standalone-upload'); }}
                 onChooseCapture={(tier) => { setSelectedModelTier(tier); setAppState('standalone-capture'); }}
               />
             </div>
+          )}
+
+          {/* ─── Standalone Generate: Vehicle Selection ─── */}
+          {appState === 'standalone-generate-select' && (
+            <VehicleSelectBeforeGenerate
+              modelTier={selectedModelTier}
+              onBack={() => setAppState('standalone-photo-choice')}
+              onConfirm={async (brand, model, variant, color) => {
+                const newVehicleData: VehicleData = {
+                  category: 'Kauf',
+                  vehicle: { brand, model, variant, year: new Date().getFullYear(), color: color || 'Original', fuelType: '', transmission: '', power: '', features: [] },
+                  finance: { monthlyRate: '', downPayment: '', duration: '', totalPrice: '', annualMileage: '', specialPayment: '', residualValue: '', interestRate: '' },
+                  dealer: { name: '', address: '', postalCode: '', city: '', phone: '', email: '', website: '', taxId: '', logoUrl: '', facebookUrl: '', instagramUrl: '', xUrl: '', tiktokUrl: '', youtubeUrl: '', whatsappNumber: '', leasingBank: '', leasingLegalText: '', financingBank: '', financingLegalText: '', defaultLegalText: '' },
+                  consumption: { origin: '', mileage: '', displacement: '', power: '', driveType: '', fuelType: '', consumptionCombined: '', co2Emissions: '', co2Class: '', consumptionCity: '', consumptionSuburban: '', consumptionRural: '', consumptionHighway: '', energyCostPerYear: '', fuelPrice: '', co2CostMedium: '', co2CostLow: '', co2CostHigh: '', vehicleTax: '', isPluginHybrid: false, co2EmissionsDischarged: '', co2ClassDischarged: '', consumptionCombinedDischarged: '', electricRange: '', consumptionElectric: '' },
+                };
+                const enriched = await loadProfileIntoDealer(newVehicleData);
+                setVehicleData(enriched);
+
+                // Start generation
+                const costPerImage = getCost('image_generate', selectedModelTier) || 2;
+                const totalCost = costPerImage * PERSPECTIVES.length;
+                setCreditDialog({
+                  open: true, cost: totalCost,
+                  label: `${PERSPECTIVES.length} Bilder für ${brand} ${model} generieren`,
+                  onConfirm: () => {
+                    setCreditDialog(prev => ({ ...prev, open: false }));
+                    setAppState('standalone-generating' as any);
+                    doStandaloneGenerate(enriched);
+                  },
+                });
+              }}
+            />
           )}
 
           {/* ─── Standalone Capture ─── */}
