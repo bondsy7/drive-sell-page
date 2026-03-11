@@ -444,10 +444,27 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
           Wähle die gewünschten Perspektiven und Pakete.
         </p>
         {detectedBrand && (
-          <Badge variant="secondary" className="mt-2 gap-1.5 text-xs">
-            <Image className="w-3 h-3" />
-            CI: {detectedBrand.charAt(0).toUpperCase() + detectedBrand.slice(1)}
-          </Badge>
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
+            <Badge variant="secondary" className="gap-1.5 text-xs">
+              <Image className="w-3 h-3" />
+              CI: {detectedBrand.charAt(0).toUpperCase() + detectedBrand.slice(1)}
+            </Badge>
+            {remasterConfig.showManufacturerLogo && (
+              <Badge variant={resolvedManufacturerLogoUrl ? "default" : "destructive"} className="gap-1.5 text-xs">
+                {resolvedManufacturerLogoUrl ? (
+                  <>
+                    <Check className="w-3 h-3" />
+                    Hersteller-Logo geladen
+                  </>
+                ) : (
+                  <>
+                    <AlertCircle className="w-3 h-3" />
+                    Kein Logo für {detectedBrand}
+                  </>
+                )}
+              </Badge>
+            )}
+          </div>
         )}
       </div>
 
