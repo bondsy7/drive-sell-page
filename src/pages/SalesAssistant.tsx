@@ -1,13 +1,15 @@
 import React from 'react';
 import AppHeader from '@/components/AppHeader';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { MessageSquare, Route, BookOpen, History, ListChecks, Sparkles } from 'lucide-react';
+import { MessageSquare, Route, BookOpen, History, ListChecks, Sparkles, Bot, Settings2 } from 'lucide-react';
 import SalesGeneratorTab from '@/components/sales/SalesGeneratorTab';
 import SalesJourneyTab from '@/components/sales/SalesJourneyTab';
 import SalesKnowledgeTab from '@/components/sales/SalesKnowledgeTab';
 import SalesHistoryTab from '@/components/sales/SalesHistoryTab';
 import SalesTasksTab from '@/components/sales/SalesTasksTab';
-import CreditBadge from '@/components/CreditBadge';
+import SalesChatPage from '@/components/sales/SalesChatPage';
+import SalesAutopilotSettings from '@/components/sales/SalesAutopilotSettings';
+
 
 export default function SalesAssistant() {
   return (
@@ -36,6 +38,9 @@ export default function SalesAssistant() {
             <TabsTrigger value="assistant" className="flex items-center gap-1.5 text-xs sm:text-sm">
               <MessageSquare className="w-4 h-4" /> Assistent
             </TabsTrigger>
+            <TabsTrigger value="chat" className="flex items-center gap-1.5 text-xs sm:text-sm">
+              <Bot className="w-4 h-4" /> Chat
+            </TabsTrigger>
             <TabsTrigger value="journey" className="flex items-center gap-1.5 text-xs sm:text-sm">
               <Route className="w-4 h-4" /> Customer Journey
             </TabsTrigger>
@@ -48,13 +53,18 @@ export default function SalesAssistant() {
             <TabsTrigger value="tasks" className="flex items-center gap-1.5 text-xs sm:text-sm">
               <ListChecks className="w-4 h-4" /> Aufgaben
             </TabsTrigger>
+            <TabsTrigger value="autopilot" className="flex items-center gap-1.5 text-xs sm:text-sm">
+              <Settings2 className="w-4 h-4" /> Autopilot
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="assistant"><SalesGeneratorTab /></TabsContent>
+          <TabsContent value="chat"><SalesChatPage /></TabsContent>
           <TabsContent value="journey"><SalesJourneyTab /></TabsContent>
           <TabsContent value="knowledge"><SalesKnowledgeTab /></TabsContent>
           <TabsContent value="history"><SalesHistoryTab /></TabsContent>
           <TabsContent value="tasks"><SalesTasksTab /></TabsContent>
+          <TabsContent value="autopilot"><SalesAutopilotSettings /></TabsContent>
         </Tabs>
       </div>
     </div>

@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { error } = await supabase.from("leads").insert({
+    const { data: lead, error } = await supabase.from("leads").insert({
       dealer_user_id: dealerUserId,
       project_id: projectId || null,
       name: String(name).slice(0, 200),
@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
       phone: phone ? String(phone).slice(0, 50) : null,
       message: message ? String(message).slice(0, 2000) : null,
       vehicle_title: vehicleTitle ? String(vehicleTitle).slice(0, 300) : null,
-    });
+    }).select('id').single();
 
     if (error) {
       console.error("Insert error:", error);
@@ -50,6 +50,29 @@ Deno.serve(async (req) => {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Check if dealer has autopilot enabled and trigger auto-processing
+    if (lead?.id) {
+      const { data: profile } = await supabase.from("sales_assistant_profiles")
+        .select("autopilot_mode, active")
+        .eq("user_id", dealerUserId)
+        .eq("active", true)
+        .single();
+
+      if (profile && profile.autopilot_mode !== 'off') {
+        // Trigger auto-process in background (fire and forget)
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+        fetch(`${supabaseUrl}/functions/v1/auto-process-lead`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${serviceKey}`,
+          },
+          body: JSON.stringify({ leadId: lead.id, dealerUserId }),
+        }).catch(err => console.error("Auto-process trigger error:", err));
+      }
     }
 
     return new Response(JSON.stringify({ success: true }), {
