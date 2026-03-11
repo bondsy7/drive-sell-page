@@ -102,8 +102,6 @@ export default function SalesChatWidget() {
     setInput('');
     setIsLoading(true);
 
-    let assistantSoFar = '';
-
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
@@ -122,56 +120,11 @@ export default function SalesChatWidget() {
         }
       );
 
-      if (!resp.ok || !resp.body) {
-        const err = await resp.json().catch(() => ({}));
-        throw new Error(err.error || 'Fehler bei der Kommunikation');
-      }
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Fehler bei der Kommunikation');
 
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder();
-      let textBuffer = '';
-      let streamDone = false;
-
-      const upsertAssistant = (chunk: string) => {
-        assistantSoFar += chunk;
-        setMessages(prev => {
-          const last = prev[prev.length - 1];
-          if (last?.role === 'assistant' && prev.length === allMessages.length + 1) {
-            return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantSoFar } : m);
-          }
-          return [...prev, { role: 'assistant', content: assistantSoFar }];
-        });
-      };
-
-      while (!streamDone) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        textBuffer += decoder.decode(value, { stream: true });
-
-        let newlineIndex: number;
-        while ((newlineIndex = textBuffer.indexOf('\n')) !== -1) {
-          let line = textBuffer.slice(0, newlineIndex);
-          textBuffer = textBuffer.slice(newlineIndex + 1);
-
-          if (line.endsWith('\r')) line = line.slice(0, -1);
-          if (line.startsWith(':') || line.trim() === '') continue;
-          if (!line.startsWith('data: ')) continue;
-
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === '[DONE]') { streamDone = true; break; }
-
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content;
-            if (content) upsertAssistant(content);
-          } catch {
-            textBuffer = line + '\n' + textBuffer;
-            break;
-          }
-        }
-      }
-
-      // Reload notifications after interaction
+      const assistantContent = data.content || 'Keine Antwort erhalten.';
+      setMessages(prev => [...prev, { role: 'assistant', content: assistantContent }]);
       loadNotifications();
     } catch (e) {
       console.error(e);
