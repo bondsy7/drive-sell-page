@@ -267,7 +267,7 @@ export default function SalesBookingsTab() {
                         <div className="flex gap-1 shrink-0">
                           {b.status === 'pending' && (
                             <>
-                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => updateBookingStatus(b.id, 'confirmed')}><Check className="w-3.5 h-3.5 text-green-600" /></Button>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => updateBookingStatus(b.id, 'confirmed')}><Check className="w-3.5 h-3.5 text-accent" /></Button>
                               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => updateBookingStatus(b.id, 'cancelled')}><X className="w-3.5 h-3.5 text-destructive" /></Button>
                             </>
                           )}
