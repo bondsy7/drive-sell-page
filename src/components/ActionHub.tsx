@@ -7,7 +7,8 @@ export type HubAction =
   | 'pdf-landing'     // PDF → Landing Page
   | 'manual-landing'  // Landing Page ohne PDF
   | 'banner'          // Banner Generator
-  | 'video';          // Video Erstellung
+  | 'video'           // Video Erstellung
+  | 'sales-assistant'; // KI Verkaufsassistent
 
 interface ActionTile {
   id: HubAction;
