@@ -38,6 +38,51 @@ export type Database = {
         }
         Relationships: []
       }
+      calendar_sync_configs: {
+        Row: {
+          access_token_encrypted: string | null
+          created_at: string
+          external_calendar_id: string | null
+          id: string
+          is_active: boolean
+          last_synced_at: string | null
+          provider: string
+          refresh_token_encrypted: string | null
+          sync_direction: string
+          token_expires_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token_encrypted?: string | null
+          created_at?: string
+          external_calendar_id?: string | null
+          id?: string
+          is_active?: boolean
+          last_synced_at?: string | null
+          provider?: string
+          refresh_token_encrypted?: string | null
+          sync_direction?: string
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token_encrypted?: string | null
+          created_at?: string
+          external_calendar_id?: string | null
+          id?: string
+          is_active?: boolean
+          last_synced_at?: string | null
+          provider?: string
+          refresh_token_encrypted?: string | null
+          sync_direction?: string
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       credit_balances: {
         Row: {
           balance: number
@@ -155,6 +200,69 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
           vehicle_category?: string | null
+        }
+        Relationships: []
+      }
+      dealer_availability: {
+        Row: {
+          created_at: string
+          day_of_week: number
+          end_time: string
+          id: string
+          is_available: boolean
+          max_parallel_bookings: number
+          slot_duration_minutes: number
+          start_time: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: number
+          end_time?: string
+          id?: string
+          is_available?: boolean
+          max_parallel_bookings?: number
+          slot_duration_minutes?: number
+          start_time?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          is_available?: boolean
+          max_parallel_bookings?: number
+          slot_duration_minutes?: number
+          start_time?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      dealer_blocked_dates: {
+        Row: {
+          blocked_date: string
+          created_at: string
+          id: string
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          blocked_date: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          blocked_date?: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -721,6 +829,69 @@ export type Database = {
         }
         Relationships: []
       }
+      sales_email_outbox: {
+        Row: {
+          body_html: string
+          body_text: string | null
+          conversation_id: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          lead_id: string | null
+          sent_at: string | null
+          status: string
+          subject: string
+          to_email: string
+          to_name: string | null
+          user_id: string
+        }
+        Insert: {
+          body_html: string
+          body_text?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          lead_id?: string | null
+          sent_at?: string | null
+          status?: string
+          subject: string
+          to_email: string
+          to_name?: string | null
+          user_id: string
+        }
+        Update: {
+          body_html?: string
+          body_text?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          lead_id?: string | null
+          sent_at?: string | null
+          status?: string
+          subject?: string
+          to_email?: string
+          to_name?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_email_outbox_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "sales_assistant_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_email_outbox_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sales_knowledge_chunks: {
         Row: {
           chunk_index: number | null
@@ -885,6 +1056,106 @@ export type Database = {
           },
         ]
       }
+      sales_quotes: {
+        Row: {
+          base_price: number | null
+          conversation_id: string | null
+          created_at: string
+          discount_amount: number | null
+          discount_reason: string | null
+          final_price: number | null
+          financing_down_payment: number | null
+          financing_monthly_rate: number | null
+          financing_term_months: number | null
+          id: string
+          lead_id: string | null
+          leasing_mileage_per_year: number | null
+          leasing_monthly_rate: number | null
+          leasing_term_months: number | null
+          notes: string | null
+          project_id: string | null
+          sent_at: string | null
+          status: string
+          trade_in_value: number | null
+          updated_at: string
+          user_id: string
+          valid_until: string | null
+          vehicle_title: string | null
+        }
+        Insert: {
+          base_price?: number | null
+          conversation_id?: string | null
+          created_at?: string
+          discount_amount?: number | null
+          discount_reason?: string | null
+          final_price?: number | null
+          financing_down_payment?: number | null
+          financing_monthly_rate?: number | null
+          financing_term_months?: number | null
+          id?: string
+          lead_id?: string | null
+          leasing_mileage_per_year?: number | null
+          leasing_monthly_rate?: number | null
+          leasing_term_months?: number | null
+          notes?: string | null
+          project_id?: string | null
+          sent_at?: string | null
+          status?: string
+          trade_in_value?: number | null
+          updated_at?: string
+          user_id: string
+          valid_until?: string | null
+          vehicle_title?: string | null
+        }
+        Update: {
+          base_price?: number | null
+          conversation_id?: string | null
+          created_at?: string
+          discount_amount?: number | null
+          discount_reason?: string | null
+          final_price?: number | null
+          financing_down_payment?: number | null
+          financing_monthly_rate?: number | null
+          financing_term_months?: number | null
+          id?: string
+          lead_id?: string | null
+          leasing_mileage_per_year?: number | null
+          leasing_monthly_rate?: number | null
+          leasing_term_months?: number | null
+          notes?: string | null
+          project_id?: string | null
+          sent_at?: string | null
+          status?: string
+          trade_in_value?: number | null
+          updated_at?: string
+          user_id?: string
+          valid_until?: string | null
+          vehicle_title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_quotes_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "sales_assistant_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_quotes_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_quotes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sample_pdfs: {
         Row: {
           active: boolean
@@ -974,6 +1245,157 @@ export type Database = {
           sort_order?: number
         }
         Relationships: []
+      }
+      test_drive_bookings: {
+        Row: {
+          booking_date: string
+          booking_time: string
+          conversation_id: string | null
+          created_at: string
+          customer_email: string | null
+          customer_name: string
+          customer_phone: string | null
+          duration_minutes: number
+          id: string
+          lead_id: string | null
+          notes: string | null
+          project_id: string | null
+          reminder_sent: boolean
+          status: string
+          updated_at: string
+          user_id: string
+          vehicle_title: string | null
+        }
+        Insert: {
+          booking_date: string
+          booking_time: string
+          conversation_id?: string | null
+          created_at?: string
+          customer_email?: string | null
+          customer_name: string
+          customer_phone?: string | null
+          duration_minutes?: number
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          project_id?: string | null
+          reminder_sent?: boolean
+          status?: string
+          updated_at?: string
+          user_id: string
+          vehicle_title?: string | null
+        }
+        Update: {
+          booking_date?: string
+          booking_time?: string
+          conversation_id?: string | null
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string
+          customer_phone?: string | null
+          duration_minutes?: number
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          project_id?: string | null
+          reminder_sent?: boolean
+          status?: string
+          updated_at?: string
+          user_id?: string
+          vehicle_title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_drive_bookings_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "sales_assistant_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "test_drive_bookings_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "test_drive_bookings_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trade_in_valuations: {
+        Row: {
+          condition: string | null
+          conversation_id: string | null
+          created_at: string
+          estimated_value_max: number | null
+          estimated_value_min: number | null
+          id: string
+          lead_id: string | null
+          mileage_km: number | null
+          notes: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          vehicle_make: string | null
+          vehicle_model: string | null
+          vehicle_year: number | null
+        }
+        Insert: {
+          condition?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          estimated_value_max?: number | null
+          estimated_value_min?: number | null
+          id?: string
+          lead_id?: string | null
+          mileage_km?: number | null
+          notes?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          vehicle_make?: string | null
+          vehicle_model?: string | null
+          vehicle_year?: number | null
+        }
+        Update: {
+          condition?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          estimated_value_max?: number | null
+          estimated_value_min?: number | null
+          id?: string
+          lead_id?: string | null
+          mileage_km?: number | null
+          notes?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          vehicle_make?: string | null
+          vehicle_model?: string | null
+          vehicle_year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_in_valuations_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "sales_assistant_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_in_valuations_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
