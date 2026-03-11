@@ -57,8 +57,20 @@ export default function SalesAssistant() {
             <TabsTrigger value="tasks" className="flex items-center gap-1.5 text-xs sm:text-sm">
               <ListChecks className="w-4 h-4" /> Aufgaben
             </TabsTrigger>
+            <TabsTrigger value="bookings" className="flex items-center gap-1.5 text-xs sm:text-sm">
+              <CalendarDays className="w-4 h-4" /> Probefahrten
+            </TabsTrigger>
+            <TabsTrigger value="quotes" className="flex items-center gap-1.5 text-xs sm:text-sm">
+              <FileText className="w-4 h-4" /> Angebote
+            </TabsTrigger>
+            <TabsTrigger value="tradein" className="flex items-center gap-1.5 text-xs sm:text-sm">
+              <Car className="w-4 h-4" /> Inzahlungnahme
+            </TabsTrigger>
             <TabsTrigger value="autopilot" className="flex items-center gap-1.5 text-xs sm:text-sm">
               <Settings2 className="w-4 h-4" /> Autopilot
+            </TabsTrigger>
+            <TabsTrigger value="calendar" className="flex items-center gap-1.5 text-xs sm:text-sm">
+              <Calendar className="w-4 h-4" /> Kalender
             </TabsTrigger>
           </TabsList>
 
@@ -68,7 +80,11 @@ export default function SalesAssistant() {
           <TabsContent value="knowledge"><SalesKnowledgeTab /></TabsContent>
           <TabsContent value="history"><SalesHistoryTab /></TabsContent>
           <TabsContent value="tasks"><SalesTasksTab /></TabsContent>
+          <TabsContent value="bookings"><SalesBookingsTab /></TabsContent>
+          <TabsContent value="quotes"><SalesQuotesTab /></TabsContent>
+          <TabsContent value="tradein"><SalesTradeInTab /></TabsContent>
           <TabsContent value="autopilot"><SalesAutopilotSettings /></TabsContent>
+          <TabsContent value="calendar"><SalesCalendarSettings /></TabsContent>
         </Tabs>
       </div>
     </div>
