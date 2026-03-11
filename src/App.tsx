@@ -106,6 +106,7 @@ const App = () => (
                 <Route path="pricing" element={<AdminPricing />} />
                 <Route path="settings" element={<AdminSettings />} />
                 <Route path="logos" element={<AdminLogos />} />
+                <Route path="sales-assistant" element={<AdminSalesAssistant />} />
               </Route>
               <Route path="/architecture" element={<ProtectedRoute><AdminRoute><ArchitectureDoc /></AdminRoute></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />

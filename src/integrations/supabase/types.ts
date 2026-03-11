@@ -98,6 +98,66 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_journey_templates: {
+        Row: {
+          buyer_intent_signals: string[] | null
+          created_at: string
+          default_prompt_block: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          is_global: boolean | null
+          journey_stage: string
+          name: string
+          recommended_assets: string[] | null
+          recommended_cta: string | null
+          recommended_goal: string | null
+          recommended_objections: string[] | null
+          sort_order: number | null
+          updated_at: string
+          user_id: string | null
+          vehicle_category: string | null
+        }
+        Insert: {
+          buyer_intent_signals?: string[] | null
+          created_at?: string
+          default_prompt_block?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_global?: boolean | null
+          journey_stage: string
+          name: string
+          recommended_assets?: string[] | null
+          recommended_cta?: string | null
+          recommended_goal?: string | null
+          recommended_objections?: string[] | null
+          sort_order?: number | null
+          updated_at?: string
+          user_id?: string | null
+          vehicle_category?: string | null
+        }
+        Update: {
+          buyer_intent_signals?: string[] | null
+          created_at?: string
+          default_prompt_block?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_global?: boolean | null
+          journey_stage?: string
+          name?: string
+          recommended_assets?: string[] | null
+          recommended_cta?: string | null
+          recommended_goal?: string | null
+          recommended_objections?: string[] | null
+          sort_order?: number | null
+          updated_at?: string
+          user_id?: string | null
+          vehicle_category?: string | null
+        }
+        Relationships: []
+      }
       ftp_configs: {
         Row: {
           created_at: string
@@ -345,6 +405,375 @@ export type Database = {
           updated_at?: string
           user_id?: string
           vehicle_data?: Json
+        }
+        Relationships: []
+      }
+      sales_assistant_conversations: {
+        Row: {
+          conversation_title: string | null
+          created_at: string
+          customer_context: Json | null
+          id: string
+          journey_stage: string | null
+          last_generated_output: string | null
+          last_prompt_snapshot: Json | null
+          lead_id: string | null
+          next_action: string | null
+          next_action_due_at: string | null
+          project_id: string | null
+          source_channel: string | null
+          status: string | null
+          summary: string | null
+          updated_at: string
+          user_id: string
+          vehicle_context: Json | null
+        }
+        Insert: {
+          conversation_title?: string | null
+          created_at?: string
+          customer_context?: Json | null
+          id?: string
+          journey_stage?: string | null
+          last_generated_output?: string | null
+          last_prompt_snapshot?: Json | null
+          lead_id?: string | null
+          next_action?: string | null
+          next_action_due_at?: string | null
+          project_id?: string | null
+          source_channel?: string | null
+          status?: string | null
+          summary?: string | null
+          updated_at?: string
+          user_id: string
+          vehicle_context?: Json | null
+        }
+        Update: {
+          conversation_title?: string | null
+          created_at?: string
+          customer_context?: Json | null
+          id?: string
+          journey_stage?: string | null
+          last_generated_output?: string | null
+          last_prompt_snapshot?: Json | null
+          lead_id?: string | null
+          next_action?: string | null
+          next_action_due_at?: string | null
+          project_id?: string | null
+          source_channel?: string | null
+          status?: string | null
+          summary?: string | null
+          updated_at?: string
+          user_id?: string
+          vehicle_context?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_assistant_conversations_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_assistant_conversations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_assistant_messages: {
+        Row: {
+          approval_status: string | null
+          channel: string | null
+          conversation_id: string
+          created_at: string
+          generation_mode: string | null
+          id: string
+          input_text: string | null
+          message_type: string
+          metadata: Json | null
+          output_text: string | null
+          role: string
+          user_id: string
+        }
+        Insert: {
+          approval_status?: string | null
+          channel?: string | null
+          conversation_id: string
+          created_at?: string
+          generation_mode?: string | null
+          id?: string
+          input_text?: string | null
+          message_type?: string
+          metadata?: Json | null
+          output_text?: string | null
+          role?: string
+          user_id: string
+        }
+        Update: {
+          approval_status?: string | null
+          channel?: string | null
+          conversation_id?: string
+          created_at?: string
+          generation_mode?: string | null
+          id?: string
+          input_text?: string | null
+          message_type?: string
+          metadata?: Json | null
+          output_text?: string | null
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_assistant_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "sales_assistant_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_assistant_profiles: {
+        Row: {
+          active: boolean | null
+          assistant_name: string | null
+          brand_voice: string | null
+          closing_style: string | null
+          compliance_notes: string | null
+          created_at: string
+          default_tone: string | null
+          email_style: string | null
+          forbidden_phrases: string[] | null
+          id: string
+          max_response_length: string | null
+          must_use_phrases: string[] | null
+          objection_style: string | null
+          preferred_cta: string | null
+          response_language: string | null
+          sales_goal: string | null
+          should_offer_callback: boolean | null
+          should_push_financing: boolean | null
+          should_push_test_drive: boolean | null
+          should_push_trade_in: boolean | null
+          signature_email: string | null
+          signature_name: string | null
+          signature_phone: string | null
+          signature_role: string | null
+          updated_at: string
+          user_id: string
+          whatsapp_style: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          assistant_name?: string | null
+          brand_voice?: string | null
+          closing_style?: string | null
+          compliance_notes?: string | null
+          created_at?: string
+          default_tone?: string | null
+          email_style?: string | null
+          forbidden_phrases?: string[] | null
+          id?: string
+          max_response_length?: string | null
+          must_use_phrases?: string[] | null
+          objection_style?: string | null
+          preferred_cta?: string | null
+          response_language?: string | null
+          sales_goal?: string | null
+          should_offer_callback?: boolean | null
+          should_push_financing?: boolean | null
+          should_push_test_drive?: boolean | null
+          should_push_trade_in?: boolean | null
+          signature_email?: string | null
+          signature_name?: string | null
+          signature_phone?: string | null
+          signature_role?: string | null
+          updated_at?: string
+          user_id: string
+          whatsapp_style?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          assistant_name?: string | null
+          brand_voice?: string | null
+          closing_style?: string | null
+          compliance_notes?: string | null
+          created_at?: string
+          default_tone?: string | null
+          email_style?: string | null
+          forbidden_phrases?: string[] | null
+          id?: string
+          max_response_length?: string | null
+          must_use_phrases?: string[] | null
+          objection_style?: string | null
+          preferred_cta?: string | null
+          response_language?: string | null
+          sales_goal?: string | null
+          should_offer_callback?: boolean | null
+          should_push_financing?: boolean | null
+          should_push_test_drive?: boolean | null
+          should_push_trade_in?: boolean | null
+          signature_email?: string | null
+          signature_name?: string | null
+          signature_phone?: string | null
+          signature_role?: string | null
+          updated_at?: string
+          user_id?: string
+          whatsapp_style?: string | null
+        }
+        Relationships: []
+      }
+      sales_assistant_tasks: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          description: string | null
+          due_at: string | null
+          id: string
+          priority: string | null
+          status: string | null
+          task_type: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          priority?: string | null
+          status?: string | null
+          task_type?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          priority?: string | null
+          status?: string | null
+          task_type?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_assistant_tasks_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "sales_assistant_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_knowledge_chunks: {
+        Row: {
+          chunk_index: number | null
+          chunk_text: string
+          created_at: string
+          document_id: string
+          embedding: string | null
+          id: string
+          is_active: boolean | null
+          metadata: Json | null
+          token_count: number | null
+          user_id: string
+        }
+        Insert: {
+          chunk_index?: number | null
+          chunk_text: string
+          created_at?: string
+          document_id: string
+          embedding?: string | null
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          token_count?: number | null
+          user_id: string
+        }
+        Update: {
+          chunk_index?: number | null
+          chunk_text?: string
+          created_at?: string
+          document_id?: string
+          embedding?: string | null
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          token_count?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_knowledge_chunks_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "sales_knowledge_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_knowledge_documents: {
+        Row: {
+          chunk_count: number | null
+          content_text: string | null
+          created_at: string
+          document_type: string
+          embedding_status: string | null
+          id: string
+          is_active: boolean | null
+          mime_type: string | null
+          public_url: string | null
+          source_type: string
+          storage_path: string | null
+          title: string
+          updated_at: string
+          user_id: string
+          version_label: string | null
+        }
+        Insert: {
+          chunk_count?: number | null
+          content_text?: string | null
+          created_at?: string
+          document_type?: string
+          embedding_status?: string | null
+          id?: string
+          is_active?: boolean | null
+          mime_type?: string | null
+          public_url?: string | null
+          source_type?: string
+          storage_path?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+          version_label?: string | null
+        }
+        Update: {
+          chunk_count?: number | null
+          content_text?: string | null
+          created_at?: string
+          document_type?: string
+          embedding_status?: string | null
+          id?: string
+          is_active?: boolean | null
+          mime_type?: string | null
+          public_url?: string | null
+          source_type?: string
+          storage_path?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+          version_label?: string | null
         }
         Relationships: []
       }

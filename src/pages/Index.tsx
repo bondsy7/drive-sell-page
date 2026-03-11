@@ -346,6 +346,9 @@ const Index = () => {
       case 'manual-landing':
         setAppState('manual-landing');
         break;
+      case 'sales-assistant':
+        navigate('/sales-assistant');
+        break;
       default:
         toast.info('Diese Funktion ist bald verfügbar!');
     }

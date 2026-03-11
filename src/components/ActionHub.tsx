@@ -50,6 +50,12 @@ const TILES: ActionTile[] = [
     title: 'Video Erstellung',
     description: 'Fahrzeugbild hochladen und ein professionelles Showroom-Video per KI erstellen.',
   },
+  {
+    id: 'sales-assistant',
+    icon: <Sparkles className="w-7 h-7" />,
+    title: 'KI Verkaufsassistent',
+    description: 'Hilft mit passenden Antworten, Follow-ups und Empfehlungen dabei, Fahrzeuge schneller zu verkaufen.',
+  },
 ];
 
 interface ActionHubProps {
