@@ -1,7 +1,7 @@
 import React from 'react';
 import AppHeader from '@/components/AppHeader';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { MessageSquare, Route, BookOpen, History, ListChecks, Sparkles, Bot, Settings2 } from 'lucide-react';
+import { MessageSquare, Route, BookOpen, History, ListChecks, Sparkles, Bot, Settings2, CalendarDays, FileText, Car, Calendar } from 'lucide-react';
 import SalesGeneratorTab from '@/components/sales/SalesGeneratorTab';
 import SalesJourneyTab from '@/components/sales/SalesJourneyTab';
 import SalesKnowledgeTab from '@/components/sales/SalesKnowledgeTab';
@@ -9,6 +9,10 @@ import SalesHistoryTab from '@/components/sales/SalesHistoryTab';
 import SalesTasksTab from '@/components/sales/SalesTasksTab';
 import SalesChatPage from '@/components/sales/SalesChatPage';
 import SalesAutopilotSettings from '@/components/sales/SalesAutopilotSettings';
+import SalesBookingsTab from '@/components/sales/SalesBookingsTab';
+import SalesQuotesTab from '@/components/sales/SalesQuotesTab';
+import SalesTradeInTab from '@/components/sales/SalesTradeInTab';
+import SalesCalendarSettings from '@/components/sales/SalesCalendarSettings';
 
 
 export default function SalesAssistant() {
