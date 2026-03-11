@@ -15,7 +15,7 @@ const PLAN_BADGE_STYLES: Record<string, string> = {
   free: 'bg-muted/80 text-muted-foreground hover:bg-muted',
   starter: 'bg-blue-500/15 text-blue-400 hover:bg-blue-500/25',
   pro: 'bg-accent/15 text-accent hover:bg-accent/25',
-  enterprise: 'bg-amber-500/15 text-amber-400 hover:bg-amber-500/25',
+  enterprise: 'bg-purple-500/15 text-purple-400 hover:bg-purple-500/25',
 };
 
 export default function CreditBadge() {
