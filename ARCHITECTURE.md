@@ -355,8 +355,8 @@ if (authResult instanceof Response) return authResult;
 // 3. Custom Prompt laden (admin_settings.ai_prompts override)
 const prompt = await getCustomPrompt("key", DEFAULT_PROMPT);
 
-// 4. KI-API aufrufen (Lovable Gateway oder direkt)
-const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", { ... });
+// 4. KI-API aufrufen (Google Gemini direkt)
+const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent", { ... });
 
 // 5. Ergebnis verarbeiten + zurückgeben
 return new Response(JSON.stringify(result), { headers: corsHeaders });
