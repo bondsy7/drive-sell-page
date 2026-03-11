@@ -47,3 +47,9 @@ verify_jwt = false
 
 [functions.ingest-sales-knowledge]
 verify_jwt = false
+
+[functions.sales-chat]
+verify_jwt = false
+
+[functions.auto-process-lead]
+verify_jwt = false
