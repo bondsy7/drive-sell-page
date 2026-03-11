@@ -41,3 +41,9 @@ verify_jwt = false
 
 [functions.generate-landing-page]
 verify_jwt = false
+
+[functions.generate-sales-response]
+verify_jwt = false
+
+[functions.ingest-sales-knowledge]
+verify_jwt = false

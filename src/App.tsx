@@ -20,6 +20,7 @@ const Integrations = lazy(() => import("./pages/Integrations"));
 const ApiDocs = lazy(() => import("./pages/ApiDocs"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const ArchitectureDoc = lazy(() => import("./pages/ArchitectureDoc"));
+const SalesAssistant = lazy(() => import("./pages/SalesAssistant"));
 
 // Admin pages
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
@@ -32,6 +33,7 @@ const AdminPrompts = lazy(() => import("./pages/admin/AdminPrompts"));
 const AdminPricing = lazy(() => import("./pages/admin/AdminPricing"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 const AdminLogos = lazy(() => import("./pages/admin/AdminLogos"));
+const AdminSalesAssistant = lazy(() => import("./pages/admin/AdminSalesAssistant"));
 const AdminRoute = lazy(() => import("./components/AdminRoute"));
 
 const queryClient = new QueryClient();
@@ -92,6 +94,8 @@ const App = () => (
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/docs" element={<ApiDocs />} />
               <Route path="/integrations" element={<ProtectedRoute><Integrations /></ProtectedRoute>} />
+              <Route path="/sales-assistant" element={<ProtectedRoute><SalesAssistant /></ProtectedRoute>} />
+              <Route path="/sales-assistant/:id" element={<ProtectedRoute><SalesAssistant /></ProtectedRoute>} />
               <Route path="/admin" element={<ProtectedRoute><AdminRoute><AdminLayout /></AdminRoute></ProtectedRoute>}>
                 <Route index element={<AdminDashboard />} />
                 <Route path="users" element={<AdminUsers />} />
@@ -102,6 +106,7 @@ const App = () => (
                 <Route path="pricing" element={<AdminPricing />} />
                 <Route path="settings" element={<AdminSettings />} />
                 <Route path="logos" element={<AdminLogos />} />
+                <Route path="sales-assistant" element={<AdminSalesAssistant />} />
               </Route>
               <Route path="/architecture" element={<ProtectedRoute><AdminRoute><ArchitectureDoc /></AdminRoute></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />

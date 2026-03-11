@@ -7,7 +7,8 @@ export type HubAction =
   | 'pdf-landing'     // PDF → Landing Page
   | 'manual-landing'  // Landing Page ohne PDF
   | 'banner'          // Banner Generator
-  | 'video';          // Video Erstellung
+  | 'video'           // Video Erstellung
+  | 'sales-assistant'; // KI Verkaufsassistent
 
 interface ActionTile {
   id: HubAction;
@@ -48,6 +49,12 @@ const TILES: ActionTile[] = [
     icon: <Video className="w-7 h-7" />,
     title: 'Video Erstellung',
     description: 'Fahrzeugbild hochladen und ein professionelles Showroom-Video per KI erstellen.',
+  },
+  {
+    id: 'sales-assistant',
+    icon: <Sparkles className="w-7 h-7" />,
+    title: 'KI Verkaufsassistent',
+    description: 'Hilft mit passenden Antworten, Follow-ups und Empfehlungen dabei, Fahrzeuge schneller zu verkaufen.',
   },
 ];
 
