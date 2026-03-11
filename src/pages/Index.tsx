@@ -297,6 +297,37 @@ const Index = () => {
     navigate('/dashboard?tab=gallery');
   }, [saveStandaloneImages, navigate]);
 
+  // ─── Standalone AI Generate (without PDF) ───
+  const doStandaloneGenerate = useCallback(async (vData: VehicleData) => {
+    setAppState('standalone-generating' as any);
+    const total = PERSPECTIVES.length;
+    setImageProgress({ current: 0, total });
+    const showroomBase = `Photorealistic image of a ${vData.vehicle?.brand || ''} ${vData.vehicle?.model || ''} ${vData.vehicle?.variant || ''} in ${vData.vehicle?.color || 'the original color'}. The car is in a modern, bright, luxurious car dealership showroom with polished floors and soft lighting. `;
+    const generatedImages: string[] = [];
+    for (let i = 0; i < PERSPECTIVES.length; i++) {
+      setImageProgress({ current: i + 1, total });
+      try {
+        const { data: imageData, error: imageError } = await supabase.functions.invoke('generate-vehicle-image', {
+          body: { imagePrompt: showroomBase + PERSPECTIVES[i].prompt, modelTier: selectedModelTier },
+        });
+        if (imageData?.error === 'insufficient_credits') { toast.error('Nicht genügend Credits.'); break; }
+        if (!imageError && imageData?.imageBase64) {
+          generatedImages.push(imageData.imageBase64);
+          if (i === 0) setImageBase64(imageData.imageBase64);
+          setGalleryImages([...generatedImages]);
+        }
+      } catch { console.warn(`Image generation failed for ${PERSPECTIVES[i].key}`); }
+    }
+    if (generatedImages.length === 0) { toast.warning('Bilder konnten nicht generiert werden.'); setAppState('standalone-photo-choice'); return; }
+    toast.success(`${generatedImages.length} von ${total} Bilder generiert.`);
+    // Save as standalone project
+    const allImages = generatedImages;
+    setStandalonePhotoResults(allImages);
+    await saveStandaloneImages(allImages);
+    navigate('/dashboard?tab=gallery');
+  }, [selectedModelTier, saveStandaloneImages, navigate]);
+
+
   // ─── Hub Action Handler ───
   const handleHubAction = useCallback((action: HubAction) => {
     switch (action) {
