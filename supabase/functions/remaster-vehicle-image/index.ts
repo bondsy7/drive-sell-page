@@ -101,62 +101,67 @@ serve(async (req) => {
     const authResult = await authenticateAndDeductCredits(req, "image_remaster", cost);
     if (authResult instanceof Response) return authResult;
 
-    const model = modelTier === 'pro' ? 'google/gemini-3-pro-image-preview' : 'google/gemini-2.5-flash-image';
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    const geminiModel = modelTier === 'pro' ? 'gemini-3-pro-image-preview' : 'gemini-3.1-flash-image-preview';
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
     if (!imageBase64) throw new Error("No image provided");
 
     // 2. Use dynamic prompt if provided, otherwise fall back to default
     const prompt = dynamicPrompt || `${await getCustomPrompt("image_remaster", DEFAULT_PROMPT)}\n\n${vehicleDescription ? `Vehicle: ${vehicleDescription}` : ''}`;
 
-    // Build content array with all reference images
-    const contentParts: any[] = [
-      { type: "text", text: prompt },
-      { type: "image_url", image_url: { url: imageBase64 } },
+    // Helper to convert data URL to inlineData part
+    function toInlineData(dataUrl: string) {
+      const raw = dataUrl.includes(",") ? dataUrl.split(",")[1] : dataUrl;
+      const mime = dataUrl.startsWith("data:image/png") ? "image/png"
+        : dataUrl.startsWith("data:image/webp") ? "image/webp" : "image/jpeg";
+      return { inlineData: { mimeType: mime, data: raw } };
+    }
+
+    // Build Gemini content parts
+    const parts: any[] = [
+      { text: prompt },
+      toInlineData(imageBase64),
     ];
-    // Add additional reference images (other perspectives of the same vehicle)
+    // Add additional reference images
     if (Array.isArray(additionalImages)) {
-      for (const img of additionalImages.slice(0, 4)) { // max 4 extra to avoid token limits
-        contentParts.push({ type: "image_url", image_url: { url: img } });
+      for (const img of additionalImages.slice(0, 4)) {
+        parts.push(toInlineData(img));
       }
     }
     // Add showroom, plate references
-    if (customShowroomBase64) contentParts.push({ type: "image_url", image_url: { url: customShowroomBase64 } });
-    if (customPlateImageBase64) contentParts.push({ type: "image_url", image_url: { url: customPlateImageBase64 } });
-    // Add manufacturer logo with label so the AI knows what it is
+    if (customShowroomBase64) parts.push(toInlineData(customShowroomBase64));
+    if (customPlateImageBase64) parts.push(toInlineData(customPlateImageBase64));
+    // Add manufacturer logo
     if (manufacturerLogoUrl) {
-      contentParts.push({ type: "text", text: "Das folgende Bild ist das HERSTELLER-LOGO (Manufacturer Logo). Verwende EXAKT dieses Logo im Hintergrund:" });
-      contentParts.push({ type: "image_url", image_url: { url: manufacturerLogoUrl } });
+      parts.push({ text: "Das folgende Bild ist das HERSTELLER-LOGO (Manufacturer Logo). Verwende EXAKT dieses Logo im Hintergrund:" });
+      parts.push(toInlineData(manufacturerLogoUrl));
       console.log("Manufacturer logo injected:", manufacturerLogoUrl.substring(0, 80));
     }
-    // Add dealer logo with label
+    // Add dealer logo
     if (dealerLogoUrl) {
-      contentParts.push({ type: "text", text: "Das folgende Bild ist das AUTOHAUS-LOGO (Dealer Logo). Verwende dieses Logo als sekundäres Branding:" });
-      contentParts.push({ type: "image_url", image_url: { url: dealerLogoUrl } });
+      parts.push({ text: "Das folgende Bild ist das AUTOHAUS-LOGO (Dealer Logo). Verwende dieses Logo als sekundäres Branding:" });
+      parts.push(toInlineData(dealerLogoUrl));
       console.log("Dealer logo injected:", dealerLogoUrl.substring(0, 80));
     }
 
-    // 3. Call AI with retry logic
+    // 3. Call Gemini API directly with retry logic
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent`;
     const maxRetries = 3;
     let resultImage: string | null = null;
     let lastError = "";
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        console.log(`Remaster attempt ${attempt + 1}/${maxRetries}, content parts: ${contentParts.length}`);
-        const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        console.log(`Remaster attempt ${attempt + 1}/${maxRetries}, parts: ${parts.length}`);
+        const response = await fetch(geminiUrl, {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "x-goog-api-key": GEMINI_API_KEY,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model,
-            messages: [{
-              role: "user",
-              content: contentParts,
-            }],
-            modalities: ["image", "text"],
+            contents: [{ parts }],
+            generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
           }),
         });
 
@@ -165,27 +170,28 @@ serve(async (req) => {
           console.error("Remaster error:", response.status, errText);
           if (response.status === 429) {
             if (attempt < maxRetries - 1) {
-              await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
+              await new Promise(r => setTimeout(r, 3000 * (attempt + 1)));
               continue;
             }
             return new Response(JSON.stringify({ error: "Rate limit erreicht. Bitte warte kurz." }), {
               status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
             });
           }
-          if (response.status === 402) {
-            return new Response(JSON.stringify({ error: "AI Credits aufgebraucht." }), {
-              status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-            });
-          }
           lastError = `Remaster error: ${response.status}`;
+          if (attempt < maxRetries - 1) { await new Promise(r => setTimeout(r, 2000)); continue; }
           continue;
         }
 
         const data = await response.json();
-        resultImage = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-        if (!resultImage && Array.isArray(data.choices?.[0]?.message?.content)) {
-          const imgPart = data.choices[0].message.content.find((p: any) => p.type === 'image_url');
-          resultImage = imgPart?.image_url?.url;
+        const respParts = data.candidates?.[0]?.content?.parts;
+        if (respParts) {
+          for (const part of respParts) {
+            if (part.inlineData?.data) {
+              const mime = part.inlineData.mimeType || "image/png";
+              resultImage = `data:${mime};base64,${part.inlineData.data}`;
+              break;
+            }
+          }
         }
 
         if (resultImage) break;

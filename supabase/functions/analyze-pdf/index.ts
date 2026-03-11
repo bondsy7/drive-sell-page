@@ -256,29 +256,13 @@ serve(async (req) => {
     const { pdfBase64 } = await req.json();
     if (!pdfBase64) throw new Error("No PDF data provided");
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
 
     // 2. Load custom prompt
     const systemPrompt = await getCustomPrompt("pdf_analysis", DEFAULT_SYSTEM_PROMPT);
 
-    // 3. Call AI
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: systemPrompt },
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: `Analysiere dieses Fahrzeug-PDF vollständig. Extrahiere ALLE verfügbaren Daten:
+    const userText = `Analysiere dieses Fahrzeug-PDF vollständig. Extrahiere ALLE verfügbaren Daten:
 - Fahrzeugdaten (Marke, Modell, Variante, Farbe, Leistung, Getriebe, Baujahr)
 - Finanzierung/Leasing (Rate, Laufzeit, Anzahlung, Sonderzahlung, Restwert, Preis)
 - Händler (Name, Adresse, Telefon, E-Mail, Website)
@@ -289,36 +273,40 @@ serve(async (req) => {
 - Bei Plug-in-Hybrid: gewichtete UND entladene Werte, Stromverbrauch, E-Reichweite
 
 Wenn CO₂-Klasse nicht angegeben aber g/km-Wert vorhanden: Klasse ableiten!
-Gib das Ergebnis als JSON zurück.`,
-              },
-              {
-                type: "image_url",
-                image_url: { url: `data:application/pdf;base64,${pdfBase64}` },
-              },
-            ],
-          },
-        ],
+Gib das Ergebnis als JSON zurück.`;
+
+    // 3. Call Gemini API directly
+    const geminiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+    const response = await fetch(geminiUrl, {
+      method: "POST",
+      headers: {
+        "x-goog-api-key": GEMINI_API_KEY,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        contents: [{
+          parts: [
+            { text: userText },
+            { inlineData: { mimeType: "application/pdf", data: pdfBase64 } },
+          ],
+        }],
       }),
     });
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error("AI gateway error:", response.status, errText);
+      console.error("Gemini API error:", response.status, errText);
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit erreicht. Bitte versuche es später erneut." }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "AI Credits aufgebraucht." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      throw new Error(`AI error: ${response.status} - ${errText}`);
+      throw new Error(`Gemini error: ${response.status} - ${errText}`);
     }
 
     const data = await response.json();
-    let content = data.choices?.[0]?.message?.content || "";
+    let content = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
     content = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
     const parsed = JSON.parse(content);
 
