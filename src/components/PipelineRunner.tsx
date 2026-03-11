@@ -48,6 +48,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   inputImages,
   originalImages,
   vehicleDescription,
+  vehicleBrand,
   remasterConfig,
   modelTier = 'standard',
   onComplete,
