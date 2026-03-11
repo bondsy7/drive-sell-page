@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import logoLight from '@/assets/logo-light.png';
 import CreditBadge from '@/components/CreditBadge';
+import UserMenuSheet from '@/components/UserMenuSheet';
 
 interface AppHeaderProps {
   leftActions?: React.ReactNode;
