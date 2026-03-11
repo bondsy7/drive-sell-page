@@ -96,7 +96,7 @@ serve(async (req) => {
   try {
     // 1. Auth & credits
     const bodyText = await req.text();
-    const { imageBase64, additionalImages, vehicleDescription, modelTier, dynamicPrompt, customShowroomBase64, customPlateImageBase64, dealerLogoUrl } = JSON.parse(bodyText);
+    const { imageBase64, additionalImages, vehicleDescription, modelTier, dynamicPrompt, customShowroomBase64, customPlateImageBase64, dealerLogoUrl, manufacturerLogoUrl } = JSON.parse(bodyText);
     const cost = modelTier === 'pro' ? 5 : 2;
     const authResult = await authenticateAndDeductCredits(req, "image_remaster", cost);
     if (authResult instanceof Response) return authResult;
@@ -120,10 +120,21 @@ serve(async (req) => {
         contentParts.push({ type: "image_url", image_url: { url: img } });
       }
     }
-    // Add showroom, plate, logo references
+    // Add showroom, plate references
     if (customShowroomBase64) contentParts.push({ type: "image_url", image_url: { url: customShowroomBase64 } });
     if (customPlateImageBase64) contentParts.push({ type: "image_url", image_url: { url: customPlateImageBase64 } });
-    if (dealerLogoUrl) contentParts.push({ type: "image_url", image_url: { url: dealerLogoUrl } });
+    // Add manufacturer logo with label so the AI knows what it is
+    if (manufacturerLogoUrl) {
+      contentParts.push({ type: "text", text: "Das folgende Bild ist das HERSTELLER-LOGO (Manufacturer Logo). Verwende EXAKT dieses Logo im Hintergrund:" });
+      contentParts.push({ type: "image_url", image_url: { url: manufacturerLogoUrl } });
+      console.log("Manufacturer logo injected:", manufacturerLogoUrl.substring(0, 80));
+    }
+    // Add dealer logo with label
+    if (dealerLogoUrl) {
+      contentParts.push({ type: "text", text: "Das folgende Bild ist das AUTOHAUS-LOGO (Dealer Logo). Verwende dieses Logo als sekundäres Branding:" });
+      contentParts.push({ type: "image_url", image_url: { url: dealerLogoUrl } });
+      console.log("Dealer logo injected:", dealerLogoUrl.substring(0, 80));
+    }
 
     // 3. Call AI with retry logic
     const maxRetries = 3;
