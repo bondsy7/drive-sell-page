@@ -355,8 +355,8 @@ if (authResult instanceof Response) return authResult;
 // 3. Custom Prompt laden (admin_settings.ai_prompts override)
 const prompt = await getCustomPrompt("key", DEFAULT_PROMPT);
 
-// 4. KI-API aufrufen (Lovable Gateway oder direkt)
-const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", { ... });
+// 4. KI-API aufrufen (Google Gemini direkt)
+const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent", { ... });
 
 // 5. Ergebnis verarbeiten + zurückgeben
 return new Response(JSON.stringify(result), { headers: corsHeaders });
@@ -557,14 +557,14 @@ CREATE POLICY "Admins can manage..." ON table
 
 ## 7. KI-Services & Modelle
 
-### 7.1 KI-Gateway
+### 7.1 Google Gemini API (direkt)
 
-Primär wird das **Lovable AI Gateway** verwendet:
+Alle KI-Aufrufe nutzen die **Google Gemini REST API** direkt:
 
 ```
-Endpoint:  https://ai.gateway.lovable.dev/v1/chat/completions
-Auth:      Bearer ${LOVABLE_API_KEY}
-Format:    OpenAI-kompatibles API-Format
+Endpoint:  https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent
+Auth:      x-goog-api-key: GEMINI_API_KEY
+Modelle:   gemini-2.5-flash, gemini-3-pro-image-preview, gemini-3.1-flash-image-preview
 ```
 
 ### 7.2 Modell-Tiers (Bildgenerierung)
@@ -815,32 +815,23 @@ Klasse G: >175 g/km
 
 ## 11. Externe APIs & Abhängigkeiten
 
-### 11.1 Lovable AI Gateway
-
-```
-URL:     https://ai.gateway.lovable.dev/v1/chat/completions
-Auth:    Bearer LOVABLE_API_KEY
-Format:  OpenAI-kompatibel
-Models:  google/gemini-*, openai/gpt-*
-```
-
-**Besonderheit Bildgenerierung:** Response enthält `images[]` Array mit Base64-URLs:
-```json
-{
-  "choices": [{
-    "message": {
-      "images": [{ "image_url": { "url": "data:image/png;base64,..." } }]
-    }
-  }]
-}
-```
-
-### 11.2 Google Gemini (Direkt-API)
+### 11.1 Google Gemini API
 
 ```
 URL:     https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent
-Auth:    ?key=GEMINI_API_KEY
-Modelle: gemini-2.5-flash-preview-native-audio-dialog (für Bilder), veo-3.1-generate-preview (für Video)
+Auth:    x-goog-api-key: GEMINI_API_KEY
+Modelle: gemini-2.5-flash (Text/PDF/OCR), gemini-3-pro-image-preview (Bild), gemini-3.1-flash-image-preview (Bild), veo-3.1-generate-preview (Video)
+```
+
+**Bild-Response:** Enthält `inlineData` in den `candidates.content.parts`:
+```json
+{
+  "candidates": [{
+    "content": {
+      "parts": [{ "inlineData": { "mimeType": "image/png", "data": "base64..." } }]
+    }
+  }]
+}
 ```
 
 ### 11.3 OpenAI
@@ -872,8 +863,7 @@ Webhook: STRIPE_WEBHOOK_SECRET (whsec_...)
 
 | Secret | Verwendung |
 |---|---|
-| `LOVABLE_API_KEY` | AI Gateway (Bild, Text, OCR) |
-| `GEMINI_API_KEY` | Direkte Google API (Video, Bildgenerierung) |
+| `GEMINI_API_KEY` | Google Gemini API (Text, Bild, Video, OCR) |
 | `OPENAI_API_KEY` | OpenAI Image API |
 | `STRIPE_SECRET_KEY` | Stripe Payments |
 | `STRIPE_WEBHOOK_SECRET` | Stripe Webhook Verifizierung |
