@@ -67,9 +67,6 @@ export default function SalesAssistant() {
           <TabsContent value="autopilot"><SalesAutopilotSettings /></TabsContent>
         </Tabs>
       </div>
-
-      {/* Floating Chat Widget (visible on all pages via App.tsx, but also here) */}
-      <SalesChatWidget />
     </div>
   );
 }

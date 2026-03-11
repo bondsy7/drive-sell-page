@@ -110,8 +110,8 @@ const App = () => (
                 <Route path="sales-assistant" element={<AdminSalesAssistant />} />
               </Route>
               <Route path="/architecture" element={<ProtectedRoute><AdminRoute><ArchitectureDoc /></AdminRoute></ProtectedRoute>} />
-            <Route path="/sales-assistant/chat" element={<ProtectedRoute><SalesAssistant /></ProtectedRoute>} />
-            <Route path="*" element={<NotFound />} />
+              <Route path="/sales-assistant/chat" element={<ProtectedRoute><SalesAssistant /></ProtectedRoute>} />
+              <Route path="*" element={<NotFound />} />
             </Routes>
             {/* Global Chat Widget */}
             <SalesChatWidgetLazy />
