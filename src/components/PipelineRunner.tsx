@@ -24,6 +24,7 @@ interface PipelineRunnerProps {
   inputImages: string[];
   originalImages?: string[];
   vehicleDescription: string;
+  vehicleBrand?: string;
   remasterConfig: RemasterConfig;
   modelTier?: string;
   onComplete: () => void;
