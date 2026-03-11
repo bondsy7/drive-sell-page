@@ -11,6 +11,7 @@ export interface RemasterConfig {
   showManufacturerLogo: boolean;
   showDealerLogo: boolean;
   dealerLogoUrl?: string | null;
+  manufacturerLogoUrl?: string | null;
 }
 
 export const SCENE_OPTIONS = [
@@ -84,8 +85,11 @@ export function buildMasterPrompt(config: RemasterConfig, vehicleDescription?: s
   }
 
   // Logo prompting
-  if (config.showDealerLogo || config.showManufacturerLogo) {
-    parts.push('Im Hintergrund soll ein fotorealistisches 3D-Rendering eines Logos sichtbar sein, das an einer modernen, dunkelgrauen matten Wand montiert ist. Das Logo besteht aus hochwertigem gebürstetem Aluminium mit sichtbarer, feiner Metallstruktur. Es wird von hinten mit kaltweißem LED-Licht beleuchtet, wodurch ein scharfer, leuchtender Halo-Effekt auf der Wand entsteht.');
+  if (config.showManufacturerLogo && config.manufacturerLogoUrl) {
+    parts.push('HERSTELLER-LOGO: Im Hintergrund soll ein fotorealistisches 3D-Rendering des beiliegenden HERSTELLER-Logos (Manufacturer Logo) sichtbar sein, das an einer modernen, dunkelgrauen matten Wand montiert ist. Das Logo besteht aus hochwertigem gebürstetem Aluminium mit sichtbarer, feiner Metallstruktur. Es wird von hinten mit kaltweißem LED-Licht beleuchtet, wodurch ein scharfer, leuchtender Halo-Effekt auf der Wand entsteht. Verwende EXAKT das beiliegende Hersteller-Logo – erfinde KEIN anderes Logo.');
+  }
+  if (config.showDealerLogo && config.dealerLogoUrl) {
+    parts.push('AUTOHAUS-LOGO: Zusätzlich soll das beiliegende AUTOHAUS-Logo (Dealer Logo) dezent sichtbar sein – z.B. als kleineres Wandlogo oder auf einem Aufsteller neben dem Fahrzeug. Verwende EXAKT das beiliegende Autohaus-Logo.');
   }
 
   // Interior-specific rules

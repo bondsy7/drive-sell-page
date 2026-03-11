@@ -17,7 +17,7 @@ import {
   detectBrandFromDescription,
   getTotalImageCount,
 } from '@/lib/pipeline-jobs';
-import { buildMasterPrompt, type RemasterConfig } from '@/lib/remaster-prompt';
+import { buildMasterPrompt, type RemasterConfig, fetchManufacturerLogos } from '@/lib/remaster-prompt';
 
 /* ─── Types ─── */
 interface PipelineRunnerProps {
@@ -93,6 +93,35 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       return next;
     });
   }, [detectedBrand, availableJobs]);
+
+  // Auto-fetch manufacturer logo based on detected brand
+  const [resolvedManufacturerLogoUrl, setResolvedManufacturerLogoUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (!remasterConfig.showManufacturerLogo || !detectedBrand) {
+      setResolvedManufacturerLogoUrl(null);
+      return;
+    }
+    // If already set manually in config, use that
+    if (remasterConfig.manufacturerLogoUrl) {
+      setResolvedManufacturerLogoUrl(remasterConfig.manufacturerLogoUrl);
+      return;
+    }
+    // Fetch from storage and match by brand name
+    fetchManufacturerLogos().then(logos => {
+      const brandLower = detectedBrand.toLowerCase();
+      // Try exact match, then partial match
+      const match = logos.find(l => l.name.toLowerCase() === brandLower)
+        || logos.find(l => l.name.toLowerCase().includes(brandLower))
+        || logos.find(l => brandLower.includes(l.name.toLowerCase()));
+      if (match) {
+        console.log(`[Pipeline] Manufacturer logo found for "${detectedBrand}": ${match.name} → ${match.url}`);
+        setResolvedManufacturerLogoUrl(match.url);
+      } else {
+        console.warn(`[Pipeline] No manufacturer logo found for brand "${detectedBrand}" in ${logos.length} logos:`, logos.map(l => l.name));
+        setResolvedManufacturerLogoUrl(null);
+      }
+    });
+  }, [detectedBrand, remasterConfig.showManufacturerLogo, remasterConfig.manufacturerLogoUrl]);
 
   const [jobs, setJobs] = useState<Record<string, JobState>>({});
   const [running, setRunning] = useState(false);
@@ -184,6 +213,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
         customShowroomBase64: remasterConfig.customShowroomBase64 || null,
         customPlateImageBase64: remasterConfig.customPlateImageBase64 || null,
         dealerLogoUrl: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null,
+        manufacturerLogoUrl: remasterConfig.showManufacturerLogo ? resolvedManufacturerLogoUrl : null,
       },
     });
 
@@ -191,7 +221,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       return { base64: null, error: data?.error || error?.message || 'Generierung fehlgeschlagen' };
     }
     return { base64: data.imageBase64 };
-  }, [inputImages, originalImages, vehicleDescription, remasterConfig, modelTier]);
+  }, [inputImages, originalImages, vehicleDescription, remasterConfig, modelTier, resolvedManufacturerLogoUrl]);
 
   /* ─── Retry a single failed job ─── */
   const retryJob = useCallback(async (jobKey: string) => {
@@ -414,10 +444,27 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
           Wähle die gewünschten Perspektiven und Pakete.
         </p>
         {detectedBrand && (
-          <Badge variant="secondary" className="mt-2 gap-1.5 text-xs">
-            <Image className="w-3 h-3" />
-            CI: {detectedBrand.charAt(0).toUpperCase() + detectedBrand.slice(1)}
-          </Badge>
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
+            <Badge variant="secondary" className="gap-1.5 text-xs">
+              <Image className="w-3 h-3" />
+              CI: {detectedBrand.charAt(0).toUpperCase() + detectedBrand.slice(1)}
+            </Badge>
+            {remasterConfig.showManufacturerLogo && (
+              <Badge variant={resolvedManufacturerLogoUrl ? "default" : "destructive"} className="gap-1.5 text-xs">
+                {resolvedManufacturerLogoUrl ? (
+                  <>
+                    <Check className="w-3 h-3" />
+                    Hersteller-Logo geladen
+                  </>
+                ) : (
+                  <>
+                    <AlertCircle className="w-3 h-3" />
+                    Kein Logo für {detectedBrand}
+                  </>
+                )}
+              </Badge>
+            )}
+          </div>
         )}
       </div>
 
