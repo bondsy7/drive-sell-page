@@ -194,6 +194,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         inputImages={allCapturedBase64}
         originalImages={allOriginalBase64}
         vehicleDescription={vehicleDescription}
+        vehicleBrand={vehicleData?.vehicle?.brand}
         remasterConfig={remasterConfig}
         modelTier={modelTier}
         onComplete={() => {
