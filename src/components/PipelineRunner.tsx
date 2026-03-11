@@ -17,7 +17,7 @@ import {
   detectBrandFromDescription,
   getTotalImageCount,
 } from '@/lib/pipeline-jobs';
-import { buildMasterPrompt, type RemasterConfig } from '@/lib/remaster-prompt';
+import { buildMasterPrompt, type RemasterConfig, fetchManufacturerLogos } from '@/lib/remaster-prompt';
 
 /* ─── Types ─── */
 interface PipelineRunnerProps {
