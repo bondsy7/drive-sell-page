@@ -1333,6 +1333,7 @@ export type Database = {
           condition: string | null
           conversation_id: string | null
           created_at: string
+          equipment: Json | null
           estimated_value_max: number | null
           estimated_value_min: number | null
           id: string
@@ -1342,14 +1343,17 @@ export type Database = {
           status: string
           updated_at: string
           user_id: string
+          variant: string | null
           vehicle_make: string | null
           vehicle_model: string | null
           vehicle_year: number | null
+          vin: string | null
         }
         Insert: {
           condition?: string | null
           conversation_id?: string | null
           created_at?: string
+          equipment?: Json | null
           estimated_value_max?: number | null
           estimated_value_min?: number | null
           id?: string
@@ -1359,14 +1363,17 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id: string
+          variant?: string | null
           vehicle_make?: string | null
           vehicle_model?: string | null
           vehicle_year?: number | null
+          vin?: string | null
         }
         Update: {
           condition?: string | null
           conversation_id?: string | null
           created_at?: string
+          equipment?: Json | null
           estimated_value_max?: number | null
           estimated_value_min?: number | null
           id?: string
@@ -1376,9 +1383,11 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id?: string
+          variant?: string | null
           vehicle_make?: string | null
           vehicle_model?: string | null
           vehicle_year?: number | null
+          vin?: string | null
         }
         Relationships: [
           {
