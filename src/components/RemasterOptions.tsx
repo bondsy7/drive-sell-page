@@ -19,6 +19,7 @@ import {
 interface RemasterOptionsProps {
   config: RemasterConfig;
   onChange: (config: RemasterConfig) => void;
+  vehicleBrand?: string; // from VIN lookup or description – used to auto-resolve manufacturer logo
 }
 
 function fileToBase64(file: File): Promise<string> {
