@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Plus, Car, TrendingDown, Trash2, Sparkles, Loader2, Search, Tag, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Car, TrendingDown, Trash2, Sparkles, Loader2, Search, Tag, ChevronDown, ChevronUp, Camera } from 'lucide-react';
 
 interface Valuation {
   id: string;
