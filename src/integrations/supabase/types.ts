@@ -540,10 +540,15 @@ export type Database = {
         Row: {
           active: boolean | null
           assistant_name: string | null
+          auto_follow_up_delay_hours: number | null
+          auto_follow_up_enabled: boolean | null
+          auto_reply_stages: string[] | null
+          autopilot_mode: string
           brand_voice: string | null
           closing_style: string | null
           compliance_notes: string | null
           created_at: string
+          daily_summary_enabled: boolean | null
           default_tone: string | null
           email_style: string | null
           forbidden_phrases: string[] | null
@@ -564,15 +569,21 @@ export type Database = {
           signature_role: string | null
           updated_at: string
           user_id: string
+          weekly_summary_enabled: boolean | null
           whatsapp_style: string | null
         }
         Insert: {
           active?: boolean | null
           assistant_name?: string | null
+          auto_follow_up_delay_hours?: number | null
+          auto_follow_up_enabled?: boolean | null
+          auto_reply_stages?: string[] | null
+          autopilot_mode?: string
           brand_voice?: string | null
           closing_style?: string | null
           compliance_notes?: string | null
           created_at?: string
+          daily_summary_enabled?: boolean | null
           default_tone?: string | null
           email_style?: string | null
           forbidden_phrases?: string[] | null
@@ -593,15 +604,21 @@ export type Database = {
           signature_role?: string | null
           updated_at?: string
           user_id: string
+          weekly_summary_enabled?: boolean | null
           whatsapp_style?: string | null
         }
         Update: {
           active?: boolean | null
           assistant_name?: string | null
+          auto_follow_up_delay_hours?: number | null
+          auto_follow_up_enabled?: boolean | null
+          auto_reply_stages?: string[] | null
+          autopilot_mode?: string
           brand_voice?: string | null
           closing_style?: string | null
           compliance_notes?: string | null
           created_at?: string
+          daily_summary_enabled?: boolean | null
           default_tone?: string | null
           email_style?: string | null
           forbidden_phrases?: string[] | null
@@ -622,6 +639,7 @@ export type Database = {
           signature_role?: string | null
           updated_at?: string
           user_id?: string
+          weekly_summary_enabled?: boolean | null
           whatsapp_style?: string | null
         }
         Relationships: []
@@ -675,6 +693,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sales_chat_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          role: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          role?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       sales_knowledge_chunks: {
         Row: {
@@ -776,6 +821,69 @@ export type Database = {
           version_label?: string | null
         }
         Relationships: []
+      }
+      sales_notifications: {
+        Row: {
+          action_payload: Json | null
+          action_type: string | null
+          approval_status: string | null
+          body: string | null
+          created_at: string
+          id: string
+          is_read: boolean | null
+          notification_type: string
+          related_conversation_id: string | null
+          related_lead_id: string | null
+          requires_approval: boolean | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          action_payload?: Json | null
+          action_type?: string | null
+          approval_status?: string | null
+          body?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          notification_type?: string
+          related_conversation_id?: string | null
+          related_lead_id?: string | null
+          requires_approval?: boolean | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          action_payload?: Json | null
+          action_type?: string | null
+          approval_status?: string | null
+          body?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          notification_type?: string
+          related_conversation_id?: string | null
+          related_lead_id?: string | null
+          requires_approval?: boolean | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_notifications_related_conversation_id_fkey"
+            columns: ["related_conversation_id"]
+            isOneToOne: false
+            referencedRelation: "sales_assistant_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_notifications_related_lead_id_fkey"
+            columns: ["related_lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sample_pdfs: {
         Row: {
