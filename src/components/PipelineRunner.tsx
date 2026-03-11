@@ -39,7 +39,7 @@ interface JobState {
 }
 
 /* ─── Constants ─── */
-const CONCURRENCY = 2; // parallel image generation slots
+const CONCURRENCY = 4; // parallel image generation slots
 const CREDIT_COST_PER_IMAGE = 2;
 
 /* ─── Component ─── */
@@ -561,7 +561,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       {(running || finished) && (
         <div className="space-y-1.5 sm:space-y-2 px-1">
           <div className="flex justify-between text-[11px] sm:text-xs text-muted-foreground">
-            <span>{running ? 'Pipeline läuft… (2 parallel)' : `${doneImages} von ${totalImages} Bilder erstellt`}</span>
+            <span>{running ? 'Pipeline läuft… (4 parallel)' : `${doneImages} von ${totalImages} Bilder erstellt`}</span>
             {running && <span>{doneImages}/{totalImages}</span>}
           </div>
           <Progress value={progressPercent} className="h-1.5" />
