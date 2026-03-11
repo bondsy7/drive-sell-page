@@ -74,7 +74,9 @@ export default function SalesTradeInTab() {
   const [saving, setSaving] = useState(false);
   const [estimating, setEstimating] = useState(false);
   const [vinLoading, setVinLoading] = useState(false);
+  const [ocrLoading, setOcrLoading] = useState(false);
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const vinFileRef = React.useRef<HTMLInputElement>(null);
 
   const toggleExpand = (id: string) => {
     setExpandedCards(prev => {
