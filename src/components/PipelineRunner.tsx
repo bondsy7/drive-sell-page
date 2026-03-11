@@ -24,6 +24,7 @@ interface PipelineRunnerProps {
   inputImages: string[];
   originalImages?: string[];
   vehicleDescription: string;
+  vehicleBrand?: string;
   remasterConfig: RemasterConfig;
   modelTier?: string;
   onComplete: () => void;
@@ -47,6 +48,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   inputImages,
   originalImages,
   vehicleDescription,
+  vehicleBrand,
   remasterConfig,
   modelTier = 'standard',
   onComplete,
@@ -57,8 +59,8 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
 
   // Detect brand for CI filtering
   const detectedBrand = useMemo(
-    () => detectBrandFromDescription(vehicleDescription),
-    [vehicleDescription],
+    () => detectBrandFromDescription(vehicleDescription, vehicleBrand),
+    [vehicleDescription, vehicleBrand],
   );
 
   const availableJobs = useMemo(() =>

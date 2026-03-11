@@ -368,10 +368,53 @@ export const PIPELINE_CATEGORIES = [
  * Detect the vehicle brand from the description and return matching CI job keys.
  * Returns all CI jobs for the detected brand.
  */
-export function detectBrandFromDescription(description: string): string | null {
-  const desc = description.toLowerCase();
+export function detectBrandFromDescription(description: string, vehicleBrand?: string): string | null {
+  // Priority 1: explicit brand from VIN lookup or vehicle data
+  if (vehicleBrand) {
+    const brandLower = vehicleBrand.toLowerCase().trim();
+    const brandMap: Record<string, string[]> = {
+      bmw: ['bmw'],
+      mercedes: ['mercedes', 'benz', 'amg'],
+      audi: ['audi'],
+      volkswagen: ['volkswagen', 'vw'],
+      porsche: ['porsche'],
+      toyota: ['toyota'],
+      ford: ['ford'],
+      hyundai: ['hyundai'],
+      kia: ['kia'],
+      renault: ['renault'],
+      peugeot: ['peugeot'],
+      opel: ['opel'],
+      skoda: ['skoda', 'škoda'],
+      seat: ['seat'],
+      cupra: ['cupra'],
+      volvo: ['volvo'],
+      mini: ['mini'],
+      fiat: ['fiat'],
+      mazda: ['mazda'],
+      nissan: ['nissan'],
+      honda: ['honda'],
+      suzuki: ['suzuki'],
+      mitsubishi: ['mitsubishi'],
+      citroen: ['citroen', 'citroën'],
+      dacia: ['dacia'],
+      tesla: ['tesla'],
+      lexus: ['lexus'],
+      jaguar: ['jaguar'],
+      'land-rover': ['land rover', 'landrover'],
+      jeep: ['jeep'],
+      subaru: ['subaru'],
+    };
+    for (const [brand, keywords] of Object.entries(brandMap)) {
+      if (keywords.some(kw => brandLower.includes(kw))) return brand;
+    }
+    // If no match in map, return the raw brand as-is (for logo matching)
+    return brandLower;
+  }
 
-  const brandMap: Record<string, string[]> = {
+  // Priority 2: fallback to description text
+  const desc = description.toLowerCase();
+  const descBrandMap: Record<string, string[]> = {
     bmw: ['bmw'],
     mercedes: ['mercedes', 'benz', 'amg'],
     audi: ['audi'],
@@ -379,7 +422,7 @@ export function detectBrandFromDescription(description: string): string | null {
     porsche: ['porsche'],
   };
 
-  for (const [brand, keywords] of Object.entries(brandMap)) {
+  for (const [brand, keywords] of Object.entries(descBrandMap)) {
     if (keywords.some(kw => desc.includes(kw))) return brand;
   }
   return null;

@@ -9,6 +9,7 @@ import { type RemasterConfig, buildMasterPrompt } from '@/lib/remaster-prompt';
 
 interface ImageUploadRemasterProps {
   vehicleDescription: string;
+  vehicleBrand?: string;
   modelTier?: string;
   onComplete: (mainImage: string, galleryImages: string[]) => void;
   onBack: () => void;
@@ -42,7 +43,7 @@ const DEFAULT_CONFIG: RemasterConfig = {
   showDealerLogo: false,
 };
 
-const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescription, modelTier, onComplete, onBack }) => {
+const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescription, vehicleBrand, modelTier, onComplete, onBack }) => {
   const [images, setImages] = useState<UploadedImage[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
@@ -115,6 +116,7 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
             customShowroomBase64: remasterConfig.customShowroomBase64 || null,
             customPlateImageBase64: remasterConfig.customPlateImageBase64 || null,
             dealerLogoUrl: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null,
+            manufacturerLogoUrl: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoUrl : null,
           },
         });
 
@@ -157,7 +159,7 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
       </div>
 
       {/* Remaster Options */}
-      <RemasterOptions config={remasterConfig} onChange={setRemasterConfig} />
+      <RemasterOptions config={remasterConfig} onChange={setRemasterConfig} vehicleBrand={vehicleBrand} />
 
       {/* Drop zone */}
       {images.length < MAX_IMAGES && !isProcessing && (

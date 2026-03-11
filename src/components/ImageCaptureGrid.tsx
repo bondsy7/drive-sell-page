@@ -144,6 +144,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
             customShowroomBase64: remasterConfig.customShowroomBase64 || null,
             customPlateImageBase64: remasterConfig.customPlateImageBase64 || null,
             dealerLogoUrl: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null,
+            manufacturerLogoUrl: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoUrl : null,
           },
         });
 
@@ -193,6 +194,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         inputImages={allCapturedBase64}
         originalImages={allOriginalBase64}
         vehicleDescription={vehicleDescription}
+        vehicleBrand={vehicleData?.vehicle?.brand}
         remasterConfig={remasterConfig}
         modelTier={modelTier}
         onComplete={() => {
@@ -217,7 +219,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       </div>
 
       {/* Remaster Options */}
-      <RemasterOptions config={remasterConfig} onChange={setRemasterConfig} />
+      <RemasterOptions config={remasterConfig} onChange={setRemasterConfig} vehicleBrand={vehicleData?.vehicle?.brand} />
 
       {/* Grid of perspective slots */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">

@@ -19,6 +19,7 @@ import {
 interface RemasterOptionsProps {
   config: RemasterConfig;
   onChange: (config: RemasterConfig) => void;
+  vehicleBrand?: string; // from VIN lookup or description – used to auto-resolve manufacturer logo
 }
 
 function fileToBase64(file: File): Promise<string> {
@@ -30,7 +31,7 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
-const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange }) => {
+const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, vehicleBrand }) => {
   const { user } = useAuth();
   const [profileShowroomUrl, setProfileShowroomUrl] = useState<string | null>(null);
   const [profileLogoUrl, setProfileLogoUrl] = useState<string | null>(null);
@@ -54,6 +55,20 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange }) =
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
+
+  // Auto-resolve manufacturer logo when brand changes
+  useEffect(() => {
+    if (!vehicleBrand || dynamicLogos.length === 0) return;
+    const brandLower = vehicleBrand.toLowerCase();
+    const match = dynamicLogos.find(l => l.name.toLowerCase() === brandLower)
+      || dynamicLogos.find(l => l.name.toLowerCase().includes(brandLower))
+      || dynamicLogos.find(l => brandLower.includes(l.name.toLowerCase()));
+    if (match) {
+      console.log(`[RemasterOptions] Auto-resolved logo for "${vehicleBrand}": ${match.name}`);
+      onChange({ ...config, manufacturerLogoUrl: match.url });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vehicleBrand, dynamicLogos]);
 
   const update = (partial: Partial<RemasterConfig>) => onChange({ ...config, ...partial });
 
