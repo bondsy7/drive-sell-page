@@ -9,6 +9,7 @@ import { type RemasterConfig, buildMasterPrompt } from '@/lib/remaster-prompt';
 
 interface ImageUploadRemasterProps {
   vehicleDescription: string;
+  vehicleBrand?: string;
   modelTier?: string;
   onComplete: (mainImage: string, galleryImages: string[]) => void;
   onBack: () => void;
