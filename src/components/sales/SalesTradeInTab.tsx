@@ -86,6 +86,60 @@ export default function SalesTradeInTab() {
     });
   };
 
+  const fileToBase64 = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  const handleVinPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (e.target) e.target.value = '';
+    setOcrLoading(true);
+    try {
+      const base64 = await fileToBase64(file);
+      const { data, error } = await supabase.functions.invoke('ocr-vin', { body: { imageBase64: base64 } });
+      if (data?.error === 'insufficient_credits') {
+        toast.error('Nicht genügend Credits für VIN-Erkennung.');
+        return;
+      }
+      if (!error && data?.vin) {
+        const vin = data.vin.toUpperCase();
+        setForm(p => ({ ...p, vin }));
+        toast.success(`VIN erkannt: ${vin}`);
+        // Auto-trigger lookup
+        setVinLoading(true);
+        try {
+          const { data: lookupData, error: lookupErr } = await supabase.functions.invoke('lookup-vin', { body: { vin } });
+          if (!lookupErr && !lookupData?.error) {
+            const v = lookupData.vehicle;
+            setForm(p => ({
+              ...p,
+              vehicle_make: v.brand || p.vehicle_make,
+              vehicle_model: v.model || p.vehicle_model,
+              variant: v.variant || p.variant,
+              vehicle_year: v.year ? String(v.year) : p.vehicle_year,
+              equipment: v.equipment?.length > 0 ? v.equipment : p.equipment,
+            }));
+            const count = v.equipment?.length || 0;
+            toast.success(`Fahrzeugdaten geladen${count > 0 ? ` – ${count} Ausstattungsmerkmale` : ''}`);
+          }
+        } finally {
+          setVinLoading(false);
+        }
+      } else {
+        toast.warning('VIN konnte nicht erkannt werden. Bitte prüfe das Foto.');
+      }
+    } catch {
+      toast.error('VIN-Erkennung fehlgeschlagen');
+    } finally {
+      setOcrLoading(false);
+    }
+  };
+
   const vinLookup = async () => {
     const vin = form.vin.trim().toUpperCase();
     if (vin.length !== 17) {
