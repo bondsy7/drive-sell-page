@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import VehicleBrandModelPicker from '@/components/VehicleBrandModelPicker';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -148,10 +149,13 @@ export default function SalesTradeInTab() {
           <DialogContent>
             <DialogHeader><DialogTitle>Inzahlungnahme bewerten</DialogTitle></DialogHeader>
             <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div><Label>Marke</Label><Input value={form.vehicle_make} onChange={e => setForm(p => ({ ...p, vehicle_make: e.target.value }))} placeholder="z.B. VW" /></div>
-                <div><Label>Modell</Label><Input value={form.vehicle_model} onChange={e => setForm(p => ({ ...p, vehicle_model: e.target.value }))} placeholder="z.B. Golf" /></div>
-              </div>
+               <VehicleBrandModelPicker
+                 brand={form.vehicle_make}
+                 model={form.vehicle_model}
+                 onBrandChange={v => setForm(p => ({ ...p, vehicle_make: v, vehicle_model: '' }))}
+                 onModelChange={v => setForm(p => ({ ...p, vehicle_model: v }))}
+                 compact
+               />
               <div className="grid grid-cols-2 gap-3">
                 <div><Label>Baujahr</Label><Input type="number" value={form.vehicle_year} onChange={e => setForm(p => ({ ...p, vehicle_year: e.target.value }))} placeholder="2020" /></div>
                 <div><Label>Laufleistung (km)</Label><Input type="number" value={form.mileage_km} onChange={e => setForm(p => ({ ...p, mileage_km: e.target.value }))} placeholder="50000" /></div>
