@@ -380,11 +380,43 @@ const Index = () => {
                 </div>
               </div>
               <ImageSourceChoice
-                onChooseGenerate={() => toast.info('Bildgenerierung benötigt Fahrzeugdaten. Nutze dafür "PDF → Angebotsseite".')}
+                onChooseGenerate={(tier) => { setSelectedModelTier(tier); setAppState('standalone-generate-select' as any); }}
                 onChooseUpload={(tier) => { setSelectedModelTier(tier); setAppState('standalone-upload'); }}
                 onChooseCapture={(tier) => { setSelectedModelTier(tier); setAppState('standalone-capture'); }}
               />
             </div>
+          )}
+
+          {/* ─── Standalone Generate: Vehicle Selection ─── */}
+          {appState === 'standalone-generate-select' && (
+            <VehicleSelectBeforeGenerate
+              modelTier={selectedModelTier}
+              onBack={() => setAppState('standalone-photo-choice')}
+              onConfirm={async (brand, model, variant, color) => {
+                const newVehicleData: VehicleData = {
+                  category: 'Kauf',
+                  vehicle: { brand, model, variant, year: new Date().getFullYear(), color: color || 'Original', fuelType: '', transmission: '', power: '', features: [] },
+                  finance: { monthlyRate: '', downPayment: '', duration: '', totalPrice: '', annualMileage: '', specialPayment: '', residualValue: '', interestRate: '' },
+                  dealer: { name: '', address: '', postalCode: '', city: '', phone: '', email: '', website: '', taxId: '', logoUrl: '', facebookUrl: '', instagramUrl: '', xUrl: '', tiktokUrl: '', youtubeUrl: '', whatsappNumber: '', leasingBank: '', leasingLegalText: '', financingBank: '', financingLegalText: '', defaultLegalText: '' },
+                  consumption: { origin: '', mileage: '', displacement: '', power: '', driveType: '', fuelType: '', consumptionCombined: '', co2Emissions: '', co2Class: '', consumptionCity: '', consumptionSuburban: '', consumptionRural: '', consumptionHighway: '', energyCostPerYear: '', fuelPrice: '', co2CostMedium: '', co2CostLow: '', co2CostHigh: '', vehicleTax: '', isPluginHybrid: false, co2EmissionsDischarged: '', co2ClassDischarged: '', consumptionCombinedDischarged: '', electricRange: '', consumptionElectric: '' },
+                };
+                const enriched = await loadProfileIntoDealer(newVehicleData);
+                setVehicleData(enriched);
+
+                // Start generation
+                const costPerImage = getCost('image_generate', selectedModelTier) || 2;
+                const totalCost = costPerImage * PERSPECTIVES.length;
+                setCreditDialog({
+                  open: true, cost: totalCost,
+                  label: `${PERSPECTIVES.length} Bilder für ${brand} ${model} generieren`,
+                  onConfirm: () => {
+                    setCreditDialog(prev => ({ ...prev, open: false }));
+                    setAppState('standalone-generating' as any);
+                    doStandaloneGenerate(enriched);
+                  },
+                });
+              }}
+            />
           )}
 
           {/* ─── Standalone Capture ─── */}
