@@ -578,8 +578,9 @@ Modelle:   gemini-2.5-flash, gemini-3-pro-image-preview, gemini-3.1-flash-image-
           <Table
             headers={['Service', 'Endpoint', 'Auth', 'Zweck']}
             rows={[
-              ['Lovable AI Gateway', 'ai.gateway.lovable.dev/v1/chat/completions', 'Bearer LOVABLE_API_KEY', 'Text, Bild, OCR'],
-              ['Google Gemini (direkt)', 'generativelanguage.googleapis.com/v1beta/...', '?key=GEMINI_API_KEY', 'Video, Bild'],
+              ['Google Gemini (Text)', 'generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent', 'x-goog-api-key', 'PDF-Analyse, OCR, Landing Pages'],
+              ['Google Gemini (Bild)', 'generativelanguage.googleapis.com/v1beta/models/gemini-3-*:generateContent', 'x-goog-api-key', 'Remastering, Bildgenerierung'],
+              ['Google Gemini (Video)', 'generativelanguage.googleapis.com/v1beta/models/veo-*', 'x-goog-api-key', 'Video-Generierung'],
               ['OpenAI', 'api.openai.com/v1/images/...', 'Bearer OPENAI_API_KEY', 'Bild (Premium/Ultra)'],
               ['OutVin', 'outvin.com/api/v1/vehicle/{vin}', 'Basic OUTVIN_API_KEY', 'VIN → Fahrzeugdaten'],
               ['Stripe', 'api.stripe.com/v1/...', 'STRIPE_SECRET_KEY', 'Zahlungen, Abos'],
@@ -589,9 +590,8 @@ Modelle:   gemini-2.5-flash, gemini-3-pro-image-preview, gemini-3.1-flash-image-
             <Table
               headers={['Secret', 'Verwendung']}
               rows={[
-                ['LOVABLE_API_KEY', 'AI Gateway (Bild, Text, OCR)'],
-                ['GEMINI_API_KEY', 'Direkte Google API (Video, Bild)'],
-                ['OPENAI_API_KEY', 'OpenAI Image API'],
+                ['GEMINI_API_KEY', 'Google Gemini API (Text, Bild, Video, OCR)'],
+                ['OPENAI_API_KEY', 'OpenAI Image API (Banner)'],
                 ['STRIPE_SECRET_KEY', 'Stripe Payments'],
                 ['STRIPE_WEBHOOK_SECRET', 'Stripe Webhook Verifizierung'],
                 ['OUTVIN_API_KEY', 'VIN-Datenbank'],
