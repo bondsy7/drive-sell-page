@@ -59,8 +59,8 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
 
   // Detect brand for CI filtering
   const detectedBrand = useMemo(
-    () => detectBrandFromDescription(vehicleDescription),
-    [vehicleDescription],
+    () => detectBrandFromDescription(vehicleDescription, vehicleBrand),
+    [vehicleDescription, vehicleBrand],
   );
 
   const availableJobs = useMemo(() =>
