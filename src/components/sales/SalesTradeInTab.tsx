@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Plus, Car, TrendingDown, Trash2, Sparkles, Loader2, Search, Tag, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Car, TrendingDown, Trash2, Sparkles, Loader2, Search, Tag, ChevronDown, ChevronUp, Camera } from 'lucide-react';
 
 interface Valuation {
   id: string;
@@ -74,7 +74,9 @@ export default function SalesTradeInTab() {
   const [saving, setSaving] = useState(false);
   const [estimating, setEstimating] = useState(false);
   const [vinLoading, setVinLoading] = useState(false);
+  const [ocrLoading, setOcrLoading] = useState(false);
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const vinFileRef = React.useRef<HTMLInputElement>(null);
 
   const toggleExpand = (id: string) => {
     setExpandedCards(prev => {
@@ -82,6 +84,60 @@ export default function SalesTradeInTab() {
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
+  };
+
+  const fileToBase64 = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  const handleVinPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (e.target) e.target.value = '';
+    setOcrLoading(true);
+    try {
+      const base64 = await fileToBase64(file);
+      const { data, error } = await supabase.functions.invoke('ocr-vin', { body: { imageBase64: base64 } });
+      if (data?.error === 'insufficient_credits') {
+        toast.error('Nicht genügend Credits für VIN-Erkennung.');
+        return;
+      }
+      if (!error && data?.vin) {
+        const vin = data.vin.toUpperCase();
+        setForm(p => ({ ...p, vin }));
+        toast.success(`VIN erkannt: ${vin}`);
+        // Auto-trigger lookup
+        setVinLoading(true);
+        try {
+          const { data: lookupData, error: lookupErr } = await supabase.functions.invoke('lookup-vin', { body: { vin } });
+          if (!lookupErr && !lookupData?.error) {
+            const v = lookupData.vehicle;
+            setForm(p => ({
+              ...p,
+              vehicle_make: v.brand || p.vehicle_make,
+              vehicle_model: v.model || p.vehicle_model,
+              variant: v.variant || p.variant,
+              vehicle_year: v.year ? String(v.year) : p.vehicle_year,
+              equipment: v.equipment?.length > 0 ? v.equipment : p.equipment,
+            }));
+            const count = v.equipment?.length || 0;
+            toast.success(`Fahrzeugdaten geladen${count > 0 ? ` – ${count} Ausstattungsmerkmale` : ''}`);
+          }
+        } finally {
+          setVinLoading(false);
+        }
+      } else {
+        toast.warning('VIN konnte nicht erkannt werden. Bitte prüfe das Foto.');
+      }
+    } catch {
+      toast.error('VIN-Erkennung fehlgeschlagen');
+    } finally {
+      setOcrLoading(false);
+    }
   };
 
   const vinLookup = async () => {
@@ -238,18 +294,36 @@ export default function SalesTradeInTab() {
                     maxLength={17}
                     className="font-mono text-xs tracking-wider"
                   />
+                  <input
+                    ref={vinFileRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={handleVinPhoto}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => vinFileRef.current?.click()}
+                    disabled={ocrLoading || vinLoading}
+                    title="VIN per Foto erkennen"
+                  >
+                    {ocrLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
+                  </Button>
                   <Button
                     type="button"
                     variant="outline"
                     size="icon"
                     onClick={vinLookup}
-                    disabled={vinLoading || form.vin.trim().length !== 17}
+                    disabled={vinLoading || ocrLoading || form.vin.trim().length !== 17}
                     title="Fahrzeugdaten per VIN laden"
                   >
                     {vinLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
                   </Button>
                 </div>
-                <p className="text-[10px] text-muted-foreground mt-1">Ausstattung & Bezeichnung automatisch per OutVin laden</p>
+                <p className="text-[10px] text-muted-foreground mt-1">VIN eingeben oder fotografieren – Ausstattung wird automatisch geladen</p>
               </div>
 
               <VehicleBrandModelPicker
