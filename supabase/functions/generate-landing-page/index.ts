@@ -280,27 +280,22 @@ Erstelle genau ${config.sectionCount} sections. Davon sollen ${config.imageCount
 
     console.log("Generating content for:", brand, model, pageType);
 
-    const contentResponse = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt },
-          ],
-        }),
-      }
-    );
+    const geminiTextUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+    const contentResponse = await fetch(geminiTextUrl, {
+      method: "POST",
+      headers: {
+        "x-goog-api-key": GEMINI_API_KEY,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        contents: [{ parts: [{ text: userPrompt }] }],
+      }),
+    });
 
     if (!contentResponse.ok) {
       const errText = await contentResponse.text();
-      console.error("AI content error:", contentResponse.status, errText);
+      console.error("Gemini content error:", contentResponse.status, errText);
       if (contentResponse.status === 429) {
         return new Response(
           JSON.stringify({ error: "Rate limit erreicht. Bitte versuche es in einer Minute erneut." }),
@@ -314,7 +309,7 @@ Erstelle genau ${config.sectionCount} sections. Davon sollen ${config.imageCount
     }
 
     const contentData = await contentResponse.json();
-    let rawContent = contentData.choices?.[0]?.message?.content || "";
+    let rawContent = contentData.candidates?.[0]?.content?.parts?.[0]?.text || "";
     rawContent = rawContent.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
 
     let pageContent;
@@ -341,39 +336,44 @@ Erstelle genau ${config.sectionCount} sections. Davon sollen ${config.imageCount
 
     console.log(`Generating ${imagePrompts.length} images...`);
 
+    const geminiImageUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
     const imageResults: Record<string, string> = {};
     for (let i = 0; i < imagePrompts.length; i += 2) {
       const batch = imagePrompts.slice(i, i + 2);
       const results = await Promise.allSettled(
         batch.map(async ({ key, prompt }) => {
           try {
-            const imgResp = await fetch(
-              "https://ai.gateway.lovable.dev/v1/chat/completions",
-              {
-                method: "POST",
-                headers: {
-                  Authorization: `Bearer ${LOVABLE_API_KEY}`,
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  model: "google/gemini-2.5-flash-image",
-                  messages: [
-                    {
-                      role: "user",
-                      content: `Generate a professional, high-quality automotive marketing photo: ${prompt}. Style: Modern, clean, professional car dealership photography. Aspect ratio: 16:9. No text overlays.`,
-                    },
-                  ],
-                  modalities: ["image", "text"],
-                }),
-              }
-            );
+            const imgResp = await fetch(geminiImageUrl, {
+              method: "POST",
+              headers: {
+                "x-goog-api-key": GEMINI_API_KEY,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                contents: [{
+                  parts: [{
+                    text: `Generate a professional, high-quality automotive marketing photo: ${prompt}. Style: Modern, clean, professional car dealership photography. Aspect ratio: 16:9. No text overlays.`,
+                  }],
+                }],
+                generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
+              }),
+            });
             if (!imgResp.ok) {
               console.error(`Image gen failed for ${key}:`, imgResp.status);
               return { key, url: null };
             }
             const imgData = await imgResp.json();
-            const base64 =
-              imgData.choices?.[0]?.message?.images?.[0]?.image_url?.url || null;
+            let base64: string | null = null;
+            const respParts = imgData.candidates?.[0]?.content?.parts;
+            if (respParts) {
+              for (const part of respParts) {
+                if (part.inlineData?.data) {
+                  const mime = part.inlineData.mimeType || "image/png";
+                  base64 = `data:${mime};base64,${part.inlineData.data}`;
+                  break;
+                }
+              }
+            }
             if (base64) {
               const url = await uploadGeneratedImage(
                 supabase,
