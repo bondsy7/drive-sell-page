@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Plus, Car, TrendingDown, TrendingUp, Trash2 } from 'lucide-react';
+import { Plus, Car, TrendingDown, TrendingUp, Trash2, Sparkles, Loader2 } from 'lucide-react';
 
 interface Valuation {
   id: string;
