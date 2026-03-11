@@ -863,8 +863,7 @@ Webhook: STRIPE_WEBHOOK_SECRET (whsec_...)
 
 | Secret | Verwendung |
 |---|---|
-| `LOVABLE_API_KEY` | AI Gateway (Bild, Text, OCR) |
-| `GEMINI_API_KEY` | Direkte Google API (Video, Bildgenerierung) |
+| `GEMINI_API_KEY` | Google Gemini API (Text, Bild, Video, OCR) |
 | `OPENAI_API_KEY` | OpenAI Image API |
 | `STRIPE_SECRET_KEY` | Stripe Payments |
 | `STRIPE_WEBHOOK_SECRET` | Stripe Webhook Verifizierung |
