@@ -557,14 +557,14 @@ CREATE POLICY "Admins can manage..." ON table
 
 ## 7. KI-Services & Modelle
 
-### 7.1 KI-Gateway
+### 7.1 Google Gemini API (direkt)
 
-Primär wird das **Lovable AI Gateway** verwendet:
+Alle KI-Aufrufe nutzen die **Google Gemini REST API** direkt:
 
 ```
-Endpoint:  https://ai.gateway.lovable.dev/v1/chat/completions
-Auth:      Bearer ${LOVABLE_API_KEY}
-Format:    OpenAI-kompatibles API-Format
+Endpoint:  https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent
+Auth:      x-goog-api-key: GEMINI_API_KEY
+Modelle:   gemini-2.5-flash, gemini-3-pro-image-preview, gemini-3.1-flash-image-preview
 ```
 
 ### 7.2 Modell-Tiers (Bildgenerierung)
