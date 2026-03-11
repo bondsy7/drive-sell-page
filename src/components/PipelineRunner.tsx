@@ -213,6 +213,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
         customShowroomBase64: remasterConfig.customShowroomBase64 || null,
         customPlateImageBase64: remasterConfig.customPlateImageBase64 || null,
         dealerLogoUrl: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null,
+        manufacturerLogoUrl: remasterConfig.showManufacturerLogo ? resolvedManufacturerLogoUrl : null,
       },
     });
 
@@ -220,7 +221,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       return { base64: null, error: data?.error || error?.message || 'Generierung fehlgeschlagen' };
     }
     return { base64: data.imageBase64 };
-  }, [inputImages, originalImages, vehicleDescription, remasterConfig, modelTier]);
+  }, [inputImages, originalImages, vehicleDescription, remasterConfig, modelTier, resolvedManufacturerLogoUrl]);
 
   /* ─── Retry a single failed job ─── */
   const retryJob = useCallback(async (jobKey: string) => {
