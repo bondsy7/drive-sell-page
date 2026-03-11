@@ -294,18 +294,36 @@ export default function SalesTradeInTab() {
                     maxLength={17}
                     className="font-mono text-xs tracking-wider"
                   />
+                  <input
+                    ref={vinFileRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={handleVinPhoto}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => vinFileRef.current?.click()}
+                    disabled={ocrLoading || vinLoading}
+                    title="VIN per Foto erkennen"
+                  >
+                    {ocrLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
+                  </Button>
                   <Button
                     type="button"
                     variant="outline"
                     size="icon"
                     onClick={vinLookup}
-                    disabled={vinLoading || form.vin.trim().length !== 17}
+                    disabled={vinLoading || ocrLoading || form.vin.trim().length !== 17}
                     title="Fahrzeugdaten per VIN laden"
                   >
                     {vinLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
                   </Button>
                 </div>
-                <p className="text-[10px] text-muted-foreground mt-1">Ausstattung & Bezeichnung automatisch per OutVin laden</p>
+                <p className="text-[10px] text-muted-foreground mt-1">VIN eingeben oder fotografieren – Ausstattung wird automatisch geladen</p>
               </div>
 
               <VehicleBrandModelPicker
