@@ -53,9 +53,11 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   vehicleBrand,
   remasterConfig,
   modelTier = 'standard',
+  projectId,
   onComplete,
   onBack,
 }) => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { balance, getCost } = useCredits();
 
