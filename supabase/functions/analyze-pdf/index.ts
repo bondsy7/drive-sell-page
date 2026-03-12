@@ -277,6 +277,7 @@ Gib das Ergebnis als JSON zurück.`;
 
     // 3. Call Gemini API directly
     const geminiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+    console.log("[analyze-pdf] Calling Gemini API...");
     const response = await fetch(geminiUrl, {
       method: "POST",
       headers: {
@@ -291,6 +292,10 @@ Gib das Ergebnis als JSON zurück.`;
             { inlineData: { mimeType: "application/pdf", data: pdfBase64 } },
           ],
         }],
+        generationConfig: {
+          responseMimeType: "application/json",
+          temperature: 0.1,
+        },
       }),
     });
 
