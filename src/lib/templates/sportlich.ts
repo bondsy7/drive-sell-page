@@ -27,8 +27,8 @@ export function generateSportlichHTML(data: VehicleData, imageBase64: string | n
     .hero-overlay{position:absolute;bottom:0;left:0;right:0;padding:32px;background:linear-gradient(transparent,rgba(8,9,13,0.95))}
     .hero-overlay h1{font-family:'Rajdhani',sans-serif;font-size:34px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:1px}
     .hero-overlay .price{font-family:'Rajdhani',sans-serif;font-size:28px;font-weight:700;color:#e63946}
-    .gallery{display:flex;gap:8px;margin-top:12px;padding:0 16px 16px}
-    .gallery-thumb{width:72px;height:52px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid transparent;transition:all .2s;opacity:0.6}
+    .gallery{display:flex;gap:8px;margin-top:12px;padding:0 16px 16px;overflow-x:auto;max-width:100%}
+    .gallery-thumb{width:72px;height:52px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid transparent;transition:all .2s;opacity:0.6;flex-shrink:0}
     .gallery-thumb:hover{border-color:#e63946;opacity:1}
     .section{background:#0f1117;border-radius:14px;padding:24px;margin-bottom:16px;border:1px solid #1a1e2a}
     .section h3{font-family:'Rajdhani',sans-serif;font-size:17px;font-weight:600;color:#e63946;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:16px}

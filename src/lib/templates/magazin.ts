@@ -36,8 +36,8 @@ export function generateMagazinHTML(data: VehicleData, imageBase64: string | nul
     .hero-info .price{font-size:26px;font-weight:800;color:#2563eb}
     .hero-info .rate-inline{display:inline-flex;align-items:baseline;gap:6px;margin-top:8px;font-size:13px;color:#64748b}
     .hero-info .rate-inline strong{font-size:18px;color:#1e293b}
-    .gallery{display:flex;gap:6px;padding:12px;background:#f1f5f9}
-    .gallery-thumb{width:72px;height:54px;object-fit:cover;border-radius:6px;cursor:pointer;opacity:0.5;transition:all .2s}
+    .gallery{display:flex;gap:6px;padding:12px;background:#f1f5f9;overflow-x:auto;max-width:100%}
+    .gallery-thumb{width:72px;height:54px;object-fit:cover;border-radius:6px;cursor:pointer;opacity:0.5;transition:all .2s;flex-shrink:0}
     .gallery-thumb:hover{opacity:1}
     .columns{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px}
     @media(max-width:768px){.columns{grid-template-columns:1fr}}

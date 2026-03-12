@@ -29,8 +29,8 @@ export function generateKlassischHTML(data: VehicleData, imageBase64: string | n
     .header .price{font-family:'Playfair Display',serif;font-size:28px;color:#1a365d;margin-top:14px;font-weight:600}
     .img-block{margin-bottom:32px;text-align:center}
     .img-block img#mainImg{width:100%;max-height:420px;object-fit:cover;border-radius:8px}
-    .gallery{display:flex;gap:8px;margin-top:12px;justify-content:center}
-    .gallery-thumb{width:68px;height:50px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid transparent;transition:all .2s}
+    .gallery{display:flex;gap:8px;margin-top:12px;overflow-x:auto;max-width:100%}
+    .gallery-thumb{width:68px;height:50px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid transparent;transition:all .2s;flex-shrink:0}
     .gallery-thumb:hover{border-color:#1a365d}
     .section{margin-bottom:24px;padding:28px;background:#fff;border:1px solid #e8e4de;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,0.03)}
     .section h3{font-family:'Playfair Display',serif;font-size:18px;color:#1a2332;margin-bottom:18px;padding-bottom:10px;border-bottom:2px solid #1a365d}
