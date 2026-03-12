@@ -87,6 +87,7 @@ export default function SalesAssistant() {
           <TabsContent value="bookings"><SalesBookingsTab /></TabsContent>
           <TabsContent value="quotes"><SalesQuotesTab /></TabsContent>
           <TabsContent value="tradein"><SalesTradeInTab /></TabsContent>
+          <TabsContent value="mailbox"><SalesMailboxTab /></TabsContent>
           <TabsContent value="autopilot"><SalesAutopilotSettings /></TabsContent>
           <TabsContent value="calendar"><SalesCalendarSettings /></TabsContent>
         </Tabs>
