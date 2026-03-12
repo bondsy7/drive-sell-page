@@ -1093,6 +1093,7 @@ Sichtbar im Dashboard + Admin-Panel
 /admin/pricing      → Abo-Pläne + Credit-Kosten bearbeiten
 /admin/settings     → System-Einstellungen
 /admin/logos        → Hersteller-Logos (Massen-Upload)
+/admin/sales-assistant → Sales-Assistant-Konfiguration
 ```
 
 ### 14.2 Admin-spezifische Edge Functions
