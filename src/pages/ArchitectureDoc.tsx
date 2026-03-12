@@ -796,8 +796,58 @@ GET /api-vehicles/:id/html  → HTML-Fragment (body-Inhalt)`}</CodeBlock>
           </SubSection>
         </Section>
 
-        {/* 17. Deployment */}
-        <Section id="s17" title="17. Deployment & Infrastruktur">
+        {/* 17. Sales Assistant & CRM */}
+        <Section id="s17" title="17. Sales Assistant & CRM">
+          <P>
+            Vollintegriertes KI-Verkaufsassistenten-System für Automobilhändler mit CRM, Lead-Management,
+            Wissensbasis und automatisierten Workflows.
+          </P>
+          <SubSection title="Module (Tabs)">
+            <Table
+              headers={['Tab', 'Funktion']}
+              rows={[
+                ['Generator', 'KI-Antworten auf Kundenanfragen generieren (E-Mail, WhatsApp, Chat)'],
+                ['CRM', 'Kunden-Timeline mit Lead-Gruppierung, Bot-Antworten, manuelle Notizen'],
+                ['Aufgaben', 'Aufgabenverwaltung mit Prioritäten und Status'],
+                ['Buchungen', 'Probefahrt-Termine + Verfügbarkeitskalender'],
+                ['Angebote', 'Angebotserstellung (Barkauf, Leasing, Finanzierung)'],
+                ['Inzahlungnahme', 'Bewertung von Gebrauchtfahrzeugen'],
+                ['Wissensbasis', 'Dokumente hochladen → Chunking → Embeddings (RAG)'],
+                ['Postfach', 'E-Mail-Outbox mit Status-Tracking'],
+                ['Verlauf', 'Konversationshistorie mit allen Nachrichten'],
+                ['Journey', 'Customer-Journey-Templates (Phasen, CTAs, Signale)'],
+              ]}
+            />
+          </SubSection>
+          <SubSection title="Autopilot-Modi">
+            <Table
+              headers={['Modus', 'Beschreibung']}
+              rows={[
+                ['Manuell', 'Alle Antworten werden vom Verkäufer geprüft und gesendet'],
+                ['Vorschlag', 'KI erstellt Entwürfe, Verkäufer genehmigt vor Versand'],
+                ['Autopilot', 'KI antwortet automatisch auf bestimmte Journey-Phasen'],
+              ]}
+            />
+          </SubSection>
+          <SubSection title="Wissensbasis (RAG)">
+            <CodeBlock>{`Dokument-Upload → ingest-sales-knowledge (Edge Function)
+  → Text-Extraktion (PDF/TXT/Markdown)
+  → Chunking (500-1000 Tokens)
+  → Embedding-Generierung (Gemini)
+  → Speicherung in sales_knowledge_chunks (pgvector)
+  → Abruf bei Antwort-Generierung via Similarity-Search`}</CodeBlock>
+          </SubSection>
+          <SubSection title="CRM-Kundengruppierung">
+            <P>
+              Leads werden automatisch nach E-Mail/Telefon zu Kunden-Threads gruppiert.
+              Jeder Thread zeigt: alle Anfragen, Bot-Antworten, Stage-Wechsel, manuelle Notizen,
+              Intenttags (Probefahrt, Leasing, Kauf, etc.) und verknüpfte Fahrzeuge.
+            </P>
+          </SubSection>
+        </Section>
+
+        {/* 18. Deployment */}
+        <Section id="s18" title="18. Deployment & Infrastruktur">
           <SubSection title="Deployment-Modell">
             <Table
               headers={['Komponente', 'Deployment']}
