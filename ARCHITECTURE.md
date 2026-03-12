@@ -377,7 +377,7 @@ const response = await fetch("https://generativelanguage.googleapis.com/v1beta/m
 return new Response(JSON.stringify(result), { headers: corsHeaders });
 ```
 
-### 4.5 JWT-Konfiguration
+### 4.6 JWT-Konfiguration
 
 ```toml
 # supabase/config.toml
