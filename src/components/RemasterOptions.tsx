@@ -67,7 +67,7 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  // Auto-resolve manufacturer logo when brand changes
+  // Auto-resolve manufacturer logo when brand changes + cache base64
   useEffect(() => {
     if (!vehicleBrand || dynamicLogos.length === 0) return;
     const brandLower = vehicleBrand.toLowerCase();
@@ -76,7 +76,9 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
       || dynamicLogos.find(l => brandLower.includes(l.name.toLowerCase()));
     if (match) {
       console.log(`[RemasterOptions] Auto-resolved logo for "${vehicleBrand}": ${match.name}`);
-      onChange({ ...config, manufacturerLogoUrl: match.url });
+      ensureCachedBase64(match.url).then(b64 => {
+        onChange({ ...config, manufacturerLogoUrl: match.url, manufacturerLogoBase64: b64 });
+      });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vehicleBrand, dynamicLogos]);
