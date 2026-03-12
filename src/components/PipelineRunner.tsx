@@ -108,13 +108,24 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       setResolvedManufacturerLogoUrl(remasterConfig.manufacturerLogoUrl);
       return;
     }
-    // Fetch from storage and match by brand name
+    // Fetch from storage and match by brand name (with alias support)
     fetchManufacturerLogos().then(logos => {
-      const brandLower = detectedBrand.toLowerCase();
-      // Try exact match, then partial match
-      const match = logos.find(l => l.name.toLowerCase() === brandLower)
-        || logos.find(l => l.name.toLowerCase().includes(brandLower))
-        || logos.find(l => brandLower.includes(l.name.toLowerCase()));
+      const brandLower = detectedBrand.toLowerCase().replace(/[-_\s]+/g, '');
+      const LOGO_ALIASES: Record<string, string[]> = {
+        volkswagen: ['vw'],
+        vw: ['volkswagen'],
+        mercedesbenz: ['mercedes', 'mb'],
+        mercedes: ['mercedesbenz', 'mb'],
+        bmw: ['bayerischemotorenwerke'],
+      };
+      const aliases = LOGO_ALIASES[brandLower] || [];
+      const allKeys = [brandLower, ...aliases];
+
+      const match = logos.find(l => {
+        const ln = l.name.toLowerCase().replace(/[-_\s]+/g, '');
+        return allKeys.some(k => ln === k || ln.includes(k) || k.includes(ln));
+      });
+
       if (match) {
         console.log(`[Pipeline] Manufacturer logo found for "${detectedBrand}": ${match.name} → ${match.url}`);
         setResolvedManufacturerLogoUrl(match.url);
