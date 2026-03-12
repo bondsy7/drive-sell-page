@@ -36,7 +36,7 @@ const ProjectView = () => {
           vehicle: vd.vehicle || { brand: '', model: '', variant: '', year: 0, color: '', fuelType: '', transmission: '', power: '', features: [] },
           finance: vd.finance || { monthlyRate: '', downPayment: '', duration: '', totalPrice: '', annualMileage: '', specialPayment: '', residualValue: '', interestRate: '' },
           consumption: vd.consumption || { origin: '', mileage: '', displacement: '', power: '', driveType: '', fuelType: '', consumptionCombined: '', co2Emissions: '', co2Class: '', consumptionCity: '', consumptionSuburban: '', consumptionRural: '', consumptionHighway: '', energyCostPerYear: '', fuelPrice: '', co2CostMedium: '', co2CostLow: '', co2CostHigh: '', vehicleTax: '', isPluginHybrid: false, co2EmissionsDischarged: '', co2ClassDischarged: '', consumptionCombinedDischarged: '', electricRange: '', consumptionElectric: '' },
-          dealer: vd.dealer || { name: '', address: '', postalCode: '', city: '', phone: '', email: '', website: '', taxId: '', logoUrl: '' },
+          dealer: vd.dealer || { name: '', address: '', postalCode: '', city: '', phone: '', email: '', website: '', taxId: '', logoUrl: '', facebookUrl: '', instagramUrl: '', xUrl: '', tiktokUrl: '', youtubeUrl: '', whatsappNumber: '', leasingBank: '', leasingLegalText: '', financingBank: '', financingLegalText: '', defaultLegalText: '' },
         });
         setSelectedTemplate((p.template_id || 'autohaus') as TemplateId);
       }
