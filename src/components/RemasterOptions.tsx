@@ -266,19 +266,37 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
           <Building2 className="w-3.5 h-3.5" /> Logo-Konfiguration
         </Label>
 
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Car className="w-3.5 h-3.5 text-muted-foreground" />
-            <span className="text-xs text-foreground">Hersteller-Logo einblenden</span>
-            {dynamicLogos.length === 0 && (
-              <span className="text-[10px] text-muted-foreground/60">(keine Logos vorhanden)</span>
-            )}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Car className="w-3.5 h-3.5 text-muted-foreground" />
+              <span className="text-xs text-foreground">Hersteller-Logo einblenden</span>
+              {dynamicLogos.length === 0 && (
+                <span className="text-[10px] text-muted-foreground/60">(keine Logos vorhanden)</span>
+              )}
+            </div>
+            <Switch
+              checked={config.showManufacturerLogo}
+              onCheckedChange={(v) => update({ showManufacturerLogo: v })}
+              disabled={dynamicLogos.length === 0}
+            />
           </div>
-          <Switch
-            checked={config.showManufacturerLogo}
-            onCheckedChange={(v) => update({ showManufacturerLogo: v })}
-            disabled={dynamicLogos.length === 0}
-          />
+          {config.showManufacturerLogo && (
+            <div className={`flex items-center gap-1.5 text-[11px] rounded-md px-2 py-1 ${config.manufacturerLogoUrl ? 'bg-accent/20 text-accent-foreground' : 'bg-destructive/10 text-destructive'}`}>
+              {config.manufacturerLogoUrl ? (
+                <>
+                  <CheckCircle2 className="w-3 h-3 text-accent shrink-0" />
+                  <span>Logo gefunden{vehicleBrand ? ` für „${vehicleBrand}"` : ''}</span>
+                  <img src={config.manufacturerLogoUrl} alt="" className="w-5 h-5 object-contain ml-auto" />
+                </>
+              ) : (
+                <>
+                  <AlertCircle className="w-3 h-3 shrink-0" />
+                  <span>{vehicleBrand ? `Kein Logo für „${vehicleBrand}" gefunden` : 'Keine Marke erkannt – Logo kann nicht zugeordnet werden'}</span>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="flex items-center justify-between">
