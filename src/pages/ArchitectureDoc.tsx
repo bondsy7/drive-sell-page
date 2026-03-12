@@ -90,7 +90,7 @@ export default function ArchitectureDoc() {
           </div>
           <h1 className="text-4xl font-bold text-foreground mb-3 print:text-3xl">Autohaus.AI</h1>
           <p className="text-xl text-muted-foreground mb-2 print:text-lg">System- & Softwarearchitektur</p>
-          <p className="text-sm text-muted-foreground">Version 1.0 · Stand: März 2026</p>
+          <p className="text-sm text-muted-foreground">Version 1.1 · Stand: März 2026</p>
           <p className="text-sm text-muted-foreground">Für Entwickler-Onboarding & Kunden-Dokumentation</p>
           
           <div className="mt-12 print:mt-8">
