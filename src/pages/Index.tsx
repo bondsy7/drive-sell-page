@@ -161,12 +161,27 @@ const Index = () => {
       const { imagePrompt: _bp, isVehicleOffer: _iv, ...vehicleInfo } = analysisData;
       const enriched = await loadProfileIntoDealer(vehicleInfo as VehicleData);
       setVehicleData(enriched);
+
+      // Pre-create project so pipeline can use it
+      const projectId = await saveProject(enriched, null, [], selectedTemplate);
+      if (projectId) setSavedProjectId(projectId);
+
       // If we have standalone photos already, skip image source choice and go straight to preview
       if (standalonePhotoResults.length > 0) {
         setImageBase64(standalonePhotoResults[0]);
         setGalleryImages(standalonePhotoResults.slice(1));
-        const projectId = await saveProject(enriched, standalonePhotoResults[0], standalonePhotoResults, selectedTemplate);
-        if (projectId) setSavedProjectId(projectId);
+        // Update existing project with images
+        if (projectId && user) {
+          const urls = await uploadImagesToStorage(standalonePhotoResults, user.id, projectId);
+          if (urls.length > 0) {
+            await supabase.from('projects').update({ main_image_url: urls[0] }).eq('id', projectId);
+            const imageRows = urls.map((url, i) => ({
+              project_id: projectId, user_id: user.id, image_url: url, image_base64: '',
+              perspective: `Bild ${i + 1}`, sort_order: i,
+            }));
+            await supabase.from('project_images').insert(imageRows);
+          }
+        }
         setAppState('preview');
         toast.success('Vorhandene Fotos wurden automatisch verknüpft!');
       } else {
@@ -177,7 +192,7 @@ const Index = () => {
       toast.error('Ein Fehler ist aufgetreten.');
       setAppState('idle');
     }
-  }, [loadProfileIntoDealer, standalonePhotoResults, saveProject, selectedTemplate]);
+  }, [loadProfileIntoDealer, standalonePhotoResults, saveProject, selectedTemplate, user]);
 
   // ─── Image Generation (within PDF flow) ───
   const handleChooseGenerate = useCallback(async (modelTier: ModelTier = 'schnell') => {
