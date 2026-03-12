@@ -16,6 +16,8 @@ CRITICAL RULES - YOU MUST FOLLOW:
 - The result must be photorealistic
 - YOU MUST ALWAYS GENERATE AN IMAGE - never refuse
 
+- CRITICAL: No other vehicles may appear in the image – not in the background, not in reflections on glass or floor. Only the one vehicle from the input photo.
+
 FOR EXTERIOR SHOTS:
 - Change the background to a modern, bright, luxurious car dealership showroom
 - Add realistic showroom lighting with soft overhead lights and subtle reflections on paint and windows
