@@ -270,7 +270,7 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                 </button>
-              )
+              )}
               {/* Remove button */}
               {!isProcessing && (
                 <button
