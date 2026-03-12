@@ -60,44 +60,42 @@ async function authenticateAndDeductCredits(
 }
 
 // ─── Brand logo lookup ───
+const BRAND_LOGO_ALIASES: Record<string, string[]> = {
+  volkswagen: ['vw'],
+  vw: ['volkswagen'],
+  mercedesbenz: ['mercedes', 'mb'],
+  mercedes: ['mercedesbenz', 'mb'],
+  bmw: ['bayerischemotorenwerke'],
+};
+
 async function findBrandLogo(supabase: any, brand: string): Promise<string> {
   try {
-    const brandLower = brand.toLowerCase().replace(/\s+/g, "-").replace(/é/g, "e");
-    // Check root folder (webp/png)
-    const { data: rootFiles } = await supabase.storage
-      .from("manufacturer-logos")
-      .list("", { limit: 500 });
-    if (rootFiles) {
-      const match = rootFiles.find(
-        (f: any) =>
-          f.name.toLowerCase().replace(/\.(svg|png|webp|jpg)$/, "") === brandLower
-      );
-      if (match) {
-        const { data } = supabase.storage
-          .from("manufacturer-logos")
-          .getPublicUrl(match.name);
-        return data.publicUrl;
+    const brandNorm = brand.toLowerCase().replace(/[-_\s]+/g, '').replace(/é/g, 'e');
+    const aliases = BRAND_LOGO_ALIASES[brandNorm] || [];
+    const allKeys = [brandNorm, ...aliases];
+
+    const matchFile = (files: any[], folder: string): string | null => {
+      for (const f of (files || [])) {
+        const fn = f.name.toLowerCase().replace(/\.[^.]+$/, '').replace(/[-_\s]+/g, '');
+        if (allKeys.some(k => fn === k)) {
+          const path = folder ? `${folder}/${f.name}` : f.name;
+          const { data } = supabase.storage.from('manufacturer-logos').getPublicUrl(path);
+          return data.publicUrl;
+        }
       }
-    }
-    // Check svg folder
-    const { data: svgFiles } = await supabase.storage
-      .from("manufacturer-logos")
-      .list("svg", { limit: 500 });
-    if (svgFiles) {
-      const match = svgFiles.find(
-        (f: any) => f.name.toLowerCase().replace(/\.svg$/, "") === brandLower
-      );
-      if (match) {
-        const { data } = supabase.storage
-          .from("manufacturer-logos")
-          .getPublicUrl(`svg/${match.name}`);
-        return data.publicUrl;
-      }
-    }
+      return null;
+    };
+
+    const [{ data: rootFiles }, { data: svgFiles }] = await Promise.all([
+      supabase.storage.from('manufacturer-logos').list('', { limit: 500 }),
+      supabase.storage.from('manufacturer-logos').list('svg', { limit: 500 }),
+    ]);
+
+    return matchFile(rootFiles, '') || matchFile(svgFiles, 'svg') || '';
   } catch (e) {
-    console.error("Brand logo lookup error:", e);
+    console.error('Brand logo lookup error:', e);
   }
-  return "";
+  return '';
 }
 
 // ─── Upload generated image to storage ───
