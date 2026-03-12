@@ -220,7 +220,15 @@ ${profile?.assistant_name ? `Du heißt "${profile.assistant_name}".` : ''}`;
         for (const n of pendingApprovals) {
           const payload = n.action_payload || {};
           if (payload.emailId) {
-            await supabase.from('sales_email_outbox').update({ status: 'queued' }).eq('id', payload.emailId);
+            await supabase.from('sales_email_outbox').update({ status: 'queued', error_message: null }).eq('id', payload.emailId);
+            await fetch(`${supabaseUrl}/functions/v1/process-sales-email`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${serviceKey}`,
+              },
+              body: JSON.stringify({ emailId: payload.emailId }),
+            }).catch((error) => console.error('process-sales-email invoke error:', error));
           }
           if (payload.conversationId) {
             await supabase.from('sales_assistant_conversations').update({ status: 'in_progress' }).eq('id', payload.conversationId);
