@@ -367,7 +367,10 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
                     <ConsumptionRow label="Gesamtpreis" value={data.finance.totalPrice} onChange={(v) => updateFinance('totalPrice', v)} suffix="€" />
                     {isLeasing ? (
                       <>
-                        <ConsumptionRow label="Jahresfahrleistung" value={data.finance.annualMileage || ''} onChange={(v) => updateFinance('annualMileage', v)} suffix="km/Jahr" />
+                        <div className="flex items-center justify-between py-1.5 border-b border-border/30">
+                          <span className="text-xs text-muted-foreground">Jahresfahrleistung</span>
+                          <AnnualMileageDropdown value={data.finance.annualMileage || ''} onChange={(v) => updateFinance('annualMileage', v)} className="w-[160px]" />
+                        </div>
                         <ConsumptionRow label="Restwert" value={data.finance.residualValue || ''} onChange={(v) => updateFinance('residualValue', v)} suffix="€" />
                       </>
                     ) : (
