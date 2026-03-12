@@ -67,10 +67,15 @@ export default function SalesChatWidget() {
         if (!open) setOpen(true);
         // Auto-add as assistant message
         const n = payload.new as Notification;
-        setMessages(prev => [...prev, {
-          role: 'assistant',
-          content: `🔔 **${n.title}**\n\n${n.body || ''}${n.requires_approval ? '\n\n_Sag "Freigabe", um den Entwurf zu genehmigen._' : ''}`,
-        }]);
+        const p = n.action_payload || {};
+        let msgContent = `🔔 **${n.title}**\n\n${n.body || ''}`;
+        if (p.draftBody) {
+          msgContent += `\n\n📧 **E-Mail-Entwurf an ${p.leadName || 'Kunde'}:**\n> Betreff: ${p.draftSubject || 'k.A.'}\n\n${p.draftBody}`;
+        }
+        if (n.requires_approval) {
+          msgContent += '\n\n_Sage "freigeben" um den Entwurf zu genehmigen und zu versenden._';
+        }
+        setMessages(prev => [...prev, { role: 'assistant', content: msgContent }]);
       }).subscribe();
 
     return () => { supabase.removeChannel(channel); };

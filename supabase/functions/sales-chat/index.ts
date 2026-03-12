@@ -165,7 +165,15 @@ ${quotes.length > 0 ? quotes.slice(0, 10).map((q: any) => `- ${q.vehicle_title |
 ${tradeIns.length > 0 ? tradeIns.map((t: any) => `- ${t.vehicle_make || ''} ${t.vehicle_model || ''} ${t.vehicle_year || ''}: ${t.estimated_value_min?.toLocaleString('de-DE') || '?'} – ${t.estimated_value_max?.toLocaleString('de-DE') || '?'} € (${t.condition}, ${t.mileage_km?.toLocaleString('de-DE') || '?'} km)`).join('\n') : 'Keine laufenden Bewertungen.'}
 
 ## NEUE LEADS (letzte 10)
-${leads.length > 0 ? leads.slice(0, 10).map((l: any) => `- ${l.name} (${l.email})${l.vehicle_title ? ` – Interesse an: ${l.vehicle_title}` : ''}${l.phone ? ` Tel: ${l.phone}` : ''} (${new Date(l.created_at).toLocaleDateString('de-DE')})`).join('\n') : 'Keine Leads vorhanden.'}
+${leads.length > 0 ? leads.slice(0, 10).map((l: any) => {
+  const interests: string[] = [];
+  if (l.interested_test_drive) interests.push('Probefahrt');
+  if (l.interested_trade_in) interests.push('Inzahlungnahme');
+  if (l.interested_leasing) interests.push('Leasing');
+  if (l.interested_financing) interests.push('Finanzierung');
+  if (l.interested_purchase) interests.push('Kauf');
+  return `- ${l.name} (${l.email})${l.vehicle_title ? ` – Fahrzeug: ${l.vehicle_title}` : ''}${interests.length > 0 ? ` – Interessen: ${interests.join(', ')}` : ''}${l.phone ? ` Tel: ${l.phone}` : ''} (${new Date(l.created_at).toLocaleDateString('de-DE')})`;
+}).join('\n') : 'Keine Leads vorhanden.'}
 
 ## E-MAIL OUTBOX (letzte ${emails.length})
 ${emails.length > 0 ? emails.map((e: any) => `- An: ${e.to_name || e.to_email} | Betreff: ${e.subject} | Status: ${e.status} | ${new Date(e.created_at).toLocaleDateString('de-DE')}`).join('\n') : 'Keine E-Mails in der Outbox.'}
@@ -178,14 +186,16 @@ ${conversations.length > 0 ? `\n## AKTIVE GESPRÄCHE\n${conversations.slice(0, 5
 
 ## VERHALTEN
 - Antworte immer auf Deutsch, knapp und hilfreich
-- Sei proaktiv: Schlage nächste Schritte vor
+- Sei PROAKTIV: Wenn ein neuer Lead Interesse an Probefahrt hat, schlage sofort vor einen Termin zu buchen. Bei Leasing/Finanzierungsinteresse, biete an ein Angebot zu erstellen. Bei Inzahlungnahme, frage nach Details zum Altfahrzeug.
+- Wenn du etwas nicht findest oder dir Informationen fehlen (z.B. Fahrzeugpreis für ein Angebot), frage den Nutzer gezielt danach statt zu raten
 - Wenn der User eine Freigabe erteilt, bestätige das
 - Wenn nach einer Zusammenfassung gefragt wird, strukturiere die Übersicht
 - Für E-Mail-Entwürfe: Erstelle professionelle, personalisierte Texte basierend auf den Kundendaten und verwende die Aktionskommandos
 - Für Probefahrt-Vorschläge: Beachte die heutigen und kommenden Termine
-- Für Angebots-Beratung: Berücksichtige Inzahlungnahme-Werte wenn vorhanden
-- Für Inzahlungnahme-Schätzungen: Gib realistische Marktpreise basierend auf Fahrzeugdaten an (Marke, Modell, Baujahr, km, Zustand)
+- Für Angebots-Beratung: Berücksichtige Inzahlungnahme-Werte wenn vorhanden. Wenn der Preis nicht bekannt ist, frage danach.
+- Für Inzahlungnahme-Schätzungen: Gib realistische Marktpreise basierend auf Fahrzeugdaten an
 - Nutze die Aktionskommandos (action:email, action:trade_in_estimate, action:book_test_drive, action:create_quote) um Aktionen auszuführen
+- Wenn ein Lead nach Leasing/Finanzierung fragt aber kein Preis bekannt ist, sage dem Nutzer dass du den Grundpreis brauchst um ein Angebot zu erstellen
 ${profile?.assistant_name ? `Du heißt "${profile.assistant_name}".` : ''}`;
 
     // Save user message
@@ -198,11 +208,24 @@ ${profile?.assistant_name ? `Du heißt "${profile.assistant_name}".` : ''}`;
 
     // Check for approval commands
     const userText = (lastUserMsg?.content || '').toLowerCase();
-    if (userText.includes('freigabe') || userText.includes('genehmig') || userText.includes('absenden')) {
+    if (userText.includes('freigabe') || userText.includes('genehmig') || userText.includes('absenden') || userText.includes('freigeben')) {
       if (pendingApprovals.length > 0) {
+        // Approve notifications
+        const approvalIds = pendingApprovals.map((n: any) => n.id);
         await supabase.from('sales_notifications').update({
           approval_status: 'approved', is_read: true,
-        }).in('id', pendingApprovals.map((n: any) => n.id));
+        }).in('id', approvalIds);
+
+        // Queue pending emails for sending
+        for (const n of pendingApprovals) {
+          const payload = n.action_payload || {};
+          if (payload.emailId) {
+            await supabase.from('sales_email_outbox').update({ status: 'queued' }).eq('id', payload.emailId);
+          }
+          if (payload.conversationId) {
+            await supabase.from('sales_assistant_conversations').update({ status: 'in_progress' }).eq('id', payload.conversationId);
+          }
+        }
       }
     }
 

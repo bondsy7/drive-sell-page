@@ -1,7 +1,7 @@
 import React from 'react';
 import AppHeader from '@/components/AppHeader';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { MessageSquare, Route, BookOpen, History, ListChecks, Sparkles, Bot, Settings2, CalendarDays, FileText, Car, Calendar } from 'lucide-react';
+import { MessageSquare, Route, BookOpen, History, ListChecks, Sparkles, Bot, Settings2, CalendarDays, FileText, Car, Calendar, Inbox } from 'lucide-react';
 import SalesGeneratorTab from '@/components/sales/SalesGeneratorTab';
 import SalesJourneyTab from '@/components/sales/SalesJourneyTab';
 import SalesKnowledgeTab from '@/components/sales/SalesKnowledgeTab';
@@ -13,6 +13,7 @@ import SalesBookingsTab from '@/components/sales/SalesBookingsTab';
 import SalesQuotesTab from '@/components/sales/SalesQuotesTab';
 import SalesTradeInTab from '@/components/sales/SalesTradeInTab';
 import SalesCalendarSettings from '@/components/sales/SalesCalendarSettings';
+import SalesMailboxTab from '@/components/sales/SalesMailboxTab';
 
 
 export default function SalesAssistant() {
@@ -66,6 +67,9 @@ export default function SalesAssistant() {
             <TabsTrigger value="tradein" className="flex items-center gap-1.5 text-xs sm:text-sm">
               <Car className="w-4 h-4" /> Inzahlungnahme
             </TabsTrigger>
+            <TabsTrigger value="mailbox" className="flex items-center gap-1.5 text-xs sm:text-sm">
+              <Inbox className="w-4 h-4" /> Postfach
+            </TabsTrigger>
             <TabsTrigger value="autopilot" className="flex items-center gap-1.5 text-xs sm:text-sm">
               <Settings2 className="w-4 h-4" /> Autopilot
             </TabsTrigger>
@@ -83,6 +87,7 @@ export default function SalesAssistant() {
           <TabsContent value="bookings"><SalesBookingsTab /></TabsContent>
           <TabsContent value="quotes"><SalesQuotesTab /></TabsContent>
           <TabsContent value="tradein"><SalesTradeInTab /></TabsContent>
+          <TabsContent value="mailbox"><SalesMailboxTab /></TabsContent>
           <TabsContent value="autopilot"><SalesAutopilotSettings /></TabsContent>
           <TabsContent value="calendar"><SalesCalendarSettings /></TabsContent>
         </Tabs>
