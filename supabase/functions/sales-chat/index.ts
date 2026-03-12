@@ -220,7 +220,15 @@ ${profile?.assistant_name ? `Du heißt "${profile.assistant_name}".` : ''}`;
         for (const n of pendingApprovals) {
           const payload = n.action_payload || {};
           if (payload.emailId) {
-            await supabase.from('sales_email_outbox').update({ status: 'queued' }).eq('id', payload.emailId);
+            await supabase.from('sales_email_outbox').update({ status: 'queued', error_message: null }).eq('id', payload.emailId);
+            await fetch(`${supabaseUrl}/functions/v1/process-sales-email`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${serviceKey}`,
+              },
+              body: JSON.stringify({ emailId: payload.emailId }),
+            }).catch((error) => console.error('process-sales-email invoke error:', error));
           }
           if (payload.conversationId) {
             await supabase.from('sales_assistant_conversations').update({ status: 'in_progress' }).eq('id', payload.conversationId);
@@ -279,7 +287,7 @@ ${profile?.assistant_name ? `Du heißt "${profile.assistant_name}".` : ''}`;
       const body = bodyMatch?.[1]?.trim();
 
       if (toEmail && subject && body) {
-        const { error } = await supabase.from('sales_email_outbox').insert({
+        const { data: queuedEmail, error } = await supabase.from('sales_email_outbox').insert({
           user_id: user.id,
           to_email: toEmail,
           to_name: toName || null,
@@ -287,8 +295,19 @@ ${profile?.assistant_name ? `Du heißt "${profile.assistant_name}".` : ''}`;
           body_html: `<div style="font-family:sans-serif;line-height:1.6">${body.replace(/\n/g, '<br>')}</div>`,
           body_text: body,
           status: 'queued',
-        });
+        }).select('id').single();
+
         if (!error) {
+          if (queuedEmail?.id) {
+            await fetch(`${supabaseUrl}/functions/v1/process-sales-email`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${serviceKey}`,
+              },
+              body: JSON.stringify({ emailId: queuedEmail.id }),
+            }).catch((invokeError) => console.error('process-sales-email invoke error:', invokeError));
+          }
           actions.push(`📧 E-Mail an ${toName || toEmail} in die Outbox gelegt.`);
         }
       }
