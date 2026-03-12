@@ -81,20 +81,39 @@ export function useVehicleMakes() {
     return (found?.models || []).map(m => m.key).filter(k => k !== 'ANDERE');
   }, [makes]);
 
+  const BRAND_ALIASES: Record<string, string[]> = {
+    'volkswagen': ['vw'],
+    'vw': ['volkswagen'],
+    'mercedesbenz': ['mercedes', 'mb'],
+    'mercedes': ['mercedesbenz', 'mb'],
+    'bmw': ['bayerischemotorenwerke'],
+  };
+
   const getLogoForMake = useCallback((makeKey: string): string | null => {
     if (!makeKey) return null;
     const normalized = makeKey.toLowerCase().replace(/[-_\s]+/g, '');
-    // Try exact match, then partial
+    // Try exact match
     const exact = logos.find(l => l.name === normalized);
     if (exact) return exact.url;
+    // Try aliases
+    const aliases = BRAND_ALIASES[normalized] || [];
+    for (const alias of aliases) {
+      const aliasMatch = logos.find(l => l.name === alias);
+      if (aliasMatch) return aliasMatch.url;
+    }
+    // Try partial
     const partial = logos.find(l => l.name.includes(normalized) || normalized.includes(l.name));
     return partial?.url || null;
   }, [logos]);
 
   const filterMakes = useCallback((query: string): VehicleMake[] => {
     if (!query) return makes;
-    const q = query.toLowerCase();
-    return makes.filter(m => m.key.toLowerCase().includes(q));
+    const q = query.toLowerCase().replace(/[-_\s]+/g, '');
+    const aliases = BRAND_ALIASES[q] || [];
+    return makes.filter(m => {
+      const mk = m.key.toLowerCase().replace(/[-_\s]+/g, '');
+      return mk.includes(q) || q.includes(mk) || aliases.some(a => mk.includes(a) || a.includes(mk));
+    });
   }, [makes]);
 
   return { makes, logos, loading, getModelsForMake, getLogoForMake, filterMakes };
