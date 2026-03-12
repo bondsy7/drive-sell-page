@@ -296,7 +296,7 @@ export default function SalesCrmTab() {
             ))
           )}
         </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 }
