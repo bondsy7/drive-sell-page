@@ -276,7 +276,7 @@ export default function SalesCrmTab() {
       </p>
 
       {/* ── Customer List ── */}
-      <ScrollArea className="max-h-[600px]">
+      <div className="max-h-[calc(100vh-380px)] overflow-y-auto">
         <div className="space-y-2">
           {filtered.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
@@ -296,7 +296,7 @@ export default function SalesCrmTab() {
             ))
           )}
         </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 }
@@ -475,7 +475,7 @@ function CustomerCard({
                           </p>
                         )}
                         {req.message && (
-                          <p className="text-xs text-muted-foreground mt-1 line-clamp-3">
+                          <p className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap break-words">
                             „{req.message}"
                           </p>
                         )}
@@ -511,7 +511,7 @@ function CustomerCard({
                       </Badge>
                     </div>
                     {conv.summary && (
-                      <p className="text-xs text-muted-foreground line-clamp-2">{conv.summary}</p>
+                      <p className="text-xs text-muted-foreground whitespace-pre-wrap break-words">{conv.summary}</p>
                     )}
                     <span className="text-[10px] text-muted-foreground">
                       {new Date(conv.updated_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}
