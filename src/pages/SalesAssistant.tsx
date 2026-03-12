@@ -1,7 +1,7 @@
 import React from 'react';
 import AppHeader from '@/components/AppHeader';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { MessageSquare, Route, BookOpen, History, ListChecks, Sparkles, Bot, Settings2, CalendarDays, FileText, Car, Calendar, Inbox } from 'lucide-react';
+import { MessageSquare, Route, BookOpen, History, ListChecks, Sparkles, Bot, Settings2, CalendarDays, FileText, Car, Calendar, Inbox, Users } from 'lucide-react';
 import SalesGeneratorTab from '@/components/sales/SalesGeneratorTab';
 import SalesJourneyTab from '@/components/sales/SalesJourneyTab';
 import SalesKnowledgeTab from '@/components/sales/SalesKnowledgeTab';
@@ -14,6 +14,7 @@ import SalesQuotesTab from '@/components/sales/SalesQuotesTab';
 import SalesTradeInTab from '@/components/sales/SalesTradeInTab';
 import SalesCalendarSettings from '@/components/sales/SalesCalendarSettings';
 import SalesMailboxTab from '@/components/sales/SalesMailboxTab';
+import SalesCrmTab from '@/components/sales/SalesCrmTab';
 
 
 export default function SalesAssistant() {
@@ -38,8 +39,11 @@ export default function SalesAssistant() {
           </div>
         </div>
 
-        <Tabs defaultValue="assistant" className="space-y-4">
+        <Tabs defaultValue="crm" className="space-y-4">
           <TabsList className="flex flex-wrap gap-1 h-auto p-1 bg-muted/50">
+            <TabsTrigger value="crm" className="flex items-center gap-1.5 text-xs sm:text-sm">
+              <Users className="w-4 h-4" /> Kunden CRM
+            </TabsTrigger>
             <TabsTrigger value="assistant" className="flex items-center gap-1.5 text-xs sm:text-sm">
               <MessageSquare className="w-4 h-4" /> Assistent
             </TabsTrigger>
@@ -78,6 +82,7 @@ export default function SalesAssistant() {
             </TabsTrigger>
           </TabsList>
 
+          <TabsContent value="crm"><SalesCrmTab /></TabsContent>
           <TabsContent value="assistant"><SalesGeneratorTab /></TabsContent>
           <TabsContent value="chat"><SalesChatPage /></TabsContent>
           <TabsContent value="journey"><SalesJourneyTab /></TabsContent>
