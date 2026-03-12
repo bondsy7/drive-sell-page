@@ -143,10 +143,14 @@ export default function SalesChatPage() {
     await supabase.from('sales_notifications' as any)
       .update({ approval_status: 'approved', is_read: true } as any).eq('id', notifId);
 
-    // If there's an email ID, queue it for sending
+    // If there's an email ID, queue and trigger delivery
     if (payload?.emailId) {
       await supabase.from('sales_email_outbox' as any)
-        .update({ status: 'queued' } as any).eq('id', payload.emailId);
+        .update({ status: 'queued', error_message: null } as any).eq('id', payload.emailId);
+
+      await supabase.functions.invoke('process-sales-email', {
+        body: { emailId: payload.emailId },
+      });
     }
 
     // Update conversation status
