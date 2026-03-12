@@ -84,8 +84,9 @@ export function useVehicleMakes() {
   const BRAND_ALIASES: Record<string, string[]> = {
     'volkswagen': ['vw'],
     'vw': ['volkswagen'],
-    'mercedesbenz': ['mercedes', 'mb'],
-    'mercedes': ['mercedesbenz', 'mb'],
+    'mercedesbenz': ['mercedes', 'mb', 'mercedesamg'],
+    'mercedes': ['mercedesbenz', 'mb', 'mercedesamg'],
+    'mb': ['mercedesbenz', 'mercedes'],
     'bmw': ['bayerischemotorenwerke'],
   };
 

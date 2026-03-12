@@ -108,13 +108,24 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       setResolvedManufacturerLogoUrl(remasterConfig.manufacturerLogoUrl);
       return;
     }
-    // Fetch from storage and match by brand name
+    // Fetch from storage and match by brand name (with alias support)
     fetchManufacturerLogos().then(logos => {
-      const brandLower = detectedBrand.toLowerCase();
-      // Try exact match, then partial match
-      const match = logos.find(l => l.name.toLowerCase() === brandLower)
-        || logos.find(l => l.name.toLowerCase().includes(brandLower))
-        || logos.find(l => brandLower.includes(l.name.toLowerCase()));
+      const brandLower = detectedBrand.toLowerCase().replace(/[-_\s]+/g, '');
+      const LOGO_ALIASES: Record<string, string[]> = {
+        volkswagen: ['vw'],
+        vw: ['volkswagen'],
+        mercedesbenz: ['mercedes', 'mb'],
+        mercedes: ['mercedesbenz', 'mb'],
+        bmw: ['bayerischemotorenwerke'],
+      };
+      const aliases = LOGO_ALIASES[brandLower] || [];
+      const allKeys = [brandLower, ...aliases];
+
+      const match = logos.find(l => {
+        const ln = l.name.toLowerCase().replace(/[-_\s]+/g, '');
+        return allKeys.some(k => ln === k || ln.includes(k) || k.includes(ln));
+      });
+
       if (match) {
         console.log(`[Pipeline] Manufacturer logo found for "${detectedBrand}": ${match.name} → ${match.url}`);
         setResolvedManufacturerLogoUrl(match.url);
@@ -449,7 +460,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
           <div className="flex items-center gap-2 mt-2 flex-wrap">
             <Badge variant="secondary" className="gap-1.5 text-xs">
               <Image className="w-3 h-3" />
-              CI: {detectedBrand.charAt(0).toUpperCase() + detectedBrand.slice(1)}
+              CI: {detectedBrand === 'volkswagen' ? 'Volkswagen' : detectedBrand.charAt(0).toUpperCase() + detectedBrand.slice(1)}
             </Badge>
             {remasterConfig.showManufacturerLogo && (
               <Badge variant={resolvedManufacturerLogoUrl ? "default" : "destructive"} className="gap-1.5 text-xs">
