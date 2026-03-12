@@ -729,9 +729,9 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
             >
               <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Zur Galerie
             </Button>
-            {projectId && (
+            {savedProjectId && (
               <Button
-                onClick={() => navigate(`/project/${projectId}`)}
+                onClick={() => navigate(`/project/${savedProjectId}`)}
                 className="gap-1.5 sm:gap-2 gradient-accent text-accent-foreground font-semibold text-xs sm:text-sm"
               >
                 <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Zur Landing Page
