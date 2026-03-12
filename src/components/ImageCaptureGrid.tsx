@@ -185,6 +185,38 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     setIsProcessing(false);
   };
 
+  const retrySingleSlot = async (slotKey: string) => {
+    const slot = vehicleSlots.find(s => s.key === slotKey);
+    if (!slot || !captures[slotKey]) return;
+    setCaptures(prev => ({ ...prev, [slotKey]: { ...prev[slotKey], status: 'processing', error: undefined } }));
+    try {
+      const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription);
+      const { data, error } = await supabase.functions.invoke('remaster-vehicle-image', {
+        body: {
+          imageBase64: captures[slotKey].base64,
+          vehicleDescription,
+          modelTier: modelTier || 'standard',
+          dynamicPrompt,
+          customShowroomBase64: remasterConfig.customShowroomBase64 || null,
+          customPlateImageBase64: remasterConfig.customPlateImageBase64 || null,
+          dealerLogoUrl: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null,
+          dealerLogoBase64: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoBase64 : null,
+          manufacturerLogoUrl: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoUrl : null,
+          manufacturerLogoBase64: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoBase64 : null,
+        },
+      });
+      if (error || !data?.imageBase64) {
+        const errMsg = data?.error || error?.message || 'Fehler beim Remastering';
+        setCaptures(prev => ({ ...prev, [slotKey]: { ...prev[slotKey], status: 'error', error: errMsg } }));
+      } else {
+        setCaptures(prev => ({ ...prev, [slotKey]: { ...prev[slotKey], status: 'done', remasteredBase64: data.imageBase64 } }));
+        toast.success('Bild erfolgreich neu generiert.');
+      }
+    } catch {
+      setCaptures(prev => ({ ...prev, [slotKey]: { ...prev[slotKey], status: 'error', error: 'Netzwerkfehler' } }));
+    }
+  };
+
   const finishUp = () => {
     const doneSlots = vehicleSlots.filter(s => captures[s.key]?.status === 'done' && captures[s.key]?.remasteredBase64);
     if (doneSlots.length === 0) {
