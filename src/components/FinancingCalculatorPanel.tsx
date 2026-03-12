@@ -35,7 +35,7 @@ const FinancingCalculatorPanel: React.FC<Props> = ({ vehicleData }) => {
   const [interestRate, setInterestRate] = useState('');
 
   useEffect(() => {
-    if (!vehicleData) return;
+    if (!vehicleData?.finance) return;
     const f = vehicleData.finance;
     if (f.totalPrice) setPrice(f.totalPrice.replace(/[€\s]/g, ''));
     if (f.downPayment) setDownPayment(f.downPayment.replace(/[€\s]/g, ''));
