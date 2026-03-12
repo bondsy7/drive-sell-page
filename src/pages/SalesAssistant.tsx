@@ -67,6 +67,9 @@ export default function SalesAssistant() {
             <TabsTrigger value="tradein" className="flex items-center gap-1.5 text-xs sm:text-sm">
               <Car className="w-4 h-4" /> Inzahlungnahme
             </TabsTrigger>
+            <TabsTrigger value="mailbox" className="flex items-center gap-1.5 text-xs sm:text-sm">
+              <Inbox className="w-4 h-4" /> Postfach
+            </TabsTrigger>
             <TabsTrigger value="autopilot" className="flex items-center gap-1.5 text-xs sm:text-sm">
               <Settings2 className="w-4 h-4" /> Autopilot
             </TabsTrigger>
