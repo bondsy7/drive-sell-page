@@ -650,6 +650,7 @@ Modelle:   gemini-2.5-flash, gemini-3-pro-image-preview, gemini-3.1-flash-image-
                 ['manufacturer-logos', '✅', 'Hersteller-Logos (SVGs in svg/, Raster im Root)'],
                 ['banners', '✅', 'Generierte Werbebanner'],
                 ['sample-pdfs', '✅', 'Beispiel-PDFs für Demo/Testing'],
+                ['sales-knowledge', '❌', 'Sales-Wissensbasis-Dokumente (RAG)'],
               ]}
             />
           </SubSection>
