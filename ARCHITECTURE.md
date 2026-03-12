@@ -921,6 +921,7 @@ Webhook: STRIPE_WEBHOOK_SECRET (whsec_...)
 | `manufacturer-logos` | ✅ | Hersteller-Logos (SVGs in `svg/`, Raster im Root) |
 | `banners` | ✅ | Generierte Werbebanner |
 | `sample-pdfs` | ✅ | Beispiel-PDFs für Demo/Testing |
+| `sales-knowledge` | ❌ | Sales-Wissensbasis-Dokumente (RAG, privat) |
 
 ### 12.2 Bild-Storage-Strategie
 
