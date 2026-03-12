@@ -41,6 +41,9 @@ export default function SalesAssistant() {
 
         <Tabs defaultValue="assistant" className="space-y-4">
           <TabsList className="flex flex-wrap gap-1 h-auto p-1 bg-muted/50">
+            <TabsTrigger value="crm" className="flex items-center gap-1.5 text-xs sm:text-sm">
+              <Users className="w-4 h-4" /> Kunden CRM
+            </TabsTrigger>
             <TabsTrigger value="assistant" className="flex items-center gap-1.5 text-xs sm:text-sm">
               <MessageSquare className="w-4 h-4" /> Assistent
             </TabsTrigger>
