@@ -288,6 +288,19 @@ export default function ArchitectureDoc() {
               ]}
             />
           </SubSection>
+          <SubSection title="Sales-Assistant-Functions">
+            <Table
+              headers={['Function', 'Zweck']}
+              rows={[
+                ['generate-sales-response', 'KI-Antwort auf Kundenanfragen generieren'],
+                ['sales-chat', 'Interner Chat-Assistent für Verkäufer'],
+                ['ingest-sales-knowledge', 'Dokumente chunken + embedden (RAG)'],
+                ['auto-process-lead', 'Automatische Lead-Verarbeitung (Autopilot)'],
+                ['process-sales-email', 'Eingehende E-Mails verarbeiten'],
+                ['seed-crm-demo', 'Demo-Daten für CRM generieren'],
+              ]}
+            />
+          </SubSection>
           <SubSection title="Integrations-Functions">
             <Table
               headers={['Function', 'Zweck']}
