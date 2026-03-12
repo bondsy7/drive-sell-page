@@ -323,9 +323,10 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
         open={vinLookup.dialogOpen}
         onClose={() => vinLookup.setDialogOpen(false)}
         diffs={vinLookup.diffs}
+        equipment={vinLookup.equipment}
         vin={data.vehicle.vin || ''}
-        onApply={(fields) => {
-          const updated = vinLookup.applyFields(fields, data);
+        onApply={(fields, replaceEquipment, selectedEquipment) => {
+          const updated = vinLookup.applyFields(fields, data, replaceEquipment, selectedEquipment);
           onDataChange(updated);
         }}
       />
