@@ -511,7 +511,7 @@ function CustomerCard({
                       </Badge>
                     </div>
                     {conv.summary && (
-                      <p className="text-xs text-muted-foreground line-clamp-2">{conv.summary}</p>
+                      <p className="text-xs text-muted-foreground whitespace-pre-wrap break-words">{conv.summary}</p>
                     )}
                     <span className="text-[10px] text-muted-foreground">
                       {new Date(conv.updated_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}
