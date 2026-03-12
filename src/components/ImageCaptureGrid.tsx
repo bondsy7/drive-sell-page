@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { Camera, Upload, X, Loader2, Check, AlertCircle, Search, Zap } from 'lucide-react';
+import { Camera, Upload, X, Loader2, Check, AlertCircle, Search, Zap, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
@@ -185,6 +185,38 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     setIsProcessing(false);
   };
 
+  const retrySingleSlot = async (slotKey: string) => {
+    const slot = vehicleSlots.find(s => s.key === slotKey);
+    if (!slot || !captures[slotKey]) return;
+    setCaptures(prev => ({ ...prev, [slotKey]: { ...prev[slotKey], status: 'processing', error: undefined } }));
+    try {
+      const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription);
+      const { data, error } = await supabase.functions.invoke('remaster-vehicle-image', {
+        body: {
+          imageBase64: captures[slotKey].base64,
+          vehicleDescription,
+          modelTier: modelTier || 'standard',
+          dynamicPrompt,
+          customShowroomBase64: remasterConfig.customShowroomBase64 || null,
+          customPlateImageBase64: remasterConfig.customPlateImageBase64 || null,
+          dealerLogoUrl: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null,
+          dealerLogoBase64: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoBase64 : null,
+          manufacturerLogoUrl: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoUrl : null,
+          manufacturerLogoBase64: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoBase64 : null,
+        },
+      });
+      if (error || !data?.imageBase64) {
+        const errMsg = data?.error || error?.message || 'Fehler beim Remastering';
+        setCaptures(prev => ({ ...prev, [slotKey]: { ...prev[slotKey], status: 'error', error: errMsg } }));
+      } else {
+        setCaptures(prev => ({ ...prev, [slotKey]: { ...prev[slotKey], status: 'done', remasteredBase64: data.imageBase64 } }));
+        toast.success('Bild erfolgreich neu generiert.');
+      }
+    } catch {
+      setCaptures(prev => ({ ...prev, [slotKey]: { ...prev[slotKey], status: 'error', error: 'Netzwerkfehler' } }));
+    }
+  };
+
   const finishUp = () => {
     const doneSlots = vehicleSlots.filter(s => captures[s.key]?.status === 'done' && captures[s.key]?.remasteredBase64);
     if (doneSlots.length === 0) {
@@ -266,14 +298,31 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                     </div>
                   )}
                   {cap.status === 'error' && (
-                    <div className="absolute inset-0 bg-destructive/20 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-destructive/20 flex flex-col items-center justify-center gap-2">
                       <AlertCircle className="w-5 h-5 text-destructive" />
+                      <button
+                        onClick={() => retrySingleSlot(slot.key)}
+                        className="flex items-center gap-1 bg-background/90 hover:bg-background text-foreground text-[10px] font-semibold px-2.5 py-1.5 rounded-lg shadow transition-colors"
+                      >
+                        <RotateCcw className="w-3 h-3" /> Erneut versuchen
+                      </button>
                     </div>
                   )}
                   {cap.status === 'done' && (
-                    <div className="absolute bottom-1.5 left-1.5 bg-accent text-accent-foreground text-[9px] font-semibold px-1.5 py-0.5 rounded-md">
-                      Remastered
-                    </div>
+                    <>
+                      <div className="absolute bottom-1.5 left-1.5 bg-accent text-accent-foreground text-[9px] font-semibold px-1.5 py-0.5 rounded-md">
+                        Remastered
+                      </div>
+                      {!isProcessing && (
+                        <button
+                          onClick={() => retrySingleSlot(slot.key)}
+                          className="absolute bottom-1.5 right-1.5 w-7 h-7 rounded-full bg-background/80 hover:bg-accent hover:text-accent-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Erneut generieren"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </>
                   )}
                   {!isProcessing && (
                     <button

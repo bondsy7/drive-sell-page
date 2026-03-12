@@ -97,6 +97,9 @@ export function buildMasterPrompt(config: RemasterConfig, vehicleDescription?: s
   // Interior-specific rules
   parts.push('FÜR INNENRAUM-AUFNAHMEN: Verändere die Orientierung/den Winkel NICHT. Füge keine Innenraum-Elemente hinzu oder entferne sie. Verbessere nur die Beleuchtung.');
 
+  // No other vehicles
+  parts.push('WICHTIG: Im generierten Bild darf KEIN anderes Fahrzeug sichtbar sein – nur das eine Fahrzeug aus dem Originalfoto. Keine Autos im Hintergrund, keine Spiegelungen anderer Fahrzeuge in Glasflächen oder auf dem Boden.');
+
   // Vehicle description
   if (vehicleDescription) {
     parts.push(`Fahrzeug: ${vehicleDescription}`);

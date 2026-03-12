@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { Upload, X, Loader2, Check, AlertCircle, Image as ImageIcon } from 'lucide-react';
+import { Upload, X, Loader2, Check, AlertCircle, Image as ImageIcon, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
@@ -151,6 +151,38 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
     setIsProcessing(false);
   };
 
+  const retrySingleImage = async (id: string) => {
+    const img = images.find(x => x.id === id);
+    if (!img) return;
+    setImages(prev => prev.map(x => x.id === id ? { ...x, status: 'processing', error: undefined } : x));
+    try {
+      const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription);
+      const { data, error } = await supabase.functions.invoke('remaster-vehicle-image', {
+        body: {
+          imageBase64: img.originalBase64,
+          vehicleDescription,
+          modelTier: modelTier || 'standard',
+          dynamicPrompt,
+          customShowroomBase64: remasterConfig.customShowroomBase64 || null,
+          customPlateImageBase64: remasterConfig.customPlateImageBase64 || null,
+          dealerLogoUrl: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null,
+          dealerLogoBase64: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoBase64 : null,
+          manufacturerLogoUrl: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoUrl : null,
+          manufacturerLogoBase64: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoBase64 : null,
+        },
+      });
+      if (error || !data?.imageBase64) {
+        const errMsg = data?.error || error?.message || 'Fehler beim Remastering';
+        setImages(prev => prev.map(x => x.id === id ? { ...x, status: 'error', error: errMsg } : x));
+      } else {
+        setImages(prev => prev.map(x => x.id === id ? { ...x, status: 'done', remasteredBase64: data.imageBase64 } : x));
+        toast.success('Bild erfolgreich neu generiert.');
+      }
+    } catch {
+      setImages(prev => prev.map(x => x.id === id ? { ...x, status: 'error', error: 'Netzwerkfehler' } : x));
+    }
+  };
+
   const finishUp = () => {
     const done = images.filter(img => img.status === 'done' && img.remasteredBase64);
     if (done.length === 0) {
@@ -213,20 +245,32 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
                 className="w-full h-full object-cover"
               />
               {/* Status overlay */}
-              <div className={`absolute inset-0 flex items-center justify-center transition-opacity ${
-                img.status === 'processing' ? 'bg-background/70' :
-                img.status === 'error' ? 'bg-destructive/20' :
-                img.status === 'done' ? 'bg-accent/10 opacity-0 group-hover:opacity-100' : ''
-              }`}>
-                {img.status === 'processing' && <Loader2 className="w-6 h-6 text-accent animate-spin" />}
-                {img.status === 'error' && (
-                  <div className="text-center px-2">
-                    <AlertCircle className="w-5 h-5 text-destructive mx-auto mb-1" />
-                    <p className="text-[10px] text-destructive">{img.error}</p>
-                  </div>
-                )}
-                {img.status === 'done' && <Check className="w-6 h-6 text-accent" />}
-              </div>
+              {img.status === 'processing' && (
+                <div className="absolute inset-0 bg-background/70 flex items-center justify-center">
+                  <Loader2 className="w-6 h-6 text-accent animate-spin" />
+                </div>
+              )}
+              {img.status === 'error' && (
+                <div className="absolute inset-0 bg-destructive/20 flex flex-col items-center justify-center gap-2 px-2">
+                  <AlertCircle className="w-5 h-5 text-destructive" />
+                  <p className="text-[10px] text-destructive text-center">{img.error}</p>
+                  <button
+                    onClick={() => retrySingleImage(img.id)}
+                    className="flex items-center gap-1 bg-background/90 hover:bg-background text-foreground text-[10px] font-semibold px-2.5 py-1.5 rounded-lg shadow transition-colors"
+                  >
+                    <RotateCcw className="w-3 h-3" /> Erneut versuchen
+                  </button>
+                </div>
+              )}
+              {img.status === 'done' && !isProcessing && (
+                <button
+                  onClick={() => retrySingleImage(img.id)}
+                  className="absolute bottom-1.5 right-1.5 w-7 h-7 rounded-full bg-background/80 hover:bg-accent hover:text-accent-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  title="Erneut generieren"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                </button>
+              )}
               {/* Remove button */}
               {!isProcessing && (
                 <button
