@@ -363,9 +363,10 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
           open={vinLookup.dialogOpen}
           onClose={() => vinLookup.setDialogOpen(false)}
           diffs={vinLookup.diffs}
+          equipment={vinLookup.equipment}
           vin={detectedVin || ''}
-          onApply={(fields) => {
-            const updated = vinLookup.applyFields(fields, vehicleData);
+          onApply={(fields, replaceEquipment, selectedEquipment) => {
+            const updated = vinLookup.applyFields(fields, vehicleData, replaceEquipment, selectedEquipment);
             onVehicleDataChange?.(updated);
           }}
         />
