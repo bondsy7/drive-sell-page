@@ -151,6 +151,38 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
     setIsProcessing(false);
   };
 
+  const retrySingleImage = async (id: string) => {
+    const img = images.find(x => x.id === id);
+    if (!img) return;
+    setImages(prev => prev.map(x => x.id === id ? { ...x, status: 'processing', error: undefined } : x));
+    try {
+      const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription);
+      const { data, error } = await supabase.functions.invoke('remaster-vehicle-image', {
+        body: {
+          imageBase64: img.originalBase64,
+          vehicleDescription,
+          modelTier: modelTier || 'standard',
+          dynamicPrompt,
+          customShowroomBase64: remasterConfig.customShowroomBase64 || null,
+          customPlateImageBase64: remasterConfig.customPlateImageBase64 || null,
+          dealerLogoUrl: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null,
+          dealerLogoBase64: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoBase64 : null,
+          manufacturerLogoUrl: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoUrl : null,
+          manufacturerLogoBase64: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoBase64 : null,
+        },
+      });
+      if (error || !data?.imageBase64) {
+        const errMsg = data?.error || error?.message || 'Fehler beim Remastering';
+        setImages(prev => prev.map(x => x.id === id ? { ...x, status: 'error', error: errMsg } : x));
+      } else {
+        setImages(prev => prev.map(x => x.id === id ? { ...x, status: 'done', remasteredBase64: data.imageBase64 } : x));
+        toast.success('Bild erfolgreich neu generiert.');
+      }
+    } catch {
+      setImages(prev => prev.map(x => x.id === id ? { ...x, status: 'error', error: 'Netzwerkfehler' } : x));
+    }
+  };
+
   const finishUp = () => {
     const done = images.filter(img => img.status === 'done' && img.remasteredBase64);
     if (done.length === 0) {
