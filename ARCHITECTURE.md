@@ -138,6 +138,8 @@ Das System folgt einer **modularen Workflow-Architektur** mit einem zentralen Ac
 /finanzierungsrechner   → Finanzierungsrechner (geschützt)
 /kfz-steuer-rechner     → Kfz-Steuer-Rechner (geschützt)
 /integrations           → API/FTP/Embed (geschützt)
+/sales-assistant        → Sales Assistant CRM (geschützt)
+/sales-assistant/:id    → Konversation/Lead-Detail (geschützt)
 /admin/*                → Admin-Panel (Admin-Rolle)
 ```
 
