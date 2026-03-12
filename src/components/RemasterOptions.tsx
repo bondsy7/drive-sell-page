@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, X, Paintbrush, Tag, Building2, Car } from 'lucide-react';
+import { Upload, X, Paintbrush, Tag, Building2, Car, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
