@@ -25,17 +25,27 @@ serve(async (req) => {
   const daysAgo = (d: number) => new Date(Date.now() - d * 86400000).toISOString();
 
   // ── 1. INSERT LEADS ──
+  const b = (v?: boolean) => v === true;
+  const lead = (d: any) => ({
+    interested_purchase: b(d.interested_purchase),
+    interested_test_drive: b(d.interested_test_drive),
+    interested_trade_in: b(d.interested_trade_in),
+    interested_leasing: b(d.interested_leasing),
+    interested_financing: b(d.interested_financing),
+    ...d,
+  });
+
   const leadsData = [
-    { name: "Stefan Müller", email: "stefan.mueller@gmail.com", phone: "+49 176 12345678", vehicle_title: "BMW 320i M Sport 2024", message: "Guten Tag, ich interessiere mich für den BMW 320i M Sport. Können Sie mir ein Angebot machen? Barkauf bevorzugt.", interested_purchase: true, interested_test_drive: true, dealer_user_id: userId, created_at: daysAgo(21) },
-    { name: "Anna Schmidt", email: "anna.schmidt@web.de", phone: "+49 151 98765432", vehicle_title: "Mercedes-Benz GLC 300 4MATIC", message: "Hallo, was kostet der GLC 300 im Leasing? Laufzeit 36 Monate, 15.000 km/Jahr wäre ideal. Probefahrt wäre super!", interested_leasing: true, interested_test_drive: true, dealer_user_id: userId, created_at: daysAgo(14) },
-    { name: "Thomas Weber", email: "t.weber@firma-weber.de", phone: "+49 170 55443322", vehicle_title: "Audi Q5 Sportback S-Line", message: "Sehr geehrte Damen und Herren, als Gewerbekunde suche ich den Q5 Sportback. Finanzierung über 48 Monate. Bitte um Rückruf.", interested_financing: true, dealer_user_id: userId, created_at: daysAgo(10) },
-    { name: "Thomas Weber", email: "t.weber@firma-weber.de", phone: "+49 170 55443322", vehicle_title: "Audi Q5 Sportback S-Line", message: "Nachtrag: Wir hätten auch noch einen Audi A4 Avant als Inzahlungnahme. BJ 2020, 65.000 km.", interested_financing: true, interested_trade_in: true, dealer_user_id: userId, created_at: daysAgo(8) },
-    { name: "Lisa Hoffmann", email: "lisa.hoffmann@outlook.de", phone: "+49 152 11223344", vehicle_title: "VW Golf 8 R-Line", message: "Hi, ich suche einen Golf 8 R-Line in Schwarz. Gibt es Rabatt bei Barkauf?", interested_purchase: true, dealer_user_id: userId, created_at: daysAgo(7) },
-    { name: "Markus Bauer", email: "m.bauer@t-online.de", phone: "+49 173 99887766", vehicle_title: "Hyundai IONIQ 5", message: "Hallo, welche Elektrofahrzeuge haben Sie aktuell? Der IONIQ 5 interessiert mich besonders. Was ist der aktuelle Preis?", interested_purchase: true, dealer_user_id: userId, created_at: daysAgo(3) },
-    { name: "Sabine Klein", email: "s.klein@gmx.de", phone: "+49 160 44556677", vehicle_title: "Toyota RAV4 Hybrid", message: "Guten Tag, können Sie mir den RAV4 Hybrid anbieten? Privat-Leasing wäre interessant. Haben Sie auch einen Corolla?", interested_leasing: true, dealer_user_id: userId, created_at: daysAgo(12) },
-    { name: "Sabine Klein", email: "s.klein@gmx.de", phone: "+49 160 44556677", vehicle_title: "Toyota Corolla Touring Sports", message: "Doch lieber der Corolla. Können wir telefonieren?", interested_leasing: true, dealer_user_id: userId, created_at: daysAgo(9) },
-    { name: "Jürgen Neumann", email: "j.neumann@yahoo.de", phone: null, vehicle_title: "Skoda Octavia Combi", message: "Haben Sie den Octavia Combi sofort verfügbar? Brauche dringend ein Fahrzeug.", interested_purchase: true, dealer_user_id: userId, created_at: daysAgo(1) },
-    { name: "Petra Richter", email: "petra.richter@posteo.de", phone: "+49 157 33221100", vehicle_title: "Opel Mokka-e Elegance", message: "Ich möchte den Mokka-e bestellen. Finanzierung über 36 Monate, Anzahlung 5.000€.", interested_financing: true, interested_purchase: true, dealer_user_id: userId, created_at: daysAgo(28) },
+    lead({ name: "Stefan Müller", email: "stefan.mueller@gmail.com", phone: "+49 176 12345678", vehicle_title: "BMW 320i M Sport 2024", message: "Guten Tag, ich interessiere mich für den BMW 320i M Sport. Können Sie mir ein Angebot machen? Barkauf bevorzugt.", interested_purchase: true, interested_test_drive: true, dealer_user_id: userId, created_at: daysAgo(21) }),
+    lead({ name: "Anna Schmidt", email: "anna.schmidt@web.de", phone: "+49 151 98765432", vehicle_title: "Mercedes-Benz GLC 300 4MATIC", message: "Hallo, was kostet der GLC 300 im Leasing? Laufzeit 36 Monate, 15.000 km/Jahr wäre ideal. Probefahrt wäre super!", interested_leasing: true, interested_test_drive: true, dealer_user_id: userId, created_at: daysAgo(14) }),
+    lead({ name: "Thomas Weber", email: "t.weber@firma-weber.de", phone: "+49 170 55443322", vehicle_title: "Audi Q5 Sportback S-Line", message: "Sehr geehrte Damen und Herren, als Gewerbekunde suche ich den Q5 Sportback. Finanzierung über 48 Monate. Bitte um Rückruf.", interested_financing: true, dealer_user_id: userId, created_at: daysAgo(10) }),
+    lead({ name: "Thomas Weber", email: "t.weber@firma-weber.de", phone: "+49 170 55443322", vehicle_title: "Audi Q5 Sportback S-Line", message: "Nachtrag: Wir hätten auch noch einen Audi A4 Avant als Inzahlungnahme. BJ 2020, 65.000 km.", interested_financing: true, interested_trade_in: true, dealer_user_id: userId, created_at: daysAgo(8) }),
+    lead({ name: "Lisa Hoffmann", email: "lisa.hoffmann@outlook.de", phone: "+49 152 11223344", vehicle_title: "VW Golf 8 R-Line", message: "Hi, ich suche einen Golf 8 R-Line in Schwarz. Gibt es Rabatt bei Barkauf?", interested_purchase: true, dealer_user_id: userId, created_at: daysAgo(7) }),
+    lead({ name: "Markus Bauer", email: "m.bauer@t-online.de", phone: "+49 173 99887766", vehicle_title: "Hyundai IONIQ 5", message: "Hallo, welche Elektrofahrzeuge haben Sie aktuell? Der IONIQ 5 interessiert mich besonders. Was ist der aktuelle Preis?", interested_purchase: true, dealer_user_id: userId, created_at: daysAgo(3) }),
+    lead({ name: "Sabine Klein", email: "s.klein@gmx.de", phone: "+49 160 44556677", vehicle_title: "Toyota RAV4 Hybrid", message: "Guten Tag, können Sie mir den RAV4 Hybrid anbieten? Privat-Leasing wäre interessant. Haben Sie auch einen Corolla?", interested_leasing: true, dealer_user_id: userId, created_at: daysAgo(12) }),
+    lead({ name: "Sabine Klein", email: "s.klein@gmx.de", phone: "+49 160 44556677", vehicle_title: "Toyota Corolla Touring Sports", message: "Doch lieber der Corolla. Können wir telefonieren?", interested_leasing: true, dealer_user_id: userId, created_at: daysAgo(9) }),
+    lead({ name: "Jürgen Neumann", email: "j.neumann@yahoo.de", phone: null, vehicle_title: "Skoda Octavia Combi", message: "Haben Sie den Octavia Combi sofort verfügbar? Brauche dringend ein Fahrzeug.", interested_purchase: true, dealer_user_id: userId, created_at: daysAgo(1) }),
+    lead({ name: "Petra Richter", email: "petra.richter@posteo.de", phone: "+49 157 33221100", vehicle_title: "Opel Mokka-e Elegance", message: "Ich möchte den Mokka-e bestellen. Finanzierung über 36 Monate, Anzahlung 5.000€.", interested_financing: true, interested_purchase: true, dealer_user_id: userId, created_at: daysAgo(28) }),
   ];
 
   const { data: insertedLeads, error: leadsErr } = await admin.from("leads").insert(leadsData).select("id, email, name");
