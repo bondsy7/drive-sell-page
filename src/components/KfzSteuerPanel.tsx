@@ -46,7 +46,7 @@ const KfzSteuerPanel: React.FC<Props> = ({ vehicleData }) => {
   const [jahr, setJahr] = useState('2024');
 
   useEffect(() => {
-    if (!vehicleData) return;
+    if (!vehicleData?.consumption) return;
     const c = vehicleData.consumption;
     if (c.displacement) {
       const h = parseInt(c.displacement.replace(/[^\d]/g, ''));
@@ -56,10 +56,10 @@ const KfzSteuerPanel: React.FC<Props> = ({ vehicleData }) => {
       const v = parseInt(c.co2Emissions.replace(/[^\d]/g, ''));
       if (v > 0) setCo2(String(v));
     }
-    const ft = (c.fuelType || vehicleData.vehicle.fuelType || '').toLowerCase();
+    const ft = (c.fuelType || vehicleData.vehicle?.fuelType || '').toLowerCase();
     if (ft.includes('diesel')) setAntrieb('diesel');
     else setAntrieb('benzin');
-    if (vehicleData.vehicle.year) setJahr(String(vehicleData.vehicle.year));
+    if (vehicleData.vehicle?.year) setJahr(String(vehicleData.vehicle.year));
   }, [vehicleData]);
 
   const result = useMemo(() => {
