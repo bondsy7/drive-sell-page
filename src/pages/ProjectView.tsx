@@ -29,7 +29,15 @@ const ProjectView = () => {
     ]).then(([{ data: p }, { data: imgs }]) => {
       if (p) {
         setProject(p);
-        setVehicleData(p.vehicle_data as unknown as VehicleData);
+        const vd = p.vehicle_data as unknown as VehicleData;
+        // Ensure all required sub-objects exist with defaults
+        setVehicleData({
+          ...vd,
+          vehicle: vd.vehicle || { brand: '', model: '', variant: '', year: 0, color: '', fuelType: '', transmission: '', power: '', features: [] },
+          finance: vd.finance || { monthlyRate: '', downPayment: '', duration: '', totalPrice: '', annualMileage: '', specialPayment: '', residualValue: '', interestRate: '' },
+          consumption: vd.consumption || { origin: '', mileage: '', displacement: '', power: '', driveType: '', fuelType: '', consumptionCombined: '', co2Emissions: '', co2Class: '', consumptionCity: '', consumptionSuburban: '', consumptionRural: '', consumptionHighway: '', energyCostPerYear: '', fuelPrice: '', co2CostMedium: '', co2CostLow: '', co2CostHigh: '', vehicleTax: '', isPluginHybrid: false, co2EmissionsDischarged: '', co2ClassDischarged: '', consumptionCombinedDischarged: '', electricRange: '', consumptionElectric: '' },
+          dealer: vd.dealer || { name: '', address: '', postalCode: '', city: '', phone: '', email: '', website: '', taxId: '', logoUrl: '' },
+        });
         setSelectedTemplate((p.template_id || 'autohaus') as TemplateId);
       }
       if (imgs) setImages(imgs.map((i: any) => i.image_url || i.image_base64));
