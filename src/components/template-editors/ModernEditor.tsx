@@ -6,6 +6,8 @@ import EditableField from '@/components/EditableField';
 import CO2LabelSelector from '@/components/CO2LabelSelector';
 import FuelTypeDropdown from '@/components/FuelTypeDropdown';
 import CategoryDropdown from '@/components/CategoryDropdown';
+import LeasingDurationDropdown from '@/components/LeasingDurationDropdown';
+import AnnualMileageDropdown from '@/components/AnnualMileageDropdown';
 import { Button } from '@/components/ui/button';
 import {
   Car, Cog, Zap, Fuel, Gauge, Calendar, Palette,
@@ -154,7 +156,7 @@ const ModernEditor: React.FC<TemplateEditorProps> = ({
                   </div>
                   <div className="bg-muted/50 rounded-xl p-3">
                     <div className="text-[10px] text-muted-foreground uppercase">Laufzeit</div>
-                    <EditableField value={data.finance.duration} onChange={(v) => updateFinance('duration', v)} className="text-sm font-bold" suffix="Monate" />
+                    <LeasingDurationDropdown value={data.finance.duration} onChange={(v) => updateFinance('duration', v)} />
                   </div>
                   {isLeasing ? (
                     <>
@@ -164,7 +166,7 @@ const ModernEditor: React.FC<TemplateEditorProps> = ({
                       </div>
                       <div className="bg-muted/50 rounded-xl p-3">
                         <div className="text-[10px] text-muted-foreground uppercase">Fahrleistung</div>
-                        <EditableField value={data.finance.annualMileage || ''} onChange={(v) => updateFinance('annualMileage', v)} className="text-sm font-bold" suffix="km/Jahr" />
+                        <AnnualMileageDropdown value={data.finance.annualMileage || ''} onChange={(v) => updateFinance('annualMileage', v)} />
                       </div>
                     </>
                   ) : (

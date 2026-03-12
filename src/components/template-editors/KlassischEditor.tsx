@@ -6,6 +6,7 @@ import EditableField from '@/components/EditableField';
 import CO2LabelSelector from '@/components/CO2LabelSelector';
 import FuelTypeDropdown from '@/components/FuelTypeDropdown';
 import CategoryDropdown from '@/components/CategoryDropdown';
+import LeasingDurationDropdown from '@/components/LeasingDurationDropdown';
 import { Button } from '@/components/ui/button';
 import {
   MapPin, Phone, Mail, Globe,
@@ -119,7 +120,7 @@ const KlassischEditor: React.FC<TemplateEditorProps> = ({
                   </div>
                   <div className="border border-border rounded-lg bg-muted/30 p-3">
                     <div className="text-[10px] uppercase text-muted-foreground tracking-wide">Laufzeit</div>
-                    <EditableField value={data.finance.duration} onChange={(v) => updateFinance('duration', v)} className="text-sm font-semibold" suffix="Monate" />
+                    <LeasingDurationDropdown value={data.finance.duration} onChange={(v) => updateFinance('duration', v)} />
                   </div>
                   {isLeasing ? (
                     <div className="border border-border rounded-lg bg-muted/30 p-3">

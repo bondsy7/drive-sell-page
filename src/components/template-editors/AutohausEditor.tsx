@@ -9,6 +9,8 @@ import EditableField from '@/components/EditableField';
 import CO2LabelSelector from '@/components/CO2LabelSelector';
 import FuelTypeDropdown from '@/components/FuelTypeDropdown';
 import CategoryDropdown from '@/components/CategoryDropdown';
+import LeasingDurationDropdown from '@/components/LeasingDurationDropdown';
+import AnnualMileageDropdown from '@/components/AnnualMileageDropdown';
 import { Button } from '@/components/ui/button';
 import {
   Car, Cog, Zap, Fuel, Gauge, Calendar,
@@ -337,23 +339,25 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
 
               {/* Finance details grid */}
               <div className="grid grid-cols-2 gap-4">
-                {!isBuyCategory && ([
-                  ...(isLeasing
-                    ? [
-                        ['Laufzeit', data.finance.duration, (v: string) => updateFinance('duration', v), 'Monate'],
-                        ['Sonderzahlung', data.finance.specialPayment || '', (v: string) => updateFinance('specialPayment', v), '€'],
-                      ]
-                    : [
-                        ['Laufzeit', data.finance.duration, (v: string) => updateFinance('duration', v), 'Monate'],
-                        ['Anzahlung', data.finance.downPayment || '', (v: string) => updateFinance('downPayment', v), '€'],
-                      ]
-                  ),
-                ] as [string, string, (v: string) => void, string][]).map(([label, value, onChange, sfx]) => (
-                  <div key={label} className="space-y-0.5">
-                    <div className="text-xs text-muted-foreground">{label}</div>
-                    <EditableField value={value} onChange={onChange} className="text-lg font-bold text-foreground" suffix={sfx} />
-                  </div>
-                ))}
+                {!isBuyCategory && (
+                  <>
+                    <div className="space-y-0.5">
+                      <div className="text-xs text-muted-foreground">Laufzeit</div>
+                      <LeasingDurationDropdown value={data.finance.duration} onChange={(v) => updateFinance('duration', v)} />
+                    </div>
+                    {isLeasing ? (
+                      <div className="space-y-0.5">
+                        <div className="text-xs text-muted-foreground">Sonderzahlung</div>
+                        <EditableField value={data.finance.specialPayment || ''} onChange={(v) => updateFinance('specialPayment', v)} className="text-lg font-bold text-foreground" suffix="€" />
+                      </div>
+                    ) : (
+                      <div className="space-y-0.5">
+                        <div className="text-xs text-muted-foreground">Anzahlung</div>
+                        <EditableField value={data.finance.downPayment || ''} onChange={(v) => updateFinance('downPayment', v)} className="text-lg font-bold text-foreground" suffix="€" />
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
 
               {/* Additional finance rows */}
@@ -363,7 +367,10 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
                     <ConsumptionRow label="Gesamtpreis" value={data.finance.totalPrice} onChange={(v) => updateFinance('totalPrice', v)} suffix="€" />
                     {isLeasing ? (
                       <>
-                        <ConsumptionRow label="Jahresfahrleistung" value={data.finance.annualMileage || ''} onChange={(v) => updateFinance('annualMileage', v)} suffix="km/Jahr" />
+                        <div className="flex items-center justify-between py-1.5 border-b border-border/30">
+                          <span className="text-xs text-muted-foreground">Jahresfahrleistung</span>
+                          <AnnualMileageDropdown value={data.finance.annualMileage || ''} onChange={(v) => updateFinance('annualMileage', v)} className="w-[160px]" />
+                        </div>
                         <ConsumptionRow label="Restwert" value={data.finance.residualValue || ''} onChange={(v) => updateFinance('residualValue', v)} suffix="€" />
                       </>
                     ) : (
