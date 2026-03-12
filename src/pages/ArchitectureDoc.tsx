@@ -90,7 +90,7 @@ export default function ArchitectureDoc() {
           </div>
           <h1 className="text-4xl font-bold text-foreground mb-3 print:text-3xl">Autohaus.AI</h1>
           <p className="text-xl text-muted-foreground mb-2 print:text-lg">System- & Softwarearchitektur</p>
-          <p className="text-sm text-muted-foreground">Version 1.0 · Stand: März 2026</p>
+          <p className="text-sm text-muted-foreground">Version 1.1 · Stand: März 2026</p>
           <p className="text-sm text-muted-foreground">Für Entwickler-Onboarding & Kunden-Dokumentation</p>
           
           <div className="mt-12 print:mt-8">
@@ -113,7 +113,8 @@ export default function ArchitectureDoc() {
                 '14. Admin-System',
                 '15. Sicherheitsarchitektur',
                 '16. Datenfluss-Diagramme',
-                '17. Deployment & Infrastruktur',
+                '17. Sales Assistant & CRM',
+                '18. Deployment & Infrastruktur',
               ].map((item, i) => (
                 <p key={i} className="text-sm text-muted-foreground py-0.5">{item}</p>
               ))}
@@ -135,6 +136,7 @@ export default function ArchitectureDoc() {
               <Li><strong>Werbebanner</strong> für Social Media rendern</Li>
               <Li><strong>Showroom-Videos</strong> per KI generieren</Li>
               <Li><strong>VIN-Erkennung</strong> per OCR und Fahrzeugdaten-Lookup</Li>
+              <Li><strong>Sales Assistant</strong> KI-gestütztes CRM mit Lead-Management, Konversationen, Aufgaben und Wissensbasis</Li>
             </ul>
           </SubSection>
           <SubSection title="High-Level-Architektur">
@@ -151,7 +153,7 @@ export default function ArchitectureDoc() {
 ┌─────────────────────────────────────────────────┐
 │           SUPABASE (Backend-as-a-Service)        │
 │                                                 │
-│  15 Edge Functions │ 12 DB-Tabellen │ 5 Buckets │
+│  21 Edge Functions │ 27 DB-Tabellen │ 6 Buckets │
 │  Auth (Email+OAuth) │ Realtime Channels          │
 └──────────────────┬──────────────────────────────┘
                    │
@@ -224,7 +226,9 @@ export default function ArchitectureDoc() {
                 ['/profile', 'Händler-Profil', 'Geschützt'],
                 ['/project/:id', 'Projekt-Editor', 'Geschützt'],
                 ['/integrations', 'API/FTP/Embed', 'Geschützt'],
-                ['/admin/*', 'Admin-Panel (9 Seiten)', 'Admin-Rolle'],
+                ['/sales-assistant', 'Sales Assistant CRM', 'Geschützt'],
+                ['/sales-assistant/:id', 'Konversation/Lead-Detail', 'Geschützt'],
+                ['/admin/*', 'Admin-Panel (10 Seiten)', 'Admin-Rolle'],
               ]}
             />
           </SubSection>
@@ -284,6 +288,19 @@ export default function ArchitectureDoc() {
               ]}
             />
           </SubSection>
+          <SubSection title="Sales-Assistant-Functions">
+            <Table
+              headers={['Function', 'Zweck']}
+              rows={[
+                ['generate-sales-response', 'KI-Antwort auf Kundenanfragen generieren'],
+                ['sales-chat', 'Interner Chat-Assistent für Verkäufer'],
+                ['ingest-sales-knowledge', 'Dokumente chunken + embedden (RAG)'],
+                ['auto-process-lead', 'Automatische Lead-Verarbeitung (Autopilot)'],
+                ['process-sales-email', 'Eingehende E-Mails verarbeiten'],
+                ['seed-crm-demo', 'Demo-Daten für CRM generieren'],
+              ]}
+            />
+          </SubSection>
           <SubSection title="Integrations-Functions">
             <Table
               headers={['Function', 'Zweck']}
@@ -318,7 +335,28 @@ export default function ArchitectureDoc() {
   ├──1:N── credit_transactions (amount, action_type)
   ├──1:N── user_subscriptions (plan_id, status, stripe_sub_id)
   ├──1:N── user_roles (role: admin|moderator|user)
-  └──1:1── ftp_configs (host, port, credentials)
+  ├──1:1── ftp_configs (host, port, credentials)
+  │
+  ├── Sales Assistant:
+  │   ├──1:1── sales_assistant_profiles (Ton, Autopilot, Signatur)
+  │   ├──1:N── sales_assistant_conversations (Lead, Stage, Kontext)
+  │   │         ├──1:N── sales_assistant_messages (Input/Output, Kanal)
+  │   │         ├──1:N── sales_assistant_tasks (Aufgaben, Priorität)
+  │   │         ├──1:N── conversation_stage_log (Stage-Wechsel)
+  │   │         ├──1:N── crm_manual_notes (Manuelle Notizen)
+  │   │         ├──1:N── sales_quotes (Angebote, Preise)
+  │   │         └──1:N── test_drive_bookings (Probefahrt-Termine)
+  │   ├──1:N── sales_knowledge_documents (Wissensbasis)
+  │   │         └──1:N── sales_knowledge_chunks (Embeddings)
+  │   ├──1:N── sales_email_outbox (E-Mail-Versand)
+  │   ├──1:N── sales_notifications (Benachrichtigungen)
+  │   ├──1:N── sales_chat_messages (Interner Chat)
+  │   ├──1:N── dealer_availability (Verfügbarkeiten)
+  │   ├──1:N── dealer_blocked_dates (Gesperrte Tage)
+  │   ├──1:N── trade_in_valuations (Inzahlungnahme)
+  │   └──1:N── calendar_sync_configs (Kalender-Sync)
+  │
+  └── customer_journey_templates (Journey-Phasen)
 
 Globale Tabellen:
   subscription_plans (name, slug, credits, prices)
@@ -612,6 +650,7 @@ Modelle:   gemini-2.5-flash, gemini-3-pro-image-preview, gemini-3.1-flash-image-
                 ['manufacturer-logos', '✅', 'Hersteller-Logos (SVGs in svg/, Raster im Root)'],
                 ['banners', '✅', 'Generierte Werbebanner'],
                 ['sample-pdfs', '✅', 'Beispiel-PDFs für Demo/Testing'],
+                ['sales-knowledge', '❌', 'Sales-Wissensbasis-Dokumente (RAG)'],
               ]}
             />
           </SubSection>
@@ -683,6 +722,7 @@ GET /api-vehicles/:id/html  → HTML-Fragment (body-Inhalt)`}</CodeBlock>
               ['/admin/pricing', 'Abo-Pläne + Credit-Kosten bearbeiten'],
               ['/admin/settings', 'System-Einstellungen'],
               ['/admin/logos', 'Hersteller-Logos (Massen-Upload)'],
+              ['/admin/sales-assistant', 'Sales-Assistant-Konfiguration'],
             ]}
           />
           <P>
@@ -756,8 +796,58 @@ GET /api-vehicles/:id/html  → HTML-Fragment (body-Inhalt)`}</CodeBlock>
           </SubSection>
         </Section>
 
-        {/* 17. Deployment */}
-        <Section id="s17" title="17. Deployment & Infrastruktur">
+        {/* 17. Sales Assistant & CRM */}
+        <Section id="s17" title="17. Sales Assistant & CRM">
+          <P>
+            Vollintegriertes KI-Verkaufsassistenten-System für Automobilhändler mit CRM, Lead-Management,
+            Wissensbasis und automatisierten Workflows.
+          </P>
+          <SubSection title="Module (Tabs)">
+            <Table
+              headers={['Tab', 'Funktion']}
+              rows={[
+                ['Generator', 'KI-Antworten auf Kundenanfragen generieren (E-Mail, WhatsApp, Chat)'],
+                ['CRM', 'Kunden-Timeline mit Lead-Gruppierung, Bot-Antworten, manuelle Notizen'],
+                ['Aufgaben', 'Aufgabenverwaltung mit Prioritäten und Status'],
+                ['Buchungen', 'Probefahrt-Termine + Verfügbarkeitskalender'],
+                ['Angebote', 'Angebotserstellung (Barkauf, Leasing, Finanzierung)'],
+                ['Inzahlungnahme', 'Bewertung von Gebrauchtfahrzeugen'],
+                ['Wissensbasis', 'Dokumente hochladen → Chunking → Embeddings (RAG)'],
+                ['Postfach', 'E-Mail-Outbox mit Status-Tracking'],
+                ['Verlauf', 'Konversationshistorie mit allen Nachrichten'],
+                ['Journey', 'Customer-Journey-Templates (Phasen, CTAs, Signale)'],
+              ]}
+            />
+          </SubSection>
+          <SubSection title="Autopilot-Modi">
+            <Table
+              headers={['Modus', 'Beschreibung']}
+              rows={[
+                ['Manuell', 'Alle Antworten werden vom Verkäufer geprüft und gesendet'],
+                ['Vorschlag', 'KI erstellt Entwürfe, Verkäufer genehmigt vor Versand'],
+                ['Autopilot', 'KI antwortet automatisch auf bestimmte Journey-Phasen'],
+              ]}
+            />
+          </SubSection>
+          <SubSection title="Wissensbasis (RAG)">
+            <CodeBlock>{`Dokument-Upload → ingest-sales-knowledge (Edge Function)
+  → Text-Extraktion (PDF/TXT/Markdown)
+  → Chunking (500-1000 Tokens)
+  → Embedding-Generierung (Gemini)
+  → Speicherung in sales_knowledge_chunks (pgvector)
+  → Abruf bei Antwort-Generierung via Similarity-Search`}</CodeBlock>
+          </SubSection>
+          <SubSection title="CRM-Kundengruppierung">
+            <P>
+              Leads werden automatisch nach E-Mail/Telefon zu Kunden-Threads gruppiert.
+              Jeder Thread zeigt: alle Anfragen, Bot-Antworten, Stage-Wechsel, manuelle Notizen,
+              Intenttags (Probefahrt, Leasing, Kauf, etc.) und verknüpfte Fahrzeuge.
+            </P>
+          </SubSection>
+        </Section>
+
+        {/* 18. Deployment */}
+        <Section id="s18" title="18. Deployment & Infrastruktur">
           <SubSection title="Deployment-Modell">
             <Table
               headers={['Komponente', 'Deployment']}

@@ -1,6 +1,6 @@
 # Autohaus.AI – System- & Softwarearchitektur
 
-> **Version:** 1.0 · **Stand:** 10. März 2026  
+> **Version:** 1.1 · **Stand:** 12. März 2026  
 > **Zielgruppe:** Entwickler-Onboarding, technische Stakeholder, Kunden-Dokumentation
 
 ---
@@ -23,7 +23,8 @@
 14. [Admin-System](#14-admin-system)
 15. [Sicherheitsarchitektur](#15-sicherheitsarchitektur)
 16. [Datenfluss-Diagramme](#16-datenfluss-diagramme)
-17. [Deployment & Infrastruktur](#17-deployment--infrastruktur)
+17. [Sales Assistant & CRM](#17-sales-assistant--crm)
+18. [Deployment & Infrastruktur](#18-deployment--infrastruktur)
 
 ---
 
@@ -37,6 +38,7 @@ Autohaus.AI ist eine SaaS-Plattform für Automobilhändler, die mithilfe von KI 
 - **Werbebanner** für Social Media rendert
 - **Showroom-Videos** per KI generiert
 - **VIN-Erkennung** per OCR und Fahrzeugdaten-Lookup bereitstellt
+- **Sales Assistant** KI-gestütztes CRM mit Lead-Management, Konversationen, Aufgaben und Wissensbasis
 
 Das System folgt einer **modularen Workflow-Architektur** mit einem zentralen ActionHub, der unabhängige Prozesse orchestriert.
 
@@ -59,7 +61,7 @@ Das System folgt einer **modularen Workflow-Architektur** mit einem zentralen Ac
 │                                                         │
 │  ┌────────────┐ ┌─────────┐ ┌────────┐ ┌────────────┐  │
 │  │Edge Funcs  │ │Database │ │Storage │ │   Auth     │  │
-│  │(15 Funcs)  │ │(12 Tab) │ │(5 Buck)│ │Email+OAuth│  │
+│  │(21 Funcs)  │ │(27 Tab) │ │(6 Buck)│ │Email+OAuth│  │
 │  └─────┬──────┘ └────┬────┘ └───┬────┘ └────────────┘  │
 └────────┼────────────┼────────┼──────────────────────┘
          │            │        │
@@ -136,6 +138,8 @@ Das System folgt einer **modularen Workflow-Architektur** mit einem zentralen Ac
 /finanzierungsrechner   → Finanzierungsrechner (geschützt)
 /kfz-steuer-rechner     → Kfz-Steuer-Rechner (geschützt)
 /integrations           → API/FTP/Embed (geschützt)
+/sales-assistant        → Sales Assistant CRM (geschützt)
+/sales-assistant/:id    → Konversation/Lead-Detail (geschützt)
 /admin/*                → Admin-Panel (Admin-Rolle)
 ```
 
@@ -305,7 +309,7 @@ src/
 
 ## 4. Backend-Architektur (Edge Functions)
 
-Alle Backend-Logik läuft in **15 Supabase Edge Functions** (Deno-Runtime):
+Alle Backend-Logik läuft in **21 Supabase Edge Functions** (Deno-Runtime):
 
 ### 4.1 KI-Verarbeitungs-Functions
 
@@ -330,7 +334,18 @@ Alle Backend-Logik läuft in **15 Supabase Edge Functions** (Deno-Runtime):
 | `stripe-webhook` | Webhook-Handler für Stripe Events |
 | `check-credits` | Credit-Balance-Prüfung |
 
-### 4.3 Integrations-Functions
+### 4.3 Sales-Assistant-Functions
+
+| Function | Zweck |
+|---|---|
+| `generate-sales-response` | KI-Antwort auf Kundenanfragen generieren (E-Mail, WhatsApp, Chat) |
+| `sales-chat` | Interner Chat-Assistent für Verkäufer |
+| `ingest-sales-knowledge` | Dokumente chunken + embedden für RAG-Wissensbasis |
+| `auto-process-lead` | Automatische Lead-Verarbeitung (Autopilot-Modus) |
+| `process-sales-email` | Eingehende E-Mails verarbeiten und zuordnen |
+| `seed-crm-demo` | Demo-Daten für CRM generieren |
+
+### 4.4 Integrations-Functions
 
 | Function | Zweck |
 |---|---|
@@ -340,7 +355,7 @@ Alle Backend-Logik läuft in **15 Supabase Edge Functions** (Deno-Runtime):
 | `admin-stripe` | Admin-Only: Stripe Payments/Refunds verwalten |
 | `admin-delete-user` | Admin-Only: Nutzer löschen |
 
-### 4.4 Gemeinsame Patterns
+### 4.5 Gemeinsame Patterns
 
 Alle KI-Functions folgen einem einheitlichen Pattern:
 
@@ -362,7 +377,7 @@ const response = await fetch("https://generativelanguage.googleapis.com/v1beta/m
 return new Response(JSON.stringify(result), { headers: corsHeaders });
 ```
 
-### 4.5 JWT-Konfiguration
+### 4.6 JWT-Konfiguration
 
 ```toml
 # supabase/config.toml
@@ -418,8 +433,29 @@ auth.users (Supabase-managed)
     ├──1:N── user_roles
     │         (role [ENUM: admin|moderator|user])
     │
-    └──1:1── ftp_configs
-              (host, port, username, password, directory, is_sftp)
+    ├──1:1── ftp_configs
+    │         (host, port, username, password, directory, is_sftp)
+    │
+    ├── Sales Assistant:
+    │   ├──1:1── sales_assistant_profiles (Ton, Autopilot, Signatur)
+    │   ├──1:N── sales_assistant_conversations (Lead, Stage, Kontext)
+    │   │         ├──1:N── sales_assistant_messages (Input/Output, Kanal)
+    │   │         ├──1:N── sales_assistant_tasks (Aufgaben, Priorität)
+    │   │         ├──1:N── conversation_stage_log (Stage-Wechsel)
+    │   │         ├──1:N── crm_manual_notes (Manuelle Notizen)
+    │   │         ├──1:N── sales_quotes (Angebote, Preise)
+    │   │         └──1:N── test_drive_bookings (Probefahrt-Termine)
+    │   ├──1:N── sales_knowledge_documents (Wissensbasis)
+    │   │         └──1:N── sales_knowledge_chunks (Embeddings, pgvector)
+    │   ├──1:N── sales_email_outbox (E-Mail-Versand)
+    │   ├──1:N── sales_notifications (Benachrichtigungen)
+    │   ├──1:N── sales_chat_messages (Interner Chat)
+    │   ├──1:N── dealer_availability (Verfügbarkeiten Mo-So)
+    │   ├──1:N── dealer_blocked_dates (Gesperrte Tage)
+    │   ├──1:N── trade_in_valuations (Inzahlungnahme-Bewertungen)
+    │   └──1:N── calendar_sync_configs (Kalender-Sync)
+    │
+    └── customer_journey_templates (Journey-Phasen, global + pro User)
 
 subscription_plans (global)
     (name, slug, monthly_credits, price_monthly_cents,
@@ -885,6 +921,7 @@ Webhook: STRIPE_WEBHOOK_SECRET (whsec_...)
 | `manufacturer-logos` | ✅ | Hersteller-Logos (SVGs in `svg/`, Raster im Root) |
 | `banners` | ✅ | Generierte Werbebanner |
 | `sample-pdfs` | ✅ | Beispiel-PDFs für Demo/Testing |
+| `sales-knowledge` | ❌ | Sales-Wissensbasis-Dokumente (RAG, privat) |
 
 ### 12.2 Bild-Storage-Strategie
 
@@ -1056,6 +1093,7 @@ Sichtbar im Dashboard + Admin-Panel
 /admin/pricing      → Abo-Pläne + Credit-Kosten bearbeiten
 /admin/settings     → System-Einstellungen
 /admin/logos        → Hersteller-Logos (Massen-Upload)
+/admin/sales-assistant → Sales-Assistant-Konfiguration
 ```
 
 ### 14.2 Admin-spezifische Edge Functions
@@ -1225,7 +1263,71 @@ Konfigurierbare Einstellungen ohne Code-Änderung:
 
 ---
 
-## 17. Deployment & Infrastruktur
+## 17. Sales Assistant & CRM
+
+Vollintegriertes KI-Verkaufsassistenten-System für Automobilhändler.
+
+### 17.1 Module (Tabs)
+
+| Tab | Funktion |
+|---|---|
+| **Generator** | KI-Antworten auf Kundenanfragen generieren (E-Mail, WhatsApp, Chat) |
+| **CRM** | Kunden-Timeline mit Lead-Gruppierung, Bot-Antworten, manuelle Notizen |
+| **Aufgaben** | Aufgabenverwaltung mit Prioritäten und Status |
+| **Buchungen** | Probefahrt-Termine + Verfügbarkeitskalender |
+| **Angebote** | Angebotserstellung (Barkauf, Leasing, Finanzierung) |
+| **Inzahlungnahme** | Bewertung von Gebrauchtfahrzeugen |
+| **Wissensbasis** | Dokumente hochladen → Chunking → Embeddings (RAG) |
+| **Postfach** | E-Mail-Outbox mit Status-Tracking |
+| **Verlauf** | Konversationshistorie mit allen Nachrichten |
+| **Journey** | Customer-Journey-Templates (Phasen, CTAs, Signale) |
+
+### 17.2 Autopilot-Modi
+
+| Modus | Beschreibung |
+|---|---|
+| **Manuell** | Alle Antworten werden vom Verkäufer geprüft und gesendet |
+| **Vorschlag** | KI erstellt Entwürfe, Verkäufer genehmigt vor Versand |
+| **Autopilot** | KI antwortet automatisch auf bestimmte Journey-Phasen |
+
+### 17.3 Wissensbasis (RAG-Pipeline)
+
+```
+Dokument-Upload → ingest-sales-knowledge (Edge Function)
+  → Text-Extraktion (PDF/TXT/Markdown)
+  → Chunking (500-1000 Tokens)
+  → Embedding-Generierung (Gemini)
+  → Speicherung in sales_knowledge_chunks (pgvector)
+  → Abruf bei Antwort-Generierung via Similarity-Search
+```
+
+### 17.4 CRM-Kundengruppierung
+
+Leads werden automatisch nach E-Mail/Telefon zu Kunden-Threads gruppiert (siehe `sales-customer-utils.ts`).
+Jeder Thread zeigt: alle Anfragen, Bot-Antworten, Stage-Wechsel, manuelle Notizen,
+Intenttags (Probefahrt, Leasing, Kauf, etc.) und verknüpfte Fahrzeuge.
+
+### 17.5 Datenfluss: Lead → Antwort
+
+```
+Lead eingehend (submit-lead / E-Mail / manuell)
+    │
+    ├── auto-process-lead (Autopilot):
+    │   ├── Lead-Kontext + Wissensbasis laden
+    │   ├── Journey-Phase bestimmen
+    │   ├── generate-sales-response aufrufen
+    │   └── Entwurf speichern oder direkt senden
+    │
+    └── Manuell (Generator-Tab):
+        ├── Verkäufer wählt Lead + Kanal + Kontext
+        ├── generate-sales-response generiert Entwurf
+        ├── Verkäufer bearbeitet + genehmigt
+        └── Versand via sales_email_outbox
+```
+
+---
+
+## 18. Deployment & Infrastruktur
 
 ### 17.1 Frontend
 
