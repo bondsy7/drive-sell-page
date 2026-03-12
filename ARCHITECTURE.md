@@ -1,6 +1,6 @@
 # Autohaus.AI – System- & Softwarearchitektur
 
-> **Version:** 1.0 · **Stand:** 10. März 2026  
+> **Version:** 1.1 · **Stand:** 12. März 2026  
 > **Zielgruppe:** Entwickler-Onboarding, technische Stakeholder, Kunden-Dokumentation
 
 ---
