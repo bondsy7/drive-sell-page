@@ -395,10 +395,6 @@ export default function SalesCrmTab() {
             ))}
           </SelectContent>
         </Select>
-        <Button variant="outline" size="sm" onClick={seedDemoData} disabled={seeding} className="gap-1.5">
-          {seeding ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-          Demo-Daten laden
-        </Button>
       </div>
 
       <p className="text-xs text-muted-foreground">{filtered.length} von {customers.length} Kunden</p>
