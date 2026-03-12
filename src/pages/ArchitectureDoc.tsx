@@ -136,6 +136,7 @@ export default function ArchitectureDoc() {
               <Li><strong>Werbebanner</strong> für Social Media rendern</Li>
               <Li><strong>Showroom-Videos</strong> per KI generieren</Li>
               <Li><strong>VIN-Erkennung</strong> per OCR und Fahrzeugdaten-Lookup</Li>
+              <Li><strong>Sales Assistant</strong> KI-gestütztes CRM mit Lead-Management, Konversationen, Aufgaben und Wissensbasis</Li>
             </ul>
           </SubSection>
           <SubSection title="High-Level-Architektur">
