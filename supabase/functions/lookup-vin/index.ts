@@ -75,12 +75,18 @@ serve(async (req) => {
     const rawEquipment = extractEquipment();
     console.log(`Raw equipment count: ${rawEquipment.length}`);
 
-    // Translate equipment via Lovable AI
+    // Limit items to prevent AI timeout (max 80 items)
+    const equipmentForTranslation = rawEquipment.slice(0, 80);
+
+    // Translate equipment via Lovable AI with timeout
     let translatedEquipment: string[] = rawEquipment;
-    if (rawEquipment.length > 0) {
+    if (equipmentForTranslation.length > 0) {
       try {
         const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
         if (LOVABLE_API_KEY) {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 25000); // 25s timeout
+
           const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
             method: "POST",
             headers: {
@@ -105,18 +111,20 @@ Regeln:
                 },
                 {
                   role: "user",
-                  content: JSON.stringify(rawEquipment)
+                  content: JSON.stringify(equipmentForTranslation)
                 }
               ],
               temperature: 0.1,
             }),
+            signal: controller.signal,
           });
+
+          clearTimeout(timeoutId);
 
           if (aiResp.ok) {
             const aiData = await aiResp.json();
             const content = aiData?.choices?.[0]?.message?.content || "";
             try {
-              // Try to parse JSON from content
               const cleaned = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
               const parsed = JSON.parse(cleaned);
               if (Array.isArray(parsed) && parsed.length > 0) {
@@ -131,7 +139,12 @@ Regeln:
           }
         }
       } catch (aiErr) {
-        console.error("AI translation failed:", aiErr);
+        if (aiErr instanceof DOMException && aiErr.name === 'AbortError') {
+          console.error("AI translation timed out, using raw equipment");
+        } else {
+          console.error("AI translation failed:", aiErr);
+        }
+        // Fall back to raw equipment (already set as default)
       }
     }
 
