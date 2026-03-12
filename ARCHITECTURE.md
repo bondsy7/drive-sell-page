@@ -309,7 +309,7 @@ src/
 
 ## 4. Backend-Architektur (Edge Functions)
 
-Alle Backend-Logik läuft in **15 Supabase Edge Functions** (Deno-Runtime):
+Alle Backend-Logik läuft in **21 Supabase Edge Functions** (Deno-Runtime):
 
 ### 4.1 KI-Verarbeitungs-Functions
 
