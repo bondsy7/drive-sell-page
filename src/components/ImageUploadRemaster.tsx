@@ -98,15 +98,17 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
     }
 
     setIsProcessing(true);
-    setProgress({ current: 0, total: pending.length });
+    const total = pending.length;
+    let completed = 0;
+    setProgress({ current: 0, total });
 
-    for (let i = 0; i < pending.length; i++) {
-      const img = pending[i];
-      setProgress({ current: i + 1, total: pending.length });
-      setImages(prev => prev.map(x => x.id === img.id ? { ...x, status: 'processing' } : x));
+    // Mark all as processing
+    setImages(prev => prev.map(x => pending.some(p => p.id === x.id) ? { ...x, status: 'processing' } : x));
 
+    const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription);
+
+    const processImage = async (img: UploadedImage) => {
       try {
-        const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription);
         const { data, error } = await supabase.functions.invoke('remaster-vehicle-image', {
           body: {
             imageBase64: img.originalBase64,
@@ -128,10 +130,23 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
         } else {
           setImages(prev => prev.map(x => x.id === img.id ? { ...x, status: 'done', remasteredBase64: data.imageBase64 } : x));
         }
-      } catch (e) {
+      } catch {
         setImages(prev => prev.map(x => x.id === img.id ? { ...x, status: 'error', error: 'Netzwerkfehler' } : x));
       }
-    }
+      completed++;
+      setProgress({ current: completed, total });
+    };
+
+    // Process all images in parallel (max 4 concurrent)
+    const CONCURRENCY = 4;
+    const queue = [...pending];
+    const workers = Array.from({ length: Math.min(CONCURRENCY, queue.length) }, async () => {
+      while (queue.length > 0) {
+        const img = queue.shift()!;
+        await processImage(img);
+      }
+    });
+    await Promise.all(workers);
 
     setIsProcessing(false);
   };

@@ -126,15 +126,23 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     }
 
     setIsProcessing(true);
-    setProgress({ current: 0, total: toProcess.length });
+    const total = toProcess.length;
+    let completed = 0;
+    setProgress({ current: 0, total });
 
-    for (let i = 0; i < toProcess.length; i++) {
-      const slot = toProcess[i];
-      setProgress({ current: i + 1, total: toProcess.length });
-      setCaptures(prev => ({ ...prev, [slot.key]: { ...prev[slot.key], status: 'processing' } }));
+    // Mark all as processing
+    setCaptures(prev => {
+      const next = { ...prev };
+      for (const slot of toProcess) {
+        next[slot.key] = { ...next[slot.key], status: 'processing' };
+      }
+      return next;
+    });
 
+    const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription);
+
+    const processSlot = async (slot: typeof toProcess[0]) => {
       try {
-        const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription);
         const { data, error } = await supabase.functions.invoke('remaster-vehicle-image', {
           body: {
             imageBase64: captures[slot.key].base64,
@@ -159,7 +167,20 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       } catch {
         setCaptures(prev => ({ ...prev, [slot.key]: { ...prev[slot.key], status: 'error', error: 'Netzwerkfehler' } }));
       }
-    }
+      completed++;
+      setProgress({ current: completed, total });
+    };
+
+    // Process all images in parallel (max 4 concurrent)
+    const CONCURRENCY = 4;
+    const queue = [...toProcess];
+    const workers = Array.from({ length: Math.min(CONCURRENCY, queue.length) }, async () => {
+      while (queue.length > 0) {
+        const slot = queue.shift()!;
+        await processSlot(slot);
+      }
+    });
+    await Promise.all(workers);
 
     setIsProcessing(false);
   };
