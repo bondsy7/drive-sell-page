@@ -460,7 +460,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
           <div className="flex items-center gap-2 mt-2 flex-wrap">
             <Badge variant="secondary" className="gap-1.5 text-xs">
               <Image className="w-3 h-3" />
-              CI: {detectedBrand.charAt(0).toUpperCase() + detectedBrand.slice(1)}
+              CI: {detectedBrand === 'volkswagen' ? 'Volkswagen' : detectedBrand.charAt(0).toUpperCase() + detectedBrand.slice(1)}
             </Badge>
             {remasterConfig.showManufacturerLogo && (
               <Badge variant={resolvedManufacturerLogoUrl ? "default" : "destructive"} className="gap-1.5 text-xs">
