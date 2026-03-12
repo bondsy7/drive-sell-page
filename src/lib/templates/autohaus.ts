@@ -94,8 +94,8 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
     /* === HERO IMAGE === */
     .ah-hero{background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e5e5e5;margin-bottom:20px}
     .ah-hero img#mainImg{width:100%;height:auto;max-height:500px;object-fit:cover;display:block}
-    .ah-gallery{display:flex;gap:8px;padding:12px;overflow-x:auto;background:#fafafa}
-    .ah-gallery-thumb{width:72px;height:54px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid transparent;transition:all .2s;opacity:0.7}
+    .ah-gallery{display:flex;gap:8px;padding:12px;overflow-x:auto;background:#fafafa;max-width:100%}
+    .ah-gallery-thumb{width:72px;height:54px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid transparent;transition:all .2s;opacity:0.7;flex-shrink:0}
     .ah-gallery-thumb:hover,.ah-gallery-thumb.active{border-color:#1a1a1a;opacity:1}
 
     /* === ACCORDION === */
