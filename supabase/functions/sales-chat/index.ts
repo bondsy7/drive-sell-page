@@ -165,7 +165,15 @@ ${quotes.length > 0 ? quotes.slice(0, 10).map((q: any) => `- ${q.vehicle_title |
 ${tradeIns.length > 0 ? tradeIns.map((t: any) => `- ${t.vehicle_make || ''} ${t.vehicle_model || ''} ${t.vehicle_year || ''}: ${t.estimated_value_min?.toLocaleString('de-DE') || '?'} – ${t.estimated_value_max?.toLocaleString('de-DE') || '?'} € (${t.condition}, ${t.mileage_km?.toLocaleString('de-DE') || '?'} km)`).join('\n') : 'Keine laufenden Bewertungen.'}
 
 ## NEUE LEADS (letzte 10)
-${leads.length > 0 ? leads.slice(0, 10).map((l: any) => `- ${l.name} (${l.email})${l.vehicle_title ? ` – Interesse an: ${l.vehicle_title}` : ''}${l.phone ? ` Tel: ${l.phone}` : ''} (${new Date(l.created_at).toLocaleDateString('de-DE')})`).join('\n') : 'Keine Leads vorhanden.'}
+${leads.length > 0 ? leads.slice(0, 10).map((l: any) => {
+  const interests: string[] = [];
+  if (l.interested_test_drive) interests.push('Probefahrt');
+  if (l.interested_trade_in) interests.push('Inzahlungnahme');
+  if (l.interested_leasing) interests.push('Leasing');
+  if (l.interested_financing) interests.push('Finanzierung');
+  if (l.interested_purchase) interests.push('Kauf');
+  return `- ${l.name} (${l.email})${l.vehicle_title ? ` – Fahrzeug: ${l.vehicle_title}` : ''}${interests.length > 0 ? ` – Interessen: ${interests.join(', ')}` : ''}${l.phone ? ` Tel: ${l.phone}` : ''} (${new Date(l.created_at).toLocaleDateString('de-DE')})`;
+}).join('\n') : 'Keine Leads vorhanden.'}
 
 ## E-MAIL OUTBOX (letzte ${emails.length})
 ${emails.length > 0 ? emails.map((e: any) => `- An: ${e.to_name || e.to_email} | Betreff: ${e.subject} | Status: ${e.status} | ${new Date(e.created_at).toLocaleDateString('de-DE')}`).join('\n') : 'Keine E-Mails in der Outbox.'}
