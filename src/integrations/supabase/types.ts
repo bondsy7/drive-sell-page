@@ -83,6 +83,47 @@ export type Database = {
         }
         Relationships: []
       }
+      conversation_stage_log: {
+        Row: {
+          changed_by: string
+          conversation_id: string
+          created_at: string
+          id: string
+          new_stage: string
+          previous_stage: string | null
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          changed_by?: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          new_stage: string
+          previous_stage?: string | null
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          changed_by?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          new_stage?: string
+          previous_stage?: string | null
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_stage_log_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "sales_assistant_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       credit_balances: {
         Row: {
           balance: number
@@ -142,6 +183,54 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      crm_manual_notes: {
+        Row: {
+          content: string
+          conversation_id: string | null
+          created_at: string
+          id: string
+          lead_id: string | null
+          metadata: Json | null
+          note_type: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          metadata?: Json | null
+          note_type?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          metadata?: Json | null
+          note_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_manual_notes_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "sales_assistant_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_manual_notes_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       customer_journey_templates: {
         Row: {
