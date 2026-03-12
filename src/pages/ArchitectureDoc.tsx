@@ -722,6 +722,7 @@ GET /api-vehicles/:id/html  → HTML-Fragment (body-Inhalt)`}</CodeBlock>
               ['/admin/pricing', 'Abo-Pläne + Credit-Kosten bearbeiten'],
               ['/admin/settings', 'System-Einstellungen'],
               ['/admin/logos', 'Hersteller-Logos (Massen-Upload)'],
+              ['/admin/sales-assistant', 'Sales-Assistant-Konfiguration'],
             ]}
           />
           <P>
