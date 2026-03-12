@@ -23,7 +23,8 @@
 14. [Admin-System](#14-admin-system)
 15. [Sicherheitsarchitektur](#15-sicherheitsarchitektur)
 16. [Datenfluss-Diagramme](#16-datenfluss-diagramme)
-17. [Deployment & Infrastruktur](#17-deployment--infrastruktur)
+17. [Sales Assistant & CRM](#17-sales-assistant--crm)
+18. [Deployment & Infrastruktur](#18-deployment--infrastruktur)
 
 ---
 
