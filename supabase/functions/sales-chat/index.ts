@@ -208,11 +208,24 @@ ${profile?.assistant_name ? `Du heißt "${profile.assistant_name}".` : ''}`;
 
     // Check for approval commands
     const userText = (lastUserMsg?.content || '').toLowerCase();
-    if (userText.includes('freigabe') || userText.includes('genehmig') || userText.includes('absenden')) {
+    if (userText.includes('freigabe') || userText.includes('genehmig') || userText.includes('absenden') || userText.includes('freigeben')) {
       if (pendingApprovals.length > 0) {
+        // Approve notifications
+        const approvalIds = pendingApprovals.map((n: any) => n.id);
         await supabase.from('sales_notifications').update({
           approval_status: 'approved', is_read: true,
-        }).in('id', pendingApprovals.map((n: any) => n.id));
+        }).in('id', approvalIds);
+
+        // Queue pending emails for sending
+        for (const n of pendingApprovals) {
+          const payload = n.action_payload || {};
+          if (payload.emailId) {
+            await supabase.from('sales_email_outbox').update({ status: 'queued' }).eq('id', payload.emailId);
+          }
+          if (payload.conversationId) {
+            await supabase.from('sales_assistant_conversations').update({ status: 'in_progress' }).eq('id', payload.conversationId);
+          }
+        }
       }
     }
 
