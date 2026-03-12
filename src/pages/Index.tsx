@@ -386,7 +386,7 @@ const Index = () => {
 
   const isProcessing = appState === 'uploading' || appState === 'analyzing' || appState === 'generating-image' || appState === 'standalone-generating';
   const vehicleDescription = vehicleData
-    ? `${vehicleData.vehicle.brand} ${vehicleData.vehicle.model} ${vehicleData.vehicle.variant}, ${vehicleData.vehicle.color}, ${vehicleData.vehicle.fuelType}` : '';
+    ? `${vehicleData.vehicle.brand} ${vehicleData.vehicle.model} ${vehicleData.vehicle.variant || ''}, ${vehicleData.vehicle.color || ''}, ${vehicleData.vehicle.fuelType || ''}`.replace(/,\s*,/g, ',').replace(/,\s*$/, '').trim() : '';
 
   return (
     <div className="min-h-screen bg-background">
