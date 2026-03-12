@@ -40,17 +40,27 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
   const showroomInputRef = useRef<HTMLInputElement>(null);
   const plateImageRef = useRef<HTMLInputElement>(null);
 
-  // Load profile data & dynamic logos
+  // Load profile data & dynamic logos, pre-cache as base64
   useEffect(() => {
-    fetchManufacturerLogos().then(setDynamicLogos);
+    fetchManufacturerLogos().then(logos => {
+      setDynamicLogos(logos);
+      // Pre-warm all logo URLs as base64 in background
+      prewarmCache(logos.map(l => l.url));
+    });
     if (!user) return;
     supabase.from('profiles').select('custom_showroom_url, logo_url').eq('id', user.id).single()
-      .then(({ data }) => {
+      .then(async ({ data }) => {
         if (data) {
-          setProfileShowroomUrl((data as any).custom_showroom_url || null);
-          setProfileLogoUrl(data.logo_url || null);
-          if (data.logo_url) {
-            onChange({ ...config, dealerLogoUrl: data.logo_url });
+          const showroomUrl = (data as any).custom_showroom_url || null;
+          const logoUrl = data.logo_url || null;
+          setProfileShowroomUrl(showroomUrl);
+          setProfileLogoUrl(logoUrl);
+          // Pre-cache dealer logo & custom showroom as base64
+          const urlsToCache = [showroomUrl, logoUrl].filter(Boolean) as string[];
+          if (urlsToCache.length) prewarmCache(urlsToCache);
+          if (logoUrl) {
+            const logoB64 = await ensureCachedBase64(logoUrl);
+            onChange({ ...config, dealerLogoUrl: logoUrl, dealerLogoBase64: logoB64 });
           }
         }
       });
