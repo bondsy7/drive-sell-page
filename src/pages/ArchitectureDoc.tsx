@@ -113,7 +113,8 @@ export default function ArchitectureDoc() {
                 '14. Admin-System',
                 '15. Sicherheitsarchitektur',
                 '16. Datenfluss-Diagramme',
-                '17. Deployment & Infrastruktur',
+                '17. Sales Assistant & CRM',
+                '18. Deployment & Infrastruktur',
               ].map((item, i) => (
                 <p key={i} className="text-sm text-muted-foreground py-0.5">{item}</p>
               ))}
