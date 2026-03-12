@@ -153,7 +153,7 @@ export default function ArchitectureDoc() {
 ┌─────────────────────────────────────────────────┐
 │           SUPABASE (Backend-as-a-Service)        │
 │                                                 │
-│  15 Edge Functions │ 12 DB-Tabellen │ 5 Buckets │
+│  21 Edge Functions │ 27 DB-Tabellen │ 6 Buckets │
 │  Auth (Email+OAuth) │ Realtime Channels          │
 └──────────────────┬──────────────────────────────┘
                    │
