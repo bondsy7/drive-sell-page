@@ -25,9 +25,9 @@ export function generateModernHTML(data: VehicleData, imageBase64: string | null
     .container{max-width:960px;margin:0 auto;padding:24px}
     .main-card{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(26,35,50,0.06);border:1px solid #e2e8f0;display:grid;grid-template-columns:1fr 1fr}
     @media(max-width:768px){.main-card{grid-template-columns:1fr}}
-    .image-side{background:#f0f4f8;display:flex;flex-direction:column;min-height:320px;padding:16px}
+    .image-side{background:#f0f4f8;display:flex;flex-direction:column;min-height:320px;padding:16px;min-width:0;overflow:hidden}
     .image-side img#mainImg{width:100%;height:auto;max-height:350px;object-fit:cover;border-radius:12px}
-    .gallery{display:flex;gap:8px;margin-top:12px;overflow-x:auto;max-width:100%}
+    .gallery{display:flex;gap:8px;margin-top:12px;overflow-x:auto;max-width:100%;scrollbar-width:thin;-webkit-overflow-scrolling:touch;padding-bottom:4px}
     .gallery-thumb{width:64px;height:48px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid transparent;transition:all .2s;flex-shrink:0}
     .gallery-thumb:hover{border-color:#3366cc;opacity:1}
     .info-side{padding:28px;display:flex;flex-direction:column}
