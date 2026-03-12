@@ -245,20 +245,32 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
                 className="w-full h-full object-cover"
               />
               {/* Status overlay */}
-              <div className={`absolute inset-0 flex items-center justify-center transition-opacity ${
-                img.status === 'processing' ? 'bg-background/70' :
-                img.status === 'error' ? 'bg-destructive/20' :
-                img.status === 'done' ? 'bg-accent/10 opacity-0 group-hover:opacity-100' : ''
-              }`}>
-                {img.status === 'processing' && <Loader2 className="w-6 h-6 text-accent animate-spin" />}
-                {img.status === 'error' && (
-                  <div className="text-center px-2">
-                    <AlertCircle className="w-5 h-5 text-destructive mx-auto mb-1" />
-                    <p className="text-[10px] text-destructive">{img.error}</p>
-                  </div>
-                )}
-                {img.status === 'done' && <Check className="w-6 h-6 text-accent" />}
-              </div>
+              {img.status === 'processing' && (
+                <div className="absolute inset-0 bg-background/70 flex items-center justify-center">
+                  <Loader2 className="w-6 h-6 text-accent animate-spin" />
+                </div>
+              )}
+              {img.status === 'error' && (
+                <div className="absolute inset-0 bg-destructive/20 flex flex-col items-center justify-center gap-2 px-2">
+                  <AlertCircle className="w-5 h-5 text-destructive" />
+                  <p className="text-[10px] text-destructive text-center">{img.error}</p>
+                  <button
+                    onClick={() => retrySingleImage(img.id)}
+                    className="flex items-center gap-1 bg-background/90 hover:bg-background text-foreground text-[10px] font-semibold px-2.5 py-1.5 rounded-lg shadow transition-colors"
+                  >
+                    <RotateCcw className="w-3 h-3" /> Erneut versuchen
+                  </button>
+                </div>
+              )}
+              {img.status === 'done' && !isProcessing && (
+                <button
+                  onClick={() => retrySingleImage(img.id)}
+                  className="absolute bottom-1.5 right-1.5 w-7 h-7 rounded-full bg-background/80 hover:bg-accent hover:text-accent-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  title="Erneut generieren"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                </button>
+              )
               {/* Remove button */}
               {!isProcessing && (
                 <button
