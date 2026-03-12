@@ -279,9 +279,10 @@ export function buildContactFormHTML(options: ContactFormOptions): string {
   const { dealerUserId, projectId, supabaseUrl, vehicleTitle, currentCategory } = options;
 
   const cat = (currentCategory || '').toLowerCase();
+  const isPurchase = ['barkauf', 'neuwagen', 'gebrauchtwagen', 'tageszulassung'].includes(cat);
   const showLeasing = cat !== 'leasing';
   const showFinancing = cat !== 'finanzierung';
-  const showPurchase = cat !== 'kauf';
+  const showPurchase = !isPurchase;
 
   const checkboxStyle = `accent-color:#3366cc;width:16px;height:16px;cursor:pointer`;
   const labelStyle = `display:flex;align-items:center;gap:8px;font-size:13px;font-family:'Inter',sans-serif;color:#1a2332;cursor:pointer`;
