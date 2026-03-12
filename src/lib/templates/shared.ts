@@ -271,10 +271,30 @@ export interface ContactFormOptions {
   projectId?: string;
   supabaseUrl: string;
   vehicleTitle: string;
+  /** Current category so we show alternative options */
+  currentCategory?: 'leasing' | 'finanzierung' | 'kauf' | string;
 }
 
 export function buildContactFormHTML(options: ContactFormOptions): string {
-  const { dealerUserId, projectId, supabaseUrl, vehicleTitle } = options;
+  const { dealerUserId, projectId, supabaseUrl, vehicleTitle, currentCategory } = options;
+
+  const cat = (currentCategory || '').toLowerCase();
+  const showLeasing = cat !== 'leasing';
+  const showFinancing = cat !== 'finanzierung';
+  const showPurchase = cat !== 'kauf';
+
+  const checkboxStyle = `accent-color:#3366cc;width:16px;height:16px;cursor:pointer`;
+  const labelStyle = `display:flex;align-items:center;gap:8px;font-size:13px;font-family:'Inter',sans-serif;color:#1a2332;cursor:pointer`;
+
+  const interestCheckboxes = `
+    <div style="border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+      <span style="font-size:12px;font-weight:600;color:#6b7a8d;text-transform:uppercase;letter-spacing:0.5px">Ich interessiere mich für:</span>
+      <label style="${labelStyle}"><input type="checkbox" name="interested_test_drive" style="${checkboxStyle}" /> Probefahrt</label>
+      <label style="${labelStyle}"><input type="checkbox" name="interested_trade_in" style="${checkboxStyle}" /> Inzahlungnahme meines Fahrzeugs</label>
+      ${showLeasing ? `<label style="${labelStyle}"><input type="checkbox" name="interested_leasing" style="${checkboxStyle}" /> Leasing-Angebot</label>` : ''}
+      ${showFinancing ? `<label style="${labelStyle}"><input type="checkbox" name="interested_financing" style="${checkboxStyle}" /> Finanzierungs-Angebot</label>` : ''}
+      ${showPurchase ? `<label style="${labelStyle}"><input type="checkbox" name="interested_purchase" style="${checkboxStyle}" /> Barkauf</label>` : ''}
+    </div>`;
 
   return `
   <!-- Sticky CTA -->
@@ -292,7 +312,7 @@ export function buildContactFormHTML(options: ContactFormOptions): string {
 
   <!-- Lead Modal -->
   <div id="leadModal" style="display:none;position:fixed;inset:0;z-index:10000;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px)" onclick="if(event.target===this)this.style.display='none'">
-    <div style="background:#fff;border-radius:20px;padding:32px;max-width:460px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.15);position:relative;animation:leadSlideIn .3s ease">
+    <div style="background:#fff;border-radius:20px;padding:32px;max-width:460px;width:90%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.15);position:relative;animation:leadSlideIn .3s ease">
       <button onclick="document.getElementById('leadModal').style.display='none'" style="position:absolute;top:16px;right:16px;background:none;border:none;cursor:pointer;color:#9ca3af;font-size:20px">✕</button>
       <div style="margin-bottom:20px">
         <h3 style="font-family:'Space Grotesk','Inter',sans-serif;font-size:20px;font-weight:700;color:#1a2332;margin-bottom:4px">Interesse an diesem Fahrzeug?</h3>
@@ -304,6 +324,7 @@ export function buildContactFormHTML(options: ContactFormOptions): string {
           <input name="email" type="email" placeholder="Ihre E-Mail *" required style="padding:12px 16px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:border .2s" onfocus="this.style.borderColor='#3366cc'" onblur="this.style.borderColor='#e2e8f0'" />
           <input name="phone" type="tel" placeholder="Telefonnummer (optional)" style="padding:12px 16px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:border .2s" onfocus="this.style.borderColor='#3366cc'" onblur="this.style.borderColor='#e2e8f0'" />
           <textarea name="message" placeholder="Ihre Nachricht (optional)" rows="3" style="padding:12px 16px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;outline:none;resize:vertical;transition:border .2s" onfocus="this.style.borderColor='#3366cc'" onblur="this.style.borderColor='#e2e8f0'"></textarea>
+          ${interestCheckboxes}
           <button type="submit" id="leadSubmitBtn" style="
             background:linear-gradient(135deg,#3366cc,#2952a3);color:#fff;border:none;cursor:pointer;
             padding:14px;border-radius:10px;font-size:15px;font-weight:700;font-family:'Inter',sans-serif;
@@ -345,7 +366,12 @@ export function buildContactFormHTML(options: ContactFormOptions): string {
             email: fd.get('email'),
             phone: fd.get('phone') || null,
             message: fd.get('message') || null,
-            vehicleTitle: '${vehicleTitle.replace(/'/g, "\\'")}'
+            vehicleTitle: '${vehicleTitle.replace(/'/g, "\\'")}',
+            interestedTestDrive: !!form.querySelector('[name=interested_test_drive]')?.checked,
+            interestedTradeIn: !!form.querySelector('[name=interested_trade_in]')?.checked,
+            interestedLeasing: !!form.querySelector('[name=interested_leasing]')?.checked,
+            interestedFinancing: !!form.querySelector('[name=interested_financing]')?.checked,
+            interestedPurchase: !!form.querySelector('[name=interested_purchase]')?.checked
           })
         });
         if (res.ok) {
