@@ -226,7 +226,9 @@ export default function ArchitectureDoc() {
                 ['/profile', 'Händler-Profil', 'Geschützt'],
                 ['/project/:id', 'Projekt-Editor', 'Geschützt'],
                 ['/integrations', 'API/FTP/Embed', 'Geschützt'],
-                ['/admin/*', 'Admin-Panel (9 Seiten)', 'Admin-Rolle'],
+                ['/sales-assistant', 'Sales Assistant CRM', 'Geschützt'],
+                ['/sales-assistant/:id', 'Konversation/Lead-Detail', 'Geschützt'],
+                ['/admin/*', 'Admin-Panel (10 Seiten)', 'Admin-Rolle'],
               ]}
             />
           </SubSection>
