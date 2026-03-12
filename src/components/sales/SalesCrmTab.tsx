@@ -475,7 +475,7 @@ function CustomerCard({
                           </p>
                         )}
                         {req.message && (
-                          <p className="text-xs text-muted-foreground mt-1 line-clamp-3">
+                          <p className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap break-words">
                             „{req.message}"
                           </p>
                         )}
