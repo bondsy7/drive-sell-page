@@ -6,6 +6,7 @@ import EditableField from '@/components/EditableField';
 import CO2LabelSelector from '@/components/CO2LabelSelector';
 import FuelTypeDropdown from '@/components/FuelTypeDropdown';
 import CategoryDropdown from '@/components/CategoryDropdown';
+import LeasingDurationDropdown from '@/components/LeasingDurationDropdown';
 import { Button } from '@/components/ui/button';
 import {
   MapPin, Phone, Mail, Globe,
