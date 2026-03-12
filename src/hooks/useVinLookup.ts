@@ -18,6 +18,7 @@ interface OutVinVehicle {
   bodyType: string;
   doors: number | null;
   seats: number | null;
+  equipment: string[];
   _raw: Record<string, unknown>;
 }
 
@@ -39,6 +40,7 @@ export function useVinLookup() {
   const [diffs, setDiffs] = useState<VinFieldDiff[]>([]);
   const [outvinData, setOutvinData] = useState<OutVinVehicle | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [equipment, setEquipment] = useState<string[]>([]);
 
   const lookup = useCallback(async (vin: string, currentData: VehicleData) => {
     if (!vin || vin.length !== 17) {
@@ -56,6 +58,7 @@ export function useVinLookup() {
 
       const vehicle = data.vehicle as OutVinVehicle;
       setOutvinData(vehicle);
+      setEquipment(vehicle.equipment || []);
 
       // Build diffs
       const foundDiffs: VinFieldDiff[] = [];
@@ -70,10 +73,14 @@ export function useVinLookup() {
       setDiffs(foundDiffs);
       setDialogOpen(true);
 
-      if (foundDiffs.length === 0) {
+      const equipCount = (vehicle.equipment || []).length;
+      if (foundDiffs.length === 0 && equipCount === 0) {
         toast.success('VIN-Daten stimmen überein!');
       } else {
-        toast.info(`${foundDiffs.length} Abweichung${foundDiffs.length > 1 ? 'en' : ''} gefunden.`);
+        const parts: string[] = [];
+        if (foundDiffs.length > 0) parts.push(`${foundDiffs.length} Abweichung${foundDiffs.length > 1 ? 'en' : ''}`);
+        if (equipCount > 0) parts.push(`${equipCount} Ausstattungsmerkmale`);
+        toast.info(`${parts.join(' & ')} gefunden.`);
       }
     } catch (e) {
       console.error('VIN lookup error:', e);
@@ -83,7 +90,7 @@ export function useVinLookup() {
     }
   }, []);
 
-  const applyFields = useCallback((selectedFields: string[], currentData: VehicleData): VehicleData => {
+  const applyFields = useCallback((selectedFields: string[], currentData: VehicleData, replaceEquipment?: boolean, selectedEquipment?: string[]): VehicleData => {
     if (!outvinData) return currentData;
     let updated = { ...currentData, vehicle: { ...currentData.vehicle }, consumption: { ...currentData.consumption } };
 
@@ -108,8 +115,14 @@ export function useVinLookup() {
         case 'driveType': updated.consumption.driveType = val; break;
       }
     }
+
+    // Replace features with selected equipment if requested
+    if (replaceEquipment && selectedEquipment && selectedEquipment.length > 0) {
+      updated.vehicle.features = selectedEquipment;
+    }
+
     return updated;
   }, [outvinData]);
 
-  return { loading, diffs, dialogOpen, setDialogOpen, lookup, applyFields };
+  return { loading, diffs, equipment, dialogOpen, setDialogOpen, lookup, applyFields };
 }

@@ -63,7 +63,6 @@ serve(async (req) => {
           }
         }
       }
-      // Also check top-level equipment arrays
       if (Array.isArray(vehicleNode?.equipment)) {
         for (const e of vehicleNode.equipment) {
           const desc = typeof e === "string" ? e : (e?.description || e?.name || e?.text || "");
@@ -73,7 +72,68 @@ serve(async (req) => {
       return [...new Set(items)];
     };
 
-    const equipment = extractEquipment();
+    const rawEquipment = extractEquipment();
+    console.log(`Raw equipment count: ${rawEquipment.length}`);
+
+    // Translate equipment via Lovable AI
+    let translatedEquipment: string[] = rawEquipment;
+    if (rawEquipment.length > 0) {
+      try {
+        const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+        if (LOVABLE_API_KEY) {
+          const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${LOVABLE_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "google/gemini-2.5-flash-lite",
+              messages: [
+                {
+                  role: "system",
+                  content: `Du bist ein Fahrzeug-Ausstattungsexperte. Übersetze und kürze die folgende Ausstattungsliste eines Fahrzeugs ins Deutsche.
+
+Regeln:
+- Entferne alle "Ohne"/"Without"-Einträge komplett
+- Entferne technische Codes und interne Referenzen
+- Entferne triviale Einträge (Warndreieck, Verbandkasten, Feuerlöscher, Betriebsanleitung, Frostschutz, Gewichtsbereiche, Produktionsdaten)
+- Kürze auf max. 4-5 Wörter pro Eintrag
+- Fasse ähnliche Einträge zusammen (z.B. mehrere Airbags → "Front-, Seiten- & Kopfairbags")
+- Gib nur relevante Ausstattungsmerkmale zurück die für einen Käufer interessant sind
+- Antwort als JSON-Array von Strings, nichts anderes`
+                },
+                {
+                  role: "user",
+                  content: JSON.stringify(rawEquipment)
+                }
+              ],
+              temperature: 0.1,
+            }),
+          });
+
+          if (aiResp.ok) {
+            const aiData = await aiResp.json();
+            const content = aiData?.choices?.[0]?.message?.content || "";
+            try {
+              // Try to parse JSON from content
+              const cleaned = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+              const parsed = JSON.parse(cleaned);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                translatedEquipment = parsed.filter((s: any) => typeof s === "string" && s.length > 0);
+                console.log(`Translated equipment count: ${translatedEquipment.length}`);
+              }
+            } catch (parseErr) {
+              console.error("AI translation parse error:", parseErr, "content:", content.slice(0, 200));
+            }
+          } else {
+            console.error("AI translation error:", aiResp.status);
+          }
+        }
+      } catch (aiErr) {
+        console.error("AI translation failed:", aiErr);
+      }
+    }
 
     const mapped = {
       brand: vehicleNode?.make?.make || "",
@@ -89,7 +149,7 @@ serve(async (req) => {
       bodyType: getStreamText("body_type"),
       doors: Number(getStreamText("number_of_doors")) || null,
       seats: Number(getStreamText("number_of_seats")) || null,
-      equipment,
+      equipment: translatedEquipment,
       _raw: data,
     };
 
