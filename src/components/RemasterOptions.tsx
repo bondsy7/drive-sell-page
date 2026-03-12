@@ -71,13 +71,40 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
+  // Brand alias map for logo matching
+  const BRAND_ALIASES: Record<string, string[]> = {
+    'volkswagen': ['vw'],
+    'vw': ['volkswagen'],
+    'mercedesbenz': ['mercedes', 'mb', 'mercedesamg'],
+    'mercedes': ['mercedesbenz', 'mb', 'mercedesamg'],
+    'mb': ['mercedesbenz', 'mercedes'],
+    'bmw': ['bayerischemotorenwerke'],
+    'alfaromeo': ['alfa-romeo', 'alfa'],
+    'alfa-romeo': ['alfaromeo', 'alfa'],
+    'astonmartin': ['aston-martin'],
+    'aston-martin': ['astonmartin'],
+  };
+
   // Auto-resolve manufacturer logo when brand changes + cache base64
   useEffect(() => {
     if (!vehicleBrand || dynamicLogos.length === 0) return;
-    const brandLower = vehicleBrand.toLowerCase();
-    const match = dynamicLogos.find(l => l.name.toLowerCase() === brandLower)
-      || dynamicLogos.find(l => l.name.toLowerCase().includes(brandLower))
-      || dynamicLogos.find(l => brandLower.includes(l.name.toLowerCase()));
+    const brandNorm = vehicleBrand.toLowerCase().replace(/[-_\s]+/g, '');
+    
+    const findLogo = () => {
+      // Exact match
+      const exact = dynamicLogos.find(l => l.name.toLowerCase().replace(/[-_\s]+/g, '') === brandNorm);
+      if (exact) return exact;
+      // Alias match
+      const aliases = BRAND_ALIASES[brandNorm] || [];
+      for (const alias of aliases) {
+        const aliasMatch = dynamicLogos.find(l => l.name.toLowerCase().replace(/[-_\s]+/g, '') === alias);
+        if (aliasMatch) return aliasMatch;
+      }
+      // Partial match
+      return dynamicLogos.find(l => l.name.toLowerCase().includes(brandNorm) || brandNorm.includes(l.name.toLowerCase()));
+    };
+
+    const match = findLogo();
     if (match) {
       console.log(`[RemasterOptions] Auto-resolved logo for "${vehicleBrand}": ${match.name}`);
       ensureCachedBase64(match.url).then(b64 => {
