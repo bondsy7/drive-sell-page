@@ -11,7 +11,9 @@ export interface RemasterConfig {
   showManufacturerLogo: boolean;
   showDealerLogo: boolean;
   dealerLogoUrl?: string | null;
+  dealerLogoBase64?: string | null;
   manufacturerLogoUrl?: string | null;
+  manufacturerLogoBase64?: string | null;
 }
 
 export const SCENE_OPTIONS = [
