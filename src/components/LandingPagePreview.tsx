@@ -82,6 +82,7 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
       projectId: projectId || undefined,
       supabaseUrl,
       vehicleTitle,
+      currentCategory: data.category,
     }
   } : undefined;
 
