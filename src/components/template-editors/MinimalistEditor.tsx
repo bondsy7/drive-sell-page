@@ -120,7 +120,7 @@ const MinimalistEditor: React.FC<TemplateEditorProps> = ({
                   </div>
                   <div className="border-b border-border/20 pb-3">
                     <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Laufzeit</div>
-                    <EditableField value={data.finance.duration} onChange={(v) => updateFinance('duration', v)} className="text-[15px] font-semibold" suffix="Monate" />
+                    <LeasingDurationDropdown value={data.finance.duration} onChange={(v) => updateFinance('duration', v)} />
                   </div>
                   {isLeasing ? (
                     <div className="border-b border-border/20 pb-3">

@@ -166,7 +166,7 @@ const ModernEditor: React.FC<TemplateEditorProps> = ({
                       </div>
                       <div className="bg-muted/50 rounded-xl p-3">
                         <div className="text-[10px] text-muted-foreground uppercase">Fahrleistung</div>
-                        <EditableField value={data.finance.annualMileage || ''} onChange={(v) => updateFinance('annualMileage', v)} className="text-sm font-bold" suffix="km/Jahr" />
+                        <AnnualMileageDropdown value={data.finance.annualMileage || ''} onChange={(v) => updateFinance('annualMileage', v)} />
                       </div>
                     </>
                   ) : (
