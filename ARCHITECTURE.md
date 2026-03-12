@@ -334,7 +334,18 @@ Alle Backend-Logik läuft in **21 Supabase Edge Functions** (Deno-Runtime):
 | `stripe-webhook` | Webhook-Handler für Stripe Events |
 | `check-credits` | Credit-Balance-Prüfung |
 
-### 4.3 Integrations-Functions
+### 4.3 Sales-Assistant-Functions
+
+| Function | Zweck |
+|---|---|
+| `generate-sales-response` | KI-Antwort auf Kundenanfragen generieren (E-Mail, WhatsApp, Chat) |
+| `sales-chat` | Interner Chat-Assistent für Verkäufer |
+| `ingest-sales-knowledge` | Dokumente chunken + embedden für RAG-Wissensbasis |
+| `auto-process-lead` | Automatische Lead-Verarbeitung (Autopilot-Modus) |
+| `process-sales-email` | Eingehende E-Mails verarbeiten und zuordnen |
+| `seed-crm-demo` | Demo-Daten für CRM generieren |
+
+### 4.4 Integrations-Functions
 
 | Function | Zweck |
 |---|---|
