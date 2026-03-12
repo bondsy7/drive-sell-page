@@ -143,7 +143,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   const [jobs, setJobs] = useState<Record<string, JobState>>({});
   const [running, setRunning] = useState(false);
   const [finished, setFinished] = useState(false);
-  const [savedProjectId, setSavedProjectId] = useState<string | null>(null);
+  const [savedProjectId, setSavedProjectId] = useState<string | null>(projectId || null);
   const [showPreview, setShowPreview] = useState(true);
 
   const selectedJobs = availableJobs.filter(j => selectedKeys.has(j.key));
