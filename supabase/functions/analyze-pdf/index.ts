@@ -312,8 +312,28 @@ Gib das Ergebnis als JSON zurück.`;
 
     const data = await response.json();
     let content = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    console.log("[analyze-pdf] Raw response length:", content.length);
+    console.log("[analyze-pdf] First 500 chars:", content.substring(0, 500));
+    
+    // Clean markdown wrappers if present
     content = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-    const parsed = JSON.parse(content);
+    
+    if (!content) {
+      console.error("[analyze-pdf] Empty response from Gemini. Full response:", JSON.stringify(data).substring(0, 1000));
+      throw new Error("Leere Antwort von der KI erhalten");
+    }
+    
+    let parsed;
+    try {
+      parsed = JSON.parse(content);
+    } catch (parseErr) {
+      console.error("[analyze-pdf] JSON parse error:", parseErr, "Content:", content.substring(0, 500));
+      throw new Error("KI-Antwort konnte nicht verarbeitet werden");
+    }
+    
+    console.log("[analyze-pdf] Parsed keys:", Object.keys(parsed));
+    console.log("[analyze-pdf] Vehicle:", parsed.vehicle?.brand, parsed.vehicle?.model);
+    console.log("[analyze-pdf] Finance totalPrice:", parsed.finance?.totalPrice);
 
     // === DOCUMENT TYPE CHECK ===
     if (parsed.isVehicleOffer === false) {
