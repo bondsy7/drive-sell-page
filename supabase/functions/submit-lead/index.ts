@@ -12,7 +12,10 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { dealerUserId, projectId, name, email, phone, message, vehicleTitle } = await req.json();
+    const {
+      dealerUserId, projectId, name, email, phone, message, vehicleTitle,
+      interestedTestDrive, interestedTradeIn, interestedLeasing, interestedFinancing, interestedPurchase
+    } = await req.json();
 
     if (!dealerUserId || !name || !email) {
       return new Response(JSON.stringify({ error: "Name, E-Mail und Händler-ID sind erforderlich." }), {
@@ -42,6 +45,11 @@ Deno.serve(async (req) => {
       phone: phone ? String(phone).slice(0, 50) : null,
       message: message ? String(message).slice(0, 2000) : null,
       vehicle_title: vehicleTitle ? String(vehicleTitle).slice(0, 300) : null,
+      interested_test_drive: !!interestedTestDrive,
+      interested_trade_in: !!interestedTradeIn,
+      interested_leasing: !!interestedLeasing,
+      interested_financing: !!interestedFinancing,
+      interested_purchase: !!interestedPurchase,
     }).select('id').single();
 
     if (error) {

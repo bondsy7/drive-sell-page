@@ -311,6 +311,11 @@ export type Database = {
           dealer_user_id: string
           email: string
           id: string
+          interested_financing: boolean
+          interested_leasing: boolean
+          interested_purchase: boolean
+          interested_test_drive: boolean
+          interested_trade_in: boolean
           message: string | null
           name: string
           phone: string | null
@@ -322,6 +327,11 @@ export type Database = {
           dealer_user_id: string
           email: string
           id?: string
+          interested_financing?: boolean
+          interested_leasing?: boolean
+          interested_purchase?: boolean
+          interested_test_drive?: boolean
+          interested_trade_in?: boolean
           message?: string | null
           name: string
           phone?: string | null
@@ -333,6 +343,11 @@ export type Database = {
           dealer_user_id?: string
           email?: string
           id?: string
+          interested_financing?: boolean
+          interested_leasing?: boolean
+          interested_purchase?: boolean
+          interested_test_drive?: boolean
+          interested_trade_in?: boolean
           message?: string | null
           name?: string
           phone?: string | null
