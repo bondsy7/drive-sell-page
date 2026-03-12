@@ -138,7 +138,11 @@ const Index = () => {
       const pdfBase64 = await extractPDFAsBase64(file);
       setAppState('analyzing');
       const { data: analysisData, error: analysisError } = await supabase.functions.invoke('analyze-pdf', { body: { pdfBase64 } });
-      if (analysisError) { toast.error('Fehler bei der Analyse.'); setAppState('idle'); return; }
+      console.log('[processFile] analysisError:', analysisError);
+      console.log('[processFile] analysisData keys:', analysisData ? Object.keys(analysisData) : 'null');
+      console.log('[processFile] vehicle:', analysisData?.vehicle?.brand, analysisData?.vehicle?.model);
+      console.log('[processFile] finance:', analysisData?.finance);
+      if (analysisError) { toast.error('Fehler bei der Analyse: ' + (analysisError.message || analysisError)); setAppState('idle'); return; }
       if (analysisData?.error) {
         if (analysisData.error === 'insufficient_credits') {
           toast.error(`Nicht genügend Credits. Guthaben: ${analysisData.balance}, benötigt: ${analysisData.cost}.`, { duration: 8000 });
@@ -147,6 +151,11 @@ const Index = () => {
         } else if (analysisData.error === 'Nicht authentifiziert') {
           toast.error('Bitte melde dich an.');
         } else { toast.error(analysisData.error); }
+        setAppState('idle'); return;
+      }
+      if (!analysisData?.vehicle) {
+        console.error('[processFile] No vehicle data in response:', analysisData);
+        toast.error('PDF-Analyse hat keine Fahrzeugdaten zurückgegeben. Bitte erneut versuchen.');
         setAppState('idle'); return;
       }
       const { imagePrompt: _bp, isVehicleOffer: _iv, ...vehicleInfo } = analysisData;
