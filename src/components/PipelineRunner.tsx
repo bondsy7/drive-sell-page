@@ -693,12 +693,23 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
             )}
           </Button>
         ) : (
-          <Button
-            onClick={onComplete}
-            className="gap-1.5 sm:gap-2 gradient-accent text-accent-foreground font-semibold text-xs sm:text-sm"
-          >
-            <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Zur Galerie
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={onComplete}
+              variant="outline"
+              className="gap-1.5 sm:gap-2 text-xs sm:text-sm"
+            >
+              <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Zur Galerie
+            </Button>
+            {projectId && (
+              <Button
+                onClick={() => navigate(`/project/${projectId}`)}
+                className="gap-1.5 sm:gap-2 gradient-accent text-accent-foreground font-semibold text-xs sm:text-sm"
+              >
+                <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Zur Landing Page
+              </Button>
+            )}
+          </div>
         )}
       </div>
 
