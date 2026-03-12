@@ -82,6 +82,7 @@ export default function SalesAssistant() {
             </TabsTrigger>
           </TabsList>
 
+          <TabsContent value="crm"><SalesCrmTab /></TabsContent>
           <TabsContent value="assistant"><SalesGeneratorTab /></TabsContent>
           <TabsContent value="chat"><SalesChatPage /></TabsContent>
           <TabsContent value="journey"><SalesJourneyTab /></TabsContent>
