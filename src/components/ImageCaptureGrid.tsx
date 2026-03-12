@@ -298,14 +298,31 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                     </div>
                   )}
                   {cap.status === 'error' && (
-                    <div className="absolute inset-0 bg-destructive/20 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-destructive/20 flex flex-col items-center justify-center gap-2">
                       <AlertCircle className="w-5 h-5 text-destructive" />
+                      <button
+                        onClick={() => retrySingleSlot(slot.key)}
+                        className="flex items-center gap-1 bg-background/90 hover:bg-background text-foreground text-[10px] font-semibold px-2.5 py-1.5 rounded-lg shadow transition-colors"
+                      >
+                        <RotateCcw className="w-3 h-3" /> Erneut versuchen
+                      </button>
                     </div>
                   )}
                   {cap.status === 'done' && (
-                    <div className="absolute bottom-1.5 left-1.5 bg-accent text-accent-foreground text-[9px] font-semibold px-1.5 py-0.5 rounded-md">
-                      Remastered
-                    </div>
+                    <>
+                      <div className="absolute bottom-1.5 left-1.5 bg-accent text-accent-foreground text-[9px] font-semibold px-1.5 py-0.5 rounded-md">
+                        Remastered
+                      </div>
+                      {!isProcessing && (
+                        <button
+                          onClick={() => retrySingleSlot(slot.key)}
+                          className="absolute bottom-1.5 right-1.5 w-7 h-7 rounded-full bg-background/80 hover:bg-accent hover:text-accent-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Erneut generieren"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </>
                   )}
                   {!isProcessing && (
                     <button
