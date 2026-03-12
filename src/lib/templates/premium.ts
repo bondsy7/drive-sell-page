@@ -30,8 +30,8 @@ export function generatePremiumHTML(data: VehicleData, imageBase64: string | nul
     .hero-overlay h1{font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:600;color:#fff}
     .hero-overlay .variant{font-size:13px;color:#7a7e8a;margin:4px 0 12px}
     .hero-overlay .price{font-family:'Cormorant Garamond',serif;font-size:30px;color:#c9a84c}
-    .gallery{display:flex;gap:8px;margin-top:12px;padding:0 16px 16px}
-    .gallery-thumb{width:68px;height:50px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid transparent;opacity:0.5;transition:all .2s}
+    .gallery{display:flex;gap:8px;margin-top:12px;padding:0 16px 16px;overflow-x:auto;max-width:100%}
+    .gallery-thumb{width:68px;height:50px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid transparent;opacity:0.5;transition:all .2s;flex-shrink:0}
     .gallery-thumb:hover{border-color:#c9a84c;opacity:1}
     .section{background:#10131a;border-radius:14px;padding:24px;margin-bottom:16px;border:1px solid #1c2030}
     .section h3{font-family:'Cormorant Garamond',serif;font-size:20px;color:#c9a84c;margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid #1c2030}

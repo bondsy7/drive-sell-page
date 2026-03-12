@@ -27,8 +27,8 @@ export function generateModernHTML(data: VehicleData, imageBase64: string | null
     @media(max-width:768px){.main-card{grid-template-columns:1fr}}
     .image-side{background:#f0f4f8;display:flex;flex-direction:column;min-height:320px;padding:16px}
     .image-side img#mainImg{width:100%;height:auto;max-height:350px;object-fit:cover;border-radius:12px}
-    .gallery{display:flex;gap:8px;margin-top:12px;overflow-x:auto}
-    .gallery-thumb{width:64px;height:48px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid transparent;transition:all .2s}
+    .gallery{display:flex;gap:8px;margin-top:12px;overflow-x:auto;max-width:100%}
+    .gallery-thumb{width:64px;height:48px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid transparent;transition:all .2s;flex-shrink:0}
     .gallery-thumb:hover{border-color:#3366cc;opacity:1}
     .info-side{padding:28px;display:flex;flex-direction:column}
     .category{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#fff;background:#3366cc;padding:4px 10px;border-radius:4px;margin-bottom:10px}

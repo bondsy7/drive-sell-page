@@ -161,12 +161,27 @@ const Index = () => {
       const { imagePrompt: _bp, isVehicleOffer: _iv, ...vehicleInfo } = analysisData;
       const enriched = await loadProfileIntoDealer(vehicleInfo as VehicleData);
       setVehicleData(enriched);
+
+      // Pre-create project so pipeline can use it
+      const projectId = await saveProject(enriched, null, [], selectedTemplate);
+      if (projectId) setSavedProjectId(projectId);
+
       // If we have standalone photos already, skip image source choice and go straight to preview
       if (standalonePhotoResults.length > 0) {
         setImageBase64(standalonePhotoResults[0]);
         setGalleryImages(standalonePhotoResults.slice(1));
-        const projectId = await saveProject(enriched, standalonePhotoResults[0], standalonePhotoResults, selectedTemplate);
-        if (projectId) setSavedProjectId(projectId);
+        // Update existing project with images
+        if (projectId && user) {
+          const urls = await uploadImagesToStorage(standalonePhotoResults, user.id, projectId);
+          if (urls.length > 0) {
+            await supabase.from('projects').update({ main_image_url: urls[0] }).eq('id', projectId);
+            const imageRows = urls.map((url, i) => ({
+              project_id: projectId, user_id: user.id, image_url: url, image_base64: '',
+              perspective: `Bild ${i + 1}`, sort_order: i,
+            }));
+            await supabase.from('project_images').insert(imageRows);
+          }
+        }
         setAppState('preview');
         toast.success('Vorhandene Fotos wurden automatisch verknüpft!');
       } else {
@@ -177,7 +192,7 @@ const Index = () => {
       toast.error('Ein Fehler ist aufgetreten.');
       setAppState('idle');
     }
-  }, [loadProfileIntoDealer, standalonePhotoResults, saveProject, selectedTemplate]);
+  }, [loadProfileIntoDealer, standalonePhotoResults, saveProject, selectedTemplate, user]);
 
   // ─── Image Generation (within PDF flow) ───
   const handleChooseGenerate = useCallback(async (modelTier: ModelTier = 'schnell') => {
@@ -239,22 +254,59 @@ const Index = () => {
       const updatedData = vin ? { ...vehicleData, vehicle: { ...vehicleData.vehicle, vin } } : vehicleData;
       if (vin) setVehicleData(updatedData);
       const allImgs = [mainImage, ...gallery];
-      const projectId = await saveProject(updatedData, mainImage, allImgs, selectedTemplate);
-      if (projectId) setSavedProjectId(projectId);
+      if (savedProjectId) {
+        // Update existing project (created during PDF analysis)
+        await supabase.from('projects').update({
+          vehicle_data: updatedData as any,
+          updated_at: new Date().toISOString(),
+        }).eq('id', savedProjectId);
+        if (user) {
+          const urls = await uploadImagesToStorage(allImgs, user.id, savedProjectId);
+          if (urls.length > 0) {
+            await supabase.from('projects').update({ main_image_url: urls[0] }).eq('id', savedProjectId);
+            const imageRows = urls.map((url, i) => ({
+              project_id: savedProjectId, user_id: user.id, image_url: url, image_base64: '',
+              perspective: `Bild ${i + 1}`, sort_order: i,
+            }));
+            await supabase.from('project_images').insert(imageRows);
+          }
+        }
+      } else {
+        const projectId = await saveProject(updatedData, mainImage, allImgs, selectedTemplate);
+        if (projectId) setSavedProjectId(projectId);
+      }
     }
     setAppState('preview');
-  }, [vehicleData, saveProject, selectedTemplate]);
+  }, [vehicleData, saveProject, selectedTemplate, savedProjectId, user]);
 
   const handleRemasterComplete = useCallback(async (mainImage: string, gallery: string[]) => {
     setImageBase64(mainImage);
     setGalleryImages(gallery);
     if (vehicleData) {
       const allImgs = [mainImage, ...gallery];
-      const projectId = await saveProject(vehicleData, mainImage, allImgs, selectedTemplate);
-      if (projectId) setSavedProjectId(projectId);
+      if (savedProjectId) {
+        await supabase.from('projects').update({
+          vehicle_data: vehicleData as any,
+          updated_at: new Date().toISOString(),
+        }).eq('id', savedProjectId);
+        if (user) {
+          const urls = await uploadImagesToStorage(allImgs, user.id, savedProjectId);
+          if (urls.length > 0) {
+            await supabase.from('projects').update({ main_image_url: urls[0] }).eq('id', savedProjectId);
+            const imageRows = urls.map((url, i) => ({
+              project_id: savedProjectId, user_id: user.id, image_url: url, image_base64: '',
+              perspective: `Bild ${i + 1}`, sort_order: i,
+            }));
+            await supabase.from('project_images').insert(imageRows);
+          }
+        }
+      } else {
+        const projectId = await saveProject(vehicleData, mainImage, allImgs, selectedTemplate);
+        if (projectId) setSavedProjectId(projectId);
+      }
     }
     setAppState('preview');
-  }, [vehicleData, saveProject, selectedTemplate]);
+  }, [vehicleData, saveProject, selectedTemplate, savedProjectId, user]);
 
   // ─── Save standalone images to storage + DB ───
   const saveStandaloneImages = useCallback(async (allImages: string[]) => {
@@ -371,7 +423,7 @@ const Index = () => {
 
   const isProcessing = appState === 'uploading' || appState === 'analyzing' || appState === 'generating-image' || appState === 'standalone-generating';
   const vehicleDescription = vehicleData
-    ? `${vehicleData.vehicle.brand} ${vehicleData.vehicle.model} ${vehicleData.vehicle.variant}, ${vehicleData.vehicle.color}, ${vehicleData.vehicle.fuelType}` : '';
+    ? `${vehicleData.vehicle.brand} ${vehicleData.vehicle.model} ${vehicleData.vehicle.variant || ''}, ${vehicleData.vehicle.color || ''}, ${vehicleData.vehicle.fuelType || ''}`.replace(/,\s*,/g, ',').replace(/,\s*$/, '').trim() : '';
 
   return (
     <div className="min-h-screen bg-background">

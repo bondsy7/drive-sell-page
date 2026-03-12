@@ -143,7 +143,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   const [jobs, setJobs] = useState<Record<string, JobState>>({});
   const [running, setRunning] = useState(false);
   const [finished, setFinished] = useState(false);
-  const [savedProjectId, setSavedProjectId] = useState<string | null>(null);
+  const [savedProjectId, setSavedProjectId] = useState<string | null>(projectId || null);
   const [showPreview, setShowPreview] = useState(true);
 
   const selectedJobs = availableJobs.filter(j => selectedKeys.has(j.key));
@@ -180,7 +180,32 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
 
   /* ─── Save remastered input images on mount ─── */
   useEffect(() => {
-    if (!user || inputImages.length === 0 || savedProjectId) return;
+    if (!user || inputImages.length === 0) return;
+    // If we already have a project (from PDF flow), just save images to it
+    if (projectId) {
+      setSavedProjectId(projectId);
+      (async () => {
+        try {
+          const urls: string[] = [];
+          for (let i = 0; i < inputImages.length; i++) {
+            const url = await uploadImageToStorage(inputImages[i], user.id, `${projectId}/remaster_${i}.png`);
+            if (url) urls.push(url);
+          }
+          if (urls.length > 0) {
+            await supabase.from('projects').update({ main_image_url: urls[0] }).eq('id', projectId);
+            const perspectives = ['3/4 Front', 'Seite', 'Hinten', 'Interieur Fahrersitz', 'Interieur Rücksitz'];
+            const imageRows = urls.map((url, i) => ({
+              project_id: projectId, user_id: user.id, image_url: url,
+              image_base64: '', perspective: perspectives[i] || `Bild ${i + 1}`, sort_order: i,
+            }));
+            await supabase.from('project_images').insert(imageRows);
+          }
+        } catch (e) { console.error('Error saving remastered images:', e); }
+      })();
+      return;
+    }
+    // No existing project – create a new one (standalone flow)
+    if (savedProjectId) return;
     (async () => {
       try {
         const dateStr = new Date().toLocaleDateString('de-DE', {
@@ -213,7 +238,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
         }
       } catch (e) { console.error('Error saving remastered images:', e); }
     })();
-  }, [user, inputImages, vehicleDescription, savedProjectId]);
+  }, [user, inputImages, vehicleDescription, savedProjectId, projectId]);
 
   /* ─── Generate a single image ─── */
   const generateOneImage = useCallback(async (prompt: string): Promise<{ base64: string | null; error?: string }> => {
@@ -704,9 +729,9 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
             >
               <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Zur Galerie
             </Button>
-            {projectId && (
+            {savedProjectId && (
               <Button
-                onClick={() => navigate(`/project/${projectId}`)}
+                onClick={() => navigate(`/project/${savedProjectId}`)}
                 className="gap-1.5 sm:gap-2 gradient-accent text-accent-foreground font-semibold text-xs sm:text-sm"
               >
                 <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Zur Landing Page
