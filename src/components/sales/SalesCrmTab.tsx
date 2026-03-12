@@ -6,7 +6,7 @@ import {
   Search, Filter, ChevronDown, ChevronRight, Phone, Mail, Car, Clock,
   MessageSquare, Tag, User, ArrowRight, Circle, CheckCircle2, XCircle,
   AlertCircle, Flame, Snowflake, CalendarDays, FileText, MoreHorizontal,
-  Send, Bot, PenLine, ArrowUpDown, Plus, RefreshCw,
+  Send, Bot, PenLine, ArrowUpDown, Plus, RefreshCw, Reply,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -89,6 +89,17 @@ interface CrmNote {
   created_at: string;
 }
 
+interface BotMessage {
+  id: string;
+  conversation_id: string;
+  role: string;
+  input_text: string | null;
+  output_text: string | null;
+  message_type: string;
+  channel: string | null;
+  created_at: string;
+}
+
 interface CustomerWithJourney extends CustomerLeadThread {
   conversations: SalesConversation[];
   currentStage: string;
@@ -101,6 +112,7 @@ export default function SalesCrmTab() {
   const [conversations, setConversations] = useState<SalesConversation[]>([]);
   const [stageLogs, setStageLogs] = useState<StageLog[]>([]);
   const [crmNotes, setCrmNotes] = useState<CrmNote[]>([]);
+  const [botMessages, setBotMessages] = useState<BotMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [seeding, setSeeding] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -115,26 +127,33 @@ export default function SalesCrmTab() {
   } | null>(null);
   const [stageReason, setStageReason] = useState('');
 
-  // Reply dialog
+  // Reply dialog - now with conversation picker
   const [replyDialog, setReplyDialog] = useState<{
-    convId: string | null; leadId: string | null; customerName: string;
+    convId: string | null;
+    leadId: string | null;
+    customerName: string;
+    conversations: SalesConversation[];
+    contextLabel: string | null; // what the reply is about
   } | null>(null);
   const [replyText, setReplyText] = useState('');
   const [replyType, setReplyType] = useState<'customer_reply' | 'internal_note'>('customer_reply');
+  const [replyConvId, setReplyConvId] = useState<string>('');
 
   const loadData = useCallback(async () => {
     if (!user) return;
     setLoading(true);
-    const [leadsRes, convsRes, logsRes, notesRes] = await Promise.all([
+    const [leadsRes, convsRes, logsRes, notesRes, msgsRes] = await Promise.all([
       supabase.from('leads').select('*').eq('dealer_user_id', user.id).order('created_at', { ascending: false }),
       supabase.from('sales_assistant_conversations' as any).select('*').eq('user_id', user.id).order('updated_at', { ascending: false }),
       supabase.from('conversation_stage_log' as any).select('*').eq('user_id', user.id).order('created_at', { ascending: true }),
       supabase.from('crm_manual_notes' as any).select('*').eq('user_id', user.id).order('created_at', { ascending: true }),
+      supabase.from('sales_assistant_messages' as any).select('*').eq('user_id', user.id).order('created_at', { ascending: true }),
     ]);
     setLeads((leadsRes.data as any) || []);
     setConversations((convsRes.data as any) || []);
     setStageLogs((logsRes.data as any) || []);
     setCrmNotes((notesRes.data as any) || []);
+    setBotMessages((msgsRes.data as any) || []);
     setLoading(false);
   }, [user]);
 
@@ -198,7 +217,6 @@ export default function SalesCrmTab() {
     if (!stageDialog || !user) return;
     const { convId, currentStage, newStage } = stageDialog;
 
-    // Log the stage change
     await supabase.from('conversation_stage_log' as any).insert({
       conversation_id: convId,
       user_id: user.id,
@@ -208,7 +226,6 @@ export default function SalesCrmTab() {
       changed_by: 'manual',
     } as any);
 
-    // Also add as CRM note for timeline visibility
     const stageLabel = STAGE_CONFIG[newStage]?.label || newStage;
     await supabase.from('crm_manual_notes' as any).insert({
       conversation_id: convId,
@@ -217,7 +234,6 @@ export default function SalesCrmTab() {
       content: `Phase geändert: ${STAGE_CONFIG[currentStage]?.label || currentStage} → ${stageLabel}${stageReason ? ` — ${stageReason}` : ''}`,
     } as any);
 
-    // Update the conversation
     await supabase.from('sales_assistant_conversations' as any)
       .update({ journey_stage: newStage, updated_at: new Date().toISOString() } as any)
       .eq('id', convId);
@@ -235,11 +251,32 @@ export default function SalesCrmTab() {
     loadData();
   };
 
+  // Open reply dialog with context
+  const openReplyDialog = (
+    customerConversations: SalesConversation[],
+    customerName: string,
+    preselectedConvId: string | null,
+    preselectedLeadId: string | null,
+    contextLabel: string | null,
+  ) => {
+    setReplyDialog({
+      convId: preselectedConvId,
+      leadId: preselectedLeadId,
+      customerName,
+      conversations: customerConversations,
+      contextLabel,
+    });
+    setReplyText('');
+    setReplyType('customer_reply');
+    setReplyConvId(preselectedConvId || customerConversations[0]?.id || '');
+  };
+
   // Manual reply / note
   const handleReplySubmit = async () => {
     if (!replyDialog || !replyText.trim() || !user) return;
+    const convId = replyConvId || replyDialog.convId;
     await supabase.from('crm_manual_notes' as any).insert({
-      conversation_id: replyDialog.convId,
+      conversation_id: convId || null,
       lead_id: replyDialog.leadId,
       user_id: user.id,
       note_type: replyType,
@@ -358,12 +395,10 @@ export default function SalesCrmTab() {
             ))}
           </SelectContent>
         </Select>
-        {customers.length === 0 && (
-          <Button variant="outline" size="sm" onClick={seedDemoData} disabled={seeding} className="gap-1.5">
-            {seeding ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-            Demo-Daten laden
-          </Button>
-        )}
+        <Button variant="outline" size="sm" onClick={seedDemoData} disabled={seeding} className="gap-1.5">
+          {seeding ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+          Demo-Daten laden
+        </Button>
       </div>
 
       <p className="text-xs text-muted-foreground">{filtered.length} von {customers.length} Kunden</p>
@@ -375,12 +410,6 @@ export default function SalesCrmTab() {
             <div className="text-center py-12 text-muted-foreground">
               <User className="w-10 h-10 mx-auto mb-3 opacity-30" />
               <p className="text-sm">Keine Kunden gefunden.</p>
-              {customers.length === 0 && (
-                <Button variant="outline" size="sm" className="mt-3 gap-1.5" onClick={seedDemoData} disabled={seeding}>
-                  {seeding ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-                  Demo-Daten erstellen
-                </Button>
-              )}
             </div>
           ) : (
             filtered.map((customer) => (
@@ -393,10 +422,9 @@ export default function SalesCrmTab() {
                 onUpdateStatus={updateConversationStatus}
                 stageLogs={stageLogs}
                 crmNotes={crmNotes}
-                onAddReply={(convId, leadId) => {
-                  setReplyDialog({ convId, leadId, customerName: customer.displayName });
-                  setReplyText('');
-                  setReplyType('customer_reply');
+                botMessages={botMessages}
+                onAddReply={(convId, leadId, contextLabel) => {
+                  openReplyDialog(customer.conversations, customer.displayName, convId, leadId, contextLabel);
                 }}
               />
             ))
@@ -439,7 +467,7 @@ export default function SalesCrmTab() {
         </DialogContent>
       </Dialog>
 
-      {/* Reply / Note Dialog */}
+      {/* Reply / Note Dialog with conversation picker */}
       <Dialog open={!!replyDialog} onOpenChange={(o) => !o && setReplyDialog(null)}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
@@ -449,6 +477,30 @@ export default function SalesCrmTab() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
+            {replyDialog?.contextLabel && (
+              <div className="text-xs bg-muted/50 rounded-md p-2 border border-border/50">
+                <span className="text-muted-foreground">Bezug:</span>{' '}
+                <span className="font-medium text-foreground">{replyDialog.contextLabel}</span>
+              </div>
+            )}
+
+            {/* Conversation picker */}
+            {replyDialog && replyDialog.conversations.length > 1 && (
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Bezieht sich auf Konversation</label>
+                <Select value={replyConvId} onValueChange={setReplyConvId}>
+                  <SelectTrigger className="text-xs"><SelectValue placeholder="Konversation wählen…" /></SelectTrigger>
+                  <SelectContent>
+                    {replyDialog.conversations.map((conv) => (
+                      <SelectItem key={conv.id} value={conv.id} className="text-xs">
+                        {conv.conversation_title || 'Konversation'} — {STAGE_CONFIG[conv.journey_stage as string]?.label || conv.journey_stage}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <div className="flex gap-2">
               <Button
                 size="sm"
@@ -497,6 +549,7 @@ function CustomerCard({
   onUpdateStatus,
   stageLogs,
   crmNotes,
+  botMessages,
   onAddReply,
 }: {
   customer: CustomerWithJourney;
@@ -506,21 +559,22 @@ function CustomerCard({
   onUpdateStatus: (convId: string, status: string) => void;
   stageLogs: StageLog[];
   crmNotes: CrmNote[];
-  onAddReply: (convId: string | null, leadId: string | null) => void;
+  botMessages: BotMessage[];
+  onAddReply: (convId: string | null, leadId: string | null, contextLabel: string | null) => void;
 }) {
   const stageCfg = STAGE_CONFIG[customer.currentStage] || STAGE_CONFIG['new_lead'];
   const statusClass = STATUS_COLORS[customer.currentStatus] || STATUS_COLORS['open'];
   const latestConv = customer.conversations[0];
 
-  // Collect all timeline entries for this customer
   const leadIds = customer.requests.map((r) => r.id);
   const convIds = customer.conversations.map((c) => c.id);
 
   const timelineEntries = useMemo(() => {
     const entries: Array<{
-      type: 'lead' | 'conversation' | 'stage_change' | 'customer_reply' | 'internal_note';
+      type: 'lead' | 'conversation' | 'bot_message' | 'stage_change' | 'customer_reply' | 'internal_note';
       date: string;
       data: any;
+      convTitle?: string;
     }> = [];
 
     // Lead requests
@@ -528,34 +582,43 @@ function CustomerCard({
       entries.push({ type: 'lead', date: req.created_at, data: req });
     });
 
-    // Conversations
+    // Conversations (as header entries)
     customer.conversations.forEach((conv) => {
       entries.push({ type: 'conversation', date: conv.created_at, data: conv });
     });
 
-    // Stage logs for this customer's conversations
+    // Bot messages for this customer's conversations
+    botMessages.filter((m) => convIds.includes(m.conversation_id)).forEach((msg) => {
+      const conv = customer.conversations.find(c => c.id === msg.conversation_id);
+      entries.push({
+        type: 'bot_message',
+        date: msg.created_at,
+        data: msg,
+        convTitle: conv?.conversation_title || undefined,
+      });
+    });
+
+    // Stage logs
     stageLogs.filter((l) => convIds.includes(l.conversation_id)).forEach((log) => {
       entries.push({ type: 'stage_change', date: log.created_at, data: log });
     });
 
-    // CRM notes for this customer
+    // CRM notes
     crmNotes.filter((n) =>
       (n.conversation_id && convIds.includes(n.conversation_id)) ||
       (n.lead_id && leadIds.includes(n.lead_id))
     ).forEach((note) => {
+      if (note.note_type === 'stage_change') return; // skip, we show stage_log entries instead
       entries.push({
-        type: note.note_type === 'customer_reply' ? 'customer_reply'
-          : note.note_type === 'stage_change' ? 'stage_change'
-          : 'internal_note',
+        type: note.note_type === 'customer_reply' ? 'customer_reply' : 'internal_note',
         date: note.created_at,
         data: note,
       });
     });
 
-    // Sort chronologically
     entries.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     return entries;
-  }, [customer, stageLogs, crmNotes, convIds, leadIds]);
+  }, [customer, stageLogs, crmNotes, botMessages, convIds, leadIds]);
 
   const formatDate = (d: string) =>
     new Date(d).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
@@ -666,19 +729,9 @@ function CustomerCard({
 
           {/* Full Timeline */}
           <div className="px-4 py-3">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5" /> Kontaktverlauf
-              </p>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 text-xs gap-1"
-                onClick={() => onAddReply(latestConv?.id || null, customer.requests[0]?.id || null)}
-              >
-                <Plus className="w-3 h-3" /> Eintrag
-              </Button>
-            </div>
+            <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1 mb-2">
+              <Clock className="w-3.5 h-3.5" /> Kontaktverlauf
+            </p>
             <div className="relative pl-4 space-y-3">
               <div className="absolute left-[7px] top-1 bottom-1 w-px bg-border" />
 
@@ -688,7 +741,7 @@ function CustomerCard({
                 if (entry.type === 'lead') {
                   const req = entry.data as LeadForGrouping;
                   return (
-                    <div key={`lead-${req.id}`} className="relative">
+                    <div key={`lead-${req.id}`} className="relative group/entry">
                       <div className={`absolute -left-4 top-1 w-2.5 h-2.5 rounded-full border-2 border-background ${isLatest ? 'bg-accent' : 'bg-muted-foreground/30'}`} />
                       <div className="bg-card rounded-lg border border-border/50 p-3">
                         <div className="flex items-start justify-between">
@@ -712,7 +765,16 @@ function CustomerCard({
                               {req.interested_purchase && <span className="text-[9px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">Kauf</span>}
                             </div>
                           </div>
-                          <span className="text-[10px] text-muted-foreground whitespace-nowrap ml-2">{formatDate(req.created_at)}</span>
+                          <div className="flex items-center gap-1 ml-2 flex-shrink-0">
+                            <span className="text-[10px] text-muted-foreground whitespace-nowrap">{formatDate(req.created_at)}</span>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); onAddReply(null, req.id, `Anfrage: ${req.vehicle_title || req.message?.slice(0, 40) || 'Lead'}`); }}
+                              className="opacity-0 group-hover/entry:opacity-100 transition-opacity p-1 rounded hover:bg-muted"
+                              title="Antwort/Notiz hinzufügen"
+                            >
+                              <Reply className="w-3 h-3 text-muted-foreground" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -722,36 +784,94 @@ function CustomerCard({
                 if (entry.type === 'conversation') {
                   const conv = entry.data as SalesConversation;
                   return (
-                    <div key={`conv-${conv.id}`} className="relative">
+                    <div key={`conv-${conv.id}`} className="relative group/entry">
                       <div className="absolute -left-4 top-1 w-2.5 h-2.5 rounded-full border-2 border-background bg-accent/50" />
                       <div className="bg-accent/5 rounded-lg border border-accent/20 p-3">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Bot className="w-3 h-3 text-accent" />
-                          <span className="text-xs font-medium text-foreground">{conv.conversation_title || 'Konversation'}</span>
-                          <Badge variant="outline" className="text-[9px] px-1 py-0">
-                            {CONVERSATION_STATUS_LABELS[conv.status as ConversationStatus] || conv.status}
-                          </Badge>
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-2">
+                            <Bot className="w-3 h-3 text-accent" />
+                            <span className="text-xs font-medium text-foreground">{conv.conversation_title || 'Konversation'}</span>
+                            <Badge variant="outline" className="text-[9px] px-1 py-0">
+                              {CONVERSATION_STATUS_LABELS[conv.status as ConversationStatus] || conv.status}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-[10px] text-muted-foreground">{formatDate(conv.created_at)}</span>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); onAddReply(conv.id, null, conv.conversation_title || 'Konversation'); }}
+                              className="opacity-0 group-hover/entry:opacity-100 transition-opacity p-1 rounded hover:bg-muted"
+                              title="Antwort/Notiz hinzufügen"
+                            >
+                              <Reply className="w-3 h-3 text-muted-foreground" />
+                            </button>
+                          </div>
                         </div>
                         {conv.summary && (
                           <p className="text-xs text-muted-foreground whitespace-pre-wrap break-words">{conv.summary}</p>
                         )}
-                        <span className="text-[10px] text-muted-foreground">{formatDate(conv.created_at)}</span>
+                      </div>
+                    </div>
+                  );
+                }
+
+                if (entry.type === 'bot_message') {
+                  const msg = entry.data as BotMessage;
+                  const isBot = msg.role === 'assistant';
+                  const text = msg.output_text || msg.input_text || '';
+                  if (!text) return null;
+                  return (
+                    <div key={`msg-${msg.id}`} className="relative group/entry">
+                      <div className={`absolute -left-4 top-1 w-2.5 h-2.5 rounded-full border-2 border-background ${isBot ? 'bg-accent' : 'bg-sky-400'}`} />
+                      <div className={`rounded-lg border p-3 ${isBot ? 'bg-accent/5 border-accent/20' : 'bg-sky-500/5 border-sky-500/20'}`}>
+                        <div className="flex items-center justify-between mb-1">
+                          <p className={`text-[10px] font-medium flex items-center gap-1 ${isBot ? 'text-accent' : 'text-sky-600 dark:text-sky-400'}`}>
+                            {isBot ? <Bot className="w-3 h-3" /> : <User className="w-3 h-3" />}
+                            {isBot ? 'Bot-Antwort' : 'Eingabe'}
+                            {msg.channel && <Badge variant="outline" className="text-[8px] px-1 py-0 ml-1">{msg.channel}</Badge>}
+                          </p>
+                          <div className="flex items-center gap-1">
+                            <span className="text-[10px] text-muted-foreground">{formatDate(msg.created_at)}</span>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); onAddReply(msg.conversation_id, null, `Bot: ${text.slice(0, 50)}…`); }}
+                              className="opacity-0 group-hover/entry:opacity-100 transition-opacity p-1 rounded hover:bg-muted"
+                              title="Antwort/Notiz hinzufügen"
+                            >
+                              <Reply className="w-3 h-3 text-muted-foreground" />
+                            </button>
+                          </div>
+                        </div>
+                        <p className="text-xs text-foreground whitespace-pre-wrap break-words line-clamp-6">{text}</p>
+                        {entry.convTitle && (
+                          <p className="text-[9px] text-muted-foreground mt-1">↳ {entry.convTitle}</p>
+                        )}
                       </div>
                     </div>
                   );
                 }
 
                 if (entry.type === 'stage_change') {
-                  const note = entry.data as CrmNote;
+                  const log = entry.data as StageLog;
+                  const fromLabel = STAGE_CONFIG[log.previous_stage || '']?.label || log.previous_stage || '—';
+                  const toLabel = STAGE_CONFIG[log.new_stage]?.label || log.new_stage;
                   return (
-                    <div key={`sc-${note.id}`} className="relative">
+                    <div key={`sc-${log.id}`} className="relative">
                       <div className="absolute -left-4 top-1 w-2.5 h-2.5 rounded-full border-2 border-background bg-violet-400" />
                       <div className="bg-violet-500/5 rounded-lg border border-violet-500/20 p-2.5">
-                        <div className="flex items-center gap-1.5">
-                          <ArrowUpDown className="w-3 h-3 text-violet-500" />
-                          <p className="text-xs text-foreground">{note.content}</p>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <ArrowUpDown className="w-3 h-3 text-violet-500 flex-shrink-0" />
+                          <span className="text-xs text-foreground">{fromLabel}</span>
+                          <ArrowRight className="w-3 h-3 text-violet-400" />
+                          <Badge className={`${STAGE_CONFIG[log.new_stage]?.color || 'bg-muted'} text-white border-0 text-[9px] px-1.5 py-0`}>
+                            {toLabel}
+                          </Badge>
+                          <Badge variant="outline" className="text-[8px] px-1 py-0">
+                            {log.changed_by === 'bot' ? 'Bot' : 'Manuell'}
+                          </Badge>
                         </div>
-                        <span className="text-[10px] text-muted-foreground">{formatDate(note.created_at)}</span>
+                        {log.reason && (
+                          <p className="text-xs text-muted-foreground mt-1">Grund: {log.reason}</p>
+                        )}
+                        <span className="text-[10px] text-muted-foreground">{formatDate(log.created_at)}</span>
                       </div>
                     </div>
                   );
@@ -760,14 +880,25 @@ function CustomerCard({
                 if (entry.type === 'customer_reply') {
                   const note = entry.data as CrmNote;
                   return (
-                    <div key={`cr-${note.id}`} className="relative">
+                    <div key={`cr-${note.id}`} className="relative group/entry">
                       <div className="absolute -left-4 top-1 w-2.5 h-2.5 rounded-full border-2 border-background bg-blue-400" />
                       <div className="bg-blue-500/5 rounded-lg border border-blue-500/20 p-3">
-                        <p className="text-[10px] text-blue-600 dark:text-blue-400 mb-1 flex items-center gap-1 font-medium">
-                          <Mail className="w-3 h-3" /> Kundenantwort
-                        </p>
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="text-[10px] text-blue-600 dark:text-blue-400 flex items-center gap-1 font-medium">
+                            <Mail className="w-3 h-3" /> Kundenantwort
+                          </p>
+                          <div className="flex items-center gap-1">
+                            <span className="text-[10px] text-muted-foreground">{formatDate(note.created_at)}</span>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); onAddReply(note.conversation_id, note.lead_id, `Kundenantwort: ${note.content.slice(0, 40)}…`); }}
+                              className="opacity-0 group-hover/entry:opacity-100 transition-opacity p-1 rounded hover:bg-muted"
+                              title="Antwort/Notiz hinzufügen"
+                            >
+                              <Reply className="w-3 h-3 text-muted-foreground" />
+                            </button>
+                          </div>
+                        </div>
                         <p className="text-xs text-foreground whitespace-pre-wrap break-words">„{note.content}"</p>
-                        <span className="text-[10px] text-muted-foreground">{formatDate(note.created_at)}</span>
                       </div>
                     </div>
                   );
