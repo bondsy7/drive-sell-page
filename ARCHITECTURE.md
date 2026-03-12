@@ -1263,7 +1263,71 @@ Konfigurierbare Einstellungen ohne Code-Änderung:
 
 ---
 
-## 17. Deployment & Infrastruktur
+## 17. Sales Assistant & CRM
+
+Vollintegriertes KI-Verkaufsassistenten-System für Automobilhändler.
+
+### 17.1 Module (Tabs)
+
+| Tab | Funktion |
+|---|---|
+| **Generator** | KI-Antworten auf Kundenanfragen generieren (E-Mail, WhatsApp, Chat) |
+| **CRM** | Kunden-Timeline mit Lead-Gruppierung, Bot-Antworten, manuelle Notizen |
+| **Aufgaben** | Aufgabenverwaltung mit Prioritäten und Status |
+| **Buchungen** | Probefahrt-Termine + Verfügbarkeitskalender |
+| **Angebote** | Angebotserstellung (Barkauf, Leasing, Finanzierung) |
+| **Inzahlungnahme** | Bewertung von Gebrauchtfahrzeugen |
+| **Wissensbasis** | Dokumente hochladen → Chunking → Embeddings (RAG) |
+| **Postfach** | E-Mail-Outbox mit Status-Tracking |
+| **Verlauf** | Konversationshistorie mit allen Nachrichten |
+| **Journey** | Customer-Journey-Templates (Phasen, CTAs, Signale) |
+
+### 17.2 Autopilot-Modi
+
+| Modus | Beschreibung |
+|---|---|
+| **Manuell** | Alle Antworten werden vom Verkäufer geprüft und gesendet |
+| **Vorschlag** | KI erstellt Entwürfe, Verkäufer genehmigt vor Versand |
+| **Autopilot** | KI antwortet automatisch auf bestimmte Journey-Phasen |
+
+### 17.3 Wissensbasis (RAG-Pipeline)
+
+```
+Dokument-Upload → ingest-sales-knowledge (Edge Function)
+  → Text-Extraktion (PDF/TXT/Markdown)
+  → Chunking (500-1000 Tokens)
+  → Embedding-Generierung (Gemini)
+  → Speicherung in sales_knowledge_chunks (pgvector)
+  → Abruf bei Antwort-Generierung via Similarity-Search
+```
+
+### 17.4 CRM-Kundengruppierung
+
+Leads werden automatisch nach E-Mail/Telefon zu Kunden-Threads gruppiert (siehe `sales-customer-utils.ts`).
+Jeder Thread zeigt: alle Anfragen, Bot-Antworten, Stage-Wechsel, manuelle Notizen,
+Intenttags (Probefahrt, Leasing, Kauf, etc.) und verknüpfte Fahrzeuge.
+
+### 17.5 Datenfluss: Lead → Antwort
+
+```
+Lead eingehend (submit-lead / E-Mail / manuell)
+    │
+    ├── auto-process-lead (Autopilot):
+    │   ├── Lead-Kontext + Wissensbasis laden
+    │   ├── Journey-Phase bestimmen
+    │   ├── generate-sales-response aufrufen
+    │   └── Entwurf speichern oder direkt senden
+    │
+    └── Manuell (Generator-Tab):
+        ├── Verkäufer wählt Lead + Kanal + Kontext
+        ├── generate-sales-response generiert Entwurf
+        ├── Verkäufer bearbeitet + genehmigt
+        └── Versand via sales_email_outbox
+```
+
+---
+
+## 18. Deployment & Infrastruktur
 
 ### 17.1 Frontend
 
