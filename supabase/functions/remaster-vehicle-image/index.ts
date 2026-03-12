@@ -96,7 +96,7 @@ serve(async (req) => {
   try {
     // 1. Auth & credits
     const bodyText = await req.text();
-    const { imageBase64, additionalImages, vehicleDescription, modelTier, dynamicPrompt, customShowroomBase64, customPlateImageBase64, dealerLogoUrl, manufacturerLogoUrl } = JSON.parse(bodyText);
+    const { imageBase64, additionalImages, vehicleDescription, modelTier, dynamicPrompt, customShowroomBase64, customPlateImageBase64, dealerLogoUrl, dealerLogoBase64, manufacturerLogoUrl, manufacturerLogoBase64 } = JSON.parse(bodyText);
     const cost = modelTier === 'pro' ? 5 : 2;
     const authResult = await authenticateAndDeductCredits(req, "image_remaster", cost);
     if (authResult instanceof Response) return authResult;
