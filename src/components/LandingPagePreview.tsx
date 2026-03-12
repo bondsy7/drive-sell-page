@@ -87,9 +87,6 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
   );
 
   // Ensure finance exists with defaults
-  if (!data.finance) {
-    data = { ...data, finance: { monthlyRate: '', downPayment: '', duration: '', totalPrice: '', annualMileage: '', specialPayment: '', residualValue: '', interestRate: '' } };
-  }
 
   // Ensure consumption exists with defaults
   const consumption: ConsumptionData = data.consumption || {
