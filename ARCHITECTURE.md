@@ -355,7 +355,7 @@ Alle Backend-Logik läuft in **21 Supabase Edge Functions** (Deno-Runtime):
 | `admin-stripe` | Admin-Only: Stripe Payments/Refunds verwalten |
 | `admin-delete-user` | Admin-Only: Nutzer löschen |
 
-### 4.4 Gemeinsame Patterns
+### 4.5 Gemeinsame Patterns
 
 Alle KI-Functions folgen einem einheitlichen Pattern:
 
