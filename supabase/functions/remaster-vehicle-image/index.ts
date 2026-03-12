@@ -156,22 +156,26 @@ serve(async (req) => {
     // Add showroom, plate references
     if (customShowroomBase64) parts.push(toInlineData(customShowroomBase64));
     if (customPlateImageBase64) parts.push(toInlineData(customPlateImageBase64));
-    // Add manufacturer logo
-    if (manufacturerLogoUrl) {
-      const logoData = await resolveImage(manufacturerLogoUrl);
+    // Add manufacturer logo – prefer pre-cached base64
+    if (manufacturerLogoBase64 || manufacturerLogoUrl) {
+      const logoData = manufacturerLogoBase64
+        ? toInlineData(manufacturerLogoBase64)
+        : await resolveImage(manufacturerLogoUrl);
       if (logoData) {
         parts.push({ text: "Das folgende Bild ist das HERSTELLER-LOGO (Manufacturer Logo). Verwende EXAKT dieses Logo im Hintergrund:" });
         parts.push(logoData);
-        console.log("Manufacturer logo injected (resolved)");
+        console.log("Manufacturer logo injected", manufacturerLogoBase64 ? "(cached b64)" : "(fetched)");
       }
     }
-    // Add dealer logo
-    if (dealerLogoUrl) {
-      const logoData = await resolveImage(dealerLogoUrl);
+    // Add dealer logo – prefer pre-cached base64
+    if (dealerLogoBase64 || dealerLogoUrl) {
+      const logoData = dealerLogoBase64
+        ? toInlineData(dealerLogoBase64)
+        : await resolveImage(dealerLogoUrl);
       if (logoData) {
         parts.push({ text: "Das folgende Bild ist das AUTOHAUS-LOGO (Dealer Logo). Verwende dieses Logo als sekundäres Branding:" });
         parts.push(logoData);
-        console.log("Dealer logo injected (resolved)");
+        console.log("Dealer logo injected", dealerLogoBase64 ? "(cached b64)" : "(fetched)");
       }
     }
 
