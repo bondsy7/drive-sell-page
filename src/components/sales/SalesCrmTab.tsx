@@ -276,7 +276,7 @@ export default function SalesCrmTab() {
       </p>
 
       {/* ── Customer List ── */}
-      <ScrollArea className="max-h-[600px]">
+      <div className="max-h-[calc(100vh-380px)] overflow-y-auto">
         <div className="space-y-2">
           {filtered.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
