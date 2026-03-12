@@ -14,6 +14,7 @@ import SalesQuotesTab from '@/components/sales/SalesQuotesTab';
 import SalesTradeInTab from '@/components/sales/SalesTradeInTab';
 import SalesCalendarSettings from '@/components/sales/SalesCalendarSettings';
 import SalesMailboxTab from '@/components/sales/SalesMailboxTab';
+import SalesCrmTab from '@/components/sales/SalesCrmTab';
 
 
 export default function SalesAssistant() {
