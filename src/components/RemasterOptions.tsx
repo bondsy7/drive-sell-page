@@ -15,6 +15,7 @@ import {
   fetchManufacturerLogos,
   type DynamicLogo,
 } from '@/lib/remaster-prompt';
+import { ensureCachedBase64, prewarmCache } from '@/lib/image-base64-cache';
 
 interface RemasterOptionsProps {
   config: RemasterConfig;
