@@ -433,8 +433,29 @@ auth.users (Supabase-managed)
     ├──1:N── user_roles
     │         (role [ENUM: admin|moderator|user])
     │
-    └──1:1── ftp_configs
-              (host, port, username, password, directory, is_sftp)
+    ├──1:1── ftp_configs
+    │         (host, port, username, password, directory, is_sftp)
+    │
+    ├── Sales Assistant:
+    │   ├──1:1── sales_assistant_profiles (Ton, Autopilot, Signatur)
+    │   ├──1:N── sales_assistant_conversations (Lead, Stage, Kontext)
+    │   │         ├──1:N── sales_assistant_messages (Input/Output, Kanal)
+    │   │         ├──1:N── sales_assistant_tasks (Aufgaben, Priorität)
+    │   │         ├──1:N── conversation_stage_log (Stage-Wechsel)
+    │   │         ├──1:N── crm_manual_notes (Manuelle Notizen)
+    │   │         ├──1:N── sales_quotes (Angebote, Preise)
+    │   │         └──1:N── test_drive_bookings (Probefahrt-Termine)
+    │   ├──1:N── sales_knowledge_documents (Wissensbasis)
+    │   │         └──1:N── sales_knowledge_chunks (Embeddings, pgvector)
+    │   ├──1:N── sales_email_outbox (E-Mail-Versand)
+    │   ├──1:N── sales_notifications (Benachrichtigungen)
+    │   ├──1:N── sales_chat_messages (Interner Chat)
+    │   ├──1:N── dealer_availability (Verfügbarkeiten Mo-So)
+    │   ├──1:N── dealer_blocked_dates (Gesperrte Tage)
+    │   ├──1:N── trade_in_valuations (Inzahlungnahme-Bewertungen)
+    │   └──1:N── calendar_sync_configs (Kalender-Sync)
+    │
+    └── customer_journey_templates (Journey-Phasen, global + pro User)
 
 subscription_plans (global)
     (name, slug, monthly_credits, price_monthly_cents,
