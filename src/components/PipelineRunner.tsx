@@ -27,6 +27,7 @@ interface PipelineRunnerProps {
   vehicleBrand?: string;
   remasterConfig: RemasterConfig;
   modelTier?: string;
+  projectId?: string | null;
   onComplete: () => void;
   onBack: () => void;
 }
