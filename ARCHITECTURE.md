@@ -38,6 +38,7 @@ Autohaus.AI ist eine SaaS-Plattform für Automobilhändler, die mithilfe von KI 
 - **Werbebanner** für Social Media rendert
 - **Showroom-Videos** per KI generiert
 - **VIN-Erkennung** per OCR und Fahrzeugdaten-Lookup bereitstellt
+- **Sales Assistant** KI-gestütztes CRM mit Lead-Management, Konversationen, Aufgaben und Wissensbasis
 
 Das System folgt einer **modularen Workflow-Architektur** mit einem zentralen ActionHub, der unabhängige Prozesse orchestriert.
 
