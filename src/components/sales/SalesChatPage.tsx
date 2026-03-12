@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, Loader2, Bell, CheckCircle2, Trash2, Settings2 } from 'lucide-react';
+import { Send, Loader2, Bell, CheckCircle2, Eye, Mail, MailOpen, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
@@ -7,6 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 
 interface ChatMessage {
@@ -32,7 +33,7 @@ export default function SalesChatPage() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [history, setHistory] = useState<any[]>([]);
+  const [expandedDraft, setExpandedDraft] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const loadNotifications = useCallback(async () => {
@@ -73,10 +74,18 @@ export default function SalesChatPage() {
       }, (payload: any) => {
         const n = payload.new as Notification;
         setNotifications(prev => [n, ...prev]);
-        setMessages(prev => [...prev, {
-          role: 'assistant',
-          content: `🔔 **${n.title}**\n\n${n.body || ''}${n.requires_approval ? '\n\n_Antworte mit "Freigabe" um zu genehmigen._' : ''}`,
-        }]);
+
+        // Build a rich message with draft preview
+        const p = n.action_payload || {};
+        let msgContent = `🔔 **${n.title}**\n\n${n.body || ''}`;
+        if (p.draftBody) {
+          msgContent += `\n\n📧 **E-Mail-Entwurf an ${p.leadName || 'Kunde'}:**\n> Betreff: ${p.draftSubject || 'k.A.'}\n\n${p.draftBody}`;
+        }
+        if (n.requires_approval) {
+          msgContent += '\n\n_Sage "freigeben" um den Entwurf zu genehmigen und zu versenden._';
+        }
+
+        setMessages(prev => [...prev, { role: 'assistant', content: msgContent }]);
       }).subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [user]);
@@ -129,11 +138,29 @@ export default function SalesChatPage() {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   };
 
-  const approveNotification = async (notifId: string) => {
+  const approveNotification = async (notifId: string, payload: any) => {
+    // Approve notification
     await supabase.from('sales_notifications' as any)
       .update({ approval_status: 'approved', is_read: true } as any).eq('id', notifId);
+
+    // If there's an email ID, queue it for sending
+    if (payload?.emailId) {
+      await supabase.from('sales_email_outbox' as any)
+        .update({ status: 'queued' } as any).eq('id', payload.emailId);
+    }
+
+    // Update conversation status
+    if (payload?.conversationId) {
+      await supabase.from('sales_assistant_conversations' as any)
+        .update({ status: 'in_progress' } as any).eq('id', payload.conversationId);
+    }
+
     loadNotifications();
-    setMessages(prev => [...prev, { role: 'assistant', content: '✅ Freigabe erteilt!' }]);
+    toast.success('Entwurf freigegeben und zum Versand bereitgestellt!');
+    setMessages(prev => [...prev, {
+      role: 'assistant',
+      content: `✅ **Freigabe erteilt!** Die E-Mail an ${payload?.leadName || 'den Kunden'} wurde zum Versand freigegeben.`,
+    }]);
   };
 
   const pendingApprovals = notifications.filter(n => n.requires_approval && n.approval_status === 'pending');
@@ -203,16 +230,59 @@ export default function SalesChatPage() {
                 Freigaben ({pendingApprovals.length})
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
-              {pendingApprovals.map(n => (
-                <div key={n.id} className="p-2 rounded-lg bg-muted/50 space-y-1">
-                  <p className="text-xs font-medium text-foreground">{n.title}</p>
-                  <p className="text-xs text-muted-foreground line-clamp-2">{n.body}</p>
-                  <Button size="sm" className="h-7 text-xs mt-1" onClick={() => approveNotification(n.id)}>
-                    <CheckCircle2 className="w-3 h-3 mr-1" /> Freigeben
-                  </Button>
-                </div>
-              ))}
+            <CardContent className="space-y-3">
+              {pendingApprovals.map(n => {
+                const p = n.action_payload || {};
+                const isExpanded = expandedDraft === n.id;
+                return (
+                  <div key={n.id} className="p-3 rounded-lg bg-muted/50 space-y-2 border border-accent/20">
+                    <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                      <Mail className="w-3.5 h-3.5 text-accent" />
+                      {n.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{n.body}</p>
+
+                    {/* Show draft preview */}
+                    {p.draftBody && (
+                      <div className="space-y-1">
+                        <button
+                          onClick={() => setExpandedDraft(isExpanded ? null : n.id)}
+                          className="flex items-center gap-1 text-xs text-accent hover:underline font-medium"
+                        >
+                          <Eye className="w-3 h-3" />
+                          {isExpanded ? 'Entwurf ausblenden' : 'Entwurf anzeigen'}
+                          {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                        </button>
+
+                        {isExpanded && (
+                          <div className="mt-2 p-2.5 rounded-md bg-background border border-border text-xs space-y-1.5">
+                            <div className="flex items-center gap-1 text-muted-foreground">
+                              <span className="font-medium">An:</span> {p.leadName || ''} &lt;{p.leadEmail || ''}&gt;
+                            </div>
+                            <div className="flex items-center gap-1 text-muted-foreground">
+                              <span className="font-medium">Betreff:</span> {p.draftSubject || 'k.A.'}
+                            </div>
+                            {p.interests?.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {p.interests.map((int: string) => (
+                                  <Badge key={int} variant="secondary" className="text-[10px] h-4">{int}</Badge>
+                                ))}
+                              </div>
+                            )}
+                            <div className="border-t border-border pt-2 mt-2 whitespace-pre-wrap text-foreground leading-relaxed">
+                              {p.draftBody}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <Button size="sm" className="h-7 text-xs w-full" onClick={() => approveNotification(n.id, p)}>
+                      <CheckCircle2 className="w-3 h-3 mr-1" /> Freigeben & Versenden
+                    </Button>
+                  </div>
+                );
+              })}
             </CardContent>
           </Card>
         )}
