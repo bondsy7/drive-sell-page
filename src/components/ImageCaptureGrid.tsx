@@ -15,6 +15,7 @@ interface ImageCaptureGridProps {
   vehicleDescription: string;
   vehicleData?: VehicleData;
   modelTier?: string;
+  projectId?: string | null;
   onComplete: (mainImage: string, galleryImages: string[], vin?: string) => void;
   onVehicleDataChange?: (data: VehicleData) => void;
   onBack: () => void;
