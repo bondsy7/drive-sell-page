@@ -44,7 +44,7 @@ const LeasingCalculatorPanel: React.FC<Props> = ({ vehicleData }) => {
 
   // Auto-populate from vehicle data
   useEffect(() => {
-    if (!vehicleData) return;
+    if (!vehicleData?.finance) return;
     const f = vehicleData.finance;
     if (f.totalPrice) setPrice(f.totalPrice.replace(/[€\s]/g, ''));
     if (f.residualValue) setResidualValue(f.residualValue.replace(/[€\s]/g, ''));

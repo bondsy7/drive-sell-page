@@ -46,7 +46,7 @@ const KfzSteuerPanel: React.FC<Props> = ({ vehicleData }) => {
   const [jahr, setJahr] = useState('2024');
 
   useEffect(() => {
-    if (!vehicleData) return;
+    if (!vehicleData?.consumption) return;
     const c = vehicleData.consumption;
     if (c.displacement) {
       const h = parseInt(c.displacement.replace(/[^\d]/g, ''));
