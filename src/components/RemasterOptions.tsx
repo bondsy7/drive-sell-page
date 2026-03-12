@@ -40,6 +40,10 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
   const showroomInputRef = useRef<HTMLInputElement>(null);
   const plateImageRef = useRef<HTMLInputElement>(null);
 
+  // Use a ref to always have the latest config without re-triggering effects
+  const configRef = React.useRef(config);
+  configRef.current = config;
+
   // Load profile data & dynamic logos, pre-cache as base64
   useEffect(() => {
     fetchManufacturerLogos().then(logos => {
@@ -60,7 +64,7 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
           if (urlsToCache.length) prewarmCache(urlsToCache);
           if (logoUrl) {
             const logoB64 = await ensureCachedBase64(logoUrl);
-            onChange({ ...config, dealerLogoUrl: logoUrl, dealerLogoBase64: logoB64 });
+            onChange({ ...configRef.current, dealerLogoUrl: logoUrl, dealerLogoBase64: logoB64 });
           }
         }
       });
@@ -77,7 +81,7 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
     if (match) {
       console.log(`[RemasterOptions] Auto-resolved logo for "${vehicleBrand}": ${match.name}`);
       ensureCachedBase64(match.url).then(b64 => {
-        onChange({ ...config, manufacturerLogoUrl: match.url, manufacturerLogoBase64: b64 });
+        onChange({ ...configRef.current, manufacturerLogoUrl: match.url, manufacturerLogoBase64: b64 });
       });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
