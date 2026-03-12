@@ -135,7 +135,7 @@ export default function SalesMailboxTab() {
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
-                            <ArrowDownLeft className="w-3.5 h-3.5 text-green-500 shrink-0" />
+                            <ArrowDownLeft className="w-3.5 h-3.5 text-accent shrink-0" />
                             <span className="font-medium text-sm text-foreground truncate">{lead.name}</span>
                           </div>
                           <p className="text-xs text-muted-foreground mt-0.5 truncate">{lead.email}</p>
