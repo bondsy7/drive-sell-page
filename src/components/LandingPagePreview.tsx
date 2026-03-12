@@ -57,7 +57,11 @@ const ConsumptionRow: React.FC<{ label: string; value: string; onChange: (v: str
 );
 
 const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, imageBase64, galleryImages = [], onReset, onDataChange, selectedTemplate, projectId }) => {
-  const data = vehicleData;
+  const data: VehicleData = {
+    ...vehicleData,
+    finance: vehicleData.finance || { monthlyRate: '', downPayment: '', duration: '', totalPrice: '', annualMileage: '', specialPayment: '', residualValue: '', interestRate: '' },
+    vehicle: vehicleData.vehicle || { brand: '', model: '', variant: '', year: 0, color: '', fuelType: '', transmission: '', power: '', features: [] },
+  };
   const { user } = useAuth();
   const [selectedImage, setSelectedImage] = useState(0);
   const [viewMode, setViewMode] = useState<'preview' | 'edit'>('preview');
@@ -81,6 +85,8 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
     () => generateHTML(selectedTemplate, data, imageBase64, galleryImages, htmlOptions),
     [selectedTemplate, data, imageBase64, galleryImages, user?.id, projectId]
   );
+
+  // Ensure finance exists with defaults
 
   // Ensure consumption exists with defaults
   const consumption: ConsumptionData = data.consumption || {
