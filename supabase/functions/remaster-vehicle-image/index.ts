@@ -113,8 +113,33 @@ serve(async (req) => {
     function toInlineData(dataUrl: string) {
       const raw = dataUrl.includes(",") ? dataUrl.split(",")[1] : dataUrl;
       const mime = dataUrl.startsWith("data:image/png") ? "image/png"
-        : dataUrl.startsWith("data:image/webp") ? "image/webp" : "image/jpeg";
+        : dataUrl.startsWith("data:image/webp") ? "image/webp"
+        : dataUrl.startsWith("data:image/svg") ? "image/png"
+        : "image/jpeg";
       return { inlineData: { mimeType: mime, data: raw } };
+    }
+
+    // Helper to fetch a URL and convert to base64 inline data
+    async function urlToInlineData(url: string) {
+      try {
+        const resp = await fetch(url);
+        if (!resp.ok) { console.warn("Failed to fetch logo:", url, resp.status); return null; }
+        const buf = await resp.arrayBuffer();
+        const bytes = new Uint8Array(buf);
+        let binary = "";
+        for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+        const b64 = btoa(binary);
+        const ct = resp.headers.get("content-type") || "image/png";
+        const mime = ct.includes("png") ? "image/png" : ct.includes("webp") ? "image/webp" : ct.includes("svg") ? "image/png" : "image/jpeg";
+        return { inlineData: { mimeType: mime, data: b64 } };
+      } catch (e) { console.warn("Logo fetch error:", url, e); return null; }
+    }
+
+    // Helper to get inline data from either a data URL or a regular URL
+    async function resolveImage(src: string) {
+      if (src.startsWith("data:")) return toInlineData(src);
+      if (src.startsWith("http")) return await urlToInlineData(src);
+      return null;
     }
 
     // Build Gemini content parts
@@ -133,15 +158,21 @@ serve(async (req) => {
     if (customPlateImageBase64) parts.push(toInlineData(customPlateImageBase64));
     // Add manufacturer logo
     if (manufacturerLogoUrl) {
-      parts.push({ text: "Das folgende Bild ist das HERSTELLER-LOGO (Manufacturer Logo). Verwende EXAKT dieses Logo im Hintergrund:" });
-      parts.push(toInlineData(manufacturerLogoUrl));
-      console.log("Manufacturer logo injected:", manufacturerLogoUrl.substring(0, 80));
+      const logoData = await resolveImage(manufacturerLogoUrl);
+      if (logoData) {
+        parts.push({ text: "Das folgende Bild ist das HERSTELLER-LOGO (Manufacturer Logo). Verwende EXAKT dieses Logo im Hintergrund:" });
+        parts.push(logoData);
+        console.log("Manufacturer logo injected (resolved)");
+      }
     }
     // Add dealer logo
     if (dealerLogoUrl) {
-      parts.push({ text: "Das folgende Bild ist das AUTOHAUS-LOGO (Dealer Logo). Verwende dieses Logo als sekundäres Branding:" });
-      parts.push(toInlineData(dealerLogoUrl));
-      console.log("Dealer logo injected:", dealerLogoUrl.substring(0, 80));
+      const logoData = await resolveImage(dealerLogoUrl);
+      if (logoData) {
+        parts.push({ text: "Das folgende Bild ist das AUTOHAUS-LOGO (Dealer Logo). Verwende dieses Logo als sekundäres Branding:" });
+        parts.push(logoData);
+        console.log("Dealer logo injected (resolved)");
+      }
     }
 
     // 3. Call Gemini API directly with retry logic
