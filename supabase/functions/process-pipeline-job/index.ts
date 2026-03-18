@@ -250,7 +250,7 @@ serve(async (req) => {
     // Self-invoke for next task if there are remaining tasks
     if (remainingCount > 0) {
       // Fire up to CONCURRENCY (4) parallel workers for remaining tasks
-      const CONCURRENCY = 4;
+      const CONCURRENCY = 2;
       const pendingCount = tasks.filter((t: any) => t.status === "pending").length;
       const workersToSpawn = Math.min(CONCURRENCY - 1, pendingCount); // -1 because we just finished one
 
