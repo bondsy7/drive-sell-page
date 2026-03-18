@@ -21,7 +21,7 @@ const ApiDocs = lazy(() => import("./pages/ApiDocs"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const ArchitectureDoc = lazy(() => import("./pages/ArchitectureDoc"));
 const SalesAssistant = lazy(() => import("./pages/SalesAssistant"));
-const SalesChatWidgetLazy = lazy(() => import("./components/sales/SalesChatWidget"));
+
 
 // Admin pages
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
@@ -113,8 +113,6 @@ const App = () => (
               <Route path="/sales-assistant/chat" element={<ProtectedRoute><SalesAssistant /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
-            {/* Global Chat Widget */}
-            <SalesChatWidgetLazy />
           </Suspense>
         </AuthProvider>
       </BrowserRouter>
