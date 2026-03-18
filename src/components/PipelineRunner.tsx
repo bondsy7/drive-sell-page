@@ -647,7 +647,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
                         {state.results.slice(0, 3).map((r, ri) => (
                           <img
                             key={ri}
-                            src={r.startsWith('data:') ? r : `data:image/png;base64,${r}`}
+                            src={r}
                             alt={`${job.labelDe} ${ri + 1}`}
                             className="w-10 h-7 rounded object-cover border border-border"
                           />
