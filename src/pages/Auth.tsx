@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Mail, Lock, User, Chrome, ShieldCheck } from 'lucide-react';
+import { Mail, Lock, User, Chrome, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { STRIPE_PRICES } from '@/lib/stripe-plans';
 import logoLight from '@/assets/logo-light.png';
@@ -23,6 +23,7 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-background"><div className="animate-spin w-8 h-8 border-2 border-accent border-t-transparent rounded-full" /></div>;
   
@@ -150,7 +151,10 @@ const Auth = () => {
             <Label htmlFor="password">Passwort</Label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input id="password" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} className="pl-9" minLength={6} required />
+              <Input id="password" type={showPassword ? 'text' : 'password'} placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} className="pl-9 pr-9" minLength={6} required />
+              <button type="button" onClick={() => setShowPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
           </div>
           <Button type="submit" className="w-full" disabled={submitting}>
