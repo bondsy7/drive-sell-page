@@ -58,12 +58,16 @@ async function callGemini(parts: any[], model: string, retries = 2): Promise<str
   return null;
 }
 
-// ─── Fetch URL → inline data ───
-async function urlToInlineData(url: string) {
+// ─── Fetch URL → inline data (with size limit to prevent OOM) ───
+async function urlToInlineData(url: string, maxSizeBytes = 4 * 1024 * 1024) {
   try {
     const resp = await fetch(url);
     if (!resp.ok) return null;
     const buf = await resp.arrayBuffer();
+    if (buf.byteLength > maxSizeBytes) {
+      console.warn(`Skipping image ${url.slice(0, 80)}… (${(buf.byteLength / 1024 / 1024).toFixed(1)} MB > limit)`);
+      return null;
+    }
     const bytes = new Uint8Array(buf);
     let binary = "";
     for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
