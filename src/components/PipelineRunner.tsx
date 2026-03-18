@@ -11,6 +11,7 @@ import { useCredits } from '@/hooks/useCredits';
 import { uploadImageToStorage } from '@/lib/storage-utils';
 import { toast } from 'sonner';
 import CreditConfirmDialog from '@/components/CreditConfirmDialog';
+import { useBackgroundJobs, type BackgroundJob, type BackgroundJobTask } from '@/hooks/useBackgroundJobs';
 import {
   PIPELINE_JOBS,
   PIPELINE_CATEGORIES,
