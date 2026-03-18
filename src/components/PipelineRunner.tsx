@@ -481,9 +481,9 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
     availableJobs.some(j => j.category === cat.key)
   );
 
-  // Collect all result images for the preview grid
+  // Collect all result images for the preview grid (now URLs from storage)
   const allResultImages = useMemo(() => {
-    const results: { key: string; label: string; base64: string }[] = [];
+    const results: { key: string; label: string; src: string }[] = [];
     for (const job of selectedJobs) {
       const state = jobs[job.key];
       if (state?.results) {
@@ -492,7 +492,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
           results.push({
             key: `${job.key}_${i}`,
             label: prompts.length > 1 ? `${job.labelDe} (${i + 1})` : job.labelDe,
-            base64: r,
+            src: r,
           });
         });
       }
