@@ -65,15 +65,16 @@ function getCO2Factor(fuelType: string): number {
 // ==================== CO₂ price scenarios (€/tonne, average over 10 years) ====================
 
 /**
- * German CO₂ price schedule + projections (average over 10 years from 2025):
- * 2025: 55 €/t, 2026: 55-65 €/t, 2027+: EU ETS expected 100-250+ €/t
- * 
- * These are AVERAGE prices over a 10-year period, accounting for annual increases.
+ * Offizielle CO₂-Preisszenarien gemäß Pkw-EnVKV / BMWK-Veröffentlichung vom 27.06.2024:
+ * - Angabe 1 (mittel): 115 €/t
+ * - Angabe 2 (niedrig): 55 €/t
+ * - Angabe 3 (hoch): 190 €/t
+ * Bezugszeitraum: 10 Jahre, 15.000 km/Jahr
  */
 const CO2_PRICE_SCENARIOS = {
-  low: 100,    // Conservative: slow increase beyond 2027
-  medium: 150, // Expected: moderate EU ETS trajectory
-  high: 250,   // Aggressive: fast convergence to high EU ETS prices
+  low: 55,     // Offiziell lt. BMWK-Veröffentlichung vom 27.06.2024 (Angabe 2)
+  medium: 115, // Offiziell lt. BMWK-Veröffentlichung vom 27.06.2024 (Angabe 1)
+  high: 190,   // Offiziell lt. BMWK-Veröffentlichung vom 27.06.2024 (Angabe 3)
 };
 
 // ==================== Calculation functions ====================
