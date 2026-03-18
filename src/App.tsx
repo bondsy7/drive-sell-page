@@ -114,8 +114,7 @@ const App = () => (
               <Route path="/sales-assistant/chat" element={<ProtectedRoute><SalesAssistant /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
-            {/* Global Chat Widget */}
-            <SalesChatWidgetLazy />
+            {/* Chat Widget removed – now in AppHeader */}
             {/* Background Job Progress */}
             <BackgroundJobIndicator />
           </Suspense>
