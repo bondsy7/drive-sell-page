@@ -58,12 +58,16 @@ async function callGemini(parts: any[], model: string, retries = 2): Promise<str
   return null;
 }
 
-// ─── Fetch URL → inline data ───
-async function urlToInlineData(url: string) {
+// ─── Fetch URL → inline data (with size limit to prevent OOM) ───
+async function urlToInlineData(url: string, maxSizeBytes = 4 * 1024 * 1024) {
   try {
     const resp = await fetch(url);
     if (!resp.ok) return null;
     const buf = await resp.arrayBuffer();
+    if (buf.byteLength > maxSizeBytes) {
+      console.warn(`Skipping image ${url.slice(0, 80)}… (${(buf.byteLength / 1024 / 1024).toFixed(1)} MB > limit)`);
+      return null;
+    }
     const bytes = new Uint8Array(buf);
     let binary = "";
     for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
@@ -157,14 +161,13 @@ serve(async (req) => {
       // Build Gemini parts
       const geminiModel = job.model_tier === "pro" ? "gemini-3-pro-image-preview" : "gemini-3.1-flash-image-preview";
 
-      // Universal detailing prefix – ensures every generated image looks professionally detailed
-      const detailingPrefix = 'MANDATORY PROFESSIONAL DETAILING: The vehicle MUST look as if it has undergone a full professional detailing. EXTERIOR: Paint must be flawless, high-gloss polished, free of any dirt, dust, water spots, scratches, bird droppings or road grime. All chrome, windows, headlights and rims must be spotlessly polished. Tires must look black and well-maintained. INTERIOR: The entire cabin must be clean and tidy. REMOVE any trash, paper, paper rolls, bottles, bags, clothing, charging cables, phones, notes, parking discs or any personal items that are NOT part of the vehicle\'s factory equipment. Seats, steering wheel, dashboard and center console must be immaculate. Floor mats clean, no crumbs or dirt. IMPORTANT: Do NOT add anything new – only remove dirt and foreign objects. The result must look like a perfectly detailed showroom-ready vehicle.\n\n';
+      // The task.prompt already contains the full detailing instructions from the client.
+      // Do NOT prepend the detailingPrefix again to avoid doubling prompt size.
+      const parts: any[] = [{ text: task.prompt }];
 
-      const parts: any[] = [{ text: detailingPrefix + task.prompt }];
-
-      // Add input reference images
+      // Add only the first 2 input reference images to stay within memory limits
       const inputUrls = job.original_image_urls?.length > 0 ? job.original_image_urls : job.input_image_urls;
-      for (const url of (inputUrls || []).slice(0, 5)) {
+      for (const url of (inputUrls || []).slice(0, 2)) {
         const inlineData = await urlToInlineData(url);
         if (inlineData) parts.push(inlineData);
       }
@@ -246,7 +249,7 @@ serve(async (req) => {
     // Self-invoke for next task if there are remaining tasks
     if (remainingCount > 0) {
       // Fire up to CONCURRENCY (4) parallel workers for remaining tasks
-      const CONCURRENCY = 4;
+      const CONCURRENCY = 2;
       const pendingCount = tasks.filter((t: any) => t.status === "pending").length;
       const workersToSpawn = Math.min(CONCURRENCY - 1, pendingCount); // -1 because we just finished one
 
