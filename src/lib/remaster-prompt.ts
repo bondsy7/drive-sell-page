@@ -66,6 +66,9 @@ export function buildMasterPrompt(config: RemasterConfig, vehicleDescription?: s
   parts.push('Du bist ein professioneller Automobil-Fotograf. Nimm dieses exakte Fahrzeugfoto und erstelle eine fotorealistische, professionelle Version.');
   parts.push('KRITISCHE REGELN: Behalte das EXAKTE gleiche Fahrzeug mit ALLEN Details: Farbe (sofern keine Farbänderung gewünscht), Felgen, Bodykit, Lichter, Badges, Aufkleber, Zubehör. Drehe das Bild NICHT. Behalte den gleichen Kamerawinkel und die gleiche Perspektive.');
 
+  // Professional detailing / cleanup
+  parts.push('PROFESSIONELLE FAHRZEUGAUFBEREITUNG – PFLICHT: Das Fahrzeug MUSS so aussehen, als hätte eine vollständige professionelle Aufbereitung (Detailing) stattgefunden. AUSSEN: Der Lack muss makellos sauber, hochglanzpoliert und frei von Schmutz, Staub, Wasserflecken, Kratzern, Vogelkot oder Straßendreck sein. Alle Chromteile, Fenster, Scheinwerfer und Felgen müssen blitzsauber poliert sein. Reifen müssen schwarz und gepflegt aussehen. INNEN: Der gesamte Innenraum muss aufgeräumt und sauber sein. Entferne JEGLICHEN Müll, Papier, Papierrollen, Flaschen, Taschen, Kleidung, Ladekabel, Handys, Zettel, Parkscheiben oder sonstige persönliche Gegenstände die NICHT zur Serienausstattung des Fahrzeugs gehören. Sitze, Lenkrad, Armaturenbrett und Mittelkonsole müssen makellos sauber sein. Fußmatten sauber, keine Krümel oder Schmutz. WICHTIG: Füge NICHTS Neues hinzu – entferne nur Schmutz und Fremdgegenstände. Das Ergebnis soll wie ein perfekt aufbereitetes Ausstellungsfahrzeug wirken.');
+
   // Scene
   const scenePrompt = SCENE_PROMPTS[config.scene];
   if (scenePrompt) {
