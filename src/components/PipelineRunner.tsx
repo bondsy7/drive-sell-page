@@ -706,7 +706,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
               {allResultImages.map(img => (
                 <div key={img.key} className="relative rounded-lg sm:rounded-xl overflow-hidden border border-border bg-muted aspect-[4/3]">
                   <img
-                    src={img.base64.startsWith('data:') ? img.base64 : `data:image/png;base64,${img.base64}`}
+                    src={img.src}
                     alt={img.label}
                     className="w-full h-full object-cover"
                   />
