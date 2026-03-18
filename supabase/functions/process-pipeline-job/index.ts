@@ -156,7 +156,11 @@ serve(async (req) => {
     try {
       // Build Gemini parts
       const geminiModel = job.model_tier === "pro" ? "gemini-3-pro-image-preview" : "gemini-3.1-flash-image-preview";
-      const parts: any[] = [{ text: task.prompt }];
+
+      // Universal detailing prefix – ensures every generated image looks professionally detailed
+      const detailingPrefix = 'MANDATORY PROFESSIONAL DETAILING: The vehicle MUST look as if it has undergone a full professional detailing. EXTERIOR: Paint must be flawless, high-gloss polished, free of any dirt, dust, water spots, scratches, bird droppings or road grime. All chrome, windows, headlights and rims must be spotlessly polished. Tires must look black and well-maintained. INTERIOR: The entire cabin must be clean and tidy. REMOVE any trash, paper, paper rolls, bottles, bags, clothing, charging cables, phones, notes, parking discs or any personal items that are NOT part of the vehicle\'s factory equipment. Seats, steering wheel, dashboard and center console must be immaculate. Floor mats clean, no crumbs or dirt. IMPORTANT: Do NOT add anything new – only remove dirt and foreign objects. The result must look like a perfectly detailed showroom-ready vehicle.\n\n';
+
+      const parts: any[] = [{ text: detailingPrefix + task.prompt }];
 
       // Add input reference images
       const inputUrls = job.original_image_urls?.length > 0 ? job.original_image_urls : job.input_image_urls;
