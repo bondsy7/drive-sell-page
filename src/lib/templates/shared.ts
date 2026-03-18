@@ -141,12 +141,12 @@ export function buildDetailedConsumption(consumption: ConsumptionData, rowClass 
 
 export function buildCostRows(consumption: ConsumptionData, rowClass = 'cons-row', labelClass = 'cons-label', valueClass = 'cons-value'): string {
   return [
-    ['Energiekosten/Jahr', consumption.energyCostPerYear],
-    ['Kraftstoffpreis', consumption.fuelPrice],
-    ['CO₂-Kosten (mittel, 10J)', consumption.co2CostMedium],
-    ['CO₂-Kosten (niedrig, 10J)', consumption.co2CostLow],
-    ['CO₂-Kosten (hoch, 10J)', consumption.co2CostHigh],
-    ['Kfz-Steuer', consumption.vehicleTax],
+    ['Energiekosten bei 15.000 km/Jahr', consumption.energyCostPerYear],
+    ['Kraftstoffpreis (Jahresdurchschnitt)', consumption.fuelPrice],
+    ['CO₂-Kosten 10 Jahre (mittel, 115 €/t)', consumption.co2CostMedium],
+    ['CO₂-Kosten 10 Jahre (niedrig, 55 €/t)', consumption.co2CostLow],
+    ['CO₂-Kosten 10 Jahre (hoch, 190 €/t)', consumption.co2CostHigh],
+    ['Kfz-Steuer/Jahr', consumption.vehicleTax],
   ].filter(([, v]) => v).map(([l, v]) => `<div class="${rowClass}"><span class="${labelClass}">${l}</span><span class="${valueClass}">${v}</span></div>`).join('');
 }
 

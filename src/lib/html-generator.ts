@@ -50,12 +50,12 @@ export function generateLandingPageHTML(data: VehicleData, imageBase64: string |
   ].filter(([, v]) => v).map(([l, v]) => `<div class="cons-row"><span class="cons-label">${l}</span><span class="cons-value">${v}</span></div>`).join('');
 
   const costRows = [
-    ['Energiekosten/Jahr', consumption.energyCostPerYear],
-    ['Kraftstoffpreis', consumption.fuelPrice],
-    ['CO₂-Kosten (mittel, 10J)', consumption.co2CostMedium],
-    ['CO₂-Kosten (niedrig, 10J)', consumption.co2CostLow],
-    ['CO₂-Kosten (hoch, 10J)', consumption.co2CostHigh],
-    ['Kfz-Steuer', consumption.vehicleTax],
+    ['Energiekosten bei 15.000 km/Jahr', consumption.energyCostPerYear],
+    ['Kraftstoffpreis (Jahresdurchschnitt)', consumption.fuelPrice],
+    ['CO₂-Kosten 10 Jahre (mittel, 115 €/t)', consumption.co2CostMedium],
+    ['CO₂-Kosten 10 Jahre (niedrig, 55 €/t)', consumption.co2CostLow],
+    ['CO₂-Kosten 10 Jahre (hoch, 190 €/t)', consumption.co2CostHigh],
+    ['Kfz-Steuer/Jahr', consumption.vehicleTax],
   ].filter(([, v]) => v).map(([l, v]) => `<div class="cons-row"><span class="cons-label">${l}</span><span class="cons-value">${v}</span></div>`).join('');
 
   const hasConsumption = consumptionRows || detailedConsumption || costRows;
