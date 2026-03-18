@@ -315,129 +315,151 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
     }
   }, [availableJobs, generateOneImage, user, savedProjectId]);
 
-  /* ─── Pipeline with parallel execution ─── */
+  /* ─── Pipeline: start background job ─── */
   const runPipeline = useCallback(async () => {
     if (!user) { toast.error('Bitte melde dich an.'); return; }
     if (selectedJobs.length === 0) { toast.error('Bitte wähle mindestens einen Job aus.'); return; }
 
     setRunning(true);
-    const allResults: { key: string; base64: string; label: string; subIndex: number }[] = [];
 
-    // Initialize job states
+    // Initialize job states in UI
     const initStates: Record<string, JobState> = {};
     selectedJobs.forEach(j => { initStates[j.key] = { status: 'pending', results: [] }; });
     setJobs(initStates);
 
-    // Build a flat task list: [{ job, promptIndex, prompt }]
-    const taskQueue: { job: PipelineJob; promptIndex: number; prompt: string }[] = [];
-    for (const job of selectedJobs) {
-      const prompts = [job.prompt, ...(job.extraPrompts || [])];
-      prompts.forEach((prompt, idx) => taskQueue.push({ job, promptIndex: idx, prompt }));
-    }
-
-    let taskPointer = 0;
-
-    const runTask = async () => {
-      while (taskPointer < taskQueue.length) {
-        const idx = taskPointer++;
-        const task = taskQueue[idx];
-
-        // Mark job as running if first prompt
-        if (task.promptIndex === 0) {
-          setJobs(prev => ({ ...prev, [task.job.key]: { ...prev[task.job.key], status: 'running' } }));
-        }
-
-        try {
-          const result = await generateOneImage(task.prompt);
-          if (result.base64) {
-            const prompts = [task.job.prompt, ...(task.job.extraPrompts || [])];
-            allResults.push({
-              key: task.job.key, base64: result.base64,
-              label: prompts.length > 1 ? `${task.job.labelDe} (${task.promptIndex + 1}/${prompts.length})` : task.job.labelDe,
-              subIndex: task.promptIndex,
-            });
-            setJobs(prev => ({
-              ...prev, [task.job.key]: { ...prev[task.job.key], status: 'running', results: [...(prev[task.job.key]?.results || []), result.base64!] },
-            }));
-          } else {
-            setJobs(prev => ({
-              ...prev, [task.job.key]: { ...prev[task.job.key], error: result.error },
-            }));
-          }
-        } catch {
-          setJobs(prev => ({
-            ...prev, [task.job.key]: { ...prev[task.job.key], error: 'Netzwerkfehler' },
-          }));
-        }
-
-        // Check if job is done (all prompts processed)
-        const jobPrompts = [task.job.prompt, ...(task.job.extraPrompts || [])];
-        const completedForJob = allResults.filter(r => r.key === task.job.key).length;
-        const errorsForJob = taskQueue.filter((t, ti) => t.job.key === task.job.key && ti < taskPointer).length - completedForJob;
-        if (completedForJob + errorsForJob >= jobPrompts.length) {
-          setJobs(prev => {
-            const state = prev[task.job.key];
-            return {
-              ...prev,
-              [task.job.key]: {
-                ...state,
-                status: state.results.length > 0 ? 'done' : 'error',
-                error: state.results.length === 0 ? (state.error || 'Alle Bilder fehlgeschlagen') : state.error,
-              },
-            };
-          });
+    try {
+      // 1. Upload input images to storage (so server can access them)
+      const referenceImages = originalImages && originalImages.length > 0 ? originalImages : inputImages;
+      const pid = savedProjectId || crypto.randomUUID();
+      
+      const uploadedUrls: string[] = [];
+      for (let i = 0; i < inputImages.length; i++) {
+        const url = await uploadImageToStorage(inputImages[i], user.id, `${pid}/input_${i}.png`);
+        if (url) uploadedUrls.push(url);
+      }
+      const uploadedOriginalUrls: string[] = [];
+      if (originalImages && originalImages.length > 0) {
+        for (let i = 0; i < originalImages.length; i++) {
+          const url = await uploadImageToStorage(originalImages[i], user.id, `${pid}/original_${i}.png`);
+          if (url) uploadedOriginalUrls.push(url);
         }
       }
-    };
 
-    // Launch CONCURRENCY workers
-    const workers = Array.from({ length: Math.min(CONCURRENCY, taskQueue.length) }, () => runTask());
-    await Promise.all(workers);
+      // Upload custom showroom/plate if present
+      let customShowroomUrl: string | null = null;
+      let customPlateUrl: string | null = null;
+      if (remasterConfig.customShowroomBase64) {
+        customShowroomUrl = await uploadImageToStorage(remasterConfig.customShowroomBase64, user.id, `${pid}/showroom_ref.png`);
+      }
+      if (remasterConfig.customPlateImageBase64) {
+        customPlateUrl = await uploadImageToStorage(remasterConfig.customPlateImageBase64, user.id, `${pid}/plate_ref.png`);
+      }
 
-    // Save all results
-    if (allResults.length > 0 && user) {
-      try {
-        const projectId = savedProjectId || crypto.randomUUID();
-        if (!savedProjectId) {
-          const dateStr = new Date().toLocaleDateString('de-DE', {
-            day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
+      // 2. Build task list
+      const baseContext = buildMasterPrompt(remasterConfig, vehicleDescription);
+      const taskList: { key: string; label: string; prompt: string; subIndex: number }[] = [];
+      for (const job of selectedJobs) {
+        const prompts = [job.prompt, ...(job.extraPrompts || [])];
+        prompts.forEach((prompt, idx) => {
+          taskList.push({
+            key: job.key,
+            label: prompts.length > 1 ? `${job.labelDe} (${idx + 1}/${prompts.length})` : job.labelDe,
+            prompt: `${baseContext}\n\n--- PERSPECTIVE INSTRUCTION ---\n${prompt}`,
+            subIndex: idx,
           });
-          await supabase.from('projects').insert({
-            id: projectId, user_id: user.id, title: `Pipeline ${dateStr}`,
-            vehicle_data: { vehicle: { brand: vehicleDescription || 'Pipeline' } } as any, template_id: 'modern',
-          });
-        }
+        });
+      }
 
-        const { data: existingImages } = await supabase
-          .from('project_images').select('sort_order').eq('project_id', projectId)
-          .order('sort_order', { ascending: false }).limit(1);
-        const startOrder = (existingImages?.[0]?.sort_order ?? -1) + 1;
+      // 3. Create background job
+      const jobId = await startJob({
+        projectId: savedProjectId,
+        jobType: 'pipeline',
+        config: {
+          customShowroomUrl,
+          customPlateUrl,
+          dealerLogoUrl: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null,
+          manufacturerLogoUrl: remasterConfig.showManufacturerLogo ? resolvedManufacturerLogoUrl : null,
+        },
+        inputImageUrls: uploadedUrls,
+        originalImageUrls: uploadedOriginalUrls,
+        tasks: taskList,
+        modelTier,
+        vehicleDescription,
+      });
 
-        const urls: string[] = [];
-        for (let i = 0; i < allResults.length; i++) {
-          const r = allResults[i];
-          const url = await uploadImageToStorage(r.base64, user.id, `${projectId}/${r.key}_${r.subIndex}.png`);
-          if (url) urls.push(url);
-        }
+      if (jobId) {
+        setActiveJobId(jobId);
+        toast.success('Pipeline gestartet! Die Bilder werden im Hintergrund generiert – du kannst die Seite verlassen.');
+      } else {
+        toast.error('Fehler beim Starten der Pipeline.');
+        setRunning(false);
+      }
+    } catch (e) {
+      console.error('Pipeline start error:', e);
+      toast.error('Fehler beim Starten der Pipeline.');
+      setRunning(false);
+    }
+  }, [inputImages, originalImages, vehicleDescription, remasterConfig, modelTier, user, savedProjectId, selectedJobs, startJob, resolvedManufacturerLogoUrl]);
 
-        if (urls.length > 0) {
-          const imageRows = urls.map((url, i) => ({
-            project_id: projectId, user_id: user.id, image_url: url, image_base64: '',
-            perspective: `Pipeline: ${allResults[i]?.label || `Bild ${i + 1}`}`, sort_order: startOrder + i,
-          }));
-          await supabase.from('project_images').insert(imageRows);
-        }
+  /* ─── Sync UI state from background job ─── */
+  useEffect(() => {
+    if (!activeJobId) return;
+    const bgJob = activeJobs.find(j => j.id === activeJobId);
+    if (!bgJob) {
+      // Job might have completed – check DB
+      (async () => {
+        const { data } = await supabase
+          .from('image_generation_jobs' as any)
+          .select('*')
+          .eq('id', activeJobId)
+          .single();
+        if (data) syncJobToUI(data as any);
+      })();
+      return;
+    }
+    syncJobToUI(bgJob);
+  }, [activeJobId, activeJobs]);
 
-        toast.success(`${allResults.length} Pipeline-Bilder erstellt und gespeichert!`);
-      } catch (e) {
-        console.error('Pipeline save error:', e);
-        toast.error('Bilder generiert, aber Speichern fehlgeschlagen.');
+  const syncJobToUI = useCallback((bgJob: BackgroundJob) => {
+    const newJobs: Record<string, JobState> = {};
+    const tasks = bgJob.tasks as BackgroundJobTask[];
+    
+    // Group tasks by key
+    const grouped = new Map<string, BackgroundJobTask[]>();
+    for (const t of tasks) {
+      if (!grouped.has(t.key)) grouped.set(t.key, []);
+      grouped.get(t.key)!.push(t);
+    }
+    
+    for (const [key, taskGroup] of grouped) {
+      const results = taskGroup.filter(t => t.status === 'done' && t.result_url).map(t => t.result_url!);
+      const hasRunning = taskGroup.some(t => t.status === 'running');
+      const allDone = taskGroup.every(t => t.status === 'done' || t.status === 'error');
+      const allError = taskGroup.every(t => t.status === 'error');
+      const anyError = taskGroup.find(t => t.status === 'error');
+      
+      let status: JobStatus = 'pending';
+      if (hasRunning) status = 'running';
+      else if (allDone) status = allError ? 'error' : 'done';
+      else if (results.length > 0 || hasRunning) status = 'running';
+      
+      newJobs[key] = {
+        status,
+        results,
+        error: anyError?.error,
+      };
+    }
+    
+    setJobs(newJobs);
+
+    if (bgJob.status === 'completed' || bgJob.status === 'failed') {
+      setRunning(false);
+      setFinished(true);
+      if (bgJob.status === 'completed') {
+        toast.success(`${bgJob.completed_tasks} Pipeline-Bilder erstellt!`);
       }
     }
-
-    setRunning(false);
-    setFinished(true);
-  }, [inputImages, originalImages, vehicleDescription, remasterConfig, modelTier, user, savedProjectId, selectedJobs, generateOneImage]);
+  }, []);
 
   /* ─── Credit pre-check before starting ─── */
   const handleStartClick = () => {
