@@ -43,7 +43,6 @@ interface JobState {
 }
 
 /* ─── Constants ─── */
-const CONCURRENCY = 4; // parallel image generation slots
 const CREDIT_COST_PER_IMAGE = 2;
 
 /* ─── Component ─── */
