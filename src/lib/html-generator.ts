@@ -49,14 +49,24 @@ export function generateLandingPageHTML(data: VehicleData, imageBase64: string |
     ['Autobahn', consumption.consumptionHighway],
   ].filter(([, v]) => v).map(([l, v]) => `<div class="cons-row"><span class="cons-label">${l}</span><span class="cons-value">${v}</span></div>`).join('');
 
-  const costRows = [
+  const costSimpleRows = [
     ['Energiekosten bei 15.000 km/Jahr', consumption.energyCostPerYear],
     ['Kraftstoffpreis (Jahresdurchschnitt)', consumption.fuelPrice],
-    ['CO₂-Kosten 10 Jahre (mittel, 115 €/t)', consumption.co2CostMedium],
-    ['CO₂-Kosten 10 Jahre (niedrig, 55 €/t)', consumption.co2CostLow],
-    ['CO₂-Kosten 10 Jahre (hoch, 190 €/t)', consumption.co2CostHigh],
-    ['Kfz-Steuer/Jahr', consumption.vehicleTax],
   ].filter(([, v]) => v).map(([l, v]) => `<div class="cons-row"><span class="cons-label">${l}</span><span class="cons-value">${v}</span></div>`).join('');
+
+  const co2CostLines: string[] = [];
+  if (consumption.co2CostMedium) co2CostLines.push(`${consumption.co2CostMedium} (bei einem angenommenen mittleren durchschnittlichen CO₂-Preis von 115 €/t)`);
+  if (consumption.co2CostLow) co2CostLines.push(`${consumption.co2CostLow} (bei einem angenommenen niedrigen durchschnittlichen CO₂-Preis von 55 €/t)`);
+  if (consumption.co2CostHigh) co2CostLines.push(`${consumption.co2CostHigh} (bei einem angenommenen hohen durchschnittlichen CO₂-Preis von 190 €/t)`);
+  const co2CostRow = co2CostLines.length > 0
+    ? `<div class="cons-row" style="align-items:flex-start"><span class="cons-label">Mögliche CO₂-Kosten über die nächsten 10 Jahre (15.000 km/Jahr)</span><span class="cons-value" style="white-space:pre-line">${co2CostLines.join('\n\n')}</span></div>`
+    : '';
+
+  const taxRow = consumption.vehicleTax
+    ? `<div class="cons-row"><span class="cons-label">Kfz-Steuer/Jahr</span><span class="cons-value">${consumption.vehicleTax}</span></div>`
+    : '';
+
+  const costRows = costSimpleRows + co2CostRow + taxRow;
 
   const hasConsumption = consumptionRows || detailedConsumption || costRows;
 

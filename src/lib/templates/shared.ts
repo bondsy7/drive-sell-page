@@ -140,14 +140,35 @@ export function buildDetailedConsumption(consumption: ConsumptionData, rowClass 
 }
 
 export function buildCostRows(consumption: ConsumptionData, rowClass = 'cons-row', labelClass = 'cons-label', valueClass = 'cons-value'): string {
-  return [
-    ['Energiekosten bei 15.000 km/Jahr', consumption.energyCostPerYear],
-    ['Kraftstoffpreis (Jahresdurchschnitt)', consumption.fuelPrice],
-    ['CO₂-Kosten 10 Jahre (mittel, 115 €/t)', consumption.co2CostMedium],
-    ['CO₂-Kosten 10 Jahre (niedrig, 55 €/t)', consumption.co2CostLow],
-    ['CO₂-Kosten 10 Jahre (hoch, 190 €/t)', consumption.co2CostHigh],
-    ['Kfz-Steuer/Jahr', consumption.vehicleTax],
-  ].filter(([, v]) => v).map(([l, v]) => `<div class="${rowClass}"><span class="${labelClass}">${l}</span><span class="${valueClass}">${v}</span></div>`).join('');
+  const rows: string[] = [];
+
+  if (consumption.energyCostPerYear) {
+    rows.push(`<div class="${rowClass}"><span class="${labelClass}">Energiekosten bei 15.000 km/Jahr</span><span class="${valueClass}">${consumption.energyCostPerYear}</span></div>`);
+  }
+  if (consumption.fuelPrice) {
+    rows.push(`<div class="${rowClass}"><span class="${labelClass}">Kraftstoffpreis (Jahresdurchschnitt)</span><span class="${valueClass}">${consumption.fuelPrice}</span></div>`);
+  }
+
+  // CO₂-Kosten: Offizielles Format gemäß Pkw-EnVKV mit allen drei Szenarien
+  const co2Lines: string[] = [];
+  if (consumption.co2CostMedium) {
+    co2Lines.push(`${consumption.co2CostMedium} (bei einem angenommenen mittleren durchschnittlichen CO₂-Preis von 115 €/t)`);
+  }
+  if (consumption.co2CostLow) {
+    co2Lines.push(`${consumption.co2CostLow} (bei einem angenommenen niedrigen durchschnittlichen CO₂-Preis von 55 €/t)`);
+  }
+  if (consumption.co2CostHigh) {
+    co2Lines.push(`${consumption.co2CostHigh} (bei einem angenommenen hohen durchschnittlichen CO₂-Preis von 190 €/t)`);
+  }
+  if (co2Lines.length > 0) {
+    rows.push(`<div class="${rowClass}" style="align-items:flex-start"><span class="${labelClass}">Mögliche CO₂-Kosten über die nächsten 10 Jahre (15.000 km/Jahr)</span><span class="${valueClass}" style="white-space:pre-line">${co2Lines.join('\n\n')}</span></div>`);
+  }
+
+  if (consumption.vehicleTax) {
+    rows.push(`<div class="${rowClass}"><span class="${labelClass}">Kfz-Steuer/Jahr</span><span class="${valueClass}">${consumption.vehicleTax}</span></div>`);
+  }
+
+  return rows.join('');
 }
 
 export function buildFinanceItems(data: VehicleData, itemClass = 'fin-item', labelClass = 'fin-label', valueClass = 'fin-value'): string {
