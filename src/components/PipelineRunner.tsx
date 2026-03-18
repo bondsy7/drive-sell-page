@@ -280,7 +280,6 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
 
     toast.success('Fehlgeschlagene Bilder werden erneut generiert…');
   }, [activeJobId]);
-  }, [availableJobs, generateOneImage, user, savedProjectId]);
 
   /* ─── Pipeline: start background job ─── */
   const runPipeline = useCallback(async () => {
