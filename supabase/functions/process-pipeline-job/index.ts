@@ -166,9 +166,9 @@ serve(async (req) => {
 
       const parts: any[] = [{ text: detailingPrefix + task.prompt }];
 
-      // Add input reference images
+      // Add only the first 2 input reference images to stay within memory limits
       const inputUrls = job.original_image_urls?.length > 0 ? job.original_image_urls : job.input_image_urls;
-      for (const url of (inputUrls || []).slice(0, 5)) {
+      for (const url of (inputUrls || []).slice(0, 2)) {
         const inlineData = await urlToInlineData(url);
         if (inlineData) parts.push(inlineData);
       }
