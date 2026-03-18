@@ -113,8 +113,6 @@ const App = () => (
               <Route path="/sales-assistant/chat" element={<ProtectedRoute><SalesAssistant /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
-            {/* Global Chat Widget */}
-            <SalesChatWidgetLazy />
           </Suspense>
         </AuthProvider>
       </BrowserRouter>
