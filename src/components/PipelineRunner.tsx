@@ -146,6 +146,8 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   const [finished, setFinished] = useState(false);
   const [savedProjectId, setSavedProjectId] = useState<string | null>(projectId || null);
   const [showPreview, setShowPreview] = useState(true);
+  const [activeJobId, setActiveJobId] = useState<string | null>(null);
+  const { activeJobs, startJob } = useBackgroundJobs();
 
   const selectedJobs = availableJobs.filter(j => selectedKeys.has(j.key));
   const totalImages = getTotalImageCount(selectedKeys);
