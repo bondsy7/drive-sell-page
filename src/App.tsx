@@ -1,5 +1,4 @@
 import { lazy, Suspense } from "react";
-import BackgroundJobIndicator from "@/components/BackgroundJobIndicator";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -22,7 +21,7 @@ const ApiDocs = lazy(() => import("./pages/ApiDocs"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const ArchitectureDoc = lazy(() => import("./pages/ArchitectureDoc"));
 const SalesAssistant = lazy(() => import("./pages/SalesAssistant"));
-
+const SalesChatWidgetLazy = lazy(() => import("./components/sales/SalesChatWidget"));
 
 // Admin pages
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
@@ -114,9 +113,8 @@ const App = () => (
               <Route path="/sales-assistant/chat" element={<ProtectedRoute><SalesAssistant /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
-            {/* Chat Widget removed – now in AppHeader */}
-            {/* Background Job Progress */}
-            <BackgroundJobIndicator />
+            {/* Global Chat Widget */}
+            <SalesChatWidgetLazy />
           </Suspense>
         </AuthProvider>
       </BrowserRouter>
