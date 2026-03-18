@@ -116,6 +116,8 @@ const App = () => (
             </Routes>
             {/* Global Chat Widget */}
             <SalesChatWidgetLazy />
+            {/* Background Job Progress */}
+            <BackgroundJobIndicator />
           </Suspense>
         </AuthProvider>
       </BrowserRouter>
