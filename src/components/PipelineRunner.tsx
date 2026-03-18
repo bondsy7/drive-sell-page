@@ -153,6 +153,18 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   const doneImages = Object.values(jobs).reduce((s, j) => s + j.results.length, 0);
   const estimatedCost = totalImages * CREDIT_COST_PER_IMAGE;
 
+  /* ─── Resume active job on mount ─── */
+  useEffect(() => {
+    if (!projectId || activeJobId) return;
+    const existingJob = activeJobs.find(j => j.project_id === projectId && (j.status === 'running' || j.status === 'pending'));
+    if (existingJob) {
+      setActiveJobId(existingJob.id);
+      setRunning(true);
+      syncJobToUI(existingJob);
+      toast.info('Laufende Pipeline wird fortgesetzt…');
+    }
+  }, [projectId, activeJobs, activeJobId]);
+
   /* ─── Selection helpers ─── */
   const toggleJob = (key: string) => {
     setSelectedKeys(prev => {
