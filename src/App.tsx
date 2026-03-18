@@ -1,4 +1,5 @@
 import { lazy, Suspense } from "react";
+import BackgroundJobIndicator from "@/components/BackgroundJobIndicator";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -115,6 +116,8 @@ const App = () => (
             </Routes>
             {/* Global Chat Widget */}
             <SalesChatWidgetLazy />
+            {/* Background Job Progress */}
+            <BackgroundJobIndicator />
           </Suspense>
         </AuthProvider>
       </BrowserRouter>
