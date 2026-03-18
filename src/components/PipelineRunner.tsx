@@ -243,76 +243,43 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
     })();
   }, [user, inputImages, vehicleDescription, savedProjectId, projectId]);
 
-  /* ─── Generate a single image ─── */
-  const generateOneImage = useCallback(async (prompt: string): Promise<{ base64: string | null; error?: string }> => {
-    const referenceImages = originalImages && originalImages.length > 0 ? originalImages : inputImages;
-    const baseContext = buildMasterPrompt(remasterConfig, vehicleDescription);
-    const fullPrompt = `${baseContext}\n\n--- PERSPECTIVE INSTRUCTION ---\n${prompt}`;
-
-    const { data, error } = await supabase.functions.invoke('remaster-vehicle-image', {
-      body: {
-        imageBase64: referenceImages[0],
-        additionalImages: referenceImages.slice(1),
-        vehicleDescription, modelTier,
-        dynamicPrompt: fullPrompt,
-        customShowroomBase64: remasterConfig.customShowroomBase64 || null,
-        customPlateImageBase64: remasterConfig.customPlateImageBase64 || null,
-        dealerLogoUrl: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null,
-        dealerLogoBase64: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoBase64 : null,
-        manufacturerLogoUrl: remasterConfig.showManufacturerLogo ? resolvedManufacturerLogoUrl : null,
-        manufacturerLogoBase64: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoBase64 : null,
-      },
-    });
-
-    if (error || !data?.imageBase64) {
-      return { base64: null, error: data?.error || error?.message || 'Generierung fehlgeschlagen' };
+  /* ─── Retry failed tasks via background job ─── */
+  const retryJob = useCallback(async (_jobKey: string) => {
+    if (!activeJobId) {
+      toast.error('Kein aktiver Hintergrund-Job zum Wiederholen.');
+      return;
     }
-    return { base64: data.imageBase64 };
-  }, [inputImages, originalImages, vehicleDescription, remasterConfig, modelTier, resolvedManufacturerLogoUrl]);
+    const { retryFailedTasks } = await import('@/hooks/useBackgroundJobs').then(m => ({ retryFailedTasks: m.useBackgroundJobs }));
+    // Use the hook's retry – but since we can't call hooks here, let's do it directly
+    const { data: job } = await supabase
+      .from('image_generation_jobs' as any)
+      .select('*')
+      .eq('id', activeJobId)
+      .single();
 
-  /* ─── Retry a single failed job ─── */
-  const retryJob = useCallback(async (jobKey: string) => {
-    const job = availableJobs.find(j => j.key === jobKey);
     if (!job) return;
+    const tasks = (job as any).tasks as BackgroundJobTask[];
+    const updated = tasks.map((t: any) => t.status === 'error' ? { ...t, status: 'pending', error: null } : t);
 
-    setJobs(prev => ({ ...prev, [jobKey]: { status: 'running', results: [] } }));
+    await supabase
+      .from('image_generation_jobs' as any)
+      .update({
+        tasks: updated,
+        status: 'running',
+        failed_tasks: 0,
+        updated_at: new Date().toISOString(),
+      } as any)
+      .eq('id', activeJobId);
 
-    const prompts = [job.prompt, ...(job.extraPrompts || [])];
-    const jobResults: string[] = [];
-    let jobError: string | undefined;
+    setRunning(true);
+    setFinished(false);
 
-    for (let p = 0; p < prompts.length; p++) {
-      try {
-        const result = await generateOneImage(prompts[p]);
-        if (result.base64) {
-          jobResults.push(result.base64);
-          setJobs(prev => ({
-            ...prev, [jobKey]: { status: 'running', results: [...prev[jobKey].results, result.base64!] },
-          }));
-        } else { jobError = result.error; }
-      } catch { jobError = 'Netzwerkfehler'; }
-    }
+    supabase.functions.invoke('process-pipeline-job', {
+      body: { jobId: activeJobId },
+    }).catch(console.error);
 
-    if (jobResults.length > 0) {
-      setJobs(prev => ({ ...prev, [jobKey]: { status: 'done', results: jobResults, error: jobError } }));
-
-      // Save retried images
-      if (user && savedProjectId) {
-        try {
-          for (let i = 0; i < jobResults.length; i++) {
-            const url = await uploadImageToStorage(jobResults[i], user.id, `${savedProjectId}/${jobKey}_retry_${i}.png`);
-            if (url) {
-              await supabase.from('project_images').insert({
-                project_id: savedProjectId, user_id: user.id, image_url: url,
-                image_base64: '', perspective: `Pipeline: ${job.labelDe} (Retry)`, sort_order: 999 + i,
-              });
-            }
-          }
-        } catch (e) { console.error('Retry save error:', e); }
-      }
-    } else {
-      setJobs(prev => ({ ...prev, [jobKey]: { status: 'error', results: [], error: jobError || 'Alle Bilder fehlgeschlagen' } }));
-    }
+    toast.success('Fehlgeschlagene Bilder werden erneut generiert…');
+  }, [activeJobId]);
   }, [availableJobs, generateOneImage, user, savedProjectId]);
 
   /* ─── Pipeline: start background job ─── */
