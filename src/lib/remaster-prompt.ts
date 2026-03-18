@@ -98,7 +98,7 @@ export function buildMasterPrompt(config: RemasterConfig, vehicleDescription?: s
   }
 
   // Interior-specific rules
-  parts.push('FÜR INNENRAUM-AUFNAHMEN: Verändere die Orientierung/den Winkel NICHT. Füge keine Innenraum-Elemente hinzu oder entferne sie. Verbessere nur die Beleuchtung.');
+  parts.push('FÜR INNENRAUM-AUFNAHMEN: Verändere die Orientierung/den Winkel NICHT. Füge KEINE neuen Innenraum-Elemente hinzu (keine Dekorationen, keine Gegenstände). Entferne aber ALLE Fremdgegenstände (Müll, Papier, persönliche Gegenstände) die nicht zur Fahrzeug-Serienausstattung gehören. Verbessere die Beleuchtung für ein professionelles Ergebnis.');
 
   // No other vehicles
   parts.push('WICHTIG: Im generierten Bild darf KEIN anderes Fahrzeug sichtbar sein – nur das eine Fahrzeug aus dem Originalfoto. Keine Autos im Hintergrund, keine Spiegelungen anderer Fahrzeuge in Glasflächen oder auf dem Boden.');
