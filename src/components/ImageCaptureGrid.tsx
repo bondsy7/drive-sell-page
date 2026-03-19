@@ -77,66 +77,123 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const brandDetectionAttempted = useRef(false);
 
-  // Auto-detect brand from vehicleData or vehicleDescription
+  const normalizeValue = (value?: string | null) => (value || '').toLowerCase().replace(/[-_\s]+/g, '');
+
+  const BRAND_ALIASES: Record<string, string[]> = {
+    volkswagen: ['vw'],
+    vw: ['volkswagen'],
+    mercedesbenz: ['mercedes', 'mb', 'mercedesamg'],
+    mercedes: ['mercedesbenz', 'mb', 'mercedesamg'],
+    mb: ['mercedesbenz', 'mercedes'],
+    bmw: ['bayerischemotorenwerke'],
+    alfaromeo: ['alfa-romeo', 'alfa'],
+    'alfa-romeo': ['alfaromeo', 'alfa'],
+    astonmartin: ['aston-martin'],
+    'aston-martin': ['astonmartin'],
+    landrover: ['land-rover', 'land rover'],
+    'land-rover': ['landrover'],
+    rollsroyce: ['rolls-royce', 'rolls royce'],
+    'rolls-royce': ['rollsroyce'],
+  };
+
+  const resolveBrandFromSource = useCallback((source?: string | null) => {
+    const sourceNorm = normalizeValue(source);
+    if (!sourceNorm || makes.length === 0) return null;
+
+    const exact = makes.find((make) => normalizeValue(make.key) === sourceNorm);
+    if (exact) return exact.key;
+
+    const aliases = BRAND_ALIASES[sourceNorm] || [];
+    for (const alias of aliases) {
+      const aliasMatch = makes.find((make) => normalizeValue(make.key) === normalizeValue(alias));
+      if (aliasMatch) return aliasMatch.key;
+    }
+
+    const reverseAliasMatch = makes.find((make) => {
+      const makeNorm = normalizeValue(make.key);
+      const makeAliases = BRAND_ALIASES[makeNorm] || [];
+      return makeAliases.some((alias) => normalizeValue(alias) === sourceNorm);
+    });
+    if (reverseAliasMatch) return reverseAliasMatch.key;
+
+    const partial = makes.find((make) => {
+      const makeNorm = normalizeValue(make.key);
+      return makeNorm.includes(sourceNorm) || sourceNorm.includes(makeNorm);
+    });
+    return partial?.key || null;
+  }, [makes]);
+
+  const resolveModelForBrand = useCallback((brand: string, sourceModel?: string | null) => {
+    if (!sourceModel) return '';
+    const sourceNorm = normalizeValue(sourceModel);
+    const matchedMake = makes.find((make) => make.key === brand);
+    if (!matchedMake) return sourceModel;
+
+    const exact = matchedMake.models
+      .filter((item) => item.key !== 'ANDERE')
+      .find((item) => normalizeValue(item.key) === sourceNorm);
+    if (exact) return exact.key;
+
+    const partial = matchedMake.models
+      .filter((item) => item.key !== 'ANDERE')
+      .find((item) => {
+        const modelNorm = normalizeValue(item.key);
+        return modelNorm.includes(sourceNorm) || sourceNorm.includes(modelNorm);
+      });
+
+    return partial?.key || sourceModel;
+  }, [makes]);
+
   useEffect(() => {
-    const brand = vehicleData?.vehicle?.brand;
-    if (brand && brand.trim()) {
+    const currentBrand = vehicleData?.vehicle?.brand;
+    if (currentBrand && currentBrand.trim()) {
       setBrandDetectionStatus('found');
       brandDetectionAttempted.current = true;
       return;
     }
 
-    // Try to detect brand from vehicleDescription by matching against known makes
     if (!brandDetectionAttempted.current && vehicleDescription && makes.length > 0) {
       brandDetectionAttempted.current = true;
-      setBrandDetectionStatus('detecting');
+      const matchedBrand = resolveBrandFromSource(vehicleDescription);
+      setBrandDetectionStatus(matchedBrand ? 'found' : 'not-found');
 
-      const descNorm = vehicleDescription.toLowerCase().replace(/[-_\s]+/g, '');
-      
-      // Brand aliases for matching
-      const ALIASES: Record<string, string> = {
-        'vw': 'Volkswagen', 'mb': 'Mercedes-Benz', 'mercedesbenz': 'Mercedes-Benz',
-        'mercedes': 'Mercedes-Benz', 'bmw': 'BMW', 'alfaromeo': 'Alfa Romeo',
-        'rollsroyce': 'Rolls-Royce', 'astonmartin': 'Aston Martin', 'landrover': 'Land Rover',
-      };
-
-      let matchedBrand: string | null = null;
-
-      // Check aliases first
-      for (const [alias, canonical] of Object.entries(ALIASES)) {
-        if (descNorm.includes(alias)) {
-          matchedBrand = canonical;
-          break;
-        }
-      }
-
-      // Then check all known makes
-      if (!matchedBrand) {
-        // Sort by key length descending so "Mercedes-Benz" matches before "Benz"
-        const sortedMakes = [...makes].sort((a, b) => b.key.length - a.key.length);
-        for (const make of sortedMakes) {
-          const makeNorm = make.key.toLowerCase().replace(/[-_\s]+/g, '');
-          if (descNorm.includes(makeNorm)) {
-            matchedBrand = make.key;
-            break;
-          }
-        }
-      }
-
-      if (matchedBrand) {
-        console.log(`[BrandDetection] Detected "${matchedBrand}" from description`);
-        setBrandDetectionStatus('found');
-        if (vehicleData && onVehicleDataChange) {
-          onVehicleDataChange({
-            ...vehicleData,
-            vehicle: { ...vehicleData.vehicle, brand: matchedBrand },
-          });
-        }
-      } else {
-        setBrandDetectionStatus('not-found');
+      if (matchedBrand && vehicleData && onVehicleDataChange) {
+        onVehicleDataChange({
+          ...vehicleData,
+          vehicle: { ...vehicleData.vehicle, brand: matchedBrand },
+        });
       }
     }
-  }, [vehicleData?.vehicle?.brand, vehicleDescription, makes, onVehicleDataChange]);
+  }, [vehicleData, vehicleDescription, makes, onVehicleDataChange, resolveBrandFromSource]);
+
+  useEffect(() => {
+    const outvinVehicle = vinLookup.outvinData;
+    if (!outvinVehicle || makes.length === 0 || !vehicleData || !onVehicleDataChange) return;
+
+    const matchedBrand = resolveBrandFromSource(outvinVehicle.brand);
+    if (!matchedBrand) {
+      setBrandDetectionStatus('not-found');
+      return;
+    }
+
+    const matchedModel = resolveModelForBrand(matchedBrand, outvinVehicle.model);
+    const sameBrand = normalizeValue(vehicleData.vehicle.brand) === normalizeValue(matchedBrand);
+    const sameModel = normalizeValue(vehicleData.vehicle.model) === normalizeValue(matchedModel);
+
+    setBrandDetectionStatus('found');
+    brandDetectionAttempted.current = true;
+
+    if (sameBrand && sameModel) return;
+
+    onVehicleDataChange({
+      ...vehicleData,
+      vehicle: {
+        ...vehicleData.vehicle,
+        brand: matchedBrand,
+        model: matchedModel || vehicleData.vehicle.model,
+      },
+    });
+  }, [vinLookup.outvinData, makes, vehicleData, onVehicleDataChange, resolveBrandFromSource, resolveModelForBrand]);
 
   const capturedCount = Object.keys(captures).length;
   const vehicleSlots = SLOTS.filter(s => !s.isVin);
@@ -154,13 +211,25 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     const base64 = await fileToBase64(file);
     setCaptures(prev => ({ ...prev, [slot.key]: { base64, status: 'captured' } }));
 
+    if (!slot.isVin && !brandDetectionAttempted.current && makes.length > 0) {
+      brandDetectionAttempted.current = true;
+      const matchedBrand = resolveBrandFromSource(vehicleDescription);
+      setBrandDetectionStatus(matchedBrand ? 'found' : 'not-found');
+      if (matchedBrand && vehicleData && onVehicleDataChange) {
+        onVehicleDataChange({
+          ...vehicleData,
+          vehicle: { ...vehicleData.vehicle, brand: matchedBrand },
+        });
+      }
+    }
 
-    // If VIN slot, trigger OCR immediately
     if (slot.isVin) {
       try {
+        setBrandDetectionStatus('detecting');
         const { data, error } = await supabase.functions.invoke('ocr-vin', { body: { imageBase64: base64 } });
         if (data?.error === 'insufficient_credits') {
           toast.error('Nicht genügend Credits für VIN-Erkennung.');
+          setBrandDetectionStatus('not-found');
         } else if (!error && data?.vin) {
           setDetectedVin(data.vin);
           toast.success(`VIN erkannt: ${data.vin}`);
@@ -168,13 +237,15 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
             vinLookup.lookup(data.vin, vehicleData);
           }
         } else {
+          setBrandDetectionStatus('not-found');
           toast.warning('VIN konnte nicht erkannt werden. Bitte prüfe das Foto.');
         }
       } catch {
+        setBrandDetectionStatus('not-found');
         toast.warning('VIN-Erkennung fehlgeschlagen.');
       }
     }
-  }, [vehicleData, vinLookup]);
+  }, [makes.length, onVehicleDataChange, resolveBrandFromSource, vehicleData, vehicleDescription, vinLookup]);
 
   const removeCapture = (key: string) => {
     setCaptures(prev => {
