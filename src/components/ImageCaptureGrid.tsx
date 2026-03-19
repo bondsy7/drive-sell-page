@@ -140,6 +140,8 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   const { makes } = useVehicleMakes();
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const brandDetectionAttempted = useRef(false);
+  const latestVehicleDataRef = useRef<VehicleData | undefined>(vehicleData);
+  latestVehicleDataRef.current = vehicleData;
 
   const makeKeys = useMemo(() => makes.map(m => m.key), [makes]);
 
@@ -169,28 +171,33 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     return partial?.key || sourceModel;
   }, [makes]);
 
-  const buildVehicleState = useCallback((): VehicleData => ({
-    category: vehicleData?.category || 'Kauf',
-    vehicle: {
-      brand: vehicleData?.vehicle?.brand || '',
-      model: vehicleData?.vehicle?.model || '',
-      variant: vehicleData?.vehicle?.variant || '',
-      year: vehicleData?.vehicle?.year || new Date().getFullYear(),
-      color: vehicleData?.vehicle?.color || '',
-      fuelType: vehicleData?.vehicle?.fuelType || '',
-      transmission: vehicleData?.vehicle?.transmission || '',
-      power: vehicleData?.vehicle?.power || '',
-      features: [...(vehicleData?.vehicle?.features || [])],
-      ...(vehicleData?.vehicle?.vin ? { vin: vehicleData.vehicle.vin } : {}),
-    },
-    finance: vehicleData?.finance ? { ...vehicleData.finance } : { ...EMPTY_FINANCE },
-    dealer: vehicleData?.dealer ? { ...vehicleData.dealer } : { ...EMPTY_DEALER },
-    consumption: vehicleData?.consumption ? { ...vehicleData.consumption } : { ...EMPTY_CONSUMPTION },
-  }), [vehicleData]);
+  const buildVehicleState = useCallback((): VehicleData => {
+    const vd = latestVehicleDataRef.current;
+    return {
+      category: vd?.category || 'Kauf',
+      vehicle: {
+        brand: vd?.vehicle?.brand || '',
+        model: vd?.vehicle?.model || '',
+        variant: vd?.vehicle?.variant || '',
+        year: vd?.vehicle?.year || new Date().getFullYear(),
+        color: vd?.vehicle?.color || '',
+        fuelType: vd?.vehicle?.fuelType || '',
+        transmission: vd?.vehicle?.transmission || '',
+        power: vd?.vehicle?.power || '',
+        features: [...(vd?.vehicle?.features || [])],
+        ...(vd?.vehicle?.vin ? { vin: vd.vehicle.vin } : {}),
+      },
+      finance: vd?.finance ? { ...vd.finance } : { ...EMPTY_FINANCE },
+      dealer: vd?.dealer ? { ...vd.dealer } : { ...EMPTY_DEALER },
+      consumption: vd?.consumption ? { ...vd.consumption } : { ...EMPTY_CONSUMPTION },
+    };
+  }, []);
 
   const patchVehicleData = useCallback((updater: (current: VehicleData) => VehicleData) => {
     if (!onVehicleDataChange) return;
-    onVehicleDataChange(updater(buildVehicleState()));
+    const updated = updater(buildVehicleState());
+    latestVehicleDataRef.current = updated;
+    onVehicleDataChange(updated);
   }, [buildVehicleState, onVehicleDataChange]);
 
   useEffect(() => {
