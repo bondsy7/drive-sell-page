@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Image, FileText, Download, ExternalLink, Trash2, MessageSquare, Mail, Phone, Video, Play, X, LayoutGrid, Layout, FolderOpen, ChevronDown, ChevronRight } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
+import Spin360Viewer from '@/components/spin360/Spin360Viewer';
 import { toast } from 'sonner';
 import { downloadHTML } from '@/lib/templates/download';
 import { embedCO2LabelsInHTML } from '@/lib/templates/shared';
@@ -79,6 +80,9 @@ const Dashboard = () => {
   const [bannersLoaded, setBannersLoaded] = useState(false);
   const [spin360Jobs, setSpin360Jobs] = useState<any[]>([]);
   const [spin360Loaded, setSpin360Loaded] = useState(false);
+  const [viewerJobId, setViewerJobId] = useState<string | null>(null);
+  const [viewerFrames, setViewerFrames] = useState<string[]>([]);
+  const [viewerLoading, setViewerLoading] = useState(false);
   const [counts, setCounts] = useState({ gallery: 0, videos: 0, leads: 0, banners: 0, spin360: 0 });
 
   const regularProjects = projects.filter(p => p.template_id !== 'landing-page');
@@ -260,6 +264,24 @@ const Dashboard = () => {
     }
     setBannersLoaded(true);
     setLoading(false);
+  };
+
+  const openSpinViewer = async (jobId: string) => {
+    setViewerJobId(jobId);
+    setViewerLoading(true);
+    setViewerFrames([]);
+    const { data } = await supabase
+      .from('spin360_generated_frames' as any)
+      .select('image_url, frame_index')
+      .eq('job_id', jobId)
+      .eq('validation_status', 'passed')
+      .order('frame_index', { ascending: true });
+    const uniqueFrames = new Map<number, string>();
+    for (const f of (data as any[] || [])) {
+      if (!uniqueFrames.has(f.frame_index)) uniqueFrames.set(f.frame_index, f.image_url);
+    }
+    setViewerFrames(Array.from(uniqueFrames.entries()).sort((a, b) => a[0] - b[0]).map(e => e[1]));
+    setViewerLoading(false);
   };
 
   const loadData = async () => {
@@ -768,7 +790,13 @@ const Dashboard = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {spin360Jobs.map((job: any) => (
-                <div key={job.id} className="bg-card rounded-xl border border-border p-5 space-y-3">
+                <div
+                  key={job.id}
+                  className={`bg-card rounded-xl border border-border p-5 space-y-3 transition-all ${
+                    job.displayStatus === 'completed' ? 'cursor-pointer hover:border-accent/50 hover:shadow-md' : ''
+                  }`}
+                  onClick={() => job.displayStatus === 'completed' && openSpinViewer(job.id)}
+                >
                   <div className="flex items-center justify-between">
                     <h3 className="font-display font-semibold text-foreground text-sm">360° Spin</h3>
                     <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
@@ -787,6 +815,9 @@ const Dashboard = () => {
                   )}
                   {job.displayStatus === 'failed' && job.displayError && (
                     <p className="text-xs text-destructive">{job.displayError}</p>
+                  )}
+                  {job.displayStatus === 'completed' && (
+                    <p className="text-xs text-accent">Zum Öffnen antippen ›</p>
                   )}
                 </div>
               ))}
@@ -878,6 +909,32 @@ const Dashboard = () => {
               <Button variant="secondary" size="sm" onClick={() => downloadVideo(playerVideo)} className="gap-1.5">
                 <Download className="w-3.5 h-3.5" /> Herunterladen
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 360° Spin Viewer Overlay */}
+      {viewerJobId && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+          <div className="bg-card rounded-2xl border border-border w-full max-w-2xl max-h-[90vh] overflow-auto">
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <h3 className="font-display font-semibold text-foreground">360° Spin Viewer</h3>
+              <Button variant="ghost" size="icon" onClick={() => { setViewerJobId(null); setViewerFrames([]); }}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            <div className="p-4">
+              {viewerLoading ? (
+                <div className="flex items-center justify-center py-20">
+                  <RotateCw className="w-6 h-6 animate-spin text-accent" />
+                  <span className="ml-2 text-sm text-muted-foreground">Frames werden geladen…</span>
+                </div>
+              ) : viewerFrames.length > 0 ? (
+                <Spin360Viewer frames={viewerFrames} autoplay autoplaySpeed={100} />
+              ) : (
+                <p className="text-center py-10 text-sm text-muted-foreground">Keine Frames gefunden.</p>
+              )}
             </div>
           </div>
         </div>
