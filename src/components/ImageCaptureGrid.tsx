@@ -441,6 +441,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         onChange={setRemasterConfig}
         vehicleBrand={vehicleData?.vehicle?.brand}
         vehicleModel={vehicleData?.vehicle?.model}
+        brandDetectionStatus={brandDetectionStatus}
         onBrandChange={(brand) => {
           if (vehicleData && onVehicleDataChange) {
             onVehicleDataChange({
@@ -448,6 +449,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
               vehicle: { ...vehicleData.vehicle, brand },
             });
           }
+          if (brand) setBrandDetectionStatus('found');
         }}
         onModelChange={(model) => {
           if (vehicleData && onVehicleDataChange) {
