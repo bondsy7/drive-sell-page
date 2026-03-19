@@ -25,6 +25,7 @@ interface GalleryLightboxProps {
   open: boolean;
   onClose: () => void;
   onAssigned?: () => void;
+  onRegenerated?: () => void;
 }
 
 const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex, open, onClose, onAssigned }) => {
