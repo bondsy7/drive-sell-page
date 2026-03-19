@@ -356,6 +356,7 @@ src/
 │   ├── AdminPrompts.tsx           # KI-Prompts anpassen
 │   ├── AdminPricing.tsx           # Abo-Pläne bearbeiten
 │   ├── AdminSettings.tsx          # System-Einstellungen (Key-Value JSONB)
+│   ├── AdminSecrets.tsx           # API-Keys & Secrets sicher verwalten
 │   ├── AdminLogos.tsx             # Hersteller-Logos verwalten
 │   ├── AdminSalesAssistant.tsx    # Sales-Assistant-Konfiguration
 │   └── AdminWmiCodes.tsx          # WMI-Codes verwalten
