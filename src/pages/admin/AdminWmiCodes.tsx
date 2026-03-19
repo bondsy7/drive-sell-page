@@ -7,58 +7,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { BRAND_ALIAS_MAP, normalizeBrand } from '@/lib/brand-aliases';
 
-// Import the WMI data from vin-wmi-lookup to display
-// We re-export the maps so the admin can see them
-import { lookupBrandFromVin } from '@/lib/vin-wmi-lookup';
+// Import the WMI data directly from the lookup module
+import { lookupBrandFromVin, WMI3_MAP, WMI2_MAP } from '@/lib/vin-wmi-lookup';
 
-// We need the raw maps – re-create them here for display (they're const in the module)
-// In a real scenario these would come from a DB, but for now we keep them in-memory
-const WMI3_DISPLAY: Record<string, string> = {
-  ZAR: 'Alfa Romeo', ZD4: 'Aprilia', WAU: 'Audi', TRU: 'Audi', WUA: 'Audi',
-  WBA: 'BMW', WBS: 'BMW', WBY: 'BMW', WB1: 'BMW',
-  VF7: 'Citroën', VR7: 'Citroën', KLY: 'Daewoo', JDA: 'Daihatsu',
-  WDD: 'Mercedes-Benz', WDC: 'Mercedes-Benz', WDB: 'Mercedes-Benz', W1K: 'Mercedes-Benz', W1N: 'Mercedes-Benz', WMX: 'Mercedes-Benz',
-  WXF: 'Fendt', ZFF: 'Ferrari', ZDF: 'Ferrari', ZFA: 'Fiat',
-  WFO: 'Ford', WF0: 'Ford', VS6: 'Ford',
-  WHB: 'Hobby', SHS: 'Honda', ZDC: 'Honda', JH2: 'Honda', JHM: 'Honda', LUC: 'Honda',
-  KMH: 'Hyundai', TMA: 'Hyundai', ZCF: 'Iveco', SAJ: 'Jaguar',
-  KNE: 'Kia', KNA: 'Kia', U5Y: 'Kia', U6Z: 'Kia',
-  SAL: 'Land Rover', SCC: 'Lotus', JT1: 'Toyota',
-  WMA: 'MAN', ZMA: 'Maserati', ZAM: 'Maserati',
-  JM2: 'Mazda', JMZ: 'Mazda',
-  JMB: 'Mitsubishi', XMC: 'Mitsubishi', MMB: 'Mitsubishi',
-  SJN: 'Nissan', JN1: 'Nissan', VSK: 'Nissan',
-  WOL: 'Opel', W0L: 'Opel', W0V: 'Opel', VXK: 'Opel', W0S: 'Opel',
-  VF3: 'Peugeot', VR3: 'Peugeot',
-  WPO: 'Porsche', WP0: 'Porsche', WP1: 'Porsche',
-  PL1: 'Proton', VF1: 'Renault', VF6: 'Renault', VFA: 'Alpine',
-  SAR: 'Rover', SAX: 'Rover', YS3: 'Saab', YK1: 'Saab',
-  VSS: 'Seat', TMB: 'Škoda', KPT: 'Ssangyong', WTA: 'Tabbert',
-  JTF: 'Toyota', VNK: 'Toyota',
-  WVW: 'Volkswagen', WV2: 'Volkswagen', WV1: 'Volkswagen', WVG: 'Volkswagen', WVM: 'Volkswagen',
-  YV1: 'Volvo', B7J: 'Chrysler', S2D: 'Chrysler',
-  VR1: 'DS', WME: 'Smart', WMW: 'MINI',
-  ZHW: 'Lamborghini', ZLA: 'Lancia', WAP: 'Alpina', WAG: 'Neoplan',
-  WEB: 'EvoBus', WSM: 'Schmitz Cargobull',
-  LC0: 'BYD', LFV: 'Volkswagen', LSV: 'Volkswagen', LPS: 'Polestar',
-  LRW: 'Tesla', XP7: 'Tesla', SUU: 'Solaris', CL9: 'Wallyscar',
-  '1C3': 'Chrysler', '1C4': 'Chrysler', '1J4': 'Jeep',
-  '1FM': 'Ford', '2FM': 'Ford', '1HF': 'Honda',
-  '1VW': 'Volkswagen', '3VW': 'Volkswagen', '9BW': 'Volkswagen',
-  '4US': 'BMW', '5YJ': 'Tesla', '6T1': 'Toyota', '6MM': 'Mitsubishi',
-  '2HM': 'Hyundai', '1YV': 'Mazda',
-};
-
-const WMI2_DISPLAY: Record<string, string> = {
-  JA: 'Isuzu', JF: 'Subaru', JH: 'Honda', JM: 'Mazda', JN: 'Nissan',
-  JS: 'Suzuki', JT: 'Toyota', KL: 'Daewoo', KN: 'Kia', UU: 'Dacia',
-  '1C': 'Chrysler', '1F': 'Ford', '1G': 'General Motors', '1H': 'Honda',
-  '1J': 'Jeep', '1L': 'Lincoln', '1M': 'Mercury', '1N': 'Nissan',
-  '2F': 'Ford', '2G': 'General Motors', '2M': 'Mercury',
-  '3F': 'Ford', '3G': 'General Motors', '3H': 'Honda',
-  '4F': 'Mazda', '4M': 'Mercury', '4S': 'Subaru',
-  '5L': 'Lincoln', '6F': 'Ford', '6H': 'Holden',
-};
+const WMI3_DISPLAY = WMI3_MAP;
+const WMI2_DISPLAY = WMI2_MAP;
 
 export default function AdminWmiCodes() {
   const [search, setSearch] = useState('');
