@@ -60,9 +60,6 @@ export default function AppHeader({ leftActions, variant = 'card' }: AppHeaderPr
                   </Button>
                 </Link>
 
-                {/* Credits */}
-                <CreditBadge />
-
                 {/* Dashboard Home */}
                 <Link to="/dashboard">
                   <Button variant="ghost" size="icon" className={ghostClass} title="Dashboard">
@@ -85,6 +82,9 @@ export default function AppHeader({ leftActions, variant = 'card' }: AppHeaderPr
                     </span>
                   )}
                 </Button>
+
+                {/* Credits */}
+                <CreditBadge />
 
                 {/* Tabbed user menu */}
                 <UserMenuSheet

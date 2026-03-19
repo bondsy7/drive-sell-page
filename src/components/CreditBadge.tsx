@@ -43,12 +43,12 @@ export default function CreditBadge() {
       <TooltipTrigger asChild>
         <Link
           to="/pricing"
-          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-colors ${style}`}
+          className={`inline-flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-full text-xs font-semibold transition-colors ${style}`}
         >
           {icon}
           <span>{balance}</span>
           {slug !== 'free' && (
-            <span className="text-[10px] opacity-75 uppercase tracking-wider">{slug}</span>
+            <span className="hidden sm:inline text-[10px] opacity-75 uppercase tracking-wider">{slug}</span>
           )}
         </Link>
       </TooltipTrigger>
