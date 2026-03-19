@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_secrets: {
+        Row: {
+          id: string
+          key: string
+          label: string | null
+          updated_at: string
+          updated_by: string | null
+          value: string
+        }
+        Insert: {
+          id?: string
+          key: string
+          label?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          value?: string
+        }
+        Update: {
+          id?: string
+          key?: string
+          label?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          value?: string
+        }
+        Relationships: []
+      }
       admin_settings: {
         Row: {
           id: string
