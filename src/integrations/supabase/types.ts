@@ -1376,6 +1376,185 @@ export type Database = {
         }
         Relationships: []
       }
+      spin360_canonical_images: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string
+          job_id: string
+          perspective: string
+          sort_order: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url: string
+          job_id: string
+          perspective: string
+          sort_order?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string
+          job_id?: string
+          perspective?: string
+          sort_order?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spin360_canonical_images_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "spin360_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spin360_generated_frames: {
+        Row: {
+          angle_degrees: number | null
+          created_at: string
+          frame_index: number
+          frame_type: string
+          id: string
+          image_url: string
+          job_id: string
+          model_used: string | null
+          user_id: string
+          validation_notes: string | null
+          validation_status: string | null
+        }
+        Insert: {
+          angle_degrees?: number | null
+          created_at?: string
+          frame_index: number
+          frame_type?: string
+          id?: string
+          image_url: string
+          job_id: string
+          model_used?: string | null
+          user_id: string
+          validation_notes?: string | null
+          validation_status?: string | null
+        }
+        Update: {
+          angle_degrees?: number | null
+          created_at?: string
+          frame_index?: number
+          frame_type?: string
+          id?: string
+          image_url?: string
+          job_id?: string
+          model_used?: string | null
+          user_id?: string
+          validation_notes?: string | null
+          validation_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spin360_generated_frames_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "spin360_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spin360_jobs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          identity_profile: Json | null
+          manifest: Json | null
+          project_id: string | null
+          retry_count: number | null
+          status: string
+          target_frame_count: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          identity_profile?: Json | null
+          manifest?: Json | null
+          project_id?: string | null
+          retry_count?: number | null
+          status?: string
+          target_frame_count?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          identity_profile?: Json | null
+          manifest?: Json | null
+          project_id?: string | null
+          retry_count?: number | null
+          status?: string
+          target_frame_count?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spin360_jobs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spin360_source_images: {
+        Row: {
+          analysis: Json | null
+          created_at: string
+          id: string
+          image_url: string
+          job_id: string
+          perspective: string
+          sort_order: number | null
+          user_id: string
+        }
+        Insert: {
+          analysis?: Json | null
+          created_at?: string
+          id?: string
+          image_url: string
+          job_id: string
+          perspective: string
+          sort_order?: number | null
+          user_id: string
+        }
+        Update: {
+          analysis?: Json | null
+          created_at?: string
+          id?: string
+          image_url?: string
+          job_id?: string
+          perspective?: string
+          sort_order?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spin360_source_images_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "spin360_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscription_plans: {
         Row: {
           active: boolean
