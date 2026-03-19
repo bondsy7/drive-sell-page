@@ -1310,7 +1310,7 @@ Nutzer füllt Formular auf Landing Page
 
 ## 16. Admin-System
 
-### 16.1 Admin-Routen & Zugang (11 Seiten)
+### 16.1 Admin-Routen & Zugang (12 Seiten)
 
 ```
 /admin              → Dashboard (KPIs, Charts)
@@ -1321,6 +1321,7 @@ Nutzer füllt Formular auf Landing Page
 /admin/prompts      → KI-System-Prompts anpassen
 /admin/pricing      → Abo-Pläne + Credit-Kosten bearbeiten
 /admin/settings     → System-Einstellungen (Key-Value JSONB)
+/admin/secrets      → API-Keys & Secrets sicher verwalten (maskierte Eingabe)
 /admin/logos        → Hersteller-Logos (Massen-Upload, SVG)
 /admin/sales-assistant → Sales-Assistant-Konfiguration
 /admin/wmi-codes    → WMI-Codes verwalten (Fahrzeug-Identifikation)
