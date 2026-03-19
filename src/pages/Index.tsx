@@ -65,7 +65,7 @@ const Index = () => {
 
   const currentStep = appState === 'hub' || appState === 'idle' ? 1 : appState === 'preview' ? 3 : 2;
 
-  const saveProject = useCallback(async (vData: VehicleData, mainImg: string | null, allImages: string[], templateId: TemplateId) => {
+  const saveProject = useCallback(async (vData: VehicleData, mainImg: string | null, allImages: string[], templateId: TemplateId, vin?: string | null) => {
     if (!user) return null;
     const title = `${vData.vehicle.brand} ${vData.vehicle.model} ${vData.vehicle.variant || ''}`.trim();
     const { data: project, error } = await supabase.from('projects').insert({
@@ -73,6 +73,7 @@ const Index = () => {
     }).select('id').single();
     if (error || !project) { console.error('Save project error:', error); return null; }
     if (allImages.length > 0) {
+      const folderName = getGalleryFolderName(vin || (vData.vehicle as any)?.vin);
       const urls = await uploadImagesToStorage(allImages, user.id, project.id);
       if (urls.length > 0) {
         await supabase.from('projects').update({ main_image_url: urls[0] }).eq('id', project.id);
@@ -80,8 +81,9 @@ const Index = () => {
       const imageRows = urls.map((url, i) => ({
         project_id: project.id, user_id: user.id, image_url: url, image_base64: '',
         perspective: PERSPECTIVES[i]?.label || `Bild ${i + 1}`, sort_order: i,
+        gallery_folder: folderName,
       }));
-      await supabase.from('project_images').insert(imageRows);
+      await supabase.from('project_images').insert(imageRows as any);
     }
     return project.id;
   }, [user]);
