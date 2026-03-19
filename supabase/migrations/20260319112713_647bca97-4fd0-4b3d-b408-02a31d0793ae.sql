@@ -1,0 +1,1 @@
+ALTER TABLE public.project_images ADD COLUMN IF NOT EXISTS gallery_folder TEXT DEFAULT NULL;
