@@ -83,8 +83,8 @@ export default function AdminSecrets() {
         </div>
       </div>
 
-      <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 flex items-start gap-3">
-        <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+      <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-4 flex items-start gap-3">
+        <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
         <div className="text-sm">
           <p className="font-semibold text-foreground">Sicherheitshinweis</p>
           <p className="text-muted-foreground">
