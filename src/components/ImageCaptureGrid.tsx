@@ -158,8 +158,8 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     }
 
     const matchedModel = resolveModelForBrand(matchedBrand, outvinVehicle.model);
-    const sameBrand = normalizeValue(vehicleData.vehicle.brand) === normalizeValue(matchedBrand);
-    const sameModel = normalizeValue(vehicleData.vehicle.model) === normalizeValue(matchedModel);
+    const sameBrand = normalizeBrand(vehicleData.vehicle.brand || '') === normalizeBrand(matchedBrand);
+    const sameModel = normalizeBrand(vehicleData.vehicle.model || '') === normalizeBrand(matchedModel);
 
     setBrandDetectionStatus('found');
     brandDetectionAttempted.current = true;
