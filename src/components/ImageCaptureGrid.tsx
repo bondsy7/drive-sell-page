@@ -71,8 +71,11 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [detectedVin, setDetectedVin] = useState<string | null>(null);
   const [remasterConfig, setRemasterConfig] = useState<RemasterConfig>(DEFAULT_CONFIG);
+  const [brandDetectionStatus, setBrandDetectionStatus] = useState<'idle' | 'detecting' | 'found' | 'not-found'>('idle');
   const vinLookup = useVinLookup();
+  const { makes, getLogoForMake } = useVehicleMakes();
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const brandDetectionAttempted = useRef(false);
 
   const capturedCount = Object.keys(captures).length;
   const vehicleSlots = SLOTS.filter(s => !s.isVin);
