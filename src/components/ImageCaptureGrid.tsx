@@ -77,67 +77,66 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const brandDetectionAttempted = useRef(false);
 
-  // Auto-detect brand from vehicleData (e.g. set via VIN or PDF)
+  // Auto-detect brand from vehicleData or vehicleDescription
   useEffect(() => {
     const brand = vehicleData?.vehicle?.brand;
     if (brand && brand.trim()) {
       setBrandDetectionStatus('found');
       brandDetectionAttempted.current = true;
+      return;
     }
-  }, [vehicleData?.vehicle?.brand]);
 
-  // Auto-detect brand from uploaded images using AI (up to 3 retries)
-  const detectBrandFromImage = useCallback(async (imageBase64: string) => {
-    if (brandDetectionAttempted.current && brandDetectionStatus === 'found') return;
-    if (brandDetectionStatus === 'detecting') return;
+    // Try to detect brand from vehicleDescription by matching against known makes
+    if (!brandDetectionAttempted.current && vehicleDescription && makes.length > 0) {
+      brandDetectionAttempted.current = true;
+      setBrandDetectionStatus('detecting');
 
-    setBrandDetectionStatus('detecting');
-    brandDetectionAttempted.current = true;
+      const descNorm = vehicleDescription.toLowerCase().replace(/[-_\s]+/g, '');
+      
+      // Brand aliases for matching
+      const ALIASES: Record<string, string> = {
+        'vw': 'Volkswagen', 'mb': 'Mercedes-Benz', 'mercedesbenz': 'Mercedes-Benz',
+        'mercedes': 'Mercedes-Benz', 'bmw': 'BMW', 'alfaromeo': 'Alfa Romeo',
+        'rollsroyce': 'Rolls-Royce', 'astonmartin': 'Aston Martin', 'landrover': 'Land Rover',
+      };
 
-    const MAX_RETRIES = 3;
-    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-      try {
-        const { data, error } = await supabase.functions.invoke('remaster-vehicle-image', {
-          body: {
-            imageBase64,
-            vehicleDescription,
-            modelTier: 'detect-brand-only',
-            dynamicPrompt: 'DETECT_BRAND',
-          },
-        });
+      let matchedBrand: string | null = null;
 
-        if (!error && data?.detectedBrand) {
-          const brand = data.detectedBrand;
-          console.log(`[BrandDetection] Attempt ${attempt}: detected "${brand}"`);
+      // Check aliases first
+      for (const [alias, canonical] of Object.entries(ALIASES)) {
+        if (descNorm.includes(alias)) {
+          matchedBrand = canonical;
+          break;
+        }
+      }
 
-          // Match against known makes
-          const matchedMake = makes.find(m =>
-            m.key.toLowerCase().replace(/[-_\s]+/g, '') === brand.toLowerCase().replace(/[-_\s]+/g, '')
-          );
-
-          if (matchedMake || getLogoForMake(brand)) {
-            const finalBrand = matchedMake?.key || brand;
-            setBrandDetectionStatus('found');
-            if (vehicleData && onVehicleDataChange) {
-              onVehicleDataChange({
-                ...vehicleData,
-                vehicle: { ...vehicleData.vehicle, brand: finalBrand },
-              });
-            }
-            return;
+      // Then check all known makes
+      if (!matchedBrand) {
+        // Sort by key length descending so "Mercedes-Benz" matches before "Benz"
+        const sortedMakes = [...makes].sort((a, b) => b.key.length - a.key.length);
+        for (const make of sortedMakes) {
+          const makeNorm = make.key.toLowerCase().replace(/[-_\s]+/g, '');
+          if (descNorm.includes(makeNorm)) {
+            matchedBrand = make.key;
+            break;
           }
         }
-      } catch (e) {
-        console.warn(`[BrandDetection] Attempt ${attempt} failed:`, e);
       }
 
-      if (attempt < MAX_RETRIES) {
-        await new Promise(r => setTimeout(r, 1000));
+      if (matchedBrand) {
+        console.log(`[BrandDetection] Detected "${matchedBrand}" from description`);
+        setBrandDetectionStatus('found');
+        if (vehicleData && onVehicleDataChange) {
+          onVehicleDataChange({
+            ...vehicleData,
+            vehicle: { ...vehicleData.vehicle, brand: matchedBrand },
+          });
+        }
+      } else {
+        setBrandDetectionStatus('not-found');
       }
     }
-
-    setBrandDetectionStatus('not-found');
-  }, [brandDetectionStatus, vehicleDescription, makes, getLogoForMake, vehicleData, onVehicleDataChange]);
+  }, [vehicleData?.vehicle?.brand, vehicleDescription, makes, onVehicleDataChange]);
 
   const capturedCount = Object.keys(captures).length;
   const vehicleSlots = SLOTS.filter(s => !s.isVin);
