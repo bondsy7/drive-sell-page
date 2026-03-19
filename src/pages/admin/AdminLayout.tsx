@@ -15,6 +15,7 @@ const NAV = [
   { to: '/admin/prompts', icon: MessageSquare, label: 'Prompts' },
   { to: '/admin/pricing', icon: CreditCard, label: 'Preise' },
   { to: '/admin/settings', icon: Settings, label: 'Einstellungen' },
+  { to: '/admin/secrets', icon: ShieldCheck, label: 'API-Keys' },
 ];
 
 function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {

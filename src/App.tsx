@@ -36,6 +36,7 @@ const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 const AdminLogos = lazy(() => import("./pages/admin/AdminLogos"));
 const AdminSalesAssistant = lazy(() => import("./pages/admin/AdminSalesAssistant"));
 const AdminWmiCodes = lazy(() => import("./pages/admin/AdminWmiCodes"));
+const AdminSecrets = lazy(() => import("./pages/admin/AdminSecrets"));
 const AdminRoute = lazy(() => import("./components/AdminRoute"));
 
 const queryClient = new QueryClient();
