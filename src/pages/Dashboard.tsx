@@ -125,7 +125,7 @@ const Dashboard = () => {
     const [imgRes, leadsRes, videosRes, bannersRes] = await Promise.all([
       supabase.from('project_images').select('id', { count: 'exact', head: true }),
       supabase.from('leads').select('id', { count: 'exact', head: true }),
-      supabase.storage.from('vehicle-images').list('videos', { limit: 200 }),
+      userId ? supabase.storage.from('vehicle-images').list(`${userId}/videos`, { limit: 200 }) : Promise.resolve({ data: null }),
       userId ? supabase.storage.from('banners').list(userId, { limit: 200 }) : Promise.resolve({ data: null }),
     ]);
     setCounts({
@@ -174,11 +174,12 @@ const Dashboard = () => {
   };
 
   const loadVideos = async () => {
+    if (!user) return;
     setLoading(true);
     try {
       const { data: files, error } = await supabase.storage
         .from('vehicle-images')
-        .list('videos', { limit: 50, sortBy: { column: 'created_at', order: 'desc' } });
+        .list(`${user.id}/videos`, { limit: 50, sortBy: { column: 'created_at', order: 'desc' } });
 
       if (error || !files) {
         setVideos([]);
@@ -186,7 +187,7 @@ const Dashboard = () => {
         const videoFiles: VideoFile[] = files
           .filter(f => f.name.endsWith('.mp4'))
           .map(f => {
-            const { data: urlData } = supabase.storage.from('vehicle-images').getPublicUrl(`videos/${f.name}`);
+            const { data: urlData } = supabase.storage.from('vehicle-images').getPublicUrl(`${user.id}/videos/${f.name}`);
             return {
               name: f.name,
               url: urlData.publicUrl,
@@ -248,7 +249,8 @@ const Dashboard = () => {
   };
 
   const deleteVideo = async (name: string) => {
-    const { error } = await supabase.storage.from('vehicle-images').remove([`videos/${name}`]);
+    if (!user) return;
+    const { error } = await supabase.storage.from('vehicle-images').remove([`${user.id}/videos/${name}`]);
     if (error) { toast.error('Fehler beim Löschen'); return; }
     toast.success('Video gelöscht');
     setVideos(prev => prev.filter(v => v.name !== name));
