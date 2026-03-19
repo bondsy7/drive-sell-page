@@ -155,6 +155,11 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     const base64 = await fileToBase64(file);
     setCaptures(prev => ({ ...prev, [slot.key]: { base64, status: 'captured' } }));
 
+    // Trigger brand detection for the first non-VIN image uploaded
+    if (!slot.isVin && brandDetectionStatus !== 'found') {
+      detectBrandFromImage(base64);
+    }
+
     // If VIN slot, trigger OCR immediately
     if (slot.isVin) {
       try {
