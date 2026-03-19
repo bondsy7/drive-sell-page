@@ -308,45 +308,28 @@ const Index = () => {
     setAppState('preview');
   }, [vehicleData, saveProject, selectedTemplate, savedProjectId, user]);
 
-  // ─── Save standalone images to storage + DB ───
-  const saveStandaloneImages = useCallback(async (allImages: string[]) => {
+  // ─── Save standalone images to gallery (NO project creation!) ───
+  const saveStandaloneImages = useCallback(async (allImages: string[], vin?: string) => {
     if (!user || allImages.length === 0) return;
     try {
-      // Upload to storage
-      const urls = await uploadImagesToStorage(allImages, user.id, `standalone-${Date.now()}`);
-      if (urls.length === 0) return;
-      // Save to project_images (without a project_id – we use a placeholder project)
-      // Create a lightweight project to hold these images
-      const dateStr = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-      const { data: project } = await supabase.from('projects').insert({
-        user_id: user.id,
-        title: `Showroom-Fotos ${dateStr}`,
-        vehicle_data: { vehicle: { brand: 'Showroom', model: 'Fotos' } } as any,
-        template_id: 'modern',
-        main_image_url: urls[0],
-      }).select('id').single();
-      if (!project) return;
-      const imageRows = urls.map((url, i) => ({
-        project_id: project.id,
-        user_id: user.id,
-        image_url: url,
-        image_base64: '',
-        perspective: PERSPECTIVES[i]?.label || `Bild ${i + 1}`,
-        sort_order: i,
-      }));
-      await supabase.from('project_images').insert(imageRows);
-      // main_image_url already set in insert above
+      const folderName = getGalleryFolderName(vin);
+      await saveImagesToGallery(
+        allImages,
+        user.id,
+        folderName,
+        allImages.map((_, i) => PERSPECTIVES[i]?.label || `Bild ${i + 1}`),
+      );
     } catch (e) {
       console.error('Error saving standalone images:', e);
     }
   }, [user]);
 
   // ─── Standalone Photo Flow ───
-  const handleStandaloneCaptureComplete = useCallback((mainImage: string, gallery: string[], _vin?: string) => {
+  const handleStandaloneCaptureComplete = useCallback((mainImage: string, gallery: string[], vin?: string) => {
     const allImages = [mainImage, ...gallery];
     setStandalonePhotoResults(allImages);
-    saveStandaloneImages(allImages);
-    toast.success(`${allImages.length} Showroom-Bilder erstellt und im Dashboard gespeichert!`);
+    saveStandaloneImages(allImages, vin);
+    toast.success(`${allImages.length} Showroom-Bilder in Galerie gespeichert!`);
     navigate('/dashboard?tab=gallery');
   }, [saveStandaloneImages, navigate]);
 
@@ -354,7 +337,7 @@ const Index = () => {
     const allImages = [mainImage, ...gallery];
     setStandalonePhotoResults(allImages);
     saveStandaloneImages(allImages);
-    toast.success(`${allImages.length} Showroom-Bilder erstellt und im Dashboard gespeichert!`);
+    toast.success(`${allImages.length} Showroom-Bilder in Galerie gespeichert!`);
     navigate('/dashboard?tab=gallery');
   }, [saveStandaloneImages, navigate]);
 
