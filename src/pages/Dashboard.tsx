@@ -149,7 +149,20 @@ const Dashboard = () => {
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
-    setSpin360Jobs((data as any[]) || []);
+
+    const now = Date.now();
+    const staleThresholdMs = 5 * 60 * 1000;
+    const jobs = ((data as any[]) || []).map((job) => {
+      const updatedAt = job.updated_at ? new Date(job.updated_at).getTime() : 0;
+      const isStale = job.status !== 'completed' && job.status !== 'failed' && updatedAt > 0 && now - updatedAt > staleThresholdMs;
+      return {
+        ...job,
+        displayStatus: isStale ? 'failed' : job.status,
+        displayError: isStale ? (job.error_message || 'Pipeline wurde abgebrochen, weil sie nicht weitergelaufen ist.') : job.error_message,
+      };
+    });
+
+    setSpin360Jobs(jobs);
     setSpin360Loaded(true);
   };
 
@@ -759,11 +772,11 @@ const Dashboard = () => {
                   <div className="flex items-center justify-between">
                     <h3 className="font-display font-semibold text-foreground text-sm">360° Spin</h3>
                     <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                      job.status === 'completed' ? 'bg-green-500/10 text-green-600' :
-                      job.status === 'failed' ? 'bg-destructive/10 text-destructive' :
+                      job.displayStatus === 'completed' ? 'bg-green-500/10 text-green-600' :
+                      job.displayStatus === 'failed' ? 'bg-destructive/10 text-destructive' :
                       'bg-accent/10 text-accent'
                     }`}>
-                      {job.status === 'completed' ? 'Fertig' : job.status === 'failed' ? 'Fehler' : 'In Bearbeitung'}
+                      {job.displayStatus === 'completed' ? 'Fertig' : job.displayStatus === 'failed' ? 'Abgebrochen' : 'In Bearbeitung'}
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground">
@@ -771,6 +784,9 @@ const Dashboard = () => {
                   </p>
                   {job.manifest?.frameCount && (
                     <p className="text-xs text-muted-foreground">{job.manifest.frameCount} Frames</p>
+                  )}
+                  {job.displayStatus === 'failed' && job.displayError && (
+                    <p className="text-xs text-destructive">{job.displayError}</p>
                   )}
                 </div>
               ))}

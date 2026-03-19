@@ -30,8 +30,66 @@ async function getCustomPrompt(sb: any, key: string, defaultPrompt: string): Pro
   return defaultPrompt;
 }
 
+const TARGET_FRAME_COUNT = 36;
+const FRAME_BATCH_SIZE = 4;
+const MAX_FRAME_BATCH_RETRIES = 3;
+
 async function updateJobStatus(sb: any, jobId: string, status: string, extra: Record<string, any> = {}) {
   await sb.from("spin360_jobs").update({ status, updated_at: new Date().toISOString(), ...extra }).eq("id", jobId);
+}
+
+async function touchJob(sb: any, jobId: string, extra: Record<string, any> = {}) {
+  await sb.from("spin360_jobs").update({ updated_at: new Date().toISOString(), ...extra }).eq("id", jobId);
+}
+
+async function markJobFailed(sb: any, jobId: string, errorMessage: string) {
+  await sb.from("spin360_jobs").update({
+    status: "failed",
+    error_message: errorMessage,
+    updated_at: new Date().toISOString(),
+  }).eq("id", jobId);
+}
+
+async function getExistingFrameIndexes(sb: any, jobId: string): Promise<Set<number>> {
+  const { data } = await sb
+    .from("spin360_generated_frames")
+    .select("frame_index")
+    .eq("job_id", jobId)
+    .eq("validation_status", "passed");
+
+  return new Set(
+    (data || [])
+      .map((frame: any) => Number(frame.frame_index))
+      .filter((frameIndex: number) => Number.isFinite(frameIndex)),
+  );
+}
+
+function buildMissingFramePlan(existingIndexes: Set<number>, targetFrameCount: number = TARGET_FRAME_COUNT) {
+  const frames: { index: number; angle: number }[] = [];
+  const angleStep = 360 / targetFrameCount;
+
+  for (let index = 0; index < targetFrameCount; index++) {
+    if (!existingIndexes.has(index)) {
+      frames.push({ index, angle: Math.round(index * angleStep) });
+    }
+  }
+
+  return frames;
+}
+
+async function insertFrameIfMissing(sb: any, frame: Record<string, any>): Promise<boolean> {
+  const { data: existing } = await sb
+    .from("spin360_generated_frames")
+    .select("id")
+    .eq("job_id", frame.job_id)
+    .eq("frame_index", frame.frame_index)
+    .limit(1);
+
+  if (existing && existing.length > 0) return false;
+
+  const { error } = await sb.from("spin360_generated_frames").insert(frame);
+  if (error) throw new Error(`Frame insert error: ${error.message}`);
+  return true;
 }
 
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
@@ -113,7 +171,7 @@ async function callImageGeneration(prompt: string, referenceImageUrl: string, mo
     console.error(`Image gen error (${model}):`, resp.status, t);
     if (resp.status === 429) throw new Error("rate_limited");
     if (resp.status === 402) throw new Error("payment_required");
-    return null;
+    throw new Error(`image_generation_${resp.status}`);
   }
 
   const data = await resp.json();
@@ -140,7 +198,7 @@ async function invokeNextStep(authHeader: string, body: Record<string, any>) {
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
   try {
-    await fetch(`${supabaseUrl}/functions/v1/generate-360-spin`, {
+    const resp = await fetch(`${supabaseUrl}/functions/v1/generate-360-spin`, {
       method: "POST",
       headers: {
         Authorization: authHeader,
@@ -149,6 +207,11 @@ async function invokeNextStep(authHeader: string, body: Record<string, any>) {
       },
       body: JSON.stringify(body),
     });
+
+    if (!resp.ok) {
+      const errorText = await resp.text();
+      console.error("Self-invoke failed:", resp.status, errorText);
+    }
   } catch (e) {
     console.error("Self-invoke failed:", e);
   }
@@ -352,10 +415,14 @@ serve(async (req) => {
       for (const ca of canonicalAngles) {
         const canonical = canonicals.find((c: any) => c.perspective === ca.perspective);
         if (canonical) {
-          await serviceSb.from("spin360_generated_frames").insert({
-            job_id: jobId, user_id: user.id, frame_index: ca.index,
-            frame_type: "canonical", image_url: canonical.image_url,
-            angle_degrees: ca.angle, model_used: "canonical",
+          await insertFrameIfMissing(serviceSb, {
+            job_id: jobId,
+            user_id: user.id,
+            frame_index: ca.index,
+            frame_type: "canonical",
+            image_url: canonical.image_url,
+            angle_degrees: ca.angle,
+            model_used: "canonical",
             validation_status: "passed",
           });
         }
@@ -441,19 +508,25 @@ Generate the vehicle from this specific angle:`);
             );
 
             if (anchorBase64) {
-              const frameIndex = Math.round((anchor.angle / 360) * 36);
+              const frameIndex = Math.round((anchor.angle / 360) * TARGET_FRAME_COUNT);
               const storedUrl = await uploadBase64ToStorage(
                 serviceSb, user.id,
                 `spin360/${jobId}/anchors/anchor_${anchor.angle}.png`,
                 anchorBase64,
               );
-              await serviceSb.from("spin360_generated_frames").insert({
-                job_id: jobId, user_id: user.id, frame_index: frameIndex,
-                frame_type: "anchor", image_url: storedUrl,
-                angle_degrees: anchor.angle, model_used: "gemini-3-pro-image-preview",
+              const inserted = await insertFrameIfMissing(serviceSb, {
+                job_id: jobId,
+                user_id: user.id,
+                frame_index: frameIndex,
+                frame_type: "anchor",
+                image_url: storedUrl,
+                angle_degrees: anchor.angle,
+                model_used: "gemini-3-pro-image-preview",
                 validation_status: "passed",
               });
-              console.log(`[${jobId}] Anchor ${anchor.angle}° saved`);
+              console.log(inserted
+                ? `[${jobId}] Anchor ${anchor.angle}° saved`
+                : `[${jobId}] Anchor ${anchor.angle}° already exists, skipping insert`);
             }
           } catch (e) {
             console.error(`[${jobId}] Anchor ${anchor.label} failed:`, e);
@@ -477,22 +550,26 @@ Generate the vehicle from this specific angle:`);
     // STEP: FRAMES (batch of 4 at a time)
     // ════════════════════════════════════════
     if (currentStep === "frames") {
-      const { batchStart = 0 } = body;
-
-      if (batchStart === 0) {
-        await updateJobStatus(serviceSb, jobId, "generating_frames");
-      }
+      await touchJob(serviceSb, jobId, { status: "generating_frames", error_message: null });
 
       const { data: canonicals } = await serviceSb.from("spin360_canonical_images")
         .select("perspective, image_url")
         .eq("job_id", jobId)
         .order("sort_order");
 
+      if (!canonicals || canonicals.length < 2) {
+        await markJobFailed(serviceSb, jobId, "Zu wenige normalisierte Bilder für die Frame-Generierung");
+        return new Response(JSON.stringify({ error: "not_enough_canonical_images" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       const { data: jobData } = await serviceSb.from("spin360_jobs")
-        .select("identity_profile")
+        .select("identity_profile, retry_count, target_frame_count")
         .eq("id", jobId)
         .single();
 
+      const targetFrameCount = jobData?.target_frame_count || TARGET_FRAME_COUNT;
       const identityDesc = jobData?.identity_profile ? JSON.stringify(jobData.identity_profile) : "";
 
       const framePromptBase = await getCustomPrompt(serviceSb, "spin360_anchor",
@@ -510,21 +587,20 @@ CRITICAL CONSISTENCY RULES:
 - ALWAYS generate an image
 Generate the vehicle from this specific angle:`);
 
-      const existingAngles = new Set([0, 45, 90, 135, 180, 225, 270, 315]);
-      const targetFrameCount = 36;
-      const angleStep = 360 / targetFrameCount;
+      const existingIndexesBefore = await getExistingFrameIndexes(serviceSb, jobId);
+      const missingFramesBefore = buildMissingFramePlan(existingIndexesBefore, targetFrameCount);
 
-      // Build list of frames to generate
-      const allFrames: { index: number; angle: number }[] = [];
-      for (let i = 0; i < targetFrameCount; i++) {
-        const angle = Math.round(i * angleStep);
-        if (!existingAngles.has(angle)) {
-          allFrames.push({ index: i, angle });
-        }
+      if (missingFramesBefore.length === 0) {
+        console.log(`[${jobId}] No frames missing, assembling...`);
+        await touchJob(serviceSb, jobId, { retry_count: 0 });
+        invokeNextStep(authHeader, { jobId, step: "assemble" });
+        return new Response(JSON.stringify({ success: true, step: "frames", remaining: 0 }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
 
-      const BATCH_SIZE = 4;
-      const batch = allFrames.slice(batchStart, batchStart + BATCH_SIZE);
+      const batch = missingFramesBefore.slice(0, FRAME_BATCH_SIZE);
+      let generatedInBatch = 0;
 
       const canonicalAngles = [
         { perspective: "front", angle: 0 },
@@ -539,13 +615,13 @@ Generate the vehicle from this specific angle:`);
           const bestDiff = Math.abs(((frame.angle - best.angle + 540) % 360) - 180);
           return diff < bestDiff ? ca : best;
         });
-        const nearestCan = canonicals?.find((c: any) => c.perspective === nearestCanonical.perspective);
-        const refUrl = nearestCan?.image_url || canonicals?.[0]?.image_url;
+        const nearestCan = canonicals.find((c: any) => c.perspective === nearestCanonical.perspective);
+        const refUrl = nearestCan?.image_url || canonicals[0]?.image_url;
 
         if (!refUrl) continue;
 
         try {
-          console.log(`[${jobId}] Generating frame ${frame.angle}°...`);
+          console.log(`[${jobId}] Generating frame ${frame.angle}° (slot ${frame.index})...`);
           const frameBase64 = await callImageGeneration(
             `${framePromptBase} ${frame.angle} degrees from center front (0° = front, 90° = left side, 180° = rear, 270° = right side)`,
             refUrl,
@@ -554,16 +630,22 @@ Generate the vehicle from this specific angle:`);
 
           if (frameBase64) {
             const storedUrl = await uploadBase64ToStorage(
-              serviceSb, user.id,
+              serviceSb,
+              user.id,
               `spin360/${jobId}/frames/frame_${String(frame.index).padStart(3, "0")}.png`,
               frameBase64,
             );
-            await serviceSb.from("spin360_generated_frames").insert({
-              job_id: jobId, user_id: user.id, frame_index: frame.index,
-              frame_type: "intermediate", image_url: storedUrl,
-              angle_degrees: frame.angle, model_used: "gemini-3.1-flash-image-preview",
+            const inserted = await insertFrameIfMissing(serviceSb, {
+              job_id: jobId,
+              user_id: user.id,
+              frame_index: frame.index,
+              frame_type: "intermediate",
+              image_url: storedUrl,
+              angle_degrees: frame.angle,
+              model_used: "gemini-3.1-flash-image-preview",
               validation_status: "passed",
             });
+            if (inserted) generatedInBatch += 1;
           }
         } catch (e) {
           if ((e as Error).message === "rate_limited") {
@@ -572,19 +654,48 @@ Generate the vehicle from this specific angle:`);
           }
           console.error(`[${jobId}] Frame ${frame.angle}° failed:`, e);
         }
+
         await new Promise(r => setTimeout(r, 1500));
       }
 
-      const nextBatch = batchStart + BATCH_SIZE;
-      if (nextBatch < allFrames.length) {
-        console.log(`[${jobId}] Frames batch done (${batchStart}-${nextBatch}), continuing...`);
-        invokeNextStep(authHeader, { jobId, step: "frames", batchStart: nextBatch });
-      } else {
+      const existingIndexesAfter = await getExistingFrameIndexes(serviceSb, jobId);
+      const missingFramesAfter = buildMissingFramePlan(existingIndexesAfter, targetFrameCount);
+
+      if (missingFramesAfter.length === 0) {
         console.log(`[${jobId}] All frames done, assembling...`);
+        await touchJob(serviceSb, jobId, { retry_count: 0 });
         invokeNextStep(authHeader, { jobId, step: "assemble" });
+      } else {
+        const nextRetryCount = generatedInBatch === 0
+          ? Number(jobData?.retry_count ?? 0) + 1
+          : 0;
+
+        await touchJob(serviceSb, jobId, { retry_count: nextRetryCount });
+
+        if (nextRetryCount >= MAX_FRAME_BATCH_RETRIES) {
+          const errorMessage = `Pipeline abgebrochen: ${missingFramesAfter.length} Frames konnten nach ${MAX_FRAME_BATCH_RETRIES} weiteren Versuchen nicht generiert werden.`;
+          console.error(`[${jobId}] ${errorMessage}`);
+          await markJobFailed(serviceSb, jobId, errorMessage);
+          return new Response(JSON.stringify({
+            error: "frame_generation_incomplete",
+            missingFrames: missingFramesAfter.length,
+          }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        console.log(
+          `[${jobId}] Frames batch finished. Remaining: ${missingFramesAfter.length}. Retry streak: ${nextRetryCount}/${MAX_FRAME_BATCH_RETRIES}`,
+        );
+        invokeNextStep(authHeader, { jobId, step: "frames" });
       }
 
-      return new Response(JSON.stringify({ success: true, step: "frames", batchStart }), {
+      return new Response(JSON.stringify({
+        success: true,
+        step: "frames",
+        generatedInBatch,
+        remaining: missingFramesAfter.length,
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
