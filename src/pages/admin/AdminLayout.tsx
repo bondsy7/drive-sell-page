@@ -16,6 +16,7 @@ const NAV = [
   { to: '/admin/pricing', icon: CreditCard, label: 'Preise' },
   { to: '/admin/settings', icon: Settings, label: 'Einstellungen' },
   { to: '/admin/secrets', icon: ShieldCheck, label: 'API-Keys' },
+  { to: '/architecture', icon: BookOpen, label: 'Architektur' },
 ];
 
 function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
