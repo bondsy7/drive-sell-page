@@ -280,7 +280,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         toast.warning('VIN-Erkennung fehlgeschlagen.');
       }
     }
-  }, [makes.length, onVehicleDataChange, resolveBrandFromSource, vehicleData, vehicleDescription, vinLookup]);
+  }, [makes.length, onVehicleDataChange, resolveBrandFromSource, resolveModelForBrand, vehicleData, vehicleDescription, vinLookup]);
 
   const removeCapture = (key: string) => {
     setCaptures(prev => {
