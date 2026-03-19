@@ -135,6 +135,19 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
           <Button variant="secondary" size="sm" onClick={download} className="gap-1.5">
             <Download className="w-4 h-4" /> Download
           </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={regenerateImage}
+            disabled={regenerating}
+            className="gap-1.5"
+          >
+            {regenerating ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Generiere…</>
+            ) : (
+              <><RotateCcw className="w-4 h-4" /> Neu generieren</>
+            )}
+          </Button>
           <Button variant="secondary" size="sm" onClick={loadProjects} className="gap-1.5">
             <FolderPlus className="w-4 h-4" /> Projekt zuordnen
           </Button>
