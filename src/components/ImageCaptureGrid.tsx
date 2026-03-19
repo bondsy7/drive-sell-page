@@ -145,7 +145,10 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     return partial?.key || sourceModel;
   }, [makes]);
 
+  // Auto-detect brand from vehicleData or vehicleDescription
   useEffect(() => {
+    if (makes.length === 0) return;
+
     const currentBrand = vehicleData?.vehicle?.brand;
     if (currentBrand && currentBrand.trim()) {
       setBrandDetectionStatus('found');
@@ -153,9 +156,24 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       return;
     }
 
-    if (!brandDetectionAttempted.current && vehicleDescription && makes.length > 0) {
+    if (!brandDetectionAttempted.current && vehicleDescription) {
       brandDetectionAttempted.current = true;
-      const matchedBrand = resolveBrandFromSource(vehicleDescription);
+
+      // Try to find brand in the description by checking each word/token
+      let matchedBrand: string | null = null;
+
+      // First try the whole description
+      matchedBrand = resolveBrandFromSource(vehicleDescription);
+
+      // If not found, try individual words from the description
+      if (!matchedBrand) {
+        const words = vehicleDescription.split(/[\s,;|/\-–]+/).filter(w => w.length > 1);
+        for (const word of words) {
+          matchedBrand = resolveBrandFromSource(word);
+          if (matchedBrand) break;
+        }
+      }
+
       setBrandDetectionStatus(matchedBrand ? 'found' : 'not-found');
 
       if (matchedBrand && vehicleData && onVehicleDataChange) {
