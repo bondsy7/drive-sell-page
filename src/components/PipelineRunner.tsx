@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useCredits } from '@/hooks/useCredits';
-import { uploadImageToStorage } from '@/lib/storage-utils';
+import { uploadImageToStorage, getGalleryFolderName } from '@/lib/storage-utils';
 import { toast } from 'sonner';
 import CreditConfirmDialog from '@/components/CreditConfirmDialog';
 import {
