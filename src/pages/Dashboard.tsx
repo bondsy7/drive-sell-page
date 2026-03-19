@@ -71,7 +71,7 @@ const Dashboard = () => {
   const [tab, setTab] = useState<'projects' | 'landings' | 'gallery' | 'banners' | 'videos' | 'leads'>(initialTab);
   const [loading, setLoading] = useState(true);
   const [lightboxIndex, setLightboxIndex] = useState(-1);
-
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [galleryLoaded, setGalleryLoaded] = useState(false);
   const [leadsLoaded, setLeadsLoaded] = useState(false);
   const [videosLoaded, setVideosLoaded] = useState(false);
