@@ -121,6 +121,7 @@ const Dashboard = () => {
     if (tab === 'leads' && !leadsLoaded) loadLeads();
     if (tab === 'videos' && !videosLoaded) loadVideos();
     if (tab === 'banners' && !bannersLoaded) loadBanners();
+    if (tab === 'spin360' && !spin360Loaded) loadSpin360();
   }, [tab]);
 
   const loadCounts = async () => {
