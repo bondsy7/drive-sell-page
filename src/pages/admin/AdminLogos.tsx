@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { toast } from 'sonner';
 import { Upload, Trash2, Image, Loader2, FileCode, Search, Check, X, AlertCircle, Plus, Pencil } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useVehicleMakes } from '@/hooks/useVehicleMakes';
+import { useVehicleMakes, invalidateLogoCache } from '@/hooks/useVehicleMakes';
 import { BRAND_ALIAS_MAP, normalizeBrand } from '@/lib/brand-aliases';
 
 interface LogoFile {
@@ -37,6 +37,10 @@ export default function AdminLogos() {
   const [editBrand, setEditBrand] = useState<string | null>(null);
   const [editFile, setEditFile] = useState<File | null>(null);
   const [editPreview, setEditPreview] = useState<string | null>(null);
+
+  // File input refs for reliable clicks
+  const newBrandFileRef = useRef<HTMLInputElement>(null);
+  const editFileRef = useRef<HTMLInputElement>(null);
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -162,6 +166,7 @@ export default function AdminLogos() {
     setUploading(false);
     if (successCount > 0) toast.success(`${successCount} Logo(s) hochgeladen`);
     if (errorCount > 0) toast.error(`${errorCount} Fehler beim Upload`);
+    invalidateLogoCache();
     loadAll();
   };
 
@@ -179,6 +184,7 @@ export default function AdminLogos() {
     if (error) toast.error('Fehler: ' + error.message);
     else {
       toast.success(`Logo für ${brandKey} hochgeladen`);
+      invalidateLogoCache();
       loadAll();
     }
   };
@@ -447,18 +453,15 @@ export default function AdminLogos() {
                 {newBrandPreview && (
                   <img src={newBrandPreview} alt="Preview" className="w-12 h-12 object-contain rounded border border-border p-1" />
                 )}
-                <label className="cursor-pointer flex-1">
-                  <Button variant="outline" size="sm" className="w-full gap-2" onClick={e => {
-                    e.preventDefault();
-                    (e.currentTarget.parentElement?.querySelector('input') as HTMLInputElement)?.click();
-                  }}>
+                <div className="flex-1">
+                  <Button variant="outline" size="sm" className="w-full gap-2" type="button" onClick={() => newBrandFileRef.current?.click()}>
                     <Upload className="w-3.5 h-3.5" />
                     {newBrandFile ? newBrandFile.name : 'Datei auswählen'}
                   </Button>
-                  <input type="file" accept="image/*,.svg" className="hidden"
-                    onChange={e => handleNewBrandFileChange(e.target.files?.[0] || null)}
+                  <input ref={newBrandFileRef} type="file" accept="image/*,.svg" className="hidden"
+                    onChange={e => { handleNewBrandFileChange(e.target.files?.[0] || null); e.target.value = ''; }}
                   />
-                </label>
+                </div>
               </div>
             </div>
           </div>
@@ -492,18 +495,15 @@ export default function AdminLogos() {
                 </div>
               )}
             </div>
-            <label className="cursor-pointer block">
-              <Button variant="outline" size="sm" className="w-full gap-2" onClick={e => {
-                e.preventDefault();
-                (e.currentTarget.parentElement?.querySelector('input') as HTMLInputElement)?.click();
-              }}>
+            <div>
+              <Button variant="outline" size="sm" className="w-full gap-2" type="button" onClick={() => editFileRef.current?.click()}>
                 <Upload className="w-3.5 h-3.5" />
                 {editFile ? editFile.name : 'Neues Logo auswählen'}
               </Button>
-              <input type="file" accept="image/*,.svg" className="hidden"
-                onChange={e => handleEditFileChange(e.target.files?.[0] || null)}
+              <input ref={editFileRef} type="file" accept="image/*,.svg" className="hidden"
+                onChange={e => { handleEditFileChange(e.target.files?.[0] || null); e.target.value = ''; }}
               />
-            </label>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setEditBrand(null)}>Abbrechen</Button>
