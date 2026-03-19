@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { RotateCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
