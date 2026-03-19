@@ -125,7 +125,7 @@ const Dashboard = () => {
     const [imgRes, leadsRes, videosRes, bannersRes] = await Promise.all([
       supabase.from('project_images').select('id', { count: 'exact', head: true }),
       supabase.from('leads').select('id', { count: 'exact', head: true }),
-      supabase.storage.from('vehicle-images').list('videos', { limit: 200 }),
+      userId ? supabase.storage.from('vehicle-images').list(`${userId}/videos`, { limit: 200 }) : Promise.resolve({ data: null }),
       userId ? supabase.storage.from('banners').list(userId, { limit: 200 }) : Promise.resolve({ data: null }),
     ]);
     setCounts({
