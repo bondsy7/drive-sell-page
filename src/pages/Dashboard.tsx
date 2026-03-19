@@ -740,6 +740,42 @@ const Dashboard = () => {
               ))}
             </div>
           )
+        ) : tab === 'spin360' ? (
+          spin360Jobs.length === 0 ? (
+            <div className="text-center py-20 space-y-3">
+              <RotateCw className="w-12 h-12 text-muted-foreground mx-auto" />
+              <p className="text-muted-foreground">Noch keine 360° Spins erstellt.</p>
+              <p className="text-xs text-muted-foreground max-w-md mx-auto">Erstelle deinen ersten interaktiven 360°-Fahrzeug-Spin unter „Fotos & Remastering".</p>
+              <Link to="/">
+                <Button variant="outline" size="sm" className="mt-2">
+                  <RotateCw className="w-3.5 h-3.5 mr-1.5" /> 360° Spin erstellen
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {spin360Jobs.map((job: any) => (
+                <div key={job.id} className="bg-card rounded-xl border border-border p-5 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-display font-semibold text-foreground text-sm">360° Spin</h3>
+                    <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                      job.status === 'completed' ? 'bg-green-500/10 text-green-600' :
+                      job.status === 'failed' ? 'bg-destructive/10 text-destructive' :
+                      'bg-accent/10 text-accent'
+                    }`}>
+                      {job.status === 'completed' ? 'Fertig' : job.status === 'failed' ? 'Fehler' : 'In Bearbeitung'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(job.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                  {job.manifest?.frameCount && (
+                    <p className="text-xs text-muted-foreground">{job.manifest.frameCount} Frames</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )
         ) : (
           leads.length === 0 ? (
             <div className="text-center py-20 space-y-3">
