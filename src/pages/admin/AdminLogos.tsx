@@ -38,6 +38,10 @@ export default function AdminLogos() {
   const [editFile, setEditFile] = useState<File | null>(null);
   const [editPreview, setEditPreview] = useState<string | null>(null);
 
+  // File input refs for reliable clicks
+  const newBrandFileRef = useRef<HTMLInputElement>(null);
+  const editFileRef = useRef<HTMLInputElement>(null);
+
   const loadAll = useCallback(async () => {
     setLoading(true);
     const [rootRes, svgRes] = await Promise.all([
