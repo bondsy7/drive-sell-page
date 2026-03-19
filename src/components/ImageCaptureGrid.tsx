@@ -10,6 +10,7 @@ import VinDataDialog from '@/components/VinDataDialog';
 import RemasterOptions from '@/components/RemasterOptions';
 import { type RemasterConfig, buildMasterPrompt } from '@/lib/remaster-prompt';
 import PipelineRunner from '@/components/PipelineRunner';
+import { lookupBrandFromVin } from '@/lib/vin-wmi-lookup';
 import type { VehicleData } from '@/types/vehicle';
 
 interface ImageCaptureGridProps {
