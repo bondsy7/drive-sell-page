@@ -284,7 +284,7 @@ const Dashboard = () => {
     setViewerLoading(false);
   };
 
-
+  const loadData = async () => {
     await loadProjects();
     if (tab === 'gallery') await loadGallery();
   };
