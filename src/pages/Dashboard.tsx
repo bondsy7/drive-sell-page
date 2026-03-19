@@ -149,7 +149,20 @@ const Dashboard = () => {
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
-    setSpin360Jobs((data as any[]) || []);
+
+    const now = Date.now();
+    const staleThresholdMs = 5 * 60 * 1000;
+    const jobs = ((data as any[]) || []).map((job) => {
+      const updatedAt = job.updated_at ? new Date(job.updated_at).getTime() : 0;
+      const isStale = job.status !== 'completed' && job.status !== 'failed' && updatedAt > 0 && now - updatedAt > staleThresholdMs;
+      return {
+        ...job,
+        displayStatus: isStale ? 'failed' : job.status,
+        displayError: isStale ? (job.error_message || 'Pipeline wurde abgebrochen, weil sie nicht weitergelaufen ist.') : job.error_message,
+      };
+    });
+
+    setSpin360Jobs(jobs);
     setSpin360Loaded(true);
   };
 
