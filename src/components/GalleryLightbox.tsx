@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, ChevronLeft, ChevronRight, Download, FolderPlus } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Download, FolderPlus, RotateCcw, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -25,13 +25,15 @@ interface GalleryLightboxProps {
   open: boolean;
   onClose: () => void;
   onAssigned?: () => void;
+  onRegenerated?: () => void;
 }
 
-const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex, open, onClose, onAssigned }) => {
+const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex, open, onClose, onAssigned, onRegenerated }) => {
   const [index, setIndex] = useState(initialIndex);
   const [assignOpen, setAssignOpen] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
   const [assigning, setAssigning] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
 
   useEffect(() => { setIndex(initialIndex); }, [initialIndex]);
 
@@ -82,6 +84,48 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
     a.click();
   };
 
+  const regenerateImage = async () => {
+    setRegenerating(true);
+    try {
+      // Fetch the current image as base64 to use as input
+      const response = await fetch(current.src);
+      const blob = await response.blob();
+      const base64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(blob);
+      });
+
+      const { data, error } = await supabase.functions.invoke('remaster-vehicle-image', {
+        body: {
+          imageBase64: base64,
+          vehicleDescription: current.perspective || '',
+          modelTier: 'standard',
+        },
+      });
+
+      if (error || !data?.imageBase64) {
+        toast.error(data?.error || error?.message || 'Fehler beim Regenerieren');
+      } else {
+        // Update the image in the database
+        const { error: updateError } = await supabase
+          .from('project_images')
+          .update({ image_url: data.imageBase64, image_base64: '' } as any)
+          .eq('id', current.id);
+
+        if (updateError) {
+          toast.error('Bild generiert, aber Speichern fehlgeschlagen');
+        } else {
+          toast.success('Bild erfolgreich neu generiert');
+          onRegenerated?.();
+        }
+      }
+    } catch {
+      toast.error('Netzwerkfehler beim Regenerieren');
+    }
+    setRegenerating(false);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/80 backdrop-blur-sm" onClick={onClose}>
       <div className="relative w-full h-full flex flex-col items-center justify-center p-4" onClick={e => e.stopPropagation()}>
@@ -90,6 +134,19 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
           <span className="text-sm text-background/70">{index + 1} / {images.length}</span>
           <Button variant="secondary" size="sm" onClick={download} className="gap-1.5">
             <Download className="w-4 h-4" /> Download
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={regenerateImage}
+            disabled={regenerating}
+            className="gap-1.5"
+          >
+            {regenerating ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Generiere…</>
+            ) : (
+              <><RotateCcw className="w-4 h-4" /> Neu generieren</>
+            )}
           </Button>
           <Button variant="secondary" size="sm" onClick={loadProjects} className="gap-1.5">
             <FolderPlus className="w-4 h-4" /> Projekt zuordnen
@@ -118,11 +175,21 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
         )}
 
         {/* Image */}
-        <img
-          src={current.src}
-          alt={current.perspective || 'Fahrzeugbild'}
-          className="max-h-[80vh] max-w-[90vw] object-contain rounded-xl shadow-2xl"
-        />
+        <div className="relative">
+          <img
+            src={current.src}
+            alt={current.perspective || 'Fahrzeugbild'}
+            className="max-h-[80vh] max-w-[90vw] object-contain rounded-xl shadow-2xl"
+          />
+          {regenerating && (
+            <div className="absolute inset-0 bg-background/60 backdrop-blur-sm rounded-xl flex items-center justify-center">
+              <div className="flex flex-col items-center gap-2">
+                <Loader2 className="w-8 h-8 text-accent animate-spin" />
+                <span className="text-sm font-medium text-foreground">Wird neu generiert…</span>
+              </div>
+            </div>
+          )}
+        </div>
 
         {current.perspective && (
           <p className="text-sm text-background/70 mt-3">{current.perspective}</p>

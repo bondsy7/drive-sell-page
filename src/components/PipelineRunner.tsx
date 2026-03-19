@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, Check, AlertCircle, Zap, ArrowRight, ChevronDown, ChevronUp, Image, Images, RotateCcw, Eye, EyeOff } from 'lucide-react';
+import ImagePreviewLightbox from '@/components/ImagePreviewLightbox';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -147,6 +148,9 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   const [finished, setFinished] = useState(false);
   const [savedProjectId, setSavedProjectId] = useState<string | null>(projectId || null);
   const [showPreview, setShowPreview] = useState(true);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [regeneratingIds, setRegeneratingIds] = useState<Set<string>>(new Set());
 
   const selectedJobs = availableJobs.filter(j => selectedKeys.has(j.key));
   const totalImages = getTotalImageCount(selectedKeys);
@@ -263,6 +267,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
     const job = availableJobs.find(j => j.key === jobKey);
     if (!job) return;
 
+    setRegeneratingIds(prev => new Set(prev).add(jobKey));
     setJobs(prev => ({ ...prev, [jobKey]: { status: 'running', results: [] } }));
 
     const prompts = [job.prompt, ...(job.extraPrompts || [])];
@@ -304,6 +309,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
     } else {
       setJobs(prev => ({ ...prev, [jobKey]: { status: 'error', results: [], error: jobError || 'Alle Bilder fehlgeschlagen' } }));
     }
+    setRegeneratingIds(prev => { const next = new Set(prev); next.delete(jobKey); return next; });
   }, [availableJobs, generateOneImage, user, savedProjectId, vin]);
 
   /* ─── Pipeline with parallel execution ─── */
@@ -453,7 +459,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
 
   // Collect all result images for the preview grid
   const allResultImages = useMemo(() => {
-    const results: { key: string; label: string; base64: string }[] = [];
+    const results: { key: string; jobKey: string; promptIndex: number; label: string; base64: string }[] = [];
     for (const job of selectedJobs) {
       const state = jobs[job.key];
       if (state?.results) {
@@ -461,6 +467,8 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
           const prompts = [job.prompt, ...(job.extraPrompts || [])];
           results.push({
             key: `${job.key}_${i}`,
+            jobKey: job.key,
+            promptIndex: i,
             label: prompts.length > 1 ? `${job.labelDe} (${i + 1})` : job.labelDe,
             base64: r,
           });
@@ -469,6 +477,61 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
     }
     return results;
   }, [jobs, selectedJobs]);
+
+  // Regenerate a single pipeline result image
+  const retrySinglePipelineImage = useCallback(async (resultId: string) => {
+    const resultImg = allResultImages.find(r => r.key === resultId);
+    if (!resultImg) return;
+    const job = availableJobs.find(j => j.key === resultImg.jobKey);
+    if (!job) return;
+
+    setRegeneratingIds(prev => new Set(prev).add(resultId));
+    const prompts = [job.prompt, ...(job.extraPrompts || [])];
+    const prompt = prompts[resultImg.promptIndex] || prompts[0];
+
+    try {
+      const result = await generateOneImage(prompt);
+      if (result.base64) {
+        setJobs(prev => {
+          const state = prev[resultImg.jobKey];
+          const newResults = [...(state?.results || [])];
+          newResults[resultImg.promptIndex] = result.base64!;
+          return { ...prev, [resultImg.jobKey]: { ...state, results: newResults } };
+        });
+        toast.success('Bild erfolgreich neu generiert.');
+
+        // Save to gallery
+        if (user) {
+          try {
+            const folderName = getGalleryFolderName(vin);
+            const storagePath = savedProjectId ? savedProjectId : `gallery/${folderName}`;
+            const url = await uploadImageToStorage(result.base64, user.id, `${storagePath}/${resultImg.jobKey}_regen_${resultImg.promptIndex}.png`);
+            if (url) {
+              await supabase.from('project_images').insert({
+                project_id: savedProjectId || null, user_id: user.id, image_url: url,
+                image_base64: '', perspective: `Pipeline: ${resultImg.label} (Regen)`, sort_order: 999,
+                gallery_folder: folderName,
+              } as any);
+            }
+          } catch (e) { console.error('Regen save error:', e); }
+        }
+      } else {
+        toast.error(result.error || 'Generierung fehlgeschlagen');
+      }
+    } catch {
+      toast.error('Netzwerkfehler bei Regenerierung');
+    }
+    setRegeneratingIds(prev => { const next = new Set(prev); next.delete(resultId); return next; });
+  }, [allResultImages, availableJobs, generateOneImage, user, savedProjectId, vin]);
+
+  const lightboxImages = useMemo(() =>
+    allResultImages.map(img => ({
+      id: img.key,
+      src: img.base64.startsWith('data:') ? img.base64 : `data:image/png;base64,${img.base64}`,
+      label: img.label,
+    })),
+    [allResultImages],
+  );
 
   const failedJobs = selectedJobs.filter(j => jobs[j.key]?.status === 'error');
 
@@ -673,8 +736,12 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
           </div>
           {showPreview && (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
-              {allResultImages.map(img => (
-                <div key={img.key} className="relative rounded-lg sm:rounded-xl overflow-hidden border border-border bg-muted aspect-[4/3]">
+              {allResultImages.map((img, imgIdx) => (
+                <div
+                  key={img.key}
+                  className="relative group rounded-lg sm:rounded-xl overflow-hidden border border-border bg-muted aspect-[4/3] cursor-pointer"
+                  onClick={() => { setLightboxIndex(imgIdx); setLightboxOpen(true); }}
+                >
                   <img
                     src={img.base64.startsWith('data:') ? img.base64 : `data:image/png;base64,${img.base64}`}
                     alt={img.label}
@@ -683,6 +750,16 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
                   <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent p-1.5 sm:p-2">
                     <p className="text-[9px] sm:text-[10px] text-white font-medium truncate">{img.label}</p>
                   </div>
+                  {/* Regenerate button on hover */}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); retrySinglePipelineImage(img.key); }}
+                    className="absolute top-1.5 right-1.5 w-7 h-7 rounded-full bg-background/80 hover:bg-accent hover:text-accent-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Neu generieren"
+                  >
+                    {regeneratingIds.has(img.key)
+                      ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      : <RotateCcw className="w-3.5 h-3.5" />}
+                  </button>
                 </div>
               ))}
             </div>
@@ -744,6 +821,16 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
         actionLabel={`${totalImages} Bilder generieren`}
         onConfirm={handleCreditConfirm}
         onCancel={() => setShowCreditDialog(false)}
+      />
+
+      {/* Lightbox */}
+      <ImagePreviewLightbox
+        images={lightboxImages}
+        initialIndex={lightboxIndex}
+        open={lightboxOpen}
+        onClose={() => setLightboxOpen(false)}
+        onRegenerate={(id) => retrySinglePipelineImage(id)}
+        regeneratingIds={regeneratingIds}
       />
     </div>
   );

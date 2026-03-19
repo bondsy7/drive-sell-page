@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { Upload, X, Loader2, Check, AlertCircle, Image as ImageIcon, RotateCcw } from 'lucide-react';
+import { Upload, X, Loader2, Check, AlertCircle, Image as ImageIcon, RotateCcw, ZoomIn } from 'lucide-react';
+import ImagePreviewLightbox from '@/components/ImagePreviewLightbox';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
@@ -49,6 +50,9 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [remasterConfig, setRemasterConfig] = useState<RemasterConfig>(DEFAULT_CONFIG);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [regeneratingIds, setRegeneratingIds] = useState<Set<string>>(new Set());
 
   const handleFiles = useCallback(async (files: FileList | File[]) => {
     const fileArray = Array.from(files);
@@ -155,6 +159,7 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
     const img = images.find(x => x.id === id);
     if (!img) return;
     setImages(prev => prev.map(x => x.id === id ? { ...x, status: 'processing', error: undefined } : x));
+    setRegeneratingIds(prev => new Set(prev).add(id));
     try {
       const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription);
       const { data, error } = await supabase.functions.invoke('remaster-vehicle-image', {
@@ -181,7 +186,22 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
     } catch {
       setImages(prev => prev.map(x => x.id === id ? { ...x, status: 'error', error: 'Netzwerkfehler' } : x));
     }
+    setRegeneratingIds(prev => { const next = new Set(prev); next.delete(id); return next; });
   };
+
+  const openLightbox = (i: number) => {
+    setLightboxIndex(i);
+    setLightboxOpen(true);
+  };
+
+  const lightboxImages = images
+    .filter(img => img.status === 'done' && img.remasteredBase64)
+    .map(img => ({
+      id: img.id,
+      src: img.remasteredBase64!,
+      label: 'Remastered',
+      originalSrc: img.originalBase64,
+    }));
 
   const finishUp = () => {
     const done = images.filter(img => img.status === 'done' && img.remasteredBase64);
@@ -237,13 +257,34 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
       {/* Image grid */}
       {images.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-          {images.map((img) => (
+          {images.map((img, imgIndex) => (
             <div key={img.id} className="relative group rounded-xl overflow-hidden border border-border bg-muted aspect-[4/3]">
               <img
                 src={img.remasteredBase64 || img.originalBase64}
                 alt="Fahrzeug"
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover cursor-pointer"
+                onClick={() => {
+                  if (img.status === 'done') {
+                    const doneImages = images.filter(i => i.status === 'done' && i.remasteredBase64);
+                    const doneIdx = doneImages.findIndex(i => i.id === img.id);
+                    if (doneIdx >= 0) openLightbox(doneIdx);
+                  }
+                }}
               />
+              {/* Zoom icon for done images */}
+              {img.status === 'done' && !isProcessing && (
+                <button
+                  onClick={() => {
+                    const doneImages = images.filter(i => i.status === 'done' && i.remasteredBase64);
+                    const doneIdx = doneImages.findIndex(i => i.id === img.id);
+                    if (doneIdx >= 0) openLightbox(doneIdx);
+                  }}
+                  className="absolute top-1.5 left-1.5 w-7 h-7 rounded-full bg-background/80 hover:bg-accent hover:text-accent-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  title="Vergrößern"
+                >
+                  <ZoomIn className="w-3.5 h-3.5" />
+                </button>
+              )}
               {/* Status overlay */}
               {img.status === 'processing' && (
                 <div className="absolute inset-0 bg-background/70 flex items-center justify-center">
@@ -336,6 +377,16 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
           )}
         </div>
       </div>
+
+      {/* Lightbox */}
+      <ImagePreviewLightbox
+        images={lightboxImages}
+        initialIndex={lightboxIndex}
+        open={lightboxOpen}
+        onClose={() => setLightboxOpen(false)}
+        onRegenerate={(id) => retrySingleImage(id)}
+        regeneratingIds={regeneratingIds}
+      />
     </div>
   );
 };
