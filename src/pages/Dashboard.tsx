@@ -233,7 +233,9 @@ const Dashboard = () => {
     if (tab === 'gallery') await loadGallery();
   };
 
-  const runMutations = async (operations: Array<Promise<{ error: { message: string } | null }>>) => {
+  const runMutations = async (
+    operations: Array<PromiseLike<{ error: { message: string } | null }>>,
+  ) => {
     const results = await Promise.all(operations);
     const failed = results.find(result => result.error);
     if (failed?.error) throw failed.error;
