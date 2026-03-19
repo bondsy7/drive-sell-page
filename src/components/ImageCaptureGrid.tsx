@@ -1,10 +1,11 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Camera, Upload, X, Loader2, Check, AlertCircle, Search, Zap, RotateCcw, ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useVinLookup } from '@/hooks/useVinLookup';
+import { useVehicleMakes } from '@/hooks/useVehicleMakes';
 import VinDataDialog from '@/components/VinDataDialog';
 import RemasterOptions from '@/components/RemasterOptions';
 import { type RemasterConfig, buildMasterPrompt } from '@/lib/remaster-prompt';
@@ -70,8 +71,72 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [detectedVin, setDetectedVin] = useState<string | null>(null);
   const [remasterConfig, setRemasterConfig] = useState<RemasterConfig>(DEFAULT_CONFIG);
+  const [brandDetectionStatus, setBrandDetectionStatus] = useState<'idle' | 'detecting' | 'found' | 'not-found'>('idle');
   const vinLookup = useVinLookup();
+  const { makes } = useVehicleMakes();
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const brandDetectionAttempted = useRef(false);
+
+  // Auto-detect brand from vehicleData or vehicleDescription
+  useEffect(() => {
+    const brand = vehicleData?.vehicle?.brand;
+    if (brand && brand.trim()) {
+      setBrandDetectionStatus('found');
+      brandDetectionAttempted.current = true;
+      return;
+    }
+
+    // Try to detect brand from vehicleDescription by matching against known makes
+    if (!brandDetectionAttempted.current && vehicleDescription && makes.length > 0) {
+      brandDetectionAttempted.current = true;
+      setBrandDetectionStatus('detecting');
+
+      const descNorm = vehicleDescription.toLowerCase().replace(/[-_\s]+/g, '');
+      
+      // Brand aliases for matching
+      const ALIASES: Record<string, string> = {
+        'vw': 'Volkswagen', 'mb': 'Mercedes-Benz', 'mercedesbenz': 'Mercedes-Benz',
+        'mercedes': 'Mercedes-Benz', 'bmw': 'BMW', 'alfaromeo': 'Alfa Romeo',
+        'rollsroyce': 'Rolls-Royce', 'astonmartin': 'Aston Martin', 'landrover': 'Land Rover',
+      };
+
+      let matchedBrand: string | null = null;
+
+      // Check aliases first
+      for (const [alias, canonical] of Object.entries(ALIASES)) {
+        if (descNorm.includes(alias)) {
+          matchedBrand = canonical;
+          break;
+        }
+      }
+
+      // Then check all known makes
+      if (!matchedBrand) {
+        // Sort by key length descending so "Mercedes-Benz" matches before "Benz"
+        const sortedMakes = [...makes].sort((a, b) => b.key.length - a.key.length);
+        for (const make of sortedMakes) {
+          const makeNorm = make.key.toLowerCase().replace(/[-_\s]+/g, '');
+          if (descNorm.includes(makeNorm)) {
+            matchedBrand = make.key;
+            break;
+          }
+        }
+      }
+
+      if (matchedBrand) {
+        console.log(`[BrandDetection] Detected "${matchedBrand}" from description`);
+        setBrandDetectionStatus('found');
+        if (vehicleData && onVehicleDataChange) {
+          onVehicleDataChange({
+            ...vehicleData,
+            vehicle: { ...vehicleData.vehicle, brand: matchedBrand },
+          });
+        }
+      } else {
+        setBrandDetectionStatus('not-found');
+      }
+    }
+  }, [vehicleData?.vehicle?.brand, vehicleDescription, makes, onVehicleDataChange]);
 
   const capturedCount = Object.keys(captures).length;
   const vehicleSlots = SLOTS.filter(s => !s.isVin);
@@ -88,6 +153,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     }
     const base64 = await fileToBase64(file);
     setCaptures(prev => ({ ...prev, [slot.key]: { base64, status: 'captured' } }));
+
 
     // If VIN slot, trigger OCR immediately
     if (slot.isVin) {
@@ -370,6 +436,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         onChange={setRemasterConfig}
         vehicleBrand={vehicleData?.vehicle?.brand}
         vehicleModel={vehicleData?.vehicle?.model}
+        brandDetectionStatus={brandDetectionStatus}
         onBrandChange={(brand) => {
           if (vehicleData && onVehicleDataChange) {
             onVehicleDataChange({
@@ -377,6 +444,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
               vehicle: { ...vehicleData.vehicle, brand },
             });
           }
+          if (brand) setBrandDetectionStatus('found');
         }}
         onModelChange={(model) => {
           if (vehicleData && onVehicleDataChange) {
