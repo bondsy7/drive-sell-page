@@ -817,6 +817,7 @@ getSecret() Helper → 5-Min-Cache → Fallback: Deno.env`}</CodeBlock>
               <Li>Service Role Key nur in Edge Functions, nie im Frontend</Li>
               <Li>API-Keys mit Prefix ak_ + 48 hex chars</Li>
               <Li>Input-Sanitization in submit-lead (Längen-Limits, E-Mail-Regex)</Li>
+              <Li>API-Secrets in admin_secrets DB-Tabelle mit Admin-Only RLS, Edge Functions lesen via getSecret() mit Env-Fallback</Li>
             </ol>
           </SubSection>
         </Section>
