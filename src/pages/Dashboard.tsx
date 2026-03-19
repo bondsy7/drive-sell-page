@@ -790,7 +790,13 @@ const Dashboard = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {spin360Jobs.map((job: any) => (
-                <div key={job.id} className="bg-card rounded-xl border border-border p-5 space-y-3">
+                <div
+                  key={job.id}
+                  className={`bg-card rounded-xl border border-border p-5 space-y-3 transition-all ${
+                    job.displayStatus === 'completed' ? 'cursor-pointer hover:border-accent/50 hover:shadow-md' : ''
+                  }`}
+                  onClick={() => job.displayStatus === 'completed' && openSpinViewer(job.id)}
+                >
                   <div className="flex items-center justify-between">
                     <h3 className="font-display font-semibold text-foreground text-sm">360° Spin</h3>
                     <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
@@ -809,6 +815,9 @@ const Dashboard = () => {
                   )}
                   {job.displayStatus === 'failed' && job.displayError && (
                     <p className="text-xs text-destructive">{job.displayError}</p>
+                  )}
+                  {job.displayStatus === 'completed' && (
+                    <p className="text-xs text-accent">Zum Öffnen antippen ›</p>
                   )}
                 </div>
               ))}
