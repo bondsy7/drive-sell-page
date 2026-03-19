@@ -502,7 +502,7 @@ verify_jwt = false
 
 ## 5. Datenbank-Architektur
 
-### 5.1 Entity-Relationship-Diagramm (31 Tabellen)
+### 5.1 Entity-Relationship-Diagramm (32 Tabellen)
 
 ```
 auth.users (Supabase-managed, nicht direkt zugreifbar)
