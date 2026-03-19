@@ -772,11 +772,11 @@ const Dashboard = () => {
                   <div className="flex items-center justify-between">
                     <h3 className="font-display font-semibold text-foreground text-sm">360° Spin</h3>
                     <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                      job.status === 'completed' ? 'bg-green-500/10 text-green-600' :
-                      job.status === 'failed' ? 'bg-destructive/10 text-destructive' :
+                      job.displayStatus === 'completed' ? 'bg-green-500/10 text-green-600' :
+                      job.displayStatus === 'failed' ? 'bg-destructive/10 text-destructive' :
                       'bg-accent/10 text-accent'
                     }`}>
-                      {job.status === 'completed' ? 'Fertig' : job.status === 'failed' ? 'Fehler' : 'In Bearbeitung'}
+                      {job.displayStatus === 'completed' ? 'Fertig' : job.displayStatus === 'failed' ? 'Abgebrochen' : 'In Bearbeitung'}
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground">
