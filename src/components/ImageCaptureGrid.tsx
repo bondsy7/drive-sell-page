@@ -417,7 +417,11 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                 size="sm"
                 onClick={finishUp}
               >
-                <Check className="w-4 h-4 mr-1" /> Weiter zur Landing Page
+                {projectId ? (
+                  <><Check className="w-4 h-4 mr-1" /> Weiter zur Landing Page</>
+                ) : (
+                  <><ImageIcon className="w-4 h-4 mr-1" /> Zur Galerie</>
+                )}
               </Button>
               <Button
                 onClick={() => setShowPipeline(true)}
