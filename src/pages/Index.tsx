@@ -505,7 +505,7 @@ const Index = () => {
             <div className="mt-4">
               <ImageCaptureGrid
                 vehicleDescription=""
-                vehicleData={undefined}
+                vehicleData={vehicleData || undefined}
                 modelTier={selectedModelTier}
                 onComplete={handleStandaloneCaptureComplete}
                 onVehicleDataChange={setVehicleData}
