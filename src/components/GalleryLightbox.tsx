@@ -175,11 +175,21 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
         )}
 
         {/* Image */}
-        <img
-          src={current.src}
-          alt={current.perspective || 'Fahrzeugbild'}
-          className="max-h-[80vh] max-w-[90vw] object-contain rounded-xl shadow-2xl"
-        />
+        <div className="relative">
+          <img
+            src={current.src}
+            alt={current.perspective || 'Fahrzeugbild'}
+            className="max-h-[80vh] max-w-[90vw] object-contain rounded-xl shadow-2xl"
+          />
+          {regenerating && (
+            <div className="absolute inset-0 bg-background/60 backdrop-blur-sm rounded-xl flex items-center justify-center">
+              <div className="flex flex-col items-center gap-2">
+                <Loader2 className="w-8 h-8 text-accent animate-spin" />
+                <span className="text-sm font-medium text-foreground">Wird neu generiert…</span>
+              </div>
+            </div>
+          )}
+        </div>
 
         {current.perspective && (
           <p className="text-sm text-background/70 mt-3">{current.perspective}</p>
