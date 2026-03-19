@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, Check, AlertCircle, Zap, ArrowRight, ChevronDown, ChevronUp, Image, Images, RotateCcw, Eye, EyeOff } from 'lucide-react';
+import ImagePreviewLightbox from '@/components/ImagePreviewLightbox';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
