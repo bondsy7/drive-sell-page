@@ -279,6 +279,8 @@ export default function ArchitectureDoc() {
                 ['generate-banner', 'prompt, imageBase64, size', 'Banner Bild', '5-10'],
                 ['generate-video', 'imageBase64 (start/poll)', 'Storage-URL Video', '10'],
                 ['generate-landing-page', 'brand, model, pageType', 'HTML + JSON + Bilder', '3'],
+                ['generate-360-spin', 'jobId, step (step-basiert)', '36 Frames in Storage', '10-20'],
+                ['detect-vehicle-brand', 'imageBase64', 'brand, model, confidence', '0'],
                 ['ocr-vin', 'imageBase64', 'VIN String', '1'],
                 ['lookup-vin', 'vin (17 chars)', 'Fahrzeugdaten JSON', '0'],
               ]}
