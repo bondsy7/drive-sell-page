@@ -3,6 +3,52 @@ import { supabase } from '@/integrations/supabase/client';
 const BUCKET = 'vehicle-images';
 
 /**
+ * Generate a gallery folder name based on VIN or fallback to date-based name.
+ */
+export function getGalleryFolderName(vin?: string | null): string {
+  if (vin && vin.trim().length >= 5) return vin.trim().toUpperCase();
+  const now = new Date();
+  const date = now.toISOString().slice(0, 10); // YYYY-MM-DD
+  const time = `${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}`;
+  return `NO_VIN_${date}_${time}`;
+}
+
+/**
+ * Save images to gallery (project_images table) with folder grouping.
+ * Does NOT create a project – only stores images in the gallery.
+ */
+export async function saveImagesToGallery(
+  images: string[],
+  userId: string,
+  galleryFolder: string,
+  perspectives?: string[],
+  projectId?: string | null,
+): Promise<string[]> {
+  const urls: string[] = [];
+  for (let i = 0; i < images.length; i++) {
+    const url = await uploadImageToStorage(
+      images[i],
+      userId,
+      `gallery/${galleryFolder}/${i}.png`,
+    );
+    if (url) urls.push(url);
+  }
+  if (urls.length > 0) {
+    const imageRows = urls.map((url, i) => ({
+      project_id: projectId || null,
+      user_id: userId,
+      image_url: url,
+      image_base64: '',
+      perspective: perspectives?.[i] || `Bild ${i + 1}`,
+      sort_order: i,
+      gallery_folder: galleryFolder,
+    }));
+    await supabase.from('project_images').insert(imageRows as any);
+  }
+  return urls;
+}
+
+/**
  * Upload a base64 image to the vehicle-images bucket.
  * Returns the public URL.
  */
