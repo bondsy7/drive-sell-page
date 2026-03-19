@@ -736,8 +736,12 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
           </div>
           {showPreview && (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
-              {allResultImages.map(img => (
-                <div key={img.key} className="relative rounded-lg sm:rounded-xl overflow-hidden border border-border bg-muted aspect-[4/3]">
+              {allResultImages.map((img, imgIdx) => (
+                <div
+                  key={img.key}
+                  className="relative group rounded-lg sm:rounded-xl overflow-hidden border border-border bg-muted aspect-[4/3] cursor-pointer"
+                  onClick={() => { setLightboxIndex(imgIdx); setLightboxOpen(true); }}
+                >
                   <img
                     src={img.base64.startsWith('data:') ? img.base64 : `data:image/png;base64,${img.base64}`}
                     alt={img.label}
@@ -746,6 +750,16 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
                   <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent p-1.5 sm:p-2">
                     <p className="text-[9px] sm:text-[10px] text-white font-medium truncate">{img.label}</p>
                   </div>
+                  {/* Regenerate button on hover */}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); retrySinglePipelineImage(img.key); }}
+                    className="absolute top-1.5 right-1.5 w-7 h-7 rounded-full bg-background/80 hover:bg-accent hover:text-accent-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Neu generieren"
+                  >
+                    {regeneratingIds.has(img.key)
+                      ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      : <RotateCcw className="w-3.5 h-3.5" />}
+                  </button>
                 </div>
               ))}
             </div>
