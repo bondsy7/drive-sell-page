@@ -108,9 +108,9 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack }) => {
 
       if (pipelineError) {
         console.error('Pipeline error:', pipelineError);
-        setJobStatus('failed');
-        setJobError('Pipeline konnte nicht gestartet werden.');
-        setIsProcessing(false);
+        // The edge function may still be running in the background even if the fetch failed
+        // (e.g. timeout on long-running function). Keep polling.
+        console.log('Edge function call failed but job was created. Will poll for updates.');
         return;
       }
 
