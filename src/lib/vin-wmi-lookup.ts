@@ -454,7 +454,6 @@ const WMI3: Record<string, string> = {
   B7J: 'Chrysler',
   CL9: 'Wallyscar',
   EAA: 'Aurus',
-  LRW: 'Tesla',
   PL1: 'Proton',
   S2D: 'Chrysler',
 };
