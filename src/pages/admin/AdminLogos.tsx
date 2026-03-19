@@ -453,18 +453,15 @@ export default function AdminLogos() {
                 {newBrandPreview && (
                   <img src={newBrandPreview} alt="Preview" className="w-12 h-12 object-contain rounded border border-border p-1" />
                 )}
-                <label className="cursor-pointer flex-1">
-                  <Button variant="outline" size="sm" className="w-full gap-2" onClick={e => {
-                    e.preventDefault();
-                    (e.currentTarget.parentElement?.querySelector('input') as HTMLInputElement)?.click();
-                  }}>
+                <div className="flex-1">
+                  <Button variant="outline" size="sm" className="w-full gap-2" type="button" onClick={() => newBrandFileRef.current?.click()}>
                     <Upload className="w-3.5 h-3.5" />
                     {newBrandFile ? newBrandFile.name : 'Datei auswählen'}
                   </Button>
-                  <input type="file" accept="image/*,.svg" className="hidden"
-                    onChange={e => handleNewBrandFileChange(e.target.files?.[0] || null)}
+                  <input ref={newBrandFileRef} type="file" accept="image/*,.svg" className="hidden"
+                    onChange={e => { handleNewBrandFileChange(e.target.files?.[0] || null); e.target.value = ''; }}
                   />
-                </label>
+                </div>
               </div>
             </div>
           </div>
