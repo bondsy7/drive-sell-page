@@ -202,12 +202,46 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
           if (matchedBrand) break;
         }
       }
-      setBrandDetectionStatus(matchedBrand ? 'found' : 'not-found');
-      if (matchedBrand && vehicleData && onVehicleDataChange) {
-        onVehicleDataChange({
-          ...vehicleData,
-          vehicle: { ...vehicleData.vehicle, brand: matchedBrand },
-        });
+
+      if (matchedBrand) {
+        setBrandDetectionStatus('found');
+        if (vehicleData && onVehicleDataChange) {
+          onVehicleDataChange({
+            ...vehicleData,
+            vehicle: { ...vehicleData.vehicle, brand: matchedBrand },
+          });
+        }
+      } else {
+        // Text-based detection failed – try AI image recognition
+        setBrandDetectionStatus('detecting');
+        try {
+          const { data: aiResult, error: aiError } = await supabase.functions.invoke('detect-vehicle-brand', {
+            body: { imageBase64: base64 },
+          });
+          if (!aiError && aiResult?.brand && aiResult.confidence !== 'low') {
+            const resolvedAiBrand = resolveBrandFromSource(aiResult.brand);
+            if (resolvedAiBrand && vehicleData && onVehicleDataChange) {
+              setBrandDetectionStatus('found');
+              const resolvedModel = aiResult.model ? resolveModelForBrand(resolvedAiBrand, aiResult.model) : '';
+              onVehicleDataChange({
+                ...vehicleData,
+                vehicle: {
+                  ...vehicleData.vehicle,
+                  brand: resolvedAiBrand,
+                  model: resolvedModel || vehicleData.vehicle.model,
+                },
+              });
+              toast.success(`Marke per Bild erkannt: ${resolvedAiBrand}${resolvedModel ? ` ${resolvedModel}` : ''}`);
+            } else {
+              setBrandDetectionStatus('not-found');
+            }
+          } else {
+            setBrandDetectionStatus('not-found');
+          }
+        } catch {
+          console.error('AI brand detection failed');
+          setBrandDetectionStatus('not-found');
+        }
       }
     }
 
