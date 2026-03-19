@@ -941,7 +941,58 @@ VITE_SUPABASE_PROJECT_ID=rauzclzphdnhzflovrya`}</CodeBlock>
           </SubSection>
         </Section>
 
-        {/* Footer */}
+        {/* 19. Kostenanalyse */}
+        <Section id="s19" title="19. Kostenanalyse: EK-Token, VK-Marge">
+          <SubSection title="EK vs. VK pro Aktion">
+            <Table
+              headers={['Aktion', 'Credits (VK)', 'EK (ca.)', 'Marge %']}
+              rows={[
+                ['PDF-Analyse', '1 (0,50 €)', '~0,006 €', '98,8%'],
+                ['Bildgen. (schnell)', '3 (1,50 €)', '~0,02 €', '98,7%'],
+                ['Bildgen. (qualität)', '5 (2,50 €)', '~0,06 €', '97,6%'],
+                ['Bildgen. (ultra)', '10 (5,00 €)', '~0,12 €', '97,6%'],
+                ['Video', '10 (5,00 €)', '~0,30 €', '94,0%'],
+                ['Landing Page', '3 (1,50 €)', '~0,175 €', '88,3%'],
+                ['360° Spin', '15 (7,50 €)', '~2,25 €', '70,0%'],
+                ['Sales-Antwort', '1 (0,50 €)', '~0,013 €', '97,5%'],
+              ]}
+            />
+            <P>Basis: 1 Credit ≈ 0,50 € (10 Credits = 5,00 €). 360° Spin hat die niedrigste Marge wegen 36 Bildgenerierungen.</P>
+          </SubSection>
+        </Section>
+
+        {/* 20. E-Mail-System */}
+        <Section id="s20" title="20. E-Mail-System (Resend)">
+          <CodeBlock>{`sales_email_outbox (Tabelle)
+├── status: queued → sending → sent | failed
+├── to_email, subject, body_html
+└── conversation_id, lead_id (Verknüpfungen)
+
+Edge Function → Resend API
+├── Von: RESEND_FROM_EMAIL
+├── Reply-To: RESEND_REPLY_TO
+└── Status-Update in sales_email_outbox`}</CodeBlock>
+        </Section>
+
+        {/* 21. Entwicklungs-Roadmap */}
+        <Section id="s21" title="21. Entwicklungsbedarf & Roadmap">
+          <SubSection title="Top 10 Refactoring-Maßnahmen">
+            <ol className="list-decimal pl-6 space-y-1">
+              <Li><strong>as any eliminieren</strong> — TypeScript-Typen korrekt verwenden</Li>
+              <Li><strong>Shared Edge Function Module</strong> — Auth, CORS, Credit-Logik in _shared/ auslagern</Li>
+              <Li><strong>SalesCrmTab.tsx splitten</strong> — In 4-5 fokussierte Komponenten</Li>
+              <Li><strong>React Query einführen</strong> — useEffect+fetch durch useQuery ersetzen</Li>
+              <Li><strong>Pagination implementieren</strong> — Dashboard, Admin-Tabellen</Li>
+              <Li><strong>Base64-Migration</strong> — Alte image_base64 zu Storage-URLs</Li>
+              <Li><strong>Error Boundaries</strong> — Pro Modul eigene Error Boundaries</Li>
+              <Li><strong>Test-Suite aufbauen</strong> — Hooks + Edge Function Unit Tests</Li>
+              <Li><strong>Bundle-Splitting</strong> — Recharts, PDF-Parser nur bei Bedarf laden</Li>
+              <Li><strong>Dashboard.tsx refactoren</strong> — Spin-Viewer, Gallery in eigene Dateien</Li>
+            </ol>
+          </SubSection>
+        </Section>
+
+
         <div className="mt-16 pt-8 border-t border-border text-center print:mt-8">
           <p className="text-xs text-muted-foreground">
             © 2026 Autohaus.AI – Dieses Dokument ist vertraulich und nur für autorisierte Empfänger bestimmt.
