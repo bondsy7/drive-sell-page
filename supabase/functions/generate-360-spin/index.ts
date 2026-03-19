@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2";
+import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -34,18 +35,28 @@ async function updateJobStatus(sb: any, jobId: string, status: string, extra: Re
   await sb.from("spin360_jobs").update({ status, updated_at: new Date().toISOString(), ...extra }).eq("id", jobId);
 }
 
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  const chunkSize = 8192;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, i + chunkSize);
+    binary += String.fromCharCode(...chunk);
+  }
+  return btoa(binary);
+}
+
 async function callGeminiFlash(prompt: string, imageUrls: string[], responseType: "json" | "text" = "json"): Promise<any> {
   const apiKey = Deno.env.get("GEMINI_API_KEY");
   if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
 
-  // Build parts
   const parts: any[] = [{ text: prompt }];
   for (const url of imageUrls) {
     const imgResp = await fetch(url);
     const imgBuf = await imgResp.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(imgBuf)));
+    const b64 = arrayBufferToBase64(imgBuf);
     const mimeType = imgResp.headers.get("content-type") || "image/jpeg";
-    parts.push({ inlineData: { mimeType, data: base64 } });
+    parts.push({ inlineData: { mimeType, data: b64 } });
   }
 
   const body: any = {
@@ -203,6 +214,8 @@ serve(async (req) => {
       throw new Error("Missing jobId or insufficient sourceImages");
     }
 
+    console.log(`Starting 360 spin pipeline for job ${jobId} with ${sourceImages.length} images`);
+
     // ─── STEP 1: ANALYZE ───
     await updateJobStatus(serviceSb, jobId, "analyzing");
 
@@ -211,7 +224,6 @@ serve(async (req) => {
     
     let analysis;
     try {
-      // Deduct analysis credits
       const { data: deductResult } = await serviceSb.rpc("deduct_credits", {
         _user_id: user.id,
         _amount: 1,
@@ -226,16 +238,15 @@ serve(async (req) => {
       }
 
       analysis = await callGeminiFlash(analysisPrompt, imageUrls);
-      console.log("Analysis result:", JSON.stringify(analysis));
+      console.log("Analysis complete:", JSON.stringify(analysis).substring(0, 200));
     } catch (e) {
       console.error("Analysis failed:", e);
-      await updateJobStatus(serviceSb, jobId, "failed", { error_message: "Analyse fehlgeschlagen" });
+      await updateJobStatus(serviceSb, jobId, "failed", { error_message: `Analyse fehlgeschlagen: ${(e as Error).message}` });
       return new Response(JSON.stringify({ error: "Analysis failed" }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Update source images with analysis
     if (analysis?.images) {
       for (const img of analysis.images) {
         await serviceSb.from("spin360_source_images")
@@ -260,7 +271,6 @@ serve(async (req) => {
 - Maintain the exact perspective (front/rear/left/right) as the original
 - ALWAYS generate an image - never refuse`);
 
-    // Deduct normalize credits
     const { data: normDeduct } = await serviceSb.rpc("deduct_credits", {
       _user_id: user.id,
       _amount: 4,
@@ -278,8 +288,9 @@ serve(async (req) => {
     const perspectives = ["front", "rear", "left", "right"];
     
     for (let i = 0; i < 4; i++) {
+      const perspective = perspectives[i];
+      console.log(`Normalizing ${perspective}...`);
       try {
-        const perspective = perspectives[i];
         const sourceUrl = imageUrls[i];
         
         const normalizedBase64 = await callImageGeneration(
@@ -299,17 +310,26 @@ serve(async (req) => {
           await serviceSb.from("spin360_canonical_images").insert({
             job_id: jobId, user_id: user.id, perspective, image_url: storedUrl, sort_order: i,
           });
+          console.log(`Normalized ${perspective} saved`);
+        } else {
+          console.warn(`Normalization returned null for ${perspective}`);
         }
       } catch (e) {
-        console.error(`Normalize ${perspectives[i]} failed:`, e);
+        console.error(`Normalize ${perspective} failed:`, e);
       }
+      // Delay between normalization calls
+      await new Promise(r => setTimeout(r, 2000));
     }
 
     if (canonicalUrls.length < 4) {
-      await updateJobStatus(serviceSb, jobId, "failed", { error_message: "Nicht alle Bilder konnten normalisiert werden" });
-      return new Response(JSON.stringify({ error: "Normalization incomplete" }), {
-        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      console.warn(`Only ${canonicalUrls.length}/4 canonical images created`);
+      // Continue with what we have if we got at least 2
+      if (canonicalUrls.length < 2) {
+        await updateJobStatus(serviceSb, jobId, "failed", { error_message: `Nur ${canonicalUrls.length}/4 Bilder normalisiert` });
+        return new Response(JSON.stringify({ error: "Normalization incomplete" }), {
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     // ─── STEP 3: IDENTITY PROFILE ───
@@ -320,6 +340,7 @@ serve(async (req) => {
       const profilePrompt = await getCustomPrompt(serviceSb, "spin360_identity", IDENTITY_PROMPT);
       identityProfile = await callGeminiFlash(profilePrompt, canonicalUrls.map(c => c.url));
       await serviceSb.from("spin360_jobs").update({ identity_profile: identityProfile }).eq("id", jobId);
+      console.log("Identity profile created");
     } catch (e) {
       console.error("Identity profiling failed:", e);
       identityProfile = {};
@@ -328,7 +349,6 @@ serve(async (req) => {
     // ─── STEP 4: GENERATE ANCHOR FRAMES ───
     await updateJobStatus(serviceSb, jobId, "generating_anchors");
 
-    // Deduct generation credits
     const { data: genDeduct } = await serviceSb.rpc("deduct_credits", {
       _user_id: user.id,
       _amount: 15,
@@ -362,15 +382,14 @@ CRITICAL CONSISTENCY RULES:
 
 Generate the vehicle from this specific angle:`);
 
-    // 4 anchor angles: front-left (45°), rear-left (135°), rear-right (225°), front-right (315°)
     const anchorAngles = [
-      { angle: 45, label: "front-left quarter (45°)", refIdx: 0 },  // between front and left
-      { angle: 135, label: "rear-left quarter (135°)", refIdx: 2 },  // between left and rear
-      { angle: 225, label: "rear-right quarter (225°)", refIdx: 1 }, // between rear and right
-      { angle: 315, label: "front-right quarter (315°)", refIdx: 3 }, // between right and front
+      { angle: 45, label: "front-left quarter (45°)", refIdx: 0 },
+      { angle: 135, label: "rear-left quarter (135°)", refIdx: 2 },
+      { angle: 225, label: "rear-right quarter (225°)", refIdx: 1 },
+      { angle: 315, label: "front-right quarter (315°)", refIdx: 3 },
     ];
 
-    // First insert the 4 canonical frames
+    // Insert canonical frames first
     const canonicalAngles = [
       { perspective: "front", angle: 0, index: 0 },
       { perspective: "rear", angle: 180, index: 18 },
@@ -390,10 +409,11 @@ Generate the vehicle from this specific angle:`);
       }
     }
 
-    // Generate anchor frames
     for (const anchor of anchorAngles) {
+      const refIdx = Math.min(anchor.refIdx, canonicalUrls.length - 1);
+      const refUrl = canonicalUrls[refIdx]?.url || canonicalUrls[0].url;
+      console.log(`Generating anchor ${anchor.label}...`);
       try {
-        const refUrl = canonicalUrls[anchor.refIdx]?.url || canonicalUrls[0].url;
         const anchorBase64 = await callImageGeneration(
           `${anchorPromptBase} ${anchor.label}`,
           refUrl,
@@ -414,29 +434,29 @@ Generate the vehicle from this specific angle:`);
             angle_degrees: anchor.angle, model_used: "gemini-3-pro-image-preview",
             validation_status: "passed",
           });
+          console.log(`Anchor ${anchor.angle}° saved`);
         }
       } catch (e) {
         console.error(`Anchor ${anchor.label} failed:`, e);
       }
+      await new Promise(r => setTimeout(r, 2000));
     }
 
     // ─── STEP 5: GENERATE INTERMEDIATE FRAMES ───
     await updateJobStatus(serviceSb, jobId, "generating_frames");
 
-    // We now have 8 frames (4 canonical + 4 anchors). Generate remaining 28 for 36 total.
     const existingAngles = new Set([0, 45, 90, 135, 180, 225, 270, 315]);
     const targetFrameCount = 36;
-    const angleStep = 360 / targetFrameCount; // 10°
+    const angleStep = 360 / targetFrameCount;
 
     for (let i = 0; i < targetFrameCount; i++) {
       const angle = Math.round(i * angleStep);
       if (existingAngles.has(angle)) continue;
 
-      // Find nearest reference frame
       let nearestRefUrl = canonicalUrls[0].url;
       const nearestCanonical = canonicalAngles.reduce((best, ca) => {
-        const diff = Math.abs(((angle - ca.angle + 180) % 360) - 180);
-        const bestDiff = Math.abs(((angle - best.angle + 180) % 360) - 180);
+        const diff = Math.abs(((angle - ca.angle + 540) % 360) - 180);
+        const bestDiff = Math.abs(((angle - best.angle + 540) % 360) - 180);
         return diff < bestDiff ? ca : best;
       });
       const nearestCan = canonicalUrls.find(c => c.perspective === nearestCanonical.perspective);
@@ -446,7 +466,7 @@ Generate the vehicle from this specific angle:`);
         const frameBase64 = await callImageGeneration(
           `${anchorPromptBase} ${angle} degrees from center front (0° = front, 90° = left side, 180° = rear, 270° = right side)`,
           nearestRefUrl,
-          "gemini-3.1-flash-image-preview", // faster model for intermediates
+          "gemini-3.1-flash-image-preview",
         );
 
         if (frameBase64) {
@@ -471,14 +491,12 @@ Generate the vehicle from this specific angle:`);
         console.error(`Frame ${angle}° failed:`, e);
       }
 
-      // Small delay to avoid rate limits
       await new Promise(r => setTimeout(r, 1500));
     }
 
     // ─── STEP 6: VALIDATE ───
     await updateJobStatus(serviceSb, jobId, "validating");
 
-    // Count generated frames
     const { data: allFrames } = await serviceSb
       .from("spin360_generated_frames")
       .select("id")
@@ -491,7 +509,6 @@ Generate the vehicle from this specific angle:`);
     // ─── STEP 7: ASSEMBLE ───
     await updateJobStatus(serviceSb, jobId, "assembling");
 
-    // Build manifest
     const manifest = {
       jobId,
       frameCount,
@@ -508,6 +525,8 @@ Generate the vehicle from this specific angle:`);
       status: "completed",
       updated_at: new Date().toISOString(),
     }).eq("id", jobId);
+
+    console.log(`Job ${jobId} completed with ${frameCount} frames`);
 
     return new Response(JSON.stringify({
       success: true,
