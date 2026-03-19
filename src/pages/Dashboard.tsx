@@ -123,10 +123,13 @@ const Dashboard = () => {
     setLoading(true);
     const { data: img } = await supabase
       .from('project_images')
-      .select('id, project_id, image_base64, image_url, perspective, created_at')
+      .select('id, project_id, image_base64, image_url, perspective, gallery_folder, created_at')
       .order('created_at', { ascending: false })
-      .limit(50);
+      .limit(200);
     setAllImages((img as ProjectImage[]) || []);
+    // Auto-expand all folders
+    const folders = new Set((img || []).map((i: any) => i.gallery_folder || 'Ohne Ordner'));
+    setExpandedFolders(folders);
     setGalleryLoaded(true);
     setLoading(false);
   };
