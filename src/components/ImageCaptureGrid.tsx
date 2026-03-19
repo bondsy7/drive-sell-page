@@ -364,6 +364,9 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         })}
       </div>
 
+      {/* Remaster Options */}
+      <RemasterOptions config={remasterConfig} onChange={setRemasterConfig} vehicleBrand={vehicleData?.vehicle?.brand} />
+
       {/* VIN display */}
       {detectedVin && (
         <div className="flex items-center gap-2 bg-accent/10 text-accent px-4 py-2.5 rounded-xl text-sm font-medium">
