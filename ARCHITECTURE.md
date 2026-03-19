@@ -590,6 +590,11 @@ admin_settings (global, nur Admins schreiben)
     (key, value [JSONB])
     Keys: "credit_costs", "ai_prompts"
 
+admin_secrets (global, NUR Admins lesen+schreiben, kein öffentlicher Zugriff!)
+    (key, value [TEXT, maskiert in UI], label)
+    Keys: "GEMINI_API_KEY", "OPENAI_API_KEY", "STRIPE_SECRET_KEY", etc.
+    → Edge Functions lesen via getSecret() Helper mit Fallback auf Deno.env
+
 sample_pdfs (global, read-only für User)
     (title, description, brand, model, category,
      pdf_url, thumbnail_url, active, sort_order)
