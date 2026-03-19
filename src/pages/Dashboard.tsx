@@ -81,6 +81,33 @@ const Dashboard = () => {
   const regularProjects = projects.filter(p => p.template_id !== 'landing-page');
   const landingProjects = projects.filter(p => p.template_id === 'landing-page');
 
+  // Group gallery images by folder
+  const groupedGallery = useMemo(() => {
+    const groups: Record<string, ProjectImage[]> = {};
+    for (const img of allImages) {
+      const folder = img.gallery_folder || 'Ohne Ordner';
+      if (!groups[folder]) groups[folder] = [];
+      groups[folder].push(img);
+    }
+    // Sort folders: VIN folders first, then NO_VIN, then "Ohne Ordner"
+    const sortedKeys = Object.keys(groups).sort((a, b) => {
+      if (a === 'Ohne Ordner') return 1;
+      if (b === 'Ohne Ordner') return -1;
+      if (a.startsWith('NO_VIN') && !b.startsWith('NO_VIN')) return 1;
+      if (!a.startsWith('NO_VIN') && b.startsWith('NO_VIN')) return -1;
+      return a.localeCompare(b);
+    });
+    return sortedKeys.map(key => ({ folder: key, images: groups[key] }));
+  }, [allImages]);
+
+  const toggleFolder = (folder: string) => {
+    setExpandedFolders(prev => {
+      const next = new Set(prev);
+      if (next.has(folder)) next.delete(folder); else next.add(folder);
+      return next;
+    });
+  };
+
   useEffect(() => {
     loadProjects();
     loadCounts();
