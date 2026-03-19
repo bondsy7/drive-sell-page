@@ -4,7 +4,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import {
   MoreVertical, User, Plug, CreditCard, ShieldCheck, LogOut,
-  Calculator, Receipt, LayoutDashboard, Plus, Sparkles,
+  Calculator, Receipt, Home, Plus, Sparkles,
 } from 'lucide-react';
 import { useState } from 'react';
 
