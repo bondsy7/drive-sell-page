@@ -785,6 +785,9 @@ const Dashboard = () => {
                   {job.manifest?.frameCount && (
                     <p className="text-xs text-muted-foreground">{job.manifest.frameCount} Frames</p>
                   )}
+                  {job.displayStatus === 'failed' && job.displayError && (
+                    <p className="text-xs text-destructive">{job.displayError}</p>
+                  )}
                 </div>
               ))}
             </div>
