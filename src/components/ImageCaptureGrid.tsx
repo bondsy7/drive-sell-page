@@ -77,6 +77,68 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const brandDetectionAttempted = useRef(false);
 
+  // Auto-detect brand from vehicleData (e.g. set via VIN or PDF)
+  useEffect(() => {
+    const brand = vehicleData?.vehicle?.brand;
+    if (brand && brand.trim()) {
+      setBrandDetectionStatus('found');
+      brandDetectionAttempted.current = true;
+    }
+  }, [vehicleData?.vehicle?.brand]);
+
+  // Auto-detect brand from uploaded images using AI (up to 3 retries)
+  const detectBrandFromImage = useCallback(async (imageBase64: string) => {
+    if (brandDetectionAttempted.current && brandDetectionStatus === 'found') return;
+    if (brandDetectionStatus === 'detecting') return;
+
+    setBrandDetectionStatus('detecting');
+    brandDetectionAttempted.current = true;
+
+    const MAX_RETRIES = 3;
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const { data, error } = await supabase.functions.invoke('remaster-vehicle-image', {
+          body: {
+            imageBase64,
+            vehicleDescription,
+            modelTier: 'detect-brand-only',
+            dynamicPrompt: 'DETECT_BRAND',
+          },
+        });
+
+        if (!error && data?.detectedBrand) {
+          const brand = data.detectedBrand;
+          console.log(`[BrandDetection] Attempt ${attempt}: detected "${brand}"`);
+
+          // Match against known makes
+          const matchedMake = makes.find(m =>
+            m.key.toLowerCase().replace(/[-_\s]+/g, '') === brand.toLowerCase().replace(/[-_\s]+/g, '')
+          );
+
+          if (matchedMake || getLogoForMake(brand)) {
+            const finalBrand = matchedMake?.key || brand;
+            setBrandDetectionStatus('found');
+            if (vehicleData && onVehicleDataChange) {
+              onVehicleDataChange({
+                ...vehicleData,
+                vehicle: { ...vehicleData.vehicle, brand: finalBrand },
+              });
+            }
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn(`[BrandDetection] Attempt ${attempt} failed:`, e);
+      }
+
+      if (attempt < MAX_RETRIES) {
+        await new Promise(r => setTimeout(r, 1000));
+      }
+    }
+
+    setBrandDetectionStatus('not-found');
+  }, [brandDetectionStatus, vehicleDescription, makes, getLogoForMake, vehicleData, onVehicleDataChange]);
+
   const capturedCount = Object.keys(captures).length;
   const vehicleSlots = SLOTS.filter(s => !s.isVin);
   const capturedVehicleImages = vehicleSlots.filter(s => captures[s.key]);
