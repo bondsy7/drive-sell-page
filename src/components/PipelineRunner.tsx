@@ -29,6 +29,7 @@ interface PipelineRunnerProps {
   remasterConfig: RemasterConfig;
   modelTier?: string;
   projectId?: string | null;
+  vin?: string | null;
   onComplete: () => void;
   onBack: () => void;
 }
