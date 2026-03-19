@@ -56,3 +56,6 @@ verify_jwt = false
 
 [functions.detect-vehicle-brand]
 verify_jwt = false
+
+[functions.generate-360-spin]
+verify_jwt = false
