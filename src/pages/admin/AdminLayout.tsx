@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Outlet, Link } from 'react-router-dom';
-import { LayoutDashboard, Users, Receipt, MessageSquare, Settings, CreditCard, ArrowLeft, FileText, Mail, Menu, X, Car, Hash, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, Users, Receipt, MessageSquare, Settings, CreditCard, ArrowLeft, FileText, Mail, Menu, X, Car, Hash, ShieldCheck, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import logoLight from '@/assets/logo-light.png';
 
@@ -16,6 +16,7 @@ const NAV = [
   { to: '/admin/pricing', icon: CreditCard, label: 'Preise' },
   { to: '/admin/settings', icon: Settings, label: 'Einstellungen' },
   { to: '/admin/secrets', icon: ShieldCheck, label: 'API-Keys' },
+  { to: '/architecture', icon: BookOpen, label: 'Architektur' },
 ];
 
 function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
