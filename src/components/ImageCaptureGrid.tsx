@@ -88,19 +88,19 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
 
   const resolveModelForBrand = useCallback((brand: string, sourceModel?: string | null) => {
     if (!sourceModel) return '';
-    const sourceNorm = normalizeValue(sourceModel);
+    const sourceNorm = normalizeBrand(sourceModel);
     const matchedMake = makes.find((make) => make.key === brand);
     if (!matchedMake) return sourceModel;
 
     const exact = matchedMake.models
       .filter((item) => item.key !== 'ANDERE')
-      .find((item) => normalizeValue(item.key) === sourceNorm);
+      .find((item) => normalizeBrand(item.key) === sourceNorm);
     if (exact) return exact.key;
 
     const partial = matchedMake.models
       .filter((item) => item.key !== 'ANDERE')
       .find((item) => {
-        const modelNorm = normalizeValue(item.key);
+        const modelNorm = normalizeBrand(item.key);
         return modelNorm.includes(sourceNorm) || sourceNorm.includes(modelNorm);
       });
 
