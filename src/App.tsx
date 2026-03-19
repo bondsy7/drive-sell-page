@@ -35,6 +35,7 @@ const AdminPricing = lazy(() => import("./pages/admin/AdminPricing"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 const AdminLogos = lazy(() => import("./pages/admin/AdminLogos"));
 const AdminSalesAssistant = lazy(() => import("./pages/admin/AdminSalesAssistant"));
+const AdminWmiCodes = lazy(() => import("./pages/admin/AdminWmiCodes"));
 const AdminRoute = lazy(() => import("./components/AdminRoute"));
 
 const queryClient = new QueryClient();
@@ -108,6 +109,7 @@ const App = () => (
                 <Route path="settings" element={<AdminSettings />} />
                 <Route path="logos" element={<AdminLogos />} />
                 <Route path="sales-assistant" element={<AdminSalesAssistant />} />
+                <Route path="wmi-codes" element={<AdminWmiCodes />} />
               </Route>
               <Route path="/architecture" element={<ProtectedRoute><AdminRoute><ArchitectureDoc /></AdminRoute></ProtectedRoute>} />
               <Route path="/sales-assistant/chat" element={<ProtectedRoute><SalesAssistant /></ProtectedRoute>} />

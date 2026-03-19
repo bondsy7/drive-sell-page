@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Outlet, Link } from 'react-router-dom';
-import { LayoutDashboard, Users, Receipt, MessageSquare, Settings, CreditCard, ArrowLeft, FileText, Mail, Menu, X, Car } from 'lucide-react';
+import { LayoutDashboard, Users, Receipt, MessageSquare, Settings, CreditCard, ArrowLeft, FileText, Mail, Menu, X, Car, Hash } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import logoLight from '@/assets/logo-light.png';
 
@@ -11,6 +11,7 @@ const NAV = [
   { to: '/admin/leads', icon: Mail, label: 'Leads' },
   { to: '/admin/pdf-gallery', icon: FileText, label: 'PDF-Galerie' },
   { to: '/admin/logos', icon: Car, label: 'Hersteller-Logos' },
+  { to: '/admin/wmi-codes', icon: Hash, label: 'WMI-Codes & Aliase' },
   { to: '/admin/prompts', icon: MessageSquare, label: 'Prompts' },
   { to: '/admin/pricing', icon: CreditCard, label: 'Preise' },
   { to: '/admin/settings', icon: Settings, label: 'Einstellungen' },
