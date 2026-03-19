@@ -151,17 +151,18 @@ export default function ArchitectureDoc() {
 │              FRONTEND (SPA)                     │
 │  React + TypeScript + Vite + Tailwind + shadcn  │
 │                                                 │
-│  ActionHub → 5 Workflows                        │
-│  Dashboard → Projektverwaltung                  │
-│  Admin Panel → 9 Verwaltungsseiten              │
+│  ActionHub → 6 Workflows                        │
+│  Dashboard → Projektverwaltung (5 Tabs)         │
+│  Admin Panel → 12 Verwaltungsseiten             │
 └──────────────────┬──────────────────────────────┘
                    │
                    ▼
 ┌─────────────────────────────────────────────────┐
 │           SUPABASE (Backend-as-a-Service)        │
+│                via Lovable Cloud                 │
 │                                                 │
-│  21 Edge Functions │ 27 DB-Tabellen │ 6 Buckets │
-│  Auth (Email+OAuth) │ Realtime Channels          │
+│  26 Edge Funcs │ 32 DB-Tabellen │ 6 Buckets     │
+│  1 Shared Modul │ Auth (Email+OAuth) │ Realtime  │
 └──────────────────┬──────────────────────────────┘
                    │
                    ▼
@@ -169,7 +170,7 @@ export default function ArchitectureDoc() {
 │              EXTERNE SERVICES                    │
 │                                                 │
 │  Lovable AI Gateway │ Google Gemini │ OpenAI    │
-│  Stripe │ OutVin (VIN) │ Google Veo (Video)     │
+│  Stripe │ OutVin (VIN) │ Resend (E-Mail)        │
 └─────────────────────────────────────────────────┘`}</CodeBlock>
           </SubSection>
         </Section>
