@@ -1,0 +1,1 @@
+ALTER TABLE public.project_images ALTER COLUMN project_id DROP NOT NULL;
