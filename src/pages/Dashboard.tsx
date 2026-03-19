@@ -233,19 +233,168 @@ const Dashboard = () => {
     if (tab === 'gallery') await loadGallery();
   };
 
+  const runMutations = async (
+    operations: Array<PromiseLike<{ error: { message: string } | null }>>,
+  ) => {
+    const results = await Promise.all(operations);
+    const failed = results.find(result => result.error);
+    if (failed?.error) throw failed.error;
+  };
+
+  const loadConversationIds = async (leadIds: string[], projectId?: string) => {
+    const ids = new Set<string>();
+
+    if (projectId) {
+      const { data, error } = await supabase
+        .from('sales_assistant_conversations')
+        .select('id')
+        .eq('project_id', projectId);
+
+      if (error) throw error;
+      data?.forEach(row => ids.add(row.id));
+    }
+
+    if (leadIds.length > 0) {
+      const { data, error } = await supabase
+        .from('sales_assistant_conversations')
+        .select('id')
+        .in('lead_id', leadIds);
+
+      if (error) throw error;
+      data?.forEach(row => ids.add(row.id));
+    }
+
+    return Array.from(ids);
+  };
+
+  const deleteConversationRelations = async (conversationIds: string[]) => {
+    if (conversationIds.length === 0) return;
+
+    await runMutations([
+      supabase.from('sales_assistant_messages').delete().in('conversation_id', conversationIds),
+      supabase.from('sales_assistant_tasks').delete().in('conversation_id', conversationIds),
+      supabase.from('conversation_stage_log').delete().in('conversation_id', conversationIds),
+      supabase.from('sales_email_outbox').delete().in('conversation_id', conversationIds),
+      supabase.from('crm_manual_notes').delete().in('conversation_id', conversationIds),
+      supabase.from('sales_notifications').delete().in('related_conversation_id', conversationIds),
+      supabase.from('sales_quotes').delete().in('conversation_id', conversationIds),
+      supabase.from('test_drive_bookings').delete().in('conversation_id', conversationIds),
+      supabase.from('trade_in_valuations').delete().in('conversation_id', conversationIds),
+    ]);
+
+    await runMutations([
+      supabase.from('sales_assistant_conversations').delete().in('id', conversationIds),
+    ]);
+  };
+
+  const deleteLeadRelations = async (leadIds: string[]) => {
+    if (leadIds.length === 0) return;
+
+    await runMutations([
+      supabase.from('sales_email_outbox').delete().in('lead_id', leadIds),
+      supabase.from('crm_manual_notes').delete().in('lead_id', leadIds),
+      supabase.from('sales_notifications').delete().in('related_lead_id', leadIds),
+      supabase.from('sales_quotes').delete().in('lead_id', leadIds),
+      supabase.from('test_drive_bookings').delete().in('lead_id', leadIds),
+      supabase.from('trade_in_valuations').delete().in('lead_id', leadIds),
+    ]);
+  };
+
+  const deleteStorageFolder = async (bucket: 'vehicle-images' | 'banners', prefix: string) => {
+    const files: string[] = [];
+
+    const walk = async (path: string) => {
+      const { data, error } = await supabase.storage
+        .from(bucket)
+        .list(path, { limit: 1000, sortBy: { column: 'name', order: 'asc' } });
+
+      if (error) throw error;
+
+      for (const item of data || []) {
+        const fullPath = path ? `${path}/${item.name}` : item.name;
+        if ((item as { id?: string | null }).id) {
+          files.push(fullPath);
+        } else {
+          await walk(fullPath);
+        }
+      }
+    };
+
+    await walk(prefix);
+
+    for (let i = 0; i < files.length; i += 100) {
+      const batch = files.slice(i, i + 100);
+      const { error } = await supabase.storage.from(bucket).remove(batch);
+      if (error) throw error;
+    }
+  };
+
   const deleteProject = async (id: string) => {
-    const { error } = await supabase.from('projects').delete().eq('id', id);
-    if (error) { toast.error('Fehler beim Löschen'); return; }
-    toast.success('Projekt gelöscht');
-    setProjects(prev => prev.filter(p => p.id !== id));
-    setAllImages(prev => prev.filter(i => i.project_id !== id));
+    if (!user) return;
+
+    setLoading(true);
+    try {
+      const { data: leadRows, error: leadError } = await supabase
+        .from('leads')
+        .select('id')
+        .eq('project_id', id);
+
+      if (leadError) throw leadError;
+
+      const leadIds = leadRows?.map(row => row.id) || [];
+      const conversationIds = await loadConversationIds(leadIds, id);
+
+      await deleteConversationRelations(conversationIds);
+      await deleteLeadRelations(leadIds);
+
+      if (leadIds.length > 0) {
+        await runMutations([
+          supabase.from('leads').delete().in('id', leadIds),
+        ]);
+      }
+
+      await runMutations([
+        supabase.from('image_generation_jobs').delete().eq('project_id', id),
+        supabase.from('project_images').delete().eq('project_id', id),
+        supabase.from('sales_quotes').delete().eq('project_id', id),
+        supabase.from('test_drive_bookings').delete().eq('project_id', id),
+        supabase.from('projects').delete().eq('id', id),
+      ]);
+
+      await deleteStorageFolder('vehicle-images', `${user.id}/${id}`);
+
+      setProjects(prev => prev.filter(project => project.id !== id));
+      setAllImages(prev => prev.filter(image => image.project_id !== id));
+      await loadCounts();
+      toast.success('Projekt vollständig gelöscht');
+    } catch (error) {
+      console.error('Delete project error:', error);
+      toast.error('Projekt konnte nicht vollständig gelöscht werden');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const deleteLead = async (id: string) => {
-    const { error } = await supabase.from('leads').delete().eq('id', id);
-    if (error) { toast.error('Fehler beim Löschen'); return; }
-    toast.success('Anfrage gelöscht');
-    setLeads(prev => prev.filter(l => l.id !== id));
+    setLoading(true);
+    try {
+      const conversationIds = await loadConversationIds([id]);
+      await deleteConversationRelations(conversationIds);
+      await deleteLeadRelations([id]);
+
+      await runMutations([
+        supabase.from('leads').delete().eq('id', id),
+      ]);
+
+      setLeads(prev => prev.filter(lead => lead.id !== id));
+      await loadCounts();
+      toast.success('Anfrage vollständig gelöscht');
+    } catch (error) {
+      console.error('Delete lead error:', error);
+      toast.error('Anfrage konnte nicht vollständig gelöscht werden');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const deleteVideo = async (name: string) => {
@@ -254,6 +403,7 @@ const Dashboard = () => {
     if (error) { toast.error('Fehler beim Löschen'); return; }
     toast.success('Video gelöscht');
     setVideos(prev => prev.filter(v => v.name !== name));
+    await loadCounts();
   };
 
   const deleteBanner = async (fullPath: string, name: string) => {
@@ -261,6 +411,7 @@ const Dashboard = () => {
     if (error) { toast.error('Fehler beim Löschen'); return; }
     toast.success('Banner gelöscht');
     setBanners(prev => prev.filter(b => b.name !== name));
+    await loadCounts();
   };
 
   const downloadBanner = (banner: BannerFile) => {
