@@ -257,13 +257,34 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
       {/* Image grid */}
       {images.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-          {images.map((img) => (
+          {images.map((img, imgIndex) => (
             <div key={img.id} className="relative group rounded-xl overflow-hidden border border-border bg-muted aspect-[4/3]">
               <img
                 src={img.remasteredBase64 || img.originalBase64}
                 alt="Fahrzeug"
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover cursor-pointer"
+                onClick={() => {
+                  if (img.status === 'done') {
+                    const doneImages = images.filter(i => i.status === 'done' && i.remasteredBase64);
+                    const doneIdx = doneImages.findIndex(i => i.id === img.id);
+                    if (doneIdx >= 0) openLightbox(doneIdx);
+                  }
+                }}
               />
+              {/* Zoom icon for done images */}
+              {img.status === 'done' && !isProcessing && (
+                <button
+                  onClick={() => {
+                    const doneImages = images.filter(i => i.status === 'done' && i.remasteredBase64);
+                    const doneIdx = doneImages.findIndex(i => i.id === img.id);
+                    if (doneIdx >= 0) openLightbox(doneIdx);
+                  }}
+                  className="absolute top-1.5 left-1.5 w-7 h-7 rounded-full bg-background/80 hover:bg-accent hover:text-accent-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  title="Vergrößern"
+                >
+                  <ZoomIn className="w-3.5 h-3.5" />
+                </button>
+              )}
               {/* Status overlay */}
               {img.status === 'processing' && (
                 <div className="absolute inset-0 bg-background/70 flex items-center justify-center">
