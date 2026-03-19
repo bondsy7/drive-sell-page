@@ -1369,7 +1369,6 @@ const WMI3: Record<string, string> = {
   // === Other notable ===
   B7J: 'Chrysler',
   CL9: 'Wallyscar',
-  PL1: 'Proton',
   RA1: 'Steyr',
   S2D: 'Chrysler',
 };
