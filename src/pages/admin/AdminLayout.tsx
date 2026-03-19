@@ -11,6 +11,7 @@ const NAV = [
   { to: '/admin/leads', icon: Mail, label: 'Leads' },
   { to: '/admin/pdf-gallery', icon: FileText, label: 'PDF-Galerie' },
   { to: '/admin/logos', icon: Car, label: 'Hersteller-Logos' },
+  { to: '/admin/wmi-codes', icon: Hash, label: 'WMI-Codes & Aliase' },
   { to: '/admin/prompts', icon: MessageSquare, label: 'Prompts' },
   { to: '/admin/pricing', icon: CreditCard, label: 'Preise' },
   { to: '/admin/settings', icon: Settings, label: 'Einstellungen' },
