@@ -69,7 +69,7 @@ const Dashboard = () => {
   const [videos, setVideos] = useState<VideoFile[]>([]);
   const [banners, setBanners] = useState<BannerFile[]>([]);
   const initialTab = (searchParams.get('tab') as any) || 'projects';
-  const [tab, setTab] = useState<'projects' | 'landings' | 'gallery' | 'banners' | 'videos' | 'leads'>(initialTab);
+  const [tab, setTab] = useState<'projects' | 'landings' | 'gallery' | 'banners' | 'videos' | 'leads' | 'spin360'>(initialTab);
   const [loading, setLoading] = useState(true);
   const [lightboxIndex, setLightboxIndex] = useState(-1);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
@@ -77,7 +77,9 @@ const Dashboard = () => {
   const [leadsLoaded, setLeadsLoaded] = useState(false);
   const [videosLoaded, setVideosLoaded] = useState(false);
   const [bannersLoaded, setBannersLoaded] = useState(false);
-  const [counts, setCounts] = useState({ gallery: 0, videos: 0, leads: 0, banners: 0 });
+  const [spin360Jobs, setSpin360Jobs] = useState<any[]>([]);
+  const [spin360Loaded, setSpin360Loaded] = useState(false);
+  const [counts, setCounts] = useState({ gallery: 0, videos: 0, leads: 0, banners: 0, spin360: 0 });
 
   const regularProjects = projects.filter(p => p.template_id !== 'landing-page');
   const landingProjects = projects.filter(p => p.template_id === 'landing-page');
