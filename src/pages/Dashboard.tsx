@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { Image, FileText, Download, ExternalLink, Trash2, MessageSquare, Mail, Phone, Video, Play, X, LayoutGrid, Layout } from 'lucide-react';
+import { Image, FileText, Download, ExternalLink, Trash2, MessageSquare, Mail, Phone, Video, Play, X, LayoutGrid, Layout, FolderOpen, ChevronDown, ChevronRight } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
 import { toast } from 'sonner';
 import { downloadHTML } from '@/lib/templates/download';
@@ -31,6 +31,7 @@ interface ProjectImage {
   image_base64: string;
   image_url: string | null;
   perspective: string | null;
+  gallery_folder: string | null;
   created_at: string;
 }
 
@@ -70,7 +71,7 @@ const Dashboard = () => {
   const [tab, setTab] = useState<'projects' | 'landings' | 'gallery' | 'banners' | 'videos' | 'leads'>(initialTab);
   const [loading, setLoading] = useState(true);
   const [lightboxIndex, setLightboxIndex] = useState(-1);
-
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [galleryLoaded, setGalleryLoaded] = useState(false);
   const [leadsLoaded, setLeadsLoaded] = useState(false);
   const [videosLoaded, setVideosLoaded] = useState(false);
@@ -79,6 +80,33 @@ const Dashboard = () => {
 
   const regularProjects = projects.filter(p => p.template_id !== 'landing-page');
   const landingProjects = projects.filter(p => p.template_id === 'landing-page');
+
+  // Group gallery images by folder
+  const groupedGallery = useMemo(() => {
+    const groups: Record<string, ProjectImage[]> = {};
+    for (const img of allImages) {
+      const folder = img.gallery_folder || 'Ohne Ordner';
+      if (!groups[folder]) groups[folder] = [];
+      groups[folder].push(img);
+    }
+    // Sort folders: VIN folders first, then NO_VIN, then "Ohne Ordner"
+    const sortedKeys = Object.keys(groups).sort((a, b) => {
+      if (a === 'Ohne Ordner') return 1;
+      if (b === 'Ohne Ordner') return -1;
+      if (a.startsWith('NO_VIN') && !b.startsWith('NO_VIN')) return 1;
+      if (!a.startsWith('NO_VIN') && b.startsWith('NO_VIN')) return -1;
+      return a.localeCompare(b);
+    });
+    return sortedKeys.map(key => ({ folder: key, images: groups[key] }));
+  }, [allImages]);
+
+  const toggleFolder = (folder: string) => {
+    setExpandedFolders(prev => {
+      const next = new Set(prev);
+      if (next.has(folder)) next.delete(folder); else next.add(folder);
+      return next;
+    });
+  };
 
   useEffect(() => {
     loadProjects();
@@ -122,10 +150,13 @@ const Dashboard = () => {
     setLoading(true);
     const { data: img } = await supabase
       .from('project_images')
-      .select('id, project_id, image_base64, image_url, perspective, created_at')
+      .select('id, project_id, image_base64, image_url, perspective, gallery_folder, created_at')
       .order('created_at', { ascending: false })
-      .limit(50);
+      .limit(200);
     setAllImages((img as ProjectImage[]) || []);
+    // Auto-expand all folders
+    const folders = new Set((img || []).map((i: any) => i.gallery_folder || 'Ohne Ordner'));
+    setExpandedFolders(folders);
     setGalleryLoaded(true);
     setLoading(false);
   };
@@ -412,19 +443,47 @@ const Dashboard = () => {
               <p className="text-muted-foreground">Noch keine Bilder generiert.</p>
             </div>
           ) : (
-            <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
-              {allImages.map((img, idx) => {
-                const imgSrc = img.image_url || (img.image_base64.startsWith('data:') ? img.image_base64 : `data:image/png;base64,${img.image_base64}`);
+            <div className="space-y-4">
+              {groupedGallery.map(({ folder, images: folderImages }) => {
+                const isExpanded = expandedFolders.has(folder);
+                const isVin = folder !== 'Ohne Ordner' && !folder.startsWith('NO_VIN');
                 return (
-                <div key={img.id} className="bg-card rounded-lg border border-border overflow-hidden group relative cursor-pointer" onClick={() => setLightboxIndex(idx)}>
-                  <div className="aspect-video bg-muted">
-                    <img src={imgSrc} alt={img.perspective || 'Fahrzeugbild'} className="w-full h-full object-cover" />
+                  <div key={folder} className="bg-card rounded-xl border border-border overflow-hidden">
+                    {/* Folder header */}
+                    <button
+                      onClick={() => toggleFolder(folder)}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-left"
+                    >
+                      {isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" /> : <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />}
+                      <FolderOpen className="w-4 h-4 text-accent shrink-0" />
+                      <span className={`font-display font-semibold text-sm ${isVin ? 'font-mono' : ''}`}>
+                        {folder}
+                      </span>
+                      <span className="text-xs text-muted-foreground ml-auto">
+                        {folderImages.length} Bild{folderImages.length !== 1 ? 'er' : ''}
+                      </span>
+                    </button>
+                    {/* Folder content */}
+                    {isExpanded && (
+                      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 p-3 pt-0">
+                        {folderImages.map((img) => {
+                          const globalIdx = allImages.findIndex(i => i.id === img.id);
+                          const imgSrc = img.image_url || (img.image_base64.startsWith('data:') ? img.image_base64 : `data:image/png;base64,${img.image_base64}`);
+                          return (
+                            <div key={img.id} className="bg-muted rounded-lg overflow-hidden group relative cursor-pointer" onClick={() => setLightboxIndex(globalIdx)}>
+                              <div className="aspect-video">
+                                <img src={imgSrc} alt={img.perspective || 'Fahrzeugbild'} className="w-full h-full object-cover" />
+                              </div>
+                              <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                <span className="text-sm font-medium text-background">Öffnen</span>
+                              </div>
+                              {img.perspective && <p className="text-xs text-muted-foreground p-2">{img.perspective}</p>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
-                  <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                    <span className="text-sm font-medium text-background">Öffnen</span>
-                  </div>
-                  {img.perspective && <p className="text-xs text-muted-foreground p-2">{img.perspective}</p>}
-                </div>
                 );
               })}
             </div>

@@ -21,7 +21,7 @@ import { extractPDFAsBase64 } from '@/lib/pdf-utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useCredits } from '@/hooks/useCredits';
-import { uploadImagesToStorage } from '@/lib/storage-utils';
+import { uploadImagesToStorage, saveImagesToGallery, getGalleryFolderName } from '@/lib/storage-utils';
 import type { AppState, VehicleData } from '@/types/vehicle';
 import type { TemplateId } from '@/types/template';
 import type { ModelTier } from '@/components/ModelSelector';
@@ -65,7 +65,7 @@ const Index = () => {
 
   const currentStep = appState === 'hub' || appState === 'idle' ? 1 : appState === 'preview' ? 3 : 2;
 
-  const saveProject = useCallback(async (vData: VehicleData, mainImg: string | null, allImages: string[], templateId: TemplateId) => {
+  const saveProject = useCallback(async (vData: VehicleData, mainImg: string | null, allImages: string[], templateId: TemplateId, vin?: string | null) => {
     if (!user) return null;
     const title = `${vData.vehicle.brand} ${vData.vehicle.model} ${vData.vehicle.variant || ''}`.trim();
     const { data: project, error } = await supabase.from('projects').insert({
@@ -73,6 +73,7 @@ const Index = () => {
     }).select('id').single();
     if (error || !project) { console.error('Save project error:', error); return null; }
     if (allImages.length > 0) {
+      const folderName = getGalleryFolderName(vin || (vData.vehicle as any)?.vin);
       const urls = await uploadImagesToStorage(allImages, user.id, project.id);
       if (urls.length > 0) {
         await supabase.from('projects').update({ main_image_url: urls[0] }).eq('id', project.id);
@@ -80,8 +81,9 @@ const Index = () => {
       const imageRows = urls.map((url, i) => ({
         project_id: project.id, user_id: user.id, image_url: url, image_base64: '',
         perspective: PERSPECTIVES[i]?.label || `Bild ${i + 1}`, sort_order: i,
+        gallery_folder: folderName,
       }));
-      await supabase.from('project_images').insert(imageRows);
+      await supabase.from('project_images').insert(imageRows as any);
     }
     return project.id;
   }, [user]);
@@ -254,8 +256,8 @@ const Index = () => {
       const updatedData = vin ? { ...vehicleData, vehicle: { ...vehicleData.vehicle, vin } } : vehicleData;
       if (vin) setVehicleData(updatedData);
       const allImgs = [mainImage, ...gallery];
+      const folderName = getGalleryFolderName(vin || (updatedData.vehicle as any)?.vin);
       if (savedProjectId) {
-        // Update existing project (created during PDF analysis)
         await supabase.from('projects').update({
           vehicle_data: updatedData as any,
           updated_at: new Date().toISOString(),
@@ -266,13 +268,13 @@ const Index = () => {
             await supabase.from('projects').update({ main_image_url: urls[0] }).eq('id', savedProjectId);
             const imageRows = urls.map((url, i) => ({
               project_id: savedProjectId, user_id: user.id, image_url: url, image_base64: '',
-              perspective: `Bild ${i + 1}`, sort_order: i,
+              perspective: `Bild ${i + 1}`, sort_order: i, gallery_folder: folderName,
             }));
-            await supabase.from('project_images').insert(imageRows);
+            await supabase.from('project_images').insert(imageRows as any);
           }
         }
       } else {
-        const projectId = await saveProject(updatedData, mainImage, allImgs, selectedTemplate);
+        const projectId = await saveProject(updatedData, mainImage, allImgs, selectedTemplate, vin);
         if (projectId) setSavedProjectId(projectId);
       }
     }
@@ -284,6 +286,7 @@ const Index = () => {
     setGalleryImages(gallery);
     if (vehicleData) {
       const allImgs = [mainImage, ...gallery];
+      const folderName = getGalleryFolderName((vehicleData.vehicle as any)?.vin);
       if (savedProjectId) {
         await supabase.from('projects').update({
           vehicle_data: vehicleData as any,
@@ -295,9 +298,9 @@ const Index = () => {
             await supabase.from('projects').update({ main_image_url: urls[0] }).eq('id', savedProjectId);
             const imageRows = urls.map((url, i) => ({
               project_id: savedProjectId, user_id: user.id, image_url: url, image_base64: '',
-              perspective: `Bild ${i + 1}`, sort_order: i,
+              perspective: `Bild ${i + 1}`, sort_order: i, gallery_folder: folderName,
             }));
-            await supabase.from('project_images').insert(imageRows);
+            await supabase.from('project_images').insert(imageRows as any);
           }
         }
       } else {
@@ -308,45 +311,28 @@ const Index = () => {
     setAppState('preview');
   }, [vehicleData, saveProject, selectedTemplate, savedProjectId, user]);
 
-  // ─── Save standalone images to storage + DB ───
-  const saveStandaloneImages = useCallback(async (allImages: string[]) => {
+  // ─── Save standalone images to gallery (NO project creation!) ───
+  const saveStandaloneImages = useCallback(async (allImages: string[], vin?: string) => {
     if (!user || allImages.length === 0) return;
     try {
-      // Upload to storage
-      const urls = await uploadImagesToStorage(allImages, user.id, `standalone-${Date.now()}`);
-      if (urls.length === 0) return;
-      // Save to project_images (without a project_id – we use a placeholder project)
-      // Create a lightweight project to hold these images
-      const dateStr = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-      const { data: project } = await supabase.from('projects').insert({
-        user_id: user.id,
-        title: `Showroom-Fotos ${dateStr}`,
-        vehicle_data: { vehicle: { brand: 'Showroom', model: 'Fotos' } } as any,
-        template_id: 'modern',
-        main_image_url: urls[0],
-      }).select('id').single();
-      if (!project) return;
-      const imageRows = urls.map((url, i) => ({
-        project_id: project.id,
-        user_id: user.id,
-        image_url: url,
-        image_base64: '',
-        perspective: PERSPECTIVES[i]?.label || `Bild ${i + 1}`,
-        sort_order: i,
-      }));
-      await supabase.from('project_images').insert(imageRows);
-      // main_image_url already set in insert above
+      const folderName = getGalleryFolderName(vin);
+      await saveImagesToGallery(
+        allImages,
+        user.id,
+        folderName,
+        allImages.map((_, i) => PERSPECTIVES[i]?.label || `Bild ${i + 1}`),
+      );
     } catch (e) {
       console.error('Error saving standalone images:', e);
     }
   }, [user]);
 
   // ─── Standalone Photo Flow ───
-  const handleStandaloneCaptureComplete = useCallback((mainImage: string, gallery: string[], _vin?: string) => {
+  const handleStandaloneCaptureComplete = useCallback((mainImage: string, gallery: string[], vin?: string) => {
     const allImages = [mainImage, ...gallery];
     setStandalonePhotoResults(allImages);
-    saveStandaloneImages(allImages);
-    toast.success(`${allImages.length} Showroom-Bilder erstellt und im Dashboard gespeichert!`);
+    saveStandaloneImages(allImages, vin);
+    toast.success(`${allImages.length} Showroom-Bilder in Galerie gespeichert!`);
     navigate('/dashboard?tab=gallery');
   }, [saveStandaloneImages, navigate]);
 
@@ -354,7 +340,7 @@ const Index = () => {
     const allImages = [mainImage, ...gallery];
     setStandalonePhotoResults(allImages);
     saveStandaloneImages(allImages);
-    toast.success(`${allImages.length} Showroom-Bilder erstellt und im Dashboard gespeichert!`);
+    toast.success(`${allImages.length} Showroom-Bilder in Galerie gespeichert!`);
     navigate('/dashboard?tab=gallery');
   }, [saveStandaloneImages, navigate]);
 

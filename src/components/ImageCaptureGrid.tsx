@@ -254,6 +254,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         remasterConfig={remasterConfig}
         modelTier={modelTier}
         projectId={projectId}
+        vin={detectedVin}
         onComplete={() => {
           if (onPipelineComplete) {
             onPipelineComplete();

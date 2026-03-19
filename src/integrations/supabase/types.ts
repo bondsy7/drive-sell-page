@@ -608,6 +608,7 @@ export type Database = {
       project_images: {
         Row: {
           created_at: string
+          gallery_folder: string | null
           id: string
           image_base64: string
           image_url: string | null
@@ -618,6 +619,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          gallery_folder?: string | null
           id?: string
           image_base64: string
           image_url?: string | null
@@ -628,6 +630,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          gallery_folder?: string | null
           id?: string
           image_base64?: string
           image_url?: string | null
