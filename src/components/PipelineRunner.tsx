@@ -284,16 +284,19 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
     if (jobResults.length > 0) {
       setJobs(prev => ({ ...prev, [jobKey]: { status: 'done', results: jobResults, error: jobError } }));
 
-      // Save retried images
-      if (user && savedProjectId) {
+      // Save retried images to gallery
+      if (user) {
         try {
+          const folderName = getGalleryFolderName(vin);
+          const storagePath = savedProjectId ? savedProjectId : `gallery/${folderName}`;
           for (let i = 0; i < jobResults.length; i++) {
-            const url = await uploadImageToStorage(jobResults[i], user.id, `${savedProjectId}/${jobKey}_retry_${i}.png`);
+            const url = await uploadImageToStorage(jobResults[i], user.id, `${storagePath}/${jobKey}_retry_${i}.png`);
             if (url) {
               await supabase.from('project_images').insert({
-                project_id: savedProjectId, user_id: user.id, image_url: url,
+                project_id: savedProjectId || null, user_id: user.id, image_url: url,
                 image_base64: '', perspective: `Pipeline: ${job.labelDe} (Retry)`, sort_order: 999 + i,
-              });
+                gallery_folder: folderName,
+              } as any);
             }
           }
         } catch (e) { console.error('Retry save error:', e); }
@@ -301,7 +304,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
     } else {
       setJobs(prev => ({ ...prev, [jobKey]: { status: 'error', results: [], error: jobError || 'Alle Bilder fehlgeschlagen' } }));
     }
-  }, [availableJobs, generateOneImage, user, savedProjectId]);
+  }, [availableJobs, generateOneImage, user, savedProjectId, vin]);
 
   /* ─── Pipeline with parallel execution ─── */
   const runPipeline = useCallback(async () => {
