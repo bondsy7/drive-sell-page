@@ -16,11 +16,15 @@ import {
   type DynamicLogo,
 } from '@/lib/remaster-prompt';
 import { ensureCachedBase64, prewarmCache } from '@/lib/image-base64-cache';
+import VehicleBrandModelPicker from '@/components/VehicleBrandModelPicker';
 
 interface RemasterOptionsProps {
   config: RemasterConfig;
   onChange: (config: RemasterConfig) => void;
-  vehicleBrand?: string; // from VIN lookup or description – used to auto-resolve manufacturer logo
+  vehicleBrand?: string;
+  onBrandChange?: (brand: string) => void;
+  onModelChange?: (model: string) => void;
+  vehicleModel?: string;
 }
 
 function fileToBase64(file: File): Promise<string> {
@@ -32,23 +36,39 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
-const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, vehicleBrand }) => {
+const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, vehicleBrand, onBrandChange, onModelChange, vehicleModel }) => {
   const { user } = useAuth();
   const [profileShowroomUrl, setProfileShowroomUrl] = useState<string | null>(null);
   const [profileLogoUrl, setProfileLogoUrl] = useState<string | null>(null);
   const [dynamicLogos, setDynamicLogos] = useState<DynamicLogo[]>([]);
+  const [selectedBrand, setSelectedBrand] = useState(vehicleBrand || '');
+  const [selectedModel, setSelectedModel] = useState(vehicleModel || '');
   const showroomInputRef = useRef<HTMLInputElement>(null);
   const plateImageRef = useRef<HTMLInputElement>(null);
+  const manufacturerLogoRef = useRef<HTMLInputElement>(null);
 
-  // Use a ref to always have the latest config without re-triggering effects
   const configRef = React.useRef(config);
   configRef.current = config;
 
-  // Load profile data & dynamic logos, pre-cache as base64
+  // Sync external vehicleBrand into local state
+  useEffect(() => {
+    if (vehicleBrand && vehicleBrand !== selectedBrand) {
+      setSelectedBrand(vehicleBrand);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vehicleBrand]);
+
+  useEffect(() => {
+    if (vehicleModel && vehicleModel !== selectedModel) {
+      setSelectedModel(vehicleModel);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vehicleModel]);
+
+  // Load profile data & dynamic logos
   useEffect(() => {
     fetchManufacturerLogos().then(logos => {
       setDynamicLogos(logos);
-      // Pre-warm all logo URLs as base64 in background
       prewarmCache(logos.map(l => l.url));
     });
     if (!user) return;
@@ -59,7 +79,6 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
           const logoUrl = data.logo_url || null;
           setProfileShowroomUrl(showroomUrl);
           setProfileLogoUrl(logoUrl);
-          // Pre-cache dealer logo & custom showroom as base64
           const urlsToCache = [showroomUrl, logoUrl].filter(Boolean) as string[];
           if (urlsToCache.length) prewarmCache(urlsToCache);
           if (logoUrl) {
@@ -83,38 +102,66 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
     'alfa-romeo': ['alfaromeo', 'alfa'],
     'astonmartin': ['aston-martin'],
     'aston-martin': ['astonmartin'],
+    'landrover': ['land-rover', 'land rover'],
+    'land-rover': ['landrover'],
+    'rollsroyce': ['rolls-royce', 'rolls royce'],
+    'rolls-royce': ['rollsroyce'],
   };
 
-  // Auto-resolve manufacturer logo when brand changes + cache base64
+  // Auto-resolve manufacturer logo when selectedBrand changes
   useEffect(() => {
-    if (!vehicleBrand || dynamicLogos.length === 0) return;
-    const brandNorm = vehicleBrand.toLowerCase().replace(/[-_\s]+/g, '');
+    if (!selectedBrand || dynamicLogos.length === 0) {
+      if (!selectedBrand) {
+        onChange({ ...configRef.current, manufacturerLogoUrl: null, manufacturerLogoBase64: null });
+      }
+      return;
+    }
+    const brandNorm = selectedBrand.toLowerCase().replace(/[-_\s]+/g, '');
     
     const findLogo = () => {
-      // Exact match
       const exact = dynamicLogos.find(l => l.name.toLowerCase().replace(/[-_\s]+/g, '') === brandNorm);
       if (exact) return exact;
-      // Alias match
       const aliases = BRAND_ALIASES[brandNorm] || [];
       for (const alias of aliases) {
         const aliasMatch = dynamicLogos.find(l => l.name.toLowerCase().replace(/[-_\s]+/g, '') === alias);
         if (aliasMatch) return aliasMatch;
       }
-      // Partial match
       return dynamicLogos.find(l => l.name.toLowerCase().includes(brandNorm) || brandNorm.includes(l.name.toLowerCase()));
     };
 
     const match = findLogo();
     if (match) {
-      console.log(`[RemasterOptions] Auto-resolved logo for "${vehicleBrand}": ${match.name}`);
+      console.log(`[RemasterOptions] Auto-resolved logo for "${selectedBrand}": ${match.name}`);
       ensureCachedBase64(match.url).then(b64 => {
         onChange({ ...configRef.current, manufacturerLogoUrl: match.url, manufacturerLogoBase64: b64 });
       });
+    } else {
+      onChange({ ...configRef.current, manufacturerLogoUrl: null, manufacturerLogoBase64: null });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vehicleBrand, dynamicLogos]);
+  }, [selectedBrand, dynamicLogos]);
 
   const update = (partial: Partial<RemasterConfig>) => onChange({ ...config, ...partial });
+
+  const handleBrandChange = (brand: string) => {
+    setSelectedBrand(brand);
+    setSelectedModel('');
+    onBrandChange?.(brand);
+    onModelChange?.('');
+  };
+
+  const handleModelChange = (model: string) => {
+    setSelectedModel(model);
+    onModelChange?.(model);
+  };
+
+  const handleManufacturerLogoUpload = async (file: File) => {
+    if (!file.type.startsWith('image/')) { toast.error('Bitte ein Bild auswählen.'); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error('Max. 5MB.'); return; }
+    const base64 = await fileToBase64(file);
+    update({ manufacturerLogoBase64: base64, manufacturerLogoUrl: base64 });
+    toast.success('Hersteller-Logo hochgeladen.');
+  };
 
   const selectedScene = SCENE_OPTIONS.find(s => s.value === config.scene);
   const scenePreview = selectedScene && 'preview' in selectedScene ? (selectedScene as any).preview : null;
@@ -125,7 +172,6 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
     const base64 = await fileToBase64(file);
     update({ customShowroomBase64: base64 });
 
-    // Also save to profile for future use
     if (user) {
       const ext = file.name.split('.').pop();
       const path = `${user.id}/showroom.${ext}`;
@@ -152,6 +198,58 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
         Remaster-Optionen
       </h3>
 
+      {/* Brand & Model Picker */}
+      <div className="space-y-2">
+        <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+          <Car className="w-3.5 h-3.5" /> Fahrzeugmarke & Modell
+        </Label>
+        <VehicleBrandModelPicker
+          brand={selectedBrand}
+          model={selectedModel}
+          onBrandChange={handleBrandChange}
+          onModelChange={handleModelChange}
+          compact
+        />
+        {/* Logo preview & upload */}
+        <div className="flex items-center gap-3 mt-1">
+          {config.manufacturerLogoUrl ? (
+            <div className="flex items-center gap-2 bg-accent/10 rounded-lg px-3 py-1.5">
+              <img src={config.manufacturerLogoUrl} alt={selectedBrand} className="w-6 h-6 object-contain" />
+              <span className="text-[11px] text-accent-foreground font-medium">
+                Logo für „{selectedBrand}" gefunden
+              </span>
+              <CheckCircle2 className="w-3.5 h-3.5 text-accent" />
+            </div>
+          ) : selectedBrand ? (
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 bg-muted/50 rounded-lg px-3 py-1.5">
+                <AlertCircle className="w-3.5 h-3.5 text-muted-foreground" />
+                <span className="text-[11px] text-muted-foreground">Kein Logo für „{selectedBrand}"</span>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-[11px] h-7 gap-1"
+                onClick={() => manufacturerLogoRef.current?.click()}
+              >
+                <Upload className="w-3 h-3" /> Logo hochladen
+              </Button>
+            </div>
+          ) : null}
+        </div>
+        <input
+          ref={manufacturerLogoRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) handleManufacturerLogoUpload(f);
+            e.target.value = '';
+          }}
+        />
+      </div>
+
       {/* Scene Dropdown */}
       <div className="space-y-2">
         <Label className="text-xs font-medium text-muted-foreground">Szene</Label>
@@ -165,14 +263,12 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
           </SelectContent>
         </Select>
 
-        {/* Scene preview */}
         {scenePreview && (
           <div className="mt-2 rounded-lg overflow-hidden border border-border">
             <img src={scenePreview} alt="Szene Vorschau" className="w-full h-32 object-cover" />
           </div>
         )}
 
-        {/* Custom showroom */}
         {config.scene === 'custom-showroom' && (
           <div className="mt-2 space-y-2">
             <p className="text-[11px] text-muted-foreground">Dein Showroom-Hintergrund. Deine Fahrzeuge werden automatisch darin platziert.</p>
@@ -298,30 +394,17 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
             <div className="flex items-center gap-2">
               <Car className="w-3.5 h-3.5 text-muted-foreground" />
               <span className="text-xs text-foreground">Hersteller-Logo einblenden</span>
-              {dynamicLogos.length === 0 && (
-                <span className="text-[10px] text-muted-foreground/60">(keine Logos vorhanden)</span>
-              )}
             </div>
             <Switch
               checked={config.showManufacturerLogo}
               onCheckedChange={(v) => update({ showManufacturerLogo: v })}
-              disabled={dynamicLogos.length === 0}
+              disabled={!config.manufacturerLogoUrl}
             />
           </div>
-          {config.showManufacturerLogo && (
-            <div className={`flex items-center gap-1.5 text-[11px] rounded-md px-2 py-1 ${config.manufacturerLogoUrl ? 'bg-accent/20 text-accent-foreground' : 'bg-destructive/10 text-destructive'}`}>
-              {config.manufacturerLogoUrl ? (
-                <>
-                  <CheckCircle2 className="w-3 h-3 text-accent shrink-0" />
-                  <span>Logo gefunden{vehicleBrand ? ` für „${vehicleBrand}"` : ''}</span>
-                  <img src={config.manufacturerLogoUrl} alt="" className="w-5 h-5 object-contain ml-auto" />
-                </>
-              ) : (
-                <>
-                  <AlertCircle className="w-3 h-3 shrink-0" />
-                  <span>{vehicleBrand ? `Kein Logo für „${vehicleBrand}" gefunden` : 'Keine Marke erkannt – Logo kann nicht zugeordnet werden'}</span>
-                </>
-              )}
+          {config.showManufacturerLogo && !config.manufacturerLogoUrl && (
+            <div className="flex items-center gap-1.5 text-[11px] rounded-md px-2 py-1 bg-destructive/10 text-destructive">
+              <AlertCircle className="w-3 h-3 shrink-0" />
+              <span>Bitte oben eine Marke auswählen oder ein Logo hochladen</span>
             </div>
           )}
         </div>

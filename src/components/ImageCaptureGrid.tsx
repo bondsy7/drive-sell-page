@@ -365,7 +365,28 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       </div>
 
       {/* Remaster Options */}
-      <RemasterOptions config={remasterConfig} onChange={setRemasterConfig} vehicleBrand={vehicleData?.vehicle?.brand} />
+      <RemasterOptions
+        config={remasterConfig}
+        onChange={setRemasterConfig}
+        vehicleBrand={vehicleData?.vehicle?.brand}
+        vehicleModel={vehicleData?.vehicle?.model}
+        onBrandChange={(brand) => {
+          if (vehicleData && onVehicleDataChange) {
+            onVehicleDataChange({
+              ...vehicleData,
+              vehicle: { ...vehicleData.vehicle, brand },
+            });
+          }
+        }}
+        onModelChange={(model) => {
+          if (vehicleData && onVehicleDataChange) {
+            onVehicleDataChange({
+              ...vehicleData,
+              vehicle: { ...vehicleData.vehicle, model },
+            });
+          }
+        }}
+      />
 
       {/* VIN display */}
       {detectedVin && (
