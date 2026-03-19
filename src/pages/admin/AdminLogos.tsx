@@ -1,10 +1,13 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Upload, Trash2, Image, Loader2, FileCode, Search, Check, X, AlertCircle } from 'lucide-react';
+import { Upload, Trash2, Image, Loader2, FileCode, Search, Check, X, AlertCircle, Plus, Pencil } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useVehicleMakes } from '@/hooks/useVehicleMakes';
+import { BRAND_ALIAS_MAP, normalizeBrand } from '@/lib/brand-aliases';
 
 interface LogoFile {
   name: string;
@@ -23,6 +26,17 @@ export default function AdminLogos() {
   const [brandSearch, setBrandSearch] = useState('');
   const [activeTab, setActiveTab] = useState('brands');
   const { makes, loading: makesLoading } = useVehicleMakes();
+
+  // New brand dialog
+  const [showNewBrand, setShowNewBrand] = useState(false);
+  const [newBrandName, setNewBrandName] = useState('');
+  const [newBrandFile, setNewBrandFile] = useState<File | null>(null);
+  const [newBrandPreview, setNewBrandPreview] = useState<string | null>(null);
+
+  // Edit logo dialog
+  const [editBrand, setEditBrand] = useState<string | null>(null);
+  const [editFile, setEditFile] = useState<File | null>(null);
+  const [editPreview, setEditPreview] = useState<string | null>(null);
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -47,38 +61,78 @@ export default function AdminLogos() {
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
-  // Match a brand key to a logo
   const getLogoForBrand = useCallback((brandKey: string): LogoFile | null => {
-    const normalized = brandKey.toLowerCase().replace(/[-_\s]+/g, '');
+    const normalized = normalizeBrand(brandKey);
     const allLogos = [...logos, ...svgs];
-    const exact = allLogos.find(l => l.name.replace(/\.[^.]+$/, '').toLowerCase().replace(/[-_\s]+/g, '') === normalized);
+    const exact = allLogos.find(l => normalizeBrand(l.name.replace(/\.[^.]+$/, '')) === normalized);
     if (exact) return exact;
+    // Check aliases
+    for (const [canonical, aliases] of Object.entries(BRAND_ALIAS_MAP)) {
+      const cNorm = normalizeBrand(canonical);
+      if (cNorm === normalized || aliases.some(a => normalizeBrand(a) === normalized)) {
+        const match = allLogos.find(l => normalizeBrand(l.name.replace(/\.[^.]+$/, '')) === cNorm);
+        if (match) return match;
+        for (const alias of aliases) {
+          const am = allLogos.find(l => normalizeBrand(l.name.replace(/\.[^.]+$/, '')) === normalizeBrand(alias));
+          if (am) return am;
+        }
+      }
+    }
     const partial = allLogos.find(l => {
-      const ln = l.name.replace(/\.[^.]+$/, '').toLowerCase().replace(/[-_\s]+/g, '');
+      const ln = normalizeBrand(l.name.replace(/\.[^.]+$/, ''));
       return ln.includes(normalized) || normalized.includes(ln);
     });
     return partial || null;
   }, [logos, svgs]);
 
-  // Brands with/without logos
   const brandsWithLogos = useMemo(() => {
     const q = brandSearch.toLowerCase();
-    return makes
-      .filter(m => !q || m.key.toLowerCase().includes(q))
+    const qNorm = normalizeBrand(brandSearch);
+
+    // Get all custom logos that don't match any make
+    const customLogos: { key: string; modelCount: number; logo: LogoFile }[] = [];
+    const allLogos = [...logos, ...svgs];
+    const makeKeys = makes.map(m => normalizeBrand(m.key));
+
+    for (const l of allLogos) {
+      const logoName = normalizeBrand(l.name.replace(/\.[^.]+$/, ''));
+      const matchesMake = makeKeys.some(mk => mk === logoName || logoName.includes(mk) || mk.includes(logoName));
+      if (!matchesMake) {
+        const displayName = l.name.replace(/\.[^.]+$/, '').replace(/-/g, ' ');
+        if (!q || displayName.toLowerCase().includes(q) || logoName.includes(qNorm)) {
+          customLogos.push({ key: displayName, modelCount: 0, logo: l });
+        }
+      }
+    }
+
+    const makeEntries = makes
+      .filter(m => {
+        if (!q) return true;
+        const mk = normalizeBrand(m.key);
+        if (mk.includes(qNorm) || m.key.toLowerCase().includes(q)) return true;
+        // Check aliases
+        for (const [canonical, aliases] of Object.entries(BRAND_ALIAS_MAP)) {
+          const cNorm = normalizeBrand(canonical);
+          if (cNorm === mk || aliases.some(a => normalizeBrand(a) === mk)) {
+            if (cNorm.includes(qNorm) || aliases.some(a => normalizeBrand(a).includes(qNorm))) return true;
+          }
+        }
+        return false;
+      })
       .map(m => ({
         key: m.key,
         modelCount: m.models.filter(mod => mod.key !== 'ANDERE').length,
         logo: getLogoForBrand(m.key),
       }));
-  }, [makes, brandSearch, getLogoForBrand]);
+
+    return [...makeEntries, ...customLogos];
+  }, [makes, brandSearch, getLogoForBrand, logos, svgs]);
 
   const missingCount = useMemo(() => brandsWithLogos.filter(b => !b.logo).length, [brandsWithLogos]);
   const coveredCount = useMemo(() => brandsWithLogos.filter(b => b.logo).length, [brandsWithLogos]);
 
   const uploadFiles = async (files: FileList | File[]) => {
-    const imageFiles = Array.from(files).filter(f =>
-      f.type.startsWith('image/') || f.name.endsWith('.svg')
-    );
+    const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/') || f.name.endsWith('.svg'));
     if (imageFiles.length === 0) { toast.error('Keine Bilddateien gefunden.'); return; }
 
     const svgFiles = imageFiles.filter(f => f.name.toLowerCase().endsWith('.svg'));
@@ -157,6 +211,48 @@ export default function AdminLogos() {
     if (e.dataTransfer.files.length) uploadFiles(e.dataTransfer.files);
   };
 
+  // New brand creation
+  const handleNewBrandFileChange = (file: File | null) => {
+    setNewBrandFile(file);
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => setNewBrandPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    } else {
+      setNewBrandPreview(null);
+    }
+  };
+
+  const createNewBrand = async () => {
+    if (!newBrandName.trim()) { toast.error('Bitte einen Markennamen eingeben.'); return; }
+    if (!newBrandFile) { toast.error('Bitte ein Logo auswählen.'); return; }
+    await uploadForBrand(newBrandName.trim(), newBrandFile);
+    setShowNewBrand(false);
+    setNewBrandName('');
+    setNewBrandFile(null);
+    setNewBrandPreview(null);
+  };
+
+  // Edit logo
+  const handleEditFileChange = (file: File | null) => {
+    setEditFile(file);
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => setEditPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    } else {
+      setEditPreview(null);
+    }
+  };
+
+  const saveEditLogo = async () => {
+    if (!editBrand || !editFile) return;
+    await uploadForBrand(editBrand, editFile);
+    setEditBrand(null);
+    setEditFile(null);
+    setEditPreview(null);
+  };
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -167,6 +263,9 @@ export default function AdminLogos() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setShowNewBrand(true)} className="gap-2">
+            <Plus className="w-4 h-4" /> Neue Marke
+          </Button>
           {(logos.length > 0 || svgs.length > 0) && (
             <Button variant="destructive" size="sm" disabled={uploading} onClick={deleteAll} className="gap-2">
               <Trash2 className="w-4 h-4" /> Alle löschen
@@ -210,7 +309,7 @@ export default function AdminLogos() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="brands" className="gap-1.5">
-            Marken-Übersicht ({makes.length})
+            Marken-Übersicht ({brandsWithLogos.length})
           </TabsTrigger>
           <TabsTrigger value="logos" className="gap-1.5">
             <Image className="w-3.5 h-3.5" /> Bild-Logos ({logos.length})
@@ -220,7 +319,6 @@ export default function AdminLogos() {
           </TabsTrigger>
         </TabsList>
 
-        {/* Brands Overview Tab */}
         <TabsContent value="brands" className="mt-4 space-y-3">
           <div className="flex items-center gap-2">
             <div className="relative flex-1 max-w-sm">
@@ -228,7 +326,7 @@ export default function AdminLogos() {
               <input
                 value={brandSearch}
                 onChange={e => setBrandSearch(e.target.value)}
-                placeholder="Marke suchen..."
+                placeholder="Marke suchen (z.B. VW, Mercedes, BMW)..."
                 className="w-full h-9 pl-9 pr-3 rounded-md border border-input bg-background text-sm outline-none focus:ring-2 focus:ring-ring"
               />
               {brandSearch && (
@@ -265,7 +363,9 @@ export default function AdminLogos() {
                   <span className="text-[10px] font-medium text-foreground truncate w-full text-center" title={key}>
                     {key}
                   </span>
-                  <span className="text-[9px] text-muted-foreground">{modelCount} Modelle</span>
+                  {modelCount > 0 && (
+                    <span className="text-[9px] text-muted-foreground">{modelCount} Modelle</span>
+                  )}
 
                   {/* Status indicator */}
                   <div className={`absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center ${
@@ -274,8 +374,8 @@ export default function AdminLogos() {
                     {logo ? <Check className="w-2.5 h-2.5 text-green-600" /> : <AlertCircle className="w-2.5 h-2.5 text-orange-500" />}
                   </div>
 
-                  {/* Upload button for missing logos */}
-                  {!logo && (
+                  {/* Upload / Replace button */}
+                  {!logo ? (
                     <label className="cursor-pointer">
                       <button className="text-[9px] text-accent hover:underline" onClick={e => {
                         e.preventDefault();
@@ -291,9 +391,16 @@ export default function AdminLogos() {
                         }}
                       />
                     </label>
+                  ) : (
+                    <button
+                      onClick={() => { setEditBrand(key); setEditFile(null); setEditPreview(null); }}
+                      className="text-[9px] text-muted-foreground hover:text-accent opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5"
+                    >
+                      <Pencil className="w-2.5 h-2.5" /> Ändern
+                    </button>
                   )}
 
-                  {/* Delete button for existing logos */}
+                  {/* Delete button */}
                   {logo && (
                     <button
                       onClick={() => deleteFile(logo.folder, logo.name)}
@@ -308,7 +415,6 @@ export default function AdminLogos() {
           )}
         </TabsContent>
 
-        {/* Raw Logo Files Tabs */}
         <TabsContent value="logos" className="mt-4">
           <LogoGrid items={logos} folder="" loading={loading} onDelete={deleteFile} />
         </TabsContent>
@@ -316,6 +422,97 @@ export default function AdminLogos() {
           <LogoGrid items={svgs} folder="svg" loading={loading} onDelete={deleteFile} />
         </TabsContent>
       </Tabs>
+
+      {/* New Brand Dialog */}
+      <Dialog open={showNewBrand} onOpenChange={setShowNewBrand}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Neue Marke anlegen</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Markenname</label>
+              <Input
+                value={newBrandName}
+                onChange={e => setNewBrandName(e.target.value)}
+                placeholder="z.B. VW Nutzfahrzeuge, BMW M, Alpine..."
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Der Name wird als Dateiname für das Logo verwendet.
+              </p>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Logo-Datei</label>
+              <div className="flex items-center gap-3">
+                {newBrandPreview && (
+                  <img src={newBrandPreview} alt="Preview" className="w-12 h-12 object-contain rounded border border-border p-1" />
+                )}
+                <label className="cursor-pointer flex-1">
+                  <Button variant="outline" size="sm" className="w-full gap-2" onClick={e => {
+                    e.preventDefault();
+                    (e.currentTarget.parentElement?.querySelector('input') as HTMLInputElement)?.click();
+                  }}>
+                    <Upload className="w-3.5 h-3.5" />
+                    {newBrandFile ? newBrandFile.name : 'Datei auswählen'}
+                  </Button>
+                  <input type="file" accept="image/*,.svg" className="hidden"
+                    onChange={e => handleNewBrandFileChange(e.target.files?.[0] || null)}
+                  />
+                </label>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setShowNewBrand(false)}>Abbrechen</Button>
+            <Button onClick={createNewBrand} disabled={!newBrandName.trim() || !newBrandFile} className="gap-2">
+              <Plus className="w-4 h-4" /> Marke anlegen
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Logo Dialog */}
+      <Dialog open={!!editBrand} onOpenChange={open => { if (!open) setEditBrand(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Logo ändern: {editBrand}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex items-center gap-4">
+              {editBrand && getLogoForBrand(editBrand) && (
+                <div className="text-center">
+                  <p className="text-[10px] text-muted-foreground mb-1">Aktuell</p>
+                  <img src={getLogoForBrand(editBrand)!.url} alt={editBrand} className="w-16 h-16 object-contain rounded border border-border p-2" />
+                </div>
+              )}
+              {editPreview && (
+                <div className="text-center">
+                  <p className="text-[10px] text-muted-foreground mb-1">Neu</p>
+                  <img src={editPreview} alt="New" className="w-16 h-16 object-contain rounded border border-accent p-2" />
+                </div>
+              )}
+            </div>
+            <label className="cursor-pointer block">
+              <Button variant="outline" size="sm" className="w-full gap-2" onClick={e => {
+                e.preventDefault();
+                (e.currentTarget.parentElement?.querySelector('input') as HTMLInputElement)?.click();
+              }}>
+                <Upload className="w-3.5 h-3.5" />
+                {editFile ? editFile.name : 'Neues Logo auswählen'}
+              </Button>
+              <input type="file" accept="image/*,.svg" className="hidden"
+                onChange={e => handleEditFileChange(e.target.files?.[0] || null)}
+              />
+            </label>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setEditBrand(null)}>Abbrechen</Button>
+            <Button onClick={saveEditLogo} disabled={!editFile} className="gap-2">
+              <Check className="w-4 h-4" /> Speichern
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
