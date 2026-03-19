@@ -780,6 +780,7 @@ const Dashboard = () => {
         open={lightboxIndex >= 0}
         onClose={() => setLightboxIndex(-1)}
         onAssigned={() => loadGallery()}
+        onRegenerated={() => loadGallery()}
       />
 
       {/* Video Player Modal */}
