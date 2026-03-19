@@ -55,6 +55,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   remasterConfig,
   modelTier = 'standard',
   projectId,
+  vin,
   onComplete,
   onBack,
 }) => {
