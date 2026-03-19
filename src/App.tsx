@@ -111,6 +111,7 @@ const App = () => (
                 <Route path="logos" element={<AdminLogos />} />
                 <Route path="sales-assistant" element={<AdminSalesAssistant />} />
                 <Route path="wmi-codes" element={<AdminWmiCodes />} />
+                <Route path="secrets" element={<AdminSecrets />} />
               </Route>
               <Route path="/architecture" element={<ProtectedRoute><AdminRoute><ArchitectureDoc /></AdminRoute></ProtectedRoute>} />
               <Route path="/sales-assistant/chat" element={<ProtectedRoute><SalesAssistant /></ProtectedRoute>} />
