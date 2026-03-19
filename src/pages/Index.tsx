@@ -17,6 +17,8 @@ import CreditConfirmDialog from '@/components/CreditConfirmDialog';
 import VideoGenerator from '@/components/VideoGenerator';
 import BannerGenerator from '@/components/BannerGenerator';
 import VehicleSelectBeforeGenerate from '@/components/VehicleSelectBeforeGenerate';
+import { PhotoModeSelector, Spin360Workflow } from '@/components/spin360';
+import type { PhotoMode } from '@/components/spin360';
 import { extractPDFAsBase64 } from '@/lib/pdf-utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -28,7 +30,7 @@ import type { ModelTier } from '@/components/ModelSelector';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-type ExtendedAppState = AppState | 'capturing-images' | 'hub' | 'standalone-photo-choice' | 'standalone-capture' | 'standalone-upload' | 'standalone-generate-select' | 'standalone-generating' | 'video' | 'banner' | 'manual-landing' | 'manual-landing-preview';
+type ExtendedAppState = AppState | 'capturing-images' | 'hub' | 'standalone-photo-choice' | 'standalone-photo-mode' | 'standalone-capture' | 'standalone-upload' | 'standalone-generate-select' | 'standalone-generating' | 'spin360' | 'video' | 'banner' | 'manual-landing' | 'manual-landing-preview';
 
 const PERSPECTIVES = [
   { key: 'front', label: 'Frontansicht', prompt: 'Front view, straight on, symmetrical composition' },
@@ -379,7 +381,7 @@ const Index = () => {
   const handleHubAction = useCallback((action: HubAction) => {
     switch (action) {
       case 'photos':
-        setAppState('standalone-photo-choice');
+        setAppState('standalone-photo-mode' as ExtendedAppState);
         break;
       case 'pdf-landing':
         setAppState('idle');
@@ -398,6 +400,20 @@ const Index = () => {
         break;
       default:
         toast.info('Diese Funktion ist bald verfügbar!');
+    }
+  }, []);
+
+  const handlePhotoMode = useCallback((mode: PhotoMode) => {
+    switch (mode) {
+      case 'single':
+        setAppState('standalone-photo-choice');
+        break;
+      case 'multi':
+        setAppState('standalone-photo-choice');
+        break;
+      case 'spin360':
+        setAppState('spin360' as ExtendedAppState);
+        break;
     }
   }, []);
 
@@ -448,11 +464,32 @@ const Index = () => {
             </>
           )}
 
+          {/* ─── Photo Mode Selector (new intermediate step) ─── */}
+          {appState === 'standalone-photo-mode' && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-3 mb-4">
+                <Button variant="ghost" size="icon" onClick={() => setAppState('hub')}>
+                  <ArrowLeft className="w-4 h-4" />
+                </Button>
+                <div>
+                  <h2 className="font-display text-2xl font-bold text-foreground">Fotos & Remastering</h2>
+                  <p className="text-sm text-muted-foreground">Wähle deinen Workflow</p>
+                </div>
+              </div>
+              <PhotoModeSelector onSelect={handlePhotoMode} />
+            </div>
+          )}
+
+          {/* ─── 360 Spin ─── */}
+          {appState === 'spin360' && (
+            <Spin360Workflow onBack={() => setAppState('standalone-photo-mode' as ExtendedAppState)} />
+          )}
+
           {/* ─── Standalone Photo Choice ─── */}
           {appState === 'standalone-photo-choice' && (
             <div className="space-y-6">
               <div className="flex items-center gap-3 mb-4">
-                <Button variant="ghost" size="icon" onClick={() => setAppState('hub')}>
+                <Button variant="ghost" size="icon" onClick={() => setAppState('standalone-photo-mode' as ExtendedAppState)}>
                   <ArrowLeft className="w-4 h-4" />
                 </Button>
                 <div>

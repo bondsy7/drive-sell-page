@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { RotateCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -68,7 +69,7 @@ const Dashboard = () => {
   const [videos, setVideos] = useState<VideoFile[]>([]);
   const [banners, setBanners] = useState<BannerFile[]>([]);
   const initialTab = (searchParams.get('tab') as any) || 'projects';
-  const [tab, setTab] = useState<'projects' | 'landings' | 'gallery' | 'banners' | 'videos' | 'leads'>(initialTab);
+  const [tab, setTab] = useState<'projects' | 'landings' | 'gallery' | 'banners' | 'videos' | 'leads' | 'spin360'>(initialTab);
   const [loading, setLoading] = useState(true);
   const [lightboxIndex, setLightboxIndex] = useState(-1);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
@@ -76,7 +77,9 @@ const Dashboard = () => {
   const [leadsLoaded, setLeadsLoaded] = useState(false);
   const [videosLoaded, setVideosLoaded] = useState(false);
   const [bannersLoaded, setBannersLoaded] = useState(false);
-  const [counts, setCounts] = useState({ gallery: 0, videos: 0, leads: 0, banners: 0 });
+  const [spin360Jobs, setSpin360Jobs] = useState<any[]>([]);
+  const [spin360Loaded, setSpin360Loaded] = useState(false);
+  const [counts, setCounts] = useState({ gallery: 0, videos: 0, leads: 0, banners: 0, spin360: 0 });
 
   const regularProjects = projects.filter(p => p.template_id !== 'landing-page');
   const landingProjects = projects.filter(p => p.template_id === 'landing-page');
@@ -118,6 +121,7 @@ const Dashboard = () => {
     if (tab === 'leads' && !leadsLoaded) loadLeads();
     if (tab === 'videos' && !videosLoaded) loadVideos();
     if (tab === 'banners' && !bannersLoaded) loadBanners();
+    if (tab === 'spin360' && !spin360Loaded) loadSpin360();
   }, [tab]);
 
   const loadCounts = async () => {
@@ -128,12 +132,25 @@ const Dashboard = () => {
       userId ? supabase.storage.from('vehicle-images').list(`${userId}/videos`, { limit: 200 }) : Promise.resolve({ data: null }),
       userId ? supabase.storage.from('banners').list(userId, { limit: 200 }) : Promise.resolve({ data: null }),
     ]);
+    const spinRes = await supabase.from('spin360_jobs' as any).select('id', { count: 'exact', head: true });
     setCounts({
       gallery: imgRes.count ?? 0,
       leads: leadsRes.count ?? 0,
       videos: videosRes.data?.filter(f => f.name.endsWith('.mp4')).length ?? 0,
       banners: bannersRes.data?.filter(f => f.name.endsWith('.png')).length ?? 0,
+      spin360: (spinRes as any).count ?? 0,
     });
+  };
+
+  const loadSpin360 = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('spin360_jobs' as any)
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+    setSpin360Jobs((data as any[]) || []);
+    setSpin360Loaded(true);
   };
 
   const loadProjects = async () => {
@@ -505,6 +522,9 @@ const Dashboard = () => {
           <Button variant={tab === 'banners' ? 'default' : 'outline'} size="sm" onClick={() => setTab('banners')} className="whitespace-nowrap">
             <LayoutGrid className="w-4 h-4 mr-1.5" /> Banner ({bannersLoaded ? banners.length : counts.banners})
           </Button>
+          <Button variant={tab === 'spin360' ? 'default' : 'outline'} size="sm" onClick={() => setTab('spin360')} className="whitespace-nowrap">
+            <RotateCw className="w-4 h-4 mr-1.5" /> 360° Spin ({spin360Loaded ? spin360Jobs.length : counts.spin360})
+          </Button>
           <Button variant={tab === 'leads' ? 'default' : 'outline'} size="sm" onClick={() => setTab('leads')} className="whitespace-nowrap">
             <MessageSquare className="w-4 h-4 mr-1.5" /> Anfragen ({leadsLoaded ? leads.length : counts.leads})
           </Button>
@@ -716,6 +736,42 @@ const Dashboard = () => {
                       </Button>
                     </div>
                   </div>
+                </div>
+              ))}
+            </div>
+          )
+        ) : tab === 'spin360' ? (
+          spin360Jobs.length === 0 ? (
+            <div className="text-center py-20 space-y-3">
+              <RotateCw className="w-12 h-12 text-muted-foreground mx-auto" />
+              <p className="text-muted-foreground">Noch keine 360° Spins erstellt.</p>
+              <p className="text-xs text-muted-foreground max-w-md mx-auto">Erstelle deinen ersten interaktiven 360°-Fahrzeug-Spin unter „Fotos & Remastering".</p>
+              <Link to="/">
+                <Button variant="outline" size="sm" className="mt-2">
+                  <RotateCw className="w-3.5 h-3.5 mr-1.5" /> 360° Spin erstellen
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {spin360Jobs.map((job: any) => (
+                <div key={job.id} className="bg-card rounded-xl border border-border p-5 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-display font-semibold text-foreground text-sm">360° Spin</h3>
+                    <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                      job.status === 'completed' ? 'bg-green-500/10 text-green-600' :
+                      job.status === 'failed' ? 'bg-destructive/10 text-destructive' :
+                      'bg-accent/10 text-accent'
+                    }`}>
+                      {job.status === 'completed' ? 'Fertig' : job.status === 'failed' ? 'Fehler' : 'In Bearbeitung'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(job.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                  {job.manifest?.frameCount && (
+                    <p className="text-xs text-muted-foreground">{job.manifest.frameCount} Frames</p>
+                  )}
                 </div>
               ))}
             </div>
