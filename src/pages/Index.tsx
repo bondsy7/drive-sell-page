@@ -256,8 +256,8 @@ const Index = () => {
       const updatedData = vin ? { ...vehicleData, vehicle: { ...vehicleData.vehicle, vin } } : vehicleData;
       if (vin) setVehicleData(updatedData);
       const allImgs = [mainImage, ...gallery];
+      const folderName = getGalleryFolderName(vin || (updatedData.vehicle as any)?.vin);
       if (savedProjectId) {
-        // Update existing project (created during PDF analysis)
         await supabase.from('projects').update({
           vehicle_data: updatedData as any,
           updated_at: new Date().toISOString(),
@@ -268,13 +268,13 @@ const Index = () => {
             await supabase.from('projects').update({ main_image_url: urls[0] }).eq('id', savedProjectId);
             const imageRows = urls.map((url, i) => ({
               project_id: savedProjectId, user_id: user.id, image_url: url, image_base64: '',
-              perspective: `Bild ${i + 1}`, sort_order: i,
+              perspective: `Bild ${i + 1}`, sort_order: i, gallery_folder: folderName,
             }));
-            await supabase.from('project_images').insert(imageRows);
+            await supabase.from('project_images').insert(imageRows as any);
           }
         }
       } else {
-        const projectId = await saveProject(updatedData, mainImage, allImgs, selectedTemplate);
+        const projectId = await saveProject(updatedData, mainImage, allImgs, selectedTemplate, vin);
         if (projectId) setSavedProjectId(projectId);
       }
     }
@@ -286,6 +286,7 @@ const Index = () => {
     setGalleryImages(gallery);
     if (vehicleData) {
       const allImgs = [mainImage, ...gallery];
+      const folderName = getGalleryFolderName((vehicleData.vehicle as any)?.vin);
       if (savedProjectId) {
         await supabase.from('projects').update({
           vehicle_data: vehicleData as any,
@@ -297,9 +298,9 @@ const Index = () => {
             await supabase.from('projects').update({ main_image_url: urls[0] }).eq('id', savedProjectId);
             const imageRows = urls.map((url, i) => ({
               project_id: savedProjectId, user_id: user.id, image_url: url, image_base64: '',
-              perspective: `Bild ${i + 1}`, sort_order: i,
+              perspective: `Bild ${i + 1}`, sort_order: i, gallery_folder: folderName,
             }));
-            await supabase.from('project_images').insert(imageRows);
+            await supabase.from('project_images').insert(imageRows as any);
           }
         }
       } else {
