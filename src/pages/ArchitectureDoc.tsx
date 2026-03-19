@@ -361,6 +361,13 @@ const apiKey = await getSecret("GEMINI_API_KEY");
   ├──1:N── user_subscriptions (plan_id, status, stripe_sub_id)
   ├──1:N── user_roles (role: admin|moderator|user)
   ├──1:1── ftp_configs (host, port, credentials)
+  ├──1:N── image_generation_jobs (Pipeline-Jobs)
+  │
+  ├── 360° Spin:
+  │   ├──1:N── spin360_jobs (status, target_frame_count)
+  │   │         ├──1:N── spin360_source_images
+  │   │         ├──1:N── spin360_canonical_images
+  │   │         └──1:N── spin360_generated_frames (36 Frames)
   │
   ├── Sales Assistant:
   │   ├──1:1── sales_assistant_profiles (Ton, Autopilot, Signatur)
@@ -371,22 +378,18 @@ const apiKey = await getSecret("GEMINI_API_KEY");
   │   │         ├──1:N── crm_manual_notes (Manuelle Notizen)
   │   │         ├──1:N── sales_quotes (Angebote, Preise)
   │   │         └──1:N── test_drive_bookings (Probefahrt-Termine)
-  │   ├──1:N── sales_knowledge_documents (Wissensbasis)
-  │   │         └──1:N── sales_knowledge_chunks (Embeddings)
-  │   ├──1:N── sales_email_outbox (E-Mail-Versand)
-  │   ├──1:N── sales_notifications (Benachrichtigungen)
-  │   ├──1:N── sales_chat_messages (Interner Chat)
-  │   ├──1:N── dealer_availability (Verfügbarkeiten)
-  │   ├──1:N── dealer_blocked_dates (Gesperrte Tage)
-  │   ├──1:N── trade_in_valuations (Inzahlungnahme)
-  │   └──1:N── calendar_sync_configs (Kalender-Sync)
+  │   ├──1:N── sales_knowledge_documents → sales_knowledge_chunks
+  │   ├──1:N── sales_email_outbox / sales_notifications
+  │   ├──1:N── sales_chat_messages / trade_in_valuations
+  │   └──1:N── dealer_availability / dealer_blocked_dates
   │
   └── customer_journey_templates (Journey-Phasen)
 
 Globale Tabellen:
-  subscription_plans (name, slug, credits, prices)
-  admin_settings (key-value, JSONB)
-  sample_pdfs (title, pdf_url, category)`}</CodeBlock>
+  subscription_plans (read-only)
+  admin_settings (key-value JSONB, nur Admins schreiben)
+  admin_secrets (API-Keys, NUR Admins lesen+schreiben!)
+  sample_pdfs (read-only)`}</CodeBlock>
           </SubSection>
           <SubSection title="Wichtige Enums">
             <Table
