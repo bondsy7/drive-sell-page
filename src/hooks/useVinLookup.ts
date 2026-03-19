@@ -124,5 +124,5 @@ export function useVinLookup() {
     return updated;
   }, [outvinData]);
 
-  return { loading, diffs, equipment, dialogOpen, setDialogOpen, lookup, applyFields };
+  return { loading, diffs, equipment, outvinData, dialogOpen, setDialogOpen, lookup, applyFields };
 }

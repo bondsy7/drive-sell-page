@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Search, ChevronRight, Car } from 'lucide-react';
 import { useVehicleMakes } from '@/hooks/useVehicleMakes';
-import { Input } from '@/components/ui/input';
 
 interface VehicleBrandModelPickerProps {
   brand: string;
@@ -12,9 +11,9 @@ interface VehicleBrandModelPickerProps {
   compact?: boolean;
 }
 
-const VehicleBrandModelPicker: React.FC<VehicleBrandModelPickerProps> = ({
+const VehicleBrandModelPicker = React.forwardRef<HTMLDivElement, VehicleBrandModelPickerProps>(({
   brand, model, onBrandChange, onModelChange, compact = false,
-}) => {
+}, ref) => {
   const { makes, loading, getModelsForMake, getLogoForMake, filterMakes } = useVehicleMakes();
   const [brandQuery, setBrandQuery] = useState('');
   const [modelQuery, setModelQuery] = useState('');
@@ -23,7 +22,6 @@ const VehicleBrandModelPicker: React.FC<VehicleBrandModelPickerProps> = ({
   const brandRef = useRef<HTMLDivElement>(null);
   const modelRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdowns on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (brandRef.current && !brandRef.current.contains(e.target as Node)) setShowBrandList(false);
@@ -51,7 +49,6 @@ const VehicleBrandModelPicker: React.FC<VehicleBrandModelPickerProps> = ({
     setBrandQuery('');
     setModelQuery('');
     setShowBrandList(false);
-    // Auto-open model list
     setTimeout(() => setShowModelList(true), 100);
   };
 
@@ -71,8 +68,7 @@ const VehicleBrandModelPicker: React.FC<VehicleBrandModelPickerProps> = ({
   }
 
   return (
-    <div className={`grid ${compact ? 'grid-cols-2 gap-3' : 'grid-cols-1 sm:grid-cols-2 gap-4'}`}>
-      {/* Brand Picker */}
+    <div ref={ref} className={`grid ${compact ? 'grid-cols-2 gap-3' : 'grid-cols-1 sm:grid-cols-2 gap-4'}`}>
       <div ref={brandRef} className="relative">
         <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Marke</label>
         <div
@@ -136,7 +132,6 @@ const VehicleBrandModelPicker: React.FC<VehicleBrandModelPickerProps> = ({
         )}
       </div>
 
-      {/* Model Picker */}
       <div ref={modelRef} className="relative">
         <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Modell</label>
         <div
@@ -187,6 +182,8 @@ const VehicleBrandModelPicker: React.FC<VehicleBrandModelPickerProps> = ({
       </div>
     </div>
   );
-};
+});
+
+VehicleBrandModelPicker.displayName = 'VehicleBrandModelPicker';
 
 export default VehicleBrandModelPicker;
