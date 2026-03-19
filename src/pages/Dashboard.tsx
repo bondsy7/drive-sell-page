@@ -31,6 +31,7 @@ interface ProjectImage {
   image_base64: string;
   image_url: string | null;
   perspective: string | null;
+  gallery_folder: string | null;
   created_at: string;
 }
 
