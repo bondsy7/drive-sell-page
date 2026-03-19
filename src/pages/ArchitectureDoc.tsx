@@ -323,13 +323,28 @@ export default function ArchitectureDoc() {
               ]}
             />
           </SubSection>
+          <SubSection title="Shared Module (_shared/)">
+            <Table
+              headers={['Modul', 'Datei', 'Zweck']}
+              rows={[
+                ['getSecret()', '_shared/get-secret.ts', 'API-Keys aus admin_secrets DB lesen, Fallback auf Deno.env, 5-Min-Cache'],
+              ]}
+            />
+            <CodeBlock>{`// Verwendung in Edge Functions:
+import { getSecret } from "../_shared/get-secret.ts";
+const apiKey = await getSecret("GEMINI_API_KEY");
+// 1. Prüft admin_secrets Tabelle (Service Role, RLS bypass)
+// 2. Falls leer → Fallback auf Deno.env.get()
+// 3. Ergebnis wird 5 Minuten gecacht`}</CodeBlock>
+          </SubSection>
           <SubSection title="Gemeinsames Pattern">
             <CodeBlock>{`// Jede KI-Function folgt diesem Schema:
 1. CORS Handling (OPTIONS)
 2. Auth + Credit-Deduction (atomar via RPC)
 3. Custom Prompt laden (admin_settings Override)
-4. KI-API aufrufen (Lovable Gateway oder direkt)
-5. Ergebnis verarbeiten + zurückgeben`}</CodeBlock>
+4. API-Key aus DB laden (getSecret() mit Env-Fallback)
+5. KI-API aufrufen (Lovable Gateway oder direkt)
+6. Ergebnis verarbeiten + zurückgeben`}</CodeBlock>
           </SubSection>
         </Section>
 
