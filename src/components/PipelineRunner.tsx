@@ -382,41 +382,42 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
     const workers = Array.from({ length: Math.min(CONCURRENCY, taskQueue.length) }, () => runTask());
     await Promise.all(workers);
 
-    // Save all results
+    // Save all results to gallery
     if (allResults.length > 0 && user) {
       try {
-        const projectId = savedProjectId || crypto.randomUUID();
+        const folderName = getGalleryFolderName(vin);
+        const storagePath = savedProjectId ? savedProjectId : `gallery/${folderName}`;
+
+        // Only create project if we don't have one from PDF flow
+        // Standalone flows: NO project creation – gallery only
         if (!savedProjectId) {
-          const dateStr = new Date().toLocaleDateString('de-DE', {
-            day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
-          });
-          await supabase.from('projects').insert({
-            id: projectId, user_id: user.id, title: `Pipeline ${dateStr}`,
-            vehicle_data: { vehicle: { brand: vehicleDescription || 'Pipeline' } } as any, template_id: 'modern',
-          });
+          // No project created – images go to gallery folder only
         }
 
-        const { data: existingImages } = await supabase
-          .from('project_images').select('sort_order').eq('project_id', projectId)
-          .order('sort_order', { ascending: false }).limit(1);
+        const { data: existingImages } = savedProjectId
+          ? await supabase
+              .from('project_images').select('sort_order').eq('project_id', savedProjectId)
+              .order('sort_order', { ascending: false }).limit(1)
+          : { data: null };
         const startOrder = (existingImages?.[0]?.sort_order ?? -1) + 1;
 
         const urls: string[] = [];
         for (let i = 0; i < allResults.length; i++) {
           const r = allResults[i];
-          const url = await uploadImageToStorage(r.base64, user.id, `${projectId}/${r.key}_${r.subIndex}.png`);
+          const url = await uploadImageToStorage(r.base64, user.id, `${storagePath}/${r.key}_${r.subIndex}.png`);
           if (url) urls.push(url);
         }
 
         if (urls.length > 0) {
           const imageRows = urls.map((url, i) => ({
-            project_id: projectId, user_id: user.id, image_url: url, image_base64: '',
+            project_id: savedProjectId || null, user_id: user.id, image_url: url, image_base64: '',
             perspective: `Pipeline: ${allResults[i]?.label || `Bild ${i + 1}`}`, sort_order: startOrder + i,
+            gallery_folder: folderName,
           }));
-          await supabase.from('project_images').insert(imageRows);
+          await supabase.from('project_images').insert(imageRows as any);
         }
 
-        toast.success(`${allResults.length} Pipeline-Bilder erstellt und gespeichert!`);
+        toast.success(`${allResults.length} Pipeline-Bilder in Galerie gespeichert!`);
       } catch (e) {
         console.error('Pipeline save error:', e);
         toast.error('Bilder generiert, aber Speichern fehlgeschlagen.');
@@ -425,7 +426,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
 
     setRunning(false);
     setFinished(true);
-  }, [inputImages, originalImages, vehicleDescription, remasterConfig, modelTier, user, savedProjectId, selectedJobs, generateOneImage]);
+  }, [inputImages, originalImages, vehicleDescription, remasterConfig, modelTier, user, savedProjectId, selectedJobs, generateOneImage, vin]);
 
   /* ─── Credit pre-check before starting ─── */
   const handleStartClick = () => {
