@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { Upload, X, Loader2, Check, AlertCircle, Image as ImageIcon, RotateCcw } from 'lucide-react';
+import { Upload, X, Loader2, Check, AlertCircle, Image as ImageIcon, RotateCcw, ZoomIn } from 'lucide-react';
+import ImagePreviewLightbox from '@/components/ImagePreviewLightbox';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
