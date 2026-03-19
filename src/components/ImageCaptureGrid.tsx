@@ -11,6 +11,7 @@ import RemasterOptions from '@/components/RemasterOptions';
 import { type RemasterConfig, buildMasterPrompt } from '@/lib/remaster-prompt';
 import PipelineRunner from '@/components/PipelineRunner';
 import { lookupBrandFromVin } from '@/lib/vin-wmi-lookup';
+import { resolveCanonicalBrand, normalizeBrand } from '@/lib/brand-aliases';
 import type { VehicleData } from '@/types/vehicle';
 
 interface ImageCaptureGridProps {
