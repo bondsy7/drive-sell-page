@@ -63,6 +63,13 @@ export default function AppHeader({ leftActions, variant = 'card' }: AppHeaderPr
                 {/* Credits */}
                 <CreditBadge />
 
+                {/* Dashboard Home */}
+                <Link to="/dashboard">
+                  <Button variant="ghost" size="icon" className={ghostClass} title="Dashboard">
+                    <Home className={iconClass} />
+                  </Button>
+                </Link>
+
                 {/* Chat icon */}
                 <Button
                   variant="ghost"
