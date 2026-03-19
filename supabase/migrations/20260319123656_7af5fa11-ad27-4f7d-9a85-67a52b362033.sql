@@ -1,0 +1,1 @@
+DROP POLICY "Admins can view all projects" ON public.projects;
