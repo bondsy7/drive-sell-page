@@ -79,6 +79,9 @@ const Dashboard = () => {
   const [bannersLoaded, setBannersLoaded] = useState(false);
   const [spin360Jobs, setSpin360Jobs] = useState<any[]>([]);
   const [spin360Loaded, setSpin360Loaded] = useState(false);
+  const [viewerJobId, setViewerJobId] = useState<string | null>(null);
+  const [viewerFrames, setViewerFrames] = useState<string[]>([]);
+  const [viewerLoading, setViewerLoading] = useState(false);
   const [counts, setCounts] = useState({ gallery: 0, videos: 0, leads: 0, banners: 0, spin360: 0 });
 
   const regularProjects = projects.filter(p => p.template_id !== 'landing-page');
