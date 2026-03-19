@@ -183,7 +183,9 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   /* ─── Save remastered input images on mount ─── */
   useEffect(() => {
     if (!user || inputImages.length === 0) return;
-    // If we already have a project (from PDF flow), just save images to it
+    const folderName = getGalleryFolderName(vin);
+
+    // If we already have a project (from PDF flow), save images to it AND to gallery
     if (projectId) {
       setSavedProjectId(projectId);
       (async () => {
@@ -199,44 +201,31 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
             const imageRows = urls.map((url, i) => ({
               project_id: projectId, user_id: user.id, image_url: url,
               image_base64: '', perspective: perspectives[i] || `Bild ${i + 1}`, sort_order: i,
+              gallery_folder: folderName,
             }));
-            await supabase.from('project_images').insert(imageRows);
+            await supabase.from('project_images').insert(imageRows as any);
           }
         } catch (e) { console.error('Error saving remastered images:', e); }
       })();
       return;
     }
-    // No existing project – create a new one (standalone flow)
+    // No existing project – standalone flow: save ONLY to gallery (no project creation!)
     if (savedProjectId) return;
     (async () => {
       try {
-        const dateStr = new Date().toLocaleDateString('de-DE', {
-          day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
-        });
-        const { data: project } = await supabase.from('projects').insert({
-          user_id: user.id,
-          title: `Showroom ${dateStr}`,
-          vehicle_data: { vehicle: { brand: vehicleDescription || 'Showroom' } } as any,
-          template_id: 'modern',
-        }).select('id').single();
-
-        if (!project) return;
-        setSavedProjectId(project.id);
-
         const urls: string[] = [];
         for (let i = 0; i < inputImages.length; i++) {
-          const url = await uploadImageToStorage(inputImages[i], user.id, `${project.id}/remaster_${i}.png`);
+          const url = await uploadImageToStorage(inputImages[i], user.id, `gallery/${folderName}/remaster_${i}.png`);
           if (url) urls.push(url);
         }
-
         if (urls.length > 0) {
-          await supabase.from('projects').update({ main_image_url: urls[0] }).eq('id', project.id);
           const perspectives = ['3/4 Front', 'Seite', 'Hinten', 'Interieur Fahrersitz', 'Interieur Rücksitz'];
           const imageRows = urls.map((url, i) => ({
-            project_id: project.id, user_id: user.id, image_url: url,
+            project_id: null, user_id: user.id, image_url: url,
             image_base64: '', perspective: perspectives[i] || `Bild ${i + 1}`, sort_order: i,
+            gallery_folder: folderName,
           }));
-          await supabase.from('project_images').insert(imageRows);
+          await supabase.from('project_images').insert(imageRows as any);
         }
       } catch (e) { console.error('Error saving remastered images:', e); }
     })();
