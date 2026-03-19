@@ -174,11 +174,12 @@ const Dashboard = () => {
   };
 
   const loadVideos = async () => {
+    if (!user) return;
     setLoading(true);
     try {
       const { data: files, error } = await supabase.storage
         .from('vehicle-images')
-        .list('videos', { limit: 50, sortBy: { column: 'created_at', order: 'desc' } });
+        .list(`${user.id}/videos`, { limit: 50, sortBy: { column: 'created_at', order: 'desc' } });
 
       if (error || !files) {
         setVideos([]);
@@ -186,7 +187,7 @@ const Dashboard = () => {
         const videoFiles: VideoFile[] = files
           .filter(f => f.name.endsWith('.mp4'))
           .map(f => {
-            const { data: urlData } = supabase.storage.from('vehicle-images').getPublicUrl(`videos/${f.name}`);
+            const { data: urlData } = supabase.storage.from('vehicle-images').getPublicUrl(`${user.id}/videos/${f.name}`);
             return {
               name: f.name,
               url: urlData.publicUrl,

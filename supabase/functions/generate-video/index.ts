@@ -149,6 +149,11 @@ Deno.serve(async (req) => {
         });
       }
 
+      // Authenticate to get userId for user-scoped storage
+      const authResult = await authenticateUser(req);
+      if (authResult instanceof Response) return authResult;
+      const { userId } = authResult;
+
       const pollUrl = `${BASE_URL}/${operationName}?key=${GEMINI_API_KEY}`;
       const pollResponse = await fetch(pollUrl);
 
@@ -189,10 +194,10 @@ Deno.serve(async (req) => {
           });
         }
 
-        // Upload to Supabase Storage instead of returning base64
+        // Upload to user-scoped folder in Supabase Storage
         const videoBytes = await videoResponse.arrayBuffer();
         const sb = createServiceClient();
-        const fileName = `videos/${crypto.randomUUID()}.mp4`;
+        const fileName = `${userId}/videos/${crypto.randomUUID()}.mp4`;
         
         const { error: uploadError } = await sb.storage
           .from("vehicle-images")
