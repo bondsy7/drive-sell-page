@@ -249,7 +249,8 @@ const Dashboard = () => {
   };
 
   const deleteVideo = async (name: string) => {
-    const { error } = await supabase.storage.from('vehicle-images').remove([`videos/${name}`]);
+    if (!user) return;
+    const { error } = await supabase.storage.from('vehicle-images').remove([`${user.id}/videos/${name}`]);
     if (error) { toast.error('Fehler beim Löschen'); return; }
     toast.success('Video gelöscht');
     setVideos(prev => prev.filter(v => v.name !== name));
