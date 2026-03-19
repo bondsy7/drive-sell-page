@@ -226,23 +226,36 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
 
     if (slot.isVin) {
       try {
-        setBrandDetectionStatus('detecting');
         const { data, error } = await supabase.functions.invoke('ocr-vin', { body: { imageBase64: base64 } });
         if (data?.error === 'insufficient_credits') {
           toast.error('Nicht genügend Credits für VIN-Erkennung.');
-          setBrandDetectionStatus('not-found');
         } else if (!error && data?.vin) {
           setDetectedVin(data.vin);
           toast.success(`VIN erkannt: ${data.vin}`);
+
+          // Instant brand detection from VIN prefix (no API needed)
+          const vinBrand = lookupBrandFromVin(data.vin);
+          if (vinBrand) {
+            const resolved = resolveBrandFromSource(vinBrand);
+            if (resolved && vehicleData && onVehicleDataChange) {
+              setBrandDetectionStatus('found');
+              brandDetectionAttempted.current = true;
+              onVehicleDataChange({
+                ...vehicleData,
+                vehicle: { ...vehicleData.vehicle, brand: resolved },
+              });
+              toast.success(`Marke erkannt: ${resolved}`);
+            }
+          }
+
+          // Also trigger full VIN lookup for additional data (model, equipment etc.)
           if (vehicleData) {
             vinLookup.lookup(data.vin, vehicleData);
           }
         } else {
-          setBrandDetectionStatus('not-found');
           toast.warning('VIN konnte nicht erkannt werden. Bitte prüfe das Foto.');
         }
       } catch {
-        setBrandDetectionStatus('not-found');
         toast.warning('VIN-Erkennung fehlgeschlagen.');
       }
     }
