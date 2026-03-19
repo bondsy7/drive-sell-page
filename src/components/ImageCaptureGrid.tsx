@@ -119,8 +119,6 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     }
 
     if (!brandDetectionAttempted.current && vehicleDescription) {
-      brandDetectionAttempted.current = true;
-
       // Try to find brand in the description by checking each word/token
       let matchedBrand: string | null = null;
 
@@ -136,14 +134,18 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         }
       }
 
-      setBrandDetectionStatus(matchedBrand ? 'found' : 'not-found');
-
-      if (matchedBrand && vehicleData && onVehicleDataChange) {
-        onVehicleDataChange({
-          ...vehicleData,
-          vehicle: { ...vehicleData.vehicle, brand: matchedBrand },
-        });
+      if (matchedBrand) {
+        // Only mark as attempted if we actually found something via text
+        brandDetectionAttempted.current = true;
+        setBrandDetectionStatus('found');
+        if (vehicleData && onVehicleDataChange) {
+          onVehicleDataChange({
+            ...vehicleData,
+            vehicle: { ...vehicleData.vehicle, brand: matchedBrand },
+          });
+        }
       }
+      // If no text match: leave status as 'idle' so image-based detection can trigger on first photo
     }
   }, [vehicleData, vehicleDescription, makes, onVehicleDataChange, resolveBrandFromSource]);
 
