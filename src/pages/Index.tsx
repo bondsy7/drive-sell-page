@@ -464,6 +464,27 @@ const Index = () => {
             </>
           )}
 
+          {/* ─── Photo Mode Selector (new intermediate step) ─── */}
+          {appState === 'standalone-photo-mode' && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-3 mb-4">
+                <Button variant="ghost" size="icon" onClick={() => setAppState('hub')}>
+                  <ArrowLeft className="w-4 h-4" />
+                </Button>
+                <div>
+                  <h2 className="font-display text-2xl font-bold text-foreground">Fotos & Remastering</h2>
+                  <p className="text-sm text-muted-foreground">Wähle deinen Workflow</p>
+                </div>
+              </div>
+              <PhotoModeSelector onSelect={handlePhotoMode} />
+            </div>
+          )}
+
+          {/* ─── 360 Spin ─── */}
+          {appState === 'spin360' && (
+            <Spin360Workflow onBack={() => setAppState('standalone-photo-mode' as ExtendedAppState)} />
+          )}
+
           {/* ─── Standalone Photo Choice ─── */}
           {appState === 'standalone-photo-choice' && (
             <div className="space-y-6">
