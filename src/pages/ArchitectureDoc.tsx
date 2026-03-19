@@ -803,6 +803,8 @@ getSecret() Helper → 5-Min-Cache → Fallback: Deno.env`}</CodeBlock>
                 ['4. DB Functions', 'SECURITY DEFINER (has_role, deduct_credits)'],
                 ['5. REST API', 'Key-basierte Auth (x-api-key Header)'],
                 ['6. Stripe', 'Webhook Signature Verifizierung'],
+                ['7. E-Mail', 'Verifizierung (email_confirmed_at Pflicht)'],
+                ['8. API-Secrets', 'admin_secrets Tabelle (Admin-Only RLS, kein public SELECT)'],
               ]}
             />
           </SubSection>
