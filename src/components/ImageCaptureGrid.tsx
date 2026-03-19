@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { Camera, Upload, X, Loader2, Check, AlertCircle, Search, Zap, RotateCcw } from 'lucide-react';
+import { Camera, Upload, X, Loader2, Check, AlertCircle, Search, Zap, RotateCcw, ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
@@ -417,7 +417,11 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                 size="sm"
                 onClick={finishUp}
               >
-                <Check className="w-4 h-4 mr-1" /> Weiter zur Landing Page
+                {projectId ? (
+                  <><Check className="w-4 h-4 mr-1" /> Weiter zur Landing Page</>
+                ) : (
+                  <><ImageIcon className="w-4 h-4 mr-1" /> Zur Galerie</>
+                )}
               </Button>
               <Button
                 onClick={() => setShowPipeline(true)}
