@@ -523,7 +523,6 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                 ref={(el) => { fileRefs.current[slot.key] = el; }}
                 type="file"
                 accept="image/*"
-                capture={slot.capture}
                 className="hidden"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
