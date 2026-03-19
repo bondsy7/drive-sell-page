@@ -136,11 +136,14 @@ export default function ArchitectureDoc() {
             <ul className="list-disc pl-6 space-y-1">
               <Li><strong>Fahrzeugangebots-Seiten</strong> aus PDF-Angeboten generieren</Li>
               <Li><strong>Showroom-Bilder</strong> aus Handyfotos per KI-Remastering erstellen</Li>
+              <Li><strong>360°-Spins</strong> aus 4 Perspektiv-Fotos generieren (36 interpolierte Frames)</Li>
               <Li><strong>SEO-optimierte Landing Pages</strong> für Fahrzeugmarketing erzeugen</Li>
               <Li><strong>Werbebanner</strong> für Social Media rendern</Li>
               <Li><strong>Showroom-Videos</strong> per KI generieren</Li>
               <Li><strong>VIN-Erkennung</strong> per OCR und Fahrzeugdaten-Lookup</Li>
+              <Li><strong>Fahrzeugmarke erkennen</strong> per KI-Bildanalyse</Li>
               <Li><strong>Sales Assistant</strong> KI-gestütztes CRM mit Lead-Management, Konversationen, Aufgaben und Wissensbasis</Li>
+              <Li><strong>E-Mail-Versand</strong> transaktional und automatisiert via Resend</Li>
             </ul>
           </SubSection>
           <SubSection title="High-Level-Architektur">
