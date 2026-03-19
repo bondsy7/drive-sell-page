@@ -105,7 +105,7 @@ serve(async (req) => {
     if (authResult instanceof Response) return authResult;
 
     const geminiModel = modelTier === 'pro' ? 'gemini-3-pro-image-preview' : 'gemini-3.1-flash-image-preview';
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    const GEMINI_API_KEY = await getSecret("GEMINI_API_KEY");
     if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
     if (!imageBase64) throw new Error("No image provided");
 

@@ -257,7 +257,7 @@ serve(async (req) => {
     const { pdfBase64 } = await req.json();
     if (!pdfBase64) throw new Error("No PDF data provided");
 
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    const GEMINI_API_KEY = await getSecret("GEMINI_API_KEY");
     if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
 
     // 2. Load custom prompt

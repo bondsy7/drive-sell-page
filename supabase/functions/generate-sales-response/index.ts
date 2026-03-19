@@ -17,7 +17,7 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const geminiKey = Deno.env.get("GEMINI_API_KEY");
+    const geminiKey = await getSecret("GEMINI_API_KEY");
     if (!geminiKey) throw new Error("GEMINI_API_KEY not configured");
 
     const supabase = createClient(supabaseUrl, supabaseKey, {
