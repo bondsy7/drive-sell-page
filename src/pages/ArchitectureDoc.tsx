@@ -90,7 +90,7 @@ export default function ArchitectureDoc() {
           </div>
           <h1 className="text-4xl font-bold text-foreground mb-3 print:text-3xl">Autohaus.AI</h1>
           <p className="text-xl text-muted-foreground mb-2 print:text-lg">System- & Softwarearchitektur</p>
-          <p className="text-sm text-muted-foreground">Version 1.1 · Stand: März 2026</p>
+          <p className="text-sm text-muted-foreground">Version 2.0 · Stand: März 2026</p>
           <p className="text-sm text-muted-foreground">Für Entwickler-Onboarding & Kunden-Dokumentation</p>
           
           <div className="mt-12 print:mt-8">
@@ -105,16 +105,20 @@ export default function ArchitectureDoc() {
                 '6. Authentifizierung & Autorisierung',
                 '7. KI-Services & Modelle',
                 '8. Monetarisierung & Credit-System',
-                '9. Stripe-Integration',
-                '10. Modul-Übersicht',
-                '11. Externe APIs & Abhängigkeiten',
-                '12. Storage & Asset-Management',
-                '13. Distributions- & Integrations-Schnittstellen',
-                '14. Admin-System',
-                '15. Sicherheitsarchitektur',
-                '16. Datenfluss-Diagramme',
-                '17. Sales Assistant & CRM',
-                '18. Deployment & Infrastruktur',
+                '9. Kostenanalyse: EK-Token, VK-Marge & API-Server',
+                '10. Stripe-Integration',
+                '11. Modul-Übersicht',
+                '12. 360° Spin-Modul',
+                '13. Externe APIs & Abhängigkeiten',
+                '14. Storage & Asset-Management',
+                '15. Distributions- & Integrations-Schnittstellen',
+                '16. Admin-System',
+                '17. Sicherheitsarchitektur',
+                '18. Datenfluss-Diagramme',
+                '19. Sales Assistant & CRM',
+                '20. E-Mail-System (Resend)',
+                '21. Deployment & Infrastruktur',
+                '22. Entwicklungsbedarf & Verbesserungs-Roadmap',
               ].map((item, i) => (
                 <p key={i} className="text-sm text-muted-foreground py-0.5">{item}</p>
               ))}
@@ -132,11 +136,14 @@ export default function ArchitectureDoc() {
             <ul className="list-disc pl-6 space-y-1">
               <Li><strong>Fahrzeugangebots-Seiten</strong> aus PDF-Angeboten generieren</Li>
               <Li><strong>Showroom-Bilder</strong> aus Handyfotos per KI-Remastering erstellen</Li>
+              <Li><strong>360°-Spins</strong> aus 4 Perspektiv-Fotos generieren (36 interpolierte Frames)</Li>
               <Li><strong>SEO-optimierte Landing Pages</strong> für Fahrzeugmarketing erzeugen</Li>
               <Li><strong>Werbebanner</strong> für Social Media rendern</Li>
               <Li><strong>Showroom-Videos</strong> per KI generieren</Li>
               <Li><strong>VIN-Erkennung</strong> per OCR und Fahrzeugdaten-Lookup</Li>
+              <Li><strong>Fahrzeugmarke erkennen</strong> per KI-Bildanalyse</Li>
               <Li><strong>Sales Assistant</strong> KI-gestütztes CRM mit Lead-Management, Konversationen, Aufgaben und Wissensbasis</Li>
+              <Li><strong>E-Mail-Versand</strong> transaktional und automatisiert via Resend</Li>
             </ul>
           </SubSection>
           <SubSection title="High-Level-Architektur">
@@ -144,17 +151,18 @@ export default function ArchitectureDoc() {
 │              FRONTEND (SPA)                     │
 │  React + TypeScript + Vite + Tailwind + shadcn  │
 │                                                 │
-│  ActionHub → 5 Workflows                        │
-│  Dashboard → Projektverwaltung                  │
-│  Admin Panel → 9 Verwaltungsseiten              │
+│  ActionHub → 6 Workflows                        │
+│  Dashboard → Projektverwaltung (5 Tabs)         │
+│  Admin Panel → 12 Verwaltungsseiten             │
 └──────────────────┬──────────────────────────────┘
                    │
                    ▼
 ┌─────────────────────────────────────────────────┐
 │           SUPABASE (Backend-as-a-Service)        │
+│                via Lovable Cloud                 │
 │                                                 │
-│  21 Edge Functions │ 27 DB-Tabellen │ 6 Buckets │
-│  Auth (Email+OAuth) │ Realtime Channels          │
+│  26 Edge Funcs │ 32 DB-Tabellen │ 6 Buckets     │
+│  1 Shared Modul │ Auth (Email+OAuth) │ Realtime  │
 └──────────────────┬──────────────────────────────┘
                    │
                    ▼
@@ -162,7 +170,7 @@ export default function ArchitectureDoc() {
 │              EXTERNE SERVICES                    │
 │                                                 │
 │  Lovable AI Gateway │ Google Gemini │ OpenAI    │
-│  Stripe │ OutVin (VIN) │ Google Veo (Video)     │
+│  Stripe │ OutVin (VIN) │ Resend (E-Mail)        │
 └─────────────────────────────────────────────────┘`}</CodeBlock>
           </SubSection>
         </Section>
@@ -271,6 +279,8 @@ export default function ArchitectureDoc() {
                 ['generate-banner', 'prompt, imageBase64, size', 'Banner Bild', '5-10'],
                 ['generate-video', 'imageBase64 (start/poll)', 'Storage-URL Video', '10'],
                 ['generate-landing-page', 'brand, model, pageType', 'HTML + JSON + Bilder', '3'],
+                ['generate-360-spin', 'jobId, step (step-basiert)', '36 Frames in Storage', '10-20'],
+                ['detect-vehicle-brand', 'imageBase64', 'brand, model, confidence', '0'],
                 ['ocr-vin', 'imageBase64', 'VIN String', '1'],
                 ['lookup-vin', 'vin (17 chars)', 'Fahrzeugdaten JSON', '0'],
               ]}
@@ -313,13 +323,28 @@ export default function ArchitectureDoc() {
               ]}
             />
           </SubSection>
+          <SubSection title="Shared Module (_shared/)">
+            <Table
+              headers={['Modul', 'Datei', 'Zweck']}
+              rows={[
+                ['getSecret()', '_shared/get-secret.ts', 'API-Keys aus admin_secrets DB lesen, Fallback auf Deno.env, 5-Min-Cache'],
+              ]}
+            />
+            <CodeBlock>{`// Verwendung in Edge Functions:
+import { getSecret } from "../_shared/get-secret.ts";
+const apiKey = await getSecret("GEMINI_API_KEY");
+// 1. Prüft admin_secrets Tabelle (Service Role, RLS bypass)
+// 2. Falls leer → Fallback auf Deno.env.get()
+// 3. Ergebnis wird 5 Minuten gecacht`}</CodeBlock>
+          </SubSection>
           <SubSection title="Gemeinsames Pattern">
             <CodeBlock>{`// Jede KI-Function folgt diesem Schema:
 1. CORS Handling (OPTIONS)
 2. Auth + Credit-Deduction (atomar via RPC)
 3. Custom Prompt laden (admin_settings Override)
-4. KI-API aufrufen (Lovable Gateway oder direkt)
-5. Ergebnis verarbeiten + zurückgeben`}</CodeBlock>
+4. API-Key aus DB laden (getSecret() mit Env-Fallback)
+5. KI-API aufrufen (Lovable Gateway oder direkt)
+6. Ergebnis verarbeiten + zurückgeben`}</CodeBlock>
           </SubSection>
         </Section>
 
@@ -336,6 +361,13 @@ export default function ArchitectureDoc() {
   ├──1:N── user_subscriptions (plan_id, status, stripe_sub_id)
   ├──1:N── user_roles (role: admin|moderator|user)
   ├──1:1── ftp_configs (host, port, credentials)
+  ├──1:N── image_generation_jobs (Pipeline-Jobs)
+  │
+  ├── 360° Spin:
+  │   ├──1:N── spin360_jobs (status, target_frame_count)
+  │   │         ├──1:N── spin360_source_images
+  │   │         ├──1:N── spin360_canonical_images
+  │   │         └──1:N── spin360_generated_frames (36 Frames)
   │
   ├── Sales Assistant:
   │   ├──1:1── sales_assistant_profiles (Ton, Autopilot, Signatur)
@@ -346,22 +378,18 @@ export default function ArchitectureDoc() {
   │   │         ├──1:N── crm_manual_notes (Manuelle Notizen)
   │   │         ├──1:N── sales_quotes (Angebote, Preise)
   │   │         └──1:N── test_drive_bookings (Probefahrt-Termine)
-  │   ├──1:N── sales_knowledge_documents (Wissensbasis)
-  │   │         └──1:N── sales_knowledge_chunks (Embeddings)
-  │   ├──1:N── sales_email_outbox (E-Mail-Versand)
-  │   ├──1:N── sales_notifications (Benachrichtigungen)
-  │   ├──1:N── sales_chat_messages (Interner Chat)
-  │   ├──1:N── dealer_availability (Verfügbarkeiten)
-  │   ├──1:N── dealer_blocked_dates (Gesperrte Tage)
-  │   ├──1:N── trade_in_valuations (Inzahlungnahme)
-  │   └──1:N── calendar_sync_configs (Kalender-Sync)
+  │   ├──1:N── sales_knowledge_documents → sales_knowledge_chunks
+  │   ├──1:N── sales_email_outbox / sales_notifications
+  │   ├──1:N── sales_chat_messages / trade_in_valuations
+  │   └──1:N── dealer_availability / dealer_blocked_dates
   │
   └── customer_journey_templates (Journey-Phasen)
 
 Globale Tabellen:
-  subscription_plans (name, slug, credits, prices)
-  admin_settings (key-value, JSONB)
-  sample_pdfs (title, pdf_url, category)`}</CodeBlock>
+  subscription_plans (read-only)
+  admin_settings (key-value JSONB, nur Admins schreiben)
+  admin_secrets (API-Keys, NUR Admins lesen+schreiben!)
+  sample_pdfs (read-only)`}</CodeBlock>
           </SubSection>
           <SubSection title="Wichtige Enums">
             <Table
@@ -626,16 +654,21 @@ Modelle:   gemini-2.5-flash, gemini-3-pro-image-preview, gemini-3.1-flash-image-
           />
           <SubSection title="Secrets-Übersicht">
             <Table
-              headers={['Secret', 'Verwendung']}
+              headers={['Secret', 'Verwendung', 'Verwaltung']}
               rows={[
-                ['GEMINI_API_KEY', 'Google Gemini API (Text, Bild, Video, OCR)'],
-                ['OPENAI_API_KEY', 'OpenAI Image API (Banner)'],
-                ['STRIPE_SECRET_KEY', 'Stripe Payments'],
-                ['STRIPE_WEBHOOK_SECRET', 'Stripe Webhook Verifizierung'],
-                ['OUTVIN_API_KEY', 'VIN-Datenbank'],
-                ['SUPABASE_SERVICE_ROLE_KEY', 'Admin-DB-Zugriff (RLS bypass)'],
+                ['GEMINI_API_KEY', 'Google Gemini API (Text, Bild, Video, OCR)', 'Admin UI + Env'],
+                ['OPENAI_API_KEY', 'OpenAI Image API (Banner)', 'Admin UI + Env'],
+                ['STRIPE_SECRET_KEY', 'Stripe Payments', 'Admin UI + Env'],
+                ['STRIPE_WEBHOOK_SECRET', 'Stripe Webhook Verifizierung', 'Admin UI + Env'],
+                ['RESEND_API_KEY', 'Resend E-Mail-Versand', 'Admin UI + Env'],
+                ['RESEND_FROM_EMAIL', 'Absender-Adresse', 'Admin UI + Env'],
+                ['RESEND_REPLY_TO', 'Reply-To-Adresse', 'Admin UI + Env'],
+                ['OUTVIN_API_KEY', 'VIN-Datenbank', 'Admin UI + Env'],
+                ['SUPABASE_SERVICE_ROLE_KEY', 'Admin-DB-Zugriff (RLS bypass)', 'Nur Env'],
+                ['LOVABLE_API_KEY', 'Lovable AI Gateway', 'Nur Env'],
               ]}
             />
+            <P>Keys mit "Admin UI + Env" können über <strong>/admin/secrets</strong> geändert werden. Edge Functions lesen via getSecret() zuerst aus der DB, dann Fallback auf Umgebungsvariablen.</P>
           </SubSection>
         </Section>
 
@@ -710,21 +743,53 @@ GET /api-vehicles/:id/html  → HTML-Fragment (body-Inhalt)`}</CodeBlock>
 
         {/* 14. Admin */}
         <Section id="s14" title="14. Admin-System">
-          <Table
-            headers={['Route', 'Funktion']}
-            rows={[
-              ['/admin', 'Dashboard: KPIs, Charts, Übersicht'],
-              ['/admin/users', 'Nutzerverwaltung (Rollen, Credits, Löschen)'],
-              ['/admin/transactions', 'Credit-Transaktionshistorie'],
-              ['/admin/leads', 'Alle Kontaktanfragen'],
-              ['/admin/pdf-gallery', 'Beispiel-PDFs verwalten'],
-              ['/admin/prompts', 'KI-System-Prompts anpassen'],
-              ['/admin/pricing', 'Abo-Pläne + Credit-Kosten bearbeiten'],
-              ['/admin/settings', 'System-Einstellungen'],
-              ['/admin/logos', 'Hersteller-Logos (Massen-Upload)'],
-              ['/admin/sales-assistant', 'Sales-Assistant-Konfiguration'],
-            ]}
-          />
+          <SubSection title="Admin-Routen (12 Seiten)">
+            <Table
+              headers={['Route', 'Funktion']}
+              rows={[
+                ['/admin', 'Dashboard: KPIs, Charts, Übersicht'],
+                ['/admin/users', 'Nutzerverwaltung (Rollen, Credits, Löschen)'],
+                ['/admin/transactions', 'Credit-Transaktionshistorie'],
+                ['/admin/leads', 'Alle Kontaktanfragen'],
+                ['/admin/pdf-gallery', 'Beispiel-PDFs verwalten'],
+                ['/admin/prompts', 'KI-System-Prompts anpassen'],
+                ['/admin/pricing', 'Abo-Pläne + Credit-Kosten bearbeiten'],
+                ['/admin/settings', 'System-Einstellungen (Key-Value JSONB)'],
+                ['/admin/secrets', 'API-Keys & Secrets sicher verwalten'],
+                ['/admin/logos', 'Hersteller-Logos (Massen-Upload)'],
+                ['/admin/sales-assistant', 'Sales-Assistant-Konfiguration'],
+                ['/admin/wmi-codes', 'WMI-Codes verwalten'],
+              ]}
+            />
+          </SubSection>
+          <SubSection title="Admin-Secrets (/admin/secrets)">
+            <P>
+              Sichere Verwaltung von API-Keys ohne Code-Änderung. Die <strong>admin_secrets</strong> Tabelle 
+              hat im Gegensatz zu admin_settings <strong>keinen öffentlichen Lesezugriff</strong> — nur Admins 
+              können Secrets lesen und schreiben.
+            </P>
+            <Table
+              headers={['Key', 'Verwendung']}
+              rows={[
+                ['GEMINI_API_KEY', 'Google Gemini API (Text, Bild, Video, OCR)'],
+                ['OPENAI_API_KEY', 'OpenAI Image API (Banner)'],
+                ['STRIPE_SECRET_KEY', 'Stripe Payments'],
+                ['STRIPE_WEBHOOK_SECRET', 'Stripe Webhook Verifizierung'],
+                ['RESEND_API_KEY', 'Resend E-Mail-Versand'],
+                ['RESEND_FROM_EMAIL', 'Absender-Adresse'],
+                ['RESEND_REPLY_TO', 'Reply-To-Adresse'],
+                ['OUTVIN_API_KEY', 'VIN-Datenbank'],
+              ]}
+            />
+            <CodeBlock>{`Sicherheits-Architektur:
+Admin UI (/admin/secrets) → Maskierte Eingabe
+    │ RLS: has_role(auth.uid(), 'admin')
+    ▼
+admin_secrets Tabelle (NUR Admin-Zugriff)
+    │ Service Role (RLS bypass)
+    ▼
+getSecret() Helper → 5-Min-Cache → Fallback: Deno.env`}</CodeBlock>
+          </SubSection>
           <P>
             <strong>Admin-Edge-Functions:</strong> admin-stripe (Payments/Refunds) und admin-delete-user prüfen beide
             server-seitig has_role(auth.uid(), 'admin').
@@ -743,6 +808,8 @@ GET /api-vehicles/:id/html  → HTML-Fragment (body-Inhalt)`}</CodeBlock>
                 ['4. DB Functions', 'SECURITY DEFINER (has_role, deduct_credits)'],
                 ['5. REST API', 'Key-basierte Auth (x-api-key Header)'],
                 ['6. Stripe', 'Webhook Signature Verifizierung'],
+                ['7. E-Mail', 'Verifizierung (email_confirmed_at Pflicht)'],
+                ['8. API-Secrets', 'admin_secrets Tabelle (Admin-Only RLS, kein public SELECT)'],
               ]}
             />
           </SubSection>
@@ -755,6 +822,7 @@ GET /api-vehicles/:id/html  → HTML-Fragment (body-Inhalt)`}</CodeBlock>
               <Li>Service Role Key nur in Edge Functions, nie im Frontend</Li>
               <Li>API-Keys mit Prefix ak_ + 48 hex chars</Li>
               <Li>Input-Sanitization in submit-lead (Längen-Limits, E-Mail-Regex)</Li>
+              <Li>API-Secrets in admin_secrets DB-Tabelle mit Admin-Only RLS, Edge Functions lesen via getSecret() mit Env-Fallback</Li>
             </ol>
           </SubSection>
         </Section>
@@ -873,13 +941,64 @@ VITE_SUPABASE_PROJECT_ID=rauzclzphdnhzflovrya`}</CodeBlock>
           </SubSection>
         </Section>
 
-        {/* Footer */}
+        {/* 19. Kostenanalyse */}
+        <Section id="s19" title="19. Kostenanalyse: EK-Token, VK-Marge">
+          <SubSection title="EK vs. VK pro Aktion">
+            <Table
+              headers={['Aktion', 'Credits (VK)', 'EK (ca.)', 'Marge %']}
+              rows={[
+                ['PDF-Analyse', '1 (0,50 €)', '~0,006 €', '98,8%'],
+                ['Bildgen. (schnell)', '3 (1,50 €)', '~0,02 €', '98,7%'],
+                ['Bildgen. (qualität)', '5 (2,50 €)', '~0,06 €', '97,6%'],
+                ['Bildgen. (ultra)', '10 (5,00 €)', '~0,12 €', '97,6%'],
+                ['Video', '10 (5,00 €)', '~0,30 €', '94,0%'],
+                ['Landing Page', '3 (1,50 €)', '~0,175 €', '88,3%'],
+                ['360° Spin', '15 (7,50 €)', '~2,25 €', '70,0%'],
+                ['Sales-Antwort', '1 (0,50 €)', '~0,013 €', '97,5%'],
+              ]}
+            />
+            <P>Basis: 1 Credit ≈ 0,50 € (10 Credits = 5,00 €). 360° Spin hat die niedrigste Marge wegen 36 Bildgenerierungen.</P>
+          </SubSection>
+        </Section>
+
+        {/* 20. E-Mail-System */}
+        <Section id="s20" title="20. E-Mail-System (Resend)">
+          <CodeBlock>{`sales_email_outbox (Tabelle)
+├── status: queued → sending → sent | failed
+├── to_email, subject, body_html
+└── conversation_id, lead_id (Verknüpfungen)
+
+Edge Function → Resend API
+├── Von: RESEND_FROM_EMAIL
+├── Reply-To: RESEND_REPLY_TO
+└── Status-Update in sales_email_outbox`}</CodeBlock>
+        </Section>
+
+        {/* 21. Entwicklungs-Roadmap */}
+        <Section id="s21" title="21. Entwicklungsbedarf & Roadmap">
+          <SubSection title="Top 10 Refactoring-Maßnahmen">
+            <ol className="list-decimal pl-6 space-y-1">
+              <Li><strong>as any eliminieren</strong> — TypeScript-Typen korrekt verwenden</Li>
+              <Li><strong>Shared Edge Function Module</strong> — Auth, CORS, Credit-Logik in _shared/ auslagern</Li>
+              <Li><strong>SalesCrmTab.tsx splitten</strong> — In 4-5 fokussierte Komponenten</Li>
+              <Li><strong>React Query einführen</strong> — useEffect+fetch durch useQuery ersetzen</Li>
+              <Li><strong>Pagination implementieren</strong> — Dashboard, Admin-Tabellen</Li>
+              <Li><strong>Base64-Migration</strong> — Alte image_base64 zu Storage-URLs</Li>
+              <Li><strong>Error Boundaries</strong> — Pro Modul eigene Error Boundaries</Li>
+              <Li><strong>Test-Suite aufbauen</strong> — Hooks + Edge Function Unit Tests</Li>
+              <Li><strong>Bundle-Splitting</strong> — Recharts, PDF-Parser nur bei Bedarf laden</Li>
+              <Li><strong>Dashboard.tsx refactoren</strong> — Spin-Viewer, Gallery in eigene Dateien</Li>
+            </ol>
+          </SubSection>
+        </Section>
+
+
         <div className="mt-16 pt-8 border-t border-border text-center print:mt-8">
           <p className="text-xs text-muted-foreground">
             © 2026 Autohaus.AI – Dieses Dokument ist vertraulich und nur für autorisierte Empfänger bestimmt.
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            Version 1.0 · Generiert am {new Date().toLocaleDateString('de-DE')}
+            Version 2.0 · Generiert am {new Date().toLocaleDateString('de-DE')}
           </p>
         </div>
       </div>

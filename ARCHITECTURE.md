@@ -356,6 +356,7 @@ src/
 │   ├── AdminPrompts.tsx           # KI-Prompts anpassen
 │   ├── AdminPricing.tsx           # Abo-Pläne bearbeiten
 │   ├── AdminSettings.tsx          # System-Einstellungen (Key-Value JSONB)
+│   ├── AdminSecrets.tsx           # API-Keys & Secrets sicher verwalten
 │   ├── AdminLogos.tsx             # Hersteller-Logos verwalten
 │   ├── AdminSalesAssistant.tsx    # Sales-Assistant-Konfiguration
 │   └── AdminWmiCodes.tsx          # WMI-Codes verwalten
@@ -377,7 +378,7 @@ src/
 
 ## 4. Backend-Architektur (Edge Functions)
 
-Alle Backend-Logik läuft in **26 Supabase Edge Functions** (Deno-Runtime):
+Alle Backend-Logik läuft in **26 Supabase Edge Functions** (Deno-Runtime) + 1 Shared-Modul:
 
 ### 4.1 KI-Verarbeitungs-Functions
 
@@ -425,7 +426,25 @@ Alle Backend-Logik läuft in **26 Supabase Edge Functions** (Deno-Runtime):
 | `admin-stripe` | Admin-Only: Stripe Payments/Refunds verwalten |
 | `admin-delete-user` | Admin-Only: Nutzer löschen (kaskadiert) |
 
-### 4.5 Gemeinsame Patterns
+### 4.5 Shared Module (`_shared/`)
+
+| Modul | Datei | Zweck |
+|---|---|---|
+| `getSecret()` | `_shared/get-secret.ts` | Liest API-Keys aus `admin_secrets` DB-Tabelle, Fallback auf `Deno.env`. 5-Minuten-Cache. |
+
+```typescript
+// Verwendung in Edge Functions:
+import { getSecret } from "../_shared/get-secret.ts";
+
+const apiKey = await getSecret("GEMINI_API_KEY");
+// 1. Prüft admin_secrets Tabelle (via Service Role, RLS bypass)
+// 2. Falls leer/Fehler → Fallback auf Deno.env.get("GEMINI_API_KEY")
+// 3. Ergebnis wird 5 Minuten gecacht
+```
+
+**Vorteil:** Admins können API-Keys über `/admin/secrets` ändern, ohne Edge Functions neu deployen zu müssen.
+
+### 4.6 Gemeinsame Patterns
 
 Alle KI-Functions folgen einem einheitlichen Pattern:
 
@@ -440,10 +459,13 @@ if (authResult instanceof Response) return authResult;
 // 3. Custom Prompt laden (admin_settings.ai_prompts override)
 const prompt = await getCustomPrompt("key", DEFAULT_PROMPT);
 
-// 4. KI-API aufrufen (Google Gemini direkt oder Lovable AI Gateway)
+// 4. API-Key aus DB laden (mit Env-Fallback)
+const apiKey = await getSecret("GEMINI_API_KEY");
+
+// 5. KI-API aufrufen (Google Gemini direkt oder Lovable AI Gateway)
 const response = await fetch("https://generativelanguage.googleapis.com/v1beta/...", { ... });
 
-// 5. Ergebnis verarbeiten + zurückgeben
+// 6. Ergebnis verarbeiten + zurückgeben
 return new Response(JSON.stringify(result), { headers: corsHeaders });
 ```
 
@@ -501,7 +523,7 @@ verify_jwt = false
 
 ## 5. Datenbank-Architektur
 
-### 5.1 Entity-Relationship-Diagramm (31 Tabellen)
+### 5.1 Entity-Relationship-Diagramm (32 Tabellen)
 
 ```
 auth.users (Supabase-managed, nicht direkt zugreifbar)
@@ -588,6 +610,11 @@ subscription_plans (global, read-only für User)
 admin_settings (global, nur Admins schreiben)
     (key, value [JSONB])
     Keys: "credit_costs", "ai_prompts"
+
+admin_secrets (global, NUR Admins lesen+schreiben, kein öffentlicher Zugriff!)
+    (key, value [TEXT, maskiert in UI], label)
+    Keys: "GEMINI_API_KEY", "OPENAI_API_KEY", "STRIPE_SECRET_KEY", etc.
+    → Edge Functions lesen via getSecret() Helper mit Fallback auf Deno.env
 
 sample_pdfs (global, read-only für User)
     (title, description, brand, model, category,
@@ -1279,11 +1306,49 @@ Nutzer füllt Formular auf Landing Page
     → Sichtbar im Dashboard + Admin-Panel + Sales Assistant CRM
 ```
 
+### 16.4 Admin-Secrets (admin_secrets)
+
+Sichere Verwaltung von API-Keys ohne Code-Änderung:
+
+```
+Tabelle: admin_secrets
+├── RLS: NUR Admins können lesen UND schreiben (kein öffentlicher Zugriff!)
+├── Unterschied zu admin_settings: KEIN public SELECT
+├── UI: Maskierte Eingabefelder mit Sichtbarkeits-Toggle
+└── Keys werden von Edge Functions via getSecret() gelesen
+```
+
+| Key | Label | Verwendung |
+|---|---|---|
+| `GEMINI_API_KEY` | Google Gemini API Key | Text/Bild/Video/OCR |
+| `OPENAI_API_KEY` | OpenAI API Key | Bild (Premium/Ultra) |
+| `STRIPE_SECRET_KEY` | Stripe Secret Key | Zahlungen |
+| `STRIPE_WEBHOOK_SECRET` | Stripe Webhook Secret | Webhook-Verifizierung |
+| `RESEND_API_KEY` | Resend API Key | E-Mail-Versand |
+| `RESEND_FROM_EMAIL` | Resend Absender E-Mail | Absenderadresse |
+| `RESEND_REPLY_TO` | Resend Reply-To E-Mail | Reply-To-Adresse |
+| `OUTVIN_API_KEY` | OutVIN API Key | VIN-Datenbank |
+
+**Sicherheits-Architektur:**
+```
+Admin UI (/admin/secrets)
+    │ Maskierte Eingabe + Sichtbarkeits-Toggle
+    │ Nur bei has_role(auth.uid(), 'admin')
+    ▼
+admin_secrets Tabelle (RLS: NUR Admin)
+    │ Service Role Key (RLS bypass)
+    ▼
+getSecret() Helper (_shared/get-secret.ts)
+    ├── 1. Liest aus admin_secrets (5-Min-Cache)
+    ├── 2. Fallback: Deno.env.get()
+    └── Verwendet von Edge Functions
+```
+
 ---
 
 ## 16. Admin-System
 
-### 16.1 Admin-Routen & Zugang (11 Seiten)
+### 16.1 Admin-Routen & Zugang (12 Seiten)
 
 ```
 /admin              → Dashboard (KPIs, Charts)
@@ -1294,6 +1359,7 @@ Nutzer füllt Formular auf Landing Page
 /admin/prompts      → KI-System-Prompts anpassen
 /admin/pricing      → Abo-Pläne + Credit-Kosten bearbeiten
 /admin/settings     → System-Einstellungen (Key-Value JSONB)
+/admin/secrets      → API-Keys & Secrets sicher verwalten (maskierte Eingabe)
 /admin/logos        → Hersteller-Logos (Massen-Upload, SVG)
 /admin/sales-assistant → Sales-Assistant-Konfiguration
 /admin/wmi-codes    → WMI-Codes verwalten (Fahrzeug-Identifikation)
@@ -1364,6 +1430,7 @@ Konfigurierbare Einstellungen ohne Code-Änderung:
 6. **API-Keys** mit Prefix `ak_` + 48 hex chars (gen_random_bytes)
 7. **Input-Sanitization** in submit-lead (Längen-Limits, E-Mail-Regex)
 8. **Anon Key** nur publishable – kein Service Role Key im Frontend
+9. **API-Secrets in DB** – `admin_secrets` Tabelle mit Admin-Only RLS (kein public SELECT), Edge Functions lesen via `getSecret()` mit Env-Fallback
 
 ---
 
