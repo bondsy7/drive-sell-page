@@ -654,16 +654,21 @@ Modelle:   gemini-2.5-flash, gemini-3-pro-image-preview, gemini-3.1-flash-image-
           />
           <SubSection title="Secrets-Übersicht">
             <Table
-              headers={['Secret', 'Verwendung']}
+              headers={['Secret', 'Verwendung', 'Verwaltung']}
               rows={[
-                ['GEMINI_API_KEY', 'Google Gemini API (Text, Bild, Video, OCR)'],
-                ['OPENAI_API_KEY', 'OpenAI Image API (Banner)'],
-                ['STRIPE_SECRET_KEY', 'Stripe Payments'],
-                ['STRIPE_WEBHOOK_SECRET', 'Stripe Webhook Verifizierung'],
-                ['OUTVIN_API_KEY', 'VIN-Datenbank'],
-                ['SUPABASE_SERVICE_ROLE_KEY', 'Admin-DB-Zugriff (RLS bypass)'],
+                ['GEMINI_API_KEY', 'Google Gemini API (Text, Bild, Video, OCR)', 'Admin UI + Env'],
+                ['OPENAI_API_KEY', 'OpenAI Image API (Banner)', 'Admin UI + Env'],
+                ['STRIPE_SECRET_KEY', 'Stripe Payments', 'Admin UI + Env'],
+                ['STRIPE_WEBHOOK_SECRET', 'Stripe Webhook Verifizierung', 'Admin UI + Env'],
+                ['RESEND_API_KEY', 'Resend E-Mail-Versand', 'Admin UI + Env'],
+                ['RESEND_FROM_EMAIL', 'Absender-Adresse', 'Admin UI + Env'],
+                ['RESEND_REPLY_TO', 'Reply-To-Adresse', 'Admin UI + Env'],
+                ['OUTVIN_API_KEY', 'VIN-Datenbank', 'Admin UI + Env'],
+                ['SUPABASE_SERVICE_ROLE_KEY', 'Admin-DB-Zugriff (RLS bypass)', 'Nur Env'],
+                ['LOVABLE_API_KEY', 'Lovable AI Gateway', 'Nur Env'],
               ]}
             />
+            <P>Keys mit "Admin UI + Env" können über <strong>/admin/secrets</strong> geändert werden. Edge Functions lesen via getSecret() zuerst aus der DB, dann Fallback auf Umgebungsvariablen.</P>
           </SubSection>
         </Section>
 
