@@ -1430,6 +1430,7 @@ Konfigurierbare Einstellungen ohne Code-Änderung:
 6. **API-Keys** mit Prefix `ak_` + 48 hex chars (gen_random_bytes)
 7. **Input-Sanitization** in submit-lead (Längen-Limits, E-Mail-Regex)
 8. **Anon Key** nur publishable – kein Service Role Key im Frontend
+9. **API-Secrets in DB** – `admin_secrets` Tabelle mit Admin-Only RLS (kein public SELECT), Edge Functions lesen via `getSecret()` mit Env-Fallback
 
 ---
 
