@@ -4,7 +4,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import {
   MoreVertical, User, Plug, CreditCard, ShieldCheck, LogOut,
-  Calculator, Receipt, LayoutDashboard, Plus, Sparkles,
+  Calculator, Receipt, Home, Plus, Sparkles,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -44,7 +44,7 @@ export default function UserMenuSheet({ isAdmin, ghostClass, iconClass, onSignOu
           {/* Navigation */}
           <TabsContent value="navigation" className="flex-1 px-4 py-3 space-y-1 mt-0">
             <Link to="/dashboard" className={linkClass} onClick={close}>
-              <LayoutDashboard className="w-4 h-4 text-muted-foreground" /> Dashboard
+              <Home className="w-4 h-4 text-muted-foreground" /> Dashboard
             </Link>
             <Link to="/generator" className={linkClass} onClick={close}>
               <Plus className="w-4 h-4 text-muted-foreground" /> Neues Projekt
