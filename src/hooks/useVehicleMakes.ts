@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { BRAND_ALIAS_MAP, normalizeBrand } from '@/lib/brand-aliases';
 
 export interface VehicleMake {
   key: string;
