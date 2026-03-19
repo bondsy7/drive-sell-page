@@ -166,6 +166,7 @@ export default function AdminLogos() {
     setUploading(false);
     if (successCount > 0) toast.success(`${successCount} Logo(s) hochgeladen`);
     if (errorCount > 0) toast.error(`${errorCount} Fehler beim Upload`);
+    invalidateLogoCache();
     loadAll();
   };
 
