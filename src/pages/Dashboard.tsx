@@ -266,7 +266,25 @@ const Dashboard = () => {
     setLoading(false);
   };
 
-  const loadData = async () => {
+  const openSpinViewer = async (jobId: string) => {
+    setViewerJobId(jobId);
+    setViewerLoading(true);
+    setViewerFrames([]);
+    const { data } = await supabase
+      .from('spin360_generated_frames' as any)
+      .select('image_url, frame_index')
+      .eq('job_id', jobId)
+      .eq('validation_status', 'passed')
+      .order('frame_index', { ascending: true });
+    const uniqueFrames = new Map<number, string>();
+    for (const f of (data as any[] || [])) {
+      if (!uniqueFrames.has(f.frame_index)) uniqueFrames.set(f.frame_index, f.image_url);
+    }
+    setViewerFrames(Array.from(uniqueFrames.entries()).sort((a, b) => a[0] - b[0]).map(e => e[1]));
+    setViewerLoading(false);
+  };
+
+
     await loadProjects();
     if (tab === 'gallery') await loadGallery();
   };
