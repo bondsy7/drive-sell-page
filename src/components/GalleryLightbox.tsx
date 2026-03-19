@@ -28,11 +28,12 @@ interface GalleryLightboxProps {
   onRegenerated?: () => void;
 }
 
-const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex, open, onClose, onAssigned }) => {
+const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex, open, onClose, onAssigned, onRegenerated }) => {
   const [index, setIndex] = useState(initialIndex);
   const [assignOpen, setAssignOpen] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
   const [assigning, setAssigning] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
 
   useEffect(() => { setIndex(initialIndex); }, [initialIndex]);
 
