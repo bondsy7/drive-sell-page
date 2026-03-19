@@ -232,7 +232,14 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
 
     if (!slot.isVin && !brandDetectionAttempted.current && makes.length > 0) {
       brandDetectionAttempted.current = true;
-      const matchedBrand = resolveBrandFromSource(vehicleDescription);
+      let matchedBrand = resolveBrandFromSource(vehicleDescription);
+      if (!matchedBrand) {
+        const words = vehicleDescription.split(/[\s,;|/\-–]+/).filter(w => w.length > 1);
+        for (const word of words) {
+          matchedBrand = resolveBrandFromSource(word);
+          if (matchedBrand) break;
+        }
+      }
       setBrandDetectionStatus(matchedBrand ? 'found' : 'not-found');
       if (matchedBrand && vehicleData && onVehicleDataChange) {
         onVehicleDataChange({
