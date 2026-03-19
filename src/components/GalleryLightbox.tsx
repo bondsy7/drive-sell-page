@@ -84,6 +84,48 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
     a.click();
   };
 
+  const regenerateImage = async () => {
+    setRegenerating(true);
+    try {
+      // Fetch the current image as base64 to use as input
+      const response = await fetch(current.src);
+      const blob = await response.blob();
+      const base64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(blob);
+      });
+
+      const { data, error } = await supabase.functions.invoke('remaster-vehicle-image', {
+        body: {
+          imageBase64: base64,
+          vehicleDescription: current.perspective || '',
+          modelTier: 'standard',
+        },
+      });
+
+      if (error || !data?.imageBase64) {
+        toast.error(data?.error || error?.message || 'Fehler beim Regenerieren');
+      } else {
+        // Update the image in the database
+        const { error: updateError } = await supabase
+          .from('project_images')
+          .update({ image_url: data.imageBase64, image_base64: '' } as any)
+          .eq('id', current.id);
+
+        if (updateError) {
+          toast.error('Bild generiert, aber Speichern fehlgeschlagen');
+        } else {
+          toast.success('Bild erfolgreich neu generiert');
+          onRegenerated?.();
+        }
+      }
+    } catch {
+      toast.error('Netzwerkfehler beim Regenerieren');
+    }
+    setRegenerating(false);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/80 backdrop-blur-sm" onClick={onClose}>
       <div className="relative w-full h-full flex flex-col items-center justify-center p-4" onClick={e => e.stopPropagation()}>
