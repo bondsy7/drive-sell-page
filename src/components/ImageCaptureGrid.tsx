@@ -79,51 +79,12 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const brandDetectionAttempted = useRef(false);
 
-  const normalizeValue = (value?: string | null) => (value || '').toLowerCase().replace(/[-_\s]+/g, '');
-
-  const BRAND_ALIASES: Record<string, string[]> = {
-    volkswagen: ['vw'],
-    vw: ['volkswagen'],
-    mercedesbenz: ['mercedes', 'mb', 'mercedesamg'],
-    mercedes: ['mercedesbenz', 'mb', 'mercedesamg'],
-    mb: ['mercedesbenz', 'mercedes'],
-    bmw: ['bayerischemotorenwerke'],
-    alfaromeo: ['alfa-romeo', 'alfa'],
-    'alfa-romeo': ['alfaromeo', 'alfa'],
-    astonmartin: ['aston-martin'],
-    'aston-martin': ['astonmartin'],
-    landrover: ['land-rover', 'land rover'],
-    'land-rover': ['landrover'],
-    rollsroyce: ['rolls-royce', 'rolls royce'],
-    'rolls-royce': ['rollsroyce'],
-  };
+  const makeKeys = useMemo(() => makes.map(m => m.key), [makes]);
 
   const resolveBrandFromSource = useCallback((source?: string | null) => {
-    const sourceNorm = normalizeValue(source);
-    if (!sourceNorm || makes.length === 0) return null;
-
-    const exact = makes.find((make) => normalizeValue(make.key) === sourceNorm);
-    if (exact) return exact.key;
-
-    const aliases = BRAND_ALIASES[sourceNorm] || [];
-    for (const alias of aliases) {
-      const aliasMatch = makes.find((make) => normalizeValue(make.key) === normalizeValue(alias));
-      if (aliasMatch) return aliasMatch.key;
-    }
-
-    const reverseAliasMatch = makes.find((make) => {
-      const makeNorm = normalizeValue(make.key);
-      const makeAliases = BRAND_ALIASES[makeNorm] || [];
-      return makeAliases.some((alias) => normalizeValue(alias) === sourceNorm);
-    });
-    if (reverseAliasMatch) return reverseAliasMatch.key;
-
-    const partial = makes.find((make) => {
-      const makeNorm = normalizeValue(make.key);
-      return makeNorm.includes(sourceNorm) || sourceNorm.includes(makeNorm);
-    });
-    return partial?.key || null;
-  }, [makes]);
+    if (!source || makeKeys.length === 0) return null;
+    return resolveCanonicalBrand(source, makeKeys);
+  }, [makeKeys]);
 
   const resolveModelForBrand = useCallback((brand: string, sourceModel?: string | null) => {
     if (!sourceModel) return '';
