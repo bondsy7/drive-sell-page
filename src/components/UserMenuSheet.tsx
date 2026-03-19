@@ -44,7 +44,7 @@ export default function UserMenuSheet({ isAdmin, ghostClass, iconClass, onSignOu
           {/* Navigation */}
           <TabsContent value="navigation" className="flex-1 px-4 py-3 space-y-1 mt-0">
             <Link to="/dashboard" className={linkClass} onClick={close}>
-              <LayoutDashboard className="w-4 h-4 text-muted-foreground" /> Dashboard
+              <Home className="w-4 h-4 text-muted-foreground" /> Dashboard
             </Link>
             <Link to="/generator" className={linkClass} onClick={close}>
               <Plus className="w-4 h-4 text-muted-foreground" /> Neues Projekt
