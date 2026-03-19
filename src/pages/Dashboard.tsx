@@ -443,19 +443,47 @@ const Dashboard = () => {
               <p className="text-muted-foreground">Noch keine Bilder generiert.</p>
             </div>
           ) : (
-            <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
-              {allImages.map((img, idx) => {
-                const imgSrc = img.image_url || (img.image_base64.startsWith('data:') ? img.image_base64 : `data:image/png;base64,${img.image_base64}`);
+            <div className="space-y-4">
+              {groupedGallery.map(({ folder, images: folderImages }) => {
+                const isExpanded = expandedFolders.has(folder);
+                const isVin = folder !== 'Ohne Ordner' && !folder.startsWith('NO_VIN');
                 return (
-                <div key={img.id} className="bg-card rounded-lg border border-border overflow-hidden group relative cursor-pointer" onClick={() => setLightboxIndex(idx)}>
-                  <div className="aspect-video bg-muted">
-                    <img src={imgSrc} alt={img.perspective || 'Fahrzeugbild'} className="w-full h-full object-cover" />
+                  <div key={folder} className="bg-card rounded-xl border border-border overflow-hidden">
+                    {/* Folder header */}
+                    <button
+                      onClick={() => toggleFolder(folder)}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-left"
+                    >
+                      {isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" /> : <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />}
+                      <FolderOpen className="w-4 h-4 text-accent shrink-0" />
+                      <span className={`font-display font-semibold text-sm ${isVin ? 'font-mono' : ''}`}>
+                        {folder}
+                      </span>
+                      <span className="text-xs text-muted-foreground ml-auto">
+                        {folderImages.length} Bild{folderImages.length !== 1 ? 'er' : ''}
+                      </span>
+                    </button>
+                    {/* Folder content */}
+                    {isExpanded && (
+                      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 p-3 pt-0">
+                        {folderImages.map((img) => {
+                          const globalIdx = allImages.findIndex(i => i.id === img.id);
+                          const imgSrc = img.image_url || (img.image_base64.startsWith('data:') ? img.image_base64 : `data:image/png;base64,${img.image_base64}`);
+                          return (
+                            <div key={img.id} className="bg-muted rounded-lg overflow-hidden group relative cursor-pointer" onClick={() => setLightboxIndex(globalIdx)}>
+                              <div className="aspect-video">
+                                <img src={imgSrc} alt={img.perspective || 'Fahrzeugbild'} className="w-full h-full object-cover" />
+                              </div>
+                              <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                <span className="text-sm font-medium text-background">Öffnen</span>
+                              </div>
+                              {img.perspective && <p className="text-xs text-muted-foreground p-2">{img.perspective}</p>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
-                  <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                    <span className="text-sm font-medium text-background">Öffnen</span>
-                  </div>
-                  {img.perspective && <p className="text-xs text-muted-foreground p-2">{img.perspective}</p>}
-                </div>
                 );
               })}
             </div>
