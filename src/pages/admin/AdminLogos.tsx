@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { toast } from 'sonner';
 import { Upload, Trash2, Image, Loader2, FileCode, Search, Check, X, AlertCircle, Plus, Pencil } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useVehicleMakes } from '@/hooks/useVehicleMakes';
+import { useVehicleMakes, invalidateLogoCache } from '@/hooks/useVehicleMakes';
 import { BRAND_ALIAS_MAP, normalizeBrand } from '@/lib/brand-aliases';
 
 interface LogoFile {

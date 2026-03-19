@@ -16,6 +16,11 @@ export interface MakeLogo {
 let cachedMakes: VehicleMake[] | null = null;
 let cachedLogos: MakeLogo[] | null = null;
 
+/** Invalidate logo cache so next useVehicleMakes call reloads from storage */
+export function invalidateLogoCache() {
+  cachedLogos = null;
+}
+
 export function useVehicleMakes() {
   const [makes, setMakes] = useState<VehicleMake[]>(cachedMakes || []);
   const [logos, setLogos] = useState<MakeLogo[]>(cachedLogos || []);
