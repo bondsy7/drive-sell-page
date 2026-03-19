@@ -381,7 +381,7 @@ const Index = () => {
   const handleHubAction = useCallback((action: HubAction) => {
     switch (action) {
       case 'photos':
-        setAppState('standalone-photo-choice');
+        setAppState('standalone-photo-mode' as ExtendedAppState);
         break;
       case 'pdf-landing':
         setAppState('idle');
@@ -400,6 +400,20 @@ const Index = () => {
         break;
       default:
         toast.info('Diese Funktion ist bald verfügbar!');
+    }
+  }, []);
+
+  const handlePhotoMode = useCallback((mode: PhotoMode) => {
+    switch (mode) {
+      case 'single':
+        setAppState('standalone-photo-choice');
+        break;
+      case 'multi':
+        setAppState('standalone-photo-choice');
+        break;
+      case 'spin360':
+        setAppState('spin360' as ExtendedAppState);
+        break;
     }
   }, []);
 
