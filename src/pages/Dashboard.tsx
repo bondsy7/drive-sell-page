@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Image, FileText, Download, ExternalLink, Trash2, MessageSquare, Mail, Phone, Video, Play, X, LayoutGrid, Layout, FolderOpen, ChevronDown, ChevronRight } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
+import Spin360Viewer from '@/components/spin360/Spin360Viewer';
 import { toast } from 'sonner';
 import { downloadHTML } from '@/lib/templates/download';
 import { embedCO2LabelsInHTML } from '@/lib/templates/shared';
