@@ -489,7 +489,7 @@ const Index = () => {
           {appState === 'standalone-photo-choice' && (
             <div className="space-y-6">
               <div className="flex items-center gap-3 mb-4">
-                <Button variant="ghost" size="icon" onClick={() => setAppState('hub')}>
+                <Button variant="ghost" size="icon" onClick={() => setAppState('standalone-photo-mode' as ExtendedAppState)}>
                   <ArrowLeft className="w-4 h-4" />
                 </Button>
                 <div>
