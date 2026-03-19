@@ -25,6 +25,8 @@ interface RemasterOptionsProps {
   onBrandChange?: (brand: string) => void;
   onModelChange?: (model: string) => void;
   vehicleModel?: string;
+  /** Status of automatic brand detection */
+  brandDetectionStatus?: 'idle' | 'detecting' | 'found' | 'not-found';
 }
 
 function fileToBase64(file: File): Promise<string> {
@@ -36,7 +38,7 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
-const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, vehicleBrand, onBrandChange, onModelChange, vehicleModel }) => {
+const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, vehicleBrand, onBrandChange, onModelChange, vehicleModel, brandDetectionStatus = 'idle' }) => {
   const { user } = useAuth();
   const [profileShowroomUrl, setProfileShowroomUrl] = useState<string | null>(null);
   const [profileLogoUrl, setProfileLogoUrl] = useState<string | null>(null);
@@ -191,64 +193,66 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
     update({ customPlateImageBase64: base64 });
   };
 
+  // Render the brand detection status indicator
+  const renderBrandStatus = () => {
+    if (brandDetectionStatus === 'detecting') {
+      return (
+        <div className="flex items-center gap-2 bg-accent/10 rounded-lg px-3 py-2 animate-pulse">
+          <div className="w-3.5 h-3.5 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+          <span className="text-[11px] text-accent-foreground font-medium">Marke wird erkannt…</span>
+        </div>
+      );
+    }
+
+    if (config.manufacturerLogoUrl && selectedBrand) {
+      return (
+        <div className="flex items-center gap-2 bg-accent/10 rounded-lg px-3 py-2">
+          <img src={config.manufacturerLogoUrl} alt={selectedBrand} className="w-6 h-6 object-contain" />
+          <span className="text-[11px] text-accent-foreground font-medium">
+            Logo für „{selectedBrand}" gefunden
+          </span>
+          <CheckCircle2 className="w-3.5 h-3.5 text-accent" />
+        </div>
+      );
+    }
+
+    if (selectedBrand && !config.manufacturerLogoUrl) {
+      return (
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 bg-muted/50 rounded-lg px-3 py-2">
+            <AlertCircle className="w-3.5 h-3.5 text-muted-foreground" />
+            <span className="text-[11px] text-muted-foreground">Kein Logo für „{selectedBrand}"</span>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-[11px] h-7 gap-1"
+            onClick={() => manufacturerLogoRef.current?.click()}
+          >
+            <Upload className="w-3 h-3" /> Logo hochladen
+          </Button>
+        </div>
+      );
+    }
+
+    if (brandDetectionStatus === 'not-found') {
+      return (
+        <div className="flex items-center gap-2 bg-destructive/10 rounded-lg px-3 py-2">
+          <AlertCircle className="w-3.5 h-3.5 text-destructive" />
+          <span className="text-[11px] text-destructive font-medium">Keine Marke erkannt – Logo kann nicht zugeordnet werden</span>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
   return (
     <div className="space-y-5 bg-card border border-border rounded-xl p-5">
       <h3 className="font-display font-semibold text-foreground text-sm flex items-center gap-2">
         <Paintbrush className="w-4 h-4 text-muted-foreground" />
         Remaster-Optionen
       </h3>
-
-      {/* Brand & Model Picker */}
-      <div className="space-y-2">
-        <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-          <Car className="w-3.5 h-3.5" /> Fahrzeugmarke & Modell
-        </Label>
-        <VehicleBrandModelPicker
-          brand={selectedBrand}
-          model={selectedModel}
-          onBrandChange={handleBrandChange}
-          onModelChange={handleModelChange}
-          compact
-        />
-        {/* Logo preview & upload */}
-        <div className="flex items-center gap-3 mt-1">
-          {config.manufacturerLogoUrl ? (
-            <div className="flex items-center gap-2 bg-accent/10 rounded-lg px-3 py-1.5">
-              <img src={config.manufacturerLogoUrl} alt={selectedBrand} className="w-6 h-6 object-contain" />
-              <span className="text-[11px] text-accent-foreground font-medium">
-                Logo für „{selectedBrand}" gefunden
-              </span>
-              <CheckCircle2 className="w-3.5 h-3.5 text-accent" />
-            </div>
-          ) : selectedBrand ? (
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1.5 bg-muted/50 rounded-lg px-3 py-1.5">
-                <AlertCircle className="w-3.5 h-3.5 text-muted-foreground" />
-                <span className="text-[11px] text-muted-foreground">Kein Logo für „{selectedBrand}"</span>
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
-                className="text-[11px] h-7 gap-1"
-                onClick={() => manufacturerLogoRef.current?.click()}
-              >
-                <Upload className="w-3 h-3" /> Logo hochladen
-              </Button>
-            </div>
-          ) : null}
-        </div>
-        <input
-          ref={manufacturerLogoRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) handleManufacturerLogoUpload(f);
-            e.target.value = '';
-          }}
-        />
-      </div>
 
       {/* Scene Dropdown */}
       <div className="space-y-2">
@@ -389,7 +393,8 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
           <Building2 className="w-3.5 h-3.5" /> Logo-Konfiguration
         </Label>
 
-        <div className="space-y-1.5">
+        {/* Manufacturer Logo Toggle – always enabled */}
+        <div className="space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Car className="w-3.5 h-3.5 text-muted-foreground" />
@@ -398,17 +403,30 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
             <Switch
               checked={config.showManufacturerLogo}
               onCheckedChange={(v) => update({ showManufacturerLogo: v })}
-              disabled={!config.manufacturerLogoUrl}
             />
           </div>
-          {config.showManufacturerLogo && !config.manufacturerLogoUrl && (
-            <div className="flex items-center gap-1.5 text-[11px] rounded-md px-2 py-1 bg-destructive/10 text-destructive">
-              <AlertCircle className="w-3 h-3 shrink-0" />
-              <span>Bitte oben eine Marke auswählen oder ein Logo hochladen</span>
+
+          {/* Brand status – always visible regardless of toggle */}
+          {renderBrandStatus()}
+
+          {/* Brand & Model Picker – shown when toggle is ON */}
+          {config.showManufacturerLogo && (
+            <div className="space-y-2 pl-1 border-l-2 border-accent/20 ml-1">
+              <Label className="text-[11px] font-medium text-muted-foreground flex items-center gap-1.5">
+                <Car className="w-3 h-3" /> Fahrzeugmarke & Modell
+              </Label>
+              <VehicleBrandModelPicker
+                brand={selectedBrand}
+                model={selectedModel}
+                onBrandChange={handleBrandChange}
+                onModelChange={handleModelChange}
+                compact
+              />
             </div>
           )}
         </div>
 
+        {/* Dealer Logo */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Building2 className="w-3.5 h-3.5 text-muted-foreground" />
@@ -424,6 +442,19 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
           />
         </div>
       </div>
+
+      {/* Hidden file inputs */}
+      <input
+        ref={manufacturerLogoRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) handleManufacturerLogoUpload(f);
+          e.target.value = '';
+        }}
+      />
     </div>
   );
 };
