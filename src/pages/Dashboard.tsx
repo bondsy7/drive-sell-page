@@ -137,20 +137,24 @@ const Dashboard = () => {
   };
 
   const loadProjects = async () => {
+    if (!user) return;
     setLoading(true);
     const { data: p } = await supabase
       .from('projects')
       .select('id, title, template_id, vehicle_data, main_image_base64, main_image_url, html_content, created_at, updated_at')
+      .eq('user_id', user.id)
       .order('updated_at', { ascending: false });
     setProjects((p as Project[]) || []);
     setLoading(false);
   };
 
   const loadGallery = async () => {
+    if (!user) return;
     setLoading(true);
     const { data: img } = await supabase
       .from('project_images')
       .select('id, project_id, image_base64, image_url, perspective, gallery_folder, created_at')
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(200);
     setAllImages((img as ProjectImage[]) || []);
