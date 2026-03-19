@@ -159,6 +159,7 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
     const img = images.find(x => x.id === id);
     if (!img) return;
     setImages(prev => prev.map(x => x.id === id ? { ...x, status: 'processing', error: undefined } : x));
+    setRegeneratingIds(prev => new Set(prev).add(id));
     try {
       const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription);
       const { data, error } = await supabase.functions.invoke('remaster-vehicle-image', {
@@ -185,7 +186,22 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
     } catch {
       setImages(prev => prev.map(x => x.id === id ? { ...x, status: 'error', error: 'Netzwerkfehler' } : x));
     }
+    setRegeneratingIds(prev => { const next = new Set(prev); next.delete(id); return next; });
   };
+
+  const openLightbox = (i: number) => {
+    setLightboxIndex(i);
+    setLightboxOpen(true);
+  };
+
+  const lightboxImages = images
+    .filter(img => img.status === 'done' && img.remasteredBase64)
+    .map(img => ({
+      id: img.id,
+      src: img.remasteredBase64!,
+      label: 'Remastered',
+      originalSrc: img.originalBase64,
+    }));
 
   const finishUp = () => {
     const done = images.filter(img => img.status === 'done' && img.remasteredBase64);
