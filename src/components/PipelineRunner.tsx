@@ -267,6 +267,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
     const job = availableJobs.find(j => j.key === jobKey);
     if (!job) return;
 
+    setRegeneratingIds(prev => new Set(prev).add(jobKey));
     setJobs(prev => ({ ...prev, [jobKey]: { status: 'running', results: [] } }));
 
     const prompts = [job.prompt, ...(job.extraPrompts || [])];
