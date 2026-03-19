@@ -822,6 +822,16 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
         onConfirm={handleCreditConfirm}
         onCancel={() => setShowCreditDialog(false)}
       />
+
+      {/* Lightbox */}
+      <ImagePreviewLightbox
+        images={lightboxImages}
+        initialIndex={lightboxIndex}
+        open={lightboxOpen}
+        onClose={() => setLightboxOpen(false)}
+        onRegenerate={(id) => retrySinglePipelineImage(id)}
+        regeneratingIds={regeneratingIds}
+      />
     </div>
   );
 };
