@@ -309,6 +309,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
     } else {
       setJobs(prev => ({ ...prev, [jobKey]: { status: 'error', results: [], error: jobError || 'Alle Bilder fehlgeschlagen' } }));
     }
+    setRegeneratingIds(prev => { const next = new Set(prev); next.delete(jobKey); return next; });
   }, [availableJobs, generateOneImage, user, savedProjectId, vin]);
 
   /* ─── Pipeline with parallel execution ─── */
