@@ -132,12 +132,25 @@ const Dashboard = () => {
       userId ? supabase.storage.from('vehicle-images').list(`${userId}/videos`, { limit: 200 }) : Promise.resolve({ data: null }),
       userId ? supabase.storage.from('banners').list(userId, { limit: 200 }) : Promise.resolve({ data: null }),
     ]);
+    const spinRes = await supabase.from('spin360_jobs' as any).select('id', { count: 'exact', head: true });
     setCounts({
       gallery: imgRes.count ?? 0,
       leads: leadsRes.count ?? 0,
       videos: videosRes.data?.filter(f => f.name.endsWith('.mp4')).length ?? 0,
       banners: bannersRes.data?.filter(f => f.name.endsWith('.png')).length ?? 0,
+      spin360: (spinRes as any).count ?? 0,
     });
+  };
+
+  const loadSpin360 = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('spin360_jobs' as any)
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+    setSpin360Jobs((data as any[]) || []);
+    setSpin360Loaded(true);
   };
 
   const loadProjects = async () => {
