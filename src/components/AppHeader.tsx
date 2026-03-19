@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { Plus, CreditCard, LogIn, MessageSquare } from 'lucide-react';
+import { Plus, CreditCard, LogIn, MessageSquare, Home } from 'lucide-react';
 import logoLight from '@/assets/logo-light.png';
 import CreditBadge from '@/components/CreditBadge';
 import UserMenuSheet from '@/components/UserMenuSheet';
@@ -62,6 +62,13 @@ export default function AppHeader({ leftActions, variant = 'card' }: AppHeaderPr
 
                 {/* Credits */}
                 <CreditBadge />
+
+                {/* Dashboard Home */}
+                <Link to="/dashboard">
+                  <Button variant="ghost" size="icon" className={ghostClass} title="Dashboard">
+                    <Home className={iconClass} />
+                  </Button>
+                </Link>
 
                 {/* Chat icon */}
                 <Button
