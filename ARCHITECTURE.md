@@ -1306,6 +1306,44 @@ Nutzer füllt Formular auf Landing Page
     → Sichtbar im Dashboard + Admin-Panel + Sales Assistant CRM
 ```
 
+### 16.4 Admin-Secrets (admin_secrets)
+
+Sichere Verwaltung von API-Keys ohne Code-Änderung:
+
+```
+Tabelle: admin_secrets
+├── RLS: NUR Admins können lesen UND schreiben (kein öffentlicher Zugriff!)
+├── Unterschied zu admin_settings: KEIN public SELECT
+├── UI: Maskierte Eingabefelder mit Sichtbarkeits-Toggle
+└── Keys werden von Edge Functions via getSecret() gelesen
+```
+
+| Key | Label | Verwendung |
+|---|---|---|
+| `GEMINI_API_KEY` | Google Gemini API Key | Text/Bild/Video/OCR |
+| `OPENAI_API_KEY` | OpenAI API Key | Bild (Premium/Ultra) |
+| `STRIPE_SECRET_KEY` | Stripe Secret Key | Zahlungen |
+| `STRIPE_WEBHOOK_SECRET` | Stripe Webhook Secret | Webhook-Verifizierung |
+| `RESEND_API_KEY` | Resend API Key | E-Mail-Versand |
+| `RESEND_FROM_EMAIL` | Resend Absender E-Mail | Absenderadresse |
+| `RESEND_REPLY_TO` | Resend Reply-To E-Mail | Reply-To-Adresse |
+| `OUTVIN_API_KEY` | OutVIN API Key | VIN-Datenbank |
+
+**Sicherheits-Architektur:**
+```
+Admin UI (/admin/secrets)
+    │ Maskierte Eingabe + Sichtbarkeits-Toggle
+    │ Nur bei has_role(auth.uid(), 'admin')
+    ▼
+admin_secrets Tabelle (RLS: NUR Admin)
+    │ Service Role Key (RLS bypass)
+    ▼
+getSecret() Helper (_shared/get-secret.ts)
+    ├── 1. Liest aus admin_secrets (5-Min-Cache)
+    ├── 2. Fallback: Deno.env.get()
+    └── Verwendet von Edge Functions
+```
+
 ---
 
 ## 16. Admin-System
