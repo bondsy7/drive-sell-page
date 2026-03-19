@@ -66,6 +66,68 @@ const DEFAULT_CONFIG: RemasterConfig = {
   showDealerLogo: false,
 };
 
+const EMPTY_FINANCE: VehicleData['finance'] = {
+  monthlyRate: '',
+  downPayment: '',
+  duration: '',
+  totalPrice: '',
+  annualMileage: '',
+  specialPayment: '',
+  residualValue: '',
+  interestRate: '',
+};
+
+const EMPTY_DEALER: VehicleData['dealer'] = {
+  name: '',
+  address: '',
+  postalCode: '',
+  city: '',
+  phone: '',
+  email: '',
+  website: '',
+  taxId: '',
+  logoUrl: '',
+  facebookUrl: '',
+  instagramUrl: '',
+  xUrl: '',
+  tiktokUrl: '',
+  youtubeUrl: '',
+  whatsappNumber: '',
+  leasingBank: '',
+  leasingLegalText: '',
+  financingBank: '',
+  financingLegalText: '',
+  defaultLegalText: '',
+};
+
+const EMPTY_CONSUMPTION: VehicleData['consumption'] = {
+  origin: '',
+  mileage: '',
+  displacement: '',
+  power: '',
+  driveType: '',
+  fuelType: '',
+  consumptionCombined: '',
+  co2Emissions: '',
+  co2Class: '',
+  consumptionCity: '',
+  consumptionSuburban: '',
+  consumptionRural: '',
+  consumptionHighway: '',
+  energyCostPerYear: '',
+  fuelPrice: '',
+  co2CostMedium: '',
+  co2CostLow: '',
+  co2CostHigh: '',
+  vehicleTax: '',
+  isPluginHybrid: false,
+  co2EmissionsDischarged: '',
+  co2ClassDischarged: '',
+  consumptionCombinedDischarged: '',
+  electricRange: '',
+  consumptionElectric: '',
+};
+
 const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription, vehicleData, modelTier, projectId, onComplete, onVehicleDataChange, onBack, onPipelineComplete }) => {
   const [showPipeline, setShowPipeline] = useState(false);
   const [captures, setCaptures] = useState<Record<string, CapturedImage>>({});
@@ -107,7 +169,30 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     return partial?.key || sourceModel;
   }, [makes]);
 
-  // Auto-detect brand from vehicleData or vehicleDescription
+  const buildVehicleState = useCallback((): VehicleData => ({
+    category: vehicleData?.category || 'Kauf',
+    vehicle: {
+      brand: vehicleData?.vehicle?.brand || '',
+      model: vehicleData?.vehicle?.model || '',
+      variant: vehicleData?.vehicle?.variant || '',
+      year: vehicleData?.vehicle?.year || new Date().getFullYear(),
+      color: vehicleData?.vehicle?.color || '',
+      fuelType: vehicleData?.vehicle?.fuelType || '',
+      transmission: vehicleData?.vehicle?.transmission || '',
+      power: vehicleData?.vehicle?.power || '',
+      features: [...(vehicleData?.vehicle?.features || [])],
+      ...(vehicleData?.vehicle?.vin ? { vin: vehicleData.vehicle.vin } : {}),
+    },
+    finance: vehicleData?.finance ? { ...vehicleData.finance } : { ...EMPTY_FINANCE },
+    dealer: vehicleData?.dealer ? { ...vehicleData.dealer } : { ...EMPTY_DEALER },
+    consumption: vehicleData?.consumption ? { ...vehicleData.consumption } : { ...EMPTY_CONSUMPTION },
+  }), [vehicleData]);
+
+  const patchVehicleData = useCallback((updater: (current: VehicleData) => VehicleData) => {
+    if (!onVehicleDataChange) return;
+    onVehicleDataChange(updater(buildVehicleState()));
+  }, [buildVehicleState, onVehicleDataChange]);
+
   useEffect(() => {
     if (makes.length === 0) return;
 
@@ -119,13 +204,8 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     }
 
     if (!brandDetectionAttempted.current && vehicleDescription) {
-      // Try to find brand in the description by checking each word/token
-      let matchedBrand: string | null = null;
+      let matchedBrand = resolveBrandFromSource(vehicleDescription);
 
-      // First try the whole description
-      matchedBrand = resolveBrandFromSource(vehicleDescription);
-
-      // If not found, try individual words from the description
       if (!matchedBrand) {
         const words = vehicleDescription.split(/[\s,;|/\-–]+/).filter(w => w.length > 1);
         for (const word of words) {
@@ -135,48 +215,48 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       }
 
       if (matchedBrand) {
-        // Only mark as attempted if we actually found something via text
         brandDetectionAttempted.current = true;
         setBrandDetectionStatus('found');
-        if (vehicleData && onVehicleDataChange) {
-          onVehicleDataChange({
-            ...vehicleData,
-            vehicle: { ...vehicleData.vehicle, brand: matchedBrand },
-          });
-        }
+        patchVehicleData((current) => ({
+          ...current,
+          vehicle: { ...current.vehicle, brand: matchedBrand },
+        }));
       }
-      // If no text match: leave status as 'idle' so image-based detection can trigger on first photo
     }
-  }, [vehicleData, vehicleDescription, makes, onVehicleDataChange, resolveBrandFromSource]);
+  }, [vehicleData, vehicleDescription, makes, patchVehicleData, resolveBrandFromSource]);
 
   useEffect(() => {
     const outvinVehicle = vinLookup.outvinData;
-    if (!outvinVehicle || makes.length === 0 || !vehicleData || !onVehicleDataChange) return;
+    if (!outvinVehicle || makes.length === 0 || !onVehicleDataChange) return;
 
-    const matchedBrand = resolveBrandFromSource(outvinVehicle.brand);
+    const currentData = buildVehicleState();
+    const matchedBrand = resolveBrandFromSource(outvinVehicle.brand)
+      || resolveBrandFromSource(currentData.vehicle.brand)
+      || (detectedVin ? resolveBrandFromSource(lookupBrandFromVin(detectedVin) || '') : null);
+
     if (!matchedBrand) {
-      setBrandDetectionStatus('not-found');
+      if (!currentData.vehicle.brand) setBrandDetectionStatus('not-found');
       return;
     }
 
     const matchedModel = resolveModelForBrand(matchedBrand, outvinVehicle.model);
-    const sameBrand = normalizeBrand(vehicleData.vehicle.brand || '') === normalizeBrand(matchedBrand);
-    const sameModel = normalizeBrand(vehicleData.vehicle.model || '') === normalizeBrand(matchedModel);
+    const sameBrand = normalizeBrand(currentData.vehicle.brand || '') === normalizeBrand(matchedBrand);
+    const sameModel = normalizeBrand(currentData.vehicle.model || '') === normalizeBrand(matchedModel);
 
     setBrandDetectionStatus('found');
     brandDetectionAttempted.current = true;
 
     if (sameBrand && sameModel) return;
 
-    onVehicleDataChange({
-      ...vehicleData,
+    patchVehicleData((current) => ({
+      ...current,
       vehicle: {
-        ...vehicleData.vehicle,
+        ...current.vehicle,
         brand: matchedBrand,
-        model: matchedModel || vehicleData.vehicle.model,
+        model: matchedModel || current.vehicle.model,
       },
-    });
-  }, [vinLookup.outvinData, makes, vehicleData, onVehicleDataChange, resolveBrandFromSource, resolveModelForBrand]);
+    }));
+  }, [buildVehicleState, detectedVin, makes, onVehicleDataChange, patchVehicleData, resolveBrandFromSource, resolveModelForBrand, vinLookup.outvinData]);
 
   const capturedCount = Object.keys(captures).length;
   const vehicleSlots = SLOTS.filter(s => !s.isVin);
@@ -194,8 +274,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     const base64 = await fileToBase64(file);
     setCaptures(prev => ({ ...prev, [slot.key]: { base64, status: 'captured' } }));
 
-    if (!slot.isVin && !brandDetectionAttempted.current && makes.length > 0) {
-      brandDetectionAttempted.current = true;
+    if (!slot.isVin && (!brandDetectionAttempted.current || brandDetectionStatus === 'not-found') && makes.length > 0) {
       let matchedBrand = resolveBrandFromSource(vehicleDescription);
       if (!matchedBrand) {
         const words = vehicleDescription.split(/[\s,;|/\-–]+/).filter(w => w.length > 1);
@@ -206,41 +285,44 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       }
 
       if (matchedBrand) {
+        brandDetectionAttempted.current = true;
         setBrandDetectionStatus('found');
-        if (vehicleData && onVehicleDataChange) {
-          onVehicleDataChange({
-            ...vehicleData,
-            vehicle: { ...vehicleData.vehicle, brand: matchedBrand },
-          });
-        }
+        patchVehicleData((current) => ({
+          ...current,
+          vehicle: { ...current.vehicle, brand: matchedBrand },
+        }));
       } else {
-        // Text-based detection failed – try AI image recognition
         setBrandDetectionStatus('detecting');
+        brandDetectionAttempted.current = true;
         try {
           const { data: aiResult, error: aiError } = await supabase.functions.invoke('detect-vehicle-brand', {
             body: { imageBase64: base64 },
           });
+
           if (!aiError && aiResult?.brand && aiResult.confidence !== 'low') {
             const resolvedAiBrand = resolveBrandFromSource(aiResult.brand);
-            if (resolvedAiBrand && vehicleData && onVehicleDataChange) {
+            if (resolvedAiBrand) {
               setBrandDetectionStatus('found');
               const resolvedModel = aiResult.model ? resolveModelForBrand(resolvedAiBrand, aiResult.model) : '';
-              onVehicleDataChange({
-                ...vehicleData,
+              patchVehicleData((current) => ({
+                ...current,
                 vehicle: {
-                  ...vehicleData.vehicle,
+                  ...current.vehicle,
                   brand: resolvedAiBrand,
-                  model: resolvedModel || vehicleData.vehicle.model,
+                  model: resolvedModel || current.vehicle.model,
                 },
-              });
+              }));
               toast.success(`Marke per Bild erkannt: ${resolvedAiBrand}${resolvedModel ? ` ${resolvedModel}` : ''}`);
             } else {
+              brandDetectionAttempted.current = false;
               setBrandDetectionStatus('not-found');
             }
           } else {
+            brandDetectionAttempted.current = false;
             setBrandDetectionStatus('not-found');
           }
         } catch {
+          brandDetectionAttempted.current = false;
           console.error('AI brand detection failed');
           setBrandDetectionStatus('not-found');
         }
@@ -253,28 +335,36 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         if (data?.error === 'insufficient_credits') {
           toast.error('Nicht genügend Credits für VIN-Erkennung.');
         } else if (!error && data?.vin) {
-          setDetectedVin(data.vin);
-          toast.success(`VIN erkannt: ${data.vin}`);
+          const recognizedVin = data.vin as string;
+          setDetectedVin(recognizedVin);
+          patchVehicleData((current) => ({
+            ...current,
+            vehicle: { ...current.vehicle, vin: recognizedVin },
+          }));
+          toast.success(`VIN erkannt: ${recognizedVin}`);
 
-          // Instant brand detection from VIN prefix (no API needed)
-          const vinBrand = lookupBrandFromVin(data.vin);
+          const vinBrand = lookupBrandFromVin(recognizedVin);
           if (vinBrand) {
             const resolved = resolveBrandFromSource(vinBrand);
-            if (resolved && vehicleData && onVehicleDataChange) {
+            if (resolved) {
               setBrandDetectionStatus('found');
               brandDetectionAttempted.current = true;
-              onVehicleDataChange({
-                ...vehicleData,
-                vehicle: { ...vehicleData.vehicle, brand: resolved },
-              });
+              patchVehicleData((current) => ({
+                ...current,
+                vehicle: { ...current.vehicle, vin: recognizedVin, brand: resolved },
+              }));
               toast.success(`Marke erkannt: ${resolved}`);
             }
           }
 
-          // Also trigger full VIN lookup for additional data (model, equipment etc.)
-          if (vehicleData) {
-            vinLookup.lookup(data.vin, vehicleData);
-          }
+          const lookupBase = buildVehicleState();
+          await vinLookup.lookup(recognizedVin, {
+            ...lookupBase,
+            vehicle: {
+              ...lookupBase.vehicle,
+              vin: recognizedVin,
+            },
+          });
         } else {
           toast.warning('VIN konnte nicht erkannt werden. Bitte prüfe das Foto.');
         }
@@ -282,7 +372,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         toast.warning('VIN-Erkennung fehlgeschlagen.');
       }
     }
-  }, [makes.length, onVehicleDataChange, resolveBrandFromSource, resolveModelForBrand, vehicleData, vehicleDescription, vinLookup]);
+  }, [brandDetectionStatus, buildVehicleState, makes.length, patchVehicleData, resolveBrandFromSource, resolveModelForBrand, vehicleDescription, vinLookup]);
 
   const removeCapture = (key: string) => {
     setCaptures(prev => {

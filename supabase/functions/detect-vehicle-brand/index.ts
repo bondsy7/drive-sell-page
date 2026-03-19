@@ -6,6 +6,31 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+type DetectionResult = {
+  brand: string;
+  model: string;
+  confidence: "high" | "medium" | "low";
+};
+
+function normalizeDetectionResult(input?: Partial<DetectionResult> | null): DetectionResult {
+  const confidence = input?.confidence;
+  return {
+    brand: typeof input?.brand === "string" ? input.brand.trim() : "",
+    model: typeof input?.model === "string" ? input.model.trim() : "",
+    confidence: confidence === "high" || confidence === "medium" || confidence === "low"
+      ? confidence
+      : (input?.brand ? "medium" : "low"),
+  };
+}
+
+function extractPartialJson(text: string): DetectionResult {
+  const cleaned = text.replace(/```json\s*/gi, "").replace(/```/g, "").trim();
+  const brand = cleaned.match(/"brand"\s*:\s*"([^"\n}]*)/i)?.[1]?.trim() || "";
+  const model = cleaned.match(/"model"\s*:\s*"([^"\n}]*)/i)?.[1]?.trim() || "";
+  const confidence = cleaned.match(/"confidence"\s*:\s*"(high|medium|low)/i)?.[1]?.toLowerCase() as DetectionResult["confidence"] | undefined;
+  return normalizeDetectionResult({ brand, model, confidence });
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -50,7 +75,6 @@ serve(async (req) => {
       });
     }
 
-    // Strip data URI prefix for Gemini inline data
     const base64Data = imageBase64.replace(/^data:image\/[a-zA-Z+]+;base64,/, "");
     const mimeMatch = imageBase64.match(/^data:(image\/[a-zA-Z+]+);base64,/);
     const mimeType = mimeMatch ? mimeMatch[1] : "image/jpeg";
@@ -71,31 +95,32 @@ serve(async (req) => {
                 },
               },
               {
-                text: `Analyze this vehicle photo carefully. Your task is to identify the vehicle manufacturer/brand and model.
+                text: `Analyze this vehicle-related image and identify the vehicle manufacturer/brand and model whenever possible.
 
-Look for:
-1. The brand logo/emblem on the vehicle (front grille, steering wheel, trunk, wheels)
-2. The overall shape and design language of the vehicle
-3. Any visible badges, nameplates or text on the vehicle
-4. Distinctive design elements (headlights, grille shape, body lines)
+Possible inputs include:
+1. Vehicle photos showing logo, grille, headlights, trunk badge, wheels or body shape
+2. Manufacturer labels, VIN stickers, compliance plates or door-jamb stickers
+3. Interior photos with steering wheel logo or badges
+4. Textual manufacturer references visible on the vehicle or label
 
-Respond with ONLY a JSON object in this exact format, nothing else:
-{"brand": "BrandName", "model": "ModelName", "confidence": "high"|"medium"|"low"}
+Respond with ONLY a JSON object in this exact format:
+{"brand":"BrandName","model":"ModelName","confidence":"high"}
 
 Rules:
-- Use the official brand name (e.g. "Volkswagen" not "VW", "Mercedes-Benz" not "Mercedes")
-- If you can identify the brand but not the model, set model to ""
-- If you cannot identify the brand at all, respond with {"brand": "", "model": "", "confidence": "low"}
-- confidence "high" = clearly visible logo or unmistakable design
-- confidence "medium" = likely correct based on design cues
-- confidence "low" = uncertain or cannot identify`,
+- Use the official brand name (e.g. "Volkswagen", "Mercedes-Benz", "BMW")
+- If you can identify only the brand, return model as ""
+- If you cannot identify the brand, return {"brand":"","model":"","confidence":"low"}
+- Use "high" when a logo, manufacturer label, VIN sticker text or unmistakable badge is visible
+- Use "medium" when design cues strongly suggest the brand
+- Use "low" when uncertain`,
               },
             ],
           },
         ],
         generationConfig: {
           temperature: 0.1,
-          maxOutputTokens: 200,
+          maxOutputTokens: 128,
+          responseMimeType: "application/json",
         },
       }),
     });
@@ -110,30 +135,20 @@ Rules:
     }
 
     const result = await response.json();
-    const textContent = result.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
-    // Extract JSON from response (handle markdown code blocks)
-    const jsonMatch = textContent.match(/\{[\s\S]*?\}/);
-    if (!jsonMatch) {
-      console.error("No JSON in response:", textContent);
-      return new Response(JSON.stringify({ brand: "", model: "", confidence: "low" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    const textContent = result.candidates?.[0]?.content?.parts?.map((part: { text?: string }) => part.text || "").join("\n") || "";
+    const cleanedContent = textContent.replace(/```json\s*/gi, "").replace(/```/g, "").trim();
 
     try {
-      const parsed = JSON.parse(jsonMatch[0]);
-      console.log("Detected vehicle:", parsed);
-      return new Response(JSON.stringify({
-        brand: parsed.brand || "",
-        model: parsed.model || "",
-        confidence: parsed.confidence || "low",
-      }), {
+      const parsed = JSON.parse(cleanedContent);
+      const normalized = normalizeDetectionResult(parsed);
+      console.log("Detected vehicle:", normalized);
+      return new Response(JSON.stringify(normalized), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     } catch {
-      console.error("Failed to parse JSON:", jsonMatch[0]);
-      return new Response(JSON.stringify({ brand: "", model: "", confidence: "low" }), {
+      const fallback = extractPartialJson(cleanedContent);
+      console.warn("Partial JSON in response, using fallback:", cleanedContent);
+      return new Response(JSON.stringify(fallback), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
