@@ -1688,6 +1688,10 @@ export type Database = {
         | "subscription_reset"
         | "admin_adjustment"
         | "landing_page_export"
+        | "spin360_analysis"
+        | "spin360_normalize"
+        | "spin360_generate"
+        | "spin360_export"
       subscription_status: "active" | "cancelled" | "past_due" | "trialing"
     }
     CompositeTypes: {
@@ -1827,6 +1831,10 @@ export const Constants = {
         "subscription_reset",
         "admin_adjustment",
         "landing_page_export",
+        "spin360_analysis",
+        "spin360_normalize",
+        "spin360_generate",
+        "spin360_export",
       ],
       subscription_status: ["active", "cancelled", "past_due", "trialing"],
     },
