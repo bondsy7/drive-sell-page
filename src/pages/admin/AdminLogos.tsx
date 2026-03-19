@@ -495,18 +495,15 @@ export default function AdminLogos() {
                 </div>
               )}
             </div>
-            <label className="cursor-pointer block">
-              <Button variant="outline" size="sm" className="w-full gap-2" onClick={e => {
-                e.preventDefault();
-                (e.currentTarget.parentElement?.querySelector('input') as HTMLInputElement)?.click();
-              }}>
+            <div>
+              <Button variant="outline" size="sm" className="w-full gap-2" type="button" onClick={() => editFileRef.current?.click()}>
                 <Upload className="w-3.5 h-3.5" />
                 {editFile ? editFile.name : 'Neues Logo auswählen'}
               </Button>
-              <input type="file" accept="image/*,.svg" className="hidden"
-                onChange={e => handleEditFileChange(e.target.files?.[0] || null)}
+              <input ref={editFileRef} type="file" accept="image/*,.svg" className="hidden"
+                onChange={e => { handleEditFileChange(e.target.files?.[0] || null); e.target.value = ''; }}
               />
-            </label>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setEditBrand(null)}>Abbrechen</Button>
