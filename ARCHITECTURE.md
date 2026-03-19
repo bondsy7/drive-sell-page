@@ -426,7 +426,25 @@ Alle Backend-Logik läuft in **26 Supabase Edge Functions** (Deno-Runtime) + 1 S
 | `admin-stripe` | Admin-Only: Stripe Payments/Refunds verwalten |
 | `admin-delete-user` | Admin-Only: Nutzer löschen (kaskadiert) |
 
-### 4.5 Gemeinsame Patterns
+### 4.5 Shared Module (`_shared/`)
+
+| Modul | Datei | Zweck |
+|---|---|---|
+| `getSecret()` | `_shared/get-secret.ts` | Liest API-Keys aus `admin_secrets` DB-Tabelle, Fallback auf `Deno.env`. 5-Minuten-Cache. |
+
+```typescript
+// Verwendung in Edge Functions:
+import { getSecret } from "../_shared/get-secret.ts";
+
+const apiKey = await getSecret("GEMINI_API_KEY");
+// 1. Prüft admin_secrets Tabelle (via Service Role, RLS bypass)
+// 2. Falls leer/Fehler → Fallback auf Deno.env.get("GEMINI_API_KEY")
+// 3. Ergebnis wird 5 Minuten gecacht
+```
+
+**Vorteil:** Admins können API-Keys über `/admin/secrets` ändern, ohne Edge Functions neu deployen zu müssen.
+
+### 4.6 Gemeinsame Patterns
 
 Alle KI-Functions folgen einem einheitlichen Pattern:
 
@@ -441,10 +459,13 @@ if (authResult instanceof Response) return authResult;
 // 3. Custom Prompt laden (admin_settings.ai_prompts override)
 const prompt = await getCustomPrompt("key", DEFAULT_PROMPT);
 
-// 4. KI-API aufrufen (Google Gemini direkt oder Lovable AI Gateway)
+// 4. API-Key aus DB laden (mit Env-Fallback)
+const apiKey = await getSecret("GEMINI_API_KEY");
+
+// 5. KI-API aufrufen (Google Gemini direkt oder Lovable AI Gateway)
 const response = await fetch("https://generativelanguage.googleapis.com/v1beta/...", { ... });
 
-// 5. Ergebnis verarbeiten + zurückgeben
+// 6. Ergebnis verarbeiten + zurückgeben
 return new Response(JSON.stringify(result), { headers: corsHeaders });
 ```
 
