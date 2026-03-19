@@ -459,7 +459,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
 
   // Collect all result images for the preview grid
   const allResultImages = useMemo(() => {
-    const results: { key: string; label: string; base64: string }[] = [];
+    const results: { key: string; jobKey: string; promptIndex: number; label: string; base64: string }[] = [];
     for (const job of selectedJobs) {
       const state = jobs[job.key];
       if (state?.results) {
@@ -467,6 +467,8 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
           const prompts = [job.prompt, ...(job.extraPrompts || [])];
           results.push({
             key: `${job.key}_${i}`,
+            jobKey: job.key,
+            promptIndex: i,
             label: prompts.length > 1 ? `${job.labelDe} (${i + 1})` : job.labelDe,
             base64: r,
           });
@@ -475,6 +477,61 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
     }
     return results;
   }, [jobs, selectedJobs]);
+
+  // Regenerate a single pipeline result image
+  const retrySinglePipelineImage = useCallback(async (resultId: string) => {
+    const resultImg = allResultImages.find(r => r.key === resultId);
+    if (!resultImg) return;
+    const job = availableJobs.find(j => j.key === resultImg.jobKey);
+    if (!job) return;
+
+    setRegeneratingIds(prev => new Set(prev).add(resultId));
+    const prompts = [job.prompt, ...(job.extraPrompts || [])];
+    const prompt = prompts[resultImg.promptIndex] || prompts[0];
+
+    try {
+      const result = await generateOneImage(prompt);
+      if (result.base64) {
+        setJobs(prev => {
+          const state = prev[resultImg.jobKey];
+          const newResults = [...(state?.results || [])];
+          newResults[resultImg.promptIndex] = result.base64!;
+          return { ...prev, [resultImg.jobKey]: { ...state, results: newResults } };
+        });
+        toast.success('Bild erfolgreich neu generiert.');
+
+        // Save to gallery
+        if (user) {
+          try {
+            const folderName = getGalleryFolderName(vin);
+            const storagePath = savedProjectId ? savedProjectId : `gallery/${folderName}`;
+            const url = await uploadImageToStorage(result.base64, user.id, `${storagePath}/${resultImg.jobKey}_regen_${resultImg.promptIndex}.png`);
+            if (url) {
+              await supabase.from('project_images').insert({
+                project_id: savedProjectId || null, user_id: user.id, image_url: url,
+                image_base64: '', perspective: `Pipeline: ${resultImg.label} (Regen)`, sort_order: 999,
+                gallery_folder: folderName,
+              } as any);
+            }
+          } catch (e) { console.error('Regen save error:', e); }
+        }
+      } else {
+        toast.error(result.error || 'Generierung fehlgeschlagen');
+      }
+    } catch {
+      toast.error('Netzwerkfehler bei Regenerierung');
+    }
+    setRegeneratingIds(prev => { const next = new Set(prev); next.delete(resultId); return next; });
+  }, [allResultImages, availableJobs, generateOneImage, user, savedProjectId, vin]);
+
+  const lightboxImages = useMemo(() =>
+    allResultImages.map(img => ({
+      id: img.key,
+      src: img.base64.startsWith('data:') ? img.base64 : `data:image/png;base64,${img.base64}`,
+      label: img.label,
+    })),
+    [allResultImages],
+  );
 
   const failedJobs = selectedJobs.filter(j => jobs[j.key]?.status === 'error');
 
