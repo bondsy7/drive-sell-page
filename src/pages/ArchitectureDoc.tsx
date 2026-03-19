@@ -738,21 +738,53 @@ GET /api-vehicles/:id/html  → HTML-Fragment (body-Inhalt)`}</CodeBlock>
 
         {/* 14. Admin */}
         <Section id="s14" title="14. Admin-System">
-          <Table
-            headers={['Route', 'Funktion']}
-            rows={[
-              ['/admin', 'Dashboard: KPIs, Charts, Übersicht'],
-              ['/admin/users', 'Nutzerverwaltung (Rollen, Credits, Löschen)'],
-              ['/admin/transactions', 'Credit-Transaktionshistorie'],
-              ['/admin/leads', 'Alle Kontaktanfragen'],
-              ['/admin/pdf-gallery', 'Beispiel-PDFs verwalten'],
-              ['/admin/prompts', 'KI-System-Prompts anpassen'],
-              ['/admin/pricing', 'Abo-Pläne + Credit-Kosten bearbeiten'],
-              ['/admin/settings', 'System-Einstellungen'],
-              ['/admin/logos', 'Hersteller-Logos (Massen-Upload)'],
-              ['/admin/sales-assistant', 'Sales-Assistant-Konfiguration'],
-            ]}
-          />
+          <SubSection title="Admin-Routen (12 Seiten)">
+            <Table
+              headers={['Route', 'Funktion']}
+              rows={[
+                ['/admin', 'Dashboard: KPIs, Charts, Übersicht'],
+                ['/admin/users', 'Nutzerverwaltung (Rollen, Credits, Löschen)'],
+                ['/admin/transactions', 'Credit-Transaktionshistorie'],
+                ['/admin/leads', 'Alle Kontaktanfragen'],
+                ['/admin/pdf-gallery', 'Beispiel-PDFs verwalten'],
+                ['/admin/prompts', 'KI-System-Prompts anpassen'],
+                ['/admin/pricing', 'Abo-Pläne + Credit-Kosten bearbeiten'],
+                ['/admin/settings', 'System-Einstellungen (Key-Value JSONB)'],
+                ['/admin/secrets', 'API-Keys & Secrets sicher verwalten'],
+                ['/admin/logos', 'Hersteller-Logos (Massen-Upload)'],
+                ['/admin/sales-assistant', 'Sales-Assistant-Konfiguration'],
+                ['/admin/wmi-codes', 'WMI-Codes verwalten'],
+              ]}
+            />
+          </SubSection>
+          <SubSection title="Admin-Secrets (/admin/secrets)">
+            <P>
+              Sichere Verwaltung von API-Keys ohne Code-Änderung. Die <strong>admin_secrets</strong> Tabelle 
+              hat im Gegensatz zu admin_settings <strong>keinen öffentlichen Lesezugriff</strong> — nur Admins 
+              können Secrets lesen und schreiben.
+            </P>
+            <Table
+              headers={['Key', 'Verwendung']}
+              rows={[
+                ['GEMINI_API_KEY', 'Google Gemini API (Text, Bild, Video, OCR)'],
+                ['OPENAI_API_KEY', 'OpenAI Image API (Banner)'],
+                ['STRIPE_SECRET_KEY', 'Stripe Payments'],
+                ['STRIPE_WEBHOOK_SECRET', 'Stripe Webhook Verifizierung'],
+                ['RESEND_API_KEY', 'Resend E-Mail-Versand'],
+                ['RESEND_FROM_EMAIL', 'Absender-Adresse'],
+                ['RESEND_REPLY_TO', 'Reply-To-Adresse'],
+                ['OUTVIN_API_KEY', 'VIN-Datenbank'],
+              ]}
+            />
+            <CodeBlock>{`Sicherheits-Architektur:
+Admin UI (/admin/secrets) → Maskierte Eingabe
+    │ RLS: has_role(auth.uid(), 'admin')
+    ▼
+admin_secrets Tabelle (NUR Admin-Zugriff)
+    │ Service Role (RLS bypass)
+    ▼
+getSecret() Helper → 5-Min-Cache → Fallback: Deno.env`}</CodeBlock>
+          </SubSection>
           <P>
             <strong>Admin-Edge-Functions:</strong> admin-stripe (Payments/Refunds) und admin-delete-user prüfen beide
             server-seitig has_role(auth.uid(), 'admin').
