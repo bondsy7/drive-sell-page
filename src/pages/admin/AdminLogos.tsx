@@ -183,6 +183,7 @@ export default function AdminLogos() {
     if (error) toast.error('Fehler: ' + error.message);
     else {
       toast.success(`Logo für ${brandKey} hochgeladen`);
+      invalidateLogoCache();
       loadAll();
     }
   };
