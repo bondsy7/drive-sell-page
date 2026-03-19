@@ -377,6 +377,16 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
           )}
         </div>
       </div>
+
+      {/* Lightbox */}
+      <ImagePreviewLightbox
+        images={lightboxImages}
+        initialIndex={lightboxIndex}
+        open={lightboxOpen}
+        onClose={() => setLightboxOpen(false)}
+        onRegenerate={(id) => retrySingleImage(id)}
+        regeneratingIds={regeneratingIds}
+      />
     </div>
   );
 };
