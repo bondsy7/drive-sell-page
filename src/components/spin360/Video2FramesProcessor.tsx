@@ -168,6 +168,7 @@ const Video2FramesProcessor: React.FC<Video2FramesProcessorProps> = ({
         playsInline
         preload="auto"
         onLoadedData={handleVideoLoaded}
+        onError={handleVideoError}
       />
       <canvas ref={canvasRef} className="hidden" />
     </div>
