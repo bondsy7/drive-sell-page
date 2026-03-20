@@ -250,6 +250,21 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
               ))}
             </Accordion>
 
+            {/* Contact Form Toggle */}
+            <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                <MessageSquare className="w-3.5 h-3.5" /> Kontaktformular
+              </h3>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-foreground">Kontaktformular anzeigen</span>
+                <Switch checked={contactFormEnabled} onCheckedChange={setContactFormEnabled} />
+              </div>
+              {contactFormEnabled && (
+                <Input value={vehicleTitle} onChange={e => setVehicleTitle(e.target.value)} placeholder="Fahrzeugtitel im Formular" className="text-sm" />
+              )}
+              <p className="text-[10px] text-muted-foreground">Anfragen landen im CRM und werden vom Sales-Bot verarbeitet.</p>
+            </div>
+
             {/* Dealer Info */}
             <div className="rounded-xl border border-border bg-card p-4 space-y-2">
               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Händler</h3>
