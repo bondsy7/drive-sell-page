@@ -14,14 +14,17 @@ export type SpinStep =
   | 'assembling'
   | 'completed'
   | 'failed'
-  | 'needs_review';
+  | 'needs_review'
+  | 'generating_video'
+  | 'extracting_frames';
 
 interface Spin360ProgressProps {
   currentStep: SpinStep;
   error?: string | null;
+  mode?: 'image2spin' | 'video2frames';
 }
 
-const STEPS: { key: SpinStep; label: string; description: string }[] = [
+const IMAGE_STEPS: { key: SpinStep; label: string; description: string }[] = [
   { key: 'analyzing', label: 'Analyse', description: 'Bilder werden geprüft' },
   { key: 'normalizing', label: 'Normalisierung', description: 'Bilder werden optimiert' },
   { key: 'profiling', label: 'Fahrzeugprofil', description: 'Identität wird erstellt' },
@@ -31,21 +34,29 @@ const STEPS: { key: SpinStep; label: string; description: string }[] = [
   { key: 'assembling', label: 'Zusammenbau', description: '360° Spin wird erstellt' },
 ];
 
-const STEP_ORDER: SpinStep[] = ['uploaded', 'analyzing', 'normalizing', 'profiling', 'generating_anchors', 'generating_frames', 'validating', 'assembling', 'completed'];
+const VIDEO_STEPS: { key: SpinStep; label: string; description: string }[] = [
+  { key: 'generating_video', label: 'Video-Generierung', description: '360°-Spin-Video wird erstellt' },
+  { key: 'extracting_frames', label: 'Frame-Extraktion', description: '48 Frames werden aus dem Video extrahiert' },
+];
 
-function getStepIndex(step: SpinStep): number {
-  return STEP_ORDER.indexOf(step);
+const IMAGE_STEP_ORDER: SpinStep[] = ['uploaded', 'analyzing', 'normalizing', 'profiling', 'generating_anchors', 'generating_frames', 'validating', 'assembling', 'completed'];
+const VIDEO_STEP_ORDER: SpinStep[] = ['uploaded', 'generating_video', 'extracting_frames', 'completed'];
+
+function getStepIndex(step: SpinStep, order: SpinStep[]): number {
+  return order.indexOf(step);
 }
 
-const Spin360Progress: React.FC<Spin360ProgressProps> = ({ currentStep, error }) => {
-  const currentIdx = getStepIndex(currentStep);
+const Spin360Progress: React.FC<Spin360ProgressProps> = ({ currentStep, error, mode = 'image2spin' }) => {
+  const isVideo = mode === 'video2frames';
+  const steps = isVideo ? VIDEO_STEPS : IMAGE_STEPS;
+  const stepOrder = isVideo ? VIDEO_STEP_ORDER : IMAGE_STEP_ORDER;
+  const currentIdx = getStepIndex(currentStep, stepOrder);
   const isFailed = currentStep === 'failed' || currentStep === 'needs_review';
   const isCompleted = currentStep === 'completed';
-  const progressPercent = isCompleted ? 100 : isFailed ? 0 : Math.round((currentIdx / (STEP_ORDER.length - 1)) * 100);
+  const progressPercent = isCompleted ? 100 : isFailed ? 0 : Math.round((currentIdx / (stepOrder.length - 1)) * 100);
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="text-center">
         {isCompleted ? (
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/10 text-green-600 text-sm font-semibold">
@@ -62,13 +73,11 @@ const Spin360Progress: React.FC<Spin360ProgressProps> = ({ currentStep, error })
         )}
       </div>
 
-      {/* Progress bar */}
       <Progress value={progressPercent} className="h-2" />
 
-      {/* Steps */}
       <div className="space-y-2">
-        {STEPS.map((step) => {
-          const stepIdx = getStepIndex(step.key);
+        {steps.map((step) => {
+          const stepIdx = getStepIndex(step.key, stepOrder);
           const isActive = step.key === currentStep;
           const isDone = currentIdx > stepIdx || isCompleted;
           const isPending = currentIdx < stepIdx && !isCompleted;
@@ -109,7 +118,6 @@ const Spin360Progress: React.FC<Spin360ProgressProps> = ({ currentStep, error })
         })}
       </div>
 
-      {/* Error message */}
       {isFailed && error && (
         <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20">
           <p className="text-sm text-destructive">{error}</p>
