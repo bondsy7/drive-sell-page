@@ -111,17 +111,26 @@ const Video2FramesProcessor: React.FC<Video2FramesProcessorProps> = ({
 
   const handleVideoLoaded = useCallback(() => {
     const video = videoRef.current;
-    if (!video || video.duration === 0) return;
+    if (!video || video.duration === 0 || isNaN(video.duration)) return;
     extractFrames().catch((err) => {
+      console.error('Frame extraction failed:', err);
       setStep('error');
       onError(String(err));
     });
   }, [extractFrames, onError]);
 
+  const handleVideoError = useCallback((e: React.SyntheticEvent<HTMLVideoElement>) => {
+    console.error('Video load error:', e);
+    setStep('error');
+    onError('Video konnte nicht geladen werden. Möglicherweise CORS-Problem.');
+  }, [onError]);
+
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    video.src = videoUrl;
+    // Add cache buster to avoid CORS cache issues
+    const separator = videoUrl.includes('?') ? '&' : '?';
+    video.src = `${videoUrl}${separator}t=${Date.now()}`;
     video.load();
   }, [videoUrl]);
 
