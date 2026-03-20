@@ -234,6 +234,52 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack }) => {
     else startImage2Spin();
   }, [spinMode, startVideo2Frames, startImage2Spin]);
 
+  // Recovery: on mount, check for stuck video2frames jobs and resume polling
+  useEffect(() => {
+    if (!user) return;
+    const recoverStuckJob = async () => {
+      const { data } = await supabase
+        .from('spin360_jobs' as any)
+        .select('id, status, manifest, target_frame_count')
+        .eq('user_id', user.id)
+        .eq('status', 'generating_video')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (!data || (data as any[]).length === 0) return;
+      const stuckJob = (data as any[])[0];
+      const manifest = stuckJob.manifest as any;
+      const operationName = manifest?.operationName;
+
+      if (!operationName) {
+        // No operation name saved — mark as failed
+        await supabase.from('spin360_jobs' as any)
+          .update({ status: 'failed', error_message: 'Job wurde unterbrochen (keine Operation-ID)', updated_at: new Date().toISOString() } as any)
+          .eq('id', stuckJob.id);
+        return;
+      }
+
+      // Check if job is too old (>15 min) — fail it
+      const jobAge = Date.now() - new Date(stuckJob.updated_at || stuckJob.created_at).getTime();
+      if (jobAge > 15 * 60 * 1000) {
+        await supabase.from('spin360_jobs' as any)
+          .update({ status: 'failed', error_message: 'Job-Timeout: Video-Generierung dauerte zu lange', updated_at: new Date().toISOString() } as any)
+          .eq('id', stuckJob.id);
+        return;
+      }
+
+      // Resume polling
+      setJobId(stuckJob.id);
+      setSpinMode('video2frames');
+      setPhase('processing');
+      setJobStatus('generating_video');
+      setIsProcessing(true);
+      toast.info('Laufender Video-Spin wird fortgesetzt…');
+      pollVideoOperation(operationName, stuckJob.id);
+    };
+    recoverStuckJob();
+  }, [user, pollVideoOperation]);
+
   // Poll job status for image2spin mode
   useEffect(() => {
     if (!jobId || spinMode === 'video2frames') return;
