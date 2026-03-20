@@ -105,6 +105,45 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack }) => {
   }, [user, uploadedSlots]);
 
   /* ─── Video2Frames Flow ─── */
+  const pollVideoOperation = useCallback(async (operationName: string, currentJobId: string) => {
+    let attempts = 0;
+    const maxAttempts = 120; // 10 min max
+    while (attempts < maxAttempts) {
+      await new Promise(r => setTimeout(r, 5000));
+      attempts++;
+
+      try {
+        const { data: pollResult } = await supabase.functions.invoke('generate-video', {
+          body: { action: 'poll', operationName },
+        });
+
+        if (pollResult?.done) {
+          if (pollResult.videoUrl) {
+            setVideoUrl(pollResult.videoUrl);
+            setJobStatus('extracting_frames');
+            setPhase('video_extracting');
+            return;
+          }
+          // Update job as failed
+          await supabase.from('spin360_jobs' as any)
+            .update({ status: 'failed', error_message: pollResult.error || 'Kein Video in der Antwort', updated_at: new Date().toISOString() } as any)
+            .eq('id', currentJobId);
+          setJobStatus('failed');
+          setJobError(pollResult.error || 'Kein Video in der Antwort');
+          setIsProcessing(false);
+          return;
+        }
+      } catch (err) {
+        console.error('Poll error:', err);
+        // Continue polling on transient errors
+      }
+    }
+    await supabase.from('spin360_jobs' as any)
+      .update({ status: 'failed', error_message: 'Timeout bei Video-Generierung', updated_at: new Date().toISOString() } as any)
+      .eq('id', currentJobId);
+    setJobStatus('failed'); setJobError('Timeout bei Video-Generierung'); setIsProcessing(false);
+  }, []);
+
   const startVideo2Frames = useCallback(async () => {
     if (!user) { toast.error('Bitte melde dich an.'); return; }
     setCreditDialogOpen(false);
@@ -160,6 +199,9 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack }) => {
       });
 
       if (startError || startResult?.error) {
+        await supabase.from('spin360_jobs' as any)
+          .update({ status: 'failed', error_message: startResult?.error || 'Video-Generierung fehlgeschlagen', updated_at: new Date().toISOString() } as any)
+          .eq('id', newJobId);
         setJobStatus('failed');
         setJobError(startResult?.error || 'Video-Generierung fehlgeschlagen');
         setIsProcessing(false);
@@ -168,43 +210,24 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack }) => {
 
       const operationName = startResult?.operationName;
       if (!operationName) {
+        await supabase.from('spin360_jobs' as any)
+          .update({ status: 'failed', error_message: 'Keine Operation-ID erhalten', updated_at: new Date().toISOString() } as any)
+          .eq('id', newJobId);
         setJobStatus('failed'); setJobError('Keine Operation-ID erhalten'); setIsProcessing(false); return;
       }
 
+      // Persist operationName in job manifest for recovery
+      await supabase.from('spin360_jobs' as any)
+        .update({ manifest: { operationName, videoMode: true } as any, updated_at: new Date().toISOString() } as any)
+        .eq('id', newJobId);
+
       // Poll for video completion
-      const pollVideo = async () => {
-        let attempts = 0;
-        const maxAttempts = 120; // 10 min max
-        while (attempts < maxAttempts) {
-          await new Promise(r => setTimeout(r, 5000));
-          attempts++;
-
-          const { data: pollResult } = await supabase.functions.invoke('generate-video', {
-            body: { action: 'poll', operationName },
-          });
-
-          if (pollResult?.done) {
-            if (pollResult.videoUrl) {
-              setVideoUrl(pollResult.videoUrl);
-              setJobStatus('extracting_frames');
-              setPhase('video_extracting');
-              return;
-            }
-            setJobStatus('failed');
-            setJobError(pollResult.error || 'Kein Video in der Antwort');
-            setIsProcessing(false);
-            return;
-          }
-        }
-        setJobStatus('failed'); setJobError('Timeout bei Video-Generierung'); setIsProcessing(false);
-      };
-
-      pollVideo();
+      pollVideoOperation(operationName, newJobId);
     } catch (err) {
       console.error('Video2Frames error:', err);
       setJobStatus('failed'); setJobError('Unerwarteter Fehler'); setIsProcessing(false);
     }
-  }, [user, uploadedSlots]);
+  }, [user, uploadedSlots, pollVideoOperation]);
 
   const startProcessing = useCallback(() => {
     if (spinMode === 'video2frames') startVideo2Frames();
