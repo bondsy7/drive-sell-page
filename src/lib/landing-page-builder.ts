@@ -1,3 +1,5 @@
+import { buildContactFormHTML, type ContactFormOptions } from '@/lib/templates/shared';
+
 export interface LandingPageContent {
   meta: { title: string; description: string; h1: string };
   hero: { headline: string; subheadline: string; ctaText: string; imagePrompt?: string };
@@ -31,13 +33,22 @@ export interface LandingPageDealer {
   defaultLegalText?: string;
 }
 
+export interface LandingPageContactForm {
+  dealerUserId: string;
+  projectId?: string;
+  supabaseUrl: string;
+  vehicleTitle: string;
+  pageType?: string;
+}
+
 export function buildLandingPageHTML(
   content: LandingPageContent,
   images: Record<string, string>,
   dealer: LandingPageDealer,
   brand: string,
   model: string,
-  brandLogoUrl?: string
+  brandLogoUrl?: string,
+  contactForm?: LandingPageContactForm
 ): string {
   const meta = content.meta || {} as any;
   const hero = content.hero || {} as any;
@@ -63,6 +74,8 @@ export function buildLandingPageHTML(
   const jsonLd = seo.structuredData
     ? `<script type="application/ld+json">${JSON.stringify(seo.structuredData)}</script>`
     : '';
+
+  const ogImage = heroImage ? `<meta property="og:image" content="${heroImage}">` : '';
 
   const logoHeader = [
     brandLogoUrl ? `<img src="${brandLogoUrl}" alt="${brand}" style="max-height:32px" />` : '',
@@ -135,6 +148,17 @@ export function buildLandingPageHTML(
     })
     .join('\n');
 
+  // Build contact form HTML if enabled
+  const contactFormHTML = contactForm
+    ? buildContactFormHTML({
+        dealerUserId: contactForm.dealerUserId,
+        projectId: contactForm.projectId,
+        supabaseUrl: contactForm.supabaseUrl,
+        vehicleTitle: contactForm.vehicleTitle,
+        currentCategory: contactForm.pageType || '',
+      })
+    : '';
+
   return `<!DOCTYPE html>
 <html lang="de">
 <head>
@@ -147,6 +171,7 @@ export function buildLandingPageHTML(
   <meta property="og:title" content="${meta.title || `${brand} ${model}`}">
   <meta property="og:description" content="${meta.description || ''}">
   <meta property="og:type" content="website">
+  ${ogImage}
   ${jsonLd}
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
@@ -207,6 +232,8 @@ export function buildLandingPageHTML(
     <p>&copy; ${new Date().getFullYear()} ${dealerName}. Alle Angaben ohne Gewähr.</p>
     ${dealer?.defaultLegalText ? `<p style="margin-top:8px;max-width:640px;margin-left:auto;margin-right:auto;line-height:1.6">${dealer.defaultLegalText}</p>` : ''}
   </footer>
+
+  ${contactFormHTML}
 </body>
 </html>`;
 }

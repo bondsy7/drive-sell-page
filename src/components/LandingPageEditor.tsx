@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from '@/components/ui/accordion';
@@ -11,13 +12,14 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import {
-  Download, Eye, Pencil, ArrowLeft, Upload, Sparkles, RefreshCw, Loader2, ImageIcon,
+  Download, Eye, Pencil, ArrowLeft, Upload, Sparkles, RefreshCw, Loader2, ImageIcon, MessageSquare,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   buildLandingPageHTML,
   type LandingPageContent,
   type LandingPageDealer,
+  type LandingPageContactForm,
 } from '@/lib/landing-page-builder';
 import { downloadHTML } from '@/lib/templates/download';
 import { uploadImageToStorage } from '@/lib/storage-utils';
@@ -44,11 +46,20 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
   const [viewMode, setViewMode] = useState<'preview' | 'edit'>('edit');
   const [imageDialogSection, setImageDialogSection] = useState<string | null>(null);
   const [imageLoading, setImageLoading] = useState<string | null>(null);
+  const [contactFormEnabled, setContactFormEnabled] = useState(true);
+  const [vehicleTitle, setVehicleTitle] = useState(`${brand} ${model}`);
   const saveTimer = useRef<ReturnType<typeof setTimeout>>();
 
+  const contactForm: LandingPageContactForm | undefined = contactFormEnabled && user ? {
+    dealerUserId: user.id,
+    projectId,
+    supabaseUrl: import.meta.env.VITE_SUPABASE_URL || '',
+    vehicleTitle,
+  } : undefined;
+
   const html = useMemo(
-    () => buildLandingPageHTML(content, images, dealer, brand, model, brandLogoUrl),
-    [content, images, dealer, brand, model, brandLogoUrl],
+    () => buildLandingPageHTML(content, images, dealer, brand, model, brandLogoUrl, contactForm),
+    [content, images, dealer, brand, model, brandLogoUrl, contactForm, contactFormEnabled, vehicleTitle],
   );
 
   // Debounced auto-save
@@ -238,6 +249,21 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
                 </AccordionItem>
               ))}
             </Accordion>
+
+            {/* Contact Form Toggle */}
+            <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                <MessageSquare className="w-3.5 h-3.5" /> Kontaktformular
+              </h3>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-foreground">Kontaktformular anzeigen</span>
+                <Switch checked={contactFormEnabled} onCheckedChange={setContactFormEnabled} />
+              </div>
+              {contactFormEnabled && (
+                <Input value={vehicleTitle} onChange={e => setVehicleTitle(e.target.value)} placeholder="Fahrzeugtitel im Formular" className="text-sm" />
+              )}
+              <p className="text-[10px] text-muted-foreground">Anfragen landen im CRM und werden vom Sales-Bot verarbeitet.</p>
+            </div>
 
             {/* Dealer Info */}
             <div className="rounded-xl border border-border bg-card p-4 space-y-2">

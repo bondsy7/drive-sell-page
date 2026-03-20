@@ -1,4 +1,4 @@
-// generate-landing-page v2 – AI landing page generator with brand logos + storage upload
+// generate-landing-page v3 – AI landing page generator with enhanced options + contact form
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -28,9 +28,7 @@ async function authenticateAndDeductCredits(
   }
   const supabase = createServiceClient();
   const token = authHeader.replace("Bearer ", "");
-  const {
-    data: { user },
-  } = await supabase.auth.getUser(token);
+  const { data: { user } } = await supabase.auth.getUser(token);
   if (!user) {
     return new Response(JSON.stringify({ error: "Nicht authentifiziert" }), {
       status: 401,
@@ -61,10 +59,8 @@ async function authenticateAndDeductCredits(
 
 // ─── Brand logo lookup ───
 const BRAND_LOGO_ALIASES: Record<string, string[]> = {
-  volkswagen: ['vw'],
-  vw: ['volkswagen'],
-  mercedesbenz: ['mercedes', 'mb'],
-  mercedes: ['mercedesbenz', 'mb'],
+  volkswagen: ['vw'], vw: ['volkswagen'],
+  mercedesbenz: ['mercedes', 'mb'], mercedes: ['mercedesbenz', 'mb'],
   bmw: ['bayerischemotorenwerke'],
 };
 
@@ -73,7 +69,6 @@ async function findBrandLogo(supabase: any, brand: string): Promise<string> {
     const brandNorm = brand.toLowerCase().replace(/[-_\s]+/g, '').replace(/é/g, 'e');
     const aliases = BRAND_LOGO_ALIASES[brandNorm] || [];
     const allKeys = [brandNorm, ...aliases];
-
     const matchFile = (files: any[], folder: string): string | null => {
       for (const f of (files || [])) {
         const fn = f.name.toLowerCase().replace(/\.[^.]+$/, '').replace(/[-_\s]+/g, '');
@@ -85,12 +80,10 @@ async function findBrandLogo(supabase: any, brand: string): Promise<string> {
       }
       return null;
     };
-
     const [{ data: rootFiles }, { data: svgFiles }] = await Promise.all([
       supabase.storage.from('manufacturer-logos').list('', { limit: 500 }),
       supabase.storage.from('manufacturer-logos').list('svg', { limit: 500 }),
     ]);
-
     return matchFile(rootFiles, '') || matchFile(svgFiles, 'svg') || '';
   } catch (e) {
     console.error('Brand logo lookup error:', e);
@@ -100,10 +93,7 @@ async function findBrandLogo(supabase: any, brand: string): Promise<string> {
 
 // ─── Upload generated image to storage ───
 async function uploadGeneratedImage(
-  supabase: any,
-  base64: string,
-  userId: string,
-  key: string
+  supabase: any, base64: string, userId: string, key: string
 ): Promise<string | null> {
   try {
     const raw = base64.includes(",") ? base64.split(",")[1] : base64;
@@ -112,17 +102,55 @@ async function uploadGeneratedImage(
     const { error } = await supabase.storage
       .from("vehicle-images")
       .upload(path, bytes, { contentType: "image/png", upsert: true });
-    if (error) {
-      console.error("Upload error:", error);
-      return null;
-    }
+    if (error) { console.error("Upload error:", error); return null; }
     const { data } = supabase.storage.from("vehicle-images").getPublicUrl(path);
     return data.publicUrl;
-  } catch (e) {
-    console.error("Upload failed:", e);
-    return null;
-  }
+  } catch (e) { console.error("Upload failed:", e); return null; }
 }
+
+// ─── Upload user-provided image ───
+async function uploadUserImage(
+  supabase: any, base64: string, userId: string, index: number
+): Promise<string | null> {
+  try {
+    const raw = base64.includes(",") ? base64.split(",")[1] : base64;
+    const mimeMatch = base64.match(/^data:([^;]+);/);
+    const mime = mimeMatch?.[1] || "image/jpeg";
+    const ext = mime.includes("png") ? "png" : "jpg";
+    const bytes = Uint8Array.from(atob(raw), (c) => c.charCodeAt(0));
+    const path = `${userId}/landing/${Date.now()}-user-${index}.${ext}`;
+    const { error } = await supabase.storage
+      .from("vehicle-images")
+      .upload(path, bytes, { contentType: mime, upsert: true });
+    if (error) { console.error("User image upload error:", error); return null; }
+    const { data } = supabase.storage.from("vehicle-images").getPublicUrl(path);
+    return data.publicUrl;
+  } catch (e) { console.error("User image upload failed:", e); return null; }
+}
+
+// ─── Tone & audience prompt enrichment ───
+const TONE_MAP: Record<string, string> = {
+  professionell: "Schreibe in einem seriösen, vertrauenswürdigen Ton. Sachlich, kompetent, überzeugend.",
+  emotional: "Schreibe emotional und bildreich. Wecke Begeisterung und Sehnsucht. Storytelling-Ansatz.",
+  sportlich: "Schreibe dynamisch und energiegeladen. Kurze, prägnante Sätze. Performance im Fokus.",
+  premium: "Schreibe in einem exklusiven, luxuriösen Ton. Understatement, Eleganz, Perfektion.",
+  jugendlich: "Schreibe modern, locker und direkt. Duze den Leser. Frisch und unkompliziert.",
+};
+
+const AUDIENCE_MAP: Record<string, string> = {
+  privat: "Zielgruppe: Privatkunden. Fokus auf Alltagstauglichkeit, Preis-Leistung, Komfort.",
+  gewerbe: "Zielgruppe: Gewerbekunden/Firmenwagen. Fokus auf steuerliche Vorteile, TCO, Dienstwagen-Regelung, Fuhrpark.",
+  jung: "Zielgruppe: Junge Fahrer (18-30). Fokus auf Lifestyle, Technologie, günstige Einstiegsangebote, Connectivity.",
+  familien: "Zielgruppe: Familien. Fokus auf Sicherheit, Platzangebot, Kindersitze, Praktikabilität, Verbrauch.",
+  premium: "Zielgruppe: Premium-Käufer. Fokus auf Exklusivität, Sonderausstattung, Concierge-Service, Status.",
+};
+
+const IMAGE_STYLE_MAP: Record<string, string> = {
+  studio: "in a clean white modern showroom with professional studio lighting, reflective floor",
+  outdoor: "on a scenic mountain road with dramatic landscape, golden hour sunlight",
+  urban: "in a modern city setting with glass architecture, evening city lights",
+  dynamic: "in motion on a highway with motion blur, dynamic driving perspective",
+};
 
 // ─── Page type configurations ───
 interface PageTypeConfig {
@@ -134,53 +162,32 @@ interface PageTypeConfig {
 
 const PAGE_TYPES: Record<string, PageTypeConfig> = {
   leasing: {
-    label: "Leasing-Angebot",
-    sectionCount: 6,
-    imageCount: 4,
-    systemInstruction:
-      "Du erstellst eine überzeugende Leasing-Landingpage. Fokus auf: niedrige monatliche Rate, Flexibilität, Steuervorteile für Gewerbetreibende, Kilometerpakete, Rückgabe-Optionen. Strukturiere mit: Hero → Vorteile Leasing → Fahrzeug-Highlights → Leasing-Konditionen → FAQ → CTA.",
+    label: "Leasing-Angebot", sectionCount: 6, imageCount: 4,
+    systemInstruction: "Du erstellst eine überzeugende Leasing-Landingpage. Fokus auf: niedrige monatliche Rate, Flexibilität, Steuervorteile für Gewerbetreibende, Kilometerpakete, Rückgabe-Optionen. Strukturiere mit: Hero → Vorteile Leasing → Fahrzeug-Highlights → Leasing-Konditionen → FAQ → CTA.",
   },
   finanzierung: {
-    label: "Finanzierung",
-    sectionCount: 6,
-    imageCount: 4,
-    systemInstruction:
-      "Du erstellst eine überzeugende Finanzierungs-Landingpage. Fokus auf: Eigentumsübergang, flexible Raten, niedrige Zinsen, Anzahlung/Schlussrate-Optionen. Strukturiere mit: Hero → Warum Finanzieren → Fahrzeug-Details → Finanzierungsrechnung → Kundenstimmen → CTA.",
+    label: "Finanzierung", sectionCount: 6, imageCount: 4,
+    systemInstruction: "Du erstellst eine überzeugende Finanzierungs-Landingpage. Fokus auf: Eigentumsübergang, flexible Raten, niedrige Zinsen, Anzahlung/Schlussrate-Optionen. Strukturiere mit: Hero → Warum Finanzieren → Fahrzeug-Details → Finanzierungsrechnung → Kundenstimmen → CTA.",
   },
   barkauf: {
-    label: "Barkauf / Neuwagen",
-    sectionCount: 5,
-    imageCount: 4,
-    systemInstruction:
-      "Du erstellst eine Premium-Verkaufsseite für Barkauf/Neuwagen. Fokus auf: Sofort-Preisvorteil, Ausstattungshighlights, Verfügbarkeit, Garantie. Strukturiere mit: Hero → Ausstattung & Technik → Preisvorteil → Warum bei uns → CTA.",
+    label: "Barkauf / Neuwagen", sectionCount: 5, imageCount: 4,
+    systemInstruction: "Du erstellst eine Premium-Verkaufsseite für Barkauf/Neuwagen. Fokus auf: Sofort-Preisvorteil, Ausstattungshighlights, Verfügbarkeit, Garantie. Strukturiere mit: Hero → Ausstattung & Technik → Preisvorteil → Warum bei uns → CTA.",
   },
   massenangebot: {
-    label: "Massenangebot / Aktionsseite",
-    sectionCount: 7,
-    imageCount: 5,
-    systemInstruction:
-      "Du erstellst eine dringliche Aktionsseite/Massenangebot. Fokus auf: zeitlich begrenzt, Stückzahl limitiert, Sonderkonditionen, FOMO-Elemente, Vergleich mit Normalpreis. Strukturiere mit: Hero mit Countdown → Angebots-Übersicht → Einzelne Modell-Highlights → Warum jetzt → Vergleichstabelle → Testimonials → CTA.",
+    label: "Massenangebot / Aktionsseite", sectionCount: 7, imageCount: 5,
+    systemInstruction: "Du erstellst eine dringliche Aktionsseite/Massenangebot. Fokus auf: zeitlich begrenzt, Stückzahl limitiert, Sonderkonditionen, FOMO-Elemente, Vergleich mit Normalpreis. Strukturiere mit: Hero mit Countdown → Angebots-Übersicht → Einzelne Modell-Highlights → Warum jetzt → Vergleichstabelle → Testimonials → CTA.",
   },
   autoabo: {
-    label: "Auto-Abo",
-    sectionCount: 6,
-    imageCount: 4,
-    systemInstruction:
-      "Du erstellst eine moderne Auto-Abo-Landingpage. Fokus auf: All-inclusive (Versicherung, Wartung, Reifen), Flexibilität, kurze Laufzeiten, keine versteckten Kosten, digitaler Prozess. Strukturiere mit: Hero → So funktioniert's (3 Schritte) → Was ist inklusive → Fahrzeug-Details → Preisvergleich Abo vs. Leasing → CTA.",
+    label: "Auto-Abo", sectionCount: 6, imageCount: 4,
+    systemInstruction: "Du erstellst eine moderne Auto-Abo-Landingpage. Fokus auf: All-inclusive (Versicherung, Wartung, Reifen), Flexibilität, kurze Laufzeiten, keine versteckten Kosten, digitaler Prozess. Strukturiere mit: Hero → So funktioniert's (3 Schritte) → Was ist inklusive → Fahrzeug-Details → Preisvergleich Abo vs. Leasing → CTA.",
   },
   event: {
-    label: "Event im Autohaus",
-    sectionCount: 6,
-    imageCount: 4,
-    systemInstruction:
-      "Du erstellst eine einladende Event-Landingpage für ein Autohaus. Fokus auf: Event-Datum/Uhrzeit, exklusive Vorteile für Teilnehmer, Programm, Registrierung. Strukturiere mit: Hero mit Datum → Event-Programm → Highlights & Sonderangebote → Über das Autohaus → Anfahrt → Anmeldung/CTA.",
+    label: "Event im Autohaus", sectionCount: 6, imageCount: 4,
+    systemInstruction: "Du erstellst eine einladende Event-Landingpage für ein Autohaus. Fokus auf: Event-Datum/Uhrzeit, exklusive Vorteile für Teilnehmer, Programm, Registrierung. Strukturiere mit: Hero mit Datum → Event-Programm → Highlights & Sonderangebote → Über das Autohaus → Anfahrt → Anmeldung/CTA.",
   },
   release: {
-    label: "Fahrzeug-Release / Premiere",
-    sectionCount: 7,
-    imageCount: 5,
-    systemInstruction:
-      "Du erstellst eine spektakuläre Release/Premiere-Seite für ein neues Fahrzeugmodell. Fokus auf: Innovation, Design, Technik-Highlights, Emotionen, Vorbestellmöglichkeit. Strukturiere mit: Hero (cinematic) → Design-Philosophie → Technische Innovation → Interieur-Erlebnis → Performance-Daten → Konfiguration/Vorbestellung → CTA.",
+    label: "Fahrzeug-Release / Premiere", sectionCount: 7, imageCount: 5,
+    systemInstruction: "Du erstellst eine spektakuläre Release/Premiere-Seite für ein neues Fahrzeugmodell. Fokus auf: Innovation, Design, Technik-Highlights, Emotionen, Vorbestellmöglichkeit. Strukturiere mit: Hero (cinematic) → Design-Philosophie → Technische Innovation → Interieur-Erlebnis → Performance-Daten → Konfiguration/Vorbestellung → CTA.",
   },
 };
 
@@ -190,7 +197,12 @@ serve(async (req) => {
   }
 
   try {
-    const { brand, model, pageType, additionalInfo, dealer } = await req.json();
+    const body = await req.json();
+    const {
+      brand, model, pageType, additionalInfo, dealer,
+      variant, color, price, targetAudience, tone, imageStyle,
+      uploadedImages,
+    } = body;
 
     if (!brand || !model || !pageType) {
       return new Response(
@@ -214,32 +226,54 @@ serve(async (req) => {
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     if (!GEMINI_API_KEY) {
       return new Response(JSON.stringify({ error: "GEMINI_API_KEY nicht konfiguriert" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const supabase = createServiceClient();
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 
-    // ─── Find brand logo ───
+    // Upload user images first
+    const userImageUrls: string[] = [];
+    if (uploadedImages && Array.isArray(uploadedImages)) {
+      for (let i = 0; i < uploadedImages.length; i++) {
+        const url = await uploadUserImage(supabase, uploadedImages[i], authResult.userId, i);
+        if (url) userImageUrls.push(url);
+      }
+    }
+
+    // Find brand logo
     const brandLogoUrl = await findBrandLogo(supabase, brand);
-    console.log("Brand logo:", brandLogoUrl ? "found" : "not found");
 
-    // ─── Step 1: Generate page content via AI ───
+    // Build vehicle description for image prompts
+    const vehicleDesc = [color, brand, model, variant].filter(Boolean).join(" ");
+    const imgStyleSuffix = IMAGE_STYLE_MAP[imageStyle || "studio"] || IMAGE_STYLE_MAP.studio;
+
+    // Build enriched prompts
     const dealerInfo = dealer
       ? `\nHändler-Informationen:\n- Name: ${dealer.name || ""}\n- Adresse: ${dealer.address || ""}, ${dealer.postalCode || ""} ${dealer.city || ""}\n- Telefon: ${dealer.phone || ""}\n- E-Mail: ${dealer.email || ""}\n- Website: ${dealer.website || ""}\n- WhatsApp: ${dealer.whatsappNumber || ""}\n`
       : "";
 
+    const toneInstruction = TONE_MAP[tone || "professionell"] || TONE_MAP.professionell;
+    const audienceInstruction = targetAudience ? (AUDIENCE_MAP[targetAudience] || "") : "";
+    const priceInstruction = price ? `\nPreis/Rate die auf der Seite erscheinen soll: ${price}` : "";
+    const variantInfo = variant ? `, Variante: ${variant}` : "";
+    const colorInfo = color ? `, Farbe: ${color}` : "";
+
     const systemPrompt = `Du bist ein professioneller Automotive-Marketing-Texter und Webdesigner.
 ${config.systemInstruction}
+
+TONALITÄT: ${toneInstruction}
+${audienceInstruction ? `\n${audienceInstruction}` : ""}
 
 WICHTIG:
 - Schreibe auf Deutsch
 - Texte müssen SEO-optimiert sein (natürliche Keywords, H1/H2/H3 Hierarchie)
 - Schreibe echten Mehrwert-Content, keine Platzhalter
-- Passe Ton und Stil an den Seitentyp an
+- Passe Ton und Stil an den Seitentyp und die Zielgruppe an
 - Verwende konkrete Zahlen und Fakten wo möglich
 - Jeder Absatz soll für den Kunden einen echten Informationswert bieten
+${priceInstruction}
 
 ${dealerInfo}
 
@@ -254,7 +288,7 @@ Antworte AUSSCHLIESSLICH als JSON mit folgender Struktur:
     "headline": "Emotionale Headline",
     "subheadline": "Ergänzender Untertitel",
     "ctaText": "CTA Button Text",
-    "imagePrompt": "Detaillierter englischer Prompt für ein Hero-Bild des ${brand} ${model}"
+    "imagePrompt": "Detaillierter englischer Prompt für ein Hero-Bild des ${vehicleDesc} ${imgStyleSuffix}"
   },
   "sections": [
     {
@@ -262,29 +296,32 @@ Antworte AUSSCHLIESSLICH als JSON mit folgender Struktur:
       "type": "content|features|pricing|faq|cta|comparison|steps|testimonials",
       "headline": "Abschnitts-Überschrift",
       "content": "HTML-formattierter Inhalt (Absätze, Listen etc.)",
-      "imagePrompt": "Englischer Prompt für ein passendes Bild oder null",
+      "imagePrompt": "Englischer Prompt für ein passendes Bild des ${vehicleDesc} oder null",
       "bgStyle": "white|light|dark|accent"
     }
   ],
   "seo": {
     "keywords": ["keyword1", "keyword2"],
-    "structuredData": { JSON-LD Objekt }
+    "structuredData": {
+      "@context": "https://schema.org",
+      "@type": "AutoDealer",
+      "name": "${dealer?.name || ''}",
+      "offers": { "@type": "Offer", "itemOffered": { "@type": "Car", "brand": "${brand}", "model": "${model}" } }
+    }
   }
 }
 
-Erstelle genau ${config.sectionCount} sections. Davon sollen ${config.imageCount} ein imagePrompt haben, der Rest null.`;
+Erstelle genau ${config.sectionCount} sections. Davon sollen ${config.imageCount} ein imagePrompt haben, der Rest null.
+Bei imagePrompts: Beschreibe immer "${vehicleDesc} ${imgStyleSuffix}" für konsistente Bilder.`;
 
-    const userPrompt = `Erstelle eine ${config.label}-Landingpage für:\nMarke: ${brand}\nModell: ${model}\n${additionalInfo ? `Zusätzliche Informationen: ${additionalInfo}` : ""}`;
+    const userPrompt = `Erstelle eine ${config.label}-Landingpage für:\nMarke: ${brand}\nModell: ${model}${variantInfo}${colorInfo}\n${additionalInfo ? `Zusätzliche Informationen / Highlights: ${additionalInfo}` : ""}`;
 
-    console.log("Generating content for:", brand, model, pageType);
+    console.log("Generating content for:", brand, model, pageType, "tone:", tone, "audience:", targetAudience);
 
-    const geminiTextUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
-    const contentResponse = await fetch(geminiTextUrl, {
+    const geminiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+    const contentResponse = await fetch(geminiUrl, {
       method: "POST",
-      headers: {
-        "x-goog-api-key": GEMINI_API_KEY,
-        "Content-Type": "application/json",
-      },
+      headers: { "x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json" },
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: systemPrompt }] },
         contents: [{ parts: [{ text: userPrompt }] }],
@@ -321,7 +358,8 @@ Erstelle genau ${config.sectionCount} sections. Davon sollen ${config.imageCount
       );
     }
 
-    // ─── Step 2: Generate images and upload to storage ───
+    // ─── Generate images ───
+    // Collect all needed image slots
     const imagePrompts: { key: string; prompt: string }[] = [];
     if (pageContent.hero?.imagePrompt) {
       imagePrompts.push({ key: "hero", prompt: pageContent.hero.imagePrompt });
@@ -332,34 +370,38 @@ Erstelle genau ${config.sectionCount} sections. Davon sollen ${config.imageCount
       }
     }
 
-    console.log(`Generating ${imagePrompts.length} images...`);
-
-    const geminiImageUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+    // Assign user images to first slots, generate rest
     const imageResults: Record<string, string> = {};
-    for (let i = 0; i < imagePrompts.length; i += 2) {
-      const batch = imagePrompts.slice(i, i + 2);
+    let userImgIdx = 0;
+
+    // Use user images for first N slots
+    for (let i = 0; i < imagePrompts.length && userImgIdx < userImageUrls.length; i++) {
+      imageResults[imagePrompts[i].key] = userImageUrls[userImgIdx];
+      userImgIdx++;
+    }
+
+    // Generate remaining images
+    const remainingPrompts = imagePrompts.filter(p => !imageResults[p.key]);
+    console.log(`User images: ${userImageUrls.length}, Generating ${remainingPrompts.length} AI images...`);
+
+    for (let i = 0; i < remainingPrompts.length; i += 2) {
+      const batch = remainingPrompts.slice(i, i + 2);
       const results = await Promise.allSettled(
         batch.map(async ({ key, prompt }) => {
           try {
-            const imgResp = await fetch(geminiImageUrl, {
+            const imgResp = await fetch(geminiUrl, {
               method: "POST",
-              headers: {
-                "x-goog-api-key": GEMINI_API_KEY,
-                "Content-Type": "application/json",
-              },
+              headers: { "x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json" },
               body: JSON.stringify({
                 contents: [{
                   parts: [{
-                    text: `Generate a professional, high-quality automotive marketing photo: ${prompt}. Style: Modern, clean, professional car dealership photography. Aspect ratio: 16:9. No text overlays.`,
+                    text: `Generate a professional, high-quality automotive marketing photo: ${prompt}. Style: Modern, clean, professional. Aspect ratio: 16:9. No text overlays.`,
                   }],
                 }],
                 generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
               }),
             });
-            if (!imgResp.ok) {
-              console.error(`Image gen failed for ${key}:`, imgResp.status);
-              return { key, url: null };
-            }
+            if (!imgResp.ok) { console.error(`Image gen failed for ${key}:`, imgResp.status); return { key, url: null }; }
             const imgData = await imgResp.json();
             let base64: string | null = null;
             const respParts = imgData.candidates?.[0]?.content?.parts;
@@ -373,19 +415,11 @@ Erstelle genau ${config.sectionCount} sections. Davon sollen ${config.imageCount
               }
             }
             if (base64) {
-              const url = await uploadGeneratedImage(
-                supabase,
-                base64,
-                authResult.userId,
-                key
-              );
+              const url = await uploadGeneratedImage(supabase, base64, authResult.userId, key);
               return { key, url: url || base64 };
             }
             return { key, url: null };
-          } catch (e) {
-            console.error(`Image gen error for ${key}:`, e);
-            return { key, url: null };
-          }
+          } catch (e) { console.error(`Image gen error for ${key}:`, e); return { key, url: null }; }
         })
       );
       for (const r of results) {
@@ -395,26 +429,19 @@ Erstelle genau ${config.sectionCount} sections. Davon sollen ${config.imageCount
       }
     }
 
-    console.log(
-      `Generated ${Object.keys(imageResults).length}/${imagePrompts.length} images`
-    );
+    console.log(`Total images: ${Object.keys(imageResults).length}/${imagePrompts.length}`);
 
-    // ─── Step 3: Assemble HTML ───
-    const html = buildHTML(
-      pageContent,
-      imageResults,
-      dealer,
-      brand,
-      model,
-      brandLogoUrl
-    );
+    // ─── Build HTML with contact form ───
+    const html = buildHTML(pageContent, imageResults, dealer, brand, model, brandLogoUrl, {
+      dealerUserId: authResult.userId,
+      supabaseUrl,
+      vehicleTitle: `${brand} ${model}${variant ? ` ${variant}` : ""}`,
+      pageType,
+    });
 
     return new Response(
       JSON.stringify({
-        html,
-        pageContent,
-        imageMap: imageResults,
-        brandLogoUrl,
+        html, pageContent, imageMap: imageResults, brandLogoUrl,
         imageCount: Object.keys(imageResults).length,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -422,25 +449,108 @@ Erstelle genau ${config.sectionCount} sections. Davon sollen ${config.imageCount
   } catch (e) {
     console.error("generate-landing-page error:", e);
     return new Response(
-      JSON.stringify({
-        error: e instanceof Error ? e.message : "Unbekannter Fehler",
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      JSON.stringify({ error: e instanceof Error ? e.message : "Unbekannter Fehler" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
 
+// ─── Contact Form Builder (inline for edge function) ───
+function buildContactFormInline(opts: {
+  dealerUserId: string;
+  supabaseUrl: string;
+  vehicleTitle: string;
+  pageType: string;
+}): string {
+  const { dealerUserId, supabaseUrl, vehicleTitle, pageType } = opts;
+  const cat = (pageType || '').toLowerCase();
+  const showLeasing = cat !== 'leasing';
+  const showFinancing = cat !== 'finanzierung';
+  const isPurchase = ['barkauf', 'neuwagen', 'gebrauchtwagen'].includes(cat);
+  const showPurchase = !isPurchase;
+
+  const checkboxStyle = `accent-color:#3366cc;width:16px;height:16px;cursor:pointer`;
+  const labelStyle = `display:flex;align-items:center;gap:8px;font-size:13px;font-family:'Inter',sans-serif;color:#1a2332;cursor:pointer`;
+
+  return `
+  <div id="leadCta" style="position:fixed;bottom:24px;right:24px;z-index:9999">
+    <button onclick="document.getElementById('leadModal').style.display='flex'" style="
+      background:linear-gradient(135deg,#3366cc,#2952a3);color:#fff;border:none;cursor:pointer;
+      padding:14px 28px;border-radius:50px;font-size:15px;font-weight:700;font-family:'Inter',sans-serif;
+      box-shadow:0 4px 24px rgba(51,102,204,0.4);transition:all .2s;display:flex;align-items:center;gap:8px;
+    " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      Jetzt anfragen
+    </button>
+  </div>
+  <div id="leadModal" style="display:none;position:fixed;inset:0;z-index:10000;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px)" onclick="if(event.target===this)this.style.display='none'">
+    <div style="background:#fff;border-radius:20px;padding:32px;max-width:460px;width:90%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.15);position:relative;animation:leadSlideIn .3s ease">
+      <button onclick="document.getElementById('leadModal').style.display='none'" style="position:absolute;top:16px;right:16px;background:none;border:none;cursor:pointer;color:#9ca3af;font-size:20px">✕</button>
+      <div style="margin-bottom:20px">
+        <h3 style="font-family:'Space Grotesk','Inter',sans-serif;font-size:20px;font-weight:700;color:#1a2332;margin-bottom:4px">Interesse an diesem Fahrzeug?</h3>
+        <p style="font-size:13px;color:#6b7a8d">${vehicleTitle.replace(/'/g, "\\'")}</p>
+      </div>
+      <form id="leadForm" onsubmit="return submitLead(event)">
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <input name="name" placeholder="Ihr Name *" required style="padding:12px 16px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;outline:none" />
+          <input name="email" type="email" placeholder="Ihre E-Mail *" required style="padding:12px 16px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;outline:none" />
+          <input name="phone" type="tel" placeholder="Telefonnummer (optional)" style="padding:12px 16px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;outline:none" />
+          <textarea name="message" placeholder="Ihre Nachricht (optional)" rows="3" style="padding:12px 16px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;outline:none;resize:vertical"></textarea>
+          <div style="border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+            <span style="font-size:12px;font-weight:600;color:#6b7a8d;text-transform:uppercase;letter-spacing:0.5px">Ich interessiere mich für:</span>
+            <label style="${labelStyle}"><input type="checkbox" name="interested_test_drive" style="${checkboxStyle}" /> Probefahrt</label>
+            <label style="${labelStyle}"><input type="checkbox" name="interested_trade_in" style="${checkboxStyle}" /> Inzahlungnahme</label>
+            ${showLeasing ? `<label style="${labelStyle}"><input type="checkbox" name="interested_leasing" style="${checkboxStyle}" /> Leasing</label>` : ''}
+            ${showFinancing ? `<label style="${labelStyle}"><input type="checkbox" name="interested_financing" style="${checkboxStyle}" /> Finanzierung</label>` : ''}
+            ${showPurchase ? `<label style="${labelStyle}"><input type="checkbox" name="interested_purchase" style="${checkboxStyle}" /> Barkauf</label>` : ''}
+          </div>
+          <button type="submit" id="leadSubmitBtn" style="background:linear-gradient(135deg,#3366cc,#2952a3);color:#fff;border:none;cursor:pointer;padding:14px;border-radius:10px;font-size:15px;font-weight:700;font-family:'Inter',sans-serif">Anfrage senden</button>
+        </div>
+      </form>
+      <div id="leadSuccess" style="display:none;text-align:center;padding:20px 0">
+        <div style="font-size:48px;margin-bottom:12px">✓</div>
+        <h4 style="font-size:18px;font-weight:700;color:#1a2332;margin-bottom:8px">Anfrage gesendet!</h4>
+        <p style="font-size:13px;color:#6b7a8d">Vielen Dank! Wir melden uns in Kürze.</p>
+      </div>
+      <p style="font-size:10px;color:#9ca3af;margin-top:12px;text-align:center">Ihre Daten werden vertraulich behandelt.</p>
+    </div>
+  </div>
+  <style>@keyframes leadSlideIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}</style>
+  <script>
+  async function submitLead(e){
+    e.preventDefault();
+    var btn=document.getElementById('leadSubmitBtn');
+    btn.disabled=true;btn.textContent='Wird gesendet...';
+    var form=document.getElementById('leadForm');
+    var fd=new FormData(form);
+    try{
+      var res=await fetch('${supabaseUrl}/functions/v1/submit-lead',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          dealerUserId:'${dealerUserId}',projectId:null,
+          name:fd.get('name'),email:fd.get('email'),
+          phone:fd.get('phone')||null,message:fd.get('message')||null,
+          vehicleTitle:'${vehicleTitle.replace(/'/g, "\\'")}',
+          interestedTestDrive:!!form.querySelector('[name=interested_test_drive]')?.checked,
+          interestedTradeIn:!!form.querySelector('[name=interested_trade_in]')?.checked,
+          interestedLeasing:!!form.querySelector('[name=interested_leasing]')?.checked,
+          interestedFinancing:!!form.querySelector('[name=interested_financing]')?.checked,
+          interestedPurchase:!!form.querySelector('[name=interested_purchase]')?.checked
+        })
+      });
+      if(res.ok){form.style.display='none';document.getElementById('leadSuccess').style.display='block';}
+      else{btn.textContent='Fehler – erneut versuchen';btn.disabled=false;}
+    }catch(err){btn.textContent='Fehler – erneut versuchen';btn.disabled=false;}
+    return false;
+  }
+  </script>`;
+}
+
 // ─── HTML Builder ───
 function buildHTML(
-  content: any,
-  images: Record<string, string>,
-  dealer: any,
-  brand: string,
-  model: string,
-  brandLogoUrl: string
+  content: any, images: Record<string, string>, dealer: any,
+  brand: string, model: string, brandLogoUrl: string,
+  contactFormOpts?: { dealerUserId: string; supabaseUrl: string; vehicleTitle: string; pageType: string }
 ): string {
   const meta = content.meta || {};
   const hero = content.hero || {};
@@ -454,46 +564,32 @@ function buildHTML(
   const email = dealer?.email || "";
   const website = dealer?.website || "";
   const whatsapp = dealer?.whatsappNumber || "";
-  const address = [dealer?.address, dealer?.postalCode, dealer?.city]
-    .filter(Boolean)
-    .join(", ");
+  const address = [dealer?.address, dealer?.postalCode, dealer?.city].filter(Boolean).join(", ");
 
   const socials = [
-    dealer?.facebookUrl &&
-      `<a href="${dealer.facebookUrl}" target="_blank" style="color:#94a3b8;text-decoration:none">Facebook</a>`,
-    dealer?.instagramUrl &&
-      `<a href="${dealer.instagramUrl}" target="_blank" style="color:#94a3b8;text-decoration:none">Instagram</a>`,
-    dealer?.youtubeUrl &&
-      `<a href="${dealer.youtubeUrl}" target="_blank" style="color:#94a3b8;text-decoration:none">YouTube</a>`,
-    dealer?.tiktokUrl &&
-      `<a href="${dealer.tiktokUrl}" target="_blank" style="color:#94a3b8;text-decoration:none">TikTok</a>`,
-  ]
-    .filter(Boolean)
-    .join(" · ");
+    dealer?.facebookUrl && `<a href="${dealer.facebookUrl}" target="_blank" style="color:#94a3b8;text-decoration:none">Facebook</a>`,
+    dealer?.instagramUrl && `<a href="${dealer.instagramUrl}" target="_blank" style="color:#94a3b8;text-decoration:none">Instagram</a>`,
+    dealer?.youtubeUrl && `<a href="${dealer.youtubeUrl}" target="_blank" style="color:#94a3b8;text-decoration:none">YouTube</a>`,
+    dealer?.tiktokUrl && `<a href="${dealer.tiktokUrl}" target="_blank" style="color:#94a3b8;text-decoration:none">TikTok</a>`,
+  ].filter(Boolean).join(" · ");
 
   const jsonLd = seo.structuredData
     ? `<script type="application/ld+json">${JSON.stringify(seo.structuredData)}</script>`
     : "";
 
+  const ogImage = heroImage ? `<meta property="og:image" content="${heroImage}">` : "";
+
   const logoHeader = [
-    brandLogoUrl
-      ? `<img src="${brandLogoUrl}" alt="${brand}" style="max-height:32px" />`
-      : "",
-    dealerLogo
-      ? `<img src="${dealerLogo}" alt="${dealerName}" style="max-height:40px" />`
-      : "",
-  ]
-    .filter(Boolean)
-    .join("");
+    brandLogoUrl ? `<img src="${brandLogoUrl}" alt="${brand}" style="max-height:32px" />` : "",
+    dealerLogo ? `<img src="${dealerLogo}" alt="${dealerName}" style="max-height:40px" />` : "",
+  ].filter(Boolean).join("");
 
   const sectionBlocks = sections
     .map((s: any, idx: number) => {
       const img = images[s.id] || "";
       const bgMap: Record<string, string> = {
-        white: "background:#ffffff",
-        light: "background:#f8fafc",
-        dark: "background:#0f172a;color:#f1f5f9",
-        accent: "background:#1e3a5f;color:#ffffff",
+        white: "background:#ffffff", light: "background:#f8fafc",
+        dark: "background:#0f172a;color:#f1f5f9", accent: "background:#1e3a5f;color:#ffffff",
       };
       const bg = bgMap[s.bgStyle] || bgMap.white;
       const isDark = s.bgStyle === "dark" || s.bgStyle === "accent";
@@ -501,56 +597,28 @@ function buildHTML(
       const subColor = isDark ? "#cbd5e1" : "#475569";
 
       if (s.type === "steps") {
-        return `<section style="${bg};padding:64px 24px">
-          <div style="max-width:960px;margin:0 auto;text-align:center">
-            <h2 style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;color:${headlineColor};margin-bottom:40px">${s.headline}</h2>
-            <div style="font-size:15px;line-height:1.8;color:${subColor}">${s.content}</div>
-          </div>
-        </section>`;
+        return `<section style="${bg};padding:64px 24px"><div style="max-width:960px;margin:0 auto;text-align:center"><h2 style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;color:${headlineColor};margin-bottom:40px">${s.headline}</h2><div style="font-size:15px;line-height:1.8;color:${subColor}">${s.content}</div></div></section>`;
       }
-
       if (s.type === "faq") {
-        return `<section style="${bg};padding:64px 24px">
-          <div style="max-width:760px;margin:0 auto">
-            <h2 style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;color:${headlineColor};margin-bottom:32px;text-align:center">${s.headline}</h2>
-            <div style="font-size:15px;line-height:1.8;color:${subColor}">${s.content}</div>
-          </div>
-        </section>`;
+        return `<section style="${bg};padding:64px 24px"><div style="max-width:760px;margin:0 auto"><h2 style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;color:${headlineColor};margin-bottom:32px;text-align:center">${s.headline}</h2><div style="font-size:15px;line-height:1.8;color:${subColor}">${s.content}</div></div></section>`;
       }
-
       if (s.type === "cta") {
-        return `<section style="background:linear-gradient(135deg,#1e3a5f,#0f172a);color:#ffffff;padding:80px 24px;text-align:center">
-          <div style="max-width:640px;margin:0 auto">
-            <h2 style="font-family:'Space Grotesk',sans-serif;font-size:32px;font-weight:700;margin-bottom:16px">${s.headline}</h2>
-            <div style="font-size:16px;line-height:1.7;opacity:0.9;margin-bottom:32px">${s.content}</div>
-            ${phone ? `<a href="tel:${phone}" style="display:inline-block;background:#3b82f6;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:16px">📞 Jetzt anrufen</a>` : ""}
-            ${whatsapp ? `<a href="https://wa.me/${whatsapp.replace(/[^0-9]/g, "")}" target="_blank" style="display:inline-block;background:#25d366;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:16px;margin-left:12px">💬 WhatsApp</a>` : ""}
-          </div>
-        </section>`;
+        return `<section style="background:linear-gradient(135deg,#1e3a5f,#0f172a);color:#ffffff;padding:80px 24px;text-align:center"><div style="max-width:640px;margin:0 auto"><h2 style="font-family:'Space Grotesk',sans-serif;font-size:32px;font-weight:700;margin-bottom:16px">${s.headline}</h2><div style="font-size:16px;line-height:1.7;opacity:0.9;margin-bottom:32px">${s.content}</div>${phone ? `<a href="tel:${phone}" style="display:inline-block;background:#3b82f6;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:16px">📞 Jetzt anrufen</a>` : ""}${whatsapp ? `<a href="https://wa.me/${whatsapp.replace(/[^0-9]/g, "")}" target="_blank" style="display:inline-block;background:#25d366;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:16px;margin-left:12px">💬 WhatsApp</a>` : ""}</div></section>`;
       }
 
       const hasImage = !!img;
       const imageOnLeft = idx % 2 === 0;
-
       if (hasImage) {
         const imgBlock = `<div style="flex:1;min-width:280px"><img src="${img}" alt="${s.headline}" style="width:100%;border-radius:12px;object-fit:cover;max-height:400px" loading="lazy" /></div>`;
         const textBlock = `<div style="flex:1;min-width:280px"><h2 style="font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;color:${headlineColor};margin-bottom:16px">${s.headline}</h2><div style="font-size:15px;line-height:1.8;color:${subColor}">${s.content}</div></div>`;
-
-        return `<section style="${bg};padding:64px 24px">
-          <div style="max-width:960px;margin:0 auto;display:flex;flex-wrap:wrap;gap:40px;align-items:center">
-            ${imageOnLeft ? imgBlock + textBlock : textBlock + imgBlock}
-          </div>
-        </section>`;
+        return `<section style="${bg};padding:64px 24px"><div style="max-width:960px;margin:0 auto;display:flex;flex-wrap:wrap;gap:40px;align-items:center">${imageOnLeft ? imgBlock + textBlock : textBlock + imgBlock}</div></section>`;
       }
 
-      return `<section style="${bg};padding:64px 24px">
-        <div style="max-width:760px;margin:0 auto">
-          <h2 style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;color:${headlineColor};margin-bottom:20px;text-align:center">${s.headline}</h2>
-          <div style="font-size:15px;line-height:1.8;color:${subColor}">${s.content}</div>
-        </div>
-      </section>`;
+      return `<section style="${bg};padding:64px 24px"><div style="max-width:760px;margin:0 auto"><h2 style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;color:${headlineColor};margin-bottom:20px;text-align:center">${s.headline}</h2><div style="font-size:15px;line-height:1.8;color:${subColor}">${s.content}</div></div></section>`;
     })
     .join("\n");
+
+  const contactFormHTML = contactFormOpts ? buildContactFormInline(contactFormOpts) : "";
 
   return `<!DOCTYPE html>
 <html lang="de">
@@ -564,6 +632,7 @@ function buildHTML(
   <meta property="og:title" content="${meta.title || `${brand} ${model}`}">
   <meta property="og:description" content="${meta.description || ""}">
   <meta property="og:type" content="website">
+  ${ogImage}
   ${jsonLd}
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
@@ -619,6 +688,8 @@ function buildHTML(
     <p>&copy; ${new Date().getFullYear()} ${dealerName}. Alle Angaben ohne Gewähr.</p>
     ${dealer?.defaultLegalText ? `<p style="margin-top:8px;max-width:640px;margin-left:auto;margin-right:auto;line-height:1.6">${dealer.defaultLegalText}</p>` : ""}
   </footer>
+
+  ${contactFormHTML}
 </body>
 </html>`;
 }
