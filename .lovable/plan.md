@@ -1,101 +1,75 @@
 
 
-# Plan: Video2Frames -- Zweite 360° Spin-Variante
+# Plan: Landing Page Generator Upgrade
 
 ## Zusammenfassung
 
-In der Spin360-Workflow-Oberfläche wird nach dem Upload der 4 Bilder ein **Slider/Toggle** angezeigt, mit dem der Nutzer zwischen zwei Methoden wählen kann:
+Der aktuelle Landing Page Generator hat drei wesentliche Schwaechen:
+1. **Marke/Modell als Freitext** statt dem bestehenden `VehicleBrandModelPicker` Dropdown
+2. **Kein Kontaktformular** in der generierten HTML (die PDF-Seiten haben es, Landing Pages nicht)
+3. **Zu wenige Gestaltungsoptionen** -- der Nutzer hat kaum Einfluss auf Bilder, Ton, Zielgruppe, Preis etc.
 
-- **Image2Spin** (bestehend): KI generiert Einzelbilder aus 4 Fotos (36 Frames)
-- **Video2Frames** (neu): KI generiert ein 360°-Spin-Video via Veo API, dann werden daraus 48 Frames extrahiert
+## Aenderungen
 
-## Architektur
+### 1. ManualLandingGenerator.tsx -- Komplett ueberarbeiten
 
-```text
-┌─────────────────────────────────────┐
-│  Spin360Upload (4 Fotos)            │
-│  ┌───────────────────────────────┐  │
-│  │  Toggle: Image2Spin │ Video2F │  │
-│  └───────────────────────────────┘  │
-│  Preis: dynamisch je nach Modus     │
-│  [360° Spin erstellen]              │
-└──────────────┬──────────────────────┘
-               │
-    ┌──────────┴──────────┐
-    ▼                     ▼
-Image2Spin            Video2Frames
-(existing edge fn)    (new edge fn action)
-generate-360-spin     generate-video action="spin360"
-36 Frames             → Video → 48 Frames
-                      (server-side extraction)
-```
+**Marke/Modell:** Freitext-Inputs durch `VehicleBrandModelPicker` ersetzen (wie bei VehicleSelectBeforeGenerate). Zusaetzlich Variante-Input (z.B. "Competition", "AMG").
 
-## Technische Umsetzung
+**Neue Eingabefelder fuer mehr Individualitaet:**
+- **Preis/Rate** (optional): Monatliche Rate oder Gesamtpreis, der auf der Seite erscheinen soll
+- **Zielgruppe**: Dropdown (Privatkunden, Gewerbe, Junge Fahrer, Familien, Premium)
+- **Tonalitaet**: Dropdown (Professionell, Emotional, Sportlich, Premium/Luxus, Jugendlich)
+- **Farbe des Fahrzeugs** (optional): Beeinflusst Bild-Prompts fuer bessere Ergebnisse
+- **Highlights/USPs**: Textarea fuer besondere Ausstattung, Aktionen, Vorteile
+- **Bild-Stil**: Dropdown (Studio/Showroom, Outdoor/Natur, Urban/Stadt, Dynamisch/Fahrt) -- steuert die Image-Prompts
+- **Eigene Bilder hochladen** (optional): Bis zu 3 Bilder vorab hochladen, die statt KI-Bildern verwendet werden
 
-### 1. Edge Function `generate-video` erweitern
+**Formular-Layout:** Mehrstufig mit klaren Abschnitten:
+1. Fahrzeug (Marke/Modell/Variante/Farbe)
+2. Angebot (Seitentyp, Preis, Zielgruppe)
+3. Stil (Tonalitaet, Bild-Stil, Highlights)
 
-Neue `action: "spin360"` hinzufuegen die:
-- 4 Bilder als Base64/URLs entgegennimmt
-- Einen optimierten, konsistenten Prompt verwendet (kein Sound, perfekte Drehung, weisser Showroom, gleichmaessige Geschwindigkeit)
-- Video via Veo API generiert (start + poll, wie bestehend)
-- Nach Video-Fertigstellung: **Server-seitig 48 Frames extrahieren** mittels Gemini Vision API (Frames bei bestimmten Timestamps als Screenshots anfragen) oder alternativ das Video in Storage speichern und die Frame-Extraction client-seitig via Canvas machen
-- Frames als Einzelbilder in Storage hochladen
-- In `spin360_generated_frames` Tabelle eintragen (gleiche Struktur wie Image2Spin)
+### 2. Edge Function `generate-landing-page` -- Erweitern
 
-**Prompt fuer 360° Spin Video:**
-```
-Professional 360-degree turntable rotation of the exact vehicle shown in the reference images. 
-The car rotates smoothly and continuously on a white turntable platform, completing exactly one 
-full 360-degree rotation. Clean white studio background, soft even lighting, no shadows. 
-Perfectly steady camera at eye level, fixed position. No sound. Smooth constant rotation speed. 
-8 seconds duration for one complete revolution.
-```
+- Neue Parameter entgegennehmen: `variant`, `price`, `targetAudience`, `tone`, `color`, `imageStyle`, `highlights`, `uploadedImages`
+- System-Prompt anreichern mit Zielgruppe, Tonalitaet, Preis-Infos
+- Bild-Prompts anpassen basierend auf `imageStyle` und `color` (z.B. "White BMW M3 Competition in a modern showroom" statt generisch)
+- Hochgeladene Bilder priorisieren: wo User-Bilder vorhanden, werden keine KI-Bilder generiert
 
-### 2. Spin360Workflow.tsx anpassen
+### 3. Kontaktformular in Landing Pages einbauen
 
-- Neuer State: `spinMode: 'image2spin' | 'video2frames'`
-- Kosten dynamisch berechnen:
-  - Image2Spin: bestehend (analysisCost + normalizeCost + generateCost ≈ 20 Credits)
-  - Video2Frames: z.B. 10 Credits (Video-Generierung)
-- Nach Upload der 4 Bilder: Toggle/Slider zwischen den Modi anzeigen
-- Bei Video2Frames: eigener Processing-Flow mit Video-Generierung + Frame-Extraction
+- `buildLandingPageHTML()` und die Edge-Function `buildHTML()` erweitern:
+  - `buildContactFormHTML()` aus `shared.ts` einbinden (bereits vorhanden, getestet, mit Leads-Integration + Bot-Verarbeitung)
+  - `dealerUserId` und `projectId` durchreichen
+  - `supabaseUrl` (VITE_SUPABASE_URL) als Parameter mitgeben
+- Im Editor: Kontaktformular-Toggle (an/aus) und vehicleTitle-Feld editierbar
+- Leads landen in der `leads`-Tabelle und werden vom Sales-Bot gleich behandelt wie PDF-Seiten-Anfragen
 
-### 3. Spin360Upload.tsx anpassen
+### 4. LandingPageEditor.tsx -- Kontaktformular-Sektion
 
-- Neuer Prop: `spinMode` + `onModeChange` callback
-- Nach den 4 Upload-Slots: Slider/Toggle-UI fuer Moduswahl
-- Button-Text anpassen je nach Modus
+- Neuer Accordion-Abschnitt "Kontaktformular" mit Toggle (aktivieren/deaktivieren)
+- VehicleTitle editierbar (default: "Brand Model")
+- Preview zeigt Kontaktformular-Button live an
 
-### 4. Frame-Extraction Strategie
+### 5. landing-page-builder.ts -- Kontaktformular integrieren
 
-Da server-seitige Video-Frame-Extraction in Deno Edge Functions komplex ist (kein ffmpeg), wird die **client-seitige Extraction via HTML5 Canvas** verwendet:
-- Video wird in ein `<video>` Element geladen
-- Bei 48 gleichmaessig verteilten Zeitpunkten wird jeweils ein Frame via `canvas.drawImage()` + `canvas.toDataURL()` extrahiert
-- Frames werden in Storage hochgeladen und in `spin360_generated_frames` gespeichert
+- Neuer optionaler Parameter `contactForm?: { dealerUserId: string; projectId: string; supabaseUrl: string; vehicleTitle: string; pageType: string }`
+- Wenn gesetzt: `buildContactFormHTML()` vor `</body>` einbauen
+- Sticky CTA-Button + Modal wie bei den PDF-Angebotsseiten
 
-### 5. Neue Komponente: `Video2FramesProcessor.tsx`
-
-Client-seitige Logik:
-1. Video von Storage URL laden
-2. 48 Frames extrahieren (video.currentTime setzen, seeked-Event abwarten, Canvas-Screenshot)
-3. Frames in Storage hochladen
-4. In DB eintragen
-5. Spin360Viewer mit Frames anzeigen
-
-### 6. Dateien
+## Dateien
 
 | Datei | Aenderung |
 |-------|-----------|
-| `src/components/spin360/Spin360Upload.tsx` | Toggle fuer spinMode hinzufuegen |
-| `src/components/spin360/Spin360Workflow.tsx` | spinMode State, dynamische Kosten, Video2Frames-Flow |
-| `src/components/spin360/Video2FramesProcessor.tsx` | **Neu** - Client-seitige Frame-Extraction |
-| `src/components/spin360/Spin360Progress.tsx` | Zusaetzliche Steps fuer Video-Modus |
-| `src/components/spin360/index.ts` | Export ergaenzen |
-| `supabase/functions/generate-video/index.ts` | Neue action `spin360` mit 4-Bild-Input |
+| `src/components/ManualLandingGenerator.tsx` | VehicleBrandModelPicker, neue Felder, Bild-Upload |
+| `supabase/functions/generate-landing-page/index.ts` | Erweiterte Parameter, bessere Prompts, Bild-Stil |
+| `src/lib/landing-page-builder.ts` | ContactForm-Support |
+| `src/components/LandingPageEditor.tsx` | Kontaktformular-Toggle + vehicleTitle |
 
-### 7. Credit-Kosten
+## SEO-Verbesserungen (im Prompt)
 
-- Video2Frames nutzt den bestehenden `spin360_video` Action-Type (neu in admin_settings/credit_costs)
-- Default: 10 Credits (entspricht der Video-Generierung)
-- Image2Spin bleibt bei ~20 Credits
+- Open Graph Image-Tag mit Hero-Bild
+- Canonical URL aus Dealer-Website
+- Bessere JSON-LD Struktur (AutoDealer + Offer Schema)
+- Zielgruppen-spezifische Keywords
 
