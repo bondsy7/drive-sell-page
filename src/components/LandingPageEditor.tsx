@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from '@/components/ui/accordion';
@@ -11,13 +12,14 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import {
-  Download, Eye, Pencil, ArrowLeft, Upload, Sparkles, RefreshCw, Loader2, ImageIcon,
+  Download, Eye, Pencil, ArrowLeft, Upload, Sparkles, RefreshCw, Loader2, ImageIcon, MessageSquare,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   buildLandingPageHTML,
   type LandingPageContent,
   type LandingPageDealer,
+  type LandingPageContactForm,
 } from '@/lib/landing-page-builder';
 import { downloadHTML } from '@/lib/templates/download';
 import { uploadImageToStorage } from '@/lib/storage-utils';
@@ -44,11 +46,20 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
   const [viewMode, setViewMode] = useState<'preview' | 'edit'>('edit');
   const [imageDialogSection, setImageDialogSection] = useState<string | null>(null);
   const [imageLoading, setImageLoading] = useState<string | null>(null);
+  const [contactFormEnabled, setContactFormEnabled] = useState(true);
+  const [vehicleTitle, setVehicleTitle] = useState(`${brand} ${model}`);
   const saveTimer = useRef<ReturnType<typeof setTimeout>>();
 
+  const contactForm: LandingPageContactForm | undefined = contactFormEnabled && user ? {
+    dealerUserId: user.id,
+    projectId,
+    supabaseUrl: import.meta.env.VITE_SUPABASE_URL || '',
+    vehicleTitle,
+  } : undefined;
+
   const html = useMemo(
-    () => buildLandingPageHTML(content, images, dealer, brand, model, brandLogoUrl),
-    [content, images, dealer, brand, model, brandLogoUrl],
+    () => buildLandingPageHTML(content, images, dealer, brand, model, brandLogoUrl, contactForm),
+    [content, images, dealer, brand, model, brandLogoUrl, contactForm, contactFormEnabled, vehicleTitle],
   );
 
   // Debounced auto-save
