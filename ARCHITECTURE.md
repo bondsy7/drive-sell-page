@@ -744,25 +744,19 @@ CREATE POLICY "Admins can manage..." ON table
 
 ```
 Endpoint:  https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent
-Auth:      x-goog-api-key: GEMINI_API_KEY
-Modelle:   gemini-2.5-flash, gemini-3-pro-image-preview, gemini-3.1-flash-image-preview
+Auth:      x-goog-api-key: GEMINI_API_KEY (eigener Key, kein Gateway)
+Modelle:   gemini-2.5-flash (Text + Bild), gemini-2.5-flash-lite (leichte Aufgaben)
+Format:    systemInstruction + contents (Gemini-natives Format)
 ```
 
-### 7.2 Lovable AI Gateway
+**Hinweis:** Alle KI-Aufrufe nutzen ausschließlich die **direkte Google Gemini REST API** mit eigenem `GEMINI_API_KEY`. Das Lovable AI Gateway wird **nicht** verwendet.
 
-Für unterstützte Modelle kann alternativ das Lovable AI Gateway verwendet werden (ohne eigenen API-Key):
-```
-Auth:      LOVABLE_API_KEY
-Modelle:   google/gemini-2.5-flash, openai/gpt-5, etc.
-```
-
-### 7.3 Modell-Tiers (Bildgenerierung)
+### 7.2 Modell-Tiers (Bildgenerierung)
 
 | Tier | Modell | Engine | Credits | Einsatz |
 |---|---|---|---|---|
-| `schnell` | `gemini-2.5-flash-image` | Gemini | 3 | Schnelle Vorschau, Prototyping |
-| `qualitaet` | `gemini-3-pro-image-preview` | Gemini | 5 | Standard-Qualität, Remastering |
-| `turbo` | `gemini-3.1-flash-image-preview` | Gemini | 6 | Schnell + hochwertig |
+| `schnell` | `gemini-2.5-flash` | Gemini | 3 | Schnelle Vorschau, Prototyping, 360° Spin |
+| `qualitaet` | `gemini-2.5-flash` | Gemini | 5 | Standard-Qualität, Remastering |
 | `premium` | `gpt-image-1` | OpenAI | 8 | Premium-Qualität |
 | `ultra` | `gpt-image-1` (HD, quality: high) | OpenAI | 10 | Höchste Qualität |
 
