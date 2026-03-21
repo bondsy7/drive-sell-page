@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Outlet, Link } from 'react-router-dom';
-import { LayoutDashboard, Users, Receipt, MessageSquare, Settings, CreditCard, ArrowLeft, FileText, Mail, Menu, X, Car, Hash, ShieldCheck, BookOpen } from 'lucide-react';
+import { LayoutDashboard, Users, Receipt, MessageSquare, Settings, CreditCard, ArrowLeft, FileText, Mail, Menu, X, Car, Hash, ShieldCheck, BookOpen, Activity, Send, TrendingUp, HardDrive, Filter, CalendarDays } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import logoLight from '@/assets/logo-light.png';
 
@@ -16,6 +16,12 @@ const NAV = [
   { to: '/admin/pricing', icon: CreditCard, label: 'Preise' },
   { to: '/admin/settings', icon: Settings, label: 'Einstellungen' },
   { to: '/admin/secrets', icon: ShieldCheck, label: 'API-Keys' },
+  { to: '/admin/jobs', icon: Activity, label: 'Job-Monitor' },
+  { to: '/admin/email-monitor', icon: Send, label: 'E-Mail-Monitor' },
+  { to: '/admin/revenue', icon: TrendingUp, label: 'Umsatz & Abos' },
+  { to: '/admin/storage', icon: HardDrive, label: 'Storage' },
+  { to: '/admin/conversion', icon: Filter, label: 'Conversion-Funnel' },
+  { to: '/admin/test-drives', icon: CalendarDays, label: 'Probefahrten' },
   { to: '/architecture', icon: BookOpen, label: 'Architektur' },
 ];
 

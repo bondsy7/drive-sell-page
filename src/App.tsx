@@ -37,6 +37,12 @@ const AdminLogos = lazy(() => import("./pages/admin/AdminLogos"));
 const AdminSalesAssistant = lazy(() => import("./pages/admin/AdminSalesAssistant"));
 const AdminWmiCodes = lazy(() => import("./pages/admin/AdminWmiCodes"));
 const AdminSecrets = lazy(() => import("./pages/admin/AdminSecrets"));
+const AdminJobMonitor = lazy(() => import("./pages/admin/AdminJobMonitor"));
+const AdminEmailMonitor = lazy(() => import("./pages/admin/AdminEmailMonitor"));
+const AdminRevenue = lazy(() => import("./pages/admin/AdminRevenue"));
+const AdminStorage = lazy(() => import("./pages/admin/AdminStorage"));
+const AdminConversionFunnel = lazy(() => import("./pages/admin/AdminConversionFunnel"));
+const AdminTestDrives = lazy(() => import("./pages/admin/AdminTestDrives"));
 const AdminRoute = lazy(() => import("./components/AdminRoute"));
 
 const queryClient = new QueryClient();
@@ -112,6 +118,12 @@ const App = () => (
                 <Route path="sales-assistant" element={<AdminSalesAssistant />} />
                 <Route path="wmi-codes" element={<AdminWmiCodes />} />
                 <Route path="secrets" element={<AdminSecrets />} />
+                <Route path="jobs" element={<AdminJobMonitor />} />
+                <Route path="email-monitor" element={<AdminEmailMonitor />} />
+                <Route path="revenue" element={<AdminRevenue />} />
+                <Route path="storage" element={<AdminStorage />} />
+                <Route path="conversion" element={<AdminConversionFunnel />} />
+                <Route path="test-drives" element={<AdminTestDrives />} />
               </Route>
               <Route path="/architecture" element={<ProtectedRoute><AdminRoute><ArchitectureDoc /></AdminRoute></ProtectedRoute>} />
               <Route path="/sales-assistant/chat" element={<ProtectedRoute><SalesAssistant /></ProtectedRoute>} />
