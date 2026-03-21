@@ -1192,7 +1192,7 @@ Reply-To: RESEND_REPLY_TO
 | `RESEND_API_KEY` | Resend E-Mail-Versand | Edge Functions |
 | `RESEND_FROM_EMAIL` | Absender-Adresse | Edge Functions |
 | `RESEND_REPLY_TO` | Reply-To-Adresse | Edge Functions |
-| `LOVABLE_API_KEY` | Lovable AI Gateway | Edge Functions |
+| `LOVABLE_API_KEY` | Lovable Cloud Auth (OAuth) | Edge Functions |
 | `SUPABASE_SERVICE_ROLE_KEY` | Admin-DB-Zugriff (RLS bypass) | Edge Functions |
 | `SUPABASE_ANON_KEY` | Standard-DB-Zugriff | Edge Functions + Frontend |
 | `SUPABASE_URL` | Supabase Projekt-URL | Edge Functions + Frontend |
