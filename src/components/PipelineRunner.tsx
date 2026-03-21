@@ -18,6 +18,7 @@ import {
   type PipelineJob,
   detectBrandFromDescription,
   getTotalImageCount,
+  applyPromptOverrides,
 } from '@/lib/pipeline-jobs';
 import { buildMasterPrompt, type RemasterConfig, fetchManufacturerLogos } from '@/lib/remaster-prompt';
 
