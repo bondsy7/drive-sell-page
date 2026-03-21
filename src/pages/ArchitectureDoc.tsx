@@ -1034,7 +1034,7 @@ Edge Function → Resend API
             © 2026 Autohaus.AI – Dieses Dokument ist vertraulich und nur für autorisierte Empfänger bestimmt.
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            Version 2.0 · Generiert am {new Date().toLocaleDateString('de-DE')}
+            Version 2.1 · Generiert am {new Date().toLocaleDateString('de-DE')}
           </p>
         </div>
       </div>
