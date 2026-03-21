@@ -143,39 +143,50 @@ async function callGeminiFlash(prompt: string, imageUrls: string[], responseType
   return textContent;
 }
 
-async function callImageGeneration(prompt: string, referenceImageUrl: string, model: string = "gemini-3-pro-image-preview"): Promise<string | null> {
-  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+async function callImageGeneration(prompt: string, referenceImageUrl: string, _model: string = "gemini-2.0-flash-exp"): Promise<string | null> {
+  const apiKey = Deno.env.get("GEMINI_API_KEY");
+  if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
 
-  const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${LOVABLE_API_KEY}`,
-      "Content-Type": "application/json",
+  // Download reference image and convert to base64
+  const imgResp = await fetch(referenceImageUrl);
+  const imgBuf = await imgResp.arrayBuffer();
+  const b64 = arrayBufferToBase64(imgBuf);
+  const mimeType = imgResp.headers.get("content-type") || "image/jpeg";
+
+  const resp = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            { text: prompt },
+            { inlineData: { mimeType, data: b64 } },
+          ],
+        }],
+        generationConfig: {
+          responseModalities: ["IMAGE", "TEXT"],
+        },
+      }),
     },
-    body: JSON.stringify({
-      model: `google/${model}`,
-      messages: [{
-        role: "user",
-        content: [
-          { type: "text", text: prompt },
-          { type: "image_url", image_url: { url: referenceImageUrl } },
-        ],
-      }],
-      modalities: ["image", "text"],
-    }),
-  });
+  );
 
   if (!resp.ok) {
     const t = await resp.text();
-    console.error(`Image gen error (${model}):`, resp.status, t);
+    console.error(`Image gen error:`, resp.status, t);
     if (resp.status === 429) throw new Error("rate_limited");
-    if (resp.status === 402) throw new Error("payment_required");
     throw new Error(`image_generation_${resp.status}`);
   }
 
   const data = await resp.json();
-  return data.choices?.[0]?.message?.images?.[0]?.image_url?.url || null;
+  const parts = data.candidates?.[0]?.content?.parts || [];
+  for (const part of parts) {
+    if (part.inlineData) {
+      return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+    }
+  }
+  return null;
 }
 
 async function uploadBase64ToStorage(sb: any, userId: string, path: string, base64Data: string): Promise<string> {

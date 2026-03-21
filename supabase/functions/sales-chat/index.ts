@@ -25,8 +25,8 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
 
     const supabase = createClient(supabaseUrl, supabaseKey, {
       global: { headers: { Authorization: authHeader } },
@@ -249,40 +249,38 @@ ${profile?.assistant_name ? `Du heißt "${profile.assistant_name}".` : ''}`;
       }
     }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
+    // Convert messages to Gemini format
+    const geminiContents = messages.map((m: any) => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }],
+    }));
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          contents: geminiContents,
+          generationConfig: { temperature: 0.7, maxOutputTokens: 4096 },
+        }),
       },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...messages,
-        ],
-        stream: false,
-      }),
-    });
+    );
 
     if (!response.ok) {
       const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
+      console.error("Gemini API error:", response.status, t);
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit erreicht, bitte versuche es gleich nochmal." }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Guthaben aufgebraucht." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      throw new Error("AI gateway error");
+      throw new Error("Gemini API error");
     }
 
     const aiResult = await response.json();
-    let assistantContent = aiResult.choices?.[0]?.message?.content || "Keine Antwort erhalten.";
+    let assistantContent = aiResult.candidates?.[0]?.content?.parts?.[0]?.text || "Keine Antwort erhalten.";
 
     // Parse and execute action commands from the AI response
     const actions: string[] = [];
@@ -338,25 +336,22 @@ ${profile?.assistant_name ? `Du heißt "${profile.assistant_name}".` : ''}`;
 
       if (make && model && year) {
         // Use AI to estimate value
-        const estimateResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
-            "Content-Type": "application/json",
+        const estimateResp = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              systemInstruction: { parts: [{ text: `Du bist ein Fahrzeugbewertungs-Experte für den deutschen Markt. Gib eine realistische Marktpreisschätzung ab. Antworte NUR im JSON-Format: {"min": number, "max": number, "notes": "string"}. Die Werte sind in Euro. Berücksichtige: Marke, Modell, Baujahr, Kilometerstand und Zustand. Orientiere dich an deutschen Gebrauchtwagenportalen (mobile.de, AutoScout24).` }] },
+              contents: [{ role: "user", parts: [{ text: `Schätze den Marktwert: ${make} ${model}, Baujahr ${year}, ${mileage.toLocaleString('de-DE')} km, Zustand: ${condition}` }] }],
+              generationConfig: { temperature: 0.3, maxOutputTokens: 1024 },
+            }),
           },
-          body: JSON.stringify({
-            model: "google/gemini-2.5-flash",
-            messages: [
-              { role: "system", content: `Du bist ein Fahrzeugbewertungs-Experte für den deutschen Markt. Gib eine realistische Marktpreisschätzung ab. Antworte NUR im JSON-Format: {"min": number, "max": number, "notes": "string"}. Die Werte sind in Euro. Berücksichtige: Marke, Modell, Baujahr, Kilometerstand und Zustand. Orientiere dich an deutschen Gebrauchtwagenportalen (mobile.de, AutoScout24).` },
-              { role: "user", content: `Schätze den Marktwert: ${make} ${model}, Baujahr ${year}, ${mileage.toLocaleString('de-DE')} km, Zustand: ${condition}` },
-            ],
-            stream: false,
-          }),
-        });
+        );
 
         if (estimateResp.ok) {
           const estimateResult = await estimateResp.json();
-          const estimateText = estimateResult.choices?.[0]?.message?.content || '';
+          const estimateText = estimateResult.candidates?.[0]?.content?.parts?.[0]?.text || '';
           try {
             const jsonMatch = estimateText.match(/\{[\s\S]*\}/);
             if (jsonMatch) {

@@ -78,27 +78,22 @@ serve(async (req) => {
     // Limit items to prevent AI timeout (max 80 items)
     const equipmentForTranslation = rawEquipment.slice(0, 80);
 
-    // Translate equipment via Lovable AI with timeout
+    // Translate equipment via Gemini API with timeout
     let translatedEquipment: string[] = rawEquipment;
     if (equipmentForTranslation.length > 0) {
       try {
-        const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-        if (LOVABLE_API_KEY) {
+        const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+        if (GEMINI_API_KEY) {
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 25000); // 25s timeout
+          const timeoutId = setTimeout(() => controller.abort(), 25000);
 
-          const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${LOVABLE_API_KEY}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              model: "google/gemini-2.5-flash-lite",
-              messages: [
-                {
-                  role: "system",
-                  content: `Du bist ein Fahrzeug-Ausstattungsexperte. Übersetze und kürze die folgende Ausstattungsliste eines Fahrzeugs ins Deutsche.
+          const aiResp = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${GEMINI_API_KEY}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                systemInstruction: { parts: [{ text: `Du bist ein Fahrzeug-Ausstattungsexperte. Übersetze und kürze die folgende Ausstattungsliste eines Fahrzeugs ins Deutsche.
 
 Regeln:
 - Entferne alle "Ohne"/"Without"-Einträge komplett
@@ -107,23 +102,19 @@ Regeln:
 - Kürze auf max. 4-5 Wörter pro Eintrag
 - Fasse ähnliche Einträge zusammen (z.B. mehrere Airbags → "Front-, Seiten- & Kopfairbags")
 - Gib nur relevante Ausstattungsmerkmale zurück die für einen Käufer interessant sind
-- Antwort als JSON-Array von Strings, nichts anderes`
-                },
-                {
-                  role: "user",
-                  content: JSON.stringify(equipmentForTranslation)
-                }
-              ],
-              temperature: 0.1,
-            }),
-            signal: controller.signal,
-          });
+- Antwort als JSON-Array von Strings, nichts anderes` }] },
+                contents: [{ role: "user", parts: [{ text: JSON.stringify(equipmentForTranslation) }] }],
+                generationConfig: { temperature: 0.1, maxOutputTokens: 4096 },
+              }),
+              signal: controller.signal,
+            },
+          );
 
           clearTimeout(timeoutId);
 
           if (aiResp.ok) {
             const aiData = await aiResp.json();
-            const content = aiData?.choices?.[0]?.message?.content || "";
+            const content = aiData?.candidates?.[0]?.content?.parts?.[0]?.text || "";
             try {
               const cleaned = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
               const parsed = JSON.parse(cleaned);
@@ -135,7 +126,7 @@ Regeln:
               console.error("AI translation parse error:", parseErr, "content:", content.slice(0, 200));
             }
           } else {
-            console.error("AI translation error:", aiResp.status);
+            console.error("Gemini API translation error:", aiResp.status);
           }
         }
       } catch (aiErr) {
@@ -144,7 +135,6 @@ Regeln:
         } else {
           console.error("AI translation failed:", aiErr);
         }
-        // Fall back to raw equipment (already set as default)
       }
     }
 
