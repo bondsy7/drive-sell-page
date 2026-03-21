@@ -532,7 +532,7 @@ Generate the vehicle from this specific angle:`);
                 frame_type: "anchor",
                 image_url: storedUrl,
                 angle_degrees: anchor.angle,
-                model_used: "gemini-3-pro-image-preview",
+                model_used: "gemini-2.5-flash",
                 validation_status: "passed",
               });
               console.log(inserted
