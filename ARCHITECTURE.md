@@ -1771,7 +1771,19 @@ VITE_SUPABASE_PROJECT_ID=rauzclzphdnhzflovrya
 | `ftp-upload/index.ts` | ~265 | FTP/SFTP-Upload von HTML + Assets |
 | `admin-stripe/index.ts` | ~235 | Admin Stripe-Management |
 | `admin-delete-user/index.ts` | ~100 | Admin User-Löschung |
+| `cleanup-orphaned-storage/index.ts` | ~120 | Automatische Storage-Bereinigung (Dry-Run-Modus) |
+| `migrate-base64-images/index.ts` | ~100 | Base64→Storage Migration (abgeschlossen, Cron deaktiviert) |
 
 ---
 
-*© 2026 Autohaus.AI – Version 2.0 – Dieses Dokument ist vertraulich und nur für autorisierte Empfänger bestimmt.*
+### Changelog v2.1 (21. März 2026)
+
+- **Storage Cleanup**: Neue Edge Function `cleanup-orphaned-storage` für automatische Bereinigung verwaister Dateien (Dry-Run-Modus)
+- **Mobile UX**: CRM-Pipeline, Filter und Kundenkarten für mobile Viewports (430px) optimiert
+- **Typsicherheit**: ~30 `as any`-Casts in Kern-Dateien eliminiert (Profile, Admin, Sales Chat, CRM)
+- **Cron-Job**: Base64-Migration-Cron nach 100% Abschluss (572 Bilder) deaktiviert
+- **RLS-Hardening**: Tabellen auf `{authenticated}` migriert, FTP-Passwort-Maskierung via View
+
+---
+
+*© 2026 Autohaus.AI – Version 2.1 – Dieses Dokument ist vertraulich und nur für autorisierte Empfänger bestimmt.*
