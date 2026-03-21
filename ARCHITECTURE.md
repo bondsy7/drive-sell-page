@@ -1102,7 +1102,7 @@ Das 360°-Spin-Modul generiert aus **4 Quellfotos** (Front, Seite-Links, Hinten,
      │
      ├── Step 2-9: Frame-Batches generieren (4 pro Batch)
      │   ├── Prompt: "Drehe Fahrzeug um X° basierend auf Referenzbild"
-     │   ├── KI-Modell: Gemini 3 Pro Image Preview
+     │   ├── KI-Modell: Gemini 2.5 Flash (responseModalities: IMAGE+TEXT)
      │   ├── Upload → vehicle-images Bucket
      │   ├── Insert → spin360_generated_frames
      │   └── Self-Invocation für nächsten Batch
