@@ -203,7 +203,7 @@ export default function SalesCrmTab() {
   return (
     <div className="space-y-4">
       {/* Stats Bar */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
         {[
           { label: 'Gesamt', value: stats.total, icon: <User className="w-4 h-4" />, accent: 'text-foreground' },
           { label: 'Aktiv', value: stats.active, icon: <MessageSquare className="w-4 h-4" />, accent: 'text-blue-500' },

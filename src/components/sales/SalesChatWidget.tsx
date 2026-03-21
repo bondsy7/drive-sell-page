@@ -36,7 +36,7 @@ export function useSalesChatUnread() {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from('sales_notifications' as any)
+    supabase.from('sales_notifications')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', user.id).eq('is_read', false)
       .then(({ count }) => setUnreadCount(count ?? 0));
@@ -68,10 +68,10 @@ export default function SalesChatWidget({ open, onOpenChange }: SalesChatWidgetP
 
   const loadNotifications = useCallback(async () => {
     if (!user) return;
-    const { data } = await supabase.from('sales_notifications' as any)
+    const { data } = await supabase.from('sales_notifications')
       .select('*').eq('user_id', user.id).eq('is_read', false)
       .order('created_at', { ascending: false }).limit(20);
-    const notifs = (data as any) || [];
+    const notifs = (data as Notification[]) || [];
     setNotifications(notifs);
     setUnreadCount(notifs.length);
   }, [user]);
@@ -163,8 +163,8 @@ export default function SalesChatWidget({ open, onOpenChange }: SalesChatWidgetP
 
   const markAllRead = async () => {
     if (!user) return;
-    await supabase.from('sales_notifications' as any)
-      .update({ is_read: true } as any).eq('user_id', user.id);
+    await supabase.from('sales_notifications')
+      .update({ is_read: true }).eq('user_id', user.id);
     setUnreadCount(0);
     loadNotifications();
   };

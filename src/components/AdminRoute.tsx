@@ -10,7 +10,7 @@ export default function AdminRoute({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     if (!user) return;
     supabase
-      .rpc('has_role' as any, { _user_id: user.id, _role: 'admin' })
+      .rpc('has_role', { _user_id: user.id, _role: 'admin' })
       .then(({ data }) => setIsAdmin(!!data));
   }, [user]);
 

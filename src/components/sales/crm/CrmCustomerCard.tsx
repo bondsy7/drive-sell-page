@@ -79,26 +79,26 @@ export default function CrmCustomerCard({
   return (
     <Card className={`border-l-4 ${statusClass} transition-all hover:shadow-md`}>
       {/* Header */}
-      <button onClick={onToggle} className="w-full p-4 flex items-center gap-3 text-left">
+      <button onClick={onToggle} className="w-full p-3 sm:p-4 flex items-center gap-2 sm:gap-3 text-left">
         <div className="flex-shrink-0">
           {isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
         </div>
-        <div className={`w-10 h-10 rounded-full ${stageCfg.color} flex items-center justify-center text-white font-bold text-sm flex-shrink-0`}>
+        <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full ${stageCfg.color} flex items-center justify-center text-white font-bold text-xs sm:text-sm flex-shrink-0`}>
           {customer.displayName.charAt(0).toUpperCase()}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-semibold text-sm text-foreground truncate">{customer.displayName}</span>
-            <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-1">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+            <span className="font-semibold text-xs sm:text-sm text-foreground truncate max-w-[120px] sm:max-w-none">{customer.displayName}</span>
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-1 hidden sm:inline-flex">
               {stageCfg.icon} {stageCfg.label}
             </Badge>
             {customer.totalInquiries > 1 && (
               <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{customer.totalInquiries} Anfragen</Badge>
             )}
           </div>
-          <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground">
-            {customer.email && <span className="flex items-center gap-1 truncate"><Mail className="w-3 h-3" /> {customer.email}</span>}
-            {customer.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" /> {customer.phone}</span>}
+          <div className="flex items-center gap-2 sm:gap-3 mt-0.5 text-[10px] sm:text-xs text-muted-foreground">
+            {customer.email && <span className="flex items-center gap-1 truncate max-w-[140px] sm:max-w-none"><Mail className="w-3 h-3 shrink-0" /> {customer.email}</span>}
+            {customer.phone && <span className="flex items-center gap-1 hidden sm:flex"><Phone className="w-3 h-3" /> {customer.phone}</span>}
           </div>
         </div>
         <div className="flex flex-col items-end gap-1 flex-shrink-0">

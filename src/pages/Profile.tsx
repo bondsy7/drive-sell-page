@@ -114,19 +114,19 @@ const Profile = () => {
           contact_name: data.contact_name || '',
           phone: data.phone || '',
           email: data.email || '',
-          website: (data as any).website || '',
+          website: data.website || '',
           address: data.address || '',
           postal_code: data.postal_code || '',
           city: data.city || '',
           tax_id: data.tax_id || '',
           logo_url: data.logo_url || '',
-          custom_showroom_url: (data as any).custom_showroom_url || '',
+          custom_showroom_url: data.custom_showroom_url || '',
           facebook_url: data.facebook_url || '',
           instagram_url: data.instagram_url || '',
           x_url: data.x_url || '',
           tiktok_url: data.tiktok_url || '',
           youtube_url: data.youtube_url || '',
-          whatsapp_number: (data as any).whatsapp_number || '',
+          whatsapp_number: data.whatsapp_number || '',
           leasing_bank: data.leasing_bank || '',
           leasing_legal_text: data.leasing_legal_text || '',
           financing_bank: data.financing_bank || '',
@@ -141,12 +141,12 @@ const Profile = () => {
     if (!user) return;
     setTxLoading(true);
     const { data } = await supabase
-      .from('credit_transactions' as any)
+      .from('credit_transactions')
       .select('id, amount, action_type, model_used, description, created_at')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(100);
-    setTransactions((data as any) || []);
+    setTransactions((data as CreditTransaction[]) || []);
     setTxLoading(false);
   }, [user]);
 

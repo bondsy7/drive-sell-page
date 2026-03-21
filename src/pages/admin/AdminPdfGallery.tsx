@@ -35,10 +35,10 @@ export default function AdminPdfGallery() {
   const loadPdfs = async () => {
     setLoading(true);
     const { data } = await supabase
-      .from('sample_pdfs' as any)
+      .from('sample_pdfs')
       .select('*')
       .order('sort_order', { ascending: true });
-    setPdfs((data as any[]) || []);
+    setPdfs((data as SamplePdf[]) || []);
     setLoading(false);
   };
 
@@ -68,11 +68,11 @@ export default function AdminPdfGallery() {
 
     const title = file.name.replace('.pdf', '').replace(/[-_]/g, ' ');
 
-    const { error } = await supabase.from('sample_pdfs' as any).insert({
+    const { error } = await supabase.from('sample_pdfs').insert({
       title,
       pdf_url: urlData.publicUrl,
       sort_order: pdfs.length,
-    } as any);
+    });
 
     if (error) {
       toast.error('Fehler: ' + error.message);
@@ -102,18 +102,18 @@ export default function AdminPdfGallery() {
       .from('sample-pdfs')
       .getPublicUrl(`thumbnails/${fileName}`);
 
-    await supabase.from('sample_pdfs' as any)
-      .update({ thumbnail_url: urlData.publicUrl, updated_at: new Date().toISOString() } as any)
+    await supabase.from('sample_pdfs')
+      .update({ thumbnail_url: urlData.publicUrl, updated_at: new Date().toISOString() })
       .eq('id', pdfId);
 
     toast.success('Vorschaubild aktualisiert');
     loadPdfs();
   };
 
-  const updateField = async (id: string, field: string, value: any) => {
+  const updateField = async (id: string, field: string, value: string | boolean | number | null) => {
     const { error } = await supabase
-      .from('sample_pdfs' as any)
-      .update({ [field]: value, updated_at: new Date().toISOString() } as any)
+      .from('sample_pdfs')
+      .update({ [field]: value, updated_at: new Date().toISOString() } as Record<string, unknown>)
       .eq('id', id);
     if (error) toast.error('Fehler: ' + error.message);
     else loadPdfs();
@@ -130,7 +130,7 @@ export default function AdminPdfGallery() {
       if (thumbPath) await supabase.storage.from('sample-pdfs').remove([thumbPath]);
     }
 
-    await supabase.from('sample_pdfs' as any).delete().eq('id', pdf.id);
+    await supabase.from('sample_pdfs').delete().eq('id', pdf.id);
     toast.success('PDF gelöscht');
     loadPdfs();
   };
