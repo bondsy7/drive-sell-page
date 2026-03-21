@@ -65,6 +65,19 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   const { user } = useAuth();
   const { balance, getCost } = useCredits();
 
+  // Fetch prompt overrides from admin_settings
+  const [promptOverrides, setPromptOverrides] = useState<Record<string, string>>({});
+  useEffect(() => {
+    supabase
+      .from('admin_settings' as any)
+      .select('value')
+      .eq('key', 'ai_prompts')
+      .single()
+      .then(({ data }) => {
+        if (data) setPromptOverrides((data as any).value || {});
+      });
+  }, []);
+
   // Detect brand for CI filtering
   const detectedBrand = useMemo(
     () => detectBrandFromDescription(vehicleDescription, vehicleBrand),
@@ -72,11 +85,11 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   );
 
   const availableJobs = useMemo(() =>
-    PIPELINE_JOBS.filter(j => {
+    applyPromptOverrides(PIPELINE_JOBS, promptOverrides).filter(j => {
       if (j.category !== 'ci') return true;
       return j.brand === detectedBrand;
     }),
-    [detectedBrand],
+    [detectedBrand, promptOverrides],
   );
 
   // Selection state
