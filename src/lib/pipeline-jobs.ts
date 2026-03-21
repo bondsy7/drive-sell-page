@@ -434,3 +434,32 @@ export function getTotalImageCount(selectedKeys: Set<string>): number {
     .filter(j => selectedKeys.has(j.key))
     .reduce((sum, j) => sum + (j.outputCount ?? 1), 0);
 }
+
+/**
+ * Apply admin prompt overrides to pipeline jobs.
+ * Overrides are stored in admin_settings under key 'ai_prompts' with keys like 'pipeline_MASTER_IMAGE'.
+ * For CI multi-prompt jobs, overrides use keys like 'pipeline_CI_BMW_STANDARD_0', 'pipeline_CI_BMW_STANDARD_1', etc.
+ */
+export function applyPromptOverrides(jobs: PipelineJob[], overrides: Record<string, string>): PipelineJob[] {
+  return jobs.map(job => {
+    const mainKey = `pipeline_${job.key}`;
+    const mainOverride = overrides[mainKey];
+
+    // For multi-prompt CI jobs, check individual overrides
+    const extraPrompts = job.extraPrompts ? [...job.extraPrompts] : undefined;
+    if (extraPrompts) {
+      for (let i = 0; i < extraPrompts.length; i++) {
+        const subKey = `pipeline_${job.key}_${i + 1}`;
+        if (overrides[subKey] && overrides[subKey].trim()) {
+          extraPrompts[i] = overrides[subKey];
+        }
+      }
+    }
+
+    // Check main prompt override (index 0 for CI jobs)
+    const ciMainKey = `pipeline_${job.key}_0`;
+    const prompt = (overrides[ciMainKey]?.trim() || mainOverride?.trim()) ? (overrides[ciMainKey]?.trim() || mainOverride) : job.prompt;
+
+    return { ...job, prompt, extraPrompts };
+  });
+}
