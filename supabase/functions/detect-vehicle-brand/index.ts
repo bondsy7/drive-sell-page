@@ -108,6 +108,7 @@ serve(async (req) => {
     const mimeMatch = imageBase64.match(/^data:(image\/[a-zA-Z+]+);base64,/);
     const mimeType = mimeMatch ? mimeMatch[1] : "image/jpeg";
 
+    const detectPrompt = await getCustomPrompt("detect_vehicle_brand", DEFAULT_DETECT_PROMPT);
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
     const response = await fetch(geminiUrl, {
@@ -124,24 +125,7 @@ serve(async (req) => {
                 },
               },
               {
-                text: `Analyze this vehicle-related image and identify the vehicle manufacturer/brand and model whenever possible.
-
-Possible inputs include:
-1. Vehicle photos showing logo, grille, headlights, trunk badge, wheels or body shape
-2. Manufacturer labels, VIN stickers, compliance plates or door-jamb stickers
-3. Interior photos with steering wheel logo or badges
-4. Textual manufacturer references visible on the vehicle or label
-
-Respond with ONLY a JSON object in this exact format:
-{"brand":"BrandName","model":"ModelName","confidence":"high"}
-
-Rules:
-- Use the official brand name (e.g. "Volkswagen", "Mercedes-Benz", "BMW")
-- If you can identify only the brand, return model as ""
-- If you cannot identify the brand, return {"brand":"","model":"","confidence":"low"}
-- Use "high" when a logo, manufacturer label, VIN sticker text or unmistakable badge is visible
-- Use "medium" when design cues strongly suggest the brand
-- Use "low" when uncertain`,
+                text: detectPrompt,
               },
             ],
           },
