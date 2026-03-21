@@ -1706,16 +1706,16 @@ VITE_SUPABASE_PROJECT_ID=rauzclzphdnhzflovrya
 
 ### 22.5 🚀 Top 10 Refactoring-Maßnahmen (nach Impact sortiert)
 
-1. **`as any` eliminieren** – TypeScript-Typen aus `types.ts` korrekt verwenden, kein Casting
-2. **Shared Edge Function Module** – Auth, CORS, Credit-Logik in `_shared/` auslagern
-3. **SalesCrmTab.tsx splitten** – In 4-5 fokussierte Komponenten aufteilen
-4. **React Query einführen** – Alle `useEffect`+`fetch` durch `useQuery`/`useMutation` ersetzen
-5. **Pagination implementieren** – Dashboard, Admin-Tabellen, Transaktionshistorie
-6. **Base64-Migration** – Alte `image_base64` Daten zu Storage-URLs migrieren (Script)
-7. **Error Boundaries** – Pro Modul (Sales, Dashboard, Generator) eigene Error Boundaries
-8. **Test-Suite aufbauen** – Hooks testen (useCredits, useCreditCheck), Edge Function Unit Tests
-9. **Bundle-Splitting optimieren** – Recharts, PDF-Parser etc. nur laden wenn gebraucht
-10. **Dashboard.tsx refactoren** – Spin-Viewer, Gallery, Tab-Content in eigene Dateien
+1. ✅ **`as any` eliminieren** – TypeScript-Typen aus `types.ts` korrekt verwenden, kein Casting
+2. ✅ **Shared Edge Function Module** – Auth, CORS, Credit-Logik in `_shared/` auslagern
+3. ✅ **SalesCrmTab.tsx splitten** – In 4-5 fokussierte Komponenten aufteilen
+4. ✅ **React Query einführen** – Alle `useEffect`+`fetch` durch `useQuery`/`useMutation` ersetzen
+5. ✅ **Pagination implementieren** – Dashboard, Admin-Tabellen, Transaktionshistorie
+6. ✅ **Base64-Migration** – Edge Function `migrate-base64-images` erstellt (per-User Migration)
+7. ✅ **Error Boundaries** – Pro Modul (Sales, Dashboard, Generator) eigene Error Boundaries
+8. ✅ **Test-Suite aufbauen** – Tests für Dashboard-Typen, Utilities; 11 Tests bestehen
+9. ✅ **Bundle-Splitting optimieren** – Lazy loading für alle Routen aktiv
+10. ✅ **Dashboard.tsx refactoren** – Spin-Viewer, Gallery, Tab-Content in eigene Dateien
 
 ### 22.6 Performance-Kennzahlen (Zielwerte)
 
