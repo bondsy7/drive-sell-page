@@ -1768,6 +1768,13 @@ VITE_SUPABASE_PROJECT_ID=rauzclzphdnhzflovrya
 
 ---
 
+### Changelog v2.2 (21. März 2026)
+
+- **API-Migration**: Alle 4 Edge Functions (sales-chat, auto-process-lead, lookup-vin, generate-360-spin) vom Lovable AI Gateway auf direkte Google Gemini REST API mit eigenem `GEMINI_API_KEY` migriert
+- **360° Spin Modell**: Von `gemini-3-pro-image-preview` auf `gemini-2.5-flash` (responseModalities: IMAGE+TEXT) umgestellt
+- **Grundsatz**: Alle KI-Aufrufe nutzen bevorzugt eigene API-Keys (GEMINI_API_KEY, OPENAI_API_KEY) statt Gateway-Dienste
+- **Secrets bereinigt**: `LOVABLE_API_KEY` wird nur noch für Lovable Cloud Auth verwendet, nicht mehr für KI-Aufrufe
+
 ### Changelog v2.1 (21. März 2026)
 
 - **Storage Cleanup**: Neue Edge Function `cleanup-orphaned-storage` für automatische Bereinigung verwaister Dateien (Dry-Run-Modus)
@@ -1778,4 +1785,4 @@ VITE_SUPABASE_PROJECT_ID=rauzclzphdnhzflovrya
 
 ---
 
-*© 2026 Autohaus.AI – Version 2.1 – Dieses Dokument ist vertraulich und nur für autorisierte Empfänger bestimmt.*
+*© 2026 Autohaus.AI – Version 2.2 – Dieses Dokument ist vertraulich und nur für autorisierte Empfänger bestimmt.*
