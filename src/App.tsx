@@ -43,7 +43,7 @@ const AdminRevenue = lazy(() => import("./pages/admin/AdminRevenue"));
 const AdminStorage = lazy(() => import("./pages/admin/AdminStorage"));
 const AdminConversionFunnel = lazy(() => import("./pages/admin/AdminConversionFunnel"));
 const AdminTestDrives = lazy(() => import("./pages/admin/AdminTestDrives"));
-const AdminRoute = lazy(() => import("./components/AdminRoute"));
+import AdminRoute from "./components/AdminRoute";
 
 const queryClient = new QueryClient();
 
