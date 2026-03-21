@@ -136,31 +136,28 @@ Nachricht: ${customerMessage}
 ${interests.length > 0 ? `Interessen: ${interests.join(', ')}` : ''}
 ${Object.keys(vehicleContext).length > 0 ? `\nFahrzeugdaten: ${JSON.stringify(vehicleContext)}` : ''}`;
 
-    // Call AI via Lovable gateway
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
+    // Call Gemini API directly
+    const aiResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+          generationConfig: { temperature: 0.7, maxOutputTokens: 4096 },
+        }),
       },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        stream: false,
-      }),
-    });
+    );
 
     if (!aiResponse.ok) {
       const t = await aiResponse.text();
-      console.error("AI gateway error:", aiResponse.status, t);
-      throw new Error("AI gateway error");
+      console.error("Gemini API error:", aiResponse.status, t);
+      throw new Error("Gemini API error");
     }
 
     const aiResult = await aiResponse.json();
-    const generatedText = aiResult.choices?.[0]?.message?.content || '';
+    const generatedText = aiResult.candidates?.[0]?.content?.parts?.[0]?.text || '';
     if (!generatedText) throw new Error("No response generated");
 
     // Generate subject line
