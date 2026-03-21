@@ -16,9 +16,14 @@ interface CreditTransaction {
   created_at: string;
 }
 
-// Costs are now keyed by model tier: { action: { schnell: N, qualitaet: N, premium: N, turbo: N, ultra: N } }
 interface CreditCosts {
   [action: string]: { [tier: string]: number };
+}
+
+interface DeductResult {
+  success: boolean;
+  balance: number;
+  error?: string;
 }
 
 export function useCredits() {
@@ -30,20 +35,20 @@ export function useCredits() {
   const fetchBalance = useCallback(async () => {
     if (!user) return;
     const { data } = await supabase
-      .from('credit_balances' as any)
+      .from('credit_balances')
       .select('balance, lifetime_used')
       .eq('user_id', user.id)
       .single();
-    if (data) setBalance(data as any);
+    if (data) setBalance({ balance: data.balance, lifetime_used: data.lifetime_used });
   }, [user]);
 
   const fetchCosts = useCallback(async () => {
     const { data } = await supabase
-      .from('admin_settings' as any)
+      .from('admin_settings')
       .select('value')
       .eq('key', 'credit_costs')
       .single();
-    if (data) setCosts((data as any).value || {});
+    if (data) setCosts((data.value as CreditCosts) || {});
   }, []);
 
   useEffect(() => {
@@ -58,9 +63,10 @@ export function useCredits() {
         schema: 'public',
         table: 'credit_balances',
         filter: `user_id=eq.${user.id}`,
-      }, (payload: any) => {
-        if (payload.new) {
-          setBalance({ balance: payload.new.balance, lifetime_used: payload.new.lifetime_used });
+      }, (payload) => {
+        const newRow = payload.new as CreditBalance | undefined;
+        if (newRow) {
+          setBalance({ balance: newRow.balance, lifetime_used: newRow.lifetime_used });
         }
       })
       .subscribe();
@@ -74,7 +80,7 @@ export function useCredits() {
     if (!user) return { success: false, balance: 0, error: 'Not authenticated' };
     const cost = costs[actionType]?.[modelTier] ?? costs[actionType]?.['schnell'] ?? 1;
     
-    const { data, error } = await supabase.rpc('deduct_credits' as any, {
+    const { data, error } = await supabase.rpc('deduct_credits', {
       _user_id: user.id,
       _amount: cost,
       _action_type: actionType,
@@ -83,7 +89,7 @@ export function useCredits() {
     });
 
     if (error) return { success: false, balance: balance?.balance || 0, error: error.message };
-    const result = data as any;
+    const result = data as DeductResult;
     if (result?.success) {
       setBalance(prev => prev ? { ...prev, balance: result.balance } : null);
     }
@@ -97,12 +103,12 @@ export function useCredits() {
   const fetchTransactions = useCallback(async (limit = 50): Promise<CreditTransaction[]> => {
     if (!user) return [];
     const { data } = await supabase
-      .from('credit_transactions' as any)
+      .from('credit_transactions')
       .select('id, amount, action_type, model_used, description, created_at')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(limit);
-    return (data as any) || [];
+    return (data || []) as CreditTransaction[];
   }, [user]);
 
   return {
