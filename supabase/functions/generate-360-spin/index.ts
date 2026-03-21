@@ -636,7 +636,7 @@ Generate the vehicle from this specific angle:`);
           const frameBase64 = await callImageGeneration(
             `${framePromptBase} ${frame.angle} degrees from center front (0° = front, 90° = left side, 180° = rear, 270° = right side)`,
             refUrl,
-            "gemini-3.1-flash-image-preview",
+            "gemini-2.5-flash",
           );
 
           if (frameBase64) {
