@@ -653,12 +653,12 @@ Grundsatz: Alle KI-Aufrufe nutzen bevorzugt eigene API-Keys.`}</CodeBlock>
           <Table
             headers={['Service', 'Endpoint', 'Auth', 'Zweck']}
             rows={[
-              ['Google Gemini (Text)', 'generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent', 'x-goog-api-key', 'PDF-Analyse, OCR, Landing Pages'],
-              ['Google Gemini (Bild)', 'generativelanguage.googleapis.com/v1beta/models/gemini-3-*:generateContent', 'x-goog-api-key', 'Remastering, Bildgenerierung'],
+              ['Google Gemini (Text+Bild)', 'generativelanguage.googleapis.com/v1beta/...', 'x-goog-api-key (eigener Key)', 'PDF, OCR, Sales-Chat, 360° Spin, Bildgenerierung'],
               ['Google Gemini (Video)', 'generativelanguage.googleapis.com/v1beta/models/veo-*', 'x-goog-api-key', 'Video-Generierung'],
               ['OpenAI', 'api.openai.com/v1/images/...', 'Bearer OPENAI_API_KEY', 'Bild (Premium/Ultra)'],
               ['OutVin', 'outvin.com/api/v1/vehicle/{vin}', 'Basic OUTVIN_API_KEY', 'VIN → Fahrzeugdaten'],
               ['Stripe', 'api.stripe.com/v1/...', 'STRIPE_SECRET_KEY', 'Zahlungen, Abos'],
+              ['Resend', 'api.resend.com/emails', 'Bearer RESEND_API_KEY', 'E-Mail-Versand'],
             ]}
           />
           <SubSection title="Secrets-Übersicht">
