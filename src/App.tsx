@@ -94,18 +94,18 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Landing />} />
               <Route path="/auth" element={<Auth />} />
-              <Route path="/generator" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/generator" element={<ProtectedRoute><ErrorBoundary moduleName="Generator"><Index /></ErrorBoundary></ProtectedRoute>} />
+              <Route path="/dashboard" element={<ProtectedRoute><ErrorBoundary moduleName="Dashboard"><Dashboard /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-              <Route path="/project/:id" element={<ProtectedRoute><ProjectView /></ProtectedRoute>} />
+              <Route path="/project/:id" element={<ProtectedRoute><ErrorBoundary moduleName="Projekt"><ProjectView /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/leasing-rechner" element={<ProtectedRoute><LeasingCalculator /></ProtectedRoute>} />
               <Route path="/finanzierungsrechner" element={<ProtectedRoute><FinancingCalculator /></ProtectedRoute>} />
               <Route path="/kfz-steuer-rechner" element={<ProtectedRoute><KfzSteuerRechner /></ProtectedRoute>} />
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/docs" element={<ApiDocs />} />
               <Route path="/integrations" element={<ProtectedRoute><Integrations /></ProtectedRoute>} />
-              <Route path="/sales-assistant" element={<ProtectedRoute><SalesAssistant /></ProtectedRoute>} />
-              <Route path="/sales-assistant/:id" element={<ProtectedRoute><SalesAssistant /></ProtectedRoute>} />
+              <Route path="/sales-assistant" element={<ProtectedRoute><ErrorBoundary moduleName="Sales Assistant"><SalesAssistant /></ErrorBoundary></ProtectedRoute>} />
+              <Route path="/sales-assistant/:id" element={<ProtectedRoute><ErrorBoundary moduleName="Sales Assistant"><SalesAssistant /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/admin" element={<ProtectedRoute><AdminRoute><AdminLayout /></AdminRoute></ProtectedRoute>}>
                 <Route index element={<AdminDashboard />} />
                 <Route path="users" element={<AdminUsers />} />
@@ -127,7 +127,7 @@ const App = () => (
                 <Route path="test-drives" element={<AdminTestDrives />} />
               </Route>
               <Route path="/architecture" element={<ProtectedRoute><AdminRoute><ArchitectureDoc /></AdminRoute></ProtectedRoute>} />
-              <Route path="/sales-assistant/chat" element={<ProtectedRoute><SalesAssistant /></ProtectedRoute>} />
+              <Route path="/sales-assistant/chat" element={<ProtectedRoute><ErrorBoundary moduleName="Sales Assistant"><SalesAssistant /></ErrorBoundary></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
