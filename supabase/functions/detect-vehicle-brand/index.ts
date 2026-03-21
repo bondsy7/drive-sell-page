@@ -31,6 +31,35 @@ function extractPartialJson(text: string): DetectionResult {
   return normalizeDetectionResult({ brand, model, confidence });
 }
 
+const DEFAULT_DETECT_PROMPT = `Analyze this vehicle-related image and identify the vehicle manufacturer/brand and model whenever possible.
+
+Possible inputs include:
+1. Vehicle photos showing logo, grille, headlights, trunk badge, wheels or body shape
+2. Manufacturer labels, VIN stickers, compliance plates or door-jamb stickers
+3. Interior photos with steering wheel logo or badges
+4. Textual manufacturer references visible on the vehicle or label
+
+Respond with ONLY a JSON object in this exact format:
+{"brand":"BrandName","model":"ModelName","confidence":"high"}
+
+Rules:
+- Use the official brand name (e.g. "Volkswagen", "Mercedes-Benz", "BMW")
+- If you can identify only the brand, return model as ""
+- If you cannot identify the brand, return {"brand":"","model":"","confidence":"low"}
+- Use "high" when a logo, manufacturer label, VIN sticker text or unmistakable badge is visible
+- Use "medium" when design cues strongly suggest the brand
+- Use "low" when uncertain`;
+
+async function getCustomPrompt(key: string, defaultPrompt: string): Promise<string> {
+  try {
+    const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const { data } = await sb.from("admin_settings").select("value").eq("key", "ai_prompts").single();
+    const override = (data?.value as Record<string, string>)?.[key];
+    if (override && override.trim() !== "" && override.trim().toLowerCase() !== "default") return override;
+  } catch (e) { console.warn("Custom prompt load failed:", e); }
+  return defaultPrompt;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
