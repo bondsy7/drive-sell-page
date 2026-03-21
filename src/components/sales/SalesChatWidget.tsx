@@ -36,7 +36,7 @@ export function useSalesChatUnread() {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from('sales_notifications' as any)
+    supabase.from('sales_notifications')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', user.id).eq('is_read', false)
       .then(({ count }) => setUnreadCount(count ?? 0));
