@@ -488,19 +488,20 @@ Globale Tabellen:
 
         {/* 7. KI-Services */}
         <Section id="s7" title="7. KI-Services & Modelle">
-          <SubSection title="Google Gemini API (direkt)">
+          <SubSection title="Google Gemini API (direkt, eigener Key)">
             <CodeBlock>{`Endpoint:  https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent
-Auth:      x-goog-api-key: GEMINI_API_KEY
-Format:    Google Gemini REST API
-Modelle:   gemini-2.5-flash, gemini-3-pro-image-preview, gemini-3.1-flash-image-preview`}</CodeBlock>
+Auth:      x-goog-api-key: GEMINI_API_KEY (eigener Key, kein Gateway)
+Format:    systemInstruction + contents (Gemini-natives Format)
+Modelle:   gemini-2.5-flash (Text + Bild), gemini-2.5-flash-lite (leichte Aufgaben)
+
+Grundsatz: Alle KI-Aufrufe nutzen bevorzugt eigene API-Keys.`}</CodeBlock>
           </SubSection>
           <SubSection title="Modell-Tiers (Bildgenerierung)">
             <Table
               headers={['Tier', 'Modell', 'Engine', 'Credits']}
               rows={[
-                ['schnell', 'gemini-2.5-flash-image', 'Gemini', '3'],
-                ['qualitaet', 'gemini-3-pro-image-preview', 'Gemini', '5'],
-                ['turbo', 'gemini-3.1-flash-image-preview', 'Gemini', '6'],
+                ['schnell', 'gemini-2.5-flash', 'Gemini', '3'],
+                ['qualitaet', 'gemini-2.5-flash', 'Gemini', '5'],
                 ['premium', 'gpt-image-1', 'OpenAI', '8'],
                 ['ultra', 'gpt-image-1 (HD)', 'OpenAI', '10'],
               ]}
