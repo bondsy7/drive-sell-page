@@ -141,12 +141,12 @@ const Profile = () => {
     if (!user) return;
     setTxLoading(true);
     const { data } = await supabase
-      .from('credit_transactions' as any)
+      .from('credit_transactions')
       .select('id, amount, action_type, model_used, description, created_at')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(100);
-    setTransactions((data as any) || []);
+    setTransactions((data as CreditTransaction[]) || []);
     setTxLoading(false);
   }, [user]);
 

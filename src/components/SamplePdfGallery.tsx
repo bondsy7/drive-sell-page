@@ -35,11 +35,11 @@ export default function SamplePdfGallery({ onSelect, isProcessing }: SamplePdfGa
   useEffect(() => {
     (async () => {
       const { data } = await supabase
-        .from('sample_pdfs' as any)
+        .from('sample_pdfs')
         .select('id, title, description, brand, model, category, pdf_url, thumbnail_url')
         .eq('active', true)
         .order('sort_order');
-      setPdfs((data as any[]) || []);
+      setPdfs((data as SamplePdf[]) || []);
       setLoading(false);
     })();
   }, []);

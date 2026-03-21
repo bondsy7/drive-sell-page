@@ -130,7 +130,7 @@ export default function AdminPdfGallery() {
       if (thumbPath) await supabase.storage.from('sample-pdfs').remove([thumbPath]);
     }
 
-    await supabase.from('sample_pdfs' as any).delete().eq('id', pdf.id);
+    await supabase.from('sample_pdfs').delete().eq('id', pdf.id);
     toast.success('PDF gelöscht');
     loadPdfs();
   };

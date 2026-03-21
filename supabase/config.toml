@@ -59,3 +59,6 @@ verify_jwt = false
 
 [functions.generate-360-spin]
 verify_jwt = false
+
+[functions.cleanup-orphaned-storage]
+verify_jwt = false

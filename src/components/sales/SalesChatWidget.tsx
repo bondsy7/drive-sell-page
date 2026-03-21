@@ -163,8 +163,8 @@ export default function SalesChatWidget({ open, onOpenChange }: SalesChatWidgetP
 
   const markAllRead = async () => {
     if (!user) return;
-    await supabase.from('sales_notifications' as any)
-      .update({ is_read: true } as any).eq('user_id', user.id);
+    await supabase.from('sales_notifications')
+      .update({ is_read: true }).eq('user_id', user.id);
     setUnreadCount(0);
     loadNotifications();
   };
