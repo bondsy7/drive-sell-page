@@ -9,6 +9,28 @@ const corsHeaders = {
 const normalizeEmail = (value?: string | null) => (value || '').trim().toLowerCase();
 const normalizePhone = (value?: string | null) => (value || '').replace(/[^\d+]/g, '');
 
+async function getCustomPrompt(sb: any, key: string, defaultPrompt: string): Promise<string> {
+  try {
+    const { data } = await sb.from("admin_settings").select("value").eq("key", "ai_prompts").single();
+    const override = (data?.value as Record<string, string>)?.[key];
+    if (override && override.trim() !== "" && override.trim().toLowerCase() !== "default") return override;
+  } catch (e) { console.warn("Custom prompt load failed:", e); }
+  return defaultPrompt;
+}
+
+const DEFAULT_LEAD_PROMPT = `Du bist ein KI-Verkaufsassistent für ein Autohaus.
+Erstelle eine professionelle Erstantwort-E-Mail auf die Kundenanfrage.
+
+WICHTIG: Gehe gezielt auf die Kundeninteressen ein:
+- Bei Probefahrt-Interesse: Biete konkret einen Termin an
+- Bei Inzahlungnahme: Frage nach Fahrzeugdetails
+- Bei Leasing/Finanzierung: Erwähne attraktive Konditionen
+- Bei Kauf: Bestätige Preis und Verfügbarkeit
+- Biete einen Rückruf an wenn gewünscht
+
+Erstelle NUR den E-Mail-Text (Betreff wird separat generiert). Beginne mit der Anrede.
+Antworte auf Deutsch.`;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
