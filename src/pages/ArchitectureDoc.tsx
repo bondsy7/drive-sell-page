@@ -90,7 +90,7 @@ export default function ArchitectureDoc() {
           </div>
           <h1 className="text-4xl font-bold text-foreground mb-3 print:text-3xl">Autohaus.AI</h1>
           <p className="text-xl text-muted-foreground mb-2 print:text-lg">System- & Softwarearchitektur</p>
-          <p className="text-sm text-muted-foreground">Version 2.1 · Stand: 21. März 2026</p>
+          <p className="text-sm text-muted-foreground">Version 2.2 · Stand: 21. März 2026</p>
           <p className="text-sm text-muted-foreground">Für Entwickler-Onboarding & Kunden-Dokumentation</p>
           
           <div className="mt-12 print:mt-8">
@@ -169,7 +169,7 @@ export default function ArchitectureDoc() {
 ┌─────────────────────────────────────────────────┐
 │              EXTERNE SERVICES                    │
 │                                                 │
-│  Lovable AI Gateway │ Google Gemini │ OpenAI    │
+│  Google Gemini (direkt) │ OpenAI (direkt)       │
 │  Stripe │ OutVin (VIN) │ Resend (E-Mail)        │
 └─────────────────────────────────────────────────┘`}</CodeBlock>
           </SubSection>
@@ -204,18 +204,17 @@ export default function ArchitectureDoc() {
               ]}
             />
           </SubSection>
-          <SubSection title="KI-Modelle">
+          <SubSection title="KI-Modelle (alle via eigene API-Keys)">
             <Table
-              headers={['Modell', 'Einsatz']}
+              headers={['Modell', 'Einsatz', 'API']}
               rows={[
-                ['Gemini 2.5 Flash', 'PDF-Analyse, VIN-OCR, Text-Generierung'],
-                ['Gemini 2.5 Flash Image', 'Bildgenerierung (Schnell-Tier)'],
-                ['Gemini 3 Pro Image', 'Bildgenerierung (Premium), Remastering'],
-                ['Gemini 3.1 Flash Image', 'Bildgenerierung (Turbo-Tier)'],
-                ['OpenAI gpt-image-1', 'Bildgenerierung (Ultra-Tier)'],
-                ['Google Veo 3.1', 'Video-Generierung'],
+                ['Gemini 2.5 Flash', 'PDF-Analyse, VIN-OCR, Text, Sales-Chat, 360° Spin, Bildgenerierung', 'Gemini REST (direkt)'],
+                ['Gemini 2.5 Flash Lite', 'Equipment-Übersetzung, Subject-Generierung', 'Gemini REST (direkt)'],
+                ['OpenAI gpt-image-1', 'Bildgenerierung (Premium/Ultra)', 'OpenAI REST (direkt)'],
+                ['Google Veo 3.1', 'Video-Generierung', 'Gemini REST (direkt)'],
               ]}
             />
+            <P><strong>Grundsatz:</strong> Alle KI-Aufrufe nutzen eigene API-Keys (GEMINI_API_KEY, OPENAI_API_KEY) über die direkte REST API — kein Gateway-Dienst.</P>
           </SubSection>
         </Section>
 
@@ -346,13 +345,13 @@ const apiKey = await getSecret("GEMINI_API_KEY");
 // 2. Falls leer → Fallback auf Deno.env.get()
 // 3. Ergebnis wird 5 Minuten gecacht`}</CodeBlock>
           </SubSection>
-          <SubSection title="Gemeinsames Pattern">
+           <SubSection title="Gemeinsames Pattern">
             <CodeBlock>{`// Jede KI-Function folgt diesem Schema:
 1. CORS Handling (OPTIONS)
 2. Auth + Credit-Deduction (atomar via RPC)
 3. Custom Prompt laden (admin_settings Override)
 4. API-Key aus DB laden (getSecret() mit Env-Fallback)
-5. KI-API aufrufen (Lovable Gateway oder direkt)
+5. KI-API aufrufen (Google Gemini REST API direkt)
 6. Ergebnis verarbeiten + zurückgeben`}</CodeBlock>
           </SubSection>
         </Section>
@@ -489,19 +488,20 @@ Globale Tabellen:
 
         {/* 7. KI-Services */}
         <Section id="s7" title="7. KI-Services & Modelle">
-          <SubSection title="Google Gemini API (direkt)">
+          <SubSection title="Google Gemini API (direkt, eigener Key)">
             <CodeBlock>{`Endpoint:  https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent
-Auth:      x-goog-api-key: GEMINI_API_KEY
-Format:    Google Gemini REST API
-Modelle:   gemini-2.5-flash, gemini-3-pro-image-preview, gemini-3.1-flash-image-preview`}</CodeBlock>
+Auth:      x-goog-api-key: GEMINI_API_KEY (eigener Key, kein Gateway)
+Format:    systemInstruction + contents (Gemini-natives Format)
+Modelle:   gemini-2.5-flash (Text + Bild), gemini-2.5-flash-lite (leichte Aufgaben)
+
+Grundsatz: Alle KI-Aufrufe nutzen bevorzugt eigene API-Keys.`}</CodeBlock>
           </SubSection>
           <SubSection title="Modell-Tiers (Bildgenerierung)">
             <Table
               headers={['Tier', 'Modell', 'Engine', 'Credits']}
               rows={[
-                ['schnell', 'gemini-2.5-flash-image', 'Gemini', '3'],
-                ['qualitaet', 'gemini-3-pro-image-preview', 'Gemini', '5'],
-                ['turbo', 'gemini-3.1-flash-image-preview', 'Gemini', '6'],
+                ['schnell', 'gemini-2.5-flash', 'Gemini', '3'],
+                ['qualitaet', 'gemini-2.5-flash', 'Gemini', '5'],
                 ['premium', 'gpt-image-1', 'OpenAI', '8'],
                 ['ultra', 'gpt-image-1 (HD)', 'OpenAI', '10'],
               ]}
@@ -653,19 +653,19 @@ Modelle:   gemini-2.5-flash, gemini-3-pro-image-preview, gemini-3.1-flash-image-
           <Table
             headers={['Service', 'Endpoint', 'Auth', 'Zweck']}
             rows={[
-              ['Google Gemini (Text)', 'generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent', 'x-goog-api-key', 'PDF-Analyse, OCR, Landing Pages'],
-              ['Google Gemini (Bild)', 'generativelanguage.googleapis.com/v1beta/models/gemini-3-*:generateContent', 'x-goog-api-key', 'Remastering, Bildgenerierung'],
+              ['Google Gemini (Text+Bild)', 'generativelanguage.googleapis.com/v1beta/...', 'x-goog-api-key (eigener Key)', 'PDF, OCR, Sales-Chat, 360° Spin, Bildgenerierung'],
               ['Google Gemini (Video)', 'generativelanguage.googleapis.com/v1beta/models/veo-*', 'x-goog-api-key', 'Video-Generierung'],
               ['OpenAI', 'api.openai.com/v1/images/...', 'Bearer OPENAI_API_KEY', 'Bild (Premium/Ultra)'],
               ['OutVin', 'outvin.com/api/v1/vehicle/{vin}', 'Basic OUTVIN_API_KEY', 'VIN → Fahrzeugdaten'],
               ['Stripe', 'api.stripe.com/v1/...', 'STRIPE_SECRET_KEY', 'Zahlungen, Abos'],
+              ['Resend', 'api.resend.com/emails', 'Bearer RESEND_API_KEY', 'E-Mail-Versand'],
             ]}
           />
           <SubSection title="Secrets-Übersicht">
             <Table
               headers={['Secret', 'Verwendung', 'Verwaltung']}
               rows={[
-                ['GEMINI_API_KEY', 'Google Gemini API (Text, Bild, Video, OCR)', 'Admin UI + Env'],
+                ['GEMINI_API_KEY', 'Google Gemini API (Text, Bild, Video, OCR, Sales, 360°)', 'Admin UI + Env'],
                 ['OPENAI_API_KEY', 'OpenAI Image API (Banner)', 'Admin UI + Env'],
                 ['STRIPE_SECRET_KEY', 'Stripe Payments', 'Admin UI + Env'],
                 ['STRIPE_WEBHOOK_SECRET', 'Stripe Webhook Verifizierung', 'Admin UI + Env'],
@@ -674,7 +674,6 @@ Modelle:   gemini-2.5-flash, gemini-3-pro-image-preview, gemini-3.1-flash-image-
                 ['RESEND_REPLY_TO', 'Reply-To-Adresse', 'Admin UI + Env'],
                 ['OUTVIN_API_KEY', 'VIN-Datenbank', 'Admin UI + Env'],
                 ['SUPABASE_SERVICE_ROLE_KEY', 'Admin-DB-Zugriff (RLS bypass)', 'Nur Env'],
-                ['LOVABLE_API_KEY', 'Lovable AI Gateway', 'Nur Env'],
               ]}
             />
             <P>Keys mit "Admin UI + Env" können über <strong>/admin/secrets</strong> geändert werden. Edge Functions lesen via getSecret() zuerst aus der DB, dann Fallback auf Umgebungsvariablen.</P>
@@ -1036,7 +1035,7 @@ Edge Function → Resend API
             © 2026 Autohaus.AI – Dieses Dokument ist vertraulich und nur für autorisierte Empfänger bestimmt.
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            Version 2.1 · Generiert am {new Date().toLocaleDateString('de-DE')}
+            Version 2.2 · Generiert am {new Date().toLocaleDateString('de-DE')}
           </p>
         </div>
       </div>

@@ -1,6 +1,6 @@
 # Autohaus.AI – System- & Softwarearchitektur
 
-> **Version:** 2.0 · **Stand:** 19. März 2026  
+> **Version:** 2.2 · **Stand:** 21. März 2026  
 > **Zielgruppe:** Anfänger, Entwickler-Onboarding, technische Stakeholder, Kunden-Dokumentation
 
 ---
@@ -69,7 +69,7 @@ Das System folgt einer **modularen Workflow-Architektur** mit einem zentralen Ac
 │                                                              │
 │  ┌──────────────┐ ┌──────────┐ ┌────────┐ ┌──────────────┐  │
 │  │ Edge Funcs   │ │ Database │ │Storage │ │    Auth       │  │
-│  │ (26 Funcs)   │ │ (31 Tab) │ │(6 Buck)│ │ Email+OAuth  │  │
+│  │ (28 Funcs)   │ │ (32 Tab) │ │(6 Buck)│ │ Email+OAuth  │  │
 │  └──────┬───────┘ └────┬─────┘ └───┬────┘ └──────────────┘  │
 └─────────┼──────────────┼───────────┼─────────────────────────┘
           │              │           │
@@ -77,9 +77,8 @@ Das System folgt einer **modularen Workflow-Architektur** mit einem zentralen Ac
 ┌──────────────────┐     │           │
 │  Externe APIs    │     │           │
 │                  │     │           │
-│ • Lovable AI     │     │           │
-│   Gateway        │     │           │
 │ • Google Gemini  │     │           │
+│   (direkte API)  │     │           │
 │ • OpenAI         │     │           │
 │ • Stripe         │     │           │
 │ • OutVin         │     │           │
@@ -128,15 +127,14 @@ Das System folgt einer **modularen Workflow-Architektur** mit einem zentralen Ac
 | **Stripe** | Zahlungsabwicklung (Abos + Einmalkäufe) |
 | **Resend** | Transaktionaler E-Mail-Versand (Lead-Benachrichtigungen, Sales) |
 
-### KI-Modelle (via Lovable AI Gateway & direkte APIs)
+### KI-Modelle (via direkte Google Gemini & OpenAI REST APIs)
 | Modell | Einsatz | API |
 |---|---|---|
-| `google/gemini-2.5-flash` | PDF-Analyse, VIN-OCR, Text-Generierung, Marken-Erkennung | Gemini REST |
-| `google/gemini-2.5-flash-image` | Bildgenerierung (Schnell-Tier) | Gemini REST |
-| `google/gemini-3-pro-image-preview` | Bildgenerierung (Premium-Tier), Remastering, 360° Spin | Gemini REST |
-| `google/gemini-3.1-flash-image-preview` | Bildgenerierung (Turbo-Tier) | Gemini REST |
-| `openai/gpt-image-1` | Bildgenerierung (Ultra-Tier), Banner | OpenAI REST |
-| `Google Veo 3.1` | Video-Generierung (direkte Google API, asynchron) | Gemini REST |
+| `gemini-2.5-flash` | PDF-Analyse, VIN-OCR, Text-Generierung, Marken-Erkennung, Sales-Chat, 360° Spin | Gemini REST (direkt) |
+| `gemini-2.5-flash-lite` | Equipment-Übersetzung (VIN), Subject-Generierung | Gemini REST (direkt) |
+| `gemini-2.5-flash-image` | Bildgenerierung (Schnell-Tier) | Gemini REST (direkt) |
+| `openai/gpt-image-1` | Bildgenerierung (Premium/Ultra-Tier), Banner | OpenAI REST (direkt) |
+| `Google Veo 3.1` | Video-Generierung (asynchron) | Gemini REST (direkt) |
 
 ---
 
@@ -378,7 +376,7 @@ src/
 
 ## 4. Backend-Architektur (Edge Functions)
 
-Alle Backend-Logik läuft in **26 Supabase Edge Functions** (Deno-Runtime) + 1 Shared-Modul:
+Alle Backend-Logik läuft in **28 Supabase Edge Functions** (Deno-Runtime) + Shared-Module:
 
 ### 4.1 KI-Verarbeitungs-Functions
 
@@ -390,7 +388,7 @@ Alle Backend-Logik läuft in **26 Supabase Edge Functions** (Deno-Runtime) + 1 S
 | `generate-banner` | `{ prompt, imageBase64?, modelTier, width, height }` | Base64 Banner | 5-10 | Gemini/OpenAI |
 | `generate-video` | `{ imageBase64, prompt }` (start/poll) | Storage-URL Video | 10 | Google Veo 3.1 |
 | `generate-landing-page` | `{ brand, model, pageType, dealer }` | HTML + JSON + Bilder | 3 | Gemini 2.5 Flash + Image |
-| `generate-360-spin` | `{ jobId, step? }` (step-basiert) | 36 Frames in Storage | 10-20 | Gemini 3 Pro Image |
+| `generate-360-spin` | `{ jobId, step? }` (step-basiert) | 36 Frames in Storage | 10-20 | Gemini 2.5 Flash |
 | `detect-vehicle-brand` | `{ imageBase64 }` | `{ brand, model, confidence }` | 0 | Gemini 2.5 Flash |
 | `ocr-vin` | `{ imageBase64 }` | `{ vin: "WBA..." }` | 1 | Gemini 2.5 Flash |
 | `lookup-vin` | `{ vin }` | Fahrzeugdaten JSON | 0 | OutVin API |
@@ -462,7 +460,7 @@ const prompt = await getCustomPrompt("key", DEFAULT_PROMPT);
 // 4. API-Key aus DB laden (mit Env-Fallback)
 const apiKey = await getSecret("GEMINI_API_KEY");
 
-// 5. KI-API aufrufen (Google Gemini direkt oder Lovable AI Gateway)
+// 5. KI-API aufrufen (Google Gemini REST API direkt)
 const response = await fetch("https://generativelanguage.googleapis.com/v1beta/...", { ... });
 
 // 6. Ergebnis verarbeiten + zurückgeben
@@ -746,29 +744,23 @@ CREATE POLICY "Admins can manage..." ON table
 
 ```
 Endpoint:  https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent
-Auth:      x-goog-api-key: GEMINI_API_KEY
-Modelle:   gemini-2.5-flash, gemini-3-pro-image-preview, gemini-3.1-flash-image-preview
+Auth:      x-goog-api-key: GEMINI_API_KEY (eigener Key, kein Gateway)
+Modelle:   gemini-2.5-flash (Text + Bild), gemini-2.5-flash-lite (leichte Aufgaben)
+Format:    systemInstruction + contents (Gemini-natives Format)
 ```
 
-### 7.2 Lovable AI Gateway
+**Hinweis:** Alle KI-Aufrufe nutzen ausschließlich die **direkte Google Gemini REST API** mit eigenem `GEMINI_API_KEY`. Das Lovable AI Gateway wird **nicht** verwendet.
 
-Für unterstützte Modelle kann alternativ das Lovable AI Gateway verwendet werden (ohne eigenen API-Key):
-```
-Auth:      LOVABLE_API_KEY
-Modelle:   google/gemini-2.5-flash, openai/gpt-5, etc.
-```
-
-### 7.3 Modell-Tiers (Bildgenerierung)
+### 7.2 Modell-Tiers (Bildgenerierung)
 
 | Tier | Modell | Engine | Credits | Einsatz |
 |---|---|---|---|---|
-| `schnell` | `gemini-2.5-flash-image` | Gemini | 3 | Schnelle Vorschau, Prototyping |
-| `qualitaet` | `gemini-3-pro-image-preview` | Gemini | 5 | Standard-Qualität, Remastering |
-| `turbo` | `gemini-3.1-flash-image-preview` | Gemini | 6 | Schnell + hochwertig |
+| `schnell` | `gemini-2.5-flash` | Gemini | 3 | Schnelle Vorschau, Prototyping, 360° Spin |
+| `qualitaet` | `gemini-2.5-flash` | Gemini | 5 | Standard-Qualität, Remastering |
 | `premium` | `gpt-image-1` | OpenAI | 8 | Premium-Qualität |
 | `ultra` | `gpt-image-1` (HD, quality: high) | OpenAI | 10 | Höchste Qualität |
 
-### 7.4 Master-Prompt-System (Bild-Remastering)
+### 7.3 Master-Prompt-System (Bild-Remastering)
 
 ```
 Nutzerkonfiguration (UI)
@@ -790,7 +782,7 @@ Zusammengesetzter Prompt-String → Edge Function → KI-API
 - Logo-Rendering: Fotorealistisches 3D auf dunkelgrauer, matter Wand mit LED-Halo
 - Pipeline-Runner: Worker-Pool mit **4 parallelen Instanzen** (CONCURRENCY = 4)
 
-### 7.5 Video-Generierung
+### 7.4 Video-Generierung
 
 ```
 Ablauf (asynchron, Polling-basiert):
@@ -801,7 +793,7 @@ Ablauf (asynchron, Polling-basiert):
 5. Response: { videoUrl: "https://...supabase.co/storage/..." }
 ```
 
-### 7.6 PDF-Analyse-Pipeline
+### 7.5 PDF-Analyse-Pipeline
 
 ```
 PDF Base64 → Gemini 2.5 Flash (System-Prompt mit striktem JSON-Schema)
@@ -822,7 +814,7 @@ Post-Processing (Server-seitig):
 └── Fehlende Felder mit Defaults füllen
 ```
 
-### 7.7 Fahrzeugmarken-Erkennung
+### 7.6 Fahrzeugmarken-Erkennung
 
 ```
 Bild-Upload → detect-vehicle-brand (Edge Function)
@@ -1110,7 +1102,7 @@ Das 360°-Spin-Modul generiert aus **4 Quellfotos** (Front, Seite-Links, Hinten,
      │
      ├── Step 2-9: Frame-Batches generieren (4 pro Batch)
      │   ├── Prompt: "Drehe Fahrzeug um X° basierend auf Referenzbild"
-     │   ├── KI-Modell: Gemini 3 Pro Image Preview
+     │   ├── KI-Modell: Gemini 2.5 Flash (responseModalities: IMAGE+TEXT)
      │   ├── Upload → vehicle-images Bucket
      │   ├── Insert → spin360_generated_frames
      │   └── Self-Invocation für nächsten Batch
@@ -1150,9 +1142,9 @@ Der `Spin360Viewer` bietet:
 
 ```
 URL:     https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent
-Auth:    x-goog-api-key: GEMINI_API_KEY
-Modelle: gemini-2.5-flash (Text/PDF/OCR), gemini-3-pro-image-preview (Bild),
-         gemini-3.1-flash-image-preview (Bild), veo-3.1-generate-preview (Video)
+Auth:    x-goog-api-key: GEMINI_API_KEY (eigener Key)
+Modelle: gemini-2.5-flash (Text/PDF/OCR/Bild/360°), gemini-2.5-flash-lite (leichte Aufgaben),
+         veo-3.1-generate-preview (Video)
 ```
 
 ### 13.2 OpenAI
@@ -1200,7 +1192,7 @@ Reply-To: RESEND_REPLY_TO
 | `RESEND_API_KEY` | Resend E-Mail-Versand | Edge Functions |
 | `RESEND_FROM_EMAIL` | Absender-Adresse | Edge Functions |
 | `RESEND_REPLY_TO` | Reply-To-Adresse | Edge Functions |
-| `LOVABLE_API_KEY` | Lovable AI Gateway | Edge Functions |
+| `LOVABLE_API_KEY` | Lovable Cloud Auth (OAuth) | Edge Functions |
 | `SUPABASE_SERVICE_ROLE_KEY` | Admin-DB-Zugriff (RLS bypass) | Edge Functions |
 | `SUPABASE_ANON_KEY` | Standard-DB-Zugriff | Edge Functions + Frontend |
 | `SUPABASE_URL` | Supabase Projekt-URL | Edge Functions + Frontend |
@@ -1348,7 +1340,7 @@ getSecret() Helper (_shared/get-secret.ts)
 
 ## 16. Admin-System
 
-### 16.1 Admin-Routen & Zugang (12 Seiten)
+### 16.1 Admin-Routen & Zugang (18 Seiten)
 
 ```
 /admin              → Dashboard (KPIs, Charts)
@@ -1490,7 +1482,7 @@ Konfigurierbare Einstellungen ohne Code-Änderung:
        │
        ▼
   generate-360-spin (Step 2-9, Batches)
-  ├── 4 Frames pro Batch generieren (Gemini 3 Pro)
+  ├── 4 Frames pro Batch generieren (Gemini 2.5 Flash)
   ├── Upload → vehicle-images Bucket
   ├── Insert → spin360_generated_frames
   ├── Heartbeat: updated_at aktualisieren
@@ -1776,6 +1768,13 @@ VITE_SUPABASE_PROJECT_ID=rauzclzphdnhzflovrya
 
 ---
 
+### Changelog v2.2 (21. März 2026)
+
+- **API-Migration**: Alle 4 Edge Functions (sales-chat, auto-process-lead, lookup-vin, generate-360-spin) vom Lovable AI Gateway auf direkte Google Gemini REST API mit eigenem `GEMINI_API_KEY` migriert
+- **360° Spin Modell**: Von `gemini-3-pro-image-preview` auf `gemini-2.5-flash` (responseModalities: IMAGE+TEXT) umgestellt
+- **Grundsatz**: Alle KI-Aufrufe nutzen bevorzugt eigene API-Keys (GEMINI_API_KEY, OPENAI_API_KEY) statt Gateway-Dienste
+- **Secrets bereinigt**: `LOVABLE_API_KEY` wird nur noch für Lovable Cloud Auth verwendet, nicht mehr für KI-Aufrufe
+
 ### Changelog v2.1 (21. März 2026)
 
 - **Storage Cleanup**: Neue Edge Function `cleanup-orphaned-storage` für automatische Bereinigung verwaister Dateien (Dry-Run-Modus)
@@ -1786,4 +1785,4 @@ VITE_SUPABASE_PROJECT_ID=rauzclzphdnhzflovrya
 
 ---
 
-*© 2026 Autohaus.AI – Version 2.1 – Dieses Dokument ist vertraulich und nur für autorisierte Empfänger bestimmt.*
+*© 2026 Autohaus.AI – Version 2.2 – Dieses Dokument ist vertraulich und nur für autorisierte Empfänger bestimmt.*
