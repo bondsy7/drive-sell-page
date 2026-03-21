@@ -460,7 +460,7 @@ const prompt = await getCustomPrompt("key", DEFAULT_PROMPT);
 // 4. API-Key aus DB laden (mit Env-Fallback)
 const apiKey = await getSecret("GEMINI_API_KEY");
 
-// 5. KI-API aufrufen (Google Gemini direkt oder Lovable AI Gateway)
+// 5. KI-API aufrufen (Google Gemini REST API direkt)
 const response = await fetch("https://generativelanguage.googleapis.com/v1beta/...", { ... });
 
 // 6. Ergebnis verarbeiten + zurückgeben
