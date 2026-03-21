@@ -165,21 +165,20 @@ ${Object.keys(vehicleContext).length > 0 ? `\nFahrzeugdaten: ${JSON.stringify(ve
     let emailSubject = `Ihre Anfrage zu ${vehicleTitle || 'Ihrem Wunschfahrzeug'} – ${dealerProfile?.company_name || 'Autohaus'}`;
 
     try {
-      const subjectResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
+      const subjectResp = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ role: "user", parts: [{ text: subjectPrompt }] }],
+            generationConfig: { temperature: 0.3, maxOutputTokens: 256 },
+          }),
         },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash-lite",
-          messages: [{ role: "user", content: subjectPrompt }],
-          stream: false,
-        }),
-      });
+      );
       if (subjectResp.ok) {
         const sr = await subjectResp.json();
-        const s = sr.choices?.[0]?.message?.content?.trim();
+        const s = sr.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
         if (s) emailSubject = s.replace(/^["']|["']$/g, '');
       }
     } catch {}

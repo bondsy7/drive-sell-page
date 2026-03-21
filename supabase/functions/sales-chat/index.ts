@@ -336,25 +336,22 @@ ${profile?.assistant_name ? `Du heißt "${profile.assistant_name}".` : ''}`;
 
       if (make && model && year) {
         // Use AI to estimate value
-        const estimateResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
-            "Content-Type": "application/json",
+        const estimateResp = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              systemInstruction: { parts: [{ text: `Du bist ein Fahrzeugbewertungs-Experte für den deutschen Markt. Gib eine realistische Marktpreisschätzung ab. Antworte NUR im JSON-Format: {"min": number, "max": number, "notes": "string"}. Die Werte sind in Euro. Berücksichtige: Marke, Modell, Baujahr, Kilometerstand und Zustand. Orientiere dich an deutschen Gebrauchtwagenportalen (mobile.de, AutoScout24).` }] },
+              contents: [{ role: "user", parts: [{ text: `Schätze den Marktwert: ${make} ${model}, Baujahr ${year}, ${mileage.toLocaleString('de-DE')} km, Zustand: ${condition}` }] }],
+              generationConfig: { temperature: 0.3, maxOutputTokens: 1024 },
+            }),
           },
-          body: JSON.stringify({
-            model: "google/gemini-2.5-flash",
-            messages: [
-              { role: "system", content: `Du bist ein Fahrzeugbewertungs-Experte für den deutschen Markt. Gib eine realistische Marktpreisschätzung ab. Antworte NUR im JSON-Format: {"min": number, "max": number, "notes": "string"}. Die Werte sind in Euro. Berücksichtige: Marke, Modell, Baujahr, Kilometerstand und Zustand. Orientiere dich an deutschen Gebrauchtwagenportalen (mobile.de, AutoScout24).` },
-              { role: "user", content: `Schätze den Marktwert: ${make} ${model}, Baujahr ${year}, ${mileage.toLocaleString('de-DE')} km, Zustand: ${condition}` },
-            ],
-            stream: false,
-          }),
-        });
+        );
 
         if (estimateResp.ok) {
           const estimateResult = await estimateResp.json();
-          const estimateText = estimateResult.choices?.[0]?.message?.content || '';
+          const estimateText = estimateResult.candidates?.[0]?.content?.parts?.[0]?.text || '';
           try {
             const jsonMatch = estimateText.match(/\{[\s\S]*\}/);
             if (jsonMatch) {
