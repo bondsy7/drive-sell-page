@@ -143,7 +143,7 @@ async function callGeminiFlash(prompt: string, imageUrls: string[], responseType
   return textContent;
 }
 
-async function callImageGeneration(prompt: string, referenceImageUrl: string, _model: string = "gemini-2.0-flash-exp"): Promise<string | null> {
+async function callImageGeneration(prompt: string, referenceImageUrl: string, model: string = "gemini-2.5-flash"): Promise<string | null> {
   const apiKey = Deno.env.get("GEMINI_API_KEY");
   if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
 
@@ -154,7 +154,7 @@ async function callImageGeneration(prompt: string, referenceImageUrl: string, _m
   const mimeType = imgResp.headers.get("content-type") || "image/jpeg";
 
   const resp = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -174,7 +174,7 @@ async function callImageGeneration(prompt: string, referenceImageUrl: string, _m
 
   if (!resp.ok) {
     const t = await resp.text();
-    console.error(`Image gen error:`, resp.status, t);
+    console.error(`Image gen error (${model}):`, resp.status, t);
     if (resp.status === 429) throw new Error("rate_limited");
     throw new Error(`image_generation_${resp.status}`);
   }
@@ -356,7 +356,7 @@ serve(async (req) => {
         const normalizedBase64 = await callImageGeneration(
           `${normalizePrompt}\n\nThis is the ${perspective} view of the vehicle.`,
           imageUrls[perspectiveIndex],
-          "gemini-3-pro-image-preview",
+          "gemini-2.5-flash",
         );
 
         if (normalizedBase64) {
@@ -515,7 +515,7 @@ Generate the vehicle from this specific angle:`);
             const anchorBase64 = await callImageGeneration(
               `${anchorPromptBase} ${anchor.label}`,
               refUrl,
-              "gemini-3-pro-image-preview",
+              "gemini-2.5-flash",
             );
 
             if (anchorBase64) {
@@ -532,7 +532,7 @@ Generate the vehicle from this specific angle:`);
                 frame_type: "anchor",
                 image_url: storedUrl,
                 angle_degrees: anchor.angle,
-                model_used: "gemini-3-pro-image-preview",
+                model_used: "gemini-2.5-flash",
                 validation_status: "passed",
               });
               console.log(inserted
@@ -636,7 +636,7 @@ Generate the vehicle from this specific angle:`);
           const frameBase64 = await callImageGeneration(
             `${framePromptBase} ${frame.angle} degrees from center front (0° = front, 90° = left side, 180° = rear, 270° = right side)`,
             refUrl,
-            "gemini-3.1-flash-image-preview",
+            "gemini-2.5-flash",
           );
 
           if (frameBase64) {
@@ -653,7 +653,7 @@ Generate the vehicle from this specific angle:`);
               frame_type: "intermediate",
               image_url: storedUrl,
               angle_degrees: frame.angle,
-              model_used: "gemini-3.1-flash-image-preview",
+              model_used: "gemini-2.5-flash",
               validation_status: "passed",
             });
             if (inserted) generatedInBatch += 1;
