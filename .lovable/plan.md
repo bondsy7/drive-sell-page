@@ -1,75 +1,79 @@
 
 
-# Plan: Landing Page Generator Upgrade
+## Vorschläge für neue Admin-Module
 
-## Zusammenfassung
+Basierend auf einer gründlichen Analyse aller Tabellen, Edge Functions, und bestehenden Features gibt es folgende sinnvolle Ergänzungen:
 
-Der aktuelle Landing Page Generator hat drei wesentliche Schwaechen:
-1. **Marke/Modell als Freitext** statt dem bestehenden `VehicleBrandModelPicker` Dropdown
-2. **Kein Kontaktformular** in der generierten HTML (die PDF-Seiten haben es, Landing Pages nicht)
-3. **Zu wenige Gestaltungsoptionen** -- der Nutzer hat kaum Einfluss auf Bilder, Ton, Zielgruppe, Preis etc.
+---
 
-## Aenderungen
+### 1. Edge Function Logs & Health Monitor
+**Warum:** Es gibt 20+ Edge Functions, aber keine Übersicht ob sie funktionieren, wie lange sie brauchen, oder ob sie Fehler werfen.
+- Live-Statusübersicht aller Edge Functions (letzter Aufruf, Erfolgsrate)
+- Fehler-Log mit Filterung nach Funktion und Zeitraum
+- Durchschnittliche Antwortzeiten pro Funktion
+- Alert-Badges bei hohen Fehlerquoten
 
-### 1. ManualLandingGenerator.tsx -- Komplett ueberarbeiten
+### 2. Storage-Übersicht & Bereinigung
+**Warum:** 6 Storage Buckets (vehicle-images, banners, logos, sales-knowledge, etc.) wachsen ständig, aber es gibt keine Einsicht in Speicherverbrauch oder verwaiste Dateien.
+- Speicherverbrauch pro Bucket (Anzahl Dateien, Gesamtgröße)
+- Verwaiste Dateien erkennen (z.B. Bilder ohne zugehöriges Projekt)
+- Massen-Bereinigung alter/ungenutzter Assets
+- Top-Nutzer nach Speicherverbrauch
 
-**Marke/Modell:** Freitext-Inputs durch `VehicleBrandModelPicker` ersetzen (wie bei VehicleSelectBeforeGenerate). Zusaetzlich Variante-Input (z.B. "Competition", "AMG").
+### 3. Pipeline & Job-Monitor
+**Warum:** `image_generation_jobs` und `spin360_jobs` laufen im Hintergrund. Wenn etwas hängt oder fehlschlägt, gibt es keine Admin-Sicht darauf.
+- Aktive/wartende/fehlgeschlagene Jobs aller Nutzer
+- Job-Details mit Status, Fehlermeldung, Dauer
+- Möglichkeit hängende Jobs manuell abzubrechen oder neu zu starten
+- Statistik: durchschnittliche Verarbeitungszeit, Erfolgsquote
 
-**Neue Eingabefelder fuer mehr Individualitaet:**
-- **Preis/Rate** (optional): Monatliche Rate oder Gesamtpreis, der auf der Seite erscheinen soll
-- **Zielgruppe**: Dropdown (Privatkunden, Gewerbe, Junge Fahrer, Familien, Premium)
-- **Tonalitaet**: Dropdown (Professionell, Emotional, Sportlich, Premium/Luxus, Jugendlich)
-- **Farbe des Fahrzeugs** (optional): Beeinflusst Bild-Prompts fuer bessere Ergebnisse
-- **Highlights/USPs**: Textarea fuer besondere Ausstattung, Aktionen, Vorteile
-- **Bild-Stil**: Dropdown (Studio/Showroom, Outdoor/Natur, Urban/Stadt, Dynamisch/Fahrt) -- steuert die Image-Prompts
-- **Eigene Bilder hochladen** (optional): Bis zu 3 Bilder vorab hochladen, die statt KI-Bildern verwendet werden
+### 4. E-Mail-Outbox & Zustellungs-Monitor
+**Warum:** `sales_email_outbox` enthält alle E-Mails mit Status (queued/sending/sent/failed), aber nur der jeweilige Nutzer sieht seine eigenen.
+- Globale Übersicht aller E-Mails (Status-Verteilung, Fehlerquote)
+- Fehlgeschlagene E-Mails mit Error-Messages
+- Resend-Aktion für fehlgeschlagene Mails
+- Tägliches Versandvolumen als Chart
 
-**Formular-Layout:** Mehrstufig mit klaren Abschnitten:
-1. Fahrzeug (Marke/Modell/Variante/Farbe)
-2. Angebot (Seitentyp, Preis, Zielgruppe)
-3. Stil (Tonalitaet, Bild-Stil, Highlights)
+### 5. Probefahrten & Terminübersicht
+**Warum:** `test_drive_bookings` und `dealer_availability` existieren, aber Admins haben keinen Überblick über Buchungsvolumen und Auslastung.
+- Gesamtanzahl Buchungen, Status-Verteilung (pending/confirmed/completed/cancelled)
+- Kalenderansicht aller Termine (aggregiert)
+- Top-Händler nach Buchungsvolumen
+- Durchschnittliche Vorlaufzeit (Buchung → Termin)
 
-### 2. Edge Function `generate-landing-page` -- Erweitern
+### 6. Conversion-Funnel / Nutzungsanalyse
+**Warum:** Die Daten sind da (Registrierung → Projekt erstellt → Bilder generiert → Landing Page → Lead erhalten), aber es fehlt eine Funnel-Visualisierung.
+- Registrierung → Erstes Projekt → Erste Bildgenerierung → Erster Lead
+- Drop-off-Raten pro Schritt
+- Durchschnittliche Time-to-Value (Registrierung bis erster Lead)
+- Aktive vs. inaktive Nutzer (letzte Aktivität)
 
-- Neue Parameter entgegennehmen: `variant`, `price`, `targetAudience`, `tone`, `color`, `imageStyle`, `highlights`, `uploadedImages`
-- System-Prompt anreichern mit Zielgruppe, Tonalitaet, Preis-Infos
-- Bild-Prompts anpassen basierend auf `imageStyle` und `color` (z.B. "White BMW M3 Competition in a modern showroom" statt generisch)
-- Hochgeladene Bilder priorisieren: wo User-Bilder vorhanden, werden keine KI-Bilder generiert
+### 7. Abo- & Umsatz-Dashboard
+**Warum:** `user_subscriptions` + Stripe-Daten existieren, aber das Dashboard zeigt nur "Aktive Abos" als Zahl. Keine MRR, Churn, Plan-Verteilung.
+- MRR (Monthly Recurring Revenue) aus `subscription_plans` Preisen
+- Plan-Verteilung (Pie Chart: Free vs. Starter vs. Pro vs. Enterprise)
+- Churn-Rate (gekündigte Abos / aktive Abos)
+- Credit-Kaufhistorie und Zusatzumsatz
 
-### 3. Kontaktformular in Landing Pages einbauen
+---
 
-- `buildLandingPageHTML()` und die Edge-Function `buildHTML()` erweitern:
-  - `buildContactFormHTML()` aus `shared.ts` einbinden (bereits vorhanden, getestet, mit Leads-Integration + Bot-Verarbeitung)
-  - `dealerUserId` und `projectId` durchreichen
-  - `supabaseUrl` (VITE_SUPABASE_URL) als Parameter mitgeben
-- Im Editor: Kontaktformular-Toggle (an/aus) und vehicleTitle-Feld editierbar
-- Leads landen in der `leads`-Tabelle und werden vom Sales-Bot gleich behandelt wie PDF-Seiten-Anfragen
+### Empfohlene Prioritätsreihenfolge
 
-### 4. LandingPageEditor.tsx -- Kontaktformular-Sektion
+| Prio | Modul | Aufwand | Nutzen |
+|------|-------|---------|--------|
+| 1 | Pipeline & Job-Monitor | Mittel | Betriebskritisch |
+| 2 | E-Mail-Outbox Monitor | Klein | Fehler sofort sehen |
+| 3 | Abo- & Umsatz-Dashboard | Mittel | Business-Entscheidungen |
+| 4 | Storage-Übersicht | Mittel | Kostenkontrolle |
+| 5 | Conversion-Funnel | Mittel | Wachstumsanalyse |
+| 6 | Edge Function Health | Klein | Stabilität |
+| 7 | Probefahrten-Übersicht | Klein | Nice-to-have |
 
-- Neuer Accordion-Abschnitt "Kontaktformular" mit Toggle (aktivieren/deaktivieren)
-- VehicleTitle editierbar (default: "Brand Model")
-- Preview zeigt Kontaktformular-Button live an
+### Technische Umsetzung
 
-### 5. landing-page-builder.ts -- Kontaktformular integrieren
-
-- Neuer optionaler Parameter `contactForm?: { dealerUserId: string; projectId: string; supabaseUrl: string; vehicleTitle: string; pageType: string }`
-- Wenn gesetzt: `buildContactFormHTML()` vor `</body>` einbauen
-- Sticky CTA-Button + Modal wie bei den PDF-Angebotsseiten
-
-## Dateien
-
-| Datei | Aenderung |
-|-------|-----------|
-| `src/components/ManualLandingGenerator.tsx` | VehicleBrandModelPicker, neue Felder, Bild-Upload |
-| `supabase/functions/generate-landing-page/index.ts` | Erweiterte Parameter, bessere Prompts, Bild-Stil |
-| `src/lib/landing-page-builder.ts` | ContactForm-Support |
-| `src/components/LandingPageEditor.tsx` | Kontaktformular-Toggle + vehicleTitle |
-
-## SEO-Verbesserungen (im Prompt)
-
-- Open Graph Image-Tag mit Hero-Bild
-- Canonical URL aus Dealer-Website
-- Bessere JSON-LD Struktur (AutoDealer + Offer Schema)
-- Zielgruppen-spezifische Keywords
+Alle Module nutzen die bestehende Infrastruktur:
+- Daten kommen direkt aus Supabase-Tabellen (RLS erlaubt Admins bereits Lesezugriff auf die meisten Tabellen)
+- Stripe-Daten über die bestehende `admin-stripe` Edge Function
+- Neue Admin-Seiten als lazy-loaded Routes unter `/admin/*`
+- Einheitliches Design mit den bestehenden Card/Chart-Komponenten aus `AdminDashboard`
 
