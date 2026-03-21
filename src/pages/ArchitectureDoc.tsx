@@ -750,7 +750,7 @@ GET /api-vehicles/:id/html  → HTML-Fragment (body-Inhalt)`}</CodeBlock>
 
         {/* 14. Admin */}
         <Section id="s14" title="14. Admin-System">
-          <SubSection title="Admin-Routen (12 Seiten)">
+          <SubSection title="Admin-Routen (17 Seiten)">
             <Table
               headers={['Route', 'Funktion']}
               rows={[
@@ -766,6 +766,12 @@ GET /api-vehicles/:id/html  → HTML-Fragment (body-Inhalt)`}</CodeBlock>
                 ['/admin/logos', 'Hersteller-Logos (Massen-Upload)'],
                 ['/admin/sales-assistant', 'Sales-Assistant-Konfiguration'],
                 ['/admin/wmi-codes', 'WMI-Codes verwalten'],
+                ['/admin/jobs', 'Job-Monitor (Pipeline-Übersicht)'],
+                ['/admin/email-monitor', 'E-Mail-Outbox-Monitor'],
+                ['/admin/revenue', 'Umsatz-Auswertung & Charts'],
+                ['/admin/storage', 'Storage-Verwaltung & Cleanup'],
+                ['/admin/conversion', 'Conversion-Funnel-Analyse'],
+                ['/admin/test-drives', 'Probefahrt-Buchungen verwalten'],
               ]}
             />
           </SubSection>
