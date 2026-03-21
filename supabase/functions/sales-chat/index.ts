@@ -86,7 +86,10 @@ serve(async (req) => {
     const todayBookings = bookings.filter((b: any) => b.booking_date === today);
     const upcomingBookings = bookings.filter((b: any) => b.booking_date > today);
 
-    const systemPrompt = `Du bist der interne Verkaufsassistent-Chatbot für ein Autohaus. Du hast Zugriff auf folgende Systeme und Daten:
+    const DEFAULT_SALES_CHAT_INTRO = `Du bist der interne Verkaufsassistent-Chatbot für ein Autohaus. Du hast Zugriff auf folgende Systeme und Daten:`;
+    const chatIntro = await getCustomPrompt(adminSupabase, "sales_chat", DEFAULT_SALES_CHAT_INTRO);
+
+    const systemPrompt = `${chatIntro}
 
 ## DEINE FÄHIGKEITEN
 1. **Probefahrten verwalten**: Du siehst alle Termine, kannst über anstehende Probefahrten informieren und Empfehlungen geben.
