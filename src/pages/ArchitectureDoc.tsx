@@ -169,7 +169,7 @@ export default function ArchitectureDoc() {
 ┌─────────────────────────────────────────────────┐
 │              EXTERNE SERVICES                    │
 │                                                 │
-│  Lovable AI Gateway │ Google Gemini │ OpenAI    │
+│  Google Gemini (direkt) │ OpenAI (direkt)       │
 │  Stripe │ OutVin (VIN) │ Resend (E-Mail)        │
 └─────────────────────────────────────────────────┘`}</CodeBlock>
           </SubSection>
