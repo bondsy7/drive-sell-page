@@ -311,7 +311,7 @@ export default function ArchitectureDoc() {
               ]}
             />
           </SubSection>
-          <SubSection title="Integrations-Functions">
+          <SubSection title="Integrations- & Utility-Functions">
             <Table
               headers={['Function', 'Zweck']}
               rows={[
@@ -320,6 +320,8 @@ export default function ArchitectureDoc() {
                 ['ftp-upload', 'HTML/Bilder auf FTP/SFTP'],
                 ['admin-stripe', 'Admin: Stripe verwalten'],
                 ['admin-delete-user', 'Admin: Nutzer löschen'],
+                ['cleanup-orphaned-storage', 'Verwaiste Storage-Dateien bereinigen (Dry-Run)'],
+                ['migrate-base64-images', 'Base64→Storage Migration (abgeschlossen)'],
               ]}
             />
           </SubSection>
