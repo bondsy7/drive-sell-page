@@ -323,15 +323,22 @@ export default function ArchitectureDoc() {
               ]}
             />
           </SubSection>
-          <SubSection title="Shared Module (_shared/)">
+           <SubSection title="Shared Module (_shared/)">
             <Table
               headers={['Modul', 'Datei', 'Zweck']}
               rows={[
                 ['getSecret()', '_shared/get-secret.ts', 'API-Keys aus admin_secrets DB lesen, Fallback auf Deno.env, 5-Min-Cache'],
+                ['authenticateRequest()', '_shared/auth.ts', 'Auth-Token validieren, User + Admin-Client zurückgeben'],
+                ['handleCors()', '_shared/cors.ts', 'CORS-Header + OPTIONS Preflight'],
+                ['deductCredits()', '_shared/credits.ts', 'Credit-Deduction via RPC mit Fehlerbehandlung'],
               ]}
             />
             <CodeBlock>{`// Verwendung in Edge Functions:
 import { getSecret } from "../_shared/get-secret.ts";
+import { authenticateRequest } from "../_shared/auth.ts";
+import { handleCors, jsonResponse } from "../_shared/cors.ts";
+import { deductCredits } from "../_shared/credits.ts";
+
 const apiKey = await getSecret("GEMINI_API_KEY");
 // 1. Prüft admin_secrets Tabelle (Service Role, RLS bypass)
 // 2. Falls leer → Fallback auf Deno.env.get()
