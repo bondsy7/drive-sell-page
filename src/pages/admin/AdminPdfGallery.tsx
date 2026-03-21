@@ -110,10 +110,10 @@ export default function AdminPdfGallery() {
     loadPdfs();
   };
 
-  const updateField = async (id: string, field: string, value: any) => {
+  const updateField = async (id: string, field: string, value: string | boolean | number | null) => {
     const { error } = await supabase
-      .from('sample_pdfs' as any)
-      .update({ [field]: value, updated_at: new Date().toISOString() } as any)
+      .from('sample_pdfs')
+      .update({ [field]: value, updated_at: new Date().toISOString() } as Record<string, unknown>)
       .eq('id', id);
     if (error) toast.error('Fehler: ' + error.message);
     else loadPdfs();
