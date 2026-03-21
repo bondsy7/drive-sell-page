@@ -6,22 +6,21 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Engine: "gemini" or "openai"
 interface ModelConfig {
   engine: "gemini" | "openai";
   model: string;
-  cost: number;
+  defaultCost: number;
 }
 
 const MODEL_MAP: Record<string, ModelConfig> = {
-  schnell:   { engine: "gemini", model: "gemini-2.5-flash-image", cost: 3 },
-  qualitaet: { engine: "gemini", model: "gemini-3.1-flash-image-preview", cost: 5 },
-  premium:   { engine: "gemini", model: "gemini-3-pro-image-preview", cost: 8 },
-  turbo:     { engine: "openai", model: "gpt-image-1", cost: 6 },
-  ultra:     { engine: "openai", model: "gpt-image-1", cost: 10 },
+  schnell:   { engine: "gemini", model: "gemini-2.5-flash-image", defaultCost: 3 },
+  qualitaet: { engine: "gemini", model: "gemini-3.1-flash-image-preview", defaultCost: 5 },
+  premium:   { engine: "gemini", model: "gemini-3-pro-image-preview", defaultCost: 8 },
+  turbo:     { engine: "openai", model: "gpt-image-1", defaultCost: 6 },
+  ultra:     { engine: "openai", model: "gpt-image-1", defaultCost: 10 },
   // Legacy fallbacks
-  standard:  { engine: "gemini", model: "gemini-2.5-flash-image", cost: 3 },
-  pro:       { engine: "gemini", model: "gemini-3-pro-image-preview", cost: 8 },
+  standard:  { engine: "gemini", model: "gemini-2.5-flash-image", defaultCost: 3 },
+  pro:       { engine: "gemini", model: "gemini-3-pro-image-preview", defaultCost: 8 },
 };
 
 function createServiceClient() {
@@ -29,6 +28,15 @@ function createServiceClient() {
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
+}
+
+async function getCreditCost(actionType: string, modelTier: string, defaultCost: number): Promise<number> {
+  try {
+    const sb = createServiceClient();
+    const { data } = await sb.from("admin_settings").select("value").eq("key", "credit_costs").single();
+    const costs = data?.value as Record<string, Record<string, number>> | null;
+    return costs?.[actionType]?.[modelTier] ?? defaultCost;
+  } catch { return defaultCost; }
 }
 
 async function authenticateAndDeductCredits(req: Request, actionType: string, cost: number): Promise<{ userId: string } | Response> {
@@ -72,16 +80,14 @@ serve(async (req) => {
     const { imagePrompt, imagePrompts, modelTier } = await req.json();
     
     const config = MODEL_MAP[modelTier] || MODEL_MAP["schnell"];
+    const costPerImage = await getCreditCost("image_generate", modelTier || "schnell", config.defaultCost);
 
-    // Calculate total cost
     const totalImages = imagePrompts ? imagePrompts.length : 1;
-    const totalCost = totalImages * config.cost;
+    const totalCost = totalImages * costPerImage;
 
-    // Auth & credits
     const authResult = await authenticateAndDeductCredits(req, "image_generate", totalCost);
     if (authResult instanceof Response) return authResult;
 
-    // Single image mode (backward compat)
     if (imagePrompt && !imagePrompts) {
       const result = await generateImage(imagePrompt, config);
       return new Response(JSON.stringify(result), {
@@ -89,7 +95,6 @@ serve(async (req) => {
       });
     }
 
-    // Multi image mode
     if (imagePrompts && Array.isArray(imagePrompts)) {
       const results: { imageBase64: string | null; error?: string }[] = [];
       for (const prompt of imagePrompts) {
@@ -122,7 +127,6 @@ async function generateImage(prompt: string, config: ModelConfig, retries = 2): 
   return generateImageGemini(prompt, config.model, retries);
 }
 
-// ─── Gemini Engine ───
 async function generateImageGemini(prompt: string, model: string, retries: number): Promise<{ imageBase64: string | null; error?: string }> {
   const apiKey = Deno.env.get("GEMINI_API_KEY");
   if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
@@ -133,10 +137,7 @@ async function generateImageGemini(prompt: string, model: string, retries: numbe
     try {
       const response = await fetch(url, {
         method: "POST",
-        headers: {
-          "x-goog-api-key": apiKey,
-          "Content-Type": "application/json",
-        },
+        headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
@@ -146,20 +147,14 @@ async function generateImageGemini(prompt: string, model: string, retries: numbe
       if (!response.ok) {
         const errText = await response.text();
         console.error(`Gemini attempt ${attempt + 1}:`, response.status, errText);
-        if (response.status === 429 && attempt < retries) {
-          await new Promise(r => setTimeout(r, 3000 * (attempt + 1)));
-          continue;
-        }
+        if (response.status === 429 && attempt < retries) { await new Promise(r => setTimeout(r, 3000 * (attempt + 1))); continue; }
         if (attempt < retries) { await new Promise(r => setTimeout(r, 2000)); continue; }
         throw new Error(`Gemini error: ${response.status}`);
       }
 
       const data = await response.json();
       const parts = data.candidates?.[0]?.content?.parts;
-      if (!parts) {
-        if (attempt < retries) { await new Promise(r => setTimeout(r, 2000)); continue; }
-        throw new Error("No image generated (Gemini)");
-      }
+      if (!parts) { if (attempt < retries) { await new Promise(r => setTimeout(r, 2000)); continue; } throw new Error("No image generated (Gemini)"); }
 
       for (const part of parts) {
         if (part.inlineData?.data) {
@@ -178,7 +173,6 @@ async function generateImageGemini(prompt: string, model: string, retries: numbe
   throw new Error("No image generated after retries (Gemini)");
 }
 
-// ─── OpenAI Engine ───
 async function generateImageOpenAI(prompt: string, model: string, retries: number): Promise<{ imageBase64: string | null; error?: string }> {
   const apiKey = Deno.env.get("OPENAI_API_KEY");
   if (!apiKey) throw new Error("OPENAI_API_KEY not configured");
@@ -189,36 +183,21 @@ async function generateImageOpenAI(prompt: string, model: string, retries: numbe
     try {
       const response = await fetch(url, {
         method: "POST",
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model,
-          prompt,
-          n: 1,
-          size: "1024x1024",
-          output_format: "b64_json",
-        }),
+        headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ model, prompt, n: 1, size: "1024x1024", output_format: "b64_json" }),
       });
 
       if (!response.ok) {
         const errText = await response.text();
         console.error(`OpenAI attempt ${attempt + 1}:`, response.status, errText);
-        if (response.status === 429 && attempt < retries) {
-          await new Promise(r => setTimeout(r, 3000 * (attempt + 1)));
-          continue;
-        }
+        if (response.status === 429 && attempt < retries) { await new Promise(r => setTimeout(r, 3000 * (attempt + 1))); continue; }
         if (attempt < retries) { await new Promise(r => setTimeout(r, 2000)); continue; }
         throw new Error(`OpenAI error: ${response.status}`);
       }
 
       const data = await response.json();
       const b64 = data.data?.[0]?.b64_json;
-      if (!b64) {
-        if (attempt < retries) { await new Promise(r => setTimeout(r, 2000)); continue; }
-        throw new Error("No image data in OpenAI response");
-      }
+      if (!b64) { if (attempt < retries) { await new Promise(r => setTimeout(r, 2000)); continue; } throw new Error("No image data in OpenAI response"); }
 
       return { imageBase64: `data:image/png;base64,${b64}` };
     } catch (e) {

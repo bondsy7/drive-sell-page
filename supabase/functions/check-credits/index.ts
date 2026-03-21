@@ -32,7 +32,7 @@ serve(async (req) => {
       .single();
 
     const costs = settings?.value as Record<string, Record<string, number>> || {};
-    const tier = model_tier || "standard";
+    const tier = model_tier || "schnell";
     const cost = costs[action_type]?.[tier] ?? 1;
 
     // Get user balance

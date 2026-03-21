@@ -16,8 +16,9 @@ interface CreditTransaction {
   created_at: string;
 }
 
+// Costs are now keyed by model tier: { action: { schnell: N, qualitaet: N, premium: N, turbo: N, ultra: N } }
 interface CreditCosts {
-  [action: string]: { standard: number; pro: number };
+  [action: string]: { [tier: string]: number };
 }
 
 export function useCredits() {
@@ -50,7 +51,6 @@ export function useCredits() {
     setLoading(true);
     Promise.all([fetchBalance(), fetchCosts()]).finally(() => setLoading(false));
 
-    // Realtime subscription for balance updates
     const channel = supabase
       .channel('credit-balance')
       .on('postgres_changes', {
@@ -69,10 +69,10 @@ export function useCredits() {
   }, [user, fetchBalance, fetchCosts]);
 
   const deductCredits = useCallback(async (
-    actionType: string, modelTier: string = 'standard', description?: string
+    actionType: string, modelTier: string = 'schnell', description?: string
   ): Promise<{ success: boolean; balance: number; error?: string }> => {
     if (!user) return { success: false, balance: 0, error: 'Not authenticated' };
-    const cost = costs[actionType]?.[modelTier as 'standard' | 'pro'] ?? 1;
+    const cost = costs[actionType]?.[modelTier] ?? costs[actionType]?.['schnell'] ?? 1;
     
     const { data, error } = await supabase.rpc('deduct_credits' as any, {
       _user_id: user.id,
@@ -90,8 +90,8 @@ export function useCredits() {
     return { success: result?.success || false, balance: result?.balance || 0, error: result?.error };
   }, [user, costs, balance]);
 
-  const getCost = useCallback((actionType: string, modelTier: string = 'standard'): number => {
-    return costs[actionType]?.[modelTier as 'standard' | 'pro'] ?? 0;
+  const getCost = useCallback((actionType: string, modelTier: string = 'schnell'): number => {
+    return costs[actionType]?.[modelTier] ?? costs[actionType]?.['schnell'] ?? 0;
   }, [costs]);
 
   const fetchTransactions = useCallback(async (limit = 50): Promise<CreditTransaction[]> => {

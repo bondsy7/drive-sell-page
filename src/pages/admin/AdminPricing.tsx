@@ -3,32 +3,33 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { Save, RotateCcw } from 'lucide-react';
+import { Save, RotateCcw, Zap, Sparkles, Crown, Rocket, Diamond } from 'lucide-react';
 
-interface TierCost { standard: number; pro: number }
-interface CreditCosts { [action: string]: TierCost }
+const MODEL_TIERS = [
+  { id: 'schnell', label: 'Schnell', icon: Zap },
+  { id: 'qualitaet', label: 'Qualität', icon: Sparkles },
+  { id: 'premium', label: 'Premium', icon: Crown },
+  { id: 'turbo', label: 'Turbo', icon: Rocket },
+  { id: 'ultra', label: 'Ultra', icon: Diamond },
+] as const;
 
-// All credit action types actually used across edge functions
-const ALL_ACTIONS: { key: string; label: string; category: string; defaultStd: number; defaultPro: number }[] = [
-  // PDF & Analyse
-  { key: 'pdf_analysis', label: 'PDF-Analyse', category: 'PDF & Analyse', defaultStd: 2, defaultPro: 1 },
-  { key: 'vin_ocr', label: 'VIN-OCR (Kennzeichen)', category: 'PDF & Analyse', defaultStd: 1, defaultPro: 1 },
-  // Bildgenerierung
-  { key: 'image_generate', label: 'Bildgenerierung (pro Bild)', category: 'Bildgenerierung', defaultStd: 3, defaultPro: 2 },
-  { key: 'image_remaster', label: 'Bild-Remastering', category: 'Bildgenerierung', defaultStd: 2, defaultPro: 1 },
-  { key: 'banner_generate', label: 'Banner-Generierung', category: 'Bildgenerierung', defaultStd: 5, defaultPro: 3 },
-  // Video
-  { key: 'video_generate', label: 'Video-Generierung', category: 'Video', defaultStd: 10, defaultPro: 7 },
-  // 360° Spin
-  { key: 'spin360_analysis', label: '360° Spin – Analyse', category: '360° Spin', defaultStd: 1, defaultPro: 1 },
-  { key: 'spin360_normalize', label: '360° Spin – Normalisierung', category: '360° Spin', defaultStd: 4, defaultPro: 3 },
-  { key: 'spin360_generate', label: '360° Spin – Frame-Generierung', category: '360° Spin', defaultStd: 15, defaultPro: 10 },
-  { key: 'spin360_export', label: '360° Spin – Export', category: '360° Spin', defaultStd: 2, defaultPro: 1 },
-  // Landing Pages
-  { key: 'landing_page_export', label: 'Landing Page Export', category: 'Landing Pages', defaultStd: 3, defaultPro: 2 },
-  // Sales & CRM
-  { key: 'sales_response', label: 'Sales-Antwort generieren', category: 'Sales & CRM', defaultStd: 1, defaultPro: 1 },
-  { key: 'auto_process_lead', label: 'Lead Auto-Verarbeitung', category: 'Sales & CRM', defaultStd: 1, defaultPro: 1 },
+type TierCosts = Record<string, number>;
+interface CreditCosts { [action: string]: TierCosts }
+
+const ALL_ACTIONS: { key: string; label: string; category: string; defaults: Record<string, number> }[] = [
+  { key: 'pdf_analysis', label: 'PDF-Analyse', category: 'PDF & Analyse', defaults: { schnell: 2, qualitaet: 3, premium: 5, turbo: 4, ultra: 7 } },
+  { key: 'vin_ocr', label: 'VIN-OCR (Kennzeichen)', category: 'PDF & Analyse', defaults: { schnell: 1, qualitaet: 1, premium: 2, turbo: 1, ultra: 2 } },
+  { key: 'image_generate', label: 'Bildgenerierung (pro Bild)', category: 'Bildgenerierung', defaults: { schnell: 3, qualitaet: 5, premium: 8, turbo: 6, ultra: 10 } },
+  { key: 'image_remaster', label: 'Bild-Remastering', category: 'Bildgenerierung', defaults: { schnell: 2, qualitaet: 3, premium: 5, turbo: 4, ultra: 7 } },
+  { key: 'banner_generate', label: 'Banner-Generierung', category: 'Bildgenerierung', defaults: { schnell: 3, qualitaet: 5, premium: 8, turbo: 6, ultra: 10 } },
+  { key: 'video_generate', label: 'Video-Generierung', category: 'Video', defaults: { schnell: 7, qualitaet: 10, premium: 15, turbo: 10, ultra: 20 } },
+  { key: 'spin360_analysis', label: '360° Spin – Analyse', category: '360° Spin', defaults: { schnell: 1, qualitaet: 1, premium: 2, turbo: 1, ultra: 2 } },
+  { key: 'spin360_normalize', label: '360° Spin – Normalisierung', category: '360° Spin', defaults: { schnell: 3, qualitaet: 4, premium: 6, turbo: 5, ultra: 8 } },
+  { key: 'spin360_generate', label: '360° Spin – Frame-Generierung', category: '360° Spin', defaults: { schnell: 10, qualitaet: 15, premium: 20, turbo: 15, ultra: 25 } },
+  { key: 'spin360_export', label: '360° Spin – Export', category: '360° Spin', defaults: { schnell: 1, qualitaet: 2, premium: 3, turbo: 2, ultra: 4 } },
+  { key: 'landing_page_export', label: 'Landing Page Export', category: 'Landing Pages', defaults: { schnell: 2, qualitaet: 3, premium: 5, turbo: 3, ultra: 5 } },
+  { key: 'sales_response', label: 'Sales-Antwort generieren', category: 'Sales & CRM', defaults: { schnell: 1, qualitaet: 1, premium: 2, turbo: 1, ultra: 2 } },
+  { key: 'auto_process_lead', label: 'Lead Auto-Verarbeitung', category: 'Sales & CRM', defaults: { schnell: 1, qualitaet: 1, premium: 2, turbo: 1, ultra: 2 } },
 ];
 
 const CATEGORIES = [...new Set(ALL_ACTIONS.map(a => a.category))];
@@ -49,13 +50,12 @@ export default function AdminPricing() {
       .single();
 
     const saved: CreditCosts = (data as any)?.value || {};
-    // Merge defaults for any missing actions
     const merged: CreditCosts = {};
     for (const action of ALL_ACTIONS) {
-      merged[action.key] = {
-        standard: saved[action.key]?.standard ?? action.defaultStd,
-        pro: saved[action.key]?.pro ?? action.defaultPro,
-      };
+      merged[action.key] = {};
+      for (const tier of MODEL_TIERS) {
+        merged[action.key][tier.id] = saved[action.key]?.[tier.id] ?? action.defaults[tier.id] ?? 1;
+      }
     }
     setCosts(merged);
     setLoading(false);
@@ -63,13 +63,11 @@ export default function AdminPricing() {
 
   const saveCosts = async () => {
     setSaving(true);
-    // Upsert: try update first, insert if not exists
     const { error } = await supabase
       .from('admin_settings' as any)
       .update({ value: costs, updated_at: new Date().toISOString() } as any)
       .eq('key', 'credit_costs');
     if (error) {
-      // Try insert
       const { error: insertErr } = await supabase
         .from('admin_settings' as any)
         .insert({ key: 'credit_costs', value: costs } as any);
@@ -79,7 +77,7 @@ export default function AdminPricing() {
     setSaving(false);
   };
 
-  const updateCost = (action: string, tier: 'standard' | 'pro', value: number) => {
+  const updateCost = (action: string, tier: string, value: number) => {
     setCosts(prev => ({
       ...prev,
       [action]: { ...prev[action], [tier]: value },
@@ -89,7 +87,7 @@ export default function AdminPricing() {
   const resetToDefaults = () => {
     const defaults: CreditCosts = {};
     for (const a of ALL_ACTIONS) {
-      defaults[a.key] = { standard: a.defaultStd, pro: a.defaultPro };
+      defaults[a.key] = { ...a.defaults };
     }
     setCosts(defaults);
     toast.info('Auf Standardwerte zurückgesetzt (noch nicht gespeichert)');
@@ -112,7 +110,7 @@ export default function AdminPricing() {
       </div>
 
       <p className="text-sm text-muted-foreground">
-        Legt fest, wie viele Credits pro Aktion abgezogen werden. „Standard" gilt für Starter-Nutzer, „Pro" für Pro/Enterprise-Abonnenten.
+        Legt fest, wie viele Credits pro Aktion und Modell-Stufe abgezogen werden. Die Stufen entsprechen den KI-Modellen, die der Nutzer bei der Ausführung wählt.
       </p>
 
       {CATEGORIES.map(cat => (
@@ -120,40 +118,44 @@ export default function AdminPricing() {
           <div className="px-4 py-2.5 bg-muted/50 border-b border-border">
             <h2 className="font-semibold text-sm text-foreground">{cat}</h2>
           </div>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="text-left p-3 font-medium text-muted-foreground">Aktion</th>
-                <th className="text-center p-3 font-medium text-muted-foreground w-28">Standard</th>
-                <th className="text-center p-3 font-medium text-muted-foreground w-28">Pro</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ALL_ACTIONS.filter(a => a.category === cat).map(action => (
-                <tr key={action.key} className="border-b border-border last:border-0">
-                  <td className="p-3 text-foreground">{action.label}</td>
-                  <td className="p-3">
-                    <Input
-                      type="number"
-                      min={0}
-                      value={costs[action.key]?.standard ?? 0}
-                      onChange={e => updateCost(action.key, 'standard', parseInt(e.target.value) || 0)}
-                      className="w-20 mx-auto text-center h-8"
-                    />
-                  </td>
-                  <td className="p-3">
-                    <Input
-                      type="number"
-                      min={0}
-                      value={costs[action.key]?.pro ?? 0}
-                      onChange={e => updateCost(action.key, 'pro', parseInt(e.target.value) || 0)}
-                      className="w-20 mx-auto text-center h-8"
-                    />
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left p-3 font-medium text-muted-foreground">Aktion</th>
+                  {MODEL_TIERS.map(t => {
+                    const Icon = t.icon;
+                    return (
+                      <th key={t.id} className="text-center p-3 font-medium text-muted-foreground w-24">
+                        <div className="flex items-center justify-center gap-1">
+                          <Icon className="w-3.5 h-3.5" />
+                          <span className="text-xs">{t.label}</span>
+                        </div>
+                      </th>
+                    );
+                  })}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {ALL_ACTIONS.filter(a => a.category === cat).map(action => (
+                  <tr key={action.key} className="border-b border-border last:border-0">
+                    <td className="p-3 text-foreground">{action.label}</td>
+                    {MODEL_TIERS.map(t => (
+                      <td key={t.id} className="p-3">
+                        <Input
+                          type="number"
+                          min={0}
+                          value={costs[action.key]?.[t.id] ?? 0}
+                          onChange={e => updateCost(action.key, t.id, parseInt(e.target.value) || 0)}
+                          className="w-16 mx-auto text-center h-8 text-xs"
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       ))}
     </div>
