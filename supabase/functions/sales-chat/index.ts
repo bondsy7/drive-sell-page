@@ -6,6 +6,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+async function getCustomPrompt(sb: any, key: string, defaultPrompt: string): Promise<string> {
+  try {
+    const { data } = await sb.from("admin_settings").select("value").eq("key", "ai_prompts").single();
+    const override = (data?.value as Record<string, string>)?.[key];
+    if (override && override.trim() !== "" && override.trim().toLowerCase() !== "default") return override;
+  } catch (e) { console.warn("Custom prompt load failed:", e); }
+  return defaultPrompt;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
