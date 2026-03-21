@@ -100,11 +100,28 @@ serve(async (req) => {
     // 1. Auth & credits
     const bodyText = await req.text();
     const { imageBase64, additionalImages, vehicleDescription, modelTier, dynamicPrompt, customShowroomBase64, customPlateImageBase64, dealerLogoUrl, dealerLogoBase64, manufacturerLogoUrl, manufacturerLogoBase64 } = JSON.parse(bodyText);
-    const cost = modelTier === 'pro' ? 5 : 2;
+    
+    // Read cost dynamically from admin_settings
+    const REMASTER_DEFAULTS: Record<string, number> = { schnell: 2, qualitaet: 3, premium: 5, turbo: 4, ultra: 7 };
+    const tier = modelTier || 'schnell';
+    let cost = REMASTER_DEFAULTS[tier] ?? 2;
+    try {
+      const adminSb = createServiceClient();
+      const { data: costData } = await adminSb.from("admin_settings").select("value").eq("key", "credit_costs").single();
+      const configuredCost = (costData?.value as Record<string, Record<string, number>>)?.["image_remaster"]?.[tier];
+      if (typeof configuredCost === 'number') cost = configuredCost;
+    } catch {}
     const authResult = await authenticateAndDeductCredits(req, "image_remaster", cost);
     if (authResult instanceof Response) return authResult;
 
-    const geminiModel = modelTier === 'pro' ? 'gemini-3-pro-image-preview' : 'gemini-3.1-flash-image-preview';
+    const GEMINI_MODELS: Record<string, string> = {
+      schnell: 'gemini-2.5-flash-image',
+      qualitaet: 'gemini-3.1-flash-image-preview',
+      premium: 'gemini-3-pro-image-preview',
+      turbo: 'gemini-3.1-flash-image-preview',
+      ultra: 'gemini-3-pro-image-preview',
+    };
+    const geminiModel = GEMINI_MODELS[tier] || 'gemini-3.1-flash-image-preview';
     const GEMINI_API_KEY = await getSecret("GEMINI_API_KEY");
     if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
     if (!imageBase64) throw new Error("No image provided");
