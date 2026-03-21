@@ -793,7 +793,7 @@ Ablauf (asynchron, Polling-basiert):
 5. Response: { videoUrl: "https://...supabase.co/storage/..." }
 ```
 
-### 7.6 PDF-Analyse-Pipeline
+### 7.5 PDF-Analyse-Pipeline
 
 ```
 PDF Base64 → Gemini 2.5 Flash (System-Prompt mit striktem JSON-Schema)
