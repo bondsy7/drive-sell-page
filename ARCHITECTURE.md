@@ -388,7 +388,7 @@ Alle Backend-Logik läuft in **28 Supabase Edge Functions** (Deno-Runtime) + Sha
 | `generate-banner` | `{ prompt, imageBase64?, modelTier, width, height }` | Base64 Banner | 5-10 | Gemini/OpenAI |
 | `generate-video` | `{ imageBase64, prompt }` (start/poll) | Storage-URL Video | 10 | Google Veo 3.1 |
 | `generate-landing-page` | `{ brand, model, pageType, dealer }` | HTML + JSON + Bilder | 3 | Gemini 2.5 Flash + Image |
-| `generate-360-spin` | `{ jobId, step? }` (step-basiert) | 36 Frames in Storage | 10-20 | Gemini 3 Pro Image |
+| `generate-360-spin` | `{ jobId, step? }` (step-basiert) | 36 Frames in Storage | 10-20 | Gemini 2.5 Flash |
 | `detect-vehicle-brand` | `{ imageBase64 }` | `{ brand, model, confidence }` | 0 | Gemini 2.5 Flash |
 | `ocr-vin` | `{ imageBase64 }` | `{ vin: "WBA..." }` | 1 | Gemini 2.5 Flash |
 | `lookup-vin` | `{ vin }` | Fahrzeugdaten JSON | 0 | OutVin API |
