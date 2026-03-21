@@ -68,11 +68,11 @@ export default function AdminPdfGallery() {
 
     const title = file.name.replace('.pdf', '').replace(/[-_]/g, ' ');
 
-    const { error } = await supabase.from('sample_pdfs' as any).insert({
+    const { error } = await supabase.from('sample_pdfs').insert({
       title,
       pdf_url: urlData.publicUrl,
       sort_order: pdfs.length,
-    } as any);
+    });
 
     if (error) {
       toast.error('Fehler: ' + error.message);
