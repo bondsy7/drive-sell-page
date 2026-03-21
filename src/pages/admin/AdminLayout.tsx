@@ -6,7 +6,19 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import logoLight from '@/assets/logo-light.png';
 import { cn } from '@/lib/utils';
 
-const NAV_GROUPS = [
+interface NavItem {
+  to: string;
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  end?: boolean;
+}
+
+interface NavGroupDef {
+  label: string;
+  items: NavItem[];
+}
+
+const NAV_GROUPS: NavGroupDef[] = [
   {
     label: 'Übersicht',
     items: [
@@ -18,7 +30,7 @@ const NAV_GROUPS = [
     items: [
       { to: '/admin/users', icon: Users, label: 'Nutzer' },
       { to: '/admin/transactions', icon: Receipt, label: 'Transaktionen' },
-      { to: '/admin/revenue', icon: TrendingUp, label: 'Umsatz & Abos', end: false },
+      { to: '/admin/revenue', icon: TrendingUp, label: 'Umsatz & Abos' },
       { to: '/admin/pricing', icon: CreditCard, label: 'Preise' },
     ],
   },
