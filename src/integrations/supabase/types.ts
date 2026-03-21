@@ -1851,7 +1851,48 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      ftp_configs_safe: {
+        Row: {
+          created_at: string | null
+          directory: string | null
+          has_password: boolean | null
+          host: string | null
+          id: string | null
+          is_sftp: boolean | null
+          password_masked: string | null
+          port: number | null
+          updated_at: string | null
+          user_id: string | null
+          username: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          directory?: string | null
+          has_password?: never
+          host?: string | null
+          id?: string | null
+          is_sftp?: boolean | null
+          password_masked?: never
+          port?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          username?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          directory?: string | null
+          has_password?: never
+          host?: string | null
+          id?: string | null
+          is_sftp?: boolean | null
+          password_masked?: never
+          port?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       add_credits: {

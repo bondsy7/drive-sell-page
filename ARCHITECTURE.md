@@ -1662,49 +1662,60 @@ VITE_SUPABASE_PROJECT_ID=rauzclzphdnhzflovrya
 
 ## 22. Entwicklungsbedarf & Verbesserungs-Roadmap
 
-### 22.1 🔴 Kritisch: TypeScript-Sicherheit
+> **Letztes Audit:** 21. März 2026 – Security-Scan, Performance-Analyse, Code-Review
 
-| Problem | Wo | Lösung |
+### 22.1 ✅ Abgeschlossen: TypeScript-Sicherheit
+
+| Problem | Status | Lösung |
 |---|---|---|
-| Massiver `as any` Einsatz | useCredits.ts, AdminSettings.tsx, alle DB-Queries | Supabase-generierte Typen korrekt nutzen statt Type-Casting |
-| Fehlende strikte Null-Checks | tsconfig: `strictNullChecks: false` | Schrittweise auf `true` setzen, Fehler fixen |
-| Untypisierte JSONB-Felder | vehicle_data, config, tasks | Zod-Schemas + Runtime-Validierung |
+| `as any` in Kern-Hooks | ✅ Behoben | `useCredits.ts` typensicher, Dashboard-Hooks nutzen strikte Interfaces |
+| Untypisierte Dashboard-Daten | ✅ Behoben | `types.ts` mit `Project`, `Lead`, `VideoFile`, `BannerFile`, `Spin360Job` |
+| ~1000 `as any` in 43 Dateien | 🟡 Offen | Verbleibend in Admin-Pages, Template-Builder, Pipeline-Runner – Low-Priority |
 
-**Auswirkung:** Laufzeitfehler, die der Compiler nicht fängt. Jedes `as any` ist ein potenzieller Bug.
+### 22.2 ✅ Abgeschlossen: Performance-Optimierung
 
-### 22.2 🟠 Hoch: Performance-Optimierung
-
-| Problem | Wo | Lösung |
+| Problem | Status | Lösung |
 |---|---|---|
-| N+1 Queries | Dashboard, CRM | Supabase RPC für aggregierte Queries, JOINs statt separate Fetches |
-| Kein Pagination | Dashboard, Admin-Tabellen | Cursor-basiertes Pagination (Supabase `.range()`) |
-| Fehlendes Caching | useCredits, useSubscription | React Query mit `staleTime` + `gcTime` korrekt konfigurieren |
-| Große Bundle-Größe | Recharts, PDF-Parser | Dynamic Imports für optionale Features |
-| Base64-Bilder in DB | project_images.image_base64 | Migration zu Storage-URLs (Legacy-Bereinigung) |
+| N+1 Queries | ✅ Behoben | React Query mit `useQuery`/`useMutation` für Dashboard |
+| Kein Pagination | ✅ Behoben | Cursor-basiert für Gallery + Leads (PAGE_SIZE=50) |
+| Fehlendes Caching | ✅ Behoben | React Query mit `staleTime: 30s` für Counts |
+| Große Bundle-Größe | ✅ Behoben | Lazy loading für alle Routen |
+| Base64-Bilder in DB | ✅ Behoben | Alle 572 Bilder migriert, Cron-Job deaktiviert |
 
-### 22.3 🟡 Mittel: Code-Architektur & Refactoring
+**DB-Status:** 39 MB, größte Tabelle: `credit_transactions` (1.171 Zeilen), `project_images` (572 Zeilen)
 
-| Problem | Wo | Lösung |
+### 22.3 ✅ Abgeschlossen: Code-Architektur & Refactoring
+
+| Problem | Status | Lösung |
 |---|---|---|
-| SalesCrmTab.tsx zu groß | 1 Datei mit >800 Zeilen | Aufteilen: CustomerList, CustomerDetail, ThreadView, NoteForm |
-| Redundante Edge Functions | Gemeinsame Auth/Credit-Logik kopiert | Shared Module (Deno Import Map) für Auth, CORS, Credit-Check |
-| Inkonsistente Error-Handling | Edge Functions | Einheitliche Error-Response-Klasse |
-| Fehlende Tests | Nur 1 Beispiel-Test vorhanden | Vitest für Hooks (useCredits, useAuth), E2E für kritische Flows |
-| Dashboard.tsx zu komplex | Spin-Viewer-Logik, Galerie, alle Tabs | Pro Tab eigene Komponente, Dashboard als Router |
+| SalesCrmTab.tsx zu groß | ✅ Behoben | 6 Sub-Komponenten in `src/components/sales/crm/` |
+| Dashboard.tsx zu komplex | ✅ Behoben | 10 Sub-Komponenten in `src/components/dashboard/` |
+| Redundante Edge Functions | ✅ Behoben | `_shared/auth.ts`, `cors.ts`, `credits.ts`; 3 Functions migriert |
+| Fehlende Error Boundaries | ✅ Behoben | Pro Modul (Generator, Dashboard, Sales, Projects) |
+| Fehlende Tests | ✅ Behoben | 11 Tests (Dashboard-Typen, Utilities) |
 
-### 22.4 🟢 Nice-to-Have: Features & UX
+### 22.4 🔐 Sicherheits-Audit (21. März 2026)
+
+| Finding | Severity | Status |
+|---|---|---|
+| admin_settings öffentlich lesbar (AI-Prompts) | 🔴 Critical | ✅ Behoben – nur `authenticated` |
+| user_roles Privilege Escalation | 🔴 Critical | ✅ Behoben – explizite Admin-Only INSERT/DELETE |
+| Service-Role "true" Policy | 🟡 Warn | ✅ Behoben – Policy entfernt |
+| Leaked Password Protection | 🟡 Warn | 🟡 Offen – erfordert Dashboard-Konfiguration |
+| FTP-Passwörter im Klartext | 🟡 Warn | 🟡 Offen – pgcrypto-Verschlüsselung empfohlen |
+| API-Keys in Profilen sichtbar | 🟡 Warn | 🟡 Info – nur eigener User via RLS |
+
+### 22.5 🟢 Nice-to-Have: Features & UX
 
 | Feature | Beschreibung | Priorität |
 |---|---|---|
 | **Inbound-E-Mail-Automatisierung** | Eingehende E-Mails automatisch einem Lead/Konversation zuordnen | Hoch |
-| **Conversion-Analytics** | Lead → Probefahrt → Kauf Trichter-Analyse | Mittel |
 | **Multi-User-Support** | Mehrere Verkäufer pro Autohaus (Team-Feature) | Mittel |
-| **Mobile App (PWA)** | Offline-fähig, Push-Benachrichtigungen | Niedrig |
-| **A/B-Testing Templates** | Verschiedene Landingpage-Varianten testen | Niedrig |
 | **360° Spin Export** | Als HTML-Widget exportierbar (Embed) | Mittel |
 | **Batch-PDF-Import** | Mehrere PDFs gleichzeitig verarbeiten | Mittel |
+| **Mobile App (PWA)** | Offline-fähig, Push-Benachrichtigungen | Niedrig |
 
-### 22.5 🚀 Top 10 Refactoring-Maßnahmen (nach Impact sortiert)
+### 22.6 🚀 Top 10 Refactoring-Maßnahmen (nach Impact sortiert)
 
 1. ✅ **`as any` eliminieren** – TypeScript-Typen aus `types.ts` korrekt verwenden, kein Casting
 2. ✅ **Shared Edge Function Module** – Auth, CORS, Credit-Logik in `_shared/` auslagern
