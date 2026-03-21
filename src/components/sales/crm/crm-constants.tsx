@@ -82,27 +82,7 @@ export interface BotMessage {
   created_at: string;
 }
 
-export interface CustomerWithJourney {
-  key: string;
-  displayName: string;
-  email: string;
-  phone: string | null;
-  totalInquiries: number;
-  vehicles: string[];
-  intentTags: string[];
-  latestAt: string;
-  requests: Array<{
-    id: string;
-    created_at: string;
-    vehicle_title: string | null;
-    message: string | null;
-    interested_test_drive: boolean;
-    interested_trade_in: boolean;
-    interested_leasing: boolean;
-    interested_financing: boolean;
-    interested_purchase: boolean;
-    [key: string]: unknown;
-  }>;
+export interface CustomerWithJourney extends CustomerLeadThread {
   conversations: SalesConversation[];
   currentStage: string;
   currentStatus: string;
