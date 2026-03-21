@@ -93,11 +93,20 @@ serve(async (req) => {
       if (docs) knowledgeContext = docs.map((d: any) => `--- ${d.title} (${d.document_type}) ---\n${d.content_text || ''}`).join('\n\n');
     }
 
-    // Load admin system prompt
-    const { data: adminSettings } = await adminSupabase.from('admin_settings')
-      .select('value').eq('key', 'sales_assistant_system_prompt').single();
-    const systemPrompt = (adminSettings?.value as any)?.prompt ||
-      'Du bist ein erfahrener KI-Verkaufsassistent für ein Autohaus. Hilf dem Verkäufer bei der Kundenkommunikation.';
+    // Load admin system prompt – first check ai_prompts (new unified), then legacy key
+    let systemPrompt = 'Du bist ein erfahrener KI-Verkaufsassistent für ein Autohaus. Hilf dem Verkäufer bei der Kundenkommunikation.';
+    try {
+      const { data: aiPrompts } = await adminSupabase.from('admin_settings').select('value').eq('key', 'ai_prompts').single();
+      const override = (aiPrompts?.value as Record<string, string>)?.["sales_response"];
+      if (override && override.trim() !== "" && override.trim().toLowerCase() !== "default") {
+        systemPrompt = override;
+      } else {
+        // Fallback to legacy key
+        const { data: adminSettings } = await adminSupabase.from('admin_settings')
+          .select('value').eq('key', 'sales_assistant_system_prompt').single();
+        if ((adminSettings?.value as any)?.prompt) systemPrompt = (adminSettings.value as any).prompt;
+      }
+    } catch (e) { console.warn("Custom prompt load failed:", e); }
 
     // Load admin objections
     const { data: objSettings } = await adminSupabase.from('admin_settings')

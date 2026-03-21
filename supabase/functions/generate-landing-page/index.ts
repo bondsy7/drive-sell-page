@@ -15,6 +15,16 @@ function createServiceClient() {
   );
 }
 
+async function getCustomPrompt(key: string, defaultPrompt: string): Promise<string> {
+  try {
+    const sb = createServiceClient();
+    const { data } = await sb.from("admin_settings").select("value").eq("key", "ai_prompts").single();
+    const override = (data?.value as Record<string, string>)?.[key];
+    if (override && override.trim() !== "" && override.trim().toLowerCase() !== "default") return override;
+  } catch (e) { console.warn("Custom prompt load failed:", e); }
+  return defaultPrompt;
+}
+
 async function authenticateAndDeductCredits(
   req: Request,
   cost: number
@@ -260,7 +270,10 @@ serve(async (req) => {
     const variantInfo = variant ? `, Variante: ${variant}` : "";
     const colorInfo = color ? `, Farbe: ${color}` : "";
 
-    const systemPrompt = `Du bist ein professioneller Automotive-Marketing-Texter und Webdesigner.
+    const DEFAULT_LP_INTRO = `Du bist ein professioneller Automotive-Marketing-Texter und Webdesigner.`;
+    const lpIntro = await getCustomPrompt("landing_page", DEFAULT_LP_INTRO);
+
+    const systemPrompt = `${lpIntro}
 ${config.systemInstruction}
 
 TONALITÄT: ${toneInstruction}

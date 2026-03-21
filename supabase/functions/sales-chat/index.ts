@@ -6,6 +6,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+async function getCustomPrompt(sb: any, key: string, defaultPrompt: string): Promise<string> {
+  try {
+    const { data } = await sb.from("admin_settings").select("value").eq("key", "ai_prompts").single();
+    const override = (data?.value as Record<string, string>)?.[key];
+    if (override && override.trim() !== "" && override.trim().toLowerCase() !== "default") return override;
+  } catch (e) { console.warn("Custom prompt load failed:", e); }
+  return defaultPrompt;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -77,7 +86,10 @@ serve(async (req) => {
     const todayBookings = bookings.filter((b: any) => b.booking_date === today);
     const upcomingBookings = bookings.filter((b: any) => b.booking_date > today);
 
-    const systemPrompt = `Du bist der interne Verkaufsassistent-Chatbot für ein Autohaus. Du hast Zugriff auf folgende Systeme und Daten:
+    const DEFAULT_SALES_CHAT_INTRO = `Du bist der interne Verkaufsassistent-Chatbot für ein Autohaus. Du hast Zugriff auf folgende Systeme und Daten:`;
+    const chatIntro = await getCustomPrompt(adminSupabase, "sales_chat", DEFAULT_SALES_CHAT_INTRO);
+
+    const systemPrompt = `${chatIntro}
 
 ## DEINE FÄHIGKEITEN
 1. **Probefahrten verwalten**: Du siehst alle Termine, kannst über anstehende Probefahrten informieren und Empfehlungen geben.
