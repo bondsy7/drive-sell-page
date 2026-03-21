@@ -4,6 +4,7 @@ import {
   CalendarDays, FileText, ArrowRight, Flame, Snowflake,
 } from 'lucide-react';
 import type { SalesConversation } from '@/types/sales-assistant';
+import type { CustomerLeadThread } from '@/lib/sales-customer-utils';
 
 /* ── Journey stage config with visual styling ── */
 export const STAGE_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
