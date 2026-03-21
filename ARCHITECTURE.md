@@ -814,7 +814,7 @@ Post-Processing (Server-seitig):
 └── Fehlende Felder mit Defaults füllen
 ```
 
-### 7.7 Fahrzeugmarken-Erkennung
+### 7.6 Fahrzeugmarken-Erkennung
 
 ```
 Bild-Upload → detect-vehicle-brand (Edge Function)
