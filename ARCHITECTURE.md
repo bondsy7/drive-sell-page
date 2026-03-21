@@ -760,7 +760,7 @@ Format:    systemInstruction + contents (Gemini-natives Format)
 | `premium` | `gpt-image-1` | OpenAI | 8 | Premium-Qualität |
 | `ultra` | `gpt-image-1` (HD, quality: high) | OpenAI | 10 | Höchste Qualität |
 
-### 7.4 Master-Prompt-System (Bild-Remastering)
+### 7.3 Master-Prompt-System (Bild-Remastering)
 
 ```
 Nutzerkonfiguration (UI)
