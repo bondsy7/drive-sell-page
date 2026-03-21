@@ -16,6 +16,12 @@ const NAV = [
   { to: '/admin/pricing', icon: CreditCard, label: 'Preise' },
   { to: '/admin/settings', icon: Settings, label: 'Einstellungen' },
   { to: '/admin/secrets', icon: ShieldCheck, label: 'API-Keys' },
+  { to: '/admin/jobs', icon: Activity, label: 'Job-Monitor' },
+  { to: '/admin/email-monitor', icon: Send, label: 'E-Mail-Monitor' },
+  { to: '/admin/revenue', icon: TrendingUp, label: 'Umsatz & Abos' },
+  { to: '/admin/storage', icon: HardDrive, label: 'Storage' },
+  { to: '/admin/conversion', icon: Filter, label: 'Conversion-Funnel' },
+  { to: '/admin/test-drives', icon: CalendarDays, label: 'Probefahrten' },
   { to: '/architecture', icon: BookOpen, label: 'Architektur' },
 ];
 

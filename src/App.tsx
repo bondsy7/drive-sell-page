@@ -118,6 +118,12 @@ const App = () => (
                 <Route path="sales-assistant" element={<AdminSalesAssistant />} />
                 <Route path="wmi-codes" element={<AdminWmiCodes />} />
                 <Route path="secrets" element={<AdminSecrets />} />
+                <Route path="jobs" element={<AdminJobMonitor />} />
+                <Route path="email-monitor" element={<AdminEmailMonitor />} />
+                <Route path="revenue" element={<AdminRevenue />} />
+                <Route path="storage" element={<AdminStorage />} />
+                <Route path="conversion" element={<AdminConversionFunnel />} />
+                <Route path="test-drives" element={<AdminTestDrives />} />
               </Route>
               <Route path="/architecture" element={<ProtectedRoute><AdminRoute><ArchitectureDoc /></AdminRoute></ProtectedRoute>} />
               <Route path="/sales-assistant/chat" element={<ProtectedRoute><SalesAssistant /></ProtectedRoute>} />
