@@ -143,7 +143,7 @@ async function callGeminiFlash(prompt: string, imageUrls: string[], responseType
   return textContent;
 }
 
-async function callImageGeneration(prompt: string, referenceImageUrl: string, _model: string = "gemini-2.0-flash-exp"): Promise<string | null> {
+async function callImageGeneration(prompt: string, referenceImageUrl: string, model: string = "gemini-2.5-flash"): Promise<string | null> {
   const apiKey = Deno.env.get("GEMINI_API_KEY");
   if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
 
@@ -154,7 +154,7 @@ async function callImageGeneration(prompt: string, referenceImageUrl: string, _m
   const mimeType = imgResp.headers.get("content-type") || "image/jpeg";
 
   const resp = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -174,7 +174,7 @@ async function callImageGeneration(prompt: string, referenceImageUrl: string, _m
 
   if (!resp.ok) {
     const t = await resp.text();
-    console.error(`Image gen error:`, resp.status, t);
+    console.error(`Image gen error (${model}):`, resp.status, t);
     if (resp.status === 429) throw new Error("rate_limited");
     throw new Error(`image_generation_${resp.status}`);
   }
