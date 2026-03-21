@@ -77,9 +77,8 @@ Das System folgt einer **modularen Workflow-Architektur** mit einem zentralen Ac
 ┌──────────────────┐     │           │
 │  Externe APIs    │     │           │
 │                  │     │           │
-│ • Lovable AI     │     │           │
-│   Gateway        │     │           │
 │ • Google Gemini  │     │           │
+│   (direkte API)  │     │           │
 │ • OpenAI         │     │           │
 │ • Stripe         │     │           │
 │ • OutVin         │     │           │
