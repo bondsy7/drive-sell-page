@@ -345,13 +345,13 @@ const apiKey = await getSecret("GEMINI_API_KEY");
 // 2. Falls leer → Fallback auf Deno.env.get()
 // 3. Ergebnis wird 5 Minuten gecacht`}</CodeBlock>
           </SubSection>
-          <SubSection title="Gemeinsames Pattern">
+           <SubSection title="Gemeinsames Pattern">
             <CodeBlock>{`// Jede KI-Function folgt diesem Schema:
 1. CORS Handling (OPTIONS)
 2. Auth + Credit-Deduction (atomar via RPC)
 3. Custom Prompt laden (admin_settings Override)
 4. API-Key aus DB laden (getSecret() mit Env-Fallback)
-5. KI-API aufrufen (Lovable Gateway oder direkt)
+5. KI-API aufrufen (Google Gemini REST API direkt)
 6. Ergebnis verarbeiten + zurückgeben`}</CodeBlock>
           </SubSection>
         </Section>
