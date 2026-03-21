@@ -515,7 +515,7 @@ Generate the vehicle from this specific angle:`);
             const anchorBase64 = await callImageGeneration(
               `${anchorPromptBase} ${anchor.label}`,
               refUrl,
-              "gemini-3-pro-image-preview",
+              "gemini-2.5-flash",
             );
 
             if (anchorBase64) {
