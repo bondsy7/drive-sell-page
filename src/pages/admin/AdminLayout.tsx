@@ -18,7 +18,7 @@ const NAV_GROUPS = [
     items: [
       { to: '/admin/users', icon: Users, label: 'Nutzer' },
       { to: '/admin/transactions', icon: Receipt, label: 'Transaktionen' },
-      { to: '/admin/revenue', icon: TrendingUp, label: 'Umsatz & Abos' },
+      { to: '/admin/revenue', icon: TrendingUp, label: 'Umsatz & Abos', end: false },
       { to: '/admin/pricing', icon: CreditCard, label: 'Preise' },
     ],
   },
