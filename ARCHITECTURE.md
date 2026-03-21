@@ -782,7 +782,7 @@ Zusammengesetzter Prompt-String → Edge Function → KI-API
 - Logo-Rendering: Fotorealistisches 3D auf dunkelgrauer, matter Wand mit LED-Halo
 - Pipeline-Runner: Worker-Pool mit **4 parallelen Instanzen** (CONCURRENCY = 4)
 
-### 7.5 Video-Generierung
+### 7.4 Video-Generierung
 
 ```
 Ablauf (asynchron, Polling-basiert):
