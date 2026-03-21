@@ -204,18 +204,17 @@ export default function ArchitectureDoc() {
               ]}
             />
           </SubSection>
-          <SubSection title="KI-Modelle">
+          <SubSection title="KI-Modelle (alle via eigene API-Keys)">
             <Table
-              headers={['Modell', 'Einsatz']}
+              headers={['Modell', 'Einsatz', 'API']}
               rows={[
-                ['Gemini 2.5 Flash', 'PDF-Analyse, VIN-OCR, Text-Generierung'],
-                ['Gemini 2.5 Flash Image', 'Bildgenerierung (Schnell-Tier)'],
-                ['Gemini 3 Pro Image', 'Bildgenerierung (Premium), Remastering'],
-                ['Gemini 3.1 Flash Image', 'Bildgenerierung (Turbo-Tier)'],
-                ['OpenAI gpt-image-1', 'Bildgenerierung (Ultra-Tier)'],
-                ['Google Veo 3.1', 'Video-Generierung'],
+                ['Gemini 2.5 Flash', 'PDF-Analyse, VIN-OCR, Text, Sales-Chat, 360° Spin, Bildgenerierung', 'Gemini REST (direkt)'],
+                ['Gemini 2.5 Flash Lite', 'Equipment-Übersetzung, Subject-Generierung', 'Gemini REST (direkt)'],
+                ['OpenAI gpt-image-1', 'Bildgenerierung (Premium/Ultra)', 'OpenAI REST (direkt)'],
+                ['Google Veo 3.1', 'Video-Generierung', 'Gemini REST (direkt)'],
               ]}
             />
+            <P><strong>Grundsatz:</strong> Alle KI-Aufrufe nutzen eigene API-Keys (GEMINI_API_KEY, OPENAI_API_KEY) über die direkte REST API — kein Gateway-Dienst.</P>
           </SubSection>
         </Section>
 
