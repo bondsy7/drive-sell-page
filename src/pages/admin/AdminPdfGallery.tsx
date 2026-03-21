@@ -102,8 +102,8 @@ export default function AdminPdfGallery() {
       .from('sample-pdfs')
       .getPublicUrl(`thumbnails/${fileName}`);
 
-    await supabase.from('sample_pdfs' as any)
-      .update({ thumbnail_url: urlData.publicUrl, updated_at: new Date().toISOString() } as any)
+    await supabase.from('sample_pdfs')
+      .update({ thumbnail_url: urlData.publicUrl, updated_at: new Date().toISOString() })
       .eq('id', pdfId);
 
     toast.success('Vorschaubild aktualisiert');
