@@ -101,8 +101,11 @@ serve(async (req) => {
     const tone = profile.default_tone || 'freundlich';
     const customerMessage = lead.message || `Anfrage von ${lead.name} zu ${vehicleTitle || 'einem Fahrzeug'}`;
 
-    // Build prompt
-    const systemPrompt = `Du bist ein KI-Verkaufsassistent für das Autohaus "${dealerProfile?.company_name || 'unbekannt'}".
+    // Build prompt – load custom base prompt from admin settings
+    const basePrompt = await getCustomPrompt(adminSupabase, "auto_process_lead", DEFAULT_LEAD_PROMPT);
+    const systemPrompt = `${basePrompt}
+
+Autohaus: "${dealerProfile?.company_name || 'unbekannt'}"
 Erstelle eine professionelle Erstantwort-E-Mail auf die Kundenanfrage.
 Tonalität: ${tone}
 ${profile.brand_voice ? `Markenstimme: ${profile.brand_voice}` : ''}
