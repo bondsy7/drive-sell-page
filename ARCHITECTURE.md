@@ -1142,9 +1142,9 @@ Der `Spin360Viewer` bietet:
 
 ```
 URL:     https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent
-Auth:    x-goog-api-key: GEMINI_API_KEY
-Modelle: gemini-2.5-flash (Text/PDF/OCR), gemini-3-pro-image-preview (Bild),
-         gemini-3.1-flash-image-preview (Bild), veo-3.1-generate-preview (Video)
+Auth:    x-goog-api-key: GEMINI_API_KEY (eigener Key)
+Modelle: gemini-2.5-flash (Text/PDF/OCR/Bild/360°), gemini-2.5-flash-lite (leichte Aufgaben),
+         veo-3.1-generate-preview (Video)
 ```
 
 ### 13.2 OpenAI
