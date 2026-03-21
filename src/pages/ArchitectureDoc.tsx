@@ -152,8 +152,8 @@ export default function ArchitectureDoc() {
 │  React + TypeScript + Vite + Tailwind + shadcn  │
 │                                                 │
 │  ActionHub → 6 Workflows                        │
-│  Dashboard → Projektverwaltung (5 Tabs)         │
-│  Admin Panel → 12 Verwaltungsseiten             │
+│  Dashboard → Projektverwaltung (7 Tabs)         │
+│  Admin Panel → 17 Verwaltungsseiten             │
 └──────────────────┬──────────────────────────────┘
                    │
                    ▼
@@ -161,8 +161,8 @@ export default function ArchitectureDoc() {
 │           SUPABASE (Backend-as-a-Service)        │
 │                via Lovable Cloud                 │
 │                                                 │
-│  26 Edge Funcs │ 32 DB-Tabellen │ 6 Buckets     │
-│  1 Shared Modul │ Auth (Email+OAuth) │ Realtime  │
+│  28 Edge Funcs │ 32 DB-Tabellen │ 6 Buckets     │
+│  3 Shared Module │ Auth (Email+OAuth) │ Realtime │
 └──────────────────┬──────────────────────────────┘
                    │
                    ▼
