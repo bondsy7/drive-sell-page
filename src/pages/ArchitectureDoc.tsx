@@ -90,7 +90,7 @@ export default function ArchitectureDoc() {
           </div>
           <h1 className="text-4xl font-bold text-foreground mb-3 print:text-3xl">Autohaus.AI</h1>
           <p className="text-xl text-muted-foreground mb-2 print:text-lg">System- & Softwarearchitektur</p>
-          <p className="text-sm text-muted-foreground">Version 2.0 · Stand: März 2026</p>
+          <p className="text-sm text-muted-foreground">Version 2.1 · Stand: 21. März 2026</p>
           <p className="text-sm text-muted-foreground">Für Entwickler-Onboarding & Kunden-Dokumentation</p>
           
           <div className="mt-12 print:mt-8">
@@ -152,8 +152,8 @@ export default function ArchitectureDoc() {
 │  React + TypeScript + Vite + Tailwind + shadcn  │
 │                                                 │
 │  ActionHub → 6 Workflows                        │
-│  Dashboard → Projektverwaltung (5 Tabs)         │
-│  Admin Panel → 12 Verwaltungsseiten             │
+│  Dashboard → Projektverwaltung (7 Tabs)         │
+│  Admin Panel → 17 Verwaltungsseiten             │
 └──────────────────┬──────────────────────────────┘
                    │
                    ▼
@@ -161,8 +161,8 @@ export default function ArchitectureDoc() {
 │           SUPABASE (Backend-as-a-Service)        │
 │                via Lovable Cloud                 │
 │                                                 │
-│  26 Edge Funcs │ 32 DB-Tabellen │ 6 Buckets     │
-│  1 Shared Modul │ Auth (Email+OAuth) │ Realtime  │
+│  28 Edge Funcs │ 32 DB-Tabellen │ 6 Buckets     │
+│  3 Shared Module │ Auth (Email+OAuth) │ Realtime │
 └──────────────────┬──────────────────────────────┘
                    │
                    ▼
@@ -236,7 +236,7 @@ export default function ArchitectureDoc() {
                 ['/integrations', 'API/FTP/Embed', 'Geschützt'],
                 ['/sales-assistant', 'Sales Assistant CRM', 'Geschützt'],
                 ['/sales-assistant/:id', 'Konversation/Lead-Detail', 'Geschützt'],
-                ['/admin/*', 'Admin-Panel (10 Seiten)', 'Admin-Rolle'],
+                ['/admin/*', 'Admin-Panel (17 Seiten)', 'Admin-Rolle'],
               ]}
             />
           </SubSection>
@@ -311,7 +311,7 @@ export default function ArchitectureDoc() {
               ]}
             />
           </SubSection>
-          <SubSection title="Integrations-Functions">
+          <SubSection title="Integrations- & Utility-Functions">
             <Table
               headers={['Function', 'Zweck']}
               rows={[
@@ -320,18 +320,27 @@ export default function ArchitectureDoc() {
                 ['ftp-upload', 'HTML/Bilder auf FTP/SFTP'],
                 ['admin-stripe', 'Admin: Stripe verwalten'],
                 ['admin-delete-user', 'Admin: Nutzer löschen'],
+                ['cleanup-orphaned-storage', 'Verwaiste Storage-Dateien bereinigen (Dry-Run)'],
+                ['migrate-base64-images', 'Base64→Storage Migration (abgeschlossen)'],
               ]}
             />
           </SubSection>
-          <SubSection title="Shared Module (_shared/)">
+           <SubSection title="Shared Module (_shared/)">
             <Table
               headers={['Modul', 'Datei', 'Zweck']}
               rows={[
                 ['getSecret()', '_shared/get-secret.ts', 'API-Keys aus admin_secrets DB lesen, Fallback auf Deno.env, 5-Min-Cache'],
+                ['authenticateRequest()', '_shared/auth.ts', 'Auth-Token validieren, User + Admin-Client zurückgeben'],
+                ['handleCors()', '_shared/cors.ts', 'CORS-Header + OPTIONS Preflight'],
+                ['deductCredits()', '_shared/credits.ts', 'Credit-Deduction via RPC mit Fehlerbehandlung'],
               ]}
             />
             <CodeBlock>{`// Verwendung in Edge Functions:
 import { getSecret } from "../_shared/get-secret.ts";
+import { authenticateRequest } from "../_shared/auth.ts";
+import { handleCors, jsonResponse } from "../_shared/cors.ts";
+import { deductCredits } from "../_shared/credits.ts";
+
 const apiKey = await getSecret("GEMINI_API_KEY");
 // 1. Prüft admin_secrets Tabelle (Service Role, RLS bypass)
 // 2. Falls leer → Fallback auf Deno.env.get()
@@ -743,7 +752,7 @@ GET /api-vehicles/:id/html  → HTML-Fragment (body-Inhalt)`}</CodeBlock>
 
         {/* 14. Admin */}
         <Section id="s14" title="14. Admin-System">
-          <SubSection title="Admin-Routen (12 Seiten)">
+          <SubSection title="Admin-Routen (17 Seiten)">
             <Table
               headers={['Route', 'Funktion']}
               rows={[
@@ -759,6 +768,12 @@ GET /api-vehicles/:id/html  → HTML-Fragment (body-Inhalt)`}</CodeBlock>
                 ['/admin/logos', 'Hersteller-Logos (Massen-Upload)'],
                 ['/admin/sales-assistant', 'Sales-Assistant-Konfiguration'],
                 ['/admin/wmi-codes', 'WMI-Codes verwalten'],
+                ['/admin/jobs', 'Job-Monitor (Pipeline-Übersicht)'],
+                ['/admin/email-monitor', 'E-Mail-Outbox-Monitor'],
+                ['/admin/revenue', 'Umsatz-Auswertung & Charts'],
+                ['/admin/storage', 'Storage-Verwaltung & Cleanup'],
+                ['/admin/conversion', 'Conversion-Funnel-Analyse'],
+                ['/admin/test-drives', 'Probefahrt-Buchungen verwalten'],
               ]}
             />
           </SubSection>
@@ -976,19 +991,42 @@ Edge Function → Resend API
 
         {/* 21. Entwicklungs-Roadmap */}
         <Section id="s21" title="21. Entwicklungsbedarf & Roadmap">
-          <SubSection title="Top 10 Refactoring-Maßnahmen">
+          <SubSection title="✅ Top 10 Refactoring-Maßnahmen (alle abgeschlossen)">
             <ol className="list-decimal pl-6 space-y-1">
-              <Li><strong>as any eliminieren</strong> — TypeScript-Typen korrekt verwenden</Li>
-              <Li><strong>Shared Edge Function Module</strong> — Auth, CORS, Credit-Logik in _shared/ auslagern</Li>
-              <Li><strong>SalesCrmTab.tsx splitten</strong> — In 4-5 fokussierte Komponenten</Li>
-              <Li><strong>React Query einführen</strong> — useEffect+fetch durch useQuery ersetzen</Li>
-              <Li><strong>Pagination implementieren</strong> — Dashboard, Admin-Tabellen</Li>
-              <Li><strong>Base64-Migration</strong> — Alte image_base64 zu Storage-URLs</Li>
-              <Li><strong>Error Boundaries</strong> — Pro Modul eigene Error Boundaries</Li>
-              <Li><strong>Test-Suite aufbauen</strong> — Hooks + Edge Function Unit Tests</Li>
-              <Li><strong>Bundle-Splitting</strong> — Recharts, PDF-Parser nur bei Bedarf laden</Li>
-              <Li><strong>Dashboard.tsx refactoren</strong> — Spin-Viewer, Gallery in eigene Dateien</Li>
+              <Li>✅ <strong>as any eliminieren</strong> — Kern-Hooks und Dashboard typensicher</Li>
+              <Li>✅ <strong>Shared Edge Function Module</strong> — _shared/auth.ts, cors.ts, credits.ts</Li>
+              <Li>✅ <strong>SalesCrmTab.tsx splitten</strong> — 6 Sub-Komponenten in crm/</Li>
+              <Li>✅ <strong>React Query einführen</strong> — Dashboard + Counts mit useQuery</Li>
+              <Li>✅ <strong>Pagination implementieren</strong> — Cursor-basiert (PAGE_SIZE=50)</Li>
+              <Li>✅ <strong>Base64-Migration</strong> — 572 Bilder migriert, Cron deaktiviert</Li>
+              <Li>✅ <strong>Error Boundaries</strong> — Pro Modul (Generator, Dashboard, Sales)</Li>
+              <Li>✅ <strong>Test-Suite aufbauen</strong> — 11 Tests (Dashboard-Typen, Utilities)</Li>
+              <Li>✅ <strong>Bundle-Splitting</strong> — Lazy Loading für alle Routen</Li>
+              <Li>✅ <strong>Dashboard.tsx refactoren</strong> — 10 Sub-Komponenten in dashboard/</Li>
             </ol>
+          </SubSection>
+          <SubSection title="🔐 Sicherheits-Audit (21. März 2026)">
+            <Table
+              headers={['Finding', 'Severity', 'Status']}
+              rows={[
+                ['admin_settings öffentlich lesbar', '🔴 Critical', '✅ Behoben'],
+                ['user_roles Privilege Escalation', '🔴 Critical', '✅ Behoben'],
+                ['Service-Role "true" Policy', '🟡 Warn', '✅ Behoben'],
+                ['FTP-Passwörter im Klartext', '🟡 Warn', '🟡 Offen (pgcrypto empfohlen)'],
+              ]}
+            />
+          </SubSection>
+          <SubSection title="🟢 Nice-to-Have Features">
+            <Table
+              headers={['Feature', 'Priorität']}
+              rows={[
+                ['Inbound-E-Mail-Automatisierung', 'Hoch'],
+                ['Multi-User-Support (Team)', 'Mittel'],
+                ['360° Spin Export als HTML-Widget', 'Mittel'],
+                ['Batch-PDF-Import', 'Mittel'],
+                ['Mobile App (PWA)', 'Niedrig'],
+              ]}
+            />
           </SubSection>
         </Section>
 
@@ -998,7 +1036,7 @@ Edge Function → Resend API
             © 2026 Autohaus.AI – Dieses Dokument ist vertraulich und nur für autorisierte Empfänger bestimmt.
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            Version 2.0 · Generiert am {new Date().toLocaleDateString('de-DE')}
+            Version 2.1 · Generiert am {new Date().toLocaleDateString('de-DE')}
           </p>
         </div>
       </div>
