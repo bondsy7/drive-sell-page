@@ -41,7 +41,8 @@ const NAV_GROUPS: NavGroupDef[] = [
       { to: '/admin/pdf-gallery', icon: FileText, label: 'PDF-Galerie' },
       { to: '/admin/logos', icon: Car, label: 'Hersteller-Logos' },
       { to: '/admin/wmi-codes', icon: Hash, label: 'WMI-Codes & Aliase' },
-      { to: '/admin/prompts', icon: MessageSquare, label: 'Prompts' },
+      { to: '/admin/sales-assistant', icon: MessageSquare, label: 'Sales-Assistent' },
+      { to: '/admin/prompts', icon: BookOpen, label: 'Prompts' },
     ],
   },
   {
