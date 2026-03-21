@@ -356,7 +356,7 @@ serve(async (req) => {
         const normalizedBase64 = await callImageGeneration(
           `${normalizePrompt}\n\nThis is the ${perspective} view of the vehicle.`,
           imageUrls[perspectiveIndex],
-          "gemini-3-pro-image-preview",
+          "gemini-2.5-flash",
         );
 
         if (normalizedBase64) {
