@@ -1340,7 +1340,7 @@ getSecret() Helper (_shared/get-secret.ts)
 
 ## 16. Admin-System
 
-### 16.1 Admin-Routen & Zugang (12 Seiten)
+### 16.1 Admin-Routen & Zugang (18 Seiten)
 
 ```
 /admin              → Dashboard (KPIs, Charts)
