@@ -68,10 +68,10 @@ export default function SalesChatWidget({ open, onOpenChange }: SalesChatWidgetP
 
   const loadNotifications = useCallback(async () => {
     if (!user) return;
-    const { data } = await supabase.from('sales_notifications' as any)
+    const { data } = await supabase.from('sales_notifications')
       .select('*').eq('user_id', user.id).eq('is_read', false)
       .order('created_at', { ascending: false }).limit(20);
-    const notifs = (data as any) || [];
+    const notifs = (data as Notification[]) || [];
     setNotifications(notifs);
     setUnreadCount(notifs.length);
   }, [user]);
