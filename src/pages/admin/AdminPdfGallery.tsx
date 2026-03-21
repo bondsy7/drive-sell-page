@@ -35,10 +35,10 @@ export default function AdminPdfGallery() {
   const loadPdfs = async () => {
     setLoading(true);
     const { data } = await supabase
-      .from('sample_pdfs' as any)
+      .from('sample_pdfs')
       .select('*')
       .order('sort_order', { ascending: true });
-    setPdfs((data as any[]) || []);
+    setPdfs((data as SamplePdf[]) || []);
     setLoading(false);
   };
 
