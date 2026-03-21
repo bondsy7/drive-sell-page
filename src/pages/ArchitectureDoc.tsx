@@ -989,19 +989,42 @@ Edge Function → Resend API
 
         {/* 21. Entwicklungs-Roadmap */}
         <Section id="s21" title="21. Entwicklungsbedarf & Roadmap">
-          <SubSection title="Top 10 Refactoring-Maßnahmen">
+          <SubSection title="✅ Top 10 Refactoring-Maßnahmen (alle abgeschlossen)">
             <ol className="list-decimal pl-6 space-y-1">
-              <Li><strong>as any eliminieren</strong> — TypeScript-Typen korrekt verwenden</Li>
-              <Li><strong>Shared Edge Function Module</strong> — Auth, CORS, Credit-Logik in _shared/ auslagern</Li>
-              <Li><strong>SalesCrmTab.tsx splitten</strong> — In 4-5 fokussierte Komponenten</Li>
-              <Li><strong>React Query einführen</strong> — useEffect+fetch durch useQuery ersetzen</Li>
-              <Li><strong>Pagination implementieren</strong> — Dashboard, Admin-Tabellen</Li>
-              <Li><strong>Base64-Migration</strong> — Alte image_base64 zu Storage-URLs</Li>
-              <Li><strong>Error Boundaries</strong> — Pro Modul eigene Error Boundaries</Li>
-              <Li><strong>Test-Suite aufbauen</strong> — Hooks + Edge Function Unit Tests</Li>
-              <Li><strong>Bundle-Splitting</strong> — Recharts, PDF-Parser nur bei Bedarf laden</Li>
-              <Li><strong>Dashboard.tsx refactoren</strong> — Spin-Viewer, Gallery in eigene Dateien</Li>
+              <Li>✅ <strong>as any eliminieren</strong> — Kern-Hooks und Dashboard typensicher</Li>
+              <Li>✅ <strong>Shared Edge Function Module</strong> — _shared/auth.ts, cors.ts, credits.ts</Li>
+              <Li>✅ <strong>SalesCrmTab.tsx splitten</strong> — 6 Sub-Komponenten in crm/</Li>
+              <Li>✅ <strong>React Query einführen</strong> — Dashboard + Counts mit useQuery</Li>
+              <Li>✅ <strong>Pagination implementieren</strong> — Cursor-basiert (PAGE_SIZE=50)</Li>
+              <Li>✅ <strong>Base64-Migration</strong> — 572 Bilder migriert, Cron deaktiviert</Li>
+              <Li>✅ <strong>Error Boundaries</strong> — Pro Modul (Generator, Dashboard, Sales)</Li>
+              <Li>✅ <strong>Test-Suite aufbauen</strong> — 11 Tests (Dashboard-Typen, Utilities)</Li>
+              <Li>✅ <strong>Bundle-Splitting</strong> — Lazy Loading für alle Routen</Li>
+              <Li>✅ <strong>Dashboard.tsx refactoren</strong> — 10 Sub-Komponenten in dashboard/</Li>
             </ol>
+          </SubSection>
+          <SubSection title="🔐 Sicherheits-Audit (21. März 2026)">
+            <Table
+              headers={['Finding', 'Severity', 'Status']}
+              rows={[
+                ['admin_settings öffentlich lesbar', '🔴 Critical', '✅ Behoben'],
+                ['user_roles Privilege Escalation', '🔴 Critical', '✅ Behoben'],
+                ['Service-Role "true" Policy', '🟡 Warn', '✅ Behoben'],
+                ['FTP-Passwörter im Klartext', '🟡 Warn', '🟡 Offen (pgcrypto empfohlen)'],
+              ]}
+            />
+          </SubSection>
+          <SubSection title="🟢 Nice-to-Have Features">
+            <Table
+              headers={['Feature', 'Priorität']}
+              rows={[
+                ['Inbound-E-Mail-Automatisierung', 'Hoch'],
+                ['Multi-User-Support (Team)', 'Mittel'],
+                ['360° Spin Export als HTML-Widget', 'Mittel'],
+                ['Batch-PDF-Import', 'Mittel'],
+                ['Mobile App (PWA)', 'Niedrig'],
+              ]}
+            />
           </SubSection>
         </Section>
 
