@@ -83,13 +83,13 @@ export function useCredits() {
     const { data, error } = await supabase.rpc('deduct_credits', {
       _user_id: user.id,
       _amount: cost,
-      _action_type: actionType,
+      _action_type: actionType as Parameters<typeof supabase.rpc<'deduct_credits'>>[1]['_action_type'],
       _model: modelTier,
       _description: description || `${actionType} (${modelTier})`,
     });
 
     if (error) return { success: false, balance: balance?.balance || 0, error: error.message };
-    const result = data as DeductResult;
+    const result = data as unknown as DeductResult;
     if (result?.success) {
       setBalance(prev => prev ? { ...prev, balance: result.balance } : null);
     }
