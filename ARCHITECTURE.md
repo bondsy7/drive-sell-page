@@ -1482,7 +1482,7 @@ Konfigurierbare Einstellungen ohne Code-Änderung:
        │
        ▼
   generate-360-spin (Step 2-9, Batches)
-  ├── 4 Frames pro Batch generieren (Gemini 3 Pro)
+  ├── 4 Frames pro Batch generieren (Gemini 2.5 Flash)
   ├── Upload → vehicle-images Bucket
   ├── Insert → spin360_generated_frames
   ├── Heartbeat: updated_at aktualisieren
