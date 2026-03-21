@@ -127,15 +127,14 @@ Das System folgt einer **modularen Workflow-Architektur** mit einem zentralen Ac
 | **Stripe** | Zahlungsabwicklung (Abos + Einmalkäufe) |
 | **Resend** | Transaktionaler E-Mail-Versand (Lead-Benachrichtigungen, Sales) |
 
-### KI-Modelle (via Lovable AI Gateway & direkte APIs)
+### KI-Modelle (via direkte Google Gemini & OpenAI REST APIs)
 | Modell | Einsatz | API |
 |---|---|---|
-| `google/gemini-2.5-flash` | PDF-Analyse, VIN-OCR, Text-Generierung, Marken-Erkennung | Gemini REST |
-| `google/gemini-2.5-flash-image` | Bildgenerierung (Schnell-Tier) | Gemini REST |
-| `google/gemini-3-pro-image-preview` | Bildgenerierung (Premium-Tier), Remastering, 360° Spin | Gemini REST |
-| `google/gemini-3.1-flash-image-preview` | Bildgenerierung (Turbo-Tier) | Gemini REST |
-| `openai/gpt-image-1` | Bildgenerierung (Ultra-Tier), Banner | OpenAI REST |
-| `Google Veo 3.1` | Video-Generierung (direkte Google API, asynchron) | Gemini REST |
+| `gemini-2.5-flash` | PDF-Analyse, VIN-OCR, Text-Generierung, Marken-Erkennung, Sales-Chat, 360° Spin | Gemini REST (direkt) |
+| `gemini-2.5-flash-lite` | Equipment-Übersetzung (VIN), Subject-Generierung | Gemini REST (direkt) |
+| `gemini-2.5-flash-image` | Bildgenerierung (Schnell-Tier) | Gemini REST (direkt) |
+| `openai/gpt-image-1` | Bildgenerierung (Premium/Ultra-Tier), Banner | OpenAI REST (direkt) |
+| `Google Veo 3.1` | Video-Generierung (asynchron) | Gemini REST (direkt) |
 
 ---
 
