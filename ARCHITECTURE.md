@@ -376,7 +376,7 @@ src/
 
 ## 4. Backend-Architektur (Edge Functions)
 
-Alle Backend-Logik läuft in **26 Supabase Edge Functions** (Deno-Runtime) + 1 Shared-Modul:
+Alle Backend-Logik läuft in **28 Supabase Edge Functions** (Deno-Runtime) + Shared-Module:
 
 ### 4.1 KI-Verarbeitungs-Functions
 
