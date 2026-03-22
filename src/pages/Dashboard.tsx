@@ -76,9 +76,23 @@ const Dashboard = () => {
 
   // ─── Helpers ────────────────────────────────────────────────
 
-  const downloadFile = (url: string, name: string) => {
-    const a = document.createElement('a');
-    a.href = url; a.download = name; a.target = '_blank'; a.click();
+  const downloadFile = async (url: string, name: string) => {
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = name;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 3000);
+    } catch {
+      // Fallback: open in new tab
+      window.open(url, '_blank');
+    }
   };
 
   const openExportDialog = (project: Project) => {
