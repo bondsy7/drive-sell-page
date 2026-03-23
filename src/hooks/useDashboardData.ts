@@ -331,4 +331,29 @@ export function useDeleteBanner() {
   });
 }
 
+export function useDeleteSpin360() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (jobId: string) => {
+      // Delete related rows first, then the job
+      await runMutations([
+        supabase.from('spin360_generated_frames').delete().eq('job_id', jobId),
+        supabase.from('spin360_canonical_images').delete().eq('job_id', jobId),
+        supabase.from('spin360_source_images').delete().eq('job_id', jobId),
+      ]);
+      const { error } = await supabase.from('spin360_jobs').delete().eq('id', jobId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['spin360'] });
+      qc.invalidateQueries({ queryKey: ['dashboard-counts'] });
+      toast.success('360° Spin gelöscht');
+    },
+    onError: (err) => {
+      console.error('Delete spin360 error:', err);
+      toast.error('Fehler beim Löschen des 360° Spins');
+    },
+  });
+}
+
 export { PAGE_SIZE };

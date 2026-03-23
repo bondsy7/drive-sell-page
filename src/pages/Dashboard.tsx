@@ -26,7 +26,7 @@ import VideoPlayerModal from '@/components/dashboard/VideoPlayerModal';
 import SpinViewerModal from '@/components/dashboard/SpinViewerModal';
 import {
   useProjects, useGallery, useLeads, useVideos, useBanners, useSpin360,
-  useDashboardCounts, useDeleteProject, useDeleteLead, useDeleteVideo, useDeleteBanner,
+  useDashboardCounts, useDeleteProject, useDeleteLead, useDeleteVideo, useDeleteBanner, useDeleteSpin360,
   PAGE_SIZE,
 } from '@/hooks/useDashboardData';
 
@@ -65,6 +65,7 @@ const Dashboard = () => {
   const deleteLead = useDeleteLead();
   const deleteVideo = useDeleteVideo();
   const deleteBanner = useDeleteBanner();
+  const deleteSpin360 = useDeleteSpin360();
 
   const allImages = galleryData?.items || [];
   const galleryTotal = galleryData?.total || 0;
@@ -192,7 +193,7 @@ const Dashboard = () => {
       );
       case 'videos': return <VideosTab videos={videos} onPlay={setPlayerVideo} onDownload={(v) => downloadFile(v.url, v.name)} onDelete={(name) => deleteVideo.mutate(name)} />;
       case 'banners': return <BannersTab banners={banners} onDownload={(b) => downloadFile(b.url, b.name)} onDelete={(fp, _name) => deleteBanner.mutate(fp)} />;
-      case 'spin360': return <Spin360Tab jobs={spin360Jobs} onOpen={openSpinViewer} />;
+      case 'spin360': return <Spin360Tab jobs={spin360Jobs} onOpen={openSpinViewer} onDelete={(id) => deleteSpin360.mutate(id)} />;
       case 'leads': return (
         <>
           <LeadsTab leads={leads} onDelete={(id) => deleteLead.mutate(id)} />
