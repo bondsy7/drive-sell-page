@@ -233,178 +233,67 @@ export const PIPELINE_JOBS: PipelineJob[] = [
   // detected brand matches. Each CI job generates multiple images
   // (outputCount > 1) following manufacturer photography guidelines.
 
-  // ── BMW CI ──
-  {
-    key: 'CI_BMW_STANDARD',
-    label: 'BMW CI – Standard Views',
-    labelDe: 'BMW CI – Standardansichten',
-    defaultSelected: true,
-    category: 'ci',
-    brand: 'bmw',
-    outputCount: 4,
-    prompt:
-      'BMW Corporate Identity photography: Front 3/4 view at eye level with the BMW kidney grille clearly visible and centered. Clean white/grey studio background. BMW corporate lighting setup with strong key light from front-left.',
-    extraPrompts: [
-      'BMW Corporate Identity photography: Direct side profile, perfectly flat/perpendicular. Wheels at 20° angle showing BMW logo on center caps. Clean white/grey studio background.',
-      'BMW Corporate Identity photography: Rear 3/4 view showing the BMW roundel badge, exhaust outlets, and rear light bar. Clean white/grey studio background.',
-      'BMW Corporate Identity photography: Direct rear view, centered, showing full width of taillights, exhaust, and rear badge. Clean white/grey studio background.',
-    ],
-  },
-  {
-    key: 'CI_BMW_DETAIL',
-    label: 'BMW CI – Detail Shots',
-    labelDe: 'BMW CI – Detailaufnahmen',
-    defaultSelected: false,
-    category: 'ci',
-    brand: 'bmw',
-    outputCount: 3,
-    prompt:
-      'BMW Corporate Identity detail photography: Close-up of the BMW kidney grille with angel-eye/adaptive LED headlights. Emphasize the BMW roundel badge. High-contrast studio lighting on clean background.',
-    extraPrompts: [
-      'BMW Corporate Identity detail photography: Dashboard and iDrive infotainment system from driver perspective. Show BMW curved display and ambient lighting. Professional interior lighting.',
-      'BMW Corporate Identity detail photography: Wheel and M-Sport brake caliper close-up. Show exact rim design and BMW center cap. Studio lighting with blurred background.',
-    ],
-  },
+  // ══════════════════════════════════════════════
+  // ── BMW CI (individual jobs) ──
+  // ══════════════════════════════════════════════
+  { key: 'CI_BMW_34_FRONT', label: 'BMW CI – 3/4 Front', labelDe: 'BMW CI – 3/4 Front', defaultSelected: true, category: 'ci', brand: 'bmw', prompt: 'BMW Corporate Identity photography: Front 3/4 view at eye level with the BMW kidney grille clearly visible and centered. Clean white/grey studio background. BMW corporate lighting setup with strong key light from front-left.' },
+  { key: 'CI_BMW_SIDE', label: 'BMW CI – Side Profile', labelDe: 'BMW CI – Seite', defaultSelected: true, category: 'ci', brand: 'bmw', prompt: 'BMW Corporate Identity photography: Direct side profile, perfectly flat/perpendicular. Wheels at 20° angle showing BMW logo on center caps. Clean white/grey studio background.' },
+  { key: 'CI_BMW_34_REAR', label: 'BMW CI – 3/4 Rear', labelDe: 'BMW CI – 3/4 Heck', defaultSelected: true, category: 'ci', brand: 'bmw', prompt: 'BMW Corporate Identity photography: Rear 3/4 view showing the BMW roundel badge, exhaust outlets, and rear light bar. Clean white/grey studio background.' },
+  { key: 'CI_BMW_REAR', label: 'BMW CI – Rear', labelDe: 'BMW CI – Heck', defaultSelected: true, category: 'ci', brand: 'bmw', prompt: 'BMW Corporate Identity photography: Direct rear view, centered, showing full width of taillights, exhaust, and rear badge. Clean white/grey studio background.' },
+  { key: 'CI_BMW_GRILLE', label: 'BMW CI – Grille Detail', labelDe: 'BMW CI – Kühlergrill', defaultSelected: false, category: 'ci', brand: 'bmw', prompt: 'BMW Corporate Identity detail photography: Close-up of the BMW kidney grille with angel-eye/adaptive LED headlights. Emphasize the BMW roundel badge. High-contrast studio lighting on clean background.' },
+  { key: 'CI_BMW_INTERIOR', label: 'BMW CI – Interior', labelDe: 'BMW CI – Innenraum', defaultSelected: false, category: 'ci', brand: 'bmw', prompt: 'BMW Corporate Identity detail photography: Dashboard and iDrive infotainment system from driver perspective. Show BMW curved display and ambient lighting. Professional interior lighting.' },
+  { key: 'CI_BMW_WHEEL', label: 'BMW CI – Wheel', labelDe: 'BMW CI – Felge', defaultSelected: false, category: 'ci', brand: 'bmw', prompt: 'BMW Corporate Identity detail photography: Wheel and M-Sport brake caliper close-up. Show exact rim design and BMW center cap. Studio lighting with blurred background.' },
 
-  // ── Mercedes-Benz CI ──
-  {
-    key: 'CI_MERCEDES_STANDARD',
-    label: 'Mercedes CI – Standard Views',
-    labelDe: 'Mercedes CI – Standardansichten',
-    defaultSelected: true,
-    category: 'ci',
-    brand: 'mercedes',
-    outputCount: 4,
-    prompt:
-      'Mercedes-Benz Corporate Identity photography: Front 3/4 view emphasizing the star emblem and radiator grille. Elegant studio with subtle gradient background. Mercedes signature lighting: soft, even, premium.',
-    extraPrompts: [
-      'Mercedes-Benz Corporate Identity photography: Side profile showing the full body silhouette and chrome details. Subtle gradient studio background.',
-      'Mercedes-Benz Corporate Identity photography: Rear 3/4 view highlighting the LED light strip, star badge, and exhaust. Elegant studio.',
-      'Mercedes-Benz Corporate Identity photography: Direct front view, perfectly centered, showcasing the three-pointed star and grille design. Even studio lighting.',
-    ],
-  },
-  {
-    key: 'CI_MERCEDES_DETAIL',
-    label: 'Mercedes CI – Detail Shots',
-    labelDe: 'Mercedes CI – Detailaufnahmen',
-    defaultSelected: false,
-    category: 'ci',
-    brand: 'mercedes',
-    outputCount: 3,
-    prompt:
-      'Mercedes-Benz Corporate Identity detail: MBUX hyperscreen/infotainment close-up from driver seat. Show digital cockpit and ambient lighting. Premium interior photography.',
-    extraPrompts: [
-      'Mercedes-Benz Corporate Identity detail: Front grille and star emblem macro shot. Show chrome textures and LED headlight internals. Studio lighting.',
-      'Mercedes-Benz Corporate Identity detail: Wheel with AMG/standard rim design and brake caliper. Star center cap visible. Studio lighting.',
-    ],
-  },
+  // ── Mercedes-Benz CI (individual jobs) ──
+  { key: 'CI_MERCEDES_34_FRONT', label: 'Mercedes CI – 3/4 Front', labelDe: 'Mercedes CI – 3/4 Front', defaultSelected: true, category: 'ci', brand: 'mercedes', prompt: 'Mercedes-Benz Corporate Identity photography: Front 3/4 view emphasizing the star emblem and radiator grille. Elegant studio with subtle gradient background. Mercedes signature lighting: soft, even, premium.' },
+  { key: 'CI_MERCEDES_SIDE', label: 'Mercedes CI – Side', labelDe: 'Mercedes CI – Seite', defaultSelected: true, category: 'ci', brand: 'mercedes', prompt: 'Mercedes-Benz Corporate Identity photography: Side profile showing the full body silhouette and chrome details. Subtle gradient studio background.' },
+  { key: 'CI_MERCEDES_34_REAR', label: 'Mercedes CI – 3/4 Rear', labelDe: 'Mercedes CI – 3/4 Heck', defaultSelected: true, category: 'ci', brand: 'mercedes', prompt: 'Mercedes-Benz Corporate Identity photography: Rear 3/4 view highlighting the LED light strip, star badge, and exhaust. Elegant studio.' },
+  { key: 'CI_MERCEDES_FRONT', label: 'Mercedes CI – Front', labelDe: 'Mercedes CI – Front', defaultSelected: true, category: 'ci', brand: 'mercedes', prompt: 'Mercedes-Benz Corporate Identity photography: Direct front view, perfectly centered, showcasing the three-pointed star and grille design. Even studio lighting.' },
+  { key: 'CI_MERCEDES_MBUX', label: 'Mercedes CI – MBUX', labelDe: 'Mercedes CI – MBUX', defaultSelected: false, category: 'ci', brand: 'mercedes', prompt: 'Mercedes-Benz Corporate Identity detail: MBUX hyperscreen/infotainment close-up from driver seat. Show digital cockpit and ambient lighting. Premium interior photography.' },
+  { key: 'CI_MERCEDES_GRILLE', label: 'Mercedes CI – Grille', labelDe: 'Mercedes CI – Kühlergrill', defaultSelected: false, category: 'ci', brand: 'mercedes', prompt: 'Mercedes-Benz Corporate Identity detail: Front grille and star emblem macro shot. Show chrome textures and LED headlight internals. Studio lighting.' },
+  { key: 'CI_MERCEDES_WHEEL', label: 'Mercedes CI – Wheel', labelDe: 'Mercedes CI – Felge', defaultSelected: false, category: 'ci', brand: 'mercedes', prompt: 'Mercedes-Benz Corporate Identity detail: Wheel with AMG/standard rim design and brake caliper. Star center cap visible. Studio lighting.' },
 
-  // ── Audi CI ──
-  {
-    key: 'CI_AUDI_STANDARD',
-    label: 'Audi CI – Standard Views',
-    labelDe: 'Audi CI – Standardansichten',
-    defaultSelected: true,
-    category: 'ci',
-    brand: 'audi',
-    outputCount: 4,
-    prompt:
-      'Audi Corporate Identity photography: Front 3/4 view with Singleframe grille and four rings emblem clearly visible. Audi-signature clean, bright studio with minimal shadows.',
-    extraPrompts: [
-      'Audi Corporate Identity photography: Perfect side profile highlighting Audi design DNA with Tornado line. Clean bright studio.',
-      'Audi Corporate Identity photography: Rear 3/4 view showing connected LED light strip and Audi four rings badge. Clean studio.',
-      'Audi Corporate Identity photography: Direct rear view centered on the full-width LED light bar and Audi lettering. Bright studio background.',
-    ],
-  },
+  // ── Audi CI (individual jobs) ──
+  { key: 'CI_AUDI_34_FRONT', label: 'Audi CI – 3/4 Front', labelDe: 'Audi CI – 3/4 Front', defaultSelected: true, category: 'ci', brand: 'audi', prompt: 'Audi Corporate Identity photography: Front 3/4 view with Singleframe grille and four rings emblem clearly visible. Audi-signature clean, bright studio with minimal shadows.' },
+  { key: 'CI_AUDI_SIDE', label: 'Audi CI – Side', labelDe: 'Audi CI – Seite', defaultSelected: true, category: 'ci', brand: 'audi', prompt: 'Audi Corporate Identity photography: Perfect side profile highlighting Audi design DNA with Tornado line. Clean bright studio.' },
+  { key: 'CI_AUDI_34_REAR', label: 'Audi CI – 3/4 Rear', labelDe: 'Audi CI – 3/4 Heck', defaultSelected: true, category: 'ci', brand: 'audi', prompt: 'Audi Corporate Identity photography: Rear 3/4 view showing connected LED light strip and Audi four rings badge. Clean studio.' },
+  { key: 'CI_AUDI_REAR', label: 'Audi CI – Rear', labelDe: 'Audi CI – Heck', defaultSelected: true, category: 'ci', brand: 'audi', prompt: 'Audi Corporate Identity photography: Direct rear view centered on the full-width LED light bar and Audi lettering. Bright studio background.' },
 
-  // ── Volkswagen CI ──
-  {
-    key: 'CI_VW_STANDARD',
-    label: 'VW CI – Standard Views',
-    labelDe: 'VW CI – Standardansichten',
-    defaultSelected: true,
-    category: 'ci',
-    brand: 'volkswagen',
-    outputCount: 4,
-    prompt:
-      'Volkswagen Corporate Identity photography: Front 3/4 view with VW logo and IQ.Light LED headlights prominent. Clean, modern white studio. Friendly, approachable lighting setup.',
-    extraPrompts: [
-      'Volkswagen Corporate Identity photography: Side profile showing clean body lines and wheel design. Modern white studio.',
-      'Volkswagen Corporate Identity photography: Rear 3/4 view with VW logo, taillights, and lettering visible. White studio.',
-      'Volkswagen Corporate Identity photography: Direct front view centered on VW badge and light signature. White studio.',
-    ],
-  },
+  // ── Volkswagen CI (individual jobs) ──
+  { key: 'CI_VW_34_FRONT', label: 'VW CI – 3/4 Front', labelDe: 'VW CI – 3/4 Front', defaultSelected: true, category: 'ci', brand: 'volkswagen', prompt: 'Volkswagen Corporate Identity photography: Front 3/4 view with VW logo and IQ.Light LED headlights prominent. Clean, modern white studio. Friendly, approachable lighting setup.' },
+  { key: 'CI_VW_SIDE', label: 'VW CI – Side', labelDe: 'VW CI – Seite', defaultSelected: true, category: 'ci', brand: 'volkswagen', prompt: 'Volkswagen Corporate Identity photography: Side profile showing clean body lines and wheel design. Modern white studio.' },
+  { key: 'CI_VW_34_REAR', label: 'VW CI – 3/4 Rear', labelDe: 'VW CI – 3/4 Heck', defaultSelected: true, category: 'ci', brand: 'volkswagen', prompt: 'Volkswagen Corporate Identity photography: Rear 3/4 view with VW logo, taillights, and lettering visible. White studio.' },
+  { key: 'CI_VW_FRONT', label: 'VW CI – Front', labelDe: 'VW CI – Front', defaultSelected: true, category: 'ci', brand: 'volkswagen', prompt: 'Volkswagen Corporate Identity photography: Direct front view centered on VW badge and light signature. White studio.' },
 
-  // ── Porsche CI ──
-  {
-    key: 'CI_PORSCHE_STANDARD',
-    label: 'Porsche CI – Standard Views',
-    labelDe: 'Porsche CI – Standardansichten',
-    defaultSelected: true,
-    category: 'ci',
-    brand: 'porsche',
-    outputCount: 4,
-    prompt:
-      'Porsche Corporate Identity photography: Front 3/4 view emphasizing the iconic silhouette, headlight design, and Porsche crest. Dark dramatic studio with controlled highlights.',
-    extraPrompts: [
-      'Porsche Corporate Identity photography: Side profile capturing the sports car proportions. Dark dramatic studio with rim focus.',
-      'Porsche Corporate Identity photography: Rear 3/4 view showing the rear light bar, PORSCHE lettering, and exhaust. Dramatic lighting.',
-     'Porsche Corporate Identity photography: Low-angle front view emphasizing power and stance. Dark studio, dramatic key light.',
-    ],
-  },
+  // ── Porsche CI (individual jobs) ──
+  { key: 'CI_PORSCHE_34_FRONT', label: 'Porsche CI – 3/4 Front', labelDe: 'Porsche CI – 3/4 Front', defaultSelected: true, category: 'ci', brand: 'porsche', prompt: 'Porsche Corporate Identity photography: Front 3/4 view emphasizing the iconic silhouette, headlight design, and Porsche crest. Dark dramatic studio with controlled highlights.' },
+  { key: 'CI_PORSCHE_SIDE', label: 'Porsche CI – Side', labelDe: 'Porsche CI – Seite', defaultSelected: true, category: 'ci', brand: 'porsche', prompt: 'Porsche Corporate Identity photography: Side profile capturing the sports car proportions. Dark dramatic studio with rim focus.' },
+  { key: 'CI_PORSCHE_34_REAR', label: 'Porsche CI – 3/4 Rear', labelDe: 'Porsche CI – 3/4 Heck', defaultSelected: true, category: 'ci', brand: 'porsche', prompt: 'Porsche Corporate Identity photography: Rear 3/4 view showing the rear light bar, PORSCHE lettering, and exhaust. Dramatic lighting.' },
+  { key: 'CI_PORSCHE_LOW', label: 'Porsche CI – Low Angle', labelDe: 'Porsche CI – Low-Angle', defaultSelected: true, category: 'ci', brand: 'porsche', prompt: 'Porsche Corporate Identity photography: Low-angle front view emphasizing power and stance. Dark studio, dramatic key light.' },
 
-  // ── Volvo CI ──
-  {
-    key: 'CI_VOLVO_STANDARD',
-    label: 'Volvo CI – Standard Views',
-    labelDe: 'Volvo CI – Standardansichten',
-    defaultSelected: true,
-    category: 'ci',
-    brand: 'volvo',
-    outputCount: 7,
-    prompt:
-      'Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle from the reference photos, from the perspective of 3/4 front, facing left. Environment: minimalist, high-tech showroom with highly reflective dark polished resin floor. Background: large seamless frosted glass panels subtly illuminated from behind with soft diffused cool-white gradient light, creating infinite depth. No extraneous objects, humans, or other vehicles. License plates blank and body-colored. Strict Detail Preservation: Replicate exact headlight internal structure, DRL signatures, front grille shape/mesh/texture, wheel spoke pattern, body contours, trim, color and rims with absolute precision. No simplification. Interior subtly visible through windows. Composition: clean, centered, premium magazine quality.',
-    extraPrompts: [
-      'Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle from the reference photos, from the perspective of 3/4 front, facing right. Environment: minimalist high-tech showroom with highly reflective dark polished resin floor and seamless frosted glass panels with soft cool-white gradient light. No humans, no other vehicles. License plates blank. Replicate exact headlight DRL signatures, grille mesh, wheel design, body lines with microscopic accuracy. No color/rim modifications. Premium magazine composition.',
-      'Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle from the reference photos, from the perspective of 3/4 rear, facing left. Environment: minimalist high-tech showroom with reflective dark polished resin floor and frosted glass panels with cool-white gradient. No humans. Replicate exact tail light internal structure, LED signatures, wheel design, body contours with microscopic accuracy. No color/rim modifications. Premium magazine composition.',
-      'Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle from the reference photos, from the perspective of 3/4 rear, facing right. Environment: minimalist high-tech showroom with reflective dark resin floor and frosted glass panels. No humans. Replicate exact tail lights, wheels, body contours with microscopic accuracy. No color/rim modifications. Premium magazine composition.',
-      'Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle from the reference photos, from the perspective of flat passenger side facing right. Environment: minimalist high-tech showroom with reflective dark resin floor and frosted glass panels. No humans. Replicate exact headlights, grille, wheel design, body lines with microscopic accuracy. No color/rim modifications. Premium magazine composition.',
-      'Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle from the reference photos, from the perspective of flat front. Environment: minimalist high-tech showroom with reflective dark resin floor and frosted glass panels. No humans. Replicate exact headlight DRL signatures, grille mesh pattern, body contours with microscopic accuracy. No color/rim modifications. Premium magazine composition.',
-      'Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle from the reference photos, from the perspective of flat rear. Environment: minimalist high-tech showroom with reflective dark resin floor and frosted glass panels. No humans. Replicate exact tail light internal structure, LED signatures, rear badges, body contours with microscopic accuracy. No color/rim modifications. Premium magazine composition.',
-    ],
-  },
-  {
-    key: 'CI_VOLVO_INTERIOR',
-    label: 'Volvo CI – Interior Shots',
-    labelDe: 'Volvo CI – Innenraum',
-    defaultSelected: true,
-    category: 'ci',
-    brand: 'volvo',
-    outputCount: 5,
-    prompt:
-      'Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle interior from reference images. Front Interior Shot from Front Passenger Side: Looking from open front passenger door towards dashboard, center console, steering wheel, and driver seat. Showroom visible through windows (frosted glass, dark resin floor). Replicate exact leather grain texture, stitching, trim materials (open-pore wood, metal mesh). Replicate exact button layout, infotainment UI, instrument cluster, gear selector. LHD configuration. Focus: full dashboard span, center vertical screen, passenger-side trim, steering wheel, center console gear selector. Premium magazine quality.',
-    extraPrompts: [
-      'Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle interior. Front Interior Shot: Looking from between front seats towards driver console and passenger dashboard. Showroom visible through windows. Replicate exact leather grain, stitching, trim materials, button layouts, UI screens, gear selector with microscopic accuracy. LHD configuration. Focus: driver door panel button array, steering wheel controls, instrument cluster, pedals, view across to passenger side. Premium quality.',
-      'Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle interior. Rear Interior Shot: Looking from open rear passenger door towards rear seats, legroom, and rear center console. Showroom visible through windows. Replicate exact seat material, stitching, rear center console/armrest controls (climate, heated seats), rear air vents. LHD configuration. Focus: second-row seating layout, floor mat texture. Premium quality.',
-      'Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle. Boot Open Rear Shot: Straight-on exterior view with tailgate fully open, looking into cargo space. Showroom environment with reflective dark resin floor and frosted glass panels. Replicate exact cargo floor texture, sidewalls, load-bearing lip, cargo net hooks, rear-seat release handles. Surrounding exterior panels and taillights perfectly matched. Premium quality.',
-      'Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle interior. Close-Up Steering Shot: Tight macro-style shot of steering wheel, central horn pad, and surrounding stalks. Complete steering wheel visible. Exterior showroom visible through windshield. Replicate exact steering wheel hub texture (leather/plastic/metal), precise button iconography on left/right spokes (media, cruise control, voice assistant), paddle shifters if present. Center logo perfectly legible. LHD configuration. Premium quality.',
-    ],
-  },
-  {
-    key: 'CI_VOLVO_DETAIL',
-    label: 'Volvo CI – Detail Shots',
-    labelDe: 'Volvo CI – Detailaufnahmen',
-    defaultSelected: false,
-    category: 'ci',
-    brand: 'volvo',
-    outputCount: 3,
-    prompt:
-      'Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle interior. Closeup Driver Infotainment Screen (Instrument Cluster): Tight macro-style shot of digital screen/cluster behind steering wheel. Replicate exact UI layout including digital gauges (speedometer, tachometer/power meter), central information display, warning light placements. All text and iconography sharp and legible. Surrounding cluster bezel material detailed. LHD configuration. Premium quality.',
-    extraPrompts: [
-      'Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle interior. Closeup Center Infotainment Screen: Tight macro-style shot of main dashboard central screen and surrounding controls. Replicate exact screen orientation (portrait/vertical), bezel design, precise UI layout with app icons, climate overlay, navigation. Surrounding air vents, physical buttons, dash material texture in sharp focus. LHD configuration. Premium quality.',
-      'Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle. Macro Close-up of Wheel, Alloy Rim, and Surrounding Fender. Environment: minimalist high-tech showroom with reflective dark polished resin floor and frosted glass panels. Replicate exact multi-spoke alloy wheel design, spoke pattern, concavity, lug nut configuration, center cap, metallic/machined finish with absolute precision. Accurately reproduce visible brake calipers, rotor pattern. Replicate tire profile, sidewall texture. Surrounding fender body contours and paint color perfectly matched. Depth of field keeps rim sharp, wheel well falls to shadow. Premium detail shot quality.',
-    ],
-  },
+  // ══════════════════════════════════════════════
+  // ── Volvo CI (individual jobs) ──
+  // ══════════════════════════════════════════════
+  // Standard Views (7)
+  { key: 'CI_VOLVO_34_FRONT_LEFT', label: 'Volvo CI – 3/4 Front Left', labelDe: 'Volvo CI – 3/4 Front Links', defaultSelected: true, category: 'ci', brand: 'volvo', prompt: 'Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle from the reference photos, from the perspective of 3/4 front, facing left. Environment: minimalist, high-tech showroom with highly reflective dark polished resin floor. Background: large seamless frosted glass panels subtly illuminated from behind with soft diffused cool-white gradient light, creating infinite depth. No extraneous objects, humans, or other vehicles. License plates blank and body-colored. Strict Detail Preservation: Replicate exact headlight internal structure, DRL signatures, front grille shape/mesh/texture, wheel spoke pattern, body contours, trim, color and rims with absolute precision. No simplification. Interior subtly visible through windows. Composition: clean, centered, premium magazine quality.' },
+  { key: 'CI_VOLVO_34_FRONT_RIGHT', label: 'Volvo CI – 3/4 Front Right', labelDe: 'Volvo CI – 3/4 Front Rechts', defaultSelected: true, category: 'ci', brand: 'volvo', prompt: 'Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle from the reference photos, from the perspective of 3/4 front, facing right. Environment: minimalist high-tech showroom with highly reflective dark polished resin floor and seamless frosted glass panels with soft cool-white gradient light. No humans, no other vehicles. License plates blank. Replicate exact headlight DRL signatures, grille mesh, wheel design, body lines with microscopic accuracy. No color/rim modifications. Premium magazine composition.' },
+  { key: 'CI_VOLVO_34_REAR_LEFT', label: 'Volvo CI – 3/4 Rear Left', labelDe: 'Volvo CI – 3/4 Heck Links', defaultSelected: true, category: 'ci', brand: 'volvo', prompt: 'Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle from the reference photos, from the perspective of 3/4 rear, facing left. Environment: minimalist high-tech showroom with reflective dark polished resin floor and frosted glass panels with cool-white gradient. No humans. Replicate exact tail light internal structure, LED signatures, wheel design, body contours with microscopic accuracy. No color/rim modifications. Premium magazine composition.' },
+  { key: 'CI_VOLVO_34_REAR_RIGHT', label: 'Volvo CI – 3/4 Rear Right', labelDe: 'Volvo CI – 3/4 Heck Rechts', defaultSelected: true, category: 'ci', brand: 'volvo', prompt: 'Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle from the reference photos, from the perspective of 3/4 rear, facing right. Environment: minimalist high-tech showroom with reflective dark resin floor and frosted glass panels. No humans. Replicate exact tail lights, wheels, body contours with microscopic accuracy. No color/rim modifications. Premium magazine composition.' },
+  { key: 'CI_VOLVO_SIDE', label: 'Volvo CI – Side', labelDe: 'Volvo CI – Seite', defaultSelected: true, category: 'ci', brand: 'volvo', prompt: 'Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle from the reference photos, from the perspective of flat passenger side facing right. Environment: minimalist high-tech showroom with reflective dark resin floor and frosted glass panels. No humans. Replicate exact headlights, grille, wheel design, body lines with microscopic accuracy. No color/rim modifications. Premium magazine composition.' },
+  { key: 'CI_VOLVO_FRONT', label: 'Volvo CI – Front', labelDe: 'Volvo CI – Front', defaultSelected: true, category: 'ci', brand: 'volvo', prompt: 'Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle from the reference photos, from the perspective of flat front. Environment: minimalist high-tech showroom with reflective dark resin floor and frosted glass panels. No humans. Replicate exact headlight DRL signatures, grille mesh pattern, body contours with microscopic accuracy. No color/rim modifications. Premium magazine composition.' },
+  { key: 'CI_VOLVO_REAR', label: 'Volvo CI – Rear', labelDe: 'Volvo CI – Heck', defaultSelected: true, category: 'ci', brand: 'volvo', prompt: 'Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle from the reference photos, from the perspective of flat rear. Environment: minimalist high-tech showroom with reflective dark resin floor and frosted glass panels. No humans. Replicate exact tail light internal structure, LED signatures, rear badges, body contours with microscopic accuracy. No color/rim modifications. Premium magazine composition.' },
+
+  // Interior (5)
+  { key: 'CI_VOLVO_INT_PASSENGER', label: 'Volvo CI – Interior Passenger', labelDe: 'Volvo CI – Innenraum Beifahrer', defaultSelected: true, category: 'ci', brand: 'volvo', prompt: 'Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle interior from reference images. Front Interior Shot from Front Passenger Side: Looking from open front passenger door towards dashboard, center console, steering wheel, and driver seat. Showroom visible through windows (frosted glass, dark resin floor). Replicate exact leather grain texture, stitching, trim materials (open-pore wood, metal mesh). Replicate exact button layout, infotainment UI, instrument cluster, gear selector. LHD configuration. Focus: full dashboard span, center vertical screen, passenger-side trim, steering wheel, center console gear selector. Premium magazine quality.' },
+  { key: 'CI_VOLVO_INT_CENTER', label: 'Volvo CI – Interior Center', labelDe: 'Volvo CI – Innenraum Mitte', defaultSelected: true, category: 'ci', brand: 'volvo', prompt: 'Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle interior. Front Interior Shot: Looking from between front seats towards driver console and passenger dashboard. Showroom visible through windows. Replicate exact leather grain, stitching, trim materials, button layouts, UI screens, gear selector with microscopic accuracy. LHD configuration. Focus: driver door panel button array, steering wheel controls, instrument cluster, pedals, view across to passenger side. Premium quality.' },
+  { key: 'CI_VOLVO_INT_REAR', label: 'Volvo CI – Rear Seats', labelDe: 'Volvo CI – Rücksitze', defaultSelected: false, category: 'ci', brand: 'volvo', prompt: 'Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle interior. Rear Interior Shot: Looking from open rear passenger door towards rear seats, legroom, and rear center console. Showroom visible through windows. Replicate exact seat material, stitching, rear center console/armrest controls (climate, heated seats), rear air vents. LHD configuration. Focus: second-row seating layout, floor mat texture. Premium quality.' },
+  { key: 'CI_VOLVO_INT_BOOT', label: 'Volvo CI – Open Boot', labelDe: 'Volvo CI – Kofferraum', defaultSelected: false, category: 'ci', brand: 'volvo', prompt: 'Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle. Boot Open Rear Shot: Straight-on exterior view with tailgate fully open, looking into cargo space. Showroom environment with reflective dark resin floor and frosted glass panels. Replicate exact cargo floor texture, sidewalls, load-bearing lip, cargo net hooks, rear-seat release handles. Surrounding exterior panels and taillights perfectly matched. Premium quality.' },
+  { key: 'CI_VOLVO_INT_STEERING', label: 'Volvo CI – Steering Wheel', labelDe: 'Volvo CI – Lenkrad', defaultSelected: false, category: 'ci', brand: 'volvo', prompt: 'Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle interior. Close-Up Steering Shot: Tight macro-style shot of steering wheel, central horn pad, and surrounding stalks. Complete steering wheel visible. Exterior showroom visible through windshield. Replicate exact steering wheel hub texture (leather/plastic/metal), precise button iconography on left/right spokes (media, cruise control, voice assistant), paddle shifters if present. Center logo perfectly legible. LHD configuration. Premium quality.' },
+
+  // Detail (3)
+  { key: 'CI_VOLVO_DET_CLUSTER', label: 'Volvo CI – Instrument Cluster', labelDe: 'Volvo CI – Instrumenten-Display', defaultSelected: false, category: 'ci', brand: 'volvo', prompt: 'Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle interior. Closeup Driver Infotainment Screen (Instrument Cluster): Tight macro-style shot of digital screen/cluster behind steering wheel. Replicate exact UI layout including digital gauges (speedometer, tachometer/power meter), central information display, warning light placements. All text and iconography sharp and legible. Surrounding cluster bezel material detailed. LHD configuration. Premium quality.' },
+  { key: 'CI_VOLVO_DET_SCREEN', label: 'Volvo CI – Center Screen', labelDe: 'Volvo CI – Zentraldisplay', defaultSelected: false, category: 'ci', brand: 'volvo', prompt: 'Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle interior. Closeup Center Infotainment Screen: Tight macro-style shot of main dashboard central screen and surrounding controls. Replicate exact screen orientation (portrait/vertical), bezel design, precise UI layout with app icons, climate overlay, navigation. Surrounding air vents, physical buttons, dash material texture in sharp focus. LHD configuration. Premium quality.' },
+  { key: 'CI_VOLVO_DET_WHEEL', label: 'Volvo CI – Wheel Detail', labelDe: 'Volvo CI – Felge Detail', defaultSelected: false, category: 'ci', brand: 'volvo', prompt: 'Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle. Macro Close-up of Wheel, Alloy Rim, and Surrounding Fender. Environment: minimalist high-tech showroom with reflective dark polished resin floor and frosted glass panels. Replicate exact multi-spoke alloy wheel design, spoke pattern, concavity, lug nut configuration, center cap, metallic/machined finish with absolute precision. Accurately reproduce visible brake calipers, rotor pattern. Replicate tire profile, sidewall texture. Surrounding fender body contours and paint color perfectly matched. Depth of field keeps rim sharp, wheel well falls to shadow. Premium detail shot quality.' },
 ];
 
 /** Group jobs by category for UI display */
