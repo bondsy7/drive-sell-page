@@ -60,6 +60,7 @@ export function useLeads(enabled: boolean, page = 0) {
       const { data, count } = await supabase
         .from('leads')
         .select('*', { count: 'exact' })
+        .eq('dealer_user_id', user.id)
         .order('created_at', { ascending: false })
         .range(from, to);
       return { items: (data as Lead[]) || [], total: count ?? 0 };
