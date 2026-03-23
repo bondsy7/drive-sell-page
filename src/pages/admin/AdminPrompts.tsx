@@ -564,6 +564,22 @@ const PROMPT_META: Record<string, PromptMeta> = {
   pipeline_CI_PORSCHE_STANDARD_1: { label: 'Porsche CI – Seite', description: 'Porsche CI: Seitenprofil, Sportwagen-Proportionen', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Porsche' },
   pipeline_CI_PORSCHE_STANDARD_2: { label: 'Porsche CI – Heck 3/4', description: 'Porsche CI: Heck 3/4 mit PORSCHE-Schriftzug', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Porsche' },
   pipeline_CI_PORSCHE_STANDARD_3: { label: 'Porsche CI – Low-Angle', description: 'Porsche CI: Low-Angle Front, Power-Pose', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Porsche' },
+  // Volvo CI
+  pipeline_CI_VOLVO_STANDARD_0: { label: 'Volvo CI – 3/4 Front Links', description: 'Volvo CI: 3/4 Front links, minimalistischer High-Tech-Showroom', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
+  pipeline_CI_VOLVO_STANDARD_1: { label: 'Volvo CI – 3/4 Front Rechts', description: 'Volvo CI: 3/4 Front rechts, Milchglas-Hintergrund', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
+  pipeline_CI_VOLVO_STANDARD_2: { label: 'Volvo CI – 3/4 Heck Links', description: 'Volvo CI: 3/4 Heck links mit LED-Signaturen', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
+  pipeline_CI_VOLVO_STANDARD_3: { label: 'Volvo CI – 3/4 Heck Rechts', description: 'Volvo CI: 3/4 Heck rechts', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
+  pipeline_CI_VOLVO_STANDARD_4: { label: 'Volvo CI – Seite', description: 'Volvo CI: Flaches Seitenprofil Beifahrerseite', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
+  pipeline_CI_VOLVO_STANDARD_5: { label: 'Volvo CI – Front', description: 'Volvo CI: Direkte Frontansicht', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
+  pipeline_CI_VOLVO_STANDARD_6: { label: 'Volvo CI – Heck', description: 'Volvo CI: Direkte Heckansicht', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
+  pipeline_CI_VOLVO_INTERIOR_0: { label: 'Volvo CI – Innenraum Beifahrer', description: 'Volvo CI: Blick von Beifahrerseite auf Dashboard', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
+  pipeline_CI_VOLVO_INTERIOR_1: { label: 'Volvo CI – Innenraum Mitte', description: 'Volvo CI: Blick zwischen Vordersitzen', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
+  pipeline_CI_VOLVO_INTERIOR_2: { label: 'Volvo CI – Rücksitze', description: 'Volvo CI: Rücksitzbank mit Beinfreiheit', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
+  pipeline_CI_VOLVO_INTERIOR_3: { label: 'Volvo CI – Kofferraum', description: 'Volvo CI: Offener Kofferraum von hinten', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
+  pipeline_CI_VOLVO_INTERIOR_4: { label: 'Volvo CI – Lenkrad', description: 'Volvo CI: Nahaufnahme Lenkrad und Bedienelemente', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
+  pipeline_CI_VOLVO_DETAIL_0: { label: 'Volvo CI – Instrumente', description: 'Volvo CI Detail: Digitales Kombiinstrument', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
+  pipeline_CI_VOLVO_DETAIL_1: { label: 'Volvo CI – Infotainment', description: 'Volvo CI Detail: Zentrales Touchscreen-Display', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
+  pipeline_CI_VOLVO_DETAIL_2: { label: 'Volvo CI – Felge', description: 'Volvo CI Detail: Felge, Bremse und Kotflügel', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
 };
 
 const CATEGORIES = [
