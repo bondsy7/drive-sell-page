@@ -167,16 +167,37 @@ async function handleVideoStart(req: Request, GEMINI_API_KEY: string, body: any)
 
   let requestBody: any;
 
-  // Multi-image spin360 flow — Veo only supports ONE image per request,
-  // so we use the front 3/4 view and embed context into the prompt
+  // Multi-image spin360 flow — create composite reference image from front + rear
   if (isSpin360 && Array.isArray(images) && images.length > 0) {
     const frontImg = images.find((img: any) => img.label === 'front_34') || images[0];
-    const parsed = parseImageBase64(frontImg.base64);
+    const rearImg = images.find((img: any) => img.label === 'rear_34');
+    const parsedFront = parseImageBase64(frontImg.base64);
 
-    const enhancedPrompt = `${finalPrompt}\n\nIMPORTANT: This is a 3/4 front view of the car. Place it on a turntable inside a clean, modern showroom. The car rotates smoothly 360 degrees. Remove the original background completely — the car must appear ONLY inside the showroom from frame 1. No flickering of original backgrounds allowed.`;
+    let finalImageData = parsedFront.data;
+    let finalImageMime = parsedFront.mimeType;
+
+    // If we have both front and rear, create a composite so Veo sees both perspectives
+    if (rearImg) {
+      const parsedRear = parseImageBase64(rearImg.base64);
+      console.log("Creating composite image from front + rear views...");
+      const composite = await createCompositeImage(
+        parsedFront.data, parsedFront.mimeType,
+        parsedRear.data, parsedRear.mimeType,
+        GEMINI_API_KEY
+      );
+      if (composite) {
+        console.log("Composite image created successfully");
+        finalImageData = composite.data;
+        finalImageMime = composite.mimeType;
+      } else {
+        console.warn("Composite failed, falling back to front image only");
+      }
+    }
+
+    const enhancedPrompt = `${finalPrompt}\n\nIMPORTANT: This reference image shows BOTH the front 3/4 and rear 3/4 views of the EXACT same car. The video must show this EXACT car from ALL angles during the 360-degree rotation — the rear of the car must match the rear reference precisely. Place it on a turntable inside a clean, modern showroom. Remove all original backgrounds completely — the car must appear ONLY inside the showroom from frame 1. No flickering of original backgrounds allowed.`;
 
     requestBody = {
-      instances: [{ prompt: enhancedPrompt, image: { bytesBase64Encoded: parsed.data, mimeType: parsed.mimeType } }],
+      instances: [{ prompt: enhancedPrompt, image: { bytesBase64Encoded: finalImageData, mimeType: finalImageMime } }],
       parameters: { sampleCount: 1 },
     };
   } else if (imageBase64) {
