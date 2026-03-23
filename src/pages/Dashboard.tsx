@@ -193,7 +193,7 @@ const Dashboard = () => {
       );
       case 'videos': return <VideosTab videos={videos} onPlay={setPlayerVideo} onDownload={(v) => downloadFile(v.url, v.name)} onDelete={(name) => deleteVideo.mutate(name)} />;
       case 'banners': return <BannersTab banners={banners} onDownload={(b) => downloadFile(b.url, b.name)} onDelete={(fp, _name) => deleteBanner.mutate(fp)} />;
-      case 'spin360': return <Spin360Tab jobs={spin360Jobs} onOpen={openSpinViewer} />;
+      case 'spin360': return <Spin360Tab jobs={spin360Jobs} onOpen={openSpinViewer} onDelete={(id) => deleteSpin360.mutate(id)} />;
       case 'leads': return (
         <>
           <LeadsTab leads={leads} onDelete={(id) => deleteLead.mutate(id)} />
