@@ -16,7 +16,7 @@ interface Spin360WorkflowProps {
   onBack: () => void;
 }
 
-const SPIN360_VIDEO_PROMPT = `A seamless, perfect 360-degree rotation of the provided car. The car is placed realistically on the turntable inside the provided empty showroom environment. The camera is mounted on a tripod, completely locked, and perfectly static. The car rotates smoothly around its own vertical center axis at a constant speed. No audio, no background shifting, and no original backgrounds from the reference images. The entire sequence happens strictly inside the showroom lighting and environment. Do not mention any specific car brands.`;
+const SPIN360_VIDEO_PROMPT = `A seamless, complete, FAST 360-degree rotation of the provided car finishing exactly one full revolution within the video duration. The car is placed realistically on a turntable inside a clean, modern showroom. The turntable spins at a brisk, steady pace — the car must complete the ENTIRE 360° turn from start to finish with NO pause and NO slow-down. The camera is mounted on a tripod, completely locked, and perfectly static. No audio, no background shifting, and no original backgrounds from the reference images. The entire sequence happens strictly inside the showroom lighting and environment. Do not mention any specific car brands.`;
 
 const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack }) => {
   const { user } = useAuth();
