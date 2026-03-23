@@ -269,7 +269,7 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
 
         {scenePreview && (
           <div className="mt-2 rounded-lg overflow-hidden border border-border">
-            <img src={scenePreview} alt="Szene Vorschau" className="w-full h-32 object-cover" />
+            <img src={scenePreview} alt="Szene Vorschau" className="w-full object-cover" />
           </div>
         )}
 
