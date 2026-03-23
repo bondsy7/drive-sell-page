@@ -14,6 +14,7 @@ interface ImageUploadRemasterProps {
   modelTier?: string;
   onComplete: (mainImage: string, galleryImages: string[]) => void;
   onBack: () => void;
+  completeLabel?: string;
 }
 
 interface UploadedImage {
