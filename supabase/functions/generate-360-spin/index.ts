@@ -352,6 +352,7 @@ serve(async (req) => {
       console.log(`[${jobId}] Normalizing ${perspective} (${perspectiveIndex + 1}/4)...`);
       const normalizePrompt = await getCustomPrompt(serviceSb, "spin360_normalize", NORMALIZE_PROMPT);
 
+      let normalizedSuccessfully = false;
       try {
         const normalizedBase64 = await callImageGeneration(
           `${normalizePrompt}\n\nThis is the ${perspective} view of the vehicle.`,
@@ -369,11 +370,21 @@ serve(async (req) => {
             job_id: jobId, user_id: user.id, perspective, image_url: storedUrl, sort_order: perspectiveIndex,
           });
           console.log(`[${jobId}] Normalized ${perspective} saved`);
+          normalizedSuccessfully = true;
         } else {
           console.warn(`[${jobId}] Normalization returned null for ${perspective}`);
         }
       } catch (e) {
         console.error(`[${jobId}] Normalize ${perspective} failed:`, e);
+      }
+
+      // Fallback: use original source image as canonical if normalization failed
+      if (!normalizedSuccessfully) {
+        console.log(`[${jobId}] Using original image as canonical fallback for ${perspective}`);
+        const originalUrl = imageUrls[perspectiveIndex];
+        await serviceSb.from("spin360_canonical_images").insert({
+          job_id: jobId, user_id: user.id, perspective, image_url: originalUrl, sort_order: perspectiveIndex,
+        });
       }
 
       // Next perspective or move to profiling
