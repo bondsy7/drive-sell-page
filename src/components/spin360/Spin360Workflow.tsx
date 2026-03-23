@@ -16,7 +16,43 @@ interface Spin360WorkflowProps {
   onBack: () => void;
 }
 
-const SPIN360_VIDEO_PROMPT = `A seamless, complete, FAST 360-degree rotation of the provided car finishing exactly one full revolution within the video duration. The car is placed realistically on a turntable inside a clean, modern showroom. The turntable spins at a brisk, steady pace — the car must complete the ENTIRE 360° turn from start to finish with NO pause and NO slow-down. The camera is mounted on a tripod, completely locked, and perfectly static. No audio, no background shifting, and no original backgrounds from the reference images. The entire sequence happens strictly inside the showroom lighting and environment. Do not mention any specific car brands.`;
+const SPIN360_VIDEO_PROMPT = `Create an EXACT identity-locked 8-second turntable video of the SAME car shown in the reference images. The car must complete one full 360-degree rotation from front 3/4 view back to front 3/4 view within the full 8-second duration at a FAST, perfectly constant speed. The FIRST frame must already show the fully transformed car inside the showroom. Never show the original source photo, outdoor background, dissolve, crossfade, ghost image, fade-in, or transition. The rear of the car must match the rear reference exactly: taillights, trunk shape, bumper, diffuser, exhaust layout, license plate area, wheels, paint, and body lines must stay consistent. Locked tripod camera, no camera movement, no zoom, no flicker, no background drift, no audio.`;
+
+const loadImageElement = (src: string) => new Promise<HTMLImageElement>((resolve, reject) => {
+  const image = new Image();
+  image.onload = () => resolve(image);
+  image.onerror = () => reject(new Error('Referenzbild konnte nicht geladen werden.'));
+  image.src = src;
+});
+
+const createSpinReferenceComposite = async (frontBase64: string, rearBase64: string) => {
+  const [frontImage, rearImage] = await Promise.all([
+    loadImageElement(frontBase64),
+    loadImageElement(rearBase64),
+  ]);
+
+  const padding = 24;
+  const gap = 20;
+  const targetHeight = Math.max(frontImage.naturalHeight || frontImage.height, rearImage.naturalHeight || rearImage.height);
+  const frontWidth = Math.round(((frontImage.naturalWidth || frontImage.width) / (frontImage.naturalHeight || frontImage.height)) * targetHeight);
+  const rearWidth = Math.round(((rearImage.naturalWidth || rearImage.width) / (rearImage.naturalHeight || rearImage.height)) * targetHeight);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = frontWidth + rearWidth + gap + padding * 2;
+  canvas.height = targetHeight + padding * 2;
+
+  const context = canvas.getContext('2d');
+  if (!context) {
+    throw new Error('Composite konnte nicht erstellt werden.');
+  }
+
+  context.fillStyle = '#ffffff';
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.drawImage(frontImage, padding, padding, frontWidth, targetHeight);
+  context.drawImage(rearImage, padding + frontWidth + gap, padding, rearWidth, targetHeight);
+
+  return canvas.toDataURL('image/jpeg', 0.98);
+};
 
 const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack }) => {
   const { user } = useAuth();
@@ -170,7 +206,7 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack }) => {
       // Create spin job with video mode
       const { data: job, error: jobErr } = await supabase
         .from('spin360_jobs' as any)
-        .insert({ user_id: user.id, status: 'generating_video', target_frame_count: 36 } as any)
+        .insert({ user_id: user.id, status: 'generating_video', target_frame_count: 60 } as any)
         .select('id').single();
 
       if (jobErr || !job) {
@@ -192,6 +228,15 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack }) => {
       const rearSlot = uploadedSlots.find(s => s.perspective === 'rear_34');
       const showroomSlot = uploadedSlots.find(s => s.perspective === 'showroom');
 
+      if (!frontSlot?.base64 || !rearSlot?.base64) {
+        toast.error('Front- und Heckbild sind für den Video-Spin erforderlich.');
+        setPhase('upload');
+        setIsProcessing(false);
+        return;
+      }
+
+      const compositeImageBase64 = await createSpinReferenceComposite(frontSlot.base64, rearSlot.base64);
+
       const images: { base64: string; label: string }[] = [];
       if (frontSlot?.base64) images.push({ base64: frontSlot.base64, label: 'front_34' });
       if (rearSlot?.base64) images.push({ base64: rearSlot.base64, label: 'rear_34' });
@@ -201,6 +246,7 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack }) => {
       const { data: startResult, error: startError } = await supabase.functions.invoke('generate-video', {
         body: {
           action: 'spin360_start',
+          imageBase64: compositeImageBase64,
           images,
           prompt: SPIN360_VIDEO_PROMPT,
           jobId: newJobId,
@@ -375,7 +421,7 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack }) => {
           <h2 className="font-display text-2xl font-bold text-foreground">360° Spin</h2>
           <p className="text-sm text-muted-foreground">
             {spinMode === 'video2frames'
-              ? '3 Bilder → KI-Video → 36 Frames'
+              ? '3 Bilder → KI-Video → komplette Drehung extrahieren'
               : '4 Fotos hochladen – KI erstellt den Rest automatisch'}
           </p>
         </div>
@@ -408,7 +454,8 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack }) => {
           videoUrl={videoUrl}
           jobId={jobId}
           userId={user.id}
-          targetFrames={36}
+          referenceImageBase64={uploadedSlots.find((slot) => slot.perspective === 'front_34')?.base64}
+          targetFrames={48}
           onComplete={handleVideoFramesComplete}
           onError={handleVideoFramesError}
         />

@@ -7,6 +7,7 @@ interface Video2FramesProcessorProps {
   videoUrl: string;
   jobId: string;
   userId: string;
+  referenceImageBase64?: string;
   targetFrames?: number;
   onComplete: (frameUrls: string[]) => void;
   onError: (error: string) => void;
@@ -18,13 +19,41 @@ const START_TRIM_RATIO = 0.18;
 const MIN_START_TRIM_SECONDS = 1.2;
 const MAX_START_TRIM_RATIO = 0.3;
 const MIN_EXTRACTION_WINDOW_SECONDS = 2;
+const END_TRIM_SECONDS = 0.05;
+const TARGET_FRAME_INTERVAL_SECONDS = 0.1;
+const MAX_DYNAMIC_FRAMES = 72;
+const REFERENCE_SCAN_STEP_SECONDS = 0.2;
+const REFERENCE_DIFFERENCE_THRESHOLD = 0.14;
+const REFERENCE_STABLE_MATCHES = 2;
+const REFERENCE_SAFETY_BUFFER_SECONDS = 0.25;
+const MAX_REFERENCE_SCAN_SECONDS = 3;
+
+const loadImageElement = (src: string) => new Promise<HTMLImageElement>((resolve, reject) => {
+  const image = new Image();
+  image.onload = () => resolve(image);
+  image.onerror = () => reject(new Error('Referenzbild konnte nicht geladen werden.'));
+  image.src = src;
+});
+
+const calculateFrameDifference = (frameData: Uint8ClampedArray, referenceData: Uint8ClampedArray) => {
+  let difference = 0;
+
+  for (let i = 0; i < frameData.length; i += 4) {
+    difference += Math.abs(frameData[i] - referenceData[i]);
+    difference += Math.abs(frameData[i + 1] - referenceData[i + 1]);
+    difference += Math.abs(frameData[i + 2] - referenceData[i + 2]);
+  }
+
+  return difference / ((frameData.length / 4) * 255 * 3);
+};
 
 const Video2FramesProcessor: React.FC<Video2FramesProcessorProps> = ({
-  videoUrl, jobId, userId, targetFrames = 48, onComplete, onError
+  videoUrl, jobId, userId, referenceImageBase64, targetFrames = 48, onComplete, onError
 }) => {
   const [step, setStep] = useState<ProcessorStep>('loading');
   const [progress, setProgress] = useState(0);
   const [extractedCount, setExtractedCount] = useState(0);
+  const [plannedFrameCount, setPlannedFrameCount] = useState(targetFrames);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const processingRef = useRef(false);
@@ -43,21 +72,80 @@ const Video2FramesProcessor: React.FC<Video2FramesProcessorProps> = ({
     const duration = video.duration;
     const requestedStartTrim = Math.max(duration * START_TRIM_RATIO, MIN_START_TRIM_SECONDS);
     const maxSafeStartTrim = Math.max(duration * MAX_START_TRIM_RATIO, 0);
-    const startTrim = Math.min(requestedStartTrim, maxSafeStartTrim);
-    const extractionStart = Math.max(0, startTrim);
-    const extractionWindow = duration - extractionStart;
+    let extractionStart = Math.max(0, Math.min(requestedStartTrim, maxSafeStartTrim));
+
+    if (referenceImageBase64) {
+      const analysisCanvas = document.createElement('canvas');
+      analysisCanvas.width = 64;
+      analysisCanvas.height = 64;
+      const analysisContext = analysisCanvas.getContext('2d', { willReadFrequently: true });
+
+      if (analysisContext) {
+        const referenceImage = await loadImageElement(referenceImageBase64);
+        analysisContext.drawImage(referenceImage, 0, 0, 64, 64);
+        const referenceImageData = analysisContext.getImageData(0, 0, 64, 64).data;
+
+        let stableDifferentFrames = 0;
+        const scanLimit = Math.min(MAX_REFERENCE_SCAN_SECONDS, Math.max(0, duration - MIN_EXTRACTION_WINDOW_SECONDS));
+
+        for (let time = 0; time <= scanLimit; time += REFERENCE_SCAN_STEP_SECONDS) {
+          await new Promise<void>((resolve) => {
+            video.currentTime = time;
+            const onSeeked = () => {
+              video.removeEventListener('seeked', onSeeked);
+              analysisContext.clearRect(0, 0, 64, 64);
+              analysisContext.drawImage(video, 0, 0, 64, 64);
+              const frameImageData = analysisContext.getImageData(0, 0, 64, 64).data;
+              const difference = calculateFrameDifference(frameImageData, referenceImageData);
+
+              if (difference >= REFERENCE_DIFFERENCE_THRESHOLD) {
+                stableDifferentFrames += 1;
+              } else {
+                stableDifferentFrames = 0;
+              }
+
+              if (stableDifferentFrames >= REFERENCE_STABLE_MATCHES) {
+                extractionStart = Math.max(
+                  extractionStart,
+                  Math.min(
+                    time + REFERENCE_SAFETY_BUFFER_SECONDS,
+                    Math.max(0, duration - MIN_EXTRACTION_WINDOW_SECONDS - END_TRIM_SECONDS),
+                  ),
+                );
+              }
+
+              resolve();
+            };
+
+            video.addEventListener('seeked', onSeeked);
+          });
+
+          if (stableDifferentFrames >= REFERENCE_STABLE_MATCHES) {
+            break;
+          }
+        }
+      }
+    }
+
+    const extractionEnd = Math.max(extractionStart, duration - END_TRIM_SECONDS);
+    const extractionWindow = extractionEnd - extractionStart;
 
     if (extractionWindow < MIN_EXTRACTION_WINDOW_SECONDS) {
       throw new Error('Das generierte Video ist zu kurz für eine saubere 360°-Extraktion.');
     }
 
-    const interval = extractionWindow / targetFrames;
+    const effectiveFrameCount = Math.min(
+      MAX_DYNAMIC_FRAMES,
+      Math.max(targetFrames, Math.round(extractionWindow / TARGET_FRAME_INTERVAL_SECONDS)),
+    );
+    const interval = effectiveFrameCount > 1 ? extractionWindow / (effectiveFrameCount - 1) : extractionWindow;
     const frames: { index: number; blob: Blob }[] = [];
+    setPlannedFrameCount(effectiveFrameCount);
 
     setStep('extracting');
 
-    for (let i = 0; i < targetFrames; i++) {
-      const time = extractionStart + i * interval;
+    for (let i = 0; i < effectiveFrameCount; i++) {
+      const time = Math.min(extractionEnd, extractionStart + i * interval);
       await new Promise<void>((resolve) => {
         video.currentTime = time;
         const onSeeked = () => {
@@ -66,7 +154,7 @@ const Video2FramesProcessor: React.FC<Video2FramesProcessorProps> = ({
           canvas.toBlob((blob) => {
             if (blob) frames.push({ index: i, blob });
             setExtractedCount(i + 1);
-            setProgress(Math.round(((i + 1) / targetFrames) * 50));
+            setProgress(Math.round(((i + 1) / effectiveFrameCount) * 50));
             resolve();
           }, 'image/jpeg', 0.92);
         };
@@ -116,13 +204,13 @@ const Video2FramesProcessor: React.FC<Video2FramesProcessorProps> = ({
     // Update job status
     await supabase
       .from('spin360_jobs' as any)
-      .update({ status: 'completed', updated_at: new Date().toISOString() } as any)
+      .update({ status: 'completed', target_frame_count: frameUrls.length, updated_at: new Date().toISOString() } as any)
       .eq('id', jobId);
 
     setProgress(100);
     setStep('done');
     onComplete(frameUrls);
-  }, [videoUrl, jobId, userId, targetFrames, onComplete]);
+  }, [jobId, onComplete, referenceImageBase64, targetFrames, userId]);
 
   const handleVideoLoaded = useCallback(() => {
     const video = videoRef.current;
@@ -151,7 +239,7 @@ const Video2FramesProcessor: React.FC<Video2FramesProcessorProps> = ({
 
   const stepLabel = {
     loading: 'Video wird geladen…',
-    extracting: `Frames extrahieren (${extractedCount}/${targetFrames})…`,
+    extracting: `Frames extrahieren (${extractedCount}/${plannedFrameCount})…`,
     uploading: 'Frames werden hochgeladen…',
     saving: 'Frames werden gespeichert…',
     done: 'Fertig!',

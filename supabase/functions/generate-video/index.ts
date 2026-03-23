@@ -67,7 +67,7 @@ async function deductCredits(userId: string, amount: number, actionType: string,
 
 const DEFAULT_VIDEO_PROMPT = `Erstelle ein professionelles 8-Sekunden Showroom-Video des Fahrzeugs. Das Auto dreht sich langsam auf einer Drehscheibe in einem modernen, hell beleuchteten Autohaus-Showroom. Weiche Beleuchtung, Reflexionen auf dem Lack, polierter Boden. Cinematische Kamerafahrt. Professionelle Autohaus-Atmosphäre.`;
 
-const DEFAULT_SPIN360_VIDEO_PROMPT = `A seamless, complete, FAST 360-degree rotation of the provided car finishing exactly one full revolution within the video duration. The car is placed realistically on a turntable inside a clean, modern showroom. The turntable spins at a brisk, steady pace — the car must complete the ENTIRE 360° turn from start to finish with NO pause and NO slow-down. The camera is mounted on a tripod, completely locked, and perfectly static. No audio, no background shifting, and no original backgrounds from the reference images. The entire sequence happens strictly inside the showroom lighting and environment. Do not mention any specific car brands.`;
+const DEFAULT_SPIN360_VIDEO_PROMPT = `Create an EXACT identity-locked 8-second turntable video of the SAME car shown in the reference images. The car must complete one full 360-degree rotation from front 3/4 view back to front 3/4 view within the full 8-second duration at a FAST, perfectly constant speed. The FIRST frame must already show the fully transformed car inside the showroom. Never show the original source photo, outdoor background, dissolve, crossfade, ghost image, fade-in, or transition. The rear of the car must match the rear reference exactly: taillights, trunk shape, bumper, diffuser, exhaust layout, license plate area, wheels, paint, and body lines must stay consistent. Locked tripod camera, no camera movement, no zoom, no flicker, no background drift, no audio.`;
 
 function encodeBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
@@ -164,11 +164,23 @@ async function handleVideoStart(req: Request, GEMINI_API_KEY: string, body: any)
   const defaultPrompt = isSpin360 ? DEFAULT_SPIN360_VIDEO_PROMPT : DEFAULT_VIDEO_PROMPT;
   const systemPrompt = await getCustomPrompt(promptKey, defaultPrompt);
   const finalPrompt = userPrompt || systemPrompt;
+  const spin360PromptGuardrail = `${finalPrompt}\n\nCRITICAL: Use the EXACT SAME real vehicle identity from the provided reference images. Do not redesign, restyle, or swap the car. Rear details must match the rear reference exactly. The video must start already inside the showroom with NO visible source photo, NO outdoor scene, NO dissolve, NO ghost overlay, and NO transition frames. Rotate fast enough to complete a full 360-degree revolution within the full 8-second video and finish near the starting angle.`;
 
   let requestBody: any;
 
+  if (isSpin360 && imageBase64) {
+    const parsed = parseImageBase64(imageBase64);
+    requestBody = {
+      instances: [{
+        prompt: spin360PromptGuardrail,
+        image: { bytesBase64Encoded: parsed.data, mimeType: parsed.mimeType },
+      }],
+      parameters: { sampleCount: 1 },
+    };
+  }
+
   // Multi-image spin360 flow — create composite reference image from front + rear
-  if (isSpin360 && Array.isArray(images) && images.length > 0) {
+  else if (isSpin360 && Array.isArray(images) && images.length > 0) {
     const frontImg = images.find((img: any) => img.label === 'front_34') || images[0];
     const rearImg = images.find((img: any) => img.label === 'rear_34');
     const parsedFront = parseImageBase64(frontImg.base64);
@@ -194,7 +206,7 @@ async function handleVideoStart(req: Request, GEMINI_API_KEY: string, body: any)
       }
     }
 
-    const enhancedPrompt = `${finalPrompt}\n\nIMPORTANT: This reference image shows BOTH the front 3/4 and rear 3/4 views of the EXACT same car. The video must show this EXACT car from ALL angles during the 360-degree rotation — the rear of the car must match the rear reference precisely. Place it on a turntable inside a clean, modern showroom. Remove all original backgrounds completely — the car must appear ONLY inside the showroom from frame 1. No flickering of original backgrounds allowed.`;
+    const enhancedPrompt = `${spin360PromptGuardrail}\n\nIMPORTANT: This reference image shows BOTH the front 3/4 and rear 3/4 views of the EXACT same car. The video must show this EXACT car from ALL angles during the 360-degree rotation — the rear of the car must match the rear reference precisely. Place it on a turntable inside a clean, modern showroom. Remove all original backgrounds completely — the car must appear ONLY inside the showroom from frame 1. No flickering of original backgrounds allowed.`;
 
     requestBody = {
       instances: [{ prompt: enhancedPrompt, image: { bytesBase64Encoded: finalImageData, mimeType: finalImageMime } }],
