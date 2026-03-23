@@ -16,7 +16,7 @@ interface Spin360WorkflowProps {
   onBack: () => void;
 }
 
-const SPIN360_VIDEO_PROMPT = `Professional 360-degree turntable rotation of the exact vehicle shown in the reference images. The car rotates smoothly and continuously on a white turntable platform, completing exactly one full 360-degree rotation. Clean white studio background, soft even lighting, no shadows. Perfectly steady camera at eye level, fixed position. No sound. Smooth constant rotation speed. 8 seconds duration for one complete revolution.`;
+const SPIN360_VIDEO_PROMPT = `A seamless, perfect 360-degree rotation of the provided car. The car is placed realistically on the turntable inside the provided empty showroom environment. The camera is mounted on a tripod, completely locked, and perfectly static. The car rotates smoothly around its own vertical center axis at a constant speed. No audio, no background shifting, and no original backgrounds from the reference images. The entire sequence happens strictly inside the showroom lighting and environment. Do not mention any specific car brands.`;
 
 const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack }) => {
   const { user } = useAuth();
@@ -104,7 +104,7 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack }) => {
     }
   }, [user, uploadedSlots]);
 
-  /* ─── Video2Frames Flow ─── */
+  /* ─── Video2Frames Flow (refactored: 3 images) ─── */
   const pollVideoOperation = useCallback(async (operationName: string, currentJobId: string) => {
     let attempts = 0;
     const maxAttempts = 120; // 10 min max
@@ -124,7 +124,6 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack }) => {
             setPhase('video_extracting');
             return;
           }
-          // Update job as failed
           await supabase.from('spin360_jobs' as any)
             .update({ status: 'failed', error_message: pollResult.error || 'Kein Video in der Antwort', updated_at: new Date().toISOString() } as any)
             .eq('id', currentJobId);
@@ -135,7 +134,6 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack }) => {
         }
       } catch (err) {
         console.error('Poll error:', err);
-        // Continue polling on transient errors
       }
     }
     await supabase.from('spin360_jobs' as any)
@@ -153,7 +151,7 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack }) => {
     setJobError(null);
 
     try {
-      // Upload source images
+      // Upload source images (front_34, rear_34, showroom)
       const sourceUrls: { perspective: string; url: string }[] = [];
       for (const slot of uploadedSlots) {
         if (!slot.base64) continue;
@@ -164,7 +162,7 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack }) => {
         if (url) sourceUrls.push({ perspective: slot.perspective, url });
       }
 
-      if (sourceUrls.length < 4) {
+      if (sourceUrls.length < 3) {
         toast.error('Fehler beim Hochladen der Bilder');
         setPhase('upload'); setIsProcessing(false); return;
       }
@@ -189,13 +187,24 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack }) => {
       }));
       await supabase.from('spin360_source_images' as any).insert(sourceRows as any);
 
-      // Use the front image as reference for video generation
-      const frontSlot = uploadedSlots.find(s => s.perspective === 'front');
-      const imageBase64 = frontSlot?.base64 || uploadedSlots[0]?.base64;
+      // Collect base64 images for all 3 inputs
+      const frontSlot = uploadedSlots.find(s => s.perspective === 'front_34');
+      const rearSlot = uploadedSlots.find(s => s.perspective === 'rear_34');
+      const showroomSlot = uploadedSlots.find(s => s.perspective === 'showroom');
 
-      // Start video generation
+      const images: { base64: string; label: string }[] = [];
+      if (frontSlot?.base64) images.push({ base64: frontSlot.base64, label: 'front_34' });
+      if (rearSlot?.base64) images.push({ base64: rearSlot.base64, label: 'rear_34' });
+      if (showroomSlot?.base64) images.push({ base64: showroomSlot.base64, label: 'showroom' });
+
+      // Start video generation with all 3 images
       const { data: startResult, error: startError } = await supabase.functions.invoke('generate-video', {
-        body: { action: 'spin360_start', imageBase64, prompt: SPIN360_VIDEO_PROMPT, jobId: newJobId },
+        body: {
+          action: 'spin360_start',
+          images,
+          prompt: SPIN360_VIDEO_PROMPT,
+          jobId: newJobId,
+        },
       });
 
       if (startError || startResult?.error) {
@@ -252,14 +261,12 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack }) => {
       const operationName = manifest?.operationName;
 
       if (!operationName) {
-        // No operation name saved — mark as failed
         await supabase.from('spin360_jobs' as any)
           .update({ status: 'failed', error_message: 'Job wurde unterbrochen (keine Operation-ID)', updated_at: new Date().toISOString() } as any)
           .eq('id', stuckJob.id);
         return;
       }
 
-      // Check if job is too old (>15 min) — fail it
       const jobAge = Date.now() - new Date(stuckJob.updated_at || stuckJob.created_at).getTime();
       if (jobAge > 15 * 60 * 1000) {
         await supabase.from('spin360_jobs' as any)
@@ -268,7 +275,6 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack }) => {
         return;
       }
 
-      // Resume polling
       setJobId(stuckJob.id);
       setSpinMode('video2frames');
       setPhase('processing');
@@ -369,7 +375,7 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack }) => {
           <h2 className="font-display text-2xl font-bold text-foreground">360° Spin</h2>
           <p className="text-sm text-muted-foreground">
             {spinMode === 'video2frames'
-              ? '4 Fotos → KI-Video → 48 Frames'
+              ? '3 Bilder → KI-Video → 48 Frames'
               : '4 Fotos hochladen – KI erstellt den Rest automatisch'}
           </p>
         </div>
