@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 
 interface LightboxImage {
   id: string;
@@ -96,12 +97,10 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
         reader.readAsDataURL(blob);
       });
 
-      const { data, error } = await supabase.functions.invoke('remaster-vehicle-image', {
-        body: {
-          imageBase64: base64,
-          vehicleDescription: current.perspective || '',
-          modelTier: 'standard',
-        },
+      const { data, error } = await invokeRemasterVehicleImage({
+        imageBase64: base64,
+        vehicleDescription: current.perspective || '',
+        modelTier: 'standard',
       });
 
       if (error || !data?.imageBase64) {

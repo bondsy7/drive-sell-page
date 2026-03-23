@@ -23,6 +23,7 @@ import {
 } from '@/lib/landing-page-builder';
 import { downloadHTML } from '@/lib/templates/download';
 import { uploadImageToStorage } from '@/lib/storage-utils';
+import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 
 interface LandingPageEditorProps {
   projectId: string;
@@ -138,9 +139,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
     setImageLoading(sectionId);
     try {
       const base64 = await fileToBase64(file);
-      const { data, error } = await supabase.functions.invoke('remaster-vehicle-image', {
-        body: { imageBase64: base64, vehicleDescription: `${brand} ${model}`, modelTier: 'schnell' },
-      });
+      const { data, error } = await invokeRemasterVehicleImage({ imageBase64: base64, vehicleDescription: `${brand} ${model}`, modelTier: 'schnell' });
       if (error || !data?.imageBase64) { toast.error('Remastering fehlgeschlagen'); return; }
       const url = await uploadImageToStorage(data.imageBase64, user.id, `landing/${projectId}/${sectionId}-${Date.now()}.png`);
       if (url) {
