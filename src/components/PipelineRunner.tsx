@@ -21,6 +21,7 @@ import {
   applyPromptOverrides,
 } from '@/lib/pipeline-jobs';
 import { buildMasterPrompt, type RemasterConfig, fetchManufacturerLogos } from '@/lib/remaster-prompt';
+import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 
 /* ─── Types ─── */
 interface PipelineRunnerProps {
@@ -255,19 +256,18 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
     const baseContext = buildMasterPrompt(remasterConfig, vehicleDescription);
     const fullPrompt = `${baseContext}\n\n--- PERSPECTIVE INSTRUCTION ---\n${prompt}`;
 
-    const { data, error } = await supabase.functions.invoke('remaster-vehicle-image', {
-      body: {
-        imageBase64: referenceImages[0],
-        additionalImages: referenceImages.slice(1),
-        vehicleDescription, modelTier,
-        dynamicPrompt: fullPrompt,
-        customShowroomBase64: remasterConfig.customShowroomBase64 || null,
-        customPlateImageBase64: remasterConfig.customPlateImageBase64 || null,
-        dealerLogoUrl: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null,
-        dealerLogoBase64: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoBase64 : null,
-        manufacturerLogoUrl: remasterConfig.showManufacturerLogo ? resolvedManufacturerLogoUrl : null,
-        manufacturerLogoBase64: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoBase64 : null,
-      },
+    const { data, error } = await invokeRemasterVehicleImage({
+      imageBase64: referenceImages[0],
+      additionalImages: referenceImages.slice(1),
+      vehicleDescription,
+      modelTier,
+      dynamicPrompt: fullPrompt,
+      customShowroomBase64: remasterConfig.customShowroomBase64 || null,
+      customPlateImageBase64: remasterConfig.customPlateImageBase64 || null,
+      dealerLogoUrl: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null,
+      dealerLogoBase64: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoBase64 : null,
+      manufacturerLogoUrl: remasterConfig.showManufacturerLogo ? resolvedManufacturerLogoUrl : null,
+      manufacturerLogoBase64: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoBase64 : null,
     });
 
     if (error || !data?.imageBase64) {
