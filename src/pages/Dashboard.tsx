@@ -169,11 +169,11 @@ const Dashboard = () => {
   const tabs: { key: TabKey; icon: React.ElementType; label: string; count: number }[] = [
     { key: 'projects', icon: FileText, label: 'Projekte', count: regularProjects.length },
     { key: 'landings', icon: Layout, label: 'Landing Pages', count: landingProjects.length },
-    { key: 'gallery', icon: Image, label: 'Galerie', count: galleryTotal || counts?.gallery || 0 },
-    { key: 'videos', icon: Video, label: 'Videos', count: videos.length || counts?.videos || 0 },
-    { key: 'banners', icon: LayoutGrid, label: 'Banner', count: banners.length || counts?.banners || 0 },
-    { key: 'spin360', icon: RotateCw, label: '360° Spin', count: spin360Jobs.length || counts?.spin360 || 0 },
-    { key: 'leads', icon: MessageSquare, label: 'Anfragen', count: leadsTotal || counts?.leads || 0 },
+    { key: 'gallery', icon: Image, label: 'Galerie', count: tab === 'gallery' ? galleryTotal : (counts?.gallery ?? 0) },
+    { key: 'videos', icon: Video, label: 'Videos', count: tab === 'videos' ? videos.length : (counts?.videos ?? 0) },
+    { key: 'banners', icon: LayoutGrid, label: 'Banner', count: tab === 'banners' ? banners.length : (counts?.banners ?? 0) },
+    { key: 'spin360', icon: RotateCw, label: '360° Spin', count: tab === 'spin360' ? spin360Jobs.length : (counts?.spin360 ?? 0) },
+    { key: 'leads', icon: MessageSquare, label: 'Anfragen', count: tab === 'leads' ? leadsTotal : (counts?.leads ?? 0) },
   ];
 
   // ─── Render ─────────────────────────────────────────────────
