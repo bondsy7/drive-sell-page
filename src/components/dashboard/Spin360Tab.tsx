@@ -1,14 +1,15 @@
 import { Link } from 'react-router-dom';
-import { RotateCw } from 'lucide-react';
+import { RotateCw, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { type Spin360Job } from './types';
 
 interface Props {
   jobs: Spin360Job[];
   onOpen: (jobId: string) => void;
+  onDelete: (jobId: string) => void;
 }
 
-export default function Spin360Tab({ jobs, onOpen }: Props) {
+export default function Spin360Tab({ jobs, onOpen, onDelete }: Props) {
   if (jobs.length === 0) {
     return (
       <div className="text-center py-20 space-y-3">
@@ -30,13 +31,23 @@ export default function Spin360Tab({ jobs, onOpen }: Props) {
         >
           <div className="flex items-center justify-between">
             <h3 className="font-display font-semibold text-foreground text-sm">360° Spin</h3>
-            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
-              job.displayStatus === 'completed' ? 'bg-green-500/10 text-green-600' :
-              job.displayStatus === 'failed' ? 'bg-destructive/10 text-destructive' :
-              'bg-accent/10 text-accent'
-            }`}>
-              {job.displayStatus === 'completed' ? 'Fertig' : job.displayStatus === 'failed' ? 'Abgebrochen' : 'In Bearbeitung'}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                job.displayStatus === 'completed' ? 'bg-green-500/10 text-green-600' :
+                job.displayStatus === 'failed' ? 'bg-destructive/10 text-destructive' :
+                'bg-accent/10 text-accent'
+              }`}>
+                {job.displayStatus === 'completed' ? 'Fertig' : job.displayStatus === 'failed' ? 'Abgebrochen' : 'In Bearbeitung'}
+              </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                onClick={(e) => { e.stopPropagation(); onDelete(job.id); }}
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
+            </div>
           </div>
           <p className="text-xs text-muted-foreground">
             {new Date(job.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}

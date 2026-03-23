@@ -26,7 +26,7 @@ import VideoPlayerModal from '@/components/dashboard/VideoPlayerModal';
 import SpinViewerModal from '@/components/dashboard/SpinViewerModal';
 import {
   useProjects, useGallery, useLeads, useVideos, useBanners, useSpin360,
-  useDashboardCounts, useDeleteProject, useDeleteLead, useDeleteVideo, useDeleteBanner,
+  useDashboardCounts, useDeleteProject, useDeleteLead, useDeleteVideo, useDeleteBanner, useDeleteSpin360,
   PAGE_SIZE,
 } from '@/hooks/useDashboardData';
 
