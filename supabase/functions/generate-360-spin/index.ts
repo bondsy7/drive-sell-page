@@ -153,37 +153,58 @@ async function callImageGeneration(prompt: string, referenceImageUrl: string, mo
   const b64 = arrayBufferToBase64(imgBuf);
   const mimeType = imgResp.headers.get("content-type") || "image/jpeg";
 
-  const resp = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            { text: prompt },
-            { inlineData: { mimeType, data: b64 } },
-          ],
-        }],
-        generationConfig: {
-          responseModalities: ["IMAGE", "TEXT"],
+  // Try multiple models as fallback for geo-restrictions
+  const modelsToTry = [model, "gemini-2.0-flash-exp", "gemini-2.0-flash-preview-image-generation"];
+  const uniqueModels = [...new Set(modelsToTry)];
+
+  for (const currentModel of uniqueModels) {
+    try {
+      const resp = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                { text: prompt },
+                { inlineData: { mimeType, data: b64 } },
+              ],
+            }],
+            generationConfig: {
+              responseModalities: ["IMAGE", "TEXT"],
+            },
+          }),
         },
-      }),
-    },
-  );
+      );
 
-  if (!resp.ok) {
-    const t = await resp.text();
-    console.error(`Image gen error (${model}):`, resp.status, t);
-    if (resp.status === 429) throw new Error("rate_limited");
-    throw new Error(`image_generation_${resp.status}`);
-  }
+      if (!resp.ok) {
+        const t = await resp.text();
+        console.error(`Image gen error (${currentModel}):`, resp.status, t);
+        if (resp.status === 429) throw new Error("rate_limited");
+        // If geo-blocked (400 FAILED_PRECONDITION), try next model
+        if (resp.status === 400 && t.includes("not available in your country")) {
+          console.warn(`Model ${currentModel} geo-blocked, trying next...`);
+          continue;
+        }
+        if (currentModel === uniqueModels[uniqueModels.length - 1]) {
+          throw new Error(`image_generation_${resp.status}`);
+        }
+        continue;
+      }
 
-  const data = await resp.json();
-  const parts = data.candidates?.[0]?.content?.parts || [];
-  for (const part of parts) {
-    if (part.inlineData) {
-      return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+      const data = await resp.json();
+      const parts = data.candidates?.[0]?.content?.parts || [];
+      for (const part of parts) {
+        if (part.inlineData) {
+          console.log(`Image generated successfully with model: ${currentModel}`);
+          return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+        }
+      }
+    } catch (e) {
+      if ((e as Error).message === "rate_limited") throw e;
+      if (currentModel === uniqueModels[uniqueModels.length - 1]) throw e;
+      console.warn(`Model ${currentModel} failed, trying next:`, (e as Error).message);
     }
   }
   return null;
@@ -352,6 +373,7 @@ serve(async (req) => {
       console.log(`[${jobId}] Normalizing ${perspective} (${perspectiveIndex + 1}/4)...`);
       const normalizePrompt = await getCustomPrompt(serviceSb, "spin360_normalize", NORMALIZE_PROMPT);
 
+      let normalizedSuccessfully = false;
       try {
         const normalizedBase64 = await callImageGeneration(
           `${normalizePrompt}\n\nThis is the ${perspective} view of the vehicle.`,
@@ -369,11 +391,21 @@ serve(async (req) => {
             job_id: jobId, user_id: user.id, perspective, image_url: storedUrl, sort_order: perspectiveIndex,
           });
           console.log(`[${jobId}] Normalized ${perspective} saved`);
+          normalizedSuccessfully = true;
         } else {
           console.warn(`[${jobId}] Normalization returned null for ${perspective}`);
         }
       } catch (e) {
         console.error(`[${jobId}] Normalize ${perspective} failed:`, e);
+      }
+
+      // Fallback: use original source image as canonical if normalization failed
+      if (!normalizedSuccessfully) {
+        console.log(`[${jobId}] Using original image as canonical fallback for ${perspective}`);
+        const originalUrl = imageUrls[perspectiveIndex];
+        await serviceSb.from("spin360_canonical_images").insert({
+          job_id: jobId, user_id: user.id, perspective, image_url: originalUrl, sort_order: perspectiveIndex,
+        });
       }
 
       // Next perspective or move to profiling
