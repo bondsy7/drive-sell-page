@@ -170,7 +170,7 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack }) => {
       // Create spin job with video mode
       const { data: job, error: jobErr } = await supabase
         .from('spin360_jobs' as any)
-        .insert({ user_id: user.id, status: 'generating_video', target_frame_count: 48 } as any)
+        .insert({ user_id: user.id, status: 'generating_video', target_frame_count: 36 } as any)
         .select('id').single();
 
       if (jobErr || !job) {
@@ -375,7 +375,7 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack }) => {
           <h2 className="font-display text-2xl font-bold text-foreground">360° Spin</h2>
           <p className="text-sm text-muted-foreground">
             {spinMode === 'video2frames'
-              ? '3 Bilder → KI-Video → 48 Frames'
+              ? '3 Bilder → KI-Video → 36 Frames'
               : '4 Fotos hochladen – KI erstellt den Rest automatisch'}
           </p>
         </div>
@@ -408,7 +408,7 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack }) => {
           videoUrl={videoUrl}
           jobId={jobId}
           userId={user.id}
-          targetFrames={48}
+          targetFrames={36}
           onComplete={handleVideoFramesComplete}
           onError={handleVideoFramesError}
         />
