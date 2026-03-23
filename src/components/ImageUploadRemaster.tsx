@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import RemasterOptions from '@/components/RemasterOptions';
 import { type RemasterConfig, buildMasterPrompt } from '@/lib/remaster-prompt';
+import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 
 interface ImageUploadRemasterProps {
   vehicleDescription: string;
@@ -146,19 +147,17 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
 
     const processImage = async (img: UploadedImage) => {
       try {
-        const { data, error } = await supabase.functions.invoke('remaster-vehicle-image', {
-          body: {
-            imageBase64: img.originalBase64,
-            vehicleDescription,
-            modelTier: modelTier || 'standard',
-            dynamicPrompt,
-            customShowroomBase64: remasterConfig.customShowroomBase64 || null,
-            customPlateImageBase64: remasterConfig.customPlateImageBase64 || null,
-            dealerLogoUrl: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null,
-            dealerLogoBase64: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoBase64 : null,
-            manufacturerLogoUrl: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoUrl : null,
-            manufacturerLogoBase64: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoBase64 : null,
-          },
+        const { data, error } = await invokeRemasterVehicleImage({
+          imageBase64: img.originalBase64,
+          vehicleDescription,
+          modelTier: modelTier || 'standard',
+          dynamicPrompt,
+          customShowroomBase64: remasterConfig.customShowroomBase64 || null,
+          customPlateImageBase64: remasterConfig.customPlateImageBase64 || null,
+          dealerLogoUrl: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null,
+          dealerLogoBase64: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoBase64 : null,
+          manufacturerLogoUrl: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoUrl : null,
+          manufacturerLogoBase64: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoBase64 : null,
         });
 
         if (error || !data?.imageBase64) {
@@ -195,19 +194,17 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
     setRegeneratingIds(prev => new Set(prev).add(id));
     try {
       const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription);
-      const { data, error } = await supabase.functions.invoke('remaster-vehicle-image', {
-        body: {
-          imageBase64: img.originalBase64,
-          vehicleDescription,
-          modelTier: modelTier || 'standard',
-          dynamicPrompt,
-          customShowroomBase64: remasterConfig.customShowroomBase64 || null,
-          customPlateImageBase64: remasterConfig.customPlateImageBase64 || null,
-          dealerLogoUrl: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null,
-          dealerLogoBase64: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoBase64 : null,
-          manufacturerLogoUrl: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoUrl : null,
-          manufacturerLogoBase64: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoBase64 : null,
-        },
+      const { data, error } = await invokeRemasterVehicleImage({
+        imageBase64: img.originalBase64,
+        vehicleDescription,
+        modelTier: modelTier || 'standard',
+        dynamicPrompt,
+        customShowroomBase64: remasterConfig.customShowroomBase64 || null,
+        customPlateImageBase64: remasterConfig.customPlateImageBase64 || null,
+        dealerLogoUrl: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null,
+        dealerLogoBase64: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoBase64 : null,
+        manufacturerLogoUrl: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoUrl : null,
+        manufacturerLogoBase64: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoBase64 : null,
       });
       if (error || !data?.imageBase64) {
         const errMsg = data?.error || error?.message || 'Fehler beim Remastering';

@@ -12,6 +12,7 @@ import { type RemasterConfig, buildMasterPrompt } from '@/lib/remaster-prompt';
 import PipelineRunner from '@/components/PipelineRunner';
 import { lookupBrandFromVin } from '@/lib/vin-wmi-lookup';
 import { resolveCanonicalBrand, normalizeBrand } from '@/lib/brand-aliases';
+import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 import type { VehicleData } from '@/types/vehicle';
 
 interface ImageCaptureGridProps {
@@ -443,19 +444,17 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       const MAX_RETRIES = 2;
       for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
         try {
-          const { data, error } = await supabase.functions.invoke('remaster-vehicle-image', {
-            body: {
-              imageBase64: captures[slot.key].base64,
-              vehicleDescription,
-              modelTier: modelTier || 'standard',
-              dynamicPrompt,
-              customShowroomBase64: remasterConfig.customShowroomBase64 || null,
-              customPlateImageBase64: remasterConfig.customPlateImageBase64 || null,
-              dealerLogoUrl: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null,
-              dealerLogoBase64: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoBase64 : null,
-              manufacturerLogoUrl: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoUrl : null,
-              manufacturerLogoBase64: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoBase64 : null,
-            },
+          const { data, error } = await invokeRemasterVehicleImage({
+            imageBase64: captures[slot.key].base64,
+            vehicleDescription,
+            modelTier: modelTier || 'standard',
+            dynamicPrompt,
+            customShowroomBase64: remasterConfig.customShowroomBase64 || null,
+            customPlateImageBase64: remasterConfig.customPlateImageBase64 || null,
+            dealerLogoUrl: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null,
+            dealerLogoBase64: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoBase64 : null,
+            manufacturerLogoUrl: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoUrl : null,
+            manufacturerLogoBase64: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoBase64 : null,
           });
 
           if (error || !data?.imageBase64) {
@@ -485,8 +484,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     };
 
     // Use lower concurrency on mobile to prevent connection drops
-    const isMobile = /Mobi|Android|iPhone/i.test(navigator.userAgent);
-    const CONCURRENCY = isMobile ? 1 : 3;
+    const CONCURRENCY = 4;
     const queue = [...toProcess];
     const workers = Array.from({ length: Math.min(CONCURRENCY, queue.length) }, async () => {
       while (queue.length > 0) {
@@ -505,19 +503,17 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     setCaptures(prev => ({ ...prev, [slotKey]: { ...prev[slotKey], status: 'processing', error: undefined } }));
     try {
       const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription);
-      const { data, error } = await supabase.functions.invoke('remaster-vehicle-image', {
-        body: {
-          imageBase64: captures[slotKey].base64,
-          vehicleDescription,
-          modelTier: modelTier || 'standard',
-          dynamicPrompt,
-          customShowroomBase64: remasterConfig.customShowroomBase64 || null,
-          customPlateImageBase64: remasterConfig.customPlateImageBase64 || null,
-          dealerLogoUrl: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null,
-          dealerLogoBase64: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoBase64 : null,
-          manufacturerLogoUrl: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoUrl : null,
-          manufacturerLogoBase64: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoBase64 : null,
-        },
+      const { data, error } = await invokeRemasterVehicleImage({
+        imageBase64: captures[slotKey].base64,
+        vehicleDescription,
+        modelTier: modelTier || 'standard',
+        dynamicPrompt,
+        customShowroomBase64: remasterConfig.customShowroomBase64 || null,
+        customPlateImageBase64: remasterConfig.customPlateImageBase64 || null,
+        dealerLogoUrl: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null,
+        dealerLogoBase64: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoBase64 : null,
+        manufacturerLogoUrl: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoUrl : null,
+        manufacturerLogoBase64: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoBase64 : null,
       });
       if (error || !data?.imageBase64) {
         const errMsg = data?.error || error?.message || 'Fehler beim Remastering';
