@@ -153,11 +153,11 @@ export function useDashboardCounts() {
     queryFn: async () => {
       const userId = user?.id;
       const [imgRes, leadsRes, videosRes, bannersRes, spinRes] = await Promise.all([
-        supabase.from('project_images').select('id', { count: 'exact', head: true }),
-        supabase.from('leads').select('id', { count: 'exact', head: true }),
+        supabase.from('project_images').select('id', { count: 'exact', head: true }).eq('user_id', userId!),
+        supabase.from('leads').select('id', { count: 'exact', head: true }).eq('dealer_user_id', userId!),
         userId ? supabase.storage.from('vehicle-images').list(`${userId}/videos`, { limit: 200 }) : Promise.resolve({ data: null }),
         userId ? supabase.storage.from('banners').list(userId, { limit: 200 }) : Promise.resolve({ data: null }),
-        supabase.from('spin360_jobs').select('id', { count: 'exact', head: true }),
+        supabase.from('spin360_jobs').select('id', { count: 'exact', head: true }).eq('user_id', userId!),
       ]);
       return {
         gallery: imgRes.count ?? 0,
