@@ -90,6 +90,57 @@ function parseImageBase64(input: string): { data: string; mimeType: string } {
   return { data: input.replace(/^data:image\/\w+;base64,/, ""), mimeType: "image/jpeg" };
 }
 
+/**
+ * Use Gemini image generation to create a side-by-side composite of front and rear views.
+ * This gives Veo a single reference image showing both perspectives of the car.
+ */
+async function createCompositeImage(
+  frontBase64: string, frontMime: string,
+  rearBase64: string, rearMime: string,
+  GEMINI_API_KEY: string
+): Promise<{ data: string; mimeType: string } | null> {
+  try {
+    const url = `${BASE_URL}/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            { text: "Create a single wide reference image showing these two views of the EXACT SAME car side by side. Left side: the front 3/4 view. Right side: the rear 3/4 view. Keep both images exactly as they are - do not change the car's appearance, color, shape, wheels, or any details. Simply place them next to each other on a plain white background. This is a reference sheet, not art." },
+            { inlineData: { mimeType: frontMime, data: frontBase64 } },
+            { inlineData: { mimeType: rearMime, data: rearBase64 } },
+          ]
+        }],
+        generationConfig: {
+          responseModalities: ["image", "text"],
+          responseMimeType: "image/jpeg",
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      console.error("Composite image generation failed:", await response.text());
+      return null;
+    }
+
+    const result = await response.json();
+    const imagePart = result.candidates?.[0]?.content?.parts?.find(
+      (p: any) => p.inlineData?.data
+    );
+    if (imagePart) {
+      return {
+        data: imagePart.inlineData.data,
+        mimeType: imagePart.inlineData.mimeType || "image/jpeg",
+      };
+    }
+    return null;
+  } catch (err) {
+    console.error("Composite image error:", err);
+    return null;
+  }
+}
+
 async function handleVideoStart(req: Request, GEMINI_API_KEY: string, body: any): Promise<Response> {
   const authResult = await authenticateUser(req);
   if (authResult instanceof Response) return authResult;
