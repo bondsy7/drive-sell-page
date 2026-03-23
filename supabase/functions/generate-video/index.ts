@@ -116,43 +116,26 @@ async function handleVideoStart(req: Request, GEMINI_API_KEY: string, body: any)
 
   let requestBody: any;
 
-  // Multi-image spin360 flow (3 images: front_34, rear_34, showroom)
+  // Multi-image spin360 flow — Veo only supports ONE image per request,
+  // so we use the front 3/4 view and embed context into the prompt
   if (isSpin360 && Array.isArray(images) && images.length > 0) {
-    const imageInstances = images.map((img: { base64: string; label: string }) => {
-      const parsed = parseImageBase64(img.base64);
-      return { bytesBase64Encoded: parsed.data, mimeType: parsed.mimeType };
-    });
+    const frontImg = images.find((img: any) => img.label === 'front_34') || images[0];
+    const parsed = parseImageBase64(frontImg.base64);
 
-    // Build prompt with context about the images
-    const enhancedPrompt = `${finalPrompt}\n\nIMPORTANT: The first image is the 3/4 front view of the car. The second image is the 3/4 rear view of the car. The third image is the empty showroom environment with turntable where the car must be placed. Remove all original backgrounds from the car images completely — the car must appear ONLY inside the showroom from frame 1. No flickering of original backgrounds allowed.`;
+    const enhancedPrompt = `${finalPrompt}\n\nIMPORTANT: This is a 3/4 front view of the car. Place it on a turntable inside a clean, modern showroom. The car rotates smoothly 360 degrees. Remove the original background completely — the car must appear ONLY inside the showroom from frame 1. No flickering of original backgrounds allowed.`;
 
-    if (imageInstances.length === 1) {
-      requestBody = {
-        instances: [{ prompt: enhancedPrompt, image: imageInstances[0] }],
-      };
-    } else {
-      // Veo API: pass multiple images via the prompt context
-      // We pass the first image as main reference and include others as additional context
-      requestBody = {
-        instances: [{
-          prompt: enhancedPrompt,
-          image: imageInstances[0],
-        }],
-      };
-
-      // If API supports multiple images, add them
-      if (imageInstances.length > 1) {
-        requestBody.instances[0].referenceImages = imageInstances.slice(1);
-      }
-    }
+    requestBody = {
+      instances: [{ prompt: enhancedPrompt, image: { bytesBase64Encoded: parsed.data, mimeType: parsed.mimeType } }],
+      parameters: { sampleCount: 1 },
+    };
   } else if (imageBase64) {
-    // Legacy single-image flow
     const parsed = parseImageBase64(imageBase64);
     requestBody = {
       instances: [{ prompt: finalPrompt, image: { bytesBase64Encoded: parsed.data, mimeType: parsed.mimeType } }],
+      parameters: { sampleCount: 1 },
     };
   } else {
-    requestBody = { instances: [{ prompt: finalPrompt }] };
+    requestBody = { instances: [{ prompt: finalPrompt }], parameters: { sampleCount: 1 } };
   }
 
   const genUrl = `${BASE_URL}/models/veo-3.1-generate-preview:predictLongRunning?key=${GEMINI_API_KEY}`;
