@@ -302,7 +302,9 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       toast.error('Bild zu groß (max 10MB).');
       return;
     }
-    const base64 = await fileToBase64(file);
+    const rawBase64 = await fileToBase64(file);
+    // Compress to max 2048px and JPEG quality 0.85 to prevent edge function timeouts
+    const base64 = await compressImage(rawBase64);
     setCaptures(prev => ({ ...prev, [slot.key]: { base64, status: 'captured' } }));
 
     if (!slot.isVin && (!brandDetectionAttempted.current || brandDetectionStatus === 'not-found') && makes.length > 0) {
