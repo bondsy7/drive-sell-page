@@ -600,6 +600,7 @@ const CATEGORIES = [
   'Pipeline – CI Audi',
   'Pipeline – CI VW',
   'Pipeline – CI Porsche',
+  'Pipeline – CI Volvo',
 ];
 
 const PROMPT_ORDER = Object.keys(PROMPT_META);
