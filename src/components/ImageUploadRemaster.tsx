@@ -373,7 +373,7 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
               disabled={doneCount === 0}
               className="gap-2 gradient-accent text-accent-foreground font-semibold"
             >
-              <Check className="w-4 h-4" /> Weiter zur Landing Page
+              <Check className="w-4 h-4" /> {completeLabel || 'Weiter zur Landing Page'}
             </Button>
           )}
         </div>
