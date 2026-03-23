@@ -45,7 +45,7 @@ const DEFAULT_CONFIG: RemasterConfig = {
   showDealerLogo: false,
 };
 
-const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescription, vehicleBrand, modelTier, onComplete, onBack }) => {
+const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescription, vehicleBrand, modelTier, onComplete, onBack, completeLabel }) => {
   const [images, setImages] = useState<UploadedImage[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
