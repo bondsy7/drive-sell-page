@@ -65,6 +65,7 @@ const Dashboard = () => {
   const deleteLead = useDeleteLead();
   const deleteVideo = useDeleteVideo();
   const deleteBanner = useDeleteBanner();
+  const deleteSpin360 = useDeleteSpin360();
 
   const allImages = galleryData?.items || [];
   const galleryTotal = galleryData?.total || 0;
