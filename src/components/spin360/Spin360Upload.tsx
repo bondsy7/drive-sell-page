@@ -1,13 +1,15 @@
-import React, { useState, useRef, useCallback } from 'react';
-import { Camera, Upload, X, Check, AlertTriangle, Loader2, RotateCw, Film, Images } from 'lucide-react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { Camera, Upload, X, Check, AlertTriangle, Loader2, RotateCw, Film, Images, ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 export type SpinMode = 'image2spin' | 'video2frames';
 
 export interface SpinSlotData {
-  perspective: 'front' | 'rear' | 'left' | 'right';
+  perspective: 'front' | 'rear' | 'left' | 'right' | 'front_34' | 'rear_34' | 'showroom';
   file?: File;
   base64?: string;
   status: 'empty' | 'filled' | 'analyzing' | 'ok' | 'warning' | 'error';
@@ -21,11 +23,17 @@ interface Spin360UploadProps {
   onModeChange: (mode: SpinMode) => void;
 }
 
-const SLOT_CONFIG: { perspective: SpinSlotData['perspective']; label: string; sublabel: string }[] = [
+const IMAGE2SPIN_SLOTS: { perspective: SpinSlotData['perspective']; label: string; sublabel: string }[] = [
   { perspective: 'front', label: 'Front', sublabel: 'Frontansicht des Fahrzeugs' },
   { perspective: 'rear', label: 'Heck', sublabel: 'Rückansicht des Fahrzeugs' },
   { perspective: 'left', label: 'Linke Seite', sublabel: 'Komplette linke Seite' },
   { perspective: 'right', label: 'Rechte Seite', sublabel: 'Komplette rechte Seite' },
+];
+
+const VIDEO2FRAMES_SLOTS: { perspective: SpinSlotData['perspective']; label: string; sublabel: string }[] = [
+  { perspective: 'front_34', label: '3/4 Front', sublabel: '3/4-Frontansicht des Fahrzeugs' },
+  { perspective: 'rear_34', label: '3/4 Heck', sublabel: '3/4-Heckansicht des Fahrzeugs' },
+  { perspective: 'showroom', label: 'Showroom', sublabel: 'Showroom-Hintergrund mit Drehteller' },
 ];
 
 function fileToBase64(file: File): Promise<string> {
@@ -71,7 +79,7 @@ const SpinModeToggle: React.FC<{ mode: SpinMode; onChange: (m: SpinMode) => void
 
 /* ─── Upload Slot ─── */
 const UploadSlot: React.FC<{
-  config: typeof SLOT_CONFIG[0];
+  config: { perspective: string; label: string; sublabel: string };
   slot: SpinSlotData;
   index: number;
   disabled?: boolean;
@@ -80,7 +88,8 @@ const UploadSlot: React.FC<{
   onCamera: (i: number) => void;
   inputRef: (el: HTMLInputElement | null) => void;
   triggerInput: () => void;
-}> = ({ config, slot, index, disabled, onFile, onRemove, onCamera, inputRef, triggerInput }) => {
+  isShowroom?: boolean;
+}> = ({ config, slot, index, disabled, onFile, onRemove, onCamera, inputRef, triggerInput, isShowroom }) => {
   const isFilled = slot.status !== 'empty';
   return (
     <div
@@ -125,7 +134,7 @@ const UploadSlot: React.FC<{
       ) : (
         <div className="aspect-[4/3] flex flex-col items-center justify-center gap-2 p-4">
           <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center text-muted-foreground">
-            <Upload className="w-5 h-5" />
+            {isShowroom ? <ImageIcon className="w-5 h-5" /> : <Upload className="w-5 h-5" />}
           </div>
           <p className="text-sm font-semibold text-foreground">{config.label}</p>
           <p className="text-[11px] text-muted-foreground text-center">{config.sublabel}</p>
@@ -133,9 +142,11 @@ const UploadSlot: React.FC<{
             <Button variant="outline" size="sm" className="text-xs h-7" onClick={triggerInput}>
               <Upload className="w-3 h-3 mr-1" /> Hochladen
             </Button>
-            <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => onCamera(index)}>
-              <Camera className="w-3 h-3 mr-1" /> Foto
-            </Button>
+            {!isShowroom && (
+              <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => onCamera(index)}>
+                <Camera className="w-3 h-3 mr-1" /> Foto
+              </Button>
+            )}
           </div>
           <input
             ref={inputRef}
@@ -152,10 +163,57 @@ const UploadSlot: React.FC<{
 
 /* ─── Main Component ─── */
 const Spin360Upload: React.FC<Spin360UploadProps> = ({ onAllFilled, disabled, spinMode, onModeChange }) => {
+  const { user } = useAuth();
+  const isVideo = spinMode === 'video2frames';
+  const slotConfig = isVideo ? VIDEO2FRAMES_SLOTS : IMAGE2SPIN_SLOTS;
+  const requiredCount = slotConfig.length;
+
   const [slots, setSlots] = useState<SpinSlotData[]>(
-    SLOT_CONFIG.map(c => ({ perspective: c.perspective, status: 'empty' }))
+    slotConfig.map(c => ({ perspective: c.perspective, status: 'empty' }))
   );
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // Reset slots when mode changes
+  useEffect(() => {
+    const newSlots = slotConfig.map(c => ({ perspective: c.perspective, status: 'empty' as const }));
+    setSlots(newSlots);
+  }, [spinMode]);
+
+  // Auto-load showroom image from profile for video2frames mode
+  useEffect(() => {
+    if (!isVideo || !user) return;
+    const loadShowroom = async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('custom_showroom_url')
+        .eq('id', user.id)
+        .single();
+      const showroomUrl = (data as any)?.custom_showroom_url;
+      if (!showroomUrl) return;
+
+      try {
+        // Fetch the showroom image and convert to base64
+        const response = await fetch(showroomUrl);
+        const blob = await response.blob();
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64 = reader.result as string;
+          setSlots(prev => {
+            const showroomIdx = prev.findIndex(s => s.perspective === 'showroom');
+            if (showroomIdx === -1) return prev;
+            const next = [...prev];
+            next[showroomIdx] = { ...next[showroomIdx], base64, status: 'filled' };
+            return next;
+          });
+          toast.info('Showroom-Bild aus Profil geladen');
+        };
+        reader.readAsDataURL(blob);
+      } catch {
+        // Silently fail — user can upload manually
+      }
+    };
+    loadShowroom();
+  }, [isVideo, user]);
 
   const updateSlot = useCallback((index: number, update: Partial<SpinSlotData>) => {
     setSlots(prev => { const next = [...prev]; next[index] = { ...next[index], ...update }; return next; });
@@ -181,8 +239,8 @@ const Spin360Upload: React.FC<Spin360UploadProps> = ({ onAllFilled, disabled, sp
   }, [updateSlot]);
 
   const filledCount = slots.filter(s => s.status !== 'empty').length;
-  const allFilled = filledCount === 4;
-  const frameCount = spinMode === 'video2frames' ? 48 : 36;
+  const allFilled = filledCount === requiredCount;
+  const frameCount = isVideo ? 48 : 36;
 
   return (
     <div className="space-y-6">
@@ -191,9 +249,13 @@ const Spin360Upload: React.FC<Spin360UploadProps> = ({ onAllFilled, disabled, sp
           <RotateCw className="w-3.5 h-3.5" />
           360° Spin erstellen
         </div>
-        <h2 className="font-display text-xl font-bold text-foreground mb-2">4 Fotos hochladen</h2>
+        <h2 className="font-display text-xl font-bold text-foreground mb-2">
+          {isVideo ? '3 Bilder hochladen' : '4 Fotos hochladen'}
+        </h2>
         <p className="text-sm text-muted-foreground max-w-md mx-auto">
-          Lade je ein Foto von jeder Seite hoch. Die KI erstellt daraus einen interaktiven 360°-Spin mit bis zu {frameCount} Einzelbildern.
+          {isVideo
+            ? 'Lade eine 3/4-Front- und 3/4-Heckansicht hoch. Das Showroom-Bild wird automatisch geladen oder manuell hochgeladen.'
+            : 'Lade je ein Foto von jeder Seite hoch. Die KI erstellt daraus einen interaktiven 360°-Spin mit bis zu 36 Einzelbildern.'}
         </p>
       </div>
 
@@ -201,14 +263,14 @@ const Spin360Upload: React.FC<Spin360UploadProps> = ({ onAllFilled, disabled, sp
 
       <div className="text-center">
         <p className="text-[11px] text-muted-foreground">
-          {spinMode === 'image2spin'
-            ? 'KI generiert Einzelbilder zwischen den 4 Perspektiven (36 Frames)'
-            : 'KI erstellt ein 360°-Video, daraus werden 48 Frames extrahiert'}
+          {isVideo
+            ? 'KI erstellt ein 360°-Drehteller-Video im Showroom, daraus werden 48 Frames extrahiert'
+            : 'KI generiert Einzelbilder zwischen den 4 Perspektiven (36 Frames)'}
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        {SLOT_CONFIG.map((config, index) => (
+      <div className={cn('grid gap-4', isVideo ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-2')}>
+        {slotConfig.map((config, index) => (
           <UploadSlot
             key={config.perspective}
             config={config}
@@ -220,15 +282,16 @@ const Spin360Upload: React.FC<Spin360UploadProps> = ({ onAllFilled, disabled, sp
             onCamera={handleCameraCapture}
             inputRef={el => { fileInputRefs.current[index] = el; }}
             triggerInput={() => fileInputRefs.current[index]?.click()}
+            isShowroom={config.perspective === 'showroom'}
           />
         ))}
       </div>
 
       <div className="text-center space-y-3">
-        <p className="text-xs text-muted-foreground">{filledCount} von 4 Fotos bereit</p>
+        <p className="text-xs text-muted-foreground">{filledCount} von {requiredCount} Bilder bereit</p>
         <Button size="lg" disabled={!allFilled || disabled} onClick={() => onAllFilled(slots)} className="min-w-[200px]">
-          {spinMode === 'video2frames' ? <Film className="w-4 h-4 mr-2" /> : <RotateCw className="w-4 h-4 mr-2" />}
-          {spinMode === 'video2frames' ? 'Video-Spin erstellen' : '360° Spin erstellen'}
+          {isVideo ? <Film className="w-4 h-4 mr-2" /> : <RotateCw className="w-4 h-4 mr-2" />}
+          {isVideo ? 'Video-Spin erstellen' : '360° Spin erstellen'}
         </Button>
       </div>
     </div>

@@ -67,7 +67,7 @@ async function deductCredits(userId: string, amount: number, actionType: string,
 
 const DEFAULT_VIDEO_PROMPT = `Erstelle ein professionelles 8-Sekunden Showroom-Video des Fahrzeugs. Das Auto dreht sich langsam auf einer Drehscheibe in einem modernen, hell beleuchteten Autohaus-Showroom. Weiche Beleuchtung, Reflexionen auf dem Lack, polierter Boden. Cinematische Kamerafahrt. Professionelle Autohaus-Atmosphäre.`;
 
-const DEFAULT_SPIN360_VIDEO_PROMPT = `Professional 360-degree turntable rotation of the exact vehicle shown in the reference images. The car rotates smoothly and continuously on a white turntable platform, completing exactly one full 360-degree rotation. Clean white studio background, soft even lighting, no shadows. Perfectly steady camera at eye level, fixed position. No sound. Smooth constant rotation speed. 8 seconds duration for one complete revolution.`;
+const DEFAULT_SPIN360_VIDEO_PROMPT = `A seamless, perfect 360-degree rotation of the provided car. The car is placed realistically on the turntable inside the provided empty showroom environment. The camera is mounted on a tripod, completely locked, and perfectly static. The car rotates smoothly around its own vertical center axis at a constant speed. No audio, no background shifting, and no original backgrounds from the reference images. The entire sequence happens strictly inside the showroom lighting and environment. Do not mention any specific car brands.`;
 
 function encodeBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
@@ -80,14 +80,24 @@ function encodeBase64(buffer: ArrayBuffer): string {
   return btoa(binary);
 }
 
+/** Extract raw base64 data and mime type from a data URI or raw base64 string */
+function parseImageBase64(input: string): { data: string; mimeType: string } {
+  if (input.startsWith("data:")) {
+    const match = input.match(/^data:(image\/\w+);base64,(.+)$/s);
+    if (match) return { data: match[2], mimeType: match[1] };
+  }
+  // Assume raw base64
+  return { data: input.replace(/^data:image\/\w+;base64,/, ""), mimeType: "image/jpeg" };
+}
+
 async function handleVideoStart(req: Request, GEMINI_API_KEY: string, body: any): Promise<Response> {
   const authResult = await authenticateUser(req);
   if (authResult instanceof Response) return authResult;
   const { userId } = authResult;
 
-  const { imageBase64, prompt: userPrompt, action } = body;
+  const { imageBase64, images, prompt: userPrompt, action } = body;
   const isSpin360 = action === "spin360_start";
-  const creditAmount = isSpin360 ? 10 : 10;
+  const creditAmount = 10;
   const creditAction = "image_generate";
   const creditDesc = isSpin360 ? "360° Video-Spin (Veo)" : "Video-Generierung (Veo)";
 
@@ -105,13 +115,41 @@ async function handleVideoStart(req: Request, GEMINI_API_KEY: string, body: any)
   const finalPrompt = userPrompt || systemPrompt;
 
   let requestBody: any;
-  if (imageBase64) {
-    const imageData = imageBase64.replace(/^data:image\/\w+;base64,/, "");
-    let mimeType = "image/jpeg";
-    if (imageBase64.startsWith("data:image/png")) mimeType = "image/png";
-    else if (imageBase64.startsWith("data:image/webp")) mimeType = "image/webp";
+
+  // Multi-image spin360 flow (3 images: front_34, rear_34, showroom)
+  if (isSpin360 && Array.isArray(images) && images.length > 0) {
+    const imageInstances = images.map((img: { base64: string; label: string }) => {
+      const parsed = parseImageBase64(img.base64);
+      return { bytesBase64Encoded: parsed.data, mimeType: parsed.mimeType };
+    });
+
+    // Build prompt with context about the images
+    const enhancedPrompt = `${finalPrompt}\n\nIMPORTANT: The first image is the 3/4 front view of the car. The second image is the 3/4 rear view of the car. The third image is the empty showroom environment with turntable where the car must be placed. Remove all original backgrounds from the car images completely — the car must appear ONLY inside the showroom from frame 1. No flickering of original backgrounds allowed.`;
+
+    if (imageInstances.length === 1) {
+      requestBody = {
+        instances: [{ prompt: enhancedPrompt, image: imageInstances[0] }],
+      };
+    } else {
+      // Veo API: pass multiple images via the prompt context
+      // We pass the first image as main reference and include others as additional context
+      requestBody = {
+        instances: [{
+          prompt: enhancedPrompt,
+          image: imageInstances[0],
+        }],
+      };
+
+      // If API supports multiple images, add them
+      if (imageInstances.length > 1) {
+        requestBody.instances[0].referenceImages = imageInstances.slice(1);
+      }
+    }
+  } else if (imageBase64) {
+    // Legacy single-image flow
+    const parsed = parseImageBase64(imageBase64);
     requestBody = {
-      instances: [{ prompt: finalPrompt, image: { bytesBase64Encoded: imageData, mimeType } }],
+      instances: [{ prompt: finalPrompt, image: { bytesBase64Encoded: parsed.data, mimeType: parsed.mimeType } }],
     };
   } else {
     requestBody = { instances: [{ prompt: finalPrompt }] };
