@@ -2,7 +2,6 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Loader2, Film, Check, AlertCircle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 
 interface Video2FramesProcessorProps {
   videoUrl: string;
@@ -14,6 +13,11 @@ interface Video2FramesProcessorProps {
 }
 
 type ProcessorStep = 'loading' | 'extracting' | 'uploading' | 'saving' | 'done' | 'error';
+
+const START_TRIM_RATIO = 0.18;
+const MIN_START_TRIM_SECONDS = 1.2;
+const MAX_START_TRIM_RATIO = 0.3;
+const MIN_EXTRACTION_WINDOW_SECONDS = 2;
 
 const Video2FramesProcessor: React.FC<Video2FramesProcessorProps> = ({
   videoUrl, jobId, userId, targetFrames = 48, onComplete, onError
@@ -37,13 +41,23 @@ const Video2FramesProcessor: React.FC<Video2FramesProcessorProps> = ({
     canvas.height = video.videoHeight;
 
     const duration = video.duration;
-    const interval = duration / targetFrames;
+    const requestedStartTrim = Math.max(duration * START_TRIM_RATIO, MIN_START_TRIM_SECONDS);
+    const maxSafeStartTrim = Math.max(duration * MAX_START_TRIM_RATIO, 0);
+    const startTrim = Math.min(requestedStartTrim, maxSafeStartTrim);
+    const extractionStart = Math.max(0, startTrim);
+    const extractionWindow = duration - extractionStart;
+
+    if (extractionWindow < MIN_EXTRACTION_WINDOW_SECONDS) {
+      throw new Error('Das generierte Video ist zu kurz für eine saubere 360°-Extraktion.');
+    }
+
+    const interval = extractionWindow / targetFrames;
     const frames: { index: number; blob: Blob }[] = [];
 
     setStep('extracting');
 
     for (let i = 0; i < targetFrames; i++) {
-      const time = i * interval;
+      const time = extractionStart + i * interval;
       await new Promise<void>((resolve) => {
         video.currentTime = time;
         const onSeeked = () => {
@@ -85,13 +99,14 @@ const Video2FramesProcessor: React.FC<Video2FramesProcessorProps> = ({
 
     // Save to DB
     setStep('saving');
+    const frameCount = frameUrls.length || targetFrames;
     const rows = frameUrls.map((url, i) => ({
       job_id: jobId,
       user_id: userId,
       frame_index: i,
       image_url: url,
       frame_type: 'video_extracted',
-      angle_degrees: Math.round((360 / targetFrames) * i),
+      angle_degrees: Math.round((360 / frameCount) * i),
       model_used: 'veo-3.1-generate-preview',
       validation_status: 'passed',
     }));
