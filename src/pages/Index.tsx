@@ -560,6 +560,7 @@ const Index = () => {
                 modelTier={selectedModelTier}
                 onComplete={handleStandaloneRemasterComplete}
                 onBack={() => setAppState('standalone-photo-choice')}
+                completeLabel="Zur Galerie"
               />
             </div>
           )}

@@ -14,6 +14,7 @@ interface ImageUploadRemasterProps {
   modelTier?: string;
   onComplete: (mainImage: string, galleryImages: string[]) => void;
   onBack: () => void;
+  completeLabel?: string;
 }
 
 interface UploadedImage {
@@ -44,7 +45,7 @@ const DEFAULT_CONFIG: RemasterConfig = {
   showDealerLogo: false,
 };
 
-const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescription, vehicleBrand, modelTier, onComplete, onBack }) => {
+const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescription, vehicleBrand, modelTier, onComplete, onBack, completeLabel }) => {
   const [images, setImages] = useState<UploadedImage[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
@@ -372,7 +373,7 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
               disabled={doneCount === 0}
               className="gap-2 gradient-accent text-accent-foreground font-semibold"
             >
-              <Check className="w-4 h-4" /> Weiter zur Landing Page
+              <Check className="w-4 h-4" /> {completeLabel || 'Weiter zur Landing Page'}
             </Button>
           )}
         </div>
