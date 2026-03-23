@@ -22,39 +22,39 @@ export default function Spin360Tab({ jobs, onOpen, onDelete }: Props) {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {jobs.map((job) => (
-        <div
-          key={job.id}
-          className={`bg-card rounded-xl border border-border p-5 space-y-3 transition-all ${job.displayStatus === 'completed' ? 'cursor-pointer hover:border-accent/50 hover:shadow-md' : ''}`}
-          onClick={() => job.displayStatus === 'completed' && onOpen(job.id)}
-        >
-          <div className="flex items-center justify-between">
-            <h3 className="font-display font-semibold text-foreground text-sm">360° Spin</h3>
-            <div className="flex items-center gap-2">
-              <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                job.displayStatus === 'completed' ? 'bg-green-500/10 text-green-600' :
-                job.displayStatus === 'failed' ? 'bg-destructive/10 text-destructive' :
-                'bg-accent/10 text-accent'
-              }`}>
-                {job.displayStatus === 'completed' ? 'Fertig' : job.displayStatus === 'failed' ? 'Abgebrochen' : 'In Bearbeitung'}
-              </span>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                onClick={(e) => { e.stopPropagation(); onDelete(job.id); }}
-              >
-                <Trash2 className="w-3.5 h-3.5" />
+        <div key={job.id} className="bg-card rounded-xl border border-border overflow-hidden group">
+          <div
+            className={`aspect-video bg-muted relative flex items-center justify-center ${job.displayStatus === 'completed' ? 'cursor-pointer' : ''}`}
+            onClick={() => job.displayStatus === 'completed' && onOpen(job.id)}
+          >
+            <RotateCw className={`w-10 h-10 text-muted-foreground/40 ${job.displayStatus !== 'completed' && job.displayStatus !== 'failed' ? 'animate-spin' : ''}`} />
+            {job.displayStatus === 'completed' && (
+              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-foreground/20">
+                <div className="bg-background/80 backdrop-blur rounded-full p-3"><RotateCw className="w-6 h-6 text-foreground" /></div>
+              </div>
+            )}
+            <span className={`absolute top-2 right-2 text-[10px] font-medium px-2 py-0.5 rounded-full ${
+              job.displayStatus === 'completed' ? 'bg-green-500/10 text-green-600' :
+              job.displayStatus === 'failed' ? 'bg-destructive/10 text-destructive' :
+              'bg-accent/10 text-accent'
+            }`}>
+              {job.displayStatus === 'completed' ? 'Fertig' : job.displayStatus === 'failed' ? 'Abgebrochen' : 'In Bearbeitung'}
+            </span>
+          </div>
+          <div className="p-3 flex items-center justify-between">
+            <div className="text-xs text-muted-foreground space-y-0.5">
+              <p>{new Date(job.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+              {job.manifest?.frameCount && <p>{job.manifest.frameCount} Frames</p>}
+              {job.displayStatus === 'failed' && job.displayError && <p className="text-destructive">{job.displayError}</p>}
+            </div>
+            <div className="flex gap-1.5">
+              <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); onDelete(job.id); }}>
+                <Trash2 className="w-3.5 h-3.5 text-destructive" />
               </Button>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">
-            {new Date(job.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-          </p>
-          {job.manifest?.frameCount && <p className="text-xs text-muted-foreground">{job.manifest.frameCount} Frames</p>}
-          {job.displayStatus === 'failed' && job.displayError && <p className="text-xs text-destructive">{job.displayError}</p>}
-          {job.displayStatus === 'completed' && <p className="text-xs text-accent">Zum Öffnen antippen ›</p>}
         </div>
       ))}
     </div>
