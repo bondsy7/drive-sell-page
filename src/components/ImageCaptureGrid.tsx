@@ -440,37 +440,53 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription);
 
     const processSlot = async (slot: typeof toProcess[0]) => {
-      try {
-        const { data, error } = await supabase.functions.invoke('remaster-vehicle-image', {
-          body: {
-            imageBase64: captures[slot.key].base64,
-            vehicleDescription,
-            modelTier: modelTier || 'standard',
-            dynamicPrompt,
-            customShowroomBase64: remasterConfig.customShowroomBase64 || null,
-            customPlateImageBase64: remasterConfig.customPlateImageBase64 || null,
-            dealerLogoUrl: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null,
-            dealerLogoBase64: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoBase64 : null,
-            manufacturerLogoUrl: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoUrl : null,
-            manufacturerLogoBase64: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoBase64 : null,
-          },
-        });
+      const MAX_RETRIES = 2;
+      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        try {
+          const { data, error } = await supabase.functions.invoke('remaster-vehicle-image', {
+            body: {
+              imageBase64: captures[slot.key].base64,
+              vehicleDescription,
+              modelTier: modelTier || 'standard',
+              dynamicPrompt,
+              customShowroomBase64: remasterConfig.customShowroomBase64 || null,
+              customPlateImageBase64: remasterConfig.customPlateImageBase64 || null,
+              dealerLogoUrl: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null,
+              dealerLogoBase64: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoBase64 : null,
+              manufacturerLogoUrl: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoUrl : null,
+              manufacturerLogoBase64: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoBase64 : null,
+            },
+          });
 
-        if (error || !data?.imageBase64) {
-          const errMsg = data?.error || error?.message || 'Fehler beim Remastering';
-          setCaptures(prev => ({ ...prev, [slot.key]: { ...prev[slot.key], status: 'error', error: errMsg } }));
-        } else {
-          setCaptures(prev => ({ ...prev, [slot.key]: { ...prev[slot.key], status: 'done', remasteredBase64: data.imageBase64 } }));
+          if (error || !data?.imageBase64) {
+            const errMsg = data?.error || error?.message || 'Fehler beim Remastering';
+            // Retry on connection / body errors
+            if (attempt < MAX_RETRIES && (errMsg.includes('Verbindung') || errMsg.includes('FunctionsFetchError') || errMsg.includes('Failed to fetch'))) {
+              console.warn(`[Remaster] Retry ${attempt + 1}/${MAX_RETRIES} for ${slot.key}: ${errMsg}`);
+              await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
+              continue;
+            }
+            setCaptures(prev => ({ ...prev, [slot.key]: { ...prev[slot.key], status: 'error', error: errMsg } }));
+          } else {
+            setCaptures(prev => ({ ...prev, [slot.key]: { ...prev[slot.key], status: 'done', remasteredBase64: data.imageBase64 } }));
+          }
+          break; // success or non-retryable error
+        } catch (e) {
+          if (attempt < MAX_RETRIES) {
+            console.warn(`[Remaster] Network retry ${attempt + 1}/${MAX_RETRIES} for ${slot.key}`);
+            await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
+            continue;
+          }
+          setCaptures(prev => ({ ...prev, [slot.key]: { ...prev[slot.key], status: 'error', error: 'Netzwerkfehler – bitte erneut versuchen' } }));
         }
-      } catch {
-        setCaptures(prev => ({ ...prev, [slot.key]: { ...prev[slot.key], status: 'error', error: 'Netzwerkfehler' } }));
       }
       completed++;
       setProgress({ current: completed, total });
     };
 
-    // Process all images in parallel (max 4 concurrent)
-    const CONCURRENCY = 4;
+    // Use lower concurrency on mobile to prevent connection drops
+    const isMobile = /Mobi|Android|iPhone/i.test(navigator.userAgent);
+    const CONCURRENCY = isMobile ? 1 : 3;
     const queue = [...toProcess];
     const workers = Array.from({ length: Math.min(CONCURRENCY, queue.length) }, async () => {
       while (queue.length > 0) {

@@ -98,7 +98,15 @@ serve(async (req) => {
 
   try {
     // 1. Auth & credits
-    const bodyText = await req.text();
+    let bodyText: string;
+    try {
+      bodyText = await req.text();
+    } catch (bodyErr) {
+      console.error("Failed to read request body (connection dropped?):", bodyErr);
+      return new Response(JSON.stringify({ error: "Verbindung abgebrochen – bitte erneut versuchen." }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const { imageBase64, additionalImages, vehicleDescription, modelTier, dynamicPrompt, customShowroomBase64, customPlateImageBase64, dealerLogoUrl, dealerLogoBase64, manufacturerLogoUrl, manufacturerLogoBase64 } = JSON.parse(bodyText);
     
     // Read cost dynamically from admin_settings
