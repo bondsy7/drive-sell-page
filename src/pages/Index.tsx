@@ -11,6 +11,7 @@ import LandingPagePreview from '@/components/LandingPagePreview';
 import TemplateSidebar from '@/components/TemplateSidebar';
 import ImageSourceChoice from '@/components/ImageSourceChoice';
 import ImageUploadRemaster from '@/components/ImageUploadRemaster';
+import PresetUploadFlow from '@/components/preset/PresetUploadFlow';
 import ImageCaptureGrid from '@/components/ImageCaptureGrid';
 import ManualLandingGenerator from '@/components/ManualLandingGenerator';
 import CreditConfirmDialog from '@/components/CreditConfirmDialog';
