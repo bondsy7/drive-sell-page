@@ -213,66 +213,79 @@ serve(async (req) => {
       }
     }
 
-    // 3. Call Gemini API directly with retry logic
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent`;
-    const maxRetries = 3;
+    // 3. Call Gemini API directly with retry logic + automatic model fallback
+    const FALLBACK_ORDER: Record<string, string[]> = {
+      'gemini-3-pro-image-preview': ['gemini-3.1-flash-image-preview', 'gemini-2.5-flash-image'],
+      'gemini-3.1-flash-image-preview': ['gemini-2.5-flash-image'],
+    };
+    const modelsToTry = [geminiModel, ...(FALLBACK_ORDER[geminiModel] || [])];
+    const maxRetries = 2;
     let resultImage: string | null = null;
     let lastError = "";
 
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-      try {
-        console.log(`Remaster attempt ${attempt + 1}/${maxRetries}, parts: ${parts.length}`);
-        const response = await fetch(geminiUrl, {
-          method: "POST",
-          headers: {
-            "x-goog-api-key": GEMINI_API_KEY,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            contents: [{ parts }],
-            generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
-          }),
-        });
+    for (const currentModel of modelsToTry) {
+      if (resultImage) break;
+      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent`;
 
-        if (!response.ok) {
-          const errText = await response.text();
-          console.error("Remaster error:", response.status, errText);
-          if (response.status === 429) {
-            if (attempt < maxRetries - 1) {
-              await new Promise(r => setTimeout(r, 3000 * (attempt + 1)));
-              continue;
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+          console.log(`Remaster model=${currentModel} attempt ${attempt + 1}/${maxRetries}, parts: ${parts.length}`);
+          const response = await fetch(geminiUrl, {
+            method: "POST",
+            headers: {
+              "x-goog-api-key": GEMINI_API_KEY,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              contents: [{ parts }],
+              generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
+            }),
+          });
+
+          if (!response.ok) {
+            const errText = await response.text();
+            console.error("Remaster error:", response.status, errText);
+            if (response.status === 503 || response.status === 429) {
+              // Model overloaded – break inner loop to try fallback model
+              lastError = `Model ${currentModel} unavailable (${response.status})`;
+              if (attempt < maxRetries - 1) {
+                await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
+                continue;
+              }
+              console.warn(`Model ${currentModel} exhausted, trying fallback...`);
+              break; // move to next model in fallback chain
             }
-            return new Response(JSON.stringify({ error: "Rate limit erreicht. Bitte warte kurz." }), {
-              status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-            });
+            lastError = `Remaster error: ${response.status}`;
+            if (attempt < maxRetries - 1) { await new Promise(r => setTimeout(r, 2000)); continue; }
+            break;
           }
-          lastError = `Remaster error: ${response.status}`;
-          if (attempt < maxRetries - 1) { await new Promise(r => setTimeout(r, 2000)); continue; }
-          continue;
-        }
 
-        const data = await response.json();
-        const respParts = data.candidates?.[0]?.content?.parts;
-        if (respParts) {
-          for (const part of respParts) {
-            if (part.inlineData?.data) {
-              const mime = part.inlineData.mimeType || "image/png";
-              resultImage = `data:${mime};base64,${part.inlineData.data}`;
-              break;
+          const data = await response.json();
+          const respParts = data.candidates?.[0]?.content?.parts;
+          if (respParts) {
+            for (const part of respParts) {
+              if (part.inlineData?.data) {
+                const mime = part.inlineData.mimeType || "image/png";
+                resultImage = `data:${mime};base64,${part.inlineData.data}`;
+                if (currentModel !== geminiModel) {
+                  console.log(`Fallback success: used ${currentModel} instead of ${geminiModel}`);
+                }
+                break;
+              }
             }
           }
-        }
 
-        if (resultImage) break;
+          if (resultImage) break;
 
-        console.warn(`Attempt ${attempt + 1}: No image in response, retrying...`);
-        lastError = "Kein Bild generiert";
-        if (attempt < maxRetries - 1) {
-          await new Promise(r => setTimeout(r, 1500));
+          console.warn(`Attempt ${attempt + 1}: No image in response, retrying...`);
+          lastError = "Kein Bild generiert";
+          if (attempt < maxRetries - 1) {
+            await new Promise(r => setTimeout(r, 1500));
+          }
+        } catch (retryErr) {
+          console.error(`Attempt ${attempt + 1} failed:`, retryErr);
+          lastError = retryErr instanceof Error ? retryErr.message : "Unknown error";
         }
-      } catch (retryErr) {
-        console.error(`Attempt ${attempt + 1} failed:`, retryErr);
-        lastError = retryErr instanceof Error ? retryErr.message : "Unknown error";
       }
     }
 
