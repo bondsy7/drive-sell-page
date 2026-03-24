@@ -405,8 +405,8 @@ const Index = () => {
 
   const handlePhotoMode = useCallback((mode: PhotoMode) => {
     switch (mode) {
-      case 'single':
-        setAppState('standalone-photo-choice');
+      case 'preset-upload':
+        setAppState('preset-upload' as ExtendedAppState);
         break;
       case 'multi':
         setAppState('standalone-photo-choice');
