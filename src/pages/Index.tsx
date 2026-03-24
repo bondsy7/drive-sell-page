@@ -566,6 +566,16 @@ const Index = () => {
             </div>
           )}
 
+          {/* ─── Preset Upload (Bildergenerator) ─── */}
+          {appState === 'preset-upload' && (
+            <div className="mt-4">
+              <PresetUploadFlow
+                onComplete={handleStandaloneRemasterComplete}
+                onBack={() => setAppState('standalone-photo-mode' as ExtendedAppState)}
+              />
+            </div>
+          )}
+
           {/* ─── Video Generator ─── */}
           {appState === 'video' && (
             <VideoGenerator
