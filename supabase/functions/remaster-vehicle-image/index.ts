@@ -207,7 +207,7 @@ serve(async (req) => {
         ? toInlineData(dealerLogoBase64)
         : await resolveImage(dealerLogoUrl);
       if (logoData) {
-        parts.push({ text: "Das folgende Bild ist das AUTOHAUS-LOGO (Dealer Logo). Verwende dieses Logo als sekundäres Branding:" });
+        parts.push({ text: "Das folgende Bild ist das AUTOHAUS-LOGO (Dealer Logo). Montiere dieses Logo gut sichtbar an der Rückwand des Showrooms – z.B. als beleuchtetes Wandlogo aus gebürstetem Aluminium mit kaltweißem LED-Halo-Effekt. Das Logo soll prominent und professionell im Hintergrund sichtbar sein. Verwende EXAKT dieses Logo – erfinde KEIN anderes." });
         parts.push(logoData);
         console.log("Dealer logo injected", dealerLogoBase64 ? "(cached b64)" : "(fetched)");
       }
