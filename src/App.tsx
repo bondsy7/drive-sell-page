@@ -120,6 +120,7 @@ const App = () => (
                 <Route path="sales-assistant" element={<AdminSalesAssistant />} />
                 <Route path="wmi-codes" element={<AdminWmiCodes />} />
                 <Route path="secrets" element={<AdminSecrets />} />
+                <Route path="presets" element={<AdminPresets />} />
                 <Route path="jobs" element={<AdminJobMonitor />} />
                 <Route path="email-monitor" element={<AdminEmailMonitor />} />
                 <Route path="revenue" element={<AdminRevenue />} />
