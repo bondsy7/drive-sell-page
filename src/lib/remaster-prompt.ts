@@ -94,8 +94,8 @@ export function buildMasterPrompt(config: RemasterConfig, vehicleDescription?: s
     parts.push('AUTOHAUS-LOGO: Zusätzlich soll das beiliegende AUTOHAUS-Logo (Dealer Logo) dezent sichtbar sein – z.B. als kleineres Wandlogo oder auf einem Aufsteller neben dem Fahrzeug. Verwende EXAKT das beiliegende Autohaus-Logo.');
   }
 
-  // Interior-specific rules
-  parts.push('FÜR INNENRAUM-AUFNAHMEN: Verändere die Orientierung/den Winkel NICHT. Füge keine Innenraum-Elemente hinzu oder entferne sie. Verbessere nur die Beleuchtung.');
+  // Interior-specific rules – must override scene prompts
+  parts.push('FÜR INNENRAUM-AUFNAHMEN (Sitze, Lenkrad, Armaturenbrett, Mittelkonsole, Kofferraum, Rücksitze): IGNORIERE alle Showroom- und Hintergrund-Anweisungen komplett. Verändere die Orientierung/den Winkel NICHT. Ändere den Hintergrund/die Umgebung NICHT. Füge keine Innenraum-Elemente hinzu oder entferne sie. Verbessere NUR die Beleuchtung – hell, gleichmäßig und professionell. Zeige EXAKT das gleiche Interieur-Motiv aus dem gleichen Blickwinkel.');
 
   // No other vehicles
   parts.push('WICHTIG: Im generierten Bild darf KEIN anderes Fahrzeug sichtbar sein – nur das eine Fahrzeug aus dem Originalfoto. Keine Autos im Hintergrund, keine Spiegelungen anderer Fahrzeuge in Glasflächen oder auf dem Boden.');

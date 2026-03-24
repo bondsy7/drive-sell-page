@@ -181,9 +181,15 @@ serve(async (req) => {
         parts.push(toInlineData(img));
       }
     }
-    // Add showroom, plate references
-    if (customShowroomBase64) parts.push(toInlineData(customShowroomBase64));
-    if (customPlateImageBase64) parts.push(toInlineData(customPlateImageBase64));
+    // Add showroom with clear label so the AI knows what it is
+    if (customShowroomBase64) {
+      parts.push({ text: "Das folgende Bild ist der EIGENE SHOWROOM-HINTERGRUND. Platziere das Fahrzeug EXAKT in dieser Showroom-Umgebung. Passe Beleuchtung, Schatten und Perspektive an, sodass das Auto natürlich in diese Szene integriert wirkt. Verwende NUR diesen Hintergrund, erfinde keinen anderen. WICHTIG: Dies gilt NUR für EXTERIEUR-Aufnahmen. Bei INTERIEUR-Aufnahmen (Sitze, Lenkrad, Armaturenbrett, Kofferraum) den Hintergrund NICHT ändern, nur die Beleuchtung verbessern." });
+      parts.push(toInlineData(customShowroomBase64));
+    }
+    if (customPlateImageBase64) {
+      parts.push({ text: "Das folgende Bild ist das EIGENE NUMMERNSCHILD. Ersetze das Nummernschild des Fahrzeugs durch dieses:" });
+      parts.push(toInlineData(customPlateImageBase64));
+    }
     // Add manufacturer logo – prefer pre-cached base64
     if (manufacturerLogoBase64 || manufacturerLogoUrl) {
       const logoData = manufacturerLogoBase64
@@ -201,7 +207,7 @@ serve(async (req) => {
         ? toInlineData(dealerLogoBase64)
         : await resolveImage(dealerLogoUrl);
       if (logoData) {
-        parts.push({ text: "Das folgende Bild ist das AUTOHAUS-LOGO (Dealer Logo). Verwende dieses Logo als sekundäres Branding:" });
+        parts.push({ text: "Das folgende Bild ist das AUTOHAUS-LOGO (Dealer Logo). Montiere dieses Logo gut sichtbar an der Rückwand des Showrooms – z.B. als beleuchtetes Wandlogo aus gebürstetem Aluminium mit kaltweißem LED-Halo-Effekt. Das Logo soll prominent und professionell im Hintergrund sichtbar sein. Verwende EXAKT dieses Logo – erfinde KEIN anderes." });
         parts.push(logoData);
         console.log("Dealer logo injected", dealerLogoBase64 ? "(cached b64)" : "(fetched)");
       }
