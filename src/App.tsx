@@ -38,6 +38,7 @@ const AdminLogos = lazy(() => import("./pages/admin/AdminLogos"));
 const AdminSalesAssistant = lazy(() => import("./pages/admin/AdminSalesAssistant"));
 const AdminWmiCodes = lazy(() => import("./pages/admin/AdminWmiCodes"));
 const AdminSecrets = lazy(() => import("./pages/admin/AdminSecrets"));
+const AdminPresets = lazy(() => import("./pages/admin/AdminPresets"));
 const AdminJobMonitor = lazy(() => import("./pages/admin/AdminJobMonitor"));
 const AdminEmailMonitor = lazy(() => import("./pages/admin/AdminEmailMonitor"));
 const AdminRevenue = lazy(() => import("./pages/admin/AdminRevenue"));
