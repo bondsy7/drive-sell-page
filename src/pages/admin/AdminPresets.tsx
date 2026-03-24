@@ -54,11 +54,11 @@ export default function AdminPresets() {
     delete (payload as any).id;
 
     if (isNew) {
-      const { error } = await supabase.from('presets').insert(payload);
+      const { error } = await supabase.from('presets').insert([payload as any]);
       if (error) { toast.error(error.message); return; }
       toast.success('Preset erstellt');
     } else {
-      const { error } = await supabase.from('presets').update(payload).eq('id', editPreset.id);
+      const { error } = await supabase.from('presets').update(payload as any).eq('id', editPreset.id!);
       if (error) { toast.error(error.message); return; }
       toast.success('Preset aktualisiert');
     }
