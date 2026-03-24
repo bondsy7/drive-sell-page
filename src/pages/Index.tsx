@@ -11,6 +11,7 @@ import LandingPagePreview from '@/components/LandingPagePreview';
 import TemplateSidebar from '@/components/TemplateSidebar';
 import ImageSourceChoice from '@/components/ImageSourceChoice';
 import ImageUploadRemaster from '@/components/ImageUploadRemaster';
+import PresetUploadFlow from '@/components/preset/PresetUploadFlow';
 import ImageCaptureGrid from '@/components/ImageCaptureGrid';
 import ManualLandingGenerator from '@/components/ManualLandingGenerator';
 import CreditConfirmDialog from '@/components/CreditConfirmDialog';
@@ -30,7 +31,7 @@ import type { ModelTier } from '@/components/ModelSelector';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-type ExtendedAppState = AppState | 'capturing-images' | 'hub' | 'standalone-photo-choice' | 'standalone-photo-mode' | 'standalone-capture' | 'standalone-upload' | 'standalone-generate-select' | 'standalone-generating' | 'spin360' | 'video' | 'banner' | 'manual-landing' | 'manual-landing-preview';
+type ExtendedAppState = AppState | 'capturing-images' | 'hub' | 'standalone-photo-choice' | 'standalone-photo-mode' | 'standalone-capture' | 'standalone-upload' | 'standalone-generate-select' | 'standalone-generating' | 'spin360' | 'video' | 'banner' | 'manual-landing' | 'manual-landing-preview' | 'preset-upload';
 
 const PERSPECTIVES = [
   { key: 'front', label: 'Frontansicht', prompt: 'Front view, straight on, symmetrical composition' },
@@ -405,8 +406,8 @@ const Index = () => {
 
   const handlePhotoMode = useCallback((mode: PhotoMode) => {
     switch (mode) {
-      case 'single':
-        setAppState('standalone-photo-choice');
+      case 'preset-upload':
+        setAppState('preset-upload' as ExtendedAppState);
         break;
       case 'multi':
         setAppState('standalone-photo-choice');
@@ -561,6 +562,16 @@ const Index = () => {
                 onComplete={handleStandaloneRemasterComplete}
                 onBack={() => setAppState('standalone-photo-choice')}
                 completeLabel="Zur Galerie"
+              />
+            </div>
+          )}
+
+          {/* ─── Preset Upload (Bildergenerator) ─── */}
+          {appState === 'preset-upload' && (
+            <div className="mt-4">
+              <PresetUploadFlow
+                onComplete={handleStandaloneRemasterComplete}
+                onBack={() => setAppState('standalone-photo-mode' as ExtendedAppState)}
               />
             </div>
           )}

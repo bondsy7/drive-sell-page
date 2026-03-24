@@ -1,8 +1,8 @@
 import React from 'react';
-import { Camera, Images, RotateCw } from 'lucide-react';
+import { Camera, Images, RotateCw, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export type PhotoMode = 'single' | 'multi' | 'spin360';
+export type PhotoMode = 'preset-upload' | 'multi' | 'spin360';
 
 interface PhotoModeSelectorProps {
   onSelect: (mode: PhotoMode) => void;
@@ -10,10 +10,10 @@ interface PhotoModeSelectorProps {
 
 const MODES: { id: PhotoMode; icon: React.ReactNode; title: string; description: string }[] = [
   {
-    id: 'single',
-    icon: <Camera className="w-6 h-6" />,
-    title: 'Einzelbild Remastering',
-    description: 'Ein oder mehrere Bilder hochladen und in professionelle Showroom-Aufnahmen verwandeln.',
+    id: 'preset-upload',
+    icon: <Sparkles className="w-6 h-6" />,
+    title: 'Bildergenerator',
+    description: 'Bilder hochladen, AI-Preset wählen und in professionelle Aufnahmen verwandeln.',
   },
   {
     id: 'multi',

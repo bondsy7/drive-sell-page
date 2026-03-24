@@ -545,6 +545,164 @@ export type Database = {
           },
         ]
       }
+      placeholder_definitions: {
+        Row: {
+          condition: Json | null
+          created_at: string
+          default_value: string | null
+          description: string | null
+          id: string
+          key: string
+          label: string
+          options: Json | null
+          parent_id: string | null
+          placeholder_text: string | null
+          required: boolean
+          trigger_value: string | null
+          type: string
+        }
+        Insert: {
+          condition?: Json | null
+          created_at?: string
+          default_value?: string | null
+          description?: string | null
+          id?: string
+          key: string
+          label: string
+          options?: Json | null
+          parent_id?: string | null
+          placeholder_text?: string | null
+          required?: boolean
+          trigger_value?: string | null
+          type?: string
+        }
+        Update: {
+          condition?: Json | null
+          created_at?: string
+          default_value?: string | null
+          description?: string | null
+          id?: string
+          key?: string
+          label?: string
+          options?: Json | null
+          parent_id?: string | null
+          placeholder_text?: string | null
+          required?: boolean
+          trigger_value?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "placeholder_definitions_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "placeholder_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      preset_placeholders: {
+        Row: {
+          display_order: number
+          id: string
+          overrides: Json | null
+          placeholder_id: string
+          preset_id: string
+        }
+        Insert: {
+          display_order?: number
+          id?: string
+          overrides?: Json | null
+          placeholder_id: string
+          preset_id: string
+        }
+        Update: {
+          display_order?: number
+          id?: string
+          overrides?: Json | null
+          placeholder_id?: string
+          preset_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "preset_placeholders_placeholder_id_fkey"
+            columns: ["placeholder_id"]
+            isOneToOne: false
+            referencedRelation: "placeholder_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "preset_placeholders_preset_id_fkey"
+            columns: ["preset_id"]
+            isOneToOne: false
+            referencedRelation: "presets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      presets: {
+        Row: {
+          active: boolean
+          allowed_aspect_ratios: string[] | null
+          category: string
+          created_at: string
+          description: string | null
+          display_order: number
+          example_images: Json | null
+          example_preview_url: string | null
+          id: string
+          is_global: boolean
+          name: string
+          premium_reason: string | null
+          prompt_secret: string
+          requires_premium_model: boolean
+          requires_user_template: boolean
+          type: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          active?: boolean
+          allowed_aspect_ratios?: string[] | null
+          category?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          example_images?: Json | null
+          example_preview_url?: string | null
+          id?: string
+          is_global?: boolean
+          name: string
+          premium_reason?: string | null
+          prompt_secret?: string
+          requires_premium_model?: boolean
+          requires_user_template?: boolean
+          type?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          active?: boolean
+          allowed_aspect_ratios?: string[] | null
+          category?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          example_images?: Json | null
+          example_preview_url?: string | null
+          id?: string
+          is_global?: boolean
+          name?: string
+          premium_reason?: string | null
+          prompt_secret?: string
+          requires_premium_model?: boolean
+          requires_user_template?: boolean
+          type?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           address: string | null
