@@ -168,10 +168,28 @@ export async function fetchManufacturerLogos(): Promise<DynamicLogo[]> {
     sortBy: { column: 'name', order: 'asc' },
   });
   if (error || !data) return [];
-  return data
-    .filter(f => f.name && !f.name.startsWith('.'))
-    .map(f => ({
-      name: f.name.replace(/\.[^.]+$/, ''),
-      url: supabase.storage.from('manufacturer-logos').getPublicUrl(f.name).data.publicUrl,
-    }));
+
+  // Group files by base name, prefer PNG > WebP > JPG (never SVG for AI generation)
+  const RASTER_EXTS = ['.png', '.webp', '.jpg', '.jpeg'];
+  const byName = new Map<string, { name: string; ext: string; fullName: string }>();
+
+  for (const f of data) {
+    if (!f.name || f.name.startsWith('.')) continue;
+    const ext = f.name.substring(f.name.lastIndexOf('.')).toLowerCase();
+    // Skip SVG – Gemini cannot process vector graphics
+    if (ext === '.svg') continue;
+    if (!RASTER_EXTS.includes(ext)) continue;
+    const baseName = f.name.replace(/\.[^.]+$/, '').toLowerCase();
+    const existing = byName.get(baseName);
+    // Priority: png > webp > jpg/jpeg
+    const priority = (e: string) => e === '.png' ? 0 : e === '.webp' ? 1 : 2;
+    if (!existing || priority(ext) < priority(existing.ext)) {
+      byName.set(baseName, { name: baseName, ext, fullName: f.name });
+    }
+  }
+
+  return Array.from(byName.values()).map(entry => ({
+    name: entry.name,
+    url: supabase.storage.from('manufacturer-logos').getPublicUrl(entry.fullName).data.publicUrl,
+  }));
 }
