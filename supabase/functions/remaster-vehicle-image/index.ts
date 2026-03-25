@@ -47,6 +47,13 @@ SHOWROOM CONSISTENCY (MANDATORY for all exterior images):
 - The showroom has: dark gray matte walls, polished light gray concrete floor with subtle reflections, large floor-to-ceiling glass windows on the left side, modern recessed LED ceiling lights
 - Do NOT vary the showroom between images – it must look like the SAME physical location every time
 
+LOGO RENDERING (MANDATORY when a logo image is provided):
+- If a logo image is attached, reproduce it as a PIXEL-PERFECT copy on the showroom wall
+- KEEP the logo's ORIGINAL COLORS – if it has yellow, red, blue, etc., those colors MUST appear exactly as in the source image
+- Do NOT convert colored logos to silver, chrome, aluminum, or monochrome – PRESERVE ALL ORIGINAL COLORS
+- The logo must appear IDENTICAL on EVERY generated image – same colors, same size, same position, same proportions
+- ZERO variation between images is acceptable
+
 FOR INTERIOR SHOTS (seats, steering wheel, dashboard, center console, door panels, rear seats):
 - MANDATORY CLEANUP: Remove ALL items that do NOT belong to the vehicle: trash, bags, papers, plastic covers, protective films, transport packaging, personal belongings, loose items on seats or floor mats, tags, stickers, warning labels (except permanent vehicle labels)
 - Clean up BOTH front seats AND rear seats equally – the entire cabin must look showroom-ready and professionally detailed
@@ -217,14 +224,22 @@ serve(async (req) => {
         ? toInlineData(manufacturerLogoBase64)
         : await resolveImage(manufacturerLogoUrl);
       if (logoData) {
-      parts.push({ text: `HERSTELLER-LOGO (Manufacturer Logo) – Das folgende Bild ist die EINZIGE Vorlage für das Hersteller-Logo.
-PFLICHT-REGELN für das Logo:
-- Rendere es als fotorealistisches 3D-Objekt aus gebürstetem Aluminium mit sichtbarer feiner Metallstruktur
-- Montiere es IMMER mittig an der Rückwand des Showrooms, auf Augenhöhe, leicht oberhalb des Fahrzeugdachs
-- Beleuchte es mit kaltweißem LED-Licht von hinten (Halo-Effekt) auf der dunkelgrauen matten Wand
-- Größe: ca. 60-80cm Durchmesser – auf JEDEM Bild IDENTISCH
-- VERBOTEN: Erfinde KEIN alternatives Logo, ändere NICHT Form/Farbe/Proportionen, zeige es NICHT als flaches Poster/Aufkleber, füge KEINEN zusätzlichen Text hinzu der nicht im Logo-Bild enthalten ist
-- Das Logo muss auf JEDEM generierten Bild EXAKT GLEICH aussehen – gleiche Position, Größe, Material, Beleuchtung` });
+      parts.push({ text: `HERSTELLER-LOGO – PIXEL-PERFEKTE REPRODUKTION (HÖCHSTE PRIORITÄT):
+Das folgende Bild ist das EXAKTE Logo das an der Showroom-Wand erscheinen MUSS.
+
+REPRODUKTIONS-REGELN (KEINE ABWEICHUNG ERLAUBT):
+1. EXAKTE KOPIE: Reproduziere das Logo-Bild PIXEL FÜR PIXEL. Jede Farbe, jede Form, jedes Detail, jeder Buchstabe muss IDENTISCH zum bereitgestellten Bild sein.
+2. KEINE INTERPRETATION: Du darfst das Logo NICHT neu interpretieren, vereinfachen, stilisieren oder in ein anderes Material umwandeln. Wenn das Logo gelb ist, bleibt es gelb. Wenn es ein Schild ist, bleibt es ein Schild. Wenn es Text enthält, muss EXAKT dieser Text erscheinen.
+3. POSITION: IMMER mittig an der Rückwand, auf Augenhöhe, leicht oberhalb des Fahrzeugdachs. Auf JEDEM Bild EXAKT dieselbe Position.
+4. GRÖßE: Ca. 60-80cm Durchmesser/Breite – auf JEDEM Bild IDENTISCH.
+5. DARSTELLUNG: Als hinterleuchtetes Wandelement mit dezenter LED-Beleuchtung von hinten (sanfter Halo-Effekt). Das Logo selbst behält seine ORIGINAL-FARBEN und ORIGINAL-FORM.
+6. VERBOTEN: 
+   - KEIN Umwandeln in Silber/Aluminium/Chrom wenn das Original farbig ist
+   - KEINE Änderung der Farbgebung (gelb bleibt gelb, rot bleibt rot, etc.)
+   - KEINE Vereinfachung der Form (Schild bleibt Schild, nicht nur das Tier/Symbol)
+   - KEIN Hinzufügen oder Entfernen von Elementen
+   - KEINE unterschiedliche Darstellung zwischen Bildern
+7. KONSISTENZ: Das Logo muss auf ALLEN generierten Bildern ABSOLUT IDENTISCH aussehen – gleiche Farben, Form, Größe, Position, Beleuchtung. NULL Variation erlaubt.` });
         parts.push(logoData);
         console.log("Manufacturer logo injected", manufacturerLogoBase64 ? "(cached b64)" : "(fetched)");
       }
@@ -235,10 +250,11 @@ PFLICHT-REGELN für das Logo:
         ? toInlineData(dealerLogoBase64)
         : await resolveImage(dealerLogoUrl);
       if (logoData) {
-        parts.push({ text: `AUTOHAUS-LOGO (Dealer Logo) – Das folgende Bild ist die EINZIGE Vorlage für das Autohaus-Logo.
-- Rendere es als beleuchtetes Wandlogo aus gebürstetem Aluminium, kleiner als das Hersteller-Logo
-- Position: IMMER rechts neben dem Hersteller-Logo oder an einer Seitenwand – auf JEDEM Bild IDENTISCH
-- VERBOTEN: Erfinde KEIN alternatives Logo, ändere NICHT Form/Farbe/Proportionen` });
+        parts.push({ text: `AUTOHAUS-LOGO – PIXEL-PERFEKTE REPRODUKTION:
+Das folgende Bild ist das EXAKTE Autohaus-Logo. Reproduziere es PIXEL FÜR PIXEL mit allen Original-Farben und Original-Formen.
+- Position: IMMER rechts neben dem Hersteller-Logo an der Rückwand – auf JEDEM Bild IDENTISCH
+- Größe: Kleiner als das Hersteller-Logo
+- KEINE Interpretation, KEINE Farbänderung, KEINE Vereinfachung – exakte Kopie des bereitgestellten Bildes` });
         parts.push(logoData);
         console.log("Dealer logo injected", dealerLogoBase64 ? "(cached b64)" : "(fetched)");
       }
