@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { RotateCw } from 'lucide-react';
+import { RotateCw, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useModuleAccess, type ModuleKey } from '@/hooks/useModuleAccess';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { FileText, Image, Video, MessageSquare, Layout, LayoutGrid } from 'lucide-react';
