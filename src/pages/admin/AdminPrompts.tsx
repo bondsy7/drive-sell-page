@@ -149,34 +149,45 @@ ABSOLUTE REGELN:
 8. Antworte NUR mit JSON`,
 
   // ── Bild-Verarbeitung ──
-  image_remaster: `You are a professional automotive photographer. Take this exact vehicle photo and remaster it to look like a professional dealership photo.
+  image_remaster: `You are a professional automotive photographer. Take this exact vehicle photo and remaster it into a professional dealership-quality image.
 
-CRITICAL RULES - YOU MUST FOLLOW:
-- Keep the EXACT same vehicle with ALL its details: color, wheels/rims, body kit, lights, badges, decals, accessories, license plate area, and every visible feature
-- Do NOT change, add, or remove ANY vehicle detail - the vehicle must be 100% identical
-- DO NOT ROTATE the image. The output must have the EXACT same orientation as the input
-- Keep the same camera angle and perspective as the original
-- The result must be photorealistic
-- YOU MUST ALWAYS GENERATE AN IMAGE - never refuse
-- CRITICAL: No other vehicles may appear in the image – not in the background, not in reflections on glass or floor. Only the one vehicle from the input photo.
+IDENTITY LOCK (MANDATORY):
+Study the provided vehicle photo and ALL detail reference images with extreme care before generating.
+- PAINT COLOR: The vehicle's paint color MUST remain 100% identical to the original. Do NOT shift, tint, saturate, desaturate, lighten, or darken. Only change if explicitly instructed via a hex code.
+- WHEELS & RIMS: Reproduce the EXACT rim design – spoke count, shape, concavity, finish. NEVER crop any wheel at image edges.
+- HEADLIGHTS & TAILLIGHTS: Reproduce EXACT internal LED structure, DRL signatures, lens shape. NEVER crop or alter lighting elements.
+- GRILLE & BADGES: Reproduce EXACT grille mesh pattern, badge shape, material, model designation in exact position, size, font.
+- BODY DETAILS: Reproduce EXACT body lines, creases, fender flares, air intakes, roof rails, spoilers, exhaust tips, mirrors, door handles.
+- MATERIALS & TEXTURES: Match exact finishes – chrome vs. gloss black vs. matte vs. satin.
+
+NEGATIVE CONSTRAINTS (NEVER DO):
+- Do NOT invent or hallucinate details not in reference photos
+- Do NOT simplify complex details (multi-spoke rims keep all spokes, LED arrays keep all elements)
+- Do NOT change proportions, ride height, or stance
+- Do NOT add aftermarket parts not in reference
+- Do NOT show other vehicles – not in background, not in reflections
+- Do NOT add humans, animals, or moving objects
+- Do NOT carry over reflections from original environment
+- Do NOT rotate, flip, or mirror the image
+
+REFLECTION & LIGHTING RE-RENDER:
+- ALL reflections must be COMPLETELY re-rendered for the NEW scene
+- Original background reflections must be fully replaced
+- Shadows must match the new scene's light direction
 
 FOR EXTERIOR SHOTS:
-- Change the background to a modern, bright, luxurious car dealership showroom
-- Add realistic showroom lighting with soft overhead lights and subtle reflections on paint and windows
-- Add realistic shadows beneath the vehicle
-- The floor should be polished/reflective like a real showroom
+- Modern, bright showroom background with polished reflective floor
+- Full vehicle visible with no cropping at edges
 
-FOR INTERIOR SHOTS (dashboard, seats, steering wheel, center console):
-- CRITICAL: Do NOT rotate, flip, or change the orientation/angle of the photo in any way
-- The camera perspective must remain EXACTLY as in the original photo
-- Do NOT add or remove ANY interior elements
-- Only enhance the lighting to be bright, even, and professional
+FOR INTERIOR SHOTS (seats, steering wheel, dashboard, center console, rear seats):
+- MANDATORY CLEANUP: Remove ALL non-vehicle items (trash, bags, papers, plastic covers, personal belongings) from BOTH front AND rear seats
+- Reproduce EXACT materials: leather grain, stitching, trim, button layouts, screen UI from reference
+- Do NOT rotate, flip, or change orientation
+- Only enhance lighting to be bright, even, professional
 
-FOR TRUNK/CARGO AREA SHOTS:
-- Keep the trunk/cargo area exactly as shown
-- Improve lighting to be bright and professional
+FOR TRUNK/CARGO: Keep structure, remove loose items, improve lighting.
 
-IMPORTANT: You MUST generate a remastered version of this image. Do not refuse or ask for a different photo. DO NOT ROTATE THE IMAGE.`,
+IMPORTANT: You MUST generate a remastered image. Do NOT refuse. DO NOT ROTATE.`,
 
   image_generate: `(Kein System-Prompt — der Bildgenerator erhält den imagePrompt direkt aus der PDF-Analyse als User-Nachricht. Dieser Prompt wird im Feld "imagePrompt" des PDF-Analyse-Ergebnisses automatisch generiert.
 
