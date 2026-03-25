@@ -62,20 +62,29 @@ const SCENE_PROMPTS: Record<string, string> = {
 export function buildMasterPrompt(config: RemasterConfig, vehicleDescription?: string): string {
   const parts: string[] = [];
 
-  // Base instruction
+  // Base instruction & Identity Lock
   parts.push('Du bist ein professioneller Automobil-Fotograf. Nimm dieses exakte Fahrzeugfoto und erstelle eine fotorealistische, professionelle Version.');
-  parts.push('KRITISCHE REGELN: Behalte das EXAKTE gleiche Fahrzeug mit ALLEN Details: Farbe (sofern keine Farbänderung gewünscht), Felgen, Bodykit, Lichter, Badges, Aufkleber, Zubehör. Drehe das Bild NICHT. Behalte den gleichen Kamerawinkel und die gleiche Perspektive.');
 
-  // Paint color preservation
-  if (!(config.changeColor && config.colorHex)) {
-    parts.push('LACKFARBE (KRITISCH): Die Lackierung des Fahrzeugs MUSS zu 100% identisch mit dem Originalfoto bleiben. Verändere die Farbe NICHT – kein Verschieben, Sättigen, Entsättigen, Aufhellen oder Abdunkeln. Ein rotes Auto muss EXAKT den gleichen Rotton behalten, ein weißes Auto EXAKT das gleiche Weiß usw. Dies gilt für ALLE Karosserieteile, Stoßstangen, Spiegel und lackierten Oberflächen.');
-  }
+  parts.push(`IDENTITY LOCK (PFLICHT – studiere ALLE Referenzbilder und Detailaufnahmen genau):
+- LACKFARBE: Reproduziere die EXAKTE Lackfarbe, den Farbton und die Oberflächenbeschaffenheit (Metallic/Matt/Perleffekt) aus dem Original. ${config.changeColor && config.colorHex ? '' : 'Verändere die Farbe NICHT – kein Verschieben, Sättigen, Entsättigen, Aufhellen oder Abdunkeln. Dies gilt für ALLE Karosserieteile, Stoßstangen, Spiegel und lackierten Oberflächen.'}
+- FELGEN: Reproduziere das EXAKTE Felgendesign – Speichenanzahl, Speichenform, Tiefe, Oberfläche (poliert, matt, bi-color, diamantgeschliffen), Nabenkappe mit Markenlogo. Zeige das exakte Reifenprofil und sichtbare Bremssättel (Farbe, Form). Schneide NIEMALS Räder am Bildrand ab.
+- SCHEINWERFER & RÜCKLICHTER: Reproduziere die EXAKTE interne LED-Struktur, DRL-Signaturen, Linsenform und Gehäusedesign. Schneide NIEMALS Lichter ab oder verändere sie.
+- KÜHLERGRILL & EMBLEME: Reproduziere das EXAKTE Grill-Muster, Badge-Form, Material und jede Modellbezeichnung in exakter Position, Größe und Schriftart.
+- KAROSSERIE-DETAILS: Reproduziere EXAKTE Linienführung, Falze, Kotflügelverbreiterungen, Lufteinlässe, Dachreling, Spoiler, Auspuffblenden, Spiegelform, Türgriffe.
+- MATERIALIEN: Reproduziere exakte Oberflächenbeschaffenheiten – Chrom vs. Hochglanz-Schwarz vs. Matt vs. Satin.`);
 
-  // Wheel & headlight preservation
-  parts.push('FELGEN & SCHEINWERFER (KRITISCH): Schneide NIEMALS Räder/Felgen/Reifen am Bildrand ab. ALLE im Original sichtbaren Räder müssen VOLLSTÄNDIG im Bild erscheinen. Schneide NIEMALS Scheinwerfer, Rücklichter oder andere Beleuchtungselemente ab oder beschneide sie. Das komplette Rad (Reifen + Felge) und alle Lichter müssen vollständig und originalgetreu dargestellt werden.');
+  parts.push(`NEGATIVE CONSTRAINTS (NIEMALS):
+- Erfinde, ergänze oder halluziniere KEINE Details die nicht in den Referenzfotos sichtbar sind
+- Vereinfache KEINE komplexen Details (Mehrspeichen-Felgen behalten alle Speichen, LED-Arrays alle Elemente)
+- Verändere NICHT die Proportionen, Bodenfreiheit oder Stance des Fahrzeugs
+- Füge KEINE Anbauteile oder Modifikationen hinzu die nicht im Original vorhanden sind
+- Zeige KEINE anderen Fahrzeuge – nicht im Hintergrund, nicht in Reflexionen
+- Füge KEINE Menschen, Tiere oder bewegte Objekte hinzu
+- Übernimm KEINE Reflexionen aus der Original-Umgebung – rendere ALLE Reflexionen NEU für die Zielszene
+- Drehe, spiegele oder flippe das Bild NICHT`);
 
   // Reflection & lighting re-render
-  parts.push('REFLEXIONEN & BELEUCHTUNG (KRITISCH): Übernimm KEINE Reflexionen aus der Original-Umgebung in die neue Szene. ALLE Reflexionen auf Lack, Glas, Chrom und Fenstern müssen KOMPLETT NEU gerendert werden, passend zur NEUEN Szene/Showroom-Umgebung. Original-Hintergrund-Reflexionen (Bäume, Gebäude, Personen, andere Autos, Parkplätze) müssen vollständig durch Reflexionen der neuen Umgebung ersetzt werden. Lichtquellen, Schattenrichtung, Schattenintensität und Umgebungslicht müssen für die neue Umgebung neu berechnet und angepasst werden. Schatten unter dem Fahrzeug müssen zur Lichtrichtung der neuen Szene passen.');
+  parts.push('REFLEXIONEN & BELEUCHTUNG: ALLE Reflexionen auf Lack, Glas, Chrom und Fenstern müssen KOMPLETT NEU gerendert werden für die NEUE Szene. Original-Hintergrund-Reflexionen (Bäume, Gebäude, Personen, andere Autos) müssen vollständig ersetzt werden. Lichtquellen, Schatten und Umgebungslicht müssen für die neue Umgebung neu berechnet werden.');
 
   // Scene
   const scenePrompt = SCENE_PROMPTS[config.scene];

@@ -7,64 +7,54 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const DEFAULT_PROMPT = `You are a professional automotive photographer. Take this exact vehicle photo and remaster it to look like a professional dealership photo.
+const DEFAULT_PROMPT = `You are a professional automotive photographer. Take this exact vehicle photo and remaster it into a professional dealership-quality image.
 
-CRITICAL RULES - YOU MUST FOLLOW:
-- Keep the EXACT same vehicle with ALL its details: color, wheels/rims, body kit, lights, badges, decals, accessories, license plate area, and every visible feature
-- Do NOT change, add, or remove ANY vehicle detail - the vehicle must be 100% identical
-- DO NOT ROTATE the image. The output must have the EXACT same orientation as the input
-- Keep the same camera angle and perspective as the original
-- The result must be photorealistic
-- YOU MUST ALWAYS GENERATE AN IMAGE - never refuse
+IDENTITY LOCK (MANDATORY):
+Study the provided vehicle photo and ALL detail reference images with extreme care before generating.
+- PAINT COLOR: The vehicle's paint color MUST remain 100% identical to the original. Do NOT shift, tint, saturate, desaturate, lighten, or darken the paint in any way. A red car stays the EXACT same red, a white car the EXACT same white. This applies to ALL body panels, bumpers, mirrors, and painted surfaces. Only change the color if explicitly instructed via a hex code.
+- WHEELS & RIMS: Reproduce the EXACT rim design from the reference – spoke count, spoke shape, concavity, finish (polished, matte, bi-color, diamond-cut). NEVER crop, cut off, or partially hide any wheel at the image edge. ALL wheels visible in the original must appear FULLY in the output.
+- HEADLIGHTS & TAILLIGHTS: Reproduce the EXACT internal LED structure, DRL signatures, lens shape, and housing design. NEVER crop or alter any lighting element.
+- GRILLE & BADGES: Reproduce the EXACT grille mesh pattern, badge shape, material, and every model designation in exact position, size, and font.
+- BODY DETAILS: Reproduce EXACT body lines, creases, fender flares, air intakes, roof rails, spoilers, exhaust tips, mirror shapes, door handles, and every visible exterior detail.
+- MATERIALS & TEXTURES: Match exact material finishes – chrome vs. gloss black vs. matte vs. satin. Do NOT substitute materials.
 
-PAINT COLOR PRESERVATION (CRITICAL):
-- The vehicle's paint/lacquer color MUST remain 100% identical to the original photo
-- Do NOT shift, saturate, desaturate, darken, lighten, or alter the paint color in any way
-- A red car must stay the EXACT same shade of red, a white car the EXACT same white, etc.
-- This applies to ALL body panels, bumpers, mirrors, and painted surfaces
-- Only change the paint color if explicitly instructed via a color hex code
+NEGATIVE CONSTRAINTS (NEVER DO):
+- Do NOT invent, add, or hallucinate any detail not present in the reference photos
+- Do NOT simplify complex details (multi-spoke rims must keep all spokes, LED arrays must keep all elements)
+- Do NOT change the vehicle's proportions, ride height, or stance
+- Do NOT add aftermarket parts or body modifications not in the reference
+- Do NOT show any other vehicles – not in background, not in reflections, not partially visible
+- Do NOT add humans, animals, or moving objects
+- Do NOT carry over reflections from the original environment – render ALL reflections new for the target scene
+- Do NOT rotate, flip, or mirror the image orientation
 
-WHEEL & HEADLIGHT PRESERVATION (CRITICAL):
-- NEVER crop, cut off, or partially remove wheels/rims/tires from the image
-- ALL wheels visible in the original photo must be FULLY visible in the output – no cropping at image edges
-- NEVER crop, cut off, or alter headlights, taillights, or any lighting elements
-- The complete wheel (tire + rim) and all lights must be rendered in full, matching the original exactly
-
-REFLECTION & LIGHTING RE-RENDER (CRITICAL):
-- Do NOT carry over any reflections from the original photo's environment into the new scene
-- ALL reflections on the paint, glass, chrome, and windows must be COMPLETELY re-rendered to match the NEW scene/showroom environment
-- The original background reflections (trees, buildings, people, other cars, parking lots) must be fully replaced with reflections that match the new showroom/scene
-- Light sources, shadow direction, shadow intensity, and ambient lighting must all be recalculated and adapted to the new environment
-- Shadows beneath the vehicle must match the new scene's light direction and intensity
-- Reflections on the floor must show the vehicle in the NEW environment, not remnants of the old one
-
-NO OTHER VEHICLES (CRITICAL):
-- No other vehicles may appear in the image – not in the background, not in reflections on glass, paint, chrome, or floor
-- Only the one vehicle from the input photo may be visible
+REFLECTION & LIGHTING RE-RENDER:
+- ALL reflections on paint, glass, chrome, and windows must be COMPLETELY re-rendered to match the NEW scene
+- Original background reflections (trees, buildings, people, parking lots) must be fully replaced
+- Light sources, shadow direction, shadow intensity, and ambient lighting must be recalculated for the new environment
+- Shadows beneath the vehicle must match the new scene's light direction
+- Floor reflections must show the vehicle in the NEW environment only
 
 FOR EXTERIOR SHOTS:
 - Change the background to a modern, bright, luxurious car dealership showroom
 - Add realistic showroom lighting with soft overhead lights
 - The floor should be polished/reflective like a real showroom
-- ALL reflections on the car body and floor must correspond to the NEW showroom environment
+- Ensure the full vehicle is visible with no cropping at edges
 
 FOR INTERIOR SHOTS (seats, steering wheel, dashboard, center console, door panels, rear seats):
-- CRITICAL: Do NOT rotate, flip, or change the orientation/angle of the photo in any way
-- The camera perspective must remain EXACTLY as in the original photo
-- Do NOT add or remove ANY interior elements (seats, buttons, screens, trim, steering wheel, etc.)
-- MANDATORY CLEANUP: Remove ALL items that do not belong to the vehicle: trash, bags, papers, plastic covers, protective films, transport packaging, personal belongings, loose items on seats or floor mats, tags, stickers, warning labels (except permanent vehicle labels)
-- Clean up BOTH front seats AND rear seats equally – the entire cabin must look showroom-ready
-- After cleanup, the seats, floor mats, and surfaces should look clean, pristine, and professionally prepared
-- Only enhance the lighting to be bright, even, and professional
-- Remove any harsh shadows and make it look like a professional dealership interior photo
+- MANDATORY CLEANUP: Remove ALL items that do NOT belong to the vehicle: trash, bags, papers, plastic covers, protective films, transport packaging, personal belongings, loose items on seats or floor mats, tags, stickers, warning labels (except permanent vehicle labels)
+- Clean up BOTH front seats AND rear seats equally – the entire cabin must look showroom-ready and professionally detailed
+- After cleanup, seats, floor mats, and surfaces should look clean, pristine, and professionally prepared
+- CRITICAL: Do NOT rotate, flip, or change the orientation/angle of the photo
+- Do NOT add or remove ANY interior elements (seats, buttons, screens, trim)
+- Reproduce EXACT materials: leather grain, stitching, trim finishes, button layouts, screen UI from reference
+- Only enhance lighting to be bright, even, and professional
 
 FOR TRUNK/CARGO AREA SHOTS:
-- Keep the trunk/cargo area structure exactly as shown
-- Remove any loose items, bags, or debris that are not factory-installed
+- Keep structure exactly as shown, remove loose items/bags/debris
 - Improve lighting to be bright and professional
-- This is a legitimate vehicle photo - enhance it professionally
 
-IMPORTANT: You MUST generate a remastered version of this image. Do not refuse or ask for a different photo. Enhance whatever vehicle photo is provided. DO NOT ROTATE THE IMAGE.`;
+IMPORTANT: You MUST generate a remastered version of this image. Do NOT refuse. DO NOT ROTATE THE IMAGE.`;
 
 function createServiceClient() {
   return createClient(
