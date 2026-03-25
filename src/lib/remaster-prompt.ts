@@ -106,12 +106,24 @@ export function buildMasterPrompt(config: RemasterConfig, vehicleDescription?: s
     parts.push(`Ändere die Lackierung des Fahrzeugs exakt in den Hex-Farbcode ${config.colorHex}. Der neue Lack soll glänzend und fotorealistisch aussehen, mit korrekten Reflexionen und Farbübergängen.`);
   }
 
-  // Logo prompting
+  // Logo prompting – enforce EXACT same rendering on EVERY image
   if (config.showManufacturerLogo && config.manufacturerLogoUrl) {
-    parts.push('HERSTELLER-LOGO: Im Hintergrund soll ein fotorealistisches 3D-Rendering des beiliegenden HERSTELLER-Logos (Manufacturer Logo) sichtbar sein, das an einer modernen, dunkelgrauen matten Wand montiert ist. Das Logo besteht aus hochwertigem gebürstetem Aluminium mit sichtbarer, feiner Metallstruktur. Es wird von hinten mit kaltweißem LED-Licht beleuchtet, wodurch ein scharfer, leuchtender Halo-Effekt auf der Wand entsteht. Verwende EXAKT das beiliegende Hersteller-Logo – erfinde KEIN anderes Logo.');
+    parts.push(`HERSTELLER-LOGO (PFLICHT – IDENTISCH AUF JEDEM BILD):
+- Verwende AUSSCHLIESSLICH das beiliegende Hersteller-Logo-Bild als Vorlage
+- Rendere das Logo als fotorealistisches 3D-Objekt aus gebürstetem Aluminium mit feiner sichtbarer Metallstruktur
+- Montiere es IMMER an derselben Position: mittig an der Rückwand des Showrooms, auf Augenhöhe, leicht oberhalb des Fahrzeugdachs
+- Beleuchte es IMMER identisch: kaltweißes LED-Licht von hinten mit scharfem, leuchtenden Halo-Effekt auf der dunkelgrauen matten Wand
+- Das Logo muss auf JEDEM Bild EXAKT gleich aussehen: gleiche Größe (ca. 60-80cm Durchmesser), gleiche Position, gleiche Beleuchtung, gleiches Material
+- VERBOTEN: Erfinde KEIN alternatives Logo, ändere NICHT die Form, Farbe oder Proportionen des Logos, zeige NICHT nur Teile des Logos
+- VERBOTEN: Zeige das Logo NICHT als flaches Bild/Poster/Aufkleber – es muss IMMER ein 3D-Objekt aus Metall sein
+- VERBOTEN: Füge KEINEN Text hinzu der nicht im Original-Logo enthalten ist`);
   }
   if (config.showDealerLogo && config.dealerLogoUrl) {
-    parts.push('AUTOHAUS-LOGO: Zusätzlich soll das beiliegende AUTOHAUS-Logo (Dealer Logo) dezent sichtbar sein – z.B. als kleineres Wandlogo oder auf einem Aufsteller neben dem Fahrzeug. Verwende EXAKT das beiliegende Autohaus-Logo.');
+    parts.push(`AUTOHAUS-LOGO (PFLICHT – IDENTISCH AUF JEDEM BILD):
+- Verwende AUSSCHLIESSLICH das beiliegende Autohaus-Logo-Bild als Vorlage
+- Rendere es als beleuchtetes Wandlogo aus gebürstetem Aluminium, kleiner als das Hersteller-Logo
+- Montiere es IMMER an derselben Position: rechts neben dem Hersteller-Logo oder an einer Seitenwand
+- VERBOTEN: Erfinde KEIN alternatives Logo, ändere NICHT die Form, Farbe oder Proportionen`);
   }
 
   // Interior-specific rules – must override scene prompts
