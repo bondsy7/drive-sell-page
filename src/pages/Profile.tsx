@@ -276,6 +276,7 @@ const Profile = () => {
       default_legal_text: profile.default_legal_text || null,
       updated_at: new Date().toISOString(),
     }).eq('id', user.id);
+    await saveBanks();
     setSaving(false);
     if (error) { toast.error('Fehler beim Speichern'); console.error(error); return; }
     toast.success('Profil gespeichert!');
