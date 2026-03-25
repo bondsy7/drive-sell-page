@@ -426,6 +426,15 @@ export default function AdminUsers() {
         </table>
         {filtered.length === 0 && <p className="text-center text-muted-foreground py-8">Keine Nutzer gefunden</p>}
       </div>
+
+      {moduleDialogUser && (
+        <UserModuleDialog
+          userId={moduleDialogUser.id}
+          userEmail={moduleDialogUser.email}
+          open={!!moduleDialogUser}
+          onOpenChange={(open) => { if (!open) setModuleDialogUser(null); }}
+        />
+      )}
     </div>
   );
 }
