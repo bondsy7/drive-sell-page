@@ -45,6 +45,16 @@ interface JobState {
   status: JobStatus;
   results: string[];
   error?: string;
+  startTime?: number;
+  endTime?: number;
+}
+
+interface JobDurationEntry {
+  key: string;
+  label: string;
+  duration_ms: number;
+  images: number;
+  status: string;
 }
 
 /* ─── Constants ─── */
