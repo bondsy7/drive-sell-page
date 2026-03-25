@@ -101,6 +101,9 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
   const descText = data.vehicle.variant || '';
   const descHTML = descText ? `<div class="card"><h2>Fahrzeugbeschreibung</h2><p class="desc-text">${descText}</p></div>` : '';
 
+  // Legal text
+  const legalTextHTML = buildLegalTextHTML(data);
+
   // Leasing / Finance conditions
   const leasingFactor = isLeasing ? calculateLeasingFactor(data) : '';
   let leasingConditionsHTML = '';
