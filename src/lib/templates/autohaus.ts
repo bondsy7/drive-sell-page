@@ -187,9 +187,6 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
       <p style="font-size:.7rem;color:#9ca3af;margin-top:.75rem">Bitte mit * gekennzeichnete Felder ausfüllen. Kostenlos und unverbindlich!</p>
     </div>`;
 
-  // Legal text
-  const legalTextHTML = buildLegalTextHTML(data);
-
   return `<!DOCTYPE html>
 <html lang="de">
 <head>
