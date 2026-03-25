@@ -962,21 +962,42 @@ VITE_SUPABASE_PROJECT_ID=rauzclzphdnhzflovrya`}</CodeBlock>
 
         {/* 19. Kostenanalyse */}
         <Section id="s19" title="19. Kostenanalyse: EK-Token, VK-Marge">
+          <SubSection title="Offizielle API-Preise (Stand März 2026)">
+            <Table
+              headers={['Modell', 'Typ', 'Preis']}
+              rows={[
+                ['gemini-2.5-flash-image', 'Bild 1K', '$0.039/Bild'],
+                ['gemini-3.1-flash-image-preview', 'Bild 1K/2K', '$0.045–$0.101/Bild'],
+                ['gemini-3-pro-image-preview', 'Bild 1K/2K', '$0.134/Bild'],
+                ['gpt-image-1', 'Bild 1024px', '$0.04–$0.17/Bild'],
+                ['Veo 3.1 Fast', 'Video 8s', '~$1.20 (8s)'],
+                ['Veo 3.1 Standard', 'Video 8s', '~$1.60 (8s)'],
+                ['Veo 3.1 Std + Audio', 'Video 8s', '~$3.20 (8s)'],
+                ['Sora 2 (720p)', 'Video', '$0.10/s'],
+                ['Sora 2 Pro (1080p)', 'Video', '$0.70/s'],
+              ]}
+            />
+          </SubSection>
           <SubSection title="EK vs. VK pro Aktion">
             <Table
               headers={['Aktion', 'Credits (VK)', 'EK (ca.)', 'Marge %']}
               rows={[
-                ['PDF-Analyse', '1 (0,50 €)', '~0,006 €', '98,8%'],
-                ['Bildgen. (schnell)', '3 (1,50 €)', '~0,02 €', '98,7%'],
-                ['Bildgen. (qualität)', '5 (2,50 €)', '~0,06 €', '97,6%'],
-                ['Bildgen. (ultra)', '10 (5,00 €)', '~0,12 €', '97,6%'],
-                ['Video', '10 (5,00 €)', '~0,30 €', '94,0%'],
-                ['Landing Page', '3 (1,50 €)', '~0,175 €', '88,3%'],
-                ['360° Spin', '15 (7,50 €)', '~2,25 €', '70,0%'],
+                ['PDF-Analyse', '2 (1,00 €)', '~0,006 €', '99,4%'],
+                ['Bildgen. Schnell (Flash)', '3 (1,50 €)', '~0,036 €', '97,6%'],
+                ['Bildgen. Qualität (3.1 Flash)', '5 (2,50 €)', '~0,06 €', '97,6%'],
+                ['Bildgen. Premium (3 Pro)', '8 (4,00 €)', '~0,134 €', '96,7%'],
+                ['Bildgen. Turbo (gpt-image-1)', '6 (3,00 €)', '~0,10 €', '96,7%'],
+                ['Bildgen. Ultra (gpt-image-1 HD)', '10 (5,00 €)', '~0,17 €', '96,6%'],
+                ['Video Fast (Veo 3.1)', '10 (5,00 €)', '~1,10 €', '78,0%'],
+                ['Video Standard (Veo 3.1)', '15 (7,50 €)', '~1,47 €', '80,4%'],
+                ['Video Std + Audio (Veo 3.1)', '20 (10,00 €)', '~2,94 €', '70,6%'],
+                ['360° Spin (36 Frames Flash)', '20 (10,00 €)', '~1,40 €', '86,0%'],
+                ['360° Spin (36 Frames Pro)', '30 (15,00 €)', '~4,82 €', '67,9%'],
+                ['Landing Page', '3 (1,50 €)', '~0,18 €', '88,0%'],
                 ['Sales-Antwort', '1 (0,50 €)', '~0,013 €', '97,5%'],
               ]}
             />
-            <P>Basis: 1 Credit ≈ 0,50 € (10 Credits = 5,00 €). 360° Spin hat die niedrigste Marge wegen 36 Bildgenerierungen.</P>
+            <P>Basis: 1 Credit ≈ 0,50 € (10 Credits = 5,00 €). Video und 360° Spin (Pro) haben die niedrigsten Margen. Quellen: Google AI Pricing, OpenAI Pricing (März 2026).</P>
           </SubSection>
         </Section>
 
