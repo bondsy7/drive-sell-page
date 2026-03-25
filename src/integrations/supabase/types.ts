@@ -545,6 +545,62 @@ export type Database = {
           },
         ]
       }
+      pipeline_timing_logs: {
+        Row: {
+          completed_images: number
+          created_at: string
+          detected_brand: string | null
+          failed_images: number
+          id: string
+          job_durations: Json
+          model_tier: string
+          project_id: string | null
+          total_duration_ms: number
+          total_images: number
+          total_jobs: number
+          user_id: string
+          vehicle_description: string | null
+        }
+        Insert: {
+          completed_images?: number
+          created_at?: string
+          detected_brand?: string | null
+          failed_images?: number
+          id?: string
+          job_durations?: Json
+          model_tier?: string
+          project_id?: string | null
+          total_duration_ms?: number
+          total_images?: number
+          total_jobs?: number
+          user_id: string
+          vehicle_description?: string | null
+        }
+        Update: {
+          completed_images?: number
+          created_at?: string
+          detected_brand?: string | null
+          failed_images?: number
+          id?: string
+          job_durations?: Json
+          model_tier?: string
+          project_id?: string | null
+          total_duration_ms?: number
+          total_images?: number
+          total_jobs?: number
+          user_id?: string
+          vehicle_description?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pipeline_timing_logs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       placeholder_definitions: {
         Row: {
           condition: Json | null
