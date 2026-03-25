@@ -217,7 +217,14 @@ serve(async (req) => {
         ? toInlineData(manufacturerLogoBase64)
         : await resolveImage(manufacturerLogoUrl);
       if (logoData) {
-        parts.push({ text: "Das folgende Bild ist das HERSTELLER-LOGO (Manufacturer Logo). Verwende EXAKT dieses Logo im Hintergrund:" });
+      parts.push({ text: `HERSTELLER-LOGO (Manufacturer Logo) – Das folgende Bild ist die EINZIGE Vorlage für das Hersteller-Logo.
+PFLICHT-REGELN für das Logo:
+- Rendere es als fotorealistisches 3D-Objekt aus gebürstetem Aluminium mit sichtbarer feiner Metallstruktur
+- Montiere es IMMER mittig an der Rückwand des Showrooms, auf Augenhöhe, leicht oberhalb des Fahrzeugdachs
+- Beleuchte es mit kaltweißem LED-Licht von hinten (Halo-Effekt) auf der dunkelgrauen matten Wand
+- Größe: ca. 60-80cm Durchmesser – auf JEDEM Bild IDENTISCH
+- VERBOTEN: Erfinde KEIN alternatives Logo, ändere NICHT Form/Farbe/Proportionen, zeige es NICHT als flaches Poster/Aufkleber, füge KEINEN zusätzlichen Text hinzu der nicht im Logo-Bild enthalten ist
+- Das Logo muss auf JEDEM generierten Bild EXAKT GLEICH aussehen – gleiche Position, Größe, Material, Beleuchtung` });
         parts.push(logoData);
         console.log("Manufacturer logo injected", manufacturerLogoBase64 ? "(cached b64)" : "(fetched)");
       }
@@ -228,7 +235,10 @@ serve(async (req) => {
         ? toInlineData(dealerLogoBase64)
         : await resolveImage(dealerLogoUrl);
       if (logoData) {
-        parts.push({ text: "Das folgende Bild ist das AUTOHAUS-LOGO (Dealer Logo). Montiere dieses Logo gut sichtbar an der Rückwand des Showrooms – z.B. als beleuchtetes Wandlogo aus gebürstetem Aluminium mit kaltweißem LED-Halo-Effekt. Das Logo soll prominent und professionell im Hintergrund sichtbar sein. Verwende EXAKT dieses Logo – erfinde KEIN anderes." });
+        parts.push({ text: `AUTOHAUS-LOGO (Dealer Logo) – Das folgende Bild ist die EINZIGE Vorlage für das Autohaus-Logo.
+- Rendere es als beleuchtetes Wandlogo aus gebürstetem Aluminium, kleiner als das Hersteller-Logo
+- Position: IMMER rechts neben dem Hersteller-Logo oder an einer Seitenwand – auf JEDEM Bild IDENTISCH
+- VERBOTEN: Erfinde KEIN alternatives Logo, ändere NICHT Form/Farbe/Proportionen` });
         parts.push(logoData);
         console.log("Dealer logo injected", dealerLogoBase64 ? "(cached b64)" : "(fetched)");
       }

@@ -73,6 +73,14 @@ export function buildMasterPrompt(config: RemasterConfig, vehicleDescription?: s
 - KAROSSERIE-DETAILS: Reproduziere EXAKTE Linienführung, Falze, Kotflügelverbreiterungen, Lufteinlässe, Dachreling, Spoiler, Auspuffblenden, Spiegelform, Türgriffe.
 - MATERIALIEN: Reproduziere exakte Oberflächenbeschaffenheiten – Chrom vs. Hochglanz-Schwarz vs. Matt vs. Satin.`);
 
+  parts.push(`ANTI-CROPPING (ABSOLUT VERBOTEN):
+- Das Fahrzeug muss VOLLSTÄNDIG im Bild sichtbar sein – KEIN Teil darf am Bildrand abgeschnitten werden
+- ALLE Scheinwerfer müssen KOMPLETT sichtbar sein – schneide NIEMALS einen Scheinwerfer ab oder verdecke ihn
+- ALLE Rücklichter müssen KOMPLETT sichtbar sein – schneide NIEMALS ein Rücklicht ab
+- ALLE Räder müssen KOMPLETT sichtbar sein – schneide NIEMALS ein Rad am Bildrand ab
+- Halte mindestens 5% Freiraum zwischen Fahrzeugkante und Bildrand auf allen Seiten
+- Dies gilt für JEDE Perspektive: Front, Heck, Seite, 3/4-Ansichten`);
+
   parts.push(`NEGATIVE CONSTRAINTS (NIEMALS):
 - Erfinde, ergänze oder halluziniere KEINE Details die nicht in den Referenzfotos sichtbar sind
 - Vereinfache KEINE komplexen Details (Mehrspeichen-Felgen behalten alle Speichen, LED-Arrays alle Elemente)
