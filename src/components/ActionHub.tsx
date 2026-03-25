@@ -1,6 +1,7 @@
 import React from 'react';
-import { Camera, FileText, Layout, Image, Video, Sparkles } from 'lucide-react';
+import { Camera, FileText, Layout, Image, Video, Sparkles, Lock } from 'lucide-react';
 import { useCredits } from '@/hooks/useCredits';
+import { useModuleAccess } from '@/hooks/useModuleAccess';
 
 export type HubAction = 
   | 'photos'          // Fotos aufnehmen & remastern
