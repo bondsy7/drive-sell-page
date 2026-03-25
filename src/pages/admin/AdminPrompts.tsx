@@ -149,34 +149,45 @@ ABSOLUTE REGELN:
 8. Antworte NUR mit JSON`,
 
   // ── Bild-Verarbeitung ──
-  image_remaster: `You are a professional automotive photographer. Take this exact vehicle photo and remaster it to look like a professional dealership photo.
+  image_remaster: `You are a professional automotive photographer. Take this exact vehicle photo and remaster it into a professional dealership-quality image.
 
-CRITICAL RULES - YOU MUST FOLLOW:
-- Keep the EXACT same vehicle with ALL its details: color, wheels/rims, body kit, lights, badges, decals, accessories, license plate area, and every visible feature
-- Do NOT change, add, or remove ANY vehicle detail - the vehicle must be 100% identical
-- DO NOT ROTATE the image. The output must have the EXACT same orientation as the input
-- Keep the same camera angle and perspective as the original
-- The result must be photorealistic
-- YOU MUST ALWAYS GENERATE AN IMAGE - never refuse
-- CRITICAL: No other vehicles may appear in the image – not in the background, not in reflections on glass or floor. Only the one vehicle from the input photo.
+IDENTITY LOCK (MANDATORY):
+Study the provided vehicle photo and ALL detail reference images with extreme care before generating.
+- PAINT COLOR: The vehicle's paint color MUST remain 100% identical to the original. Do NOT shift, tint, saturate, desaturate, lighten, or darken. Only change if explicitly instructed via a hex code.
+- WHEELS & RIMS: Reproduce the EXACT rim design – spoke count, shape, concavity, finish. NEVER crop any wheel at image edges.
+- HEADLIGHTS & TAILLIGHTS: Reproduce EXACT internal LED structure, DRL signatures, lens shape. NEVER crop or alter lighting elements.
+- GRILLE & BADGES: Reproduce EXACT grille mesh pattern, badge shape, material, model designation in exact position, size, font.
+- BODY DETAILS: Reproduce EXACT body lines, creases, fender flares, air intakes, roof rails, spoilers, exhaust tips, mirrors, door handles.
+- MATERIALS & TEXTURES: Match exact finishes – chrome vs. gloss black vs. matte vs. satin.
+
+NEGATIVE CONSTRAINTS (NEVER DO):
+- Do NOT invent or hallucinate details not in reference photos
+- Do NOT simplify complex details (multi-spoke rims keep all spokes, LED arrays keep all elements)
+- Do NOT change proportions, ride height, or stance
+- Do NOT add aftermarket parts not in reference
+- Do NOT show other vehicles – not in background, not in reflections
+- Do NOT add humans, animals, or moving objects
+- Do NOT carry over reflections from original environment
+- Do NOT rotate, flip, or mirror the image
+
+REFLECTION & LIGHTING RE-RENDER:
+- ALL reflections must be COMPLETELY re-rendered for the NEW scene
+- Original background reflections must be fully replaced
+- Shadows must match the new scene's light direction
 
 FOR EXTERIOR SHOTS:
-- Change the background to a modern, bright, luxurious car dealership showroom
-- Add realistic showroom lighting with soft overhead lights and subtle reflections on paint and windows
-- Add realistic shadows beneath the vehicle
-- The floor should be polished/reflective like a real showroom
+- Modern, bright showroom background with polished reflective floor
+- Full vehicle visible with no cropping at edges
 
-FOR INTERIOR SHOTS (dashboard, seats, steering wheel, center console):
-- CRITICAL: Do NOT rotate, flip, or change the orientation/angle of the photo in any way
-- The camera perspective must remain EXACTLY as in the original photo
-- Do NOT add or remove ANY interior elements
-- Only enhance the lighting to be bright, even, and professional
+FOR INTERIOR SHOTS (seats, steering wheel, dashboard, center console, rear seats):
+- MANDATORY CLEANUP: Remove ALL non-vehicle items (trash, bags, papers, plastic covers, personal belongings) from BOTH front AND rear seats
+- Reproduce EXACT materials: leather grain, stitching, trim, button layouts, screen UI from reference
+- Do NOT rotate, flip, or change orientation
+- Only enhance lighting to be bright, even, professional
 
-FOR TRUNK/CARGO AREA SHOTS:
-- Keep the trunk/cargo area exactly as shown
-- Improve lighting to be bright and professional
+FOR TRUNK/CARGO: Keep structure, remove loose items, improve lighting.
 
-IMPORTANT: You MUST generate a remastered version of this image. Do not refuse or ask for a different photo. DO NOT ROTATE THE IMAGE.`,
+IMPORTANT: You MUST generate a remastered image. Do NOT refuse. DO NOT ROTATE.`,
 
   image_generate: `(Kein System-Prompt — der Bildgenerator erhält den imagePrompt direkt aus der PDF-Analyse als User-Nachricht. Dieser Prompt wird im Feld "imagePrompt" des PDF-Analyse-Ergebnisses automatisch generiert.
 
@@ -313,77 +324,79 @@ Antworte immer auf Deutsch, knapp und hilfreich. Sei PROAKTIV.`,
   sales_response: `Du bist ein erfahrener KI-Verkaufsassistent für ein Autohaus. Hilf dem Verkäufer bei der Kundenkommunikation.`,
 
   // ── Pipeline Bildgenerierung ──
-  pipeline_MASTER_IMAGE: `Create a single photorealistic 8K image of the EXACT vehicle from the provided reference photos. Position the car in the PROVIDED SHOWROOM environment. Camera: Front-left 3/4 perspective at eye level, full-frame layout. The Company Logo MUST be physically integrated onto a large background feature wall behind the car with realistic 3D properties, perspective skew and reflections. Do NOT modify the car body color, rims, or accessories. No humans. Clean luxury studio lighting with realistic floor reflections.`,
-  pipeline_EXT_FRONT: `Create a single photorealistic image of the EXACT vehicle from the reference photos. Direct head-on front view at eye level, centered in frame. Place the car in the PROVIDED SHOWROOM environment. The Company Logo is visible on the background wall. Realistic floor reflections and showroom lighting. No humans.`,
-  pipeline_EXT_REAR: `Create a single photorealistic image of the EXACT vehicle from the reference photos. Direct rear view at eye level, centered in frame showing taillights, exhaust, and rear badge. Place the car in the PROVIDED SHOWROOM environment. The Company Logo is visible on the background wall. Realistic shadows and lighting. No humans.`,
-  pipeline_EXT_SIDE_LEFT: `Create a single photorealistic image of the EXACT vehicle from the reference photos. Perfect left side profile view, completely flat/perpendicular to the car body. Place the car in the PROVIDED SHOWROOM environment. The Company Logo is visible on the background wall. Highlight body lines and wheel design. No humans.`,
-  pipeline_EXT_SIDE_RIGHT: `Create a single photorealistic image of the EXACT vehicle from the reference photos. Perfect right side profile view, completely flat/perpendicular to the car body. Place the car in the PROVIDED SHOWROOM environment. The Company Logo is visible on the background wall. Highlight body lines and wheel design. No humans.`,
-  pipeline_EXT_34_FRONT_RIGHT: `Create a single photorealistic image of the EXACT vehicle from the reference photos. Front-right 3/4 perspective at eye level. Place the car in the PROVIDED SHOWROOM environment. The Company Logo is on the background wall with correct perspective. Realistic lighting and reflections. No humans.`,
-  pipeline_EXT_34_REAR_LEFT: `Create a single photorealistic image of the EXACT vehicle from the reference photos. Rear-left 3/4 perspective at eye level showing the rear quarter and side. Place the car in the PROVIDED SHOWROOM environment. The Company Logo is on the wall behind. Dramatic lighting emphasizing body contours. No humans.`,
-  pipeline_EXT_34_REAR_RIGHT: `Create a single photorealistic image of the EXACT vehicle from the reference photos. Rear-right 3/4 perspective at eye level. Place the car in the PROVIDED SHOWROOM environment. The Company Logo is on the wall with correct perspective. Smooth showroom lighting. No humans.`,
-  pipeline_EXT_LOW_ANGLE: `Create a single photorealistic image of the EXACT vehicle from the reference photos. Low-angle hero shot from the ground level looking up at the front bumper and grille. Place the car in the PROVIDED SHOWROOM environment. Dramatic perspective making the car look powerful and imposing. The Company Logo visible on the background wall. No humans.`,
-  pipeline_EXT_ELEVATED_FRONT: `Create a single photorealistic image of the EXACT vehicle from the reference photos. Elevated front 3/4 view looking down at the hood and windshield from above. Place the car in the PROVIDED SHOWROOM environment. The Company Logo is on the wall. Bird-eye perspective showing roof and bonnet lines. No humans.`,
-  pipeline_INT_DASHBOARD: `Create a single photorealistic image of the EXACT vehicle interior from the reference photos. Driver's seat perspective looking at the steering wheel and full dashboard. Maintain every interior detail exactly as in reference. Bright, even professional lighting. CRITICAL: Do NOT rotate or flip the perspective. The Company Logo is subtly visible through the windshield on the showroom wall outside. No humans.`,
-  pipeline_INT_CENTER_CONSOLE: `Create a single photorealistic macro close-up of the center console and infotainment screen of the EXACT vehicle from the reference photos. Show gear selector, controls, and screen in sharp detail. Professional interior lighting. Do NOT change any interior element. No humans.`,
-  pipeline_INT_REAR_SEATS: `Create a single photorealistic image from the front looking back at the rear seats of the EXACT vehicle from the reference photos. Show legroom, seat materials, and rear amenities. Clean professional lighting. Do NOT rotate or change perspective. No humans.`,
-  pipeline_INT_WIDE_CABIN: `Create a single photorealistic wide-angle view of the full front cabin from the center of the rear seats of the EXACT vehicle. Show the entire dashboard, both front seats, and windshield. Maintain exact interior details. The Company Logo is visible through the windshield on the showroom wall. Professional even lighting. No humans.`,
-  pipeline_DET_HEADLIGHT: `Create a single photorealistic macro close-up of the front headlight of the EXACT vehicle from the reference photos. Reveal internal LED textures, DRL signatures, and lens details. High-contrast studio lighting. Solid or highly blurred showroom background. No humans.`,
-  pipeline_DET_TAILLIGHT: `Create a single photorealistic macro close-up of the rear taillight signature pattern of the EXACT vehicle from the reference photos. Show LED elements and light design in detail. High-contrast studio lighting against blurred showroom background. No humans.`,
-  pipeline_DET_WHEEL: `Create a single photorealistic ultra-sharp close-up of the front wheel of the EXACT vehicle from the reference photos. Match the exact rim design without distortion. Show tire profile and brake caliper if visible. High-contrast studio lighting. Blurred showroom background. No humans.`,
-  pipeline_DET_GRILLE: `Create a single photorealistic close-up of the front grille mesh and central badge of the EXACT vehicle from the reference photos. Show chrome/material textures in detail. High-contrast studio lighting emphasizing materials. Blurred showroom background. No humans.`,
-  pipeline_GRID_EXTERIOR_4: `Create a photorealistic 2x2 image grid of the EXACT vehicle from the reference photos. Top-left: front 3/4 view. Top-right: direct side profile. Bottom-left: rear 3/4 view. Bottom-right: direct rear view. All in the same PROVIDED SHOWROOM environment with consistent lighting. Each cell shows the complete car. Thin white divider between cells. Company Logo visible on the showroom wall. No humans.`,
-  pipeline_GRID_HIGHLIGHTS_6: `Create a photorealistic 3x2 image grid of the EXACT vehicle from the reference photos. Row 1: front 3/4 hero shot | side profile | rear 3/4 view. Row 2: headlight close-up | dashboard interior | wheel/rim close-up. All images in the same PROVIDED SHOWROOM with consistent lighting. Thin white dividers between cells. Company Logo on background wall. No humans.`,
-  pipeline_GRID_INTERIOR_4: `Create a photorealistic 2x2 image grid of the EXACT vehicle interior from the reference photos. Top-left: full dashboard from driver seat. Top-right: center console close-up with infotainment. Bottom-left: rear seats from front. Bottom-right: steering wheel close-up. Consistent professional interior lighting. Thin white dividers. Do NOT rotate or flip any perspective. No humans.`,
-  pipeline_GRID_SOCIAL_MEDIA: `Create a single photorealistic social-media-ready collage of the EXACT vehicle from the reference photos. One large hero image (front 3/4) taking 60% of the canvas on the left, with 3 smaller images stacked vertically on the right: side profile, interior dashboard, and wheel detail. PROVIDED SHOWROOM environment. Company Logo watermark. Modern, clean layout. No humans.`,
+  // NOTE: These defaults mirror src/lib/pipeline-jobs.ts but without the shared IDENTITY_LOCK block.
+  // The IDENTITY_LOCK is automatically prepended at runtime. Admin overrides replace the FULL prompt including the lock.
+  pipeline_MASTER_IMAGE: `Create a single photorealistic 8K image of the EXACT vehicle from the provided reference photos. PERSPECTIVE: Front-left 3/4 view at eye level. Camera at 30-40° left of center axis. Full vehicle visible. SCENE: PROVIDED SHOWROOM. Company Logo physically integrated on background wall with 3D properties. Do NOT modify car body color, rims, or accessories. Clean luxury studio lighting with realistic floor reflections. No humans.`,
+  pipeline_EXT_FRONT: `PERSPECTIVE: Direct head-on front view at eye level, perfectly centered. Grille, headlights, badge symmetrically framed. Full vehicle width visible. SCENE: PROVIDED SHOWROOM. Company Logo on wall. Realistic floor reflections. No humans.`,
+  pipeline_EXT_REAR: `PERSPECTIVE: Direct rear view at eye level, perfectly centered. Taillights, exhaust, rear badge, model designation visible and symmetrical. SCENE: PROVIDED SHOWROOM. Company Logo on wall. No humans.`,
+  pipeline_EXT_SIDE_LEFT: `PERSPECTIVE: Perfect left (driver) side profile, camera perpendicular (90°) to left flank. Both left wheels fully visible. SCENE: PROVIDED SHOWROOM. Company Logo on wall. No humans.`,
+  pipeline_EXT_SIDE_RIGHT: `PERSPECTIVE: Perfect right (passenger) side profile, camera perpendicular (90°) to right flank. Both right wheels fully visible. SCENE: PROVIDED SHOWROOM. Company Logo on wall. No humans.`,
+  pipeline_EXT_34_FRONT_RIGHT: `PERSPECTIVE: Front-right 3/4 view at eye level. Camera at 30-40° RIGHT of center axis. Right headlight, right fender, right front wheel prominently visible. NOT a left-side view. SCENE: PROVIDED SHOWROOM. Company Logo on wall. No humans.`,
+  pipeline_EXT_34_REAR_LEFT: `PERSPECTIVE: Rear-left 3/4 view at eye level. Camera behind and to the LEFT. Left taillight, left rear wheel prominent. SCENE: PROVIDED SHOWROOM. Company Logo on wall. Dramatic lighting. No humans.`,
+  pipeline_EXT_34_REAR_RIGHT: `PERSPECTIVE: Rear-right 3/4 view at eye level. Camera behind and to the RIGHT. Right taillight, right rear wheel prominent. SCENE: PROVIDED SHOWROOM. Company Logo on wall. No humans.`,
+  pipeline_EXT_LOW_ANGLE: `PERSPECTIVE: Low-angle hero shot from ground level (20-30cm above ground) looking up at front bumper and grille. Full bumper and wheels visible. SCENE: PROVIDED SHOWROOM. Company Logo on wall. Dramatic perspective. No humans.`,
+  pipeline_EXT_ELEVATED_FRONT: `PERSPECTIVE: Elevated front 3/4 view from 2-3m above. Looking down at hood, windshield, roof. SCENE: PROVIDED SHOWROOM. Company Logo on wall. No humans.`,
+  pipeline_INT_DASHBOARD: `PERSPECTIVE: Driver's seat looking at steering wheel and full dashboard. Steering wheel on correct side (LHD/RHD as in reference). Do NOT rotate or flip. Company Logo subtly visible through windshield. INTERIOR RULES: Remove all non-vehicle items. Reproduce exact materials, buttons, screens from reference. Bright professional lighting. No humans.`,
+  pipeline_INT_CENTER_CONSOLE: `PERSPECTIVE: Macro close-up of center console from above. Gear selector, controls, infotainment screen in sharp detail. Reproduce exact button layouts, screen UI, materials from reference. Professional interior lighting. No humans.`,
+  pipeline_INT_REAR_SEATS: `PERSPECTIVE: From front looking back at rear seats. Show legroom, seat materials, rear amenities. Do NOT rotate. INTERIOR RULES: Clean up both front and rear seats. Reproduce exact materials from reference. Professional lighting. No humans.`,
+  pipeline_INT_WIDE_CABIN: `PERSPECTIVE: Wide-angle from rear seat center looking forward. Full dashboard, both front seats, windshield visible. Company Logo visible through windshield. Reproduce exact interior details from reference. Professional lighting. No humans.`,
+  pipeline_DET_HEADLIGHT: `Macro close-up of front headlight (60-70% of frame). Reproduce EXACT internal LED modules, DRL signature, projector lens, reflector geometry, housing material from reference. High-contrast studio lighting. Blurred background. No humans.`,
+  pipeline_DET_TAILLIGHT: `Macro close-up of rear taillight (60-70% of frame). Reproduce EXACT LED elements, light signature, 3D internal structure, lens material from reference. High-contrast studio lighting. Blurred background. No humans.`,
+  pipeline_DET_WHEEL: `Ultra-sharp close-up of front wheel (60-70% of frame). Reproduce EXACT rim design – spoke count, shape, finish (polished/matte/bi-color/diamond-cut), center cap, tire profile, brake caliper from reference. High-contrast studio lighting. Blurred background. No humans.`,
+  pipeline_DET_GRILLE: `Close-up of front grille and central badge. Reproduce EXACT grille mesh pattern, chrome/black finish, badge shape and material, model designation lettering (exact font, size, position) from reference. High-contrast studio lighting. Blurred background. No humans.`,
+  pipeline_GRID_EXTERIOR_4: `Photorealistic 2×2 grid. Top-left: front-left 3/4. Top-right: left side profile. Bottom-left: rear-left 3/4. Bottom-right: direct rear. All same SHOWROOM, consistent lighting, thin white dividers. Full car in each cell. Company Logo on wall. No humans.`,
+  pipeline_GRID_HIGHLIGHTS_6: `Photorealistic 3×2 grid. Row 1: front-left 3/4 | left side | rear-left 3/4. Row 2: headlight macro | dashboard | wheel close-up. Same SHOWROOM, consistent lighting, thin white dividers. Company Logo. No humans.`,
+  pipeline_GRID_INTERIOR_4: `Photorealistic 2×2 interior grid. Top-left: dashboard from driver seat. Top-right: center console. Bottom-left: rear seats. Bottom-right: steering wheel. Consistent interior lighting. Thin white dividers. Do NOT rotate. No humans.`,
+  pipeline_GRID_SOCIAL_MEDIA: `Social media collage. Large hero (front-left 3/4, 60% left). 3 smaller right: side profile, dashboard, wheel detail. PROVIDED SHOWROOM. Company Logo watermark. Clean layout. No humans.`,
 
-  // ── CI Brand Pipelines (individual jobs) ──
+  // ── CI Brand Pipelines ──
   // BMW
-  pipeline_CI_BMW_34_FRONT: `BMW Corporate Identity photography: Front 3/4 view at eye level with the BMW kidney grille clearly visible and centered. Clean white/grey studio background. BMW corporate lighting setup with strong key light from front-left.`,
-  pipeline_CI_BMW_SIDE: `BMW Corporate Identity photography: Direct side profile, perfectly flat/perpendicular. Wheels at 20° angle showing BMW logo on center caps. Clean white/grey studio background.`,
-  pipeline_CI_BMW_34_REAR: `BMW Corporate Identity photography: Rear 3/4 view showing the BMW roundel badge, exhaust outlets, and rear light bar. Clean white/grey studio background.`,
-  pipeline_CI_BMW_REAR: `BMW Corporate Identity photography: Direct rear view, centered, showing full width of taillights, exhaust, and rear badge. Clean white/grey studio background.`,
-  pipeline_CI_BMW_GRILLE: `BMW Corporate Identity detail photography: Close-up of the BMW kidney grille with angel-eye/adaptive LED headlights. Emphasize the BMW roundel badge. High-contrast studio lighting on clean background.`,
-  pipeline_CI_BMW_INTERIOR: `BMW Corporate Identity detail photography: Dashboard and iDrive infotainment system from driver perspective. Show BMW curved display and ambient lighting. Professional interior lighting.`,
-  pipeline_CI_BMW_WHEEL: `BMW Corporate Identity detail photography: Wheel and M-Sport brake caliper close-up. Show exact rim design and BMW center cap. Studio lighting with blurred background.`,
+  pipeline_CI_BMW_34_FRONT: `BMW CI: Front-left 3/4 at eye level. Kidney grille and headlight design from reference exactly reproduced. Clean white/grey studio. Strong key light from front-left.`,
+  pipeline_CI_BMW_SIDE: `BMW CI: Direct left side profile, perpendicular. Both wheels fully visible with exact rim design from reference. BMW center caps. White/grey studio.`,
+  pipeline_CI_BMW_34_REAR: `BMW CI: Rear-left 3/4. Exact taillight design, BMW roundel, exhaust from reference. White/grey studio.`,
+  pipeline_CI_BMW_REAR: `BMW CI: Direct rear, centered. Exact full taillight width, exhaust, badge, model lettering from reference. White/grey studio.`,
+  pipeline_CI_BMW_GRILLE: `BMW CI detail: Kidney grille with headlights close-up. Exact grille slats, roundel badge, LED internals from reference. High-contrast studio.`,
+  pipeline_CI_BMW_INTERIOR: `BMW CI interior: Dashboard from driver seat. Exact iDrive/curved display, instrument cluster, steering wheel buttons, ambient lighting from reference. CLEANUP: Remove non-vehicle items. Professional lighting.`,
+  pipeline_CI_BMW_WHEEL: `BMW CI detail: Wheel and brake caliper. Exact rim spoke design, finish, BMW center cap, caliper color from reference. Studio lighting, blurred background.`,
   // Mercedes
-  pipeline_CI_MERCEDES_34_FRONT: `Mercedes-Benz Corporate Identity photography: Front 3/4 view emphasizing the star emblem and radiator grille. Elegant studio with subtle gradient background. Mercedes signature lighting: soft, even, premium.`,
-  pipeline_CI_MERCEDES_SIDE: `Mercedes-Benz Corporate Identity photography: Side profile showing the full body silhouette and chrome details. Subtle gradient studio background.`,
-  pipeline_CI_MERCEDES_34_REAR: `Mercedes-Benz Corporate Identity photography: Rear 3/4 view highlighting the LED light strip, star badge, and exhaust. Elegant studio.`,
-  pipeline_CI_MERCEDES_FRONT: `Mercedes-Benz Corporate Identity photography: Direct front view, perfectly centered, showcasing the three-pointed star and grille design. Even studio lighting.`,
-  pipeline_CI_MERCEDES_MBUX: `Mercedes-Benz Corporate Identity detail: MBUX hyperscreen/infotainment close-up from driver seat. Show digital cockpit and ambient lighting. Premium interior photography.`,
-  pipeline_CI_MERCEDES_GRILLE: `Mercedes-Benz Corporate Identity detail: Front grille and star emblem macro shot. Show chrome textures and LED headlight internals. Studio lighting.`,
-  pipeline_CI_MERCEDES_WHEEL: `Mercedes-Benz Corporate Identity detail: Wheel with AMG/standard rim design and brake caliper. Star center cap visible. Studio lighting.`,
+  pipeline_CI_MERCEDES_34_FRONT: `Mercedes CI: Front-left 3/4. Exact star emblem, grille pattern (diamond/louvre/Panamericana), headlight internals from reference. Elegant studio, subtle gradient. Premium lighting.`,
+  pipeline_CI_MERCEDES_SIDE: `Mercedes CI: Left side profile. Full silhouette, chrome surrounds, exact wheel design from reference. Subtle gradient studio.`,
+  pipeline_CI_MERCEDES_34_REAR: `Mercedes CI: Rear-left 3/4. Exact LED light strip, star badge, exhaust, diffuser from reference. Elegant studio.`,
+  pipeline_CI_MERCEDES_FRONT: `Mercedes CI: Direct front, centered. Exact star and grille design from reference. Even studio lighting.`,
+  pipeline_CI_MERCEDES_MBUX: `Mercedes CI detail: MBUX/infotainment from driver seat. Exact screen layout, turbine vents, ambient lighting from reference. CLEANUP: Remove non-vehicle items.`,
+  pipeline_CI_MERCEDES_GRILLE: `Mercedes CI detail: Grille and star macro. Exact pattern, chrome, LED internals from reference. Studio lighting.`,
+  pipeline_CI_MERCEDES_WHEEL: `Mercedes CI detail: Wheel with exact AMG/standard rim, brake caliper, star center cap from reference. Studio lighting.`,
   // Audi
-  pipeline_CI_AUDI_34_FRONT: `Audi Corporate Identity photography: Front 3/4 view with Singleframe grille and four rings emblem clearly visible. Audi-signature clean, bright studio with minimal shadows.`,
-  pipeline_CI_AUDI_SIDE: `Audi Corporate Identity photography: Perfect side profile highlighting Audi design DNA with Tornado line. Clean bright studio.`,
-  pipeline_CI_AUDI_34_REAR: `Audi Corporate Identity photography: Rear 3/4 view showing connected LED light strip and Audi four rings badge. Clean studio.`,
-  pipeline_CI_AUDI_REAR: `Audi Corporate Identity photography: Direct rear view centered on the full-width LED light bar and Audi lettering. Bright studio background.`,
+  pipeline_CI_AUDI_34_FRONT: `Audi CI: Front-left 3/4. Exact Singleframe grille, four rings, headlight internals (matrix LED, DRL) from reference. Bright clean studio.`,
+  pipeline_CI_AUDI_SIDE: `Audi CI: Left side profile. Exact body lines, wheel design from reference. Clean bright studio.`,
+  pipeline_CI_AUDI_34_REAR: `Audi CI: Rear-left 3/4. Exact LED light strip, four rings badge from reference. Clean studio.`,
+  pipeline_CI_AUDI_REAR: `Audi CI: Direct rear. Exact full-width LED bar, Audi lettering from reference. Bright studio.`,
   // VW
-  pipeline_CI_VW_34_FRONT: `Volkswagen Corporate Identity photography: Front 3/4 view with VW logo and IQ.Light LED headlights prominent. Clean, modern white studio. Friendly, approachable lighting setup.`,
-  pipeline_CI_VW_SIDE: `Volkswagen Corporate Identity photography: Side profile showing clean body lines and wheel design. Modern white studio.`,
-  pipeline_CI_VW_34_REAR: `Volkswagen Corporate Identity photography: Rear 3/4 view with VW logo, taillights, and lettering visible. White studio.`,
-  pipeline_CI_VW_FRONT: `Volkswagen Corporate Identity photography: Direct front view centered on VW badge and light signature. White studio.`,
+  pipeline_CI_VW_34_FRONT: `VW CI: Front-left 3/4. Exact VW logo, IQ.Light headlights from reference. Clean modern white studio.`,
+  pipeline_CI_VW_SIDE: `VW CI: Left side profile. Exact body lines and wheel design from reference. White studio.`,
+  pipeline_CI_VW_34_REAR: `VW CI: Rear-left 3/4. Exact VW logo, taillight design, model lettering from reference. White studio.`,
+  pipeline_CI_VW_FRONT: `VW CI: Direct front. Exact VW badge and light signature from reference. White studio.`,
   // Porsche
-  pipeline_CI_PORSCHE_34_FRONT: `Porsche Corporate Identity photography: Front 3/4 view emphasizing the iconic silhouette, headlight design, and Porsche crest. Dark dramatic studio with controlled highlights.`,
-  pipeline_CI_PORSCHE_SIDE: `Porsche Corporate Identity photography: Side profile capturing the sports car proportions. Dark dramatic studio with rim focus.`,
-  pipeline_CI_PORSCHE_34_REAR: `Porsche Corporate Identity photography: Rear 3/4 view showing the rear light bar, PORSCHE lettering, and exhaust. Dramatic lighting.`,
-  pipeline_CI_PORSCHE_LOW: `Porsche Corporate Identity photography: Low-angle front view emphasizing power and stance. Dark studio, dramatic key light.`,
+  pipeline_CI_PORSCHE_34_FRONT: `Porsche CI: Front-left 3/4. Exact headlight design, front intakes, Porsche crest from reference. Dark dramatic studio.`,
+  pipeline_CI_PORSCHE_SIDE: `Porsche CI: Left side profile. Exact proportions and wheel design from reference. Dark dramatic studio.`,
+  pipeline_CI_PORSCHE_34_REAR: `Porsche CI: Rear-left 3/4. Exact rear light bar, PORSCHE lettering, exhaust from reference. Dramatic lighting.`,
+  pipeline_CI_PORSCHE_LOW: `Porsche CI: Low-angle front. Camera at ground level. Exact front design from reference. Dark studio, dramatic key light.`,
   // Volvo
-  pipeline_CI_VOLVO_34_FRONT_LEFT: `Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle from the reference photos, from the perspective of 3/4 front, facing left. Environment: minimalist, high-tech showroom with highly reflective dark polished resin floor. Background: large seamless frosted glass panels subtly illuminated from behind with soft diffused cool-white gradient light, creating infinite depth. No extraneous objects, humans, or other vehicles. License plates blank and body-colored. Strict Detail Preservation: Replicate exact headlight internal structure, DRL signatures, front grille shape/mesh/texture, wheel spoke pattern, body contours, trim, color and rims with absolute precision. No simplification. Interior subtly visible through windows. Composition: clean, centered, premium magazine quality.`,
-  pipeline_CI_VOLVO_34_FRONT_RIGHT: `Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle from the reference photos, from the perspective of 3/4 front, facing right. Environment: minimalist high-tech showroom with highly reflective dark polished resin floor and seamless frosted glass panels with soft cool-white gradient light. No humans, no other vehicles. License plates blank. Replicate exact headlight DRL signatures, grille mesh, wheel design, body lines with microscopic accuracy. No color/rim modifications. Premium magazine composition.`,
-  pipeline_CI_VOLVO_34_REAR_LEFT: `Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle from the reference photos, from the perspective of 3/4 rear, facing left. Environment: minimalist high-tech showroom with reflective dark polished resin floor and frosted glass panels with cool-white gradient. No humans. Replicate exact tail light internal structure, LED signatures, wheel design, body contours with microscopic accuracy. No color/rim modifications. Premium magazine composition.`,
-  pipeline_CI_VOLVO_34_REAR_RIGHT: `Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle from the reference photos, from the perspective of 3/4 rear, facing right. Environment: minimalist high-tech showroom with reflective dark resin floor and frosted glass panels. No humans. Replicate exact tail lights, wheels, body contours with microscopic accuracy. No color/rim modifications. Premium magazine composition.`,
-  pipeline_CI_VOLVO_SIDE: `Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle from the reference photos, from the perspective of flat passenger side facing right. Environment: minimalist high-tech showroom with reflective dark resin floor and frosted glass panels. No humans. Replicate exact headlights, grille, wheel design, body lines with microscopic accuracy. No color/rim modifications. Premium magazine composition.`,
-  pipeline_CI_VOLVO_FRONT: `Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle from the reference photos, from the perspective of flat front. Environment: minimalist high-tech showroom with reflective dark resin floor and frosted glass panels. No humans. Replicate exact headlight DRL signatures, grille mesh pattern, body contours with microscopic accuracy. No color/rim modifications. Premium magazine composition.`,
-  pipeline_CI_VOLVO_REAR: `Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle from the reference photos, from the perspective of flat rear. Environment: minimalist high-tech showroom with reflective dark resin floor and frosted glass panels. No humans. Replicate exact tail light internal structure, LED signatures, rear badges, body contours with microscopic accuracy. No color/rim modifications. Premium magazine composition.`,
-  pipeline_CI_VOLVO_INT_PASSENGER: `Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle interior from reference images. Front Interior Shot from Front Passenger Side: Looking from open front passenger door towards dashboard, center console, steering wheel, and driver seat. Showroom visible through windows (frosted glass, dark resin floor). Replicate exact leather grain texture, stitching, trim materials (open-pore wood, metal mesh). Replicate exact button layout, infotainment UI, instrument cluster, gear selector. LHD configuration. Focus: full dashboard span, center vertical screen, passenger-side trim, steering wheel, center console gear selector. Premium magazine quality.`,
-  pipeline_CI_VOLVO_INT_CENTER: `Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle interior. Front Interior Shot: Looking from between front seats towards driver console and passenger dashboard. Showroom visible through windows. Replicate exact leather grain, stitching, trim materials, button layouts, UI screens, gear selector with microscopic accuracy. LHD configuration. Focus: driver door panel button array, steering wheel controls, instrument cluster, pedals, view across to passenger side. Premium quality.`,
-  pipeline_CI_VOLVO_INT_REAR: `Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle interior. Rear Interior Shot: Looking from open rear passenger door towards rear seats, legroom, and rear center console. Showroom visible through windows. Replicate exact seat material, stitching, rear center console/armrest controls (climate, heated seats), rear air vents. LHD configuration. Focus: second-row seating layout, floor mat texture. Premium quality.`,
-  pipeline_CI_VOLVO_INT_BOOT: `Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle. Boot Open Rear Shot: Straight-on exterior view with tailgate fully open, looking into cargo space. Showroom environment with reflective dark resin floor and frosted glass panels. Replicate exact cargo floor texture, sidewalls, load-bearing lip, cargo net hooks, rear-seat release handles. Surrounding exterior panels and taillights perfectly matched. Premium quality.`,
-  pipeline_CI_VOLVO_INT_STEERING: `Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle interior. Close-Up Steering Shot: Tight macro-style shot of steering wheel, central horn pad, and surrounding stalks. Complete steering wheel visible. Exterior showroom visible through windshield. Replicate exact steering wheel hub texture (leather/plastic/metal), precise button iconography on left/right spokes (media, cruise control, voice assistant), paddle shifters if present. Center logo perfectly legible. LHD configuration. Premium quality.`,
-  pipeline_CI_VOLVO_DET_CLUSTER: `Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle interior. Closeup Driver Infotainment Screen (Instrument Cluster): Tight macro-style shot of digital screen/cluster behind steering wheel. Replicate exact UI layout including digital gauges (speedometer, tachometer/power meter), central information display, warning light placements. All text and iconography sharp and legible. Surrounding cluster bezel material detailed. LHD configuration. Premium quality.`,
-  pipeline_CI_VOLVO_DET_SCREEN: `Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle interior. Closeup Center Infotainment Screen: Tight macro-style shot of main dashboard central screen and surrounding controls. Replicate exact screen orientation (portrait/vertical), bezel design, precise UI layout with app icons, climate overlay, navigation. Surrounding air vents, physical buttons, dash material texture in sharp focus. LHD configuration. Premium quality.`,
-  pipeline_CI_VOLVO_DET_WHEEL: `Generate a high-resolution, ultra-detailed professional automotive photograph of the EXACT vehicle. Macro Close-up of Wheel, Alloy Rim, and Surrounding Fender. Environment: minimalist high-tech showroom with reflective dark polished resin floor and frosted glass panels. Replicate exact multi-spoke alloy wheel design, spoke pattern, concavity, lug nut configuration, center cap, metallic/machined finish with absolute precision. Accurately reproduce visible brake calipers, rotor pattern. Replicate tire profile, sidewall texture. Surrounding fender body contours and paint color perfectly matched. Depth of field keeps rim sharp, wheel well falls to shadow. Premium detail shot quality.`,
+  pipeline_CI_VOLVO_34_FRONT_LEFT: `Volvo CI: 3/4 front-left. Minimalist high-tech showroom with dark polished resin floor, frosted glass panels with cool-white gradient. Exact headlight DRL (Thor's Hammer), grille, wheel design from reference. No humans. Premium magazine quality.`,
+  pipeline_CI_VOLVO_34_FRONT_RIGHT: `Volvo CI: 3/4 front-right. Camera at front-right (NOT left). Minimalist showroom, dark resin floor, frosted glass. Exact headlight, grille, wheels from reference. No color/rim modifications.`,
+  pipeline_CI_VOLVO_34_REAR_LEFT: `Volvo CI: 3/4 rear-left. Minimalist showroom. Exact taillight LED signatures, wheel design, body contours from reference.`,
+  pipeline_CI_VOLVO_34_REAR_RIGHT: `Volvo CI: 3/4 rear-right. Minimalist showroom. Exact taillights, wheels, body contours from reference.`,
+  pipeline_CI_VOLVO_SIDE: `Volvo CI: Flat right side profile. Minimalist showroom. Exact body lines, wheel design from reference.`,
+  pipeline_CI_VOLVO_FRONT: `Volvo CI: Flat front, centered. Minimalist showroom. Exact headlight DRL, grille, Iron Mark badge from reference.`,
+  pipeline_CI_VOLVO_REAR: `Volvo CI: Flat rear, centered. Minimalist showroom. Exact taillight C-shaped signatures, VOLVO lettering, badges from reference.`,
+  pipeline_CI_VOLVO_INT_PASSENGER: `Volvo CI interior: From passenger door toward dashboard. Showroom through windows. Exact leather grain, stitching, trim materials, button layouts, infotainment UI, gear selector from reference. CLEANUP required. LHD.`,
+  pipeline_CI_VOLVO_INT_CENTER: `Volvo CI interior: Between front seats looking forward. Exact materials, buttons, steering wheel controls, instrument cluster, gear selector from reference. CLEANUP required. LHD.`,
+  pipeline_CI_VOLVO_INT_REAR: `Volvo CI interior: From rear door toward rear seats. Exact seat material, stitching, rear console controls, air vents from reference. CLEANUP required. LHD.`,
+  pipeline_CI_VOLVO_INT_BOOT: `Volvo CI: Rear exterior with tailgate open. Showroom environment. Exact cargo floor texture, sidewalls, load lip, cargo hooks from reference. Surrounding panels and taillights matched.`,
+  pipeline_CI_VOLVO_INT_STEERING: `Volvo CI interior: Macro of steering wheel and stalks. Exact hub texture, button iconography (media, cruise, voice), paddle shifters, Volvo Iron Mark from reference. LHD.`,
+  pipeline_CI_VOLVO_DET_CLUSTER: `Volvo CI detail: Digital instrument cluster macro. Exact UI layout, gauges, info display, warning lights from reference. All text legible. LHD.`,
+  pipeline_CI_VOLVO_DET_SCREEN: `Volvo CI detail: Center infotainment screen macro. Exact screen orientation (portrait), bezel, UI layout, surrounding vents and buttons from reference. LHD.`,
+  pipeline_CI_VOLVO_DET_WHEEL: `Volvo CI detail: Wheel macro with fender. Minimalist showroom. Exact spoke pattern, concavity, center cap, finish, brake caliper, tire sidewall from reference. Paint color matched. Rim sharp, wheel well in shadow.`,
 };
 
 // ─── PROMPT METADATA with categories ───
