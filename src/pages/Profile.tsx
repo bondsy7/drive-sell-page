@@ -509,7 +509,7 @@ const Profile = () => {
                 )}
                 {banks.filter(b => b.bank_type === 'financing').map(bank => (
                   <div key={bank.id} className="bg-muted/30 rounded-lg border border-border p-3 space-y-2 relative group">
-                    <button onClick={() => removeBank(bank.id)} className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive/80">
+                    <button onClick={() => setBankToDelete(bank.id)} className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive/80">
                       <X className="w-4 h-4" />
                     </button>
                     <div className="space-y-1.5">
