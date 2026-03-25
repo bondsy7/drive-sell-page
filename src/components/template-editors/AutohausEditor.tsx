@@ -469,9 +469,6 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
             <p className="text-xs text-muted-foreground mt-1">
               Fahrzeugpreis: <EditableField value={data.finance.totalPrice} onChange={(v) => updateFinance('totalPrice', v)} className="text-xs text-muted-foreground inline" suffix="€ inkl. MwSt." />
             </p>
-            <OrangeButton className="mt-3" onClick={recalculateRate}>
-              <Pencil className="w-3 h-3" /> Werte anklicken
-            </OrangeButton>
           </div>
 
           {/* Specs grid */}
