@@ -66,6 +66,17 @@ export function buildMasterPrompt(config: RemasterConfig, vehicleDescription?: s
   parts.push('Du bist ein professioneller Automobil-Fotograf. Nimm dieses exakte Fahrzeugfoto und erstelle eine fotorealistische, professionelle Version.');
   parts.push('KRITISCHE REGELN: Behalte das EXAKTE gleiche Fahrzeug mit ALLEN Details: Farbe (sofern keine Farbänderung gewünscht), Felgen, Bodykit, Lichter, Badges, Aufkleber, Zubehör. Drehe das Bild NICHT. Behalte den gleichen Kamerawinkel und die gleiche Perspektive.');
 
+  // Paint color preservation
+  if (!(config.changeColor && config.colorHex)) {
+    parts.push('LACKFARBE (KRITISCH): Die Lackierung des Fahrzeugs MUSS zu 100% identisch mit dem Originalfoto bleiben. Verändere die Farbe NICHT – kein Verschieben, Sättigen, Entsättigen, Aufhellen oder Abdunkeln. Ein rotes Auto muss EXAKT den gleichen Rotton behalten, ein weißes Auto EXAKT das gleiche Weiß usw. Dies gilt für ALLE Karosserieteile, Stoßstangen, Spiegel und lackierten Oberflächen.');
+  }
+
+  // Wheel & headlight preservation
+  parts.push('FELGEN & SCHEINWERFER (KRITISCH): Schneide NIEMALS Räder/Felgen/Reifen am Bildrand ab. ALLE im Original sichtbaren Räder müssen VOLLSTÄNDIG im Bild erscheinen. Schneide NIEMALS Scheinwerfer, Rücklichter oder andere Beleuchtungselemente ab oder beschneide sie. Das komplette Rad (Reifen + Felge) und alle Lichter müssen vollständig und originalgetreu dargestellt werden.');
+
+  // Reflection & lighting re-render
+  parts.push('REFLEXIONEN & BELEUCHTUNG (KRITISCH): Übernimm KEINE Reflexionen aus der Original-Umgebung in die neue Szene. ALLE Reflexionen auf Lack, Glas, Chrom und Fenstern müssen KOMPLETT NEU gerendert werden, passend zur NEUEN Szene/Showroom-Umgebung. Original-Hintergrund-Reflexionen (Bäume, Gebäude, Personen, andere Autos, Parkplätze) müssen vollständig durch Reflexionen der neuen Umgebung ersetzt werden. Lichtquellen, Schattenrichtung, Schattenintensität und Umgebungslicht müssen für die neue Umgebung neu berechnet und angepasst werden. Schatten unter dem Fahrzeug müssen zur Lichtrichtung der neuen Szene passen.');
+
   // Scene
   const scenePrompt = SCENE_PROMPTS[config.scene];
   if (scenePrompt) {
@@ -97,8 +108,11 @@ export function buildMasterPrompt(config: RemasterConfig, vehicleDescription?: s
   // Interior-specific rules – must override scene prompts
   parts.push('FÜR INNENRAUM-AUFNAHMEN (Sitze, Lenkrad, Armaturenbrett, Mittelkonsole, Kofferraum, Rücksitze): IGNORIERE alle Showroom- und Hintergrund-Anweisungen komplett. Verändere die Orientierung/den Winkel NICHT. Ändere den Hintergrund/die Umgebung NICHT. Füge keine Innenraum-Elemente hinzu oder entferne sie. Verbessere NUR die Beleuchtung – hell, gleichmäßig und professionell. Zeige EXAKT das gleiche Interieur-Motiv aus dem gleichen Blickwinkel.');
 
+  // Interior cleanup (MANDATORY)
+  parts.push('INTERIEUR-AUFRÄUMUNG (PFLICHT): Entferne ALLE Gegenstände die NICHT zum Fahrzeug gehören: Müll, Tüten, Papiere, Plastikfolien, Transportverpackungen, persönliche Gegenstände, lose Gegenstände auf Sitzen oder Fußmatten, Anhänger, Aufkleber, Warnetiketten (außer fest montierte Fahrzeug-Labels). Räume SOWOHL Vordersitze ALS AUCH Rücksitze gleichermaßen auf – die gesamte Kabine muss showroom-fertig aussehen. Nach der Aufräumung sollen Sitze, Fußmatten und Oberflächen sauber, makellos und professionell aufbereitet wirken.');
+
   // No other vehicles
-  parts.push('WICHTIG: Im generierten Bild darf KEIN anderes Fahrzeug sichtbar sein – nur das eine Fahrzeug aus dem Originalfoto. Keine Autos im Hintergrund, keine Spiegelungen anderer Fahrzeuge in Glasflächen oder auf dem Boden.');
+  parts.push('WICHTIG: Im generierten Bild darf KEIN anderes Fahrzeug sichtbar sein – nur das eine Fahrzeug aus dem Originalfoto. Keine Autos im Hintergrund, keine Spiegelungen anderer Fahrzeuge in Glasflächen, Lack, Chrom oder auf dem Boden.');
 
   // Vehicle description
   if (vehicleDescription) {
