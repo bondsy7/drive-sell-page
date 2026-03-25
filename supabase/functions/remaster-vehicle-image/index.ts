@@ -260,19 +260,16 @@ serve(async (req) => {
           if (!response.ok) {
             const errText = await response.text();
             console.error("Remaster error:", response.status, errText);
-            if (response.status === 503 || response.status === 429) {
-              // Model overloaded – break inner loop to try fallback model
-              lastError = `Model ${currentModel} unavailable (${response.status})`;
-              if (attempt < maxRetries - 1) {
-                await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
-                continue;
-              }
-              console.warn(`Model ${currentModel} exhausted, trying fallback...`);
-              break; // move to next model in fallback chain
+            const isRetryable = response.status === 500 || response.status === 503 || response.status === 429;
+            lastError = `Model ${currentModel} error (${response.status})`;
+            if (isRetryable && attempt < maxRetries - 1) {
+              const delay = 3000 * (attempt + 1);
+              console.warn(`Retryable ${response.status}, waiting ${delay}ms...`);
+              await new Promise(r => setTimeout(r, delay));
+              continue;
             }
-            lastError = `Remaster error: ${response.status}`;
-            if (attempt < maxRetries - 1) { await new Promise(r => setTimeout(r, 2000)); continue; }
-            break;
+            console.warn(`Model ${currentModel} exhausted (${response.status}), trying fallback...`);
+            break; // move to next model in fallback chain
           }
 
           const data = await response.json();
