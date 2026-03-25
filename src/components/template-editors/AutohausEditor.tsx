@@ -103,7 +103,7 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
                 <img
                   src={allImages[selectedImage] || allImages[0]}
                   alt={`${data.vehicle.brand} ${data.vehicle.model}`}
-                  className="w-full max-h-[600px] object-contain mx-auto block"
+                  className="w-full max-h-[600px] object-cover mx-auto block"
                 />
                 {allImages.length > 1 && (
                   <>
