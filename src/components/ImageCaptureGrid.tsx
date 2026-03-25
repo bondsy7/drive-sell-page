@@ -448,6 +448,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         try {
           const { data, error } = await invokeRemasterVehicleImage({
             imageBase64: captures[slot.key].base64,
+            additionalImages: detailImages.length > 0 ? detailImages : undefined,
             vehicleDescription,
             modelTier: modelTier || 'standard',
             dynamicPrompt,
