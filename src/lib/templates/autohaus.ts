@@ -283,7 +283,6 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
       ${techHTML}
       ${descHTML}
       ${leasingConditionsHTML}
-      ${legalFooter}
     </div>
 
     <!-- RIGHT COLUMN (sticky sidebar) -->
