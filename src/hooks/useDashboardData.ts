@@ -332,6 +332,38 @@ export function useDeleteBanner() {
   });
 }
 
+export function useDeleteGalleryImage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('project_images').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['gallery'] });
+      qc.invalidateQueries({ queryKey: ['dashboard-counts'] });
+      toast.success('Bild gelöscht');
+    },
+    onError: () => toast.error('Fehler beim Löschen des Bildes'),
+  });
+}
+
+export function useDeleteGalleryFolder() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (folder: string) => {
+      const { error } = await supabase.from('project_images').delete().eq('gallery_folder', folder);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['gallery'] });
+      qc.invalidateQueries({ queryKey: ['dashboard-counts'] });
+      toast.success('Ordner gelöscht');
+    },
+    onError: () => toast.error('Fehler beim Löschen des Ordners'),
+  });
+}
+
 export function useDeleteSpin360() {
   const qc = useQueryClient();
   return useMutation({
