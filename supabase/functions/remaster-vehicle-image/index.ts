@@ -243,10 +243,11 @@ REPRODUKTIONS-REGELN (KEINE ABWEICHUNG ERLAUBT):
         ? toInlineData(dealerLogoBase64)
         : await resolveImage(dealerLogoUrl);
       if (logoData) {
-        parts.push({ text: `AUTOHAUS-LOGO (Dealer Logo) – Das folgende Bild ist die EINZIGE Vorlage für das Autohaus-Logo.
-- Rendere es als beleuchtetes Wandlogo aus gebürstetem Aluminium, kleiner als das Hersteller-Logo
-- Position: IMMER rechts neben dem Hersteller-Logo oder an einer Seitenwand – auf JEDEM Bild IDENTISCH
-- VERBOTEN: Erfinde KEIN alternatives Logo, ändere NICHT Form/Farbe/Proportionen` });
+        parts.push({ text: `AUTOHAUS-LOGO – PIXEL-PERFEKTE REPRODUKTION:
+Das folgende Bild ist das EXAKTE Autohaus-Logo. Reproduziere es PIXEL FÜR PIXEL mit allen Original-Farben und Original-Formen.
+- Position: IMMER rechts neben dem Hersteller-Logo an der Rückwand – auf JEDEM Bild IDENTISCH
+- Größe: Kleiner als das Hersteller-Logo
+- KEINE Interpretation, KEINE Farbänderung, KEINE Vereinfachung – exakte Kopie des bereitgestellten Bildes` });
         parts.push(logoData);
         console.log("Dealer logo injected", dealerLogoBase64 ? "(cached b64)" : "(fetched)");
       }
