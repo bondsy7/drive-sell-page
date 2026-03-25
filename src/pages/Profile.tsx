@@ -75,6 +75,14 @@ interface CreditTransaction {
   created_at: string;
 }
 
+interface BankEntry {
+  id: string;
+  bank_type: 'leasing' | 'financing';
+  bank_name: string;
+  legal_text: string;
+  sort_order: number;
+}
+
 const Profile = () => {
   const { user } = useAuth();
   const { balance, lifetimeUsed, loading: creditsLoading } = useCredits();
@@ -89,6 +97,7 @@ const Profile = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [changingPassword, setChangingPassword] = useState(false);
+  const [banks, setBanks] = useState<BankEntry[]>([]);
 
   const loginProvider = user?.app_metadata?.provider || 'email';
   const isGoogleLogin = loginProvider === 'google';
