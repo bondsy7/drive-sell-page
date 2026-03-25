@@ -35,9 +35,29 @@ type TabKey = 'projects' | 'landings' | 'gallery' | 'banners' | 'videos' | 'lead
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const { disabledModules } = useModuleAccess();
   const [searchParams] = useSearchParams();
   const initialTab = (searchParams.get('tab') as TabKey) || 'projects';
   const [tab, setTab] = useState<TabKey>(initialTab);
+
+  // Map module keys to dashboard tab keys
+  const moduleToTabs: Record<ModuleKey, TabKey[]> = {
+    'photos': ['gallery'],
+    'pdf-landing': ['landings'],
+    'manual-landing': ['landings'],
+    'banner': ['banners'],
+    'video': ['videos'],
+    'sales-assistant': [],
+  };
+
+  const disabledTabs = new Set<TabKey>();
+  for (const mod of disabledModules) {
+    for (const t of moduleToTabs[mod] || []) disabledTabs.add(t);
+  }
+  // landings only disabled if BOTH pdf-landing and manual-landing are disabled
+  if (disabledTabs.has('landings') && !(disabledModules.has('pdf-landing') && disabledModules.has('manual-landing'))) {
+    disabledTabs.delete('landings');
+  }
 
   // Pagination state
   const [galleryPage, setGalleryPage] = useState(0);
