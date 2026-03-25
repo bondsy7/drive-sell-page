@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Save, Building2, MapPin, Phone, Globe, Facebook, Instagram, Youtube, FileText, Landmark, Upload, X, Image, Zap, History, TrendingDown, TrendingUp, Lock, KeyRound, Chrome, Share2, CreditCard, Plus } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
 import { toast } from 'sonner';
@@ -204,9 +205,13 @@ const Profile = () => {
     }
   };
 
-  const removeBank = async (id: string) => {
-    await supabase.from('dealer_banks').delete().eq('id', id);
-    setBanks(prev => prev.filter(b => b.id !== id));
+  const [bankToDelete, setBankToDelete] = useState<string | null>(null);
+
+  const confirmDeleteBank = async () => {
+    if (!bankToDelete) return;
+    await supabase.from('dealer_banks').delete().eq('id', bankToDelete);
+    setBanks(prev => prev.filter(b => b.id !== bankToDelete));
+    setBankToDelete(null);
     toast.success('Bank entfernt');
   };
 
@@ -477,7 +482,7 @@ const Profile = () => {
                 )}
                 {banks.filter(b => b.bank_type === 'leasing').map(bank => (
                   <div key={bank.id} className="bg-muted/30 rounded-lg border border-border p-3 space-y-2 relative group">
-                    <button onClick={() => removeBank(bank.id)} className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive/80">
+                    <button onClick={() => setBankToDelete(bank.id)} className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive/80">
                       <X className="w-4 h-4" />
                     </button>
                     <div className="space-y-1.5">
@@ -505,7 +510,7 @@ const Profile = () => {
                 )}
                 {banks.filter(b => b.bank_type === 'financing').map(bank => (
                   <div key={bank.id} className="bg-muted/30 rounded-lg border border-border p-3 space-y-2 relative group">
-                    <button onClick={() => removeBank(bank.id)} className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive/80">
+                    <button onClick={() => setBankToDelete(bank.id)} className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive/80">
                       <X className="w-4 h-4" />
                     </button>
                     <div className="space-y-1.5">
@@ -644,6 +649,23 @@ const Profile = () => {
           </TabsContent>
         </Tabs>
       </main>
+
+      <AlertDialog open={!!bankToDelete} onOpenChange={(open) => !open && setBankToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Bank wirklich löschen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Diese Bank und der zugehörige Rechtstext werden unwiderruflich entfernt.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteBank} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Löschen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
