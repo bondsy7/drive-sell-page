@@ -1,4 +1,5 @@
 import type { VehicleData, ConsumptionData, DealerData } from '@/types/vehicle';
+import type { DealerBank } from '@/hooks/useDealerBanks';
 
 export interface TemplateEditorProps {
   data: VehicleData;
@@ -23,4 +24,5 @@ export interface TemplateEditorProps {
   updateFeature: (index: number, val: string) => void;
   removeFeature: (index: number) => void;
   vinLookup: any;
+  dealerBanks?: DealerBank[];
 }

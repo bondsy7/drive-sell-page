@@ -13,6 +13,9 @@ import LeasingDurationDropdown from '@/components/LeasingDurationDropdown';
 import AnnualMileageDropdown from '@/components/AnnualMileageDropdown';
 import { Button } from '@/components/ui/button';
 import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import {
   Car, Cog, Zap, Fuel, Gauge, Calendar,
   MapPin, Phone, Mail, Globe,
   Plus, Trash2, ChevronLeft, ChevronRight,
@@ -78,10 +81,12 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
   updatePower, updateFuelType, onDataChange,
   recalculateRate, calculateCosts, costCalculating, costMissingFields,
   addFeature, updateFeature, removeFeature, vinLookup,
+  dealerBanks = [],
 }) => {
   const [selectedImage, setSelectedImage] = useState(0);
   const cat = category.toLowerCase();
   const isLeasing = cat.includes('leasing');
+  const relevantBanks = dealerBanks.filter(b => b.bank_type === (isLeasing ? 'leasing' : 'financing'));
 
   return (
     <div className="flex gap-6 items-start w-full">
@@ -404,6 +409,40 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
                     Bankangaben / Pflichthinweis
                     <span className="text-[10px] font-bold uppercase tracking-wider bg-destructive text-destructive-foreground px-2 py-0.5 rounded">Pflichtfeld</span>
                   </div>
+
+                  {/* Bank selector dropdown */}
+                  {relevantBanks.length > 0 && (
+                    <div className="space-y-1.5">
+                      <label className="text-xs text-muted-foreground">{isLeasing ? 'Leasing-Bank' : 'Finanzierungs-Bank'} wählen</label>
+                      <Select
+                        value={isLeasing ? (data.dealer.leasingBank || '') : (data.dealer.financingBank || '')}
+                        onValueChange={(bankId) => {
+                          const bank = relevantBanks.find(b => b.bank_name === bankId);
+                          if (bank) {
+                            if (isLeasing) {
+                              updateDealer('leasingBank', bank.bank_name);
+                              updateDealer('leasingLegalText', bank.legal_text);
+                            } else {
+                              updateDealer('financingBank', bank.bank_name);
+                              updateDealer('financingLegalText', bank.legal_text);
+                            }
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="h-9 text-sm">
+                          <SelectValue placeholder="Bank auswählen..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {relevantBanks.map(bank => (
+                            <SelectItem key={bank.id} value={bank.bank_name || bank.id}>
+                              {bank.bank_name || '(kein Name)'}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
                   <textarea
                     value={isLeasing ? (data.dealer.leasingLegalText || '') : (data.dealer.financingLegalText || '')}
                     onChange={(e) => updateDealer(isLeasing ? 'leasingLegalText' : 'financingLegalText', e.target.value)}

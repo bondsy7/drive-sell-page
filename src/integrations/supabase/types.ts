@@ -358,6 +358,36 @@ export type Database = {
         }
         Relationships: []
       }
+      dealer_banks: {
+        Row: {
+          bank_name: string
+          bank_type: string
+          created_at: string
+          id: string
+          legal_text: string
+          sort_order: number
+          user_id: string
+        }
+        Insert: {
+          bank_name?: string
+          bank_type: string
+          created_at?: string
+          id?: string
+          legal_text?: string
+          sort_order?: number
+          user_id: string
+        }
+        Update: {
+          bank_name?: string
+          bank_type?: string
+          created_at?: string
+          id?: string
+          legal_text?: string
+          sort_order?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       dealer_blocked_dates: {
         Row: {
           blocked_date: string

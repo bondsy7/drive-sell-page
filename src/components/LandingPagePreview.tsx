@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
+import { useDealerBanks } from '@/hooks/useDealerBanks';
 import { supabase } from '@/integrations/supabase/client';
 import { urlToBase64, urlsToBase64, compressToWebP, compressAllToWebP } from '@/lib/storage-utils';
 import { Download, RotateCcw, Car, Fuel, Gauge, Calendar, Palette, Cog, Zap, MapPin, Phone, Mail, Globe, Plus, Trash2, ChevronLeft, ChevronRight, Eye, Pencil, Calculator, Loader2, Search } from 'lucide-react';
@@ -67,6 +68,7 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
     consumption: vehicleData.consumption || emptyConsumption,
   };
   const { user } = useAuth();
+  const { banks: dealerBanks } = useDealerBanks();
   const [selectedImage, setSelectedImage] = useState(0);
   const [viewMode, setViewMode] = useState<'preview' | 'edit'>('preview');
   const [costCalculating, setCostCalculating] = useState(false);
@@ -312,6 +314,7 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
           updatePower, updateFuelType, onDataChange,
           recalculateRate, calculateCosts, costCalculating, costMissingFields,
           addFeature, updateFeature, removeFeature, vinLookup,
+          dealerBanks,
         };
         switch (selectedTemplate) {
           case 'autohaus': return <AutohausEditor {...editorProps} />;
