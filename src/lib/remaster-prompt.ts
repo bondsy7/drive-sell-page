@@ -43,20 +43,20 @@ export const LICENSE_PLATE_OPTIONS = [
 
 const SCENE_PROMPTS: Record<string, string> = {
   'none': '',
-  'showroom-1': 'Platziere das Fahrzeug in einem modernen, hellen Autohaus-Showroom mit weißen Wänden, poliertem Betonboden, minimalistischen Deckenspots und einer dezenten LED-Akzentbeleuchtung an der Rückwand. Der Boden reflektiert leicht das Fahrzeug.',
-  'showroom-2': 'Platziere das Fahrzeug in einem eleganten, luxuriösen Showroom mit großen Glasfronten, warmem Licht, Designermöbeln im Hintergrund und einem glänzenden Marmor-ähnlichen Boden. Pflanzen und eine Stadtkulisse sind durch die Fenster sichtbar.',
-  'showroom-3': 'Platziere das Fahrzeug in einem lichtdurchfluteten Autohaus mit raumhoher Glasfassade, grauem Fliesenboden mit Spiegelungen und moderner Architektur. Natürliches Tageslicht strömt herein.',
-  'custom-showroom': 'Platziere das Fahrzeug exakt in der bereitgestellten Showroom-Umgebung. Passe Beleuchtung, Schatten und Perspektive an, sodass das Auto natürlich in die Szene integriert wirkt.',
-  'forest': 'Das Fahrzeug steht auf einem unbefestigten Waldweg in einem dichten, mystischen Tannenwald. Sanfte Lichtstrahlen brechen durch die Baumkronen. Der Boden ist leicht feucht mit Moos und Nadeln bedeckt. Die Atmosphäre ist ruhig und natürlich.',
-  'mountain': 'Das Fahrzeug steht auf einer asphaltierten Bergstraße mit atemberaubender Panorama-Aussicht auf schneebedeckte Gipfel. Klarer blauer Himmel, dramatische Wolkenformationen und üppige Almwiesen umgeben die Szene.',
-  'city': 'Das Fahrzeug steht vor einer modernen Großstadt-Skyline mit Glasfassaden und Wolkenkratzern. Der Boden ist sauberer Asphalt, die Beleuchtung ist golden durch die tiefstehende Sonne (Golden Hour). Leichte Spiegelungen auf dem nassen Boden.',
-  'street': 'Das Fahrzeug steht auf einer breiten, geraden Straße mit perfektem Asphalt. Links und rechts moderne Gebäude oder Bäume. Dramatische Perspektive mit Fluchtpunkt. Warmes Nachmittagslicht.',
-  'beach': 'Das Fahrzeug steht auf festem Sand an einem weitläufigen Strand. Türkisfarbenes Meer im Hintergrund, sanfte Wellen, klarer Himmel mit leichten Zirruswolken. Warmes Sonnenuntergangslicht reflektiert auf der Karosserie.',
-  'desert': 'Das Fahrzeug steht auf einer geraden Wüstenstraße inmitten einer weiten, sandigen Landschaft mit Dünen. Dramatisches Licht, klarer Himmel, intensive Farben. Hitzeflimmern am Horizont.',
-  'night-city': 'Das Fahrzeug steht auf einer beleuchteten Stadtstraße bei Nacht. Neonlichter und Leuchtreklamen spiegeln sich auf der nassen Fahrbahn und der Karosserie. Urbane Atmosphäre mit Bokeh-Lichtern im Hintergrund.',
-  'parking-garage': 'Das Fahrzeug steht in einer modernen, sauberen Tiefgarage mit poliertem Betonboden, LED-Deckenbeleuchtung und klaren Linien. Dramatische Schatten und kontrastreiches Licht.',
-  'racetrack': 'Das Fahrzeug steht auf der Start-Ziel-Geraden einer professionellen Rennstrecke. Curbs in Rot-Weiß, glatter Asphalt, leere Tribünen im Hintergrund. Sportliche Atmosphäre.',
-  'mansion': 'Das Fahrzeug steht in der Auffahrt einer luxuriösen Villa oder eines Anwesens. Gepflegter Rasen, mediterrane Architektur, schmiedeeiserne Elemente. Warmes Abendlicht.',
+  'showroom-1': 'SHOWROOM-KONSISTENZ (PFLICHT): Platziere das Fahrzeug in einem modernen, hellen Autohaus-Showroom. Der Showroom hat IMMER: weiße Wände, polierter hellgrauer Betonboden mit dezenten Reflexionen, minimalistische LED-Deckenspots, dezente LED-Akzentbeleuchtung an der Rückwand. Verwende auf JEDEM Bild EXAKT denselben Showroom – gleiche Wände, gleicher Boden, gleiche Fenster, gleiche Beleuchtung. Es muss aussehen wie derselbe physische Raum.',
+  'showroom-2': 'SHOWROOM-KONSISTENZ (PFLICHT): Platziere das Fahrzeug in einem eleganten, luxuriösen Showroom. Der Showroom hat IMMER: große Glasfronten, warmes Licht, Designermöbel im Hintergrund, glänzender Marmor-ähnlicher Boden. Verwende auf JEDEM Bild EXAKT denselben Showroom – gleiche Architektur, gleicher Boden, gleiche Fenster.',
+  'showroom-3': 'SHOWROOM-KONSISTENZ (PFLICHT): Platziere das Fahrzeug in einem lichtdurchfluteten Autohaus mit raumhoher Glasfassade. Der Showroom hat IMMER: dunkelgraue matte Rückwand, grauer Fliesenboden mit Spiegelungen, raumhohe Glasfenster links, moderne LED-Deckenbeleuchtung. Verwende auf JEDEM Bild EXAKT denselben Showroom.',
+  'custom-showroom': 'Platziere das Fahrzeug exakt in der bereitgestellten Showroom-Umgebung. Passe Beleuchtung, Schatten und Perspektive an, sodass das Auto natürlich in die Szene integriert wirkt. Verwende auf JEDEM Bild EXAKT denselben Showroom-Hintergrund.',
+  'forest': 'Das Fahrzeug steht auf einem unbefestigten Waldweg in einem dichten, mystischen Tannenwald. Sanfte Lichtstrahlen brechen durch die Baumkronen. Der Boden ist leicht feucht mit Moos und Nadeln bedeckt.',
+  'mountain': 'Das Fahrzeug steht auf einer asphaltierten Bergstraße mit atemberaubender Panorama-Aussicht auf schneebedeckte Gipfel. Klarer blauer Himmel, dramatische Wolkenformationen.',
+  'city': 'Das Fahrzeug steht vor einer modernen Großstadt-Skyline mit Glasfassaden und Wolkenkratzern. Sauberer Asphalt, Golden Hour Beleuchtung.',
+  'street': 'Das Fahrzeug steht auf einer breiten, geraden Straße mit perfektem Asphalt. Dramatische Perspektive mit Fluchtpunkt. Warmes Nachmittagslicht.',
+  'beach': 'Das Fahrzeug steht auf festem Sand an einem weitläufigen Strand. Türkisfarbenes Meer im Hintergrund, sanfte Wellen, warmes Sonnenuntergangslicht.',
+  'desert': 'Das Fahrzeug steht auf einer geraden Wüstenstraße inmitten einer weiten, sandigen Landschaft mit Dünen. Dramatisches Licht, klarer Himmel.',
+  'night-city': 'Das Fahrzeug steht auf einer beleuchteten Stadtstraße bei Nacht. Neonlichter und Leuchtreklamen spiegeln sich auf der nassen Fahrbahn und der Karosserie.',
+  'parking-garage': 'Das Fahrzeug steht in einer modernen, sauberen Tiefgarage mit poliertem Betonboden, LED-Deckenbeleuchtung und klaren Linien.',
+  'racetrack': 'Das Fahrzeug steht auf der Start-Ziel-Geraden einer professionellen Rennstrecke. Curbs in Rot-Weiß, glatter Asphalt.',
+  'mansion': 'Das Fahrzeug steht in der Auffahrt einer luxuriösen Villa. Gepflegter Rasen, mediterrane Architektur, warmes Abendlicht.',
 };
 
 export function buildMasterPrompt(config: RemasterConfig, vehicleDescription?: string): string {
@@ -72,6 +72,14 @@ export function buildMasterPrompt(config: RemasterConfig, vehicleDescription?: s
 - KÜHLERGRILL & EMBLEME: Reproduziere das EXAKTE Grill-Muster, Badge-Form, Material und jede Modellbezeichnung in exakter Position, Größe und Schriftart.
 - KAROSSERIE-DETAILS: Reproduziere EXAKTE Linienführung, Falze, Kotflügelverbreiterungen, Lufteinlässe, Dachreling, Spoiler, Auspuffblenden, Spiegelform, Türgriffe.
 - MATERIALIEN: Reproduziere exakte Oberflächenbeschaffenheiten – Chrom vs. Hochglanz-Schwarz vs. Matt vs. Satin.`);
+
+  parts.push(`ANTI-CROPPING (ABSOLUT VERBOTEN):
+- Das Fahrzeug muss VOLLSTÄNDIG im Bild sichtbar sein – KEIN Teil darf am Bildrand abgeschnitten werden
+- ALLE Scheinwerfer müssen KOMPLETT sichtbar sein – schneide NIEMALS einen Scheinwerfer ab oder verdecke ihn
+- ALLE Rücklichter müssen KOMPLETT sichtbar sein – schneide NIEMALS ein Rücklicht ab
+- ALLE Räder müssen KOMPLETT sichtbar sein – schneide NIEMALS ein Rad am Bildrand ab
+- Halte mindestens 5% Freiraum zwischen Fahrzeugkante und Bildrand auf allen Seiten
+- Dies gilt für JEDE Perspektive: Front, Heck, Seite, 3/4-Ansichten`);
 
   parts.push(`NEGATIVE CONSTRAINTS (NIEMALS):
 - Erfinde, ergänze oder halluziniere KEINE Details die nicht in den Referenzfotos sichtbar sind
@@ -106,12 +114,24 @@ export function buildMasterPrompt(config: RemasterConfig, vehicleDescription?: s
     parts.push(`Ändere die Lackierung des Fahrzeugs exakt in den Hex-Farbcode ${config.colorHex}. Der neue Lack soll glänzend und fotorealistisch aussehen, mit korrekten Reflexionen und Farbübergängen.`);
   }
 
-  // Logo prompting
+  // Logo prompting – enforce EXACT same rendering on EVERY image
   if (config.showManufacturerLogo && config.manufacturerLogoUrl) {
-    parts.push('HERSTELLER-LOGO: Im Hintergrund soll ein fotorealistisches 3D-Rendering des beiliegenden HERSTELLER-Logos (Manufacturer Logo) sichtbar sein, das an einer modernen, dunkelgrauen matten Wand montiert ist. Das Logo besteht aus hochwertigem gebürstetem Aluminium mit sichtbarer, feiner Metallstruktur. Es wird von hinten mit kaltweißem LED-Licht beleuchtet, wodurch ein scharfer, leuchtender Halo-Effekt auf der Wand entsteht. Verwende EXAKT das beiliegende Hersteller-Logo – erfinde KEIN anderes Logo.');
+    parts.push(`HERSTELLER-LOGO (PFLICHT – IDENTISCH AUF JEDEM BILD):
+- Verwende AUSSCHLIESSLICH das beiliegende Hersteller-Logo-Bild als Vorlage
+- Rendere das Logo als fotorealistisches 3D-Objekt aus gebürstetem Aluminium mit feiner sichtbarer Metallstruktur
+- Montiere es IMMER an derselben Position: mittig an der Rückwand des Showrooms, auf Augenhöhe, leicht oberhalb des Fahrzeugdachs
+- Beleuchte es IMMER identisch: kaltweißes LED-Licht von hinten mit scharfem, leuchtenden Halo-Effekt auf der dunkelgrauen matten Wand
+- Das Logo muss auf JEDEM Bild EXAKT gleich aussehen: gleiche Größe (ca. 60-80cm Durchmesser), gleiche Position, gleiche Beleuchtung, gleiches Material
+- VERBOTEN: Erfinde KEIN alternatives Logo, ändere NICHT die Form, Farbe oder Proportionen des Logos, zeige NICHT nur Teile des Logos
+- VERBOTEN: Zeige das Logo NICHT als flaches Bild/Poster/Aufkleber – es muss IMMER ein 3D-Objekt aus Metall sein
+- VERBOTEN: Füge KEINEN Text hinzu der nicht im Original-Logo enthalten ist`);
   }
   if (config.showDealerLogo && config.dealerLogoUrl) {
-    parts.push('AUTOHAUS-LOGO: Zusätzlich soll das beiliegende AUTOHAUS-Logo (Dealer Logo) dezent sichtbar sein – z.B. als kleineres Wandlogo oder auf einem Aufsteller neben dem Fahrzeug. Verwende EXAKT das beiliegende Autohaus-Logo.');
+    parts.push(`AUTOHAUS-LOGO (PFLICHT – IDENTISCH AUF JEDEM BILD):
+- Verwende AUSSCHLIESSLICH das beiliegende Autohaus-Logo-Bild als Vorlage
+- Rendere es als beleuchtetes Wandlogo aus gebürstetem Aluminium, kleiner als das Hersteller-Logo
+- Montiere es IMMER an derselben Position: rechts neben dem Hersteller-Logo oder an einer Seitenwand
+- VERBOTEN: Erfinde KEIN alternatives Logo, ändere NICHT die Form, Farbe oder Proportionen`);
   }
 
   // Interior-specific rules – must override scene prompts
