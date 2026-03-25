@@ -533,15 +533,19 @@ Grundsatz: Alle KI-Aufrufe nutzen bevorzugt eigene API-Keys.`}</CodeBlock>
             <Table
               headers={['Aktion', 'Credits']}
               rows={[
-                ['PDF-Analyse', '1'],
+                ['PDF-Analyse', '2'],
                 ['VIN-OCR', '1'],
                 ['Bildgenerierung (Schnell)', '3'],
                 ['Bildgenerierung (Qualität)', '5'],
                 ['Bildgenerierung (Turbo)', '6'],
                 ['Bildgenerierung (Premium)', '8'],
                 ['Bildgenerierung (Ultra)', '10'],
-                ['Video-Generierung', '10'],
-                ['Landing Page', '3'],
+                ['Video (Veo Fast)', '10'],
+                ['Video (Veo Standard)', '15'],
+                ['Video (Veo Std + Audio)', '20'],
+                ['360° Spin – Frame-Gen', '20–30'],
+                ['Landing Page', '2–5'],
+                ['Sales-Antwort', '1'],
               ]}
             />
           </SubSection>
