@@ -101,6 +101,9 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
   const descText = data.vehicle.variant || '';
   const descHTML = descText ? `<div class="card"><h2>Fahrzeugbeschreibung</h2><p class="desc-text">${descText}</p></div>` : '';
 
+  // Legal text
+  const legalTextHTML = buildLegalTextHTML(data);
+
   // Leasing / Finance conditions
   const leasingFactor = isLeasing ? calculateLeasingFactor(data) : '';
   let leasingConditionsHTML = '';
@@ -136,6 +139,7 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
             </div>
           </div>
         </div>` : ''}
+        ${legalTextHTML}
       </div>`;
   }
 
@@ -183,12 +187,6 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
       <p style="font-size:.7rem;color:#9ca3af;margin-top:.75rem">Bitte mit * gekennzeichnete Felder ausfüllen. Kostenlos und unverbindlich!</p>
     </div>`;
 
-  // Legal text
-  const legalTextHTML = buildLegalTextHTML(data);
-  const legalFooter = legalTextHTML
-    ? `<div style="margin-top:1.5rem;font-size:.75rem;color:#6b7280;line-height:1.6;border-top:1px solid #e5e7eb;padding-top:.75rem">${legalTextHTML}</div>`
-    : '';
-
   return `<!DOCTYPE html>
 <html lang="de">
 <head>
@@ -233,7 +231,7 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
 
     /* Grid cells */
     .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
-    .grid-cell{background:#f9fafb;border-radius:8px;padding:.75rem}
+    .grid-cell{background:#ffffff;border:1px solid #e5e7eb;border-radius:8px;padding:.75rem}
     .cell-label{font-size:.72rem;color:#6b7280;margin-bottom:.2rem}
     .cell-value{font-weight:700;color:#1a2e5a;font-size:.9rem}
 
@@ -285,7 +283,6 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
       ${techHTML}
       ${descHTML}
       ${leasingConditionsHTML}
-      ${legalFooter}
     </div>
 
     <!-- RIGHT COLUMN (sticky sidebar) -->
