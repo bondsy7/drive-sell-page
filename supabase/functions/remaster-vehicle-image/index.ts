@@ -176,8 +176,9 @@ serve(async (req) => {
       toInlineData(imageBase64),
     ];
     // Add additional reference images
-    if (Array.isArray(additionalImages)) {
-      for (const img of additionalImages.slice(0, 4)) {
+    if (Array.isArray(additionalImages) && additionalImages.length > 0) {
+      parts.push({ text: "Die folgenden Bilder sind zusätzliche Detailaufnahmen des Fahrzeugs (z.B. Felgen, Schäden, Logos, Motorraum). Nutze sie als Referenz, um das Fahrzeug exakt und detailgetreu darzustellen:" });
+      for (const img of additionalImages.slice(0, 10)) {
         parts.push(toInlineData(img));
       }
     }
