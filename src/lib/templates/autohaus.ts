@@ -125,8 +125,8 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
       <div class="card">
         <h2>${getFinanceSectionTitle(data)}konditionen</h2>
         <div class="leasing-highlight">
-          <div class="rate-label">Monatliche ${isLeasing ? 'Leasingrate' : 'Rate'}</div>
-          <div class="rate-value">${data.finance.monthlyRate}</div>
+          <div class="rate-value">${data.finance.monthlyRate} <span style="font-size:1rem;font-weight:400;opacity:.85">/ Monat<sup style="font-size:.6rem;vertical-align:super">1</sup></span></div>
+          <div style="font-size:.78rem;opacity:.7;margin-top:.3rem">inkl. MwSt.</div>
         </div>
         <div class="grid-2">${conditionCells}</div>
         ${data.finance.totalPrice ? `
@@ -290,8 +290,8 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
       <div class="card price-card">
         <h1>${data.vehicle.brand} ${data.vehicle.model}${data.vehicle.variant ? ' ' + data.vehicle.variant : ''}</h1>
         ${!isBuy && data.finance.monthlyRate
-          ? `<div class="rate">${data.finance.monthlyRate} <span style="font-size:.95rem;font-weight:400;color:#6b7280">/ Monat</span></div>
-             ${data.finance.totalPrice ? `<p class="list-price">Listenpreis: ${data.finance.totalPrice} inkl. MwSt.</p>` : ''}`
+          ? `<div class="rate">${data.finance.monthlyRate} <span style="font-size:.95rem;font-weight:400;color:#6b7280">/ Monat<sup style="font-size:.6rem;vertical-align:super">1</sup></span></div>
+             ${data.finance.totalPrice ? `<p class="list-price">Fahrzeugpreis: ${data.finance.totalPrice} inkl. MwSt.</p>` : ''}`
           : `<div class="rate">${data.finance.totalPrice || '–'}</div>
              <p class="list-price">${isBuy ? 'Fahrzeugpreis inkl. MwSt.' : ''}</p>`
         }
