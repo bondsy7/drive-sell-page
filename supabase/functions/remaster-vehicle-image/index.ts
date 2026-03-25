@@ -232,9 +232,10 @@ serve(async (req) => {
     const FALLBACK_ORDER: Record<string, string[]> = {
       'gemini-3-pro-image-preview': ['gemini-3.1-flash-image-preview', 'gemini-2.5-flash-image'],
       'gemini-3.1-flash-image-preview': ['gemini-2.5-flash-image'],
+      'gemini-2.5-flash-image': ['gemini-3.1-flash-image-preview'],
     };
-    const modelsToTry = [geminiModel, ...(FALLBACK_ORDER[geminiModel] || [])];
-    const maxRetries = 2;
+    const modelsToTry = [geminiModel, ...(FALLBACK_ORDER[geminiModel] || ['gemini-2.5-flash-image'])];
+    const maxRetries = 3;
     let resultImage: string | null = null;
     let lastError = "";
 
@@ -260,19 +261,16 @@ serve(async (req) => {
           if (!response.ok) {
             const errText = await response.text();
             console.error("Remaster error:", response.status, errText);
-            if (response.status === 503 || response.status === 429) {
-              // Model overloaded – break inner loop to try fallback model
-              lastError = `Model ${currentModel} unavailable (${response.status})`;
-              if (attempt < maxRetries - 1) {
-                await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
-                continue;
-              }
-              console.warn(`Model ${currentModel} exhausted, trying fallback...`);
-              break; // move to next model in fallback chain
+            const isRetryable = response.status === 500 || response.status === 503 || response.status === 429;
+            lastError = `Model ${currentModel} error (${response.status})`;
+            if (isRetryable && attempt < maxRetries - 1) {
+              const delay = 3000 * (attempt + 1);
+              console.warn(`Retryable ${response.status}, waiting ${delay}ms...`);
+              await new Promise(r => setTimeout(r, delay));
+              continue;
             }
-            lastError = `Remaster error: ${response.status}`;
-            if (attempt < maxRetries - 1) { await new Promise(r => setTimeout(r, 2000)); continue; }
-            break;
+            console.warn(`Model ${currentModel} exhausted (${response.status}), trying fallback...`);
+            break; // move to next model in fallback chain
           }
 
           const data = await response.json();
