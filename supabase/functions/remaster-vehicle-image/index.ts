@@ -47,12 +47,20 @@ SHOWROOM CONSISTENCY (MANDATORY for all exterior images):
 - The showroom has: dark gray matte walls, polished light gray concrete floor with subtle reflections, large floor-to-ceiling glass windows on the left side, modern recessed LED ceiling lights
 - Do NOT vary the showroom between images – it must look like the SAME physical location every time
 
+PERSPECTIVE ACCURACY (ABSOLUTE PRIORITY):
+- The requested camera angle MUST be followed exactly. Never substitute another angle because it looks more aesthetic or easier to generate.
+- Rear view means direct rear view only. Front view means direct front view only. Side view means true side profile only.
+- 3/4 front left, 3/4 front right, 3/4 rear left, and 3/4 rear right are four different mandatory outputs and must never be swapped or mirrored.
+- Interior, exterior, trunk, and detail shots must stay in their own category. Never convert an interior request into an exterior shot or vice versa.
+- Left must remain left. Right must remain right. Never mirror, flip, or reinterpret the orientation.
+
 LOGO RENDERING (MANDATORY when a logo image is provided):
 - If a logo image is attached, reproduce it as a PIXEL-PERFECT copy on the showroom wall
 - KEEP the logo's ORIGINAL COLORS – if it has yellow, red, blue, etc., those colors MUST appear exactly as in the source image
 - Do NOT convert colored logos to silver, chrome, aluminum, or monochrome – PRESERVE ALL ORIGINAL COLORS
 - The logo must appear IDENTICAL on EVERY generated image – same colors, same size, same position, same proportions
 - ZERO variation between images is acceptable
+- Treat the supplied logo image as IMMUTABLE SOURCE MATERIAL: do NOT redesign, simplify, restyle, vectorize, emboss, recolor, add a new border, remove a border, alter proportions, or change any text or symbols
 
 FOR INTERIOR SHOTS (seats, steering wheel, dashboard, center console, door panels, rear seats):
 - MANDATORY CLEANUP: Remove ALL items that do NOT belong to the vehicle: trash, bags, papers, plastic covers, protective films, transport packaging, personal belongings, loose items on seats or floor mats, tags, stickers, warning labels (except permanent vehicle labels)
@@ -230,6 +238,7 @@ Das folgende Bild ist das EXAKTE Logo das an der Showroom-Wand erscheinen MUSS.
 REPRODUKTIONS-REGELN (KEINE ABWEICHUNG ERLAUBT):
 1. EXAKTE KOPIE: Reproduziere das Logo-Bild PIXEL FÜR PIXEL. Jede Farbe, jede Form, jedes Detail, jeder Buchstabe muss IDENTISCH zum bereitgestellten Bild sein.
 2. KEINE INTERPRETATION: Du darfst das Logo NICHT neu interpretieren, vereinfachen, stilisieren oder in ein anderes Material umwandeln. Wenn das Logo gelb ist, bleibt es gelb. Wenn es ein Schild ist, bleibt es ein Schild. Wenn es Text enthält, muss EXAKT dieser Text erscheinen.
+2b. IMMUTABLE ASSET: Behandle das gelieferte Logo als unveränderbares Asset. KEIN Nachzeichnen, KEIN Redesign, KEINE neue Kontur, KEIN anderes Seitenverhältnis, KEIN zusätzlicher Rand, KEIN Weglassen kleiner Details.
 3. POSITION: IMMER mittig an der Rückwand, auf Augenhöhe, leicht oberhalb des Fahrzeugdachs. Auf JEDEM Bild EXAKT dieselbe Position.
 4. GRÖßE: Ca. 60-80cm Durchmesser/Breite – auf JEDEM Bild IDENTISCH.
 5. DARSTELLUNG: Als hinterleuchtetes Wandelement mit dezenter LED-Beleuchtung von hinten (sanfter Halo-Effekt). Das Logo selbst behält seine ORIGINAL-FARBEN und ORIGINAL-FORM.
@@ -239,6 +248,7 @@ REPRODUKTIONS-REGELN (KEINE ABWEICHUNG ERLAUBT):
    - KEINE Vereinfachung der Form (Schild bleibt Schild, nicht nur das Tier/Symbol)
    - KEIN Hinzufügen oder Entfernen von Elementen
    - KEINE unterschiedliche Darstellung zwischen Bildern
+   - KEINE neue Logo-Version erzeugen, auch nicht wenn sie "sauberer" oder "realistischer" wirkt
 7. KONSISTENZ: Das Logo muss auf ALLEN generierten Bildern ABSOLUT IDENTISCH aussehen – gleiche Farben, Form, Größe, Position, Beleuchtung. NULL Variation erlaubt.` });
         parts.push(logoData);
         console.log("Manufacturer logo injected", manufacturerLogoBase64 ? "(cached b64)" : "(fetched)");
@@ -254,7 +264,8 @@ REPRODUKTIONS-REGELN (KEINE ABWEICHUNG ERLAUBT):
 Das folgende Bild ist das EXAKTE Autohaus-Logo. Reproduziere es PIXEL FÜR PIXEL mit allen Original-Farben und Original-Formen.
 - Position: IMMER rechts neben dem Hersteller-Logo an der Rückwand – auf JEDEM Bild IDENTISCH
 - Größe: Kleiner als das Hersteller-Logo
-- KEINE Interpretation, KEINE Farbänderung, KEINE Vereinfachung – exakte Kopie des bereitgestellten Bildes` });
+- KEINE Interpretation, KEINE Farbänderung, KEINE Vereinfachung – exakte Kopie des bereitgestellten Bildes
+- IMMUTABLE ASSET: keine neue Kontur, kein neues Schild, kein alternativer Font, keine neue Farbwelt` });
         parts.push(logoData);
         console.log("Dealer logo injected", dealerLogoBase64 ? "(cached b64)" : "(fetched)");
       }
