@@ -178,6 +178,38 @@ const Profile = () => {
     return () => { supabase.removeChannel(channel); };
   }, [user, loadTransactions]);
 
+  // ─── Banks CRUD ───
+  useEffect(() => {
+    if (!user) return;
+    supabase.from('dealer_banks').select('*').eq('user_id', user.id).order('sort_order').then(({ data }) => {
+      if (data) setBanks(data.map((d: any) => ({ id: d.id, bank_type: d.bank_type, bank_name: d.bank_name, legal_text: d.legal_text, sort_order: d.sort_order })));
+    });
+  }, [user]);
+
+  const addBank = async (type: 'leasing' | 'financing') => {
+    if (!user) return;
+    const order = banks.filter(b => b.bank_type === type).length;
+    const { data, error } = await supabase.from('dealer_banks').insert({ user_id: user.id, bank_type: type, bank_name: '', legal_text: '', sort_order: order } as any).select().single();
+    if (error) { toast.error('Fehler beim Anlegen'); return; }
+    if (data) setBanks(prev => [...prev, { id: (data as any).id, bank_type: type, bank_name: '', legal_text: '', sort_order: order }]);
+  };
+
+  const updateBank = (id: string, field: 'bank_name' | 'legal_text', value: string) => {
+    setBanks(prev => prev.map(b => b.id === id ? { ...b, [field]: value } : b));
+  };
+
+  const saveBanks = async () => {
+    for (const bank of banks) {
+      await supabase.from('dealer_banks').update({ bank_name: bank.bank_name, legal_text: bank.legal_text } as any).eq('id', bank.id);
+    }
+  };
+
+  const removeBank = async (id: string) => {
+    await supabase.from('dealer_banks').delete().eq('id', id);
+    setBanks(prev => prev.filter(b => b.id !== id));
+    toast.success('Bank entfernt');
+  };
+
   const update = (key: keyof ProfileData, val: string) => setProfile(p => ({ ...p, [key]: val }));
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
