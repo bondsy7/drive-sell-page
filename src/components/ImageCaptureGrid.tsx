@@ -562,6 +562,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       <PipelineRunner
         inputImages={allCapturedBase64}
         originalImages={allOriginalBase64}
+        additionalImages={detailImages.length > 0 ? detailImages : undefined}
         vehicleDescription={vehicleDescription}
         vehicleBrand={vehicleData?.vehicle?.brand}
         remasterConfig={remasterConfig}
