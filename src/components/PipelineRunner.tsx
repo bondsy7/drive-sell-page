@@ -54,6 +54,7 @@ const CREDIT_COST_PER_IMAGE = 2;
 const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   inputImages,
   originalImages,
+  additionalImages,
   vehicleDescription,
   vehicleBrand,
   remasterConfig,
