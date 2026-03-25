@@ -68,6 +68,7 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
     consumption: vehicleData.consumption || emptyConsumption,
   };
   const { user } = useAuth();
+  const { banks: dealerBanks } = useDealerBanks();
   const [selectedImage, setSelectedImage] = useState(0);
   const [viewMode, setViewMode] = useState<'preview' | 'edit'>('preview');
   const [costCalculating, setCostCalculating] = useState(false);
