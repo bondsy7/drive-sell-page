@@ -156,10 +156,6 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
             <Plus className="w-3.5 h-3.5" />
             Hinzufügen
           </Button>
-          <Button variant="outline" size="sm" className="gap-1.5 text-xs border-amber-400 text-amber-600 hover:bg-amber-50">
-            <Zap className="w-3.5 h-3.5" />
-            KI-Bild
-          </Button>
         </div>
 
         {/* ── ACCORDION SECTIONS ── */}
