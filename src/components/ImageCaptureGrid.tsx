@@ -703,7 +703,65 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         }}
       />
 
-      {/* VIN display */}
+      {/* Detail image upload */}
+      <div className="space-y-3">
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">Weitere Detailaufnahmen</h3>
+          <p className="text-xs text-muted-foreground">Felgen, Schäden, Logos, Motorraum etc. – werden als Referenz für bessere Ergebnisse mitgesendet (max. 10)</p>
+        </div>
+        <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+          {detailImages.map((img, idx) => (
+            <div key={idx} className="relative group aspect-square rounded-xl overflow-hidden border border-border bg-card">
+              <img src={img} alt={`Detail ${idx + 1}`} className="w-full h-full object-cover" />
+              {!isProcessing && (
+                <button
+                  onClick={() => setDetailImages(prev => prev.filter((_, i) => i !== idx))}
+                  className="absolute top-1 right-1 w-5 h-5 rounded-full bg-background/80 hover:bg-destructive hover:text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+          ))}
+          {detailImages.length < 10 && (
+            <button
+              onClick={() => detailFileRef.current?.click()}
+              className="aspect-square rounded-xl border-2 border-dashed border-border hover:border-accent bg-card flex flex-col items-center justify-center gap-1 transition-colors"
+              disabled={isProcessing}
+            >
+              <Upload className="w-4 h-4 text-muted-foreground" />
+              <span className="text-[10px] text-muted-foreground">Hinzufügen</span>
+            </button>
+          )}
+        </div>
+        <input
+          ref={detailFileRef}
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={async (e) => {
+            const files = Array.from(e.target.files || []);
+            e.target.value = '';
+            const remaining = 10 - detailImages.length;
+            const toProcess = files.slice(0, remaining);
+            const newImages: string[] = [];
+            for (const file of toProcess) {
+              if (!file.type.startsWith('image/') || file.size > 10 * 1024 * 1024) continue;
+              try {
+                const raw = await fileToBase64(file);
+                const compressed = await compressImage(raw);
+                newImages.push(compressed);
+              } catch { /* skip */ }
+            }
+            if (newImages.length > 0) {
+              setDetailImages(prev => [...prev, ...newImages]);
+              toast.success(`${newImages.length} Detailbild${newImages.length > 1 ? 'er' : ''} hinzugefügt`);
+            }
+          }}
+        />
+      </div>
+
       {detectedVin && (
         <div className="flex items-center gap-2 bg-accent/10 text-accent px-4 py-2.5 rounded-xl text-sm font-medium">
           <Check className="w-4 h-4" />
