@@ -115,13 +115,23 @@ export function buildMasterPrompt(config: RemasterConfig, vehicleDescription?: s
   }
 
   // Interior-specific rules – must override scene prompts
-  parts.push('FÜR INNENRAUM-AUFNAHMEN (Sitze, Lenkrad, Armaturenbrett, Mittelkonsole, Kofferraum, Rücksitze): IGNORIERE alle Showroom- und Hintergrund-Anweisungen komplett. Verändere die Orientierung/den Winkel NICHT. Ändere den Hintergrund/die Umgebung NICHT. Füge keine Innenraum-Elemente hinzu oder entferne sie. Verbessere NUR die Beleuchtung – hell, gleichmäßig und professionell. Zeige EXAKT das gleiche Interieur-Motiv aus dem gleichen Blickwinkel.');
+  parts.push(`FÜR INNENRAUM-AUFNAHMEN (Sitze, Lenkrad, Armaturenbrett, Mittelkonsole, Kofferraum, Rücksitze):
+- IGNORIERE alle Showroom- und Hintergrund-Anweisungen komplett
+- Verändere die Orientierung/den Winkel NICHT – drehe, spiegele oder flippe NICHT
+- Ändere den Hintergrund/die Umgebung NICHT
+- Füge keine Innenraum-Elemente hinzu oder entferne sie
+- Reproduziere EXAKTE Materialien: Ledernarbung, Nähte, Zierleisten, Tastenlayouts, Bildschirm-UI aus den Referenzfotos
+- Verbessere NUR die Beleuchtung – hell, gleichmäßig und professionell`);
 
   // Interior cleanup (MANDATORY)
-  parts.push('INTERIEUR-AUFRÄUMUNG (PFLICHT): Entferne ALLE Gegenstände die NICHT zum Fahrzeug gehören: Müll, Tüten, Papiere, Plastikfolien, Transportverpackungen, persönliche Gegenstände, lose Gegenstände auf Sitzen oder Fußmatten, Anhänger, Aufkleber, Warnetiketten (außer fest montierte Fahrzeug-Labels). Räume SOWOHL Vordersitze ALS AUCH Rücksitze gleichermaßen auf – die gesamte Kabine muss showroom-fertig aussehen. Nach der Aufräumung sollen Sitze, Fußmatten und Oberflächen sauber, makellos und professionell aufbereitet wirken.');
+  parts.push(`INTERIEUR-AUFRÄUMUNG (PFLICHT):
+- Entferne ALLE Gegenstände die NICHT zum Fahrzeug gehören: Müll, Tüten, Papiere, Plastikfolien, Transportverpackungen, persönliche Gegenstände, lose Gegenstände auf Sitzen oder Fußmatten, Anhänger, Aufkleber, Warnetiketten (außer fest montierte Fahrzeug-Labels)
+- Räume SOWOHL Vordersitze ALS AUCH Rücksitze gleichermaßen auf
+- Die gesamte Kabine muss showroom-fertig und professionell aufbereitet aussehen
+- Sitze, Fußmatten und Oberflächen sollen sauber, makellos und detailreich wirken`);
 
   // No other vehicles
-  parts.push('WICHTIG: Im generierten Bild darf KEIN anderes Fahrzeug sichtbar sein – nur das eine Fahrzeug aus dem Originalfoto. Keine Autos im Hintergrund, keine Spiegelungen anderer Fahrzeuge in Glasflächen, Lack, Chrom oder auf dem Boden.');
+  parts.push('WICHTIG: Im generierten Bild darf KEIN anderes Fahrzeug sichtbar sein – nur das eine Fahrzeug aus dem Originalfoto. Keine Autos im Hintergrund, keine Spiegelungen anderer Fahrzeuge.');
 
   // Vehicle description
   if (vehicleDescription) {
