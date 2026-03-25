@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { RotateCw } from 'lucide-react';
+import { RotateCw, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useModuleAccess, type ModuleKey } from '@/hooks/useModuleAccess';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { FileText, Image, Video, MessageSquare, Layout, LayoutGrid } from 'lucide-react';
@@ -34,9 +35,29 @@ type TabKey = 'projects' | 'landings' | 'gallery' | 'banners' | 'videos' | 'lead
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const { disabledModules } = useModuleAccess();
   const [searchParams] = useSearchParams();
   const initialTab = (searchParams.get('tab') as TabKey) || 'projects';
   const [tab, setTab] = useState<TabKey>(initialTab);
+
+  // Map module keys to dashboard tab keys
+  const moduleToTabs: Record<ModuleKey, TabKey[]> = {
+    'photos': ['gallery'],
+    'pdf-landing': ['landings'],
+    'manual-landing': ['landings'],
+    'banner': ['banners'],
+    'video': ['videos'],
+    'sales-assistant': [],
+  };
+
+  const disabledTabs = new Set<TabKey>();
+  for (const mod of disabledModules) {
+    for (const t of moduleToTabs[mod] || []) disabledTabs.add(t);
+  }
+  // landings only disabled if BOTH pdf-landing and manual-landing are disabled
+  if (disabledTabs.has('landings') && !(disabledModules.has('pdf-landing') && disabledModules.has('manual-landing'))) {
+    disabledTabs.delete('landings');
+  }
 
   // Pagination state
   const [galleryPage, setGalleryPage] = useState(0);
@@ -208,11 +229,23 @@ const Dashboard = () => {
       <AppHeader />
       <main className="max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
         <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
-          {tabs.map(t => (
-            <Button key={t.key} variant={tab === t.key ? 'default' : 'outline'} size="sm" onClick={() => setTab(t.key)} className="whitespace-nowrap">
-              <t.icon className="w-4 h-4 mr-1.5" /> {t.label} ({t.count})
-            </Button>
-          ))}
+          {tabs.map(t => {
+            const isDisabled = disabledTabs.has(t.key);
+            return (
+              <Button
+                key={t.key}
+                variant={tab === t.key ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => !isDisabled && setTab(t.key)}
+                disabled={isDisabled}
+                className={`whitespace-nowrap ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <t.icon className="w-4 h-4 mr-1.5" />
+                {t.label} ({t.count})
+                {isDisabled && <Lock className="w-3 h-3 ml-1.5" />}
+              </Button>
+            );
+          })}
         </div>
         {renderTabContent()}
       </main>
