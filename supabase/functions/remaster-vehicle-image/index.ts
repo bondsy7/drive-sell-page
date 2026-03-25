@@ -9,14 +9,21 @@ const corsHeaders = {
 
 const DEFAULT_PROMPT = `You are a professional automotive photographer. Take this exact vehicle photo and remaster it into a professional dealership-quality image.
 
-IDENTITY LOCK (MANDATORY):
-Study the provided vehicle photo and ALL detail reference images with extreme care before generating.
+IDENTITY LOCK (MANDATORY – study ALL reference images and detail shots with extreme care):
 - PAINT COLOR: The vehicle's paint color MUST remain 100% identical to the original. Do NOT shift, tint, saturate, desaturate, lighten, or darken the paint in any way. A red car stays the EXACT same red, a white car the EXACT same white. This applies to ALL body panels, bumpers, mirrors, and painted surfaces. Only change the color if explicitly instructed via a hex code.
-- WHEELS & RIMS: Reproduce the EXACT rim design from the reference – spoke count, spoke shape, concavity, finish (polished, matte, bi-color, diamond-cut). NEVER crop, cut off, or partially hide any wheel at the image edge. ALL wheels visible in the original must appear FULLY in the output.
-- HEADLIGHTS & TAILLIGHTS: Reproduce the EXACT internal LED structure, DRL signatures, lens shape, and housing design. NEVER crop or alter any lighting element.
+- WHEELS & RIMS: Reproduce the EXACT rim design from the reference – spoke count, spoke shape, concavity, finish (polished, matte, bi-color, diamond-cut), hub cap with brand logo. Show exact tire profile and visible brake calipers (color, shape). NEVER crop, cut off, or partially hide any wheel at the image edge. ALL wheels visible in the original must appear FULLY in the output.
+- HEADLIGHTS & TAILLIGHTS: Reproduce the EXACT internal LED structure, DRL signatures, lens shape, and housing design. NEVER crop, cut off, or partially hide any lighting element at the image edge.
 - GRILLE & BADGES: Reproduce the EXACT grille mesh pattern, badge shape, material, and every model designation in exact position, size, and font.
 - BODY DETAILS: Reproduce EXACT body lines, creases, fender flares, air intakes, roof rails, spoilers, exhaust tips, mirror shapes, door handles, and every visible exterior detail.
 - MATERIALS & TEXTURES: Match exact material finishes – chrome vs. gloss black vs. matte vs. satin. Do NOT substitute materials.
+
+ANTI-CROPPING (ABSOLUTELY FORBIDDEN):
+- The vehicle MUST be FULLY visible in the image – NO part may be cut off at the image edge
+- ALL headlights must be COMPLETELY visible – NEVER crop a headlight
+- ALL taillights must be COMPLETELY visible – NEVER crop a taillight
+- ALL wheels must be COMPLETELY visible – NEVER crop a wheel at the image edge
+- Maintain at least 5% free space between the vehicle edge and image border on all sides
+- This applies to EVERY perspective: front, rear, side, 3/4 views
 
 NEGATIVE CONSTRAINTS (NEVER DO):
 - Do NOT invent, add, or hallucinate any detail not present in the reference photos
@@ -25,21 +32,20 @@ NEGATIVE CONSTRAINTS (NEVER DO):
 - Do NOT add aftermarket parts or body modifications not in the reference
 - Do NOT show any other vehicles – not in background, not in reflections, not partially visible
 - Do NOT add humans, animals, or moving objects
-- Do NOT carry over reflections from the original environment – render ALL reflections new for the target scene
+- Do NOT carry over ANY reflections from the original environment – render ALL reflections completely new for the target scene
 - Do NOT rotate, flip, or mirror the image orientation
 
-REFLECTION & LIGHTING RE-RENDER:
+REFLECTION & LIGHTING RE-RENDER (MANDATORY):
 - ALL reflections on paint, glass, chrome, and windows must be COMPLETELY re-rendered to match the NEW scene
-- Original background reflections (trees, buildings, people, parking lots) must be fully replaced
+- Original background reflections (trees, buildings, people, parking lots, other cars) must be FULLY replaced – no traces of the original environment may remain
 - Light sources, shadow direction, shadow intensity, and ambient lighting must be recalculated for the new environment
 - Shadows beneath the vehicle must match the new scene's light direction
 - Floor reflections must show the vehicle in the NEW environment only
 
-FOR EXTERIOR SHOTS:
-- Change the background to a modern, bright, luxurious car dealership showroom
-- Add realistic showroom lighting with soft overhead lights
-- The floor should be polished/reflective like a real showroom
-- Ensure the full vehicle is visible with no cropping at edges
+SHOWROOM CONSISTENCY (MANDATORY for all exterior images):
+- Use the EXACT SAME showroom design for EVERY image: same wall color, same floor material, same window layout, same lighting setup
+- The showroom has: dark gray matte walls, polished light gray concrete floor with subtle reflections, large floor-to-ceiling glass windows on the left side, modern recessed LED ceiling lights
+- Do NOT vary the showroom between images – it must look like the SAME physical location every time
 
 FOR INTERIOR SHOTS (seats, steering wheel, dashboard, center console, door panels, rear seats):
 - MANDATORY CLEANUP: Remove ALL items that do NOT belong to the vehicle: trash, bags, papers, plastic covers, protective films, transport packaging, personal belongings, loose items on seats or floor mats, tags, stickers, warning labels (except permanent vehicle labels)
