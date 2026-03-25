@@ -13,6 +13,9 @@ import LeasingDurationDropdown from '@/components/LeasingDurationDropdown';
 import AnnualMileageDropdown from '@/components/AnnualMileageDropdown';
 import { Button } from '@/components/ui/button';
 import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import {
   Car, Cog, Zap, Fuel, Gauge, Calendar,
   MapPin, Phone, Mail, Globe,
   Plus, Trash2, ChevronLeft, ChevronRight,
