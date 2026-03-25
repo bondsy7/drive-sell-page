@@ -231,7 +231,7 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
 
     /* Grid cells */
     .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
-    .grid-cell{background:#f9fafb;border-radius:8px;padding:.75rem}
+    .grid-cell{background:#ffffff;border:1px solid #e5e7eb;border-radius:8px;padding:.75rem}
     .cell-label{font-size:.72rem;color:#6b7280;margin-bottom:.2rem}
     .cell-value{font-weight:700;color:#1a2e5a;font-size:.9rem}
 
