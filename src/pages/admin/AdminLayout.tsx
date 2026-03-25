@@ -53,6 +53,7 @@ const NAV_GROUPS: NavGroupDef[] = [
       { to: '/admin/storage', icon: HardDrive, label: 'Storage' },
       { to: '/admin/conversion', icon: Filter, label: 'Conversion-Funnel' },
       { to: '/admin/test-drives', icon: CalendarDays, label: 'Probefahrten' },
+      { to: '/admin/pipeline-stats', icon: Timer, label: 'Pipeline-Stats' },
     ],
   },
   {

@@ -128,6 +128,7 @@ const App = () => (
                 <Route path="storage" element={<AdminStorage />} />
                 <Route path="conversion" element={<AdminConversionFunnel />} />
                 <Route path="test-drives" element={<AdminTestDrives />} />
+                <Route path="pipeline-stats" element={<AdminPipelineStats />} />
               </Route>
               <Route path="/architecture" element={<ProtectedRoute><AdminRoute><ArchitectureDoc /></AdminRoute></ProtectedRoute>} />
               <Route path="/sales-assistant/chat" element={<ProtectedRoute><ErrorBoundary moduleName="Sales Assistant"><SalesAssistant /></ErrorBoundary></ProtectedRoute>} />
