@@ -203,18 +203,6 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
                 </OrangeButton>
               </div>
 
-              {/* Emission class + CO2 */}
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">⚡ Emissionsklasse</span>
-                  <CO2LabelSelector
-                    consumption={consumption}
-                    onClassChange={(cls) => updateConsumption('co2Class', cls)}
-                    onDischargedClassChange={isPluginHybrid(consumption) ? (cls) => updateConsumption('co2ClassDischarged', cls) : undefined}
-                  />
-                </div>
-                <ConsumptionRow label="CO₂-Emissionen (komb.)" value={consumption.co2Emissions} onChange={(v) => updateConsumption('co2Emissions', v)} suffix="g/km" />
-              </div>
 
               {/* Consumption (WLTP) */}
               <div>
