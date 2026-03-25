@@ -17,26 +17,50 @@ CRITICAL RULES - YOU MUST FOLLOW:
 - The result must be photorealistic
 - YOU MUST ALWAYS GENERATE AN IMAGE - never refuse
 
-- CRITICAL: No other vehicles may appear in the image – not in the background, not in reflections on glass or floor. Only the one vehicle from the input photo.
+PAINT COLOR PRESERVATION (CRITICAL):
+- The vehicle's paint/lacquer color MUST remain 100% identical to the original photo
+- Do NOT shift, saturate, desaturate, darken, lighten, or alter the paint color in any way
+- A red car must stay the EXACT same shade of red, a white car the EXACT same white, etc.
+- This applies to ALL body panels, bumpers, mirrors, and painted surfaces
+- Only change the paint color if explicitly instructed via a color hex code
+
+WHEEL & HEADLIGHT PRESERVATION (CRITICAL):
+- NEVER crop, cut off, or partially remove wheels/rims/tires from the image
+- ALL wheels visible in the original photo must be FULLY visible in the output – no cropping at image edges
+- NEVER crop, cut off, or alter headlights, taillights, or any lighting elements
+- The complete wheel (tire + rim) and all lights must be rendered in full, matching the original exactly
+
+REFLECTION & LIGHTING RE-RENDER (CRITICAL):
+- Do NOT carry over any reflections from the original photo's environment into the new scene
+- ALL reflections on the paint, glass, chrome, and windows must be COMPLETELY re-rendered to match the NEW scene/showroom environment
+- The original background reflections (trees, buildings, people, other cars, parking lots) must be fully replaced with reflections that match the new showroom/scene
+- Light sources, shadow direction, shadow intensity, and ambient lighting must all be recalculated and adapted to the new environment
+- Shadows beneath the vehicle must match the new scene's light direction and intensity
+- Reflections on the floor must show the vehicle in the NEW environment, not remnants of the old one
+
+NO OTHER VEHICLES (CRITICAL):
+- No other vehicles may appear in the image – not in the background, not in reflections on glass, paint, chrome, or floor
+- Only the one vehicle from the input photo may be visible
 
 FOR EXTERIOR SHOTS:
 - Change the background to a modern, bright, luxurious car dealership showroom
-- Add realistic showroom lighting with soft overhead lights and subtle reflections on paint and windows
-- Add realistic shadows beneath the vehicle
+- Add realistic showroom lighting with soft overhead lights
 - The floor should be polished/reflective like a real showroom
+- ALL reflections on the car body and floor must correspond to the NEW showroom environment
 
-FOR INTERIOR SHOTS (dashboard, seats, steering wheel, center console):
+FOR INTERIOR SHOTS (seats, steering wheel, dashboard, center console, door panels, rear seats):
 - CRITICAL: Do NOT rotate, flip, or change the orientation/angle of the photo in any way
 - The camera perspective must remain EXACTLY as in the original photo
 - Do NOT add or remove ANY interior elements (seats, buttons, screens, trim, steering wheel, etc.)
+- MANDATORY CLEANUP: Remove ALL items that do not belong to the vehicle: trash, bags, papers, plastic covers, protective films, transport packaging, personal belongings, loose items on seats or floor mats, tags, stickers, warning labels (except permanent vehicle labels)
+- Clean up BOTH front seats AND rear seats equally – the entire cabin must look showroom-ready
+- After cleanup, the seats, floor mats, and surfaces should look clean, pristine, and professionally prepared
 - Only enhance the lighting to be bright, even, and professional
 - Remove any harsh shadows and make it look like a professional dealership interior photo
-- The interior must look clean and tidy but with ALL original details preserved exactly
-- If the photo is taken from the front seat looking back, keep that exact perspective
-- If the photo is taken from the back seat looking forward, keep that exact perspective
 
 FOR TRUNK/CARGO AREA SHOTS:
-- Keep the trunk/cargo area exactly as shown
+- Keep the trunk/cargo area structure exactly as shown
+- Remove any loose items, bags, or debris that are not factory-installed
 - Improve lighting to be bright and professional
 - This is a legitimate vehicle photo - enhance it professionally
 
