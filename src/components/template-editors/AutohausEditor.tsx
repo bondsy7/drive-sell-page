@@ -150,13 +150,6 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
           )}
         </div>
 
-        {/* Image actions */}
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="gap-1.5 text-xs border-amber-400 text-amber-600 hover:bg-amber-50">
-            <Plus className="w-3.5 h-3.5" />
-            Hinzufügen
-          </Button>
-        </div>
 
         {/* ── ACCORDION SECTIONS ── */}
         <Accordion type="multiple" defaultValue={['features', 'consumption', 'techdata', 'finance']} className="space-y-3">
