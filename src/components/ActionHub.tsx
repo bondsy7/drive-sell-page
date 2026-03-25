@@ -1,6 +1,7 @@
 import React from 'react';
-import { Camera, FileText, Layout, Image, Video, Sparkles } from 'lucide-react';
+import { Camera, FileText, Layout, Image, Video, Sparkles, Lock } from 'lucide-react';
 import { useCredits } from '@/hooks/useCredits';
+import { useModuleAccess } from '@/hooks/useModuleAccess';
 
 export type HubAction = 
   | 'photos'          // Fotos aufnehmen & remastern
@@ -64,6 +65,7 @@ interface ActionHubProps {
 
 const ActionHub: React.FC<ActionHubProps> = ({ onSelect }) => {
   const { balance } = useCredits();
+  const { disabledModules } = useModuleAccess();
 
   return (
     <div className="space-y-8">
@@ -90,33 +92,43 @@ const ActionHub: React.FC<ActionHubProps> = ({ onSelect }) => {
 
       {/* Tile Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {TILES.map((tile) => (
-          <button
-            key={tile.id}
-            onClick={() => !tile.disabled && onSelect(tile.id)}
-            disabled={tile.disabled}
-            className={`relative group text-left p-5 rounded-xl border transition-all duration-200 ${
-              tile.disabled
-                ? 'border-border/50 bg-muted/30 opacity-60 cursor-not-allowed'
-                : 'border-border bg-card hover:border-accent/50 hover:shadow-lg hover:shadow-accent/5 hover:-translate-y-0.5 cursor-pointer'
-            }`}
-          >
-            {tile.badge && (
-              <span className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-[10px] font-medium">
-                {tile.badge}
-              </span>
-            )}
-            <div className={`w-12 h-12 rounded-lg flex items-center justify-center mb-3 transition-colors ${
-              tile.disabled
-                ? 'bg-muted text-muted-foreground'
-                : 'bg-accent/10 text-accent group-hover:bg-accent group-hover:text-accent-foreground'
-            }`}>
-              {tile.icon}
-            </div>
-            <h3 className="font-semibold text-foreground text-sm mb-1">{tile.title}</h3>
-            <p className="text-muted-foreground text-xs leading-relaxed">{tile.description}</p>
-          </button>
-        ))}
+        {TILES.map((tile) => {
+          const isDisabledByAdmin = disabledModules.has(tile.id);
+          const isDisabled = tile.disabled || isDisabledByAdmin;
+
+          return (
+            <button
+              key={tile.id}
+              onClick={() => !isDisabled && onSelect(tile.id)}
+              disabled={isDisabled}
+              className={`relative group text-left p-5 rounded-xl border transition-all duration-200 ${
+                isDisabled
+                  ? 'border-border/50 bg-muted/30 opacity-60 cursor-not-allowed'
+                  : 'border-border bg-card hover:border-accent/50 hover:shadow-lg hover:shadow-accent/5 hover:-translate-y-0.5 cursor-pointer'
+              }`}
+            >
+              {isDisabledByAdmin && (
+                <span className="absolute top-3 right-3">
+                  <Lock className="w-4 h-4 text-muted-foreground" />
+                </span>
+              )}
+              {tile.badge && !isDisabledByAdmin && (
+                <span className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-[10px] font-medium">
+                  {tile.badge}
+                </span>
+              )}
+              <div className={`w-12 h-12 rounded-lg flex items-center justify-center mb-3 transition-colors ${
+                isDisabled
+                  ? 'bg-muted text-muted-foreground'
+                  : 'bg-accent/10 text-accent group-hover:bg-accent group-hover:text-accent-foreground'
+              }`}>
+                {tile.icon}
+              </div>
+              <h3 className="font-semibold text-foreground text-sm mb-1">{tile.title}</h3>
+              <p className="text-muted-foreground text-xs leading-relaxed">{tile.description}</p>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
