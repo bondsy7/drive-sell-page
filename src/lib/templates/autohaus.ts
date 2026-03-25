@@ -185,9 +185,6 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
 
   // Legal text
   const legalTextHTML = buildLegalTextHTML(data);
-  const legalFooter = legalTextHTML
-    ? `<div style="margin-top:1.5rem;font-size:.75rem;color:#6b7280;line-height:1.6;border-top:1px solid #e5e7eb;padding-top:.75rem">${legalTextHTML}</div>`
-    : '';
 
   return `<!DOCTYPE html>
 <html lang="de">
