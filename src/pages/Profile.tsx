@@ -204,9 +204,13 @@ const Profile = () => {
     }
   };
 
-  const removeBank = async (id: string) => {
-    await supabase.from('dealer_banks').delete().eq('id', id);
-    setBanks(prev => prev.filter(b => b.id !== id));
+  const [bankToDelete, setBankToDelete] = useState<string | null>(null);
+
+  const confirmDeleteBank = async () => {
+    if (!bankToDelete) return;
+    await supabase.from('dealer_banks').delete().eq('id', bankToDelete);
+    setBanks(prev => prev.filter(b => b.id !== bankToDelete));
+    setBankToDelete(null);
     toast.success('Bank entfernt');
   };
 
