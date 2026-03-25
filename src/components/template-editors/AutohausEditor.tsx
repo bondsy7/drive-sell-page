@@ -331,11 +331,6 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
               </div>
             </AccordionTrigger>
             <AccordionContent className="pb-5 space-y-5">
-              <div className="flex items-center gap-2 mb-1">
-                <OrangeButton onClick={recalculateRate}>
-                  <Pencil className="w-3 h-3" /> Werte anklicken
-                </OrangeButton>
-              </div>
 
               {/* Rate highlight card */}
               {!isBuyCategory && data.finance.monthlyRate && (
