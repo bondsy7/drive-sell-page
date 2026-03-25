@@ -180,6 +180,34 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [regeneratingIds, setRegeneratingIds] = useState<Set<string>>(new Set());
 
+  // Timing state
+  const [pipelineStartTime, setPipelineStartTime] = useState<number | null>(null);
+  const [pipelineEndTime, setPipelineEndTime] = useState<number | null>(null);
+  const [elapsedMs, setElapsedMs] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Live timer
+  useEffect(() => {
+    if (running && pipelineStartTime) {
+      timerRef.current = setInterval(() => {
+        setElapsedMs(Date.now() - pipelineStartTime);
+      }, 100);
+    } else if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [running, pipelineStartTime]);
+
+  const formatElapsed = (ms: number) => {
+    const sec = Math.floor(ms / 1000);
+    const min = Math.floor(sec / 60);
+    if (min === 0) return `${sec}s`;
+    return `${min}m ${sec % 60}s`;
+  };
+
+  const totalDurationMs = pipelineEndTime && pipelineStartTime ? pipelineEndTime - pipelineStartTime : elapsedMs;
+
   const selectedJobs = availableJobs.filter(j => selectedKeys.has(j.key));
   const totalImages = getTotalImageCount(selectedKeys);
   const doneImages = Object.values(jobs).reduce((s, j) => s + j.results.length, 0);
