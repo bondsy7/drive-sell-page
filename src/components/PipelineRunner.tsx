@@ -1,5 +1,6 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Timer } from 'lucide-react';
 import { Loader2, Check, AlertCircle, Zap, ArrowRight, ChevronDown, ChevronUp, Image, Images, RotateCcw, Eye, EyeOff } from 'lucide-react';
 import ImagePreviewLightbox from '@/components/ImagePreviewLightbox';
 import { Button } from '@/components/ui/button';
@@ -44,6 +45,16 @@ interface JobState {
   status: JobStatus;
   results: string[];
   error?: string;
+  startTime?: number;
+  endTime?: number;
+}
+
+interface JobDurationEntry {
+  key: string;
+  label: string;
+  duration_ms: number;
+  images: number;
+  status: string;
 }
 
 /* ─── Constants ─── */
@@ -168,6 +179,34 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [regeneratingIds, setRegeneratingIds] = useState<Set<string>>(new Set());
+
+  // Timing state
+  const [pipelineStartTime, setPipelineStartTime] = useState<number | null>(null);
+  const [pipelineEndTime, setPipelineEndTime] = useState<number | null>(null);
+  const [elapsedMs, setElapsedMs] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Live timer
+  useEffect(() => {
+    if (running && pipelineStartTime) {
+      timerRef.current = setInterval(() => {
+        setElapsedMs(Date.now() - pipelineStartTime);
+      }, 100);
+    } else if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [running, pipelineStartTime]);
+
+  const formatElapsed = (ms: number) => {
+    const sec = Math.floor(ms / 1000);
+    const min = Math.floor(sec / 60);
+    if (min === 0) return `${sec}s`;
+    return `${min}m ${sec % 60}s`;
+  };
+
+  const totalDurationMs = pipelineEndTime && pipelineStartTime ? pipelineEndTime - pipelineStartTime : elapsedMs;
 
   const selectedJobs = availableJobs.filter(j => selectedKeys.has(j.key));
   const totalImages = getTotalImageCount(selectedKeys);
@@ -337,12 +376,19 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
     if (!user) { toast.error('Bitte melde dich an.'); return; }
     if (selectedJobs.length === 0) { toast.error('Bitte wähle mindestens einen Job aus.'); return; }
 
+    const startTs = Date.now();
+    setPipelineStartTime(startTs);
+    setPipelineEndTime(null);
+    setElapsedMs(0);
     setRunning(true);
     const allResults: { key: string; base64: string; label: string; subIndex: number }[] = [];
 
+    // Per-job timing
+    const jobTimings: Record<string, { start: number; end?: number }> = {};
+
     // Initialize job states
     const initStates: Record<string, JobState> = {};
-    selectedJobs.forEach(j => { initStates[j.key] = { status: 'pending', results: [] }; });
+    selectedJobs.forEach(j => { initStates[j.key] = { status: 'pending', results: [], startTime: undefined, endTime: undefined }; });
     setJobs(initStates);
 
     // Build a flat task list: [{ job, promptIndex, prompt }]
@@ -359,9 +405,10 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
         const idx = taskPointer++;
         const task = taskQueue[idx];
 
-        // Mark job as running if first prompt
+        // Mark job as running if first prompt, track start time
         if (task.promptIndex === 0) {
-          setJobs(prev => ({ ...prev, [task.job.key]: { ...prev[task.job.key], status: 'running' } }));
+          jobTimings[task.job.key] = { start: Date.now() };
+          setJobs(prev => ({ ...prev, [task.job.key]: { ...prev[task.job.key], status: 'running', startTime: Date.now() } }));
         }
 
         try {
@@ -392,6 +439,8 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
         const completedForJob = allResults.filter(r => r.key === task.job.key).length;
         const errorsForJob = taskQueue.filter((t, ti) => t.job.key === task.job.key && ti < taskPointer).length - completedForJob;
         if (completedForJob + errorsForJob >= jobPrompts.length) {
+          if (jobTimings[task.job.key]) jobTimings[task.job.key].end = Date.now();
+          const endTime = Date.now();
           setJobs(prev => {
             const state = prev[task.job.key];
             return {
@@ -400,6 +449,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
                 ...state,
                 status: state.results.length > 0 ? 'done' : 'error',
                 error: state.results.length === 0 ? (state.error || 'Alle Bilder fehlgeschlagen') : state.error,
+                endTime,
               },
             };
           });
@@ -410,6 +460,10 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
     // Launch CONCURRENCY workers
     const workers = Array.from({ length: Math.min(CONCURRENCY, taskQueue.length) }, () => runTask());
     await Promise.all(workers);
+
+    const endTs = Date.now();
+    setPipelineEndTime(endTs);
+    setElapsedMs(endTs - startTs);
 
     // Save all results to gallery
     if (allResults.length > 0 && user) {
@@ -453,9 +507,47 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       }
     }
 
+    // Save timing log
+    try {
+      const jobDurations: JobDurationEntry[] = selectedJobs.map(j => {
+        const timing = jobTimings[j.key];
+        const dur = timing?.end && timing?.start ? timing.end - timing.start : 0;
+        const completed = allResults.filter(r => r.key === j.key).length;
+        return {
+          key: j.key,
+          label: j.labelDe,
+          duration_ms: dur,
+          images: completed,
+          status: completed > 0 ? 'done' : 'error',
+        };
+      });
+
+      const failedCount = selectedJobs.reduce((s, j) => {
+        const prompts = [j.prompt, ...(j.extraPrompts || [])];
+        const completed = allResults.filter(r => r.key === j.key).length;
+        return s + (prompts.length - completed);
+      }, 0);
+
+      await supabase.from('pipeline_timing_logs' as any).insert({
+        user_id: user.id,
+        project_id: savedProjectId || null,
+        model_tier: modelTier,
+        total_jobs: selectedJobs.length,
+        total_images: totalImages,
+        completed_images: allResults.length,
+        failed_images: failedCount,
+        total_duration_ms: endTs - startTs,
+        job_durations: jobDurations,
+        vehicle_description: vehicleDescription?.slice(0, 200) || null,
+        detected_brand: detectedBrand || null,
+      } as any);
+    } catch (e) {
+      console.error('Failed to save timing log:', e);
+    }
+
     setRunning(false);
     setFinished(true);
-  }, [inputImages, originalImages, vehicleDescription, remasterConfig, modelTier, user, savedProjectId, selectedJobs, generateOneImage, vin]);
+  }, [inputImages, originalImages, vehicleDescription, remasterConfig, modelTier, user, savedProjectId, selectedJobs, generateOneImage, vin, totalImages, detectedBrand]);
 
   /* ─── Credit pre-check before starting ─── */
   const handleStartClick = () => {
@@ -730,8 +822,14 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       {(running || finished) && (
         <div className="space-y-1.5 sm:space-y-2 px-1">
           <div className="flex justify-between text-[11px] sm:text-xs text-muted-foreground">
-            <span>{running ? 'Pipeline läuft… (4 parallel)' : `${doneImages} von ${totalImages} Bilder erstellt`}</span>
-            {running && <span>{doneImages}/{totalImages}</span>}
+            <span className="flex items-center gap-1.5">
+              {running ? 'Pipeline läuft… (4 parallel)' : `${doneImages} von ${totalImages} Bilder erstellt`}
+            </span>
+            <span className="flex items-center gap-1.5 font-mono">
+              <Timer className="w-3 h-3" />
+              {formatElapsed(totalDurationMs)}
+              {running && <span className="text-muted-foreground/60">· {doneImages}/{totalImages}</span>}
+            </span>
           </div>
           <Progress value={progressPercent} className="h-1.5" />
         </div>
@@ -741,8 +839,12 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       {finished && allResultImages.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between px-1">
-            <h3 className="text-sm font-semibold text-foreground">
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
               Ergebnisse ({allResultImages.length})
+              <Badge variant="outline" className="text-[10px] font-mono gap-1">
+                <Timer className="w-2.5 h-2.5" />
+                {formatElapsed(totalDurationMs)}
+              </Badge>
             </h3>
             <Button
               variant="ghost"

@@ -45,6 +45,7 @@ const AdminRevenue = lazy(() => import("./pages/admin/AdminRevenue"));
 const AdminStorage = lazy(() => import("./pages/admin/AdminStorage"));
 const AdminConversionFunnel = lazy(() => import("./pages/admin/AdminConversionFunnel"));
 const AdminTestDrives = lazy(() => import("./pages/admin/AdminTestDrives"));
+const AdminPipelineStats = lazy(() => import("./pages/admin/AdminPipelineStats"));
 import AdminRoute from "./components/AdminRoute";
 
 const queryClient = new QueryClient();
@@ -127,6 +128,7 @@ const App = () => (
                 <Route path="storage" element={<AdminStorage />} />
                 <Route path="conversion" element={<AdminConversionFunnel />} />
                 <Route path="test-drives" element={<AdminTestDrives />} />
+                <Route path="pipeline-stats" element={<AdminPipelineStats />} />
               </Route>
               <Route path="/architecture" element={<ProtectedRoute><AdminRoute><ArchitectureDoc /></AdminRoute></ProtectedRoute>} />
               <Route path="/sales-assistant/chat" element={<ProtectedRoute><ErrorBoundary moduleName="Sales Assistant"><SalesAssistant /></ErrorBoundary></ProtectedRoute>} />
