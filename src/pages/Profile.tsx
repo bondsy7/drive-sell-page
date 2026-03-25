@@ -421,24 +421,64 @@ const Profile = () => {
               <p className="text-xs text-muted-foreground -mt-2 mb-2">
                 Je nach Angebotstyp wird der passende Rechtstext angezeigt: Leasing-Text bei Leasing, Finanzierungs-Text bei Finanzierung, sonst der Standard-Text.
               </p>
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label>Leasing-Bank</Label>
-                  <Input value={profile.leasing_bank} onChange={e => update('leasing_bank', e.target.value)} placeholder="z.B. BMW Financial Services" />
+
+              {/* Leasing Banks */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-semibold">Leasing-Banken</Label>
+                  <Button variant="outline" size="sm" className="gap-1 h-7 text-xs" onClick={() => addBank('leasing')}>
+                    <Plus className="w-3 h-3" /> Bank hinzufügen
+                  </Button>
                 </div>
-                <div className="space-y-1.5">
-                  <Label>Finanzierungs-Bank</Label>
-                  <Input value={profile.financing_bank} onChange={e => update('financing_bank', e.target.value)} placeholder="z.B. Santander Consumer Bank" />
+                {banks.filter(b => b.bank_type === 'leasing').length === 0 && (
+                  <p className="text-xs text-muted-foreground italic">Noch keine Leasing-Bank angelegt.</p>
+                )}
+                {banks.filter(b => b.bank_type === 'leasing').map(bank => (
+                  <div key={bank.id} className="bg-muted/30 rounded-lg border border-border p-3 space-y-2 relative group">
+                    <button onClick={() => removeBank(bank.id)} className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive/80">
+                      <X className="w-4 h-4" />
+                    </button>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Bankname</Label>
+                      <Input value={bank.bank_name} onChange={e => updateBank(bank.id, 'bank_name', e.target.value)} placeholder="z.B. BMW Financial Services" className="h-8 text-sm" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Rechtstext</Label>
+                      <Textarea value={bank.legal_text} onChange={e => updateBank(bank.id, 'legal_text', e.target.value)} placeholder="Rechtstext für diese Leasing-Bank..." rows={3} className="text-sm" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Financing Banks */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-semibold">Finanzierungs-Banken</Label>
+                  <Button variant="outline" size="sm" className="gap-1 h-7 text-xs" onClick={() => addBank('financing')}>
+                    <Plus className="w-3 h-3" /> Bank hinzufügen
+                  </Button>
                 </div>
+                {banks.filter(b => b.bank_type === 'financing').length === 0 && (
+                  <p className="text-xs text-muted-foreground italic">Noch keine Finanzierungs-Bank angelegt.</p>
+                )}
+                {banks.filter(b => b.bank_type === 'financing').map(bank => (
+                  <div key={bank.id} className="bg-muted/30 rounded-lg border border-border p-3 space-y-2 relative group">
+                    <button onClick={() => removeBank(bank.id)} className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive/80">
+                      <X className="w-4 h-4" />
+                    </button>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Bankname</Label>
+                      <Input value={bank.bank_name} onChange={e => updateBank(bank.id, 'bank_name', e.target.value)} placeholder="z.B. Santander Consumer Bank" className="h-8 text-sm" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Rechtstext</Label>
+                      <Textarea value={bank.legal_text} onChange={e => updateBank(bank.id, 'legal_text', e.target.value)} placeholder="Rechtstext für diese Finanzierungs-Bank..." rows={3} className="text-sm" />
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="space-y-1.5">
-                <Label>Leasing-Rechtstext</Label>
-                <Textarea value={profile.leasing_legal_text} onChange={e => update('leasing_legal_text', e.target.value)} placeholder="Rechtstext für Leasing-Angebote..." rows={4} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Finanzierungs-Rechtstext</Label>
-                <Textarea value={profile.financing_legal_text} onChange={e => update('financing_legal_text', e.target.value)} placeholder="Rechtstext für Finanzierungs-Angebote..." rows={4} />
-              </div>
+
+              {/* Standard legal text (no + button) */}
               <div className="space-y-1.5">
                 <Label className="flex items-center gap-1.5"><FileText className="w-3.5 h-3.5" /> Standard-Rechtstext</Label>
                 <Textarea value={profile.default_legal_text} onChange={e => update('default_legal_text', e.target.value)} placeholder="Allgemeiner Rechtstext / Haftungsausschluss..." rows={4} />
