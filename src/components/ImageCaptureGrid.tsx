@@ -151,6 +151,8 @@ const EMPTY_CONSUMPTION: VehicleData['consumption'] = {
   consumptionCombinedDischarged: '',
   electricRange: '',
   consumptionElectric: '',
+  hsnTsn: '', electricMotorPower: '', electricMotorTorque: '', gearboxType: '',
+  topSpeed: '', acceleration: '', curbWeight: '', grossWeight: '', warranty: '', paintColor: '',
 };
 
 const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription, vehicleData, modelTier, projectId, onComplete, onVehicleDataChange, onBack, onPipelineComplete }) => {
