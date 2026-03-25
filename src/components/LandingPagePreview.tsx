@@ -102,6 +102,8 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
     co2CostMedium: '', co2CostLow: '', co2CostHigh: '', vehicleTax: '',
     isPluginHybrid: false, co2EmissionsDischarged: '', co2ClassDischarged: '',
     consumptionCombinedDischarged: '', electricRange: '', consumptionElectric: '',
+    hsnTsn: '', electricMotorPower: '', electricMotorTorque: '', gearboxType: '',
+    topSpeed: '', acceleration: '', curbWeight: '', grossWeight: '', warranty: '', paintColor: '',
   };
 
   const cat = (data.category || '').toLowerCase();
