@@ -229,11 +229,23 @@ const Dashboard = () => {
       <AppHeader />
       <main className="max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
         <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
-          {tabs.map(t => (
-            <Button key={t.key} variant={tab === t.key ? 'default' : 'outline'} size="sm" onClick={() => setTab(t.key)} className="whitespace-nowrap">
-              <t.icon className="w-4 h-4 mr-1.5" /> {t.label} ({t.count})
-            </Button>
-          ))}
+          {tabs.map(t => {
+            const isDisabled = disabledTabs.has(t.key);
+            return (
+              <Button
+                key={t.key}
+                variant={tab === t.key ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => !isDisabled && setTab(t.key)}
+                disabled={isDisabled}
+                className={`whitespace-nowrap ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <t.icon className="w-4 h-4 mr-1.5" />
+                {t.label} ({t.count})
+                {isDisabled && <Lock className="w-3 h-3 ml-1.5" />}
+              </Button>
+            );
+          })}
         </div>
         {renderTabContent()}
       </main>
