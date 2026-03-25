@@ -394,6 +394,10 @@ export default function AdminUsers() {
                         </AlertDialog>
                       )}
 
+                      <Button size="sm" variant="outline" className="h-7 px-2" title="Module verwalten" onClick={() => setModuleDialogUser({ id: u.id, email: u.email || '' })}>
+                        <Settings2 className="w-3.5 h-3.5" />
+                      </Button>
+
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button size="sm" variant="outline" className="h-7 px-2 text-destructive hover:text-destructive" title="Nutzer löschen">
