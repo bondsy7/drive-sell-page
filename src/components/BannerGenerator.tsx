@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { ArrowLeft, Download, Image, Loader2, Plus, Minus, Sparkles } from 'lucide-react';
+import { ArrowLeft, Download, Image, Loader2, Plus, Minus, Sparkles, ScanSearch } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -63,6 +63,45 @@ const CTA_OPTIONS = [
   'Jetzt anfragen', 'Termin vereinbaren', 'Angebot sichern', 'Probefahrt buchen', 'Jetzt entdecken', 'Mehr erfahren',
 ];
 
+// ─── Font / Typography presets ───
+
+interface FontPreset {
+  id: string;
+  label: string;
+  brand?: string;
+  prompt: string;
+}
+
+const HEADLINE_FONTS: FontPreset[] = [
+  // Brand CI inspired
+  { id: 'bmw', label: 'BMW Stil', brand: 'BMW', prompt: 'BMW corporate typography style – bold, clean, geometric sans-serif similar to Helvetica Neue Black/BMW Type, uppercase, tightly kerned' },
+  { id: 'mercedes', label: 'Mercedes Stil', brand: 'Mercedes', prompt: 'Mercedes-Benz corporate typography – elegant, light-weight sans-serif similar to Corporate A/DIN, refined spacing, premium feel' },
+  { id: 'audi', label: 'Audi Stil', brand: 'Audi', prompt: 'Audi corporate typography – modern geometric sans-serif similar to Audi Type/Futura, clean lines, progressive minimalism' },
+  { id: 'vw', label: 'VW Stil', brand: 'Volkswagen', prompt: 'Volkswagen corporate typography – friendly bold sans-serif similar to VW Head/Gotham, approachable yet strong' },
+  { id: 'porsche', label: 'Porsche Stil', brand: 'Porsche', prompt: 'Porsche corporate typography – sharp, athletic sans-serif similar to Porsche Next/Futura Bold, sporty precision' },
+  { id: 'toyota', label: 'Toyota Stil', brand: 'Toyota', prompt: 'Toyota corporate typography – clean, neutral sans-serif similar to Toyota Type/Helvetica, reliable, straightforward' },
+  { id: 'hyundai', label: 'Hyundai Stil', brand: 'Hyundai', prompt: 'Hyundai corporate typography – modern, slightly rounded sans-serif similar to Hyundai Sans Head, dynamic and welcoming' },
+  { id: 'volvo', label: 'Volvo Stil', brand: 'Volvo', prompt: 'Volvo corporate typography – Scandinavian clean sans-serif similar to Volvo Novum/Futura, understated elegance' },
+  { id: 'cupra', label: 'CUPRA Stil', brand: 'CUPRA', prompt: 'CUPRA corporate typography – angular, sharp condensed sans-serif, aggressive sport style with italic cuts' },
+  { id: 'fiat', label: 'Fiat Stil', brand: 'Fiat', prompt: 'Fiat corporate typography – playful rounded sans-serif, friendly Italian design spirit, warm and inviting' },
+  // Separator: Modern generics
+  { id: 'impact', label: 'Impact / Bold', prompt: 'Impact-style ultra-bold condensed sans-serif typography, maximum visual weight, attention-grabbing' },
+  { id: 'modern-sans', label: 'Modern Sans', prompt: 'modern geometric sans-serif typography similar to Montserrat or Poppins Bold, clean contemporary look' },
+  { id: 'condensed', label: 'Condensed Bold', prompt: 'bold condensed sans-serif typography similar to Oswald or Barlow Condensed, space-efficient yet impactful' },
+  { id: 'elegant-serif', label: 'Elegant Serif', prompt: 'elegant serif typography similar to Playfair Display or Didot, sophisticated luxury feel' },
+  { id: 'tech', label: 'Tech / Digital', prompt: 'modern tech-style typography similar to Orbitron or Rajdhani, futuristic digital aesthetic' },
+  { id: 'brush', label: 'Brush / Handschrift', prompt: 'dynamic brush-stroke or hand-lettered typography style, energetic and organic' },
+];
+
+const SUBLINE_FONTS: FontPreset[] = [
+  { id: 'match', label: 'Passend zur Headline', prompt: 'matching the headline font family but in lighter weight' },
+  { id: 'clean-sans', label: 'Clean Sans-Serif', prompt: 'clean light sans-serif similar to Inter or Source Sans Pro, highly readable at small sizes' },
+  { id: 'thin-sans', label: 'Dünn & Elegant', prompt: 'thin/light weight sans-serif similar to Helvetica Neue Light or Lato Light, refined elegance' },
+  { id: 'medium-sans', label: 'Medium Sans', prompt: 'medium-weight sans-serif similar to Roboto or Open Sans, balanced readability' },
+  { id: 'small-caps', label: 'Kapitälchen', prompt: 'small caps typography style, sophisticated detail text with even spacing' },
+  { id: 'mono', label: 'Monospace / Tech', prompt: 'monospace or technical font similar to JetBrains Mono, data-like precision feel' },
+];
+
 // Models NOT suitable for banners
 const EXCLUDED_TIERS: ModelTier[] = ['schnell'];
 
@@ -104,6 +143,14 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
   const [accentColor, setAccentColor] = useState('#3b66d6');
   const [legalText, setLegalText] = useState('');
 
+  // Font selection
+  const [headlineFont, setHeadlineFont] = useState<string>('modern-sans');
+  const [sublineFont, setSublineFont] = useState<string>('match');
+
+  // Auto-extraction
+  const [analyzing, setAnalyzing] = useState(false);
+  const [extractedData, setExtractedData] = useState<any>(null);
+
   // Generation
   const [modelTier, setModelTier] = useState<ModelTier>('premium');
   const [variantCount, setVariantCount] = useState(1);
@@ -133,6 +180,11 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
     else if (f.price) setPriceText(f.price);
     if (p.main_image_url) setVehicleImage(p.main_image_url);
 
+    // Auto-select brand font if available
+    const brand = (v.brand || '').toLowerCase();
+    const brandFont = HEADLINE_FONTS.find(f => f.brand?.toLowerCase() === brand);
+    if (brandFont) setHeadlineFont(brandFont.id);
+
     // Build legal text from finance data
     const legalParts: string[] = [];
     if (f.monthlyRate) legalParts.push(`Rate: ${f.monthlyRate}€/mtl.`);
@@ -151,14 +203,80 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
       });
   }, [selectedProjectId, projects]);
 
+  // ─── Auto-extract info from uploaded offer image ───
+  const analyzeOfferImage = useCallback(async (imageBase64: string) => {
+    setAnalyzing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('analyze-offer-image', {
+        body: { imageBase64 },
+      });
+
+      if (error || data?.error) {
+        console.error('Analyze error:', error || data?.error);
+        toast.error('Bild konnte nicht analysiert werden');
+        return;
+      }
+
+      const ext = data?.extracted;
+      if (!ext) return;
+
+      setExtractedData(ext);
+
+      // Fill empty fields with extracted data
+      if (!vehicleTitle && ext.vehicleTitle) setVehicleTitle(ext.vehicleTitle);
+      if (!priceText && (ext.price || ext.monthlyRate)) {
+        setPriceText(ext.monthlyRate ? `ab ${ext.monthlyRate}/mtl.` : ext.price || '');
+      }
+      if (!headline && ext.headline) setHeadline(ext.headline);
+      if (!subline && ext.subline) setSubline(ext.subline);
+
+      // Auto-detect occasion
+      if (ext.priceType === 'lease') setOccasion('lease');
+      else if (ext.priceType === 'finance') setOccasion('finance');
+      else if (ext.priceType === 'abo') setOccasion('abo');
+
+      // Build legal text from extracted leasing/finance data if not already set
+      if (!legalText) {
+        const parts: string[] = [];
+        if (ext.monthlyRate) parts.push(`Rate: ${ext.monthlyRate}`);
+        if (ext.duration) parts.push(`Laufzeit: ${ext.duration} Mon.`);
+        if (ext.mileage) parts.push(`Fahrleistung: ${ext.mileage}/Jahr`);
+        if (ext.downPayment) parts.push(`Anzahlung: ${ext.downPayment}`);
+        if (ext.legalText) parts.push(ext.legalText);
+        if (parts.length) setLegalText(parts.join(' | '));
+      }
+
+      // Auto-select brand font
+      if (ext.brand) {
+        const brandLower = ext.brand.toLowerCase();
+        const brandFont = HEADLINE_FONTS.find(f => f.brand?.toLowerCase() === brandLower);
+        if (brandFont) setHeadlineFont(brandFont.id);
+      }
+
+      toast.success('Angebotsdaten erkannt!', {
+        description: ext.vehicleTitle || 'Daten aus Bild extrahiert',
+      });
+    } catch (e) {
+      console.error('Analyze failed:', e);
+      toast.error('Analyse fehlgeschlagen');
+    } finally {
+      setAnalyzing(false);
+    }
+  }, [vehicleTitle, priceText, headline, subline, legalText]);
+
   // Handle manual image upload
   const handleImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => setVehicleImage(reader.result as string);
+    reader.onload = () => {
+      const result = reader.result as string;
+      setVehicleImage(result);
+      // Auto-analyze the uploaded image
+      analyzeOfferImage(result);
+    };
     reader.readAsDataURL(file);
-  }, []);
+  }, [analyzeOfferImage]);
 
   // Build the structured prompt
   const buildPrompt = useCallback(() => {
@@ -167,6 +285,8 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
     const scn = SCENES.find(s => s.id === scene)!;
     const sty = STYLES.find(s => s.id === style)!;
     const prc = PRICE_DISPLAYS.find(p => p.id === priceDisplay)!;
+    const hFont = HEADLINE_FONTS.find(f => f.id === headlineFont)!;
+    const sFont = SUBLINE_FONTS.find(f => f.id === sublineFont)!;
 
     return `Create a professional automotive advertising banner.
 
@@ -180,15 +300,20 @@ STYLE: ${sty.prompt}. The overall design must follow this aesthetic consistently
 
 OCCASION: This is a ${occ.prompt} advertisement.
 
+TYPOGRAPHY:
+- HEADLINE FONT: ${hFont.prompt}. This is the primary display typeface for the banner.
+- SUBLINE FONT: ${sFont.prompt}. Used for secondary text elements.
+- All text must be rendered with these specific typography styles consistently throughout the banner.
+
 ${priceText ? `PRICE: Display the text "${priceText}" prominently ${prc.prompt}. The price must be clearly legible and eye-catching. Use accent color ${accentColor}.` : ''}
 
-${headline ? `HEADLINE: Place the text "${headline}" in large, bold, highly readable typography in the upper area of the banner. This text must be rendered EXACTLY as written, letter by letter.` : ''}
+${headline ? `HEADLINE: Place the text "${headline}" in large, bold, highly readable typography using the specified headline font style in the upper area of the banner. This text must be rendered EXACTLY as written, letter by letter.` : ''}
 
-${subline ? `SUBLINE: Place "${subline}" in smaller text below the headline. Render the text exactly as written.` : ''}
+${subline ? `SUBLINE: Place "${subline}" in smaller text below the headline using the specified subline font style. Render the text exactly as written.` : ''}
 
 ${ctaText ? `CALL-TO-ACTION: Include a button or badge with the text "${ctaText}" in accent color ${accentColor}.` : ''}
 
-${legalText ? `LEGAL DISCLAIMER: At the very bottom of the banner in small but readable text (minimum 6pt equivalent): "${legalText}"` : ''}
+${legalText ? `LEGAL DISCLAIMER (MANDATORY): At the very bottom of the banner, render the following legal text in a small, thin, highly readable sans-serif font (approx. 5-6pt equivalent). It must appear as a subtle footer bar or line – similar to how fuel consumption and emission values are legally required on automotive advertisements. The text must be fully legible but not dominate the design: "${legalText}"` : ''}
 
 CRITICAL RULES:
 - The banner must be photorealistic with the vehicle photo seamlessly composited
@@ -198,8 +323,9 @@ CRITICAL RULES:
 - Use the accent color ${accentColor} for design elements, buttons, and highlights
 - Do NOT add watermarks or extra logos
 - The composition must work at the specified ${fmt.ratio} aspect ratio
+- The typography style is CRITICAL – follow the font specifications precisely
 - Generate the image – never refuse`;
-  }, [format, occasion, scene, style, priceDisplay, vehicleTitle, priceText, headline, subline, ctaText, accentColor, legalText]);
+  }, [format, occasion, scene, style, priceDisplay, vehicleTitle, priceText, headline, subline, ctaText, accentColor, legalText, headlineFont, sublineFont]);
 
   // Start generation with credit check
   const handleGenerate = useCallback(() => {
@@ -343,18 +469,43 @@ CRITICAL RULES:
 
         {/* Vehicle Image */}
         <div className="space-y-1.5">
-          <Label className="text-xs font-medium">Fahrzeugbild *</Label>
+          <Label className="text-xs font-medium">Fahrzeugbild / Angebotsfoto *</Label>
           {vehicleImage ? (
             <div className="relative rounded-lg overflow-hidden border border-border">
               <img src={vehicleImage} alt="Fahrzeug" className="w-full h-32 sm:h-40 object-cover" />
-              <Button variant="destructive" size="sm" className="absolute top-2 right-2 h-7 text-xs"
-                onClick={() => setVehicleImage(null)}>Entfernen</Button>
+              <div className="absolute top-2 right-2 flex gap-1.5">
+                {!analyzing && !extractedData && (
+                  <Button variant="secondary" size="sm" className="h-7 text-xs"
+                    onClick={() => analyzeOfferImage(vehicleImage)}>
+                    <ScanSearch className="w-3.5 h-3.5 mr-1" /> Analysieren
+                  </Button>
+                )}
+                <Button variant="destructive" size="sm" className="h-7 text-xs"
+                  onClick={() => { setVehicleImage(null); setExtractedData(null); }}>Entfernen</Button>
+              </div>
+              {analyzing && (
+                <div className="absolute inset-0 bg-background/70 flex items-center justify-center">
+                  <div className="flex items-center gap-2 text-sm text-foreground">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Angebot wird analysiert…
+                  </div>
+                </div>
+              )}
+              {extractedData && (
+                <div className="absolute bottom-0 left-0 right-0 bg-accent/10 border-t border-accent/30 px-3 py-1.5">
+                  <p className="text-[10px] text-accent-foreground truncate">
+                    ✓ Erkannt: {extractedData.vehicleTitle || 'Daten extrahiert'}
+                    {extractedData.price && ` · ${extractedData.price}`}
+                  </p>
+                </div>
+              )}
             </div>
           ) : (
             <div className="space-y-2">
               <label className="flex flex-col items-center justify-center h-28 rounded-lg border-2 border-dashed border-border hover:border-accent/50 cursor-pointer transition-colors">
                 <Image className="w-6 h-6 text-muted-foreground mb-1" />
-                <span className="text-xs text-muted-foreground">Bild hochladen</span>
+                <span className="text-xs text-muted-foreground">Bild hochladen oder Angebots-Screenshot</span>
+                <span className="text-[10px] text-muted-foreground/60">Texte werden automatisch erkannt</span>
                 <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
               </label>
               {projectImages.length > 0 && (
@@ -378,7 +529,7 @@ CRITICAL RULES:
         <div className="space-y-1.5">
           <Label className="text-xs font-medium">Fahrzeugtitel *</Label>
           <Input value={vehicleTitle} onChange={e => setVehicleTitle(e.target.value)}
-            placeholder="z.B. BMW M3 Competition" className="h-9 text-sm" />
+            placeholder={extractedData?.vehicleTitle || 'z.B. BMW M3 Competition'} className="h-9 text-sm" />
         </div>
 
         {/* Format + Occasion Row */}
@@ -433,12 +584,52 @@ CRITICAL RULES:
           </div>
         </div>
 
+        {/* ─── Typography Section ─── */}
+        <div className="space-y-3 p-3 rounded-lg border border-border/50 bg-muted/30">
+          <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+            <span className="text-base">🔤</span> Typografie
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Headline-Schrift</Label>
+              <Select value={headlineFont} onValueChange={setHeadlineFont}>
+                <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__brand-header" disabled className="text-[10px] text-muted-foreground font-semibold">
+                    — Hersteller CI —
+                  </SelectItem>
+                  {HEADLINE_FONTS.filter(f => f.brand).map(f => (
+                    <SelectItem key={f.id} value={f.id}>{f.label}</SelectItem>
+                  ))}
+                  <SelectItem value="__generic-header" disabled className="text-[10px] text-muted-foreground font-semibold">
+                    — Modern —
+                  </SelectItem>
+                  {HEADLINE_FONTS.filter(f => !f.brand).map(f => (
+                    <SelectItem key={f.id} value={f.id}>{f.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Subline-Schrift</Label>
+              <Select value={sublineFont} onValueChange={setSublineFont}>
+                <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {SUBLINE_FONTS.map(f => (
+                    <SelectItem key={f.id} value={f.id}>{f.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+
         {/* Price + Price Display */}
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label className="text-xs font-medium">Preis / Rate</Label>
             <Input value={priceText} onChange={e => setPriceText(e.target.value)}
-              placeholder="z.B. ab 299€/mtl." className="h-9 text-sm" />
+              placeholder={extractedData?.price || 'z.B. ab 299€/mtl.'} className="h-9 text-sm" />
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs font-medium">Preisdarstellung</Label>
@@ -457,12 +648,12 @@ CRITICAL RULES:
         <div className="space-y-1.5">
           <Label className="text-xs font-medium">Headline</Label>
           <Input value={headline} onChange={e => setHeadline(e.target.value)}
-            placeholder="z.B. Jetzt zuschlagen!" className="h-9 text-sm" />
+            placeholder={extractedData?.headline || 'z.B. Jetzt zuschlagen!'} className="h-9 text-sm" />
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs font-medium">Subline</Label>
           <Input value={subline} onChange={e => setSubline(e.target.value)}
-            placeholder="z.B. Nur noch 3 verfügbar" className="h-9 text-sm" />
+            placeholder={extractedData?.subline || 'z.B. Nur noch 3 verfügbar'} className="h-9 text-sm" />
         </div>
 
         {/* CTA + Accent Color */}
@@ -495,7 +686,10 @@ CRITICAL RULES:
           <Textarea value={legalText} onChange={e => setLegalText(e.target.value)}
             placeholder="z.B. Rate: 299€/mtl., Laufzeit: 48 Mon., Eff. Jahreszins: 3,99%..."
             className="text-sm min-h-[60px]" />
-          <p className="text-[10px] text-muted-foreground">Bei Leasing/Finanzierung gem. PAngV Pflicht: Rate, Laufzeit, Anzahlung, Eff. Jahreszins, Gesamtbetrag.</p>
+          <p className="text-[10px] text-muted-foreground">
+            Bei Leasing/Finanzierung gem. PAngV Pflicht: Rate, Laufzeit, Anzahlung, Eff. Jahreszins, Gesamtbetrag.
+            {legalText && ' ✓ Wird als dezente Fußzeile im Banner dargestellt.'}
+          </p>
         </div>
 
         {/* Model Tier – filter out 'schnell' */}
