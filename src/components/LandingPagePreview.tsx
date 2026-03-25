@@ -313,6 +313,7 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
           updatePower, updateFuelType, onDataChange,
           recalculateRate, calculateCosts, costCalculating, costMissingFields,
           addFeature, updateFeature, removeFeature, vinLookup,
+          dealerBanks,
         };
         switch (selectedTemplate) {
           case 'autohaus': return <AutohausEditor {...editorProps} />;
