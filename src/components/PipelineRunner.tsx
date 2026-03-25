@@ -27,6 +27,7 @@ import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 interface PipelineRunnerProps {
   inputImages: string[];
   originalImages?: string[];
+  additionalImages?: string[];
   vehicleDescription: string;
   vehicleBrand?: string;
   remasterConfig: RemasterConfig;
@@ -53,6 +54,7 @@ const CREDIT_COST_PER_IMAGE = 2;
 const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   inputImages,
   originalImages,
+  additionalImages,
   vehicleDescription,
   vehicleBrand,
   remasterConfig,
@@ -256,9 +258,13 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
     const baseContext = buildMasterPrompt(remasterConfig, vehicleDescription);
     const fullPrompt = `${baseContext}\n\n--- PERSPECTIVE INSTRUCTION ---\n${prompt}`;
 
+    // Merge reference slices with additional detail images
+    const refSlice = referenceImages.slice(1);
+    const allAdditional = [...refSlice, ...(additionalImages || [])];
+
     const { data, error } = await invokeRemasterVehicleImage({
       imageBase64: referenceImages[0],
-      additionalImages: referenceImages.slice(1),
+      additionalImages: allAdditional.length > 0 ? allAdditional : undefined,
       vehicleDescription,
       modelTier,
       dynamicPrompt: fullPrompt,
@@ -274,7 +280,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       return { base64: null, error: data?.error || error?.message || 'Generierung fehlgeschlagen' };
     }
     return { base64: data.imageBase64 };
-  }, [inputImages, originalImages, vehicleDescription, remasterConfig, modelTier, resolvedManufacturerLogoUrl]);
+  }, [inputImages, originalImages, additionalImages, vehicleDescription, remasterConfig, modelTier, resolvedManufacturerLogoUrl]);
 
   /* ─── Retry a single failed job ─── */
   const retryJob = useCallback(async (jobKey: string) => {
