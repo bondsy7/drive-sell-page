@@ -258,7 +258,7 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
     .desc-text{font-size:.875rem;color:#4b5563;line-height:1.7;white-space:pre-line}
 
     /* EnVKV Pflichtangaben box */
-    .envkv-box{margin-top:1.25rem;padding:1rem 1.25rem;background:#f0f4fa;border:1px solid #c5d3e8;border-radius:8px;font-size:.78rem;color:#1a2e5a;line-height:1.65}
+    .envkv-box{margin-top:1rem;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:.75rem;font-size:.72rem;color:#1e40af;line-height:1.6}
     .envkv-title{font-weight:700;margin-bottom:.4rem;font-size:.82rem}
 
     /* Legal */
