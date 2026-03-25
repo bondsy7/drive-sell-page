@@ -81,10 +81,12 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
   updatePower, updateFuelType, onDataChange,
   recalculateRate, calculateCosts, costCalculating, costMissingFields,
   addFeature, updateFeature, removeFeature, vinLookup,
+  dealerBanks = [],
 }) => {
   const [selectedImage, setSelectedImage] = useState(0);
   const cat = category.toLowerCase();
   const isLeasing = cat.includes('leasing');
+  const relevantBanks = dealerBanks.filter(b => b.bank_type === (isLeasing ? 'leasing' : 'financing'));
 
   return (
     <div className="flex gap-6 items-start w-full">
