@@ -822,8 +822,14 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       {(running || finished) && (
         <div className="space-y-1.5 sm:space-y-2 px-1">
           <div className="flex justify-between text-[11px] sm:text-xs text-muted-foreground">
-            <span>{running ? 'Pipeline läuft… (4 parallel)' : `${doneImages} von ${totalImages} Bilder erstellt`}</span>
-            {running && <span>{doneImages}/{totalImages}</span>}
+            <span className="flex items-center gap-1.5">
+              {running ? 'Pipeline läuft… (4 parallel)' : `${doneImages} von ${totalImages} Bilder erstellt`}
+            </span>
+            <span className="flex items-center gap-1.5 font-mono">
+              <Timer className="w-3 h-3" />
+              {formatElapsed(totalDurationMs)}
+              {running && <span className="text-muted-foreground/60">· {doneImages}/{totalImages}</span>}
+            </span>
           </div>
           <Progress value={progressPercent} className="h-1.5" />
         </div>
@@ -833,8 +839,12 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       {finished && allResultImages.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between px-1">
-            <h3 className="text-sm font-semibold text-foreground">
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
               Ergebnisse ({allResultImages.length})
+              <Badge variant="outline" className="text-[10px] font-mono gap-1">
+                <Timer className="w-2.5 h-2.5" />
+                {formatElapsed(totalDurationMs)}
+              </Badge>
             </h3>
             <Button
               variant="ghost"
