@@ -65,6 +65,7 @@ export default function AdminUsers() {
   const [loading, setLoading] = useState(true);
   const [adjusting, setAdjusting] = useState<string | null>(null);
   const [adjustAmount, setAdjustAmount] = useState('');
+  const [moduleDialogUser, setModuleDialogUser] = useState<{ id: string; email: string } | null>(null);
 
   useEffect(() => { loadUsers(); }, []);
 
