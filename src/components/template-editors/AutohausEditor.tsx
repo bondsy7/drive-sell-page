@@ -331,11 +331,6 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
               </div>
             </AccordionTrigger>
             <AccordionContent className="pb-5 space-y-5">
-              <div className="flex items-center gap-2 mb-1">
-                <OrangeButton onClick={recalculateRate}>
-                  <Pencil className="w-3 h-3" /> Werte anklicken
-                </OrangeButton>
-              </div>
 
               {/* Rate highlight card */}
               {!isBuyCategory && data.finance.monthlyRate && (
@@ -474,9 +469,6 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
             <p className="text-xs text-muted-foreground mt-1">
               Fahrzeugpreis: <EditableField value={data.finance.totalPrice} onChange={(v) => updateFinance('totalPrice', v)} className="text-xs text-muted-foreground inline" suffix="€ inkl. MwSt." />
             </p>
-            <OrangeButton className="mt-3" onClick={recalculateRate}>
-              <Pencil className="w-3 h-3" /> Werte anklicken
-            </OrangeButton>
           </div>
 
           {/* Specs grid */}
