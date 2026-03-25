@@ -901,42 +901,68 @@ const channel = supabase
 
 ### 9.1 Einkaufskosten (EK) pro KI-Aktion
 
-Die tatsächlichen API-Kosten, die **pro Aktion anfallen** (Kosten an Google/OpenAI):
+Die tatsächlichen API-Kosten, die **pro Aktion anfallen** (Kosten an Google/OpenAI, Stand März 2026):
 
 | Aktion | EK pro Aufruf (ca.) | API-Anbieter | Berechnung |
 |---|---|---|---|
-| **PDF-Analyse** (Gemini 2.5 Flash) | ~0,002–0,01 € | Google | ~2.000 Input-Token + 1.000 Output-Token |
+| **PDF-Analyse** (Gemini 2.5 Flash) | ~0,002–0,01 € | Google | ~2.000 Input + 1.000 Output @ $0.30/$2.50 per 1M |
 | **VIN-OCR** (Gemini 2.5 Flash) | ~0,001–0,005 € | Google | Bild + kurze Antwort |
 | **Marken-Erkennung** (Gemini 2.5 Flash) | ~0,001–0,005 € | Google | Bild + JSON (kurz) |
-| **Bildgenerierung (schnell)** | ~0,01–0,03 € | Google Gemini | Flash Image, 1 Bild |
-| **Bildgenerierung (qualitaet)** | ~0,04–0,08 € | Google Gemini | Pro Image, 1 Bild |
-| **Bildgenerierung (turbo)** | ~0,02–0,05 € | Google Gemini | Flash Image 3.1, 1 Bild |
-| **Bildgenerierung (premium)** | ~0,04–0,08 € | OpenAI | gpt-image-1, standard quality |
-| **Bildgenerierung (ultra)** | ~0,08–0,16 € | OpenAI | gpt-image-1, high quality, HD |
-| **Bild-Remastering** | ~0,04–0,16 € | Google/OpenAI | Abhängig vom Tier, wie oben |
-| **Video-Generierung** (Veo 3.1) | ~0,10–0,50 € | Google | Stark modellabhängig |
+| **Bildgenerierung (schnell)** | **~0,036 €** | Google | gemini-2.5-flash-image, $0.039/Bild (1024px) |
+| **Bildgenerierung (qualitaet)** | **~0,042–0,062 €** | Google | gemini-3.1-flash-image, $0.045–0.067/Bild |
+| **Bildgenerierung (turbo)** | **~0,042–0,062 €** | Google | gemini-3.1-flash-image, $0.045–0.067/Bild |
+| **Bildgenerierung (premium)** | **~0,124 €** | Google | gemini-3-pro-image, $0.134/Bild (1K/2K) |
+| **Bildgenerierung (ultra)** | **~0,08–0,16 €** | OpenAI | gpt-image-1, $10/$40 per 1M Tokens (HD) |
+| **Bild-Remastering** | ~0,036–0,16 € | Google/OpenAI | Abhängig vom Tier, wie oben |
+| **Video-Generierung** (Veo 3.1 Fast) | **~1,10 €** | Google | $0.15/s × 8s = $1.20 |
+| **Video-Generierung** (Veo 3.1 Standard) | **~1,48 €** | Google | $0.20/s × 8s = $1.60 (ohne Audio) |
+| **Video-Generierung** (Veo 3.1 Std+Audio) | **~2,95 €** | Google | $0.40/s × 8s = $3.20 (mit Audio) |
 | **Landing Page** | ~0,10–0,25 € | Google | Text-Generierung + 3-6 Bilder |
-| **360° Spin** (36 Frames) | ~1,50–3,00 € | Google | 9 Batches × 4 Bilder (Gemini Pro) |
+| **360° Spin Image** (36 Frames, Flash) | **~1,30 €** | Google | 36 × $0.039 = $1.40 (gemini-2.5-flash-image) |
+| **360° Spin Image** (36 Frames, Pro) | **~4,50 €** | Google | 36 × $0.134 = $4.82 (gemini-3-pro-image) |
+| **360° Spin Video** (Veo) | **~1,10–2,95 €** | Google | 1 Video × Veo-Preis (siehe oben) |
 | **Sales-Antwort** | ~0,005–0,02 € | Google | Text-Generierung + RAG Lookup |
 | **VIN-Lookup** | ~0,02 € pro Abfrage | OutVin | Fester Preis pro API-Call |
+
+**OpenAI Bildmodelle (Referenz, nicht alle im Einsatz):**
+| Modell | Input/1M Tokens | Output/1M Tokens | Status |
+|---|---|---|---|
+| gpt-image-1 | $10.00 (Image) / $5.00 (Text) | $40.00 (Image) | ✅ Im Einsatz (Ultra) |
+| gpt-image-1-mini | $2.50 (Image) / $2.00 (Text) | $8.00 (Image) | ❌ Nicht im Einsatz |
+| gpt-image-1.5 | $8.00 (Image) / $5.00 (Text) | $32.00 (Image) | ❌ Nicht im Einsatz |
+
+**OpenAI Videomodelle (Referenz, nicht im Einsatz):**
+| Modell | Auflösung | Preis/Sekunde | 8s Video |
+|---|---|---|---|
+| sora-2 | 720p | $0.10 | $0.80 |
+| sora-2-pro | 720p | $0.30 | $2.40 |
+| sora-2-pro | 1080p | $0.70 | $5.60 |
 
 ### 9.2 Verkaufspreis (VK) & Marge
 
 | Aktion | Credits | Credit-Wert (VK) | EK (Mitte) | Marge | Marge % |
 |---|---|---|---|---|---|
 | PDF-Analyse | 1 | 0,50 € | 0,006 € | 0,494 € | **98,8%** |
-| Bildgen. (schnell) | 3 | 1,50 € | 0,02 € | 1,48 € | **98,7%** |
-| Bildgen. (qualitaet) | 5 | 2,50 € | 0,06 € | 2,44 € | **97,6%** |
-| Bildgen. (premium) | 8 | 4,00 € | 0,06 € | 3,94 € | **98,5%** |
+| Bildgen. (schnell) | 3 | 1,50 € | 0,036 € | 1,464 € | **97,6%** |
+| Bildgen. (qualität) | 5 | 2,50 € | 0,052 € | 2,448 € | **97,9%** |
+| Bildgen. (turbo) | 6 | 3,00 € | 0,052 € | 2,948 € | **98,3%** |
+| Bildgen. (premium) | 8 | 4,00 € | 0,124 € | 3,876 € | **96,9%** |
 | Bildgen. (ultra) | 10 | 5,00 € | 0,12 € | 4,88 € | **97,6%** |
-| Video | 10 | 5,00 € | 0,30 € | 4,70 € | **94,0%** |
+| Video (Veo Fast) | 10 | 5,00 € | 1,10 € | 3,90 € | **78,0%** |
+| Video (Veo Standard) | 15 | 7,50 € | 1,48 € | 6,02 € | **80,3%** |
+| Video (Veo Std+Audio) | 20 | 10,00 € | 2,95 € | 7,05 € | **70,5%** |
 | Landing Page | 3 | 1,50 € | 0,175 € | 1,325 € | **88,3%** |
-| 360° Spin | 15* | 7,50 € | 2,25 € | 5,25 € | **70,0%** |
+| 360° Spin Image (Flash) | 20 | 10,00 € | 1,30 € | 8,70 € | **87,0%** |
+| 360° Spin Image (Pro) | 30 | 15,00 € | 4,50 € | 10,50 € | **70,0%** |
+| 360° Spin Video | 10 | 5,00 € | 1,10 € | 3,90 € | **78,0%** |
 | Sales-Antwort | 1 | 0,50 € | 0,013 € | 0,487 € | **97,5%** |
 
 *Preise basieren auf 1 Credit ≈ 0,50 € (Mittelwert: 10 Credits = 5,00 €)*
 
-**Wichtig:** Die 360°-Spin-Generierung hat die niedrigste Marge (70%), da 36 Bildgenerierungen nötig sind. Eine Preisanpassung (15→20 Credits) oder Batch-Optimierung wäre sinnvoll.
+**Empfohlene Preisanpassungen:**
+- **Video**: Mindestens 10 Credits (Veo Fast), 15 Credits (Standard), 20 Credits (mit Audio) → Marge 70–78%
+- **360° Spin Image**: Von 15 auf **20 Credits** (Flash) bzw. **30 Credits** (Pro) anheben → Marge 70–87%
+- **gpt-image-1-mini** als günstigeres Turbo-Tier evaluieren (60-75% günstiger als gpt-image-1)
 
 ### 9.3 Credit-Pakete & Umsatzberechnung
 
