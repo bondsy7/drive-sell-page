@@ -1,237 +1,314 @@
 import { VehicleData } from "@/types/vehicle";
-import { getCO2LabelHTML, getGalleryHTML, getConsumptionData, buildConsumptionRows, buildDetailedConsumption, buildCostRows, buildFinanceItems, buildFeatures, buildSocialLinksHTML, buildWhatsAppButtonHTML, buildLegalTextHTML, buildDealerAddressHTML, buildDealerFooterHTML, buildWebsiteLinkHTML, getFinanceSectionTitle, buildVinHTML } from "./shared";
+import { getCO2LabelHTML, getConsumptionData, buildConsumptionRows, buildDetailedConsumption, buildCostRows, buildFinanceItems, buildFeatures, buildSocialLinksHTML, buildWhatsAppButtonHTML, buildLegalTextHTML, buildDealerAddressHTML, buildDealerFooterHTML, buildWebsiteLinkHTML, getFinanceSectionTitle, calculateLeasingFactor } from "./shared";
 
 export function generateAutohausHTML(data: VehicleData, imageBase64: string | null, galleryImages: string[] = []): string {
   const consumption = getConsumptionData(data);
   const allImages = [imageBase64, ...galleryImages].filter(Boolean) as string[];
-  const features = buildFeatures(data, 'ah-tag');
-  const financeItems = buildFinanceItems(data, 'ah-fin-item', 'ah-fin-label', 'ah-fin-value');
-  const consumptionRows = buildConsumptionRows(consumption, 'ah-row', 'ah-row-label', 'ah-row-value');
-  const detailedConsumption = buildDetailedConsumption(consumption, 'ah-row', 'ah-row-label', 'ah-row-value');
-  const costRows = buildCostRows(consumption, 'ah-row', 'ah-row-label', 'ah-row-value');
-  const galleryHTML = getGalleryHTML(allImages);
-  const hasConsumption = consumptionRows || detailedConsumption || costRows;
   const cat = (data.category || '').toLowerCase();
   const isBuy = cat.includes('barkauf') || cat.includes('neuwagen') || cat.includes('gebrauchtwagen') || cat.includes('tageszulassung') || cat.includes('kauf');
+  const isLeasing = cat.includes('leasing');
 
-  const accordionSections: { id: string; title: string; content: string }[] = [];
+  // Features as badges
+  const featuresList = data.vehicle.features || [];
+  const badgesHTML = featuresList.length > 0
+    ? `<div class="card"><h2>Ausstattung</h2><div class="badges">${featuresList.map(f => `<span class="badge">${f}</span>`).join('')}</div></div>`
+    : '';
 
-  // Finance accordion
-  if (financeItems) {
-    accordionSections.push({
-      id: 'finance',
-      title: getFinanceSectionTitle(data),
-      content: `<div class="ah-fin-grid">${financeItems}</div>`,
-    });
+  // Consumption & Environment section
+  const co2Label = getCO2LabelHTML(consumption);
+  const consumptionRowPairs: [string, string | undefined][] = [
+    ['Emissionsklasse', consumption.co2Class],
+    ['CO₂-Emissionen (komb.)', consumption.co2Emissions],
+    ['Verbrauch (komb.)', consumption.consumptionCombined],
+  ];
+  // PHEV extra rows
+  if (consumption.isPluginHybrid) {
+    if (consumption.consumptionCombinedDischarged) consumptionRowPairs.push(['Verbrauch (komb., entladen)', consumption.consumptionCombinedDischarged]);
+    if (consumption.co2EmissionsDischarged) consumptionRowPairs.push(['CO₂-Emissionen (entladen)', consumption.co2EmissionsDischarged]);
+    if (consumption.consumptionElectric) consumptionRowPairs.push(['Stromverbrauch (komb.)', consumption.consumptionElectric]);
+    if (consumption.electricRange) consumptionRowPairs.push(['Elektrische Reichweite', consumption.electricRange]);
   }
 
-  // Consumption accordion
-  if (hasConsumption) {
-    accordionSections.push({
-      id: 'consumption',
-      title: 'Verbrauch & Emissionen',
-      content: `
-        <div class="ah-cons-layout">
-          <div>${consumptionRows}</div>
-          <div class="ah-co2-label">${getCO2LabelHTML(consumption)}</div>
-        </div>
-        ${detailedConsumption ? `<div class="ah-cons-sub"><div class="ah-cons-sub-title">Verbrauch im Detail</div>${detailedConsumption}</div>` : ''}
-        ${costRows ? `<div class="ah-cons-sub"><div class="ah-cons-sub-title">Kosten</div>${costRows}</div>` : ''}
-      `,
-    });
-  }
+  const consumptionMainRows = consumptionRowPairs
+    .filter(([, v]) => v)
+    .map(([l, v]) => `<div class="cons-row"><span>${l}</span><span style="font-weight:600">${v}</span></div>`)
+    .join('');
 
-  // Features accordion
-  if (features) {
-    accordionSections.push({
-      id: 'features',
-      title: 'Ausstattung & Extras',
-      content: `<div class="ah-tags">${features}</div>`,
-    });
-  }
+  const consumptionDetailPairs: [string, string | undefined][] = [
+    ['Kombiniert', consumption.consumptionCombined],
+    ['Innerorts', consumption.consumptionCity],
+    ['Außerorts / Landstraße', consumption.consumptionSuburban || consumption.consumptionRural],
+    ['Autobahn', consumption.consumptionHighway],
+  ];
+  const consumptionDetailCells = consumptionDetailPairs
+    .filter(([, v]) => v)
+    .map(([l, v]) => `<div class="cons-cell"><span class="cons-label">${l}</span><span class="cons-val">${v}</span></div>`)
+    .join('');
 
-  const accordionsHTML = accordionSections.map((s, i) => `
-    <div class="ah-accordion">
-      <button class="ah-acc-trigger" onclick="toggleAccordion('${s.id}')" aria-expanded="${i === 0 ? 'true' : 'false'}">
-        <span>${s.title}</span>
-        <svg class="ah-acc-chevron" id="chevron-${s.id}" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="${i === 0 ? 'transform:rotate(180deg)' : ''}"><polyline points="6 9 12 15 18 9"/></svg>
-      </button>
-      <div class="ah-acc-content" id="acc-${s.id}" style="${i === 0 ? '' : 'display:none'}">
-        ${s.content}
-      </div>
-    </div>
-  `).join('');
+  // Cost rows
+  const costPairs: [string, string | undefined][] = [
+    ['Energiekosten (15.000 km/Jahr)', consumption.energyCostPerYear],
+    ['Kraftfahrzeugsteuer (€/Jahr)', consumption.vehicleTax],
+  ];
+  // CO2 costs
+  if (consumption.co2CostMedium) costPairs.push(['CO₂-Kosten über 10 Jahre (€)', consumption.co2CostMedium]);
 
-  const specs = [
+  const costRows = costPairs.filter(([, v]) => v).map(([l, v]) => `<div class="cons-row"><span>${l}</span><span style="font-weight:600">${v}</span></div>`).join('');
+
+  const hasConsumptionData = consumptionMainRows || consumptionDetailCells || costRows;
+  const consumptionHTML = hasConsumptionData ? `
+    <div class="card">
+      <h2>Verbrauch &amp; Umwelt</h2>
+      ${consumptionMainRows}
+      ${consumptionDetailCells ? `<div class="cons-grid">${consumptionDetailCells}</div>` : ''}
+      ${costRows ? `<div style="margin-top:1rem">${costRows}</div>` : ''}
+      ${co2Label ? `<div style="margin-top:1rem">${co2Label}</div>` : ''}
+    </div>` : '';
+
+  // Technical data
+  const techPairs: [string, string | number | undefined][] = [
     ['Leistung', data.vehicle.power],
     ['Getriebe', data.vehicle.transmission],
     ['Kraftstoff', data.vehicle.fuelType],
-    ['Farbe', data.vehicle.color],
-    ['Baujahr', data.vehicle.year],
-  ].filter(([, v]) => v);
+    ['Antriebsart', consumption.driveType],
+    ['Hubraum', consumption.displacement],
+    ['Farbe / Lackierung', data.vehicle.color],
+    ['Baujahr', data.vehicle.year && data.vehicle.year > 0 ? String(data.vehicle.year) : undefined],
+  ];
+  const techRows = techPairs
+    .filter(([, v]) => v)
+    .map(([l, v]) => `<div class="tech-row"><span class="tech-label">${l}:</span><span class="tech-value">${v}</span></div>`)
+    .join('');
+  const techHTML = techRows ? `<div class="card"><h2>Technische Daten</h2><div class="tech-grid">${techRows}</div></div>` : '';
+
+  // Vehicle description (if variant exists, use it as short description)
+  const descText = data.vehicle.variant || '';
+  const descHTML = descText ? `<div class="card"><h2>Fahrzeugbeschreibung</h2><p class="desc-text">${descText}</p></div>` : '';
+
+  // Leasing / Finance conditions
+  const leasingFactor = isLeasing ? calculateLeasingFactor(data) : '';
+  let leasingConditionsHTML = '';
+  if (!isBuy && data.finance.monthlyRate) {
+    const conditionPairs: [string, string | undefined][] = [
+      ['Laufzeit', data.finance.duration],
+      ['Laufleistung / Jahr', data.finance.annualMileage],
+      [isLeasing ? 'Sonderzahlung' : 'Anzahlung', isLeasing ? data.finance.specialPayment : data.finance.downPayment],
+    ];
+    if (isLeasing && leasingFactor) conditionPairs.push(['Leasingfaktor', leasingFactor]);
+    if (isLeasing && data.finance.residualValue) conditionPairs.push(['Restwert', data.finance.residualValue]);
+
+    const conditionCells = conditionPairs
+      .filter(([, v]) => v)
+      .map(([l, v]) => `<div class="grid-cell"><div class="cell-label">${l}</div><div class="cell-value">${v}</div></div>`)
+      .join('');
+
+    leasingConditionsHTML = `
+      <div class="card">
+        <h2>${getFinanceSectionTitle(data)}konditionen</h2>
+        <div class="leasing-highlight">
+          <div class="rate-label">Monatliche ${isLeasing ? 'Leasingrate' : 'Rate'}</div>
+          <div class="rate-value">${data.finance.monthlyRate}</div>
+        </div>
+        <div class="grid-2">${conditionCells}</div>
+        ${data.finance.totalPrice ? `
+        <div style="margin-top:1rem;border-top:1px solid #e5e7eb;padding-top:1rem">
+          <div style="font-size:.85rem">
+            <div style="font-weight:600;margin-bottom:.5rem">Kostenübersicht</div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:.3rem">
+              <span style="color:#6b7280">Anschaffungspreis (Nettodarlehensbetrag)</span>
+              <span style="font-weight:600">${data.finance.totalPrice}</span>
+            </div>
+          </div>
+        </div>` : ''}
+      </div>`;
+  }
+
+  // Sidebar specs
+  const sidebarSpecs: [string, string | undefined][] = [
+    ['Fahrzeugtyp', data.category || undefined],
+    ['Getriebe', data.vehicle.transmission],
+    ['Zustand', cat.includes('neuwagen') || cat.includes('neu') ? 'Neufahrzeug' : cat.includes('gebrauchtwagen') ? 'Gebrauchtfahrzeug' : undefined],
+    ['Leistung', data.vehicle.power],
+    ['Kraftstoff', data.vehicle.fuelType],
+    ['Kilometer', consumption.mileage],
+  ];
+  const sidebarSpecsHTML = sidebarSpecs
+    .filter(([, v]) => v)
+    .map(([l, v]) => `<div><span class="spec-label">${l}</span><div class="spec-value">${v}</div></div>`)
+    .join('');
+
+  // Contact form placeholder in sidebar
+  const contactFormHTML = `
+    <div class="card" style="margin-top:1.5rem">
+      <h2>Kontakt aufnehmen</h2>
+      <form onsubmit="return false" style="display:flex;flex-direction:column;gap:.75rem">
+        <div>
+          <label style="font-size:.8rem;font-weight:700;display:block;margin-bottom:.3rem">Vorname*</label>
+          <input type="text" name="firstname" required style="width:100%;padding:.6rem .75rem;border:1px solid #e5e7eb;border-radius:6px;font-size:.875rem;font-family:inherit" />
+        </div>
+        <div>
+          <label style="font-size:.8rem;font-weight:700;display:block;margin-bottom:.3rem">Nachname*</label>
+          <input type="text" name="lastname" required style="width:100%;padding:.6rem .75rem;border:1px solid #e5e7eb;border-radius:6px;font-size:.875rem;font-family:inherit" />
+        </div>
+        <div>
+          <label style="font-size:.8rem;font-weight:700;display:block;margin-bottom:.3rem">E-Mail-Adresse*</label>
+          <input type="email" name="email" required style="width:100%;padding:.6rem .75rem;border:1px solid #e5e7eb;border-radius:6px;font-size:.875rem;font-family:inherit" />
+        </div>
+        <div>
+          <label style="font-size:.8rem;font-weight:700;display:block;margin-bottom:.3rem">Telefonnummer *</label>
+          <input type="tel" name="phone" style="width:100%;padding:.6rem .75rem;border:1px solid #e5e7eb;border-radius:6px;font-size:.875rem;font-family:inherit" />
+        </div>
+        <div>
+          <label style="font-size:.8rem;font-weight:700;display:block;margin-bottom:.3rem">Ihre Nachricht (optional)</label>
+          <textarea name="message" rows="4" style="width:100%;padding:.6rem .75rem;border:1px solid #e5e7eb;border-radius:6px;font-size:.875rem;font-family:inherit;resize:vertical">Hallo,\nich interessiere mich für das angebotene Fahrzeug und bitte um weitere Informationen.\nMit freundlichen Grüßen</textarea>
+        </div>
+        <button type="submit" style="background:#1a2e5a;color:#fff;border:none;padding:.75rem 1.5rem;border-radius:6px;font-size:.95rem;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:.5px;font-family:inherit">Senden</button>
+      </form>
+      <p style="font-size:.7rem;color:#9ca3af;margin-top:.75rem">Bitte mit * gekennzeichnete Felder ausfüllen. Kostenlos und unverbindlich!</p>
+    </div>`;
+
+  // Legal text
+  const legalTextHTML = buildLegalTextHTML(data);
+  const legalFooter = legalTextHTML
+    ? `<div style="margin-top:1.5rem;font-size:.75rem;color:#6b7280;line-height:1.6;border-top:1px solid #e5e7eb;padding-top:.75rem">${legalTextHTML}</div>`
+    : '';
 
   return `<!DOCTYPE html>
 <html lang="de">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${data.vehicle.brand} ${data.vehicle.model} – Angebot</title>
+  <title>${data.vehicle.brand} ${data.vehicle.model} ${data.vehicle.variant || ''} – Angebot</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
-    *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:'Inter',sans-serif;background:#f5f5f5;color:#1a1a1a}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f3f4f6;color:#111827}
 
-    /* === TWO-COLUMN LAYOUT === */
-    .ah-wrapper{max-width:1248px;margin:0 auto;padding:24px;display:flex;gap:31px;align-items:flex-start}
-    .ah-main{flex:1;max-width:822px;min-width:0}
-    .ah-sidebar{width:395px;flex-shrink:0;position:sticky;top:24px}
+    .page-wrap{max-width:1200px;margin:0 auto;padding:2rem 1rem;display:grid;grid-template-columns:1fr 360px;gap:2rem}
+    @media(max-width:900px){.page-wrap{grid-template-columns:1fr}}
 
-    @media(max-width:1024px){
-      .ah-wrapper{flex-direction:column;max-width:700px}
-      .ah-sidebar{width:100%;position:static}
-    }
+    .left-col,.right-col{display:flex;flex-direction:column;gap:1.5rem}
 
-    /* === HERO IMAGE === */
-    .ah-hero{background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e5e5e5;margin-bottom:20px}
-    .ah-hero img#mainImg{width:100%;height:auto;max-height:500px;object-fit:cover;display:block}
-    .ah-gallery{display:flex;gap:8px;padding:12px;overflow-x:auto;background:#fafafa;max-width:100%}
-    .ah-gallery-thumb{width:72px;height:54px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid transparent;transition:all .2s;opacity:0.7;flex-shrink:0}
-    .ah-gallery-thumb:hover,.ah-gallery-thumb.active{border-color:#1a1a1a;opacity:1}
+    /* Cards */
+    .card{background:white;border-radius:10px;border:1px solid #e5e7eb;padding:1.5rem}
+    .card h2{font-size:1.05rem;font-weight:700;color:#1a2e5a;margin-bottom:1rem}
 
-    /* === ACCORDION === */
-    .ah-accordion{background:#fff;border-radius:14px;border:1px solid #e5e5e5;margin-bottom:12px;overflow:hidden}
-    .ah-acc-trigger{width:100%;display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border:none;background:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;color:#1a1a1a;transition:background .15s}
-    .ah-acc-trigger:hover{background:#fafafa}
-    .ah-acc-chevron{transition:transform .25s ease;color:#999}
-    .ah-acc-content{padding:0 22px 20px}
+    /* Gallery */
+    .gallery-card{background:white;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden}
+    .gallery-main-img{width:100%;aspect-ratio:4/3;object-fit:contain;background:#f9fafb;display:block}
+    .gallery-thumbs{display:flex;gap:.5rem;padding:.75rem;overflow-x:auto}
+    .thumb{width:80px;height:60px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid transparent;flex-shrink:0}
+    .thumb.active{border-color:#1a2e5a}
 
-    /* === FINANCE GRID === */
-    .ah-fin-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-    .ah-fin-item{background:#f9f9f9;border-radius:10px;padding:14px;border:1px solid #ebebeb}
-    .ah-fin-label{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px}
-    .ah-fin-value{font-size:15px;font-weight:600;color:#1a1a1a}
+    /* Price card / sidebar */
+    .price-card{position:sticky;top:1rem}
+    .price-card h1{font-size:1.2rem;font-weight:800;color:#1a2e5a;margin-bottom:.25rem}
+    .price-card .subtitle{font-size:.8rem;color:#6b7280;margin-bottom:1rem}
+    .price-card .rate{font-size:2rem;font-weight:800;color:#1a2e5a}
+    .list-price{font-size:.75rem;color:#6b7280;margin-top:.2rem;margin-bottom:1rem}
+    .specs-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;font-size:.85rem}
+    .spec-label{color:#6b7280;font-size:.73rem}
+    .spec-value{font-weight:600}
+    .divider{border:none;border-top:1px solid #e5e7eb;margin:1rem 0}
 
-    /* === CONSUMPTION === */
-    .ah-cons-layout{display:grid;grid-template-columns:1fr auto;gap:20px;align-items:start}
-    @media(max-width:600px){.ah-cons-layout{grid-template-columns:1fr}}
-    .ah-co2-label{display:flex;align-items:center;justify-content:center}
-    .ah-co2-label img{max-width:240px}
-    .ah-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f0f0f0}
-    .ah-row:last-child{border-bottom:none}
-    .ah-row-label{font-size:12px;color:#888}
-    .ah-row-value{font-size:13px;font-weight:600;color:#1a1a1a}
-    .ah-cons-sub{margin-top:16px;padding-top:14px;border-top:1px solid #eee}
-    .ah-cons-sub-title{font-size:12px;font-weight:600;color:#1a1a1a;margin-bottom:10px}
+    /* Leasing highlight */
+    .leasing-highlight{background:linear-gradient(135deg,#1a2e5a,#2a4070);border-radius:10px;padding:1.5rem;color:white;margin-bottom:1rem}
+    .rate-label{font-size:.85rem;opacity:.75;margin-bottom:.2rem}
+    .rate-value{font-size:2.2rem;font-weight:800}
 
-    /* === FEATURES === */
-    .ah-tags{display:flex;flex-wrap:wrap;gap:6px}
-    .ah-tag{font-size:12px;padding:6px 14px;border-radius:100px;background:#f3f3f3;color:#444;border:1px solid #e5e5e5}
+    /* Grid cells */
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+    .grid-cell{background:#f9fafb;border-radius:8px;padding:.75rem}
+    .cell-label{font-size:.72rem;color:#6b7280;margin-bottom:.2rem}
+    .cell-value{font-weight:700;color:#1a2e5a;font-size:.9rem}
 
-    /* === SIDEBAR === */
-    .ah-sidebar-card{background:#fff;border-radius:16px;border:1px solid #e5e5e5;overflow:hidden}
-    .ah-sidebar-header{padding:24px;border-bottom:1px solid #f0f0f0}
-    .ah-sidebar-cat{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#fff;background:#1a1a1a;padding:4px 12px;border-radius:4px;display:inline-block;margin-bottom:12px}
-    .ah-sidebar-title{font-family:'DM Sans',sans-serif;font-size:22px;font-weight:700;color:#1a1a1a;line-height:1.2}
-    .ah-sidebar-variant{font-size:13px;color:#888;margin-top:4px}
+    /* Badges */
+    .badges{display:flex;flex-wrap:wrap;gap:.4rem}
+    .badge{background:#f3f4f6;color:#374151;font-size:.75rem;padding:.3rem .7rem;border-radius:999px}
 
-    .ah-sidebar-price{padding:20px 24px;border-bottom:1px solid #f0f0f0}
-    .ah-price-main{font-family:'DM Sans',sans-serif;font-size:32px;font-weight:700;color:#1a1a1a}
-    .ah-price-sub{font-size:12px;color:#888;margin-top:2px}
+    /* Tech grid */
+    .tech-grid{display:grid;grid-template-columns:1fr 1fr;gap:.5rem 1.5rem}
+    .tech-row{display:flex;justify-content:space-between;padding:.4rem 0;border-bottom:1px solid #f3f4f6;font-size:.875rem}
+    .tech-label{color:#6b7280}
+    .tech-value{font-weight:600}
 
-    .ah-sidebar-rate{background:#1a1a1a;color:#fff;margin:16px;border-radius:14px;padding:22px;text-align:center}
-    .ah-rate-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;opacity:0.6}
-    .ah-rate-amount{font-family:'DM Sans',sans-serif;font-size:34px;font-weight:700;margin:6px 0}
-    .ah-rate-period{font-size:12px;opacity:0.6}
+    /* Consumption */
+    .cons-row{display:flex;justify-content:space-between;padding:.35rem 0;border-bottom:1px solid #f3f4f6;font-size:.875rem}
+    .cons-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-top:.75rem}
+    .cons-cell{background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:.75rem}
+    .cons-label{font-size:.72rem;color:#6b7280;display:block;margin-bottom:.2rem}
+    .cons-val{font-weight:700;font-size:.9rem}
 
-    .ah-sidebar-specs{padding:20px 24px;border-top:1px solid #f0f0f0}
-    .ah-spec-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f5f5f5}
-    .ah-spec-row:last-child{border-bottom:none}
-    .ah-spec-label{font-size:11px;color:#888}
-    .ah-spec-value{font-size:12px;font-weight:600;color:#1a1a1a}
+    /* Description */
+    .desc-text{font-size:.875rem;color:#4b5563;line-height:1.7;white-space:pre-line}
 
-    .ah-sidebar-dealer{padding:20px 24px;border-top:1px solid #f0f0f0}
-    .ah-dealer-name{font-family:'DM Sans',sans-serif;font-weight:700;font-size:15px;color:#1a1a1a;margin-bottom:6px}
-    .ah-dealer-info{font-size:12px;color:#666;line-height:1.8}
-    .ah-dealer-info a{color:#1a1a1a;text-decoration:none}
-
-    /* === LEGAL & FOOTER === */
-    .ah-footer{text-align:center;padding:24px;font-size:11px;color:#bbb;margin-top:8px}
+    /* Legal */
+    .legal-text{margin-top:24px;padding:20px;background:#f9fafb;border-radius:12px;border:1px solid #e8eaee}
   </style>
 </head>
 <body>
-  <div class="ah-wrapper">
-    <!-- LEFT: Main Content -->
-    <div class="ah-main">
-      <div class="ah-hero">
-        ${imageBase64 ? `<img id="mainImg" src="${imageBase64}" alt="${data.vehicle.brand} ${data.vehicle.model}" />` : `<div style="color:#bbb;text-align:center;padding:80px">Kein Bild verfügbar</div>`}
-        ${allImages.length > 1 ? `<div class="ah-gallery">${allImages.map((img, i) => `<img src="${img}" alt="Bild ${i + 1}" class="ah-gallery-thumb${i === 0 ? ' active' : ''}" onclick="document.getElementById('mainImg').src=this.src;document.querySelectorAll('.ah-gallery-thumb').forEach(t=>t.classList.remove('active'));this.classList.add('active')" />`).join('')}</div>` : ''}
+  <div class="page-wrap">
+    <!-- LEFT COLUMN -->
+    <div class="left-col">
+      <div class="gallery-card">
+        ${imageBase64
+          ? `<img id="mainImg" class="gallery-main-img" src="${imageBase64}" alt="${data.vehicle.brand} ${data.vehicle.model}"/>`
+          : `<div style="color:#bbb;text-align:center;padding:80px;background:#f9fafb">Kein Bild verfügbar</div>`
+        }
+        ${allImages.length > 1 ? `
+          <div class="gallery-thumbs">
+            ${allImages.map((img, i) => `<img src="${img}" alt="Bild ${i + 1}" class="thumb${i === 0 ? ' active' : ''}" onclick="setMain(this)" />`).join('')}
+          </div>` : ''}
       </div>
 
-      ${accordionsHTML}
-
-      ${buildLegalTextHTML(data)}
+      ${badgesHTML}
+      ${consumptionHTML}
+      ${techHTML}
+      ${descHTML}
+      ${leasingConditionsHTML}
+      ${legalFooter}
     </div>
 
-    <!-- RIGHT: Sticky Sidebar -->
-    <div class="ah-sidebar">
-      <div class="ah-sidebar-card">
-        <div class="ah-sidebar-header">
-          <div class="ah-sidebar-cat">${data.category || 'Angebot'}</div>
-          <div class="ah-sidebar-title">${data.vehicle.brand} ${data.vehicle.model}</div>
-          ${data.vehicle.variant ? `<div class="ah-sidebar-variant">${data.vehicle.variant}</div>` : ''}
+    <!-- RIGHT COLUMN (sticky sidebar) -->
+    <div class="right-col">
+      <div class="card price-card">
+        <h1>${data.vehicle.brand} ${data.vehicle.model}${data.vehicle.variant ? ' ' + data.vehicle.variant : ''}</h1>
+        ${!isBuy && data.finance.monthlyRate
+          ? `<div class="rate">${data.finance.monthlyRate} <span style="font-size:.95rem;font-weight:400;color:#6b7280">/ Monat</span></div>
+             ${data.finance.totalPrice ? `<p class="list-price">Listenpreis: ${data.finance.totalPrice} inkl. MwSt.</p>` : ''}`
+          : `<div class="rate">${data.finance.totalPrice || '–'}</div>
+             <p class="list-price">${isBuy ? 'Fahrzeugpreis inkl. MwSt.' : ''}</p>`
+        }
+        <hr class="divider"/>
+        <div class="specs-grid">
+          ${sidebarSpecsHTML}
         </div>
-
-        <div class="ah-sidebar-price">
-          <div class="ah-price-main">${data.finance.totalPrice || '–'}</div>
-          <div class="ah-price-sub">${isBuy ? 'Fahrzeugpreis inkl. MwSt.' : 'Gesamtpreis'}</div>
-        </div>
-
-        ${!isBuy && data.finance.monthlyRate ? `
-          <div class="ah-sidebar-rate">
-            <div class="ah-rate-label">Monatliche Rate</div>
-            <div class="ah-rate-amount">${data.finance.monthlyRate}</div>
-            <div class="ah-rate-period">pro Monat</div>
-          </div>
-        ` : ''}
-
-        <div class="ah-sidebar-specs">
-          ${specs.map(([l, v]) => `<div class="ah-spec-row"><span class="ah-spec-label">${l}</span><span class="ah-spec-value">${v}</span></div>`).join('')}
-          ${data.vehicle.vin ? `<div class="ah-spec-row"><span class="ah-spec-label">VIN</span><span class="ah-spec-value" style="font-family:monospace;font-size:11px">${data.vehicle.vin}</span></div>` : ''}
-        </div>
-
-        <div class="ah-sidebar-dealer">
-          ${data.dealer.logoUrl ? `<img src="${data.dealer.logoUrl}" alt="${data.dealer.name}" style="max-height:40px;margin-bottom:10px;display:block" />` : ''}
-          <div class="ah-dealer-name">${data.dealer.name || '–'}</div>
-          <div class="ah-dealer-info">
-            ${buildDealerAddressHTML(data.dealer)}<br/>
-            ${data.dealer.phone ? `${data.dealer.phone}<br/>` : ''}
-            ${data.dealer.email ? `${data.dealer.email}<br/>` : ''}
-            ${buildWebsiteLinkHTML(data.dealer)}
-            ${buildDealerFooterHTML(data.dealer)}
-            ${buildSocialLinksHTML(data.dealer)}
-            ${buildWhatsAppButtonHTML(data.dealer, `${data.vehicle.brand} ${data.vehicle.model}`)}
-          </div>
-        </div>
+        ${data.vehicle.vin ? `<hr class="divider"/><div style="font-size:.75rem;color:#9ca3af;font-style:italic">VIN: ${data.vehicle.vin}</div>` : ''}
       </div>
+
+      ${contactFormHTML}
+
+      ${data.dealer.name ? `
+      <div class="card">
+        ${data.dealer.logoUrl ? `<img src="${data.dealer.logoUrl}" alt="${data.dealer.name}" style="max-height:40px;margin-bottom:10px;display:block" />` : ''}
+        <div style="font-weight:700;color:#1a2e5a;font-size:.95rem;margin-bottom:.4rem">${data.dealer.name}</div>
+        <div style="font-size:.8rem;color:#6b7280;line-height:1.8">
+          ${buildDealerAddressHTML(data.dealer)}<br/>
+          ${data.dealer.phone ? `${data.dealer.phone}<br/>` : ''}
+          ${data.dealer.email ? `${data.dealer.email}<br/>` : ''}
+          ${buildWebsiteLinkHTML(data.dealer)}
+          ${buildDealerFooterHTML(data.dealer)}
+          ${buildSocialLinksHTML(data.dealer)}
+          ${buildWhatsAppButtonHTML(data.dealer, `${data.vehicle.brand} ${data.vehicle.model}`)}
+        </div>
+      </div>` : ''}
     </div>
   </div>
 
-  <div class="ah-footer">Alle Angaben ohne Gewähr.</div>
-
   <script>
-    function toggleAccordion(id) {
-      var content = document.getElementById('acc-' + id);
-      var chevron = document.getElementById('chevron-' + id);
-      var trigger = chevron.closest('.ah-acc-trigger');
-      if (content.style.display === 'none') {
-        content.style.display = 'block';
-        chevron.style.transform = 'rotate(180deg)';
-        trigger.setAttribute('aria-expanded', 'true');
-      } else {
-        content.style.display = 'none';
-        chevron.style.transform = 'rotate(0deg)';
-        trigger.setAttribute('aria-expanded', 'false');
-      }
+    function setMain(el){
+      document.getElementById('mainImg').src=el.src;
+      document.querySelectorAll('.thumb').forEach(function(t){t.classList.remove('active')});
+      el.classList.add('active');
     }
   </script>
 </body></html>`;
