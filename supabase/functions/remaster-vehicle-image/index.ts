@@ -232,9 +232,10 @@ serve(async (req) => {
     const FALLBACK_ORDER: Record<string, string[]> = {
       'gemini-3-pro-image-preview': ['gemini-3.1-flash-image-preview', 'gemini-2.5-flash-image'],
       'gemini-3.1-flash-image-preview': ['gemini-2.5-flash-image'],
+      'gemini-2.5-flash-image': ['gemini-3.1-flash-image-preview'],
     };
-    const modelsToTry = [geminiModel, ...(FALLBACK_ORDER[geminiModel] || [])];
-    const maxRetries = 2;
+    const modelsToTry = [geminiModel, ...(FALLBACK_ORDER[geminiModel] || ['gemini-2.5-flash-image'])];
+    const maxRetries = 3;
     let resultImage: string | null = null;
     let lastError = "";
 
