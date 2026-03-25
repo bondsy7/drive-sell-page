@@ -498,12 +498,13 @@ Grundsatz: Alle KI-Aufrufe nutzen bevorzugt eigene API-Keys.`}</CodeBlock>
           </SubSection>
           <SubSection title="Modell-Tiers (Bildgenerierung)">
             <Table
-              headers={['Tier', 'Modell', 'Engine', 'Credits']}
+              headers={['Tier', 'Modell', 'Engine', 'EK/Bild', 'Credits']}
               rows={[
-                ['schnell', 'gemini-2.5-flash', 'Gemini', '3'],
-                ['qualitaet', 'gemini-2.5-flash', 'Gemini', '5'],
-                ['premium', 'gpt-image-1', 'OpenAI', '8'],
-                ['ultra', 'gpt-image-1 (HD)', 'OpenAI', '10'],
+                ['Schnell', 'gemini-2.5-flash-image', 'Gemini', '~$0.039', '3'],
+                ['Qualität', 'gemini-3.1-flash-image-preview', 'Gemini', '~$0.045–0.067', '5'],
+                ['Premium', 'gemini-3-pro-image-preview', 'Gemini', '~$0.134', '8'],
+                ['Turbo', 'gpt-image-1', 'OpenAI', '~$0.04–0.17', '6'],
+                ['Ultra', 'gpt-image-1 (HD)', 'OpenAI', '~$0.08–0.17', '10'],
               ]}
             />
           </SubSection>
