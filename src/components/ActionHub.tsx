@@ -65,6 +65,7 @@ interface ActionHubProps {
 
 const ActionHub: React.FC<ActionHubProps> = ({ onSelect }) => {
   const { balance } = useCredits();
+  const { disabledModules } = useModuleAccess();
 
   return (
     <div className="space-y-8">
