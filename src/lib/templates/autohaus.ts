@@ -136,6 +136,7 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
             </div>
           </div>
         </div>` : ''}
+        ${legalTextHTML}
       </div>`;
   }
 
