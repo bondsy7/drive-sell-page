@@ -57,6 +57,39 @@ interface JobDurationEntry {
   status: string;
 }
 
+const FRONT_REFERENCE_PATTERNS = /(master|front|34_front|3\/4 vorne|3\/4 front|headlight|scheinwerfer|grille|kühlergrill|kuehlergrill|emblem)/i;
+const REAR_REFERENCE_PATTERNS = /(rear|heck|34_rear|3\/4 hinten|3\/4 heck|taillight|rücklicht|ruecklicht|kofferraum|boot|trunk)/i;
+const SIDE_REFERENCE_PATTERNS = /(side|seite|profile)/i;
+const FRONT_INTERIOR_PATTERNS = /(dashboard|armaturenbrett|fahrer|driver|center console|mittelkonsole|cabin|kabine|mbux|screen|display|steering|lenkrad|cluster)/i;
+const REAR_INTERIOR_PATTERNS = /(rear seats|rear seat|rücksitz|ruecksitz|rücksitzbank|ruecksitzbank)/i;
+
+function inferPrimaryReferenceIndex(job: PipelineJob | undefined, promptText: string, availableCount: number): number {
+  if (availableCount <= 1) return 0;
+
+  const signature = `${job?.key || ''} ${job?.label || ''} ${job?.labelDe || ''} ${promptText}`;
+
+  if (REAR_INTERIOR_PATTERNS.test(signature) && availableCount >= 5) return 4;
+  if (FRONT_INTERIOR_PATTERNS.test(signature) && availableCount >= 4) return 3;
+  if (REAR_REFERENCE_PATTERNS.test(signature) && availableCount >= 3) return 2;
+  if (SIDE_REFERENCE_PATTERNS.test(signature) && availableCount >= 2) return 1;
+  if (FRONT_REFERENCE_PATTERNS.test(signature)) return 0;
+
+  return 0;
+}
+
+function buildTaskOutputLock(job: PipelineJob | undefined): string {
+  const jobName = job?.labelDe || job?.label || 'angeforderte Pipeline-Ansicht';
+
+  return `TASK OUTPUT LOCK (ABSOLUTE PRIORITY):
+- Generate ONLY the requested pipeline step: "${jobName}".
+- Follow the requested perspective exactly. Never replace it with a visually similar but different angle.
+- Rear means rear. Front means front. Side means true side profile. 3/4 left/right means exactly that left/right side.
+- Interior means interior only. Detail means detail only. Do NOT switch between exterior, interior, and detail shots.
+- Do NOT add, remove, redesign, simplify, restyle, or reinterpret any logo, badge, emblem, lettering, wall logo, or brand mark.
+- If a logo asset is provided, treat it as IMMUTABLE SOURCE MATERIAL: preserve exact silhouette, border/frame, symbol, text, proportions, placement logic, and colors.
+- Do NOT invent any missing view information. Use the matching reference image and detail photos to reproduce exactly what was requested.`;
+}
+
 /* ─── Constants ─── */
 const CONCURRENCY = 4; // parallel image generation slots
 const CREDIT_COST_PER_IMAGE = 2;
@@ -292,18 +325,20 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   }, [user, inputImages, vehicleDescription, savedProjectId, projectId]);
 
   /* ─── Generate a single image ─── */
-  const generateOneImage = useCallback(async (prompt: string): Promise<{ base64: string | null; error?: string }> => {
+  const generateOneImage = useCallback(async (prompt: string, job?: PipelineJob): Promise<{ base64: string | null; error?: string }> => {
     const referenceImages = originalImages && originalImages.length > 0 ? originalImages : inputImages;
+    const primaryReferenceIndex = inferPrimaryReferenceIndex(job, prompt, referenceImages.length);
+    const primaryReference = referenceImages[primaryReferenceIndex] || referenceImages[0];
+    const supportingReferences = referenceImages
+      .filter((_, index) => index !== primaryReferenceIndex)
+      .concat(additionalImages || []);
     const baseContext = buildMasterPrompt(remasterConfig, vehicleDescription);
-    const fullPrompt = `${baseContext}\n\n--- PERSPECTIVE INSTRUCTION ---\n${prompt}`;
-
-    // Merge reference slices with additional detail images
-    const refSlice = referenceImages.slice(1);
-    const allAdditional = [...refSlice, ...(additionalImages || [])];
+    const taskLock = buildTaskOutputLock(job);
+    const fullPrompt = `${baseContext}\n\n${taskLock}\n\n--- PERSPECTIVE INSTRUCTION ---\n${prompt}`;
 
     const { data, error } = await invokeRemasterVehicleImage({
-      imageBase64: referenceImages[0],
-      additionalImages: allAdditional.length > 0 ? allAdditional : undefined,
+      imageBase64: primaryReference,
+      additionalImages: supportingReferences.length > 0 ? supportingReferences : undefined,
       vehicleDescription,
       modelTier,
       dynamicPrompt: fullPrompt,
@@ -335,7 +370,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
 
     for (let p = 0; p < prompts.length; p++) {
       try {
-        const result = await generateOneImage(prompts[p]);
+        const result = await generateOneImage(prompts[p], job);
         if (result.base64) {
           jobResults.push(result.base64);
           setJobs(prev => ({
@@ -412,7 +447,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
         }
 
         try {
-          const result = await generateOneImage(task.prompt);
+          const result = await generateOneImage(task.prompt, task.job);
           if (result.base64) {
             const prompts = [task.job.prompt, ...(task.job.extraPrompts || [])];
             allResults.push({
@@ -602,7 +637,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
     const prompt = prompts[resultImg.promptIndex] || prompts[0];
 
     try {
-      const result = await generateOneImage(prompt);
+      const result = await generateOneImage(prompt, job);
       if (result.base64) {
         setJobs(prev => {
           const state = prev[resultImg.jobKey];
