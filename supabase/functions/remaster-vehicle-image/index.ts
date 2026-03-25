@@ -47,6 +47,13 @@ SHOWROOM CONSISTENCY (MANDATORY for all exterior images):
 - The showroom has: dark gray matte walls, polished light gray concrete floor with subtle reflections, large floor-to-ceiling glass windows on the left side, modern recessed LED ceiling lights
 - Do NOT vary the showroom between images – it must look like the SAME physical location every time
 
+LOGO RENDERING (MANDATORY when a logo image is provided):
+- If a logo image is attached, reproduce it as a PIXEL-PERFECT copy on the showroom wall
+- KEEP the logo's ORIGINAL COLORS – if it has yellow, red, blue, etc., those colors MUST appear exactly as in the source image
+- Do NOT convert colored logos to silver, chrome, aluminum, or monochrome – PRESERVE ALL ORIGINAL COLORS
+- The logo must appear IDENTICAL on EVERY generated image – same colors, same size, same position, same proportions
+- ZERO variation between images is acceptable
+
 FOR INTERIOR SHOTS (seats, steering wheel, dashboard, center console, door panels, rear seats):
 - MANDATORY CLEANUP: Remove ALL items that do NOT belong to the vehicle: trash, bags, papers, plastic covers, protective films, transport packaging, personal belongings, loose items on seats or floor mats, tags, stickers, warning labels (except permanent vehicle labels)
 - Clean up BOTH front seats AND rear seats equally – the entire cabin must look showroom-ready and professionally detailed
