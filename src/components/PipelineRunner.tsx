@@ -27,6 +27,7 @@ import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 interface PipelineRunnerProps {
   inputImages: string[];
   originalImages?: string[];
+  additionalImages?: string[];
   vehicleDescription: string;
   vehicleBrand?: string;
   remasterConfig: RemasterConfig;
