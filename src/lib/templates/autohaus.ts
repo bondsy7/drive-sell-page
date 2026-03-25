@@ -1,5 +1,5 @@
 import { VehicleData } from "@/types/vehicle";
-import { getCO2LabelHTML, getConsumptionData, buildConsumptionRows, buildDetailedConsumption, buildCostRows, buildFinanceItems, buildFeatures, buildSocialLinksHTML, buildWhatsAppButtonHTML, buildLegalTextHTML, buildDealerAddressHTML, buildDealerFooterHTML, buildWebsiteLinkHTML, getFinanceSectionTitle, calculateLeasingFactor } from "./shared";
+import { getCO2LabelHTML, getConsumptionData, buildLegalTextHTML, buildDealerAddressHTML, buildDealerFooterHTML, buildSocialLinksHTML, buildWhatsAppButtonHTML, buildWebsiteLinkHTML, getFinanceSectionTitle, calculateLeasingFactor } from "./shared";
 
 export function generateAutohausHTML(data: VehicleData, imageBase64: string | null, galleryImages: string[] = []): string {
   const consumption = getConsumptionData(data);
@@ -21,7 +21,6 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
     ['CO₂-Emissionen (komb.)', consumption.co2Emissions],
     ['Verbrauch (komb.)', consumption.consumptionCombined],
   ];
-  // PHEV extra rows
   if (consumption.isPluginHybrid) {
     if (consumption.consumptionCombinedDischarged) consumptionRowPairs.push(['Verbrauch (komb., entladen)', consumption.consumptionCombinedDischarged]);
     if (consumption.co2EmissionsDischarged) consumptionRowPairs.push(['CO₂-Emissionen (entladen)', consumption.co2EmissionsDischarged]);
@@ -50,12 +49,20 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
     ['Energiekosten (15.000 km/Jahr)', consumption.energyCostPerYear],
     ['Kraftfahrzeugsteuer (€/Jahr)', consumption.vehicleTax],
   ];
-  // CO2 costs
   if (consumption.co2CostMedium) costPairs.push(['CO₂-Kosten über 10 Jahre (€)', consumption.co2CostMedium]);
 
   const costRows = costPairs.filter(([, v]) => v).map(([l, v]) => `<div class="cons-row"><span>${l}</span><span style="font-weight:600">${v}</span></div>`).join('');
 
   const hasConsumptionData = consumptionMainRows || consumptionDetailCells || costRows;
+
+  // EnVKV Pflichtangaben blue box
+  const envkvBoxHTML = `
+    <div class="envkv-box">
+      <div class="envkv-title">Pflichtangaben nach Pkw-EnVKV (Anlage 4):</div>
+      <p>Die angegebenen Werte wurden nach dem vorgeschriebenen WLTP-Messverfahren (Worldwide Harmonised Light Vehicle Test Procedure) ermittelt.</p>
+      <p style="margin-top:.5rem">Weitere Informationen zum offiziellen Kraftstoffverbrauch und den offiziellen spezifischen CO₂-Emissionen neuer Personenkraftwagen können dem „Leitfaden über den Kraftstoffverbrauch, die CO₂-Emissionen und den Stromverbrauch neuer Personenkraftwagen" entnommen werden, der an allen Verkaufsstellen und bei der Deutschen Automobil Treuhand GmbH (DAT) unentgeltlich erhältlich ist.</p>
+    </div>`;
+
   const consumptionHTML = hasConsumptionData ? `
     <div class="card">
       <h2>Verbrauch &amp; Umwelt</h2>
@@ -63,25 +70,34 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
       ${consumptionDetailCells ? `<div class="cons-grid">${consumptionDetailCells}</div>` : ''}
       ${costRows ? `<div style="margin-top:1rem">${costRows}</div>` : ''}
       ${co2Label ? `<div style="margin-top:1rem">${co2Label}</div>` : ''}
+      ${envkvBoxHTML}
     </div>` : '';
 
-  // Technical data
+  // Technical data — extended, only show rows with values
   const techPairs: [string, string | number | undefined][] = [
     ['Leistung', data.vehicle.power],
-    ['Getriebe', data.vehicle.transmission],
-    ['Kraftstoff', data.vehicle.fuelType],
+    ['HSN / TSN', consumption.hsnTsn],
+    ['Elektromotor Max. Leistung', consumption.electricMotorPower],
+    ['Elektromotor Max. Drehmoment', consumption.electricMotorTorque],
+    ['Getriebeart', consumption.gearboxType || data.vehicle.transmission],
     ['Antriebsart', consumption.driveType],
+    ['Höchstgeschwindigkeit', consumption.topSpeed],
+    ['Beschleunigung 0 bis 100 km/h', consumption.acceleration],
+    ['Leergewicht', consumption.curbWeight],
+    ['Zulässiges Gesamtgewicht', consumption.grossWeight],
     ['Hubraum', consumption.displacement],
-    ['Farbe / Lackierung', data.vehicle.color],
+    ['Kraftstoff', data.vehicle.fuelType],
+    ['Farbe / Lackierung', consumption.paintColor || data.vehicle.color],
     ['Baujahr', data.vehicle.year && data.vehicle.year > 0 ? String(data.vehicle.year) : undefined],
+    ['Fahrzeuggarantie', consumption.warranty],
   ];
   const techRows = techPairs
-    .filter(([, v]) => v)
+    .filter(([, v]) => v && String(v).trim() !== '' && String(v).trim() !== '-')
     .map(([l, v]) => `<div class="tech-row"><span class="tech-label">${l}:</span><span class="tech-value">${v}</span></div>`)
     .join('');
   const techHTML = techRows ? `<div class="card"><h2>Technische Daten</h2><div class="tech-grid">${techRows}</div></div>` : '';
 
-  // Vehicle description (if variant exists, use it as short description)
+  // Vehicle description
   const descText = data.vehicle.variant || '';
   const descHTML = descText ? `<div class="card"><h2>Fahrzeugbeschreibung</h2><p class="desc-text">${descText}</p></div>` : '';
 
@@ -126,7 +142,7 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
   // Sidebar specs
   const sidebarSpecs: [string, string | undefined][] = [
     ['Fahrzeugtyp', data.category || undefined],
-    ['Getriebe', data.vehicle.transmission],
+    ['Getriebe', consumption.gearboxType || data.vehicle.transmission],
     ['Zustand', cat.includes('neuwagen') || cat.includes('neu') ? 'Neufahrzeug' : cat.includes('gebrauchtwagen') ? 'Gebrauchtfahrzeug' : undefined],
     ['Leistung', data.vehicle.power],
     ['Kraftstoff', data.vehicle.fuelType],
@@ -137,7 +153,7 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
     .map(([l, v]) => `<div><span class="spec-label">${l}</span><div class="spec-value">${v}</div></div>`)
     .join('');
 
-  // Contact form placeholder in sidebar
+  // Contact form
   const contactFormHTML = `
     <div class="card" style="margin-top:1.5rem">
       <h2>Kontakt aufnehmen</h2>
@@ -194,7 +210,7 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
 
     /* Gallery */
     .gallery-card{background:white;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden}
-    .gallery-main-img{width:100%;aspect-ratio:4/3;object-fit:contain;background:#f9fafb;display:block}
+    .gallery-main-img{width:100%;display:block;max-height:600px;object-fit:contain;background:#f9fafb}
     .gallery-thumbs{display:flex;gap:.5rem;padding:.75rem;overflow-x:auto}
     .thumb{width:80px;height:60px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid transparent;flex-shrink:0}
     .thumb.active{border-color:#1a2e5a}
@@ -226,10 +242,10 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
     .badge{background:#f3f4f6;color:#374151;font-size:.75rem;padding:.3rem .7rem;border-radius:999px}
 
     /* Tech grid */
-    .tech-grid{display:grid;grid-template-columns:1fr 1fr;gap:.5rem 1.5rem}
-    .tech-row{display:flex;justify-content:space-between;padding:.4rem 0;border-bottom:1px solid #f3f4f6;font-size:.875rem}
+    .tech-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 1.5rem}
+    .tech-row{display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid #f3f4f6;font-size:.875rem}
     .tech-label{color:#6b7280}
-    .tech-value{font-weight:600}
+    .tech-value{font-weight:600;text-align:right}
 
     /* Consumption */
     .cons-row{display:flex;justify-content:space-between;padding:.35rem 0;border-bottom:1px solid #f3f4f6;font-size:.875rem}
@@ -240,6 +256,10 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
 
     /* Description */
     .desc-text{font-size:.875rem;color:#4b5563;line-height:1.7;white-space:pre-line}
+
+    /* EnVKV Pflichtangaben box */
+    .envkv-box{margin-top:1.25rem;padding:1rem 1.25rem;background:#f0f4fa;border:1px solid #c5d3e8;border-radius:8px;font-size:.78rem;color:#1a2e5a;line-height:1.65}
+    .envkv-title{font-weight:700;margin-bottom:.4rem;font-size:.82rem}
 
     /* Legal */
     .legal-text{margin-top:24px;padding:20px;background:#f9fafb;border-radius:12px;border:1px solid #e8eaee}

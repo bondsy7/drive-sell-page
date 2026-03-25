@@ -55,6 +55,21 @@ const OrangeButton: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { c
   </button>
 );
 
+/** Tech data row – always visible in editor, shows "-" placeholder when empty */
+const TechDataRow: React.FC<{
+  label: string; value: string; onChange: (v: string) => void; suffix?: string;
+}> = ({ label, value, onChange, suffix }) => (
+  <div className="flex justify-between items-center py-2 border-b border-border/40 last:border-0">
+    <span className="text-sm text-muted-foreground">{label}</span>
+    <EditableField
+      value={value || '-'}
+      onChange={(v) => onChange(v === '-' ? '' : v)}
+      className={`text-sm font-semibold ${value && value !== '-' ? 'text-foreground' : 'text-muted-foreground/50'}`}
+      suffix={suffix}
+    />
+  </div>
+);
+
 /* ─── main component ─── */
 const AutohausEditor: React.FC<TemplateEditorProps> = ({
   data, consumption, imageBase64, galleryImages, allImages,
@@ -84,11 +99,11 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
             </div>
 
             {allImages.length > 0 ? (
-              <div className="relative">
+              <div className="relative bg-muted/30">
                 <img
                   src={allImages[selectedImage] || allImages[0]}
                   alt={`${data.vehicle.brand} ${data.vehicle.model}`}
-                  className="w-full aspect-[16/9] object-cover"
+                  className="w-full max-h-[600px] object-contain mx-auto block"
                 />
                 {allImages.length > 1 && (
                   <>
@@ -110,7 +125,7 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
                 )}
               </div>
             ) : (
-              <div className="w-full aspect-[16/9] bg-muted flex flex-col items-center justify-center text-muted-foreground gap-3">
+              <div className="w-full aspect-[4/3] bg-muted flex flex-col items-center justify-center text-muted-foreground gap-3">
                 <Upload className="w-10 h-10 opacity-50" />
                 <span className="text-sm">Eigene Fahrzeugbilder hochladen · Thumbnail hover → zum Entfernen</span>
               </div>
@@ -148,7 +163,7 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
         </div>
 
         {/* ── ACCORDION SECTIONS ── */}
-        <Accordion type="multiple" defaultValue={['features', 'consumption', 'finance']} className="space-y-3">
+        <Accordion type="multiple" defaultValue={['features', 'consumption', 'techdata', 'finance']} className="space-y-3">
 
           {/* ── AUSSTATTUNG ── */}
           <AccordionItem value="features" className="bg-card rounded-2xl border border-border px-5 overflow-hidden">
@@ -268,41 +283,53 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
               </div>
 
               {/* Legal Pflichtangaben text */}
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-900 leading-relaxed">
+              <div className="bg-[hsl(213,50%,95%)] border border-[hsl(213,40%,78%)] rounded-xl p-4 text-xs text-[hsl(220,55%,23%)] leading-relaxed">
                 <div className="font-bold mb-1">Pflichtangaben nach Pkw-EnVKV (Anlage 4):</div>
-                <p>Die angegebenen Werte wurden nach den vorgeschriebenen WLTP-Messverfahren (Worldwide Harmonized Light Vehicle Test Procedure) ermittelt.</p>
+                <p>Die angegebenen Werte wurden nach dem vorgeschriebenen WLTP-Messverfahren (Worldwide Harmonised Light Vehicle Test Procedure) ermittelt.</p>
                 <p className="mt-1">Weitere Informationen zum offiziellen Kraftstoffverbrauch und den offiziellen spezifischen CO₂-Emissionen neuer Personenkraftwagen können dem „Leitfaden über den Kraftstoffverbrauch, die CO₂-Emissionen und den Stromverbrauch neuer Personenkraftwagen" entnommen werden, der an allen Verkaufsstellen und bei der <strong>Deutschen Automobil Treuhand GmbH (DAT)</strong> unentgeltlich erhältlich ist.</p>
               </div>
             </AccordionContent>
           </AccordionItem>
 
-          {/* ── TECHNISCHE DATEN ── */}
+          {/* ── TECHNISCHE DATEN (extended) ── */}
           <AccordionItem value="techdata" className="bg-card rounded-2xl border border-border px-5 overflow-hidden">
             <AccordionTrigger className="py-4 text-base font-semibold hover:no-underline">
               Technische Daten
             </AccordionTrigger>
             <AccordionContent className="pb-5">
+              <p className="text-[10px] text-muted-foreground mb-3">Felder mit „-" werden in der HTML-Ausgabe nicht angezeigt. Klicken um Werte einzutragen.</p>
               <div className="grid grid-cols-2 gap-x-6">
-                <ConsumptionRow label="Herkunft" value={consumption.origin} onChange={(v) => updateConsumption('origin', v)} />
-                <ConsumptionRow label="Kilometerstand" value={consumption.mileage} onChange={(v) => updateConsumption('mileage', v)} suffix="km" />
-                <ConsumptionRow label="Hubraum" value={consumption.displacement} onChange={(v) => updateConsumption('displacement', v)} suffix="cm³" />
+                {/* Power – special handling for kW/PS */}
                 <div className="flex justify-between items-center py-2 border-b border-border/40">
                   <span className="text-sm text-muted-foreground">Leistung</span>
                   <span className="text-sm font-semibold text-foreground flex items-center gap-1">
                     <EditableField
-                      value={(() => { const m = consumption.power?.match(/^([\d.,]+)/); return m ? m[1] : consumption.power || ''; })()}
-                      onChange={(v) => { const kw = parseFloat(v.replace(',', '.')); const ps = isNaN(kw) ? '' : String(Math.round(kw * 1.36)); updatePower(v && !isNaN(kw) ? `${v} kW (${ps} PS)` : v); }}
+                      value={(() => { const m = consumption.power?.match(/^([\d.,]+)/); return m ? m[1] : consumption.power || '-'; })()}
+                      onChange={(v) => { const kw = parseFloat(v.replace(',', '.')); const ps = isNaN(kw) ? '' : String(Math.round(kw * 1.36)); updatePower(v && !isNaN(kw) ? `${v} kW (${ps} PS)` : v === '-' ? '' : v); }}
                       className="text-sm font-semibold text-foreground"
                       suffix="kW"
                     />
                     {(() => { const m = consumption.power?.match(/^([\d.,]+)/); const kw = m ? parseFloat(m[1].replace(',', '.')) : NaN; return !isNaN(kw) ? <span className="text-xs text-muted-foreground ml-1">({Math.round(kw * 1.36)} PS)</span> : null; })()}
                   </span>
                 </div>
-                <ConsumptionRow label="Antriebsart" value={consumption.driveType} onChange={(v) => updateConsumption('driveType', v)} />
+                <TechDataRow label="HSN / TSN" value={consumption.hsnTsn || ''} onChange={(v) => updateConsumption('hsnTsn', v)} />
+                <TechDataRow label="Elektromotor Max. Leistung" value={consumption.electricMotorPower || ''} onChange={(v) => updateConsumption('electricMotorPower', v)} />
+                <TechDataRow label="Elektromotor Max. Drehmoment" value={consumption.electricMotorTorque || ''} onChange={(v) => updateConsumption('electricMotorTorque', v)} suffix="Nm" />
+                <TechDataRow label="Getriebeart" value={consumption.gearboxType || data.vehicle.transmission || ''} onChange={(v) => updateConsumption('gearboxType', v)} />
+                <TechDataRow label="Antriebsart" value={consumption.driveType} onChange={(v) => updateConsumption('driveType', v)} />
+                <TechDataRow label="Höchstgeschwindigkeit" value={consumption.topSpeed || ''} onChange={(v) => updateConsumption('topSpeed', v)} suffix="km/h" />
+                <TechDataRow label="Beschleunigung 0-100 km/h" value={consumption.acceleration || ''} onChange={(v) => updateConsumption('acceleration', v)} suffix="s" />
+                <TechDataRow label="Leergewicht" value={consumption.curbWeight || ''} onChange={(v) => updateConsumption('curbWeight', v)} suffix="kg" />
+                <TechDataRow label="Zulässiges Gesamtgewicht" value={consumption.grossWeight || ''} onChange={(v) => updateConsumption('grossWeight', v)} suffix="kg" />
+                <TechDataRow label="Hubraum" value={consumption.displacement} onChange={(v) => updateConsumption('displacement', v)} suffix="cm³" />
                 <div className="flex justify-between items-center py-2 border-b border-border/40">
                   <span className="text-sm text-muted-foreground">Kraftstoffart</span>
                   <FuelTypeDropdown value={consumption.fuelType} onChange={updateFuelType} />
                 </div>
+                <TechDataRow label="Herkunft" value={consumption.origin} onChange={(v) => updateConsumption('origin', v)} />
+                <TechDataRow label="Kilometerstand" value={consumption.mileage} onChange={(v) => updateConsumption('mileage', v)} suffix="km" />
+                <TechDataRow label="Farbe / Lackierung" value={consumption.paintColor || data.vehicle.color || ''} onChange={(v) => updateConsumption('paintColor', v)} />
+                <TechDataRow label="Fahrzeuggarantie" value={consumption.warranty || ''} onChange={(v) => updateConsumption('warranty', v)} />
               </div>
             </AccordionContent>
           </AccordionItem>
@@ -467,7 +494,7 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
           <div className="p-5 border-b border-border/60">
             <div className="grid grid-cols-2 gap-x-4 gap-y-1">
               <SpecCell icon={<Car className="w-3.5 h-3.5" />} label="Fahr.typ" value={`${data.vehicle.brand} ${data.vehicle.model}`.substring(0, 15)} onChange={(v) => updateVehicle('model', v)} />
-              <SpecCell icon={<Cog className="w-3.5 h-3.5" />} label="Getriebe" value={data.vehicle.transmission} onChange={(v) => updateVehicle('transmission', v)} />
+              <SpecCell icon={<Cog className="w-3.5 h-3.5" />} label="Getriebe" value={consumption.gearboxType || data.vehicle.transmission} onChange={(v) => updateVehicle('transmission', v)} />
               <SpecCell icon={<Calendar className="w-3.5 h-3.5" />} label="Zustand" value={data.category || 'Neufahrzeug'} onChange={(v) => onDataChange({ ...data, category: v })} />
               <SpecCell icon={<Zap className="w-3.5 h-3.5" />} label="Leistung" value={data.vehicle.power || ''} onChange={updatePower} />
               <SpecCell icon={<Fuel className="w-3.5 h-3.5" />} label="Kraftstoff" value={data.vehicle.fuelType} onChange={updateFuelType} />

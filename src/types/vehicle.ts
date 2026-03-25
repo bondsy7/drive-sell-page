@@ -25,6 +25,17 @@ export interface ConsumptionData {
   consumptionCombinedDischarged: string;
   electricRange: string;
   consumptionElectric: string;
+  // Extended technical data
+  hsnTsn: string;
+  electricMotorPower: string;
+  electricMotorTorque: string;
+  gearboxType: string;
+  topSpeed: string;
+  acceleration: string;
+  curbWeight: string;
+  grossWeight: string;
+  warranty: string;
+  paintColor: string;
 }
 
 export interface DealerData {
