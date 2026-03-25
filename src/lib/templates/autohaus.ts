@@ -290,8 +290,8 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
       <div class="card price-card">
         <h1>${data.vehicle.brand} ${data.vehicle.model}${data.vehicle.variant ? ' ' + data.vehicle.variant : ''}</h1>
         ${!isBuy && data.finance.monthlyRate
-          ? `<div class="rate">${data.finance.monthlyRate} <span style="font-size:.95rem;font-weight:400;color:#6b7280">/ Monat</span></div>
-             ${data.finance.totalPrice ? `<p class="list-price">Listenpreis: ${data.finance.totalPrice} inkl. MwSt.</p>` : ''}`
+          ? `<div class="rate">${data.finance.monthlyRate} <span style="font-size:.95rem;font-weight:400;color:#6b7280">/ Monat<sup style="font-size:.6rem;vertical-align:super">1</sup></span></div>
+             ${data.finance.totalPrice ? `<p class="list-price">Fahrzeugpreis: ${data.finance.totalPrice} inkl. MwSt.</p>` : ''}`
           : `<div class="rate">${data.finance.totalPrice || '–'}</div>
              <p class="list-price">${isBuy ? 'Fahrzeugpreis inkl. MwSt.' : ''}</p>`
         }
