@@ -93,7 +93,10 @@ JSON-Schema:
     "residualValue": "string mit € (Restwert / Schlussrate)",
     "interestRate": "string (eff. Jahreszins, z.B. '3,99 %')",
     "nominalInterestRate": "string (gebundener Sollzinssatz, z.B. '3,49 % p.a.')",
-    "totalAmount": "string mit € (Gesamtbetrag / Darlehenssumme / Gesamtdarlehensbetrag, z.B. '33.984,91 €' - dies ist die Summe aller Zahlungen inkl. Zinsen)"
+    "totalAmount": "string mit € (Gesamtbetrag / Darlehenssumme / Gesamtdarlehensbetrag, z.B. '33.984,91 €' - dies ist die Summe aller Zahlungen inkl. Zinsen)",
+    "excessMileageCost": "string (Kosten pro Mehrkilometer, z.B. '0,126 € pro km' - nur bei Leasing)",
+    "underMileageCost": "string (Vergütung/Erstattung pro Minderkilometer, z.B. '0,072 € pro km' - nur bei Leasing)",
+    "mileageTolerance": "string (Freigrenze Kilometer, z.B. '2.500' - nur bei Leasing)"
   },
   "dealer": {
     "name": "string (Autohaus-Name)",

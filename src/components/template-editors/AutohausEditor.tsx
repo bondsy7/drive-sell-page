@@ -391,7 +391,10 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
                           <span className="text-xs text-muted-foreground">Jahresfahrleistung</span>
                           <AnnualMileageDropdown value={data.finance.annualMileage || ''} onChange={(v) => updateFinance('annualMileage', v)} className="w-[160px]" />
                         </div>
-                        <ConsumptionRow label="Restwert" value={data.finance.residualValue || ''} onChange={(v) => updateFinance('residualValue', v)} suffix="€" />
+                      <ConsumptionRow label="Restwert" value={data.finance.residualValue || ''} onChange={(v) => updateFinance('residualValue', v)} suffix="€" />
+                      <ConsumptionRow label="Mehrkilometer" value={data.finance.excessMileageCost || ''} onChange={(v) => updateFinance('excessMileageCost', v)} suffix="€ pro km" />
+                      <ConsumptionRow label="Minderkilometer (Vergütung)" value={data.finance.underMileageCost || ''} onChange={(v) => updateFinance('underMileageCost', v)} suffix="€ pro km" />
+                      <ConsumptionRow label="Freigrenze" value={data.finance.mileageTolerance || ''} onChange={(v) => updateFinance('mileageTolerance', v)} suffix="km" />
                       </>
                     ) : (
                       <ConsumptionRow label="Schlussrate" value={data.finance.residualValue || ''} onChange={(v) => updateFinance('residualValue', v)} suffix="€" />

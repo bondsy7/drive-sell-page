@@ -117,6 +117,13 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
     if (isLeasing && leasingFactor) conditionPairs.push(['Leasingfaktor', leasingFactor]);
     if (isLeasing && data.finance.residualValue) conditionPairs.push(['Restwert', data.finance.residualValue]);
     if (!isLeasing && data.finance.residualValue) conditionPairs.push(['Schlussrate', data.finance.residualValue]);
+    if (isLeasing && data.finance.excessMileageCost) conditionPairs.push(['Mehrkilometer', data.finance.excessMileageCost]);
+    if (isLeasing && data.finance.underMileageCost) conditionPairs.push(['Minderkilometer (Vergütung)', data.finance.underMileageCost]);
+
+    // Freigrenze as standalone text below grid
+    const freigrenzeHTML = isLeasing && data.finance.mileageTolerance
+      ? `<div style="margin-top:.5rem;font-size:.82rem;color:#6b7280">Freigrenze: ${data.finance.mileageTolerance}</div>`
+      : '';
 
     const conditionCells = conditionPairs
       .filter(([, v]) => v)
@@ -131,6 +138,7 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
           <div style="font-size:.78rem;opacity:.7;margin-top:.3rem">inkl. MwSt.</div>
         </div>
         <div class="grid-2">${conditionCells}</div>
+        ${freigrenzeHTML}
         ${data.finance.totalPrice ? (() => {
           const tp = parsePrice(data.finance.totalPrice);
           const dp = isLeasing ? parsePrice(data.finance.specialPayment) : parsePrice(data.finance.downPayment);

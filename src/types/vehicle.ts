@@ -89,6 +89,9 @@ export interface VehicleData {
     interestRate: string;
     nominalInterestRate?: string;
     totalAmount?: string;
+    excessMileageCost?: string;
+    underMileageCost?: string;
+    mileageTolerance?: string;
   };
   dealer: DealerData;
   consumption: ConsumptionData;
