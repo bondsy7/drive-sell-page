@@ -116,6 +116,7 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
     ];
     if (isLeasing && leasingFactor) conditionPairs.push(['Leasingfaktor', leasingFactor]);
     if (isLeasing && data.finance.residualValue) conditionPairs.push(['Restwert', data.finance.residualValue]);
+    if (!isLeasing && data.finance.residualValue) conditionPairs.push(['Schlussrate', data.finance.residualValue]);
 
     const conditionCells = conditionPairs
       .filter(([, v]) => v)
