@@ -91,7 +91,8 @@ JSON-Schema:
     "specialPayment": "string mit € (Sonderzahlung / Leasing-Sonderzahlung)",
     "residualValue": "string mit € (Restwert / Schlussrate)",
     "interestRate": "string (eff. Jahreszins, z.B. '3,99 %')",
-    "nominalInterestRate": "string (gebundener Sollzinssatz, z.B. '3,49 % p.a.')"
+    "nominalInterestRate": "string (gebundener Sollzinssatz, z.B. '3,49 % p.a.')",
+    "totalAmount": "string mit € (Gesamtbetrag / Darlehenssumme / Gesamtdarlehensbetrag, z.B. '33.984,91 €' - dies ist die Summe aller Zahlungen inkl. Zinsen)"
   },
   "dealer": {
     "name": "string (Autohaus-Name)",
