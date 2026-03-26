@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { isPluginHybrid } from '@/lib/co2-utils';
 import { getFinanceSectionTitle, calculateLeasingFactor } from '@/lib/templates/shared';
+import { parsePrice, formatPrice } from '@/lib/finance-utils';
 import type { TemplateEditorProps } from './types';
 
 /* ─── small helpers ─── */
