@@ -385,6 +385,125 @@ Gib das Ergebnis als JSON zurück.`;
     if (!c.power && parsed.vehicle?.power) c.power = parsed.vehicle.power;
     if (!c.fuelType && parsed.vehicle?.fuelType) c.fuelType = parsed.vehicle.fuelType;
 
+    // ── AUTO-LOOKUP: Hubraum + EnVKV wenn nicht im PDF ──
+    const brand = parsed.vehicle?.brand || '';
+    const model = parsed.vehicle?.model || '';
+    const variant = parsed.vehicle?.variant || '';
+    const vehiclePower = c.power || parsed.vehicle?.power || '';
+    const vehicleFuelType = c.fuelType || parsed.vehicle?.fuelType || '';
+    const vehicleYear = parsed.vehicle?.year || '';
+
+    const needsDisplacement = !c.displacement || c.displacement.trim() === '';
+    const needsEnergyCost = !c.energyCostPerYear || c.energyCostPerYear.trim() === '';
+    const needsTax = !c.vehicleTax || c.vehicleTax.trim() === '';
+    const needsCo2Costs = !c.co2CostMedium || c.co2CostMedium.trim() === '';
+
+    if (brand && model && (needsDisplacement || needsEnergyCost || needsTax || needsCo2Costs)) {
+      console.log("[analyze-pdf] Auto-lookup needed. Displacement missing:", needsDisplacement);
+      try {
+        const lookupPrompt = `Du bist eine technische Fahrzeugdatenbank. Ermittle die fehlenden technischen Daten für folgendes Fahrzeug:
+
+Marke: ${brand}
+Modell: ${model}
+Variante: ${variant}
+Leistung: ${vehiclePower}
+Kraftstoff: ${vehicleFuelType}
+Baujahr: ${vehicleYear}
+
+Bereits bekannte Daten:
+- Hubraum: ${c.displacement || 'UNBEKANNT'}
+- CO₂ kombiniert: ${c.co2Emissions || 'UNBEKANNT'}
+- Verbrauch kombiniert: ${c.consumptionCombined || 'UNBEKANNT'}
+
+Antworte NUR mit JSON:
+{
+  "displacement": "string (Hubraum in cm³, z.B. '1.998 cm³' - NUR angeben wenn oben UNBEKANNT)",
+  "co2Emissions": "string (CO₂ g/km WLTP falls oben UNBEKANNT)",
+  "consumptionCombined": "string (l/100km WLTP falls oben UNBEKANNT)",
+  "vehicleTax": "number (Kfz-Steuer pro Jahr in Euro, berechne basierend auf Hubraum + CO₂ + Antrieb + Jahr)",
+  "energyCostPerYear": "number (Energiekosten pro Jahr in Euro bei 15.000 km/Jahr)",
+  "co2CostLow": "number (CO₂-Kosten niedrig über 10 Jahre bei 55€/t, 15.000 km/Jahr)",
+  "co2CostMedium": "number (CO₂-Kosten mittel über 10 Jahre bei 115€/t, 15.000 km/Jahr)",
+  "co2CostHigh": "number (CO₂-Kosten hoch über 10 Jahre bei 190€/t, 15.000 km/Jahr)"
+}
+
+Berechne die Kosten mit diesen Formeln:
+- Energiekosten = Verbrauch/100 × 15.000 × Kraftstoffpreis (Benzin: 1,80€/l, Diesel: 1,70€/l, Strom: 0,35€/kWh)
+- CO₂-Kosten = CO₂_g/km × 15.000/1000 × Preis_pro_Tonne/1000 × 10 Jahre
+- Kfz-Steuer für PKW ab 2021: Hubraum-Anteil (Benzin: 2€ je 100cm³, Diesel: 9,50€ je 100cm³) + CO₂-Stufen ab 95 g/km
+
+Wenn du den genauen Hubraum nicht kennst, schätze ihn anhand des Modellnamens und der Leistung.
+Antworte NUR mit JSON, keine Erklärungen.`;
+
+        const lookupResp = await fetch(geminiUrl, {
+          method: "POST",
+          headers: {
+            "x-goog-api-key": GEMINI_API_KEY,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: lookupPrompt }] }],
+            generationConfig: {
+              responseMimeType: "application/json",
+              temperature: 0.1,
+            },
+          }),
+        });
+
+        if (lookupResp.ok) {
+          const lookupData = await lookupResp.json();
+          let lookupContent = lookupData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+          lookupContent = lookupContent.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+          
+          if (lookupContent) {
+            const lookup = JSON.parse(lookupContent);
+            console.log("[analyze-pdf] Lookup result:", JSON.stringify(lookup));
+
+            // Fill displacement if missing
+            if (needsDisplacement && lookup.displacement) {
+              c.displacement = lookup.displacement;
+              console.log("[analyze-pdf] Auto-filled displacement:", c.displacement);
+            }
+
+            // Fill CO₂ if missing
+            if ((!c.co2Emissions || c.co2Emissions.trim() === '') && lookup.co2Emissions) {
+              c.co2Emissions = lookup.co2Emissions;
+              if (!c.co2Class) c.co2Class = deriveCO2Class(c.co2Emissions);
+            }
+
+            // Fill consumption if missing
+            if ((!c.consumptionCombined || c.consumptionCombined.trim() === '') && lookup.consumptionCombined) {
+              c.consumptionCombined = lookup.consumptionCombined;
+            }
+
+            // Fill EnVKV cost fields if missing
+            if (needsTax && lookup.vehicleTax) {
+              const taxVal = typeof lookup.vehicleTax === 'number' ? lookup.vehicleTax : parseFloat(lookup.vehicleTax);
+              if (taxVal > 0) c.vehicleTax = `${Math.round(taxVal).toLocaleString('de-DE')} €/Jahr`;
+            }
+
+            if (needsEnergyCost && lookup.energyCostPerYear) {
+              const ecVal = typeof lookup.energyCostPerYear === 'number' ? lookup.energyCostPerYear : parseFloat(lookup.energyCostPerYear);
+              if (ecVal > 0) c.energyCostPerYear = `${Math.round(ecVal).toLocaleString('de-DE')} €`;
+            }
+
+            if (needsCo2Costs) {
+              const fmt = (v: any) => {
+                const n = typeof v === 'number' ? v : parseFloat(v);
+                return n > 0 ? `${Math.round(n).toLocaleString('de-DE')} €` : '';
+              };
+              if (lookup.co2CostLow) c.co2CostLow = fmt(lookup.co2CostLow);
+              if (lookup.co2CostMedium) c.co2CostMedium = fmt(lookup.co2CostMedium);
+              if (lookup.co2CostHigh) c.co2CostHigh = fmt(lookup.co2CostHigh);
+            }
+          }
+        }
+      } catch (lookupErr) {
+        console.warn("[analyze-pdf] Auto-lookup failed (non-critical):", lookupErr);
+        // Non-critical: continue without lookup data
+      }
+    }
+
     // Ensure arrays/objects exist
     if (parsed.vehicle && !Array.isArray(parsed.vehicle.features)) parsed.vehicle.features = [];
 
