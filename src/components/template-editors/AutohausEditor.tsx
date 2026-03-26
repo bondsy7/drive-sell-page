@@ -426,13 +426,13 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
                   </div>
 
                   {/* Bank selector dropdown */}
-                  {relevantBanks.length > 0 && (
+                  {dealerBanks.length > 0 && (
                     <div className="space-y-1.5">
-                      <label className="text-xs text-muted-foreground">{isLeasing ? 'Leasing-Bank' : 'Finanzierungs-Bank'} wählen</label>
+                      <label className="text-xs text-muted-foreground">Gespeicherte Banktexte</label>
                       <Select
-                        value={isLeasing ? (data.dealer.leasingBank || '') : (data.dealer.financingBank || '')}
+                        value=""
                         onValueChange={(bankId) => {
-                          const bank = relevantBanks.find(b => b.bank_name === bankId);
+                          const bank = dealerBanks.find(b => b.id === bankId);
                           if (bank) {
                             if (isLeasing) {
                               updateDealer('leasingBank', bank.bank_name);
@@ -445,12 +445,12 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
                         }}
                       >
                         <SelectTrigger className="h-9 text-sm">
-                          <SelectValue placeholder="Bank auswählen..." />
+                          <SelectValue placeholder="Banktext aus Profil wählen..." />
                         </SelectTrigger>
                         <SelectContent>
-                          {relevantBanks.map(bank => (
-                            <SelectItem key={bank.id} value={bank.bank_name || bank.id}>
-                              {bank.bank_name || '(kein Name)'}
+                          {dealerBanks.map(bank => (
+                            <SelectItem key={bank.id} value={bank.id}>
+                              {bank.bank_name} ({bank.bank_type === 'leasing' ? 'Leasing' : 'Finanzierung'})
                             </SelectItem>
                           ))}
                         </SelectContent>
