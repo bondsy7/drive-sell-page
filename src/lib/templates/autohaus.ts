@@ -139,14 +139,16 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
         </div>
         <div class="grid-2">${conditionCells}</div>
         ${freigrenzeHTML}
-        ${data.finance.totalPrice ? (() => {
+        ${(() => {
           const tp = parsePrice(data.finance.totalPrice);
           const dp = isLeasing ? parsePrice(data.finance.specialPayment) : parsePrice(data.finance.downPayment);
           const fp = parsePrice(data.finance.residualValue);
           const mr = parsePrice(data.finance.monthlyRate);
           const dur = parseInt((data.finance.duration || '').match(/(\d+)/)?.[1] || '0');
-          const nettodarlehensbetrag = tp - dp;
+          const nettodarlehensbetrag = tp > 0 && dp >= 0 ? tp - dp : 0;
           const gesamtbetrag = data.finance.totalAmount ? parsePrice(data.finance.totalAmount) : (mr > 0 && dur > 0 ? (mr * dur + dp + fp) : 0);
+          const hasAnyRow = (!isLeasing && fp > 0) || data.finance.interestRate || (!isLeasing && data.finance.nominalInterestRate) || nettodarlehensbetrag > 0 || gesamtbetrag > 0;
+          if (!hasAnyRow) return '';
           return `
         <div style="margin-top:1rem;border-top:1px solid #e5e7eb;padding-top:1rem">
           <div style="font-size:.85rem">
@@ -154,10 +156,10 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
               <span style="color:#6b7280">Schlussrate</span>
               <span style="font-weight:600">${formatPrice(fp)}</span>
             </div>` : ''}
-            <div style="display:flex;justify-content:space-between;margin-bottom:.3rem">
+            ${data.finance.interestRate ? `<div style="display:flex;justify-content:space-between;margin-bottom:.3rem">
               <span style="color:#6b7280">Effektiver Jahreszins</span>
-              <span style="font-weight:600">${data.finance.interestRate || '–'}</span>
-            </div>
+              <span style="font-weight:600">${data.finance.interestRate}</span>
+            </div>` : ''}
             ${!isLeasing && data.finance.nominalInterestRate ? `<div style="display:flex;justify-content:space-between;margin-bottom:.3rem">
               <span style="color:#6b7280">Gebundener Sollzinssatz</span>
               <span style="font-weight:600">${data.finance.nominalInterestRate}</span>
@@ -172,7 +174,7 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
             </div>` : ''}
           </div>
         </div>`;
-        })() : ''}
+        })()}
         ${legalTextHTML}
       </div>`;
   }

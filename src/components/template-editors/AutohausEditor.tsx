@@ -415,8 +415,25 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
                         </div>
                       ) : null;
                     })()}
-                    {/* Gesamtbetrag (from PDF or manual) */}
-                    <ConsumptionRow label="Gesamtbetrag" value={data.finance.totalAmount || ''} onChange={(v) => updateFinance('totalAmount', v)} suffix="€" />
+                    {/* Gesamtbetrag (from PDF or manual, auto-calculated as fallback) */}
+                    {(() => {
+                      const manualVal = data.finance.totalAmount || '';
+                      if (manualVal) {
+                        return <ConsumptionRow label="Gesamtbetrag" value={manualVal} onChange={(v) => updateFinance('totalAmount', v)} suffix="€" />;
+                      }
+                      // Auto-calculate: Anzahlung/Sonderzahlung + (Rate × Laufzeit) + Schlussrate/Restwert
+                      const dp = isLeasing ? parsePrice(data.finance.specialPayment) : parsePrice(data.finance.downPayment);
+                      const mr = parsePrice(data.finance.monthlyRate);
+                      const dur = parseInt((data.finance.duration || '').match(/(\d+)/)?.[1] || '0');
+                      const fp = parsePrice(data.finance.residualValue);
+                      const calc = mr > 0 && dur > 0 ? (dp + mr * dur + fp) : 0;
+                      return (
+                        <div className="flex items-center justify-between py-1.5 border-b border-border/30">
+                          <span className="text-xs text-muted-foreground">Gesamtbetrag</span>
+                          <EditableField value={calc > 0 ? formatPrice(calc) : ''} onChange={(v) => updateFinance('totalAmount', v)} className="text-sm font-semibold text-foreground" suffix="€" />
+                        </div>
+                      );
+                    })()}
                   </>
                 )}
                 {isBuyCategory && (
