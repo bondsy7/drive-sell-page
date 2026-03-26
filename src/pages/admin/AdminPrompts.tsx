@@ -89,7 +89,8 @@ JSON-Schema:
     "annualMileage": "string (z.B. '10.000 km/Jahr')",
     "specialPayment": "string mit € (Sonderzahlung / Leasing-Sonderzahlung)",
     "residualValue": "string mit € (Restwert / Schlussrate)",
-    "interestRate": "string (eff. Jahreszins, z.B. '3,99 %')"
+    "interestRate": "string (eff. Jahreszins, z.B. '3,99 %')",
+    "nominalInterestRate": "string (gebundener Sollzinssatz, z.B. '3,49 % p.a.')"
   },
   "dealer": {
     "name": "string (Autohaus-Name)",

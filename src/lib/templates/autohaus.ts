@@ -150,6 +150,10 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
               <span style="color:#6b7280">Effektiver Jahreszins</span>
               <span style="font-weight:600">${data.finance.interestRate || '–'}</span>
             </div>
+            ${!isLeasing && data.finance.nominalInterestRate ? `<div style="display:flex;justify-content:space-between;margin-bottom:.3rem">
+              <span style="color:#6b7280">Gebundener Sollzinssatz</span>
+              <span style="font-weight:600">${data.finance.nominalInterestRate}</span>
+            </div>` : ''}
             ${nettodarlehensbetrag > 0 ? `<div style="display:flex;justify-content:space-between;margin-bottom:.3rem">
               <span style="color:#6b7280">Nettodarlehensbetrag</span>
               <span style="font-weight:600">${formatPrice(nettodarlehensbetrag)}</span>

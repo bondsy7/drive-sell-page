@@ -397,6 +397,9 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
                       <ConsumptionRow label="Schlussrate" value={data.finance.residualValue || ''} onChange={(v) => updateFinance('residualValue', v)} suffix="€" />
                     )}
                     <ConsumptionRow label="Effektiver Jahreszins" value={data.finance.interestRate || ''} onChange={(v) => updateFinance('interestRate', v)} suffix="%" />
+                    {!isLeasing && (
+                      <ConsumptionRow label="Gebundener Sollzinssatz" value={data.finance.nominalInterestRate || ''} onChange={(v) => updateFinance('nominalInterestRate', v)} suffix="% p.a." />
+                    )}
                     {/* Calculated: Nettodarlehensbetrag & Gesamtbetrag */}
                     {(() => {
                       const tp = parsePrice(data.finance.totalPrice);
