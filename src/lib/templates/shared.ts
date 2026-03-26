@@ -188,6 +188,8 @@ export function buildFinanceItems(data: VehicleData, itemClass = 'fin-item', lab
     items.push(['Jahresfahrleistung', data.finance.annualMileage]);
     if (cat.includes('leasing')) {
       items.push(['Restwert', data.finance.residualValue]);
+    } else if (data.finance.residualValue) {
+      items.push(['Schlussrate', data.finance.residualValue]);
     }
 
     // Leasingfaktor for leasing

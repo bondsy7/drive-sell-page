@@ -116,6 +116,7 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
     ];
     if (isLeasing && leasingFactor) conditionPairs.push(['Leasingfaktor', leasingFactor]);
     if (isLeasing && data.finance.residualValue) conditionPairs.push(['Restwert', data.finance.residualValue]);
+    if (!isLeasing && data.finance.residualValue) conditionPairs.push(['Schlussrate', data.finance.residualValue]);
 
     const conditionCells = conditionPairs
       .filter(([, v]) => v)
@@ -141,6 +142,10 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
           return `
         <div style="margin-top:1rem;border-top:1px solid #e5e7eb;padding-top:1rem">
           <div style="font-size:.85rem">
+            ${!isLeasing && fp > 0 ? `<div style="display:flex;justify-content:space-between;margin-bottom:.3rem">
+              <span style="color:#6b7280">Schlussrate</span>
+              <span style="font-weight:600">${formatPrice(fp)}</span>
+            </div>` : ''}
             <div style="display:flex;justify-content:space-between;margin-bottom:.3rem">
               <span style="color:#6b7280">Effektiver Jahreszins</span>
               <span style="font-weight:600">${data.finance.interestRate || '–'}</span>
