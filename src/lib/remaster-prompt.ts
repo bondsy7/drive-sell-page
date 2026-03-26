@@ -100,13 +100,14 @@ export function buildMasterPrompt(config: RemasterConfig, vehicleDescription?: s
     parts.push(scenePrompt);
   }
 
-  // License plate
+  // License plate – default is ALWAYS remove
   if (config.licensePlate === 'blur') {
     parts.push('Das Nummernschild des Fahrzeugs soll unkenntlich gemacht werden – verwische oder blurre es, sodass die Zeichen nicht mehr lesbar sind.');
-  } else if (config.licensePlate === 'remove') {
-    parts.push('Entferne das Nummernschild komplett vom Fahrzeug. Die Stelle soll sauber und natürlich aussehen, als wäre nie ein Kennzeichen montiert gewesen.');
   } else if (config.licensePlate === 'custom' && config.customPlateText) {
     parts.push(`Ersetze das Nummernschild des Fahrzeugs durch ein deutsches Kennzeichen mit dem Text "${config.customPlateText}". Das Kennzeichen soll fotorealistisch aussehen.`);
+  } else {
+    // 'keep' and 'remove' both remove the plate completely
+    parts.push('Entferne das Nummernschild KOMPLETT vom Fahrzeug. Die Kennzeichenhalterung und die gesamte Nummernschildfläche müssen vollständig entfernt werden. Die Stelle muss sauber, glatt und nahtlos in die Karosserie übergehen, als wäre dort NIE ein Kennzeichen oder eine Halterung montiert gewesen. Es darf KEIN Rest eines Nummernschildes, keiner Halterung und kein leerer Rahmen sichtbar sein.');
   }
 
   // Color change
