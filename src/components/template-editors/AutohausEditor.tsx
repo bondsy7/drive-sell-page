@@ -159,6 +159,21 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
         {/* ── ACCORDION SECTIONS ── */}
         <Accordion type="multiple" defaultValue={['features', 'consumption', 'techdata', 'finance']} className="space-y-3">
 
+          {/* ── FAHRZEUGBESCHREIBUNG ── */}
+          <AccordionItem value="description" className="bg-card rounded-2xl border border-border px-5 overflow-hidden">
+            <AccordionTrigger className="py-4 text-base font-semibold hover:no-underline">
+              Fahrzeugbeschreibung
+            </AccordionTrigger>
+            <AccordionContent className="pb-5">
+              <textarea
+                value={data.vehicle.description || ''}
+                onChange={(e) => onDataChange({ ...data, vehicle: { ...data.vehicle, description: e.target.value } })}
+                className="w-full text-sm text-foreground bg-muted/30 border border-border rounded-xl p-3 min-h-[80px] resize-y focus:outline-none focus:ring-2 focus:ring-amber-400"
+                placeholder="Beschreibung des Fahrzeugs (2-3 Sätze)..."
+              />
+            </AccordionContent>
+          </AccordionItem>
+
           {/* ── AUSSTATTUNG ── */}
           <AccordionItem value="features" className="bg-card rounded-2xl border border-border px-5 overflow-hidden">
             <AccordionTrigger className="py-4 text-base font-semibold hover:no-underline">
