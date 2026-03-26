@@ -138,6 +138,7 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
           <div style="font-size:.78rem;opacity:.7;margin-top:.3rem">inkl. MwSt.</div>
         </div>
         <div class="grid-2">${conditionCells}</div>
+        ${freigrenzeHTML}
         ${data.finance.totalPrice ? (() => {
           const tp = parsePrice(data.finance.totalPrice);
           const dp = isLeasing ? parsePrice(data.finance.specialPayment) : parsePrice(data.finance.downPayment);
