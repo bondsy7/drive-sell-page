@@ -400,32 +400,20 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
                     {!isLeasing && (
                       <ConsumptionRow label="Gebundener Sollzinssatz" value={data.finance.nominalInterestRate || ''} onChange={(v) => updateFinance('nominalInterestRate', v)} suffix="% p.a." />
                     )}
-                    {/* Calculated: Nettodarlehensbetrag & Gesamtbetrag */}
+                    {/* Nettodarlehensbetrag (calculated) */}
                     {(() => {
                       const tp = parsePrice(data.finance.totalPrice);
                       const dp = isLeasing ? parsePrice(data.finance.specialPayment) : parsePrice(data.finance.downPayment);
-                      const fp = parsePrice(data.finance.residualValue);
-                      const mr = parsePrice(data.finance.monthlyRate);
-                      const dur = parseInt((data.finance.duration || '').match(/(\d+)/)?.[1] || '0');
                       const netto = tp - dp;
-                      const gesamt = mr > 0 && dur > 0 ? (mr * dur + dp + fp) : 0;
-                      return (
-                        <>
-                          {netto > 0 && (
-                            <div className="flex items-center justify-between py-1.5 border-b border-border/30">
-                              <span className="text-xs text-muted-foreground">Nettodarlehensbetrag</span>
-                              <span className="text-sm font-semibold text-foreground">{formatPrice(netto)}</span>
-                            </div>
-                          )}
-                          {gesamt > 0 && (
-                            <div className="flex items-center justify-between py-1.5 border-b border-border/30">
-                              <span className="text-xs text-muted-foreground">Gesamtbetrag</span>
-                              <span className="text-sm font-semibold text-foreground">{formatPrice(gesamt)}</span>
-                            </div>
-                          )}
-                        </>
-                      );
+                      return netto > 0 ? (
+                        <div className="flex items-center justify-between py-1.5 border-b border-border/30">
+                          <span className="text-xs text-muted-foreground">Nettodarlehensbetrag</span>
+                          <span className="text-sm font-semibold text-foreground">{formatPrice(netto)}</span>
+                        </div>
+                      ) : null;
                     })()}
+                    {/* Gesamtbetrag (from PDF or manual) */}
+                    <ConsumptionRow label="Gesamtbetrag" value={data.finance.totalAmount || ''} onChange={(v) => updateFinance('totalAmount', v)} suffix="€" />
                   </>
                 )}
                 {isBuyCategory && (

@@ -58,6 +58,7 @@ FINANZIERUNG:
 - "Sonderzahlung" = "Anzahlung" bei manchen Händlern
 - "Schlussrate" = "Restwert" bei manchen Angeboten
 - Leasingfaktor, eff. Jahreszins wenn vorhanden
+- "Gesamtbetrag" = "Darlehenssumme" = "Gesamtdarlehensbetrag" - dies ist die Summe aller Zahlungen des Kreditnehmers (inkl. Zinsen), NICHT der Fahrzeugpreis
 
 VERBRAUCH - Suche nach ALLEN dieser Werte:
 - Kombiniert, Innerorts/Innenstadt, Außerorts/Stadtrand, Landstraße, Autobahn
