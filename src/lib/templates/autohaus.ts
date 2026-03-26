@@ -138,7 +138,7 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
           const mr = parsePrice(data.finance.monthlyRate);
           const dur = parseInt((data.finance.duration || '').match(/(\d+)/)?.[1] || '0');
           const nettodarlehensbetrag = tp - dp;
-          const gesamtbetrag = mr > 0 && dur > 0 ? (mr * dur + dp + fp) : 0;
+          const gesamtbetrag = data.finance.totalAmount ? parsePrice(data.finance.totalAmount) : (mr > 0 && dur > 0 ? (mr * dur + dp + fp) : 0);
           return `
         <div style="margin-top:1rem;border-top:1px solid #e5e7eb;padding-top:1rem">
           <div style="font-size:.85rem">

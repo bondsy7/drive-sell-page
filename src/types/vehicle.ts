@@ -88,6 +88,7 @@ export interface VehicleData {
     residualValue: string;
     interestRate: string;
     nominalInterestRate?: string;
+    totalAmount?: string;
   };
   dealer: DealerData;
   consumption: ConsumptionData;
