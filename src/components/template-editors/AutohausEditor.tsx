@@ -157,7 +157,7 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
 
 
         {/* ── ACCORDION SECTIONS ── */}
-        <Accordion type="multiple" defaultValue={['features', 'consumption', 'techdata', 'finance']} className="space-y-3">
+        <Accordion type="multiple" defaultValue={['description', 'features', 'consumption', 'techdata', 'finance']} className="space-y-3">
 
           {/* ── FAHRZEUGBESCHREIBUNG ── */}
           <AccordionItem value="description" className="bg-card rounded-2xl border border-border px-5 overflow-hidden">
