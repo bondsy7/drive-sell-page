@@ -79,7 +79,8 @@ JSON-Schema:
     "fuelType": "Benzin|Diesel|Elektro|Hybrid|Plug-in-Hybrid",
     "transmission": "Automatik|Manuell|Doppelkupplungsgetriebe|CVT",
     "power": "string (z.B. '150 PS / 110 kW' oder Systemleistung bei Hybrid)",
-    "features": ["NUR Highlights, max 15-20, keine 'Ohne'-Einträge, keine Trivialausstattung"]
+    "features": ["NUR Highlights, max 15-20, keine 'Ohne'-Einträge, keine Trivialausstattung"],
+    "description": "string (2-3 Sätze Fahrzeugbeschreibung: Beschreibe das Fahrzeug und seine wichtigsten Ausstattungsmerkmale in verkaufsförderndem Ton. Erwähne Marke, Modell, Motorisierung, besondere Highlights und Zustand.)"
   },
   "finance": {
     "monthlyRate": "string mit € (z.B. '299,00 €')",
@@ -271,6 +272,7 @@ serve(async (req) => {
 - CO₂-Emissionen und CO₂-Klasse (bei PHEV: BEIDE Klassen!)
 - Energiekosten, Kraftstoffpreis, CO₂-Kosten, Kfz-Steuer
 - Ausstattungs-HIGHLIGHTS (max 15-20, keine "Ohne"-Einträge, keine Trivialausstattung, NUR vom Hauptfahrzeug!)
+- Fahrzeugbeschreibung: 2-3 verkaufsfördernde Sätze über das Fahrzeug (Marke, Modell, Motor, Highlights, Zustand)
 - Bei Plug-in-Hybrid: gewichtete UND entladene Werte, Stromverbrauch, E-Reichweite
 
 Wenn CO₂-Klasse nicht angegeben aber g/km-Wert vorhanden: Klasse ableiten!

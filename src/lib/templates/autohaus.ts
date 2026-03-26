@@ -98,7 +98,7 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
   const techHTML = techRows ? `<div class="card"><h2>Technische Daten</h2><div class="tech-grid">${techRows}</div></div>` : '';
 
   // Vehicle description
-  const descText = data.vehicle.variant || '';
+  const descText = data.vehicle.description || '';
   const descHTML = descText ? `<div class="card"><h2>Fahrzeugbeschreibung</h2><p class="desc-text">${descText}</p></div>` : '';
 
   // Legal text

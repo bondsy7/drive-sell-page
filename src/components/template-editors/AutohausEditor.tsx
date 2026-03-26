@@ -86,7 +86,7 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
   const [selectedImage, setSelectedImage] = useState(0);
   const cat = category.toLowerCase();
   const isLeasing = cat.includes('leasing');
-  const relevantBanks = dealerBanks.filter(b => b.bank_type === (isLeasing ? 'leasing' : 'financing'));
+  
 
   return (
     <div className="flex gap-6 items-start w-full">
@@ -157,7 +157,22 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
 
 
         {/* ── ACCORDION SECTIONS ── */}
-        <Accordion type="multiple" defaultValue={['features', 'consumption', 'techdata', 'finance']} className="space-y-3">
+        <Accordion type="multiple" defaultValue={['description', 'features', 'consumption', 'techdata', 'finance']} className="space-y-3">
+
+          {/* ── FAHRZEUGBESCHREIBUNG ── */}
+          <AccordionItem value="description" className="bg-card rounded-2xl border border-border px-5 overflow-hidden">
+            <AccordionTrigger className="py-4 text-base font-semibold hover:no-underline">
+              Fahrzeugbeschreibung
+            </AccordionTrigger>
+            <AccordionContent className="pb-5">
+              <textarea
+                value={data.vehicle.description || ''}
+                onChange={(e) => onDataChange({ ...data, vehicle: { ...data.vehicle, description: e.target.value } })}
+                className="w-full text-sm text-foreground bg-muted/30 border border-border rounded-xl p-3 min-h-[80px] resize-y focus:outline-none focus:ring-2 focus:ring-amber-400"
+                placeholder="Beschreibung des Fahrzeugs (2-3 Sätze)..."
+              />
+            </AccordionContent>
+          </AccordionItem>
 
           {/* ── AUSSTATTUNG ── */}
           <AccordionItem value="features" className="bg-card rounded-2xl border border-border px-5 overflow-hidden">
@@ -411,13 +426,13 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
                   </div>
 
                   {/* Bank selector dropdown */}
-                  {relevantBanks.length > 0 && (
+                  {dealerBanks.length > 0 && (
                     <div className="space-y-1.5">
-                      <label className="text-xs text-muted-foreground">{isLeasing ? 'Leasing-Bank' : 'Finanzierungs-Bank'} wählen</label>
+                      <label className="text-xs text-muted-foreground">Gespeicherte Banktexte</label>
                       <Select
-                        value={isLeasing ? (data.dealer.leasingBank || '') : (data.dealer.financingBank || '')}
+                        value=""
                         onValueChange={(bankId) => {
-                          const bank = relevantBanks.find(b => b.bank_name === bankId);
+                          const bank = dealerBanks.find(b => b.id === bankId);
                           if (bank) {
                             if (isLeasing) {
                               updateDealer('leasingBank', bank.bank_name);
@@ -430,12 +445,12 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
                         }}
                       >
                         <SelectTrigger className="h-9 text-sm">
-                          <SelectValue placeholder="Bank auswählen..." />
+                          <SelectValue placeholder="Banktext aus Profil wählen..." />
                         </SelectTrigger>
                         <SelectContent>
-                          {relevantBanks.map(bank => (
-                            <SelectItem key={bank.id} value={bank.bank_name || bank.id}>
-                              {bank.bank_name || '(kein Name)'}
+                          {dealerBanks.map(bank => (
+                            <SelectItem key={bank.id} value={bank.id}>
+                              {bank.bank_name} ({bank.bank_type === 'leasing' ? 'Leasing' : 'Finanzierung'})
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -443,12 +458,15 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
                     </div>
                   )}
 
-                  <textarea
-                    value={isLeasing ? (data.dealer.leasingLegalText || '') : (data.dealer.financingLegalText || '')}
-                    onChange={(e) => updateDealer(isLeasing ? 'leasingLegalText' : 'financingLegalText', e.target.value)}
-                    className="w-full text-sm text-foreground bg-muted/30 border border-border rounded-xl p-3 min-h-[80px] resize-y focus:outline-none focus:ring-2 focus:ring-amber-400"
-                    placeholder="Ihre Bankangaben und Pflichthinweise eintragen..."
-                  />
+                  <div className="relative">
+                    <span className="absolute top-3 left-3 text-xs font-bold text-foreground select-none"><sup>1</sup></span>
+                    <textarea
+                      value={isLeasing ? (data.dealer.leasingLegalText || '') : (data.dealer.financingLegalText || '')}
+                      onChange={(e) => updateDealer(isLeasing ? 'leasingLegalText' : 'financingLegalText', e.target.value)}
+                      className="w-full text-sm text-foreground bg-muted/30 border border-border rounded-xl p-3 pl-6 min-h-[80px] resize-y focus:outline-none focus:ring-2 focus:ring-amber-400"
+                      placeholder="Ihre Bankangaben und Pflichthinweise eintragen..."
+                    />
+                  </div>
                   <div className="flex items-center gap-1.5 text-amber-600 text-xs font-medium">
                     <span className="text-base">⚠</span>
                     Pflichtfeld – Bankangaben müssen ausgefüllt sein

@@ -75,6 +75,7 @@ export interface VehicleData {
     transmission: string;
     power: string;
     features: string[];
+    description?: string;
     vin?: string;
   };
   finance: {
