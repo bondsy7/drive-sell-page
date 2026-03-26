@@ -458,12 +458,15 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
                     </div>
                   )}
 
-                  <textarea
-                    value={isLeasing ? (data.dealer.leasingLegalText || '') : (data.dealer.financingLegalText || '')}
-                    onChange={(e) => updateDealer(isLeasing ? 'leasingLegalText' : 'financingLegalText', e.target.value)}
-                    className="w-full text-sm text-foreground bg-muted/30 border border-border rounded-xl p-3 min-h-[80px] resize-y focus:outline-none focus:ring-2 focus:ring-amber-400"
-                    placeholder="Ihre Bankangaben und Pflichthinweise eintragen..."
-                  />
+                  <div className="relative">
+                    <span className="absolute top-3 left-3 text-xs font-bold text-foreground select-none"><sup>1</sup></span>
+                    <textarea
+                      value={isLeasing ? (data.dealer.leasingLegalText || '') : (data.dealer.financingLegalText || '')}
+                      onChange={(e) => updateDealer(isLeasing ? 'leasingLegalText' : 'financingLegalText', e.target.value)}
+                      className="w-full text-sm text-foreground bg-muted/30 border border-border rounded-xl p-3 pl-6 min-h-[80px] resize-y focus:outline-none focus:ring-2 focus:ring-amber-400"
+                      placeholder="Ihre Bankangaben und Pflichthinweise eintragen..."
+                    />
+                  </div>
                   <div className="flex items-center gap-1.5 text-amber-600 text-xs font-medium">
                     <span className="text-base">⚠</span>
                     Pflichtfeld – Bankangaben müssen ausgefüllt sein

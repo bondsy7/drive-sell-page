@@ -272,6 +272,7 @@ serve(async (req) => {
 - CO₂-Emissionen und CO₂-Klasse (bei PHEV: BEIDE Klassen!)
 - Energiekosten, Kraftstoffpreis, CO₂-Kosten, Kfz-Steuer
 - Ausstattungs-HIGHLIGHTS (max 15-20, keine "Ohne"-Einträge, keine Trivialausstattung, NUR vom Hauptfahrzeug!)
+- Fahrzeugbeschreibung: 2-3 verkaufsfördernde Sätze über das Fahrzeug (Marke, Modell, Motor, Highlights, Zustand)
 - Bei Plug-in-Hybrid: gewichtete UND entladene Werte, Stromverbrauch, E-Reichweite
 
 Wenn CO₂-Klasse nicht angegeben aber g/km-Wert vorhanden: Klasse ableiten!
