@@ -383,7 +383,7 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
               <div className="space-y-0">
                 {!isBuyCategory && (
                   <>
-                    <ConsumptionRow label="Gesamtpreis" value={data.finance.totalPrice} onChange={(v) => updateFinance('totalPrice', v)} suffix="€" />
+                    <ConsumptionRow label="Fahrzeugpreis" value={data.finance.totalPrice} onChange={(v) => updateFinance('totalPrice', v)} suffix="€" />
                     {isLeasing ? (
                       <>
                         <div className="flex items-center justify-between py-1.5 border-b border-border/30">
@@ -396,6 +396,32 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
                       <ConsumptionRow label="Schlussrate" value={data.finance.residualValue || ''} onChange={(v) => updateFinance('residualValue', v)} suffix="€" />
                     )}
                     <ConsumptionRow label="Effektiver Jahreszins" value={data.finance.interestRate || ''} onChange={(v) => updateFinance('interestRate', v)} suffix="%" />
+                    {/* Calculated: Nettodarlehensbetrag & Gesamtbetrag */}
+                    {(() => {
+                      const tp = parsePrice(data.finance.totalPrice);
+                      const dp = isLeasing ? parsePrice(data.finance.specialPayment) : parsePrice(data.finance.downPayment);
+                      const fp = parsePrice(data.finance.residualValue);
+                      const mr = parsePrice(data.finance.monthlyRate);
+                      const dur = parseInt((data.finance.duration || '').match(/(\d+)/)?.[1] || '0');
+                      const netto = tp - dp;
+                      const gesamt = mr > 0 && dur > 0 ? (mr * dur + dp + fp) : 0;
+                      return (
+                        <>
+                          {netto > 0 && (
+                            <div className="flex items-center justify-between py-1.5 border-b border-border/30">
+                              <span className="text-xs text-muted-foreground">Nettodarlehensbetrag</span>
+                              <span className="text-sm font-semibold text-foreground">{formatPrice(netto)}</span>
+                            </div>
+                          )}
+                          {gesamt > 0 && (
+                            <div className="flex items-center justify-between py-1.5 border-b border-border/30">
+                              <span className="text-xs text-muted-foreground">Gesamtbetrag</span>
+                              <span className="text-sm font-semibold text-foreground">{formatPrice(gesamt)}</span>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
                   </>
                 )}
                 {isBuyCategory && (
