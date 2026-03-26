@@ -1,4 +1,5 @@
 import { VehicleData } from "@/types/vehicle";
+import { parsePrice, formatPrice } from "@/lib/finance-utils";
 import { getCO2LabelHTML, getConsumptionData, buildLegalTextHTML, buildDealerAddressHTML, buildDealerFooterHTML, buildSocialLinksHTML, buildWhatsAppButtonHTML, buildWebsiteLinkHTML, getFinanceSectionTitle, calculateLeasingFactor } from "./shared";
 
 export function generateAutohausHTML(data: VehicleData, imageBase64: string | null, galleryImages: string[] = []): string {
@@ -129,16 +130,32 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
           <div style="font-size:.78rem;opacity:.7;margin-top:.3rem">inkl. MwSt.</div>
         </div>
         <div class="grid-2">${conditionCells}</div>
-        ${data.finance.totalPrice ? `
+        ${data.finance.totalPrice ? (() => {
+          const tp = parsePrice(data.finance.totalPrice);
+          const dp = isLeasing ? parsePrice(data.finance.specialPayment) : parsePrice(data.finance.downPayment);
+          const fp = parsePrice(data.finance.residualValue);
+          const mr = parsePrice(data.finance.monthlyRate);
+          const dur = parseInt((data.finance.duration || '').match(/(\d+)/)?.[1] || '0');
+          const nettodarlehensbetrag = tp - dp;
+          const gesamtbetrag = mr > 0 && dur > 0 ? (mr * dur + dp + fp) : 0;
+          return `
         <div style="margin-top:1rem;border-top:1px solid #e5e7eb;padding-top:1rem">
           <div style="font-size:.85rem">
-            <div style="font-weight:600;margin-bottom:.5rem">Kostenübersicht</div>
             <div style="display:flex;justify-content:space-between;margin-bottom:.3rem">
-              <span style="color:#6b7280">Anschaffungspreis (Nettodarlehensbetrag)</span>
-              <span style="font-weight:600">${data.finance.totalPrice}</span>
+              <span style="color:#6b7280">Effektiver Jahreszins</span>
+              <span style="font-weight:600">${data.finance.interestRate || '–'}</span>
             </div>
+            ${nettodarlehensbetrag > 0 ? `<div style="display:flex;justify-content:space-between;margin-bottom:.3rem">
+              <span style="color:#6b7280">Nettodarlehensbetrag</span>
+              <span style="font-weight:600">${formatPrice(nettodarlehensbetrag)}</span>
+            </div>` : ''}
+            ${gesamtbetrag > 0 ? `<div style="display:flex;justify-content:space-between;margin-bottom:.3rem">
+              <span style="color:#6b7280">Gesamtbetrag</span>
+              <span style="font-weight:600">${formatPrice(gesamtbetrag)}</span>
+            </div>` : ''}
           </div>
-        </div>` : ''}
+        </div>`;
+        })() : ''}
         ${legalTextHTML}
       </div>`;
   }
