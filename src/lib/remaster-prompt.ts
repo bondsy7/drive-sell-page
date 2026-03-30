@@ -149,9 +149,11 @@ export function buildMasterPrompt(config: RemasterConfig, vehicleDescription?: s
 
   // Interior cleanup (MANDATORY)
   parts.push(`INTERIEUR-AUFRÄUMUNG (PFLICHT):
-- Entferne ALLE Gegenstände die NICHT zum Fahrzeug gehören: Müll, Tüten, Papiere, Plastikfolien, Transportverpackungen, persönliche Gegenstände, lose Gegenstände auf Sitzen oder Fußmatten, Anhänger, Aufkleber, Warnetiketten (außer fest montierte Fahrzeug-Labels)
+- Entferne ALLE Gegenstände die NICHT zum Fahrzeug gehören: Müll, Tüten, Papiere, Blätter, Plastikfolien, Transportverpackungen, persönliche Gegenstände, lose Gegenstände auf Sitzen oder Fußmatten, Anhänger, Aufkleber, Warnetiketten (außer fest montierte Fahrzeug-Labels)
+- Entferne ALLE sichtbaren Menschen, Körperteile (Hände, Füße, Beine, Schuhe), Kleidungsstücke und persönliche Gegenstände KOMPLETT aus dem Bild – das Fahrzeug muss LEER und UNBEWOHNT aussehen
 - Räume SOWOHL Vordersitze ALS AUCH Rücksitze gleichermaßen auf
-- Die gesamte Kabine muss showroom-fertig und professionell aufbereitet aussehen
+- Die Mittelkonsole, Getränkehalter, Ablagefächer und alle Oberflächen müssen KOMPLETT leer und sauber sein – keine Münzen, Schlüssel, Kabel, Getränke oder sonstige Fremdkörper
+- Die gesamte Kabine muss showroom-fertig und professionell aufbereitet aussehen, als wäre das Fahrzeug gerade frisch aufbereitet worden
 - Sitze, Fußmatten und Oberflächen sollen sauber, makellos und detailreich wirken`);
 
   // No other vehicles
