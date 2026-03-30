@@ -133,6 +133,25 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return () => window.removeEventListener('beforeunload', handler);
   }, [status]);
 
+  // Cached logo base64 – fetched ONCE before pipeline starts to ensure consistency
+  const cachedManufacturerLogoBase64Ref = useRef<string | null>(null);
+  const cachedDealerLogoBase64Ref = useRef<string | null>(null);
+
+  // Helper to fetch a URL and convert to data URL (base64)
+  const fetchUrlToBase64 = useCallback(async (url: string): Promise<string | null> => {
+    try {
+      const resp = await fetch(url);
+      if (!resp.ok) { console.warn('[Pipeline] Failed to fetch logo:', url, resp.status); return null; }
+      const blob = await resp.blob();
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(blob);
+      });
+    } catch (e) { console.warn('[Pipeline] Logo fetch error:', url, e); return null; }
+  }, []);
+
   // Generate a single image using stored config
   const generateOneImage = useCallback(async (
     prompt: string, job: PipelineJob | undefined, cfg: PipelineConfig
@@ -147,6 +166,14 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const taskLock = buildTaskOutputLock(job);
     const fullPrompt = `${baseContext}\n\n${taskLock}\n\n--- PERSPECTIVE INSTRUCTION ---\n${prompt}`;
 
+    // Always prefer cached base64 logos over URLs for consistency
+    const manufacturerLogoBase64 = cfg.remasterConfig.showManufacturerLogo
+      ? (cachedManufacturerLogoBase64Ref.current || cfg.remasterConfig.manufacturerLogoBase64 || null)
+      : null;
+    const dealerLogoBase64 = cfg.remasterConfig.showDealerLogo
+      ? (cachedDealerLogoBase64Ref.current || cfg.remasterConfig.dealerLogoBase64 || null)
+      : null;
+
     const { data, error } = await invokeRemasterVehicleImage({
       imageBase64: primaryReference,
       additionalImages: supportingReferences.length > 0 ? supportingReferences : undefined,
@@ -155,17 +182,18 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       dynamicPrompt: fullPrompt,
       customShowroomBase64: cfg.remasterConfig.customShowroomBase64 || null,
       customPlateImageBase64: cfg.remasterConfig.customPlateImageBase64 || null,
-      dealerLogoUrl: cfg.remasterConfig.showDealerLogo ? cfg.remasterConfig.dealerLogoUrl : null,
-      dealerLogoBase64: cfg.remasterConfig.showDealerLogo ? cfg.remasterConfig.dealerLogoBase64 : null,
-      manufacturerLogoUrl: cfg.remasterConfig.showManufacturerLogo ? cfg.resolvedManufacturerLogoUrl : null,
-      manufacturerLogoBase64: cfg.remasterConfig.showManufacturerLogo ? cfg.remasterConfig.manufacturerLogoBase64 : null,
+      // Only pass URL as fallback if base64 is not available
+      dealerLogoUrl: dealerLogoBase64 ? null : (cfg.remasterConfig.showDealerLogo ? cfg.remasterConfig.dealerLogoUrl : null),
+      dealerLogoBase64: dealerLogoBase64,
+      manufacturerLogoUrl: manufacturerLogoBase64 ? null : (cfg.remasterConfig.showManufacturerLogo ? cfg.resolvedManufacturerLogoUrl : null),
+      manufacturerLogoBase64: manufacturerLogoBase64,
     });
 
     if (error || !data?.imageBase64) {
       return { base64: null, error: data?.error || error?.message || 'Generierung fehlgeschlagen' };
     }
     return { base64: data.imageBase64 };
-  }, []);
+  }, [fetchUrlToBase64]);
 
   const startPipeline = useCallback((cfg: PipelineConfig) => {
     setConfig(cfg);
