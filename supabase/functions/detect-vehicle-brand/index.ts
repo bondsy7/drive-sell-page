@@ -110,7 +110,7 @@ serve(async (req) => {
 
     const detectPrompt = await getCustomPrompt("detect_vehicle_brand", DEFAULT_DETECT_PROMPT);
     // Retry with fallback models on 503/429
-    const MODELS_TO_TRY = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+    const MODELS_TO_TRY = ['gemini-2.5-flash', 'gemini-2.0-flash'];
     const MAX_RETRIES = 2;
     let lastError = "AI analysis failed";
 
