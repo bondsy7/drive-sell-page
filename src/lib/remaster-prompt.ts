@@ -59,7 +59,32 @@ const SCENE_PROMPTS: Record<string, string> = {
   'mansion': 'Das Fahrzeug steht in der Auffahrt einer luxuriösen Villa. Gepflegter Rasen, mediterrane Architektur, warmes Abendlicht.',
 };
 
-export function buildMasterPrompt(config: RemasterConfig, vehicleDescription?: string): string {
+/** Perspective-specific instructions appended per slot */
+const PERSPECTIVE_PROMPTS: Record<string, string> = {
+  '34front': 'PERSPEKTIVE: 3/4-Frontansicht des Fahrzeugs von schräg vorne. Beide Scheinwerfer, Kühlergrill, Front- und Seitenpartie müssen VOLLSTÄNDIG sichtbar sein.',
+  'side': 'PERSPEKTIVE: Seitenansicht des Fahrzeugs. Das gesamte Fahrzeug von vorne bis hinten muss VOLLSTÄNDIG sichtbar sein, einschließlich aller Räder.',
+  'rear': 'PERSPEKTIVE: Heckansicht des Fahrzeugs. Beide Rücklichter, Heckklappe, Auspuffblenden und Stoßstange müssen VOLLSTÄNDIG sichtbar sein.',
+  'interior-front': `PERSPEKTIVE INNENRAUM VORNE (PFLICHT):
+- Dies ist eine Aufnahme VOM RÜCKSITZ NACH VORNE schauend auf das Armaturenbrett, Lenkrad und die Windschutzscheibe
+- Die Kameraposition ist HINTER den Vordersitzen – das Lenkrad und Dashboard sind IM BILD SICHTBAR
+- Das KOMPLETTE Dach, ALLE A-/B-Säulen, der Dachhimmel und der Rückspiegel müssen VOLLSTÄNDIG im Bild sein
+- ABSOLUT VERBOTEN: Dach abschneiden, Dachhimmel weglassen, von oben in das Auto schauen, Draufsicht ohne Dach
+- Der Showroom-Hintergrund mit Logo muss DURCH DIE WINDSCHUTZSCHEIBE sichtbar sein
+- Das Bild muss aussehen als säße man auf der Rücksitzbank und fotografiert nach vorne`,
+  'interior-rear': `PERSPEKTIVE INNENRAUM HINTEN (PFLICHT):
+- Dies ist eine Aufnahme VOM FAHRERSITZ NACH HINTEN schauend auf die Rücksitzbank
+- Die Kameraposition ist VOR den Vordersitzen – die Rücksitze, Kopfstützen und Rückenlehnen sind IM BILD SICHTBAR
+- Das KOMPLETTE Dach, ALLE B-/C-Säulen, der Dachhimmel und die Heckscheibe müssen VOLLSTÄNDIG im Bild sein
+- ABSOLUT VERBOTEN: Dach abschneiden, Dachhimmel weglassen, von oben in das Auto schauen, Draufsicht ohne Dach
+- Der Showroom-Hintergrund mit Logo muss DURCH DIE HECKSCHEIBE sichtbar sein
+- Das Bild muss aussehen als säße man auf dem Fahrersitz und fotografiert nach hinten`,
+};
+
+export function getPerspectivePrompt(slotKey: string): string {
+  return PERSPECTIVE_PROMPTS[slotKey] || '';
+}
+
+export function buildMasterPrompt(config: RemasterConfig, vehicleDescription?: string, slotKey?: string): string {
   const parts: string[] = [];
 
   // Base instruction & Identity Lock
