@@ -5,7 +5,9 @@ import { Loader2, Check, Timer, X } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 
 const BackgroundPipelineIndicator: React.FC = () => {
-  const pipeline = usePipeline();
+  const ctx = React.useContext(require('@/contexts/PipelineContext').PipelineContext_INTERNAL);
+  const pipeline = usePipeline != null ? (() => { try { return usePipeline(); } catch { return null; } })() : null;
+  if (!pipeline) return null;
   const navigate = useNavigate();
   const location = useLocation();
 
