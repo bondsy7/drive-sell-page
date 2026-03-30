@@ -179,14 +179,16 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     // For interior jobs, add an explicit override to prevent exterior generation
     const interiorOverride = isInteriorJob
-      ? `\n\nCRITICAL INTERIOR OVERRIDE (HÖCHSTE PRIORITÄT):
+      ? `\n\nCRITICAL INTERIOR OVERRIDE (HÖCHSTE PRIORITÄT – NULL TOLERANZ):
 Dies ist eine INNENRAUM-Aufnahme. Das bereitgestellte Referenzbild zeigt das INTERIEUR des Fahrzeugs.
-- Du MUSST das Interieur-Referenzbild remastern – NICHT eine Außenansicht generieren
-- Behalte die EXAKTE Perspektive, den Blickwinkel und die Komposition des Referenzbildes bei
-- Verbessere NUR die Beleuchtung, entferne Unordnung, und ersetze den durch die Scheiben sichtbaren Hintergrund durch den Showroom
-- Generiere unter KEINEN Umständen eine Außenansicht des Fahrzeugs
-- Das Fahrzeugdach, alle Säulen (A/B/C), Türverkleidungen, Sonnenblenden und der Rückspiegel müssen VOLLSTÄNDIG erhalten bleiben
-- Schneide NICHTS ab – das Bild muss die gleiche Komposition wie das Original haben`
+- Du MUSST das EXAKTE Interieur-Referenzbild remastern – NICHT eine Außenansicht generieren.
+- Das Ausgabebild MUSS die EXAKT GLEICHE Komposition, Rahmung und Perspektive wie das Referenzfoto haben.
+- NUR AUFRÄUMEN: Entferne NUR Müll, Papiere, Plastikfolien, Staub, persönliche Gegenstände, Körperteile.
+- NULL ERFINDUNG: Füge KEINE neuen Elemente hinzu, ändere KEINE Materialien, KEIN Design-Upgrade.
+- JEDES DETAIL ZÄHLT: Tachometer, Monitor-UI, Nahtfarben, Sitzperforierung, Lüftungsdüsen, Gangwahlhebel – EXAKT wie im Original.
+- STRUKTURELLE INTEGRITÄT: Dach, ALLE Säulen, Türverkleidungen, Sonnenblenden, Rückspiegel müssen VOLLSTÄNDIG erhalten bleiben.
+- Schneide NICHTS ab – KEIN Dach, KEINE Tür, KEINE Säule darf am Bildrand fehlen.
+- Generiere unter KEINEN Umständen eine Außenansicht des Fahrzeugs.`
       : '';
 
     const fullPrompt = `${baseContext}${interiorOverride}\n\n${taskLock}\n\n--- PERSPECTIVE INSTRUCTION ---\n${prompt}`;
