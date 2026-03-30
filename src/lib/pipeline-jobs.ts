@@ -63,11 +63,16 @@ LIGHTING & REFLECTIONS:
 // INTERIOR RULES – appended to all interior pipeline prompts
 // ═══════════════════════════════════════════════════════════════════
 const INTERIOR_RULES = `INTERIOR-SPECIFIC RULES (MANDATORY):
+- THIS IS AN INTERIOR SHOT. The provided reference image shows the INSIDE of the vehicle. You MUST remaster this interior image – do NOT generate an exterior view.
+- KEEP the EXACT same perspective, viewing angle, and composition as the reference photo.
 - CLEANUP: Remove ALL items that do NOT belong to the vehicle: trash, bags, papers, plastic covers, protective films, transport packaging, personal belongings, loose items on seats or floor mats, tags, stickers, warning labels (except permanent vehicle labels). Clean up BOTH front seats AND rear seats. The cabin must look showroom-ready and professionally detailed.
 - PRESERVATION: Reproduce EXACT leather/fabric grain texture, stitching patterns, trim materials (wood, metal, piano black, alcantara), button layouts, screen UI, instrument cluster design, gear selector shape, steering wheel controls, and ambient lighting exactly as in the reference photos.
-- Do NOT rotate, flip, or change the camera orientation/angle from what is specified.
+- STRUCTURAL INTEGRITY: The vehicle roof, ALL pillars (A/B/C), door panels, sun visors, and rearview mirror MUST remain FULLY visible. Do NOT cut off, remove, or hide any structural element.
+- BACKGROUND THROUGH WINDOWS: Replace the background visible through windshield, side windows, and rear window with the showroom environment. The showroom must be naturally visible THROUGH the existing glass – do NOT remove or alter the glass itself.
+- Do NOT rotate, flip, or change the camera orientation/angle from what is shown in the reference.
 - Do NOT add or remove any interior elements.
-- Only enhance lighting to be bright, even, and professional.`;
+- Only enhance lighting to be bright, even, and professional.
+- ABSOLUTELY FORBIDDEN: Generating an exterior view of the vehicle when an interior reference image is provided.`;
 
 export const PIPELINE_JOBS: PipelineJob[] = [
   // ── Hero ──
