@@ -1,6 +1,44 @@
 import { useMemo, useState } from 'react';
 import { Image, FolderOpen, ChevronDown, ChevronRight, Trash2 } from 'lucide-react';
 import { type ProjectImage, getImageSrc } from './types';
+import { PIPELINE_JOBS } from '@/lib/pipeline-jobs';
+
+/* ── Fixed sort order for images within a gallery folder ── */
+const REMASTER_ORDER: string[] = [
+  '3/4 Front', 'Seite', 'Hinten', 'Interieur Fahrersitz', 'Interieur Rücksitz',
+];
+
+// Build pipeline label → sort index from the canonical PIPELINE_JOBS array
+const PIPELINE_LABEL_ORDER = new Map<string, number>();
+PIPELINE_JOBS.forEach((j, i) => {
+  PIPELINE_LABEL_ORDER.set(j.labelDe, i);
+  PIPELINE_LABEL_ORDER.set(j.label, i);
+});
+
+function getImageSortKey(perspective: string | null): number {
+  if (!perspective) return 90000;
+
+  // Remastered images come first (indices 0-99)
+  const remasterIdx = REMASTER_ORDER.indexOf(perspective);
+  if (remasterIdx >= 0) return remasterIdx;
+
+  // Pipeline images come second (indices 100+)
+  if (perspective.startsWith('Pipeline: ')) {
+    const label = perspective
+      .replace(/^Pipeline:\s*/, '')
+      .replace(/\s*\(Retry\)$/, '')
+      .replace(/\s*\(Regen\)$/, '');
+    const pIdx = PIPELINE_LABEL_ORDER.get(label);
+    if (pIdx !== undefined) return 100 + pIdx;
+    return 100 + 9000; // unknown pipeline job → end of pipeline section
+  }
+
+  // Generic "Bild N" or unknown → end
+  const bildMatch = perspective.match(/^Bild\s+(\d+)$/);
+  if (bildMatch) return 50 + parseInt(bildMatch[1], 10);
+
+  return 90000;
+}
 import { useDeleteGalleryImage, useDeleteGalleryFolder } from '@/hooks/useDashboardData';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -30,14 +68,17 @@ export default function GalleryTab({ images, onLightbox }: Props) {
       if (!groups[folder]) groups[folder] = [];
       groups[folder].push(img);
     }
+    // Sort images within each folder by fixed perspective order
+    for (const key of Object.keys(groups)) {
+      groups[key].sort((a, b) => getImageSortKey(a.perspective) - getImageSortKey(b.perspective));
+    }
     // Sort folders by newest image first
     const sortedKeys = Object.keys(groups).sort((a, b) => {
       if (a === 'Ohne Ordner') return 1;
       if (b === 'Ohne Ordner') return -1;
-      // Compare by most recent image date in each folder
       const latestA = Math.max(...groups[a].map(i => new Date(i.created_at || 0).getTime()));
       const latestB = Math.max(...groups[b].map(i => new Date(i.created_at || 0).getTime()));
-      return latestB - latestA; // newest first
+      return latestB - latestA;
     });
     return sortedKeys.map(key => ({ folder: key, images: groups[key] }));
   }, [images]);
