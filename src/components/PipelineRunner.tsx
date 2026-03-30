@@ -212,6 +212,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [regeneratingIds, setRegeneratingIds] = useState<Set<string>>(new Set());
+  const inputImagesSavedRef = useRef(false);
 
   // Timing state
   const [pipelineStartTime, setPipelineStartTime] = useState<number | null>(null);
