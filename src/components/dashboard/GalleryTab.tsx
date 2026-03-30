@@ -68,14 +68,17 @@ export default function GalleryTab({ images, onLightbox }: Props) {
       if (!groups[folder]) groups[folder] = [];
       groups[folder].push(img);
     }
+    // Sort images within each folder by fixed perspective order
+    for (const key of Object.keys(groups)) {
+      groups[key].sort((a, b) => getImageSortKey(a.perspective) - getImageSortKey(b.perspective));
+    }
     // Sort folders by newest image first
     const sortedKeys = Object.keys(groups).sort((a, b) => {
       if (a === 'Ohne Ordner') return 1;
       if (b === 'Ohne Ordner') return -1;
-      // Compare by most recent image date in each folder
       const latestA = Math.max(...groups[a].map(i => new Date(i.created_at || 0).getTime()));
       const latestB = Math.max(...groups[b].map(i => new Date(i.created_at || 0).getTime()));
-      return latestB - latestA; // newest first
+      return latestB - latestA;
     });
     return sortedKeys.map(key => ({ folder: key, images: groups[key] }));
   }, [images]);
