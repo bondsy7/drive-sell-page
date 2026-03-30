@@ -38,6 +38,7 @@ const Dashboard = () => {
   const { disabledModules } = useModuleAccess();
   const [searchParams] = useSearchParams();
   const initialTab = (searchParams.get('tab') as TabKey) || 'projects';
+  const highlightFolder = searchParams.get('folder') || null;
   const [tab, setTab] = useState<TabKey>(initialTab);
 
   // Map module keys to dashboard tab keys
