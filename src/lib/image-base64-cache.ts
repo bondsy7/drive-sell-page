@@ -141,6 +141,40 @@ export async function prewarmShowrooms(): Promise<void> {
 }
 
 /**
+ * Ensure a logo URL is cached as PNG base64 (converted via canvas for AI compatibility).
+ * WebP/SVG logos are converted to PNG to ensure Gemini processes them correctly.
+ */
+export async function ensureLogoCachedAsPng(url: string): Promise<string> {
+  if (!url) return url;
+  if (url.startsWith('data:image/png')) return url;
+
+  const cacheKey = `logo_png:${url}`;
+
+  // 1. Memory
+  if (memoryCache[cacheKey]) return memoryCache[cacheKey];
+
+  // 2. localStorage
+  const store = loadStore();
+  if (store.entries[cacheKey]) {
+    memoryCache[cacheKey] = store.entries[cacheKey].base64;
+    return store.entries[cacheKey].base64;
+  }
+
+  // 3. Fetch, convert to PNG via canvas, cache
+  try {
+    const pngBase64 = await fetchAsPngBase64(url);
+    memoryCache[cacheKey] = pngBase64;
+    store.entries[cacheKey] = { url, base64: pngBase64, cachedAt: Date.now() };
+    saveStore(store);
+    console.log(`[image-cache] Logo converted to PNG and cached: ${url} (${Math.round(pngBase64.length / 1024)}KB)`);
+    return pngBase64;
+  } catch (err) {
+    console.warn('[image-cache] Failed to convert logo to PNG, falling back to regular cache:', url, err);
+    return ensureCachedBase64(url);
+  }
+}
+
+/**
  * Clear the entire cache.
  */
 export function clearImageCache() {
