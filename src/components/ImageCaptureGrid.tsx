@@ -556,10 +556,10 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         dynamicPrompt,
         customShowroomBase64: remasterConfig.customShowroomBase64 || null,
         customPlateImageBase64: remasterConfig.customPlateImageBase64 || null,
-        dealerLogoUrl: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null,
-        dealerLogoBase64: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoBase64 : null,
-        manufacturerLogoUrl: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoUrl : null,
-        manufacturerLogoBase64: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoBase64 : null,
+        dealerLogoUrl: cachedDealerLogoRef.current ? null : (remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null),
+        dealerLogoBase64: remasterConfig.showDealerLogo ? (cachedDealerLogoRef.current || remasterConfig.dealerLogoBase64) : null,
+        manufacturerLogoUrl: cachedMfgLogoRef.current ? null : (remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoUrl : null),
+        manufacturerLogoBase64: remasterConfig.showManufacturerLogo ? (cachedMfgLogoRef.current || remasterConfig.manufacturerLogoBase64) : null,
       });
       if (error || !data?.imageBase64) {
         const errMsg = data?.error || error?.message || 'Fehler beim Remastering';
