@@ -238,11 +238,20 @@ serve(async (req) => {
       parts.push({ text: "Das folgende Bild ist das EIGENE NUMMERNSCHILD. Ersetze das Nummernschild des Fahrzeugs durch dieses:" });
       parts.push(toInlineData(customPlateImageBase64));
     }
-    // Add manufacturer logo – prefer pre-cached base64
+    // Add manufacturer logo – prefer pre-cached PNG base64 from client
     if (manufacturerLogoBase64 || manufacturerLogoUrl) {
-      const logoData = manufacturerLogoBase64
-        ? toInlineData(manufacturerLogoBase64)
-        : await resolveImage(manufacturerLogoUrl);
+      let logoData = null;
+      if (manufacturerLogoBase64) {
+        // Client sends pre-converted PNG base64 – use directly
+        const cleaned = cleanBase64(manufacturerLogoBase64);
+        const mime = manufacturerLogoBase64.startsWith("data:image/png") ? "image/png"
+          : manufacturerLogoBase64.startsWith("data:image/webp") ? "image/webp" : "image/png";
+        logoData = { inlineData: { mimeType: mime, data: cleaned } };
+        console.log(`Manufacturer logo: using pre-cached base64 (${mime}, ${Math.round(cleaned.length / 1024)}KB)`);
+      } else if (manufacturerLogoUrl) {
+        logoData = await resolveImage(manufacturerLogoUrl);
+        console.log(`Manufacturer logo: fetched from URL ${manufacturerLogoUrl}`);
+      }
       if (logoData) {
       parts.push({ text: `HERSTELLER-LOGO – PIXEL-PERFEKTE REPRODUKTION (HÖCHSTE PRIORITÄT):
 Das folgende Bild ist das EXAKTE Logo das an der Showroom-Wand erscheinen MUSS.
@@ -261,9 +270,9 @@ REPRODUKTIONS-REGELN (KEINE ABWEICHUNG ERLAUBT):
    - KEIN Hinzufügen oder Entfernen von Elementen
    - KEINE unterschiedliche Darstellung zwischen Bildern
    - KEINE neue Logo-Version erzeugen, auch nicht wenn sie "sauberer" oder "realistischer" wirkt
+   - VERWENDE NIEMALS eine ältere oder alternative Version des Logos – NUR das exakte bereitgestellte Bild
 7. KONSISTENZ: Das Logo muss auf ALLEN generierten Bildern ABSOLUT IDENTISCH aussehen – gleiche Farben, Form, Größe, Position, Beleuchtung. NULL Variation erlaubt.` });
         parts.push(logoData);
-        console.log("Manufacturer logo injected", manufacturerLogoBase64 ? "(cached b64)" : "(fetched)");
       }
     }
     // Add dealer logo – prefer pre-cached base64
