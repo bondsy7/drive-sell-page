@@ -1,15 +1,15 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { usePipeline } from '@/contexts/PipelineContext';
+import { usePipelineSafe } from '@/contexts/PipelineContext';
 import { Loader2, Check, Timer, X } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 
 const BackgroundPipelineIndicator: React.FC = () => {
-  const pipeline = usePipeline();
+  const pipeline = usePipelineSafe();
   const navigate = useNavigate();
   const location = useLocation();
 
-  if (pipeline.status === 'idle') return null;
+  if (!pipeline || pipeline.status === 'idle') return null;
 
   // Hide on generator page – PipelineRunner handles display there
   if (location.pathname === '/generator') return null;

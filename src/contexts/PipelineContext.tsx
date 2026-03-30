@@ -102,6 +102,11 @@ export const usePipeline = (): PipelineContextValue => {
   return ctx;
 };
 
+/** Safe version that returns null if outside PipelineProvider */
+export const usePipelineSafe = (): PipelineContextValue | null => {
+  return useContext(PipelineContext);
+};
+
 export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [status, setStatus] = useState<PipelineStatus>('idle');
   const [jobs, setJobs] = useState<Record<string, JobState>>({});
