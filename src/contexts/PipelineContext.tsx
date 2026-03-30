@@ -54,6 +54,7 @@ interface PipelineContextValue {
   elapsedMs: number;
   config: PipelineConfig | null;
   savedProjectId: string | null;
+  galleryFolder: string | null;
   totalImages: number;
   startPipeline: (config: PipelineConfig) => void;
   retryJob: (jobKey: string) => Promise<void>;
@@ -115,6 +116,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [elapsedMs, setElapsedMs] = useState(0);
   const [config, setConfig] = useState<PipelineConfig | null>(null);
   const [savedProjectId, setSavedProjectId] = useState<string | null>(null);
+  const [galleryFolder, setGalleryFolder] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Live timer
@@ -355,6 +357,7 @@ Dies ist eine INNENRAUM-Aufnahme. Das bereitgestellte Referenzbild zeigt das INT
       if (allResults.length > 0) {
         try {
           const folderName = getGalleryFolderName(cfg.vin);
+          setGalleryFolder(folderName);
           const storagePath = cfg.projectId ? cfg.projectId : `gallery/${folderName}`;
 
           const { data: existingImages } = cfg.projectId
@@ -519,12 +522,13 @@ Dies ist eine INNENRAUM-Aufnahme. Das bereitgestellte Referenzbild zeigt das INT
     setElapsedMs(0);
     setConfig(null);
     setSavedProjectId(null);
+    setGalleryFolder(null);
   }, []);
 
   return (
     <PipelineContext.Provider value={{
       status, isRunning: status === 'running', isFinished: status === 'finished',
-      jobs, startTime, endTime, elapsedMs, config, savedProjectId,
+      jobs, startTime, endTime, elapsedMs, config, savedProjectId, galleryFolder,
       totalImages: config?.totalImages ?? 0,
       startPipeline, retryJob, retrySingleImage, clearPipeline,
     }}>

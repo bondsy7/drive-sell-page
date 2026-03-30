@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { Image, FolderOpen, ChevronDown, ChevronRight, Trash2 } from 'lucide-react';
 import { type ProjectImage, getImageSrc } from './types';
 import { PIPELINE_JOBS } from '@/lib/pipeline-jobs';
@@ -48,12 +48,22 @@ import {
 interface Props {
   images: ProjectImage[];
   onLightbox: (globalIndex: number) => void;
+  highlightFolder?: string | null;
 }
 
-export default function GalleryTab({ images, onLightbox }: Props) {
+export default function GalleryTab({ images, onLightbox, highlightFolder }: Props) {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(() => {
+    if (highlightFolder) return new Set([highlightFolder]);
     return new Set(images.map(i => i.gallery_folder || 'Ohne Ordner'));
   });
+  const highlightRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to highlighted folder on mount
+  useEffect(() => {
+    if (highlightFolder && highlightRef.current) {
+      highlightRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [highlightFolder]);
 
   const [confirmDeleteImage, setConfirmDeleteImage] = useState<string | null>(null);
   const [confirmDeleteFolder, setConfirmDeleteFolder] = useState<{ folder: string; count: number } | null>(null);
@@ -107,7 +117,7 @@ export default function GalleryTab({ images, onLightbox }: Props) {
           const isExpanded = expandedFolders.has(folder);
           const isVin = folder !== 'Ohne Ordner' && !folder.startsWith('NO_VIN');
           return (
-            <div key={folder} className="bg-card rounded-xl border border-border overflow-hidden">
+            <div key={folder} ref={folder === highlightFolder ? highlightRef : undefined} className={`bg-card rounded-xl border overflow-hidden ${folder === highlightFolder ? 'border-accent ring-2 ring-accent/20' : 'border-border'}`}>
               <div className="flex items-center">
                 <button
                   onClick={() => toggleFolder(folder)}

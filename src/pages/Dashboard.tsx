@@ -38,6 +38,7 @@ const Dashboard = () => {
   const { disabledModules } = useModuleAccess();
   const [searchParams] = useSearchParams();
   const initialTab = (searchParams.get('tab') as TabKey) || 'projects';
+  const highlightFolder = searchParams.get('folder') || null;
   const [tab, setTab] = useState<TabKey>(initialTab);
 
   // Map module keys to dashboard tab keys
@@ -208,7 +209,7 @@ const Dashboard = () => {
       case 'landings': return <LandingsTab projects={landingProjects} onExport={openExportDialog} onDelete={(id) => deleteProject.mutate(id)} />;
       case 'gallery': return (
         <>
-          <GalleryTab images={allImages} onLightbox={setLightboxIndex} />
+          <GalleryTab images={allImages} onLightbox={setLightboxIndex} highlightFolder={highlightFolder} />
           <Pagination page={galleryPage} setPage={setGalleryPage} total={galleryTotal} />
         </>
       );
