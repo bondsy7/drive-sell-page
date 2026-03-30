@@ -357,6 +357,7 @@ Dies ist eine INNENRAUM-Aufnahme. Das bereitgestellte Referenzbild zeigt das INT
       if (allResults.length > 0) {
         try {
           const folderName = getGalleryFolderName(cfg.vin);
+          setGalleryFolder(folderName);
           const storagePath = cfg.projectId ? cfg.projectId : `gallery/${folderName}`;
 
           const { data: existingImages } = cfg.projectId
