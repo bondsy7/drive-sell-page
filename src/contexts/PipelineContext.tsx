@@ -216,6 +216,42 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     // Run pipeline async (survives navigation since context is at App level)
     (async () => {
+      // Pre-cache logos as base64 ONCE before any image generation
+      // This ensures the EXACT same logo binary is used for every single image
+      cachedManufacturerLogoBase64Ref.current = null;
+      cachedDealerLogoBase64Ref.current = null;
+
+      const logoFetches: Promise<void>[] = [];
+      if (cfg.remasterConfig.showManufacturerLogo) {
+        if (cfg.remasterConfig.manufacturerLogoBase64) {
+          cachedManufacturerLogoBase64Ref.current = cfg.remasterConfig.manufacturerLogoBase64;
+        } else if (cfg.resolvedManufacturerLogoUrl) {
+          logoFetches.push(
+            fetchUrlToBase64(cfg.resolvedManufacturerLogoUrl).then(b64 => {
+              if (b64) {
+                cachedManufacturerLogoBase64Ref.current = b64;
+                console.log('[Pipeline] Manufacturer logo pre-cached as base64 ✓');
+              }
+            })
+          );
+        }
+      }
+      if (cfg.remasterConfig.showDealerLogo) {
+        if (cfg.remasterConfig.dealerLogoBase64) {
+          cachedDealerLogoBase64Ref.current = cfg.remasterConfig.dealerLogoBase64;
+        } else if (cfg.remasterConfig.dealerLogoUrl) {
+          logoFetches.push(
+            fetchUrlToBase64(cfg.remasterConfig.dealerLogoUrl).then(b64 => {
+              if (b64) {
+                cachedDealerLogoBase64Ref.current = b64;
+                console.log('[Pipeline] Dealer logo pre-cached as base64 ✓');
+              }
+            })
+          );
+        }
+      }
+      if (logoFetches.length > 0) await Promise.all(logoFetches);
+
       const allResults: { key: string; base64: string; label: string; subIndex: number }[] = [];
       const jobTimings: Record<string, { start: number; end?: number }> = {};
 
