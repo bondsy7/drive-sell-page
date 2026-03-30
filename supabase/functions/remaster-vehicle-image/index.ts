@@ -175,11 +175,23 @@ serve(async (req) => {
     // Helper to convert data URL to inlineData part
     function toInlineData(dataUrl: string) {
       const raw = dataUrl.includes(",") ? dataUrl.split(",")[1] : dataUrl;
-      const mime = dataUrl.startsWith("data:image/png") ? "image/png"
-        : dataUrl.startsWith("data:image/webp") ? "image/webp"
-        : dataUrl.startsWith("data:image/svg") ? "image/png"
-        : "image/jpeg";
+      // Detect MIME from data URL prefix
+      let mime = "image/jpeg";
+      if (dataUrl.startsWith("data:image/png")) mime = "image/png";
+      else if (dataUrl.startsWith("data:image/webp")) mime = "image/webp";
+      else if (dataUrl.startsWith("data:image/svg")) mime = "image/png"; // SVG not supported, treat as PNG
       return { inlineData: { mimeType: mime, data: raw } };
+    }
+
+    /** Clean base64: strip data URL prefix, remove whitespace, validate */
+    function cleanBase64(base64String: string): string {
+      if (!base64String) return "";
+      let cleaned = base64String.trim();
+      if (cleaned.includes(",") && cleaned.startsWith("data:")) {
+        cleaned = cleaned.split(",")[1];
+      }
+      cleaned = cleaned.replace(/\s/g, "");
+      return cleaned;
     }
 
     // Helper to fetch a URL and convert to base64 inline data
