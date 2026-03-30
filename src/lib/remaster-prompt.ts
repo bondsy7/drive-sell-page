@@ -163,14 +163,16 @@ export function buildMasterPrompt(config: RemasterConfig, vehicleDescription?: s
   // Interior-specific rules
   parts.push(`FÜR INNENRAUM-AUFNAHMEN (Sitze, Lenkrad, Armaturenbrett, Mittelkonsole, Kofferraum, Rücksitze, Kabinen-Übersicht):
 - Verändere die Orientierung/den Winkel NICHT – drehe, spiegele oder flippe NICHT
-- Schneide NIEMALS Teile des Innenraums ab – Dach, Türverkleidungen, A-/B-/C-Säulen, Sonnenblenden, Rückspiegel müssen VOLLSTÄNDIG erhalten bleiben
+- DACH-ERHALTUNG (ABSOLUT VERBOTEN ZU VERLETZEN): Das Dach, der Dachhimmel, ALLE Säulen (A, B, C), Sonnenblenden und der Rückspiegel müssen zu 100% VOLLSTÄNDIG im Bild erhalten bleiben. Es darf KEIN EINZIGER PIXEL des Dachs oder Dachhimmels abgeschnitten, beschnitten oder entfernt werden. Jedes Ergebnis bei dem das Dach fehlt oder abgeschnitten ist, ist UNBRAUCHBAR.
+- Schneide NIEMALS Teile des Innenraums ab – das Bild muss EXAKT den gleichen Bildausschnitt wie das Original haben
 - Füge keine Innenraum-Elemente hinzu oder entferne sie
 - Reproduziere EXAKTE Materialien: Ledernarbung, Nähte, Zierleisten, Tastenlayouts, Bildschirm-UI aus den Referenzfotos
 - Verbessere die Beleuchtung – hell, gleichmäßig und professionell
 - HINTERGRUND DURCH DIE SCHEIBEN (PFLICHT): Ersetze den durch die Windschutzscheibe, Seitenscheiben und Heckscheibe sichtbaren Hintergrund durch den gewählten Showroom-Hintergrund. Der Showroom muss DURCH die Glasflächen hindurch natürlich sichtbar sein – dunkelgraue matte Wände, polierter Boden, professionelle Beleuchtung
 - Das Hersteller-Logo (falls aktiviert) muss an der Showroom-Rückwand DURCH die Windschutzscheibe oder Heckscheibe sichtbar platziert werden – als beleuchtetes 3D-Wandlogo, genau wie bei Außenaufnahmen
 - Die Scheiben selbst dürfen NICHT entfernt, verändert oder transparenter gemacht werden – der Showroom scheint realistisch durch das vorhandene Glas hindurch
-- VERBOTEN: Dach abschneiden, Türen entfernen, Säulen wegschneiden oder den Blickwinkel so ändern dass Teile der Karosserie fehlen`);
+- VERBOTEN: Dach abschneiden, Dachhimmel entfernen, Türen entfernen, Säulen wegschneiden, von oben ins Auto schauen, oder den Blickwinkel so ändern dass Teile der Karosserie fehlen
+- BILDAUSSCHNITT: Behalte EXAKT den gleichen Kamerawinkel und Bildausschnitt wie im Originalbild bei. Wenn das Original von hinten nach vorne fotografiert wurde, muss das Ergebnis ebenfalls von hinten nach vorne zeigen. Wenn von vorne nach hinten, dann ebenso.`);
 
   // Interior cleanup (MANDATORY)
   parts.push(`INTERIEUR-AUFRÄUMUNG (PFLICHT):
