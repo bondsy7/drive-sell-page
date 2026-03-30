@@ -117,7 +117,7 @@ export default function GalleryTab({ images, onLightbox, highlightFolder }: Prop
           const isExpanded = expandedFolders.has(folder);
           const isVin = folder !== 'Ohne Ordner' && !folder.startsWith('NO_VIN');
           return (
-            <div key={folder} className="bg-card rounded-xl border border-border overflow-hidden">
+            <div key={folder} ref={folder === highlightFolder ? highlightRef : undefined} className={`bg-card rounded-xl border overflow-hidden ${folder === highlightFolder ? 'border-accent ring-2 ring-accent/20' : 'border-border'}`}>
               <div className="flex items-center">
                 <button
                   onClick={() => toggleFolder(folder)}
