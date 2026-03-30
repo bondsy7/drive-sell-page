@@ -54,6 +54,7 @@ interface PipelineContextValue {
   elapsedMs: number;
   config: PipelineConfig | null;
   savedProjectId: string | null;
+  galleryFolder: string | null;
   totalImages: number;
   startPipeline: (config: PipelineConfig) => void;
   retryJob: (jobKey: string) => Promise<void>;
