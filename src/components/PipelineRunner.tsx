@@ -212,6 +212,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [regeneratingIds, setRegeneratingIds] = useState<Set<string>>(new Set());
+  const inputImagesSavedRef = useRef(false);
 
   // Timing state
   const [pipelineStartTime, setPipelineStartTime] = useState<number | null>(null);
@@ -275,7 +276,8 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
 
   /* ─── Save remastered input images on mount ─── */
   useEffect(() => {
-    if (!user || inputImages.length === 0) return;
+    if (!user || inputImages.length === 0 || inputImagesSavedRef.current) return;
+    inputImagesSavedRef.current = true;
     const folderName = getGalleryFolderName(vin);
 
     // If we already have a project (from PDF flow), save images to it AND to gallery
