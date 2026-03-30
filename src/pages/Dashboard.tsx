@@ -209,7 +209,7 @@ const Dashboard = () => {
       case 'landings': return <LandingsTab projects={landingProjects} onExport={openExportDialog} onDelete={(id) => deleteProject.mutate(id)} />;
       case 'gallery': return (
         <>
-          <GalleryTab images={allImages} onLightbox={setLightboxIndex} />
+          <GalleryTab images={allImages} onLightbox={setLightboxIndex} highlightFolder={highlightFolder} />
           <Pagination page={galleryPage} setPage={setGalleryPage} total={galleryTotal} />
         </>
       );
