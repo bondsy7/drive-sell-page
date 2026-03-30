@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 import { buildMasterPrompt, type RemasterConfig } from '@/lib/remaster-prompt';
 import { type PipelineJob } from '@/lib/pipeline-jobs';
+import { ensureLogoCachedAsPng } from '@/lib/image-base64-cache';
 
 /* ─── Types ─── */
 export type JobStatus = 'pending' | 'running' | 'done' | 'error';
@@ -251,29 +252,36 @@ Dies ist eine INNENRAUM-Aufnahme. Das bereitgestellte Referenzbild zeigt das INT
 
       const logoFetches: Promise<void>[] = [];
       if (cfg.remasterConfig.showManufacturerLogo) {
-        if (cfg.remasterConfig.manufacturerLogoBase64) {
-          cachedManufacturerLogoBase64Ref.current = cfg.remasterConfig.manufacturerLogoBase64;
-        } else if (cfg.resolvedManufacturerLogoUrl) {
+        // Always use PNG conversion for manufacturer logos (best AI compatibility)
+        const mLogoSrc = cfg.remasterConfig.manufacturerLogoBase64 || cfg.resolvedManufacturerLogoUrl || cfg.remasterConfig.manufacturerLogoUrl;
+        if (mLogoSrc) {
           logoFetches.push(
-            fetchUrlToBase64(cfg.resolvedManufacturerLogoUrl).then(b64 => {
-              if (b64) {
+            ensureLogoCachedAsPng(mLogoSrc).then(b64 => {
+              if (b64 && b64.startsWith('data:')) {
                 cachedManufacturerLogoBase64Ref.current = b64;
-                console.log('[Pipeline] Manufacturer logo pre-cached as base64 ✓');
+                console.log(`[Pipeline] Manufacturer logo pre-cached as PNG ✓ (${Math.round(b64.length / 1024)}KB)`);
+              }
+            }).catch(err => {
+              console.warn('[Pipeline] Manufacturer logo PNG conversion failed, using fallback:', err);
+              if (cfg.remasterConfig.manufacturerLogoBase64) {
+                cachedManufacturerLogoBase64Ref.current = cfg.remasterConfig.manufacturerLogoBase64;
               }
             })
           );
         }
       }
       if (cfg.remasterConfig.showDealerLogo) {
-        if (cfg.remasterConfig.dealerLogoBase64) {
-          cachedDealerLogoBase64Ref.current = cfg.remasterConfig.dealerLogoBase64;
-        } else if (cfg.remasterConfig.dealerLogoUrl) {
+        const dLogoSrc = cfg.remasterConfig.dealerLogoBase64 || cfg.remasterConfig.dealerLogoUrl;
+        if (dLogoSrc) {
           logoFetches.push(
-            fetchUrlToBase64(cfg.remasterConfig.dealerLogoUrl).then(b64 => {
-              if (b64) {
+            ensureLogoCachedAsPng(dLogoSrc).then(b64 => {
+              if (b64 && b64.startsWith('data:')) {
                 cachedDealerLogoBase64Ref.current = b64;
-                console.log('[Pipeline] Dealer logo pre-cached as base64 ✓');
+                console.log(`[Pipeline] Dealer logo pre-cached as PNG ✓ (${Math.round(b64.length / 1024)}KB)`);
               }
+            }).catch(err => {
+              console.warn('[Pipeline] Dealer logo PNG conversion failed (CORS?), will use URL fallback:', err);
+              // For external URLs that fail CORS, the edge function will fetch server-side
             })
           );
         }
