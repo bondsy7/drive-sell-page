@@ -133,8 +133,9 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
 
     const match = findLogo();
     if (match) {
-      console.log(`[RemasterOptions] Auto-resolved logo for "${selectedBrand}": ${match.name}`);
-      ensureCachedBase64(match.url).then(b64 => {
+      console.log(`[RemasterOptions] Auto-resolved logo for "${selectedBrand}": ${match.name} → ${match.url}`);
+      ensureLogoCachedAsPng(match.url).then(b64 => {
+        console.log(`[RemasterOptions] Logo cached as PNG (${Math.round(b64.length / 1024)}KB), starts with: ${b64.substring(0, 30)}`);
         onChange({ ...configRef.current, manufacturerLogoUrl: match.url, manufacturerLogoBase64: b64 });
       });
     } else {
