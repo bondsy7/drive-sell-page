@@ -175,11 +175,23 @@ serve(async (req) => {
     // Helper to convert data URL to inlineData part
     function toInlineData(dataUrl: string) {
       const raw = dataUrl.includes(",") ? dataUrl.split(",")[1] : dataUrl;
-      const mime = dataUrl.startsWith("data:image/png") ? "image/png"
-        : dataUrl.startsWith("data:image/webp") ? "image/webp"
-        : dataUrl.startsWith("data:image/svg") ? "image/png"
-        : "image/jpeg";
+      // Detect MIME from data URL prefix
+      let mime = "image/jpeg";
+      if (dataUrl.startsWith("data:image/png")) mime = "image/png";
+      else if (dataUrl.startsWith("data:image/webp")) mime = "image/webp";
+      else if (dataUrl.startsWith("data:image/svg")) mime = "image/png"; // SVG not supported, treat as PNG
       return { inlineData: { mimeType: mime, data: raw } };
+    }
+
+    /** Clean base64: strip data URL prefix, remove whitespace, validate */
+    function cleanBase64(base64String: string): string {
+      if (!base64String) return "";
+      let cleaned = base64String.trim();
+      if (cleaned.includes(",") && cleaned.startsWith("data:")) {
+        cleaned = cleaned.split(",")[1];
+      }
+      cleaned = cleaned.replace(/\s/g, "");
+      return cleaned;
     }
 
     // Helper to fetch a URL and convert to base64 inline data
@@ -226,11 +238,20 @@ serve(async (req) => {
       parts.push({ text: "Das folgende Bild ist das EIGENE NUMMERNSCHILD. Ersetze das Nummernschild des Fahrzeugs durch dieses:" });
       parts.push(toInlineData(customPlateImageBase64));
     }
-    // Add manufacturer logo – prefer pre-cached base64
+    // Add manufacturer logo – prefer pre-cached PNG base64 from client
     if (manufacturerLogoBase64 || manufacturerLogoUrl) {
-      const logoData = manufacturerLogoBase64
-        ? toInlineData(manufacturerLogoBase64)
-        : await resolveImage(manufacturerLogoUrl);
+      let logoData = null;
+      if (manufacturerLogoBase64) {
+        // Client sends pre-converted PNG base64 – use directly
+        const cleaned = cleanBase64(manufacturerLogoBase64);
+        const mime = manufacturerLogoBase64.startsWith("data:image/png") ? "image/png"
+          : manufacturerLogoBase64.startsWith("data:image/webp") ? "image/webp" : "image/png";
+        logoData = { inlineData: { mimeType: mime, data: cleaned } };
+        console.log(`Manufacturer logo: using pre-cached base64 (${mime}, ${Math.round(cleaned.length / 1024)}KB)`);
+      } else if (manufacturerLogoUrl) {
+        logoData = await resolveImage(manufacturerLogoUrl);
+        console.log(`Manufacturer logo: fetched from URL ${manufacturerLogoUrl}`);
+      }
       if (logoData) {
       parts.push({ text: `HERSTELLER-LOGO – PIXEL-PERFEKTE REPRODUKTION (HÖCHSTE PRIORITÄT):
 Das folgende Bild ist das EXAKTE Logo das an der Showroom-Wand erscheinen MUSS.
@@ -249,9 +270,9 @@ REPRODUKTIONS-REGELN (KEINE ABWEICHUNG ERLAUBT):
    - KEIN Hinzufügen oder Entfernen von Elementen
    - KEINE unterschiedliche Darstellung zwischen Bildern
    - KEINE neue Logo-Version erzeugen, auch nicht wenn sie "sauberer" oder "realistischer" wirkt
+   - VERWENDE NIEMALS eine ältere oder alternative Version des Logos – NUR das exakte bereitgestellte Bild
 7. KONSISTENZ: Das Logo muss auf ALLEN generierten Bildern ABSOLUT IDENTISCH aussehen – gleiche Farben, Form, Größe, Position, Beleuchtung. NULL Variation erlaubt.` });
         parts.push(logoData);
-        console.log("Manufacturer logo injected", manufacturerLogoBase64 ? "(cached b64)" : "(fetched)");
       }
     }
     // Add dealer logo – prefer pre-cached base64

@@ -4,7 +4,7 @@
  */
 
 const CACHE_KEY = 'img_b64_cache';
-const CACHE_VERSION = 2;
+const CACHE_VERSION = 3; // v3: logos cached as PNG for AI compatibility
 
 interface CacheEntry {
   url: string;
@@ -54,6 +54,24 @@ async function fetchAsBase64(url: string): Promise<string> {
     reader.onerror = reject;
     reader.readAsDataURL(blob);
   });
+}
+
+/**
+ * Convert a URL to a PNG base64 data URL via canvas.
+ * This ensures logos are always sent as PNG (best AI compatibility).
+ */
+async function fetchAsPngBase64(url: string): Promise<string> {
+  const res = await fetch(url);
+  const blob = await res.blob();
+  const bitmap = await createImageBitmap(blob);
+  const canvas = document.createElement('canvas');
+  canvas.width = bitmap.width;
+  canvas.height = bitmap.height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Canvas not supported');
+  ctx.drawImage(bitmap, 0, 0);
+  bitmap.close();
+  return canvas.toDataURL('image/png');
 }
 
 /**
@@ -120,6 +138,40 @@ export async function prewarmShowrooms(): Promise<void> {
     '/images/showrooms/showroom-3.webp',
   ];
   await prewarmCache(showroomUrls);
+}
+
+/**
+ * Ensure a logo URL is cached as PNG base64 (converted via canvas for AI compatibility).
+ * WebP/SVG logos are converted to PNG to ensure Gemini processes them correctly.
+ */
+export async function ensureLogoCachedAsPng(url: string): Promise<string> {
+  if (!url) return url;
+  if (url.startsWith('data:image/png')) return url;
+
+  const cacheKey = `logo_png:${url}`;
+
+  // 1. Memory
+  if (memoryCache[cacheKey]) return memoryCache[cacheKey];
+
+  // 2. localStorage
+  const store = loadStore();
+  if (store.entries[cacheKey]) {
+    memoryCache[cacheKey] = store.entries[cacheKey].base64;
+    return store.entries[cacheKey].base64;
+  }
+
+  // 3. Fetch, convert to PNG via canvas, cache
+  try {
+    const pngBase64 = await fetchAsPngBase64(url);
+    memoryCache[cacheKey] = pngBase64;
+    store.entries[cacheKey] = { url, base64: pngBase64, cachedAt: Date.now() };
+    saveStore(store);
+    console.log(`[image-cache] Logo converted to PNG and cached: ${url} (${Math.round(pngBase64.length / 1024)}KB)`);
+    return pngBase64;
+  } catch (err) {
+    console.warn('[image-cache] Failed to convert logo to PNG, falling back to regular cache:', url, err);
+    return ensureCachedBase64(url);
+  }
 }
 
 /**
