@@ -4,7 +4,7 @@
  */
 
 const CACHE_KEY = 'img_b64_cache';
-const CACHE_VERSION = 2;
+const CACHE_VERSION = 3; // v3: logos cached as PNG for AI compatibility
 
 interface CacheEntry {
   url: string;
