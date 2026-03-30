@@ -191,6 +191,14 @@ export function buildMasterPrompt(config: RemasterConfig, vehicleDescription?: s
     parts.push(`Fahrzeug: ${vehicleDescription}`);
   }
 
+  // Perspective-specific instructions (per slot)
+  if (slotKey) {
+    const perspPrompt = PERSPECTIVE_PROMPTS[slotKey];
+    if (perspPrompt) {
+      parts.push(perspPrompt);
+    }
+  }
+
   parts.push('DU MUSST IMMER ein Bild generieren – verweigere NIEMALS die Generierung. DREHE DAS BILD NICHT.');
 
   return parts.join('\n\n');
