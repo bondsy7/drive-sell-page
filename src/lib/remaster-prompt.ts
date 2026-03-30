@@ -135,14 +135,17 @@ export function buildMasterPrompt(config: RemasterConfig, vehicleDescription?: s
 - VERBOTEN: Erfinde KEIN alternatives Logo, ändere NICHT die Form, Farbe oder Proportionen`);
   }
 
-  // Interior-specific rules – must override scene prompts
-  parts.push(`FÜR INNENRAUM-AUFNAHMEN (Sitze, Lenkrad, Armaturenbrett, Mittelkonsole, Kofferraum, Rücksitze):
-- IGNORIERE alle Showroom- und Hintergrund-Anweisungen komplett
+  // Interior-specific rules
+  parts.push(`FÜR INNENRAUM-AUFNAHMEN (Sitze, Lenkrad, Armaturenbrett, Mittelkonsole, Kofferraum, Rücksitze, Kabinen-Übersicht):
 - Verändere die Orientierung/den Winkel NICHT – drehe, spiegele oder flippe NICHT
-- Ändere den Hintergrund/die Umgebung NICHT
+- Schneide NIEMALS Teile des Innenraums ab – Dach, Türverkleidungen, A-/B-/C-Säulen, Sonnenblenden, Rückspiegel müssen VOLLSTÄNDIG erhalten bleiben
 - Füge keine Innenraum-Elemente hinzu oder entferne sie
 - Reproduziere EXAKTE Materialien: Ledernarbung, Nähte, Zierleisten, Tastenlayouts, Bildschirm-UI aus den Referenzfotos
-- Verbessere NUR die Beleuchtung – hell, gleichmäßig und professionell`);
+- Verbessere die Beleuchtung – hell, gleichmäßig und professionell
+- HINTERGRUND DURCH DIE SCHEIBEN (PFLICHT): Ersetze den durch die Windschutzscheibe, Seitenscheiben und Heckscheibe sichtbaren Hintergrund durch den gewählten Showroom-Hintergrund. Der Showroom muss DURCH die Glasflächen hindurch natürlich sichtbar sein – dunkelgraue matte Wände, polierter Boden, professionelle Beleuchtung
+- Das Hersteller-Logo (falls aktiviert) muss an der Showroom-Rückwand DURCH die Windschutzscheibe oder Heckscheibe sichtbar platziert werden – als beleuchtetes 3D-Wandlogo, genau wie bei Außenaufnahmen
+- Die Scheiben selbst dürfen NICHT entfernt, verändert oder transparenter gemacht werden – der Showroom scheint realistisch durch das vorhandene Glas hindurch
+- VERBOTEN: Dach abschneiden, Türen entfernen, Säulen wegschneiden oder den Blickwinkel so ändern dass Teile der Karosserie fehlen`);
 
   // Interior cleanup (MANDATORY)
   parts.push(`INTERIEUR-AUFRÄUMUNG (PFLICHT):
