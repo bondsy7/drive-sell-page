@@ -422,6 +422,10 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     if (key === 'vin') setDetectedVin(null);
   };
 
+  // Ref to hold pre-cached logo base64 for consistent use across all remaster calls
+  const cachedMfgLogoRef = useRef<string | null>(null);
+  const cachedDealerLogoRef = useRef<string | null>(null);
+
   const startRemastering = async () => {
     const toProcess = vehicleSlots.filter(s => captures[s.key] && captures[s.key].status !== 'done');
     if (toProcess.length === 0) {
@@ -433,6 +437,40 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     const total = toProcess.length;
     let completed = 0;
     setProgress({ current: 0, total });
+
+    // Pre-cache logos as PNG ONCE before any remastering to ensure consistency
+    cachedMfgLogoRef.current = null;
+    cachedDealerLogoRef.current = null;
+    try {
+      const logoPromises: Promise<void>[] = [];
+      if (remasterConfig.showManufacturerLogo) {
+        const src = remasterConfig.manufacturerLogoBase64 || remasterConfig.manufacturerLogoUrl;
+        if (src) {
+          logoPromises.push(
+            ensureLogoCachedAsPng(src).then(b64 => {
+              if (b64?.startsWith('data:')) cachedMfgLogoRef.current = b64;
+            }).catch(() => {
+              if (remasterConfig.manufacturerLogoBase64) cachedMfgLogoRef.current = remasterConfig.manufacturerLogoBase64;
+            })
+          );
+        }
+      }
+      if (remasterConfig.showDealerLogo) {
+        const src = remasterConfig.dealerLogoBase64 || remasterConfig.dealerLogoUrl;
+        if (src) {
+          logoPromises.push(
+            ensureLogoCachedAsPng(src).then(b64 => {
+              if (b64?.startsWith('data:')) cachedDealerLogoRef.current = b64;
+            }).catch(() => {
+              if (remasterConfig.dealerLogoBase64) cachedDealerLogoRef.current = remasterConfig.dealerLogoBase64;
+            })
+          );
+        }
+      }
+      if (logoPromises.length > 0) await Promise.all(logoPromises);
+    } catch (e) {
+      console.warn('[Remaster] Logo pre-cache failed:', e);
+    }
 
     // Mark all as processing
     setCaptures(prev => {
