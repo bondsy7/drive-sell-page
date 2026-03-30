@@ -63,13 +63,14 @@ LOGO RENDERING (MANDATORY when a logo image is provided):
 - Treat the supplied logo image as IMMUTABLE SOURCE MATERIAL: do NOT redesign, simplify, restyle, vectorize, emboss, recolor, add a new border, remove a border, alter proportions, or change any text or symbols
 
 FOR INTERIOR SHOTS (seats, steering wheel, dashboard, center console, door panels, rear seats):
-- MANDATORY CLEANUP: Remove ALL items that do NOT belong to the vehicle: trash, bags, papers, plastic covers, protective films, transport packaging, personal belongings, loose items on seats or floor mats, tags, stickers, warning labels (except permanent vehicle labels)
-- Clean up BOTH front seats AND rear seats equally – the entire cabin must look showroom-ready and professionally detailed
-- After cleanup, seats, floor mats, and surfaces should look clean, pristine, and professionally prepared
-- CRITICAL: Do NOT rotate, flip, or change the orientation/angle of the photo
-- Do NOT add or remove ANY interior elements (seats, buttons, screens, trim)
-- Reproduce EXACT materials: leather grain, stitching, trim finishes, button layouts, screen UI from reference
-- Only enhance lighting to be bright, even, and professional
+- EXACT COMPOSITION: The output MUST have the EXACT SAME framing, camera angle, and perspective as the input. Do NOT rotate, flip, zoom, re-frame, or crop differently.
+- ZERO INVENTION: Do NOT add ANY element not in the original (no new buttons, screens, trim, ambient lighting, decorative elements). Do NOT change any material, color, or texture.
+- ZERO REMOVAL: Do NOT remove ANY permanent vehicle element (seats, buttons, screens, speakers, vents, pedals, handles, trim).
+- EVERY DETAIL MATTERS: Tachometer display, screen UI content, stitching color/pattern, seat perforation, air vent angles, gear selector position, cup holder shape, USB ports, steering wheel controls – ALL must match the original EXACTLY.
+- CLEANUP ONLY: The ONLY changes allowed are removing items that do NOT belong (trash, bags, papers, plastic covers, dust, dirt, personal belongings, hands/feet, temporary stickers). Clean surfaces to look showroom-ready.
+- LIGHTING ONLY: Improve lighting to bright, even, professional. Replace background through windows with showroom. Do NOT alter glass transparency.
+- STRUCTURAL INTEGRITY: Roof, ALL pillars (A/B/C), headliner, door panels, sun visors, rearview mirror MUST remain FULLY visible and UNCUT. Do NOT crop any structural element.
+- FORBIDDEN: Generating exterior view, changing camera angle, adding/modifying design elements, cutting roof/doors/pillars, inventing details.
 
 FOR TRUNK/CARGO AREA SHOTS:
 - Keep structure exactly as shown, remove loose items/bags/debris
