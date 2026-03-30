@@ -15,7 +15,7 @@ import {
   fetchManufacturerLogos,
   type DynamicLogo,
 } from '@/lib/remaster-prompt';
-import { ensureCachedBase64, prewarmCache } from '@/lib/image-base64-cache';
+import { ensureCachedBase64, prewarmCache, ensureLogoCachedAsPng } from '@/lib/image-base64-cache';
 import VehicleBrandModelPicker from '@/components/VehicleBrandModelPicker';
 
 interface RemasterOptionsProps {
