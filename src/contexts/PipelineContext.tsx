@@ -522,6 +522,7 @@ Dies ist eine INNENRAUM-Aufnahme. Das bereitgestellte Referenzbild zeigt das INT
     setElapsedMs(0);
     setConfig(null);
     setSavedProjectId(null);
+    setGalleryFolder(null);
   }, []);
 
   return (
