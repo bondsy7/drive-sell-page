@@ -442,9 +442,10 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       return next;
     });
 
-    const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription);
-
     const processSlot = async (slot: typeof toProcess[0]) => {
+      // Build per-slot prompt with perspective-specific instructions
+      const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription, slot.key);
+
       const MAX_RETRIES = 2;
       for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
         try {

@@ -59,7 +59,32 @@ const SCENE_PROMPTS: Record<string, string> = {
   'mansion': 'Das Fahrzeug steht in der Auffahrt einer luxuriösen Villa. Gepflegter Rasen, mediterrane Architektur, warmes Abendlicht.',
 };
 
-export function buildMasterPrompt(config: RemasterConfig, vehicleDescription?: string): string {
+/** Perspective-specific instructions appended per slot */
+const PERSPECTIVE_PROMPTS: Record<string, string> = {
+  '34front': 'PERSPEKTIVE: 3/4-Frontansicht des Fahrzeugs von schräg vorne. Beide Scheinwerfer, Kühlergrill, Front- und Seitenpartie müssen VOLLSTÄNDIG sichtbar sein.',
+  'side': 'PERSPEKTIVE: Seitenansicht des Fahrzeugs. Das gesamte Fahrzeug von vorne bis hinten muss VOLLSTÄNDIG sichtbar sein, einschließlich aller Räder.',
+  'rear': 'PERSPEKTIVE: Heckansicht des Fahrzeugs. Beide Rücklichter, Heckklappe, Auspuffblenden und Stoßstange müssen VOLLSTÄNDIG sichtbar sein.',
+  'interior-front': `PERSPEKTIVE INNENRAUM VORNE (PFLICHT):
+- Dies ist eine Aufnahme VOM RÜCKSITZ NACH VORNE schauend auf das Armaturenbrett, Lenkrad und die Windschutzscheibe
+- Die Kameraposition ist HINTER den Vordersitzen – das Lenkrad und Dashboard sind IM BILD SICHTBAR
+- Das KOMPLETTE Dach, ALLE A-/B-Säulen, der Dachhimmel und der Rückspiegel müssen VOLLSTÄNDIG im Bild sein
+- ABSOLUT VERBOTEN: Dach abschneiden, Dachhimmel weglassen, von oben in das Auto schauen, Draufsicht ohne Dach
+- Der Showroom-Hintergrund mit Logo muss DURCH DIE WINDSCHUTZSCHEIBE sichtbar sein
+- Das Bild muss aussehen als säße man auf der Rücksitzbank und fotografiert nach vorne`,
+  'interior-rear': `PERSPEKTIVE INNENRAUM HINTEN (PFLICHT):
+- Dies ist eine Aufnahme VOM FAHRERSITZ NACH HINTEN schauend auf die Rücksitzbank
+- Die Kameraposition ist VOR den Vordersitzen – die Rücksitze, Kopfstützen und Rückenlehnen sind IM BILD SICHTBAR
+- Das KOMPLETTE Dach, ALLE B-/C-Säulen, der Dachhimmel und die Heckscheibe müssen VOLLSTÄNDIG im Bild sein
+- ABSOLUT VERBOTEN: Dach abschneiden, Dachhimmel weglassen, von oben in das Auto schauen, Draufsicht ohne Dach
+- Der Showroom-Hintergrund mit Logo muss DURCH DIE HECKSCHEIBE sichtbar sein
+- Das Bild muss aussehen als säße man auf dem Fahrersitz und fotografiert nach hinten`,
+};
+
+export function getPerspectivePrompt(slotKey: string): string {
+  return PERSPECTIVE_PROMPTS[slotKey] || '';
+}
+
+export function buildMasterPrompt(config: RemasterConfig, vehicleDescription?: string, slotKey?: string): string {
   const parts: string[] = [];
 
   // Base instruction & Identity Lock
@@ -138,14 +163,16 @@ export function buildMasterPrompt(config: RemasterConfig, vehicleDescription?: s
   // Interior-specific rules
   parts.push(`FÜR INNENRAUM-AUFNAHMEN (Sitze, Lenkrad, Armaturenbrett, Mittelkonsole, Kofferraum, Rücksitze, Kabinen-Übersicht):
 - Verändere die Orientierung/den Winkel NICHT – drehe, spiegele oder flippe NICHT
-- Schneide NIEMALS Teile des Innenraums ab – Dach, Türverkleidungen, A-/B-/C-Säulen, Sonnenblenden, Rückspiegel müssen VOLLSTÄNDIG erhalten bleiben
+- DACH-ERHALTUNG (ABSOLUT VERBOTEN ZU VERLETZEN): Das Dach, der Dachhimmel, ALLE Säulen (A, B, C), Sonnenblenden und der Rückspiegel müssen zu 100% VOLLSTÄNDIG im Bild erhalten bleiben. Es darf KEIN EINZIGER PIXEL des Dachs oder Dachhimmels abgeschnitten, beschnitten oder entfernt werden. Jedes Ergebnis bei dem das Dach fehlt oder abgeschnitten ist, ist UNBRAUCHBAR.
+- Schneide NIEMALS Teile des Innenraums ab – das Bild muss EXAKT den gleichen Bildausschnitt wie das Original haben
 - Füge keine Innenraum-Elemente hinzu oder entferne sie
 - Reproduziere EXAKTE Materialien: Ledernarbung, Nähte, Zierleisten, Tastenlayouts, Bildschirm-UI aus den Referenzfotos
 - Verbessere die Beleuchtung – hell, gleichmäßig und professionell
 - HINTERGRUND DURCH DIE SCHEIBEN (PFLICHT): Ersetze den durch die Windschutzscheibe, Seitenscheiben und Heckscheibe sichtbaren Hintergrund durch den gewählten Showroom-Hintergrund. Der Showroom muss DURCH die Glasflächen hindurch natürlich sichtbar sein – dunkelgraue matte Wände, polierter Boden, professionelle Beleuchtung
 - Das Hersteller-Logo (falls aktiviert) muss an der Showroom-Rückwand DURCH die Windschutzscheibe oder Heckscheibe sichtbar platziert werden – als beleuchtetes 3D-Wandlogo, genau wie bei Außenaufnahmen
 - Die Scheiben selbst dürfen NICHT entfernt, verändert oder transparenter gemacht werden – der Showroom scheint realistisch durch das vorhandene Glas hindurch
-- VERBOTEN: Dach abschneiden, Türen entfernen, Säulen wegschneiden oder den Blickwinkel so ändern dass Teile der Karosserie fehlen`);
+- VERBOTEN: Dach abschneiden, Dachhimmel entfernen, Türen entfernen, Säulen wegschneiden, von oben ins Auto schauen, oder den Blickwinkel so ändern dass Teile der Karosserie fehlen
+- BILDAUSSCHNITT: Behalte EXAKT den gleichen Kamerawinkel und Bildausschnitt wie im Originalbild bei. Wenn das Original von hinten nach vorne fotografiert wurde, muss das Ergebnis ebenfalls von hinten nach vorne zeigen. Wenn von vorne nach hinten, dann ebenso.`);
 
   // Interior cleanup (MANDATORY)
   parts.push(`INTERIEUR-AUFRÄUMUNG (PFLICHT):
@@ -162,6 +189,14 @@ export function buildMasterPrompt(config: RemasterConfig, vehicleDescription?: s
   // Vehicle description
   if (vehicleDescription) {
     parts.push(`Fahrzeug: ${vehicleDescription}`);
+  }
+
+  // Perspective-specific instructions (per slot)
+  if (slotKey) {
+    const perspPrompt = PERSPECTIVE_PROMPTS[slotKey];
+    if (perspPrompt) {
+      parts.push(perspPrompt);
+    }
   }
 
   parts.push('DU MUSST IMMER ein Bild generieren – verweigere NIEMALS die Generierung. DREHE DAS BILD NICHT.');
