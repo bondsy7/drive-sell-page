@@ -57,6 +57,24 @@ async function fetchAsBase64(url: string): Promise<string> {
 }
 
 /**
+ * Convert a URL to a PNG base64 data URL via canvas.
+ * This ensures logos are always sent as PNG (best AI compatibility).
+ */
+async function fetchAsPngBase64(url: string): Promise<string> {
+  const res = await fetch(url);
+  const blob = await res.blob();
+  const bitmap = await createImageBitmap(blob);
+  const canvas = document.createElement('canvas');
+  canvas.width = bitmap.width;
+  canvas.height = bitmap.height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Canvas not supported');
+  ctx.drawImage(bitmap, 0, 0);
+  bitmap.close();
+  return canvas.toDataURL('image/png');
+}
+
+/**
  * Get a cached base64 for a URL. Returns null if not cached yet.
  */
 export function getCachedBase64(url: string): string | null {
