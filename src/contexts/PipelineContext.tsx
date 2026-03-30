@@ -289,6 +289,13 @@ Dies ist eine INNENRAUM-Aufnahme. Das bereitgestellte Referenzbild zeigt das INT
         }
       }
       if (logoFetches.length > 0) await Promise.all(logoFetches);
+      
+      // Log logo fingerprint for consistency verification
+      if (cachedManufacturerLogoBase64Ref.current) {
+        const logoLen = cachedManufacturerLogoBase64Ref.current.length;
+        const logoHash = logoLen.toString(36) + '_' + cachedManufacturerLogoBase64Ref.current.slice(-20);
+        console.log(`[Pipeline] Logo fingerprint: ${logoHash} (${Math.round(logoLen / 1024)}KB) – this MUST be identical for all images`);
+      }
 
       const allResults: { key: string; base64: string; label: string; subIndex: number }[] = [];
       const jobTimings: Record<string, { start: number; end?: number }> = {};
