@@ -164,7 +164,24 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       .concat(cfg.additionalImages);
     const baseContext = buildMasterPrompt(cfg.remasterConfig, cfg.vehicleDescription);
     const taskLock = buildTaskOutputLock(job);
-    const fullPrompt = `${baseContext}\n\n${taskLock}\n\n--- PERSPECTIVE INSTRUCTION ---\n${prompt}`;
+
+    // Detect if this is an interior/detail job – prevents AI from generating exterior views
+    const isInteriorJob = job?.category === 'interior';
+    const isDetailJob = job?.category === 'detail';
+
+    // For interior jobs, add an explicit override to prevent exterior generation
+    const interiorOverride = isInteriorJob
+      ? `\n\nCRITICAL INTERIOR OVERRIDE (HÖCHSTE PRIORITÄT):
+Dies ist eine INNENRAUM-Aufnahme. Das bereitgestellte Referenzbild zeigt das INTERIEUR des Fahrzeugs.
+- Du MUSST das Interieur-Referenzbild remastern – NICHT eine Außenansicht generieren
+- Behalte die EXAKTE Perspektive, den Blickwinkel und die Komposition des Referenzbildes bei
+- Verbessere NUR die Beleuchtung, entferne Unordnung, und ersetze den durch die Scheiben sichtbaren Hintergrund durch den Showroom
+- Generiere unter KEINEN Umständen eine Außenansicht des Fahrzeugs
+- Das Fahrzeugdach, alle Säulen (A/B/C), Türverkleidungen, Sonnenblenden und der Rückspiegel müssen VOLLSTÄNDIG erhalten bleiben
+- Schneide NICHTS ab – das Bild muss die gleiche Komposition wie das Original haben`
+      : '';
+
+    const fullPrompt = `${baseContext}${interiorOverride}\n\n${taskLock}\n\n--- PERSPECTIVE INSTRUCTION ---\n${prompt}`;
 
     // Always prefer cached base64 logos over URLs for consistency
     const manufacturerLogoBase64 = cfg.remasterConfig.showManufacturerLogo
@@ -174,14 +191,18 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       ? (cachedDealerLogoBase64Ref.current || cfg.remasterConfig.dealerLogoBase64 || null)
       : null;
 
+    // For interior jobs: do NOT send the custom showroom image – it confuses the AI into generating exterior views
+    // The showroom should only be visible THROUGH the windows, described via text prompt
+    const showroomBase64ForRequest = isInteriorJob ? null : (cfg.remasterConfig.customShowroomBase64 || null);
+
     const { data, error } = await invokeRemasterVehicleImage({
       imageBase64: primaryReference,
       additionalImages: supportingReferences.length > 0 ? supportingReferences : undefined,
       vehicleDescription: cfg.vehicleDescription,
       modelTier: cfg.modelTier,
       dynamicPrompt: fullPrompt,
-      customShowroomBase64: cfg.remasterConfig.customShowroomBase64 || null,
-      customPlateImageBase64: cfg.remasterConfig.customPlateImageBase64 || null,
+      customShowroomBase64: showroomBase64ForRequest,
+      customPlateImageBase64: isInteriorJob ? null : (cfg.remasterConfig.customPlateImageBase64 || null),
       // Only pass URL as fallback if base64 is not available
       dealerLogoUrl: dealerLogoBase64 ? null : (cfg.remasterConfig.showDealerLogo ? cfg.remasterConfig.dealerLogoUrl : null),
       dealerLogoBase64: dealerLogoBase64,
