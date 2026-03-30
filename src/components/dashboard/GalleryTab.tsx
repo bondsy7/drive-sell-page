@@ -48,12 +48,22 @@ import {
 interface Props {
   images: ProjectImage[];
   onLightbox: (globalIndex: number) => void;
+  highlightFolder?: string | null;
 }
 
-export default function GalleryTab({ images, onLightbox }: Props) {
+export default function GalleryTab({ images, onLightbox, highlightFolder }: Props) {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(() => {
+    if (highlightFolder) return new Set([highlightFolder]);
     return new Set(images.map(i => i.gallery_folder || 'Ohne Ordner'));
   });
+  const highlightRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to highlighted folder on mount
+  useEffect(() => {
+    if (highlightFolder && highlightRef.current) {
+      highlightRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [highlightFolder]);
 
   const [confirmDeleteImage, setConfirmDeleteImage] = useState<string | null>(null);
   const [confirmDeleteFolder, setConfirmDeleteFolder] = useState<{ folder: string; count: number } | null>(null);
