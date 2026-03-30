@@ -1,32 +1,15 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { usePipelineSafe } from '@/contexts/PipelineContext';
 import { Loader2, Check, Timer, X } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
-import { createContext } from 'react';
-
-// Import the raw context to avoid the throwing hook
-// We need a safe version that returns null outside the provider
-let PipelineContextRef: React.Context<any> | null = null;
-try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const mod = await import('@/contexts/PipelineContext');
-  PipelineContextRef = (mod as any).__PipelineContext || null;
-} catch {}
 
 const BackgroundPipelineIndicator: React.FC = () => {
-  // Use usePipeline safely – catch if outside provider
-  let pipeline: any = null;
-  try {
-    const { usePipeline } = require('@/contexts/PipelineContext');
-    pipeline = usePipeline();
-  } catch {
-    // Not inside PipelineProvider – render nothing
-    return null;
-  }
+  const pipeline = usePipelineSafe();
   const navigate = useNavigate();
   const location = useLocation();
 
-  if (pipeline.status === 'idle') return null;
+  if (!pipeline || pipeline.status === 'idle') return null;
 
   // Hide on generator page – PipelineRunner handles display there
   if (location.pathname === '/generator') return null;
