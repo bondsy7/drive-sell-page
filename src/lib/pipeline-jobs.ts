@@ -62,17 +62,48 @@ LIGHTING & REFLECTIONS:
 // ═══════════════════════════════════════════════════════════════════
 // INTERIOR RULES – appended to all interior pipeline prompts
 // ═══════════════════════════════════════════════════════════════════
-const INTERIOR_RULES = `INTERIOR-SPECIFIC RULES (MANDATORY):
-- THIS IS AN INTERIOR SHOT. The provided reference image shows the INSIDE of the vehicle. You MUST remaster this interior image – do NOT generate an exterior view.
-- KEEP the EXACT same perspective, viewing angle, and composition as the reference photo.
-- CLEANUP: Remove ALL items that do NOT belong to the vehicle: trash, bags, papers, plastic covers, protective films, transport packaging, personal belongings, loose items on seats or floor mats, tags, stickers, warning labels (except permanent vehicle labels). Clean up BOTH front seats AND rear seats. The cabin must look showroom-ready and professionally detailed.
-- PRESERVATION: Reproduce EXACT leather/fabric grain texture, stitching patterns, trim materials (wood, metal, piano black, alcantara), button layouts, screen UI, instrument cluster design, gear selector shape, steering wheel controls, and ambient lighting exactly as in the reference photos.
-- STRUCTURAL INTEGRITY: The vehicle roof, ALL pillars (A/B/C), door panels, sun visors, and rearview mirror MUST remain FULLY visible. Do NOT cut off, remove, or hide any structural element.
-- BACKGROUND THROUGH WINDOWS: Replace the background visible through windshield, side windows, and rear window with the showroom environment. The showroom must be naturally visible THROUGH the existing glass – do NOT remove or alter the glass itself.
-- Do NOT rotate, flip, or change the camera orientation/angle from what is shown in the reference.
-- Do NOT add or remove any interior elements.
-- Only enhance lighting to be bright, even, and professional.
-- ABSOLUTELY FORBIDDEN: Generating an exterior view of the vehicle when an interior reference image is provided.`;
+const INTERIOR_RULES = `INTERIOR-SPECIFIC RULES (ABSOLUTE MANDATORY – ZERO TOLERANCE):
+
+1. EXACT COMPOSITION PRESERVATION (HÖCHSTE PRIORITÄT):
+- THIS IS AN INTERIOR SHOT. You MUST remaster this EXACT interior image – do NOT generate an exterior view.
+- The output image MUST have the EXACT SAME composition, framing, camera angle, and perspective as the reference photo.
+- If the reference shows the dashboard from the driver seat → output MUST show the dashboard from the driver seat.
+- If the reference shows rear seats from the front → output MUST show rear seats from the front.
+- If the reference shows a door panel → output MUST show the same door panel from the same angle.
+- Do NOT rotate, flip, mirror, zoom in, zoom out, or re-frame the image in ANY way.
+- The pixel boundaries of the image must contain the SAME elements as the original.
+
+2. ZERO INVENTION / ZERO MODIFICATION:
+- Do NOT add ANY element not present in the original (no new buttons, no new screens, no new trim, no new ambient lighting effects).
+- Do NOT remove ANY permanent vehicle element (seats, buttons, screens, speakers, trim, handles, vents, pedals, steering wheel controls).
+- Do NOT change ANY material (leather stays leather, alcantara stays alcantara, piano black stays piano black, carbon stays carbon).
+- Do NOT alter the instrument cluster display, infotainment screen content, or any digital readout.
+- Do NOT change the steering wheel design, button layout, or any control surface.
+- EVERY detail matters: tachometer needles, screen UI, stitching color, seat perforation pattern, air vent angles, gear selector position, cup holder shape, USB port positions – ALL must match the original EXACTLY.
+
+3. CLEANUP ONLY (the ONLY changes allowed):
+- Remove items that do NOT belong to the vehicle: trash, bags, papers, leaves, plastic protective covers, transport packaging, dust, dirt, personal belongings, loose items, clothing, body parts/hands/feet.
+- Remove any WARNING stickers/labels that are temporary (keep permanent vehicle labels).
+- Clean all surfaces: seats, floor mats, dashboard, center console must look freshly detailed.
+- The cabin must look showroom-ready – as if professionally cleaned by a detailer.
+
+4. LIGHTING ENHANCEMENT (the ONLY visual change allowed):
+- Improve lighting to be bright, even, and professional – as if photographed in a showroom.
+- Replace the background visible through windows with the showroom environment (visible THROUGH glass naturally).
+- Do NOT alter the glass transparency or remove window tint.
+
+5. STRUCTURAL INTEGRITY (ABSOLUTELY FORBIDDEN TO VIOLATE):
+- The vehicle roof, ALL pillars (A/B/C), headliner, door panels, door cards, sun visors, rearview mirror, and ALL trim must remain FULLY visible and UNCUT.
+- Do NOT crop, cut off, or hide ANY structural element at the image edges.
+- If the original shows a door panel, the COMPLETE door panel must be in the output.
+- If the original shows the full dashboard span, the COMPLETE dashboard must be in the output.
+
+6. ABSOLUTELY FORBIDDEN:
+- Generating an exterior view when an interior reference is provided.
+- Changing the camera angle or perspective from the original.
+- Adding decorative elements, changing materials, or "improving" the design.
+- Cutting off the roof, removing doors, or altering the structural frame.
+- Inventing details not visible in the reference photos.`;
 
 export const PIPELINE_JOBS: PipelineJob[] = [
   // ── Hero ──

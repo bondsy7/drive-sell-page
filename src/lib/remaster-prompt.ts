@@ -161,18 +161,43 @@ export function buildMasterPrompt(config: RemasterConfig, vehicleDescription?: s
   }
 
   // Interior-specific rules
-  parts.push(`FÜR INNENRAUM-AUFNAHMEN (Sitze, Lenkrad, Armaturenbrett, Mittelkonsole, Kofferraum, Rücksitze, Kabinen-Übersicht):
-- Verändere die Orientierung/den Winkel NICHT – drehe, spiegele oder flippe NICHT
-- DACH-ERHALTUNG (ABSOLUT VERBOTEN ZU VERLETZEN): Das Dach, der Dachhimmel, ALLE Säulen (A, B, C), Sonnenblenden und der Rückspiegel müssen zu 100% VOLLSTÄNDIG im Bild erhalten bleiben. Es darf KEIN EINZIGER PIXEL des Dachs oder Dachhimmels abgeschnitten, beschnitten oder entfernt werden. Jedes Ergebnis bei dem das Dach fehlt oder abgeschnitten ist, ist UNBRAUCHBAR.
-- Schneide NIEMALS Teile des Innenraums ab – das Bild muss EXAKT den gleichen Bildausschnitt wie das Original haben
-- Füge keine Innenraum-Elemente hinzu oder entferne sie
-- Reproduziere EXAKTE Materialien: Ledernarbung, Nähte, Zierleisten, Tastenlayouts, Bildschirm-UI aus den Referenzfotos
-- Verbessere die Beleuchtung – hell, gleichmäßig und professionell
-- HINTERGRUND DURCH DIE SCHEIBEN (PFLICHT): Ersetze den durch die Windschutzscheibe, Seitenscheiben und Heckscheibe sichtbaren Hintergrund durch den gewählten Showroom-Hintergrund. Der Showroom muss DURCH die Glasflächen hindurch natürlich sichtbar sein – dunkelgraue matte Wände, polierter Boden, professionelle Beleuchtung
-- Das Hersteller-Logo (falls aktiviert) muss an der Showroom-Rückwand DURCH die Windschutzscheibe oder Heckscheibe sichtbar platziert werden – als beleuchtetes 3D-Wandlogo, genau wie bei Außenaufnahmen
-- Die Scheiben selbst dürfen NICHT entfernt, verändert oder transparenter gemacht werden – der Showroom scheint realistisch durch das vorhandene Glas hindurch
-- VERBOTEN: Dach abschneiden, Dachhimmel entfernen, Türen entfernen, Säulen wegschneiden, von oben ins Auto schauen, oder den Blickwinkel so ändern dass Teile der Karosserie fehlen
-- BILDAUSSCHNITT: Behalte EXAKT den gleichen Kamerawinkel und Bildausschnitt wie im Originalbild bei. Wenn das Original von hinten nach vorne fotografiert wurde, muss das Ergebnis ebenfalls von hinten nach vorne zeigen. Wenn von vorne nach hinten, dann ebenso.`);
+  parts.push(`FÜR INNENRAUM-AUFNAHMEN (ABSOLUTE PFLICHT – NULL TOLERANZ):
+
+1. EXAKTE KOMPOSITIONS-ERHALTUNG (HÖCHSTE PRIORITÄT):
+- Das Ausgabebild MUSS die EXAKT GLEICHE Komposition, Rahmung, Kamerawinkel und Perspektive wie das Referenzfoto haben.
+- Drehe, spiegele, flippe, zoome oder beschneide das Bild NICHT.
+- Die Pixelgrenzen des Bildes müssen die GLEICHEN Elemente wie das Original enthalten.
+
+2. NULL ERFINDUNG / NULL VERÄNDERUNG:
+- Füge KEINE Elemente hinzu die nicht im Original vorhanden sind (keine neuen Tasten, Bildschirme, Zierleisten, Ambientebeleuchtung).
+- Entferne KEINE permanenten Fahrzeugelemente (Sitze, Tasten, Bildschirme, Lautsprecher, Türgriffe, Lüftungsdüsen, Pedale).
+- Ändere KEIN Material (Leder bleibt Leder, Alcantara bleibt Alcantara, Piano-Schwarz bleibt Piano-Schwarz, Carbon bleibt Carbon).
+- Verändere NICHT die Tachonadeln, Bildschirm-UI, Infotainment-Anzeige oder digitale Anzeigen.
+- Verändere NICHT das Lenkraddesign, die Tastenbelegung oder Bedienoberflächen.
+- JEDES Detail zählt: Tachometer, Monitor-Inhalte, Nahtfarben, Sitzperforierung, Lüftungsdüsen-Winkel, Gangwahlhebel-Position, Becherhalter-Form, USB-Positionen – ALLES muss EXAKT dem Original entsprechen.
+
+3. NUR AUFRÄUMEN (die EINZIGEN erlaubten Änderungen):
+- Entferne NUR Gegenstände die NICHT zum Fahrzeug gehören: Müll, Tüten, Papiere, Blätter, Plastik-Schutzfolien, Transportverpackungen, Staub, Schmutz, persönliche Gegenstände, lose Gegenstände, Kleidung, Körperteile/Hände/Füße.
+- Entferne temporäre WARNING-Aufkleber (permanente Fahrzeuglabels behalten).
+- Reinige alle Oberflächen: Sitze, Fußmatten, Armaturenbrett, Mittelkonsole müssen frisch aufbereitet aussehen.
+
+4. NUR BELEUCHTUNGSVERBESSERUNG:
+- Verbessere die Beleuchtung zu hell, gleichmäßig und professionell – wie im Showroom fotografiert.
+- Ersetze den durch Scheiben sichtbaren Hintergrund durch den Showroom-Hintergrund (DURCH das Glas natürlich sichtbar).
+- Das Hersteller-Logo (falls aktiviert) muss an der Showroom-Rückwand DURCH die Scheiben sichtbar sein.
+- Verändere NICHT die Glastransparenz oder Scheibentönung.
+
+5. STRUKTURELLE INTEGRITÄT (ABSOLUT VERBOTEN ZU VERLETZEN):
+- Dach, ALLE Säulen (A/B/C), Dachhimmel, Türverkleidungen, Sonnenblenden und Rückspiegel müssen VOLLSTÄNDIG sichtbar und UNGESCHNITTEN bleiben.
+- Beschneide NICHTS an den Bildrändern.
+- Wenn das Original eine Türverkleidung zeigt, muss die KOMPLETTE Türverkleidung im Output sein.
+
+6. ABSOLUT VERBOTEN:
+- Außenansicht generieren wenn Innenraum-Referenz gegeben ist.
+- Kamerawinkel oder Perspektive vom Original ändern.
+- Dekorative Elemente hinzufügen, Materialien ändern oder das Design „verbessern".
+- Dach abschneiden, Türen entfernen oder den Strukturrahmen ändern.
+- Details erfinden die nicht in den Referenzfotos sichtbar sind.`);
 
   // Interior cleanup (MANDATORY)
   parts.push(`INTERIEUR-AUFRÄUMUNG (PFLICHT):
