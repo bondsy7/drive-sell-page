@@ -528,7 +528,7 @@ Dies ist eine INNENRAUM-Aufnahme. Das bereitgestellte Referenzbild zeigt das INT
   return (
     <PipelineContext.Provider value={{
       status, isRunning: status === 'running', isFinished: status === 'finished',
-      jobs, startTime, endTime, elapsedMs, config, savedProjectId,
+      jobs, startTime, endTime, elapsedMs, config, savedProjectId, galleryFolder,
       totalImages: config?.totalImages ?? 0,
       startPipeline, retryJob, retrySingleImage, clearPipeline,
     }}>
