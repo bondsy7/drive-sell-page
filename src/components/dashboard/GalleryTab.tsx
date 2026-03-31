@@ -138,11 +138,10 @@ export default function GalleryTab({ images, onLightbox, highlightFolder }: Prop
               </div>
               {isExpanded && (
                 <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 p-3 pt-0">
-                  {folderImages.map((img) => {
-                    const globalIdx = images.findIndex(i => i.id === img.id);
+                  {folderImages.map((img, idxInFolder) => {
                     return (
                       <div key={img.id} className="bg-muted rounded-lg overflow-hidden group relative">
-                        <div className="cursor-pointer" onClick={() => onLightbox(globalIdx)}>
+                        <div className="cursor-pointer" onClick={() => onLightbox(folder, idxInFolder)}>
                           <div className="aspect-video">
                             <img src={getImageSrc(img)} alt={img.perspective || 'Fahrzeugbild'} className="w-full h-full object-cover" />
                           </div>
