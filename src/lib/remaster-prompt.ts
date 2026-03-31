@@ -197,10 +197,16 @@ LIGHTING: Bright, even, professional interior lighting. Improve existing lightin
       parts.push(`<SCENE_AND_LIGHTING>
 ENVIRONMENT: ${scenePrompt}
 FLOOR: The floor MUST match the selected showroom/scene exactly. Use the CORRECT floor material (polished concrete, marble, tiles, asphalt) as described.${isCustomShowroom ? ' The floor from the custom showroom reference image is the AUTHORITATIVE source – reproduce its EXACT color, texture, and reflectivity.' : ''}
-REFLECTIONS: Completely re-render ALL vehicle body reflections to match the NEW scene environment. The paint surface must reflect the showroom walls, windows, ceiling lights, and floor – NOT remnants of the original photo location. The car must look like it is PHYSICALLY PRESENT in this showroom.
-SHADOWS: Generate realistic ground shadows and ambient occlusion beneath the vehicle. The car must appear to be STANDING ON the floor – NOT floating or hovering. Shadow direction must match the scene lighting.
-LIGHTING: ${isCustomShowroom ? 'Match the lighting conditions from the custom showroom reference image exactly – same direction, color temperature, and intensity.' : 'Bright, even, professional studio lighting.'}
-${isCustomShowroom ? `CUSTOM SHOWROOM PRESERVATION: ALL architectural elements, wall decorations, logos, brand marks, and lettering visible in the showroom reference image MUST be preserved in their EXACT positions. When the camera perspective changes (e.g. front view vs. side view), these elements must shift naturally according to correct 3D perspective – but they must NEVER disappear, be removed, or be altered. The showroom IS the showroom – you are only placing the car INTO it.` : ''}
+REFLECTIONS: Completely re-render ALL vehicle body reflections to match the NEW scene environment. The paint surface must reflect the showroom walls, windows, ceiling lights, and floor – NOT remnants of the original photo location. Remove ALL original reflections from the previous environment. The car must look like it is PHYSICALLY PRESENT in this showroom.
+SHADOWS: Generate realistic ground shadows and ambient occlusion beneath the vehicle. The car must appear to be STANDING ON the floor – NOT floating or hovering. Shadow direction must match the scene lighting. The tires must make realistic contact with the floor surface.
+LIGHTING: ${isCustomShowroom ? 'Match the lighting conditions from the custom showroom reference image exactly – same direction, color temperature, and intensity. The vehicle paint, chrome, and glass must reflect the showroom lighting naturally.' : 'Bright, even, professional studio lighting.'}
+${isCustomShowroom ? `CUSTOM SHOWROOM INTEGRATION (CRITICAL):
+- The showroom MUST be the DOMINANT environment in every image – it must ALWAYS be clearly recognizable as the same room.
+- Do NOT overlay the vehicle on top of the showroom like a cut-out or collage. The result must look like a REAL PHOTOGRAPH taken inside this showroom.
+- The showroom walls, ceiling, floor, windows, and all architectural elements MUST be fully visible in the background – never cropped out or obscured.
+- ALL wall decorations, logos, brand marks, and lettering visible in the showroom reference image MUST be preserved in their EXACT positions. When the camera perspective changes (e.g. front view vs. side view), these elements must shift naturally according to correct 3D perspective – but they must NEVER disappear, be removed, or be altered.
+- The vehicle must cast correct shadows onto the showroom floor and receive correct lighting from the showroom light sources.
+- The showroom IS the showroom – you are placing the car INTO it as if it drove in and parked there.` : ''}
 </SCENE_AND_LIGHTING>`);
     }
   }
