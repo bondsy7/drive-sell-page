@@ -699,7 +699,7 @@ const Index = () => {
         balance={balance}
         actionLabel={creditDialog.label}
         onConfirm={creditDialog.onConfirm}
-        onCancel={() => { setCreditDialog(prev => ({ ...prev, open: false })); setPendingFile(null); }}
+        onCancel={() => { setCreditDialog(prev => ({ ...prev, open: false })); }}
       />
     </div>
   );
