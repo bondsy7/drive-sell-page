@@ -66,6 +66,7 @@ const Dashboard = () => {
 
   // Modals
   const [lightboxIndex, setLightboxIndex] = useState(-1);
+  const [lightboxFolder, setLightboxFolder] = useState<string | null>(null);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
   const [exportProject, setExportProject] = useState<Project | null>(null);
