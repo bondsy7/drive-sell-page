@@ -271,8 +271,17 @@ The following image is the EXACT dealer logo. Reproduce PIXEL-FOR-PIXEL with all
         console.log("Dealer logo injected", dealerLogoBase64 ? "(cached b64)" : "(fetched)");
       }
     }
+    // If NO logos were provided at all, explicitly tell the AI not to add any
+    const hasAnyLogo = !!(manufacturerLogoBase64 || manufacturerLogoUrl || dealerLogoBase64 || dealerLogoUrl);
+    if (!hasAnyLogo) {
+      parts.push({ text: `<NO_LOGO_INSTRUCTION>
+Do NOT add ANY logo, brand mark, emblem, or wall decoration to the background.
+The showroom wall must remain CLEAN and EMPTY. No manufacturer logos, no dealer logos, no decorative elements.
+</NO_LOGO_INSTRUCTION>` });
+      console.log("No logos provided – injected NO_LOGO_INSTRUCTION");
+    }
 
-    // 3. Call Gemini API directly with retry logic + automatic model fallback
+
     const FALLBACK_ORDER: Record<string, string[]> = {
       'gemini-3-pro-image-preview': ['gemini-3.1-flash-image-preview', 'gemini-2.5-flash-image'],
       'gemini-3.1-flash-image-preview': ['gemini-2.5-flash-image'],
