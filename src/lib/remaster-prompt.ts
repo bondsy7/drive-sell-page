@@ -48,7 +48,7 @@ const SCENE_PROMPTS: Record<string, string> = {
   'showroom-1': 'Modern, bright dealership showroom. White walls, polished light-gray concrete floor with subtle reflections, minimalist recessed LED ceiling spots, subtle LED accent lighting on the back wall. Use the EXACT SAME showroom on EVERY image – same walls, floor, windows, lighting.',
   'showroom-2': 'Elegant luxury showroom. Large glass facades, warm lighting, designer furniture in background, glossy marble-like floor. Use the EXACT SAME showroom on EVERY image.',
   'showroom-3': 'Light-flooded dealership with floor-to-ceiling glass facade. Dark gray matte back wall, gray tile floor with reflections, full-height glass windows on the left, modern recessed LED ceiling lighting. Use the EXACT SAME showroom on EVERY image.',
-  'custom-showroom': 'Place the vehicle in the PROVIDED custom showroom environment. Match lighting, shadows, and perspective so the car integrates naturally. Use this EXACT showroom for EVERY image.',
+  'custom-showroom': 'The user has provided a REFERENCE IMAGE of their custom showroom. This showroom is an IMMUTABLE ASSET – do NOT alter, redesign, or reimagine it. Preserve EVERY architectural detail: walls, floor material and color, ceiling, windows, glass facades, lighting fixtures, and ALL decorations including ANY logos, brand marks, emblems, or lettering mounted on walls. If a logo (e.g. Ferrari prancing horse, brand name text) is visible on a wall in the reference, it MUST remain at its EXACT position, size, and appearance – adjusted ONLY for camera perspective changes. The floor material, color, and reflectivity MUST be IDENTICAL across all generated images. Use this EXACT showroom for EVERY image.',
   'forest': 'Dense, mystical conifer forest. Soft light rays through tree canopy. Ground with moss and pine needles. Vehicle on unpaved forest path.',
   'mountain': 'Paved mountain road with panoramic view of snow-capped peaks. Clear blue sky, dramatic cloud formations.',
   'city': 'Modern big-city skyline with glass facades and skyscrapers. Clean asphalt, golden hour lighting.',
@@ -163,11 +163,13 @@ MATERIALS: Match exact finishes – chrome vs. gloss black vs. matte vs. satin. 
 
   // ── VEHICLE SCALE LOCK ──
   if (!interior) {
+    const isCustomShowroom = config.scene === 'custom-showroom';
     parts.push(`<VEHICLE_SCALE_LOCK>
 The vehicle MUST occupy the SAME proportion of the image frame in EVERY generated image.
-For full-body exterior shots: vehicle should fill approximately 70-80% of the image width.
+For full-body exterior shots: vehicle should fill approximately 55-65% of the image width.
 The apparent SIZE of the vehicle must remain CONSISTENT across all perspectives – same car, same scale.
 Do NOT make the vehicle larger or smaller between different camera angles.
+${isCustomShowroom ? `CRITICAL SCALE RULE FOR CUSTOM SHOWROOM: The vehicle must look REALISTICALLY SIZED relative to the showroom architecture. Compare the vehicle height to door frames, windows, ceiling height, and wall elements visible in the showroom reference image. The car must NOT appear oversized or undersized for the space. It must look like a real car naturally parked in this real showroom.` : ''}
 </VEHICLE_SCALE_LOCK>`);
   }
 
@@ -191,11 +193,14 @@ REFLECTIONS: Re-render all glass reflections to match the scene visible through 
 LIGHTING: Bright, even, professional interior lighting. Improve existing lighting to showroom quality.
 </SCENE_AND_LIGHTING>`);
     } else {
+      const isCustomShowroom = config.scene === 'custom-showroom';
       parts.push(`<SCENE_AND_LIGHTING>
 ENVIRONMENT: ${scenePrompt}
-FLOOR: The floor MUST match the selected showroom/scene exactly. Use the CORRECT floor material (polished concrete, marble, tiles, asphalt) as described.
-REFLECTIONS: Completely re-render ALL reflections for the NEW scene. Remove original background reflections entirely. Shadows MUST match new lighting direction.
-LIGHTING: Bright, even, professional studio lighting.
+FLOOR: The floor MUST match the selected showroom/scene exactly. Use the CORRECT floor material (polished concrete, marble, tiles, asphalt) as described.${isCustomShowroom ? ' The floor from the custom showroom reference image is the AUTHORITATIVE source – reproduce its EXACT color, texture, and reflectivity.' : ''}
+REFLECTIONS: Completely re-render ALL vehicle body reflections to match the NEW scene environment. The paint surface must reflect the showroom walls, windows, ceiling lights, and floor – NOT remnants of the original photo location. The car must look like it is PHYSICALLY PRESENT in this showroom.
+SHADOWS: Generate realistic ground shadows and ambient occlusion beneath the vehicle. The car must appear to be STANDING ON the floor – NOT floating or hovering. Shadow direction must match the scene lighting.
+LIGHTING: ${isCustomShowroom ? 'Match the lighting conditions from the custom showroom reference image exactly – same direction, color temperature, and intensity.' : 'Bright, even, professional studio lighting.'}
+${isCustomShowroom ? `CUSTOM SHOWROOM PRESERVATION: ALL architectural elements, wall decorations, logos, brand marks, and lettering visible in the showroom reference image MUST be preserved in their EXACT positions. When the camera perspective changes (e.g. front view vs. side view), these elements must shift naturally according to correct 3D perspective – but they must NEVER disappear, be removed, or be altered. The showroom IS the showroom – you are only placing the car INTO it.` : ''}
 </SCENE_AND_LIGHTING>`);
     }
   }
