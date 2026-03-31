@@ -101,9 +101,10 @@ async function authenticateAndDeductCredits(req: Request, actionType: string, co
       status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
+  const userId = data.claims.sub as string;
   const serviceSb = createServiceClient();
   const { data: result, error: deductError } = await serviceSb.rpc("deduct_credits", {
-    _user_id: user.id, _amount: cost, _action_type: actionType, _description: `${actionType} (serverseitig)`,
+    _user_id: userId, _amount: cost, _action_type: actionType, _description: `${actionType} (serverseitig)`,
   });
   if (deductError) {
     return new Response(JSON.stringify({ error: "Credit-Fehler: " + deductError.message }), {
@@ -116,7 +117,7 @@ async function authenticateAndDeductCredits(req: Request, actionType: string, co
       status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-  return { userId: user.id };
+  return { userId };
 }
 
 serve(async (req) => {
