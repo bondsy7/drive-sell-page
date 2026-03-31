@@ -225,7 +225,7 @@ serve(async (req) => {
     }
     // Add showroom with clear label so the AI knows what it is
     if (customShowroomBase64) {
-      parts.push({ text: "Das folgende Bild ist der EIGENE SHOWROOM-HINTERGRUND. Platziere das Fahrzeug EXAKT in dieser Showroom-Umgebung. Passe Beleuchtung, Schatten und Perspektive an, sodass das Auto natürlich in diese Szene integriert wirkt. Verwende NUR diesen Hintergrund, erfinde keinen anderen. WICHTIG: Dies gilt NUR für EXTERIEUR-Aufnahmen. Bei INTERIEUR-Aufnahmen (Sitze, Lenkrad, Armaturenbrett, Kofferraum) den Hintergrund NICHT ändern, nur die Beleuchtung verbessern." });
+      parts.push({ text: "The following image is the CUSTOM SHOWROOM BACKGROUND. Place the vehicle EXACTLY in this showroom environment. Match lighting, shadows, and perspective so the car integrates naturally. Use ONLY this background. NOTE: For INTERIOR shots, do NOT change background – only improve lighting." });
       parts.push(toInlineData(customShowroomBase64));
     }
     if (customPlateImageBase64) {
