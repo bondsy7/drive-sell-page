@@ -210,7 +210,7 @@ const Dashboard = () => {
       case 'landings': return <LandingsTab projects={landingProjects} onExport={openExportDialog} onDelete={(id) => deleteProject.mutate(id)} />;
       case 'gallery': return (
         <>
-          <GalleryTab images={allImages} onLightbox={setLightboxIndex} highlightFolder={highlightFolder} />
+          <GalleryTab images={allImages} onLightbox={(folder, idx) => { setLightboxFolder(folder); setLightboxIndex(idx); }} highlightFolder={highlightFolder} />
           <Pagination page={galleryPage} setPage={setGalleryPage} total={galleryTotal} />
         </>
       );
