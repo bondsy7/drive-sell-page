@@ -229,7 +229,7 @@ serve(async (req) => {
       parts.push(toInlineData(customShowroomBase64));
     }
     if (customPlateImageBase64) {
-      parts.push({ text: "Das folgende Bild ist das EIGENE NUMMERNSCHILD. Ersetze das Nummernschild des Fahrzeugs durch dieses:" });
+      parts.push({ text: "The following image is the CUSTOM LICENSE PLATE. Replace the vehicle's license plate with this exact plate:" });
       parts.push(toInlineData(customPlateImageBase64));
     }
     // Add manufacturer logo – prefer pre-cached PNG base64 from client
