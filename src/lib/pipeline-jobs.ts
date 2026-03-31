@@ -972,9 +972,11 @@ FOCUS_ELEMENTS: Exact screen orientation (portrait/vertical for Volvo), bezel de
 <BRAND_ENVIRONMENT_OVERRIDE>Volvo CI: Minimalist showroom, dark resin floor, frosted glass panels.</BRAND_ENVIRONMENT_OVERRIDE>
 
 <CURRENT_PIPELINE_SHOT>
-SHOT_TYPE: Volvo CI - Wheel Detail Macro
-CAMERA_ANGLE: Macro close-up of wheel, alloy rim, surrounding fender.
-FOCUS_ELEMENTS: Exact multi-spoke design, spoke pattern, concavity, lug nuts, center cap, metallic/machined finish from reference. Brake calipers, rotor, tire sidewall texture. Surrounding fender body contours. Depth of field: rim sharp, wheel well to shadow.
+SHOT_TYPE: Volvo CI - Front Wheel in Context
+CAMERA_ANGLE: Low angle close-up of front wheel area at wheel height, showing wheel and surrounding fender.
+FRAMING: Wheel and tire MUST remain attached to the vehicle. Show wheel arch, fender contours, lower body panel. Vehicle body MUST be visible.
+FOCUS_ELEMENTS: Exact multi-spoke design, spoke pattern, concavity, lug nuts, center cap, metallic/machined finish from reference. Brake calipers, rotor, tire sidewall texture.
+CRITICAL: Do NOT isolate the wheel. It MUST be mounted on the vehicle with surrounding bodywork visible.
 </CURRENT_PIPELINE_SHOT>`,
   },
 ];
