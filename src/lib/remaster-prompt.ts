@@ -67,21 +67,18 @@ const PERSPECTIVE_PROMPTS: Record<string, string> = {
 SHOT_TYPE: Exterior - Front 3/4 Hero View
 CAMERA_ANGLE: Eye-level, 30-45° left of center axis
 FRAMING: Front fascia and one full side visible. Both wheels on visible side fully in frame. Full vehicle with minimum 5% padding on all edges.
-ENVIRONMENT: The provided company logo MUST be visible on the background wall.
 </CURRENT_PERSPECTIVE>`,
 
   'side': `<CURRENT_PERSPECTIVE>
 SHOT_TYPE: Exterior - Perfect Side Profile
 CAMERA_ANGLE: Exactly perpendicular (90°) to the vehicle's left flank. Ground-to-waist-level horizon.
 FRAMING: Both wheels COMPLETELY visible and perfectly round (zero fisheye distortion). Entire silhouette from front bumper to rear bumper in frame.
-ENVIRONMENT: Logo placement on wall above roofline.
 </CURRENT_PERSPECTIVE>`,
 
   'rear': `<CURRENT_PERSPECTIVE>
 SHOT_TYPE: Exterior - Direct Rear View
 CAMERA_ANGLE: Eye-level, perfectly centered on rear axis.
 FRAMING: Both taillights, exhaust outlets, rear badge, and model designation symmetrically framed. Full vehicle width visible.
-ENVIRONMENT: The provided company logo MUST be visible on the background wall.
 </CURRENT_PERSPECTIVE>`,
 
   'interior-front': `<CURRENT_PERSPECTIVE>
@@ -89,7 +86,7 @@ SHOT_TYPE: Interior - Rear Seat POV Looking Forward
 CAMERA_ANGLE: From center of rear seat, looking at dashboard, steering wheel, and windshield.
 STRUCTURAL_INTEGRITY: Complete roof, ALL A/B pillars, headliner, and rearview mirror MUST be FULLY visible and UNCUT.
 FORBIDDEN: Do NOT crop roof. Do NOT shoot from above without roof. Do NOT generate an exterior view.
-WINDOW_VIEW: Showroom background with logo MUST be visible THROUGH the windshield.
+WINDOW_VIEW: The selected showroom/scene MUST be visible THROUGH the windshield – NOT a random outdoor scene.
 </CURRENT_PERSPECTIVE>`,
 
   'interior-rear': `<CURRENT_PERSPECTIVE>
@@ -97,7 +94,7 @@ SHOT_TYPE: Interior - Driver Seat POV Looking Backward
 CAMERA_ANGLE: From driver seat position, looking at rear seats, headrests, and rear bench.
 STRUCTURAL_INTEGRITY: Complete roof, ALL B/C pillars, headliner, and rear window MUST be FULLY visible and UNCUT.
 FORBIDDEN: Do NOT crop roof. Do NOT shoot from above without roof. Do NOT generate an exterior view.
-WINDOW_VIEW: Showroom background with logo MUST be visible THROUGH the rear window.
+WINDOW_VIEW: The selected showroom/scene MUST be visible THROUGH the rear window – NOT a random outdoor scene.
 </CURRENT_PERSPECTIVE>`,
 };
 
@@ -119,9 +116,12 @@ export function buildMasterPrompt(config: RemasterConfig, vehicleDescription?: s
   parts.push('You are a top-tier professional automotive commercial photographer and retoucher.\nTASK: Remaster the provided reference vehicle photo into a flawless, dealership-quality promotional image.');
 
   // ── CRITICAL ASSET INTEGRATION (logos FIRST – highest priority) ──
-  const logoLines: string[] = [];
-  if (config.showManufacturerLogo && config.manufacturerLogoUrl) {
-    logoLines.push(`MANUFACTURER LOGO:
+  const hasAnyLogo = (config.showManufacturerLogo && config.manufacturerLogoUrl) || (config.showDealerLogo && config.dealerLogoUrl);
+  
+  if (hasAnyLogo) {
+    const logoLines: string[] = [];
+    if (config.showManufacturerLogo && config.manufacturerLogoUrl) {
+      logoLines.push(`MANUFACTURER LOGO:
 - You are provided with a specific reference image of the manufacturer logo.
 - Reproduce this EXACT logo PIXEL-FOR-PIXEL: every color, shape, text element, and proportion.
 - Render as a backlit wall element with subtle LED halo effect.
@@ -129,16 +129,22 @@ export function buildMasterPrompt(config: RemasterConfig, vehicleDescription?: s
 - Position: centered on showroom back wall, at eye level, slightly above vehicle roofline.
 - Size: approximately 60-80cm diameter/width. IDENTICAL position, size, and appearance on EVERY image.
 - FORBIDDEN: Do NOT redesign, simplify, recolor, vectorize, or create an alternative version. IMMUTABLE ASSET.`);
-  }
-  if (config.showDealerLogo && config.dealerLogoUrl) {
-    logoLines.push(`DEALER LOGO:
+    }
+    if (config.showDealerLogo && config.dealerLogoUrl) {
+      logoLines.push(`DEALER LOGO:
 - You are provided with the dealer's company logo image.
 - Reproduce PIXEL-FOR-PIXEL with all original colors and shapes.
 - Position: to the right of the manufacturer logo on the back wall. Smaller than manufacturer logo.
 - FORBIDDEN: Do NOT redesign, recolor, or simplify. IMMUTABLE ASSET.`);
-  }
-  if (logoLines.length > 0) {
+    }
     parts.push(`<CRITICAL_ASSET_INTEGRATION>\n${logoLines.join('\n\n')}\n</CRITICAL_ASSET_INTEGRATION>`);
+  } else {
+    // Explicitly tell AI NOT to add logos when none are selected
+    parts.push(`<NO_LOGO_INSTRUCTION>
+Do NOT add ANY logo, brand mark, emblem, or wall decoration to the background.
+The showroom wall must remain CLEAN and EMPTY – no manufacturer logos, no dealer logos, no decorative elements.
+If the AI would normally place a logo, SKIP IT. The wall stays blank.
+</NO_LOGO_INSTRUCTION>`);
   }
 
   // ── IDENTITY LOCK ──
@@ -155,6 +161,16 @@ BODY_DETAILS: EXACT body lines, creases, fender flares, air intakes, roof rails,
 MATERIALS: Match exact finishes – chrome vs. gloss black vs. matte vs. satin. Do NOT substitute.
 </IDENTITY_LOCK>`);
 
+  // ── VEHICLE SCALE LOCK ──
+  if (!interior) {
+    parts.push(`<VEHICLE_SCALE_LOCK>
+The vehicle MUST occupy the SAME proportion of the image frame in EVERY generated image.
+For full-body exterior shots: vehicle should fill approximately 70-80% of the image width.
+The apparent SIZE of the vehicle must remain CONSISTENT across all perspectives – same car, same scale.
+Do NOT make the vehicle larger or smaller between different camera angles.
+</VEHICLE_SCALE_LOCK>`);
+  }
+
   // ── ANTI-CROPPING ──
   parts.push(`<ANTI_CROPPING>
 The vehicle MUST be FULLY visible – NO part cut off at image edges.
@@ -165,11 +181,23 @@ Maintain minimum 5% free space between vehicle edge and image border on all side
   // ── SCENE AND LIGHTING ──
   const scenePrompt = SCENE_PROMPTS[config.scene];
   if (scenePrompt) {
-    parts.push(`<SCENE_AND_LIGHTING>
+    if (interior) {
+      // For interior shots: describe the scene as what should be visible THROUGH the windows
+      parts.push(`<SCENE_AND_LIGHTING>
+WINDOW_VIEW: The view through ALL vehicle windows MUST show: ${scenePrompt}
+The scene must be visible THROUGH the glass naturally – do NOT place the car in a different environment.
+Use the EXACT SAME scene visible through windows on EVERY interior image.
+REFLECTIONS: Re-render all glass reflections to match the scene visible through windows.
+LIGHTING: Bright, even, professional interior lighting. Improve existing lighting to showroom quality.
+</SCENE_AND_LIGHTING>`);
+    } else {
+      parts.push(`<SCENE_AND_LIGHTING>
 ENVIRONMENT: ${scenePrompt}
+FLOOR: The floor MUST match the selected showroom/scene exactly. Use the CORRECT floor material (polished concrete, marble, tiles, asphalt) as described.
 REFLECTIONS: Completely re-render ALL reflections for the NEW scene. Remove original background reflections entirely. Shadows MUST match new lighting direction.
 LIGHTING: Bright, even, professional studio lighting.
 </SCENE_AND_LIGHTING>`);
+    }
   }
 
   // ── LICENSE PLATE ──
@@ -203,7 +231,7 @@ THIS IS AN INTERIOR SHOT – the following rules are ABSOLUTE and NON-NEGOTIABLE
 
 4. LIGHTING ENHANCEMENT ONLY:
 - Improve to bright, even, professional lighting.
-- Replace background through windows with showroom environment (visible THROUGH glass naturally).
+- View through windows MUST show the SELECTED showroom/scene – NOT a random outdoor scene or street.
 - Do NOT alter glass transparency or window tint.
 
 5. STRUCTURAL INTEGRITY:
@@ -215,6 +243,7 @@ THIS IS AN INTERIOR SHOT – the following rules are ABSOLUTE and NON-NEGOTIABLE
 - Changing camera angle from original.
 - Adding decorative elements or "improving" design.
 - Cutting roof, removing doors, altering structural frame.
+- Showing a different scene through windows than the selected showroom/scene.
 </INTERIOR_RULES>`);
   }
 
@@ -228,6 +257,7 @@ UNDER NO CIRCUMSTANCES SHALL YOU:
 - Show other vehicles in background or reflections
 - Rotate, flip, or mirror the image
 - Carry over reflections from original environment
+- Add ANY logo, brand mark, or wall decoration UNLESS a logo image is explicitly provided as a reference asset
 </STRICT_NEGATIVE_CONSTRAINTS>`);
 
   // ── Vehicle description ──

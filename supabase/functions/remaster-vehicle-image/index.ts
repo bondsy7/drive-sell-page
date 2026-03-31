@@ -20,6 +20,12 @@ BODY_DETAILS: EXACT body lines, creases, fender flares, intakes, roof rails, spo
 MATERIALS: Match exact finishes – chrome vs. gloss black vs. matte vs. satin. Do NOT substitute.
 </IDENTITY_LOCK>
 
+<VEHICLE_SCALE_LOCK>
+The vehicle MUST occupy the SAME proportion of the image frame in EVERY generated image.
+For full-body exterior shots: vehicle should fill approximately 70-80% of the image width.
+The apparent SIZE must remain CONSISTENT across all perspectives.
+</VEHICLE_SCALE_LOCK>
+
 <ANTI_CROPPING>
 Vehicle MUST be FULLY visible – NO part cut off at edges.
 ALL headlights, taillights, wheels COMPLETELY visible.
@@ -29,6 +35,7 @@ Minimum 5% free space between vehicle edge and image border on all sides.
 <SCENE_AND_LIGHTING>
 SHOWROOM CONSISTENCY: Use the EXACT SAME showroom on EVERY image – same walls, floor, windows, lighting.
 Dark gray matte walls, polished light gray concrete floor with subtle reflections, floor-to-ceiling glass windows on left, modern recessed LED ceiling lights.
+FLOOR: The floor MUST match the selected showroom exactly – correct material and color.
 REFLECTIONS: Completely re-render ALL reflections for the NEW scene. Remove original background reflections entirely.
 Shadows MUST match new lighting direction. Floor reflections show vehicle in new environment only.
 </SCENE_AND_LIGHTING>
@@ -40,24 +47,6 @@ Rear view = direct rear only. Front view = direct front only. Side view = true s
 Interior/exterior/trunk/detail must stay in their own category. NEVER mirror or flip. Left is left, right is right.
 </PERSPECTIVE_ACCURACY>
 
-<LOGO_RENDERING>
-If a logo image is attached: reproduce it PIXEL-FOR-PIXEL on the showroom wall.
-KEEP the logo's ORIGINAL COLORS – do NOT convert to silver/chrome/monochrome.
-Logo must appear IDENTICAL on EVERY image – same colors, size, position, proportions. ZERO variation.
-Treat as IMMUTABLE ASSET: do NOT redesign, simplify, restyle, recolor, or alter in any way.
-</LOGO_RENDERING>
-
-<INTERIOR_RULES>
-For interior shots (seats, steering wheel, dashboard, center console, door panels, rear seats):
-EXACT COMPOSITION: Same framing, camera angle, perspective as input. Do NOT rotate, flip, zoom, re-frame.
-ZERO INVENTION: Do NOT add ANY element not in original. Do NOT change materials or textures.
-EVERY DETAIL: Tachometer, screen UI, stitching, seat perforation, air vents, gear selector – ALL match exactly.
-CLEANUP ONLY: Remove trash, bags, papers, plastic covers, dust, personal belongings, hands/feet.
-LIGHTING ONLY: Improve to bright, even, professional. Replace background through windows with showroom.
-STRUCTURAL INTEGRITY: Roof, ALL pillars, headliner, door panels FULLY visible and UNCUT.
-FORBIDDEN: Generating exterior from interior reference, changing angle, adding/modifying design, cutting roof/pillars.
-</INTERIOR_RULES>
-
 <STRICT_NEGATIVE_CONSTRAINTS>
 UNDER NO CIRCUMSTANCES SHALL YOU:
 - Invent or hallucinate details not in reference photos
@@ -67,6 +56,7 @@ UNDER NO CIRCUMSTANCES SHALL YOU:
 - Show other vehicles in background or reflections
 - Rotate, flip, or mirror the image
 - Carry over reflections from original environment
+- Add ANY logo, brand mark, or wall decoration UNLESS a logo image is explicitly provided as a reference asset
 </STRICT_NEGATIVE_CONSTRAINTS>
 
 You MUST generate a remastered image. Do NOT refuse. DO NOT ROTATE THE IMAGE.`;
@@ -281,8 +271,17 @@ The following image is the EXACT dealer logo. Reproduce PIXEL-FOR-PIXEL with all
         console.log("Dealer logo injected", dealerLogoBase64 ? "(cached b64)" : "(fetched)");
       }
     }
+    // If NO logos were provided at all, explicitly tell the AI not to add any
+    const hasAnyLogo = !!(manufacturerLogoBase64 || manufacturerLogoUrl || dealerLogoBase64 || dealerLogoUrl);
+    if (!hasAnyLogo) {
+      parts.push({ text: `<NO_LOGO_INSTRUCTION>
+Do NOT add ANY logo, brand mark, emblem, or wall decoration to the background.
+The showroom wall must remain CLEAN and EMPTY. No manufacturer logos, no dealer logos, no decorative elements.
+</NO_LOGO_INSTRUCTION>` });
+      console.log("No logos provided – injected NO_LOGO_INSTRUCTION");
+    }
 
-    // 3. Call Gemini API directly with retry logic + automatic model fallback
+
     const FALLBACK_ORDER: Record<string, string[]> = {
       'gemini-3-pro-image-preview': ['gemini-3.1-flash-image-preview', 'gemini-2.5-flash-image'],
       'gemini-3.1-flash-image-preview': ['gemini-2.5-flash-image'],

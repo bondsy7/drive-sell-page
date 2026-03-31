@@ -4,7 +4,7 @@ import { uploadImageToStorage, getGalleryFolderName } from '@/lib/storage-utils'
 import { toast } from 'sonner';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 import { buildMasterPrompt, type RemasterConfig } from '@/lib/remaster-prompt';
-import { type PipelineJob } from '@/lib/pipeline-jobs';
+import { type PipelineJob, injectLogoPlaceholder } from '@/lib/pipeline-jobs';
 import { ensureLogoCachedAsPng } from '@/lib/image-base64-cache';
 
 /* ─── Types ─── */
@@ -177,21 +177,28 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const isInteriorJob = job?.category === 'interior';
     const isDetailJob = job?.category === 'detail';
 
+    // Determine if logos are enabled
+    const hasLogo = !!(cfg.remasterConfig.showManufacturerLogo || cfg.remasterConfig.showDealerLogo);
+
+    // Replace {{LOGO_LINE}} placeholders based on logo selection
+    const processedPrompt = injectLogoPlaceholder(prompt, hasLogo);
+
     // For interior jobs, add an explicit override to prevent exterior generation
     const interiorOverride = isInteriorJob
-      ? `\n\nCRITICAL INTERIOR OVERRIDE (HÖCHSTE PRIORITÄT – NULL TOLERANZ):
-Dies ist eine INNENRAUM-Aufnahme. Das bereitgestellte Referenzbild zeigt das INTERIEUR des Fahrzeugs.
-- Du MUSST das EXAKTE Interieur-Referenzbild remastern – NICHT eine Außenansicht generieren.
-- Das Ausgabebild MUSS die EXAKT GLEICHE Komposition, Rahmung und Perspektive wie das Referenzfoto haben.
-- NUR AUFRÄUMEN: Entferne NUR Müll, Papiere, Plastikfolien, Staub, persönliche Gegenstände, Körperteile.
-- NULL ERFINDUNG: Füge KEINE neuen Elemente hinzu, ändere KEINE Materialien, KEIN Design-Upgrade.
-- JEDES DETAIL ZÄHLT: Tachometer, Monitor-UI, Nahtfarben, Sitzperforierung, Lüftungsdüsen, Gangwahlhebel – EXAKT wie im Original.
-- STRUKTURELLE INTEGRITÄT: Dach, ALLE Säulen, Türverkleidungen, Sonnenblenden, Rückspiegel müssen VOLLSTÄNDIG erhalten bleiben.
-- Schneide NICHTS ab – KEIN Dach, KEINE Tür, KEINE Säule darf am Bildrand fehlen.
-- Generiere unter KEINEN Umständen eine Außenansicht des Fahrzeugs.`
+      ? `\n\nCRITICAL INTERIOR OVERRIDE (ABSOLUTE PRIORITY – ZERO TOLERANCE):
+This is an INTERIOR shot. The provided reference image shows the INTERIOR of the vehicle.
+- You MUST remaster the EXACT interior reference image – do NOT generate an exterior view.
+- The output MUST have the EXACT SAME composition, framing, and perspective as the reference photo.
+- CLEANUP ONLY: Remove ONLY trash, papers, plastic covers, dust, personal belongings, body parts.
+- ZERO INVENTION: Do NOT add new elements, do NOT change materials, NO design upgrades.
+- EVERY DETAIL MATTERS: Tachometer, screen UI, stitch colors, seat perforation, air vents, gear selector – EXACTLY as in original.
+- STRUCTURAL INTEGRITY: Roof, ALL pillars, door panels, sun visors, rearview mirror MUST remain FULLY preserved.
+- Do NOT crop ANYTHING – NO roof, NO door, NO pillar may be cut off at the image edge.
+- Under NO circumstances generate an exterior view of the vehicle.
+- View through ALL windows MUST show the SELECTED showroom/scene environment – NOT a random outdoor scene.`
       : '';
 
-    const fullPrompt = `${baseContext}${interiorOverride}\n\n${taskLock}\n\n--- PERSPECTIVE INSTRUCTION ---\n${prompt}`;
+    const fullPrompt = `${baseContext}${interiorOverride}\n\n${taskLock}\n\n--- PERSPECTIVE INSTRUCTION ---\n${processedPrompt}`;
 
     // Always prefer cached base64 logos over URLs for consistency
     const manufacturerLogoBase64 = cfg.remasterConfig.showManufacturerLogo
