@@ -255,12 +255,19 @@ const Dashboard = () => {
       <ExportChoiceDialog open={exportDialogOpen} onOpenChange={setExportDialogOpen} onChoose={handleExportHTML} loading={exportLoading} projectId={exportProject?.id} />
 
       <GalleryLightbox
-        images={allImages.map(img => ({ id: img.id, src: getImageSrc(img), perspective: img.perspective, project_id: img.project_id }))}
+        images={
+          lightboxFolder
+            ? allImages
+                .filter(img => (img.gallery_folder || 'Ohne Ordner') === lightboxFolder)
+                .map(img => ({ id: img.id, src: getImageSrc(img), perspective: img.perspective, project_id: img.project_id }))
+            : allImages.map(img => ({ id: img.id, src: getImageSrc(img), perspective: img.perspective, project_id: img.project_id }))
+        }
         initialIndex={lightboxIndex}
         open={lightboxIndex >= 0}
-        onClose={() => setLightboxIndex(-1)}
+        onClose={() => { setLightboxIndex(-1); setLightboxFolder(null); }}
         onAssigned={() => {}}
         onRegenerated={() => {}}
+        onDeleted={() => {}}
       />
 
       {playerVideo && <VideoPlayerModal video={playerVideo} onClose={() => setPlayerVideo(null)} onDownload={(v) => downloadFile(v.url, v.name)} />}
