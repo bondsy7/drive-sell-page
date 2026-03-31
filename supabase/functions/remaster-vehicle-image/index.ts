@@ -218,7 +218,7 @@ serve(async (req) => {
     ];
     // Add additional reference images
     if (Array.isArray(additionalImages) && additionalImages.length > 0) {
-      parts.push({ text: "Die folgenden Bilder sind zusätzliche Detailaufnahmen des Fahrzeugs (z.B. Felgen, Schäden, Logos, Motorraum). Nutze sie als Referenz, um das Fahrzeug exakt und detailgetreu darzustellen:" });
+      parts.push({ text: "The following images are additional detail reference photos of the vehicle (e.g. wheels, damage, logos, engine bay). Use them as reference to reproduce the vehicle with maximum accuracy:" });
       for (const img of additionalImages.slice(0, 10)) {
         parts.push(toInlineData(img));
       }
