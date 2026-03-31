@@ -40,10 +40,14 @@ MATERIALS: Match exact finishes – chrome vs. gloss black vs. matte vs. satin. 
 </IDENTITY_LOCK>
 
 <VEHICLE_SCALE_LOCK>
-The vehicle MUST occupy the SAME proportion of the image frame in EVERY generated image.
-For full-body exterior shots: vehicle should fill approximately 70-80% of the image width.
-The apparent SIZE of the vehicle must remain CONSISTENT across all perspectives – same car, same scale.
-Do NOT make the vehicle larger or smaller between different camera angles.
+ABSOLUTE POSITIONING AND SCALE RULES – ZERO DEVIATION BETWEEN IMAGES:
+1. CONSISTENT SIZE: The vehicle MUST occupy EXACTLY 55-65% of the image WIDTH in EVERY full-body exterior shot. NOT more, NOT less. This creates natural breathing room within the showroom.
+2. VERTICAL CENTER: The vehicle's vertical center (wheel-to-roof midpoint) MUST be at approximately 55% from the top of the image (slightly below center) in EVERY shot.
+3. HORIZONTAL CENTER: The vehicle's center of mass MUST be horizontally centered in the image (50% ± 5%) for ALL symmetric views (front, rear, side). For 3/4 views, the vehicle center may shift up to 10% toward the camera side.
+4. GROUND PLANE: ALL four wheels MUST sit on the SAME ground plane at the SAME height in EVERY image. The floor line (where tires meet ground) MUST be at approximately 75-80% from the top of the image.
+5. NO VARIATION: The vehicle must appear the EXACT same physical size across ALL generated perspectives. A viewer comparing two images side by side must see the same car at the same scale.
+6. BREATHING ROOM: Maintain at least 10% padding between the vehicle and any image edge. The car must NEVER feel cramped or oversized for the showroom.
+7. PERSPECTIVE CONSISTENCY: Even when camera angle changes, the apparent size of the vehicle must remain constant. Wide-angle distortion is FORBIDDEN.
 </VEHICLE_SCALE_LOCK>
 
 <PERSPECTIVE_ACCURACY>
@@ -69,7 +73,16 @@ UNDER NO CIRCUMSTANCES SHALL YOU:
 <REFLECTIONS_LIGHTING>
 ALL reflections on paint, glass, chrome, windows must match the TARGET scene.
 Shadows consistent with scene light sources. Floor reflections show vehicle in new environment.
-</REFLECTIONS_LIGHTING>`;
+</REFLECTIONS_LIGHTING>
+
+<CUSTOM_SHOWROOM_INTEGRITY>
+When a CUSTOM SHOWROOM image is provided:
+1. CONTENT PRESERVATION: Do NOT modify, replace, remove, or obscure ANY element in the showroom (logos, signs, furniture, decorations, wall art). The showroom is an IMMUTABLE ASSET – reproduce it EXACTLY as provided.
+2. PERSPECTIVE ADAPTATION: You MAY adjust the camera angle, perspective, and viewing direction to match the required shot type. The showroom must be rendered from the appropriate angle for each shot.
+3. LIGHTING ADAPTATION: Adapt the showroom lighting naturally to match the camera angle while preserving the overall ambiance.
+4. SPATIAL FIT: The vehicle MUST look like it NATURALLY belongs in the showroom. Scale the vehicle so it fits proportionally within the showroom space – not too large (overwhelming the room) and not too small (lost in the space).
+5. CONSISTENCY: The showroom must be CLEARLY RECOGNIZABLE as the SAME room in EVERY generated image, regardless of camera angle. Same walls, same floor, same decorations, same logos.
+</CUSTOM_SHOWROOM_INTEGRITY>`;
 
 // ═══════════════════════════════════════════════════════════════════
 // INTERIOR RULES – appended ONLY to interior pipeline prompts

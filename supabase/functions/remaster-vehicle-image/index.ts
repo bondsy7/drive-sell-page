@@ -21,9 +21,14 @@ MATERIALS: Match exact finishes – chrome vs. gloss black vs. matte vs. satin. 
 </IDENTITY_LOCK>
 
 <VEHICLE_SCALE_LOCK>
-The vehicle MUST occupy the SAME proportion of the image frame in EVERY generated image.
-For full-body exterior shots: vehicle should fill approximately 70-80% of the image width.
-The apparent SIZE must remain CONSISTENT across all perspectives.
+ABSOLUTE POSITIONING AND SCALE RULES – ZERO DEVIATION BETWEEN IMAGES:
+1. CONSISTENT SIZE: The vehicle MUST occupy EXACTLY 55-65% of the image WIDTH in EVERY full-body exterior shot. NOT more, NOT less. This creates natural breathing room within the showroom.
+2. VERTICAL CENTER: The vehicle's vertical center (wheel-to-roof midpoint) MUST be at approximately 55% from the top of the image (slightly below center).
+3. HORIZONTAL CENTER: The vehicle's center of mass MUST be horizontally centered in the image (50% ± 5%) for symmetric views. For 3/4 views, shift up to 10% toward the camera side.
+4. GROUND PLANE: ALL four wheels MUST sit on the SAME ground plane. The floor line MUST be at approximately 75-80% from the top of the image.
+5. NO VARIATION: The vehicle must appear the EXACT same physical size across ALL perspectives.
+6. BREATHING ROOM: Maintain at least 10% padding between the vehicle and any image edge.
+7. PERSPECTIVE CONSISTENCY: Even when camera angle changes, the apparent size must remain constant. Wide-angle distortion is FORBIDDEN.
 </VEHICLE_SCALE_LOCK>
 
 <ANTI_CROPPING>
@@ -215,7 +220,26 @@ serve(async (req) => {
     }
     // Add showroom with clear label so the AI knows what it is
     if (customShowroomBase64) {
-      parts.push({ text: "The following image is the CUSTOM SHOWROOM BACKGROUND. Place the vehicle EXACTLY in this showroom environment. Match lighting, shadows, and perspective so the car integrates naturally. Use ONLY this background. NOTE: For INTERIOR shots, do NOT change background – only improve lighting." });
+      parts.push({ text: `<CUSTOM_SHOWROOM_INSTRUCTION>
+The following image is the CUSTOM SHOWROOM BACKGROUND. This is an IMMUTABLE ASSET.
+
+PLACEMENT RULES:
+1. Place the vehicle NATURALLY in this showroom. The car must fit PROPORTIONALLY – not too large (overwhelming the room) and not too small.
+2. The vehicle should occupy approximately 55-65% of the image width, leaving breathing room on all sides.
+3. Match lighting, shadows, and perspective so the car integrates naturally into the space.
+
+CONTENT PRESERVATION (CRITICAL):
+- Do NOT modify, replace, remove, or obscure ANY element in the showroom.
+- ALL logos, signs, wall decorations, furniture, branding elements MUST remain EXACTLY as they are in the provided image.
+- The showroom floor, walls, ceiling, windows must be reproduced faithfully.
+- You may adapt the CAMERA ANGLE and PERSPECTIVE to match the required shot, but the showroom CONTENTS are UNTOUCHABLE.
+
+CONSISTENCY:
+- The showroom must be CLEARLY RECOGNIZABLE as the SAME room across ALL images.
+- Use ONLY this background. Do NOT substitute or blend with other environments.
+
+NOTE: For INTERIOR vehicle shots, do NOT change the background – only improve interior lighting.
+</CUSTOM_SHOWROOM_INSTRUCTION>` });
       parts.push(toInlineData(customShowroomBase64));
     }
     if (customPlateImageBase64) {
