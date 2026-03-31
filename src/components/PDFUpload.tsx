@@ -1,15 +1,13 @@
 import React, { useCallback, useState } from 'react';
-import { Upload, FileText, AlertCircle, X, Plus } from 'lucide-react';
+import { Upload, FileText, AlertCircle, X, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface PDFUploadProps {
   onFilesSelected: (files: File[]) => void;
   isProcessing: boolean;
-  /** Legacy single-file callback */
-  onFileSelected?: (file: File) => void;
 }
 
-const PDFUpload: React.FC<PDFUploadProps> = ({ onFilesSelected, onFileSelected, isProcessing }) => {
+const PDFUpload: React.FC<PDFUploadProps> = ({ onFilesSelected, isProcessing }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [files, setFiles] = useState<File[]>([]);
@@ -43,12 +41,8 @@ const PDFUpload: React.FC<PDFUploadProps> = ({ onFilesSelected, onFileSelected, 
 
   const handleSubmit = useCallback(() => {
     if (files.length === 0) return;
-    if (files.length === 1 && onFileSelected) {
-      onFileSelected(files[0]);
-    } else {
-      onFilesSelected(files);
-    }
-  }, [files, onFilesSelected, onFileSelected]);
+    onFilesSelected(files);
+  }, [files, onFilesSelected]);
 
   const formatSize = (bytes: number) => {
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
@@ -134,8 +128,5 @@ const PDFUpload: React.FC<PDFUploadProps> = ({ onFilesSelected, onFileSelected, 
     </div>
   );
 };
-
-// Need to import Sparkles for the button
-import { Sparkles } from 'lucide-react';
 
 export default PDFUpload;
