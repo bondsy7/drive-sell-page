@@ -193,11 +193,14 @@ REFLECTIONS: Re-render all glass reflections to match the scene visible through 
 LIGHTING: Bright, even, professional interior lighting. Improve existing lighting to showroom quality.
 </SCENE_AND_LIGHTING>`);
     } else {
+      const isCustomShowroom = config.scene === 'custom-showroom';
       parts.push(`<SCENE_AND_LIGHTING>
 ENVIRONMENT: ${scenePrompt}
-FLOOR: The floor MUST match the selected showroom/scene exactly. Use the CORRECT floor material (polished concrete, marble, tiles, asphalt) as described.
-REFLECTIONS: Completely re-render ALL reflections for the NEW scene. Remove original background reflections entirely. Shadows MUST match new lighting direction.
-LIGHTING: Bright, even, professional studio lighting.
+FLOOR: The floor MUST match the selected showroom/scene exactly. Use the CORRECT floor material (polished concrete, marble, tiles, asphalt) as described.${isCustomShowroom ? ' The floor from the custom showroom reference image is the AUTHORITATIVE source – reproduce its EXACT color, texture, and reflectivity.' : ''}
+REFLECTIONS: Completely re-render ALL vehicle body reflections to match the NEW scene environment. The paint surface must reflect the showroom walls, windows, ceiling lights, and floor – NOT remnants of the original photo location. The car must look like it is PHYSICALLY PRESENT in this showroom.
+SHADOWS: Generate realistic ground shadows and ambient occlusion beneath the vehicle. The car must appear to be STANDING ON the floor – NOT floating or hovering. Shadow direction must match the scene lighting.
+LIGHTING: ${isCustomShowroom ? 'Match the lighting conditions from the custom showroom reference image exactly – same direction, color temperature, and intensity.' : 'Bright, even, professional studio lighting.'}
+${isCustomShowroom ? `CUSTOM SHOWROOM PRESERVATION: ALL architectural elements, wall decorations, logos, brand marks, and lettering visible in the showroom reference image MUST be preserved in their EXACT positions. When the camera perspective changes (e.g. front view vs. side view), these elements must shift naturally according to correct 3D perspective – but they must NEVER disappear, be removed, or be altered. The showroom IS the showroom – you are only placing the car INTO it.` : ''}
 </SCENE_AND_LIGHTING>`);
     }
   }
