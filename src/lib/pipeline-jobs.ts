@@ -372,10 +372,13 @@ LIGHTING: High-contrast studio lighting against blurred background.
     prompt: `${IDENTITY_LOCK}
 
 <CURRENT_PIPELINE_SHOT>
-SHOT_TYPE: Macro Detail - Wheel and Brake Caliper
-CAMERA_ANGLE: Direct, flat on wheel face to show exact spoke geometry without perspective distortion.
-FOCUS_ELEMENTS: Rim finish (machined/matte/gloss), center brand cap, tire sidewall texture, brake caliper/rotor behind spokes. Exact spoke count, shape, concavity from reference.
-LIGHTING: High-contrast studio lighting. Inner wheel well shadowed and clean. Blurred background.
+SHOT_TYPE: Detail - Front Wheel in Context
+CAMERA_ANGLE: Low angle, close-up of the FRONT wheel area. Camera positioned at wheel height, slightly angled to show the wheel, tire, fender, and part of the vehicle body.
+FRAMING: The wheel and tire MUST remain attached to the vehicle. Show the wheel arch, fender, lower door sill, and part of the front bumper. The vehicle body MUST be visible — this is NOT an isolated wheel shot.
+FOCUS_ELEMENTS: Rim finish (machined/matte/gloss), center brand cap, tire sidewall, brake caliper visible behind spokes, exact spoke count and shape from reference.
+CRITICAL: Do NOT isolate or detach the wheel from the car. Do NOT show a standalone tire/rim. The wheel MUST be mounted on the vehicle with surrounding bodywork clearly visible.
+LIGHTING: Dramatic low lighting emphasizing rim geometry. Background shows the showroom environment.
+{{LOGO_LINE}}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
