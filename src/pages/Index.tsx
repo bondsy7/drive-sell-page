@@ -639,7 +639,7 @@ const Index = () => {
                 ))}
               </div>
 
-              <PDFUpload onFileSelected={handleFileSelected} isProcessing={false} />
+              <PDFUpload onFilesSelected={handleFilesSelected} isProcessing={false} />
               <div className="flex items-center justify-center gap-1 text-accent">
                 <Sparkles className="w-4 h-4" />
                 <span className="text-xs font-medium text-muted-foreground">
