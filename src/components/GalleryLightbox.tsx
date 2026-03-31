@@ -1,11 +1,16 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { X, ChevronLeft, ChevronRight, Download, FolderPlus, RotateCcw, Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, ChevronLeft, ChevronRight, Download, FolderPlus, RotateCcw, Loader2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
+import { useDeleteGalleryImage } from '@/hooks/useDashboardData';
 
 interface LightboxImage {
   id: string;
@@ -27,22 +32,30 @@ interface GalleryLightboxProps {
   onClose: () => void;
   onAssigned?: () => void;
   onRegenerated?: () => void;
+  onDeleted?: () => void;
 }
 
-const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex, open, onClose, onAssigned, onRegenerated }) => {
+const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex, open, onClose, onAssigned, onRegenerated, onDeleted }) => {
   const [index, setIndex] = useState(initialIndex);
   const [assignOpen, setAssignOpen] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
   const [assigning, setAssigning] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const deleteImage = useDeleteGalleryImage();
 
   useEffect(() => { setIndex(initialIndex); }, [initialIndex]);
+
+  // Wrap-around navigation
+  const goPrev = () => setIndex(i => (i <= 0 ? images.length - 1 : i - 1));
+  const goNext = () => setIndex(i => (i >= images.length - 1 ? 0 : i + 1));
 
   useEffect(() => {
     if (!open) return;
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowRight') setIndex(i => Math.min(i + 1, images.length - 1));
-      if (e.key === 'ArrowLeft') setIndex(i => Math.max(i - 1, 0));
+      if (e.key === 'ArrowRight') goNext();
+      if (e.key === 'ArrowLeft') goPrev();
       if (e.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', handleKey);
@@ -85,10 +98,29 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
     a.click();
   };
 
+  const handleDelete = () => {
+    deleteImage.mutate(current.id, {
+      onSuccess: () => {
+        toast.success('Bild gelöscht');
+        setConfirmDelete(false);
+        // If last image in folder, close lightbox
+        if (images.length <= 1) {
+          onClose();
+        } else if (index >= images.length - 1) {
+          setIndex(0);
+        }
+        onDeleted?.();
+      },
+      onError: () => {
+        toast.error('Fehler beim Löschen');
+        setConfirmDelete(false);
+      },
+    });
+  };
+
   const regenerateImage = async () => {
     setRegenerating(true);
     try {
-      // Fetch the current image as base64 to use as input
       const response = await fetch(current.src);
       const blob = await response.blob();
       const base64 = await new Promise<string>((resolve) => {
@@ -106,7 +138,6 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
       if (error || !data?.imageBase64) {
         toast.error(data?.error || error?.message || 'Fehler beim Regenerieren');
       } else {
-        // Update the image in the database
         const { error: updateError } = await supabase
           .from('project_images')
           .update({ image_url: data.imageBase64, image_base64: '' } as any)
@@ -150,27 +181,35 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
           <Button variant="secondary" size="sm" onClick={loadProjects} className="gap-1.5">
             <FolderPlus className="w-4 h-4" /> Projekt zuordnen
           </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setConfirmDelete(true)}
+            className="gap-1.5 text-destructive hover:text-destructive"
+          >
+            <Trash2 className="w-4 h-4" /> Löschen
+          </Button>
           <button onClick={onClose} className="text-background hover:text-background/80 transition-colors ml-2">
             <X className="w-6 h-6" />
           </button>
         </div>
 
-        {/* Navigation */}
-        {index > 0 && (
-          <button
-            onClick={() => setIndex(i => i - 1)}
-            className="absolute left-4 top-1/2 -translate-y-1/2 bg-background/20 hover:bg-background/40 backdrop-blur rounded-full p-2 transition-colors"
-          >
-            <ChevronLeft className="w-8 h-8 text-background" />
-          </button>
-        )}
-        {index < images.length - 1 && (
-          <button
-            onClick={() => setIndex(i => i + 1)}
-            className="absolute right-4 top-1/2 -translate-y-1/2 bg-background/20 hover:bg-background/40 backdrop-blur rounded-full p-2 transition-colors"
-          >
-            <ChevronRight className="w-8 h-8 text-background" />
-          </button>
+        {/* Navigation – always show, wrap around */}
+        {images.length > 1 && (
+          <>
+            <button
+              onClick={goPrev}
+              className="absolute left-4 top-1/2 -translate-y-1/2 bg-background/20 hover:bg-background/40 backdrop-blur rounded-full p-2 transition-colors"
+            >
+              <ChevronLeft className="w-8 h-8 text-background" />
+            </button>
+            <button
+              onClick={goNext}
+              className="absolute right-4 top-1/2 -translate-y-1/2 bg-background/20 hover:bg-background/40 backdrop-blur rounded-full p-2 transition-colors"
+            >
+              <ChevronRight className="w-8 h-8 text-background" />
+            </button>
+          </>
         )}
 
         {/* Image */}
@@ -238,6 +277,27 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Confirm delete dialog */}
+      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <AlertDialogContent onClick={e => e.stopPropagation()}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Bild löschen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Dieses Bild wird unwiderruflich gelöscht. Möchtest du fortfahren?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleDelete}
+            >
+              Löschen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
