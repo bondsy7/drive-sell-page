@@ -203,6 +203,15 @@ LIGHTING: Bright, even, professional studio lighting.
   // ── LICENSE PLATE ──
   if (config.licensePlate === 'blur') {
     parts.push(`<LICENSE_PLATE>\nBlur the license plate so characters are unreadable.\n</LICENSE_PLATE>`);
+  } else if (config.licensePlate === 'custom' && config.customPlateImageBase64) {
+    // Custom plate IMAGE takes absolute priority over text
+    parts.push(`<LICENSE_PLATE>
+CRITICAL: A separate reference image of a CUSTOM LICENSE PLATE is provided as an additional input image.
+You MUST replace the vehicle's existing license plate with this EXACT custom plate image.
+Reproduce the plate PIXEL-FOR-PIXEL: exact text, font, colors, EU badge, city seal, spacing, and proportions.
+The plate must be photorealistically integrated – correct perspective, lighting, and reflections matching the vehicle.
+Do NOT use the original plate. Do NOT invent plate text. Use ONLY the provided custom plate image.
+</LICENSE_PLATE>`);
   } else if (config.licensePlate === 'custom' && config.customPlateText) {
     parts.push(`<LICENSE_PLATE>\nReplace the license plate with a German plate reading "${config.customPlateText}". Photorealistic rendering.\n</LICENSE_PLATE>`);
   } else {
