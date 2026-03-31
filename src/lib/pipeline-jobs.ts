@@ -372,11 +372,28 @@ RULES: Maintain exact interior layout from reference. View through windshield MU
 
 <CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Detail - Front Headlight in Vehicle Context
-CAMERA_ANGLE: Close-up showing the headlight assembly WITH surrounding bodywork (fender, hood edge, bumper corner). The headlight fills 50-60% of the frame but the vehicle body MUST be visible around it.
-FOCUS_ELEMENTS: Pin-sharp focus on the EXACT internal LED module arrangement, DRL signature pattern, projector lens shape, reflector geometry, and housing design FROM THE PROVIDED REFERENCE PHOTOS. Every LED strip, chrome accent, and lens texture must EXACTLY match what is visible in the reference images.
-CRITICAL REFERENCE RULE: If detail reference photos are provided, use them as the AUTHORITATIVE source for the headlight's internal structure. The headlight design MUST be an exact reproduction – do NOT invent, simplify, or generalize any LED element, reflector shape, or DRL pattern. Count the exact number of LED modules, match their arrangement, and reproduce the exact lens geometry.
+CAMERA_ANGLE: Close-up, slightly angled (10-20° from perpendicular) showing the headlight assembly WITH surrounding bodywork (fender, hood edge, bumper corner). The headlight fills 50-60% of the frame but the vehicle body MUST be visible around it.
+
+<HEADLIGHT_IDENTITY_LOCK>
+ABSOLUTE PRIORITY: The headlight's internal design is the MOST IMPORTANT element in this image.
+ZERO TOLERANCE FOR DEVIATION: The headlight MUST be a PIXEL-PERFECT reproduction of the ORIGINAL reference photo.
+
+MANDATORY MATCHING CHECKLIST – verify EACH item against the reference:
+1. LED MODULE COUNT: Count the EXACT number of individual LED modules/projectors in the reference. Reproduce that EXACT count.
+2. DRL SIGNATURE: The Daytime Running Light pattern (strip shape, curves, angles) MUST match the reference EXACTLY. Do NOT straighten curves, add segments, or simplify.
+3. LENS SHAPE: The overall headlight housing outline and lens boundary MUST match the reference precisely.
+4. INTERNAL LAYOUT: The spatial arrangement of projectors, reflectors, LED strips within the housing MUST be identical to the reference.
+5. CHROME/DARK ACCENTS: Match every chrome trim piece, dark separator, and internal housing color exactly.
+6. REFLECTOR GEOMETRY: Internal reflector bowls, their count, size, and finish (smooth vs. textured) from the reference.
+7. TURN SIGNAL POSITION: If visible in reference, place turn signal elements in the EXACT same location.
+
+WHAT TO LOOK AT: Study the reference headlight photo with extreme attention. If the reference shows 3 LED projectors stacked vertically – reproduce exactly 3, not 2 or 4. If the DRL is a thin horizontal strip – do NOT make it a thick bar or C-shape. If there are small individual LED dots – reproduce each one.
+
+FORBIDDEN: Do NOT substitute a generic headlight design. Do NOT use a headlight from a different model year or trim level. Do NOT simplify complex multi-element headlights into simpler designs. Do NOT invent LED patterns not present in the reference.
+</HEADLIGHT_IDENTITY_LOCK>
+
 FRAMING: The headlight MUST remain attached to the vehicle. Show the hood line, fender edge, and part of the front bumper. Do NOT isolate the headlight as a standalone object.
-LIGHTING: High-contrast studio lighting revealing internal textures and reflections. Showroom environment visible in background.
+LIGHTING: High-contrast studio lighting that reveals every internal texture, LED element, and reflection. Light should emphasize the depth and layering inside the headlight housing. Showroom environment visible in background.
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
