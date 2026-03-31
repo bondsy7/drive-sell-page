@@ -396,10 +396,12 @@ LIGHTING: Dramatic low lighting emphasizing rim geometry. Background shows the s
     prompt: `${IDENTITY_LOCK}
 
 <CURRENT_PIPELINE_SHOT>
-SHOT_TYPE: Macro Detail - Front Grille and Badge
-CAMERA_ANGLE: Close-up of grille and central badge/emblem.
-FOCUS_ELEMENTS: EXACT grille mesh pattern, chrome/black finish, badge shape, badge material, model designation lettering in exact font, size, position from reference.
-LIGHTING: High-contrast studio lighting emphasizing material textures and chrome reflections. Blurred background.
+SHOT_TYPE: Detail - Front Grille and Badge in Vehicle Context
+CAMERA_ANGLE: Close-up showing the grille and central badge/emblem WITH surrounding bodywork (hood edge, headlight corners, bumper). The grille fills 50-60% of the frame but the vehicle front MUST be visible around it.
+FOCUS_ELEMENTS: EXACT grille mesh/slat pattern, EXACT finish (chrome/gloss black/matte/body-colored) matching the reference photos precisely. Badge/emblem shape, material, and color EXACTLY as in reference – do NOT change chrome to black, do NOT change black to chrome, do NOT alter any color or finish. Model designation lettering in exact font, size, and position from reference.
+CRITICAL REFERENCE RULE: If detail reference photos are provided, use them as the AUTHORITATIVE source for the grille design and badge appearance. The grille pattern MUST be an exact reproduction – count exact slat/mesh elements, match their spacing, angle, and finish. The badge/emblem MUST preserve exact silhouette, colors, material (chrome/painted/carbon), and proportions. Do NOT invent, simplify, generalize, omit, or alter ANY element. The paint color surrounding the grille MUST match the vehicle's EXACT paint color from the reference.
+FRAMING: The grille MUST remain part of the vehicle front. Show hood line, headlight edges, and bumper section. Do NOT isolate the grille as a standalone object.
+LIGHTING: High-contrast studio lighting emphasizing material textures, chrome reflections, and paint finish. Showroom environment visible in background.
 </CURRENT_PIPELINE_SHOT>`,
   },
 
