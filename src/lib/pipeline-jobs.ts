@@ -73,7 +73,16 @@ UNDER NO CIRCUMSTANCES SHALL YOU:
 <REFLECTIONS_LIGHTING>
 ALL reflections on paint, glass, chrome, windows must match the TARGET scene.
 Shadows consistent with scene light sources. Floor reflections show vehicle in new environment.
-</REFLECTIONS_LIGHTING>`;
+</REFLECTIONS_LIGHTING>
+
+<CUSTOM_SHOWROOM_INTEGRITY>
+When a CUSTOM SHOWROOM image is provided:
+1. CONTENT PRESERVATION: Do NOT modify, replace, remove, or obscure ANY element in the showroom (logos, signs, furniture, decorations, wall art). The showroom is an IMMUTABLE ASSET – reproduce it EXACTLY as provided.
+2. PERSPECTIVE ADAPTATION: You MAY adjust the camera angle, perspective, and viewing direction to match the required shot type. The showroom must be rendered from the appropriate angle for each shot.
+3. LIGHTING ADAPTATION: Adapt the showroom lighting naturally to match the camera angle while preserving the overall ambiance.
+4. SPATIAL FIT: The vehicle MUST look like it NATURALLY belongs in the showroom. Scale the vehicle so it fits proportionally within the showroom space – not too large (overwhelming the room) and not too small (lost in the space).
+5. CONSISTENCY: The showroom must be CLEARLY RECOGNIZABLE as the SAME room in EVERY generated image, regardless of camera angle. Same walls, same floor, same decorations, same logos.
+</CUSTOM_SHOWROOM_INTEGRITY>`;
 
 // ═══════════════════════════════════════════════════════════════════
 // INTERIOR RULES – appended ONLY to interior pipeline prompts

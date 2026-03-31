@@ -220,7 +220,26 @@ serve(async (req) => {
     }
     // Add showroom with clear label so the AI knows what it is
     if (customShowroomBase64) {
-      parts.push({ text: "The following image is the CUSTOM SHOWROOM BACKGROUND. Place the vehicle EXACTLY in this showroom environment. Match lighting, shadows, and perspective so the car integrates naturally. Use ONLY this background. NOTE: For INTERIOR shots, do NOT change background – only improve lighting." });
+      parts.push({ text: `<CUSTOM_SHOWROOM_INSTRUCTION>
+The following image is the CUSTOM SHOWROOM BACKGROUND. This is an IMMUTABLE ASSET.
+
+PLACEMENT RULES:
+1. Place the vehicle NATURALLY in this showroom. The car must fit PROPORTIONALLY – not too large (overwhelming the room) and not too small.
+2. The vehicle should occupy approximately 55-65% of the image width, leaving breathing room on all sides.
+3. Match lighting, shadows, and perspective so the car integrates naturally into the space.
+
+CONTENT PRESERVATION (CRITICAL):
+- Do NOT modify, replace, remove, or obscure ANY element in the showroom.
+- ALL logos, signs, wall decorations, furniture, branding elements MUST remain EXACTLY as they are in the provided image.
+- The showroom floor, walls, ceiling, windows must be reproduced faithfully.
+- You may adapt the CAMERA ANGLE and PERSPECTIVE to match the required shot, but the showroom CONTENTS are UNTOUCHABLE.
+
+CONSISTENCY:
+- The showroom must be CLEARLY RECOGNIZABLE as the SAME room across ALL images.
+- Use ONLY this background. Do NOT substitute or blend with other environments.
+
+NOTE: For INTERIOR vehicle shots, do NOT change the background – only improve interior lighting.
+</CUSTOM_SHOWROOM_INSTRUCTION>` });
       parts.push(toInlineData(customShowroomBase64));
     }
     if (customPlateImageBase64) {
