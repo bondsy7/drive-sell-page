@@ -629,8 +629,11 @@ FOCUS_ELEMENTS: Exact grille pattern, chrome textures, LED headlight internal st
     prompt: `${IDENTITY_LOCK}
 
 <CURRENT_PIPELINE_SHOT>
-SHOT_TYPE: Mercedes CI - Wheel Detail
-FOCUS_ELEMENTS: Exact AMG/standard rim design, brake caliper, star center cap from reference. Studio lighting.
+SHOT_TYPE: Mercedes CI - Front Wheel in Context
+CAMERA_ANGLE: Low angle close-up of front wheel area at wheel height.
+FRAMING: Wheel and tire MUST remain attached to the vehicle. Show wheel arch, fender, lower door sill. Vehicle body MUST be visible.
+FOCUS_ELEMENTS: Exact AMG/standard rim design, brake caliper, star center cap from reference.
+CRITICAL: Do NOT isolate the wheel. It MUST be mounted on the vehicle with surrounding bodywork visible.
 </CURRENT_PIPELINE_SHOT>`,
   },
 
