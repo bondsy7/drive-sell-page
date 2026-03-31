@@ -85,7 +85,7 @@ async function getCustomPrompt(key: string, defaultPrompt: string): Promise<stri
 
 async function authenticateAndDeductCredits(req: Request, actionType: string, cost: number): Promise<{ userId: string } | Response> {
   const authHeader = req.headers.get("Authorization");
-  if (!authHeader) {
+  if (!authHeader?.startsWith("Bearer ")) {
     return new Response(JSON.stringify({ error: "Nicht authentifiziert" }), {
       status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
@@ -93,15 +93,18 @@ async function authenticateAndDeductCredits(req: Request, actionType: string, co
   const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
     global: { headers: { Authorization: authHeader } },
   });
-  const { data: { user }, error } = await sb.auth.getUser();
-  if (error || !user) {
+  const token = authHeader.replace("Bearer ", "");
+  const { data, error } = await sb.auth.getClaims(token);
+  if (error || !data?.claims?.sub) {
+    console.error("Auth failed:", error?.message);
     return new Response(JSON.stringify({ error: "Nicht authentifiziert" }), {
       status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
+  const userId = data.claims.sub as string;
   const serviceSb = createServiceClient();
   const { data: result, error: deductError } = await serviceSb.rpc("deduct_credits", {
-    _user_id: user.id, _amount: cost, _action_type: actionType, _description: `${actionType} (serverseitig)`,
+    _user_id: userId, _amount: cost, _action_type: actionType, _description: `${actionType} (serverseitig)`,
   });
   if (deductError) {
     return new Response(JSON.stringify({ error: "Credit-Fehler: " + deductError.message }), {
@@ -114,7 +117,7 @@ async function authenticateAndDeductCredits(req: Request, actionType: string, co
       status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-  return { userId: user.id };
+  return { userId };
 }
 
 serve(async (req) => {
