@@ -247,25 +247,20 @@ serve(async (req) => {
         console.log(`Manufacturer logo: fetched from URL ${manufacturerLogoUrl}`);
       }
       if (logoData) {
-      parts.push({ text: `HERSTELLER-LOGO – PIXEL-PERFEKTE REPRODUKTION (HÖCHSTE PRIORITÄT):
-Das folgende Bild ist das EXAKTE Logo das an der Showroom-Wand erscheinen MUSS.
+      parts.push({ text: `<LOGO_REFERENCE>
+MANUFACTURER LOGO – PIXEL-PERFECT REPRODUCTION (HIGHEST PRIORITY):
+The following image is the EXACT logo that MUST appear on the showroom wall.
 
-REPRODUKTIONS-REGELN (KEINE ABWEICHUNG ERLAUBT):
-1. EXAKTE KOPIE: Reproduziere das Logo-Bild PIXEL FÜR PIXEL. Jede Farbe, jede Form, jedes Detail, jeder Buchstabe muss IDENTISCH zum bereitgestellten Bild sein.
-2. KEINE INTERPRETATION: Du darfst das Logo NICHT neu interpretieren, vereinfachen, stilisieren oder in ein anderes Material umwandeln. Wenn das Logo gelb ist, bleibt es gelb. Wenn es ein Schild ist, bleibt es ein Schild. Wenn es Text enthält, muss EXAKT dieser Text erscheinen.
-2b. IMMUTABLE ASSET: Behandle das gelieferte Logo als unveränderbares Asset. KEIN Nachzeichnen, KEIN Redesign, KEINE neue Kontur, KEIN anderes Seitenverhältnis, KEIN zusätzlicher Rand, KEIN Weglassen kleiner Details.
-3. POSITION: IMMER mittig an der Rückwand, auf Augenhöhe, leicht oberhalb des Fahrzeugdachs. Auf JEDEM Bild EXAKT dieselbe Position.
-4. GRÖßE: Ca. 60-80cm Durchmesser/Breite – auf JEDEM Bild IDENTISCH.
-5. DARSTELLUNG: Als hinterleuchtetes Wandelement mit dezenter LED-Beleuchtung von hinten (sanfter Halo-Effekt). Das Logo selbst behält seine ORIGINAL-FARBEN und ORIGINAL-FORM.
-6. VERBOTEN: 
-   - KEIN Umwandeln in Silber/Aluminium/Chrom wenn das Original farbig ist
-   - KEINE Änderung der Farbgebung (gelb bleibt gelb, rot bleibt rot, etc.)
-   - KEINE Vereinfachung der Form (Schild bleibt Schild, nicht nur das Tier/Symbol)
-   - KEIN Hinzufügen oder Entfernen von Elementen
-   - KEINE unterschiedliche Darstellung zwischen Bildern
-   - KEINE neue Logo-Version erzeugen, auch nicht wenn sie "sauberer" oder "realistischer" wirkt
-   - VERWENDE NIEMALS eine ältere oder alternative Version des Logos – NUR das exakte bereitgestellte Bild
-7. KONSISTENZ: Das Logo muss auf ALLEN generierten Bildern ABSOLUT IDENTISCH aussehen – gleiche Farben, Form, Größe, Position, Beleuchtung. NULL Variation erlaubt.` });
+REPRODUCTION RULES (ZERO DEVIATION ALLOWED):
+1. EXACT COPY: Reproduce the logo image PIXEL-FOR-PIXEL. Every color, shape, detail, letter must be IDENTICAL.
+2. NO INTERPRETATION: Do NOT redesign, simplify, stylize, or convert to different material. If logo is yellow, it stays yellow. If it contains text, EXACTLY that text must appear.
+3. IMMUTABLE ASSET: No re-tracing, no redesign, no new outline, no different aspect ratio, no added border, no omitting small details.
+4. POSITION: Always centered on back wall, at eye level, slightly above vehicle roofline. EXACT same position on EVERY image.
+5. SIZE: Approximately 60-80cm diameter/width – IDENTICAL on EVERY image.
+6. RENDERING: As backlit wall element with subtle LED halo effect. Logo keeps its ORIGINAL COLORS and ORIGINAL SHAPE.
+7. FORBIDDEN: No converting to silver/aluminum/chrome. No color changes. No shape simplification. No adding/removing elements. No variation between images.
+8. CONSISTENCY: Logo must look ABSOLUTELY IDENTICAL on ALL generated images – same colors, shape, size, position, lighting. ZERO variation.
+</LOGO_REFERENCE>` });
         parts.push(logoData);
       }
     }
