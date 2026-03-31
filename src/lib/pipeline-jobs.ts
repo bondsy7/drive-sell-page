@@ -359,10 +359,12 @@ LIGHTING: High-contrast studio lighting revealing internal textures and reflecti
     prompt: `${IDENTITY_LOCK}
 
 <CURRENT_PIPELINE_SHOT>
-SHOT_TYPE: Macro Detail - Rear Taillight
-CAMERA_ANGLE: Extreme close-up, filling 60-70% of frame with taillight assembly.
-FOCUS_ELEMENTS: EXACT LED element arrangement, light signature, 3D internal structure, lens material (clear/smoked/red), housing design. Every LED bar and reflector from reference.
-LIGHTING: High-contrast studio lighting against blurred background.
+SHOT_TYPE: Detail - Rear Taillight in Vehicle Context
+CAMERA_ANGLE: Close-up showing the taillight assembly WITH surrounding bodywork (rear quarter panel, trunk edge, bumper corner). The taillight fills 50-60% of the frame but the vehicle body MUST be visible around it.
+FOCUS_ELEMENTS: EXACT LED element arrangement, light signature, 3D internal structure, lens material (clear/smoked/red), housing design from the PROVIDED REFERENCE PHOTOS. Every LED bar, reflector strip, and light guide must EXACTLY match what is visible in the reference images.
+CRITICAL REFERENCE RULE: If detail reference photos are provided, use them as the AUTHORITATIVE source for the taillight's internal structure. The taillight design MUST be an exact reproduction – do NOT invent, simplify, generalize, or alter any LED element, reflector shape, or light signature. Count the exact number of LED segments, match their arrangement, and reproduce the exact lens geometry and coloring.
+FRAMING: The taillight MUST remain attached to the vehicle. Show the rear quarter panel, trunk/hatch edge, and part of the rear bumper. Do NOT isolate the taillight as a standalone object. Do NOT crop or cut off any part of the taillight.
+LIGHTING: High-contrast studio lighting revealing internal textures and reflections. Showroom environment visible in background.
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
