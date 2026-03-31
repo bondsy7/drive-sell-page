@@ -652,7 +652,7 @@ const Index = () => {
                     const response = await fetch(pdfUrl);
                     const blob = await response.blob();
                     const file = new File([blob], `${title}.pdf`, { type: 'application/pdf' });
-                    handleFileSelected(file);
+                    handleFilesSelected([file]);
                   } catch { toast.error('Fehler beim Laden des Beispiel-PDFs'); }
                 }}
                 isProcessing={false}
