@@ -21,9 +21,14 @@ MATERIALS: Match exact finishes – chrome vs. gloss black vs. matte vs. satin. 
 </IDENTITY_LOCK>
 
 <VEHICLE_SCALE_LOCK>
-The vehicle MUST occupy the SAME proportion of the image frame in EVERY generated image.
-For full-body exterior shots: vehicle should fill approximately 70-80% of the image width.
-The apparent SIZE must remain CONSISTENT across all perspectives.
+ABSOLUTE POSITIONING AND SCALE RULES – ZERO DEVIATION BETWEEN IMAGES:
+1. CONSISTENT SIZE: The vehicle MUST occupy EXACTLY 55-65% of the image WIDTH in EVERY full-body exterior shot. NOT more, NOT less. This creates natural breathing room within the showroom.
+2. VERTICAL CENTER: The vehicle's vertical center (wheel-to-roof midpoint) MUST be at approximately 55% from the top of the image (slightly below center).
+3. HORIZONTAL CENTER: The vehicle's center of mass MUST be horizontally centered in the image (50% ± 5%) for symmetric views. For 3/4 views, shift up to 10% toward the camera side.
+4. GROUND PLANE: ALL four wheels MUST sit on the SAME ground plane. The floor line MUST be at approximately 75-80% from the top of the image.
+5. NO VARIATION: The vehicle must appear the EXACT same physical size across ALL perspectives.
+6. BREATHING ROOM: Maintain at least 10% padding between the vehicle and any image edge.
+7. PERSPECTIVE CONSISTENCY: Even when camera angle changes, the apparent size must remain constant. Wide-angle distortion is FORBIDDEN.
 </VEHICLE_SCALE_LOCK>
 
 <ANTI_CROPPING>
