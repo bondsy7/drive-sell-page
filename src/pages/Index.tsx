@@ -59,7 +59,7 @@ const Index = () => {
   const [creditDialog, setCreditDialog] = useState<{ open: boolean; cost: number; label: string; onConfirm: () => void }>({
     open: false, cost: 0, label: '', onConfirm: () => {},
   });
-  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  
 
   // For standalone photo results
   const [standalonePhotoResults, setStandalonePhotoResults] = useState<string[]>([]);
