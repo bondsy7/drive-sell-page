@@ -543,8 +543,11 @@ FOCUS_ELEMENTS: Exact iDrive/curved display, instrument cluster, steering wheel 
     prompt: `${IDENTITY_LOCK}
 
 <CURRENT_PIPELINE_SHOT>
-SHOT_TYPE: BMW CI - Wheel and Brake Caliper Detail
-FOCUS_ELEMENTS: Exact rim spoke design, finish, BMW center cap, brake caliper color/shape from reference. Studio lighting, blurred background.
+SHOT_TYPE: BMW CI - Front Wheel in Context
+CAMERA_ANGLE: Low angle close-up of front wheel area at wheel height.
+FRAMING: Wheel and tire MUST remain attached to the vehicle. Show wheel arch, fender, lower door sill, and part of the bumper. Vehicle body MUST be visible.
+FOCUS_ELEMENTS: Exact rim spoke design, finish, BMW center cap, brake caliper color/shape from reference.
+CRITICAL: Do NOT isolate the wheel. It MUST be mounted on the vehicle with surrounding bodywork visible.
 </CURRENT_PIPELINE_SHOT>`,
   },
 
