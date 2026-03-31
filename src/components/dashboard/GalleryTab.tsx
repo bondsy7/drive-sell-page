@@ -15,7 +15,7 @@ PIPELINE_JOBS.forEach((j, i) => {
   PIPELINE_LABEL_ORDER.set(j.label, i);
 });
 
-function getImageSortKey(perspective: string | null): number {
+export function getImageSortKey(perspective: string | null): number {
   if (!perspective) return 90000;
 
   // Remastered images come first (indices 0-99)

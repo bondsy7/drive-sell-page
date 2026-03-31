@@ -16,6 +16,7 @@ import { useSearchParams } from 'react-router-dom';
 
 import type { Project, VideoFile } from '@/components/dashboard/types';
 import { getImageSrc } from '@/components/dashboard/types';
+import { getImageSortKey } from '@/components/dashboard/GalleryTab';
 import ProjectsTab from '@/components/dashboard/ProjectsTab';
 import LandingsTab from '@/components/dashboard/LandingsTab';
 import GalleryTab from '@/components/dashboard/GalleryTab';
@@ -256,11 +257,12 @@ const Dashboard = () => {
 
       <GalleryLightbox
         images={
-          lightboxFolder
-            ? allImages
-                .filter(img => (img.gallery_folder || 'Ohne Ordner') === lightboxFolder)
-                .map(img => ({ id: img.id, src: getImageSrc(img), perspective: img.perspective, project_id: img.project_id }))
-            : allImages.map(img => ({ id: img.id, src: getImageSrc(img), perspective: img.perspective, project_id: img.project_id }))
+          (lightboxFolder
+            ? allImages.filter(img => (img.gallery_folder || 'Ohne Ordner') === lightboxFolder)
+            : [...allImages]
+          )
+            .sort((a, b) => getImageSortKey(a.perspective) - getImageSortKey(b.perspective))
+            .map(img => ({ id: img.id, src: getImageSrc(img), perspective: img.perspective, project_id: img.project_id }))
         }
         initialIndex={lightboxIndex}
         open={lightboxIndex >= 0}
