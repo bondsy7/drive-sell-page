@@ -16,6 +16,7 @@ import { useSearchParams } from 'react-router-dom';
 
 import type { Project, VideoFile } from '@/components/dashboard/types';
 import { getImageSrc } from '@/components/dashboard/types';
+import { getImageSortKey } from '@/components/dashboard/GalleryTab';
 import ProjectsTab from '@/components/dashboard/ProjectsTab';
 import LandingsTab from '@/components/dashboard/LandingsTab';
 import GalleryTab from '@/components/dashboard/GalleryTab';
