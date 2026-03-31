@@ -47,7 +47,7 @@ import {
 
 interface Props {
   images: ProjectImage[];
-  onLightbox: (globalIndex: number) => void;
+  onLightbox: (folder: string, indexInFolder: number) => void;
   highlightFolder?: string | null;
 }
 
