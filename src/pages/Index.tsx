@@ -59,7 +59,7 @@ const Index = () => {
   const [creditDialog, setCreditDialog] = useState<{ open: boolean; cost: number; label: string; onConfirm: () => void }>({
     open: false, cost: 0, label: '', onConfirm: () => {},
   });
-  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  
 
   // For standalone photo results
   const [standalonePhotoResults, setStandalonePhotoResults] = useState<string[]>([]);
@@ -126,23 +126,29 @@ const Index = () => {
   }, [user]);
 
   // ─── PDF → Landing Page Flow ───
-  const handleFileSelected = useCallback(async (file: File) => {
+  const handleFilesSelected = useCallback(async (files: File[]) => {
     const pdfCost = getCost('pdf_analysis', 'standard') || 1;
-    setPendingFile(file);
+    const totalCost = pdfCost * files.length;
     setCreditDialog({
-      open: true, cost: pdfCost, label: 'PDF analysieren',
-      onConfirm: () => { setPendingFile(null); setCreditDialog(prev => ({ ...prev, open: false })); processFile(file); },
+      open: true, cost: totalCost, label: files.length === 1 ? 'PDF analysieren' : `${files.length} PDFs analysieren`,
+      onConfirm: () => { setCreditDialog(prev => ({ ...prev, open: false })); processFiles(files); },
     });
   }, [getCost]);
 
-  const processFile = useCallback(async (file: File) => {
-    setFileName(file.name);
+  const processFiles = useCallback(async (files: File[]) => {
+    setFileName(files.map(f => f.name).join(', '));
     setGalleryImages([]); setImageBase64(null); setSavedProjectId(null);
     try {
       setAppState('uploading');
-      const pdfBase64 = await extractPDFAsBase64(file);
+      const pdfBase64Array: string[] = [];
+      for (const file of files) {
+        pdfBase64Array.push(await extractPDFAsBase64(file));
+      }
       setAppState('analyzing');
-      const { data: analysisData, error: analysisError } = await supabase.functions.invoke('analyze-pdf', { body: { pdfBase64 } });
+      const body = pdfBase64Array.length === 1
+        ? { pdfBase64: pdfBase64Array[0] }
+        : { pdfBase64Array };
+      const { data: analysisData, error: analysisError } = await supabase.functions.invoke('analyze-pdf', { body });
       console.log('[processFile] analysisError:', analysisError);
       console.log('[processFile] analysisData keys:', analysisData ? Object.keys(analysisData) : 'null');
       console.log('[processFile] vehicle:', analysisData?.vehicle?.brand, analysisData?.vehicle?.model);
@@ -633,7 +639,7 @@ const Index = () => {
                 ))}
               </div>
 
-              <PDFUpload onFileSelected={handleFileSelected} isProcessing={false} />
+              <PDFUpload onFilesSelected={handleFilesSelected} isProcessing={false} />
               <div className="flex items-center justify-center gap-1 text-accent">
                 <Sparkles className="w-4 h-4" />
                 <span className="text-xs font-medium text-muted-foreground">
@@ -646,7 +652,7 @@ const Index = () => {
                     const response = await fetch(pdfUrl);
                     const blob = await response.blob();
                     const file = new File([blob], `${title}.pdf`, { type: 'application/pdf' });
-                    handleFileSelected(file);
+                    handleFilesSelected([file]);
                   } catch { toast.error('Fehler beim Laden des Beispiel-PDFs'); }
                 }}
                 isProcessing={false}
@@ -693,7 +699,7 @@ const Index = () => {
         balance={balance}
         actionLabel={creditDialog.label}
         onConfirm={creditDialog.onConfirm}
-        onCancel={() => { setCreditDialog(prev => ({ ...prev, open: false })); setPendingFile(null); }}
+        onCancel={() => { setCreditDialog(prev => ({ ...prev, open: false })); }}
       />
     </div>
   );
