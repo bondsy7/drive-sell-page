@@ -167,6 +167,19 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const referenceImages = cfg.originalImages.length > 0 ? cfg.originalImages : cfg.inputImages;
     const primaryReferenceIndex = inferPrimaryReferenceIndex(job, prompt, referenceImages.length);
     const primaryReference = referenceImages[primaryReferenceIndex] || referenceImages[0];
+
+    // For detail jobs: move the most relevant additional image to the FRONT of supporting references
+    // so the AI sees it as the primary detail reference
+    const isDetailJob = job?.category === 'detail';
+    let orderedAdditional = [...cfg.additionalImages];
+    if (isDetailJob && orderedAdditional.length > 0) {
+      // Put additional detail images FIRST, before other reference angles
+      const supportingReferences = orderedAdditional.concat(
+        referenceImages.filter((_, i) => i !== primaryReferenceIndex)
+      );
+      return generateWithReferences(prompt, job, cfg, primaryReference, supportingReferences);
+    }
+
     const supportingReferences = referenceImages
       .filter((_, i) => i !== primaryReferenceIndex)
       .concat(cfg.additionalImages);
