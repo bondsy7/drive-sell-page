@@ -372,10 +372,13 @@ LIGHTING: High-contrast studio lighting against blurred background.
     prompt: `${IDENTITY_LOCK}
 
 <CURRENT_PIPELINE_SHOT>
-SHOT_TYPE: Macro Detail - Wheel and Brake Caliper
-CAMERA_ANGLE: Direct, flat on wheel face to show exact spoke geometry without perspective distortion.
-FOCUS_ELEMENTS: Rim finish (machined/matte/gloss), center brand cap, tire sidewall texture, brake caliper/rotor behind spokes. Exact spoke count, shape, concavity from reference.
-LIGHTING: High-contrast studio lighting. Inner wheel well shadowed and clean. Blurred background.
+SHOT_TYPE: Detail - Front Wheel in Context
+CAMERA_ANGLE: Low angle, close-up of the FRONT wheel area. Camera positioned at wheel height, slightly angled to show the wheel, tire, fender, and part of the vehicle body.
+FRAMING: The wheel and tire MUST remain attached to the vehicle. Show the wheel arch, fender, lower door sill, and part of the front bumper. The vehicle body MUST be visible — this is NOT an isolated wheel shot.
+FOCUS_ELEMENTS: Rim finish (machined/matte/gloss), center brand cap, tire sidewall, brake caliper visible behind spokes, exact spoke count and shape from reference.
+CRITICAL: Do NOT isolate or detach the wheel from the car. Do NOT show a standalone tire/rim. The wheel MUST be mounted on the vehicle with surrounding bodywork clearly visible.
+LIGHTING: Dramatic low lighting emphasizing rim geometry. Background shows the showroom environment.
+{{LOGO_LINE}}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
@@ -540,8 +543,11 @@ FOCUS_ELEMENTS: Exact iDrive/curved display, instrument cluster, steering wheel 
     prompt: `${IDENTITY_LOCK}
 
 <CURRENT_PIPELINE_SHOT>
-SHOT_TYPE: BMW CI - Wheel and Brake Caliper Detail
-FOCUS_ELEMENTS: Exact rim spoke design, finish, BMW center cap, brake caliper color/shape from reference. Studio lighting, blurred background.
+SHOT_TYPE: BMW CI - Front Wheel in Context
+CAMERA_ANGLE: Low angle close-up of front wheel area at wheel height.
+FRAMING: Wheel and tire MUST remain attached to the vehicle. Show wheel arch, fender, lower door sill, and part of the bumper. Vehicle body MUST be visible.
+FOCUS_ELEMENTS: Exact rim spoke design, finish, BMW center cap, brake caliper color/shape from reference.
+CRITICAL: Do NOT isolate the wheel. It MUST be mounted on the vehicle with surrounding bodywork visible.
 </CURRENT_PIPELINE_SHOT>`,
   },
 
@@ -623,8 +629,11 @@ FOCUS_ELEMENTS: Exact grille pattern, chrome textures, LED headlight internal st
     prompt: `${IDENTITY_LOCK}
 
 <CURRENT_PIPELINE_SHOT>
-SHOT_TYPE: Mercedes CI - Wheel Detail
-FOCUS_ELEMENTS: Exact AMG/standard rim design, brake caliper, star center cap from reference. Studio lighting.
+SHOT_TYPE: Mercedes CI - Front Wheel in Context
+CAMERA_ANGLE: Low angle close-up of front wheel area at wheel height.
+FRAMING: Wheel and tire MUST remain attached to the vehicle. Show wheel arch, fender, lower door sill. Vehicle body MUST be visible.
+FOCUS_ELEMENTS: Exact AMG/standard rim design, brake caliper, star center cap from reference.
+CRITICAL: Do NOT isolate the wheel. It MUST be mounted on the vehicle with surrounding bodywork visible.
 </CURRENT_PIPELINE_SHOT>`,
   },
 
@@ -963,9 +972,11 @@ FOCUS_ELEMENTS: Exact screen orientation (portrait/vertical for Volvo), bezel de
 <BRAND_ENVIRONMENT_OVERRIDE>Volvo CI: Minimalist showroom, dark resin floor, frosted glass panels.</BRAND_ENVIRONMENT_OVERRIDE>
 
 <CURRENT_PIPELINE_SHOT>
-SHOT_TYPE: Volvo CI - Wheel Detail Macro
-CAMERA_ANGLE: Macro close-up of wheel, alloy rim, surrounding fender.
-FOCUS_ELEMENTS: Exact multi-spoke design, spoke pattern, concavity, lug nuts, center cap, metallic/machined finish from reference. Brake calipers, rotor, tire sidewall texture. Surrounding fender body contours. Depth of field: rim sharp, wheel well to shadow.
+SHOT_TYPE: Volvo CI - Front Wheel in Context
+CAMERA_ANGLE: Low angle close-up of front wheel area at wheel height, showing wheel and surrounding fender.
+FRAMING: Wheel and tire MUST remain attached to the vehicle. Show wheel arch, fender contours, lower body panel. Vehicle body MUST be visible.
+FOCUS_ELEMENTS: Exact multi-spoke design, spoke pattern, concavity, lug nuts, center cap, metallic/machined finish from reference. Brake calipers, rotor, tire sidewall texture.
+CRITICAL: Do NOT isolate the wheel. It MUST be mounted on the vehicle with surrounding bodywork visible.
 </CURRENT_PIPELINE_SHOT>`,
   },
 ];
