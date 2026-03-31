@@ -3,7 +3,8 @@
  * Each job can produce one or more images (outputCount).
  * 
  * All prompts use structured English XML-tags optimized for Gemini image models.
- * Logo references are included in EVERY job to prevent "forgetting".
+ * Logo references are injected at RUNTIME only when the user has selected logos.
+ * The placeholder {{LOGO_LINE}} is replaced dynamically in PipelineContext.
  */
 
 export interface PipelineJob {
@@ -38,6 +39,13 @@ BODY_DETAILS: EXACT body lines, creases, fender flares, intakes, roof rails, spo
 MATERIALS: Match exact finishes – chrome vs. gloss black vs. matte vs. satin. Do NOT substitute.
 </IDENTITY_LOCK>
 
+<VEHICLE_SCALE_LOCK>
+The vehicle MUST occupy the SAME proportion of the image frame in EVERY generated image.
+For full-body exterior shots: vehicle should fill approximately 70-80% of the image width.
+The apparent SIZE of the vehicle must remain CONSISTENT across all perspectives – same car, same scale.
+Do NOT make the vehicle larger or smaller between different camera angles.
+</VEHICLE_SCALE_LOCK>
+
 <PERSPECTIVE_ACCURACY>
 The output MUST show EXACTLY the camera angle specified in the prompt.
 "3/4 front left" = camera at front-left. "3/4 front right" = camera at front-right.
@@ -55,6 +63,7 @@ UNDER NO CIRCUMSTANCES SHALL YOU:
 - Carry over reflections from original environment – render ALL reflections new
 - Rotate, flip, or mirror the image
 - Crop the vehicle at image edges – full car visible for full-body shots
+- Add ANY logo, brand mark, or wall decoration UNLESS a logo image is explicitly provided as a reference asset
 </STRICT_NEGATIVE_CONSTRAINTS>
 
 <REFLECTIONS_LIGHTING>
@@ -74,15 +83,19 @@ THIS IS AN INTERIOR SHOT – the following rules are ABSOLUTE:
 
 3. CLEANUP ONLY: Remove items NOT belonging to vehicle: trash, bags, papers, plastic covers, dust, dirt, personal belongings, hands/feet. Clean surfaces to showroom-ready condition.
 
-4. LIGHTING ONLY: Improve to bright, even, professional. Replace background through windows with showroom (THROUGH glass naturally). Do NOT alter glass transparency.
+4. LIGHTING AND WINDOW VIEW: Improve to bright, even, professional lighting. The view through ALL windows MUST show the SELECTED showroom/scene environment (visible THROUGH glass naturally, matching the scene chosen for exterior shots). Do NOT show a random outdoor scene or street – use the SAME environment as the exterior images. Do NOT alter glass transparency.
 
 5. STRUCTURAL INTEGRITY: Roof, ALL pillars (A/B/C), headliner, door panels, sun visors, rearview mirror FULLY visible and UNCUT.
 
 6. FORBIDDEN: Generating exterior view, changing camera angle, adding/modifying design, cutting roof/doors/pillars, inventing details.
 </INTERIOR_RULES>`;
 
-// Logo reminder appended to every exterior/hero job
-const LOGO_REMINDER = 'The provided company logo MUST be integrated on the background wall. Reproduce it PIXEL-FOR-PIXEL with all original colors. IMMUTABLE ASSET.';
+// ═══════════════════════════════════════════════════════════════════
+// LOGO PLACEHOLDER – replaced at runtime in PipelineContext
+// When user has NOT selected logos, this becomes empty string.
+// When user HAS selected logos, this becomes the logo instruction.
+// ═══════════════════════════════════════════════════════════════════
+const LOGO_LINE = '{{LOGO_LINE}}';
 
 export const PIPELINE_JOBS: PipelineJob[] = [
   // ── Hero ──
@@ -98,8 +111,8 @@ export const PIPELINE_JOBS: PipelineJob[] = [
 SHOT_TYPE: Exterior - Front 3/4 Hero View (Master Image)
 CAMERA_ANGLE: Eye-level, 30-40° left of center axis, looking at front-left quarter.
 FRAMING: Full vehicle visible with no cropping. Minimum 5% padding on all edges.
-ENVIRONMENT: PROVIDED SHOWROOM. ${LOGO_REMINDER}
-LIGHTING: Clean luxury studio lighting with soft overhead key light, fill lights, and realistic polished floor reflections.
+ENVIRONMENT: PROVIDED SHOWROOM. ${LOGO_LINE}
+LIGHTING: Clean luxury studio lighting with soft overhead key light, fill lights, and realistic polished floor reflections matching the selected showroom.
 </CURRENT_PIPELINE_SHOT>`,
   },
 
@@ -116,7 +129,7 @@ LIGHTING: Clean luxury studio lighting with soft overhead key light, fill lights
 SHOT_TYPE: Exterior - Direct Head-On Front View
 CAMERA_ANGLE: Eye-level, exactly 0° center axis. Perfectly symmetrical.
 FRAMING: Both headlights, full grille, center badge mathematically centered. Full vehicle width visible.
-ENVIRONMENT: PROVIDED SHOWROOM. ${LOGO_REMINDER}
+ENVIRONMENT: PROVIDED SHOWROOM. ${LOGO_LINE}
 LIGHTING: Balanced showroom lighting with realistic floor reflections.
 </CURRENT_PIPELINE_SHOT>`,
   },
@@ -132,7 +145,7 @@ LIGHTING: Balanced showroom lighting with realistic floor reflections.
 SHOT_TYPE: Exterior - Direct Rear View
 CAMERA_ANGLE: Eye-level, perfectly centered on rear axis.
 FRAMING: Both taillights, exhaust outlets, rear badge, model designation symmetrically framed. Full width visible.
-ENVIRONMENT: PROVIDED SHOWROOM. ${LOGO_REMINDER}
+ENVIRONMENT: PROVIDED SHOWROOM. ${LOGO_LINE}
 LIGHTING: Shadows consistent with showroom lighting.
 </CURRENT_PIPELINE_SHOT>`,
   },
@@ -148,7 +161,7 @@ LIGHTING: Shadows consistent with showroom lighting.
 SHOT_TYPE: Exterior - Perfect Left Side Profile
 CAMERA_ANGLE: Exactly perpendicular (90°) to vehicle's left flank. Ground-to-waist-level horizon.
 FRAMING: Both left-side wheels COMPLETELY visible and perfectly round (zero distortion). Entire silhouette front to rear in frame.
-ENVIRONMENT: PROVIDED SHOWROOM. ${LOGO_REMINDER} Logo above roofline.
+ENVIRONMENT: PROVIDED SHOWROOM. ${LOGO_LINE}
 LIGHTING: Flat, even lighting to highlight body lines.
 </CURRENT_PIPELINE_SHOT>`,
   },
@@ -164,7 +177,7 @@ LIGHTING: Flat, even lighting to highlight body lines.
 SHOT_TYPE: Exterior - Perfect Right Side Profile
 CAMERA_ANGLE: Exactly perpendicular (90°) to vehicle's right flank.
 FRAMING: Both right-side wheels fully visible. Body lines and proportions accurately represented.
-ENVIRONMENT: PROVIDED SHOWROOM. ${LOGO_REMINDER}
+ENVIRONMENT: PROVIDED SHOWROOM. ${LOGO_LINE}
 LIGHTING: Clean studio lighting emphasizing body lines.
 </CURRENT_PIPELINE_SHOT>`,
   },
@@ -180,7 +193,7 @@ LIGHTING: Clean studio lighting emphasizing body lines.
 SHOT_TYPE: Exterior - Front-Right 3/4 View
 CAMERA_ANGLE: Eye-level, 30-40° to the RIGHT of center axis. This is NOT a left-side view.
 FRAMING: Right headlight, right fender, and right front wheel prominently visible. Full vehicle in frame.
-ENVIRONMENT: PROVIDED SHOWROOM. ${LOGO_REMINDER} Logo with correct perspective matching camera angle.
+ENVIRONMENT: PROVIDED SHOWROOM. ${LOGO_LINE}
 LIGHTING: Realistic lighting and floor reflections.
 </CURRENT_PIPELINE_SHOT>`,
   },
@@ -196,7 +209,7 @@ LIGHTING: Realistic lighting and floor reflections.
 SHOT_TYPE: Exterior - Rear-Left 3/4 View
 CAMERA_ANGLE: Eye-level, behind and to the LEFT of the vehicle. Rear-left quarter, left taillight, left rear wheel prominent.
 FRAMING: Rear bumper and exhaust visible. Full vehicle in frame.
-ENVIRONMENT: PROVIDED SHOWROOM. ${LOGO_REMINDER}
+ENVIRONMENT: PROVIDED SHOWROOM. ${LOGO_LINE}
 LIGHTING: Dramatic lighting emphasizing body contours and rear design.
 </CURRENT_PIPELINE_SHOT>`,
   },
@@ -212,7 +225,7 @@ LIGHTING: Dramatic lighting emphasizing body contours and rear design.
 SHOT_TYPE: Exterior - Rear-Right 3/4 View
 CAMERA_ANGLE: Eye-level, behind and to the RIGHT. Rear-right quarter, right taillight, right rear wheel prominent.
 FRAMING: Full vehicle in frame.
-ENVIRONMENT: PROVIDED SHOWROOM. ${LOGO_REMINDER}
+ENVIRONMENT: PROVIDED SHOWROOM. ${LOGO_LINE}
 LIGHTING: Smooth, balanced showroom lighting.
 </CURRENT_PIPELINE_SHOT>`,
   },
@@ -228,7 +241,7 @@ LIGHTING: Smooth, balanced showroom lighting.
 SHOT_TYPE: Exterior - Low Angle Hero Shot
 CAMERA_ANGLE: Ground level (20-30cm above ground), looking upward at front bumper, grille, and hood. Powerful, imposing perspective.
 FRAMING: Full front bumper and wheels visible – no cropping.
-ENVIRONMENT: PROVIDED SHOWROOM. ${LOGO_REMINDER}
+ENVIRONMENT: PROVIDED SHOWROOM. ${LOGO_LINE}
 LIGHTING: Dramatic perspective with studio lighting creating strong highlights on hood and body lines.
 </CURRENT_PIPELINE_SHOT>`,
   },
@@ -244,7 +257,7 @@ LIGHTING: Dramatic perspective with studio lighting creating strong highlights o
 SHOT_TYPE: Exterior - Elevated Front 3/4 View
 CAMERA_ANGLE: 2-3 meters above ground, looking down at hood, windshield, and roof. Bird's-eye angle.
 FRAMING: Full vehicle visible from above showing roof and hood lines.
-ENVIRONMENT: PROVIDED SHOWROOM. ${LOGO_REMINDER}
+ENVIRONMENT: PROVIDED SHOWROOM. ${LOGO_LINE}
 LIGHTING: Lighting from above emphasizing roof and hood lines.
 </CURRENT_PIPELINE_SHOT>`,
   },
@@ -264,7 +277,7 @@ ${INTERIOR_RULES}
 SHOT_TYPE: Interior - Driver's Seat POV
 CAMERA_ANGLE: Eye-level from driver's head position, looking at steering wheel, instrument cluster, and full dashboard.
 FOCUS_ELEMENTS: Steering wheel must be perfectly circular with accurate brand badging. Dashboard, infotainment screens, center console visible.
-RULES: Steering wheel on correct side (left for LHD, right for RHD) as in reference. Do NOT rotate or flip. ${LOGO_REMINDER} (visible through windshield)
+RULES: Steering wheel on correct side (left for LHD, right for RHD) as in reference. Do NOT rotate or flip. View through windshield MUST show the selected showroom/scene environment. ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
@@ -281,7 +294,7 @@ ${INTERIOR_RULES}
 SHOT_TYPE: Interior - Center Console Macro View
 CAMERA_ANGLE: Elevated close-up looking down at center console, gear selector, climate controls.
 FOCUS_ELEMENTS: Sharp focus on material textures (wood, carbon, piano black, leather). Knobs, buttons, stitching highly detailed. Reproduce exact button layouts and screen UI.
-RULES: Shallow depth of field to draw attention to console details.
+RULES: Shallow depth of field to draw attention to console details. View through windows MUST match the selected showroom/scene.
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
@@ -298,7 +311,7 @@ ${INTERIOR_RULES}
 SHOT_TYPE: Interior - Rear Seats from Front
 CAMERA_ANGLE: From front headrests looking backward at rear seats.
 FOCUS_ELEMENTS: Legroom, seat materials, rear center armrest, rear amenities.
-RULES: Do NOT rotate or change perspective direction.
+RULES: Do NOT rotate or change perspective direction. View through rear window MUST show the selected showroom/scene.
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
@@ -315,7 +328,7 @@ ${INTERIOR_RULES}
 SHOT_TYPE: Interior - Wide Cabin Overview
 CAMERA_ANGLE: Wide-angle from center of rear seat area looking forward.
 FOCUS_ELEMENTS: Entire dashboard span, both front seats, center console, windshield.
-RULES: Maintain exact interior layout from reference. ${LOGO_REMINDER} (visible through windshield)
+RULES: Maintain exact interior layout from reference. View through windshield MUST show the selected showroom/scene. ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
 
@@ -393,7 +406,7 @@ LIGHTING: High-contrast studio lighting emphasizing material textures and chrome
 <CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Composite - Exterior 2×2 Grid
 LAYOUT: Top-left: front-left 3/4. Top-right: direct left side profile. Bottom-left: rear-left 3/4. Bottom-right: direct rear.
-RULES: All 4 cells show COMPLETE IDENTICAL vehicle in SAME PROVIDED SHOWROOM with consistent lighting. Thin white dividers. ${LOGO_REMINDER} Full car visible in each cell.
+RULES: All 4 cells show COMPLETE IDENTICAL vehicle in SAME PROVIDED SHOWROOM with consistent lighting. Vehicle SAME SIZE in each cell. Thin white dividers. ${LOGO_LINE} Full car visible in each cell.
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
@@ -407,7 +420,7 @@ RULES: All 4 cells show COMPLETE IDENTICAL vehicle in SAME PROVIDED SHOWROOM wit
 <CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Composite - Highlights 3×2 Grid
 LAYOUT: Row 1: front-left 3/4 hero | left side profile | rear-left 3/4. Row 2: headlight macro | dashboard interior | wheel/rim close-up.
-RULES: All cells show IDENTICAL vehicle. Exterior cells use SAME PROVIDED SHOWROOM. Thin white dividers. ${LOGO_REMINDER}
+RULES: All cells show IDENTICAL vehicle. Exterior cells use SAME PROVIDED SHOWROOM. Vehicle SAME SIZE in exterior cells. Thin white dividers. ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
@@ -423,7 +436,7 @@ ${INTERIOR_RULES}
 <CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Composite - Interior 2×2 Grid
 LAYOUT: Top-left: full dashboard from driver seat. Top-right: center console close-up. Bottom-left: rear seats from front. Bottom-right: steering wheel close-up.
-RULES: All cells show IDENTICAL vehicle interior. Consistent professional lighting. Thin white dividers. Do NOT rotate or flip any perspective.
+RULES: All cells show IDENTICAL vehicle interior. Consistent professional lighting. Thin white dividers. Do NOT rotate or flip any perspective. View through windows MUST show the selected showroom/scene.
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
@@ -437,7 +450,7 @@ RULES: All cells show IDENTICAL vehicle interior. Consistent professional lighti
 <CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Composite - Social Media Collage
 LAYOUT: One large hero (front-left 3/4) at 60% canvas on left. 3 smaller stacked right: side profile, interior dashboard, wheel detail.
-RULES: All images show IDENTICAL vehicle. PROVIDED SHOWROOM. ${LOGO_REMINDER} Modern, clean layout with thin dividers.
+RULES: All images show IDENTICAL vehicle. PROVIDED SHOWROOM. ${LOGO_LINE} Modern, clean layout with thin dividers. Vehicle SAME SIZE in comparable cells.
 </CURRENT_PIPELINE_SHOT>`,
   },
 
@@ -458,7 +471,7 @@ BMW Corporate Identity: Clean white/grey studio. Strong key light from front-lef
 SHOT_TYPE: BMW CI - Front-Left 3/4 View
 CAMERA_ANGLE: Eye-level, 30-40° left of center axis.
 FOCUS_ELEMENTS: BMW kidney grille clearly visible and centered. Headlight design, grille slats, front bumper air intakes from reference exactly.
-ENVIRONMENT: ${LOGO_REMINDER}
+ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
@@ -473,7 +486,7 @@ BMW Corporate Identity: Clean white/grey studio. Even lighting highlighting Hofm
 SHOT_TYPE: BMW CI - Direct Left Side Profile
 CAMERA_ANGLE: Perfectly perpendicular to vehicle body.
 FOCUS_ELEMENTS: Both left wheels fully visible with exact rim design. BMW logo on center caps.
-ENVIRONMENT: ${LOGO_REMINDER}
+ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
@@ -485,7 +498,7 @@ ENVIRONMENT: ${LOGO_REMINDER}
 <CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: BMW CI - Rear-Left 3/4 View
 FOCUS_ELEMENTS: BMW roundel badge, exact taillight design, exhaust outlet shape, rear diffuser from reference.
-ENVIRONMENT: ${LOGO_REMINDER}
+ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
@@ -498,7 +511,7 @@ ENVIRONMENT: ${LOGO_REMINDER}
 SHOT_TYPE: BMW CI - Direct Rear View
 CAMERA_ANGLE: Perfectly centered.
 FOCUS_ELEMENTS: Full width taillights, exhaust config, rear badge, model designation from reference exactly.
-ENVIRONMENT: ${LOGO_REMINDER}
+ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
@@ -519,7 +532,7 @@ ${INTERIOR_RULES}
 
 <CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: BMW CI - Dashboard from Driver Perspective
-FOCUS_ELEMENTS: Exact iDrive/curved display, instrument cluster, steering wheel buttons, ambient lighting from reference. Professional interior lighting.
+FOCUS_ELEMENTS: Exact iDrive/curved display, instrument cluster, steering wheel buttons, ambient lighting from reference. Professional interior lighting. View through windows MUST show the selected showroom/scene.
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
@@ -544,7 +557,7 @@ Mercedes-Benz Corporate Identity: Elegant studio with subtle gradient background
 <CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Mercedes CI - Front-Left 3/4 View
 FOCUS_ELEMENTS: Three-pointed star emblem, exact radiator grille design (diamond/louvre/Panamericana), headlight internals from reference.
-ENVIRONMENT: ${LOGO_REMINDER}
+ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
@@ -556,7 +569,7 @@ ENVIRONMENT: ${LOGO_REMINDER}
 <CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Mercedes CI - Direct Left Side Profile
 FOCUS_ELEMENTS: Full body silhouette, chrome window surrounds, exact wheel design from reference.
-ENVIRONMENT: ${LOGO_REMINDER}
+ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
@@ -568,7 +581,7 @@ ENVIRONMENT: ${LOGO_REMINDER}
 <CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Mercedes CI - Rear-Left 3/4 View
 FOCUS_ELEMENTS: Exact LED light strip design, star badge, exhaust config, rear diffuser from reference.
-ENVIRONMENT: ${LOGO_REMINDER}
+ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
@@ -581,7 +594,7 @@ ENVIRONMENT: ${LOGO_REMINDER}
 SHOT_TYPE: Mercedes CI - Direct Front View
 CAMERA_ANGLE: Perfectly centered.
 FOCUS_ELEMENTS: Three-pointed star, exact grille design from reference.
-ENVIRONMENT: ${LOGO_REMINDER}
+ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
@@ -593,7 +606,7 @@ ${INTERIOR_RULES}
 <CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Mercedes CI - MBUX/Infotainment Detail
 CAMERA_ANGLE: Driver seat perspective.
-FOCUS_ELEMENTS: Exact MBUX hyperscreen/infotainment, screen layout, UI design, turbine air vents, ambient lighting from reference. Premium interior photography.
+FOCUS_ELEMENTS: Exact MBUX hyperscreen/infotainment, screen layout, UI design, turbine air vents, ambient lighting from reference. Premium interior photography. View through windows MUST show the selected showroom/scene.
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
@@ -625,7 +638,7 @@ FOCUS_ELEMENTS: Exact AMG/standard rim design, brake caliper, star center cap fr
 <CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Audi CI - Front-Left 3/4 View
 FOCUS_ELEMENTS: Exact Singleframe grille pattern, four rings emblem, headlight internals (matrix LED, DRL signature) from reference.
-ENVIRONMENT: ${LOGO_REMINDER}
+ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
@@ -637,7 +650,7 @@ ENVIRONMENT: ${LOGO_REMINDER}
 <CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Audi CI - Perfect Left Side Profile
 FOCUS_ELEMENTS: Exact body lines, wheel design, Audi design DNA from reference.
-ENVIRONMENT: ${LOGO_REMINDER}
+ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
@@ -649,7 +662,7 @@ ENVIRONMENT: ${LOGO_REMINDER}
 <CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Audi CI - Rear-Left 3/4 View
 FOCUS_ELEMENTS: Exact connected LED light strip design, four rings badge from reference.
-ENVIRONMENT: ${LOGO_REMINDER}
+ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
@@ -662,7 +675,7 @@ ENVIRONMENT: ${LOGO_REMINDER}
 SHOT_TYPE: Audi CI - Direct Rear View
 CAMERA_ANGLE: Centered.
 FOCUS_ELEMENTS: Exact full-width LED light bar, Audi lettering from reference.
-ENVIRONMENT: ${LOGO_REMINDER}
+ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
 
@@ -676,7 +689,7 @@ ENVIRONMENT: ${LOGO_REMINDER}
 <CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: VW CI - Front-Left 3/4 View
 FOCUS_ELEMENTS: Exact VW logo, IQ.Light LED headlight design from reference.
-ENVIRONMENT: ${LOGO_REMINDER}
+ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
@@ -688,7 +701,7 @@ ENVIRONMENT: ${LOGO_REMINDER}
 <CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: VW CI - Left Side Profile
 FOCUS_ELEMENTS: Exact body lines, wheel design from reference.
-ENVIRONMENT: ${LOGO_REMINDER}
+ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
@@ -700,7 +713,7 @@ ENVIRONMENT: ${LOGO_REMINDER}
 <CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: VW CI - Rear-Left 3/4 View
 FOCUS_ELEMENTS: Exact VW logo, taillight design, model lettering from reference.
-ENVIRONMENT: ${LOGO_REMINDER}
+ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
@@ -713,7 +726,7 @@ ENVIRONMENT: ${LOGO_REMINDER}
 SHOT_TYPE: VW CI - Direct Front View
 CAMERA_ANGLE: Centered.
 FOCUS_ELEMENTS: Exact VW badge and light signature from reference.
-ENVIRONMENT: ${LOGO_REMINDER}
+ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
 
@@ -727,7 +740,7 @@ ENVIRONMENT: ${LOGO_REMINDER}
 <CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Porsche CI - Front-Left 3/4 View
 FOCUS_ELEMENTS: Exact headlight design, front bumper air intakes, Porsche crest from reference.
-ENVIRONMENT: ${LOGO_REMINDER}
+ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
@@ -739,7 +752,7 @@ ENVIRONMENT: ${LOGO_REMINDER}
 <CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Porsche CI - Left Side Profile
 FOCUS_ELEMENTS: Exact sports car proportions, wheel design from reference.
-ENVIRONMENT: ${LOGO_REMINDER}
+ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
@@ -751,7 +764,7 @@ ENVIRONMENT: ${LOGO_REMINDER}
 <CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Porsche CI - Rear-Left 3/4 View
 FOCUS_ELEMENTS: Exact rear light bar, PORSCHE lettering, exhaust layout from reference.
-ENVIRONMENT: ${LOGO_REMINDER}
+ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
@@ -764,7 +777,7 @@ ENVIRONMENT: ${LOGO_REMINDER}
 SHOT_TYPE: Porsche CI - Low-Angle Front View
 CAMERA_ANGLE: Ground level looking up at front, emphasizing power and stance.
 FOCUS_ELEMENTS: Exact front design from reference.
-ENVIRONMENT: ${LOGO_REMINDER}
+ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
 
@@ -782,7 +795,7 @@ Volvo Corporate Identity: Minimalist high-tech Scandinavian showroom. Highly ref
 SHOT_TYPE: Volvo CI - 3/4 Front-Left View
 CAMERA_ANGLE: Front-left, looking at front-left quarter.
 FOCUS_ELEMENTS: Exact headlight DRL signatures ("Thor's Hammer"), front grille shape/mesh/texture, wheel spoke pattern, body contours from reference. Interior subtly visible through windows. License plates blank and body-colored.
-ENVIRONMENT: ${LOGO_REMINDER}
+ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
@@ -795,7 +808,7 @@ ENVIRONMENT: ${LOGO_REMINDER}
 SHOT_TYPE: Volvo CI - 3/4 Front-Right View
 CAMERA_ANGLE: Front-right, looking at front-right quarter. This is NOT a left-side view.
 FOCUS_ELEMENTS: Exact headlight DRL signatures, grille mesh, wheel design, body lines from reference. License plates blank.
-ENVIRONMENT: ${LOGO_REMINDER}
+ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
@@ -807,7 +820,7 @@ ENVIRONMENT: ${LOGO_REMINDER}
 <CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Volvo CI - 3/4 Rear-Left View
 FOCUS_ELEMENTS: Exact taillight internal structure, LED signatures, wheel design, body contours from reference.
-ENVIRONMENT: ${LOGO_REMINDER}
+ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
@@ -819,7 +832,7 @@ ENVIRONMENT: ${LOGO_REMINDER}
 <CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Volvo CI - 3/4 Rear-Right View
 FOCUS_ELEMENTS: Exact taillights, wheels, body contours from reference.
-ENVIRONMENT: ${LOGO_REMINDER}
+ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
@@ -832,7 +845,7 @@ ENVIRONMENT: ${LOGO_REMINDER}
 SHOT_TYPE: Volvo CI - Right Side Profile
 CAMERA_ANGLE: Flat, perpendicular to car body.
 FOCUS_ELEMENTS: Exact body lines, wheel design, window trim, proportions from reference.
-ENVIRONMENT: ${LOGO_REMINDER}
+ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
@@ -845,7 +858,7 @@ ENVIRONMENT: ${LOGO_REMINDER}
 SHOT_TYPE: Volvo CI - Direct Front View
 CAMERA_ANGLE: Perfectly centered.
 FOCUS_ELEMENTS: Exact headlight DRL "Thor's Hammer" design, grille mesh, Volvo Iron Mark badge from reference.
-ENVIRONMENT: ${LOGO_REMINDER}
+ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
@@ -858,7 +871,7 @@ ENVIRONMENT: ${LOGO_REMINDER}
 SHOT_TYPE: Volvo CI - Direct Rear View
 CAMERA_ANGLE: Perfectly centered.
 FOCUS_ELEMENTS: Exact taillight C-shaped LED signatures, VOLVO lettering, rear badges from reference.
-ENVIRONMENT: ${LOGO_REMINDER}
+ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
 
@@ -872,7 +885,7 @@ ${INTERIOR_RULES}
 <CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Volvo CI - Interior from Passenger Door
 CAMERA_ANGLE: From open passenger door looking toward dashboard, center console, steering wheel, driver seat.
-FOCUS_ELEMENTS: Exact leather grain, stitching, trim materials (open-pore wood, metal mesh, piano black), button layout, infotainment UI, instrument cluster, gear selector from reference. LHD configuration. Showroom visible through windows.
+FOCUS_ELEMENTS: Exact leather grain, stitching, trim materials (open-pore wood, metal mesh, piano black), button layout, infotainment UI, instrument cluster, gear selector from reference. LHD configuration. View through windows MUST show the Volvo CI showroom environment.
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
@@ -884,7 +897,7 @@ ${INTERIOR_RULES}
 <CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Volvo CI - Interior Center View
 CAMERA_ANGLE: Between front seats looking forward at dashboard and center console.
-FOCUS_ELEMENTS: Exact materials, button arrays, steering wheel controls, instrument cluster, pedals, gear selector from reference. LHD configuration. Showroom through windows.
+FOCUS_ELEMENTS: Exact materials, button arrays, steering wheel controls, instrument cluster, pedals, gear selector from reference. LHD configuration. View through windows MUST show the Volvo CI showroom environment.
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
@@ -896,7 +909,7 @@ ${INTERIOR_RULES}
 <CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Volvo CI - Rear Seats
 CAMERA_ANGLE: From open rear passenger door looking at rear seats, legroom, rear center console.
-FOCUS_ELEMENTS: Exact seat material, stitching, rear center console controls, rear air vents from reference. LHD. Showroom through windows.
+FOCUS_ELEMENTS: Exact seat material, stitching, rear center console controls, rear air vents from reference. LHD. View through windows MUST show the Volvo CI showroom environment.
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
@@ -918,7 +931,7 @@ ${INTERIOR_RULES}
 <CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Volvo CI - Steering Wheel Macro
 CAMERA_ANGLE: Tight macro of steering wheel, central horn pad, surrounding stalks. Complete wheel visible.
-FOCUS_ELEMENTS: Exact hub texture, button iconography (media, cruise, voice), paddle shifters if present, center Volvo Iron Mark from reference. LHD. Showroom through windshield.
+FOCUS_ELEMENTS: Exact hub texture, button iconography (media, cruise, voice), paddle shifters if present, center Volvo Iron Mark from reference. LHD. View through windshield MUST show the Volvo CI showroom.
 </CURRENT_PIPELINE_SHOT>`,
   },
 
@@ -966,6 +979,24 @@ export const PIPELINE_CATEGORIES = [
   { key: 'composite', labelDe: 'Grid / Composites' },
   { key: 'ci', labelDe: 'CI Hersteller-Guidelines' },
 ] as const;
+
+/**
+ * Replace the {{LOGO_LINE}} placeholder in a prompt based on whether logos are enabled.
+ * When no logos are selected, the placeholder becomes an explicit "no logo" instruction.
+ */
+export function injectLogoPlaceholder(prompt: string, hasLogo: boolean): string {
+  if (hasLogo) {
+    return prompt.replace(
+      /\{\{LOGO_LINE\}\}/g,
+      'The provided company logo MUST be integrated on the background wall. Reproduce it PIXEL-FOR-PIXEL with all original colors. IMMUTABLE ASSET.'
+    );
+  }
+  // Explicitly tell the AI NOT to add any logo when none is selected
+  return prompt.replace(
+    /\{\{LOGO_LINE\}\}/g,
+    'Do NOT add any logo, brand mark, or wall decoration to the background. The wall must remain clean and empty.'
+  );
+}
 
 /**
  * Detect the vehicle brand from the description and return matching CI job keys.
