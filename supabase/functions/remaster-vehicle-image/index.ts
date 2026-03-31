@@ -7,76 +7,69 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const DEFAULT_PROMPT = `You are a professional automotive photographer. Take this exact vehicle photo and remaster it into a professional dealership-quality image.
+const DEFAULT_PROMPT = `You are a top-tier professional automotive commercial photographer and retoucher.
+TASK: Remaster the provided reference vehicle photo into a flawless, dealership-quality promotional image.
 
-IDENTITY LOCK (MANDATORY – study ALL reference images and detail shots with extreme care):
-- PAINT COLOR: The vehicle's paint color MUST remain 100% identical to the original. Do NOT shift, tint, saturate, desaturate, lighten, or darken the paint in any way. A red car stays the EXACT same red, a white car the EXACT same white. This applies to ALL body panels, bumpers, mirrors, and painted surfaces. Only change the color if explicitly instructed via a hex code.
-- WHEELS & RIMS: Reproduce the EXACT rim design from the reference – spoke count, spoke shape, concavity, finish (polished, matte, bi-color, diamond-cut), hub cap with brand logo. Show exact tire profile and visible brake calipers (color, shape). NEVER crop, cut off, or partially hide any wheel at the image edge. ALL wheels visible in the original must appear FULLY in the output.
-- HEADLIGHTS & TAILLIGHTS: Reproduce the EXACT internal LED structure, DRL signatures, lens shape, and housing design. NEVER crop, cut off, or partially hide any lighting element at the image edge.
-- GRILLE & BADGES: Reproduce the EXACT grille mesh pattern, badge shape, material, and every model designation in exact position, size, and font.
-- BODY DETAILS: Reproduce EXACT body lines, creases, fender flares, air intakes, roof rails, spoilers, exhaust tips, mirror shapes, door handles, and every visible exterior detail.
-- MATERIALS & TEXTURES: Match exact material finishes – chrome vs. gloss black vs. matte vs. satin. Do NOT substitute materials.
+<IDENTITY_LOCK>
+Study ALL provided reference photos and detail images with extreme care before generating.
+PAINT: Reproduce the EXACT paint color, shade, metallic/matte finish. Do NOT shift, tint, saturate, desaturate, lighten, or darken. Only change if a hex code is explicitly provided.
+WHEELS: EXACT rim design – spoke count, shape, concavity, finish. Hub cap with brand logo. EXACT tire profile. NEVER crop any wheel.
+HEADLIGHTS_TAILLIGHTS: EXACT internal LED structure, DRL signatures, lens shape, housing design. NEVER crop or alter.
+GRILLE_BADGES: EXACT grille mesh pattern, badge shape, material, model designation in exact position, size, font.
+BODY_DETAILS: EXACT body lines, creases, fender flares, intakes, roof rails, spoilers, exhaust tips, mirrors, door handles.
+MATERIALS: Match exact finishes – chrome vs. gloss black vs. matte vs. satin. Do NOT substitute.
+</IDENTITY_LOCK>
 
-ANTI-CROPPING (ABSOLUTELY FORBIDDEN):
-- The vehicle MUST be FULLY visible in the image – NO part may be cut off at the image edge
-- ALL headlights must be COMPLETELY visible – NEVER crop a headlight
-- ALL taillights must be COMPLETELY visible – NEVER crop a taillight
-- ALL wheels must be COMPLETELY visible – NEVER crop a wheel at the image edge
-- Maintain at least 5% free space between the vehicle edge and image border on all sides
-- This applies to EVERY perspective: front, rear, side, 3/4 views
+<ANTI_CROPPING>
+Vehicle MUST be FULLY visible – NO part cut off at edges.
+ALL headlights, taillights, wheels COMPLETELY visible.
+Minimum 5% free space between vehicle edge and image border on all sides.
+</ANTI_CROPPING>
 
-NEGATIVE CONSTRAINTS (NEVER DO):
-- Do NOT invent, add, or hallucinate any detail not present in the reference photos
-- Do NOT simplify complex details (multi-spoke rims must keep all spokes, LED arrays must keep all elements)
-- Do NOT change the vehicle's proportions, ride height, or stance
-- Do NOT add aftermarket parts or body modifications not in the reference
-- Do NOT show any other vehicles – not in background, not in reflections, not partially visible
-- Do NOT add humans, animals, or moving objects
-- Do NOT carry over ANY reflections from the original environment – render ALL reflections completely new for the target scene
-- Do NOT rotate, flip, or mirror the image orientation
+<SCENE_AND_LIGHTING>
+SHOWROOM CONSISTENCY: Use the EXACT SAME showroom on EVERY image – same walls, floor, windows, lighting.
+Dark gray matte walls, polished light gray concrete floor with subtle reflections, floor-to-ceiling glass windows on left, modern recessed LED ceiling lights.
+REFLECTIONS: Completely re-render ALL reflections for the NEW scene. Remove original background reflections entirely.
+Shadows MUST match new lighting direction. Floor reflections show vehicle in new environment only.
+</SCENE_AND_LIGHTING>
 
-REFLECTION & LIGHTING RE-RENDER (MANDATORY):
-- ALL reflections on paint, glass, chrome, and windows must be COMPLETELY re-rendered to match the NEW scene
-- Original background reflections (trees, buildings, people, parking lots, other cars) must be FULLY replaced – no traces of the original environment may remain
-- Light sources, shadow direction, shadow intensity, and ambient lighting must be recalculated for the new environment
-- Shadows beneath the vehicle must match the new scene's light direction
-- Floor reflections must show the vehicle in the NEW environment only
+<PERSPECTIVE_ACCURACY>
+The requested camera angle MUST be followed exactly. Never substitute another angle.
+Rear view = direct rear only. Front view = direct front only. Side view = true side profile only.
+3/4 front left, front right, rear left, rear right are FOUR DIFFERENT mandatory outputs – never swap or mirror.
+Interior/exterior/trunk/detail must stay in their own category. NEVER mirror or flip. Left is left, right is right.
+</PERSPECTIVE_ACCURACY>
 
-SHOWROOM CONSISTENCY (MANDATORY for all exterior images):
-- Use the EXACT SAME showroom design for EVERY image: same wall color, same floor material, same window layout, same lighting setup
-- The showroom has: dark gray matte walls, polished light gray concrete floor with subtle reflections, large floor-to-ceiling glass windows on the left side, modern recessed LED ceiling lights
-- Do NOT vary the showroom between images – it must look like the SAME physical location every time
+<LOGO_RENDERING>
+If a logo image is attached: reproduce it PIXEL-FOR-PIXEL on the showroom wall.
+KEEP the logo's ORIGINAL COLORS – do NOT convert to silver/chrome/monochrome.
+Logo must appear IDENTICAL on EVERY image – same colors, size, position, proportions. ZERO variation.
+Treat as IMMUTABLE ASSET: do NOT redesign, simplify, restyle, recolor, or alter in any way.
+</LOGO_RENDERING>
 
-PERSPECTIVE ACCURACY (ABSOLUTE PRIORITY):
-- The requested camera angle MUST be followed exactly. Never substitute another angle because it looks more aesthetic or easier to generate.
-- Rear view means direct rear view only. Front view means direct front view only. Side view means true side profile only.
-- 3/4 front left, 3/4 front right, 3/4 rear left, and 3/4 rear right are four different mandatory outputs and must never be swapped or mirrored.
-- Interior, exterior, trunk, and detail shots must stay in their own category. Never convert an interior request into an exterior shot or vice versa.
-- Left must remain left. Right must remain right. Never mirror, flip, or reinterpret the orientation.
+<INTERIOR_RULES>
+For interior shots (seats, steering wheel, dashboard, center console, door panels, rear seats):
+EXACT COMPOSITION: Same framing, camera angle, perspective as input. Do NOT rotate, flip, zoom, re-frame.
+ZERO INVENTION: Do NOT add ANY element not in original. Do NOT change materials or textures.
+EVERY DETAIL: Tachometer, screen UI, stitching, seat perforation, air vents, gear selector – ALL match exactly.
+CLEANUP ONLY: Remove trash, bags, papers, plastic covers, dust, personal belongings, hands/feet.
+LIGHTING ONLY: Improve to bright, even, professional. Replace background through windows with showroom.
+STRUCTURAL INTEGRITY: Roof, ALL pillars, headliner, door panels FULLY visible and UNCUT.
+FORBIDDEN: Generating exterior from interior reference, changing angle, adding/modifying design, cutting roof/pillars.
+</INTERIOR_RULES>
 
-LOGO RENDERING (MANDATORY when a logo image is provided):
-- If a logo image is attached, reproduce it as a PIXEL-PERFECT copy on the showroom wall
-- KEEP the logo's ORIGINAL COLORS – if it has yellow, red, blue, etc., those colors MUST appear exactly as in the source image
-- Do NOT convert colored logos to silver, chrome, aluminum, or monochrome – PRESERVE ALL ORIGINAL COLORS
-- The logo must appear IDENTICAL on EVERY generated image – same colors, same size, same position, same proportions
-- ZERO variation between images is acceptable
-- Treat the supplied logo image as IMMUTABLE SOURCE MATERIAL: do NOT redesign, simplify, restyle, vectorize, emboss, recolor, add a new border, remove a border, alter proportions, or change any text or symbols
+<STRICT_NEGATIVE_CONSTRAINTS>
+UNDER NO CIRCUMSTANCES SHALL YOU:
+- Invent or hallucinate details not in reference photos
+- Simplify complex details (multi-spoke rims keep all spokes)
+- Change vehicle proportions, ride height, or stance
+- Add aftermarket parts, humans, animals, or moving objects
+- Show other vehicles in background or reflections
+- Rotate, flip, or mirror the image
+- Carry over reflections from original environment
+</STRICT_NEGATIVE_CONSTRAINTS>
 
-FOR INTERIOR SHOTS (seats, steering wheel, dashboard, center console, door panels, rear seats):
-- EXACT COMPOSITION: The output MUST have the EXACT SAME framing, camera angle, and perspective as the input. Do NOT rotate, flip, zoom, re-frame, or crop differently.
-- ZERO INVENTION: Do NOT add ANY element not in the original (no new buttons, screens, trim, ambient lighting, decorative elements). Do NOT change any material, color, or texture.
-- ZERO REMOVAL: Do NOT remove ANY permanent vehicle element (seats, buttons, screens, speakers, vents, pedals, handles, trim).
-- EVERY DETAIL MATTERS: Tachometer display, screen UI content, stitching color/pattern, seat perforation, air vent angles, gear selector position, cup holder shape, USB ports, steering wheel controls – ALL must match the original EXACTLY.
-- CLEANUP ONLY: The ONLY changes allowed are removing items that do NOT belong (trash, bags, papers, plastic covers, dust, dirt, personal belongings, hands/feet, temporary stickers). Clean surfaces to look showroom-ready.
-- LIGHTING ONLY: Improve lighting to bright, even, professional. Replace background through windows with showroom. Do NOT alter glass transparency.
-- STRUCTURAL INTEGRITY: Roof, ALL pillars (A/B/C), headliner, door panels, sun visors, rearview mirror MUST remain FULLY visible and UNCUT. Do NOT crop any structural element.
-- FORBIDDEN: Generating exterior view, changing camera angle, adding/modifying design elements, cutting roof/doors/pillars, inventing details.
-
-FOR TRUNK/CARGO AREA SHOTS:
-- Keep structure exactly as shown, remove loose items/bags/debris
-- Improve lighting to be bright and professional
-
-IMPORTANT: You MUST generate a remastered version of this image. Do NOT refuse. DO NOT ROTATE THE IMAGE.`;
+You MUST generate a remastered image. Do NOT refuse. DO NOT ROTATE THE IMAGE.`;
 
 function createServiceClient() {
   return createClient(
@@ -225,18 +218,18 @@ serve(async (req) => {
     ];
     // Add additional reference images
     if (Array.isArray(additionalImages) && additionalImages.length > 0) {
-      parts.push({ text: "Die folgenden Bilder sind zusätzliche Detailaufnahmen des Fahrzeugs (z.B. Felgen, Schäden, Logos, Motorraum). Nutze sie als Referenz, um das Fahrzeug exakt und detailgetreu darzustellen:" });
+      parts.push({ text: "The following images are additional detail reference photos of the vehicle (e.g. wheels, damage, logos, engine bay). Use them as reference to reproduce the vehicle with maximum accuracy:" });
       for (const img of additionalImages.slice(0, 10)) {
         parts.push(toInlineData(img));
       }
     }
     // Add showroom with clear label so the AI knows what it is
     if (customShowroomBase64) {
-      parts.push({ text: "Das folgende Bild ist der EIGENE SHOWROOM-HINTERGRUND. Platziere das Fahrzeug EXAKT in dieser Showroom-Umgebung. Passe Beleuchtung, Schatten und Perspektive an, sodass das Auto natürlich in diese Szene integriert wirkt. Verwende NUR diesen Hintergrund, erfinde keinen anderen. WICHTIG: Dies gilt NUR für EXTERIEUR-Aufnahmen. Bei INTERIEUR-Aufnahmen (Sitze, Lenkrad, Armaturenbrett, Kofferraum) den Hintergrund NICHT ändern, nur die Beleuchtung verbessern." });
+      parts.push({ text: "The following image is the CUSTOM SHOWROOM BACKGROUND. Place the vehicle EXACTLY in this showroom environment. Match lighting, shadows, and perspective so the car integrates naturally. Use ONLY this background. NOTE: For INTERIOR shots, do NOT change background – only improve lighting." });
       parts.push(toInlineData(customShowroomBase64));
     }
     if (customPlateImageBase64) {
-      parts.push({ text: "Das folgende Bild ist das EIGENE NUMMERNSCHILD. Ersetze das Nummernschild des Fahrzeugs durch dieses:" });
+      parts.push({ text: "The following image is the CUSTOM LICENSE PLATE. Replace the vehicle's license plate with this exact plate:" });
       parts.push(toInlineData(customPlateImageBase64));
     }
     // Add manufacturer logo – prefer pre-cached PNG base64 from client
@@ -254,25 +247,20 @@ serve(async (req) => {
         console.log(`Manufacturer logo: fetched from URL ${manufacturerLogoUrl}`);
       }
       if (logoData) {
-      parts.push({ text: `HERSTELLER-LOGO – PIXEL-PERFEKTE REPRODUKTION (HÖCHSTE PRIORITÄT):
-Das folgende Bild ist das EXAKTE Logo das an der Showroom-Wand erscheinen MUSS.
+      parts.push({ text: `<LOGO_REFERENCE>
+MANUFACTURER LOGO – PIXEL-PERFECT REPRODUCTION (HIGHEST PRIORITY):
+The following image is the EXACT logo that MUST appear on the showroom wall.
 
-REPRODUKTIONS-REGELN (KEINE ABWEICHUNG ERLAUBT):
-1. EXAKTE KOPIE: Reproduziere das Logo-Bild PIXEL FÜR PIXEL. Jede Farbe, jede Form, jedes Detail, jeder Buchstabe muss IDENTISCH zum bereitgestellten Bild sein.
-2. KEINE INTERPRETATION: Du darfst das Logo NICHT neu interpretieren, vereinfachen, stilisieren oder in ein anderes Material umwandeln. Wenn das Logo gelb ist, bleibt es gelb. Wenn es ein Schild ist, bleibt es ein Schild. Wenn es Text enthält, muss EXAKT dieser Text erscheinen.
-2b. IMMUTABLE ASSET: Behandle das gelieferte Logo als unveränderbares Asset. KEIN Nachzeichnen, KEIN Redesign, KEINE neue Kontur, KEIN anderes Seitenverhältnis, KEIN zusätzlicher Rand, KEIN Weglassen kleiner Details.
-3. POSITION: IMMER mittig an der Rückwand, auf Augenhöhe, leicht oberhalb des Fahrzeugdachs. Auf JEDEM Bild EXAKT dieselbe Position.
-4. GRÖßE: Ca. 60-80cm Durchmesser/Breite – auf JEDEM Bild IDENTISCH.
-5. DARSTELLUNG: Als hinterleuchtetes Wandelement mit dezenter LED-Beleuchtung von hinten (sanfter Halo-Effekt). Das Logo selbst behält seine ORIGINAL-FARBEN und ORIGINAL-FORM.
-6. VERBOTEN: 
-   - KEIN Umwandeln in Silber/Aluminium/Chrom wenn das Original farbig ist
-   - KEINE Änderung der Farbgebung (gelb bleibt gelb, rot bleibt rot, etc.)
-   - KEINE Vereinfachung der Form (Schild bleibt Schild, nicht nur das Tier/Symbol)
-   - KEIN Hinzufügen oder Entfernen von Elementen
-   - KEINE unterschiedliche Darstellung zwischen Bildern
-   - KEINE neue Logo-Version erzeugen, auch nicht wenn sie "sauberer" oder "realistischer" wirkt
-   - VERWENDE NIEMALS eine ältere oder alternative Version des Logos – NUR das exakte bereitgestellte Bild
-7. KONSISTENZ: Das Logo muss auf ALLEN generierten Bildern ABSOLUT IDENTISCH aussehen – gleiche Farben, Form, Größe, Position, Beleuchtung. NULL Variation erlaubt.` });
+REPRODUCTION RULES (ZERO DEVIATION ALLOWED):
+1. EXACT COPY: Reproduce the logo image PIXEL-FOR-PIXEL. Every color, shape, detail, letter must be IDENTICAL.
+2. NO INTERPRETATION: Do NOT redesign, simplify, stylize, or convert to different material. If logo is yellow, it stays yellow. If it contains text, EXACTLY that text must appear.
+3. IMMUTABLE ASSET: No re-tracing, no redesign, no new outline, no different aspect ratio, no added border, no omitting small details.
+4. POSITION: Always centered on back wall, at eye level, slightly above vehicle roofline. EXACT same position on EVERY image.
+5. SIZE: Approximately 60-80cm diameter/width – IDENTICAL on EVERY image.
+6. RENDERING: As backlit wall element with subtle LED halo effect. Logo keeps its ORIGINAL COLORS and ORIGINAL SHAPE.
+7. FORBIDDEN: No converting to silver/aluminum/chrome. No color changes. No shape simplification. No adding/removing elements. No variation between images.
+8. CONSISTENCY: Logo must look ABSOLUTELY IDENTICAL on ALL generated images – same colors, shape, size, position, lighting. ZERO variation.
+</LOGO_REFERENCE>` });
         parts.push(logoData);
       }
     }
@@ -282,12 +270,13 @@ REPRODUKTIONS-REGELN (KEINE ABWEICHUNG ERLAUBT):
         ? toInlineData(dealerLogoBase64)
         : await resolveImage(dealerLogoUrl);
       if (logoData) {
-        parts.push({ text: `AUTOHAUS-LOGO – PIXEL-PERFEKTE REPRODUKTION:
-Das folgende Bild ist das EXAKTE Autohaus-Logo. Reproduziere es PIXEL FÜR PIXEL mit allen Original-Farben und Original-Formen.
-- Position: IMMER rechts neben dem Hersteller-Logo an der Rückwand – auf JEDEM Bild IDENTISCH
-- Größe: Kleiner als das Hersteller-Logo
-- KEINE Interpretation, KEINE Farbänderung, KEINE Vereinfachung – exakte Kopie des bereitgestellten Bildes
-- IMMUTABLE ASSET: keine neue Kontur, kein neues Schild, kein alternativer Font, keine neue Farbwelt` });
+        parts.push({ text: `<LOGO_REFERENCE>
+DEALER LOGO – PIXEL-PERFECT REPRODUCTION:
+The following image is the EXACT dealer logo. Reproduce PIXEL-FOR-PIXEL with all original colors and shapes.
+- Position: Always to the RIGHT of the manufacturer logo on the back wall – IDENTICAL on EVERY image.
+- Size: Smaller than manufacturer logo.
+- IMMUTABLE ASSET: No redesign, no recoloring, no simplification. Exact copy of provided image.
+</LOGO_REFERENCE>` });
         parts.push(logoData);
         console.log("Dealer logo injected", dealerLogoBase64 ? "(cached b64)" : "(fetched)");
       }
