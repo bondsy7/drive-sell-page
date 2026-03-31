@@ -167,15 +167,19 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const referenceImages = cfg.originalImages.length > 0 ? cfg.originalImages : cfg.inputImages;
     const primaryReferenceIndex = inferPrimaryReferenceIndex(job, prompt, referenceImages.length);
     const primaryReference = referenceImages[primaryReferenceIndex] || referenceImages[0];
-    const supportingReferences = referenceImages
-      .filter((_, i) => i !== primaryReferenceIndex)
-      .concat(cfg.additionalImages);
+
+    // For detail jobs: put additional detail images FIRST in supporting references
+    // so the AI sees them as the primary detail source for identity matching
+    const isDetailJob = job?.category === 'detail';
+    const supportingReferences = isDetailJob && cfg.additionalImages.length > 0
+      ? [...cfg.additionalImages, ...referenceImages.filter((_, i) => i !== primaryReferenceIndex)]
+      : referenceImages.filter((_, i) => i !== primaryReferenceIndex).concat(cfg.additionalImages);
+
     const baseContext = buildMasterPrompt(cfg.remasterConfig, cfg.vehicleDescription);
     const taskLock = buildTaskOutputLock(job);
 
-    // Detect if this is an interior/detail job – prevents AI from generating exterior views
+    // Detect if this is an interior job – prevents AI from generating exterior views
     const isInteriorJob = job?.category === 'interior';
-    const isDetailJob = job?.category === 'detail';
 
     // Determine if logos are enabled
     const hasLogo = !!(cfg.remasterConfig.showManufacturerLogo || cfg.remasterConfig.showDealerLogo);

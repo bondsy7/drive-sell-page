@@ -342,10 +342,12 @@ RULES: Maintain exact interior layout from reference. View through windshield MU
     prompt: `${IDENTITY_LOCK}
 
 <CURRENT_PIPELINE_SHOT>
-SHOT_TYPE: Macro Detail - Front Headlight
-CAMERA_ANGLE: Extreme close-up, filling 60-70% of frame with headlight assembly.
-FOCUS_ELEMENTS: Pin-sharp focus on internal LED module arrangement, DRL signature pattern, projector lens shape, reflector geometry, housing material. Every LED strip, chrome accent, and lens texture must match reference.
-LIGHTING: High-contrast studio lighting revealing internal textures. Deeply blurred dark background.
+SHOT_TYPE: Detail - Front Headlight in Vehicle Context
+CAMERA_ANGLE: Close-up showing the headlight assembly WITH surrounding bodywork (fender, hood edge, bumper corner). The headlight fills 50-60% of the frame but the vehicle body MUST be visible around it.
+FOCUS_ELEMENTS: Pin-sharp focus on the EXACT internal LED module arrangement, DRL signature pattern, projector lens shape, reflector geometry, and housing design FROM THE PROVIDED REFERENCE PHOTOS. Every LED strip, chrome accent, and lens texture must EXACTLY match what is visible in the reference images.
+CRITICAL REFERENCE RULE: If detail reference photos are provided, use them as the AUTHORITATIVE source for the headlight's internal structure. The headlight design MUST be an exact reproduction – do NOT invent, simplify, or generalize any LED element, reflector shape, or DRL pattern. Count the exact number of LED modules, match their arrangement, and reproduce the exact lens geometry.
+FRAMING: The headlight MUST remain attached to the vehicle. Show the hood line, fender edge, and part of the front bumper. Do NOT isolate the headlight as a standalone object.
+LIGHTING: High-contrast studio lighting revealing internal textures and reflections. Showroom environment visible in background.
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
