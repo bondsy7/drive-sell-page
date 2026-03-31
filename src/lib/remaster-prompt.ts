@@ -163,11 +163,13 @@ MATERIALS: Match exact finishes – chrome vs. gloss black vs. matte vs. satin. 
 
   // ── VEHICLE SCALE LOCK ──
   if (!interior) {
+    const isCustomShowroom = config.scene === 'custom-showroom';
     parts.push(`<VEHICLE_SCALE_LOCK>
 The vehicle MUST occupy the SAME proportion of the image frame in EVERY generated image.
-For full-body exterior shots: vehicle should fill approximately 70-80% of the image width.
+For full-body exterior shots: vehicle should fill approximately 55-65% of the image width.
 The apparent SIZE of the vehicle must remain CONSISTENT across all perspectives – same car, same scale.
 Do NOT make the vehicle larger or smaller between different camera angles.
+${isCustomShowroom ? `CRITICAL SCALE RULE FOR CUSTOM SHOWROOM: The vehicle must look REALISTICALLY SIZED relative to the showroom architecture. Compare the vehicle height to door frames, windows, ceiling height, and wall elements visible in the showroom reference image. The car must NOT appear oversized or undersized for the space. It must look like a real car naturally parked in this real showroom.` : ''}
 </VEHICLE_SCALE_LOCK>`);
   }
 
