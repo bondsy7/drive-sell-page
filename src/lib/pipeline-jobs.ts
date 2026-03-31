@@ -326,9 +326,21 @@ ${INTERIOR_RULES}
 
 <CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Interior - Rear Seats from Front
-CAMERA_ANGLE: From front headrests looking backward at rear seats.
-FOCUS_ELEMENTS: Legroom, seat materials, rear center armrest, rear amenities.
-RULES: Do NOT rotate or change perspective direction. View through rear window MUST show the selected showroom/scene.
+CAMERA_ANGLE: From between the front headrests looking backward at the rear bench/seats. Slightly elevated perspective (as if turning around from the driver seat).
+FOCUS_ELEMENTS: Rear seat upholstery material and texture, legroom, rear center armrest, rear air vents, rear amenities, floor mats.
+
+<REMASTERING_QUALITY_RULES>
+- LIGHTING: Apply professional studio-quality interior lighting. Soft, even illumination that eliminates harsh shadows. Add subtle warm fill light to reveal seat textures, stitching patterns, and material quality. The rear cabin must look inviting and premium.
+- CLEANUP: Remove ALL clutter, personal items, dust, marks, fingerprints, and imperfections from seats, trim, and surfaces. Seats must look freshly cleaned and pristine. Floor area must be spotless.
+- SHADOWS: Add realistic soft shadows under the seats and in seat folds to create depth and three-dimensionality. Shadow direction must be consistent with the showroom lighting.
+- DETAILS: Enhance visibility of leather/fabric grain, stitching, embossing, and trim details. Make materials look their best while staying true to the original.
+</REMASTERING_QUALITY_RULES>
+
+<WINDOW_VIEW_RULE>
+CRITICAL: Any view through the rear window, side rear windows, or any glass MUST show the selected showroom environment – polished floor, showroom walls, ceiling lights. Do NOT show an outdoor scene, parking lot, or blank/dark area through the windows. The showroom must be visible as a realistic reflection/view through the glass, consistent with the showroom used in exterior shots.
+</WINDOW_VIEW_RULE>
+
+RULES: Do NOT rotate or change perspective direction. Do NOT crop – full rear cabin visible.
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
