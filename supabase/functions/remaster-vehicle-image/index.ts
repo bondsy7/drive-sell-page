@@ -270,12 +270,13 @@ REPRODUCTION RULES (ZERO DEVIATION ALLOWED):
         ? toInlineData(dealerLogoBase64)
         : await resolveImage(dealerLogoUrl);
       if (logoData) {
-        parts.push({ text: `AUTOHAUS-LOGO – PIXEL-PERFEKTE REPRODUKTION:
-Das folgende Bild ist das EXAKTE Autohaus-Logo. Reproduziere es PIXEL FÜR PIXEL mit allen Original-Farben und Original-Formen.
-- Position: IMMER rechts neben dem Hersteller-Logo an der Rückwand – auf JEDEM Bild IDENTISCH
-- Größe: Kleiner als das Hersteller-Logo
-- KEINE Interpretation, KEINE Farbänderung, KEINE Vereinfachung – exakte Kopie des bereitgestellten Bildes
-- IMMUTABLE ASSET: keine neue Kontur, kein neues Schild, kein alternativer Font, keine neue Farbwelt` });
+        parts.push({ text: `<LOGO_REFERENCE>
+DEALER LOGO – PIXEL-PERFECT REPRODUCTION:
+The following image is the EXACT dealer logo. Reproduce PIXEL-FOR-PIXEL with all original colors and shapes.
+- Position: Always to the RIGHT of the manufacturer logo on the back wall – IDENTICAL on EVERY image.
+- Size: Smaller than manufacturer logo.
+- IMMUTABLE ASSET: No redesign, no recoloring, no simplification. Exact copy of provided image.
+</LOGO_REFERENCE>` });
         parts.push(logoData);
         console.log("Dealer logo injected", dealerLogoBase64 ? "(cached b64)" : "(fetched)");
       }
