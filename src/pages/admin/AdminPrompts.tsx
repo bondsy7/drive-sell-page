@@ -4,8 +4,10 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Save, RotateCcw, Eye, EyeOff, ChevronDown, ChevronRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { PIPELINE_JOBS } from '@/lib/pipeline-jobs';
 
-// ─── ALL DEFAULT PROMPTS (extracted from every edge function) ───
+// ─── ALL DEFAULT PROMPTS (synced from edge functions + pipeline-jobs.ts) ───
+// Pipeline prompts are imported dynamically from PIPELINE_JOBS to stay in sync.
 
 const DEFAULT_PROMPTS: Record<string, string> = {
   // ── PDF & Analyse ──
@@ -150,45 +152,56 @@ ABSOLUTE REGELN:
 8. Antworte NUR mit JSON`,
 
   // ── Bild-Verarbeitung ──
-  image_remaster: `You are a professional automotive photographer. Take this exact vehicle photo and remaster it into a professional dealership-quality image.
+  image_remaster: `You are a top-tier professional automotive commercial photographer and retoucher.
+TASK: Remaster the provided reference vehicle photo into a flawless, dealership-quality promotional image.
 
-IDENTITY LOCK (MANDATORY):
-Study the provided vehicle photo and ALL detail reference images with extreme care before generating.
-- PAINT COLOR: The vehicle's paint color MUST remain 100% identical to the original. Do NOT shift, tint, saturate, desaturate, lighten, or darken. Only change if explicitly instructed via a hex code.
-- WHEELS & RIMS: Reproduce the EXACT rim design – spoke count, shape, concavity, finish. NEVER crop any wheel at image edges.
-- HEADLIGHTS & TAILLIGHTS: Reproduce EXACT internal LED structure, DRL signatures, lens shape. NEVER crop or alter lighting elements.
-- GRILLE & BADGES: Reproduce EXACT grille mesh pattern, badge shape, material, model designation in exact position, size, font.
-- BODY DETAILS: Reproduce EXACT body lines, creases, fender flares, air intakes, roof rails, spoilers, exhaust tips, mirrors, door handles.
-- MATERIALS & TEXTURES: Match exact finishes – chrome vs. gloss black vs. matte vs. satin.
+<IDENTITY_LOCK>
+Study ALL provided reference photos and detail images with extreme care before generating.
+PAINT: Reproduce the EXACT paint color, shade, metallic/matte finish. Do NOT shift, tint, saturate, desaturate, lighten, or darken. Only change if a hex code is explicitly provided.
+WHEELS: EXACT rim design – spoke count, shape, concavity, finish. Hub cap with brand logo. EXACT tire profile. NEVER crop any wheel.
+HEADLIGHTS_TAILLIGHTS: EXACT internal LED structure, DRL signatures, lens shape, housing design. NEVER crop or alter.
+GRILLE_BADGES: EXACT grille mesh pattern, badge shape, material, model designation in exact position, size, font.
+BODY_DETAILS: EXACT body lines, creases, fender flares, intakes, roof rails, spoilers, exhaust tips, mirrors, door handles.
+MATERIALS: Match exact finishes – chrome vs. gloss black vs. matte vs. satin. Do NOT substitute.
+</IDENTITY_LOCK>
 
-NEGATIVE CONSTRAINTS (NEVER DO):
-- Do NOT invent or hallucinate details not in reference photos
-- Do NOT simplify complex details (multi-spoke rims keep all spokes, LED arrays keep all elements)
-- Do NOT change proportions, ride height, or stance
-- Do NOT add aftermarket parts not in reference
-- Do NOT show other vehicles – not in background, not in reflections
-- Do NOT add humans, animals, or moving objects
-- Do NOT carry over reflections from original environment
-- Do NOT rotate, flip, or mirror the image
+<VEHICLE_SCALE_LOCK>
+The vehicle MUST occupy the SAME proportion of the image frame in EVERY generated image.
+For full-body exterior shots: vehicle should fill approximately 70-80% of the image width.
+The apparent SIZE must remain CONSISTENT across all perspectives.
+</VEHICLE_SCALE_LOCK>
 
-REFLECTION & LIGHTING RE-RENDER:
-- ALL reflections must be COMPLETELY re-rendered for the NEW scene
-- Original background reflections must be fully replaced
-- Shadows must match the new scene's light direction
+<ANTI_CROPPING>
+Vehicle MUST be FULLY visible – NO part cut off at edges.
+ALL headlights, taillights, wheels COMPLETELY visible.
+Minimum 5% free space between vehicle edge and image border on all sides.
+</ANTI_CROPPING>
 
-FOR EXTERIOR SHOTS:
-- Modern, bright showroom background with polished reflective floor
-- Full vehicle visible with no cropping at edges
+<SCENE_AND_LIGHTING>
+SHOWROOM CONSISTENCY: Use the EXACT SAME showroom on EVERY image – same walls, floor, windows, lighting.
+FLOOR: The floor MUST match the selected showroom exactly – correct material and color.
+REFLECTIONS: Completely re-render ALL reflections for the NEW scene. Remove original background reflections entirely.
+Shadows MUST match new lighting direction. Floor reflections show vehicle in new environment only.
+</SCENE_AND_LIGHTING>
 
-FOR INTERIOR SHOTS (seats, steering wheel, dashboard, center console, rear seats):
-- MANDATORY CLEANUP: Remove ALL non-vehicle items (trash, bags, papers, plastic covers, personal belongings) from BOTH front AND rear seats
-- Reproduce EXACT materials: leather grain, stitching, trim, button layouts, screen UI from reference
-- Do NOT rotate, flip, or change orientation
-- Only enhance lighting to be bright, even, professional
+<PERSPECTIVE_ACCURACY>
+The requested camera angle MUST be followed exactly. Never substitute another angle.
+Interior/exterior/trunk/detail must stay in their own category. NEVER mirror or flip. Left is left, right is right.
+</PERSPECTIVE_ACCURACY>
 
-FOR TRUNK/CARGO: Keep structure, remove loose items, improve lighting.
+<STRICT_NEGATIVE_CONSTRAINTS>
+UNDER NO CIRCUMSTANCES SHALL YOU:
+- Invent or hallucinate details not in reference photos
+- Simplify complex details (multi-spoke rims keep all spokes)
+- Change vehicle proportions, ride height, or stance
+- Add aftermarket parts, humans, animals, or moving objects
+- Show other vehicles in background or reflections
+- Rotate, flip, or mirror the image
+- Carry over reflections from original environment
+- Add ANY logo, brand mark, or wall decoration UNLESS a logo image is explicitly provided as a reference asset
+</STRICT_NEGATIVE_CONSTRAINTS>
 
-IMPORTANT: You MUST generate a remastered image. Do NOT refuse. DO NOT ROTATE.`,
+You MUST generate a remastered image. Do NOT refuse. DO NOT ROTATE THE IMAGE.`,
 
   image_generate: `(Kein System-Prompt — der Bildgenerator erhält den imagePrompt direkt aus der PDF-Analyse als User-Nachricht. Dieser Prompt wird im Feld "imagePrompt" des PDF-Analyse-Ergebnisses automatisch generiert.
 
@@ -325,79 +338,12 @@ Antworte immer auf Deutsch, knapp und hilfreich. Sei PROAKTIV.`,
   sales_response: `Du bist ein erfahrener KI-Verkaufsassistent für ein Autohaus. Hilf dem Verkäufer bei der Kundenkommunikation.`,
 
   // ── Pipeline Bildgenerierung ──
-  // NOTE: These defaults mirror src/lib/pipeline-jobs.ts but without the shared IDENTITY_LOCK block.
-  // The IDENTITY_LOCK is automatically prepended at runtime. Admin overrides replace the FULL prompt including the lock.
-  pipeline_MASTER_IMAGE: `Create a single photorealistic 8K image of the EXACT vehicle from the provided reference photos. PERSPECTIVE: Front-left 3/4 view at eye level. Camera at 30-40° left of center axis. Full vehicle visible. SCENE: PROVIDED SHOWROOM. Company Logo physically integrated on background wall with 3D properties. Do NOT modify car body color, rims, or accessories. Clean luxury studio lighting with realistic floor reflections. No humans.`,
-  pipeline_EXT_FRONT: `PERSPECTIVE: Direct head-on front view at eye level, perfectly centered. Grille, headlights, badge symmetrically framed. Full vehicle width visible. SCENE: PROVIDED SHOWROOM. Company Logo on wall. Realistic floor reflections. No humans.`,
-  pipeline_EXT_REAR: `PERSPECTIVE: Direct rear view at eye level, perfectly centered. Taillights, exhaust, rear badge, model designation visible and symmetrical. SCENE: PROVIDED SHOWROOM. Company Logo on wall. No humans.`,
-  pipeline_EXT_SIDE_LEFT: `PERSPECTIVE: Perfect left (driver) side profile, camera perpendicular (90°) to left flank. Both left wheels fully visible. SCENE: PROVIDED SHOWROOM. Company Logo on wall. No humans.`,
-  pipeline_EXT_SIDE_RIGHT: `PERSPECTIVE: Perfect right (passenger) side profile, camera perpendicular (90°) to right flank. Both right wheels fully visible. SCENE: PROVIDED SHOWROOM. Company Logo on wall. No humans.`,
-  pipeline_EXT_34_FRONT_RIGHT: `PERSPECTIVE: Front-right 3/4 view at eye level. Camera at 30-40° RIGHT of center axis. Right headlight, right fender, right front wheel prominently visible. NOT a left-side view. SCENE: PROVIDED SHOWROOM. Company Logo on wall. No humans.`,
-  pipeline_EXT_34_REAR_LEFT: `PERSPECTIVE: Rear-left 3/4 view at eye level. Camera behind and to the LEFT. Left taillight, left rear wheel prominent. SCENE: PROVIDED SHOWROOM. Company Logo on wall. Dramatic lighting. No humans.`,
-  pipeline_EXT_34_REAR_RIGHT: `PERSPECTIVE: Rear-right 3/4 view at eye level. Camera behind and to the RIGHT. Right taillight, right rear wheel prominent. SCENE: PROVIDED SHOWROOM. Company Logo on wall. No humans.`,
-  pipeline_EXT_LOW_ANGLE: `PERSPECTIVE: Low-angle hero shot from ground level (20-30cm above ground) looking up at front bumper and grille. Full bumper and wheels visible. SCENE: PROVIDED SHOWROOM. Company Logo on wall. Dramatic perspective. No humans.`,
-  pipeline_EXT_ELEVATED_FRONT: `PERSPECTIVE: Elevated front 3/4 view from 2-3m above. Looking down at hood, windshield, roof. SCENE: PROVIDED SHOWROOM. Company Logo on wall. No humans.`,
-  pipeline_INT_DASHBOARD: `PERSPECTIVE: Driver's seat looking at steering wheel and full dashboard. Steering wheel on correct side (LHD/RHD as in reference). Do NOT rotate or flip. Company Logo subtly visible through windshield. INTERIOR RULES: Remove all non-vehicle items. Reproduce exact materials, buttons, screens from reference. Bright professional lighting. No humans.`,
-  pipeline_INT_CENTER_CONSOLE: `PERSPECTIVE: Macro close-up of center console from above. Gear selector, controls, infotainment screen in sharp detail. Reproduce exact button layouts, screen UI, materials from reference. Professional interior lighting. No humans.`,
-  pipeline_INT_REAR_SEATS: `PERSPECTIVE: From front looking back at rear seats. Show legroom, seat materials, rear amenities. Do NOT rotate. INTERIOR RULES: Clean up both front and rear seats. Reproduce exact materials from reference. Professional lighting. No humans.`,
-  pipeline_INT_WIDE_CABIN: `PERSPECTIVE: Wide-angle from rear seat center looking forward. Full dashboard, both front seats, windshield visible. Company Logo visible through windshield. Reproduce exact interior details from reference. Professional lighting. No humans.`,
-  pipeline_DET_HEADLIGHT: `Macro close-up of front headlight (60-70% of frame). Reproduce EXACT internal LED modules, DRL signature, projector lens, reflector geometry, housing material from reference. High-contrast studio lighting. Blurred background. No humans.`,
-  pipeline_DET_TAILLIGHT: `Macro close-up of rear taillight (60-70% of frame). Reproduce EXACT LED elements, light signature, 3D internal structure, lens material from reference. High-contrast studio lighting. Blurred background. No humans.`,
-  pipeline_DET_WHEEL: `Ultra-sharp close-up of front wheel (60-70% of frame). Reproduce EXACT rim design – spoke count, shape, finish (polished/matte/bi-color/diamond-cut), center cap, tire profile, brake caliper from reference. High-contrast studio lighting. Blurred background. No humans.`,
-  pipeline_DET_GRILLE: `Close-up of front grille and central badge. Reproduce EXACT grille mesh pattern, chrome/black finish, badge shape and material, model designation lettering (exact font, size, position) from reference. High-contrast studio lighting. Blurred background. No humans.`,
-  pipeline_GRID_EXTERIOR_4: `Photorealistic 2×2 grid. Top-left: front-left 3/4. Top-right: left side profile. Bottom-left: rear-left 3/4. Bottom-right: direct rear. All same SHOWROOM, consistent lighting, thin white dividers. Full car in each cell. Company Logo on wall. No humans.`,
-  pipeline_GRID_HIGHLIGHTS_6: `Photorealistic 3×2 grid. Row 1: front-left 3/4 | left side | rear-left 3/4. Row 2: headlight macro | dashboard | wheel close-up. Same SHOWROOM, consistent lighting, thin white dividers. Company Logo. No humans.`,
-  pipeline_GRID_INTERIOR_4: `Photorealistic 2×2 interior grid. Top-left: dashboard from driver seat. Top-right: center console. Bottom-left: rear seats. Bottom-right: steering wheel. Consistent interior lighting. Thin white dividers. Do NOT rotate. No humans.`,
-  pipeline_GRID_SOCIAL_MEDIA: `Social media collage. Large hero (front-left 3/4, 60% left). 3 smaller right: side profile, dashboard, wheel detail. PROVIDED SHOWROOM. Company Logo watermark. Clean layout. No humans.`,
-
-  // ── CI Brand Pipelines ──
-  // BMW
-  pipeline_CI_BMW_34_FRONT: `BMW CI: Front-left 3/4 at eye level. Kidney grille and headlight design from reference exactly reproduced. Clean white/grey studio. Strong key light from front-left.`,
-  pipeline_CI_BMW_SIDE: `BMW CI: Direct left side profile, perpendicular. Both wheels fully visible with exact rim design from reference. BMW center caps. White/grey studio.`,
-  pipeline_CI_BMW_34_REAR: `BMW CI: Rear-left 3/4. Exact taillight design, BMW roundel, exhaust from reference. White/grey studio.`,
-  pipeline_CI_BMW_REAR: `BMW CI: Direct rear, centered. Exact full taillight width, exhaust, badge, model lettering from reference. White/grey studio.`,
-  pipeline_CI_BMW_GRILLE: `BMW CI detail: Kidney grille with headlights close-up. Exact grille slats, roundel badge, LED internals from reference. High-contrast studio.`,
-  pipeline_CI_BMW_INTERIOR: `BMW CI interior: Dashboard from driver seat. Exact iDrive/curved display, instrument cluster, steering wheel buttons, ambient lighting from reference. CLEANUP: Remove non-vehicle items. Professional lighting.`,
-  pipeline_CI_BMW_WHEEL: `BMW CI detail: Wheel and brake caliper. Exact rim spoke design, finish, BMW center cap, caliper color from reference. Studio lighting, blurred background.`,
-  // Mercedes
-  pipeline_CI_MERCEDES_34_FRONT: `Mercedes CI: Front-left 3/4. Exact star emblem, grille pattern (diamond/louvre/Panamericana), headlight internals from reference. Elegant studio, subtle gradient. Premium lighting.`,
-  pipeline_CI_MERCEDES_SIDE: `Mercedes CI: Left side profile. Full silhouette, chrome surrounds, exact wheel design from reference. Subtle gradient studio.`,
-  pipeline_CI_MERCEDES_34_REAR: `Mercedes CI: Rear-left 3/4. Exact LED light strip, star badge, exhaust, diffuser from reference. Elegant studio.`,
-  pipeline_CI_MERCEDES_FRONT: `Mercedes CI: Direct front, centered. Exact star and grille design from reference. Even studio lighting.`,
-  pipeline_CI_MERCEDES_MBUX: `Mercedes CI detail: MBUX/infotainment from driver seat. Exact screen layout, turbine vents, ambient lighting from reference. CLEANUP: Remove non-vehicle items.`,
-  pipeline_CI_MERCEDES_GRILLE: `Mercedes CI detail: Grille and star macro. Exact pattern, chrome, LED internals from reference. Studio lighting.`,
-  pipeline_CI_MERCEDES_WHEEL: `Mercedes CI detail: Wheel with exact AMG/standard rim, brake caliper, star center cap from reference. Studio lighting.`,
-  // Audi
-  pipeline_CI_AUDI_34_FRONT: `Audi CI: Front-left 3/4. Exact Singleframe grille, four rings, headlight internals (matrix LED, DRL) from reference. Bright clean studio.`,
-  pipeline_CI_AUDI_SIDE: `Audi CI: Left side profile. Exact body lines, wheel design from reference. Clean bright studio.`,
-  pipeline_CI_AUDI_34_REAR: `Audi CI: Rear-left 3/4. Exact LED light strip, four rings badge from reference. Clean studio.`,
-  pipeline_CI_AUDI_REAR: `Audi CI: Direct rear. Exact full-width LED bar, Audi lettering from reference. Bright studio.`,
-  // VW
-  pipeline_CI_VW_34_FRONT: `VW CI: Front-left 3/4. Exact VW logo, IQ.Light headlights from reference. Clean modern white studio.`,
-  pipeline_CI_VW_SIDE: `VW CI: Left side profile. Exact body lines and wheel design from reference. White studio.`,
-  pipeline_CI_VW_34_REAR: `VW CI: Rear-left 3/4. Exact VW logo, taillight design, model lettering from reference. White studio.`,
-  pipeline_CI_VW_FRONT: `VW CI: Direct front. Exact VW badge and light signature from reference. White studio.`,
-  // Porsche
-  pipeline_CI_PORSCHE_34_FRONT: `Porsche CI: Front-left 3/4. Exact headlight design, front intakes, Porsche crest from reference. Dark dramatic studio.`,
-  pipeline_CI_PORSCHE_SIDE: `Porsche CI: Left side profile. Exact proportions and wheel design from reference. Dark dramatic studio.`,
-  pipeline_CI_PORSCHE_34_REAR: `Porsche CI: Rear-left 3/4. Exact rear light bar, PORSCHE lettering, exhaust from reference. Dramatic lighting.`,
-  pipeline_CI_PORSCHE_LOW: `Porsche CI: Low-angle front. Camera at ground level. Exact front design from reference. Dark studio, dramatic key light.`,
-  // Volvo
-  pipeline_CI_VOLVO_34_FRONT_LEFT: `Volvo CI: 3/4 front-left. Minimalist high-tech showroom with dark polished resin floor, frosted glass panels with cool-white gradient. Exact headlight DRL (Thor's Hammer), grille, wheel design from reference. No humans. Premium magazine quality.`,
-  pipeline_CI_VOLVO_34_FRONT_RIGHT: `Volvo CI: 3/4 front-right. Camera at front-right (NOT left). Minimalist showroom, dark resin floor, frosted glass. Exact headlight, grille, wheels from reference. No color/rim modifications.`,
-  pipeline_CI_VOLVO_34_REAR_LEFT: `Volvo CI: 3/4 rear-left. Minimalist showroom. Exact taillight LED signatures, wheel design, body contours from reference.`,
-  pipeline_CI_VOLVO_34_REAR_RIGHT: `Volvo CI: 3/4 rear-right. Minimalist showroom. Exact taillights, wheels, body contours from reference.`,
-  pipeline_CI_VOLVO_SIDE: `Volvo CI: Flat right side profile. Minimalist showroom. Exact body lines, wheel design from reference.`,
-  pipeline_CI_VOLVO_FRONT: `Volvo CI: Flat front, centered. Minimalist showroom. Exact headlight DRL, grille, Iron Mark badge from reference.`,
-  pipeline_CI_VOLVO_REAR: `Volvo CI: Flat rear, centered. Minimalist showroom. Exact taillight C-shaped signatures, VOLVO lettering, badges from reference.`,
-  pipeline_CI_VOLVO_INT_PASSENGER: `Volvo CI interior: From passenger door toward dashboard. Showroom through windows. Exact leather grain, stitching, trim materials, button layouts, infotainment UI, gear selector from reference. CLEANUP required. LHD.`,
-  pipeline_CI_VOLVO_INT_CENTER: `Volvo CI interior: Between front seats looking forward. Exact materials, buttons, steering wheel controls, instrument cluster, gear selector from reference. CLEANUP required. LHD.`,
-  pipeline_CI_VOLVO_INT_REAR: `Volvo CI interior: From rear door toward rear seats. Exact seat material, stitching, rear console controls, air vents from reference. CLEANUP required. LHD.`,
-  pipeline_CI_VOLVO_INT_BOOT: `Volvo CI: Rear exterior with tailgate open. Showroom environment. Exact cargo floor texture, sidewalls, load lip, cargo hooks from reference. Surrounding panels and taillights matched.`,
-  pipeline_CI_VOLVO_INT_STEERING: `Volvo CI interior: Macro of steering wheel and stalks. Exact hub texture, button iconography (media, cruise, voice), paddle shifters, Volvo Iron Mark from reference. LHD.`,
-  pipeline_CI_VOLVO_DET_CLUSTER: `Volvo CI detail: Digital instrument cluster macro. Exact UI layout, gauges, info display, warning lights from reference. All text legible. LHD.`,
-  pipeline_CI_VOLVO_DET_SCREEN: `Volvo CI detail: Center infotainment screen macro. Exact screen orientation (portrait), bezel, UI layout, surrounding vents and buttons from reference. LHD.`,
-  pipeline_CI_VOLVO_DET_WHEEL: `Volvo CI detail: Wheel macro with fender. Minimalist showroom. Exact spoke pattern, concavity, center cap, finish, brake caliper, tire sidewall from reference. Paint color matched. Rim sharp, wheel well in shadow.`,
+  // These are auto-synced from PIPELINE_JOBS in pipeline-jobs.ts
+  // The IDENTITY_LOCK, INTERIOR_RULES, VEHICLE_SCALE_LOCK etc. are embedded in each prompt.
+  // {{LOGO_LINE}} placeholders are replaced at runtime based on user's logo selection.
+  ...Object.fromEntries(
+    PIPELINE_JOBS.map(job => [`pipeline_${job.key}`, job.prompt])
+  ),
 };
 
 // ─── PROMPT METADATA with categories ───
@@ -422,8 +368,8 @@ const PROMPT_META: Record<string, PromptMeta> = {
   },
   // Bild-Verarbeitung
   image_remaster: {
-    label: 'Bild-Remastering',
-    description: 'Prompt für professionelle Aufbereitung von Fahrzeugfotos (Standard-Prompt ohne Master-Prompt-Optionen)',
+    label: 'Bild-Remastering (Base-Prompt)',
+    description: 'Master-Prompt mit XML-Tags: IDENTITY_LOCK, VEHICLE_SCALE_LOCK, ANTI_CROPPING, SCENE, NEGATIVE_CONSTRAINTS. Perspektive + Logo werden dynamisch ergänzt.',
     model: 'gemini-2.5-flash (image)',
     edgeFunction: 'remaster-vehicle-image',
     category: 'Bild-Verarbeitung',
@@ -533,80 +479,43 @@ const PROMPT_META: Record<string, PromptMeta> = {
     edgeFunction: 'generate-sales-response',
     category: 'Sales & CRM',
   },
-  // Pipeline Bildgenerierung
-  pipeline_MASTER_IMAGE: { label: 'Master-Bild', description: 'Hero-Aufnahme: 3/4 vorne links im Showroom', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Hero' },
-  pipeline_EXT_FRONT: { label: 'Frontansicht', description: 'Direkte Frontansicht auf Augenhöhe', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Exterieur' },
-  pipeline_EXT_REAR: { label: 'Heckansicht', description: 'Direkte Heckansicht mit Rückleuchten', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Exterieur' },
-  pipeline_EXT_SIDE_LEFT: { label: 'Linke Seite', description: 'Seitenprofil links, senkrecht zur Karosserie', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Exterieur' },
-  pipeline_EXT_SIDE_RIGHT: { label: 'Rechte Seite', description: 'Seitenprofil rechts, senkrecht zur Karosserie', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Exterieur' },
-  pipeline_EXT_34_FRONT_RIGHT: { label: '3/4 Vorne Rechts', description: '3/4-Perspektive vorne rechts', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Exterieur' },
-  pipeline_EXT_34_REAR_LEFT: { label: '3/4 Hinten Links', description: '3/4-Perspektive hinten links, dramatische Beleuchtung', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Exterieur' },
-  pipeline_EXT_34_REAR_RIGHT: { label: '3/4 Hinten Rechts', description: '3/4-Perspektive hinten rechts', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Exterieur' },
-  pipeline_EXT_LOW_ANGLE: { label: 'Low-Angle Hero', description: 'Bodenperspektive von unten – kraftvoller Look', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Exterieur' },
-  pipeline_EXT_ELEVATED_FRONT: { label: 'Erhöhte Frontansicht', description: 'Vogelperspektive auf Motorhaube und Dach', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Exterieur' },
-  pipeline_INT_DASHBOARD: { label: 'Armaturenbrett', description: 'Fahrersitz-Perspektive auf Lenkrad und Cockpit', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Interieur' },
-  pipeline_INT_CENTER_CONSOLE: { label: 'Mittelkonsole', description: 'Nahaufnahme Mittelkonsole und Infotainment', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Interieur' },
-  pipeline_INT_REAR_SEATS: { label: 'Rücksitzbank', description: 'Blick von vorne auf die Rücksitze', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Interieur' },
-  pipeline_INT_WIDE_CABIN: { label: 'Kabinen-Übersicht', description: 'Weitwinkel-Aufnahme der gesamten Kabine', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Interieur' },
-  pipeline_DET_HEADLIGHT: { label: 'Scheinwerfer', description: 'Makro-Nahaufnahme des Frontscheinwerfers', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Details' },
-  pipeline_DET_TAILLIGHT: { label: 'Rücklicht', description: 'Makro-Nahaufnahme der Rücklicht-Signatur', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Details' },
-  pipeline_DET_WHEEL: { label: 'Felge', description: 'Ultra-scharfe Nahaufnahme der Felge mit Bremssattel', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Details' },
-  pipeline_DET_GRILLE: { label: 'Kühlergrill & Emblem', description: 'Nahaufnahme Kühlergrill und Markenemblem', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Details' },
-  pipeline_GRID_EXTERIOR_4: { label: 'Exterieur-Grid (4)', description: '2×2 Grid: 4 Außenansichten', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Composites' },
-  pipeline_GRID_HIGHLIGHTS_6: { label: 'Highlight-Grid (6)', description: '3×2 Grid: Außen + Detail-Mix', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Composites' },
-  pipeline_GRID_INTERIOR_4: { label: 'Interieur-Grid (4)', description: '2×2 Grid: 4 Innenansichten', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Composites' },
-  pipeline_GRID_SOCIAL_MEDIA: { label: 'Social-Media-Collage', description: 'Hero + 3 Detail-Bilder als Collage', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Composites' },
-  // CI Brand Pipelines (individual jobs)
-  // BMW
-  pipeline_CI_BMW_34_FRONT: { label: 'BMW CI – 3/4 Front', description: 'BMW CI: Front 3/4 mit Niere', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI BMW' },
-  pipeline_CI_BMW_SIDE: { label: 'BMW CI – Seite', description: 'BMW CI: Seitenprofil', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI BMW' },
-  pipeline_CI_BMW_34_REAR: { label: 'BMW CI – 3/4 Heck', description: 'BMW CI: Heck 3/4', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI BMW' },
-  pipeline_CI_BMW_REAR: { label: 'BMW CI – Heck', description: 'BMW CI: Direkte Heckansicht', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI BMW' },
-  pipeline_CI_BMW_GRILLE: { label: 'BMW CI – Grill/Scheinwerfer', description: 'BMW CI Detail: Niere + Scheinwerfer', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI BMW' },
-  pipeline_CI_BMW_INTERIOR: { label: 'BMW CI – Cockpit', description: 'BMW CI Detail: iDrive + Curved Display', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI BMW' },
-  pipeline_CI_BMW_WHEEL: { label: 'BMW CI – Felge', description: 'BMW CI Detail: Felge + M-Bremse', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI BMW' },
-  // Mercedes
-  pipeline_CI_MERCEDES_34_FRONT: { label: 'Mercedes CI – 3/4 Front', description: 'Mercedes CI: Front 3/4 mit Stern', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Mercedes' },
-  pipeline_CI_MERCEDES_SIDE: { label: 'Mercedes CI – Seite', description: 'Mercedes CI: Seitenprofil mit Chromleisten', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Mercedes' },
-  pipeline_CI_MERCEDES_34_REAR: { label: 'Mercedes CI – 3/4 Heck', description: 'Mercedes CI: Heck 3/4 mit Lichtband', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Mercedes' },
-  pipeline_CI_MERCEDES_FRONT: { label: 'Mercedes CI – Front', description: 'Mercedes CI: Direkte Front mit Stern', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Mercedes' },
-  pipeline_CI_MERCEDES_MBUX: { label: 'Mercedes CI – MBUX', description: 'Mercedes CI Detail: MBUX Hyperscreen', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Mercedes' },
-  pipeline_CI_MERCEDES_GRILLE: { label: 'Mercedes CI – Grill/Stern', description: 'Mercedes CI Detail: Grill + Stern Makro', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Mercedes' },
-  pipeline_CI_MERCEDES_WHEEL: { label: 'Mercedes CI – Felge', description: 'Mercedes CI Detail: AMG-Felge + Bremse', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Mercedes' },
-  // Audi
-  pipeline_CI_AUDI_34_FRONT: { label: 'Audi CI – 3/4 Front', description: 'Audi CI: Front 3/4 mit Singleframe-Grill', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Audi' },
-  pipeline_CI_AUDI_SIDE: { label: 'Audi CI – Seite', description: 'Audi CI: Seitenprofil mit Tornado-Linie', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Audi' },
-  pipeline_CI_AUDI_34_REAR: { label: 'Audi CI – 3/4 Heck', description: 'Audi CI: Heck 3/4 mit LED-Lichtband', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Audi' },
-  pipeline_CI_AUDI_REAR: { label: 'Audi CI – Heck', description: 'Audi CI: Heck mit LED-Lichtleiste und Schriftzug', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Audi' },
-  // VW
-  pipeline_CI_VW_34_FRONT: { label: 'VW CI – 3/4 Front', description: 'VW CI: Front 3/4 mit VW-Logo und IQ.Light', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI VW' },
-  pipeline_CI_VW_SIDE: { label: 'VW CI – Seite', description: 'VW CI: Seitenprofil mit klaren Linien', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI VW' },
-  pipeline_CI_VW_34_REAR: { label: 'VW CI – 3/4 Heck', description: 'VW CI: Heck 3/4 mit VW-Logo', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI VW' },
-  pipeline_CI_VW_FRONT: { label: 'VW CI – Front', description: 'VW CI: Direkte Front mit VW-Emblem', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI VW' },
-  // Porsche
-  pipeline_CI_PORSCHE_34_FRONT: { label: 'Porsche CI – 3/4 Front', description: 'Porsche CI: Front 3/4 mit Wappen', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Porsche' },
-  pipeline_CI_PORSCHE_SIDE: { label: 'Porsche CI – Seite', description: 'Porsche CI: Seitenprofil, Sportwagen', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Porsche' },
-  pipeline_CI_PORSCHE_34_REAR: { label: 'Porsche CI – 3/4 Heck', description: 'Porsche CI: Heck 3/4 mit Schriftzug', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Porsche' },
-  pipeline_CI_PORSCHE_LOW: { label: 'Porsche CI – Low-Angle', description: 'Porsche CI: Low-Angle Front, Power-Pose', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Porsche' },
-  // Volvo
-  pipeline_CI_VOLVO_34_FRONT_LEFT: { label: 'Volvo CI – 3/4 Front Links', description: 'Volvo CI: 3/4 Front links, High-Tech-Showroom', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
-  pipeline_CI_VOLVO_34_FRONT_RIGHT: { label: 'Volvo CI – 3/4 Front Rechts', description: 'Volvo CI: 3/4 Front rechts, Milchglas', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
-  pipeline_CI_VOLVO_34_REAR_LEFT: { label: 'Volvo CI – 3/4 Heck Links', description: 'Volvo CI: 3/4 Heck links mit LED-Signaturen', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
-  pipeline_CI_VOLVO_34_REAR_RIGHT: { label: 'Volvo CI – 3/4 Heck Rechts', description: 'Volvo CI: 3/4 Heck rechts', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
-  pipeline_CI_VOLVO_SIDE: { label: 'Volvo CI – Seite', description: 'Volvo CI: Seitenprofil Beifahrerseite', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
-  pipeline_CI_VOLVO_FRONT: { label: 'Volvo CI – Front', description: 'Volvo CI: Direkte Frontansicht', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
-  pipeline_CI_VOLVO_REAR: { label: 'Volvo CI – Heck', description: 'Volvo CI: Direkte Heckansicht', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
-  pipeline_CI_VOLVO_INT_PASSENGER: { label: 'Volvo CI – Innenraum Beifahrer', description: 'Volvo CI: Blick von Beifahrerseite auf Dashboard', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
-  pipeline_CI_VOLVO_INT_CENTER: { label: 'Volvo CI – Innenraum Mitte', description: 'Volvo CI: Blick zwischen Vordersitzen', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
-  pipeline_CI_VOLVO_INT_REAR: { label: 'Volvo CI – Rücksitze', description: 'Volvo CI: Rücksitzbank mit Beinfreiheit', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
-  pipeline_CI_VOLVO_INT_BOOT: { label: 'Volvo CI – Kofferraum', description: 'Volvo CI: Offener Kofferraum von hinten', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
-  pipeline_CI_VOLVO_INT_STEERING: { label: 'Volvo CI – Lenkrad', description: 'Volvo CI: Nahaufnahme Lenkrad und Bedienelemente', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
-  pipeline_CI_VOLVO_DET_CLUSTER: { label: 'Volvo CI – Instrumente', description: 'Volvo CI Detail: Digitales Kombiinstrument', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
-  pipeline_CI_VOLVO_DET_SCREEN: { label: 'Volvo CI – Infotainment', description: 'Volvo CI Detail: Zentrales Touchscreen-Display', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
-  pipeline_CI_VOLVO_DET_WHEEL: { label: 'Volvo CI – Felge', description: 'Volvo CI Detail: Felge, Bremse und Kotflügel', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
+  // Pipeline – auto-generated from PIPELINE_JOBS
+  ...Object.fromEntries(
+    PIPELINE_JOBS.map(job => {
+      const isInterior = job.category === 'interior';
+      const isCI = job.category === 'ci';
+      const isComposite = job.category === 'composite';
+      const isDetail = job.category === 'detail';
+
+      let catLabel = 'Pipeline – Hero';
+      if (job.category === 'exterior') catLabel = 'Pipeline – Exterieur';
+      else if (isInterior) catLabel = 'Pipeline – Interieur';
+      else if (isDetail) catLabel = 'Pipeline – Details';
+      else if (isComposite) catLabel = 'Pipeline – Composites';
+      else if (isCI && job.brand) {
+        const brandNames: Record<string, string> = {
+          bmw: 'BMW', mercedes: 'Mercedes', audi: 'Audi',
+          volkswagen: 'VW', porsche: 'Porsche', volvo: 'Volvo',
+        };
+        catLabel = `Pipeline – CI ${brandNames[job.brand] || job.brand}`;
+      }
+
+      return [`pipeline_${job.key}`, {
+        label: job.labelDe,
+        description: `XML-strukturierter Prompt mit IDENTITY_LOCK, VEHICLE_SCALE_LOCK, {{LOGO_LINE}} Platzhalter. Perspektive: ${job.label}`,
+        model: 'gemini / gpt-image',
+        edgeFunction: 'remaster-vehicle-image',
+        category: catLabel,
+      }];
+    })
+  ),
 };
 
-const CATEGORIES = [
+// Build categories dynamically from PROMPT_META
+const CATEGORIES = Array.from(new Set(Object.values(PROMPT_META).map(m => m.category)));
+
+// Stable ordering: non-pipeline first, then pipeline categories
+const CATEGORY_ORDER = [
   'PDF & Analyse',
   'Bild-Verarbeitung',
   'Video',
@@ -614,17 +523,10 @@ const CATEGORIES = [
   'Landing Page',
   'Banner',
   'Sales & CRM',
-  'Pipeline – Hero',
-  'Pipeline – Exterieur',
-  'Pipeline – Interieur',
-  'Pipeline – Details',
-  'Pipeline – Composites',
-  'Pipeline – CI BMW',
-  'Pipeline – CI Mercedes',
-  'Pipeline – CI Audi',
-  'Pipeline – CI VW',
-  'Pipeline – CI Porsche',
-  'Pipeline – CI Volvo',
+];
+const sortedCategories = [
+  ...CATEGORY_ORDER.filter(c => CATEGORIES.includes(c)),
+  ...CATEGORIES.filter(c => !CATEGORY_ORDER.includes(c)).sort(),
 ];
 
 const PROMPT_ORDER = Object.keys(PROMPT_META);
@@ -707,7 +609,10 @@ export default function AdminPrompts() {
         <div>
           <h1 className="font-display text-2xl font-bold text-foreground">Prompt-Verwaltung</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {PROMPT_ORDER.length} Prompts in {CATEGORIES.length} Kategorien · {overriddenCount} überschrieben
+            {PROMPT_ORDER.length} Prompts in {sortedCategories.length} Kategorien · {overriddenCount} überschrieben
+          </p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Pipeline-Prompts nutzen XML-Tags (IDENTITY_LOCK, VEHICLE_SCALE_LOCK, INTERIOR_RULES) und {'{{LOGO_LINE}}'} Platzhalter.
           </p>
         </div>
         <Button onClick={saveOverrides} disabled={saving} className="gap-1.5">
@@ -716,8 +621,9 @@ export default function AdminPrompts() {
       </div>
 
       <div className="space-y-6">
-        {CATEGORIES.map(category => {
+        {sortedCategories.map(category => {
           const prompts = PROMPT_ORDER.filter(k => PROMPT_META[k].category === category);
+          if (prompts.length === 0) return null;
           const catOverridden = prompts.filter(k => isOverridden(k)).length;
           const isCatCollapsed = collapsedCategories.has(category);
 
