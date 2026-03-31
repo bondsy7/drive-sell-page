@@ -67,21 +67,18 @@ const PERSPECTIVE_PROMPTS: Record<string, string> = {
 SHOT_TYPE: Exterior - Front 3/4 Hero View
 CAMERA_ANGLE: Eye-level, 30-45° left of center axis
 FRAMING: Front fascia and one full side visible. Both wheels on visible side fully in frame. Full vehicle with minimum 5% padding on all edges.
-ENVIRONMENT: The provided company logo MUST be visible on the background wall.
 </CURRENT_PERSPECTIVE>`,
 
   'side': `<CURRENT_PERSPECTIVE>
 SHOT_TYPE: Exterior - Perfect Side Profile
 CAMERA_ANGLE: Exactly perpendicular (90°) to the vehicle's left flank. Ground-to-waist-level horizon.
 FRAMING: Both wheels COMPLETELY visible and perfectly round (zero fisheye distortion). Entire silhouette from front bumper to rear bumper in frame.
-ENVIRONMENT: Logo placement on wall above roofline.
 </CURRENT_PERSPECTIVE>`,
 
   'rear': `<CURRENT_PERSPECTIVE>
 SHOT_TYPE: Exterior - Direct Rear View
 CAMERA_ANGLE: Eye-level, perfectly centered on rear axis.
 FRAMING: Both taillights, exhaust outlets, rear badge, and model designation symmetrically framed. Full vehicle width visible.
-ENVIRONMENT: The provided company logo MUST be visible on the background wall.
 </CURRENT_PERSPECTIVE>`,
 
   'interior-front': `<CURRENT_PERSPECTIVE>
@@ -89,7 +86,7 @@ SHOT_TYPE: Interior - Rear Seat POV Looking Forward
 CAMERA_ANGLE: From center of rear seat, looking at dashboard, steering wheel, and windshield.
 STRUCTURAL_INTEGRITY: Complete roof, ALL A/B pillars, headliner, and rearview mirror MUST be FULLY visible and UNCUT.
 FORBIDDEN: Do NOT crop roof. Do NOT shoot from above without roof. Do NOT generate an exterior view.
-WINDOW_VIEW: Showroom background with logo MUST be visible THROUGH the windshield.
+WINDOW_VIEW: The selected showroom/scene MUST be visible THROUGH the windshield – NOT a random outdoor scene.
 </CURRENT_PERSPECTIVE>`,
 
   'interior-rear': `<CURRENT_PERSPECTIVE>
@@ -97,7 +94,7 @@ SHOT_TYPE: Interior - Driver Seat POV Looking Backward
 CAMERA_ANGLE: From driver seat position, looking at rear seats, headrests, and rear bench.
 STRUCTURAL_INTEGRITY: Complete roof, ALL B/C pillars, headliner, and rear window MUST be FULLY visible and UNCUT.
 FORBIDDEN: Do NOT crop roof. Do NOT shoot from above without roof. Do NOT generate an exterior view.
-WINDOW_VIEW: Showroom background with logo MUST be visible THROUGH the rear window.
+WINDOW_VIEW: The selected showroom/scene MUST be visible THROUGH the rear window – NOT a random outdoor scene.
 </CURRENT_PERSPECTIVE>`,
 };
 
