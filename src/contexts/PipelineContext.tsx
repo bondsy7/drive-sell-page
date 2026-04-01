@@ -145,6 +145,13 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const cachedManufacturerLogoBase64Ref = useRef<string | null>(null);
   const cachedDealerLogoBase64Ref = useRef<string | null>(null);
 
+  // Cached Gemini File API URIs – uploaded ONCE, reused for all jobs (Phase 4)
+  const cachedFileUrisRef = useRef<{
+    mainImage: { uri: string; mimeType: string } | null;
+    references: { uri: string; mimeType: string }[];
+    showroom: { uri: string; mimeType: string } | null;
+  }>({ mainImage: null, references: [], showroom: null });
+
   // Helper to fetch a URL and convert to data URL (base64)
   const fetchUrlToBase64 = useCallback(async (url: string): Promise<string | null> => {
     try {
@@ -168,12 +175,37 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const primaryReferenceIndex = inferPrimaryReferenceIndex(job, prompt, referenceImages.length);
     const primaryReference = referenceImages[primaryReferenceIndex] || referenceImages[0];
 
-    // For detail jobs: put additional detail images FIRST in supporting references
-    // so the AI sees them as the primary detail source for identity matching
-    const isDetailJob = job?.category === 'detail';
-    const supportingReferences = isDetailJob && cfg.additionalImages.length > 0
-      ? [...cfg.additionalImages, ...referenceImages.filter((_, i) => i !== primaryReferenceIndex)]
-      : referenceImages.filter((_, i) => i !== primaryReferenceIndex).concat(cfg.additionalImages);
+    // ── Phase 3: Smart Image Routing ──
+    // Filter supporting references based on job category to reduce payload
+    const category = job?.category || 'exterior';
+    const otherReferences = referenceImages.filter((_, i) => i !== primaryReferenceIndex);
+
+    let supportingReferences: string[];
+    switch (category) {
+      case 'interior':
+        // Interior jobs: NO exterior reference images, NO detail images
+        // Only the primary interior reference is needed
+        supportingReferences = [];
+        break;
+      case 'detail':
+        // Detail jobs: Send ALL additional detail images (they are the authoritative source)
+        // Plus the primary reference for body context, but limit other refs
+        supportingReferences = [
+          ...cfg.additionalImages,
+          ...otherReferences.slice(0, 2), // max 2 body refs for context
+        ];
+        break;
+      case 'exterior':
+      case 'hero':
+      case 'composite':
+      case 'ci':
+      default:
+        // Exterior/hero: Send body references + showroom context, limit to max 5
+        supportingReferences = otherReferences.slice(0, 5);
+        break;
+    }
+
+    console.log(`[Pipeline] Job ${job?.key} (${category}): primary ref #${primaryReferenceIndex}, ${supportingReferences.length} supporting refs`);
 
     const promptOverrides = await fetchPromptOverrides();
     const isInteriorJob = job?.category === 'interior';
@@ -201,19 +233,38 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       ? (cachedDealerLogoBase64Ref.current || cfg.remasterConfig.dealerLogoBase64 || null)
       : null;
 
-    // For interior jobs: do NOT send the custom showroom image – it confuses the AI into generating exterior views
-    // The showroom should only be visible THROUGH the windows, described via text prompt
+    // For interior jobs: do NOT send the custom showroom image
     const showroomBase64ForRequest = isInteriorJob ? null : (cfg.remasterConfig.customShowroomBase64 || null);
+
+    // Phase 4: Use cached Gemini File URIs when available
+    const fileCache = cachedFileUrisRef.current;
+    const hasFileUris = !!(fileCache.mainImage || fileCache.references.length > 0);
+
+    // Build file URI arrays for this specific job based on smart routing
+    let additionalFileUris: { uri: string; mimeType: string }[] | undefined;
+    if (hasFileUris && fileCache.references.length > 0) {
+      // Map supporting references to their file URIs
+      // The file URIs correspond to ALL original references uploaded at pipeline start
+      const allRefs = cfg.originalImages.length > 0 ? cfg.originalImages : cfg.inputImages;
+      additionalFileUris = supportingReferences
+        .map(ref => {
+          const idx = allRefs.indexOf(ref);
+          return idx >= 0 && idx < fileCache.references.length ? fileCache.references[idx] : null;
+        })
+        .filter((fu): fu is { uri: string; mimeType: string } => fu !== null);
+    }
 
     const { data, error } = await invokeRemasterVehicleImage({
       imageBase64: primaryReference,
-      additionalImages: supportingReferences.length > 0 ? supportingReferences : undefined,
+      additionalImages: hasFileUris ? undefined : (supportingReferences.length > 0 ? supportingReferences : undefined),
+      additionalFileUris: additionalFileUris && additionalFileUris.length > 0 ? additionalFileUris : undefined,
+      mainImageFileUri: fileCache.mainImage || null,
       vehicleDescription: cfg.vehicleDescription,
       modelTier: cfg.modelTier,
       dynamicPrompt: fullPrompt,
-      customShowroomBase64: showroomBase64ForRequest,
+      customShowroomBase64: hasFileUris ? null : showroomBase64ForRequest,
+      customShowroomFileUri: !isInteriorJob ? fileCache.showroom : null,
       customPlateImageBase64: isInteriorJob ? null : (cfg.remasterConfig.customPlateImageBase64 || null),
-      // Only pass URL as fallback if base64 is not available
       dealerLogoUrl: dealerLogoBase64 ? null : (cfg.remasterConfig.showDealerLogo ? cfg.remasterConfig.dealerLogoUrl : null),
       dealerLogoBase64: dealerLogoBase64,
       manufacturerLogoUrl: manufacturerLogoBase64 ? null : (cfg.remasterConfig.showManufacturerLogo ? cfg.resolvedManufacturerLogoUrl : null),
@@ -295,6 +346,44 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const logoLen = cachedManufacturerLogoBase64Ref.current.length;
         const logoHash = logoLen.toString(36) + '_' + cachedManufacturerLogoBase64Ref.current.slice(-20);
         console.log(`[Pipeline] Logo fingerprint: ${logoHash} (${Math.round(logoLen / 1024)}KB) – this MUST be identical for all images`);
+      }
+
+      // ── Phase 4: Upload images to Gemini File API ONCE ──
+      // This avoids sending MB of base64 with every single job request
+      cachedFileUrisRef.current = { mainImage: null, references: [], showroom: null };
+      try {
+        const referenceImages = cfg.originalImages.length > 0 ? cfg.originalImages : cfg.inputImages;
+        const imagesToUpload: string[] = [...referenceImages];
+        
+        // Add showroom if present
+        const showroomB64 = cfg.remasterConfig.customShowroomBase64;
+        const showroomIdx = showroomB64 ? imagesToUpload.length : -1;
+        if (showroomB64) imagesToUpload.push(showroomB64);
+
+        if (imagesToUpload.length > 0) {
+          console.log(`[Pipeline] Uploading ${imagesToUpload.length} images to Gemini File API...`);
+          const { data: uploadData, error: uploadError } = await supabase.functions.invoke('upload-pipeline-images', {
+            body: { images: imagesToUpload },
+          });
+
+          if (!uploadError && uploadData?.fileUris?.length > 0) {
+            const fileUris = uploadData.fileUris as { uri: string; mimeType: string }[];
+            console.log(`[Pipeline] ✓ ${fileUris.length} images uploaded to File API`);
+
+            // Map file URIs back to their roles
+            if (fileUris.length > 0) {
+              cachedFileUrisRef.current.mainImage = fileUris[0]; // First reference = main image
+              cachedFileUrisRef.current.references = fileUris.slice(0, referenceImages.length);
+            }
+            if (showroomIdx >= 0 && fileUris[showroomIdx]) {
+              cachedFileUrisRef.current.showroom = fileUris[showroomIdx];
+            }
+          } else {
+            console.warn('[Pipeline] File API upload failed, falling back to inline_data:', uploadError);
+          }
+        }
+      } catch (e) {
+        console.warn('[Pipeline] File API upload error, falling back to inline_data:', e);
       }
 
       const allResults: { key: string; base64: string; label: string; subIndex: number }[] = [];

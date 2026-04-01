@@ -6,7 +6,12 @@ export interface RemasterInvokePayload {
   modelTier?: string;
   dynamicPrompt?: string;
   additionalImages?: string[];
+  /** Pre-uploaded Gemini File API URIs – used INSTEAD of additionalImages when available */
+  additionalFileUris?: { uri: string; mimeType: string }[];
+  /** Pre-uploaded main image file URI */
+  mainImageFileUri?: { uri: string; mimeType: string } | null;
   customShowroomBase64?: string | null;
+  customShowroomFileUri?: { uri: string; mimeType: string } | null;
   customPlateImageBase64?: string | null;
   dealerLogoUrl?: string | null;
   dealerLogoBase64?: string | null;

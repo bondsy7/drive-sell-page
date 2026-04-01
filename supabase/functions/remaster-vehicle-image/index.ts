@@ -140,7 +140,7 @@ serve(async (req) => {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const { imageBase64, additionalImages, vehicleDescription, modelTier, dynamicPrompt, customShowroomBase64, customPlateImageBase64, dealerLogoUrl, dealerLogoBase64, manufacturerLogoUrl, manufacturerLogoBase64 } = JSON.parse(bodyText);
+    const { imageBase64, additionalImages, additionalFileUris, mainImageFileUri, customShowroomFileUri, vehicleDescription, modelTier, dynamicPrompt, customShowroomBase64, customPlateImageBase64, dealerLogoUrl, dealerLogoBase64, manufacturerLogoUrl, manufacturerLogoBase64 } = JSON.parse(bodyText);
     
     // Read cost dynamically from admin_settings
     const REMASTER_DEFAULTS: Record<string, number> = { schnell: 2, qualitaet: 3, premium: 5, turbo: 4, ultra: 7 };
@@ -223,10 +223,24 @@ serve(async (req) => {
     // Build Gemini content parts
     const parts: any[] = [
       { text: prompt },
-      toInlineData(imageBase64),
     ];
-    // Add additional reference images
-    if (Array.isArray(additionalImages) && additionalImages.length > 0) {
+
+    // Main image: prefer file_data URI if available, otherwise inline_data
+    if (mainImageFileUri?.uri) {
+      parts.push({ file_data: { mime_type: mainImageFileUri.mimeType, file_uri: mainImageFileUri.uri } });
+      console.log(`[remaster] Main image via file_uri`);
+    } else {
+      parts.push(toInlineData(imageBase64));
+    }
+
+    // Additional reference images: prefer file URIs over base64
+    if (Array.isArray(additionalFileUris) && additionalFileUris.length > 0) {
+      parts.push({ text: "The following images are additional detail reference photos of the vehicle. Use them as reference to reproduce the vehicle with maximum accuracy:" });
+      for (const fu of additionalFileUris) {
+        parts.push({ file_data: { mime_type: fu.mimeType, file_uri: fu.uri } });
+      }
+      console.log(`[remaster] ${additionalFileUris.length} additional images via file_uri`);
+    } else if (Array.isArray(additionalImages) && additionalImages.length > 0) {
       parts.push({ text: "The following images are additional detail reference photos of the vehicle (e.g. wheels, damage, logos, engine bay). Use them as reference to reproduce the vehicle with maximum accuracy:" });
       for (const img of additionalImages.slice(0, 10)) {
         parts.push(toInlineData(img));
@@ -264,7 +278,17 @@ CAMERA PERSPECTIVE:
 
 NOTE: For INTERIOR vehicle shots, do NOT change the background – only improve interior lighting.
 </CUSTOM_SHOWROOM_INSTRUCTION>` });
-      parts.push(toInlineData(customShowroomBase64));
+      // Prefer file_uri if available
+      if (customShowroomFileUri?.uri) {
+        parts.push({ file_data: { mime_type: customShowroomFileUri.mimeType, file_uri: customShowroomFileUri.uri } });
+        console.log(`[remaster] Showroom via file_uri`);
+      } else {
+        parts.push(toInlineData(customShowroomBase64));
+      }
+    } else if (customShowroomFileUri?.uri) {
+      // Showroom provided as file_uri only (no base64)
+      parts.push({ text: `<CUSTOM_SHOWROOM_INSTRUCTION>The following is the CUSTOM SHOWROOM BACKGROUND. This is an IMMUTABLE ASSET. Place the vehicle naturally in this showroom.</CUSTOM_SHOWROOM_INSTRUCTION>` });
+      parts.push({ file_data: { mime_type: customShowroomFileUri.mimeType, file_uri: customShowroomFileUri.uri } });
     }
     if (customPlateImageBase64) {
       parts.push({ text: "CRITICAL – CUSTOM LICENSE PLATE IMAGE: The following image is the EXACT license plate you MUST use. Replace the vehicle's existing plate with this plate PIXEL-FOR-PIXEL. Reproduce every character, color, seal, EU badge, and spacing exactly. Do NOT invent or modify any element. This is an IMMUTABLE ASSET:" });

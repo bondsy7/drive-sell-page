@@ -16,6 +16,7 @@ import {
   type DynamicLogo,
 } from '@/lib/remaster-prompt';
 import { ensureCachedBase64, prewarmCache, ensureLogoCachedAsPng } from '@/lib/image-base64-cache';
+import { compressImageForAI, fileToBase64 } from '@/lib/image-compress';
 import VehicleBrandModelPicker from '@/components/VehicleBrandModelPicker';
 
 interface RemasterOptionsProps {
@@ -29,14 +30,7 @@ interface RemasterOptionsProps {
   brandDetectionStatus?: 'idle' | 'detecting' | 'found' | 'not-found';
 }
 
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
+// fileToBase64 imported from '@/lib/image-compress'
 
 const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, vehicleBrand, onBrandChange, onModelChange, vehicleModel, brandDetectionStatus = 'idle' }) => {
   const { user } = useAuth();
@@ -161,8 +155,8 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
   const handleManufacturerLogoUpload = async (file: File) => {
     if (!file.type.startsWith('image/')) { toast.error('Bitte ein Bild auswählen.'); return; }
     if (file.size > 5 * 1024 * 1024) { toast.error('Max. 5MB.'); return; }
-    const base64 = await fileToBase64(file);
-    update({ manufacturerLogoBase64: base64, manufacturerLogoUrl: base64 });
+    const base64 = await compressImageForAI(await fileToBase64(file), 512).catch(() => fileToBase64(file));
+    update({ manufacturerLogoBase64: base64 as string, manufacturerLogoUrl: base64 as string });
     toast.success('Hersteller-Logo hochgeladen.');
   };
 
@@ -172,7 +166,8 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
   const handleShowroomUpload = async (file: File) => {
     if (!file.type.startsWith('image/')) { toast.error('Bitte ein Bild auswählen.'); return; }
     if (file.size > 10 * 1024 * 1024) { toast.error('Max. 10MB.'); return; }
-    const base64 = await fileToBase64(file);
+    const raw = await fileToBase64(file);
+    const base64 = await compressImageForAI(raw, 1024).catch(() => raw);
     update({ customShowroomBase64: base64 });
 
     if (user) {
@@ -190,7 +185,8 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
 
   const handlePlateImageUpload = async (file: File) => {
     if (!file.type.startsWith('image/')) { toast.error('Bitte ein Bild auswählen.'); return; }
-    const base64 = await fileToBase64(file);
+    const raw = await fileToBase64(file);
+    const base64 = await compressImageForAI(raw, 800).catch(() => raw);
     update({ customPlateImageBase64: base64 });
   };
 
