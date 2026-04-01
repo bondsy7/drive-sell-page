@@ -518,6 +518,38 @@ const PROMPT_META: Record<string, PromptMeta> = {
       }];
     })
   ),
+  // ── Remaster Prompt-Bausteine ──
+  ...Object.fromEntries(
+    Object.values(REMASTER_PROMPT_BLOCKS).map(b => [b.key, {
+      label: b.label,
+      description: b.description,
+      model: 'gemini (image)',
+      edgeFunction: 'remaster-vehicle-image',
+      category: 'Remastering – Bausteine',
+    }])
+  ),
+  // ── Scene Descriptions ──
+  ...Object.fromEntries(
+    Object.entries(SCENE_PROMPT_DEFAULTS).map(([k, _v]) => {
+      const sceneLabels: Record<string, string> = {
+        'showroom-1': 'Showroom 1 – Modern Hell',
+        'showroom-2': 'Showroom 2 – Elegant',
+        'showroom-3': 'Showroom 3 – Glasfront',
+        'custom-showroom': 'Eigener Showroom',
+        'forest': 'Wald', 'mountain': 'Berglandschaft', 'city': 'Stadtkulisse',
+        'street': 'Straße', 'beach': 'Strand', 'desert': 'Wüste',
+        'night-city': 'Stadt bei Nacht', 'parking-garage': 'Tiefgarage / Parkhaus',
+        'racetrack': 'Rennstrecke', 'mansion': 'Villa / Anwesen',
+      };
+      return [`remaster_scene_${k}`, {
+        label: sceneLabels[k] || k,
+        description: `Szenen-Beschreibung für "${sceneLabels[k] || k}" – wird im ENVIRONMENT-Block des Prompts verwendet.`,
+        model: 'gemini (image)',
+        edgeFunction: 'remaster-vehicle-image',
+        category: 'Remastering – Szenen',
+      }];
+    })
+  ),
 };
 
 // Build categories dynamically from PROMPT_META
