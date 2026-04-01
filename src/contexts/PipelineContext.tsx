@@ -93,7 +93,7 @@ function buildTaskOutputLock(job: PipelineJob | undefined): string {
 - Do NOT invent any missing view information. Use the matching reference image and detail photos to reproduce exactly what was requested.`;
 }
 
-const CONCURRENCY = 4;
+const CONCURRENCY = 6;
 
 /* ─── Context ─── */
 const PipelineContext = createContext<PipelineContextValue | null>(null);
