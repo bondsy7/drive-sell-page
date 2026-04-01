@@ -348,6 +348,44 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         console.log(`[Pipeline] Logo fingerprint: ${logoHash} (${Math.round(logoLen / 1024)}KB) – this MUST be identical for all images`);
       }
 
+      // ── Phase 4: Upload images to Gemini File API ONCE ──
+      // This avoids sending MB of base64 with every single job request
+      cachedFileUrisRef.current = { mainImage: null, references: [], showroom: null };
+      try {
+        const referenceImages = cfg.originalImages.length > 0 ? cfg.originalImages : cfg.inputImages;
+        const imagesToUpload: string[] = [...referenceImages];
+        
+        // Add showroom if present
+        const showroomB64 = cfg.remasterConfig.customShowroomBase64;
+        const showroomIdx = showroomB64 ? imagesToUpload.length : -1;
+        if (showroomB64) imagesToUpload.push(showroomB64);
+
+        if (imagesToUpload.length > 0) {
+          console.log(`[Pipeline] Uploading ${imagesToUpload.length} images to Gemini File API...`);
+          const { data: uploadData, error: uploadError } = await supabase.functions.invoke('upload-pipeline-images', {
+            body: { images: imagesToUpload },
+          });
+
+          if (!uploadError && uploadData?.fileUris?.length > 0) {
+            const fileUris = uploadData.fileUris as { uri: string; mimeType: string }[];
+            console.log(`[Pipeline] ✓ ${fileUris.length} images uploaded to File API`);
+
+            // Map file URIs back to their roles
+            if (fileUris.length > 0) {
+              cachedFileUrisRef.current.mainImage = fileUris[0]; // First reference = main image
+              cachedFileUrisRef.current.references = fileUris.slice(0, referenceImages.length);
+            }
+            if (showroomIdx >= 0 && fileUris[showroomIdx]) {
+              cachedFileUrisRef.current.showroom = fileUris[showroomIdx];
+            }
+          } else {
+            console.warn('[Pipeline] File API upload failed, falling back to inline_data:', uploadError);
+          }
+        }
+      } catch (e) {
+        console.warn('[Pipeline] File API upload error, falling back to inline_data:', e);
+      }
+
       const allResults: { key: string; base64: string; label: string; subIndex: number }[] = [];
       const jobTimings: Record<string, { start: number; end?: number }> = {};
 
