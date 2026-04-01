@@ -153,53 +153,7 @@ ABSOLUTE REGELN:
 7. Fehlende Werte = leerer String "", fehlende booleans = false
 8. Antworte NUR mit JSON`,
 
-  // ── Bild-Verarbeitung ──
-
-WHEELS: EXACT rim design – spoke count, shape, concavity, finish. Hub cap with brand logo. EXACT tire profile. NEVER crop any wheel.
-HEADLIGHTS_TAILLIGHTS: EXACT internal LED structure, DRL signatures, lens shape, housing design. NEVER crop or alter.
-GRILLE_BADGES: EXACT grille mesh pattern, badge shape, material, model designation in exact position, size, font.
-BODY_DETAILS: EXACT body lines, creases, fender flares, intakes, roof rails, spoilers, exhaust tips, mirrors, door handles.
-MATERIALS: Match exact finishes – chrome vs. gloss black vs. matte vs. satin. Do NOT substitute.
-</IDENTITY_LOCK>
-
-<VEHICLE_SCALE_LOCK>
-The vehicle MUST occupy the SAME proportion of the image frame in EVERY generated image.
-For full-body exterior shots: vehicle should fill approximately 70-80% of the image width.
-The apparent SIZE must remain CONSISTENT across all perspectives.
-</VEHICLE_SCALE_LOCK>
-
-<ANTI_CROPPING>
-Vehicle MUST be FULLY visible – NO part cut off at edges.
-ALL headlights, taillights, wheels COMPLETELY visible.
-Minimum 5% free space between vehicle edge and image border on all sides.
-</ANTI_CROPPING>
-
-<SCENE_AND_LIGHTING>
-SHOWROOM CONSISTENCY: Use the EXACT SAME showroom on EVERY image – same walls, floor, windows, lighting.
-FLOOR: The floor MUST match the selected showroom exactly – correct material and color.
-REFLECTIONS: Completely re-render ALL reflections for the NEW scene. Remove original background reflections entirely.
-Shadows MUST match new lighting direction. Floor reflections show vehicle in new environment only.
-</SCENE_AND_LIGHTING>
-
-<PERSPECTIVE_ACCURACY>
-The requested camera angle MUST be followed exactly. Never substitute another angle.
-Interior/exterior/trunk/detail must stay in their own category. NEVER mirror or flip. Left is left, right is right.
-</PERSPECTIVE_ACCURACY>
-
-<STRICT_NEGATIVE_CONSTRAINTS>
-UNDER NO CIRCUMSTANCES SHALL YOU:
-- Invent or hallucinate details not in reference photos
-- Simplify complex details (multi-spoke rims keep all spokes)
-- Change vehicle proportions, ride height, or stance
-- Add aftermarket parts, humans, animals, or moving objects
-- Show other vehicles in background or reflections
-- Rotate, flip, or mirror the image
-- Carry over reflections from original environment
-- Add ANY logo, brand mark, or wall decoration UNLESS a logo image is explicitly provided as a reference asset
-</STRICT_NEGATIVE_CONSTRAINTS>
-
-You MUST generate a remastered image. Do NOT refuse. DO NOT ROTATE THE IMAGE.`,
-
+  // ── Bild-Verarbeitung (image_remaster removed – managed via modular blocks) ──
   image_generate: `(Kein System-Prompt — der Bildgenerator erhält den imagePrompt direkt aus der PDF-Analyse als User-Nachricht. Dieser Prompt wird im Feld "imagePrompt" des PDF-Analyse-Ergebnisses automatisch generiert.
 
 Der User-Prompt an das Modell lautet:
