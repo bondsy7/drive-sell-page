@@ -761,11 +761,11 @@ Format:    systemInstruction + contents (Gemini-natives Format)
 
 | Tier | Modell | Engine | Credits | EK/Bild (ca.) | Einsatz |
 |---|---|---|---|---|---|
-| `schnell` | `gemini-2.5-flash-image` | Gemini | 3 | ~$0.039 (~0,036 €) | Schnelle Vorschau, Prototyping |
-| `qualitaet` | `gemini-3.1-flash-image-preview` | Gemini | 5 | ~$0.045–0.067 (~0,042–0,062 €) | Standard-Qualität, Remastering |
-| `turbo` | `gemini-3.1-flash-image-preview` | Gemini | 6 | ~$0.045–0.067 (~0,042–0,062 €) | Schnell + gute Qualität |
-| `premium` | `gemini-3-pro-image-preview` | Gemini | 8 | ~$0.134 (~0,124 €) | Premium-Qualität |
-| `ultra` | `gpt-image-1` (HD, quality: high) | OpenAI | 10 | ~$0.08–0.17 (~0,08–0,16 €) | Höchste Qualität |
+| `schnell` | `gemini-2.5-flash-image` | Gemini | 2 | ~$0.039 (~0,036 €) | Schnelle Vorschau, Prototyping |
+| `qualitaet` | `gemini-3.1-flash-image-preview` | Gemini | 3 | ~$0.045–0.067 (~0,042–0,062 €) | Standard-Qualität, Remastering |
+| `turbo` | `gemini-3.1-flash-image-preview` | Gemini | 4 | ~$0.045–0.067 (~0,042–0,062 €) | Schnell + gute Qualität |
+| `premium` | `gemini-3-pro-image-preview` | Gemini | 5 | ~$0.134 (~0,124 €) | Premium-Qualität |
+| `ultra` | `gemini-3-pro-image-preview` | Gemini | 7 | ~$0.134 (~0,124 €) | Höchste Qualität |
 
 **Preisquellen (Stand März 2026):**
 - gemini-2.5-flash-image: $30/1M Output-Tokens, ~1.290 Tokens/Bild (1024px) → **$0.039/Bild**
