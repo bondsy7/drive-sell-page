@@ -2,10 +2,11 @@ import React, { createContext, useContext, useState, useRef, useCallback, useEff
 import { supabase } from '@/integrations/supabase/client';
 import { uploadImageToStorage, getGalleryFolderName } from '@/lib/storage-utils';
 import { toast } from 'sonner';
-import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
+import { invokeRemasterVehicleImage, uploadPipelineImages } from '@/lib/remaster-invoke';
 import { buildMasterPrompt, fetchPromptOverrides, type RemasterConfig } from '@/lib/remaster-prompt';
 import { type PipelineJob, injectLogoPlaceholder } from '@/lib/pipeline-jobs';
 import { ensureLogoCachedAsPng } from '@/lib/image-base64-cache';
+import { compressImagesForAI, compressImageForAI } from '@/lib/image-compress';
 
 /* ─── Types ─── */
 export type JobStatus = 'pending' | 'running' | 'done' | 'error';
@@ -42,6 +43,9 @@ export interface PipelineConfig {
   detectedBrand: string | null;
   totalImages: number;
 }
+
+/** Pre-uploaded Gemini File URIs for pipeline reuse */
+type FileUriMap = Record<string, { uri: string; mimeType: string }>;
 
 type PipelineStatus = 'idle' | 'running' | 'finished';
 
@@ -144,6 +148,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Cached logo base64 – fetched ONCE before pipeline starts to ensure consistency
   const cachedManufacturerLogoBase64Ref = useRef<string | null>(null);
   const cachedDealerLogoBase64Ref = useRef<string | null>(null);
+  // Pre-uploaded Gemini File URIs – populated once at pipeline start
+  const fileUriMapRef = useRef<FileUriMap>({});
 
   // Helper to fetch a URL and convert to data URL (base64)
   const fetchUrlToBase64 = useCallback(async (url: string): Promise<string | null> => {
@@ -168,15 +174,33 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const primaryReferenceIndex = inferPrimaryReferenceIndex(job, prompt, referenceImages.length);
     const primaryReference = referenceImages[primaryReferenceIndex] || referenceImages[0];
 
-    // For detail jobs: put additional detail images FIRST in supporting references
-    // so the AI sees them as the primary detail source for identity matching
-    const isDetailJob = job?.category === 'detail';
-    const supportingReferences = isDetailJob && cfg.additionalImages.length > 0
-      ? [...cfg.additionalImages, ...referenceImages.filter((_, i) => i !== primaryReferenceIndex)]
-      : referenceImages.filter((_, i) => i !== primaryReferenceIndex).concat(cfg.additionalImages);
+    // ── Phase 3: Smart Image Routing ──
+    // Filter additionalImages based on job category to avoid confusing the AI
+    const jobCategory = job?.category || 'exterior';
+    let filteredAdditional: string[];
+    
+    if (jobCategory === 'interior') {
+      // Interior jobs: don't send exterior detail photos (wheels, headlights etc.)
+      filteredAdditional = [];
+    } else if (jobCategory === 'detail') {
+      // Detail jobs: send ALL additional images – critical for identity matching
+      filteredAdditional = cfg.additionalImages;
+    } else if (jobCategory === 'composite') {
+      // Composite/grid: send limited references (max 3) for identity
+      filteredAdditional = cfg.additionalImages.slice(0, 3);
+    } else {
+      // Exterior, hero, ci: send up to 5 most relevant detail images
+      filteredAdditional = cfg.additionalImages.slice(0, 5);
+    }
+
+    // Build supporting references based on category
+    const isDetailJob = jobCategory === 'detail';
+    const supportingReferences = isDetailJob && filteredAdditional.length > 0
+      ? [...filteredAdditional, ...referenceImages.filter((_, i) => i !== primaryReferenceIndex)]
+      : referenceImages.filter((_, i) => i !== primaryReferenceIndex).concat(filteredAdditional);
 
     const promptOverrides = await fetchPromptOverrides();
-    const isInteriorJob = job?.category === 'interior';
+    const isInteriorJob = jobCategory === 'interior';
 
     // Pass interior slotKey so buildMasterPrompt includes INTERIOR_RULES only when needed
     const interiorSlotKey = isInteriorJob ? 'interior-front' : undefined;
@@ -190,7 +214,6 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const processedPrompt = injectLogoPlaceholder(prompt, hasLogo);
 
     // buildMasterPrompt already includes INTERIOR_RULES when interiorSlotKey is set
-    // No need for a separate interiorOverride – this was the source of triple redundancy
     const fullPrompt = `${baseContext}\n\n${taskLock}\n\n--- PERSPECTIVE INSTRUCTION ---\n${processedPrompt}`;
 
     // Always prefer cached base64 logos over URLs for consistency
@@ -201,9 +224,11 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       ? (cachedDealerLogoBase64Ref.current || cfg.remasterConfig.dealerLogoBase64 || null)
       : null;
 
-    // For interior jobs: do NOT send the custom showroom image – it confuses the AI into generating exterior views
-    // The showroom should only be visible THROUGH the windows, described via text prompt
+    // For interior jobs: do NOT send the custom showroom image
     const showroomBase64ForRequest = isInteriorJob ? null : (cfg.remasterConfig.customShowroomBase64 || null);
+
+    // Use pre-uploaded Gemini File URIs if available
+    const currentFileUris = Object.keys(fileUriMapRef.current).length > 0 ? fileUriMapRef.current : undefined;
 
     const { data, error } = await invokeRemasterVehicleImage({
       imageBase64: primaryReference,
@@ -213,11 +238,11 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       dynamicPrompt: fullPrompt,
       customShowroomBase64: showroomBase64ForRequest,
       customPlateImageBase64: isInteriorJob ? null : (cfg.remasterConfig.customPlateImageBase64 || null),
-      // Only pass URL as fallback if base64 is not available
       dealerLogoUrl: dealerLogoBase64 ? null : (cfg.remasterConfig.showDealerLogo ? cfg.remasterConfig.dealerLogoUrl : null),
       dealerLogoBase64: dealerLogoBase64,
       manufacturerLogoUrl: manufacturerLogoBase64 ? null : (cfg.remasterConfig.showManufacturerLogo ? cfg.resolvedManufacturerLogoUrl : null),
       manufacturerLogoBase64: manufacturerLogoBase64,
+      fileUris: currentFileUris,
     });
 
     if (error || !data?.imageBase64) {
@@ -248,13 +273,12 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // Run pipeline async (survives navigation since context is at App level)
     (async () => {
       // Pre-cache logos as base64 ONCE before any image generation
-      // This ensures the EXACT same logo binary is used for every single image
       cachedManufacturerLogoBase64Ref.current = null;
       cachedDealerLogoBase64Ref.current = null;
+      fileUriMapRef.current = {};
 
       const logoFetches: Promise<void>[] = [];
       if (cfg.remasterConfig.showManufacturerLogo) {
-        // Always use PNG conversion for manufacturer logos (best AI compatibility)
         const mLogoSrc = cfg.remasterConfig.manufacturerLogoBase64 || cfg.resolvedManufacturerLogoUrl || cfg.remasterConfig.manufacturerLogoUrl;
         if (mLogoSrc) {
           logoFetches.push(
@@ -283,18 +307,71 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               }
             }).catch(err => {
               console.warn('[Pipeline] Dealer logo PNG conversion failed (CORS?), will use URL fallback:', err);
-              // For external URLs that fail CORS, the edge function will fetch server-side
             })
           );
         }
       }
       if (logoFetches.length > 0) await Promise.all(logoFetches);
       
-      // Log logo fingerprint for consistency verification
       if (cachedManufacturerLogoBase64Ref.current) {
         const logoLen = cachedManufacturerLogoBase64Ref.current.length;
         const logoHash = logoLen.toString(36) + '_' + cachedManufacturerLogoBase64Ref.current.slice(-20);
-        console.log(`[Pipeline] Logo fingerprint: ${logoHash} (${Math.round(logoLen / 1024)}KB) – this MUST be identical for all images`);
+        console.log(`[Pipeline] Logo fingerprint: ${logoHash} (${Math.round(logoLen / 1024)}KB)`);
+      }
+
+      // ── Phase 2: Compress images before pipeline ──
+      console.log(`[Pipeline] Compressing reference images for AI (1024px max, WebP 80%)...`);
+      try {
+        const refImgs = cfg.originalImages.length > 0 ? cfg.originalImages : cfg.inputImages;
+        const compressedRefs = await compressImagesForAI(refImgs, 1024, 0.8);
+        if (cfg.originalImages.length > 0) {
+          cfg.originalImages = compressedRefs;
+        } else {
+          cfg.inputImages = compressedRefs;
+        }
+        if (cfg.additionalImages.length > 0) {
+          cfg.additionalImages = await compressImagesForAI(cfg.additionalImages, 1024, 0.8);
+        }
+        if (cfg.remasterConfig.customShowroomBase64) {
+          cfg.remasterConfig.customShowroomBase64 = await compressImageForAI(cfg.remasterConfig.customShowroomBase64, 1024, 0.8);
+        }
+        if (cfg.remasterConfig.customPlateImageBase64) {
+          cfg.remasterConfig.customPlateImageBase64 = await compressImageForAI(cfg.remasterConfig.customPlateImageBase64, 512, 0.9);
+        }
+        console.log(`[Pipeline] Image compression complete ✓`);
+      } catch (err) {
+        console.warn('[Pipeline] Image compression failed, using originals:', err);
+      }
+
+      // ── Phase 4: Pre-upload images to Gemini File API ──
+      if (cfg.selectedJobs.length > 1) {
+        try {
+          console.log(`[Pipeline] Pre-uploading images to Gemini File API...`);
+          const imagesToUpload: Array<{ key: string; base64: string }> = [];
+          
+          const refImgs2 = cfg.originalImages.length > 0 ? cfg.originalImages : cfg.inputImages;
+          if (refImgs2[0]) {
+            imagesToUpload.push({ key: 'main', base64: refImgs2[0] });
+          }
+          for (let i = 0; i < cfg.additionalImages.length; i++) {
+            imagesToUpload.push({ key: `additional_${i}`, base64: cfg.additionalImages[i] });
+          }
+          if (cfg.remasterConfig.customShowroomBase64) {
+            imagesToUpload.push({ key: 'showroom', base64: cfg.remasterConfig.customShowroomBase64 });
+          }
+          if (cfg.remasterConfig.customPlateImageBase64) {
+            imagesToUpload.push({ key: 'plate', base64: cfg.remasterConfig.customPlateImageBase64 });
+          }
+
+          if (imagesToUpload.length > 0) {
+            const uris = await uploadPipelineImages(imagesToUpload);
+            fileUriMapRef.current = uris;
+            console.log(`[Pipeline] Pre-upload complete: ${Object.keys(uris).length} files cached on Gemini ✓`);
+          }
+        } catch (err) {
+          console.warn('[Pipeline] Gemini File API pre-upload failed, falling back to inline_data:', err);
+          fileUriMapRef.current = {};
+        }
       }
 
       const allResults: { key: string; base64: string; label: string; subIndex: number }[] = [];

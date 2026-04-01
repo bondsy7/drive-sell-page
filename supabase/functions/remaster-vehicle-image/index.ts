@@ -140,7 +140,7 @@ serve(async (req) => {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const { imageBase64, additionalImages, vehicleDescription, modelTier, dynamicPrompt, customShowroomBase64, customPlateImageBase64, dealerLogoUrl, dealerLogoBase64, manufacturerLogoUrl, manufacturerLogoBase64 } = JSON.parse(bodyText);
+    const { imageBase64, additionalImages, vehicleDescription, modelTier, dynamicPrompt, customShowroomBase64, customPlateImageBase64, dealerLogoUrl, dealerLogoBase64, manufacturerLogoUrl, manufacturerLogoBase64, fileUris } = JSON.parse(bodyText);
     
     // Read cost dynamically from admin_settings
     const REMASTER_DEFAULTS: Record<string, number> = { schnell: 2, qualitaet: 3, premium: 5, turbo: 4, ultra: 7 };
@@ -169,7 +169,11 @@ serve(async (req) => {
 
     // 2. Use dynamic prompt if provided, otherwise fall back to default
     const prompt = dynamicPrompt || `${await getCustomPrompt("image_remaster", DEFAULT_PROMPT)}\n\n${vehicleDescription ? `Vehicle: ${vehicleDescription}` : ''}`;
-    console.log(`[remaster] Using ${dynamicPrompt ? 'DYNAMIC' : 'DEFAULT'} prompt (${prompt.length} chars), model: ${geminiModel}, tier: ${tier}`);
+    
+    // Check if we have pre-uploaded file URIs from Gemini File API
+    const hasFileUris = fileUris && typeof fileUris === 'object' && Object.keys(fileUris).length > 0;
+    console.log(`[remaster] Using ${dynamicPrompt ? 'DYNAMIC' : 'DEFAULT'} prompt (${prompt.length} chars), model: ${geminiModel}, tier: ${tier}, fileUris: ${hasFileUris ? Object.keys(fileUris).length : 0}`);
+    
     // Log key prompt sections for debugging
     const hasLicensePlate = prompt.includes('LICENSE_PLATE');
     const hasScene = prompt.includes('SCENE_AND_LIGHTING') || prompt.includes('CUSTOM_SHOWROOM');
@@ -184,6 +188,19 @@ serve(async (req) => {
       else if (dataUrl.startsWith("data:image/webp")) mime = "image/webp";
       else if (dataUrl.startsWith("data:image/svg")) mime = "image/png"; // SVG not supported, treat as PNG
       return { inlineData: { mimeType: mime, data: raw } };
+    }
+
+    /** Create a file_data part from a pre-uploaded Gemini File URI */
+    function toFileData(fileUri: { uri: string; mimeType: string }) {
+      return { file_data: { mime_type: fileUri.mimeType, file_uri: fileUri.uri } };
+    }
+
+    /** Get image part – prefer file_data if URI exists for this key, else inline_data */
+    function getImagePart(key: string, base64Fallback: string) {
+      if (hasFileUris && fileUris[key]) {
+        return toFileData(fileUris[key]);
+      }
+      return toInlineData(base64Fallback);
     }
 
     /** Clean base64: strip data URL prefix, remove whitespace, validate */
@@ -223,16 +240,17 @@ serve(async (req) => {
     // Build Gemini content parts
     const parts: any[] = [
       { text: prompt },
-      toInlineData(imageBase64),
+      getImagePart("main", imageBase64),
     ];
-    // Add additional reference images
+    // Add additional reference images – use file_data when available
     if (Array.isArray(additionalImages) && additionalImages.length > 0) {
       parts.push({ text: "The following images are additional detail reference photos of the vehicle (e.g. wheels, damage, logos, engine bay). Use them as reference to reproduce the vehicle with maximum accuracy:" });
-      for (const img of additionalImages.slice(0, 10)) {
-        parts.push(toInlineData(img));
+      for (let i = 0; i < Math.min(additionalImages.length, 10); i++) {
+        const key = `additional_${i}`;
+        parts.push(getImagePart(key, additionalImages[i]));
       }
     }
-    // Add showroom with clear label so the AI knows what it is
+    // Add showroom – prefer file_data if available
     if (customShowroomBase64) {
       parts.push({ text: `<CUSTOM_SHOWROOM_INSTRUCTION>
 The following image is the CUSTOM SHOWROOM BACKGROUND. This is an IMMUTABLE ASSET.
@@ -264,11 +282,11 @@ CAMERA PERSPECTIVE:
 
 NOTE: For INTERIOR vehicle shots, do NOT change the background – only improve interior lighting.
 </CUSTOM_SHOWROOM_INSTRUCTION>` });
-      parts.push(toInlineData(customShowroomBase64));
+      parts.push(getImagePart("showroom", customShowroomBase64));
     }
     if (customPlateImageBase64) {
       parts.push({ text: "CRITICAL – CUSTOM LICENSE PLATE IMAGE: The following image is the EXACT license plate you MUST use. Replace the vehicle's existing plate with this plate PIXEL-FOR-PIXEL. Reproduce every character, color, seal, EU badge, and spacing exactly. Do NOT invent or modify any element. This is an IMMUTABLE ASSET:" });
-      parts.push(toInlineData(customPlateImageBase64));
+      parts.push(getImagePart("plate", customPlateImageBase64));
     }
     // Add manufacturer logo – prefer pre-cached PNG base64 from client
     if (manufacturerLogoBase64 || manufacturerLogoUrl) {
