@@ -143,7 +143,8 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
     // Mark all as processing
     setImages(prev => prev.map(x => pending.some(p => p.id === x.id) ? { ...x, status: 'processing' } : x));
 
-    const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription);
+    const promptOverrides = await fetchPromptOverrides();
+    const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription, undefined, promptOverrides);
 
     const processImage = async (img: UploadedImage) => {
       try {
