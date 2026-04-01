@@ -1,16 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { ArrowLeft, Download, Image, Loader2, Plus, Minus, Sparkles, ScanSearch } from 'lucide-react';
+import { ArrowLeft, Download, Image, Loader2, Plus, Minus, Sparkles, ScanSearch, Building2, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import CreditConfirmDialog from '@/components/CreditConfirmDialog';
 import ModelSelector, { type ModelTier } from '@/components/ModelSelector';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useCredits } from '@/hooks/useCredits';
+import { useVehicleMakes } from '@/hooks/useVehicleMakes';
 import { toast } from 'sonner';
 
 // ─── Config ───
