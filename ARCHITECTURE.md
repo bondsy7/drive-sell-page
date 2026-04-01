@@ -234,7 +234,7 @@ src/
 │   ├── LandingPagePreview.tsx      # Vorschau-Rendering
 │   │
 │   ├── # Banner & Video
-│   ├── BannerGenerator.tsx         # Banner-Erstellung mit Prompt-Builder
+│   ├── BannerGenerator.tsx         # Banner-Erstellung mit Multi-Format-Generierung + Lightbox
 │   ├── VideoGenerator.tsx          # Video-Erstellung via Veo API
 │   │
 │   ├── # Sales Assistant
