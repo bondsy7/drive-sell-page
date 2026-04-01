@@ -362,11 +362,21 @@ CRITICAL RULES:
 - The banner must be photorealistic with the vehicle photo seamlessly composited
 - ALL text must be rendered EXACTLY as specified – no paraphrasing, no spelling changes
 - Text must be perfectly legible against the background
-- Use the accent color ${accentColor} for design elements, buttons, and highlights
+
+ACCENT COLOR INTEGRATION (${accentColor}):
+The accent color ${accentColor} is the KEY DESIGN ELEMENT that defines the banner's identity. Integrate it deeply:
+- Use it for CTA buttons, price tags, and highlighted text backgrounds
+- Add a subtle colored LIGHT BEAM, LENS FLARE, or GLOW in the accent color washing across the scene
+- Apply accent-colored REFLECTIONS or HIGHLIGHTS on the vehicle's paint, chrome, and glass surfaces
+- Use the accent color for decorative DESIGN ELEMENTS: geometric shapes, lines, gradients, borders, or overlays
+- The accent color should create a cohesive COLOR THEME throughout the entire banner
+- Background elements, shadows, and atmospheric effects should subtly echo the accent hue
+- Consider accent-colored PARTICLES, BOKEH, or LIGHT STREAKS for added visual drama
 ${showLogo && logoBase64 ? '- The provided logo MUST appear in the banner exactly as given' : '- Do NOT add watermarks or extra logos'}
 - The composition must work at the specified ${fmt.ratio} aspect ratio
+${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` : ''}
 - Generate the image – never refuse`;
-  }, [occasion, scene, style, priceDisplay, vehicleTitle, priceText, headline, subline, ctaText, accentColor, legalText, headlineFont, sublineFont, showLogo, logoBase64]);
+  }, [occasion, scene, style, priceDisplay, vehicleTitle, priceText, headline, subline, ctaText, accentColor, legalText, headlineFont, sublineFont, showLogo, logoBase64, freePrompt]);
 
   // Generate a single banner for a given format
   const generateForFormat = useCallback(async (formatId: string): Promise<BannerResult | null> => {
