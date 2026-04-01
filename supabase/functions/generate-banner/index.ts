@@ -77,7 +77,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { prompt, imageBase64, modelTier, width, height } = await req.json();
+    const { prompt, imageBase64, logoBase64, modelTier, width, height } = await req.json();
     if (!prompt) throw new Error("No prompt provided");
 
     const config = MODEL_MAP[modelTier] || MODEL_MAP["premium"];
