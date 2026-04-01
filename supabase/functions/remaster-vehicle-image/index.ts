@@ -250,7 +250,7 @@ serve(async (req) => {
         parts.push(getImagePart(key, additionalImages[i]));
       }
     }
-    // Add showroom with clear label so the AI knows what it is
+    // Add showroom – prefer file_data if available
     if (customShowroomBase64) {
       parts.push({ text: `<CUSTOM_SHOWROOM_INSTRUCTION>
 The following image is the CUSTOM SHOWROOM BACKGROUND. This is an IMMUTABLE ASSET.
@@ -282,7 +282,7 @@ CAMERA PERSPECTIVE:
 
 NOTE: For INTERIOR vehicle shots, do NOT change the background – only improve interior lighting.
 </CUSTOM_SHOWROOM_INSTRUCTION>` });
-      parts.push(toInlineData(customShowroomBase64));
+      parts.push(getImagePart("showroom", customShowroomBase64));
     }
     if (customPlateImageBase64) {
       parts.push({ text: "CRITICAL – CUSTOM LICENSE PLATE IMAGE: The following image is the EXACT license plate you MUST use. Replace the vehicle's existing plate with this plate PIXEL-FOR-PIXEL. Reproduce every character, color, seal, EU badge, and spacing exactly. Do NOT invent or modify any element. This is an IMMUTABLE ASSET:" });
