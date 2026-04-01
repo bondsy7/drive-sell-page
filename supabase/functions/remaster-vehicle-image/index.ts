@@ -10,6 +10,11 @@ const corsHeaders = {
 const DEFAULT_PROMPT = `You are a top-tier professional automotive commercial photographer and retoucher.
 TASK: Remaster the provided reference vehicle photo into a flawless, dealership-quality promotional image.
 
+<OUTPUT_FORMAT>
+ASPECT RATIO: The output image MUST be in 4:3 (landscape) format. Width-to-height ratio = 4:3 exactly.
+This applies to EVERY generated image without exception.
+</OUTPUT_FORMAT>
+
 <IDENTITY_LOCK>
 Study ALL provided reference photos and detail images with extreme care before generating.
 PAINT: Reproduce the EXACT paint color, shade, metallic/matte finish. Do NOT shift, tint, saturate, desaturate, lighten, or darken. Only change if a hex code is explicitly provided.
@@ -22,8 +27,8 @@ MATERIALS: Match exact finishes – chrome vs. gloss black vs. matte vs. satin. 
 
 <VEHICLE_SCALE_LOCK>
 ABSOLUTE POSITIONING AND SCALE RULES – ZERO DEVIATION BETWEEN IMAGES:
-1. CONSISTENT SIZE: The vehicle MUST occupy EXACTLY 55-65% of the image WIDTH in EVERY full-body exterior shot. NOT more, NOT less. This creates natural breathing room within the showroom.
-2. VERTICAL CENTER: The vehicle's vertical center (wheel-to-roof midpoint) MUST be at approximately 55% from the top of the image (slightly below center).
+1. CONSISTENT SIZE: The vehicle MUST occupy EXACTLY 55-65% of the image WIDTH in EVERY full-body exterior shot. NOT more, NOT less.
+2. VERTICAL CENTER: The vehicle's vertical center (wheel-to-roof midpoint) MUST be at approximately 55% from the top of the image.
 3. HORIZONTAL CENTER: The vehicle's center of mass MUST be horizontally centered in the image (50% ± 5%) for symmetric views. For 3/4 views, shift up to 10% toward the camera side.
 4. GROUND PLANE: ALL four wheels MUST sit on the SAME ground plane. The floor line MUST be at approximately 75-80% from the top of the image.
 5. NO VARIATION: The vehicle must appear the EXACT same physical size across ALL perspectives.
@@ -42,7 +47,8 @@ SHOWROOM CONSISTENCY: Use the EXACT SAME showroom on EVERY image – same walls,
 Dark gray matte walls, polished light gray concrete floor with subtle reflections, floor-to-ceiling glass windows on left, modern recessed LED ceiling lights.
 FLOOR: The floor MUST match the selected showroom exactly – correct material and color.
 REFLECTIONS: Completely re-render ALL reflections for the NEW scene. Remove original background reflections entirely.
-Shadows MUST match new lighting direction. Floor reflections show vehicle in new environment only.
+LIGHTING: The vehicle paint, chrome, and glass MUST be lit by the showroom's light sources. Shadows MUST match lighting direction.
+SHADOWS: Generate realistic ground shadows and ambient occlusion. Tires MUST make contact with floor. NO floating.
 </SCENE_AND_LIGHTING>
 
 <PERSPECTIVE_ACCURACY>
