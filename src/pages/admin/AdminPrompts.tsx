@@ -155,8 +155,8 @@ ABSOLUTE REGELN:
 
   // ── Bild-Verarbeitung ──
   // image_remaster entry removed – all remaster prompts are managed via modular blocks (Remastering – Bausteine)
-<IDENTITY_LOCK>
-Study ALL provided reference photos and detail images with extreme care before generating.
+
+
 PAINT: Reproduce the EXACT paint color, shade, metallic/matte finish. Do NOT shift, tint, saturate, desaturate, lighten, or darken. Only change if a hex code is explicitly provided.
 WHEELS: EXACT rim design – spoke count, shape, concavity, finish. Hub cap with brand logo. EXACT tire profile. NEVER crop any wheel.
 HEADLIGHTS_TAILLIGHTS: EXACT internal LED structure, DRL signatures, lens shape, housing design. NEVER crop or alter.
