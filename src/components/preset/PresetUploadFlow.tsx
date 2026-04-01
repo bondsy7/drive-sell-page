@@ -81,7 +81,7 @@ const PresetUploadFlow: React.FC<PresetUploadFlowProps> = ({ onComplete, onBack 
       if (!file.type.startsWith('image/')) { toast.error(`${file.name} ist kein Bild.`); continue; }
       if (file.size > MAX_SIZE_MB * 1024 * 1024) { toast.error(`${file.name} ist zu groß (max ${MAX_SIZE_MB}MB).`); continue; }
       const rawBase64 = await fileToBase64(file);
-      const base64 = await compressImage(rawBase64).catch(() => rawBase64);
+      const base64 = await compressImageForAI(rawBase64).catch(() => rawBase64);
       newImages.push({ id: crypto.randomUUID(), originalBase64: base64, remasteredBase64: null, status: 'pending' });
     }
     setImages(prev => [...prev, ...newImages]);

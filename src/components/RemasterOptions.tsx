@@ -185,7 +185,8 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
 
   const handlePlateImageUpload = async (file: File) => {
     if (!file.type.startsWith('image/')) { toast.error('Bitte ein Bild auswählen.'); return; }
-    const base64 = await fileToBase64(file);
+    const raw = await fileToBase64(file);
+    const base64 = await compressImageForAI(raw, 800).catch(() => raw);
     update({ customPlateImageBase64: base64 });
   };
 
