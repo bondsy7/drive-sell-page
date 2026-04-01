@@ -430,6 +430,9 @@ Alle Backend-Logik läuft in **29 Supabase Edge Functions** (Deno-Runtime) + Sha
 | Modul | Datei | Zweck |
 |---|---|---|
 | `getSecret()` | `_shared/get-secret.ts` | Liest API-Keys aus `admin_secrets` DB-Tabelle, Fallback auf `Deno.env`. 5-Minuten-Cache. |
+| `authenticateRequest()` | `_shared/auth.ts` | Auth-Token validieren, User + Admin-Client zurückgeben |
+| `handleCors()` | `_shared/cors.ts` | CORS-Header + OPTIONS Preflight + JSON-Response-Helfer |
+| `deductCredits()` | `_shared/credits.ts` | Credit-Deduction via RPC mit Fehlerbehandlung |
 
 ```typescript
 // Verwendung in Edge Functions:
