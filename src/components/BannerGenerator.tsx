@@ -810,6 +810,19 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
             className="text-sm min-h-[60px]" />
         </div>
 
+        {/* Free Prompting */}
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-accent" /> Freies Prompting (optional)
+          </Label>
+          <Textarea value={freePrompt} onChange={e => setFreePrompt(e.target.value)}
+            placeholder="z.B. Füge Rauch-Effekte hinzu, mache den Hintergrund dunkler, zeige das Auto in Bewegung, füge Funken hinzu..."
+            className="text-sm min-h-[60px]" />
+          <p className="text-[10px] text-muted-foreground">
+            Eigene kreative Anweisungen, die das Banner-Design zusätzlich beeinflussen.
+          </p>
+        </div>
+
         {/* Model Tier */}
         <div className="space-y-1.5">
           <Label className="text-xs font-medium">KI-Modell</Label>
