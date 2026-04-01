@@ -1057,7 +1057,7 @@ stripe-webhook empfängt Event
 | 1 | **Fotos & Remastering** | Fotos aufnehmen/hochladen → Perspektiven-Grid → KI-Remastering → Pipeline | Showroom-Bilder (Storage) |
 | 2 | **PDF → Angebotsseite** | PDF hochladen → KI-Analyse → Daten-Editor → Template wählen → Export | HTML-Angebotsseite |
 | 3 | **Landing Page manuell** | Marke+Modell+Typ → KI generiert Text+Bilder → Editor → Export | SEO-Landing-Page |
-| 4 | **Banner Generator** | Projekt wählen/Bild hochladen → Prompt bauen → KI rendert Banner | Social-Media-Banner |
+| 4 | **Banner Generator** | Projekt wählen/Bild hochladen → Prompt bauen → KI rendert Banner (Multi-Format parallel, Lightbox) | Social-Media-Banner (7 Formate) |
 | 5 | **Video Erstellung** | Bild hochladen → KI-Video generieren (Veo 3.1) | Showroom-Video |
 | 6 | **KI Verkaufsassistent** | Lead wählen → Kontext eingeben → KI generiert Antwort | E-Mail/WhatsApp-Antwort |
 
