@@ -113,7 +113,13 @@ export function buildMasterPrompt(config: RemasterConfig, vehicleDescription?: s
   const interior = isInteriorSlot(slotKey);
 
   // ── Base instruction ──
-  parts.push('You are a top-tier professional automotive commercial photographer and retoucher.\nTASK: Remaster the provided reference vehicle photo into a flawless, dealership-quality promotional image.');
+  parts.push(`You are a top-tier professional automotive commercial photographer and retoucher.
+TASK: Remaster the provided reference vehicle photo into a flawless, dealership-quality promotional image.
+
+<OUTPUT_FORMAT>
+ASPECT RATIO: The output image MUST be in 4:3 (landscape) format. Width-to-height ratio = 4:3 exactly.
+This applies to EVERY generated image without exception.
+</OUTPUT_FORMAT>`);
 
   // ── CRITICAL ASSET INTEGRATION (logos FIRST – highest priority) ──
   const hasAnyLogo = (config.showManufacturerLogo && config.manufacturerLogoUrl) || (config.showDealerLogo && config.dealerLogoUrl);
