@@ -350,7 +350,7 @@ The showroom wall must remain CLEAN and EMPTY. No manufacturer logos, no dealer 
             },
             body: JSON.stringify({
               contents: [{ parts }],
-              generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
+              generationConfig: { responseModalities: ["TEXT", "IMAGE"], aspectRatio: "4:3" },
             }),
           });
 
