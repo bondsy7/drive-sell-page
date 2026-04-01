@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Save, RotateCcw, Eye, EyeOff, ChevronDown, ChevronRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { PIPELINE_JOBS } from '@/lib/pipeline-jobs';
+import { REMASTER_PROMPT_BLOCKS, SCENE_PROMPT_DEFAULTS } from '@/lib/remaster-prompt-defaults';
 
 // ─── ALL DEFAULT PROMPTS (synced from edge functions + pipeline-jobs.ts) ───
 // Pipeline prompts are imported dynamically from PIPELINE_JOBS to stay in sync.
