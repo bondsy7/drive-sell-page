@@ -504,11 +504,11 @@ Grundsatz: Alle KI-Aufrufe nutzen bevorzugt eigene API-Keys.`}</CodeBlock>
             <Table
               headers={['Tier', 'Modell', 'Engine', 'EK/Bild', 'Credits']}
               rows={[
-                ['Schnell', 'gemini-2.5-flash-image', 'Gemini', '~$0.039', '3'],
-                ['Qualität', 'gemini-3.1-flash-image-preview', 'Gemini', '~$0.045–0.067', '5'],
-                ['Premium', 'gemini-3-pro-image-preview', 'Gemini', '~$0.134', '8'],
-                ['Turbo', 'gpt-image-1', 'OpenAI', '~$0.04–0.17', '6'],
-                ['Ultra', 'gpt-image-1 (HD)', 'OpenAI', '~$0.08–0.17', '10'],
+                ['Schnell', 'gemini-2.5-flash-image', 'Gemini', '~$0.039', '2'],
+                ['Qualität', 'gemini-3.1-flash-image-preview', 'Gemini', '~$0.045–0.067', '3'],
+                ['Premium', 'gemini-3-pro-image-preview', 'Gemini', '~$0.134', '5'],
+                ['Turbo', 'gemini-3.1-flash-image-preview', 'Gemini', '~$0.045–0.067', '4'],
+                ['Ultra', 'gemini-3-pro-image-preview', 'Gemini', '~$0.134', '7'],
               ]}
             />
           </SubSection>
