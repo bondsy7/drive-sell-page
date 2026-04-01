@@ -174,15 +174,33 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const primaryReferenceIndex = inferPrimaryReferenceIndex(job, prompt, referenceImages.length);
     const primaryReference = referenceImages[primaryReferenceIndex] || referenceImages[0];
 
-    // For detail jobs: put additional detail images FIRST in supporting references
-    // so the AI sees them as the primary detail source for identity matching
-    const isDetailJob = job?.category === 'detail';
-    const supportingReferences = isDetailJob && cfg.additionalImages.length > 0
-      ? [...cfg.additionalImages, ...referenceImages.filter((_, i) => i !== primaryReferenceIndex)]
-      : referenceImages.filter((_, i) => i !== primaryReferenceIndex).concat(cfg.additionalImages);
+    // ── Phase 3: Smart Image Routing ──
+    // Filter additionalImages based on job category to avoid confusing the AI
+    const jobCategory = job?.category || 'exterior';
+    let filteredAdditional: string[];
+    
+    if (jobCategory === 'interior') {
+      // Interior jobs: don't send exterior detail photos (wheels, headlights etc.)
+      filteredAdditional = [];
+    } else if (jobCategory === 'detail') {
+      // Detail jobs: send ALL additional images – critical for identity matching
+      filteredAdditional = cfg.additionalImages;
+    } else if (jobCategory === 'composite') {
+      // Composite/grid: send limited references (max 3) for identity
+      filteredAdditional = cfg.additionalImages.slice(0, 3);
+    } else {
+      // Exterior, hero, ci: send up to 5 most relevant detail images
+      filteredAdditional = cfg.additionalImages.slice(0, 5);
+    }
+
+    // Build supporting references based on category
+    const isDetailJob = jobCategory === 'detail';
+    const supportingReferences = isDetailJob && filteredAdditional.length > 0
+      ? [...filteredAdditional, ...referenceImages.filter((_, i) => i !== primaryReferenceIndex)]
+      : referenceImages.filter((_, i) => i !== primaryReferenceIndex).concat(filteredAdditional);
 
     const promptOverrides = await fetchPromptOverrides();
-    const isInteriorJob = job?.category === 'interior';
+    const isInteriorJob = jobCategory === 'interior';
 
     // Pass interior slotKey so buildMasterPrompt includes INTERIOR_RULES only when needed
     const interiorSlotKey = isInteriorJob ? 'interior-front' : undefined;
@@ -196,7 +214,6 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const processedPrompt = injectLogoPlaceholder(prompt, hasLogo);
 
     // buildMasterPrompt already includes INTERIOR_RULES when interiorSlotKey is set
-    // No need for a separate interiorOverride – this was the source of triple redundancy
     const fullPrompt = `${baseContext}\n\n${taskLock}\n\n--- PERSPECTIVE INSTRUCTION ---\n${processedPrompt}`;
 
     // Always prefer cached base64 logos over URLs for consistency
@@ -207,9 +224,11 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       ? (cachedDealerLogoBase64Ref.current || cfg.remasterConfig.dealerLogoBase64 || null)
       : null;
 
-    // For interior jobs: do NOT send the custom showroom image – it confuses the AI into generating exterior views
-    // The showroom should only be visible THROUGH the windows, described via text prompt
+    // For interior jobs: do NOT send the custom showroom image
     const showroomBase64ForRequest = isInteriorJob ? null : (cfg.remasterConfig.customShowroomBase64 || null);
+
+    // Use pre-uploaded Gemini File URIs if available
+    const currentFileUris = Object.keys(fileUriMapRef.current).length > 0 ? fileUriMapRef.current : undefined;
 
     const { data, error } = await invokeRemasterVehicleImage({
       imageBase64: primaryReference,
@@ -219,11 +238,11 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       dynamicPrompt: fullPrompt,
       customShowroomBase64: showroomBase64ForRequest,
       customPlateImageBase64: isInteriorJob ? null : (cfg.remasterConfig.customPlateImageBase64 || null),
-      // Only pass URL as fallback if base64 is not available
       dealerLogoUrl: dealerLogoBase64 ? null : (cfg.remasterConfig.showDealerLogo ? cfg.remasterConfig.dealerLogoUrl : null),
       dealerLogoBase64: dealerLogoBase64,
       manufacturerLogoUrl: manufacturerLogoBase64 ? null : (cfg.remasterConfig.showManufacturerLogo ? cfg.resolvedManufacturerLogoUrl : null),
       manufacturerLogoBase64: manufacturerLogoBase64,
+      fileUris: currentFileUris,
     });
 
     if (error || !data?.imageBase64) {
