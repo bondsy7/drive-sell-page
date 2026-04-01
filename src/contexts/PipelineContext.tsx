@@ -44,6 +44,9 @@ export interface PipelineConfig {
   totalImages: number;
 }
 
+/** Pre-uploaded Gemini File URIs for pipeline reuse */
+type FileUriMap = Record<string, { uri: string; mimeType: string }>;
+
 type PipelineStatus = 'idle' | 'running' | 'finished';
 
 interface PipelineContextValue {
