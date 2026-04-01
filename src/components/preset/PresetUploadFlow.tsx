@@ -134,9 +134,10 @@ const PresetUploadFlow: React.FC<PresetUploadFlowProps> = ({ onComplete, onBack 
       resolvedPrompt = resolvedPrompt.replace(new RegExp(`\\{${key}\\}`, 'g'), value || '');
     });
 
+    const promptOverrides = await fetchPromptOverrides();
     const dynamicPrompt = resolvedPrompt
-      ? `${resolvedPrompt}\n\n${buildMasterPrompt(remasterConfig, '')}`
-      : buildMasterPrompt(remasterConfig, '');
+      ? `${resolvedPrompt}\n\n${buildMasterPrompt(remasterConfig, '', undefined, promptOverrides)}`
+      : buildMasterPrompt(remasterConfig, '', undefined, promptOverrides);
 
     setIsProcessing(true);
     setStep('processing');
