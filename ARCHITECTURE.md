@@ -853,12 +853,12 @@ Bild-Upload → detect-vehicle-brand (Edge Function)
 | VIN-OCR | 1 | Pro Bild |
 | Marken-Erkennung | 0 | Kostenlos |
 | VIN-Lookup | 0 | Kostenlos (OutVin API-Kosten intern) |
-| Bildgenerierung (Schnell) | 3 | Pro Bild |
-| Bildgenerierung (Qualität) | 5 | Pro Bild |
-| Bildgenerierung (Turbo) | 6 | Pro Bild |
-| Bildgenerierung (Premium) | 8 | Pro Bild |
-| Bildgenerierung (Ultra) | 10 | Pro Bild |
-| Bild-Remastering | 3-10 | Abhängig vom gewählten Tier |
+| Bildgenerierung (Schnell) | 2 | Pro Bild |
+| Bildgenerierung (Qualität) | 3 | Pro Bild |
+| Bildgenerierung (Turbo) | 4 | Pro Bild |
+| Bildgenerierung (Premium) | 5 | Pro Bild |
+| Bildgenerierung (Ultra) | 7 | Pro Bild |
+| Bild-Remastering | 2-7 | Abhängig vom gewählten Tier |
 | Video-Generierung | 10 | Pro Video |
 | Landing Page | 3 | Text + Bilder |
 | 360° Spin | 10-20 | 36 Frames (abhängig von Batch-Größe) |
