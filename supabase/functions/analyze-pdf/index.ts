@@ -401,6 +401,19 @@ Gib das Ergebnis als JSON zurück.`;
       });
     }
 
+    // === CATEGORY NORMALIZATION ===
+    const VALID_CATEGORIES = ['Leasing', 'Finanzierung', 'Barkauf', 'Neuwagen', 'Gebrauchtwagen', 'Tageszulassung'];
+    const rawCat = (parsed.category || '').toLowerCase().trim();
+    const categoryMap: Record<string, string> = {
+      'leasing': 'Leasing', 'finanzierung': 'Finanzierung', 'kredit': 'Finanzierung',
+      'barkauf': 'Barkauf', 'kauf': 'Barkauf', 'direktkauf': 'Barkauf',
+      'neuwagen': 'Neuwagen', 'neufahrzeug': 'Neuwagen',
+      'gebrauchtwagen': 'Gebrauchtwagen', 'gebraucht': 'Gebrauchtwagen',
+      'tageszulassung': 'Tageszulassung',
+    };
+    parsed.category = categoryMap[rawCat] || VALID_CATEGORIES.find(c => rawCat.includes(c.toLowerCase())) || parsed.category || 'Barkauf';
+    console.log("[analyze-pdf] Detected category:", parsed.category);
+
     // === POST-PROCESSING ===
     if (!parsed.consumption) parsed.consumption = {};
     const c = parsed.consumption;
