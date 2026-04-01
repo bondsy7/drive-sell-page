@@ -30,14 +30,7 @@ interface RemasterOptionsProps {
   brandDetectionStatus?: 'idle' | 'detecting' | 'found' | 'not-found';
 }
 
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
+// fileToBase64 imported from '@/lib/image-compress'
 
 const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, vehicleBrand, onBrandChange, onModelChange, vehicleModel, brandDetectionStatus = 'idle' }) => {
   const { user } = useAuth();
