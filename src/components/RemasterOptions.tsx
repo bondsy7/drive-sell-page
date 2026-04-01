@@ -155,8 +155,8 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
   const handleManufacturerLogoUpload = async (file: File) => {
     if (!file.type.startsWith('image/')) { toast.error('Bitte ein Bild auswählen.'); return; }
     if (file.size > 5 * 1024 * 1024) { toast.error('Max. 5MB.'); return; }
-    const base64 = await fileToBase64(file);
-    update({ manufacturerLogoBase64: base64, manufacturerLogoUrl: base64 });
+    const base64 = await compressImageForAI(await fileToBase64(file), 512).catch(() => fileToBase64(file));
+    update({ manufacturerLogoBase64: base64 as string, manufacturerLogoUrl: base64 as string });
     toast.success('Hersteller-Logo hochgeladen.');
   };
 
