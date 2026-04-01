@@ -232,20 +232,30 @@ serve(async (req) => {
       parts.push({ text: `<CUSTOM_SHOWROOM_INSTRUCTION>
 The following image is the CUSTOM SHOWROOM BACKGROUND. This is an IMMUTABLE ASSET.
 
-PLACEMENT RULES:
-1. Place the vehicle NATURALLY in this showroom. The car must fit PROPORTIONALLY – not too large (overwhelming the room) and not too small.
-2. The vehicle should occupy approximately 55-65% of the image width, leaving breathing room on all sides.
-3. Match lighting, shadows, and perspective so the car integrates naturally into the space.
+OUTPUT FORMAT: The result MUST be in 4:3 (landscape) aspect ratio.
 
-CONTENT PRESERVATION (CRITICAL):
+MUTUAL ADAPTATION (CRITICAL):
+This is NOT a simple background swap or collage. You must RE-RENDER the ENTIRE scene as ONE cohesive photograph – as if a professional photographer took a real photo of this car parked inside this exact showroom.
+
+VEHICLE INTEGRATION:
+1. Place the vehicle NATURALLY in this showroom – it must look PHYSICALLY PRESENT and STANDING on the floor.
+2. The vehicle should occupy approximately 55-65% of the image width. This size MUST be IDENTICAL across ALL perspectives.
+3. The vehicle MUST be lit by the showroom's actual light sources – matching direction, color temperature, and intensity.
+4. Vehicle paint MUST reflect the showroom environment (walls, ceiling, windows, floor).
+5. Vehicle MUST cast realistic shadows onto the showroom floor. Tires MUST make contact with the floor surface.
+6. If the showroom floor is reflective, show a realistic reflection of the vehicle on the floor.
+
+SHOWROOM PRESERVATION (CRITICAL):
 - Do NOT modify, replace, remove, or obscure ANY element in the showroom.
-- ALL logos, signs, wall decorations, furniture, branding elements MUST remain EXACTLY as they are in the provided image.
-- The showroom floor, walls, ceiling, windows must be reproduced faithfully.
-- You may adapt the CAMERA ANGLE and PERSPECTIVE to match the required shot, but the showroom CONTENTS are UNTOUCHABLE.
+- ALL logos, signs, wall decorations, furniture, branding, display cases MUST remain EXACTLY as they are.
+- The showroom floor, walls, ceiling, windows MUST be reproduced faithfully with their exact materials and colors.
+- When camera perspective changes, architectural elements and logos shift naturally by 3D perspective – but NEVER disappear or change.
+- The showroom MUST be CLEARLY RECOGNIZABLE as the SAME room in EVERY generated image.
 
-CONSISTENCY:
-- The showroom must be CLEARLY RECOGNIZABLE as the SAME room across ALL images.
-- Use ONLY this background. Do NOT substitute or blend with other environments.
+CAMERA PERSPECTIVE:
+- The camera perspective of the showroom MUST match the requested vehicle perspective.
+- Adapt the showroom view to match front, side, rear, or 3/4 angles naturally.
+- The showroom must ALWAYS be fully visible – never cropped out or replaced.
 
 NOTE: For INTERIOR vehicle shots, do NOT change the background – only improve interior lighting.
 </CUSTOM_SHOWROOM_INSTRUCTION>` });
