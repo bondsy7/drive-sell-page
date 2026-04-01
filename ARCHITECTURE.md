@@ -217,7 +217,7 @@ src/
 │   ├── ImageCaptureGrid.tsx       # Perspektiven-Raster für Fahrzeugfotos
 │   ├── ImageUploadRemaster.tsx    # Upload → Remaster Workflow
 │   ├── RemasterOptions.tsx        # Master-Prompt-UI (Szene, Kennzeichen, Logo)
-│   ├── PipelineRunner.tsx         # Batch-Bildgenerierung (Worker-Pool, 4 parallel)
+│   ├── PipelineRunner.tsx         # Batch-Bildgenerierung (Worker-Pool, 6 parallel)
 │   │
 │   ├── # 360° Spin
 │   ├── spin360/
