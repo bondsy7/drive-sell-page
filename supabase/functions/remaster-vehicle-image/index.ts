@@ -286,7 +286,7 @@ NOTE: For INTERIOR vehicle shots, do NOT change the background – only improve 
     }
     if (customPlateImageBase64) {
       parts.push({ text: "CRITICAL – CUSTOM LICENSE PLATE IMAGE: The following image is the EXACT license plate you MUST use. Replace the vehicle's existing plate with this plate PIXEL-FOR-PIXEL. Reproduce every character, color, seal, EU badge, and spacing exactly. Do NOT invent or modify any element. This is an IMMUTABLE ASSET:" });
-      parts.push(toInlineData(customPlateImageBase64));
+      parts.push(getImagePart("plate", customPlateImageBase64));
     }
     // Add manufacturer logo – prefer pre-cached PNG base64 from client
     if (manufacturerLogoBase64 || manufacturerLogoUrl) {
