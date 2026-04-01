@@ -161,7 +161,7 @@ export default function ArchitectureDoc() {
 │           SUPABASE (Backend-as-a-Service)        │
 │                via Lovable Cloud                 │
 │                                                 │
-│  28 Edge Funcs │ 32 DB-Tabellen │ 6 Buckets     │
+│  29 Edge Funcs │ 32 DB-Tabellen │ 6 Buckets     │
 │  3 Shared Module │ Auth (Email+OAuth) │ Realtime │
 └──────────────────┬──────────────────────────────┘
                    │
