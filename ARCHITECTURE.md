@@ -1811,6 +1811,18 @@ VITE_SUPABASE_PROJECT_ID=rauzclzphdnhzflovrya
 
 ---
 
+### Changelog v2.3 (1. April 2026)
+
+- **Pipeline-Concurrency**: Worker-Pool von 4 auf **6 parallele Instanzen** erhöht
+- **Gemini File API**: Neue Edge Function `upload-pipeline-images` – Bilder werden einmalig hochgeladen, Folgejobs nutzen `file_uri` statt Base64 (massiver Payload-Gewinn: ~156 MB → ~2 MB bei 13 Jobs)
+- **Prompt-Architektur bereinigt**: Redundante globale Regeln (Identity Lock, Scale Lock) nur noch zentral in `buildMasterPrompt`; `pipeline-jobs.ts` enthält nur perspektiv-spezifische Instruktionen
+- **Admin-Prompts bereinigt**: Veralteter `image_remaster` Default-Prompt aus Admin UI entfernt; Edge Function Fallback baut dynamisch aus modularen Admin-Blöcken (remaster_base_instruction, remaster_identity_lock, etc.)
+- **Remaster-Modell-Tiers aktualisiert**: `gemini-3.1-flash-image-preview` (Qualität/Turbo), `gemini-3-pro-image-preview` (Premium/Ultra) mit Fallback-Chain
+- **Credit-Kosten angepasst**: Schnell 2, Qualität 3, Turbo 4, Premium 5, Ultra 7
+- **Banner Generator**: Multi-Format-Generierung (7 Formate parallel, Concurrency 4), Ergebnis-Grid unterhalb des Formulars mit Lightbox-Navigation
+- **Bildkompression**: Clientseitige Kompression via `compressImageForAI` (max. 1024px, WebP 80%) vor Upload (~100-200KB pro Bild)
+- **Smart Routing**: Nur kategorie-relevante Referenzbilder pro Job (Interior: 0, Detail: Alle, Exterior/Hero: max. 5)
+
 ### Changelog v2.2 (21. März 2026)
 
 - **API-Migration**: Alle 4 Edge Functions (sales-chat, auto-process-lead, lookup-vin, generate-360-spin) vom Lovable AI Gateway auf direkte Google Gemini REST API mit eigenem `GEMINI_API_KEY` migriert
