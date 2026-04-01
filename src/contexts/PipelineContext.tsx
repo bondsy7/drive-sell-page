@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { uploadImageToStorage, getGalleryFolderName } from '@/lib/storage-utils';
 import { toast } from 'sonner';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
-import { buildMasterPrompt, type RemasterConfig } from '@/lib/remaster-prompt';
+import { buildMasterPrompt, fetchPromptOverrides, type RemasterConfig } from '@/lib/remaster-prompt';
 import { type PipelineJob, injectLogoPlaceholder } from '@/lib/pipeline-jobs';
 import { ensureLogoCachedAsPng } from '@/lib/image-base64-cache';
 
