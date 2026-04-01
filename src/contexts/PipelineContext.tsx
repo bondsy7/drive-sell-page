@@ -273,13 +273,12 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // Run pipeline async (survives navigation since context is at App level)
     (async () => {
       // Pre-cache logos as base64 ONCE before any image generation
-      // This ensures the EXACT same logo binary is used for every single image
       cachedManufacturerLogoBase64Ref.current = null;
       cachedDealerLogoBase64Ref.current = null;
+      fileUriMapRef.current = {};
 
       const logoFetches: Promise<void>[] = [];
       if (cfg.remasterConfig.showManufacturerLogo) {
-        // Always use PNG conversion for manufacturer logos (best AI compatibility)
         const mLogoSrc = cfg.remasterConfig.manufacturerLogoBase64 || cfg.resolvedManufacturerLogoUrl || cfg.remasterConfig.manufacturerLogoUrl;
         if (mLogoSrc) {
           logoFetches.push(
@@ -308,18 +307,71 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               }
             }).catch(err => {
               console.warn('[Pipeline] Dealer logo PNG conversion failed (CORS?), will use URL fallback:', err);
-              // For external URLs that fail CORS, the edge function will fetch server-side
             })
           );
         }
       }
       if (logoFetches.length > 0) await Promise.all(logoFetches);
       
-      // Log logo fingerprint for consistency verification
       if (cachedManufacturerLogoBase64Ref.current) {
         const logoLen = cachedManufacturerLogoBase64Ref.current.length;
         const logoHash = logoLen.toString(36) + '_' + cachedManufacturerLogoBase64Ref.current.slice(-20);
-        console.log(`[Pipeline] Logo fingerprint: ${logoHash} (${Math.round(logoLen / 1024)}KB) – this MUST be identical for all images`);
+        console.log(`[Pipeline] Logo fingerprint: ${logoHash} (${Math.round(logoLen / 1024)}KB)`);
+      }
+
+      // ── Phase 2: Compress images before pipeline ──
+      console.log(`[Pipeline] Compressing reference images for AI (1024px max, WebP 80%)...`);
+      try {
+        const refImgs = cfg.originalImages.length > 0 ? cfg.originalImages : cfg.inputImages;
+        const compressedRefs = await compressImagesForAI(refImgs, 1024, 0.8);
+        if (cfg.originalImages.length > 0) {
+          cfg.originalImages = compressedRefs;
+        } else {
+          cfg.inputImages = compressedRefs;
+        }
+        if (cfg.additionalImages.length > 0) {
+          cfg.additionalImages = await compressImagesForAI(cfg.additionalImages, 1024, 0.8);
+        }
+        if (cfg.remasterConfig.customShowroomBase64) {
+          cfg.remasterConfig.customShowroomBase64 = await compressImageForAI(cfg.remasterConfig.customShowroomBase64, 1024, 0.8);
+        }
+        if (cfg.remasterConfig.customPlateImageBase64) {
+          cfg.remasterConfig.customPlateImageBase64 = await compressImageForAI(cfg.remasterConfig.customPlateImageBase64, 512, 0.9);
+        }
+        console.log(`[Pipeline] Image compression complete ✓`);
+      } catch (err) {
+        console.warn('[Pipeline] Image compression failed, using originals:', err);
+      }
+
+      // ── Phase 4: Pre-upload images to Gemini File API ──
+      if (cfg.selectedJobs.length > 1) {
+        try {
+          console.log(`[Pipeline] Pre-uploading images to Gemini File API...`);
+          const imagesToUpload: Array<{ key: string; base64: string }> = [];
+          
+          const refImgs2 = cfg.originalImages.length > 0 ? cfg.originalImages : cfg.inputImages;
+          if (refImgs2[0]) {
+            imagesToUpload.push({ key: 'main', base64: refImgs2[0] });
+          }
+          for (let i = 0; i < cfg.additionalImages.length; i++) {
+            imagesToUpload.push({ key: `additional_${i}`, base64: cfg.additionalImages[i] });
+          }
+          if (cfg.remasterConfig.customShowroomBase64) {
+            imagesToUpload.push({ key: 'showroom', base64: cfg.remasterConfig.customShowroomBase64 });
+          }
+          if (cfg.remasterConfig.customPlateImageBase64) {
+            imagesToUpload.push({ key: 'plate', base64: cfg.remasterConfig.customPlateImageBase64 });
+          }
+
+          if (imagesToUpload.length > 0) {
+            const uris = await uploadPipelineImages(imagesToUpload);
+            fileUriMapRef.current = uris;
+            console.log(`[Pipeline] Pre-upload complete: ${Object.keys(uris).length} files cached on Gemini ✓`);
+          }
+        } catch (err) {
+          console.warn('[Pipeline] Gemini File API pre-upload failed, falling back to inline_data:', err);
+          fileUriMapRef.current = {};
+        }
       }
 
       const allResults: { key: string; base64: string; label: string; subIndex: number }[] = [];
