@@ -8,7 +8,7 @@ import { useVinLookup } from '@/hooks/useVinLookup';
 import { useVehicleMakes } from '@/hooks/useVehicleMakes';
 import VinDataDialog from '@/components/VinDataDialog';
 import RemasterOptions from '@/components/RemasterOptions';
-import { type RemasterConfig, buildMasterPrompt } from '@/lib/remaster-prompt';
+import { type RemasterConfig, buildMasterPrompt, fetchPromptOverrides } from '@/lib/remaster-prompt';
 import PipelineRunner from '@/components/PipelineRunner';
 import { lookupBrandFromVin } from '@/lib/vin-wmi-lookup';
 import { resolveCanonicalBrand, normalizeBrand } from '@/lib/brand-aliases';
