@@ -181,6 +181,47 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
       });
   }, [user]);
 
+  // Load dealer logo from profile
+  useEffect(() => {
+    if (!user) return;
+    supabase.from('profiles').select('logo_url').eq('id', user.id).single()
+      .then(({ data }) => {
+        if (data?.logo_url) setDealerLogoUrl(data.logo_url);
+      });
+  }, [user]);
+
+  // Resolve manufacturer logo when brand changes
+  useEffect(() => {
+    if (!showLogo || logoSource !== 'manufacturer' || !selectedLogoBrand) {
+      if (logoSource === 'manufacturer') setLogoBase64(null);
+      return;
+    }
+    const logoUrl = getLogoForMake(selectedLogoBrand);
+    if (logoUrl) {
+      // Fetch and convert to base64
+      fetch(logoUrl).then(r => r.blob()).then(blob => {
+        const reader = new FileReader();
+        reader.onload = () => setLogoBase64(reader.result as string);
+        reader.readAsDataURL(blob);
+      }).catch(() => setLogoBase64(null));
+    } else {
+      setLogoBase64(null);
+    }
+  }, [showLogo, logoSource, selectedLogoBrand, getLogoForMake]);
+
+  // Resolve dealer logo to base64
+  useEffect(() => {
+    if (!showLogo || logoSource !== 'dealer' || !dealerLogoUrl) {
+      if (logoSource === 'dealer') setLogoBase64(null);
+      return;
+    }
+    fetch(dealerLogoUrl).then(r => r.blob()).then(blob => {
+      const reader = new FileReader();
+      reader.onload = () => setLogoBase64(reader.result as string);
+      reader.readAsDataURL(blob);
+    }).catch(() => setLogoBase64(null));
+  }, [showLogo, logoSource, dealerLogoUrl]);
+
   // When project selected, fill data
   useEffect(() => {
     if (!selectedProjectId) return;
