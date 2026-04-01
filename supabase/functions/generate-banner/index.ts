@@ -108,7 +108,7 @@ serve(async (req) => {
   }
 });
 
-async function generateGemini(prompt: string, imageBase64: string | null, model: string, retries: number): Promise<string | null> {
+async function generateGemini(prompt: string, imageBase64: string | null, logoBase64: string | null, model: string, retries: number): Promise<string | null> {
   const apiKey = Deno.env.get("GEMINI_API_KEY");
   if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
 
@@ -116,11 +116,17 @@ async function generateGemini(prompt: string, imageBase64: string | null, model:
 
   const parts: any[] = [{ text: prompt }];
   if (imageBase64) {
-    // Strip data URL prefix if present
     const base64Data = imageBase64.includes(",") ? imageBase64.split(",")[1] : imageBase64;
     const mimeType = imageBase64.startsWith("data:image/png") ? "image/png"
       : imageBase64.startsWith("data:image/webp") ? "image/webp" : "image/jpeg";
     parts.push({ inlineData: { mimeType, data: base64Data } });
+  }
+  if (logoBase64) {
+    const logoData = logoBase64.includes(",") ? logoBase64.split(",")[1] : logoBase64;
+    const logoMime = logoBase64.startsWith("data:image/png") ? "image/png"
+      : logoBase64.startsWith("data:image/svg") ? "image/png" : "image/png";
+    parts.push({ text: "The following image is the LOGO to be placed in the banner:" });
+    parts.push({ inlineData: { mimeType: logoMime, data: logoData } });
   }
 
   for (let attempt = 0; attempt <= retries; attempt++) {
