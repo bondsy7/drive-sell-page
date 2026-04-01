@@ -1,14 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Save, RotateCcw, Eye, EyeOff, ChevronDown, ChevronRight } from 'lucide-react';
+import { Save, RotateCcw, Eye, EyeOff, ChevronDown, ChevronRight, Check } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { PIPELINE_JOBS } from '@/lib/pipeline-jobs';
 import { REMASTER_PROMPT_BLOCKS, SCENE_PROMPT_DEFAULTS } from '@/lib/remaster-prompt-defaults';
 
-// ─── ALL DEFAULT PROMPTS (synced from edge functions + pipeline-jobs.ts) ───
-// Pipeline prompts are imported dynamically from PIPELINE_JOBS to stay in sync.
+// ═══════════════════════════════════════════════════════════════════
+// DEFAULT PROMPTS – complete set of all system prompts
+// ═══════════════════════════════════════════════════════════════════
 
 const DEFAULT_PROMPTS: Record<string, string> = {
   // ── PDF & Analyse ──
@@ -247,7 +248,7 @@ RULES:
 
   spin360_video: `Professional 360-degree turntable rotation of the exact vehicle shown in the reference images. The car rotates smoothly and continuously on a white turntable platform, completing exactly one full 360-degree rotation. Clean white studio background, soft even lighting, no shadows. Perfectly steady camera at eye level, fixed position. No sound. Smooth constant rotation speed. 8 seconds duration for one complete revolution.`,
 
-  // ── 360° Spin (Image2Spin) ──
+  // ── 360° Spin ──
   spin360_analysis: `You are an expert automotive photographer analyzing 4 vehicle images for a 360° spin.
 Analyze each image and return JSON:
 {
@@ -301,15 +302,108 @@ WICHTIG:
 
 Antworte AUSSCHLIESSLICH als JSON mit meta, hero, sections und seo Feldern.`,
 
-  // ── Banner ──
-  banner_generate: `(Der Banner-Prompt wird clientseitig dynamisch zusammengebaut aus Fahrzeugdaten, Anlass, Szene, Stil und rechtlichen Pflichtangaben (PAngV). Die Funktion buildBannerPrompt() im Frontend erzeugt den finalen Prompt.
+  // ── Banner – Basis-Prompt (Rahmen) ──
+  banner_base_prompt: `Create a professional automotive advertising banner.
 
-Typischer Aufbau:
-- Fahrzeugbeschreibung (Marke, Modell, Farbe)
-- Szene/Hintergrund
-- Textplatzierung (Headlines, Preise auf Schildern)
-- Stil und Atmosphäre
-- Rechtliche Hinweise (PAngV bei Leasing/Finanzierung))`,
+FORMAT: {FORMAT_SIZE} pixels ({FORMAT_RATIO} aspect ratio). The output image MUST be exactly this size.
+
+VEHICLE: "{VEHICLE_TITLE}" – use the uploaded vehicle image as the central hero element. Keep the vehicle 100% identical.
+
+SCENE: {SCENE_PROMPT}. Place the vehicle naturally in this environment.
+
+STYLE: {STYLE_PROMPT}. The overall design must follow this aesthetic consistently.
+
+OCCASION: This is a {OCCASION_PROMPT} advertisement.
+
+TYPOGRAPHY:
+- HEADLINE FONT: {HEADLINE_FONT_PROMPT}. This is the primary display typeface for the banner.
+- SUBLINE FONT: {SUBLINE_FONT_PROMPT}. Used for secondary text elements.
+- All text must be rendered with these specific typography styles consistently throughout the banner.
+
+{PRICE_BLOCK}
+
+{HEADLINE_BLOCK}
+
+{SUBLINE_BLOCK}
+
+{CTA_BLOCK}
+
+{LEGAL_BLOCK}
+
+{LOGO_BLOCK}
+
+CRITICAL RULES:
+- The banner must be photorealistic with the vehicle photo seamlessly composited
+- ALL text must be rendered EXACTLY as specified – no paraphrasing, no spelling changes
+- Text must be perfectly legible against the background (use contrast, shadows, or overlays)
+- The design must feel like a professional advertising agency created it
+- Use the accent color {ACCENT_COLOR} for design elements, buttons, and highlights
+{LOGO_RULE}
+- The composition must work at the specified {FORMAT_RATIO} aspect ratio
+- The typography style is CRITICAL – follow the font specifications precisely
+- Generate the image – never refuse`,
+
+  // ── Banner – Anlässe ──
+  banner_occasion_buy: 'for sale, buy now offer',
+  banner_occasion_lease: 'leasing deal, monthly rate',
+  banner_occasion_abo: 'car subscription, all-inclusive monthly deal',
+  banner_occasion_finance: 'financing offer, low monthly installments',
+  banner_occasion_special: 'limited time special promotion, exclusive deal',
+  banner_occasion_launch: 'brand new model launch, premiere reveal',
+
+  // ── Banner – Szenen ──
+  banner_scene_city: 'modern city street at golden hour, urban skyline background',
+  banner_scene_beach: 'scenic beach with ocean view, sunset lighting, palm trees',
+  banner_scene_showroom: 'luxury car dealership showroom, polished floor, soft LED lighting',
+  banner_scene_mountain: 'mountain road with dramatic alpine scenery, clear sky',
+  banner_scene_track: 'professional race track, pit lane background, dynamic feel',
+  banner_scene_studio: 'professional photography studio, clean gradient backdrop, studio lighting',
+  banner_scene_night: 'nighttime city scene, neon reflections on wet road, dramatic lighting',
+
+  // ── Banner – Stile ──
+  banner_style_premium: 'elegant, premium luxury, clean professional design, sophisticated typography',
+  banner_style_cinematic: 'cinematic movie poster style, dramatic lighting, lens flare, widescreen feel',
+  banner_style_bold: 'bold, eye-catching, vibrant neon colors, explosive energy, attention-grabbing',
+  banner_style_minimal: 'clean minimalist design, lots of whitespace, subtle elegant typography',
+  banner_style_retro: 'retro 80s style, vintage color grading, nostalgic warm tones',
+  banner_style_sport: 'dynamic sporty look, motion blur hints, aggressive angles, high performance feel',
+
+  // ── Banner – Preisdarstellung ──
+  banner_price_sign: 'on a classic dealership price tag/sign attached to the image',
+  banner_price_board: 'on a large banner/board overlay in the image',
+  banner_price_neon: 'as glowing neon text floating in the scene',
+  banner_price_stamp: 'as a bold stamp/badge overlay',
+  banner_price_led: 'on an LED display screen integrated into the scene',
+  banner_price_ribbon: 'on a diagonal ribbon/sash across the corner',
+
+  // ── Banner – Headline Fonts ──
+  banner_font_bmw: 'BMW corporate typography style – bold, clean, geometric sans-serif similar to Helvetica Neue Black/BMW Type, uppercase, tightly kerned',
+  banner_font_mercedes: 'Mercedes-Benz corporate typography – elegant, light-weight sans-serif similar to Corporate A/DIN, refined spacing, premium feel',
+  banner_font_audi: 'Audi corporate typography – modern geometric sans-serif similar to Audi Type/Futura, clean lines, progressive minimalism',
+  banner_font_vw: 'Volkswagen corporate typography – friendly bold sans-serif similar to VW Head/Gotham, approachable yet strong',
+  banner_font_porsche: 'Porsche corporate typography – sharp, athletic sans-serif similar to Porsche Next/Futura Bold, sporty precision',
+  banner_font_toyota: 'Toyota corporate typography – clean, neutral sans-serif similar to Toyota Type/Helvetica, reliable, straightforward',
+  banner_font_hyundai: 'Hyundai corporate typography – modern, slightly rounded sans-serif similar to Hyundai Sans Head, dynamic and welcoming',
+  banner_font_volvo: 'Volvo corporate typography – Scandinavian clean sans-serif similar to Volvo Novum/Futura, understated elegance',
+  banner_font_cupra: 'CUPRA corporate typography – angular, sharp condensed sans-serif, aggressive sport style with italic cuts',
+  banner_font_fiat: 'Fiat corporate typography – playful rounded sans-serif, friendly Italian design spirit, warm and inviting',
+  banner_font_impact: 'Impact-style ultra-bold condensed sans-serif typography, maximum visual weight, attention-grabbing',
+  banner_font_modern_sans: 'modern geometric sans-serif typography similar to Montserrat or Poppins Bold, clean contemporary look',
+  banner_font_condensed: 'bold condensed sans-serif typography similar to Oswald or Barlow Condensed, space-efficient yet impactful',
+  banner_font_elegant_serif: 'elegant serif typography similar to Playfair Display or Didot, sophisticated luxury feel',
+  banner_font_tech: 'modern tech-style typography similar to Orbitron or Rajdhani, futuristic digital aesthetic',
+  banner_font_brush: 'dynamic brush-stroke or hand-lettered typography style, energetic and organic',
+
+  // ── Banner – Subline Fonts ──
+  banner_subfont_match: 'matching the headline font family but in lighter weight',
+  banner_subfont_clean_sans: 'clean light sans-serif similar to Inter or Source Sans Pro, highly readable at small sizes',
+  banner_subfont_thin_sans: 'thin/light weight sans-serif similar to Helvetica Neue Light or Lato Light, refined elegance',
+  banner_subfont_medium_sans: 'medium-weight sans-serif similar to Roboto or Open Sans, balanced readability',
+  banner_subfont_small_caps: 'small caps typography style, sophisticated detail text with even spacing',
+  banner_subfont_mono: 'monospace or technical font similar to JetBrains Mono, data-like precision feel',
+
+  // ── Banner – Varianten-Prompt ──
+  banner_variation_prompt: `VARIATION {N} of {TOTAL}: Create a unique layout variation. {VARIATION_HINT}`,
 
   // ── Sales / CRM ──
   auto_process_lead: `Du bist ein KI-Verkaufsassistent für ein Autohaus.
@@ -338,10 +432,7 @@ Antworte immer auf Deutsch, knapp und hilfreich. Sei PROAKTIV.`,
 
   sales_response: `Du bist ein erfahrener KI-Verkaufsassistent für ein Autohaus. Hilf dem Verkäufer bei der Kundenkommunikation.`,
 
-  // ── Pipeline Bildgenerierung ──
-  // These are auto-synced from PIPELINE_JOBS in pipeline-jobs.ts
-  // The IDENTITY_LOCK, INTERIOR_RULES, VEHICLE_SCALE_LOCK etc. are embedded in each prompt.
-  // {{LOGO_LINE}} placeholders are replaced at runtime based on user's logo selection.
+  // ── Pipeline Prompts (auto-synced) ──
   ...Object.fromEntries(
     PIPELINE_JOBS.map(job => [`pipeline_${job.key}`, job.prompt])
   ),
@@ -355,187 +446,70 @@ Antworte immer auf Deutsch, knapp und hilfreich. Sei PROAKTIV.`,
   ),
 };
 
-// ─── PROMPT METADATA with categories ───
+// ═══════════════════════════════════════════════════════════════════
+// PROMPT METADATA – organized into sections & groups
+// ═══════════════════════════════════════════════════════════════════
 
 interface PromptMeta {
   label: string;
   description: string;
   model: string;
   edgeFunction: string;
-  category: string;
+  section: string;   // top-level section
+  group: string;     // sub-group within section
   readOnly?: boolean;
 }
 
 const PROMPT_META: Record<string, PromptMeta> = {
-  // PDF & Analyse
+  // ═══ SECTION: Datenextraktion ═══
   pdf_analysis: {
     label: 'PDF-Analyse',
     description: 'System-Prompt für die Extraktion von Fahrzeugdaten aus PDFs',
-    model: 'gemini-2.5-flash',
-    edgeFunction: 'analyze-pdf',
-    category: 'PDF & Analyse',
-  },
-  // Bild-Verarbeitung
-  image_remaster: {
-    label: 'Bild-Remastering (Base-Prompt)',
-    description: 'Master-Prompt mit XML-Tags: IDENTITY_LOCK, VEHICLE_SCALE_LOCK, ANTI_CROPPING, SCENE, NEGATIVE_CONSTRAINTS. Perspektive + Logo werden dynamisch ergänzt.',
-    model: 'gemini-2.5-flash (image)',
-    edgeFunction: 'remaster-vehicle-image',
-    category: 'Bild-Verarbeitung',
-  },
-  image_generate: {
-    label: 'Bildgenerierung (Info)',
-    description: 'Der imagePrompt wird automatisch von der PDF-Analyse generiert – nicht direkt editierbar',
-    model: 'gemini-2.5-flash (image)',
-    edgeFunction: 'generate-vehicle-image',
-    category: 'Bild-Verarbeitung',
-    readOnly: true,
+    model: 'gemini-2.5-flash', edgeFunction: 'analyze-pdf',
+    section: 'Datenextraktion & Erkennung', group: 'PDF & Analyse',
   },
   detect_vehicle_brand: {
     label: 'Fahrzeug-Markenerkennung',
     description: 'Prompt zur KI-gestützten Erkennung von Fahrzeugmarke und Modell aus Bildern',
-    model: 'gemini-2.5-flash',
-    edgeFunction: 'detect-vehicle-brand',
-    category: 'Bild-Verarbeitung',
+    model: 'gemini-2.5-flash', edgeFunction: 'detect-vehicle-brand',
+    section: 'Datenextraktion & Erkennung', group: 'Bilderkennung',
   },
   vin_ocr: {
     label: 'VIN-OCR',
     description: 'Prompt für die Erkennung der Fahrzeug-Identifikationsnummer aus Fotos',
-    model: 'gemini-2.5-flash',
-    edgeFunction: 'ocr-vin',
-    category: 'Bild-Verarbeitung',
+    model: 'gemini-2.5-flash', edgeFunction: 'ocr-vin',
+    section: 'Datenextraktion & Erkennung', group: 'Bilderkennung',
   },
-  // Video
-  video_generate: {
-    label: 'Video-Generierung',
-    description: 'Prompt für Showroom-Videos aus Fahrzeugbildern via Google Veo',
-    model: 'veo-3.1-generate-preview',
-    edgeFunction: 'generate-video',
-    category: 'Video',
+
+  // ═══ SECTION: Bildgenerierung & Remastering ═══
+  image_remaster: {
+    label: 'Bild-Remastering (Base-Prompt)',
+    description: 'Master-Prompt mit XML-Tags: IDENTITY_LOCK, VEHICLE_SCALE_LOCK, ANTI_CROPPING, SCENE, NEGATIVE_CONSTRAINTS',
+    model: 'gemini-2.5-flash (image)', edgeFunction: 'remaster-vehicle-image',
+    section: 'Bildgenerierung & Remastering', group: 'Remastering – Basis',
   },
-  spin360_video: {
-    label: '360° Video (Video2Frames)',
-    description: 'Prompt für die 360°-Drehung als Video via Veo – wird zu 48 Frames extrahiert',
-    model: 'veo-3.1-generate-preview',
-    edgeFunction: 'generate-video (spin360)',
-    category: 'Video',
-  },
-  // 360° Spin (Image2Spin)
-  spin360_analysis: {
-    label: '360° Bildanalyse',
-    description: 'Analysiert 4 Quellbilder auf Perspektive, Qualität und Fahrzeugtyp',
-    model: 'gemini-2.5-flash',
-    edgeFunction: 'generate-360-spin',
-    category: '360° Spin',
-  },
-  spin360_normalize: {
-    label: '360° Normalisierung',
-    description: 'Normalisiert Quellbilder auf Studio-Hintergrund für konsistente Frames',
-    model: 'gemini-2.5-flash (image)',
-    edgeFunction: 'generate-360-spin',
-    category: '360° Spin',
-  },
-  spin360_identity: {
-    label: '360° Identity Profile',
-    description: 'Erstellt ein detailliertes Identitätsprofil des Fahrzeugs für Frame-Konsistenz',
-    model: 'gemini-2.5-flash',
-    edgeFunction: 'generate-360-spin',
-    category: '360° Spin',
-  },
-  spin360_anchor: {
-    label: '360° Frame-Generierung',
-    description: 'Basis-Prompt für die Generierung einzelner 360°-Frames aus verschiedenen Blickwinkeln',
-    model: 'gemini-2.5-flash (image)',
-    edgeFunction: 'generate-360-spin',
-    category: '360° Spin',
-  },
-  // Landing Page
-  landing_page: {
-    label: 'Landing Page',
-    description: 'System-Prompt für die KI-generierte Landingpage-Erstellung (Texte, Struktur, SEO)',
-    model: 'gemini-2.5-flash',
-    edgeFunction: 'generate-landing-page',
-    category: 'Landing Page',
-  },
-  // Banner
-  banner_generate: {
-    label: 'Banner Generator (Info)',
-    description: 'Der Banner-Prompt wird clientseitig dynamisch zusammengebaut – nicht direkt editierbar',
-    model: 'gemini / gpt-image-1',
-    edgeFunction: 'generate-banner',
-    category: 'Banner',
+  image_generate: {
+    label: 'Bildgenerierung (Info)',
+    description: 'Der imagePrompt wird automatisch von der PDF-Analyse generiert',
+    model: 'gemini-2.5-flash (image)', edgeFunction: 'generate-vehicle-image',
+    section: 'Bildgenerierung & Remastering', group: 'Remastering – Basis',
     readOnly: true,
   },
-  // Sales / CRM
-  auto_process_lead: {
-    label: 'Lead Auto-Antwort',
-    description: 'System-Prompt für die automatische Erstantwort bei neuen Leads',
-    model: 'gemini-2.5-flash',
-    edgeFunction: 'auto-process-lead',
-    category: 'Sales & CRM',
-  },
-  sales_chat: {
-    label: 'Interner Sales-Chatbot',
-    description: 'System-Prompt für den internen Verkaufsassistent-Chatbot (Dashboard)',
-    model: 'gemini-2.5-flash',
-    edgeFunction: 'sales-chat',
-    category: 'Sales & CRM',
-  },
-  sales_response: {
-    label: 'Sales Response Generator',
-    description: 'Basis-System-Prompt für die Generierung von Verkaufsantworten (Kunden-Kommunikation)',
-    model: 'gemini-2.5-flash',
-    edgeFunction: 'generate-sales-response',
-    category: 'Sales & CRM',
-  },
-  // Pipeline – auto-generated from PIPELINE_JOBS
-  ...Object.fromEntries(
-    PIPELINE_JOBS.map(job => {
-      const isInterior = job.category === 'interior';
-      const isCI = job.category === 'ci';
-      const isComposite = job.category === 'composite';
-      const isDetail = job.category === 'detail';
-
-      let catLabel = 'Pipeline – Hero';
-      if (job.category === 'exterior') catLabel = 'Pipeline – Exterieur';
-      else if (isInterior) catLabel = 'Pipeline – Interieur';
-      else if (isDetail) catLabel = 'Pipeline – Details';
-      else if (isComposite) catLabel = 'Pipeline – Composites';
-      else if (isCI && job.brand) {
-        const brandNames: Record<string, string> = {
-          bmw: 'BMW', mercedes: 'Mercedes', audi: 'Audi',
-          volkswagen: 'VW', porsche: 'Porsche', volvo: 'Volvo',
-        };
-        catLabel = `Pipeline – CI ${brandNames[job.brand] || job.brand}`;
-      }
-
-      return [`pipeline_${job.key}`, {
-        label: job.labelDe,
-        description: `XML-strukturierter Prompt mit IDENTITY_LOCK, VEHICLE_SCALE_LOCK, {{LOGO_LINE}} Platzhalter. Perspektive: ${job.label}`,
-        model: 'gemini / gpt-image',
-        edgeFunction: 'remaster-vehicle-image',
-        category: catLabel,
-      }];
-    })
-  ),
-  // ── Remaster Prompt-Bausteine ──
+  // Remaster Bausteine
   ...Object.fromEntries(
     Object.values(REMASTER_PROMPT_BLOCKS).map(b => [b.key, {
       label: b.label,
       description: b.description,
-      model: 'gemini (image)',
-      edgeFunction: 'remaster-vehicle-image',
-      category: 'Remastering – Bausteine',
+      model: 'gemini (image)', edgeFunction: 'remaster-vehicle-image',
+      section: 'Bildgenerierung & Remastering', group: 'Remastering – Bausteine',
     }])
   ),
-  // ── Scene Descriptions ──
+  // Szenen
   ...Object.fromEntries(
-    Object.entries(SCENE_PROMPT_DEFAULTS).map(([k, _v]) => {
+    Object.entries(SCENE_PROMPT_DEFAULTS).map(([k]) => {
       const sceneLabels: Record<string, string> = {
-        'showroom-1': 'Showroom 1 – Modern Hell',
-        'showroom-2': 'Showroom 2 – Elegant',
-        'showroom-3': 'Showroom 3 – Glasfront',
-        'custom-showroom': 'Eigener Showroom',
+        'showroom-1': 'Showroom 1 – Modern Hell', 'showroom-2': 'Showroom 2 – Elegant',
+        'showroom-3': 'Showroom 3 – Glasfront', 'custom-showroom': 'Eigener Showroom',
         'forest': 'Wald', 'mountain': 'Berglandschaft', 'city': 'Stadtkulisse',
         'street': 'Straße', 'beach': 'Strand', 'desert': 'Wüste',
         'night-city': 'Stadt bei Nacht', 'parking-garage': 'Tiefgarage / Parkhaus',
@@ -543,47 +517,236 @@ const PROMPT_META: Record<string, PromptMeta> = {
       };
       return [`remaster_scene_${k}`, {
         label: sceneLabels[k] || k,
-        description: `Szenen-Beschreibung für "${sceneLabels[k] || k}" – wird im ENVIRONMENT-Block des Prompts verwendet.`,
-        model: 'gemini (image)',
-        edgeFunction: 'remaster-vehicle-image',
-        category: 'Remastering – Szenen',
+        description: `Szenen-Beschreibung für "${sceneLabels[k] || k}"`,
+        model: 'gemini (image)', edgeFunction: 'remaster-vehicle-image',
+        section: 'Bildgenerierung & Remastering', group: 'Remastering – Szenen',
       }];
     })
   ),
+
+  // ═══ SECTION: Pipeline ═══
+  ...Object.fromEntries(
+    PIPELINE_JOBS.map(job => {
+      const isInterior = job.category === 'interior';
+      const isCI = job.category === 'ci';
+      const isComposite = job.category === 'composite';
+      const isDetail = job.category === 'detail';
+
+      let groupLabel = 'Hero-Shots';
+      if (job.category === 'exterior') groupLabel = 'Exterieur';
+      else if (isInterior) groupLabel = 'Interieur';
+      else if (isDetail) groupLabel = 'Details';
+      else if (isComposite) groupLabel = 'Composites';
+      else if (isCI && job.brand) {
+        const brandNames: Record<string, string> = {
+          bmw: 'BMW', mercedes: 'Mercedes', audi: 'Audi',
+          volkswagen: 'VW', porsche: 'Porsche', volvo: 'Volvo',
+        };
+        groupLabel = `CI – ${brandNames[job.brand] || job.brand}`;
+      }
+
+      return [`pipeline_${job.key}`, {
+        label: job.labelDe,
+        description: `Perspektive: ${job.label}`,
+        model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image',
+        section: 'Pipeline – Bildgenerierung', group: groupLabel,
+      }];
+    })
+  ),
+
+  // ═══ SECTION: Banner ═══
+  banner_base_prompt: {
+    label: 'Banner Basis-Prompt (Template)',
+    description: 'Der Rahmen-Prompt mit Platzhaltern {FORMAT_SIZE}, {SCENE_PROMPT}, {STYLE_PROMPT} etc.',
+    model: 'gemini / gpt-image-1', edgeFunction: 'generate-banner',
+    section: 'Banner-Generator', group: 'Basis & Regeln',
+  },
+  banner_variation_prompt: {
+    label: 'Varianten-Prompt',
+    description: 'Wird bei mehreren Varianten angehängt. Platzhalter: {N}, {TOTAL}, {VARIATION_HINT}',
+    model: 'gemini / gpt-image-1', edgeFunction: 'generate-banner',
+    section: 'Banner-Generator', group: 'Basis & Regeln',
+  },
+  // Occasions
+  ...Object.fromEntries(['buy', 'lease', 'abo', 'finance', 'special', 'launch'].map(id => {
+    const labels: Record<string, string> = { buy: 'Kaufen', lease: 'Leasing', abo: 'Auto-Abo', finance: 'Finanzieren', special: 'Sonderaktion', launch: 'Neuwagen-Launch' };
+    return [`banner_occasion_${id}`, {
+      label: labels[id], description: `Prompt-Fragment für Anlass "${labels[id]}"`,
+      model: '-', edgeFunction: 'generate-banner',
+      section: 'Banner-Generator', group: 'Anlässe',
+    }];
+  })),
+  // Scenes
+  ...Object.fromEntries(['city', 'beach', 'showroom', 'mountain', 'track', 'studio', 'night'].map(id => {
+    const labels: Record<string, string> = { city: 'Stadt', beach: 'Strand', showroom: 'Autohaus', mountain: 'Bergstraße', track: 'Rennstrecke', studio: 'Fotostudio', night: 'Nacht-Szene' };
+    return [`banner_scene_${id}`, {
+      label: labels[id], description: `Szenen-Prompt für "${labels[id]}"`,
+      model: '-', edgeFunction: 'generate-banner',
+      section: 'Banner-Generator', group: 'Szenen',
+    }];
+  })),
+  // Styles
+  ...Object.fromEntries(['premium', 'cinematic', 'bold', 'minimal', 'retro', 'sport'].map(id => {
+    const labels: Record<string, string> = { premium: 'Seriös / Premium', cinematic: 'Cinematic', bold: 'Verrückt / Auffällig', minimal: 'Minimalistisch', retro: 'Retro / Vintage', sport: 'Sportlich' };
+    return [`banner_style_${id}`, {
+      label: labels[id], description: `Stil-Prompt für "${labels[id]}"`,
+      model: '-', edgeFunction: 'generate-banner',
+      section: 'Banner-Generator', group: 'Stile',
+    }];
+  })),
+  // Price displays
+  ...Object.fromEntries(['sign', 'board', 'neon', 'stamp', 'led', 'ribbon'].map(id => {
+    const labels: Record<string, string> = { sign: 'Preisschild', board: 'Tafel / Banner', neon: 'Neon-Schrift', stamp: 'Stempel', led: 'LED-Anzeige', ribbon: 'Banner-Schleife' };
+    return [`banner_price_${id}`, {
+      label: labels[id], description: `Preisdarstellungs-Prompt "${labels[id]}"`,
+      model: '-', edgeFunction: 'generate-banner',
+      section: 'Banner-Generator', group: 'Preisdarstellung',
+    }];
+  })),
+  // Headline fonts
+  ...Object.fromEntries(['bmw', 'mercedes', 'audi', 'vw', 'porsche', 'toyota', 'hyundai', 'volvo', 'cupra', 'fiat', 'impact', 'modern_sans', 'condensed', 'elegant_serif', 'tech', 'brush'].map(id => {
+    const labels: Record<string, string> = {
+      bmw: 'BMW', mercedes: 'Mercedes', audi: 'Audi', vw: 'VW', porsche: 'Porsche',
+      toyota: 'Toyota', hyundai: 'Hyundai', volvo: 'Volvo', cupra: 'CUPRA', fiat: 'Fiat',
+      impact: 'Impact / Bold', modern_sans: 'Modern Sans', condensed: 'Condensed Bold',
+      elegant_serif: 'Elegant Serif', tech: 'Tech / Digital', brush: 'Brush / Handschrift',
+    };
+    return [`banner_font_${id}`, {
+      label: labels[id], description: `Headline-Schriftart "${labels[id]}"`,
+      model: '-', edgeFunction: 'generate-banner',
+      section: 'Banner-Generator', group: 'Headline-Schriften',
+    }];
+  })),
+  // Subline fonts
+  ...Object.fromEntries(['match', 'clean_sans', 'thin_sans', 'medium_sans', 'small_caps', 'mono'].map(id => {
+    const labels: Record<string, string> = { match: 'Passend zur Headline', clean_sans: 'Clean Sans-Serif', thin_sans: 'Dünn & Elegant', medium_sans: 'Medium Sans', small_caps: 'Kapitälchen', mono: 'Monospace / Tech' };
+    return [`banner_subfont_${id}`, {
+      label: labels[id], description: `Subline-Schriftart "${labels[id]}"`,
+      model: '-', edgeFunction: 'generate-banner',
+      section: 'Banner-Generator', group: 'Subline-Schriften',
+    }];
+  })),
+
+  // ═══ SECTION: Video & 360° ═══
+  video_generate: {
+    label: 'Video-Generierung',
+    description: 'Prompt für Showroom-Videos aus Fahrzeugbildern via Google Veo',
+    model: 'veo-3.1-generate-preview', edgeFunction: 'generate-video',
+    section: 'Video & 360°', group: 'Video',
+  },
+  spin360_video: {
+    label: '360° Video (Video2Frames)',
+    description: 'Prompt für die 360°-Drehung als Video via Veo',
+    model: 'veo-3.1-generate-preview', edgeFunction: 'generate-video (spin360)',
+    section: 'Video & 360°', group: 'Video',
+  },
+  spin360_analysis: {
+    label: '360° Bildanalyse',
+    description: 'Analysiert 4 Quellbilder auf Perspektive, Qualität und Fahrzeugtyp',
+    model: 'gemini-2.5-flash', edgeFunction: 'generate-360-spin',
+    section: 'Video & 360°', group: '360° Spin',
+  },
+  spin360_normalize: {
+    label: '360° Normalisierung',
+    description: 'Normalisiert Quellbilder auf Studio-Hintergrund',
+    model: 'gemini-2.5-flash (image)', edgeFunction: 'generate-360-spin',
+    section: 'Video & 360°', group: '360° Spin',
+  },
+  spin360_identity: {
+    label: '360° Identity Profile',
+    description: 'Erstellt ein Identitätsprofil für Frame-Konsistenz',
+    model: 'gemini-2.5-flash', edgeFunction: 'generate-360-spin',
+    section: 'Video & 360°', group: '360° Spin',
+  },
+  spin360_anchor: {
+    label: '360° Frame-Generierung',
+    description: 'Basis-Prompt für einzelne 360°-Frames',
+    model: 'gemini-2.5-flash (image)', edgeFunction: 'generate-360-spin',
+    section: 'Video & 360°', group: '360° Spin',
+  },
+
+  // ═══ SECTION: Landing Page ═══
+  landing_page: {
+    label: 'Landing Page Generierung',
+    description: 'System-Prompt für KI-generierte Landingpage-Inhalte (Texte, Struktur, SEO)',
+    model: 'gemini-2.5-flash', edgeFunction: 'generate-landing-page',
+    section: 'Landing Page & Marketing', group: 'Landing Page',
+  },
+
+  // ═══ SECTION: Sales & CRM ═══
+  auto_process_lead: {
+    label: 'Lead Auto-Antwort',
+    description: 'System-Prompt für die automatische Erstantwort bei neuen Leads',
+    model: 'gemini-2.5-flash', edgeFunction: 'auto-process-lead',
+    section: 'Sales & CRM', group: 'Lead-Verarbeitung',
+  },
+  sales_chat: {
+    label: 'Interner Sales-Chatbot',
+    description: 'System-Prompt für den internen Verkaufsassistent-Chatbot',
+    model: 'gemini-2.5-flash', edgeFunction: 'sales-chat',
+    section: 'Sales & CRM', group: 'Chatbot',
+  },
+  sales_response: {
+    label: 'Sales Response Generator',
+    description: 'Basis-System-Prompt für die Generierung von Verkaufsantworten',
+    model: 'gemini-2.5-flash', edgeFunction: 'generate-sales-response',
+    section: 'Sales & CRM', group: 'Chatbot',
+  },
 };
 
-// Build categories dynamically from PROMPT_META
-const CATEGORIES = Array.from(new Set(Object.values(PROMPT_META).map(m => m.category)));
+// ═══════════════════════════════════════════════════════════════════
+// SECTION ORDERING
+// ═══════════════════════════════════════════════════════════════════
 
-// Stable ordering: non-pipeline first, then pipeline categories
-const CATEGORY_ORDER = [
-  'PDF & Analyse',
-  'Bild-Verarbeitung',
-  'Remastering – Bausteine',
-  'Remastering – Szenen',
-  'Video',
-  '360° Spin',
-  'Landing Page',
-  'Banner',
+const SECTION_ORDER = [
+  'Datenextraktion & Erkennung',
+  'Bildgenerierung & Remastering',
+  'Pipeline – Bildgenerierung',
+  'Banner-Generator',
+  'Video & 360°',
+  'Landing Page & Marketing',
   'Sales & CRM',
 ];
-const sortedCategories = [
-  ...CATEGORY_ORDER.filter(c => CATEGORIES.includes(c)),
-  ...CATEGORIES.filter(c => !CATEGORY_ORDER.includes(c)).sort(),
-];
 
-const PROMPT_ORDER = Object.keys(PROMPT_META);
+const GROUP_ORDER: Record<string, string[]> = {
+  'Datenextraktion & Erkennung': ['PDF & Analyse', 'Bilderkennung'],
+  'Bildgenerierung & Remastering': ['Remastering – Basis', 'Remastering – Bausteine', 'Remastering – Szenen'],
+  'Pipeline – Bildgenerierung': ['Hero-Shots', 'Exterieur', 'Interieur', 'Details', 'Composites'],
+  'Banner-Generator': ['Basis & Regeln', 'Anlässe', 'Szenen', 'Stile', 'Preisdarstellung', 'Headline-Schriften', 'Subline-Schriften'],
+  'Video & 360°': ['Video', '360° Spin'],
+  'Landing Page & Marketing': ['Landing Page'],
+  'Sales & CRM': ['Lead-Verarbeitung', 'Chatbot'],
+};
+
+const SECTION_ICONS: Record<string, string> = {
+  'Datenextraktion & Erkennung': '📄',
+  'Bildgenerierung & Remastering': '🖼️',
+  'Pipeline – Bildgenerierung': '⚡',
+  'Banner-Generator': '🎨',
+  'Video & 360°': '🎬',
+  'Landing Page & Marketing': '🌐',
+  'Sales & CRM': '💬',
+};
+
+// Build ordered keys
+const ALL_KEYS = Object.keys(PROMPT_META);
 
 interface PromptOverrides {
   [key: string]: string;
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// COMPONENT
+// ═══════════════════════════════════════════════════════════════════
+
 export default function AdminPrompts() {
   const [overrides, setOverrides] = useState<PromptOverrides>({});
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [savingSection, setSavingSection] = useState<string | null>(null);
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
-  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const [savedSections, setSavedSections] = useState<Set<string>>(new Set());
 
   useEffect(() => { loadOverrides(); }, []);
 
@@ -598,15 +761,21 @@ export default function AdminPrompts() {
     setLoading(false);
   };
 
-  const saveOverrides = async () => {
-    setSaving(true);
+  const saveAll = useCallback(async (sectionLabel?: string) => {
+    setSavingSection(sectionLabel || 'all');
     const { error } = await supabase
       .from('admin_settings' as any)
       .upsert({ key: 'ai_prompts', value: overrides, updated_at: new Date().toISOString() } as any, { onConflict: 'key' });
     if (error) toast.error('Fehler: ' + error.message);
-    else toast.success('Prompt-Überschreibungen gespeichert');
-    setSaving(false);
-  };
+    else {
+      toast.success(sectionLabel ? `"${sectionLabel}" gespeichert` : 'Alle Prompts gespeichert');
+      if (sectionLabel) {
+        setSavedSections(prev => new Set(prev).add(sectionLabel));
+        setTimeout(() => setSavedSections(prev => { const n = new Set(prev); n.delete(sectionLabel); return n; }), 2000);
+      }
+    }
+    setSavingSection(null);
+  }, [overrides]);
 
   const toggleExpand = (key: string) => {
     setExpandedKeys(prev => {
@@ -616,10 +785,18 @@ export default function AdminPrompts() {
     });
   };
 
-  const toggleCategory = (cat: string) => {
-    setCollapsedCategories(prev => {
+  const toggleSection = (s: string) => {
+    setCollapsedSections(prev => {
       const next = new Set(prev);
-      if (next.has(cat)) next.delete(cat); else next.add(cat);
+      if (next.has(s)) next.delete(s); else next.add(s);
+      return next;
+    });
+  };
+
+  const toggleGroup = (g: string) => {
+    setCollapsedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(g)) next.delete(g); else next.add(g);
       return next;
     });
   };
@@ -642,117 +819,171 @@ export default function AdminPrompts() {
     });
   };
 
-  const overriddenCount = PROMPT_ORDER.filter(k => isOverridden(k)).length;
+  const overriddenCount = ALL_KEYS.filter(k => isOverridden(k)).length;
+
+  // Build section data
+  const sections = SECTION_ORDER.map(sectionName => {
+    const groups = (GROUP_ORDER[sectionName] || []).map(groupName => {
+      const keys = ALL_KEYS.filter(k => PROMPT_META[k]?.section === sectionName && PROMPT_META[k]?.group === groupName);
+      return { name: groupName, keys };
+    }).filter(g => g.keys.length > 0);
+
+    // Also catch any keys not in GROUP_ORDER
+    const coveredKeys = new Set(groups.flatMap(g => g.keys));
+    const ungrouped = ALL_KEYS.filter(k => PROMPT_META[k]?.section === sectionName && !coveredKeys.has(k));
+    if (ungrouped.length > 0) groups.push({ name: 'Weitere', keys: ungrouped });
+
+    const allSectionKeys = groups.flatMap(g => g.keys);
+    const sectionOverridden = allSectionKeys.filter(k => isOverridden(k)).length;
+
+    return { name: sectionName, groups, totalKeys: allSectionKeys.length, overridden: sectionOverridden };
+  }).filter(s => s.totalKeys > 0);
 
   if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin w-8 h-8 border-2 border-accent border-t-transparent rounded-full" /></div>;
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="font-display text-2xl font-bold text-foreground">Prompt-Verwaltung</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {PROMPT_ORDER.length} Prompts in {sortedCategories.length} Kategorien · {overriddenCount} überschrieben
-          </p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Pipeline-Prompts nutzen XML-Tags (IDENTITY_LOCK, VEHICLE_SCALE_LOCK, INTERIOR_RULES) und {'{{LOGO_LINE}}'} Platzhalter.
+            {ALL_KEYS.length} Prompts in {sections.length} Modulen · {overriddenCount} überschrieben
           </p>
         </div>
-        <Button onClick={saveOverrides} disabled={saving} className="gap-1.5">
-          <Save className="w-4 h-4" /> {saving ? 'Speichern…' : 'Überschreibungen speichern'}
+        <Button onClick={() => saveAll()} disabled={!!savingSection} className="gap-1.5">
+          <Save className="w-4 h-4" /> {savingSection === 'all' ? 'Speichern…' : 'Alle speichern'}
         </Button>
       </div>
 
-      <div className="space-y-6">
-        {sortedCategories.map(category => {
-          const prompts = PROMPT_ORDER.filter(k => PROMPT_META[k].category === category);
-          if (prompts.length === 0) return null;
-          const catOverridden = prompts.filter(k => isOverridden(k)).length;
-          const isCatCollapsed = collapsedCategories.has(category);
+      {/* Sections */}
+      <div className="space-y-4">
+        {sections.map(section => {
+          const isCollapsed = collapsedSections.has(section.name);
+          const isSaved = savedSections.has(section.name);
 
           return (
-            <div key={category} className="space-y-2">
-              <button
-                onClick={() => toggleCategory(category)}
-                className="flex items-center gap-2 w-full text-left group"
-              >
-                {isCatCollapsed
-                  ? <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                  : <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                }
-                <h2 className="font-display text-lg font-semibold text-foreground group-hover:text-accent transition-colors">
-                  {category}
-                </h2>
-                <Badge variant="secondary" className="text-xs">{prompts.length}</Badge>
-                {catOverridden > 0 && <Badge variant="outline" className="text-xs border-accent text-accent">{catOverridden} überschrieben</Badge>}
-              </button>
+            <div key={section.name} className="bg-card rounded-xl border border-border overflow-hidden">
+              {/* Section header */}
+              <div className="flex items-center justify-between px-4 py-3 bg-muted/30 border-b border-border">
+                <button onClick={() => toggleSection(section.name)} className="flex items-center gap-2.5 min-w-0 group">
+                  {isCollapsed
+                    ? <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                    : <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                  }
+                  <span className="text-base">{SECTION_ICONS[section.name] || '📋'}</span>
+                  <h2 className="font-display text-base font-bold text-foreground group-hover:text-accent transition-colors">
+                    {section.name}
+                  </h2>
+                  <Badge variant="secondary" className="text-xs">{section.totalKeys}</Badge>
+                  {section.overridden > 0 && <Badge variant="outline" className="text-xs border-accent text-accent">{section.overridden} custom</Badge>}
+                </button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => saveAll(section.name)}
+                  disabled={!!savingSection}
+                  className="gap-1 text-xs h-7 shrink-0"
+                >
+                  {isSaved ? <Check className="w-3 h-3 text-green-500" /> : <Save className="w-3 h-3" />}
+                  {savingSection === section.name ? 'Speichern…' : isSaved ? 'Gespeichert' : 'Speichern'}
+                </Button>
+              </div>
 
-              {!isCatCollapsed && (
-                <div className="space-y-3 ml-6">
-                  {prompts.map(key => {
-                    const meta = PROMPT_META[key];
-                    const expanded = expandedKeys.has(key);
-                    const overridden = isOverridden(key);
+              {/* Groups */}
+              {!isCollapsed && (
+                <div className="divide-y divide-border">
+                  {section.groups.map(group => {
+                    const groupKey = `${section.name}::${group.name}`;
+                    const isGroupCollapsed = collapsedGroups.has(groupKey);
+                    const groupOverridden = group.keys.filter(k => isOverridden(k)).length;
 
                     return (
-                      <div key={key} className="bg-card rounded-xl border border-border overflow-hidden">
+                      <div key={groupKey}>
+                        {/* Group header */}
                         <button
-                          onClick={() => toggleExpand(key)}
-                          className="w-full flex items-center justify-between p-3 sm:p-4 hover:bg-muted/50 transition-colors text-left"
+                          onClick={() => toggleGroup(groupKey)}
+                          className="flex items-center gap-2 w-full text-left px-4 py-2.5 hover:bg-muted/30 transition-colors"
                         >
-                          <div className="flex items-center gap-3 min-w-0">
-                            {expanded ? <EyeOff className="w-4 h-4 text-muted-foreground shrink-0" /> : <Eye className="w-4 h-4 text-muted-foreground shrink-0" />}
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="font-display font-semibold text-foreground text-sm">{meta.label}</span>
-                                {overridden && <Badge variant="outline" className="text-xs border-accent text-accent">Überschrieben</Badge>}
-                                {meta.readOnly && <Badge variant="secondary" className="text-xs">Nur Info</Badge>}
-                              </div>
-                              <p className="text-xs text-muted-foreground mt-0.5 truncate">{meta.description}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0 ml-2">
-                            <Badge variant="secondary" className="text-xs font-mono hidden sm:inline-flex">{meta.model}</Badge>
-                            <Badge variant="secondary" className="text-xs font-mono hidden sm:inline-flex">{meta.edgeFunction}</Badge>
-                          </div>
+                          {isGroupCollapsed
+                            ? <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
+                            : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+                          }
+                          <span className="text-sm font-semibold text-foreground/80">{group.name}</span>
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{group.keys.length}</Badge>
+                          {groupOverridden > 0 && <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-accent text-accent">{groupOverridden}</Badge>}
                         </button>
 
-                        {expanded && (
-                          <div className="px-3 sm:px-4 pb-4 space-y-3 border-t border-border pt-3">
-                            {/* Mobile badges */}
-                            <div className="flex gap-2 sm:hidden">
-                              <Badge variant="secondary" className="text-xs font-mono">{meta.model}</Badge>
-                              <Badge variant="secondary" className="text-xs font-mono">{meta.edgeFunction}</Badge>
-                            </div>
+                        {/* Prompt items */}
+                        {!isGroupCollapsed && (
+                          <div className="space-y-1.5 px-4 pb-3">
+                            {group.keys.map(key => {
+                              const meta = PROMPT_META[key];
+                              if (!meta) return null;
+                              const expanded = expandedKeys.has(key);
+                              const overridden = isOverridden(key);
+                              const isSmallPrompt = (DEFAULT_PROMPTS[key]?.length || 0) < 200;
 
-                            {meta.readOnly ? (
-                              <div className="bg-muted/50 rounded-lg p-4">
-                                <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                                  {DEFAULT_PROMPTS[key]}
-                                </p>
-                              </div>
-                            ) : (
-                              <>
-                                <div className="flex items-center justify-between">
-                                  <span className="text-xs font-medium text-muted-foreground">
-                                    {overridden ? 'Benutzerdefinierter Prompt (aktiv)' : 'Standard-Prompt (aktiv)'}
-                                  </span>
-                                  {overridden && (
-                                    <Button variant="ghost" size="sm" onClick={() => resetToDefault(key)} className="gap-1 text-xs h-7">
-                                      <RotateCcw className="w-3 h-3" /> Auf Standard zurücksetzen
-                                    </Button>
+                              return (
+                                <div key={key} className={`rounded-lg border ${overridden ? 'border-accent/40 bg-accent/5' : 'border-border bg-background'} overflow-hidden`}>
+                                  <button
+                                    onClick={() => toggleExpand(key)}
+                                    className="w-full flex items-center justify-between px-3 py-2 hover:bg-muted/30 transition-colors text-left"
+                                  >
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      {expanded ? <EyeOff className="w-3.5 h-3.5 text-muted-foreground shrink-0" /> : <Eye className="w-3.5 h-3.5 text-muted-foreground shrink-0" />}
+                                      <span className="font-medium text-foreground text-sm truncate">{meta.label}</span>
+                                      {overridden && <Badge variant="outline" className="text-[10px] px-1 py-0 border-accent text-accent shrink-0">Custom</Badge>}
+                                      {meta.readOnly && <Badge variant="secondary" className="text-[10px] px-1 py-0 shrink-0">Info</Badge>}
+                                    </div>
+                                    <div className="hidden sm:flex items-center gap-1.5 shrink-0 ml-2">
+                                      {meta.model !== '-' && <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-mono">{meta.model}</Badge>}
+                                    </div>
+                                  </button>
+
+                                  {expanded && (
+                                    <div className="px-3 pb-3 space-y-2 border-t border-border pt-2">
+                                      <p className="text-xs text-muted-foreground">{meta.description}</p>
+                                      {meta.model !== '-' && (
+                                        <div className="flex gap-1.5 flex-wrap">
+                                          <Badge variant="secondary" className="text-[10px] font-mono">{meta.model}</Badge>
+                                          <Badge variant="secondary" className="text-[10px] font-mono">{meta.edgeFunction}</Badge>
+                                        </div>
+                                      )}
+
+                                      {meta.readOnly ? (
+                                        <div className="bg-muted/50 rounded-lg p-3">
+                                          <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                                            {DEFAULT_PROMPTS[key]}
+                                          </p>
+                                        </div>
+                                      ) : (
+                                        <>
+                                          <div className="flex items-center justify-between">
+                                            <span className="text-xs font-medium text-muted-foreground">
+                                              {overridden ? '✏️ Benutzerdefiniert (aktiv)' : '📄 Standard (aktiv)'}
+                                            </span>
+                                            {overridden && (
+                                              <Button variant="ghost" size="sm" onClick={() => resetToDefault(key)} className="gap-1 text-xs h-6 px-2">
+                                                <RotateCcw className="w-3 h-3" /> Reset
+                                              </Button>
+                                            )}
+                                          </div>
+                                          <textarea
+                                            value={isMeaningfulOverride(overrides[key]) ? overrides[key] : DEFAULT_PROMPTS[key] || ''}
+                                            onChange={e => setOverrides(p => ({ ...p, [key]: e.target.value }))}
+                                            className={`w-full p-2.5 rounded-lg border border-border bg-background text-foreground text-xs resize-y font-mono leading-relaxed ${isSmallPrompt ? 'min-h-[60px]' : 'min-h-[160px]'}`}
+                                          />
+                                          <p className="text-[10px] text-muted-foreground">
+                                            Key: <code className="bg-muted px-1 rounded">{key}</code>
+                                          </p>
+                                        </>
+                                      )}
+                                    </div>
                                   )}
                                 </div>
-                                <textarea
-                                  value={isMeaningfulOverride(overrides[key]) ? overrides[key] : DEFAULT_PROMPTS[key]}
-                                  onChange={e => setOverrides(p => ({ ...p, [key]: e.target.value }))}
-                                  className="w-full min-h-[200px] p-3 rounded-lg border border-border bg-background text-foreground text-xs resize-y font-mono leading-relaxed"
-                                />
-                                <p className="text-xs text-muted-foreground">
-                                  Leer lassen oder löschen → Standard-Prompt wird verwendet. Key: <code className="bg-muted px-1 rounded">{key}</code>
-                                </p>
-                              </>
-                            )}
+                              );
+                            })}
                           </div>
                         )}
                       </div>
