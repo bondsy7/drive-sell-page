@@ -1781,7 +1781,8 @@ VITE_SUPABASE_PROJECT_ID=rauzclzphdnhzflovrya
 |---|---|---|
 | `analyze-pdf/index.ts` | ~417 | PDF-Analyse, JSON-Extraktion, CO₂-Post-Processing |
 | `generate-vehicle-image/index.ts` | ~230 | Multi-Engine Bildgenerierung (Gemini/OpenAI) |
-| `remaster-vehicle-image/index.ts` | ~204 | Master-Prompt Remastering mit bis zu 4 Referenzbildern |
+| `remaster-vehicle-image/index.ts` | ~441 | Master-Prompt Remastering mit Referenzbildern, Logos, Showroom, Kennzeichen, Fallback-Chain |
+| `upload-pipeline-images/index.ts` | ~120 | Gemini File API Upload für Pipeline-Payload-Optimierung |
 | `generate-banner/index.ts` | ~243 | Banner-Rendering (Gemini/OpenAI, beliebige Formate) |
 | `generate-video/index.ts` | ~231 | Async Video (Veo 3.1, Start/Poll-Pattern) |
 | `generate-landing-page/index.ts` | ~626 | Dual-Prompt Landing Page (Text-JSON → Bilder → HTML) |
