@@ -225,7 +225,11 @@ ${isCustomShowroom ? `MUTUAL ADAPTATION (CRITICAL):
 
   // ── LICENSE PLATE ──
   if (config.licensePlate === 'blur') {
-    parts.push(`<LICENSE_PLATE>\nBlur the license plate so characters are unreadable.\n</LICENSE_PLATE>`);
+    parts.push(`<LICENSE_PLATE>
+MANDATORY: Blur/pixelate the license plate so ALL characters are completely unreadable.
+The plate shape may remain visible but NO text, numbers, seals, or EU badges may be legible.
+This is NON-NEGOTIABLE – check your output before finalizing.
+</LICENSE_PLATE>`);
   } else if (config.licensePlate === 'custom' && config.customPlateImageBase64) {
     // Custom plate IMAGE takes absolute priority over text
     parts.push(`<LICENSE_PLATE>
@@ -237,8 +241,18 @@ Do NOT use the original plate. Do NOT invent plate text. Use ONLY the provided c
 </LICENSE_PLATE>`);
   } else if (config.licensePlate === 'custom' && config.customPlateText) {
     parts.push(`<LICENSE_PLATE>\nReplace the license plate with a German plate reading "${config.customPlateText}". Photorealistic rendering.\n</LICENSE_PLATE>`);
+  } else if (config.licensePlate === 'keep') {
+    parts.push(`<LICENSE_PLATE>\nKeep the original license plate exactly as it is. Do NOT alter, blur, or remove it.\n</LICENSE_PLATE>`);
   } else {
-    parts.push(`<LICENSE_PLATE>\nCompletely remove the license plate AND mounting bracket. The area must blend seamlessly into the body as if no plate was ever mounted.\n</LICENSE_PLATE>`);
+    // 'remove' or default
+    parts.push(`<LICENSE_PLATE>
+MANDATORY LICENSE PLATE REMOVAL (ZERO TOLERANCE – NON-NEGOTIABLE):
+1. COMPLETELY REMOVE the license plate from the vehicle. The plate, ALL text, numbers, seals, EU badges, and the mounting bracket MUST be GONE.
+2. The area where the plate was mounted MUST be seamlessly filled with matching body paint, bumper material, or grille texture – as if NO plate was EVER mounted.
+3. Do NOT leave a blank rectangle. Do NOT leave a white/gray placeholder. Do NOT leave any trace of the plate.
+4. This applies to FRONT and REAR plates – remove ALL visible plates on the vehicle.
+5. VERIFICATION: Before finalizing, check that NO license plate or mounting bracket remnant is visible ANYWHERE on the vehicle.
+</LICENSE_PLATE>`);
   }
 
   // ── INTERIOR RULES (ONLY for interior slots) ──
