@@ -124,6 +124,7 @@ interface BannerGeneratorProps {
 const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImage }) => {
   const { user } = useAuth();
   const { balance, getCost } = useCredits();
+  const { makes, getLogoForMake } = useVehicleMakes();
 
   // Project picker
   const [projects, setProjects] = useState<ProjectOption[]>([]);
@@ -132,6 +133,13 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
 
   // Vehicle image
   const [vehicleImage, setVehicleImage] = useState<string | null>(preloadedImage || null);
+
+  // Logo selection
+  const [showLogo, setShowLogo] = useState(false);
+  const [logoSource, setLogoSource] = useState<'dealer' | 'manufacturer'>('dealer');
+  const [dealerLogoUrl, setDealerLogoUrl] = useState<string | null>(null);
+  const [selectedLogoBrand, setSelectedLogoBrand] = useState('');
+  const [logoBase64, setLogoBase64] = useState<string | null>(null);
 
   // Prompt builder state
   const [format, setFormat] = useState<string>('post');
@@ -152,6 +160,7 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
   const [sublineFont, setSublineFont] = useState<string>('match');
 
   // Auto-extraction
+  const [autoAnalyze, setAutoAnalyze] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [extractedData, setExtractedData] = useState<any>(null);
 
