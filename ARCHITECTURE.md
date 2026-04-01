@@ -133,7 +133,9 @@ Das System folgt einer **modularen Workflow-Architektur** mit einem zentralen Ac
 | `gemini-2.5-flash` | PDF-Analyse, VIN-OCR, Text-Generierung, Marken-Erkennung, Sales-Chat, 360° Spin | Gemini REST (direkt) |
 | `gemini-2.5-flash-lite` | Equipment-Übersetzung (VIN), Subject-Generierung | Gemini REST (direkt) |
 | `gemini-2.5-flash-image` | Bildgenerierung (Schnell-Tier) | Gemini REST (direkt) |
-| `openai/gpt-image-1` | Bildgenerierung (Premium/Ultra-Tier), Banner | OpenAI REST (direkt) |
+| `gemini-3.1-flash-image-preview` | Bildgenerierung (Qualität/Turbo-Tier) | Gemini REST (direkt) |
+| `gemini-3-pro-image-preview` | Bildgenerierung (Premium/Ultra-Tier) | Gemini REST (direkt) |
+| `openai/gpt-image-1` | Bildgenerierung (Banner) | OpenAI REST (direkt) |
 | `Google Veo 3.1` | Video-Generierung (asynchron) | Gemini REST (direkt) |
 
 ---
