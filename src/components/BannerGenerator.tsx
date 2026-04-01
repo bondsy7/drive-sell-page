@@ -356,7 +356,14 @@ ${ctaText ? `CALL-TO-ACTION: Include a button or badge with the text "${ctaText}
 
 ${legalText ? `LEGAL DISCLAIMER (MANDATORY): At the very bottom of the banner, render the following legal text in a small, thin, highly readable sans-serif font (approx. 5-6pt equivalent). "${legalText}"` : ''}
 
-${showLogo && logoBase64 ? `LOGO: A logo image is provided as an additional reference image. Place it prominently in the banner – typically in a corner or alongside the headline. Keep the logo 100% identical.` : ''}
+${showLogo && logoBase64 ? `LOGO (MANDATORY – MUST BE VISIBLE):
+A logo image is provided as a separate reference image. You MUST place this logo visibly and prominently in the banner:
+- Position it in a corner (top-left or top-right preferred) or next to the headline
+- Keep the logo EXACTLY as provided – do NOT alter colors, proportions, or design
+- Ensure the logo is clearly visible with sufficient contrast against the background
+- Size it appropriately: large enough to be recognizable but not overpowering (roughly 10-15% of banner width)
+- If the background behind the logo is busy, add a subtle semi-transparent backing to ensure readability
+- The logo MUST NOT be omitted, hidden, or obscured under any circumstances` : ''}
 
 CRITICAL RULES:
 - The banner must be photorealistic with the vehicle photo seamlessly composited
