@@ -1840,4 +1840,4 @@ VITE_SUPABASE_PROJECT_ID=rauzclzphdnhzflovrya
 
 ---
 
-*© 2026 Autohaus.AI – Version 2.2 – Dieses Dokument ist vertraulich und nur für autorisierte Empfänger bestimmt.*
+*© 2026 Autohaus.AI – Version 2.3 – Dieses Dokument ist vertraulich und nur für autorisierte Empfänger bestimmt.*
