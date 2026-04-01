@@ -171,11 +171,15 @@ MATERIALS: Match exact finishes – chrome vs. gloss black vs. matte vs. satin. 
   if (!interior) {
     const isCustomShowroom = config.scene === 'custom-showroom';
     parts.push(`<VEHICLE_SCALE_LOCK>
-The vehicle MUST occupy the SAME proportion of the image frame in EVERY generated image.
-For full-body exterior shots: vehicle should fill approximately 55-65% of the image width.
-The apparent SIZE of the vehicle must remain CONSISTENT across all perspectives – same car, same scale.
-Do NOT make the vehicle larger or smaller between different camera angles.
-${isCustomShowroom ? `CRITICAL SCALE RULE FOR CUSTOM SHOWROOM: The vehicle must look REALISTICALLY SIZED relative to the showroom architecture. Compare the vehicle height to door frames, windows, ceiling height, and wall elements visible in the showroom reference image. The car must NOT appear oversized or undersized for the space. It must look like a real car naturally parked in this real showroom.` : ''}
+ABSOLUTE SCALE AND POSITION RULES – ZERO DEVIATION BETWEEN IMAGES:
+1. CONSISTENT SIZE: The vehicle MUST occupy EXACTLY 55-65% of the image WIDTH in EVERY full-body exterior shot. NOT more, NOT less.
+2. VERTICAL CENTER: The vehicle's vertical center (wheel-to-roof midpoint) MUST be at approximately 55% from the top of the image.
+3. HORIZONTAL CENTER: The vehicle's center of mass MUST be horizontally centered (50% ± 5%) for symmetric views. For 3/4 views, shift up to 10% toward the camera side.
+4. GROUND PLANE: ALL four wheels MUST sit on the SAME ground plane. The floor line MUST be at approximately 75-80% from the top.
+5. NO VARIATION: The vehicle must appear the EXACT same physical size across ALL perspectives – front, side, rear, 3/4.
+6. BREATHING ROOM: Maintain at least 10% padding between vehicle and image edge.
+7. PERSPECTIVE CONSISTENCY: Even when camera angle changes, the apparent size must remain constant. Wide-angle distortion is FORBIDDEN.
+${isCustomShowroom ? `8. CUSTOM SHOWROOM SCALE: The vehicle must look REALISTICALLY SIZED relative to the showroom architecture. Compare vehicle height to door frames, windows, ceiling. A standard sedan is ~1.4m tall, an SUV ~1.7m. The car must NOT appear oversized or undersized for the space.` : ''}
 </VEHICLE_SCALE_LOCK>`);
   }
 
