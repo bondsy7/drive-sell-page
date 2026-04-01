@@ -885,7 +885,7 @@ export default function AdminPrompts() {
                   disabled={!!savingSection}
                   className="gap-1 text-xs h-7 shrink-0"
                 >
-                  {isSaved ? <Check className="w-3 h-3 text-green-500" /> : <Save className="w-3 h-3" />}
+                  {isSaved ? <Check className="w-3 h-3 text-accent" /> : <Save className="w-3 h-3" />}
                   {savingSection === section.name ? 'Speichern…' : isSaved ? 'Gespeichert' : 'Speichern'}
                 </Button>
               </div>
