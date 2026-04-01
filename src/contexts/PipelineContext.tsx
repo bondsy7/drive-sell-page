@@ -168,12 +168,37 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const primaryReferenceIndex = inferPrimaryReferenceIndex(job, prompt, referenceImages.length);
     const primaryReference = referenceImages[primaryReferenceIndex] || referenceImages[0];
 
-    // For detail jobs: put additional detail images FIRST in supporting references
-    // so the AI sees them as the primary detail source for identity matching
-    const isDetailJob = job?.category === 'detail';
-    const supportingReferences = isDetailJob && cfg.additionalImages.length > 0
-      ? [...cfg.additionalImages, ...referenceImages.filter((_, i) => i !== primaryReferenceIndex)]
-      : referenceImages.filter((_, i) => i !== primaryReferenceIndex).concat(cfg.additionalImages);
+    // ── Phase 3: Smart Image Routing ──
+    // Filter supporting references based on job category to reduce payload
+    const category = job?.category || 'exterior';
+    const otherReferences = referenceImages.filter((_, i) => i !== primaryReferenceIndex);
+
+    let supportingReferences: string[];
+    switch (category) {
+      case 'interior':
+        // Interior jobs: NO exterior reference images, NO detail images
+        // Only the primary interior reference is needed
+        supportingReferences = [];
+        break;
+      case 'detail':
+        // Detail jobs: Send ALL additional detail images (they are the authoritative source)
+        // Plus the primary reference for body context, but limit other refs
+        supportingReferences = [
+          ...cfg.additionalImages,
+          ...otherReferences.slice(0, 2), // max 2 body refs for context
+        ];
+        break;
+      case 'exterior':
+      case 'hero':
+      case 'composite':
+      case 'ci':
+      default:
+        // Exterior/hero: Send body references + showroom context, limit to max 5
+        supportingReferences = otherReferences.slice(0, 5);
+        break;
+    }
+
+    console.log(`[Pipeline] Job ${job?.key} (${category}): primary ref #${primaryReferenceIndex}, ${supportingReferences.length} supporting refs`);
 
     const promptOverrides = await fetchPromptOverrides();
     const isInteriorJob = job?.category === 'interior';
