@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useCredits } from '@/hooks/useCredits';
 import RemasterOptions from '@/components/RemasterOptions';
-import { type RemasterConfig, buildMasterPrompt } from '@/lib/remaster-prompt';
+import { type RemasterConfig, buildMasterPrompt, fetchPromptOverrides } from '@/lib/remaster-prompt';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 import ImagePreviewLightbox from '@/components/ImagePreviewLightbox';
 import type { PresetData } from './PresetSelectionModal';
