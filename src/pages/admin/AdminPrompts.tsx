@@ -480,12 +480,6 @@ const PROMPT_META: Record<string, PromptMeta> = {
   },
 
   // ═══ SECTION: Bildgenerierung & Remastering ═══
-  image_remaster: {
-    label: 'Bild-Remastering (Base-Prompt)',
-    description: 'Master-Prompt mit XML-Tags: IDENTITY_LOCK, VEHICLE_SCALE_LOCK, ANTI_CROPPING, SCENE, NEGATIVE_CONSTRAINTS',
-    model: 'gemini-2.5-flash (image)', edgeFunction: 'remaster-vehicle-image',
-    section: 'Bildgenerierung & Remastering', group: 'Remastering – Basis',
-  },
   image_generate: {
     label: 'Bildgenerierung (Info)',
     description: 'Der imagePrompt wird automatisch von der PDF-Analyse generiert',
