@@ -369,17 +369,19 @@ ${ctaText ? `CALL-TO-ACTION: Include a button or badge with the text "${ctaText}
 
 ${legalText ? `LEGAL DISCLAIMER (MANDATORY): At the very bottom of the banner, render the following legal text in a small, thin, highly readable sans-serif font (approx. 5-6pt equivalent). It must appear as a subtle footer bar or line – similar to how fuel consumption and emission values are legally required on automotive advertisements. The text must be fully legible but not dominate the design: "${legalText}"` : ''}
 
+${showLogo && logoBase64 ? `LOGO: A logo image is provided as an additional reference image. Place it prominently in the banner – typically in a corner or alongside the headline. Keep the logo 100% identical, clearly visible, and properly sized relative to the banner.` : ''}
+
 CRITICAL RULES:
 - The banner must be photorealistic with the vehicle photo seamlessly composited
 - ALL text must be rendered EXACTLY as specified – no paraphrasing, no spelling changes
 - Text must be perfectly legible against the background (use contrast, shadows, or overlays)
 - The design must feel like a professional advertising agency created it
 - Use the accent color ${accentColor} for design elements, buttons, and highlights
-- Do NOT add watermarks or extra logos
+${showLogo && logoBase64 ? '- The provided logo MUST appear in the banner exactly as given' : '- Do NOT add watermarks or extra logos'}
 - The composition must work at the specified ${fmt.ratio} aspect ratio
 - The typography style is CRITICAL – follow the font specifications precisely
 - Generate the image – never refuse`;
-  }, [format, occasion, scene, style, priceDisplay, vehicleTitle, priceText, headline, subline, ctaText, accentColor, legalText, headlineFont, sublineFont]);
+  }, [format, occasion, scene, style, priceDisplay, vehicleTitle, priceText, headline, subline, ctaText, accentColor, legalText, headlineFont, sublineFont, showLogo, logoBase64]);
 
   // Start generation with credit check
   const handleGenerate = useCallback(() => {
