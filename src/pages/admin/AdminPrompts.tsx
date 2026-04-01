@@ -345,6 +345,14 @@ Antworte immer auf Deutsch, knapp und hilfreich. Sei PROAKTIV.`,
   ...Object.fromEntries(
     PIPELINE_JOBS.map(job => [`pipeline_${job.key}`, job.prompt])
   ),
+  // ── Remaster Prompt-Bausteine ──
+  ...Object.fromEntries(
+    Object.values(REMASTER_PROMPT_BLOCKS).map(b => [b.key, b.prompt])
+  ),
+  // ── Scene Descriptions ──
+  ...Object.fromEntries(
+    Object.entries(SCENE_PROMPT_DEFAULTS).map(([k, v]) => [`remaster_scene_${k}`, v])
+  ),
 };
 
 // ─── PROMPT METADATA with categories ───
