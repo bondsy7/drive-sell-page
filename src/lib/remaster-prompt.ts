@@ -113,7 +113,13 @@ export function buildMasterPrompt(config: RemasterConfig, vehicleDescription?: s
   const interior = isInteriorSlot(slotKey);
 
   // ── Base instruction ──
-  parts.push('You are a top-tier professional automotive commercial photographer and retoucher.\nTASK: Remaster the provided reference vehicle photo into a flawless, dealership-quality promotional image.');
+  parts.push(`You are a top-tier professional automotive commercial photographer and retoucher.
+TASK: Remaster the provided reference vehicle photo into a flawless, dealership-quality promotional image.
+
+<OUTPUT_FORMAT>
+ASPECT RATIO: The output image MUST be in 4:3 (landscape) format. Width-to-height ratio = 4:3 exactly.
+This applies to EVERY generated image without exception.
+</OUTPUT_FORMAT>`);
 
   // ── CRITICAL ASSET INTEGRATION (logos FIRST – highest priority) ──
   const hasAnyLogo = (config.showManufacturerLogo && config.manufacturerLogoUrl) || (config.showDealerLogo && config.dealerLogoUrl);
@@ -165,11 +171,15 @@ MATERIALS: Match exact finishes – chrome vs. gloss black vs. matte vs. satin. 
   if (!interior) {
     const isCustomShowroom = config.scene === 'custom-showroom';
     parts.push(`<VEHICLE_SCALE_LOCK>
-The vehicle MUST occupy the SAME proportion of the image frame in EVERY generated image.
-For full-body exterior shots: vehicle should fill approximately 55-65% of the image width.
-The apparent SIZE of the vehicle must remain CONSISTENT across all perspectives – same car, same scale.
-Do NOT make the vehicle larger or smaller between different camera angles.
-${isCustomShowroom ? `CRITICAL SCALE RULE FOR CUSTOM SHOWROOM: The vehicle must look REALISTICALLY SIZED relative to the showroom architecture. Compare the vehicle height to door frames, windows, ceiling height, and wall elements visible in the showroom reference image. The car must NOT appear oversized or undersized for the space. It must look like a real car naturally parked in this real showroom.` : ''}
+ABSOLUTE SCALE AND POSITION RULES – ZERO DEVIATION BETWEEN IMAGES:
+1. CONSISTENT SIZE: The vehicle MUST occupy EXACTLY 55-65% of the image WIDTH in EVERY full-body exterior shot. NOT more, NOT less.
+2. VERTICAL CENTER: The vehicle's vertical center (wheel-to-roof midpoint) MUST be at approximately 55% from the top of the image.
+3. HORIZONTAL CENTER: The vehicle's center of mass MUST be horizontally centered (50% ± 5%) for symmetric views. For 3/4 views, shift up to 10% toward the camera side.
+4. GROUND PLANE: ALL four wheels MUST sit on the SAME ground plane. The floor line MUST be at approximately 75-80% from the top.
+5. NO VARIATION: The vehicle must appear the EXACT same physical size across ALL perspectives – front, side, rear, 3/4.
+6. BREATHING ROOM: Maintain at least 10% padding between vehicle and image edge.
+7. PERSPECTIVE CONSISTENCY: Even when camera angle changes, the apparent size must remain constant. Wide-angle distortion is FORBIDDEN.
+${isCustomShowroom ? `8. CUSTOM SHOWROOM SCALE: The vehicle must look REALISTICALLY SIZED relative to the showroom architecture. Compare vehicle height to door frames, windows, ceiling. A standard sedan is ~1.4m tall, an SUV ~1.7m. The car must NOT appear oversized or undersized for the space.` : ''}
 </VEHICLE_SCALE_LOCK>`);
   }
 
@@ -196,17 +206,19 @@ LIGHTING: Bright, even, professional interior lighting. Improve existing lightin
       const isCustomShowroom = config.scene === 'custom-showroom';
       parts.push(`<SCENE_AND_LIGHTING>
 ENVIRONMENT: ${scenePrompt}
-FLOOR: The floor MUST match the selected showroom/scene exactly. Use the CORRECT floor material (polished concrete, marble, tiles, asphalt) as described.${isCustomShowroom ? ' The floor from the custom showroom reference image is the AUTHORITATIVE source – reproduce its EXACT color, texture, and reflectivity.' : ''}
-REFLECTIONS: Completely re-render ALL vehicle body reflections to match the NEW scene environment. The paint surface must reflect the showroom walls, windows, ceiling lights, and floor – NOT remnants of the original photo location. Remove ALL original reflections from the previous environment. The car must look like it is PHYSICALLY PRESENT in this showroom.
-SHADOWS: Generate realistic ground shadows and ambient occlusion beneath the vehicle. The car must appear to be STANDING ON the floor – NOT floating or hovering. Shadow direction must match the scene lighting. The tires must make realistic contact with the floor surface.
-LIGHTING: ${isCustomShowroom ? 'Match the lighting conditions from the custom showroom reference image exactly – same direction, color temperature, and intensity. The vehicle paint, chrome, and glass must reflect the showroom lighting naturally.' : 'Bright, even, professional studio lighting.'}
-${isCustomShowroom ? `CUSTOM SHOWROOM INTEGRATION (CRITICAL):
-- The showroom MUST be the DOMINANT environment in every image – it must ALWAYS be clearly recognizable as the same room.
-- Do NOT overlay the vehicle on top of the showroom like a cut-out or collage. The result must look like a REAL PHOTOGRAPH taken inside this showroom.
-- The showroom walls, ceiling, floor, windows, and all architectural elements MUST be fully visible in the background – never cropped out or obscured.
-- ALL wall decorations, logos, brand marks, and lettering visible in the showroom reference image MUST be preserved in their EXACT positions. When the camera perspective changes (e.g. front view vs. side view), these elements must shift naturally according to correct 3D perspective – but they must NEVER disappear, be removed, or be altered.
-- The vehicle must cast correct shadows onto the showroom floor and receive correct lighting from the showroom light sources.
-- The showroom IS the showroom – you are placing the car INTO it as if it drove in and parked there.` : ''}
+FLOOR: The floor MUST match the selected showroom/scene exactly.${isCustomShowroom ? ' The floor from the custom showroom reference image is the AUTHORITATIVE source – reproduce its EXACT color, texture, and reflectivity.' : ''}
+REFLECTIONS: Completely re-render ALL vehicle body reflections to match the NEW scene. Remove ALL original reflections from previous environment. The paint must reflect showroom walls, ceiling lights, floor – NOT remnants of original location.
+SHADOWS: Generate realistic ground shadows and ambient occlusion beneath the vehicle. Tires MUST make realistic contact with floor surface. Shadow direction matches scene lighting. NO floating or hovering.
+LIGHTING: ${isCustomShowroom ? 'Analyze the lighting conditions in the custom showroom reference image (light sources, direction, color temperature, intensity) and apply them ONTO the vehicle. The car paint, chrome, and glass MUST reflect the showroom lighting naturally. BOTH the showroom AND the vehicle must be lit by the SAME light sources.' : 'Bright, even, professional studio lighting.'}
+${isCustomShowroom ? `MUTUAL ADAPTATION (CRITICAL):
+- This is NOT a simple background swap. You must RE-RENDER the ENTIRE scene as one cohesive photograph.
+- The showroom provides the ENVIRONMENT and LIGHTING. The vehicle must be LIT BY the showroom's lights.
+- The vehicle must CAST SHADOWS onto the showroom floor and RECEIVE REFLECTIONS from the showroom surfaces.
+- The showroom floor must show a REFLECTION of the vehicle (if the floor is reflective in the reference).
+- The camera perspective of the showroom must MATCH the camera perspective of the vehicle shot.
+- ALL architectural details, wall logos, branding, furniture, display cases MUST remain in their EXACT positions – shifted only by natural 3D perspective when camera angle changes.
+- The result must be INDISTINGUISHABLE from a real photograph taken in this exact showroom.
+- Do NOT overlay or collage. Do NOT crop out the showroom. The room MUST be fully visible and recognizable in EVERY image.` : ''}
 </SCENE_AND_LIGHTING>`);
     }
   }
