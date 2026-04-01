@@ -233,19 +233,38 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       ? (cachedDealerLogoBase64Ref.current || cfg.remasterConfig.dealerLogoBase64 || null)
       : null;
 
-    // For interior jobs: do NOT send the custom showroom image – it confuses the AI into generating exterior views
-    // The showroom should only be visible THROUGH the windows, described via text prompt
+    // For interior jobs: do NOT send the custom showroom image
     const showroomBase64ForRequest = isInteriorJob ? null : (cfg.remasterConfig.customShowroomBase64 || null);
+
+    // Phase 4: Use cached Gemini File URIs when available
+    const fileCache = cachedFileUrisRef.current;
+    const hasFileUris = !!(fileCache.mainImage || fileCache.references.length > 0);
+
+    // Build file URI arrays for this specific job based on smart routing
+    let additionalFileUris: { uri: string; mimeType: string }[] | undefined;
+    if (hasFileUris && fileCache.references.length > 0) {
+      // Map supporting references to their file URIs
+      // The file URIs correspond to ALL original references uploaded at pipeline start
+      const allRefs = cfg.originalImages.length > 0 ? cfg.originalImages : cfg.inputImages;
+      additionalFileUris = supportingReferences
+        .map(ref => {
+          const idx = allRefs.indexOf(ref);
+          return idx >= 0 && idx < fileCache.references.length ? fileCache.references[idx] : null;
+        })
+        .filter((fu): fu is { uri: string; mimeType: string } => fu !== null);
+    }
 
     const { data, error } = await invokeRemasterVehicleImage({
       imageBase64: primaryReference,
-      additionalImages: supportingReferences.length > 0 ? supportingReferences : undefined,
+      additionalImages: hasFileUris ? undefined : (supportingReferences.length > 0 ? supportingReferences : undefined),
+      additionalFileUris: additionalFileUris && additionalFileUris.length > 0 ? additionalFileUris : undefined,
+      mainImageFileUri: fileCache.mainImage || null,
       vehicleDescription: cfg.vehicleDescription,
       modelTier: cfg.modelTier,
       dynamicPrompt: fullPrompt,
-      customShowroomBase64: showroomBase64ForRequest,
+      customShowroomBase64: hasFileUris ? null : showroomBase64ForRequest,
+      customShowroomFileUri: !isInteriorJob ? fileCache.showroom : null,
       customPlateImageBase64: isInteriorJob ? null : (cfg.remasterConfig.customPlateImageBase64 || null),
-      // Only pass URL as fallback if base64 is not available
       dealerLogoUrl: dealerLogoBase64 ? null : (cfg.remasterConfig.showDealerLogo ? cfg.remasterConfig.dealerLogoUrl : null),
       dealerLogoBase64: dealerLogoBase64,
       manufacturerLogoUrl: manufacturerLogoBase64 ? null : (cfg.remasterConfig.showManufacturerLogo ? cfg.resolvedManufacturerLogoUrl : null),
