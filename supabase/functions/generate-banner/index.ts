@@ -175,7 +175,7 @@ async function generateGemini(prompt: string, imageBase64: string | null, logoBa
   return null;
 }
 
-async function generateOpenAI(prompt: string, imageBase64: string | null, model: string, width: number, height: number, isUltra: boolean, retries: number): Promise<string | null> {
+async function generateOpenAI(prompt: string, imageBase64: string | null, logoBase64: string | null, model: string, width: number, height: number, isUltra: boolean, retries: number): Promise<string | null> {
   const apiKey = Deno.env.get("OPENAI_API_KEY");
   if (!apiKey) throw new Error("OPENAI_API_KEY not configured");
 
