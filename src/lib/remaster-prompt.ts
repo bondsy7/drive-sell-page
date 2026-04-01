@@ -1,5 +1,9 @@
 // Dynamic master prompt construction for vehicle image remastering
 // Uses structured English XML-tags optimized for Gemini image models
+// Prompt blocks are admin-editable via Admin > Prompt-Verwaltung
+
+import { supabase } from '@/integrations/supabase/client';
+import { REMASTER_PROMPT_BLOCKS, SCENE_PROMPT_DEFAULTS } from './remaster-prompt-defaults';
 
 export interface RemasterConfig {
   scene: string;
@@ -42,24 +46,43 @@ export const LICENSE_PLATE_OPTIONS = [
   { value: 'custom', label: 'Eigenes Nummernschild' },
 ] as const;
 
-// ── Scene prompt fragments (English, structured) ──
-const SCENE_PROMPTS: Record<string, string> = {
-  'none': '',
-  'showroom-1': 'Modern, bright dealership showroom. White walls, polished light-gray concrete floor with subtle reflections, minimalist recessed LED ceiling spots, subtle LED accent lighting on the back wall. Use the EXACT SAME showroom on EVERY image – same walls, floor, windows, lighting.',
-  'showroom-2': 'Elegant luxury showroom. Large glass facades, warm lighting, designer furniture in background, glossy marble-like floor. Use the EXACT SAME showroom on EVERY image.',
-  'showroom-3': 'Light-flooded dealership with floor-to-ceiling glass facade. Dark gray matte back wall, gray tile floor with reflections, full-height glass windows on the left, modern recessed LED ceiling lighting. Use the EXACT SAME showroom on EVERY image.',
-  'custom-showroom': 'The user has provided a REFERENCE IMAGE of their custom showroom. This showroom is an IMMUTABLE ASSET – do NOT alter, redesign, or reimagine it. The vehicle MUST look like it is PHYSICALLY STANDING INSIDE this exact showroom – as if a real photograph was taken of the car parked in this real room. The showroom MUST always be clearly recognizable in every generated image. You may change the camera perspective (front, side, rear) but the showroom environment must ALWAYS remain fully visible and identifiable – same walls, same floor, same ceiling, same windows, same lighting fixtures. Do NOT overlay the car on top of the showroom like a collage. Do NOT crop out the showroom. Do NOT replace or obscure the showroom with a different background. The showroom must occupy the FULL background of every image. Preserve EVERY architectural detail: walls, floor material and color, ceiling, windows, glass facades, lighting fixtures, and ALL decorations including ANY logos, brand marks, emblems, or lettering mounted on walls. If a logo (e.g. Ferrari prancing horse, brand name text) is visible on a wall in the reference, it MUST remain at its EXACT position, size, and appearance – adjusted ONLY for natural 3D perspective changes when the camera moves. The floor material, color, and reflectivity MUST be IDENTICAL across all generated images. Use this EXACT showroom for EVERY image.',
-  'forest': 'Dense, mystical conifer forest. Soft light rays through tree canopy. Ground with moss and pine needles. Vehicle on unpaved forest path.',
-  'mountain': 'Paved mountain road with panoramic view of snow-capped peaks. Clear blue sky, dramatic cloud formations.',
-  'city': 'Modern big-city skyline with glass facades and skyscrapers. Clean asphalt, golden hour lighting.',
-  'street': 'Broad, straight road with perfect asphalt. Dramatic vanishing-point perspective. Warm afternoon light.',
-  'beach': 'Firm sand on wide beach. Turquoise ocean background, gentle waves, warm sunset light.',
-  'desert': 'Straight desert road amid vast sandy landscape with dunes. Dramatic light, clear sky.',
-  'night-city': 'Illuminated city street at night. Neon lights and signs reflect on wet road and car body.',
-  'parking-garage': 'Modern, clean underground garage. Polished concrete floor, LED ceiling lighting, clean lines.',
-  'racetrack': 'Start/finish straight of professional racetrack. Red-white curbs, smooth asphalt.',
-  'mansion': 'Driveway of luxurious villa. Manicured lawn, Mediterranean architecture, warm evening light.',
-};
+// ── Admin prompt overrides cache ──
+let _cachedOverrides: Record<string, string> | null = null;
+let _cacheTime = 0;
+const CACHE_TTL = 60_000; // 1 minute
+
+export async function fetchPromptOverrides(): Promise<Record<string, string>> {
+  if (_cachedOverrides && Date.now() - _cacheTime < CACHE_TTL) return _cachedOverrides;
+  try {
+    const { data } = await supabase
+      .from('admin_settings' as any)
+      .select('value')
+      .eq('key', 'ai_prompts')
+      .single();
+    _cachedOverrides = ((data as any)?.value as Record<string, string>) || {};
+    _cacheTime = Date.now();
+    return _cachedOverrides;
+  } catch {
+    return {};
+  }
+}
+
+/** Get a prompt block – admin override if set, otherwise default */
+function getBlock(overrides: Record<string, string>, blockName: string): string {
+  const block = REMASTER_PROMPT_BLOCKS[blockName];
+  if (!block) return '';
+  const override = overrides[block.key];
+  if (override && override.trim() && override.trim().toLowerCase() !== 'default') return override;
+  return block.prompt;
+}
+
+/** Get a scene description – admin override if set, otherwise default */
+function getScenePrompt(overrides: Record<string, string>, sceneKey: string): string {
+  const overrideKey = `remaster_scene_${sceneKey}`;
+  const override = overrides[overrideKey];
+  if (override && override.trim() && override.trim().toLowerCase() !== 'default') return override;
+  return SCENE_PROMPT_DEFAULTS[sceneKey] || '';
+}
 
 // ── Perspective prompts (structured XML format) ──
 const PERSPECTIVE_PROMPTS: Record<string, string> = {
@@ -108,18 +131,24 @@ function isInteriorSlot(slotKey?: string): boolean {
   return slotKey.startsWith('interior');
 }
 
-export function buildMasterPrompt(config: RemasterConfig, vehicleDescription?: string, slotKey?: string): string {
+/**
+ * Build the master prompt from admin-editable blocks.
+ * @param config - Remaster configuration
+ * @param overrides - Admin prompt overrides (fetched via fetchPromptOverrides)
+ * @param vehicleDescription - Optional vehicle description text
+ * @param slotKey - Optional perspective slot key
+ */
+export function buildMasterPrompt(
+  config: RemasterConfig,
+  vehicleDescription?: string,
+  slotKey?: string,
+  overrides: Record<string, string> = {},
+): string {
   const parts: string[] = [];
   const interior = isInteriorSlot(slotKey);
 
   // ── Base instruction ──
-  parts.push(`You are a top-tier professional automotive commercial photographer and retoucher.
-TASK: Remaster the provided reference vehicle photo into a flawless, dealership-quality promotional image.
-
-<OUTPUT_FORMAT>
-ASPECT RATIO: The output image MUST be in 4:3 (landscape) format. Width-to-height ratio = 4:3 exactly.
-This applies to EVERY generated image without exception.
-</OUTPUT_FORMAT>`);
+  parts.push(getBlock(overrides, 'base_instruction'));
 
   // ── CRITICAL ASSET INTEGRATION (logos FIRST – highest priority) ──
   const hasAnyLogo = (config.showManufacturerLogo && config.manufacturerLogoUrl) || (config.showDealerLogo && config.dealerLogoUrl);
@@ -145,11 +174,9 @@ This applies to EVERY generated image without exception.
     }
     parts.push(`<CRITICAL_ASSET_INTEGRATION>\n${logoLines.join('\n\n')}\n</CRITICAL_ASSET_INTEGRATION>`);
   } else {
-    // Explicitly tell AI NOT to add logos when none are selected
     parts.push(`<NO_LOGO_INSTRUCTION>
 Do NOT add ANY logo, brand mark, emblem, or wall decoration to the background.
 The showroom wall must remain CLEAN and EMPTY – no manufacturer logos, no dealer logos, no decorative elements.
-If the AI would normally place a logo, SKIP IT. The wall stays blank.
 </NO_LOGO_INSTRUCTION>`);
   }
 
@@ -158,80 +185,46 @@ If the AI would normally place a logo, SKIP IT. The wall stays blank.
     ? `PAINT COLOR: Change vehicle paint to EXACTLY hex ${config.colorHex}. Glossy, photorealistic finish with correct reflections and color transitions.`
     : 'PAINT COLOR: Reproduce the EXACT paint color, shade, and finish (metallic/matte/pearl) from the original. Do NOT shift, tint, saturate, desaturate, lighten, or darken. Applies to ALL body panels, bumpers, mirrors, and painted surfaces.';
 
-  parts.push(`<IDENTITY_LOCK>
-${colorLock}
-WHEELS: EXACT rim design – spoke count, shape, concavity, finish (polished/matte/bi-color/diamond-cut). Hub cap with brand logo. EXACT tire profile. NEVER crop any wheel at image edges.
-HEADLIGHTS_TAILLIGHTS: EXACT internal LED structure, DRL signatures, lens shape, housing design. NEVER crop or alter.
-GRILLE_BADGES: EXACT grille mesh pattern, badge shape, material, model designation in exact position, size, font.
-BODY_DETAILS: EXACT body lines, creases, fender flares, air intakes, roof rails, spoilers, exhaust tips, mirror shapes, door handles.
-MATERIALS: Match exact finishes – chrome vs. gloss black vs. matte vs. satin. Do NOT substitute.
-</IDENTITY_LOCK>`);
+  parts.push(`<IDENTITY_LOCK>\n${colorLock}\n${getBlock(overrides, 'identity_lock')}\n</IDENTITY_LOCK>`);
 
   // ── VEHICLE SCALE LOCK ──
   if (!interior) {
     const isCustomShowroom = config.scene === 'custom-showroom';
-    parts.push(`<VEHICLE_SCALE_LOCK>
-ABSOLUTE SCALE AND POSITION RULES – ZERO DEVIATION BETWEEN IMAGES:
-1. CONSISTENT SIZE: The vehicle MUST occupy EXACTLY 55-65% of the image WIDTH in EVERY full-body exterior shot. NOT more, NOT less.
-2. VERTICAL CENTER: The vehicle's vertical center (wheel-to-roof midpoint) MUST be at approximately 55% from the top of the image.
-3. HORIZONTAL CENTER: The vehicle's center of mass MUST be horizontally centered (50% ± 5%) for symmetric views. For 3/4 views, shift up to 10% toward the camera side.
-4. GROUND PLANE: ALL four wheels MUST sit on the SAME ground plane. The floor line MUST be at approximately 75-80% from the top.
-5. NO VARIATION: The vehicle must appear the EXACT same physical size across ALL perspectives – front, side, rear, 3/4.
-6. BREATHING ROOM: Maintain at least 10% padding between vehicle and image edge.
-7. PERSPECTIVE CONSISTENCY: Even when camera angle changes, the apparent size must remain constant. Wide-angle distortion is FORBIDDEN.
-${isCustomShowroom ? `8. CUSTOM SHOWROOM SCALE: The vehicle must look REALISTICALLY SIZED relative to the showroom architecture. Compare vehicle height to door frames, windows, ceiling. A standard sedan is ~1.4m tall, an SUV ~1.7m. The car must NOT appear oversized or undersized for the space.` : ''}
-</VEHICLE_SCALE_LOCK>`);
+    const scaleLock = getBlock(overrides, 'vehicle_scale_lock');
+    parts.push(`<VEHICLE_SCALE_LOCK>\n${scaleLock}${isCustomShowroom ? `\n8. CUSTOM SHOWROOM SCALE: The vehicle must look REALISTICALLY SIZED relative to the showroom architecture. Compare vehicle height to door frames, windows, ceiling. A standard sedan is ~1.4m tall, an SUV ~1.7m. The car must NOT appear oversized or undersized for the space.` : ''}\n</VEHICLE_SCALE_LOCK>`);
   }
 
   // ── ANTI-CROPPING ──
-  parts.push(`<ANTI_CROPPING>
-The vehicle MUST be FULLY visible – NO part cut off at image edges.
-ALL headlights, taillights, and wheels COMPLETELY visible.
-Maintain minimum 5% free space between vehicle edge and image border on all sides.
-</ANTI_CROPPING>`);
+  parts.push(`<ANTI_CROPPING>\n${getBlock(overrides, 'anti_cropping')}\n</ANTI_CROPPING>`);
 
   // ── SCENE AND LIGHTING ──
-  const scenePrompt = SCENE_PROMPTS[config.scene];
+  const scenePrompt = getScenePrompt(overrides, config.scene);
   if (scenePrompt) {
     if (interior) {
-      // For interior shots: describe the scene as what should be visible THROUGH the windows
+      const interiorLighting = getBlock(overrides, 'scene_lighting_interior');
       parts.push(`<SCENE_AND_LIGHTING>
 WINDOW_VIEW: The view through ALL vehicle windows MUST show: ${scenePrompt}
 The scene must be visible THROUGH the glass naturally – do NOT place the car in a different environment.
 Use the EXACT SAME scene visible through windows on EVERY interior image.
-REFLECTIONS: Re-render all glass reflections to match the scene visible through windows.
-LIGHTING: Bright, even, professional interior lighting. Improve existing lighting to showroom quality.
+${interiorLighting}
 </SCENE_AND_LIGHTING>`);
     } else {
       const isCustomShowroom = config.scene === 'custom-showroom';
+      const exteriorLighting = getBlock(overrides, 'scene_lighting_exterior');
       parts.push(`<SCENE_AND_LIGHTING>
 ENVIRONMENT: ${scenePrompt}
+Use the EXACT SAME environment on EVERY image – same walls, floor, windows, lighting.
 FLOOR: The floor MUST match the selected showroom/scene exactly.${isCustomShowroom ? ' The floor from the custom showroom reference image is the AUTHORITATIVE source – reproduce its EXACT color, texture, and reflectivity.' : ''}
-REFLECTIONS: Completely re-render ALL vehicle body reflections to match the NEW scene. Remove ALL original reflections from previous environment. The paint must reflect showroom walls, ceiling lights, floor – NOT remnants of original location.
-SHADOWS: Generate realistic ground shadows and ambient occlusion beneath the vehicle. Tires MUST make realistic contact with floor surface. Shadow direction matches scene lighting. NO floating or hovering.
-LIGHTING: ${isCustomShowroom ? 'Analyze the lighting conditions in the custom showroom reference image (light sources, direction, color temperature, intensity) and apply them ONTO the vehicle. The car paint, chrome, and glass MUST reflect the showroom lighting naturally. BOTH the showroom AND the vehicle must be lit by the SAME light sources.' : 'Bright, even, professional studio lighting.'}
-${isCustomShowroom ? `MUTUAL ADAPTATION (CRITICAL):
-- This is NOT a simple background swap. You must RE-RENDER the ENTIRE scene as one cohesive photograph.
-- The showroom provides the ENVIRONMENT and LIGHTING. The vehicle must be LIT BY the showroom's lights.
-- The vehicle must CAST SHADOWS onto the showroom floor and RECEIVE REFLECTIONS from the showroom surfaces.
-- The showroom floor must show a REFLECTION of the vehicle (if the floor is reflective in the reference).
-- The camera perspective of the showroom must MATCH the camera perspective of the vehicle shot.
-- ALL architectural details, wall logos, branding, furniture, display cases MUST remain in their EXACT positions – shifted only by natural 3D perspective when camera angle changes.
-- The result must be INDISTINGUISHABLE from a real photograph taken in this exact showroom.
-- Do NOT overlay or collage. Do NOT crop out the showroom. The room MUST be fully visible and recognizable in EVERY image.` : ''}
+${exteriorLighting}
+${isCustomShowroom ? getBlock(overrides, 'custom_showroom_instruction') : ''}
 </SCENE_AND_LIGHTING>`);
     }
   }
 
   // ── LICENSE PLATE ──
   if (config.licensePlate === 'blur') {
-    parts.push(`<LICENSE_PLATE>
-MANDATORY: Blur/pixelate the license plate so ALL characters are completely unreadable.
-The plate shape may remain visible but NO text, numbers, seals, or EU badges may be legible.
-This is NON-NEGOTIABLE – check your output before finalizing.
-</LICENSE_PLATE>`);
+    parts.push(`<LICENSE_PLATE>\n${getBlock(overrides, 'license_plate_blur')}\n</LICENSE_PLATE>`);
   } else if (config.licensePlate === 'custom' && config.customPlateImageBase64) {
-    // Custom plate IMAGE takes absolute priority over text
     parts.push(`<LICENSE_PLATE>
 CRITICAL: A separate reference image of a CUSTOM LICENSE PLATE is provided as an additional input image.
 You MUST replace the vehicle's existing license plate with this EXACT custom plate image.
@@ -244,67 +237,16 @@ Do NOT use the original plate. Do NOT invent plate text. Use ONLY the provided c
   } else if (config.licensePlate === 'keep') {
     parts.push(`<LICENSE_PLATE>\nKeep the original license plate exactly as it is. Do NOT alter, blur, or remove it.\n</LICENSE_PLATE>`);
   } else {
-    // 'remove' or default
-    parts.push(`<LICENSE_PLATE>
-MANDATORY LICENSE PLATE REMOVAL (ZERO TOLERANCE – NON-NEGOTIABLE):
-1. COMPLETELY REMOVE the license plate from the vehicle. The plate, ALL text, numbers, seals, EU badges, and the mounting bracket MUST be GONE.
-2. The area where the plate was mounted MUST be seamlessly filled with matching body paint, bumper material, or grille texture – as if NO plate was EVER mounted.
-3. Do NOT leave a blank rectangle. Do NOT leave a white/gray placeholder. Do NOT leave any trace of the plate.
-4. This applies to FRONT and REAR plates – remove ALL visible plates on the vehicle.
-5. VERIFICATION: Before finalizing, check that NO license plate or mounting bracket remnant is visible ANYWHERE on the vehicle.
-</LICENSE_PLATE>`);
+    parts.push(`<LICENSE_PLATE>\n${getBlock(overrides, 'license_plate_remove')}\n</LICENSE_PLATE>`);
   }
 
   // ── INTERIOR RULES (ONLY for interior slots) ──
   if (interior) {
-    parts.push(`<INTERIOR_RULES>
-THIS IS AN INTERIOR SHOT – the following rules are ABSOLUTE and NON-NEGOTIABLE:
-
-1. EXACT COMPOSITION PRESERVATION:
-- Output MUST have the EXACT SAME framing, camera angle, and perspective as the reference.
-- Do NOT rotate, flip, mirror, zoom, re-frame, or crop differently.
-
-2. ZERO INVENTION / ZERO MODIFICATION:
-- Do NOT add ANY element not in the original (no new buttons, screens, trim, ambient lighting).
-- Do NOT remove ANY permanent vehicle element (seats, buttons, screens, speakers, vents, pedals).
-- Do NOT change ANY material (leather stays leather, alcantara stays alcantara, piano black stays piano black).
-- EVERY detail matters: tachometer, screen UI, stitching color, seat perforation, air vent angles, gear selector position, cup holder shape, USB ports – ALL must match EXACTLY.
-
-3. CLEANUP ONLY (the ONLY changes allowed):
-- Remove items NOT belonging to vehicle: trash, bags, papers, plastic covers, dust, dirt, personal belongings, hands/feet, clothing.
-- Remove temporary WARNING stickers (keep permanent vehicle labels).
-- Clean all surfaces to showroom-ready condition.
-
-4. LIGHTING ENHANCEMENT ONLY:
-- Improve to bright, even, professional lighting.
-- View through windows MUST show the SELECTED showroom/scene – NOT a random outdoor scene or street.
-- Do NOT alter glass transparency or window tint.
-
-5. STRUCTURAL INTEGRITY:
-- Roof, ALL pillars (A/B/C), headliner, door panels, sun visors, rearview mirror MUST remain FULLY visible and UNCUT.
-- Do NOT crop ANY structural element at image edges.
-
-6. ABSOLUTELY FORBIDDEN:
-- Generating exterior view from interior reference.
-- Changing camera angle from original.
-- Adding decorative elements or "improving" design.
-- Cutting roof, removing doors, altering structural frame.
-- Showing a different scene through windows than the selected showroom/scene.
-</INTERIOR_RULES>`);
+    parts.push(`<INTERIOR_RULES>\n${getBlock(overrides, 'interior_rules')}\n</INTERIOR_RULES>`);
   }
 
   // ── STRICT NEGATIVE CONSTRAINTS ──
-  parts.push(`<STRICT_NEGATIVE_CONSTRAINTS>
-UNDER NO CIRCUMSTANCES SHALL YOU:
-- Invent or hallucinate details not in reference photos
-- Simplify complex details (multi-spoke rims keep all spokes, LED arrays keep all elements)
-- Change vehicle proportions, ride height, or stance
-- Add aftermarket parts, humans, animals, or moving objects
-- Show other vehicles in background or reflections
-- Rotate, flip, or mirror the image
-- Carry over reflections from original environment
-- Add ANY logo, brand mark, or wall decoration UNLESS a logo image is explicitly provided as a reference asset
-</STRICT_NEGATIVE_CONSTRAINTS>`);
+  parts.push(`<STRICT_NEGATIVE_CONSTRAINTS>\n${getBlock(overrides, 'negative_constraints')}\n</STRICT_NEGATIVE_CONSTRAINTS>`);
 
   // ── Vehicle description ──
   if (vehicleDescription) {
@@ -325,7 +267,6 @@ UNDER NO CIRCUMSTANCES SHALL YOU:
 }
 
 // Dynamic manufacturer logos loaded from storage bucket 'manufacturer-logos'
-// Legacy static map kept for fallback – new logos are managed via Admin > Hersteller-Logos
 export const MANUFACTURER_LOGOS: Record<string, { svg?: string; webp?: string; label: string }> = {
   abarth: { svg: '/images/logos/abarth.svg', webp: '/images/logos/abarth.webp', label: 'Abarth' },
   aiways: { webp: '/images/logos/aiways.webp', label: 'Aiways' },
@@ -335,11 +276,8 @@ export const MANUFACTURER_LOGOS: Record<string, { svg?: string; webp?: string; l
   'aston-martin': { svg: '/images/logos/astonmartin.svg', webp: '/images/logos/aston-martin.webp', label: 'Aston Martin' },
 };
 
-// Fetch all logos from dynamic storage bucket
-import { supabase } from '@/integrations/supabase/client';
-
 export interface DynamicLogo {
-  name: string;  // filename without extension
+  name: string;
   url: string;
 }
 
@@ -350,19 +288,16 @@ export async function fetchManufacturerLogos(): Promise<DynamicLogo[]> {
   });
   if (error || !data) return [];
 
-  // Group files by base name, prefer PNG > WebP > JPG (never SVG for AI generation)
   const RASTER_EXTS = ['.png', '.webp', '.jpg', '.jpeg'];
   const byName = new Map<string, { name: string; ext: string; fullName: string }>();
 
   for (const f of data) {
     if (!f.name || f.name.startsWith('.')) continue;
     const ext = f.name.substring(f.name.lastIndexOf('.')).toLowerCase();
-    // Skip SVG – Gemini cannot process vector graphics
     if (ext === '.svg') continue;
     if (!RASTER_EXTS.includes(ext)) continue;
     const baseName = f.name.replace(/\.[^.]+$/, '').toLowerCase();
     const existing = byName.get(baseName);
-    // Priority: png > webp > jpg/jpeg
     const priority = (e: string) => e === '.png' ? 0 : e === '.webp' ? 1 : 2;
     if (!existing || priority(ext) < priority(existing.ext)) {
       byName.set(baseName, { name: baseName, ext, fullName: f.name });
