@@ -70,7 +70,7 @@ VERBRAUCH - Suche nach ALLEN dieser Werte:
 
 JSON-Schema:
 {
-  "category": "Leasing|Finanzierung|Kauf|Barkauf",
+  "category": "Leasing|Finanzierung|Barkauf|Neuwagen|Gebrauchtwagen|Tageszulassung",
   "vehicle": {
     "brand": "string (Marke, z.B. 'BMW', 'Mercedes-Benz', 'Volkswagen')",
     "model": "string (volles Modell, z.B. 'X3 xDrive30e')",
@@ -137,8 +137,18 @@ JSON-Schema:
 
 Für den imagePrompt: Erstelle einen detaillierten englischen Prompt mit exaktem Fahrzeugmodell (Marke, Modell, Farbe, Karosserieform) in einem modernen, hellen Autohaus-Showroom. Beschreibe Licht, Reflexionen, Boden und Atmosphäre.
 
-DOKUMENTTYP-ERKENNUNG (WICHTIG!):
-Prüfe ZUERST, ob es sich um ein Fahrzeug-Angebot handelt (Leasing, Finanzierung, Kauf, Barkauf).
+KATEGORIE-ERKENNUNG (WICHTIG!):
+Erkenne den Angebotstyp so dynamisch wie möglich:
+- "Leasing" → Wenn Begriffe wie "Leasingrate", "Leasingvertrag", "mtl. Leasingrate", "Sonderzahlung" vorkommen
+- "Finanzierung" → Wenn Begriffe wie "Finanzierungsrate", "eff. Jahreszins", "Sollzinssatz", "Kreditvertrag", "Darlehen", "Gesamtdarlehensbetrag" vorkommen
+- "Barkauf" → Wenn ein Fahrzeug zum Direktkauf angeboten wird ohne Finanzierung/Leasing
+- "Neuwagen" → Wenn es ein Neuwagen/Werksfahrzeug ist (0 km, Neufahrzeug, Bestellung, Konfigurator)
+- "Gebrauchtwagen" → Wenn Kilometerstand > 100 km, "Gebrauchtwagen", "Vorbesitzer" etc.
+- "Tageszulassung" → Wenn "Tageszulassung", "TZ", niedriger km-Stand (< 100 km) mit Erstzulassung
+Kombiniere wenn nötig: Ein Gebrauchtwagen kann per Finanzierung angeboten werden → dann "Finanzierung". Der Angebotstyp (Leasing/Finanzierung/Barkauf) hat VORRANG vor dem Fahrzeugzustand.
+
+DOKUMENTTYP-ERKENNUNG:
+Prüfe ZUERST, ob es sich um ein Fahrzeug-Angebot handelt (Leasing, Finanzierung, Kauf, Barkauf, Neuwagen, Gebrauchtwagen, Tageszulassung).
 Wenn das Dokument KEIN Fahrzeugangebot ist (z.B. Rechnung, Versicherung, Werkstattrechnung, Mietvertrag, 
 Bewerbung, Steuerbescheid, beliebiges anderes Dokument), antworte mit:
 {
@@ -390,6 +400,19 @@ Gib das Ergebnis als JSON zurück.`;
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // === CATEGORY NORMALIZATION ===
+    const VALID_CATEGORIES = ['Leasing', 'Finanzierung', 'Barkauf', 'Neuwagen', 'Gebrauchtwagen', 'Tageszulassung'];
+    const rawCat = (parsed.category || '').toLowerCase().trim();
+    const categoryMap: Record<string, string> = {
+      'leasing': 'Leasing', 'finanzierung': 'Finanzierung', 'kredit': 'Finanzierung',
+      'barkauf': 'Barkauf', 'kauf': 'Barkauf', 'direktkauf': 'Barkauf',
+      'neuwagen': 'Neuwagen', 'neufahrzeug': 'Neuwagen',
+      'gebrauchtwagen': 'Gebrauchtwagen', 'gebraucht': 'Gebrauchtwagen',
+      'tageszulassung': 'Tageszulassung',
+    };
+    parsed.category = categoryMap[rawCat] || VALID_CATEGORIES.find(c => rawCat.includes(c.toLowerCase())) || parsed.category || 'Barkauf';
+    console.log("[analyze-pdf] Detected category:", parsed.category);
 
     // === POST-PROCESSING ===
     if (!parsed.consumption) parsed.consumption = {};
