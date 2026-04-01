@@ -148,6 +148,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Cached logo base64 – fetched ONCE before pipeline starts to ensure consistency
   const cachedManufacturerLogoBase64Ref = useRef<string | null>(null);
   const cachedDealerLogoBase64Ref = useRef<string | null>(null);
+  // Pre-uploaded Gemini File URIs – populated once at pipeline start
+  const fileUriMapRef = useRef<FileUriMap>({});
 
   // Helper to fetch a URL and convert to data URL (base64)
   const fetchUrlToBase64 = useCallback(async (url: string): Promise<string | null> => {
