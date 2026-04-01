@@ -200,7 +200,20 @@ async function generateOpenAI(prompt: string, imageBase64: string | null, logoBa
         const form = new FormData();
         form.append("model", model);
         form.append("image", blob, "vehicle.png");
-        form.append("prompt", `${prompt}\n\nIMPORTANT: Use the provided vehicle image as the central hero element. Keep it 100% identical.`);
+        
+        // Add logo as additional image if provided
+        let logoPromptAddition = "";
+        if (logoBase64) {
+          const logoRaw = logoBase64.includes(",") ? logoBase64.split(",")[1] : logoBase64;
+          const logoBinaryStr = atob(logoRaw);
+          const logoBytes = new Uint8Array(logoBinaryStr.length);
+          for (let j = 0; j < logoBinaryStr.length; j++) logoBytes[j] = logoBinaryStr.charCodeAt(j);
+          const logoBlob = new Blob([logoBytes], { type: "image/png" });
+          form.append("image", logoBlob, "logo.png");
+          logoPromptAddition = "\n\nA LOGO image is also provided. Place it prominently in the banner (corner or near headline). Keep the logo 100% identical.";
+        }
+        
+        form.append("prompt", `${prompt}\n\nIMPORTANT: Use the provided vehicle image as the central hero element. Keep it 100% identical.${logoPromptAddition}`);
         form.append("n", "1");
         form.append("size", size);
         if (isUltra) form.append("quality", "high");
