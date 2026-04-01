@@ -16,6 +16,7 @@ import { useSearchParams } from 'react-router-dom';
 
 import type { Project, VideoFile } from '@/components/dashboard/types';
 import { getImageSrc } from '@/components/dashboard/types';
+import { getImageSortKey } from '@/components/dashboard/GalleryTab';
 import ProjectsTab from '@/components/dashboard/ProjectsTab';
 import LandingsTab from '@/components/dashboard/LandingsTab';
 import GalleryTab from '@/components/dashboard/GalleryTab';
@@ -38,6 +39,7 @@ const Dashboard = () => {
   const { disabledModules } = useModuleAccess();
   const [searchParams] = useSearchParams();
   const initialTab = (searchParams.get('tab') as TabKey) || 'projects';
+  const highlightFolder = searchParams.get('folder') || null;
   const [tab, setTab] = useState<TabKey>(initialTab);
 
   // Map module keys to dashboard tab keys
@@ -65,6 +67,7 @@ const Dashboard = () => {
 
   // Modals
   const [lightboxIndex, setLightboxIndex] = useState(-1);
+  const [lightboxFolder, setLightboxFolder] = useState<string | null>(null);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
   const [exportProject, setExportProject] = useState<Project | null>(null);
@@ -208,7 +211,7 @@ const Dashboard = () => {
       case 'landings': return <LandingsTab projects={landingProjects} onExport={openExportDialog} onDelete={(id) => deleteProject.mutate(id)} />;
       case 'gallery': return (
         <>
-          <GalleryTab images={allImages} onLightbox={setLightboxIndex} />
+          <GalleryTab images={allImages} onLightbox={(folder, idx) => { setLightboxFolder(folder); setLightboxIndex(idx); }} highlightFolder={highlightFolder} />
           <Pagination page={galleryPage} setPage={setGalleryPage} total={galleryTotal} />
         </>
       );
@@ -253,12 +256,20 @@ const Dashboard = () => {
       <ExportChoiceDialog open={exportDialogOpen} onOpenChange={setExportDialogOpen} onChoose={handleExportHTML} loading={exportLoading} projectId={exportProject?.id} />
 
       <GalleryLightbox
-        images={allImages.map(img => ({ id: img.id, src: getImageSrc(img), perspective: img.perspective, project_id: img.project_id }))}
+        images={
+          (lightboxFolder
+            ? allImages.filter(img => (img.gallery_folder || 'Ohne Ordner') === lightboxFolder)
+            : [...allImages]
+          )
+            .sort((a, b) => getImageSortKey(a.perspective) - getImageSortKey(b.perspective))
+            .map(img => ({ id: img.id, src: getImageSrc(img), perspective: img.perspective, project_id: img.project_id }))
+        }
         initialIndex={lightboxIndex}
         open={lightboxIndex >= 0}
-        onClose={() => setLightboxIndex(-1)}
+        onClose={() => { setLightboxIndex(-1); setLightboxFolder(null); }}
         onAssigned={() => {}}
         onRegenerated={() => {}}
+        onDeleted={() => {}}
       />
 
       {playerVideo && <VideoPlayerModal video={playerVideo} onClose={() => setPlayerVideo(null)} onDownload={(v) => downloadFile(v.url, v.name)} />}

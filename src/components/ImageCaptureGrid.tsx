@@ -8,11 +8,12 @@ import { useVinLookup } from '@/hooks/useVinLookup';
 import { useVehicleMakes } from '@/hooks/useVehicleMakes';
 import VinDataDialog from '@/components/VinDataDialog';
 import RemasterOptions from '@/components/RemasterOptions';
-import { type RemasterConfig, buildMasterPrompt } from '@/lib/remaster-prompt';
+import { type RemasterConfig, buildMasterPrompt, fetchPromptOverrides } from '@/lib/remaster-prompt';
 import PipelineRunner from '@/components/PipelineRunner';
 import { lookupBrandFromVin } from '@/lib/vin-wmi-lookup';
 import { resolveCanonicalBrand, normalizeBrand } from '@/lib/brand-aliases';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
+import { ensureLogoCachedAsPng } from '@/lib/image-base64-cache';
 import type { VehicleData } from '@/types/vehicle';
 
 interface ImageCaptureGridProps {
@@ -421,6 +422,10 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     if (key === 'vin') setDetectedVin(null);
   };
 
+  // Ref to hold pre-cached logo base64 for consistent use across all remaster calls
+  const cachedMfgLogoRef = useRef<string | null>(null);
+  const cachedDealerLogoRef = useRef<string | null>(null);
+
   const startRemastering = async () => {
     const toProcess = vehicleSlots.filter(s => captures[s.key] && captures[s.key].status !== 'done');
     if (toProcess.length === 0) {
@@ -433,6 +438,40 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     let completed = 0;
     setProgress({ current: 0, total });
 
+    // Pre-cache logos as PNG ONCE before any remastering to ensure consistency
+    cachedMfgLogoRef.current = null;
+    cachedDealerLogoRef.current = null;
+    try {
+      const logoPromises: Promise<void>[] = [];
+      if (remasterConfig.showManufacturerLogo) {
+        const src = remasterConfig.manufacturerLogoBase64 || remasterConfig.manufacturerLogoUrl;
+        if (src) {
+          logoPromises.push(
+            ensureLogoCachedAsPng(src).then(b64 => {
+              if (b64?.startsWith('data:')) cachedMfgLogoRef.current = b64;
+            }).catch(() => {
+              if (remasterConfig.manufacturerLogoBase64) cachedMfgLogoRef.current = remasterConfig.manufacturerLogoBase64;
+            })
+          );
+        }
+      }
+      if (remasterConfig.showDealerLogo) {
+        const src = remasterConfig.dealerLogoBase64 || remasterConfig.dealerLogoUrl;
+        if (src) {
+          logoPromises.push(
+            ensureLogoCachedAsPng(src).then(b64 => {
+              if (b64?.startsWith('data:')) cachedDealerLogoRef.current = b64;
+            }).catch(() => {
+              if (remasterConfig.dealerLogoBase64) cachedDealerLogoRef.current = remasterConfig.dealerLogoBase64;
+            })
+          );
+        }
+      }
+      if (logoPromises.length > 0) await Promise.all(logoPromises);
+    } catch (e) {
+      console.warn('[Remaster] Logo pre-cache failed:', e);
+    }
+
     // Mark all as processing
     setCaptures(prev => {
       const next = { ...prev };
@@ -442,9 +481,11 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       return next;
     });
 
-    const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription);
-
+    const promptOverrides = await fetchPromptOverrides();
     const processSlot = async (slot: typeof toProcess[0]) => {
+      // Build per-slot prompt with perspective-specific instructions
+      const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription, slot.key, promptOverrides);
+
       const MAX_RETRIES = 2;
       for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
         try {
@@ -456,10 +497,10 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
             dynamicPrompt,
             customShowroomBase64: remasterConfig.customShowroomBase64 || null,
             customPlateImageBase64: remasterConfig.customPlateImageBase64 || null,
-            dealerLogoUrl: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null,
-            dealerLogoBase64: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoBase64 : null,
-            manufacturerLogoUrl: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoUrl : null,
-            manufacturerLogoBase64: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoBase64 : null,
+            dealerLogoUrl: cachedDealerLogoRef.current ? null : (remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null),
+            dealerLogoBase64: remasterConfig.showDealerLogo ? (cachedDealerLogoRef.current || remasterConfig.dealerLogoBase64) : null,
+            manufacturerLogoUrl: cachedMfgLogoRef.current ? null : (remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoUrl : null),
+            manufacturerLogoBase64: remasterConfig.showManufacturerLogo ? (cachedMfgLogoRef.current || remasterConfig.manufacturerLogoBase64) : null,
           });
 
           if (error || !data?.imageBase64) {
@@ -507,7 +548,8 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     if (!slot || !captures[slotKey]) return;
     setCaptures(prev => ({ ...prev, [slotKey]: { ...prev[slotKey], status: 'processing', error: undefined } }));
     try {
-      const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription);
+      const overrides = await fetchPromptOverrides();
+      const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription, undefined, overrides);
       const { data, error } = await invokeRemasterVehicleImage({
         imageBase64: captures[slotKey].base64,
         additionalImages: detailImages.length > 0 ? detailImages : undefined,
@@ -516,10 +558,10 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         dynamicPrompt,
         customShowroomBase64: remasterConfig.customShowroomBase64 || null,
         customPlateImageBase64: remasterConfig.customPlateImageBase64 || null,
-        dealerLogoUrl: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null,
-        dealerLogoBase64: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoBase64 : null,
-        manufacturerLogoUrl: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoUrl : null,
-        manufacturerLogoBase64: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoBase64 : null,
+        dealerLogoUrl: cachedDealerLogoRef.current ? null : (remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null),
+        dealerLogoBase64: remasterConfig.showDealerLogo ? (cachedDealerLogoRef.current || remasterConfig.dealerLogoBase64) : null,
+        manufacturerLogoUrl: cachedMfgLogoRef.current ? null : (remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoUrl : null),
+        manufacturerLogoBase64: remasterConfig.showManufacturerLogo ? (cachedMfgLogoRef.current || remasterConfig.manufacturerLogoBase64) : null,
       });
       if (error || !data?.imageBase64) {
         const errMsg = data?.error || error?.message || 'Fehler beim Remastering';

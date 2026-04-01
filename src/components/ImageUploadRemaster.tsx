@@ -6,7 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import RemasterOptions from '@/components/RemasterOptions';
-import { type RemasterConfig, buildMasterPrompt } from '@/lib/remaster-prompt';
+import { type RemasterConfig, buildMasterPrompt, fetchPromptOverrides } from '@/lib/remaster-prompt';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 
 interface ImageUploadRemasterProps {
@@ -143,7 +143,8 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
     // Mark all as processing
     setImages(prev => prev.map(x => pending.some(p => p.id === x.id) ? { ...x, status: 'processing' } : x));
 
-    const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription);
+    const promptOverrides = await fetchPromptOverrides();
+    const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription, undefined, promptOverrides);
 
     const processImage = async (img: UploadedImage) => {
       try {
@@ -193,7 +194,8 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
     setImages(prev => prev.map(x => x.id === id ? { ...x, status: 'processing', error: undefined } : x));
     setRegeneratingIds(prev => new Set(prev).add(id));
     try {
-      const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription);
+      const overrides = await fetchPromptOverrides();
+      const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription, undefined, overrides);
       const { data, error } = await invokeRemasterVehicleImage({
         imageBase64: img.originalBase64,
         vehicleDescription,

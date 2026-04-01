@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useCredits } from '@/hooks/useCredits';
 import RemasterOptions from '@/components/RemasterOptions';
-import { type RemasterConfig, buildMasterPrompt } from '@/lib/remaster-prompt';
+import { type RemasterConfig, buildMasterPrompt, fetchPromptOverrides } from '@/lib/remaster-prompt';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 import ImagePreviewLightbox from '@/components/ImagePreviewLightbox';
 import type { PresetData } from './PresetSelectionModal';
@@ -86,7 +86,7 @@ const PresetUploadFlow: React.FC<PresetUploadFlowProps> = ({ onComplete, onBack 
   const [step, setStep] = useState<'preset' | 'config' | 'upload' | 'processing' | 'done'>('preset');
   const [selectedPreset, setSelectedPreset] = useState<PresetData | null>(null);
   const [presetModalOpen, setPresetModalOpen] = useState(false);
-  const [modelTier, setModelTier] = useState<ModelTier>('schnell');
+  const [modelTier, setModelTier] = useState<ModelTier>('qualitaet');
   const [dynamicFields, setDynamicFields] = useState<Record<string, string>>({});
   const [remasterConfig, setRemasterConfig] = useState<RemasterConfig>(DEFAULT_CONFIG);
   const [images, setImages] = useState<UploadedImage[]>([]);
@@ -134,9 +134,10 @@ const PresetUploadFlow: React.FC<PresetUploadFlowProps> = ({ onComplete, onBack 
       resolvedPrompt = resolvedPrompt.replace(new RegExp(`\\{${key}\\}`, 'g'), value || '');
     });
 
+    const promptOverrides = await fetchPromptOverrides();
     const dynamicPrompt = resolvedPrompt
-      ? `${resolvedPrompt}\n\n${buildMasterPrompt(remasterConfig, '')}`
-      : buildMasterPrompt(remasterConfig, '');
+      ? `${resolvedPrompt}\n\n${buildMasterPrompt(remasterConfig, '', undefined, promptOverrides)}`
+      : buildMasterPrompt(remasterConfig, '', undefined, promptOverrides);
 
     setIsProcessing(true);
     setStep('processing');
@@ -191,9 +192,10 @@ const PresetUploadFlow: React.FC<PresetUploadFlowProps> = ({ onComplete, onBack 
     Object.entries(dynamicFields).forEach(([key, value]) => {
       resolvedPrompt = resolvedPrompt.replace(new RegExp(`\\{${key}\\}`, 'g'), value || '');
     });
+    const retryOverrides = await fetchPromptOverrides();
     const dynamicPrompt = resolvedPrompt
-      ? `${resolvedPrompt}\n\n${buildMasterPrompt(remasterConfig, '')}`
-      : buildMasterPrompt(remasterConfig, '');
+      ? `${resolvedPrompt}\n\n${buildMasterPrompt(remasterConfig, '', undefined, retryOverrides)}`
+      : buildMasterPrompt(remasterConfig, '', undefined, retryOverrides);
 
     try {
       const { data, error } = await invokeRemasterVehicleImage({

@@ -1,16 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { ArrowLeft, Download, Image, Loader2, Plus, Minus, Sparkles, ScanSearch } from 'lucide-react';
+import { ArrowLeft, Download, Image, Loader2, Plus, Minus, Sparkles, ScanSearch, Building2, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import CreditConfirmDialog from '@/components/CreditConfirmDialog';
 import ModelSelector, { type ModelTier } from '@/components/ModelSelector';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useCredits } from '@/hooks/useCredits';
+import { useVehicleMakes } from '@/hooks/useVehicleMakes';
 import { toast } from 'sonner';
 
 // ─── Config ───
@@ -20,6 +23,9 @@ const BANNER_FORMATS = [
   { id: 'post', label: 'Instagram Post', w: 1080, h: 1080, ratio: '1:1' },
   { id: 'fb-ad', label: 'Facebook Ad', w: 1200, h: 628, ratio: '16:9' },
   { id: 'hero', label: 'Website Banner', w: 1920, h: 1080, ratio: '16:9' },
+  { id: 'half-page', label: 'Google Half Page', w: 300, h: 600, ratio: '1:2' },
+  { id: 'billboard', label: 'Google Ads Billboard', w: 970, h: 250, ratio: '97:25' },
+  { id: 'wide-skyscraper', label: 'Google Ads Wide Skyscraper', w: 160, h: 600, ratio: '4:15' },
 ] as const;
 
 const OCCASIONS = [
@@ -120,6 +126,7 @@ interface BannerGeneratorProps {
 const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImage }) => {
   const { user } = useAuth();
   const { balance, getCost } = useCredits();
+  const { makes, getLogoForMake } = useVehicleMakes();
 
   // Project picker
   const [projects, setProjects] = useState<ProjectOption[]>([]);
@@ -128,6 +135,13 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
 
   // Vehicle image
   const [vehicleImage, setVehicleImage] = useState<string | null>(preloadedImage || null);
+
+  // Logo selection
+  const [showLogo, setShowLogo] = useState(false);
+  const [logoSource, setLogoSource] = useState<'dealer' | 'manufacturer'>('dealer');
+  const [dealerLogoUrl, setDealerLogoUrl] = useState<string | null>(null);
+  const [selectedLogoBrand, setSelectedLogoBrand] = useState('');
+  const [logoBase64, setLogoBase64] = useState<string | null>(null);
 
   // Prompt builder state
   const [format, setFormat] = useState<string>('post');
@@ -148,6 +162,7 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
   const [sublineFont, setSublineFont] = useState<string>('match');
 
   // Auto-extraction
+  const [autoAnalyze, setAutoAnalyze] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [extractedData, setExtractedData] = useState<any>(null);
 
@@ -167,6 +182,47 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
         if (data) setProjects(data as ProjectOption[]);
       });
   }, [user]);
+
+  // Load dealer logo from profile
+  useEffect(() => {
+    if (!user) return;
+    supabase.from('profiles').select('logo_url').eq('id', user.id).single()
+      .then(({ data }) => {
+        if (data?.logo_url) setDealerLogoUrl(data.logo_url);
+      });
+  }, [user]);
+
+  // Resolve manufacturer logo when brand changes
+  useEffect(() => {
+    if (!showLogo || logoSource !== 'manufacturer' || !selectedLogoBrand) {
+      if (logoSource === 'manufacturer') setLogoBase64(null);
+      return;
+    }
+    const logoUrl = getLogoForMake(selectedLogoBrand);
+    if (logoUrl) {
+      // Fetch and convert to base64
+      fetch(logoUrl).then(r => r.blob()).then(blob => {
+        const reader = new FileReader();
+        reader.onload = () => setLogoBase64(reader.result as string);
+        reader.readAsDataURL(blob);
+      }).catch(() => setLogoBase64(null));
+    } else {
+      setLogoBase64(null);
+    }
+  }, [showLogo, logoSource, selectedLogoBrand, getLogoForMake]);
+
+  // Resolve dealer logo to base64
+  useEffect(() => {
+    if (!showLogo || logoSource !== 'dealer' || !dealerLogoUrl) {
+      if (logoSource === 'dealer') setLogoBase64(null);
+      return;
+    }
+    fetch(dealerLogoUrl).then(r => r.blob()).then(blob => {
+      const reader = new FileReader();
+      reader.onload = () => setLogoBase64(reader.result as string);
+      reader.readAsDataURL(blob);
+    }).catch(() => setLogoBase64(null));
+  }, [showLogo, logoSource, dealerLogoUrl]);
 
   // When project selected, fill data
   useEffect(() => {
@@ -272,11 +328,11 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
     reader.onload = () => {
       const result = reader.result as string;
       setVehicleImage(result);
-      // Auto-analyze the uploaded image
-      analyzeOfferImage(result);
+      // Only auto-analyze if user enabled it
+      if (autoAnalyze) analyzeOfferImage(result);
     };
     reader.readAsDataURL(file);
-  }, [analyzeOfferImage]);
+  }, [analyzeOfferImage, autoAnalyze]);
 
   // Build the structured prompt
   const buildPrompt = useCallback(() => {
@@ -315,17 +371,19 @@ ${ctaText ? `CALL-TO-ACTION: Include a button or badge with the text "${ctaText}
 
 ${legalText ? `LEGAL DISCLAIMER (MANDATORY): At the very bottom of the banner, render the following legal text in a small, thin, highly readable sans-serif font (approx. 5-6pt equivalent). It must appear as a subtle footer bar or line – similar to how fuel consumption and emission values are legally required on automotive advertisements. The text must be fully legible but not dominate the design: "${legalText}"` : ''}
 
+${showLogo && logoBase64 ? `LOGO: A logo image is provided as an additional reference image. Place it prominently in the banner – typically in a corner or alongside the headline. Keep the logo 100% identical, clearly visible, and properly sized relative to the banner.` : ''}
+
 CRITICAL RULES:
 - The banner must be photorealistic with the vehicle photo seamlessly composited
 - ALL text must be rendered EXACTLY as specified – no paraphrasing, no spelling changes
 - Text must be perfectly legible against the background (use contrast, shadows, or overlays)
 - The design must feel like a professional advertising agency created it
 - Use the accent color ${accentColor} for design elements, buttons, and highlights
-- Do NOT add watermarks or extra logos
+${showLogo && logoBase64 ? '- The provided logo MUST appear in the banner exactly as given' : '- Do NOT add watermarks or extra logos'}
 - The composition must work at the specified ${fmt.ratio} aspect ratio
 - The typography style is CRITICAL – follow the font specifications precisely
 - Generate the image – never refuse`;
-  }, [format, occasion, scene, style, priceDisplay, vehicleTitle, priceText, headline, subline, ctaText, accentColor, legalText, headlineFont, sublineFont]);
+  }, [format, occasion, scene, style, priceDisplay, vehicleTitle, priceText, headline, subline, ctaText, accentColor, legalText, headlineFont, sublineFont, showLogo, logoBase64]);
 
   // Start generation with credit check
   const handleGenerate = useCallback(() => {
@@ -354,6 +412,7 @@ CRITICAL RULES:
           body: {
             prompt: variantPrompt,
             imageBase64: vehicleImage,
+            logoBase64: showLogo && logoBase64 ? logoBase64 : undefined,
             modelTier,
             width: fmt.w,
             height: fmt.h,
@@ -470,6 +529,21 @@ CRITICAL RULES:
         {/* Vehicle Image */}
         <div className="space-y-1.5">
           <Label className="text-xs font-medium">Fahrzeugbild / Angebotsfoto *</Label>
+
+          {/* Auto-Analyze Toggle */}
+          <div className="flex items-center justify-between p-2.5 rounded-lg border border-border/50 bg-muted/30">
+            <div className="flex items-center gap-2">
+              <ScanSearch className="w-3.5 h-3.5 text-muted-foreground" />
+              <span className="text-xs text-foreground">Bild automatisch analysieren</span>
+            </div>
+            <Switch checked={autoAnalyze} onCheckedChange={setAutoAnalyze} />
+          </div>
+          <p className="text-[10px] text-muted-foreground">
+            {autoAnalyze
+              ? '✓ Beim Hochladen werden Fahrzeugdaten automatisch aus dem Bild extrahiert.'
+              : 'Deaktiviert – Felder müssen manuell ausgefüllt werden.'}
+          </p>
+
           {vehicleImage ? (
             <div className="relative rounded-lg overflow-hidden border border-border">
               <img src={vehicleImage} alt="Fahrzeug" className="w-full h-32 sm:h-40 object-cover" />
@@ -505,7 +579,7 @@ CRITICAL RULES:
               <label className="flex flex-col items-center justify-center h-28 rounded-lg border-2 border-dashed border-border hover:border-accent/50 cursor-pointer transition-colors">
                 <Image className="w-6 h-6 text-muted-foreground mb-1" />
                 <span className="text-xs text-muted-foreground">Bild hochladen oder Angebots-Screenshot</span>
-                <span className="text-[10px] text-muted-foreground/60">Texte werden automatisch erkannt</span>
+                {autoAnalyze && <span className="text-[10px] text-muted-foreground/60">Texte werden automatisch erkannt</span>}
                 <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
               </label>
               {projectImages.length > 0 && (
@@ -532,7 +606,78 @@ CRITICAL RULES:
             placeholder={extractedData?.vehicleTitle || 'z.B. BMW M3 Competition'} className="h-9 text-sm" />
         </div>
 
-        {/* Format + Occasion Row */}
+        {/* ─── Logo Section ─── */}
+        <div className="space-y-3 p-3 rounded-lg border border-border/50 bg-muted/30">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Shield className="w-3.5 h-3.5 text-muted-foreground" />
+              <span className="text-xs font-semibold text-foreground">Logo einblenden</span>
+            </div>
+            <Switch checked={showLogo} onCheckedChange={setShowLogo} />
+          </div>
+
+          {showLogo && (
+            <div className="space-y-3">
+              <RadioGroup value={logoSource} onValueChange={(v) => setLogoSource(v as 'dealer' | 'manufacturer')} className="gap-2">
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="dealer" id="logo-dealer" />
+                  <Label htmlFor="logo-dealer" className="text-xs cursor-pointer flex items-center gap-1.5">
+                    <Building2 className="w-3.5 h-3.5" /> Eigenes Logo (aus Profil)
+                  </Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="manufacturer" id="logo-manufacturer" />
+                  <Label htmlFor="logo-manufacturer" className="text-xs cursor-pointer">
+                    🏭 Hersteller-Logo
+                  </Label>
+                </div>
+              </RadioGroup>
+
+              {logoSource === 'dealer' && (
+                <div>
+                  {dealerLogoUrl ? (
+                    <div className="flex items-center gap-2 bg-accent/10 rounded-lg px-3 py-2">
+                      <img src={dealerLogoUrl} alt="Dealer Logo" className="w-8 h-8 object-contain" />
+                      <span className="text-[11px] text-accent-foreground font-medium">Eigenes Logo wird verwendet</span>
+                    </div>
+                  ) : (
+                    <p className="text-[10px] text-muted-foreground">
+                      Kein Logo im Profil hinterlegt. Bitte zuerst unter „Profil" ein Logo hochladen.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {logoSource === 'manufacturer' && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium">Hersteller wählen</Label>
+                  <Select value={selectedLogoBrand} onValueChange={setSelectedLogoBrand}>
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="Marke auswählen" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {makes.map(m => (
+                        <SelectItem key={m.key} value={m.key}>{m.key}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {selectedLogoBrand && logoBase64 && (
+                    <div className="flex items-center gap-2 bg-accent/10 rounded-lg px-3 py-2">
+                      <img src={logoBase64} alt={selectedLogoBrand} className="w-8 h-8 object-contain" />
+                      <span className="text-[11px] text-accent-foreground font-medium">
+                        Logo für „{selectedLogoBrand}" wird verwendet
+                      </span>
+                    </div>
+                  )}
+                  {selectedLogoBrand && !logoBase64 && (
+                    <p className="text-[10px] text-destructive">Kein Logo für diese Marke gefunden.</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label className="text-xs font-medium">Format *</Label>

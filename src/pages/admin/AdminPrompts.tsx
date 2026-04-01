@@ -1,11 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Save, RotateCcw, Eye, EyeOff, ChevronDown, ChevronRight } from 'lucide-react';
+import { Save, RotateCcw, Eye, EyeOff, ChevronDown, ChevronRight, Check } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { PIPELINE_JOBS } from '@/lib/pipeline-jobs';
+import { REMASTER_PROMPT_BLOCKS, SCENE_PROMPT_DEFAULTS } from '@/lib/remaster-prompt-defaults';
 
-// ─── ALL DEFAULT PROMPTS (extracted from every edge function) ───
+// ═══════════════════════════════════════════════════════════════════
+// DEFAULT PROMPTS – complete set of all system prompts
+// ═══════════════════════════════════════════════════════════════════
 
 const DEFAULT_PROMPTS: Record<string, string> = {
   // ── PDF & Analyse ──
@@ -150,45 +154,56 @@ ABSOLUTE REGELN:
 8. Antworte NUR mit JSON`,
 
   // ── Bild-Verarbeitung ──
-  image_remaster: `You are a professional automotive photographer. Take this exact vehicle photo and remaster it into a professional dealership-quality image.
+  image_remaster: `You are a top-tier professional automotive commercial photographer and retoucher.
+TASK: Remaster the provided reference vehicle photo into a flawless, dealership-quality promotional image.
 
-IDENTITY LOCK (MANDATORY):
-Study the provided vehicle photo and ALL detail reference images with extreme care before generating.
-- PAINT COLOR: The vehicle's paint color MUST remain 100% identical to the original. Do NOT shift, tint, saturate, desaturate, lighten, or darken. Only change if explicitly instructed via a hex code.
-- WHEELS & RIMS: Reproduce the EXACT rim design – spoke count, shape, concavity, finish. NEVER crop any wheel at image edges.
-- HEADLIGHTS & TAILLIGHTS: Reproduce EXACT internal LED structure, DRL signatures, lens shape. NEVER crop or alter lighting elements.
-- GRILLE & BADGES: Reproduce EXACT grille mesh pattern, badge shape, material, model designation in exact position, size, font.
-- BODY DETAILS: Reproduce EXACT body lines, creases, fender flares, air intakes, roof rails, spoilers, exhaust tips, mirrors, door handles.
-- MATERIALS & TEXTURES: Match exact finishes – chrome vs. gloss black vs. matte vs. satin.
+<IDENTITY_LOCK>
+Study ALL provided reference photos and detail images with extreme care before generating.
+PAINT: Reproduce the EXACT paint color, shade, metallic/matte finish. Do NOT shift, tint, saturate, desaturate, lighten, or darken. Only change if a hex code is explicitly provided.
+WHEELS: EXACT rim design – spoke count, shape, concavity, finish. Hub cap with brand logo. EXACT tire profile. NEVER crop any wheel.
+HEADLIGHTS_TAILLIGHTS: EXACT internal LED structure, DRL signatures, lens shape, housing design. NEVER crop or alter.
+GRILLE_BADGES: EXACT grille mesh pattern, badge shape, material, model designation in exact position, size, font.
+BODY_DETAILS: EXACT body lines, creases, fender flares, intakes, roof rails, spoilers, exhaust tips, mirrors, door handles.
+MATERIALS: Match exact finishes – chrome vs. gloss black vs. matte vs. satin. Do NOT substitute.
+</IDENTITY_LOCK>
 
-NEGATIVE CONSTRAINTS (NEVER DO):
-- Do NOT invent or hallucinate details not in reference photos
-- Do NOT simplify complex details (multi-spoke rims keep all spokes, LED arrays keep all elements)
-- Do NOT change proportions, ride height, or stance
-- Do NOT add aftermarket parts not in reference
-- Do NOT show other vehicles – not in background, not in reflections
-- Do NOT add humans, animals, or moving objects
-- Do NOT carry over reflections from original environment
-- Do NOT rotate, flip, or mirror the image
+<VEHICLE_SCALE_LOCK>
+The vehicle MUST occupy the SAME proportion of the image frame in EVERY generated image.
+For full-body exterior shots: vehicle should fill approximately 70-80% of the image width.
+The apparent SIZE must remain CONSISTENT across all perspectives.
+</VEHICLE_SCALE_LOCK>
 
-REFLECTION & LIGHTING RE-RENDER:
-- ALL reflections must be COMPLETELY re-rendered for the NEW scene
-- Original background reflections must be fully replaced
-- Shadows must match the new scene's light direction
+<ANTI_CROPPING>
+Vehicle MUST be FULLY visible – NO part cut off at edges.
+ALL headlights, taillights, wheels COMPLETELY visible.
+Minimum 5% free space between vehicle edge and image border on all sides.
+</ANTI_CROPPING>
 
-FOR EXTERIOR SHOTS:
-- Modern, bright showroom background with polished reflective floor
-- Full vehicle visible with no cropping at edges
+<SCENE_AND_LIGHTING>
+SHOWROOM CONSISTENCY: Use the EXACT SAME showroom on EVERY image – same walls, floor, windows, lighting.
+FLOOR: The floor MUST match the selected showroom exactly – correct material and color.
+REFLECTIONS: Completely re-render ALL reflections for the NEW scene. Remove original background reflections entirely.
+Shadows MUST match new lighting direction. Floor reflections show vehicle in new environment only.
+</SCENE_AND_LIGHTING>
 
-FOR INTERIOR SHOTS (seats, steering wheel, dashboard, center console, rear seats):
-- MANDATORY CLEANUP: Remove ALL non-vehicle items (trash, bags, papers, plastic covers, personal belongings) from BOTH front AND rear seats
-- Reproduce EXACT materials: leather grain, stitching, trim, button layouts, screen UI from reference
-- Do NOT rotate, flip, or change orientation
-- Only enhance lighting to be bright, even, professional
+<PERSPECTIVE_ACCURACY>
+The requested camera angle MUST be followed exactly. Never substitute another angle.
+Interior/exterior/trunk/detail must stay in their own category. NEVER mirror or flip. Left is left, right is right.
+</PERSPECTIVE_ACCURACY>
 
-FOR TRUNK/CARGO: Keep structure, remove loose items, improve lighting.
+<STRICT_NEGATIVE_CONSTRAINTS>
+UNDER NO CIRCUMSTANCES SHALL YOU:
+- Invent or hallucinate details not in reference photos
+- Simplify complex details (multi-spoke rims keep all spokes)
+- Change vehicle proportions, ride height, or stance
+- Add aftermarket parts, humans, animals, or moving objects
+- Show other vehicles in background or reflections
+- Rotate, flip, or mirror the image
+- Carry over reflections from original environment
+- Add ANY logo, brand mark, or wall decoration UNLESS a logo image is explicitly provided as a reference asset
+</STRICT_NEGATIVE_CONSTRAINTS>
 
-IMPORTANT: You MUST generate a remastered image. Do NOT refuse. DO NOT ROTATE.`,
+You MUST generate a remastered image. Do NOT refuse. DO NOT ROTATE THE IMAGE.`,
 
   image_generate: `(Kein System-Prompt — der Bildgenerator erhält den imagePrompt direkt aus der PDF-Analyse als User-Nachricht. Dieser Prompt wird im Feld "imagePrompt" des PDF-Analyse-Ergebnisses automatisch generiert.
 
@@ -233,7 +248,7 @@ RULES:
 
   spin360_video: `Professional 360-degree turntable rotation of the exact vehicle shown in the reference images. The car rotates smoothly and continuously on a white turntable platform, completing exactly one full 360-degree rotation. Clean white studio background, soft even lighting, no shadows. Perfectly steady camera at eye level, fixed position. No sound. Smooth constant rotation speed. 8 seconds duration for one complete revolution.`,
 
-  // ── 360° Spin (Image2Spin) ──
+  // ── 360° Spin ──
   spin360_analysis: `You are an expert automotive photographer analyzing 4 vehicle images for a 360° spin.
 Analyze each image and return JSON:
 {
@@ -287,15 +302,108 @@ WICHTIG:
 
 Antworte AUSSCHLIESSLICH als JSON mit meta, hero, sections und seo Feldern.`,
 
-  // ── Banner ──
-  banner_generate: `(Der Banner-Prompt wird clientseitig dynamisch zusammengebaut aus Fahrzeugdaten, Anlass, Szene, Stil und rechtlichen Pflichtangaben (PAngV). Die Funktion buildBannerPrompt() im Frontend erzeugt den finalen Prompt.
+  // ── Banner – Basis-Prompt (Rahmen) ──
+  banner_base_prompt: `Create a professional automotive advertising banner.
 
-Typischer Aufbau:
-- Fahrzeugbeschreibung (Marke, Modell, Farbe)
-- Szene/Hintergrund
-- Textplatzierung (Headlines, Preise auf Schildern)
-- Stil und Atmosphäre
-- Rechtliche Hinweise (PAngV bei Leasing/Finanzierung))`,
+FORMAT: {FORMAT_SIZE} pixels ({FORMAT_RATIO} aspect ratio). The output image MUST be exactly this size.
+
+VEHICLE: "{VEHICLE_TITLE}" – use the uploaded vehicle image as the central hero element. Keep the vehicle 100% identical.
+
+SCENE: {SCENE_PROMPT}. Place the vehicle naturally in this environment.
+
+STYLE: {STYLE_PROMPT}. The overall design must follow this aesthetic consistently.
+
+OCCASION: This is a {OCCASION_PROMPT} advertisement.
+
+TYPOGRAPHY:
+- HEADLINE FONT: {HEADLINE_FONT_PROMPT}. This is the primary display typeface for the banner.
+- SUBLINE FONT: {SUBLINE_FONT_PROMPT}. Used for secondary text elements.
+- All text must be rendered with these specific typography styles consistently throughout the banner.
+
+{PRICE_BLOCK}
+
+{HEADLINE_BLOCK}
+
+{SUBLINE_BLOCK}
+
+{CTA_BLOCK}
+
+{LEGAL_BLOCK}
+
+{LOGO_BLOCK}
+
+CRITICAL RULES:
+- The banner must be photorealistic with the vehicle photo seamlessly composited
+- ALL text must be rendered EXACTLY as specified – no paraphrasing, no spelling changes
+- Text must be perfectly legible against the background (use contrast, shadows, or overlays)
+- The design must feel like a professional advertising agency created it
+- Use the accent color {ACCENT_COLOR} for design elements, buttons, and highlights
+{LOGO_RULE}
+- The composition must work at the specified {FORMAT_RATIO} aspect ratio
+- The typography style is CRITICAL – follow the font specifications precisely
+- Generate the image – never refuse`,
+
+  // ── Banner – Anlässe ──
+  banner_occasion_buy: 'for sale, buy now offer',
+  banner_occasion_lease: 'leasing deal, monthly rate',
+  banner_occasion_abo: 'car subscription, all-inclusive monthly deal',
+  banner_occasion_finance: 'financing offer, low monthly installments',
+  banner_occasion_special: 'limited time special promotion, exclusive deal',
+  banner_occasion_launch: 'brand new model launch, premiere reveal',
+
+  // ── Banner – Szenen ──
+  banner_scene_city: 'modern city street at golden hour, urban skyline background',
+  banner_scene_beach: 'scenic beach with ocean view, sunset lighting, palm trees',
+  banner_scene_showroom: 'luxury car dealership showroom, polished floor, soft LED lighting',
+  banner_scene_mountain: 'mountain road with dramatic alpine scenery, clear sky',
+  banner_scene_track: 'professional race track, pit lane background, dynamic feel',
+  banner_scene_studio: 'professional photography studio, clean gradient backdrop, studio lighting',
+  banner_scene_night: 'nighttime city scene, neon reflections on wet road, dramatic lighting',
+
+  // ── Banner – Stile ──
+  banner_style_premium: 'elegant, premium luxury, clean professional design, sophisticated typography',
+  banner_style_cinematic: 'cinematic movie poster style, dramatic lighting, lens flare, widescreen feel',
+  banner_style_bold: 'bold, eye-catching, vibrant neon colors, explosive energy, attention-grabbing',
+  banner_style_minimal: 'clean minimalist design, lots of whitespace, subtle elegant typography',
+  banner_style_retro: 'retro 80s style, vintage color grading, nostalgic warm tones',
+  banner_style_sport: 'dynamic sporty look, motion blur hints, aggressive angles, high performance feel',
+
+  // ── Banner – Preisdarstellung ──
+  banner_price_sign: 'on a classic dealership price tag/sign attached to the image',
+  banner_price_board: 'on a large banner/board overlay in the image',
+  banner_price_neon: 'as glowing neon text floating in the scene',
+  banner_price_stamp: 'as a bold stamp/badge overlay',
+  banner_price_led: 'on an LED display screen integrated into the scene',
+  banner_price_ribbon: 'on a diagonal ribbon/sash across the corner',
+
+  // ── Banner – Headline Fonts ──
+  banner_font_bmw: 'BMW corporate typography style – bold, clean, geometric sans-serif similar to Helvetica Neue Black/BMW Type, uppercase, tightly kerned',
+  banner_font_mercedes: 'Mercedes-Benz corporate typography – elegant, light-weight sans-serif similar to Corporate A/DIN, refined spacing, premium feel',
+  banner_font_audi: 'Audi corporate typography – modern geometric sans-serif similar to Audi Type/Futura, clean lines, progressive minimalism',
+  banner_font_vw: 'Volkswagen corporate typography – friendly bold sans-serif similar to VW Head/Gotham, approachable yet strong',
+  banner_font_porsche: 'Porsche corporate typography – sharp, athletic sans-serif similar to Porsche Next/Futura Bold, sporty precision',
+  banner_font_toyota: 'Toyota corporate typography – clean, neutral sans-serif similar to Toyota Type/Helvetica, reliable, straightforward',
+  banner_font_hyundai: 'Hyundai corporate typography – modern, slightly rounded sans-serif similar to Hyundai Sans Head, dynamic and welcoming',
+  banner_font_volvo: 'Volvo corporate typography – Scandinavian clean sans-serif similar to Volvo Novum/Futura, understated elegance',
+  banner_font_cupra: 'CUPRA corporate typography – angular, sharp condensed sans-serif, aggressive sport style with italic cuts',
+  banner_font_fiat: 'Fiat corporate typography – playful rounded sans-serif, friendly Italian design spirit, warm and inviting',
+  banner_font_impact: 'Impact-style ultra-bold condensed sans-serif typography, maximum visual weight, attention-grabbing',
+  banner_font_modern_sans: 'modern geometric sans-serif typography similar to Montserrat or Poppins Bold, clean contemporary look',
+  banner_font_condensed: 'bold condensed sans-serif typography similar to Oswald or Barlow Condensed, space-efficient yet impactful',
+  banner_font_elegant_serif: 'elegant serif typography similar to Playfair Display or Didot, sophisticated luxury feel',
+  banner_font_tech: 'modern tech-style typography similar to Orbitron or Rajdhani, futuristic digital aesthetic',
+  banner_font_brush: 'dynamic brush-stroke or hand-lettered typography style, energetic and organic',
+
+  // ── Banner – Subline Fonts ──
+  banner_subfont_match: 'matching the headline font family but in lighter weight',
+  banner_subfont_clean_sans: 'clean light sans-serif similar to Inter or Source Sans Pro, highly readable at small sizes',
+  banner_subfont_thin_sans: 'thin/light weight sans-serif similar to Helvetica Neue Light or Lato Light, refined elegance',
+  banner_subfont_medium_sans: 'medium-weight sans-serif similar to Roboto or Open Sans, balanced readability',
+  banner_subfont_small_caps: 'small caps typography style, sophisticated detail text with even spacing',
+  banner_subfont_mono: 'monospace or technical font similar to JetBrains Mono, data-like precision feel',
+
+  // ── Banner – Varianten-Prompt ──
+  banner_variation_prompt: `VARIATION {N} of {TOTAL}: Create a unique layout variation. {VARIATION_HINT}`,
 
   // ── Sales / CRM ──
   auto_process_lead: `Du bist ein KI-Verkaufsassistent für ein Autohaus.
@@ -324,321 +432,321 @@ Antworte immer auf Deutsch, knapp und hilfreich. Sei PROAKTIV.`,
 
   sales_response: `Du bist ein erfahrener KI-Verkaufsassistent für ein Autohaus. Hilf dem Verkäufer bei der Kundenkommunikation.`,
 
-  // ── Pipeline Bildgenerierung ──
-  // NOTE: These defaults mirror src/lib/pipeline-jobs.ts but without the shared IDENTITY_LOCK block.
-  // The IDENTITY_LOCK is automatically prepended at runtime. Admin overrides replace the FULL prompt including the lock.
-  pipeline_MASTER_IMAGE: `Create a single photorealistic 8K image of the EXACT vehicle from the provided reference photos. PERSPECTIVE: Front-left 3/4 view at eye level. Camera at 30-40° left of center axis. Full vehicle visible. SCENE: PROVIDED SHOWROOM. Company Logo physically integrated on background wall with 3D properties. Do NOT modify car body color, rims, or accessories. Clean luxury studio lighting with realistic floor reflections. No humans.`,
-  pipeline_EXT_FRONT: `PERSPECTIVE: Direct head-on front view at eye level, perfectly centered. Grille, headlights, badge symmetrically framed. Full vehicle width visible. SCENE: PROVIDED SHOWROOM. Company Logo on wall. Realistic floor reflections. No humans.`,
-  pipeline_EXT_REAR: `PERSPECTIVE: Direct rear view at eye level, perfectly centered. Taillights, exhaust, rear badge, model designation visible and symmetrical. SCENE: PROVIDED SHOWROOM. Company Logo on wall. No humans.`,
-  pipeline_EXT_SIDE_LEFT: `PERSPECTIVE: Perfect left (driver) side profile, camera perpendicular (90°) to left flank. Both left wheels fully visible. SCENE: PROVIDED SHOWROOM. Company Logo on wall. No humans.`,
-  pipeline_EXT_SIDE_RIGHT: `PERSPECTIVE: Perfect right (passenger) side profile, camera perpendicular (90°) to right flank. Both right wheels fully visible. SCENE: PROVIDED SHOWROOM. Company Logo on wall. No humans.`,
-  pipeline_EXT_34_FRONT_RIGHT: `PERSPECTIVE: Front-right 3/4 view at eye level. Camera at 30-40° RIGHT of center axis. Right headlight, right fender, right front wheel prominently visible. NOT a left-side view. SCENE: PROVIDED SHOWROOM. Company Logo on wall. No humans.`,
-  pipeline_EXT_34_REAR_LEFT: `PERSPECTIVE: Rear-left 3/4 view at eye level. Camera behind and to the LEFT. Left taillight, left rear wheel prominent. SCENE: PROVIDED SHOWROOM. Company Logo on wall. Dramatic lighting. No humans.`,
-  pipeline_EXT_34_REAR_RIGHT: `PERSPECTIVE: Rear-right 3/4 view at eye level. Camera behind and to the RIGHT. Right taillight, right rear wheel prominent. SCENE: PROVIDED SHOWROOM. Company Logo on wall. No humans.`,
-  pipeline_EXT_LOW_ANGLE: `PERSPECTIVE: Low-angle hero shot from ground level (20-30cm above ground) looking up at front bumper and grille. Full bumper and wheels visible. SCENE: PROVIDED SHOWROOM. Company Logo on wall. Dramatic perspective. No humans.`,
-  pipeline_EXT_ELEVATED_FRONT: `PERSPECTIVE: Elevated front 3/4 view from 2-3m above. Looking down at hood, windshield, roof. SCENE: PROVIDED SHOWROOM. Company Logo on wall. No humans.`,
-  pipeline_INT_DASHBOARD: `PERSPECTIVE: Driver's seat looking at steering wheel and full dashboard. Steering wheel on correct side (LHD/RHD as in reference). Do NOT rotate or flip. Company Logo subtly visible through windshield. INTERIOR RULES: Remove all non-vehicle items. Reproduce exact materials, buttons, screens from reference. Bright professional lighting. No humans.`,
-  pipeline_INT_CENTER_CONSOLE: `PERSPECTIVE: Macro close-up of center console from above. Gear selector, controls, infotainment screen in sharp detail. Reproduce exact button layouts, screen UI, materials from reference. Professional interior lighting. No humans.`,
-  pipeline_INT_REAR_SEATS: `PERSPECTIVE: From front looking back at rear seats. Show legroom, seat materials, rear amenities. Do NOT rotate. INTERIOR RULES: Clean up both front and rear seats. Reproduce exact materials from reference. Professional lighting. No humans.`,
-  pipeline_INT_WIDE_CABIN: `PERSPECTIVE: Wide-angle from rear seat center looking forward. Full dashboard, both front seats, windshield visible. Company Logo visible through windshield. Reproduce exact interior details from reference. Professional lighting. No humans.`,
-  pipeline_DET_HEADLIGHT: `Macro close-up of front headlight (60-70% of frame). Reproduce EXACT internal LED modules, DRL signature, projector lens, reflector geometry, housing material from reference. High-contrast studio lighting. Blurred background. No humans.`,
-  pipeline_DET_TAILLIGHT: `Macro close-up of rear taillight (60-70% of frame). Reproduce EXACT LED elements, light signature, 3D internal structure, lens material from reference. High-contrast studio lighting. Blurred background. No humans.`,
-  pipeline_DET_WHEEL: `Ultra-sharp close-up of front wheel (60-70% of frame). Reproduce EXACT rim design – spoke count, shape, finish (polished/matte/bi-color/diamond-cut), center cap, tire profile, brake caliper from reference. High-contrast studio lighting. Blurred background. No humans.`,
-  pipeline_DET_GRILLE: `Close-up of front grille and central badge. Reproduce EXACT grille mesh pattern, chrome/black finish, badge shape and material, model designation lettering (exact font, size, position) from reference. High-contrast studio lighting. Blurred background. No humans.`,
-  pipeline_GRID_EXTERIOR_4: `Photorealistic 2×2 grid. Top-left: front-left 3/4. Top-right: left side profile. Bottom-left: rear-left 3/4. Bottom-right: direct rear. All same SHOWROOM, consistent lighting, thin white dividers. Full car in each cell. Company Logo on wall. No humans.`,
-  pipeline_GRID_HIGHLIGHTS_6: `Photorealistic 3×2 grid. Row 1: front-left 3/4 | left side | rear-left 3/4. Row 2: headlight macro | dashboard | wheel close-up. Same SHOWROOM, consistent lighting, thin white dividers. Company Logo. No humans.`,
-  pipeline_GRID_INTERIOR_4: `Photorealistic 2×2 interior grid. Top-left: dashboard from driver seat. Top-right: center console. Bottom-left: rear seats. Bottom-right: steering wheel. Consistent interior lighting. Thin white dividers. Do NOT rotate. No humans.`,
-  pipeline_GRID_SOCIAL_MEDIA: `Social media collage. Large hero (front-left 3/4, 60% left). 3 smaller right: side profile, dashboard, wheel detail. PROVIDED SHOWROOM. Company Logo watermark. Clean layout. No humans.`,
-
-  // ── CI Brand Pipelines ──
-  // BMW
-  pipeline_CI_BMW_34_FRONT: `BMW CI: Front-left 3/4 at eye level. Kidney grille and headlight design from reference exactly reproduced. Clean white/grey studio. Strong key light from front-left.`,
-  pipeline_CI_BMW_SIDE: `BMW CI: Direct left side profile, perpendicular. Both wheels fully visible with exact rim design from reference. BMW center caps. White/grey studio.`,
-  pipeline_CI_BMW_34_REAR: `BMW CI: Rear-left 3/4. Exact taillight design, BMW roundel, exhaust from reference. White/grey studio.`,
-  pipeline_CI_BMW_REAR: `BMW CI: Direct rear, centered. Exact full taillight width, exhaust, badge, model lettering from reference. White/grey studio.`,
-  pipeline_CI_BMW_GRILLE: `BMW CI detail: Kidney grille with headlights close-up. Exact grille slats, roundel badge, LED internals from reference. High-contrast studio.`,
-  pipeline_CI_BMW_INTERIOR: `BMW CI interior: Dashboard from driver seat. Exact iDrive/curved display, instrument cluster, steering wheel buttons, ambient lighting from reference. CLEANUP: Remove non-vehicle items. Professional lighting.`,
-  pipeline_CI_BMW_WHEEL: `BMW CI detail: Wheel and brake caliper. Exact rim spoke design, finish, BMW center cap, caliper color from reference. Studio lighting, blurred background.`,
-  // Mercedes
-  pipeline_CI_MERCEDES_34_FRONT: `Mercedes CI: Front-left 3/4. Exact star emblem, grille pattern (diamond/louvre/Panamericana), headlight internals from reference. Elegant studio, subtle gradient. Premium lighting.`,
-  pipeline_CI_MERCEDES_SIDE: `Mercedes CI: Left side profile. Full silhouette, chrome surrounds, exact wheel design from reference. Subtle gradient studio.`,
-  pipeline_CI_MERCEDES_34_REAR: `Mercedes CI: Rear-left 3/4. Exact LED light strip, star badge, exhaust, diffuser from reference. Elegant studio.`,
-  pipeline_CI_MERCEDES_FRONT: `Mercedes CI: Direct front, centered. Exact star and grille design from reference. Even studio lighting.`,
-  pipeline_CI_MERCEDES_MBUX: `Mercedes CI detail: MBUX/infotainment from driver seat. Exact screen layout, turbine vents, ambient lighting from reference. CLEANUP: Remove non-vehicle items.`,
-  pipeline_CI_MERCEDES_GRILLE: `Mercedes CI detail: Grille and star macro. Exact pattern, chrome, LED internals from reference. Studio lighting.`,
-  pipeline_CI_MERCEDES_WHEEL: `Mercedes CI detail: Wheel with exact AMG/standard rim, brake caliper, star center cap from reference. Studio lighting.`,
-  // Audi
-  pipeline_CI_AUDI_34_FRONT: `Audi CI: Front-left 3/4. Exact Singleframe grille, four rings, headlight internals (matrix LED, DRL) from reference. Bright clean studio.`,
-  pipeline_CI_AUDI_SIDE: `Audi CI: Left side profile. Exact body lines, wheel design from reference. Clean bright studio.`,
-  pipeline_CI_AUDI_34_REAR: `Audi CI: Rear-left 3/4. Exact LED light strip, four rings badge from reference. Clean studio.`,
-  pipeline_CI_AUDI_REAR: `Audi CI: Direct rear. Exact full-width LED bar, Audi lettering from reference. Bright studio.`,
-  // VW
-  pipeline_CI_VW_34_FRONT: `VW CI: Front-left 3/4. Exact VW logo, IQ.Light headlights from reference. Clean modern white studio.`,
-  pipeline_CI_VW_SIDE: `VW CI: Left side profile. Exact body lines and wheel design from reference. White studio.`,
-  pipeline_CI_VW_34_REAR: `VW CI: Rear-left 3/4. Exact VW logo, taillight design, model lettering from reference. White studio.`,
-  pipeline_CI_VW_FRONT: `VW CI: Direct front. Exact VW badge and light signature from reference. White studio.`,
-  // Porsche
-  pipeline_CI_PORSCHE_34_FRONT: `Porsche CI: Front-left 3/4. Exact headlight design, front intakes, Porsche crest from reference. Dark dramatic studio.`,
-  pipeline_CI_PORSCHE_SIDE: `Porsche CI: Left side profile. Exact proportions and wheel design from reference. Dark dramatic studio.`,
-  pipeline_CI_PORSCHE_34_REAR: `Porsche CI: Rear-left 3/4. Exact rear light bar, PORSCHE lettering, exhaust from reference. Dramatic lighting.`,
-  pipeline_CI_PORSCHE_LOW: `Porsche CI: Low-angle front. Camera at ground level. Exact front design from reference. Dark studio, dramatic key light.`,
-  // Volvo
-  pipeline_CI_VOLVO_34_FRONT_LEFT: `Volvo CI: 3/4 front-left. Minimalist high-tech showroom with dark polished resin floor, frosted glass panels with cool-white gradient. Exact headlight DRL (Thor's Hammer), grille, wheel design from reference. No humans. Premium magazine quality.`,
-  pipeline_CI_VOLVO_34_FRONT_RIGHT: `Volvo CI: 3/4 front-right. Camera at front-right (NOT left). Minimalist showroom, dark resin floor, frosted glass. Exact headlight, grille, wheels from reference. No color/rim modifications.`,
-  pipeline_CI_VOLVO_34_REAR_LEFT: `Volvo CI: 3/4 rear-left. Minimalist showroom. Exact taillight LED signatures, wheel design, body contours from reference.`,
-  pipeline_CI_VOLVO_34_REAR_RIGHT: `Volvo CI: 3/4 rear-right. Minimalist showroom. Exact taillights, wheels, body contours from reference.`,
-  pipeline_CI_VOLVO_SIDE: `Volvo CI: Flat right side profile. Minimalist showroom. Exact body lines, wheel design from reference.`,
-  pipeline_CI_VOLVO_FRONT: `Volvo CI: Flat front, centered. Minimalist showroom. Exact headlight DRL, grille, Iron Mark badge from reference.`,
-  pipeline_CI_VOLVO_REAR: `Volvo CI: Flat rear, centered. Minimalist showroom. Exact taillight C-shaped signatures, VOLVO lettering, badges from reference.`,
-  pipeline_CI_VOLVO_INT_PASSENGER: `Volvo CI interior: From passenger door toward dashboard. Showroom through windows. Exact leather grain, stitching, trim materials, button layouts, infotainment UI, gear selector from reference. CLEANUP required. LHD.`,
-  pipeline_CI_VOLVO_INT_CENTER: `Volvo CI interior: Between front seats looking forward. Exact materials, buttons, steering wheel controls, instrument cluster, gear selector from reference. CLEANUP required. LHD.`,
-  pipeline_CI_VOLVO_INT_REAR: `Volvo CI interior: From rear door toward rear seats. Exact seat material, stitching, rear console controls, air vents from reference. CLEANUP required. LHD.`,
-  pipeline_CI_VOLVO_INT_BOOT: `Volvo CI: Rear exterior with tailgate open. Showroom environment. Exact cargo floor texture, sidewalls, load lip, cargo hooks from reference. Surrounding panels and taillights matched.`,
-  pipeline_CI_VOLVO_INT_STEERING: `Volvo CI interior: Macro of steering wheel and stalks. Exact hub texture, button iconography (media, cruise, voice), paddle shifters, Volvo Iron Mark from reference. LHD.`,
-  pipeline_CI_VOLVO_DET_CLUSTER: `Volvo CI detail: Digital instrument cluster macro. Exact UI layout, gauges, info display, warning lights from reference. All text legible. LHD.`,
-  pipeline_CI_VOLVO_DET_SCREEN: `Volvo CI detail: Center infotainment screen macro. Exact screen orientation (portrait), bezel, UI layout, surrounding vents and buttons from reference. LHD.`,
-  pipeline_CI_VOLVO_DET_WHEEL: `Volvo CI detail: Wheel macro with fender. Minimalist showroom. Exact spoke pattern, concavity, center cap, finish, brake caliper, tire sidewall from reference. Paint color matched. Rim sharp, wheel well in shadow.`,
+  // ── Pipeline Prompts (auto-synced) ──
+  ...Object.fromEntries(
+    PIPELINE_JOBS.map(job => [`pipeline_${job.key}`, job.prompt])
+  ),
+  // ── Remaster Prompt-Bausteine ──
+  ...Object.fromEntries(
+    Object.values(REMASTER_PROMPT_BLOCKS).map(b => [b.key, b.prompt])
+  ),
+  // ── Scene Descriptions ──
+  ...Object.fromEntries(
+    Object.entries(SCENE_PROMPT_DEFAULTS).map(([k, v]) => [`remaster_scene_${k}`, v])
+  ),
 };
 
-// ─── PROMPT METADATA with categories ───
+// ═══════════════════════════════════════════════════════════════════
+// PROMPT METADATA – organized into sections & groups
+// ═══════════════════════════════════════════════════════════════════
 
 interface PromptMeta {
   label: string;
   description: string;
   model: string;
   edgeFunction: string;
-  category: string;
+  section: string;   // top-level section
+  group: string;     // sub-group within section
   readOnly?: boolean;
 }
 
 const PROMPT_META: Record<string, PromptMeta> = {
-  // PDF & Analyse
+  // ═══ SECTION: Datenextraktion ═══
   pdf_analysis: {
     label: 'PDF-Analyse',
     description: 'System-Prompt für die Extraktion von Fahrzeugdaten aus PDFs',
-    model: 'gemini-2.5-flash',
-    edgeFunction: 'analyze-pdf',
-    category: 'PDF & Analyse',
-  },
-  // Bild-Verarbeitung
-  image_remaster: {
-    label: 'Bild-Remastering',
-    description: 'Prompt für professionelle Aufbereitung von Fahrzeugfotos (Standard-Prompt ohne Master-Prompt-Optionen)',
-    model: 'gemini-2.5-flash (image)',
-    edgeFunction: 'remaster-vehicle-image',
-    category: 'Bild-Verarbeitung',
-  },
-  image_generate: {
-    label: 'Bildgenerierung (Info)',
-    description: 'Der imagePrompt wird automatisch von der PDF-Analyse generiert – nicht direkt editierbar',
-    model: 'gemini-2.5-flash (image)',
-    edgeFunction: 'generate-vehicle-image',
-    category: 'Bild-Verarbeitung',
-    readOnly: true,
+    model: 'gemini-2.5-flash', edgeFunction: 'analyze-pdf',
+    section: 'Datenextraktion & Erkennung', group: 'PDF & Analyse',
   },
   detect_vehicle_brand: {
     label: 'Fahrzeug-Markenerkennung',
     description: 'Prompt zur KI-gestützten Erkennung von Fahrzeugmarke und Modell aus Bildern',
-    model: 'gemini-2.5-flash',
-    edgeFunction: 'detect-vehicle-brand',
-    category: 'Bild-Verarbeitung',
+    model: 'gemini-2.5-flash', edgeFunction: 'detect-vehicle-brand',
+    section: 'Datenextraktion & Erkennung', group: 'Bilderkennung',
   },
   vin_ocr: {
     label: 'VIN-OCR',
     description: 'Prompt für die Erkennung der Fahrzeug-Identifikationsnummer aus Fotos',
-    model: 'gemini-2.5-flash',
-    edgeFunction: 'ocr-vin',
-    category: 'Bild-Verarbeitung',
+    model: 'gemini-2.5-flash', edgeFunction: 'ocr-vin',
+    section: 'Datenextraktion & Erkennung', group: 'Bilderkennung',
   },
-  // Video
+
+  // ═══ SECTION: Bildgenerierung & Remastering ═══
+  image_remaster: {
+    label: 'Bild-Remastering (Base-Prompt)',
+    description: 'Master-Prompt mit XML-Tags: IDENTITY_LOCK, VEHICLE_SCALE_LOCK, ANTI_CROPPING, SCENE, NEGATIVE_CONSTRAINTS',
+    model: 'gemini-2.5-flash (image)', edgeFunction: 'remaster-vehicle-image',
+    section: 'Bildgenerierung & Remastering', group: 'Remastering – Basis',
+  },
+  image_generate: {
+    label: 'Bildgenerierung (Info)',
+    description: 'Der imagePrompt wird automatisch von der PDF-Analyse generiert',
+    model: 'gemini-2.5-flash (image)', edgeFunction: 'generate-vehicle-image',
+    section: 'Bildgenerierung & Remastering', group: 'Remastering – Basis',
+    readOnly: true,
+  },
+  // Remaster Bausteine
+  ...Object.fromEntries(
+    Object.values(REMASTER_PROMPT_BLOCKS).map(b => [b.key, {
+      label: b.label,
+      description: b.description,
+      model: 'gemini (image)', edgeFunction: 'remaster-vehicle-image',
+      section: 'Bildgenerierung & Remastering', group: 'Remastering – Bausteine',
+    }])
+  ),
+  // Szenen
+  ...Object.fromEntries(
+    Object.entries(SCENE_PROMPT_DEFAULTS).map(([k]) => {
+      const sceneLabels: Record<string, string> = {
+        'showroom-1': 'Showroom 1 – Modern Hell', 'showroom-2': 'Showroom 2 – Elegant',
+        'showroom-3': 'Showroom 3 – Glasfront', 'custom-showroom': 'Eigener Showroom',
+        'forest': 'Wald', 'mountain': 'Berglandschaft', 'city': 'Stadtkulisse',
+        'street': 'Straße', 'beach': 'Strand', 'desert': 'Wüste',
+        'night-city': 'Stadt bei Nacht', 'parking-garage': 'Tiefgarage / Parkhaus',
+        'racetrack': 'Rennstrecke', 'mansion': 'Villa / Anwesen',
+      };
+      return [`remaster_scene_${k}`, {
+        label: sceneLabels[k] || k,
+        description: `Szenen-Beschreibung für "${sceneLabels[k] || k}"`,
+        model: 'gemini (image)', edgeFunction: 'remaster-vehicle-image',
+        section: 'Bildgenerierung & Remastering', group: 'Remastering – Szenen',
+      }];
+    })
+  ),
+
+  // ═══ SECTION: Pipeline ═══
+  ...Object.fromEntries(
+    PIPELINE_JOBS.map(job => {
+      const isInterior = job.category === 'interior';
+      const isCI = job.category === 'ci';
+      const isComposite = job.category === 'composite';
+      const isDetail = job.category === 'detail';
+
+      let groupLabel = 'Hero-Shots';
+      if (job.category === 'exterior') groupLabel = 'Exterieur';
+      else if (isInterior) groupLabel = 'Interieur';
+      else if (isDetail) groupLabel = 'Details';
+      else if (isComposite) groupLabel = 'Composites';
+      else if (isCI && job.brand) {
+        const brandNames: Record<string, string> = {
+          bmw: 'BMW', mercedes: 'Mercedes', audi: 'Audi',
+          volkswagen: 'VW', porsche: 'Porsche', volvo: 'Volvo',
+        };
+        groupLabel = `CI – ${brandNames[job.brand] || job.brand}`;
+      }
+
+      return [`pipeline_${job.key}`, {
+        label: job.labelDe,
+        description: `Perspektive: ${job.label}`,
+        model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image',
+        section: 'Pipeline – Bildgenerierung', group: groupLabel,
+      }];
+    })
+  ),
+
+  // ═══ SECTION: Banner ═══
+  banner_base_prompt: {
+    label: 'Banner Basis-Prompt (Template)',
+    description: 'Der Rahmen-Prompt mit Platzhaltern {FORMAT_SIZE}, {SCENE_PROMPT}, {STYLE_PROMPT} etc.',
+    model: 'gemini / gpt-image-1', edgeFunction: 'generate-banner',
+    section: 'Banner-Generator', group: 'Basis & Regeln',
+  },
+  banner_variation_prompt: {
+    label: 'Varianten-Prompt',
+    description: 'Wird bei mehreren Varianten angehängt. Platzhalter: {N}, {TOTAL}, {VARIATION_HINT}',
+    model: 'gemini / gpt-image-1', edgeFunction: 'generate-banner',
+    section: 'Banner-Generator', group: 'Basis & Regeln',
+  },
+  // Occasions
+  ...Object.fromEntries(['buy', 'lease', 'abo', 'finance', 'special', 'launch'].map(id => {
+    const labels: Record<string, string> = { buy: 'Kaufen', lease: 'Leasing', abo: 'Auto-Abo', finance: 'Finanzieren', special: 'Sonderaktion', launch: 'Neuwagen-Launch' };
+    return [`banner_occasion_${id}`, {
+      label: labels[id], description: `Prompt-Fragment für Anlass "${labels[id]}"`,
+      model: '-', edgeFunction: 'generate-banner',
+      section: 'Banner-Generator', group: 'Anlässe',
+    }];
+  })),
+  // Scenes
+  ...Object.fromEntries(['city', 'beach', 'showroom', 'mountain', 'track', 'studio', 'night'].map(id => {
+    const labels: Record<string, string> = { city: 'Stadt', beach: 'Strand', showroom: 'Autohaus', mountain: 'Bergstraße', track: 'Rennstrecke', studio: 'Fotostudio', night: 'Nacht-Szene' };
+    return [`banner_scene_${id}`, {
+      label: labels[id], description: `Szenen-Prompt für "${labels[id]}"`,
+      model: '-', edgeFunction: 'generate-banner',
+      section: 'Banner-Generator', group: 'Szenen',
+    }];
+  })),
+  // Styles
+  ...Object.fromEntries(['premium', 'cinematic', 'bold', 'minimal', 'retro', 'sport'].map(id => {
+    const labels: Record<string, string> = { premium: 'Seriös / Premium', cinematic: 'Cinematic', bold: 'Verrückt / Auffällig', minimal: 'Minimalistisch', retro: 'Retro / Vintage', sport: 'Sportlich' };
+    return [`banner_style_${id}`, {
+      label: labels[id], description: `Stil-Prompt für "${labels[id]}"`,
+      model: '-', edgeFunction: 'generate-banner',
+      section: 'Banner-Generator', group: 'Stile',
+    }];
+  })),
+  // Price displays
+  ...Object.fromEntries(['sign', 'board', 'neon', 'stamp', 'led', 'ribbon'].map(id => {
+    const labels: Record<string, string> = { sign: 'Preisschild', board: 'Tafel / Banner', neon: 'Neon-Schrift', stamp: 'Stempel', led: 'LED-Anzeige', ribbon: 'Banner-Schleife' };
+    return [`banner_price_${id}`, {
+      label: labels[id], description: `Preisdarstellungs-Prompt "${labels[id]}"`,
+      model: '-', edgeFunction: 'generate-banner',
+      section: 'Banner-Generator', group: 'Preisdarstellung',
+    }];
+  })),
+  // Headline fonts
+  ...Object.fromEntries(['bmw', 'mercedes', 'audi', 'vw', 'porsche', 'toyota', 'hyundai', 'volvo', 'cupra', 'fiat', 'impact', 'modern_sans', 'condensed', 'elegant_serif', 'tech', 'brush'].map(id => {
+    const labels: Record<string, string> = {
+      bmw: 'BMW', mercedes: 'Mercedes', audi: 'Audi', vw: 'VW', porsche: 'Porsche',
+      toyota: 'Toyota', hyundai: 'Hyundai', volvo: 'Volvo', cupra: 'CUPRA', fiat: 'Fiat',
+      impact: 'Impact / Bold', modern_sans: 'Modern Sans', condensed: 'Condensed Bold',
+      elegant_serif: 'Elegant Serif', tech: 'Tech / Digital', brush: 'Brush / Handschrift',
+    };
+    return [`banner_font_${id}`, {
+      label: labels[id], description: `Headline-Schriftart "${labels[id]}"`,
+      model: '-', edgeFunction: 'generate-banner',
+      section: 'Banner-Generator', group: 'Headline-Schriften',
+    }];
+  })),
+  // Subline fonts
+  ...Object.fromEntries(['match', 'clean_sans', 'thin_sans', 'medium_sans', 'small_caps', 'mono'].map(id => {
+    const labels: Record<string, string> = { match: 'Passend zur Headline', clean_sans: 'Clean Sans-Serif', thin_sans: 'Dünn & Elegant', medium_sans: 'Medium Sans', small_caps: 'Kapitälchen', mono: 'Monospace / Tech' };
+    return [`banner_subfont_${id}`, {
+      label: labels[id], description: `Subline-Schriftart "${labels[id]}"`,
+      model: '-', edgeFunction: 'generate-banner',
+      section: 'Banner-Generator', group: 'Subline-Schriften',
+    }];
+  })),
+
+  // ═══ SECTION: Video & 360° ═══
   video_generate: {
     label: 'Video-Generierung',
     description: 'Prompt für Showroom-Videos aus Fahrzeugbildern via Google Veo',
-    model: 'veo-3.1-generate-preview',
-    edgeFunction: 'generate-video',
-    category: 'Video',
+    model: 'veo-3.1-generate-preview', edgeFunction: 'generate-video',
+    section: 'Video & 360°', group: 'Video',
   },
   spin360_video: {
     label: '360° Video (Video2Frames)',
-    description: 'Prompt für die 360°-Drehung als Video via Veo – wird zu 48 Frames extrahiert',
-    model: 'veo-3.1-generate-preview',
-    edgeFunction: 'generate-video (spin360)',
-    category: 'Video',
+    description: 'Prompt für die 360°-Drehung als Video via Veo',
+    model: 'veo-3.1-generate-preview', edgeFunction: 'generate-video (spin360)',
+    section: 'Video & 360°', group: 'Video',
   },
-  // 360° Spin (Image2Spin)
   spin360_analysis: {
     label: '360° Bildanalyse',
     description: 'Analysiert 4 Quellbilder auf Perspektive, Qualität und Fahrzeugtyp',
-    model: 'gemini-2.5-flash',
-    edgeFunction: 'generate-360-spin',
-    category: '360° Spin',
+    model: 'gemini-2.5-flash', edgeFunction: 'generate-360-spin',
+    section: 'Video & 360°', group: '360° Spin',
   },
   spin360_normalize: {
     label: '360° Normalisierung',
-    description: 'Normalisiert Quellbilder auf Studio-Hintergrund für konsistente Frames',
-    model: 'gemini-2.5-flash (image)',
-    edgeFunction: 'generate-360-spin',
-    category: '360° Spin',
+    description: 'Normalisiert Quellbilder auf Studio-Hintergrund',
+    model: 'gemini-2.5-flash (image)', edgeFunction: 'generate-360-spin',
+    section: 'Video & 360°', group: '360° Spin',
   },
   spin360_identity: {
     label: '360° Identity Profile',
-    description: 'Erstellt ein detailliertes Identitätsprofil des Fahrzeugs für Frame-Konsistenz',
-    model: 'gemini-2.5-flash',
-    edgeFunction: 'generate-360-spin',
-    category: '360° Spin',
+    description: 'Erstellt ein Identitätsprofil für Frame-Konsistenz',
+    model: 'gemini-2.5-flash', edgeFunction: 'generate-360-spin',
+    section: 'Video & 360°', group: '360° Spin',
   },
   spin360_anchor: {
     label: '360° Frame-Generierung',
-    description: 'Basis-Prompt für die Generierung einzelner 360°-Frames aus verschiedenen Blickwinkeln',
-    model: 'gemini-2.5-flash (image)',
-    edgeFunction: 'generate-360-spin',
-    category: '360° Spin',
+    description: 'Basis-Prompt für einzelne 360°-Frames',
+    model: 'gemini-2.5-flash (image)', edgeFunction: 'generate-360-spin',
+    section: 'Video & 360°', group: '360° Spin',
   },
-  // Landing Page
+
+  // ═══ SECTION: Landing Page ═══
   landing_page: {
-    label: 'Landing Page',
-    description: 'System-Prompt für die KI-generierte Landingpage-Erstellung (Texte, Struktur, SEO)',
-    model: 'gemini-2.5-flash',
-    edgeFunction: 'generate-landing-page',
-    category: 'Landing Page',
+    label: 'Landing Page Generierung',
+    description: 'System-Prompt für KI-generierte Landingpage-Inhalte (Texte, Struktur, SEO)',
+    model: 'gemini-2.5-flash', edgeFunction: 'generate-landing-page',
+    section: 'Landing Page & Marketing', group: 'Landing Page',
   },
-  // Banner
-  banner_generate: {
-    label: 'Banner Generator (Info)',
-    description: 'Der Banner-Prompt wird clientseitig dynamisch zusammengebaut – nicht direkt editierbar',
-    model: 'gemini / gpt-image-1',
-    edgeFunction: 'generate-banner',
-    category: 'Banner',
-    readOnly: true,
-  },
-  // Sales / CRM
+
+  // ═══ SECTION: Sales & CRM ═══
   auto_process_lead: {
     label: 'Lead Auto-Antwort',
     description: 'System-Prompt für die automatische Erstantwort bei neuen Leads',
-    model: 'gemini-2.5-flash',
-    edgeFunction: 'auto-process-lead',
-    category: 'Sales & CRM',
+    model: 'gemini-2.5-flash', edgeFunction: 'auto-process-lead',
+    section: 'Sales & CRM', group: 'Lead-Verarbeitung',
   },
   sales_chat: {
     label: 'Interner Sales-Chatbot',
-    description: 'System-Prompt für den internen Verkaufsassistent-Chatbot (Dashboard)',
-    model: 'gemini-2.5-flash',
-    edgeFunction: 'sales-chat',
-    category: 'Sales & CRM',
+    description: 'System-Prompt für den internen Verkaufsassistent-Chatbot',
+    model: 'gemini-2.5-flash', edgeFunction: 'sales-chat',
+    section: 'Sales & CRM', group: 'Chatbot',
   },
   sales_response: {
     label: 'Sales Response Generator',
-    description: 'Basis-System-Prompt für die Generierung von Verkaufsantworten (Kunden-Kommunikation)',
-    model: 'gemini-2.5-flash',
-    edgeFunction: 'generate-sales-response',
-    category: 'Sales & CRM',
+    description: 'Basis-System-Prompt für die Generierung von Verkaufsantworten',
+    model: 'gemini-2.5-flash', edgeFunction: 'generate-sales-response',
+    section: 'Sales & CRM', group: 'Chatbot',
   },
-  // Pipeline Bildgenerierung
-  pipeline_MASTER_IMAGE: { label: 'Master-Bild', description: 'Hero-Aufnahme: 3/4 vorne links im Showroom', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Hero' },
-  pipeline_EXT_FRONT: { label: 'Frontansicht', description: 'Direkte Frontansicht auf Augenhöhe', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Exterieur' },
-  pipeline_EXT_REAR: { label: 'Heckansicht', description: 'Direkte Heckansicht mit Rückleuchten', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Exterieur' },
-  pipeline_EXT_SIDE_LEFT: { label: 'Linke Seite', description: 'Seitenprofil links, senkrecht zur Karosserie', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Exterieur' },
-  pipeline_EXT_SIDE_RIGHT: { label: 'Rechte Seite', description: 'Seitenprofil rechts, senkrecht zur Karosserie', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Exterieur' },
-  pipeline_EXT_34_FRONT_RIGHT: { label: '3/4 Vorne Rechts', description: '3/4-Perspektive vorne rechts', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Exterieur' },
-  pipeline_EXT_34_REAR_LEFT: { label: '3/4 Hinten Links', description: '3/4-Perspektive hinten links, dramatische Beleuchtung', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Exterieur' },
-  pipeline_EXT_34_REAR_RIGHT: { label: '3/4 Hinten Rechts', description: '3/4-Perspektive hinten rechts', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Exterieur' },
-  pipeline_EXT_LOW_ANGLE: { label: 'Low-Angle Hero', description: 'Bodenperspektive von unten – kraftvoller Look', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Exterieur' },
-  pipeline_EXT_ELEVATED_FRONT: { label: 'Erhöhte Frontansicht', description: 'Vogelperspektive auf Motorhaube und Dach', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Exterieur' },
-  pipeline_INT_DASHBOARD: { label: 'Armaturenbrett', description: 'Fahrersitz-Perspektive auf Lenkrad und Cockpit', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Interieur' },
-  pipeline_INT_CENTER_CONSOLE: { label: 'Mittelkonsole', description: 'Nahaufnahme Mittelkonsole und Infotainment', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Interieur' },
-  pipeline_INT_REAR_SEATS: { label: 'Rücksitzbank', description: 'Blick von vorne auf die Rücksitze', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Interieur' },
-  pipeline_INT_WIDE_CABIN: { label: 'Kabinen-Übersicht', description: 'Weitwinkel-Aufnahme der gesamten Kabine', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Interieur' },
-  pipeline_DET_HEADLIGHT: { label: 'Scheinwerfer', description: 'Makro-Nahaufnahme des Frontscheinwerfers', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Details' },
-  pipeline_DET_TAILLIGHT: { label: 'Rücklicht', description: 'Makro-Nahaufnahme der Rücklicht-Signatur', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Details' },
-  pipeline_DET_WHEEL: { label: 'Felge', description: 'Ultra-scharfe Nahaufnahme der Felge mit Bremssattel', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Details' },
-  pipeline_DET_GRILLE: { label: 'Kühlergrill & Emblem', description: 'Nahaufnahme Kühlergrill und Markenemblem', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Details' },
-  pipeline_GRID_EXTERIOR_4: { label: 'Exterieur-Grid (4)', description: '2×2 Grid: 4 Außenansichten', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Composites' },
-  pipeline_GRID_HIGHLIGHTS_6: { label: 'Highlight-Grid (6)', description: '3×2 Grid: Außen + Detail-Mix', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Composites' },
-  pipeline_GRID_INTERIOR_4: { label: 'Interieur-Grid (4)', description: '2×2 Grid: 4 Innenansichten', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Composites' },
-  pipeline_GRID_SOCIAL_MEDIA: { label: 'Social-Media-Collage', description: 'Hero + 3 Detail-Bilder als Collage', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – Composites' },
-  // CI Brand Pipelines (individual jobs)
-  // BMW
-  pipeline_CI_BMW_34_FRONT: { label: 'BMW CI – 3/4 Front', description: 'BMW CI: Front 3/4 mit Niere', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI BMW' },
-  pipeline_CI_BMW_SIDE: { label: 'BMW CI – Seite', description: 'BMW CI: Seitenprofil', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI BMW' },
-  pipeline_CI_BMW_34_REAR: { label: 'BMW CI – 3/4 Heck', description: 'BMW CI: Heck 3/4', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI BMW' },
-  pipeline_CI_BMW_REAR: { label: 'BMW CI – Heck', description: 'BMW CI: Direkte Heckansicht', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI BMW' },
-  pipeline_CI_BMW_GRILLE: { label: 'BMW CI – Grill/Scheinwerfer', description: 'BMW CI Detail: Niere + Scheinwerfer', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI BMW' },
-  pipeline_CI_BMW_INTERIOR: { label: 'BMW CI – Cockpit', description: 'BMW CI Detail: iDrive + Curved Display', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI BMW' },
-  pipeline_CI_BMW_WHEEL: { label: 'BMW CI – Felge', description: 'BMW CI Detail: Felge + M-Bremse', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI BMW' },
-  // Mercedes
-  pipeline_CI_MERCEDES_34_FRONT: { label: 'Mercedes CI – 3/4 Front', description: 'Mercedes CI: Front 3/4 mit Stern', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Mercedes' },
-  pipeline_CI_MERCEDES_SIDE: { label: 'Mercedes CI – Seite', description: 'Mercedes CI: Seitenprofil mit Chromleisten', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Mercedes' },
-  pipeline_CI_MERCEDES_34_REAR: { label: 'Mercedes CI – 3/4 Heck', description: 'Mercedes CI: Heck 3/4 mit Lichtband', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Mercedes' },
-  pipeline_CI_MERCEDES_FRONT: { label: 'Mercedes CI – Front', description: 'Mercedes CI: Direkte Front mit Stern', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Mercedes' },
-  pipeline_CI_MERCEDES_MBUX: { label: 'Mercedes CI – MBUX', description: 'Mercedes CI Detail: MBUX Hyperscreen', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Mercedes' },
-  pipeline_CI_MERCEDES_GRILLE: { label: 'Mercedes CI – Grill/Stern', description: 'Mercedes CI Detail: Grill + Stern Makro', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Mercedes' },
-  pipeline_CI_MERCEDES_WHEEL: { label: 'Mercedes CI – Felge', description: 'Mercedes CI Detail: AMG-Felge + Bremse', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Mercedes' },
-  // Audi
-  pipeline_CI_AUDI_34_FRONT: { label: 'Audi CI – 3/4 Front', description: 'Audi CI: Front 3/4 mit Singleframe-Grill', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Audi' },
-  pipeline_CI_AUDI_SIDE: { label: 'Audi CI – Seite', description: 'Audi CI: Seitenprofil mit Tornado-Linie', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Audi' },
-  pipeline_CI_AUDI_34_REAR: { label: 'Audi CI – 3/4 Heck', description: 'Audi CI: Heck 3/4 mit LED-Lichtband', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Audi' },
-  pipeline_CI_AUDI_REAR: { label: 'Audi CI – Heck', description: 'Audi CI: Heck mit LED-Lichtleiste und Schriftzug', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Audi' },
-  // VW
-  pipeline_CI_VW_34_FRONT: { label: 'VW CI – 3/4 Front', description: 'VW CI: Front 3/4 mit VW-Logo und IQ.Light', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI VW' },
-  pipeline_CI_VW_SIDE: { label: 'VW CI – Seite', description: 'VW CI: Seitenprofil mit klaren Linien', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI VW' },
-  pipeline_CI_VW_34_REAR: { label: 'VW CI – 3/4 Heck', description: 'VW CI: Heck 3/4 mit VW-Logo', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI VW' },
-  pipeline_CI_VW_FRONT: { label: 'VW CI – Front', description: 'VW CI: Direkte Front mit VW-Emblem', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI VW' },
-  // Porsche
-  pipeline_CI_PORSCHE_34_FRONT: { label: 'Porsche CI – 3/4 Front', description: 'Porsche CI: Front 3/4 mit Wappen', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Porsche' },
-  pipeline_CI_PORSCHE_SIDE: { label: 'Porsche CI – Seite', description: 'Porsche CI: Seitenprofil, Sportwagen', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Porsche' },
-  pipeline_CI_PORSCHE_34_REAR: { label: 'Porsche CI – 3/4 Heck', description: 'Porsche CI: Heck 3/4 mit Schriftzug', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Porsche' },
-  pipeline_CI_PORSCHE_LOW: { label: 'Porsche CI – Low-Angle', description: 'Porsche CI: Low-Angle Front, Power-Pose', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Porsche' },
-  // Volvo
-  pipeline_CI_VOLVO_34_FRONT_LEFT: { label: 'Volvo CI – 3/4 Front Links', description: 'Volvo CI: 3/4 Front links, High-Tech-Showroom', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
-  pipeline_CI_VOLVO_34_FRONT_RIGHT: { label: 'Volvo CI – 3/4 Front Rechts', description: 'Volvo CI: 3/4 Front rechts, Milchglas', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
-  pipeline_CI_VOLVO_34_REAR_LEFT: { label: 'Volvo CI – 3/4 Heck Links', description: 'Volvo CI: 3/4 Heck links mit LED-Signaturen', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
-  pipeline_CI_VOLVO_34_REAR_RIGHT: { label: 'Volvo CI – 3/4 Heck Rechts', description: 'Volvo CI: 3/4 Heck rechts', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
-  pipeline_CI_VOLVO_SIDE: { label: 'Volvo CI – Seite', description: 'Volvo CI: Seitenprofil Beifahrerseite', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
-  pipeline_CI_VOLVO_FRONT: { label: 'Volvo CI – Front', description: 'Volvo CI: Direkte Frontansicht', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
-  pipeline_CI_VOLVO_REAR: { label: 'Volvo CI – Heck', description: 'Volvo CI: Direkte Heckansicht', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
-  pipeline_CI_VOLVO_INT_PASSENGER: { label: 'Volvo CI – Innenraum Beifahrer', description: 'Volvo CI: Blick von Beifahrerseite auf Dashboard', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
-  pipeline_CI_VOLVO_INT_CENTER: { label: 'Volvo CI – Innenraum Mitte', description: 'Volvo CI: Blick zwischen Vordersitzen', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
-  pipeline_CI_VOLVO_INT_REAR: { label: 'Volvo CI – Rücksitze', description: 'Volvo CI: Rücksitzbank mit Beinfreiheit', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
-  pipeline_CI_VOLVO_INT_BOOT: { label: 'Volvo CI – Kofferraum', description: 'Volvo CI: Offener Kofferraum von hinten', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
-  pipeline_CI_VOLVO_INT_STEERING: { label: 'Volvo CI – Lenkrad', description: 'Volvo CI: Nahaufnahme Lenkrad und Bedienelemente', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
-  pipeline_CI_VOLVO_DET_CLUSTER: { label: 'Volvo CI – Instrumente', description: 'Volvo CI Detail: Digitales Kombiinstrument', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
-  pipeline_CI_VOLVO_DET_SCREEN: { label: 'Volvo CI – Infotainment', description: 'Volvo CI Detail: Zentrales Touchscreen-Display', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
-  pipeline_CI_VOLVO_DET_WHEEL: { label: 'Volvo CI – Felge', description: 'Volvo CI Detail: Felge, Bremse und Kotflügel', model: 'gemini / gpt-image', edgeFunction: 'remaster-vehicle-image', category: 'Pipeline – CI Volvo' },
 };
 
-const CATEGORIES = [
-  'PDF & Analyse',
-  'Bild-Verarbeitung',
-  'Video',
-  '360° Spin',
-  'Landing Page',
-  'Banner',
+// ═══════════════════════════════════════════════════════════════════
+// SECTION ORDERING
+// ═══════════════════════════════════════════════════════════════════
+
+const SECTION_ORDER = [
+  'Datenextraktion & Erkennung',
+  'Bildgenerierung & Remastering',
+  'Pipeline – Bildgenerierung',
+  'Banner-Generator',
+  'Video & 360°',
+  'Landing Page & Marketing',
   'Sales & CRM',
-  'Pipeline – Hero',
-  'Pipeline – Exterieur',
-  'Pipeline – Interieur',
-  'Pipeline – Details',
-  'Pipeline – Composites',
-  'Pipeline – CI BMW',
-  'Pipeline – CI Mercedes',
-  'Pipeline – CI Audi',
-  'Pipeline – CI VW',
-  'Pipeline – CI Porsche',
-  'Pipeline – CI Volvo',
 ];
 
-const PROMPT_ORDER = Object.keys(PROMPT_META);
+const GROUP_ORDER: Record<string, string[]> = {
+  'Datenextraktion & Erkennung': ['PDF & Analyse', 'Bilderkennung'],
+  'Bildgenerierung & Remastering': ['Remastering – Basis', 'Remastering – Bausteine', 'Remastering – Szenen'],
+  'Pipeline – Bildgenerierung': ['Hero-Shots', 'Exterieur', 'Interieur', 'Details', 'Composites'],
+  'Banner-Generator': ['Basis & Regeln', 'Anlässe', 'Szenen', 'Stile', 'Preisdarstellung', 'Headline-Schriften', 'Subline-Schriften'],
+  'Video & 360°': ['Video', '360° Spin'],
+  'Landing Page & Marketing': ['Landing Page'],
+  'Sales & CRM': ['Lead-Verarbeitung', 'Chatbot'],
+};
+
+const SECTION_ICONS: Record<string, string> = {
+  'Datenextraktion & Erkennung': '📄',
+  'Bildgenerierung & Remastering': '🖼️',
+  'Pipeline – Bildgenerierung': '⚡',
+  'Banner-Generator': '🎨',
+  'Video & 360°': '🎬',
+  'Landing Page & Marketing': '🌐',
+  'Sales & CRM': '💬',
+};
+
+// Build ordered keys
+const ALL_KEYS = Object.keys(PROMPT_META);
 
 interface PromptOverrides {
   [key: string]: string;
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// COMPONENT
+// ═══════════════════════════════════════════════════════════════════
+
 export default function AdminPrompts() {
   const [overrides, setOverrides] = useState<PromptOverrides>({});
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [savingSection, setSavingSection] = useState<string | null>(null);
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
-  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const [savedSections, setSavedSections] = useState<Set<string>>(new Set());
 
   useEffect(() => { loadOverrides(); }, []);
 
@@ -653,15 +761,21 @@ export default function AdminPrompts() {
     setLoading(false);
   };
 
-  const saveOverrides = async () => {
-    setSaving(true);
+  const saveAll = useCallback(async (sectionLabel?: string) => {
+    setSavingSection(sectionLabel || 'all');
     const { error } = await supabase
       .from('admin_settings' as any)
       .upsert({ key: 'ai_prompts', value: overrides, updated_at: new Date().toISOString() } as any, { onConflict: 'key' });
     if (error) toast.error('Fehler: ' + error.message);
-    else toast.success('Prompt-Überschreibungen gespeichert');
-    setSaving(false);
-  };
+    else {
+      toast.success(sectionLabel ? `"${sectionLabel}" gespeichert` : 'Alle Prompts gespeichert');
+      if (sectionLabel) {
+        setSavedSections(prev => new Set(prev).add(sectionLabel));
+        setTimeout(() => setSavedSections(prev => { const n = new Set(prev); n.delete(sectionLabel); return n; }), 2000);
+      }
+    }
+    setSavingSection(null);
+  }, [overrides]);
 
   const toggleExpand = (key: string) => {
     setExpandedKeys(prev => {
@@ -671,10 +785,18 @@ export default function AdminPrompts() {
     });
   };
 
-  const toggleCategory = (cat: string) => {
-    setCollapsedCategories(prev => {
+  const toggleSection = (s: string) => {
+    setCollapsedSections(prev => {
       const next = new Set(prev);
-      if (next.has(cat)) next.delete(cat); else next.add(cat);
+      if (next.has(s)) next.delete(s); else next.add(s);
+      return next;
+    });
+  };
+
+  const toggleGroup = (g: string) => {
+    setCollapsedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(g)) next.delete(g); else next.add(g);
       return next;
     });
   };
@@ -697,113 +819,171 @@ export default function AdminPrompts() {
     });
   };
 
-  const overriddenCount = PROMPT_ORDER.filter(k => isOverridden(k)).length;
+  const overriddenCount = ALL_KEYS.filter(k => isOverridden(k)).length;
+
+  // Build section data
+  const sections = SECTION_ORDER.map(sectionName => {
+    const groups = (GROUP_ORDER[sectionName] || []).map(groupName => {
+      const keys = ALL_KEYS.filter(k => PROMPT_META[k]?.section === sectionName && PROMPT_META[k]?.group === groupName);
+      return { name: groupName, keys };
+    }).filter(g => g.keys.length > 0);
+
+    // Also catch any keys not in GROUP_ORDER
+    const coveredKeys = new Set(groups.flatMap(g => g.keys));
+    const ungrouped = ALL_KEYS.filter(k => PROMPT_META[k]?.section === sectionName && !coveredKeys.has(k));
+    if (ungrouped.length > 0) groups.push({ name: 'Weitere', keys: ungrouped });
+
+    const allSectionKeys = groups.flatMap(g => g.keys);
+    const sectionOverridden = allSectionKeys.filter(k => isOverridden(k)).length;
+
+    return { name: sectionName, groups, totalKeys: allSectionKeys.length, overridden: sectionOverridden };
+  }).filter(s => s.totalKeys > 0);
 
   if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin w-8 h-8 border-2 border-accent border-t-transparent rounded-full" /></div>;
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="font-display text-2xl font-bold text-foreground">Prompt-Verwaltung</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {PROMPT_ORDER.length} Prompts in {CATEGORIES.length} Kategorien · {overriddenCount} überschrieben
+            {ALL_KEYS.length} Prompts in {sections.length} Modulen · {overriddenCount} überschrieben
           </p>
         </div>
-        <Button onClick={saveOverrides} disabled={saving} className="gap-1.5">
-          <Save className="w-4 h-4" /> {saving ? 'Speichern…' : 'Überschreibungen speichern'}
+        <Button onClick={() => saveAll()} disabled={!!savingSection} className="gap-1.5">
+          <Save className="w-4 h-4" /> {savingSection === 'all' ? 'Speichern…' : 'Alle speichern'}
         </Button>
       </div>
 
-      <div className="space-y-6">
-        {CATEGORIES.map(category => {
-          const prompts = PROMPT_ORDER.filter(k => PROMPT_META[k].category === category);
-          const catOverridden = prompts.filter(k => isOverridden(k)).length;
-          const isCatCollapsed = collapsedCategories.has(category);
+      {/* Sections */}
+      <div className="space-y-4">
+        {sections.map(section => {
+          const isCollapsed = collapsedSections.has(section.name);
+          const isSaved = savedSections.has(section.name);
 
           return (
-            <div key={category} className="space-y-2">
-              <button
-                onClick={() => toggleCategory(category)}
-                className="flex items-center gap-2 w-full text-left group"
-              >
-                {isCatCollapsed
-                  ? <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                  : <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                }
-                <h2 className="font-display text-lg font-semibold text-foreground group-hover:text-accent transition-colors">
-                  {category}
-                </h2>
-                <Badge variant="secondary" className="text-xs">{prompts.length}</Badge>
-                {catOverridden > 0 && <Badge variant="outline" className="text-xs border-accent text-accent">{catOverridden} überschrieben</Badge>}
-              </button>
+            <div key={section.name} className="bg-card rounded-xl border border-border overflow-hidden">
+              {/* Section header */}
+              <div className="flex items-center justify-between px-4 py-3 bg-muted/30 border-b border-border">
+                <button onClick={() => toggleSection(section.name)} className="flex items-center gap-2.5 min-w-0 group">
+                  {isCollapsed
+                    ? <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                    : <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                  }
+                  <span className="text-base">{SECTION_ICONS[section.name] || '📋'}</span>
+                  <h2 className="font-display text-base font-bold text-foreground group-hover:text-accent transition-colors">
+                    {section.name}
+                  </h2>
+                  <Badge variant="secondary" className="text-xs">{section.totalKeys}</Badge>
+                  {section.overridden > 0 && <Badge variant="outline" className="text-xs border-accent text-accent">{section.overridden} custom</Badge>}
+                </button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => saveAll(section.name)}
+                  disabled={!!savingSection}
+                  className="gap-1 text-xs h-7 shrink-0"
+                >
+                  {isSaved ? <Check className="w-3 h-3 text-accent" /> : <Save className="w-3 h-3" />}
+                  {savingSection === section.name ? 'Speichern…' : isSaved ? 'Gespeichert' : 'Speichern'}
+                </Button>
+              </div>
 
-              {!isCatCollapsed && (
-                <div className="space-y-3 ml-6">
-                  {prompts.map(key => {
-                    const meta = PROMPT_META[key];
-                    const expanded = expandedKeys.has(key);
-                    const overridden = isOverridden(key);
+              {/* Groups */}
+              {!isCollapsed && (
+                <div className="divide-y divide-border">
+                  {section.groups.map(group => {
+                    const groupKey = `${section.name}::${group.name}`;
+                    const isGroupCollapsed = collapsedGroups.has(groupKey);
+                    const groupOverridden = group.keys.filter(k => isOverridden(k)).length;
 
                     return (
-                      <div key={key} className="bg-card rounded-xl border border-border overflow-hidden">
+                      <div key={groupKey}>
+                        {/* Group header */}
                         <button
-                          onClick={() => toggleExpand(key)}
-                          className="w-full flex items-center justify-between p-3 sm:p-4 hover:bg-muted/50 transition-colors text-left"
+                          onClick={() => toggleGroup(groupKey)}
+                          className="flex items-center gap-2 w-full text-left px-4 py-2.5 hover:bg-muted/30 transition-colors"
                         >
-                          <div className="flex items-center gap-3 min-w-0">
-                            {expanded ? <EyeOff className="w-4 h-4 text-muted-foreground shrink-0" /> : <Eye className="w-4 h-4 text-muted-foreground shrink-0" />}
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="font-display font-semibold text-foreground text-sm">{meta.label}</span>
-                                {overridden && <Badge variant="outline" className="text-xs border-accent text-accent">Überschrieben</Badge>}
-                                {meta.readOnly && <Badge variant="secondary" className="text-xs">Nur Info</Badge>}
-                              </div>
-                              <p className="text-xs text-muted-foreground mt-0.5 truncate">{meta.description}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0 ml-2">
-                            <Badge variant="secondary" className="text-xs font-mono hidden sm:inline-flex">{meta.model}</Badge>
-                            <Badge variant="secondary" className="text-xs font-mono hidden sm:inline-flex">{meta.edgeFunction}</Badge>
-                          </div>
+                          {isGroupCollapsed
+                            ? <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
+                            : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+                          }
+                          <span className="text-sm font-semibold text-foreground/80">{group.name}</span>
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{group.keys.length}</Badge>
+                          {groupOverridden > 0 && <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-accent text-accent">{groupOverridden}</Badge>}
                         </button>
 
-                        {expanded && (
-                          <div className="px-3 sm:px-4 pb-4 space-y-3 border-t border-border pt-3">
-                            {/* Mobile badges */}
-                            <div className="flex gap-2 sm:hidden">
-                              <Badge variant="secondary" className="text-xs font-mono">{meta.model}</Badge>
-                              <Badge variant="secondary" className="text-xs font-mono">{meta.edgeFunction}</Badge>
-                            </div>
+                        {/* Prompt items */}
+                        {!isGroupCollapsed && (
+                          <div className="space-y-1.5 px-4 pb-3">
+                            {group.keys.map(key => {
+                              const meta = PROMPT_META[key];
+                              if (!meta) return null;
+                              const expanded = expandedKeys.has(key);
+                              const overridden = isOverridden(key);
+                              const isSmallPrompt = (DEFAULT_PROMPTS[key]?.length || 0) < 200;
 
-                            {meta.readOnly ? (
-                              <div className="bg-muted/50 rounded-lg p-4">
-                                <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                                  {DEFAULT_PROMPTS[key]}
-                                </p>
-                              </div>
-                            ) : (
-                              <>
-                                <div className="flex items-center justify-between">
-                                  <span className="text-xs font-medium text-muted-foreground">
-                                    {overridden ? 'Benutzerdefinierter Prompt (aktiv)' : 'Standard-Prompt (aktiv)'}
-                                  </span>
-                                  {overridden && (
-                                    <Button variant="ghost" size="sm" onClick={() => resetToDefault(key)} className="gap-1 text-xs h-7">
-                                      <RotateCcw className="w-3 h-3" /> Auf Standard zurücksetzen
-                                    </Button>
+                              return (
+                                <div key={key} className={`rounded-lg border ${overridden ? 'border-accent/40 bg-accent/5' : 'border-border bg-background'} overflow-hidden`}>
+                                  <button
+                                    onClick={() => toggleExpand(key)}
+                                    className="w-full flex items-center justify-between px-3 py-2 hover:bg-muted/30 transition-colors text-left"
+                                  >
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      {expanded ? <EyeOff className="w-3.5 h-3.5 text-muted-foreground shrink-0" /> : <Eye className="w-3.5 h-3.5 text-muted-foreground shrink-0" />}
+                                      <span className="font-medium text-foreground text-sm truncate">{meta.label}</span>
+                                      {overridden && <Badge variant="outline" className="text-[10px] px-1 py-0 border-accent text-accent shrink-0">Custom</Badge>}
+                                      {meta.readOnly && <Badge variant="secondary" className="text-[10px] px-1 py-0 shrink-0">Info</Badge>}
+                                    </div>
+                                    <div className="hidden sm:flex items-center gap-1.5 shrink-0 ml-2">
+                                      {meta.model !== '-' && <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-mono">{meta.model}</Badge>}
+                                    </div>
+                                  </button>
+
+                                  {expanded && (
+                                    <div className="px-3 pb-3 space-y-2 border-t border-border pt-2">
+                                      <p className="text-xs text-muted-foreground">{meta.description}</p>
+                                      {meta.model !== '-' && (
+                                        <div className="flex gap-1.5 flex-wrap">
+                                          <Badge variant="secondary" className="text-[10px] font-mono">{meta.model}</Badge>
+                                          <Badge variant="secondary" className="text-[10px] font-mono">{meta.edgeFunction}</Badge>
+                                        </div>
+                                      )}
+
+                                      {meta.readOnly ? (
+                                        <div className="bg-muted/50 rounded-lg p-3">
+                                          <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                                            {DEFAULT_PROMPTS[key]}
+                                          </p>
+                                        </div>
+                                      ) : (
+                                        <>
+                                          <div className="flex items-center justify-between">
+                                            <span className="text-xs font-medium text-muted-foreground">
+                                              {overridden ? '✏️ Benutzerdefiniert (aktiv)' : '📄 Standard (aktiv)'}
+                                            </span>
+                                            {overridden && (
+                                              <Button variant="ghost" size="sm" onClick={() => resetToDefault(key)} className="gap-1 text-xs h-6 px-2">
+                                                <RotateCcw className="w-3 h-3" /> Reset
+                                              </Button>
+                                            )}
+                                          </div>
+                                          <textarea
+                                            value={isMeaningfulOverride(overrides[key]) ? overrides[key] : DEFAULT_PROMPTS[key] || ''}
+                                            onChange={e => setOverrides(p => ({ ...p, [key]: e.target.value }))}
+                                            className={`w-full p-2.5 rounded-lg border border-border bg-background text-foreground text-xs resize-y font-mono leading-relaxed ${isSmallPrompt ? 'min-h-[60px]' : 'min-h-[160px]'}`}
+                                          />
+                                          <p className="text-[10px] text-muted-foreground">
+                                            Key: <code className="bg-muted px-1 rounded">{key}</code>
+                                          </p>
+                                        </>
+                                      )}
+                                    </div>
                                   )}
                                 </div>
-                                <textarea
-                                  value={isMeaningfulOverride(overrides[key]) ? overrides[key] : DEFAULT_PROMPTS[key]}
-                                  onChange={e => setOverrides(p => ({ ...p, [key]: e.target.value }))}
-                                  className="w-full min-h-[200px] p-3 rounded-lg border border-border bg-background text-foreground text-xs resize-y font-mono leading-relaxed"
-                                />
-                                <p className="text-xs text-muted-foreground">
-                                  Leer lassen oder löschen → Standard-Prompt wird verwendet. Key: <code className="bg-muted px-1 rounded">{key}</code>
-                                </p>
-                              </>
-                            )}
+                              );
+                            })}
                           </div>
                         )}
                       </div>
