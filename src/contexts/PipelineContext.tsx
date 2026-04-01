@@ -175,7 +175,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       ? [...cfg.additionalImages, ...referenceImages.filter((_, i) => i !== primaryReferenceIndex)]
       : referenceImages.filter((_, i) => i !== primaryReferenceIndex).concat(cfg.additionalImages);
 
-    const baseContext = buildMasterPrompt(cfg.remasterConfig, cfg.vehicleDescription);
+    const promptOverrides = await fetchPromptOverrides();
+    const baseContext = buildMasterPrompt(cfg.remasterConfig, cfg.vehicleDescription, undefined, promptOverrides);
     const taskLock = buildTaskOutputLock(job);
 
     // Detect if this is an interior job – prevents AI from generating exterior views

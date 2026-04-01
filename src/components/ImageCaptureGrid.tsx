@@ -548,7 +548,8 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     if (!slot || !captures[slotKey]) return;
     setCaptures(prev => ({ ...prev, [slotKey]: { ...prev[slotKey], status: 'processing', error: undefined } }));
     try {
-      const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription);
+      const overrides = await fetchPromptOverrides();
+      const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription, undefined, overrides);
       const { data, error } = await invokeRemasterVehicleImage({
         imageBase64: captures[slotKey].base64,
         additionalImages: detailImages.length > 0 ? detailImages : undefined,

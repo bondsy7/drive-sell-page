@@ -192,9 +192,10 @@ const PresetUploadFlow: React.FC<PresetUploadFlowProps> = ({ onComplete, onBack 
     Object.entries(dynamicFields).forEach(([key, value]) => {
       resolvedPrompt = resolvedPrompt.replace(new RegExp(`\\{${key}\\}`, 'g'), value || '');
     });
+    const retryOverrides = await fetchPromptOverrides();
     const dynamicPrompt = resolvedPrompt
-      ? `${resolvedPrompt}\n\n${buildMasterPrompt(remasterConfig, '')}`
-      : buildMasterPrompt(remasterConfig, '');
+      ? `${resolvedPrompt}\n\n${buildMasterPrompt(remasterConfig, '', undefined, retryOverrides)}`
+      : buildMasterPrompt(remasterConfig, '', undefined, retryOverrides);
 
     try {
       const { data, error } = await invokeRemasterVehicleImage({

@@ -194,7 +194,8 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
     setImages(prev => prev.map(x => x.id === id ? { ...x, status: 'processing', error: undefined } : x));
     setRegeneratingIds(prev => new Set(prev).add(id));
     try {
-      const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription);
+      const overrides = await fetchPromptOverrides();
+      const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription, undefined, overrides);
       const { data, error } = await invokeRemasterVehicleImage({
         imageBase64: img.originalBase64,
         vehicleDescription,
