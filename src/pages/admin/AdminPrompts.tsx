@@ -154,9 +154,7 @@ ABSOLUTE REGELN:
 8. Antworte NUR mit JSON`,
 
   // ── Bild-Verarbeitung ──
-  image_remaster: `You are a top-tier professional automotive commercial photographer and retoucher.
-TASK: Remaster the provided reference vehicle photo into a flawless, dealership-quality promotional image.
-
+  // image_remaster entry removed – all remaster prompts are managed via modular blocks (Remastering – Bausteine)
 <IDENTITY_LOCK>
 Study ALL provided reference photos and detail images with extreme care before generating.
 PAINT: Reproduce the EXACT paint color, shade, metallic/matte finish. Do NOT shift, tint, saturate, desaturate, lighten, or darken. Only change if a hex code is explicitly provided.
