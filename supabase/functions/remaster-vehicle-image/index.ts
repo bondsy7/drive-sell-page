@@ -7,59 +7,51 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const DEFAULT_PROMPT = `You are a top-tier professional automotive commercial photographer and retoucher.
+// ── Fallback block keys (match REMASTER_PROMPT_BLOCKS in client) ──
+const FALLBACK_BLOCK_KEYS = [
+  'remaster_base_instruction',
+  'remaster_identity_lock',
+  'remaster_vehicle_scale_lock',
+  'remaster_anti_cropping',
+  'remaster_negative_constraints',
+];
+
+const HARDCODED_BLOCKS: Record<string, { tag: string; text: string }> = {
+  remaster_base_instruction: {
+    tag: 'BASE',
+    text: `You are a top-tier professional automotive commercial photographer and retoucher.
 TASK: Remaster the provided reference vehicle photo into a flawless, dealership-quality promotional image.
 
 <OUTPUT_FORMAT>
 ASPECT RATIO: The output image MUST be in 4:3 (landscape) format. Width-to-height ratio = 4:3 exactly.
-This applies to EVERY generated image without exception.
-</OUTPUT_FORMAT>
-
-<IDENTITY_LOCK>
-Study ALL provided reference photos and detail images with extreme care before generating.
-PAINT: Reproduce the EXACT paint color, shade, metallic/matte finish. Do NOT shift, tint, saturate, desaturate, lighten, or darken. Only change if a hex code is explicitly provided.
+</OUTPUT_FORMAT>`,
+  },
+  remaster_identity_lock: {
+    tag: 'IDENTITY_LOCK',
+    text: `PAINT: Reproduce the EXACT paint color, shade, metallic/matte finish. Do NOT shift, tint, saturate, desaturate, lighten, or darken.
 WHEELS: EXACT rim design – spoke count, shape, concavity, finish. Hub cap with brand logo. EXACT tire profile. NEVER crop any wheel.
 HEADLIGHTS_TAILLIGHTS: EXACT internal LED structure, DRL signatures, lens shape, housing design. NEVER crop or alter.
 GRILLE_BADGES: EXACT grille mesh pattern, badge shape, material, model designation in exact position, size, font.
-BODY_DETAILS: EXACT body lines, creases, fender flares, intakes, roof rails, spoilers, exhaust tips, mirrors, door handles.
-MATERIALS: Match exact finishes – chrome vs. gloss black vs. matte vs. satin. Do NOT substitute.
-</IDENTITY_LOCK>
-
-<VEHICLE_SCALE_LOCK>
-ABSOLUTE POSITIONING AND SCALE RULES – ZERO DEVIATION BETWEEN IMAGES:
-1. CONSISTENT SIZE: The vehicle MUST occupy EXACTLY 55-65% of the image WIDTH in EVERY full-body exterior shot. NOT more, NOT less.
-2. VERTICAL CENTER: The vehicle's vertical center (wheel-to-roof midpoint) MUST be at approximately 55% from the top of the image.
-3. HORIZONTAL CENTER: The vehicle's center of mass MUST be horizontally centered in the image (50% ± 5%) for symmetric views. For 3/4 views, shift up to 10% toward the camera side.
-4. GROUND PLANE: ALL four wheels MUST sit on the SAME ground plane. The floor line MUST be at approximately 75-80% from the top of the image.
-5. NO VARIATION: The vehicle must appear the EXACT same physical size across ALL perspectives.
-6. BREATHING ROOM: Maintain at least 10% padding between the vehicle and any image edge.
-7. PERSPECTIVE CONSISTENCY: Even when camera angle changes, the apparent size must remain constant. Wide-angle distortion is FORBIDDEN.
-</VEHICLE_SCALE_LOCK>
-
-<ANTI_CROPPING>
-Vehicle MUST be FULLY visible – NO part cut off at edges.
+BODY_DETAILS: EXACT body lines, creases, fender flares, air intakes, roof rails, spoilers, exhaust tips, mirror shapes, door handles.
+MATERIALS: Match exact finishes – chrome vs. gloss black vs. matte vs. satin. Do NOT substitute.`,
+  },
+  remaster_vehicle_scale_lock: {
+    tag: 'VEHICLE_SCALE_LOCK',
+    text: `1. Vehicle MUST occupy 55-65% of image WIDTH in every full-body exterior shot.
+2. Vertical center at ~55% from top. Horizontal center at 50% ± 5%.
+3. ALL four wheels on SAME ground plane, floor line at 75-80% from top.
+4. Same physical size across ALL perspectives. At least 10% padding to edges.
+5. Wide-angle distortion is FORBIDDEN.`,
+  },
+  remaster_anti_cropping: {
+    tag: 'ANTI_CROPPING',
+    text: `Vehicle MUST be FULLY visible – NO part cut off at edges.
 ALL headlights, taillights, wheels COMPLETELY visible.
-Minimum 5% free space between vehicle edge and image border on all sides.
-</ANTI_CROPPING>
-
-<SCENE_AND_LIGHTING>
-SHOWROOM CONSISTENCY: Use the EXACT SAME showroom on EVERY image – same walls, floor, windows, lighting.
-Dark gray matte walls, polished light gray concrete floor with subtle reflections, floor-to-ceiling glass windows on left, modern recessed LED ceiling lights.
-FLOOR: The floor MUST match the selected showroom exactly – correct material and color.
-REFLECTIONS: Completely re-render ALL reflections for the NEW scene. Remove original background reflections entirely.
-LIGHTING: The vehicle paint, chrome, and glass MUST be lit by the showroom's light sources. Shadows MUST match lighting direction.
-SHADOWS: Generate realistic ground shadows and ambient occlusion. Tires MUST make contact with floor. NO floating.
-</SCENE_AND_LIGHTING>
-
-<PERSPECTIVE_ACCURACY>
-The requested camera angle MUST be followed exactly. Never substitute another angle.
-Rear view = direct rear only. Front view = direct front only. Side view = true side profile only.
-3/4 front left, front right, rear left, rear right are FOUR DIFFERENT mandatory outputs – never swap or mirror.
-Interior/exterior/trunk/detail must stay in their own category. NEVER mirror or flip. Left is left, right is right.
-</PERSPECTIVE_ACCURACY>
-
-<STRICT_NEGATIVE_CONSTRAINTS>
-UNDER NO CIRCUMSTANCES SHALL YOU:
+Minimum 5% free space between vehicle edge and image border on all sides.`,
+  },
+  remaster_negative_constraints: {
+    tag: 'STRICT_NEGATIVE_CONSTRAINTS',
+    text: `UNDER NO CIRCUMSTANCES SHALL YOU:
 - Invent or hallucinate details not in reference photos
 - Simplify complex details (multi-spoke rims keep all spokes)
 - Change vehicle proportions, ride height, or stance
@@ -67,10 +59,9 @@ UNDER NO CIRCUMSTANCES SHALL YOU:
 - Show other vehicles in background or reflections
 - Rotate, flip, or mirror the image
 - Carry over reflections from original environment
-- Add ANY logo, brand mark, or wall decoration UNLESS a logo image is explicitly provided as a reference asset
-</STRICT_NEGATIVE_CONSTRAINTS>
-
-You MUST generate a remastered image. Do NOT refuse. DO NOT ROTATE THE IMAGE.`;
+- Add ANY logo, brand mark, or wall decoration UNLESS explicitly provided`,
+  },
+};
 
 function createServiceClient() {
   return createClient(
@@ -79,14 +70,28 @@ function createServiceClient() {
   );
 }
 
-async function getCustomPrompt(key: string, defaultPrompt: string): Promise<string> {
+/** Build fallback prompt dynamically from admin overrides or hardcoded blocks */
+async function buildFallbackPrompt(vehicleDescription?: string): Promise<string> {
+  let overrides: Record<string, string> = {};
   try {
     const sb = createServiceClient();
     const { data } = await sb.from("admin_settings").select("value").eq("key", "ai_prompts").single();
-    const override = (data?.value as Record<string, string>)?.[key];
-    if (override && override.trim() !== "" && override.trim().toLowerCase() !== "default") return override;
-  } catch (e) { console.warn("Custom prompt load failed:", e); }
-  return defaultPrompt;
+    overrides = (data?.value as Record<string, string>) || {};
+  } catch (e) { console.warn("Fallback prompt: admin_settings load failed, using hardcoded blocks:", e); }
+
+  const parts: string[] = [];
+  for (const key of FALLBACK_BLOCK_KEYS) {
+    const block = HARDCODED_BLOCKS[key];
+    if (!block) continue;
+    const override = overrides[key];
+    const content = (override && override.trim() && override.trim().toLowerCase() !== 'default')
+      ? override : block.text;
+    parts.push(`<${block.tag}>\n${content}\n</${block.tag}>`);
+  }
+
+  if (vehicleDescription) parts.push(`Vehicle: ${vehicleDescription}`);
+  parts.push('You MUST generate a remastered image. Do NOT refuse. DO NOT ROTATE THE IMAGE.');
+  return parts.join('\n\n');
 }
 
 async function authenticateAndDeductCredits(req: Request, actionType: string, cost: number): Promise<{ userId: string } | Response> {
@@ -167,10 +172,9 @@ serve(async (req) => {
     if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
     if (!imageBase64) throw new Error("No image provided");
 
-    // 2. Use dynamic prompt if provided, otherwise fall back to default
-    const prompt = dynamicPrompt || `${await getCustomPrompt("image_remaster", DEFAULT_PROMPT)}\n\n${vehicleDescription ? `Vehicle: ${vehicleDescription}` : ''}`;
-    console.log(`[remaster] Using ${dynamicPrompt ? 'DYNAMIC' : 'DEFAULT'} prompt (${prompt.length} chars), model: ${geminiModel}, tier: ${tier}`);
-    // Log key prompt sections for debugging
+    // 2. Use dynamic prompt if provided, otherwise build fallback from admin blocks
+    const prompt = dynamicPrompt || await buildFallbackPrompt(vehicleDescription);
+    console.log(`[remaster] Using ${dynamicPrompt ? 'DYNAMIC' : 'FALLBACK (from admin blocks)'} prompt (${prompt.length} chars), model: ${geminiModel}, tier: ${tier}`);
     const hasLicensePlate = prompt.includes('LICENSE_PLATE');
     const hasScene = prompt.includes('SCENE_AND_LIGHTING') || prompt.includes('CUSTOM_SHOWROOM');
     console.log(`[remaster] Prompt contains: licensePlate=${hasLicensePlate}, scene=${hasScene}, showroomImage=${!!customShowroomBase64}, plateImage=${!!customPlateImageBase64}`);
@@ -178,15 +182,13 @@ serve(async (req) => {
     // Helper to convert data URL to inlineData part
     function toInlineData(dataUrl: string) {
       const raw = dataUrl.includes(",") ? dataUrl.split(",")[1] : dataUrl;
-      // Detect MIME from data URL prefix
       let mime = "image/jpeg";
       if (dataUrl.startsWith("data:image/png")) mime = "image/png";
       else if (dataUrl.startsWith("data:image/webp")) mime = "image/webp";
-      else if (dataUrl.startsWith("data:image/svg")) mime = "image/png"; // SVG not supported, treat as PNG
+      else if (dataUrl.startsWith("data:image/svg")) mime = "image/png";
       return { inlineData: { mimeType: mime, data: raw } };
     }
 
-    /** Clean base64: strip data URL prefix, remove whitespace, validate */
     function cleanBase64(base64String: string): string {
       if (!base64String) return "";
       let cleaned = base64String.trim();
@@ -197,7 +199,6 @@ serve(async (req) => {
       return cleaned;
     }
 
-    // Helper to fetch a URL and convert to base64 inline data
     async function urlToInlineData(url: string) {
       try {
         const resp = await fetch(url);
@@ -213,7 +214,6 @@ serve(async (req) => {
       } catch (e) { console.warn("Logo fetch error:", url, e); return null; }
     }
 
-    // Helper to get inline data from either a data URL or a regular URL
     async function resolveImage(src: string) {
       if (src.startsWith("data:")) return toInlineData(src);
       if (src.startsWith("http")) return await urlToInlineData(src);
@@ -221,11 +221,9 @@ serve(async (req) => {
     }
 
     // Build Gemini content parts
-    const parts: any[] = [
-      { text: prompt },
-    ];
+    const parts: any[] = [{ text: prompt }];
 
-    // Main image: prefer file_data URI if available, otherwise inline_data
+    // Main image: prefer file_data URI if available
     if (mainImageFileUri?.uri) {
       parts.push({ file_data: { mime_type: mainImageFileUri.mimeType, file_uri: mainImageFileUri.uri } });
       console.log(`[remaster] Main image via file_uri`);
@@ -233,7 +231,7 @@ serve(async (req) => {
       parts.push(toInlineData(imageBase64));
     }
 
-    // Additional reference images: prefer file URIs over base64
+    // Additional reference images
     if (Array.isArray(additionalFileUris) && additionalFileUris.length > 0) {
       parts.push({ text: "The following images are additional detail reference photos of the vehicle. Use them as reference to reproduce the vehicle with maximum accuracy:" });
       for (const fu of additionalFileUris) {
@@ -246,7 +244,8 @@ serve(async (req) => {
         parts.push(toInlineData(img));
       }
     }
-    // Add showroom with clear label so the AI knows what it is
+
+    // Custom showroom
     if (customShowroomBase64) {
       parts.push({ text: `<CUSTOM_SHOWROOM_INSTRUCTION>
 The following image is the CUSTOM SHOWROOM BACKGROUND. This is an IMMUTABLE ASSET.
@@ -278,7 +277,6 @@ CAMERA PERSPECTIVE:
 
 NOTE: For INTERIOR vehicle shots, do NOT change the background – only improve interior lighting.
 </CUSTOM_SHOWROOM_INSTRUCTION>` });
-      // Prefer file_uri if available
       if (customShowroomFileUri?.uri) {
         parts.push({ file_data: { mime_type: customShowroomFileUri.mimeType, file_uri: customShowroomFileUri.uri } });
         console.log(`[remaster] Showroom via file_uri`);
@@ -286,19 +284,19 @@ NOTE: For INTERIOR vehicle shots, do NOT change the background – only improve 
         parts.push(toInlineData(customShowroomBase64));
       }
     } else if (customShowroomFileUri?.uri) {
-      // Showroom provided as file_uri only (no base64)
       parts.push({ text: `<CUSTOM_SHOWROOM_INSTRUCTION>The following is the CUSTOM SHOWROOM BACKGROUND. This is an IMMUTABLE ASSET. Place the vehicle naturally in this showroom.</CUSTOM_SHOWROOM_INSTRUCTION>` });
       parts.push({ file_data: { mime_type: customShowroomFileUri.mimeType, file_uri: customShowroomFileUri.uri } });
     }
+
     if (customPlateImageBase64) {
       parts.push({ text: "CRITICAL – CUSTOM LICENSE PLATE IMAGE: The following image is the EXACT license plate you MUST use. Replace the vehicle's existing plate with this plate PIXEL-FOR-PIXEL. Reproduce every character, color, seal, EU badge, and spacing exactly. Do NOT invent or modify any element. This is an IMMUTABLE ASSET:" });
       parts.push(toInlineData(customPlateImageBase64));
     }
-    // Add manufacturer logo – prefer pre-cached PNG base64 from client
+
+    // Manufacturer logo
     if (manufacturerLogoBase64 || manufacturerLogoUrl) {
       let logoData = null;
       if (manufacturerLogoBase64) {
-        // Client sends pre-converted PNG base64 – use directly
         const cleaned = cleanBase64(manufacturerLogoBase64);
         const mime = manufacturerLogoBase64.startsWith("data:image/png") ? "image/png"
           : manufacturerLogoBase64.startsWith("data:image/webp") ? "image/webp" : "image/png";
@@ -309,24 +307,25 @@ NOTE: For INTERIOR vehicle shots, do NOT change the background – only improve 
         console.log(`Manufacturer logo: fetched from URL ${manufacturerLogoUrl}`);
       }
       if (logoData) {
-      parts.push({ text: `<LOGO_REFERENCE>
+        parts.push({ text: `<LOGO_REFERENCE>
 MANUFACTURER LOGO – PIXEL-PERFECT REPRODUCTION (HIGHEST PRIORITY):
 The following image is the EXACT logo that MUST appear on the showroom wall.
 
 REPRODUCTION RULES (ZERO DEVIATION ALLOWED):
 1. EXACT COPY: Reproduce the logo image PIXEL-FOR-PIXEL. Every color, shape, detail, letter must be IDENTICAL.
-2. NO INTERPRETATION: Do NOT redesign, simplify, stylize, or convert to different material. If logo is yellow, it stays yellow. If it contains text, EXACTLY that text must appear.
-3. IMMUTABLE ASSET: No re-tracing, no redesign, no new outline, no different aspect ratio, no added border, no omitting small details.
+2. NO INTERPRETATION: Do NOT redesign, simplify, stylize, or convert to different material.
+3. IMMUTABLE ASSET: No re-tracing, no redesign, no new outline, no different aspect ratio.
 4. POSITION: Always centered on back wall, at eye level, slightly above vehicle roofline. EXACT same position on EVERY image.
 5. SIZE: Approximately 60-80cm diameter/width – IDENTICAL on EVERY image.
 6. RENDERING: As backlit wall element with subtle LED halo effect. Logo keeps its ORIGINAL COLORS and ORIGINAL SHAPE.
-7. FORBIDDEN: No converting to silver/aluminum/chrome. No color changes. No shape simplification. No adding/removing elements. No variation between images.
-8. CONSISTENCY: Logo must look ABSOLUTELY IDENTICAL on ALL generated images – same colors, shape, size, position, lighting. ZERO variation.
+7. FORBIDDEN: No converting to silver/aluminum/chrome. No color changes. No shape simplification.
+8. CONSISTENCY: Logo must look ABSOLUTELY IDENTICAL on ALL generated images – ZERO variation.
 </LOGO_REFERENCE>` });
         parts.push(logoData);
       }
     }
-    // Add dealer logo – prefer pre-cached base64
+
+    // Dealer logo
     if (dealerLogoBase64 || dealerLogoUrl) {
       const logoData = dealerLogoBase64
         ? toInlineData(dealerLogoBase64)
@@ -337,13 +336,14 @@ DEALER LOGO – PIXEL-PERFECT REPRODUCTION:
 The following image is the EXACT dealer logo. Reproduce PIXEL-FOR-PIXEL with all original colors and shapes.
 - Position: Always to the RIGHT of the manufacturer logo on the back wall – IDENTICAL on EVERY image.
 - Size: Smaller than manufacturer logo.
-- IMMUTABLE ASSET: No redesign, no recoloring, no simplification. Exact copy of provided image.
+- IMMUTABLE ASSET: No redesign, no recoloring, no simplification.
 </LOGO_REFERENCE>` });
         parts.push(logoData);
         console.log("Dealer logo injected", dealerLogoBase64 ? "(cached b64)" : "(fetched)");
       }
     }
-    // If NO logos were provided at all, explicitly tell the AI not to add any
+
+    // No logos → explicit instruction
     const hasAnyLogo = !!(manufacturerLogoBase64 || manufacturerLogoUrl || dealerLogoBase64 || dealerLogoUrl);
     if (!hasAnyLogo) {
       parts.push({ text: `<NO_LOGO_INSTRUCTION>
@@ -353,7 +353,7 @@ The showroom wall must remain CLEAN and EMPTY. No manufacturer logos, no dealer 
       console.log("No logos provided – injected NO_LOGO_INSTRUCTION");
     }
 
-
+    // 3. Call Gemini with fallback chain
     const FALLBACK_ORDER: Record<string, string[]> = {
       'gemini-3-pro-image-preview': ['gemini-3.1-flash-image-preview', 'gemini-2.5-flash-image'],
       'gemini-3.1-flash-image-preview': ['gemini-2.5-flash-image'],
@@ -395,7 +395,7 @@ The showroom wall must remain CLEAN and EMPTY. No manufacturer logos, no dealer 
               continue;
             }
             console.warn(`Model ${currentModel} exhausted (${response.status}), trying fallback...`);
-            break; // move to next model in fallback chain
+            break;
           }
 
           const data = await response.json();
