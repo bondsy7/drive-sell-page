@@ -613,7 +613,7 @@ Grundsatz: Alle KI-Aufrufe nutzen bevorzugt eigene API-Keys.`}</CodeBlock>
                 ['Fotos & Remastering', 'Fotos aufnehmen/hochladen → KI-Remastering', 'Showroom-Bilder'],
                 ['PDF → Angebotsseite', 'PDF → KI-Analyse → Editor → Template → Export', 'HTML-Angebotsseite'],
                 ['Landing Page manuell', 'Marke+Modell+Typ → KI-Text+Bilder → Editor', 'SEO-Landing-Page'],
-                ['Banner Generator', 'Projekt/Bild → Prompt → KI-Banner', 'Social-Media-Banner'],
+                ['Banner Generator', 'Projekt/Bild → Prompt → KI-Banner (7 Formate parallel)', 'Social-Media-Banner'],
                 ['Video Erstellung', 'Bild → Veo 3.1 → Video', 'Showroom-Video'],
               ]}
             />
