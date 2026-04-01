@@ -169,6 +169,11 @@ serve(async (req) => {
 
     // 2. Use dynamic prompt if provided, otherwise fall back to default
     const prompt = dynamicPrompt || `${await getCustomPrompt("image_remaster", DEFAULT_PROMPT)}\n\n${vehicleDescription ? `Vehicle: ${vehicleDescription}` : ''}`;
+    console.log(`[remaster] Using ${dynamicPrompt ? 'DYNAMIC' : 'DEFAULT'} prompt (${prompt.length} chars), model: ${geminiModel}, tier: ${tier}`);
+    // Log key prompt sections for debugging
+    const hasLicensePlate = prompt.includes('LICENSE_PLATE');
+    const hasScene = prompt.includes('SCENE_AND_LIGHTING') || prompt.includes('CUSTOM_SHOWROOM');
+    console.log(`[remaster] Prompt contains: licensePlate=${hasLicensePlate}, scene=${hasScene}, showroomImage=${!!customShowroomBase64}, plateImage=${!!customPlateImageBase64}`);
 
     // Helper to convert data URL to inlineData part
     function toInlineData(dataUrl: string) {
