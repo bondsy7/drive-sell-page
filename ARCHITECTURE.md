@@ -1,6 +1,6 @@
 # Autohaus.AI – System- & Softwarearchitektur
 
-> **Version:** 2.2 · **Stand:** 21. März 2026  
+> **Version:** 2.3 · **Stand:** 1. April 2026  
 > **Zielgruppe:** Anfänger, Entwickler-Onboarding, technische Stakeholder, Kunden-Dokumentation
 
 ---
