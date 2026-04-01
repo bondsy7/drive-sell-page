@@ -363,15 +363,15 @@ CRITICAL RULES:
 - ALL text must be rendered EXACTLY as specified – no paraphrasing, no spelling changes
 - Text must be perfectly legible against the background
 
-ACCENT COLOR INTEGRATION (${accentColor}):
-The accent color ${accentColor} is the KEY DESIGN ELEMENT that defines the banner's identity. Integrate it deeply:
-- Use it for CTA buttons, price tags, and highlighted text backgrounds
-- Add a subtle colored LIGHT BEAM, LENS FLARE, or GLOW in the accent color washing across the scene
-- Apply accent-colored REFLECTIONS or HIGHLIGHTS on the vehicle's paint, chrome, and glass surfaces
-- Use the accent color for decorative DESIGN ELEMENTS: geometric shapes, lines, gradients, borders, or overlays
-- The accent color should create a cohesive COLOR THEME throughout the entire banner
-- Background elements, shadows, and atmospheric effects should subtly echo the accent hue
-- Consider accent-colored PARTICLES, BOKEH, or LIGHT STREAKS for added visual drama
+ACCENT COLOR (${accentColor}):
+Use the accent color ${accentColor} sparingly and elegantly as a SUBTLE HIGHLIGHT – NOT as a dominant color:
+- Use it ONLY for small UI elements: CTA buttons, price tags, thin borders, or small text highlights
+- Add at most ONE very subtle, soft glow or light accent in this color – keep it minimal and transparent
+- Do NOT tint the entire scene, background, or atmosphere in the accent color
+- Do NOT add heavy colored overlays, particles, bokeh, or dramatic light beams in the accent color
+- The overall image should remain BRIGHT, CLEAN, and PROFESSIONAL – never dark or moody because of the accent color
+- The accent color should feel like a tasteful design touch, not a color filter
+- Keep the vehicle and background naturally lit with neutral, bright tones
 ${showLogo && logoBase64 ? '- The provided logo MUST appear in the banner exactly as given' : '- Do NOT add watermarks or extra logos'}
 - The composition must work at the specified ${fmt.ratio} aspect ratio
 ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` : ''}
