@@ -384,7 +384,8 @@ Alle Backend-Logik läuft in **29 Supabase Edge Functions** (Deno-Runtime) + Sha
 |---|---|---|---|---|
 | `analyze-pdf` | `{ pdfBase64 }` | Strukturiertes JSON (VehicleData) | 1 | Gemini 2.5 Flash |
 | `generate-vehicle-image` | `{ imagePrompt(s), modelTier }` | Base64 Bild(er) | 3-10 | Gemini Flash/Pro, OpenAI |
-| `remaster-vehicle-image` | `{ imageBase64, vehicleDescription, ... }` | Base64 remastertes Bild | 3-10 | Gemini 3 Pro/Flash Image |
+| `remaster-vehicle-image` | `{ imageBase64, vehicleDescription, ... }` | Base64 remastertes Bild | 2-7 | Gemini Flash/Pro Image (Fallback-Chain) |
+| `upload-pipeline-images` | `{ images[] }` | `{ fileUris[] }` | 0 | – (Gemini File API Upload) |
 | `generate-banner` | `{ prompt, imageBase64?, modelTier, width, height }` | Base64 Banner | 5-10 | Gemini/OpenAI |
 | `generate-video` | `{ imageBase64, prompt }` (start/poll) | Storage-URL Video | 10 | Google Veo 3.1 |
 | `generate-landing-page` | `{ brand, model, pageType, dealer }` | HTML + JSON + Bilder | 3 | Gemini 2.5 Flash + Image |
