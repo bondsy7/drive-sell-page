@@ -78,7 +78,7 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
       }
 
       const rawBase64 = await fileToBase64(file);
-      const base64 = await compressImage(rawBase64).catch(() => rawBase64);
+      const base64 = await compressImageForAI(rawBase64, 1024, 0.8).catch(() => rawBase64);
 
       newImages.push({
         id: crypto.randomUUID(),
