@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { ArrowLeft, Sparkles, Loader2, FileText, Target, Palette, Users, MessageSquare, ImageIcon, Upload, X, Euro } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { ArrowLeft, Sparkles, Loader2, FileText, Target, Palette, Users, MessageSquare, ImageIcon, Upload, X, Euro, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useCredits } from '@/hooks/useCredits';
 import { toast } from 'sonner';
 import VehicleBrandModelPicker from '@/components/VehicleBrandModelPicker';
+import { Progress } from '@/components/ui/progress';
 
 const PAGE_TYPES = [
   { value: 'leasing', label: 'Leasing-Angebot', desc: 'Monatliche Rate, Flexibilität', icon: '📋' },
@@ -52,35 +53,50 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
   const { user } = useAuth();
   const { balance } = useCredits();
   
-  // Step 1: Vehicle
+  // Auto-loaded dealer profile
+  const [dealerProfile, setDealerProfile] = useState<any>(null);
+  const [profileLoaded, setProfileLoaded] = useState(false);
+  
+  // Step 1: Vehicle & Offer
   const [brand, setBrand] = useState('');
   const [model, setModel] = useState('');
   const [variant, setVariant] = useState('');
   const [color, setColor] = useState('');
-  
-  // Step 2: Offer
   const [pageType, setPageType] = useState('');
   const [price, setPrice] = useState('');
   const [targetAudience, setTargetAudience] = useState('');
   
-  // Step 3: Style
+  // Step 2: Style & Extras
   const [tone, setTone] = useState('professionell');
   const [imageStyle, setImageStyle] = useState('studio');
   const [highlights, setHighlights] = useState('');
   
-  // Image uploads
+  // Image uploads (max 5)
   const [uploadedImages, setUploadedImages] = useState<{ file: File; preview: string }[]>([]);
   
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState('');
+  const [progressPercent, setProgressPercent] = useState(0);
+
+  // Auto-load dealer profile on mount
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+      if (profile) {
+        setDealerProfile(profile);
+        setProfileLoaded(true);
+      }
+    })();
+  }, [user]);
 
   const canGenerate = brand.trim() && model.trim() && pageType;
   const cost = 3;
 
   const handleImageAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    if (uploadedImages.length + files.length > 3) {
-      toast.error('Maximal 3 eigene Bilder');
+    if (uploadedImages.length + files.length > 5) {
+      toast.error('Maximal 5 eigene Bilder');
       return;
     }
     const newImages = files.map(file => ({
@@ -115,36 +131,40 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
     }
 
     setLoading(true);
-    setProgress('Lade Händlerprofil...');
+    setProgress('Händlerprofil wird geladen...');
+    setProgressPercent(5);
 
     try {
-      const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+      // Use auto-loaded profile
+      const profile = dealerProfile;
       const dealer = profile ? {
-        name: (profile as any).company_name || '',
-        address: (profile as any).address || '',
-        postalCode: (profile as any).postal_code || '',
-        city: (profile as any).city || '',
-        phone: (profile as any).phone || '',
-        email: (profile as any).email || '',
-        website: (profile as any).website || '',
-        logoUrl: (profile as any).logo_url || '',
-        whatsappNumber: (profile as any).whatsapp_number || '',
-        facebookUrl: (profile as any).facebook_url || '',
-        instagramUrl: (profile as any).instagram_url || '',
-        youtubeUrl: (profile as any).youtube_url || '',
-        tiktokUrl: (profile as any).tiktok_url || '',
-        defaultLegalText: (profile as any).default_legal_text || '',
+        name: profile.company_name || '',
+        address: profile.address || '',
+        postalCode: profile.postal_code || '',
+        city: profile.city || '',
+        phone: profile.phone || '',
+        email: profile.email || '',
+        website: profile.website || '',
+        logoUrl: profile.logo_url || '',
+        whatsappNumber: profile.whatsapp_number || '',
+        facebookUrl: profile.facebook_url || '',
+        instagramUrl: profile.instagram_url || '',
+        youtubeUrl: profile.youtube_url || '',
+        tiktokUrl: profile.tiktok_url || '',
+        defaultLegalText: profile.default_legal_text || '',
       } : {};
 
       // Upload user images
       setProgress('Bilder werden vorbereitet...');
+      setProgressPercent(15);
       const uploadedBase64: string[] = [];
       for (const img of uploadedImages) {
         const b64 = await fileToBase64(img.file);
         uploadedBase64.push(b64);
       }
 
-      setProgress('KI generiert Inhalte & Bilder...');
+      setProgress('KI generiert Texte...');
+      setProgressPercent(25);
 
       const { data, error } = await supabase.functions.invoke('generate-landing-page', {
         body: {
@@ -171,7 +191,13 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
         return;
       }
 
+      setProgress('Bilder werden generiert...');
+      setProgressPercent(60);
+
       if (data?.html) {
+        setProgress('Seite wird gespeichert...');
+        setProgressPercent(90);
+
         const { data: project, error: saveError } = await supabase.from('projects').insert({
           user_id: user.id,
           title: `${brand} ${model}${variant ? ` ${variant}` : ''} – Landing Page`,
@@ -194,6 +220,7 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
           return;
         }
 
+        setProgressPercent(100);
         toast.success(`Landing Page erstellt! ${data.imageCount || 0} Bilder generiert.`);
         onComplete(project.id);
       } else {
@@ -205,6 +232,7 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
     } finally {
       setLoading(false);
       setProgress('');
+      setProgressPercent(0);
     }
   };
 
@@ -222,11 +250,19 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
         </div>
       </div>
 
-      {/* Section 1: Vehicle */}
+      {/* Dealer Profile Badge */}
+      {profileLoaded && dealerProfile && (
+        <div className="flex items-center gap-2 rounded-lg border border-accent/20 bg-accent/5 px-3 py-2 text-xs text-muted-foreground">
+          <CheckCircle2 className="w-3.5 h-3.5 text-accent" />
+          <span>Händlerdaten geladen: <strong className="text-foreground">{dealerProfile.company_name || dealerProfile.email || 'Profil'}</strong></span>
+        </div>
+      )}
+
+      {/* Step 1: Fahrzeug & Angebot */}
       <div className="rounded-xl border border-border bg-card p-5 space-y-4">
         <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
           <span className="flex items-center justify-center w-6 h-6 rounded-full bg-accent/10 text-accent text-xs font-bold">1</span>
-          Fahrzeug
+          Fahrzeug & Angebot
         </div>
 
         <VehicleBrandModelPicker
@@ -249,55 +285,46 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
             <Input placeholder="z.B. Alpinweiß, Schwarz..." value={color} onChange={e => setColor(e.target.value)} disabled={loading} />
           </div>
         </div>
-      </div>
-
-      {/* Section 2: Offer */}
-      <div className="rounded-xl border border-border bg-card p-5 space-y-4">
-        <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-          <span className="flex items-center justify-center w-6 h-6 rounded-full bg-accent/10 text-accent text-xs font-bold">2</span>
-          Angebot
-        </div>
-
-        <div className="space-y-1.5">
-          <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-            <Target className="w-3.5 h-3.5" /> Seitentyp
-          </label>
-          <Select value={pageType} onValueChange={setPageType} disabled={loading}>
-            <SelectTrigger><SelectValue placeholder="Wofür ist die Seite?" /></SelectTrigger>
-            <SelectContent>
-              {PAGE_TYPES.map(t => (
-                <SelectItem key={t.value} value={t.value}>
-                  <span className="flex items-center gap-2">
-                    <span>{t.icon}</span>
-                    <span>{t.label}</span>
-                    <span className="text-muted-foreground text-xs">– {t.desc}</span>
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
 
         <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+              <Target className="w-3.5 h-3.5" /> Seitentyp
+            </label>
+            <Select value={pageType} onValueChange={setPageType} disabled={loading}>
+              <SelectTrigger><SelectValue placeholder="Wofür ist die Seite?" /></SelectTrigger>
+              <SelectContent>
+                {PAGE_TYPES.map(t => (
+                  <SelectItem key={t.value} value={t.value}>
+                    <span className="flex items-center gap-2">
+                      <span>{t.icon}</span>
+                      <span>{t.label}</span>
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
               <Euro className="w-3 h-3" /> Preis / Rate (optional)
             </label>
             <Input placeholder="z.B. ab 299€/mtl. oder 45.900€" value={price} onChange={e => setPrice(e.target.value)} disabled={loading} />
           </div>
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-              <Users className="w-3 h-3" /> Zielgruppe
-            </label>
-            <Select value={targetAudience} onValueChange={setTargetAudience} disabled={loading}>
-              <SelectTrigger><SelectValue placeholder="Alle" /></SelectTrigger>
-              <SelectContent>
-                {TARGET_AUDIENCES.map(a => (
-                  <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+            <Users className="w-3 h-3" /> Zielgruppe (optional)
+          </label>
+          <Select value={targetAudience} onValueChange={setTargetAudience} disabled={loading}>
+            <SelectTrigger><SelectValue placeholder="Alle" /></SelectTrigger>
+            <SelectContent>
+              {TARGET_AUDIENCES.map(a => (
+                <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {selectedType && (
@@ -311,11 +338,11 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
         )}
       </div>
 
-      {/* Section 3: Style */}
+      {/* Step 2: Stil & Extras */}
       <div className="rounded-xl border border-border bg-card p-5 space-y-4">
         <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-          <span className="flex items-center justify-center w-6 h-6 rounded-full bg-accent/10 text-accent text-xs font-bold">3</span>
-          Stil & Inhalte
+          <span className="flex items-center justify-center w-6 h-6 rounded-full bg-accent/10 text-accent text-xs font-bold">2</span>
+          Stil & Extras
         </div>
 
         <div className="grid grid-cols-2 gap-3">
@@ -364,11 +391,11 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
           />
         </div>
 
-        {/* Image Upload */}
+        {/* Image Upload – max 5 */}
         <div className="space-y-2">
           <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
             <Upload className="w-3.5 h-3.5" /> Eigene Bilder
-            <span className="text-muted-foreground/60">(optional, max. 3)</span>
+            <span className="text-muted-foreground/60">(optional, max. 5 – z.B. Innenraum, Motor, Details)</span>
           </label>
           <div className="flex flex-wrap gap-2">
             {uploadedImages.map((img, idx) => (
@@ -382,19 +409,28 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
                 </button>
               </div>
             ))}
-            {uploadedImages.length < 3 && (
+            {uploadedImages.length < 5 && (
               <label className="w-20 h-20 rounded-lg border-2 border-dashed border-border hover:border-accent/50 flex items-center justify-center cursor-pointer transition-colors">
                 <Upload className="w-5 h-5 text-muted-foreground" />
                 <input type="file" accept="image/*" className="hidden" onChange={handleImageAdd} disabled={loading} multiple />
               </label>
             )}
           </div>
-          <p className="text-[10px] text-muted-foreground">Eigene Bilder werden priorisiert, fehlende werden KI-generiert.</p>
+          <p className="text-[10px] text-muted-foreground">Eigene Bilder werden priorisiert, fehlende werden KI-generiert. Tipp: Motor, Innenraum, Heck etc. hochladen für passende Section-Bilder.</p>
         </div>
       </div>
 
       {/* Generate Button */}
       <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+        {loading && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>{progress}</span>
+              <span>{progressPercent}%</span>
+            </div>
+            <Progress value={progressPercent} className="h-2" />
+          </div>
+        )}
         <Button onClick={handleGenerate} disabled={!canGenerate || loading} className="w-full h-12 text-base font-semibold">
           {loading ? (
             <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{progress}</>
@@ -414,8 +450,8 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
         <h3 className="text-sm font-semibold text-foreground mb-3">Was wird generiert?</h3>
         <div className="grid grid-cols-2 gap-3">
           {[
-            { icon: '📝', text: 'SEO-optimierte Texte' },
-            { icon: '🖼️', text: 'KI-generierte Bilder' },
+            { icon: '📝', text: 'SEO-optimierte Helpful Content Texte' },
+            { icon: '🖼️', text: '5-7 kontextuelle KI-Bilder' },
             { icon: '📊', text: 'Strukturierte Daten (JSON-LD)' },
             { icon: '📱', text: 'Responsive Design' },
             { icon: '🏢', text: 'Deine Händlerdaten integriert' },

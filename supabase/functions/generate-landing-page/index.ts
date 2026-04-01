@@ -1,4 +1,4 @@
-// generate-landing-page v3 – AI landing page generator with enhanced options + contact form
+// generate-landing-page v4 – Contextual images + Helpful Content
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -149,10 +149,10 @@ const TONE_MAP: Record<string, string> = {
 
 const AUDIENCE_MAP: Record<string, string> = {
   privat: "Zielgruppe: Privatkunden. Fokus auf Alltagstauglichkeit, Preis-Leistung, Komfort.",
-  gewerbe: "Zielgruppe: Gewerbekunden/Firmenwagen. Fokus auf steuerliche Vorteile, TCO, Dienstwagen-Regelung, Fuhrpark.",
-  jung: "Zielgruppe: Junge Fahrer (18-30). Fokus auf Lifestyle, Technologie, günstige Einstiegsangebote, Connectivity.",
-  familien: "Zielgruppe: Familien. Fokus auf Sicherheit, Platzangebot, Kindersitze, Praktikabilität, Verbrauch.",
-  premium: "Zielgruppe: Premium-Käufer. Fokus auf Exklusivität, Sonderausstattung, Concierge-Service, Status.",
+  gewerbe: "Zielgruppe: Gewerbekunden/Firmenwagen. Fokus auf steuerliche Vorteile, TCO, Dienstwagen-Regelung.",
+  jung: "Zielgruppe: Junge Fahrer (18-30). Fokus auf Lifestyle, Technologie, günstige Einstiegsangebote.",
+  familien: "Zielgruppe: Familien. Fokus auf Sicherheit, Platzangebot, Kindersitze, Praktikabilität.",
+  premium: "Zielgruppe: Premium-Käufer. Fokus auf Exklusivität, Sonderausstattung, Status.",
 };
 
 const IMAGE_STYLE_MAP: Record<string, string> = {
@@ -162,7 +162,7 @@ const IMAGE_STYLE_MAP: Record<string, string> = {
   dynamic: "in motion on a highway with motion blur, dynamic driving perspective",
 };
 
-// ─── Page type configurations ───
+// ─── Page type configurations (v4 – more images, helpful content) ───
 interface PageTypeConfig {
   label: string;
   sectionCount: number;
@@ -172,32 +172,32 @@ interface PageTypeConfig {
 
 const PAGE_TYPES: Record<string, PageTypeConfig> = {
   leasing: {
-    label: "Leasing-Angebot", sectionCount: 6, imageCount: 4,
-    systemInstruction: "Du erstellst eine überzeugende Leasing-Landingpage. Fokus auf: niedrige monatliche Rate, Flexibilität, Steuervorteile für Gewerbetreibende, Kilometerpakete, Rückgabe-Optionen. Strukturiere mit: Hero → Vorteile Leasing → Fahrzeug-Highlights → Leasing-Konditionen → FAQ → CTA.",
+    label: "Leasing-Angebot", sectionCount: 7, imageCount: 6,
+    systemInstruction: "Erstelle eine überzeugende Leasing-Landingpage. Strukturiere: Hero → Leasing-Vorteile (Kaufberatung-Charakter) → Fahrzeug-Highlights mit technischen Daten → Interieur & Komfort → Leasing-Konditionen → FAQ mit echten Fragen → CTA.",
   },
   finanzierung: {
-    label: "Finanzierung", sectionCount: 6, imageCount: 4,
-    systemInstruction: "Du erstellst eine überzeugende Finanzierungs-Landingpage. Fokus auf: Eigentumsübergang, flexible Raten, niedrige Zinsen, Anzahlung/Schlussrate-Optionen. Strukturiere mit: Hero → Warum Finanzieren → Fahrzeug-Details → Finanzierungsrechnung → Kundenstimmen → CTA.",
+    label: "Finanzierung", sectionCount: 7, imageCount: 6,
+    systemInstruction: "Erstelle eine überzeugende Finanzierungs-Landingpage. Strukturiere: Hero → Warum Finanzieren (Vergleich Leasing vs. Finanzierung) → Fahrzeug-Design & Exterieur → Interieur & Technologie → Finanzierungskonditionen → FAQ → CTA.",
   },
   barkauf: {
-    label: "Barkauf / Neuwagen", sectionCount: 5, imageCount: 4,
-    systemInstruction: "Du erstellst eine Premium-Verkaufsseite für Barkauf/Neuwagen. Fokus auf: Sofort-Preisvorteil, Ausstattungshighlights, Verfügbarkeit, Garantie. Strukturiere mit: Hero → Ausstattung & Technik → Preisvorteil → Warum bei uns → CTA.",
+    label: "Barkauf / Neuwagen", sectionCount: 6, imageCount: 5,
+    systemInstruction: "Erstelle eine Premium-Verkaufsseite. Strukturiere: Hero → Ausstattung & Technik → Design & Exterieur → Interieur-Erlebnis → Preisvorteil & Garantie → CTA.",
   },
   massenangebot: {
-    label: "Massenangebot / Aktionsseite", sectionCount: 7, imageCount: 5,
-    systemInstruction: "Du erstellst eine dringliche Aktionsseite/Massenangebot. Fokus auf: zeitlich begrenzt, Stückzahl limitiert, Sonderkonditionen, FOMO-Elemente, Vergleich mit Normalpreis. Strukturiere mit: Hero mit Countdown → Angebots-Übersicht → Einzelne Modell-Highlights → Warum jetzt → Vergleichstabelle → Testimonials → CTA.",
+    label: "Massenangebot / Aktionsseite", sectionCount: 8, imageCount: 7,
+    systemInstruction: "Erstelle eine dringliche Aktionsseite. Strukturiere: Hero → Angebots-Übersicht → Fahrzeug-Highlights → Motor & Leistung → Interieur → Vergleichstabelle (comparison) → FAQ → CTA.",
   },
   autoabo: {
-    label: "Auto-Abo", sectionCount: 6, imageCount: 4,
-    systemInstruction: "Du erstellst eine moderne Auto-Abo-Landingpage. Fokus auf: All-inclusive (Versicherung, Wartung, Reifen), Flexibilität, kurze Laufzeiten, keine versteckten Kosten, digitaler Prozess. Strukturiere mit: Hero → So funktioniert's (3 Schritte) → Was ist inklusive → Fahrzeug-Details → Preisvergleich Abo vs. Leasing → CTA.",
+    label: "Auto-Abo", sectionCount: 7, imageCount: 6,
+    systemInstruction: "Erstelle eine Auto-Abo-Landingpage. Strukturiere: Hero → So funktioniert's (steps) → Was ist inklusive (benefits) → Fahrzeug-Details → Interieur & Technologie → Preisvergleich (comparison) → CTA.",
   },
   event: {
-    label: "Event im Autohaus", sectionCount: 6, imageCount: 4,
-    systemInstruction: "Du erstellst eine einladende Event-Landingpage für ein Autohaus. Fokus auf: Event-Datum/Uhrzeit, exklusive Vorteile für Teilnehmer, Programm, Registrierung. Strukturiere mit: Hero mit Datum → Event-Programm → Highlights & Sonderangebote → Über das Autohaus → Anfahrt → Anmeldung/CTA.",
+    label: "Event im Autohaus", sectionCount: 7, imageCount: 5,
+    systemInstruction: "Erstelle eine Event-Landingpage. Strukturiere: Hero → Event-Programm (steps) → Fahrzeug-Highlights → Interieur-Erlebnis → Vorteile für Teilnehmer (benefits) → FAQ → CTA.",
   },
   release: {
-    label: "Fahrzeug-Release / Premiere", sectionCount: 7, imageCount: 5,
-    systemInstruction: "Du erstellst eine spektakuläre Release/Premiere-Seite für ein neues Fahrzeugmodell. Fokus auf: Innovation, Design, Technik-Highlights, Emotionen, Vorbestellmöglichkeit. Strukturiere mit: Hero (cinematic) → Design-Philosophie → Technische Innovation → Interieur-Erlebnis → Performance-Daten → Konfiguration/Vorbestellung → CTA.",
+    label: "Fahrzeug-Release / Premiere", sectionCount: 8, imageCount: 7,
+    systemInstruction: "Erstelle eine spektakuläre Release-Seite. Strukturiere: Hero → Design-Philosophie → Motor & Performance → Interieur & Technologie → Technische Daten (specs) → Vergleich zum Vorgänger (comparison) → Vorbestellung → CTA.",
   },
 };
 
@@ -270,7 +270,7 @@ serve(async (req) => {
     const variantInfo = variant ? `, Variante: ${variant}` : "";
     const colorInfo = color ? `, Farbe: ${color}` : "";
 
-    const DEFAULT_LP_INTRO = `Du bist ein professioneller Automotive-Marketing-Texter und Webdesigner.`;
+    const DEFAULT_LP_INTRO = `Du bist ein professioneller Automotive-Marketing-Texter und Webdesigner, spezialisiert auf Google-Helpful-Content.`;
     const lpIntro = await getCustomPrompt("landing_page", DEFAULT_LP_INTRO);
 
     const systemPrompt = `${lpIntro}
@@ -279,13 +279,25 @@ ${config.systemInstruction}
 TONALITÄT: ${toneInstruction}
 ${audienceInstruction ? `\n${audienceInstruction}` : ""}
 
-WICHTIG:
-- Schreibe auf Deutsch
-- Texte müssen SEO-optimiert sein (natürliche Keywords, H1/H2/H3 Hierarchie)
-- Schreibe echten Mehrwert-Content, keine Platzhalter
-- Passe Ton und Stil an den Seitentyp und die Zielgruppe an
-- Verwende konkrete Zahlen und Fakten wo möglich
-- Jeder Absatz soll für den Kunden einen echten Informationswert bieten
+HELPFUL CONTENT RICHTLINIEN:
+- Jede Section MUSS echten Informationswert für den Kunden bieten – KEINE leeren Marketing-Phrasen
+- Verwende konkrete technische Daten, Zahlen und Fakten (PS, Nm, Verbrauch, Kofferraum-Liter, 0-100 km/h etc.)
+- Erkläre technische Features aus Kundensicht: "Was bedeutet das für Ihren Alltag?"
+- Nutze Vergleiche: "Im Vergleich zum Vorgänger...", "Gegenüber dem Wettbewerb..."
+- Baue Praxisbeispiele ein: "Auf der Langstrecke...", "Im Stadtverkehr..."
+- FAQ: Echte Fragen die Kunden stellen ("Wie hoch ist der Restwert?", "Was passiert bei Mehrkilometern?")
+- Verwende Bullet-Points (<ul><li>) für Aufzählungen und Checklisten
+- Strukturiere mit Zwischenüberschriften (<h3>) innerhalb der Sections
+
+KONTEXTUELLE BILD-PROMPTS (KRITISCH):
+Für JEDE Section die ein Bild braucht, MUSS der imagePrompt EXAKT zum Sektionsinhalt passen:
+- Sektion über Motor/Leistung/Performance → "Close-up of the engine bay / exhaust system / brake calipers of a ${vehicleDesc}"
+- Sektion über Innenraum/Komfort/Interieur → "Interior cockpit view showing dashboard, steering wheel, and infotainment of a ${vehicleDesc}"
+- Sektion über Design/Exterieur → "Elegant side profile / rear three-quarter view of a ${vehicleDesc}"
+- Sektion über Technologie/Assistenzsysteme → "Detail of the digital dashboard display / head-up display / charging port of a ${vehicleDesc}"
+- Sektion über Sicherheit → "Artistic visualization of safety sensors and driver assistance of a ${vehicleDesc}"
+- FAQ/Steps/CTA/Comparison/Benefits Sektionen → imagePrompt: null (kein Bild)
+Jeder imagePrompt MUSS enden mit: "${imgStyleSuffix}"
 ${priceInstruction}
 
 ${dealerInfo}
@@ -293,28 +305,28 @@ ${dealerInfo}
 Antworte AUSSCHLIESSLICH als JSON mit folgender Struktur:
 {
   "meta": {
-    "title": "SEO Title (<60 Zeichen)",
-    "description": "Meta Description (<160 Zeichen)",
+    "title": "SEO Title (<60 Zeichen, mit Keyword)",
+    "description": "Meta Description (<160 Zeichen, Call-to-Action)",
     "h1": "Hauptüberschrift der Seite"
   },
   "hero": {
-    "headline": "Emotionale Headline",
-    "subheadline": "Ergänzender Untertitel",
+    "headline": "Emotionale Headline mit Marke/Modell",
+    "subheadline": "Ergänzender Untertitel mit Kernvorteil",
     "ctaText": "CTA Button Text",
-    "imagePrompt": "Detaillierter englischer Prompt für ein Hero-Bild des ${vehicleDesc} ${imgStyleSuffix}"
+    "imagePrompt": "Professional hero shot of a ${vehicleDesc} from a dramatic front 3/4 angle ${imgStyleSuffix}"
   },
   "sections": [
     {
-      "id": "unique-id",
-      "type": "content|features|pricing|faq|cta|comparison|steps|testimonials",
+      "id": "unique-kebab-id",
+      "type": "content|features|pricing|faq|cta|comparison|steps|benefits|specs|gallery",
       "headline": "Abschnitts-Überschrift",
-      "content": "HTML-formattierter Inhalt (Absätze, Listen etc.)",
-      "imagePrompt": "Englischer Prompt für ein passendes Bild des ${vehicleDesc} oder null",
+      "content": "HTML-formatierter Inhalt mit <h3>, <ul><li>, <p> etc. – echter Mehrwert-Content",
+      "imagePrompt": "Kontextueller englischer Prompt passend zum Sektionsinhalt ODER null",
       "bgStyle": "white|light|dark|accent"
     }
   ],
   "seo": {
-    "keywords": ["keyword1", "keyword2"],
+    "keywords": ["long-tail-keyword-1", "keyword-2", "keyword-3"],
     "structuredData": {
       "@context": "https://schema.org",
       "@type": "AutoDealer",
@@ -325,7 +337,7 @@ Antworte AUSSCHLIESSLICH als JSON mit folgender Struktur:
 }
 
 Erstelle genau ${config.sectionCount} sections. Davon sollen ${config.imageCount} ein imagePrompt haben, der Rest null.
-Bei imagePrompts: Beschreibe immer "${vehicleDesc} ${imgStyleSuffix}" für konsistente Bilder.`;
+Section-Types "specs", "comparison", "benefits" werden speziell gerendert – nutze sie wo sinnvoll.`;
 
     const userPrompt = `Erstelle eine ${config.label}-Landingpage für:\nMarke: ${brand}\nModell: ${model}${variantInfo}${colorInfo}\n${additionalInfo ? `Zusätzliche Informationen / Highlights: ${additionalInfo}` : ""}`;
 
@@ -372,7 +384,6 @@ Bei imagePrompts: Beschreibe immer "${vehicleDesc} ${imgStyleSuffix}" für konsi
     }
 
     // ─── Generate images ───
-    // Collect all needed image slots
     const imagePrompts: { key: string; prompt: string }[] = [];
     if (pageContent.hero?.imagePrompt) {
       imagePrompts.push({ key: "hero", prompt: pageContent.hero.imagePrompt });
@@ -387,18 +398,17 @@ Bei imagePrompts: Beschreibe immer "${vehicleDesc} ${imgStyleSuffix}" für konsi
     const imageResults: Record<string, string> = {};
     let userImgIdx = 0;
 
-    // Use user images for first N slots
     for (let i = 0; i < imagePrompts.length && userImgIdx < userImageUrls.length; i++) {
       imageResults[imagePrompts[i].key] = userImageUrls[userImgIdx];
       userImgIdx++;
     }
 
-    // Generate remaining images
+    // Generate remaining images in batches of 3
     const remainingPrompts = imagePrompts.filter(p => !imageResults[p.key]);
     console.log(`User images: ${userImageUrls.length}, Generating ${remainingPrompts.length} AI images...`);
 
-    for (let i = 0; i < remainingPrompts.length; i += 2) {
-      const batch = remainingPrompts.slice(i, i + 2);
+    for (let i = 0; i < remainingPrompts.length; i += 3) {
+      const batch = remainingPrompts.slice(i, i + 3);
       const results = await Promise.allSettled(
         batch.map(async ({ key, prompt }) => {
           try {
@@ -408,7 +418,7 @@ Bei imagePrompts: Beschreibe immer "${vehicleDesc} ${imgStyleSuffix}" für konsi
               body: JSON.stringify({
                 contents: [{
                   parts: [{
-                    text: `Generate a professional, high-quality automotive marketing photo: ${prompt}. Style: Modern, clean, professional. Aspect ratio: 16:9. No text overlays.`,
+                    text: `Generate a professional, high-quality automotive marketing photo: ${prompt}. Style: Modern, clean, professional. Aspect ratio: 16:9. No text overlays, no watermarks.`,
                   }],
                 }],
                 generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
@@ -559,7 +569,7 @@ function buildContactFormInline(opts: {
   </script>`;
 }
 
-// ─── HTML Builder ───
+// ─── HTML Builder (v4 – new section types: specs, comparison, benefits, gallery) ───
 function buildHTML(
   content: any, images: Record<string, string>, dealer: any,
   brand: string, model: string, brandLogoUrl: string,
@@ -609,20 +619,47 @@ function buildHTML(
       const headlineColor = isDark ? "#ffffff" : "#0f172a";
       const subColor = isDark ? "#cbd5e1" : "#475569";
 
+      // Steps section
       if (s.type === "steps") {
         return `<section style="${bg};padding:64px 24px"><div style="max-width:960px;margin:0 auto;text-align:center"><h2 style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;color:${headlineColor};margin-bottom:40px">${s.headline}</h2><div style="font-size:15px;line-height:1.8;color:${subColor}">${s.content}</div></div></section>`;
       }
+
+      // FAQ section
       if (s.type === "faq") {
         return `<section style="${bg};padding:64px 24px"><div style="max-width:760px;margin:0 auto"><h2 style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;color:${headlineColor};margin-bottom:32px;text-align:center">${s.headline}</h2><div style="font-size:15px;line-height:1.8;color:${subColor}">${s.content}</div></div></section>`;
       }
+
+      // CTA section
       if (s.type === "cta") {
         return `<section style="background:linear-gradient(135deg,#1e3a5f,#0f172a);color:#ffffff;padding:80px 24px;text-align:center"><div style="max-width:640px;margin:0 auto"><h2 style="font-family:'Space Grotesk',sans-serif;font-size:32px;font-weight:700;margin-bottom:16px">${s.headline}</h2><div style="font-size:16px;line-height:1.7;opacity:0.9;margin-bottom:32px">${s.content}</div>${phone ? `<a href="tel:${phone}" style="display:inline-block;background:#3b82f6;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:16px">📞 Jetzt anrufen</a>` : ""}${whatsapp ? `<a href="https://wa.me/${whatsapp.replace(/[^0-9]/g, "")}" target="_blank" style="display:inline-block;background:#25d366;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:16px;margin-left:12px">💬 WhatsApp</a>` : ""}</div></section>`;
       }
 
+      // Specs section – image left, data right
+      if (s.type === "specs") {
+        const imgBlock = img ? `<div style="flex:1;min-width:280px"><img src="${img}" alt="${s.headline}" style="width:100%;border-radius:12px;object-fit:cover;max-height:420px" loading="lazy" /></div>` : "";
+        return `<section style="${bg};padding:64px 24px"><div style="max-width:960px;margin:0 auto"><h2 style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;color:${headlineColor};margin-bottom:32px;text-align:center">${s.headline}</h2><div style="display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start">${imgBlock}<div style="flex:1;min-width:280px;font-size:14px;line-height:1.8;color:${subColor}">${s.content}</div></div></div></section>`;
+      }
+
+      // Comparison section – full-width table
+      if (s.type === "comparison") {
+        return `<section style="${bg};padding:64px 24px"><div style="max-width:860px;margin:0 auto"><h2 style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;color:${headlineColor};margin-bottom:32px;text-align:center">${s.headline}</h2><div style="font-size:14px;line-height:1.8;color:${subColor};overflow-x:auto">${s.content}</div></div></section>`;
+      }
+
+      // Benefits section – icon grid
+      if (s.type === "benefits") {
+        return `<section style="${bg};padding:64px 24px"><div style="max-width:960px;margin:0 auto;text-align:center"><h2 style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;color:${headlineColor};margin-bottom:40px">${s.headline}</h2><div style="font-size:15px;line-height:1.8;color:${subColor}">${s.content}</div></div></section>`;
+      }
+
+      // Gallery section
+      if (s.type === "gallery") {
+        return `<section style="${bg};padding:64px 24px"><div style="max-width:960px;margin:0 auto"><h2 style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;color:${headlineColor};margin-bottom:32px;text-align:center">${s.headline}</h2>${img ? `<img src="${img}" alt="${s.headline}" style="width:100%;border-radius:12px;object-fit:cover;max-height:500px" loading="lazy" />` : ""}<div style="font-size:15px;line-height:1.8;color:${subColor};margin-top:20px">${s.content}</div></div></section>`;
+      }
+
+      // Default content with image
       const hasImage = !!img;
       const imageOnLeft = idx % 2 === 0;
       if (hasImage) {
-        const imgBlock = `<div style="flex:1;min-width:280px"><img src="${img}" alt="${s.headline}" style="width:100%;border-radius:12px;object-fit:cover;max-height:400px" loading="lazy" /></div>`;
+        const imgBlock = `<div style="flex:1;min-width:280px"><img src="${img}" alt="${s.headline}" style="width:100%;border-radius:12px;object-fit:cover;max-height:400px" loading="lazy" /><p style="font-size:11px;color:#94a3b8;margin-top:8px;text-align:center;font-style:italic">${s.headline}</p></div>`;
         const textBlock = `<div style="flex:1;min-width:280px"><h2 style="font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;color:${headlineColor};margin-bottom:16px">${s.headline}</h2><div style="font-size:15px;line-height:1.8;color:${subColor}">${s.content}</div></div>`;
         return `<section style="${bg};padding:64px 24px"><div style="max-width:960px;margin:0 auto;display:flex;flex-wrap:wrap;gap:40px;align-items:center">${imageOnLeft ? imgBlock + textBlock : textBlock + imgBlock}</div></section>`;
       }
@@ -654,11 +691,17 @@ function buildHTML(
     img{max-width:100%}
     a{color:#3b82f6}
     h1,h2,h3{font-family:'Space Grotesk',sans-serif}
+    h3{font-size:18px;font-weight:600;margin:20px 0 8px}
     ul,ol{padding-left:20px}
     li{margin-bottom:8px}
+    table{width:100%;border-collapse:collapse;margin:16px 0}
+    th,td{padding:10px 14px;border:1px solid #e2e8f0;text-align:left;font-size:13px}
+    th{background:#f1f5f9;font-weight:600;font-family:'Space Grotesk',sans-serif}
     @media(max-width:768px){
       .hero-content{padding:40px 20px !important}
       .hero-content h1{font-size:28px !important}
+      table{font-size:12px}
+      th,td{padding:6px 8px}
     }
   </style>
 </head>
