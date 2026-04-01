@@ -527,6 +527,21 @@ ${showLogo && logoBase64 ? '- The provided logo MUST appear in the banner exactl
         {/* Vehicle Image */}
         <div className="space-y-1.5">
           <Label className="text-xs font-medium">Fahrzeugbild / Angebotsfoto *</Label>
+
+          {/* Auto-Analyze Toggle */}
+          <div className="flex items-center justify-between p-2.5 rounded-lg border border-border/50 bg-muted/30">
+            <div className="flex items-center gap-2">
+              <ScanSearch className="w-3.5 h-3.5 text-muted-foreground" />
+              <span className="text-xs text-foreground">Bild automatisch analysieren</span>
+            </div>
+            <Switch checked={autoAnalyze} onCheckedChange={setAutoAnalyze} />
+          </div>
+          <p className="text-[10px] text-muted-foreground">
+            {autoAnalyze
+              ? '✓ Beim Hochladen werden Fahrzeugdaten automatisch aus dem Bild extrahiert.'
+              : 'Deaktiviert – Felder müssen manuell ausgefüllt werden.'}
+          </p>
+
           {vehicleImage ? (
             <div className="relative rounded-lg overflow-hidden border border-border">
               <img src={vehicleImage} alt="Fahrzeug" className="w-full h-32 sm:h-40 object-cover" />
@@ -562,7 +577,7 @@ ${showLogo && logoBase64 ? '- The provided logo MUST appear in the banner exactl
               <label className="flex flex-col items-center justify-center h-28 rounded-lg border-2 border-dashed border-border hover:border-accent/50 cursor-pointer transition-colors">
                 <Image className="w-6 h-6 text-muted-foreground mb-1" />
                 <span className="text-xs text-muted-foreground">Bild hochladen oder Angebots-Screenshot</span>
-                <span className="text-[10px] text-muted-foreground/60">Texte werden automatisch erkannt</span>
+                {autoAnalyze && <span className="text-[10px] text-muted-foreground/60">Texte werden automatisch erkannt</span>}
                 <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
               </label>
               {projectImages.length > 0 && (
