@@ -109,81 +109,62 @@ serve(async (req) => {
     const mimeType = mimeMatch ? mimeMatch[1] : "image/jpeg";
 
     const detectPrompt = await getCustomPrompt("detect_vehicle_brand", DEFAULT_DETECT_PROMPT);
-    // Retry with fallback models on 503/429
-    const MODELS_TO_TRY = ['gemini-2.5-flash', 'gemini-2.0-flash'];
-    const MAX_RETRIES = 2;
-    let lastError = "AI analysis failed";
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
-    for (const model of MODELS_TO_TRY) {
-      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
-
-      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-        try {
-          console.log(`detect-vehicle-brand: model=${model} attempt=${attempt + 1}`);
-          const response = await fetch(geminiUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [
-                {
-                  parts: [
-                    { inlineData: { mimeType, data: base64Data } },
-                    { text: detectPrompt },
-                  ],
+    const response = await fetch(geminiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              {
+                inlineData: {
+                  mimeType,
+                  data: base64Data,
                 },
-              ],
-              generationConfig: {
-                temperature: 0.1,
-                maxOutputTokens: 128,
-                responseMimeType: "application/json",
               },
-            }),
-          });
+              {
+                text: detectPrompt,
+              },
+            ],
+          },
+        ],
+        generationConfig: {
+          temperature: 0.1,
+          maxOutputTokens: 128,
+          responseMimeType: "application/json",
+        },
+      }),
+    });
 
-          if (!response.ok) {
-            const errText = await response.text();
-            console.error(`Gemini ${model} error:`, response.status, errText);
-            const isRetryable = response.status === 503 || response.status === 429 || response.status === 500;
-            if (isRetryable && attempt < MAX_RETRIES) {
-              await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
-              continue;
-            }
-            lastError = `Model ${model} error (${response.status})`;
-            break; // try next model
-          }
-
-          const result = await response.json();
-          const textContent = result.candidates?.[0]?.content?.parts?.map((part: { text?: string }) => part.text || "").join("\n") || "";
-          const cleanedContent = textContent.replace(/```json\s*/gi, "").replace(/```/g, "").trim();
-
-          try {
-            const parsed = JSON.parse(cleanedContent);
-            const normalized = normalizeDetectionResult(parsed);
-            console.log("Detected vehicle:", normalized);
-            return new Response(JSON.stringify(normalized), {
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-            });
-          } catch {
-            const fallback = extractPartialJson(cleanedContent);
-            console.warn("Partial JSON, using fallback:", cleanedContent);
-            return new Response(JSON.stringify(fallback), {
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-            });
-          }
-        } catch (fetchErr) {
-          console.warn(`Fetch error for ${model}:`, fetchErr);
-          lastError = fetchErr instanceof Error ? fetchErr.message : "Network error";
-          if (attempt < MAX_RETRIES) {
-            await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
-          }
-        }
-      }
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("Gemini API error:", response.status, errText);
+      return new Response(JSON.stringify({ error: "AI analysis failed" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    return new Response(JSON.stringify({ error: lastError }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    const result = await response.json();
+    const textContent = result.candidates?.[0]?.content?.parts?.map((part: { text?: string }) => part.text || "").join("\n") || "";
+    const cleanedContent = textContent.replace(/```json\s*/gi, "").replace(/```/g, "").trim();
+
+    try {
+      const parsed = JSON.parse(cleanedContent);
+      const normalized = normalizeDetectionResult(parsed);
+      console.log("Detected vehicle:", normalized);
+      return new Response(JSON.stringify(normalized), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    } catch {
+      const fallback = extractPartialJson(cleanedContent);
+      console.warn("Partial JSON in response, using fallback:", cleanedContent);
+      return new Response(JSON.stringify(fallback), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
   } catch (e) {
     console.error("detect-vehicle-brand error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {

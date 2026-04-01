@@ -55,11 +55,11 @@ const Index = () => {
   const [imageProgress, setImageProgress] = useState({ current: 0, total: 0 });
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>('autohaus');
   const [savedProjectId, setSavedProjectId] = useState<string | null>(null);
-  const [selectedModelTier, setSelectedModelTier] = useState<ModelTier>('qualitaet');
+  const [selectedModelTier, setSelectedModelTier] = useState<ModelTier>('schnell');
   const [creditDialog, setCreditDialog] = useState<{ open: boolean; cost: number; label: string; onConfirm: () => void }>({
     open: false, cost: 0, label: '', onConfirm: () => {},
   });
-  
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
 
   // For standalone photo results
   const [standalonePhotoResults, setStandalonePhotoResults] = useState<string[]>([]);
@@ -126,29 +126,23 @@ const Index = () => {
   }, [user]);
 
   // ─── PDF → Landing Page Flow ───
-  const handleFilesSelected = useCallback(async (files: File[]) => {
+  const handleFileSelected = useCallback(async (file: File) => {
     const pdfCost = getCost('pdf_analysis', 'standard') || 1;
-    const totalCost = pdfCost * files.length;
+    setPendingFile(file);
     setCreditDialog({
-      open: true, cost: totalCost, label: files.length === 1 ? 'PDF analysieren' : `${files.length} PDFs analysieren`,
-      onConfirm: () => { setCreditDialog(prev => ({ ...prev, open: false })); processFiles(files); },
+      open: true, cost: pdfCost, label: 'PDF analysieren',
+      onConfirm: () => { setPendingFile(null); setCreditDialog(prev => ({ ...prev, open: false })); processFile(file); },
     });
   }, [getCost]);
 
-  const processFiles = useCallback(async (files: File[]) => {
-    setFileName(files.map(f => f.name).join(', '));
+  const processFile = useCallback(async (file: File) => {
+    setFileName(file.name);
     setGalleryImages([]); setImageBase64(null); setSavedProjectId(null);
     try {
       setAppState('uploading');
-      const pdfBase64Array: string[] = [];
-      for (const file of files) {
-        pdfBase64Array.push(await extractPDFAsBase64(file));
-      }
+      const pdfBase64 = await extractPDFAsBase64(file);
       setAppState('analyzing');
-      const body = pdfBase64Array.length === 1
-        ? { pdfBase64: pdfBase64Array[0] }
-        : { pdfBase64Array };
-      const { data: analysisData, error: analysisError } = await supabase.functions.invoke('analyze-pdf', { body });
+      const { data: analysisData, error: analysisError } = await supabase.functions.invoke('analyze-pdf', { body: { pdfBase64 } });
       console.log('[processFile] analysisError:', analysisError);
       console.log('[processFile] analysisData keys:', analysisData ? Object.keys(analysisData) : 'null');
       console.log('[processFile] vehicle:', analysisData?.vehicle?.brand, analysisData?.vehicle?.model);
@@ -639,7 +633,7 @@ const Index = () => {
                 ))}
               </div>
 
-              <PDFUpload onFilesSelected={handleFilesSelected} isProcessing={false} />
+              <PDFUpload onFileSelected={handleFileSelected} isProcessing={false} />
               <div className="flex items-center justify-center gap-1 text-accent">
                 <Sparkles className="w-4 h-4" />
                 <span className="text-xs font-medium text-muted-foreground">
@@ -652,7 +646,7 @@ const Index = () => {
                     const response = await fetch(pdfUrl);
                     const blob = await response.blob();
                     const file = new File([blob], `${title}.pdf`, { type: 'application/pdf' });
-                    handleFilesSelected([file]);
+                    handleFileSelected(file);
                   } catch { toast.error('Fehler beim Laden des Beispiel-PDFs'); }
                 }}
                 isProcessing={false}
@@ -699,7 +693,7 @@ const Index = () => {
         balance={balance}
         actionLabel={creditDialog.label}
         onConfirm={creditDialog.onConfirm}
-        onCancel={() => { setCreditDialog(prev => ({ ...prev, open: false })); }}
+        onCancel={() => { setCreditDialog(prev => ({ ...prev, open: false })); setPendingFile(null); }}
       />
     </div>
   );

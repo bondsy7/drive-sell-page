@@ -19,7 +19,7 @@ const TIERS: { id: ModelTier; label: string; sublabel: string; icon: React.React
 
 const ImageSourceChoice: React.FC<ImageSourceChoiceProps> = ({ onChooseGenerate, onChooseUpload, onChooseCapture }) => {
   const { getCost, balance } = useCredits();
-  const [modelTier, setModelTier] = useState<ModelTier>('qualitaet');
+  const [modelTier, setModelTier] = useState<ModelTier>('schnell');
 
   const generateCost = getCost('image_generate', modelTier) * 7;
   const remasterCost = getCost('image_remaster', modelTier);

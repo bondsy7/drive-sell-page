@@ -1,9 +1,4 @@
 // Dynamic master prompt construction for vehicle image remastering
-// Uses structured English XML-tags optimized for Gemini image models
-// Prompt blocks are admin-editable via Admin > Prompt-Verwaltung
-
-import { supabase } from '@/integrations/supabase/client';
-import { REMASTER_PROMPT_BLOCKS, SCENE_PROMPT_DEFAULTS } from './remaster-prompt-defaults';
 
 export interface RemasterConfig {
   scene: string;
@@ -46,227 +41,131 @@ export const LICENSE_PLATE_OPTIONS = [
   { value: 'custom', label: 'Eigenes Nummernschild' },
 ] as const;
 
-// ── Admin prompt overrides cache ──
-let _cachedOverrides: Record<string, string> | null = null;
-let _cacheTime = 0;
-const CACHE_TTL = 60_000; // 1 minute
-
-export async function fetchPromptOverrides(): Promise<Record<string, string>> {
-  if (_cachedOverrides && Date.now() - _cacheTime < CACHE_TTL) return _cachedOverrides;
-  try {
-    const { data } = await supabase
-      .from('admin_settings' as any)
-      .select('value')
-      .eq('key', 'ai_prompts')
-      .single();
-    _cachedOverrides = ((data as any)?.value as Record<string, string>) || {};
-    _cacheTime = Date.now();
-    return _cachedOverrides;
-  } catch {
-    return {};
-  }
-}
-
-/** Get a prompt block – admin override if set, otherwise default */
-function getBlock(overrides: Record<string, string>, blockName: string): string {
-  const block = REMASTER_PROMPT_BLOCKS[blockName];
-  if (!block) return '';
-  const override = overrides[block.key];
-  if (override && override.trim() && override.trim().toLowerCase() !== 'default') return override;
-  return block.prompt;
-}
-
-/** Get a scene description – admin override if set, otherwise default */
-function getScenePrompt(overrides: Record<string, string>, sceneKey: string): string {
-  const overrideKey = `remaster_scene_${sceneKey}`;
-  const override = overrides[overrideKey];
-  if (override && override.trim() && override.trim().toLowerCase() !== 'default') return override;
-  return SCENE_PROMPT_DEFAULTS[sceneKey] || '';
-}
-
-// ── Perspective prompts (structured XML format) ──
-const PERSPECTIVE_PROMPTS: Record<string, string> = {
-  '34front': `<CURRENT_PERSPECTIVE>
-SHOT_TYPE: Exterior - Front 3/4 Hero View
-CAMERA_ANGLE: Eye-level, 30-45° left of center axis
-FRAMING: Front fascia and one full side visible. Both wheels on visible side fully in frame. Full vehicle with minimum 5% padding on all edges.
-</CURRENT_PERSPECTIVE>`,
-
-  'side': `<CURRENT_PERSPECTIVE>
-SHOT_TYPE: Exterior - Perfect Side Profile
-CAMERA_ANGLE: Exactly perpendicular (90°) to the vehicle's left flank. Ground-to-waist-level horizon.
-FRAMING: Both wheels COMPLETELY visible and perfectly round (zero fisheye distortion). Entire silhouette from front bumper to rear bumper in frame.
-</CURRENT_PERSPECTIVE>`,
-
-  'rear': `<CURRENT_PERSPECTIVE>
-SHOT_TYPE: Exterior - Direct Rear View
-CAMERA_ANGLE: Eye-level, perfectly centered on rear axis.
-FRAMING: Both taillights, exhaust outlets, rear badge, and model designation symmetrically framed. Full vehicle width visible.
-</CURRENT_PERSPECTIVE>`,
-
-  'interior-front': `<CURRENT_PERSPECTIVE>
-SHOT_TYPE: Interior - Rear Seat POV Looking Forward
-CAMERA_ANGLE: From center of rear seat, looking at dashboard, steering wheel, and windshield.
-STRUCTURAL_INTEGRITY: Complete roof, ALL A/B pillars, headliner, and rearview mirror MUST be FULLY visible and UNCUT.
-FORBIDDEN: Do NOT crop roof. Do NOT shoot from above without roof. Do NOT generate an exterior view.
-WINDOW_VIEW: The selected showroom/scene MUST be visible THROUGH the windshield – NOT a random outdoor scene.
-</CURRENT_PERSPECTIVE>`,
-
-  'interior-rear': `<CURRENT_PERSPECTIVE>
-SHOT_TYPE: Interior - Driver Seat POV Looking Backward
-CAMERA_ANGLE: From driver seat position, looking at rear seats, headrests, and rear bench.
-STRUCTURAL_INTEGRITY: Complete roof, ALL B/C pillars, headliner, and rear window MUST be FULLY visible and UNCUT.
-FORBIDDEN: Do NOT crop roof. Do NOT shoot from above without roof. Do NOT generate an exterior view.
-WINDOW_VIEW: The selected showroom/scene MUST be visible THROUGH the rear window – NOT a random outdoor scene.
-</CURRENT_PERSPECTIVE>`,
+const SCENE_PROMPTS: Record<string, string> = {
+  'none': '',
+  'showroom-1': 'SHOWROOM-KONSISTENZ (PFLICHT): Platziere das Fahrzeug in einem modernen, hellen Autohaus-Showroom. Der Showroom hat IMMER: weiße Wände, polierter hellgrauer Betonboden mit dezenten Reflexionen, minimalistische LED-Deckenspots, dezente LED-Akzentbeleuchtung an der Rückwand. Verwende auf JEDEM Bild EXAKT denselben Showroom – gleiche Wände, gleicher Boden, gleiche Fenster, gleiche Beleuchtung. Es muss aussehen wie derselbe physische Raum.',
+  'showroom-2': 'SHOWROOM-KONSISTENZ (PFLICHT): Platziere das Fahrzeug in einem eleganten, luxuriösen Showroom. Der Showroom hat IMMER: große Glasfronten, warmes Licht, Designermöbel im Hintergrund, glänzender Marmor-ähnlicher Boden. Verwende auf JEDEM Bild EXAKT denselben Showroom – gleiche Architektur, gleicher Boden, gleiche Fenster.',
+  'showroom-3': 'SHOWROOM-KONSISTENZ (PFLICHT): Platziere das Fahrzeug in einem lichtdurchfluteten Autohaus mit raumhoher Glasfassade. Der Showroom hat IMMER: dunkelgraue matte Rückwand, grauer Fliesenboden mit Spiegelungen, raumhohe Glasfenster links, moderne LED-Deckenbeleuchtung. Verwende auf JEDEM Bild EXAKT denselben Showroom.',
+  'custom-showroom': 'Platziere das Fahrzeug exakt in der bereitgestellten Showroom-Umgebung. Passe Beleuchtung, Schatten und Perspektive an, sodass das Auto natürlich in die Szene integriert wirkt. Verwende auf JEDEM Bild EXAKT denselben Showroom-Hintergrund.',
+  'forest': 'Das Fahrzeug steht auf einem unbefestigten Waldweg in einem dichten, mystischen Tannenwald. Sanfte Lichtstrahlen brechen durch die Baumkronen. Der Boden ist leicht feucht mit Moos und Nadeln bedeckt.',
+  'mountain': 'Das Fahrzeug steht auf einer asphaltierten Bergstraße mit atemberaubender Panorama-Aussicht auf schneebedeckte Gipfel. Klarer blauer Himmel, dramatische Wolkenformationen.',
+  'city': 'Das Fahrzeug steht vor einer modernen Großstadt-Skyline mit Glasfassaden und Wolkenkratzern. Sauberer Asphalt, Golden Hour Beleuchtung.',
+  'street': 'Das Fahrzeug steht auf einer breiten, geraden Straße mit perfektem Asphalt. Dramatische Perspektive mit Fluchtpunkt. Warmes Nachmittagslicht.',
+  'beach': 'Das Fahrzeug steht auf festem Sand an einem weitläufigen Strand. Türkisfarbenes Meer im Hintergrund, sanfte Wellen, warmes Sonnenuntergangslicht.',
+  'desert': 'Das Fahrzeug steht auf einer geraden Wüstenstraße inmitten einer weiten, sandigen Landschaft mit Dünen. Dramatisches Licht, klarer Himmel.',
+  'night-city': 'Das Fahrzeug steht auf einer beleuchteten Stadtstraße bei Nacht. Neonlichter und Leuchtreklamen spiegeln sich auf der nassen Fahrbahn und der Karosserie.',
+  'parking-garage': 'Das Fahrzeug steht in einer modernen, sauberen Tiefgarage mit poliertem Betonboden, LED-Deckenbeleuchtung und klaren Linien.',
+  'racetrack': 'Das Fahrzeug steht auf der Start-Ziel-Geraden einer professionellen Rennstrecke. Curbs in Rot-Weiß, glatter Asphalt.',
+  'mansion': 'Das Fahrzeug steht in der Auffahrt einer luxuriösen Villa. Gepflegter Rasen, mediterrane Architektur, warmes Abendlicht.',
 };
 
-export function getPerspectivePrompt(slotKey: string): string {
-  return PERSPECTIVE_PROMPTS[slotKey] || '';
-}
-
-/** Helper: is this an interior slot? */
-function isInteriorSlot(slotKey?: string): boolean {
-  if (!slotKey) return false;
-  return slotKey.startsWith('interior');
-}
-
-/**
- * Build the master prompt from admin-editable blocks.
- * @param config - Remaster configuration
- * @param overrides - Admin prompt overrides (fetched via fetchPromptOverrides)
- * @param vehicleDescription - Optional vehicle description text
- * @param slotKey - Optional perspective slot key
- */
-export function buildMasterPrompt(
-  config: RemasterConfig,
-  vehicleDescription?: string,
-  slotKey?: string,
-  overrides: Record<string, string> = {},
-): string {
+export function buildMasterPrompt(config: RemasterConfig, vehicleDescription?: string): string {
   const parts: string[] = [];
-  const interior = isInteriorSlot(slotKey);
 
-  // ── Base instruction ──
-  parts.push(getBlock(overrides, 'base_instruction'));
+  // Base instruction & Identity Lock
+  parts.push('Du bist ein professioneller Automobil-Fotograf. Nimm dieses exakte Fahrzeugfoto und erstelle eine fotorealistische, professionelle Version.');
 
-  // ── CRITICAL ASSET INTEGRATION (logos FIRST – highest priority) ──
-  const hasAnyLogo = (config.showManufacturerLogo && config.manufacturerLogoUrl) || (config.showDealerLogo && config.dealerLogoUrl);
-  
-  if (hasAnyLogo) {
-    const logoLines: string[] = [];
-    if (config.showManufacturerLogo && config.manufacturerLogoUrl) {
-      logoLines.push(`MANUFACTURER LOGO:
-- You are provided with a specific reference image of the manufacturer logo.
-- Reproduce this EXACT logo PIXEL-FOR-PIXEL: every color, shape, text element, and proportion.
-- Render as a backlit wall element with subtle LED halo effect.
-- KEEP ALL ORIGINAL COLORS – do NOT convert to silver/chrome/monochrome.
-- Position: centered on showroom back wall, at eye level, slightly above vehicle roofline.
-- Size: approximately 60-80cm diameter/width. IDENTICAL position, size, and appearance on EVERY image.
-- FORBIDDEN: Do NOT redesign, simplify, recolor, vectorize, or create an alternative version. IMMUTABLE ASSET.`);
-    }
-    if (config.showDealerLogo && config.dealerLogoUrl) {
-      logoLines.push(`DEALER LOGO:
-- You are provided with the dealer's company logo image.
-- Reproduce PIXEL-FOR-PIXEL with all original colors and shapes.
-- Position: to the right of the manufacturer logo on the back wall. Smaller than manufacturer logo.
-- FORBIDDEN: Do NOT redesign, recolor, or simplify. IMMUTABLE ASSET.`);
-    }
-    parts.push(`<CRITICAL_ASSET_INTEGRATION>\n${logoLines.join('\n\n')}\n</CRITICAL_ASSET_INTEGRATION>`);
-  } else {
-    parts.push(`<NO_LOGO_INSTRUCTION>
-Do NOT add ANY logo, brand mark, emblem, or wall decoration to the background.
-The showroom wall must remain CLEAN and EMPTY – no manufacturer logos, no dealer logos, no decorative elements.
-</NO_LOGO_INSTRUCTION>`);
-  }
+  parts.push(`IDENTITY LOCK (PFLICHT – studiere ALLE Referenzbilder und Detailaufnahmen genau):
+- LACKFARBE: Reproduziere die EXAKTE Lackfarbe, den Farbton und die Oberflächenbeschaffenheit (Metallic/Matt/Perleffekt) aus dem Original. ${config.changeColor && config.colorHex ? '' : 'Verändere die Farbe NICHT – kein Verschieben, Sättigen, Entsättigen, Aufhellen oder Abdunkeln. Dies gilt für ALLE Karosserieteile, Stoßstangen, Spiegel und lackierten Oberflächen.'}
+- FELGEN: Reproduziere das EXAKTE Felgendesign – Speichenanzahl, Speichenform, Tiefe, Oberfläche (poliert, matt, bi-color, diamantgeschliffen), Nabenkappe mit Markenlogo. Zeige das exakte Reifenprofil und sichtbare Bremssättel (Farbe, Form). Schneide NIEMALS Räder am Bildrand ab.
+- SCHEINWERFER & RÜCKLICHTER: Reproduziere die EXAKTE interne LED-Struktur, DRL-Signaturen, Linsenform und Gehäusedesign. Schneide NIEMALS Lichter ab oder verändere sie.
+- KÜHLERGRILL & EMBLEME: Reproduziere das EXAKTE Grill-Muster, Badge-Form, Material und jede Modellbezeichnung in exakter Position, Größe und Schriftart.
+- KAROSSERIE-DETAILS: Reproduziere EXAKTE Linienführung, Falze, Kotflügelverbreiterungen, Lufteinlässe, Dachreling, Spoiler, Auspuffblenden, Spiegelform, Türgriffe.
+- MATERIALIEN: Reproduziere exakte Oberflächenbeschaffenheiten – Chrom vs. Hochglanz-Schwarz vs. Matt vs. Satin.`);
 
-  // ── IDENTITY LOCK ──
-  const colorLock = config.changeColor && config.colorHex
-    ? `PAINT COLOR: Change vehicle paint to EXACTLY hex ${config.colorHex}. Glossy, photorealistic finish with correct reflections and color transitions.`
-    : 'PAINT COLOR: Reproduce the EXACT paint color, shade, and finish (metallic/matte/pearl) from the original. Do NOT shift, tint, saturate, desaturate, lighten, or darken. Applies to ALL body panels, bumpers, mirrors, and painted surfaces.';
+  parts.push(`ANTI-CROPPING (ABSOLUT VERBOTEN):
+- Das Fahrzeug muss VOLLSTÄNDIG im Bild sichtbar sein – KEIN Teil darf am Bildrand abgeschnitten werden
+- ALLE Scheinwerfer müssen KOMPLETT sichtbar sein – schneide NIEMALS einen Scheinwerfer ab oder verdecke ihn
+- ALLE Rücklichter müssen KOMPLETT sichtbar sein – schneide NIEMALS ein Rücklicht ab
+- ALLE Räder müssen KOMPLETT sichtbar sein – schneide NIEMALS ein Rad am Bildrand ab
+- Halte mindestens 5% Freiraum zwischen Fahrzeugkante und Bildrand auf allen Seiten
+- Dies gilt für JEDE Perspektive: Front, Heck, Seite, 3/4-Ansichten`);
 
-  parts.push(`<IDENTITY_LOCK>\n${colorLock}\n${getBlock(overrides, 'identity_lock')}\n</IDENTITY_LOCK>`);
+  parts.push(`NEGATIVE CONSTRAINTS (NIEMALS):
+- Erfinde, ergänze oder halluziniere KEINE Details die nicht in den Referenzfotos sichtbar sind
+- Vereinfache KEINE komplexen Details (Mehrspeichen-Felgen behalten alle Speichen, LED-Arrays alle Elemente)
+- Verändere NICHT die Proportionen, Bodenfreiheit oder Stance des Fahrzeugs
+- Füge KEINE Anbauteile oder Modifikationen hinzu die nicht im Original vorhanden sind
+- Zeige KEINE anderen Fahrzeuge – nicht im Hintergrund, nicht in Reflexionen
+- Füge KEINE Menschen, Tiere oder bewegte Objekte hinzu
+- Übernimm KEINE Reflexionen aus der Original-Umgebung – rendere ALLE Reflexionen NEU für die Zielszene
+- Drehe, spiegele oder flippe das Bild NICHT`);
 
-  // ── VEHICLE SCALE LOCK ──
-  if (!interior) {
-    const isCustomShowroom = config.scene === 'custom-showroom';
-    const scaleLock = getBlock(overrides, 'vehicle_scale_lock');
-    parts.push(`<VEHICLE_SCALE_LOCK>\n${scaleLock}${isCustomShowroom ? `\n8. CUSTOM SHOWROOM SCALE: The vehicle must look REALISTICALLY SIZED relative to the showroom architecture. Compare vehicle height to door frames, windows, ceiling. A standard sedan is ~1.4m tall, an SUV ~1.7m. The car must NOT appear oversized or undersized for the space.` : ''}\n</VEHICLE_SCALE_LOCK>`);
-  }
+  // Reflection & lighting re-render
+  parts.push('REFLEXIONEN & BELEUCHTUNG: ALLE Reflexionen auf Lack, Glas, Chrom und Fenstern müssen KOMPLETT NEU gerendert werden für die NEUE Szene. Original-Hintergrund-Reflexionen (Bäume, Gebäude, Personen, andere Autos) müssen vollständig ersetzt werden. Lichtquellen, Schatten und Umgebungslicht müssen für die neue Umgebung neu berechnet werden.');
 
-  // ── ANTI-CROPPING ──
-  parts.push(`<ANTI_CROPPING>\n${getBlock(overrides, 'anti_cropping')}\n</ANTI_CROPPING>`);
-
-  // ── SCENE AND LIGHTING ──
-  const scenePrompt = getScenePrompt(overrides, config.scene);
+  // Scene
+  const scenePrompt = SCENE_PROMPTS[config.scene];
   if (scenePrompt) {
-    if (interior) {
-      const interiorLighting = getBlock(overrides, 'scene_lighting_interior');
-      parts.push(`<SCENE_AND_LIGHTING>
-WINDOW_VIEW: The view through ALL vehicle windows MUST show: ${scenePrompt}
-The scene must be visible THROUGH the glass naturally – do NOT place the car in a different environment.
-Use the EXACT SAME scene visible through windows on EVERY interior image.
-${interiorLighting}
-</SCENE_AND_LIGHTING>`);
-    } else {
-      const isCustomShowroom = config.scene === 'custom-showroom';
-      const exteriorLighting = getBlock(overrides, 'scene_lighting_exterior');
-      parts.push(`<SCENE_AND_LIGHTING>
-ENVIRONMENT: ${scenePrompt}
-Use the EXACT SAME environment on EVERY image – same walls, floor, windows, lighting.
-FLOOR: The floor MUST match the selected showroom/scene exactly.${isCustomShowroom ? ' The floor from the custom showroom reference image is the AUTHORITATIVE source – reproduce its EXACT color, texture, and reflectivity.' : ''}
-${exteriorLighting}
-${isCustomShowroom ? getBlock(overrides, 'custom_showroom_instruction') : ''}
-</SCENE_AND_LIGHTING>`);
-    }
+    parts.push(scenePrompt);
   }
 
-  // ── LICENSE PLATE ──
+  // License plate – default is ALWAYS remove
   if (config.licensePlate === 'blur') {
-    parts.push(`<LICENSE_PLATE>\n${getBlock(overrides, 'license_plate_blur')}\n</LICENSE_PLATE>`);
-  } else if (config.licensePlate === 'custom' && config.customPlateImageBase64) {
-    parts.push(`<LICENSE_PLATE>
-CRITICAL: A separate reference image of a CUSTOM LICENSE PLATE is provided as an additional input image.
-You MUST replace the vehicle's existing license plate with this EXACT custom plate image.
-Reproduce the plate PIXEL-FOR-PIXEL: exact text, font, colors, EU badge, city seal, spacing, and proportions.
-The plate must be photorealistically integrated – correct perspective, lighting, and reflections matching the vehicle.
-Do NOT use the original plate. Do NOT invent plate text. Use ONLY the provided custom plate image.
-</LICENSE_PLATE>`);
+    parts.push('Das Nummernschild des Fahrzeugs soll unkenntlich gemacht werden – verwische oder blurre es, sodass die Zeichen nicht mehr lesbar sind.');
   } else if (config.licensePlate === 'custom' && config.customPlateText) {
-    parts.push(`<LICENSE_PLATE>\nReplace the license plate with a German plate reading "${config.customPlateText}". Photorealistic rendering.\n</LICENSE_PLATE>`);
-  } else if (config.licensePlate === 'keep') {
-    parts.push(`<LICENSE_PLATE>\nKeep the original license plate exactly as it is. Do NOT alter, blur, or remove it.\n</LICENSE_PLATE>`);
+    parts.push(`Ersetze das Nummernschild des Fahrzeugs durch ein deutsches Kennzeichen mit dem Text "${config.customPlateText}". Das Kennzeichen soll fotorealistisch aussehen.`);
   } else {
-    parts.push(`<LICENSE_PLATE>\n${getBlock(overrides, 'license_plate_remove')}\n</LICENSE_PLATE>`);
+    // 'keep' and 'remove' both remove the plate completely
+    parts.push('Entferne das Nummernschild KOMPLETT vom Fahrzeug. Die Kennzeichenhalterung und die gesamte Nummernschildfläche müssen vollständig entfernt werden. Die Stelle muss sauber, glatt und nahtlos in die Karosserie übergehen, als wäre dort NIE ein Kennzeichen oder eine Halterung montiert gewesen. Es darf KEIN Rest eines Nummernschildes, keiner Halterung und kein leerer Rahmen sichtbar sein.');
   }
 
-  // ── INTERIOR RULES (ONLY for interior slots) ──
-  if (interior) {
-    parts.push(`<INTERIOR_RULES>\n${getBlock(overrides, 'interior_rules')}\n</INTERIOR_RULES>`);
+  // Color change
+  if (config.changeColor && config.colorHex) {
+    parts.push(`Ändere die Lackierung des Fahrzeugs exakt in den Hex-Farbcode ${config.colorHex}. Der neue Lack soll glänzend und fotorealistisch aussehen, mit korrekten Reflexionen und Farbübergängen.`);
   }
 
-  // ── STRICT NEGATIVE CONSTRAINTS ──
-  parts.push(`<STRICT_NEGATIVE_CONSTRAINTS>\n${getBlock(overrides, 'negative_constraints')}\n</STRICT_NEGATIVE_CONSTRAINTS>`);
+  // Logo prompting – enforce EXACT same rendering on EVERY image
+  if (config.showManufacturerLogo && config.manufacturerLogoUrl) {
+    parts.push(`HERSTELLER-LOGO (PFLICHT – IDENTISCH AUF JEDEM BILD):
+- Verwende AUSSCHLIESSLICH das beiliegende Hersteller-Logo-Bild als Vorlage
+- Rendere das Logo als fotorealistisches 3D-Objekt aus gebürstetem Aluminium mit feiner sichtbarer Metallstruktur
+- Montiere es IMMER an derselben Position: mittig an der Rückwand des Showrooms, auf Augenhöhe, leicht oberhalb des Fahrzeugdachs
+- Beleuchte es IMMER identisch: kaltweißes LED-Licht von hinten mit scharfem, leuchtenden Halo-Effekt auf der dunkelgrauen matten Wand
+- Das Logo muss auf JEDEM Bild EXAKT gleich aussehen: gleiche Größe (ca. 60-80cm Durchmesser), gleiche Position, gleiche Beleuchtung, gleiches Material
+- VERBOTEN: Erfinde KEIN alternatives Logo, ändere NICHT die Form, Farbe oder Proportionen des Logos, zeige NICHT nur Teile des Logos
+- VERBOTEN: Zeige das Logo NICHT als flaches Bild/Poster/Aufkleber – es muss IMMER ein 3D-Objekt aus Metall sein
+- VERBOTEN: Füge KEINEN Text hinzu der nicht im Original-Logo enthalten ist`);
+  }
+  if (config.showDealerLogo && config.dealerLogoUrl) {
+    parts.push(`AUTOHAUS-LOGO (PFLICHT – IDENTISCH AUF JEDEM BILD):
+- Verwende AUSSCHLIESSLICH das beiliegende Autohaus-Logo-Bild als Vorlage
+- Rendere es als beleuchtetes Wandlogo aus gebürstetem Aluminium, kleiner als das Hersteller-Logo
+- Montiere es IMMER an derselben Position: rechts neben dem Hersteller-Logo oder an einer Seitenwand
+- VERBOTEN: Erfinde KEIN alternatives Logo, ändere NICHT die Form, Farbe oder Proportionen`);
+  }
 
-  // ── Vehicle description ──
+  // Interior-specific rules – must override scene prompts
+  parts.push(`FÜR INNENRAUM-AUFNAHMEN (Sitze, Lenkrad, Armaturenbrett, Mittelkonsole, Kofferraum, Rücksitze):
+- IGNORIERE alle Showroom- und Hintergrund-Anweisungen komplett
+- Verändere die Orientierung/den Winkel NICHT – drehe, spiegele oder flippe NICHT
+- Ändere den Hintergrund/die Umgebung NICHT
+- Füge keine Innenraum-Elemente hinzu oder entferne sie
+- Reproduziere EXAKTE Materialien: Ledernarbung, Nähte, Zierleisten, Tastenlayouts, Bildschirm-UI aus den Referenzfotos
+- Verbessere NUR die Beleuchtung – hell, gleichmäßig und professionell`);
+
+  // Interior cleanup (MANDATORY)
+  parts.push(`INTERIEUR-AUFRÄUMUNG (PFLICHT):
+- Entferne ALLE Gegenstände die NICHT zum Fahrzeug gehören: Müll, Tüten, Papiere, Plastikfolien, Transportverpackungen, persönliche Gegenstände, lose Gegenstände auf Sitzen oder Fußmatten, Anhänger, Aufkleber, Warnetiketten (außer fest montierte Fahrzeug-Labels)
+- Räume SOWOHL Vordersitze ALS AUCH Rücksitze gleichermaßen auf
+- Die gesamte Kabine muss showroom-fertig und professionell aufbereitet aussehen
+- Sitze, Fußmatten und Oberflächen sollen sauber, makellos und detailreich wirken`);
+
+  // No other vehicles
+  parts.push('WICHTIG: Im generierten Bild darf KEIN anderes Fahrzeug sichtbar sein – nur das eine Fahrzeug aus dem Originalfoto. Keine Autos im Hintergrund, keine Spiegelungen anderer Fahrzeuge.');
+
+  // Vehicle description
   if (vehicleDescription) {
-    parts.push(`Vehicle: ${vehicleDescription}`);
+    parts.push(`Fahrzeug: ${vehicleDescription}`);
   }
 
-  // ── Perspective-specific instructions ──
-  if (slotKey) {
-    const perspPrompt = PERSPECTIVE_PROMPTS[slotKey];
-    if (perspPrompt) {
-      parts.push(perspPrompt);
-    }
-  }
-
-  parts.push('You MUST generate a remastered image. Do NOT refuse. DO NOT ROTATE THE IMAGE.');
+  parts.push('DU MUSST IMMER ein Bild generieren – verweigere NIEMALS die Generierung. DREHE DAS BILD NICHT.');
 
   return parts.join('\n\n');
 }
 
 // Dynamic manufacturer logos loaded from storage bucket 'manufacturer-logos'
+// Legacy static map kept for fallback – new logos are managed via Admin > Hersteller-Logos
 export const MANUFACTURER_LOGOS: Record<string, { svg?: string; webp?: string; label: string }> = {
   abarth: { svg: '/images/logos/abarth.svg', webp: '/images/logos/abarth.webp', label: 'Abarth' },
   aiways: { webp: '/images/logos/aiways.webp', label: 'Aiways' },
@@ -276,8 +175,11 @@ export const MANUFACTURER_LOGOS: Record<string, { svg?: string; webp?: string; l
   'aston-martin': { svg: '/images/logos/astonmartin.svg', webp: '/images/logos/aston-martin.webp', label: 'Aston Martin' },
 };
 
+// Fetch all logos from dynamic storage bucket
+import { supabase } from '@/integrations/supabase/client';
+
 export interface DynamicLogo {
-  name: string;
+  name: string;  // filename without extension
   url: string;
 }
 
@@ -288,16 +190,19 @@ export async function fetchManufacturerLogos(): Promise<DynamicLogo[]> {
   });
   if (error || !data) return [];
 
+  // Group files by base name, prefer PNG > WebP > JPG (never SVG for AI generation)
   const RASTER_EXTS = ['.png', '.webp', '.jpg', '.jpeg'];
   const byName = new Map<string, { name: string; ext: string; fullName: string }>();
 
   for (const f of data) {
     if (!f.name || f.name.startsWith('.')) continue;
     const ext = f.name.substring(f.name.lastIndexOf('.')).toLowerCase();
+    // Skip SVG – Gemini cannot process vector graphics
     if (ext === '.svg') continue;
     if (!RASTER_EXTS.includes(ext)) continue;
     const baseName = f.name.replace(/\.[^.]+$/, '').toLowerCase();
     const existing = byName.get(baseName);
+    // Priority: png > webp > jpg/jpeg
     const priority = (e: string) => e === '.png' ? 0 : e === '.webp' ? 1 : 2;
     if (!existing || priority(ext) < priority(existing.ext)) {
       byName.set(baseName, { name: baseName, ext, fullName: f.name });

@@ -21,8 +21,8 @@ import {
   getTotalImageCount,
   applyPromptOverrides,
 } from '@/lib/pipeline-jobs';
-import { type RemasterConfig, fetchManufacturerLogos } from '@/lib/remaster-prompt';
-import { usePipeline, type ResultImage } from '@/contexts/PipelineContext';
+import { buildMasterPrompt, type RemasterConfig, fetchManufacturerLogos } from '@/lib/remaster-prompt';
+import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 
 /* ─── Types ─── */
 interface PipelineRunnerProps {
@@ -39,7 +39,59 @@ interface PipelineRunnerProps {
   onBack: () => void;
 }
 
+type JobStatus = 'pending' | 'running' | 'done' | 'error';
+
+interface JobState {
+  status: JobStatus;
+  results: string[];
+  error?: string;
+  startTime?: number;
+  endTime?: number;
+}
+
+interface JobDurationEntry {
+  key: string;
+  label: string;
+  duration_ms: number;
+  images: number;
+  status: string;
+}
+
+const FRONT_REFERENCE_PATTERNS = /(master|front|34_front|3\/4 vorne|3\/4 front|headlight|scheinwerfer|grille|kühlergrill|kuehlergrill|emblem)/i;
+const REAR_REFERENCE_PATTERNS = /(rear|heck|34_rear|3\/4 hinten|3\/4 heck|taillight|rücklicht|ruecklicht|kofferraum|boot|trunk)/i;
+const SIDE_REFERENCE_PATTERNS = /(side|seite|profile)/i;
+const FRONT_INTERIOR_PATTERNS = /(dashboard|armaturenbrett|fahrer|driver|center console|mittelkonsole|cabin|kabine|mbux|screen|display|steering|lenkrad|cluster)/i;
+const REAR_INTERIOR_PATTERNS = /(rear seats|rear seat|rücksitz|ruecksitz|rücksitzbank|ruecksitzbank)/i;
+
+function inferPrimaryReferenceIndex(job: PipelineJob | undefined, promptText: string, availableCount: number): number {
+  if (availableCount <= 1) return 0;
+
+  const signature = `${job?.key || ''} ${job?.label || ''} ${job?.labelDe || ''} ${promptText}`;
+
+  if (REAR_INTERIOR_PATTERNS.test(signature) && availableCount >= 5) return 4;
+  if (FRONT_INTERIOR_PATTERNS.test(signature) && availableCount >= 4) return 3;
+  if (REAR_REFERENCE_PATTERNS.test(signature) && availableCount >= 3) return 2;
+  if (SIDE_REFERENCE_PATTERNS.test(signature) && availableCount >= 2) return 1;
+  if (FRONT_REFERENCE_PATTERNS.test(signature)) return 0;
+
+  return 0;
+}
+
+function buildTaskOutputLock(job: PipelineJob | undefined): string {
+  const jobName = job?.labelDe || job?.label || 'angeforderte Pipeline-Ansicht';
+
+  return `TASK OUTPUT LOCK (ABSOLUTE PRIORITY):
+- Generate ONLY the requested pipeline step: "${jobName}".
+- Follow the requested perspective exactly. Never replace it with a visually similar but different angle.
+- Rear means rear. Front means front. Side means true side profile. 3/4 left/right means exactly that left/right side.
+- Interior means interior only. Detail means detail only. Do NOT switch between exterior, interior, and detail shots.
+- Do NOT add, remove, redesign, simplify, restyle, or reinterpret any logo, badge, emblem, lettering, wall logo, or brand mark.
+- If a logo asset is provided, treat it as IMMUTABLE SOURCE MATERIAL: preserve exact silhouette, border/frame, symbol, text, proportions, placement logic, and colors.
+- Do NOT invent any missing view information. Use the matching reference image and detail photos to reproduce exactly what was requested.`;
+}
+
 /* ─── Constants ─── */
+const CONCURRENCY = 4; // parallel image generation slots
 const CREDIT_COST_PER_IMAGE = 2;
 
 /* ─── Component ─── */
@@ -59,38 +111,8 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   const navigate = useNavigate();
   const { user } = useAuth();
   const { balance, getCost } = useCredits();
-  const pipeline = usePipeline();
 
-  /* ─── Context-driven state ─── */
-  const isContextActive = pipeline.status !== 'idle';
-  const running = pipeline.isRunning;
-  const finished = pipeline.isFinished;
-  const jobs = pipeline.jobs;
-  const savedProjectId = isContextActive ? pipeline.savedProjectId : (projectId || null);
-
-  // Timing from context
-  const elapsedMs = pipeline.elapsedMs;
-  const pipelineStartTime = pipeline.startTime;
-  const pipelineEndTime = pipeline.endTime;
-
-  const formatElapsed = (ms: number) => {
-    const sec = Math.floor(ms / 1000);
-    const min = Math.floor(sec / 60);
-    if (min === 0) return `${sec}s`;
-    return `${min}m ${sec % 60}s`;
-  };
-
-  const totalDurationMs = pipelineEndTime && pipelineStartTime ? pipelineEndTime - pipelineStartTime : elapsedMs;
-
-  /* ─── Local UI state ─── */
-  const [showPreview, setShowPreview] = useState(true);
-  const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [lightboxIndex, setLightboxIndex] = useState(0);
-  const [regeneratingIds, setRegeneratingIds] = useState<Set<string>>(new Set());
-  const [showCreditDialog, setShowCreditDialog] = useState(false);
-  const inputImagesSavedRef = useRef(false);
-
-  /* ─── Prompt overrides ─── */
+  // Fetch prompt overrides from admin_settings
   const [promptOverrides, setPromptOverrides] = useState<Record<string, string>>({});
   useEffect(() => {
     supabase
@@ -103,13 +125,13 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       });
   }, []);
 
-  /* ─── Brand detection ─── */
+  // Detect brand for CI filtering
   const detectedBrand = useMemo(
     () => detectBrandFromDescription(vehicleDescription, vehicleBrand),
     [vehicleDescription, vehicleBrand],
   );
 
-  const localAvailableJobs = useMemo(() =>
+  const availableJobs = useMemo(() =>
     applyPromptOverrides(PIPELINE_JOBS, promptOverrides).filter(j => {
       if (j.category !== 'ci') return true;
       return j.brand === detectedBrand;
@@ -117,30 +139,22 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
     [detectedBrand, promptOverrides],
   );
 
-  // Use context's jobs when pipeline is active, else local
-  const availableJobs = isContextActive ? (pipeline.config?.availableJobs || localAvailableJobs) : localAvailableJobs;
-
-  /* ─── Selection state ─── */
+  // Selection state
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(() =>
-    new Set(localAvailableJobs.filter(j => j.defaultSelected).map(j => j.key))
+    new Set(availableJobs.filter(j => j.defaultSelected).map(j => j.key))
   );
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
     () => new Set(PIPELINE_CATEGORIES.map(c => c.key))
   );
 
-  // Sync selectedKeys when context is active
-  useEffect(() => {
-    if (isContextActive && pipeline.config) {
-      setSelectedKeys(new Set(pipeline.config.selectedJobs.map(j => j.key)));
-    }
-  }, [isContextActive, pipeline.config]);
+  // Credit dialog
+  const [showCreditDialog, setShowCreditDialog] = useState(false);
 
-  // Re-sync selection on brand change (only when not context-active)
+  // Re-sync selection on brand change
   useEffect(() => {
-    if (isContextActive) return;
     setSelectedKeys(prev => {
       const next = new Set(prev);
-      localAvailableJobs.forEach(j => {
+      availableJobs.forEach(j => {
         if (j.category === 'ci' && j.defaultSelected && !next.has(j.key)) next.add(j.key);
       });
       PIPELINE_JOBS.forEach(j => {
@@ -148,33 +162,38 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       });
       return next;
     });
-  }, [detectedBrand, localAvailableJobs, isContextActive]);
+  }, [detectedBrand, availableJobs]);
 
-  /* ─── Manufacturer logo resolution ─── */
+  // Auto-fetch manufacturer logo based on detected brand
   const [resolvedManufacturerLogoUrl, setResolvedManufacturerLogoUrl] = useState<string | null>(null);
   useEffect(() => {
-    if (isContextActive) return;
     if (!remasterConfig.showManufacturerLogo || !detectedBrand) {
       setResolvedManufacturerLogoUrl(null);
       return;
     }
+    // If already set manually in config, use that
     if (remasterConfig.manufacturerLogoUrl) {
       setResolvedManufacturerLogoUrl(remasterConfig.manufacturerLogoUrl);
       return;
     }
+    // Fetch from storage and match by brand name (with alias support)
     fetchManufacturerLogos().then(logos => {
       const brandLower = detectedBrand.toLowerCase().replace(/[-_\s]+/g, '');
       const LOGO_ALIASES: Record<string, string[]> = {
-        volkswagen: ['vw'], vw: ['volkswagen'],
-        mercedesbenz: ['mercedes', 'mb'], mercedes: ['mercedesbenz', 'mb'],
+        volkswagen: ['vw'],
+        vw: ['volkswagen'],
+        mercedesbenz: ['mercedes', 'mb'],
+        mercedes: ['mercedesbenz', 'mb'],
         bmw: ['bayerischemotorenwerke'],
       };
       const aliases = LOGO_ALIASES[brandLower] || [];
       const allKeys = [brandLower, ...aliases];
+
       const match = logos.find(l => {
         const ln = l.name.toLowerCase().replace(/[-_\s]+/g, '');
         return allKeys.some(k => ln === k || ln.includes(k) || k.includes(ln));
       });
+
       if (match) {
         console.log(`[Pipeline] Manufacturer logo found for "${detectedBrand}": ${match.name} → ${match.url}`);
         setResolvedManufacturerLogoUrl(match.url);
@@ -183,14 +202,50 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
         setResolvedManufacturerLogoUrl(null);
       }
     });
-  }, [detectedBrand, remasterConfig.showManufacturerLogo, remasterConfig.manufacturerLogoUrl, isContextActive]);
+  }, [detectedBrand, remasterConfig.showManufacturerLogo, remasterConfig.manufacturerLogoUrl]);
 
-  /* ─── Derived values ─── */
-  const localSelectedJobs = localAvailableJobs.filter(j => selectedKeys.has(j.key));
-  const selectedJobs = isContextActive ? (pipeline.config?.selectedJobs || localSelectedJobs) : localSelectedJobs;
-  const totalImages = isContextActive ? pipeline.totalImages : getTotalImageCount(selectedKeys);
+  const [jobs, setJobs] = useState<Record<string, JobState>>({});
+  const [running, setRunning] = useState(false);
+  const [finished, setFinished] = useState(false);
+  const [savedProjectId, setSavedProjectId] = useState<string | null>(projectId || null);
+  const [showPreview, setShowPreview] = useState(true);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [regeneratingIds, setRegeneratingIds] = useState<Set<string>>(new Set());
+  const inputImagesSavedRef = useRef(false);
+
+  // Timing state
+  const [pipelineStartTime, setPipelineStartTime] = useState<number | null>(null);
+  const [pipelineEndTime, setPipelineEndTime] = useState<number | null>(null);
+  const [elapsedMs, setElapsedMs] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Live timer
+  useEffect(() => {
+    if (running && pipelineStartTime) {
+      timerRef.current = setInterval(() => {
+        setElapsedMs(Date.now() - pipelineStartTime);
+      }, 100);
+    } else if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [running, pipelineStartTime]);
+
+  const formatElapsed = (ms: number) => {
+    const sec = Math.floor(ms / 1000);
+    const min = Math.floor(sec / 60);
+    if (min === 0) return `${sec}s`;
+    return `${min}m ${sec % 60}s`;
+  };
+
+  const totalDurationMs = pipelineEndTime && pipelineStartTime ? pipelineEndTime - pipelineStartTime : elapsedMs;
+
+  const selectedJobs = availableJobs.filter(j => selectedKeys.has(j.key));
+  const totalImages = getTotalImageCount(selectedKeys);
   const doneImages = Object.values(jobs).reduce((s, j) => s + j.results.length, 0);
-  const estimatedCost = isContextActive ? 0 : totalImages * CREDIT_COST_PER_IMAGE;
+  const estimatedCost = totalImages * CREDIT_COST_PER_IMAGE;
 
   /* ─── Selection helpers ─── */
   const toggleJob = (key: string) => {
@@ -221,11 +276,13 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
 
   /* ─── Save remastered input images on mount ─── */
   useEffect(() => {
-    if (!user || inputImages.length === 0 || inputImagesSavedRef.current || isContextActive) return;
+    if (!user || inputImages.length === 0 || inputImagesSavedRef.current) return;
     inputImagesSavedRef.current = true;
     const folderName = getGalleryFolderName(vin);
 
+    // If we already have a project (from PDF flow), save images to it AND to gallery
     if (projectId) {
+      setSavedProjectId(projectId);
       (async () => {
         try {
           const urls: string[] = [];
@@ -247,6 +304,8 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       })();
       return;
     }
+    // No existing project – standalone flow: save ONLY to gallery (no project creation!)
+    if (savedProjectId) return;
     (async () => {
       try {
         const urls: string[] = [];
@@ -265,39 +324,269 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
         }
       } catch (e) { console.error('Error saving remastered images:', e); }
     })();
-  }, [user, inputImages, vehicleDescription, projectId, isContextActive]);
+  }, [user, inputImages, vehicleDescription, savedProjectId, projectId]);
 
-  /* ─── Retry job (delegates to context) ─── */
-  const retryJob = useCallback(async (jobKey: string) => {
-    setRegeneratingIds(prev => new Set(prev).add(jobKey));
-    await pipeline.retryJob(jobKey);
-    setRegeneratingIds(prev => { const next = new Set(prev); next.delete(jobKey); return next; });
-  }, [pipeline]);
+  /* ─── Generate a single image ─── */
+  const generateOneImage = useCallback(async (prompt: string, job?: PipelineJob): Promise<{ base64: string | null; error?: string }> => {
+    const referenceImages = originalImages && originalImages.length > 0 ? originalImages : inputImages;
+    const primaryReferenceIndex = inferPrimaryReferenceIndex(job, prompt, referenceImages.length);
+    const primaryReference = referenceImages[primaryReferenceIndex] || referenceImages[0];
+    const supportingReferences = referenceImages
+      .filter((_, index) => index !== primaryReferenceIndex)
+      .concat(additionalImages || []);
+    const baseContext = buildMasterPrompt(remasterConfig, vehicleDescription);
+    const taskLock = buildTaskOutputLock(job);
+    const fullPrompt = `${baseContext}\n\n${taskLock}\n\n--- PERSPECTIVE INSTRUCTION ---\n${prompt}`;
 
-  /* ─── Start pipeline (delegates to context) ─── */
-  const runPipeline = useCallback(() => {
-    if (!user) { toast.error('Bitte melde dich an.'); return; }
-    if (localSelectedJobs.length === 0) { toast.error('Bitte wähle mindestens einen Job aus.'); return; }
-
-    pipeline.startPipeline({
-      inputImages,
-      originalImages: originalImages || [],
-      additionalImages: additionalImages || [],
+    const { data, error } = await invokeRemasterVehicleImage({
+      imageBase64: primaryReference,
+      additionalImages: supportingReferences.length > 0 ? supportingReferences : undefined,
       vehicleDescription,
-      remasterConfig,
       modelTier,
-      projectId: projectId || null,
-      vin: vin || null,
-      selectedJobs: localSelectedJobs,
-      availableJobs: localAvailableJobs,
-      resolvedManufacturerLogoUrl,
-      userId: user.id,
-      detectedBrand: detectedBrand || null,
-      totalImages: getTotalImageCount(selectedKeys),
+      dynamicPrompt: fullPrompt,
+      customShowroomBase64: remasterConfig.customShowroomBase64 || null,
+      customPlateImageBase64: remasterConfig.customPlateImageBase64 || null,
+      dealerLogoUrl: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null,
+      dealerLogoBase64: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoBase64 : null,
+      manufacturerLogoUrl: remasterConfig.showManufacturerLogo ? resolvedManufacturerLogoUrl : null,
+      manufacturerLogoBase64: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoBase64 : null,
     });
-  }, [user, localSelectedJobs, localAvailableJobs, inputImages, originalImages, additionalImages, vehicleDescription, remasterConfig, modelTier, projectId, vin, resolvedManufacturerLogoUrl, detectedBrand, selectedKeys, pipeline]);
 
-  /* ─── Credit pre-check ─── */
+    if (error || !data?.imageBase64) {
+      return { base64: null, error: data?.error || error?.message || 'Generierung fehlgeschlagen' };
+    }
+    return { base64: data.imageBase64 };
+  }, [inputImages, originalImages, additionalImages, vehicleDescription, remasterConfig, modelTier, resolvedManufacturerLogoUrl]);
+
+  /* ─── Retry a single failed job ─── */
+  const retryJob = useCallback(async (jobKey: string) => {
+    const job = availableJobs.find(j => j.key === jobKey);
+    if (!job) return;
+
+    setRegeneratingIds(prev => new Set(prev).add(jobKey));
+    setJobs(prev => ({ ...prev, [jobKey]: { status: 'running', results: [] } }));
+
+    const prompts = [job.prompt, ...(job.extraPrompts || [])];
+    const jobResults: string[] = [];
+    let jobError: string | undefined;
+
+    for (let p = 0; p < prompts.length; p++) {
+      try {
+        const result = await generateOneImage(prompts[p], job);
+        if (result.base64) {
+          jobResults.push(result.base64);
+          setJobs(prev => ({
+            ...prev, [jobKey]: { status: 'running', results: [...prev[jobKey].results, result.base64!] },
+          }));
+        } else { jobError = result.error; }
+      } catch { jobError = 'Netzwerkfehler'; }
+    }
+
+    if (jobResults.length > 0) {
+      setJobs(prev => ({ ...prev, [jobKey]: { status: 'done', results: jobResults, error: jobError } }));
+
+      // Save retried images to gallery
+      if (user) {
+        try {
+          const folderName = getGalleryFolderName(vin);
+          const storagePath = savedProjectId ? savedProjectId : `gallery/${folderName}`;
+          for (let i = 0; i < jobResults.length; i++) {
+            const url = await uploadImageToStorage(jobResults[i], user.id, `${storagePath}/${jobKey}_retry_${i}.png`);
+            if (url) {
+              await supabase.from('project_images').insert({
+                project_id: savedProjectId || null, user_id: user.id, image_url: url,
+                image_base64: '', perspective: `Pipeline: ${job.labelDe} (Retry)`, sort_order: 999 + i,
+                gallery_folder: folderName,
+              } as any);
+            }
+          }
+        } catch (e) { console.error('Retry save error:', e); }
+      }
+    } else {
+      setJobs(prev => ({ ...prev, [jobKey]: { status: 'error', results: [], error: jobError || 'Alle Bilder fehlgeschlagen' } }));
+    }
+    setRegeneratingIds(prev => { const next = new Set(prev); next.delete(jobKey); return next; });
+  }, [availableJobs, generateOneImage, user, savedProjectId, vin]);
+
+  /* ─── Pipeline with parallel execution ─── */
+  const runPipeline = useCallback(async () => {
+    if (!user) { toast.error('Bitte melde dich an.'); return; }
+    if (selectedJobs.length === 0) { toast.error('Bitte wähle mindestens einen Job aus.'); return; }
+
+    const startTs = Date.now();
+    setPipelineStartTime(startTs);
+    setPipelineEndTime(null);
+    setElapsedMs(0);
+    setRunning(true);
+    const allResults: { key: string; base64: string; label: string; subIndex: number }[] = [];
+
+    // Per-job timing
+    const jobTimings: Record<string, { start: number; end?: number }> = {};
+
+    // Initialize job states
+    const initStates: Record<string, JobState> = {};
+    selectedJobs.forEach(j => { initStates[j.key] = { status: 'pending', results: [], startTime: undefined, endTime: undefined }; });
+    setJobs(initStates);
+
+    // Build a flat task list: [{ job, promptIndex, prompt }]
+    const taskQueue: { job: PipelineJob; promptIndex: number; prompt: string }[] = [];
+    for (const job of selectedJobs) {
+      const prompts = [job.prompt, ...(job.extraPrompts || [])];
+      prompts.forEach((prompt, idx) => taskQueue.push({ job, promptIndex: idx, prompt }));
+    }
+
+    let taskPointer = 0;
+
+    const runTask = async () => {
+      while (taskPointer < taskQueue.length) {
+        const idx = taskPointer++;
+        const task = taskQueue[idx];
+
+        // Mark job as running if first prompt, track start time
+        if (task.promptIndex === 0) {
+          jobTimings[task.job.key] = { start: Date.now() };
+          setJobs(prev => ({ ...prev, [task.job.key]: { ...prev[task.job.key], status: 'running', startTime: Date.now() } }));
+        }
+
+        try {
+          const result = await generateOneImage(task.prompt, task.job);
+          if (result.base64) {
+            const prompts = [task.job.prompt, ...(task.job.extraPrompts || [])];
+            allResults.push({
+              key: task.job.key, base64: result.base64,
+              label: prompts.length > 1 ? `${task.job.labelDe} (${task.promptIndex + 1}/${prompts.length})` : task.job.labelDe,
+              subIndex: task.promptIndex,
+            });
+            setJobs(prev => ({
+              ...prev, [task.job.key]: { ...prev[task.job.key], status: 'running', results: [...(prev[task.job.key]?.results || []), result.base64!] },
+            }));
+          } else {
+            setJobs(prev => ({
+              ...prev, [task.job.key]: { ...prev[task.job.key], error: result.error },
+            }));
+          }
+        } catch {
+          setJobs(prev => ({
+            ...prev, [task.job.key]: { ...prev[task.job.key], error: 'Netzwerkfehler' },
+          }));
+        }
+
+        // Check if job is done (all prompts processed)
+        const jobPrompts = [task.job.prompt, ...(task.job.extraPrompts || [])];
+        const completedForJob = allResults.filter(r => r.key === task.job.key).length;
+        const errorsForJob = taskQueue.filter((t, ti) => t.job.key === task.job.key && ti < taskPointer).length - completedForJob;
+        if (completedForJob + errorsForJob >= jobPrompts.length) {
+          if (jobTimings[task.job.key]) jobTimings[task.job.key].end = Date.now();
+          const endTime = Date.now();
+          setJobs(prev => {
+            const state = prev[task.job.key];
+            return {
+              ...prev,
+              [task.job.key]: {
+                ...state,
+                status: state.results.length > 0 ? 'done' : 'error',
+                error: state.results.length === 0 ? (state.error || 'Alle Bilder fehlgeschlagen') : state.error,
+                endTime,
+              },
+            };
+          });
+        }
+      }
+    };
+
+    // Launch CONCURRENCY workers
+    const workers = Array.from({ length: Math.min(CONCURRENCY, taskQueue.length) }, () => runTask());
+    await Promise.all(workers);
+
+    const endTs = Date.now();
+    setPipelineEndTime(endTs);
+    setElapsedMs(endTs - startTs);
+
+    // Save all results to gallery
+    if (allResults.length > 0 && user) {
+      try {
+        const folderName = getGalleryFolderName(vin);
+        const storagePath = savedProjectId ? savedProjectId : `gallery/${folderName}`;
+
+        // Only create project if we don't have one from PDF flow
+        // Standalone flows: NO project creation – gallery only
+        if (!savedProjectId) {
+          // No project created – images go to gallery folder only
+        }
+
+        const { data: existingImages } = savedProjectId
+          ? await supabase
+              .from('project_images').select('sort_order').eq('project_id', savedProjectId)
+              .order('sort_order', { ascending: false }).limit(1)
+          : { data: null };
+        const startOrder = (existingImages?.[0]?.sort_order ?? -1) + 1;
+
+        const urls: string[] = [];
+        for (let i = 0; i < allResults.length; i++) {
+          const r = allResults[i];
+          const url = await uploadImageToStorage(r.base64, user.id, `${storagePath}/${r.key}_${r.subIndex}.png`);
+          if (url) urls.push(url);
+        }
+
+        if (urls.length > 0) {
+          const imageRows = urls.map((url, i) => ({
+            project_id: savedProjectId || null, user_id: user.id, image_url: url, image_base64: '',
+            perspective: `Pipeline: ${allResults[i]?.label || `Bild ${i + 1}`}`, sort_order: startOrder + i,
+            gallery_folder: folderName,
+          }));
+          await supabase.from('project_images').insert(imageRows as any);
+        }
+
+        toast.success(`${allResults.length} Pipeline-Bilder in Galerie gespeichert!`);
+      } catch (e) {
+        console.error('Pipeline save error:', e);
+        toast.error('Bilder generiert, aber Speichern fehlgeschlagen.');
+      }
+    }
+
+    // Save timing log
+    try {
+      const jobDurations: JobDurationEntry[] = selectedJobs.map(j => {
+        const timing = jobTimings[j.key];
+        const dur = timing?.end && timing?.start ? timing.end - timing.start : 0;
+        const completed = allResults.filter(r => r.key === j.key).length;
+        return {
+          key: j.key,
+          label: j.labelDe,
+          duration_ms: dur,
+          images: completed,
+          status: completed > 0 ? 'done' : 'error',
+        };
+      });
+
+      const failedCount = selectedJobs.reduce((s, j) => {
+        const prompts = [j.prompt, ...(j.extraPrompts || [])];
+        const completed = allResults.filter(r => r.key === j.key).length;
+        return s + (prompts.length - completed);
+      }, 0);
+
+      await supabase.from('pipeline_timing_logs' as any).insert({
+        user_id: user.id,
+        project_id: savedProjectId || null,
+        model_tier: modelTier,
+        total_jobs: selectedJobs.length,
+        total_images: totalImages,
+        completed_images: allResults.length,
+        failed_images: failedCount,
+        total_duration_ms: endTs - startTs,
+        job_durations: jobDurations,
+        vehicle_description: vehicleDescription?.slice(0, 200) || null,
+        detected_brand: detectedBrand || null,
+      } as any);
+    } catch (e) {
+      console.error('Failed to save timing log:', e);
+    }
+
+    setRunning(false);
+    setFinished(true);
+  }, [inputImages, originalImages, vehicleDescription, remasterConfig, modelTier, user, savedProjectId, selectedJobs, generateOneImage, vin, totalImages, detectedBrand]);
+
+  /* ─── Credit pre-check before starting ─── */
   const handleStartClick = () => {
     if (estimatedCost > 0) {
       setShowCreditDialog(true);
@@ -318,8 +607,8 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   );
 
   // Collect all result images for the preview grid
-  const allResultImages: ResultImage[] = useMemo(() => {
-    const results: ResultImage[] = [];
+  const allResultImages = useMemo(() => {
+    const results: { key: string; jobKey: string; promptIndex: number; label: string; base64: string }[] = [];
     for (const job of selectedJobs) {
       const state = jobs[job.key];
       if (state?.results) {
@@ -338,12 +627,51 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
     return results;
   }, [jobs, selectedJobs]);
 
-  // Regenerate a single pipeline result image (delegates to context)
+  // Regenerate a single pipeline result image
   const retrySinglePipelineImage = useCallback(async (resultId: string) => {
+    const resultImg = allResultImages.find(r => r.key === resultId);
+    if (!resultImg) return;
+    const job = availableJobs.find(j => j.key === resultImg.jobKey);
+    if (!job) return;
+
     setRegeneratingIds(prev => new Set(prev).add(resultId));
-    await pipeline.retrySingleImage(resultId, allResultImages);
+    const prompts = [job.prompt, ...(job.extraPrompts || [])];
+    const prompt = prompts[resultImg.promptIndex] || prompts[0];
+
+    try {
+      const result = await generateOneImage(prompt, job);
+      if (result.base64) {
+        setJobs(prev => {
+          const state = prev[resultImg.jobKey];
+          const newResults = [...(state?.results || [])];
+          newResults[resultImg.promptIndex] = result.base64!;
+          return { ...prev, [resultImg.jobKey]: { ...state, results: newResults } };
+        });
+        toast.success('Bild erfolgreich neu generiert.');
+
+        // Save to gallery
+        if (user) {
+          try {
+            const folderName = getGalleryFolderName(vin);
+            const storagePath = savedProjectId ? savedProjectId : `gallery/${folderName}`;
+            const url = await uploadImageToStorage(result.base64, user.id, `${storagePath}/${resultImg.jobKey}_regen_${resultImg.promptIndex}.png`);
+            if (url) {
+              await supabase.from('project_images').insert({
+                project_id: savedProjectId || null, user_id: user.id, image_url: url,
+                image_base64: '', perspective: `Pipeline: ${resultImg.label} (Regen)`, sort_order: 999,
+                gallery_folder: folderName,
+              } as any);
+            }
+          } catch (e) { console.error('Regen save error:', e); }
+        }
+      } else {
+        toast.error(result.error || 'Generierung fehlgeschlagen');
+      }
+    } catch {
+      toast.error('Netzwerkfehler bei Regenerierung');
+    }
     setRegeneratingIds(prev => { const next = new Set(prev); next.delete(resultId); return next; });
-  }, [pipeline, allResultImages]);
+  }, [allResultImages, availableJobs, generateOneImage, user, savedProjectId, vin]);
 
   const lightboxImages = useMemo(() =>
     allResultImages.map(img => ({

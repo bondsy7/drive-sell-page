@@ -77,7 +77,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { prompt, imageBase64, logoBase64, modelTier, width, height } = await req.json();
+    const { prompt, imageBase64, modelTier, width, height } = await req.json();
     if (!prompt) throw new Error("No prompt provided");
 
     const config = MODEL_MAP[modelTier] || MODEL_MAP["premium"];
@@ -90,9 +90,9 @@ serve(async (req) => {
     const maxRetries = 3;
 
     if (config.engine === "gemini") {
-      resultImage = await generateGemini(prompt, imageBase64, logoBase64, config.model, maxRetries);
+      resultImage = await generateGemini(prompt, imageBase64, config.model, maxRetries);
     } else {
-      resultImage = await generateOpenAI(prompt, imageBase64, logoBase64, config.model, width, height, modelTier === "ultra", maxRetries);
+      resultImage = await generateOpenAI(prompt, imageBase64, config.model, width, height, modelTier === "ultra", maxRetries);
     }
 
     if (!resultImage) throw new Error("Kein Banner generiert. Bitte versuche es erneut.");
@@ -108,7 +108,7 @@ serve(async (req) => {
   }
 });
 
-async function generateGemini(prompt: string, imageBase64: string | null, logoBase64: string | null, model: string, retries: number): Promise<string | null> {
+async function generateGemini(prompt: string, imageBase64: string | null, model: string, retries: number): Promise<string | null> {
   const apiKey = Deno.env.get("GEMINI_API_KEY");
   if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
 
@@ -116,17 +116,11 @@ async function generateGemini(prompt: string, imageBase64: string | null, logoBa
 
   const parts: any[] = [{ text: prompt }];
   if (imageBase64) {
+    // Strip data URL prefix if present
     const base64Data = imageBase64.includes(",") ? imageBase64.split(",")[1] : imageBase64;
     const mimeType = imageBase64.startsWith("data:image/png") ? "image/png"
       : imageBase64.startsWith("data:image/webp") ? "image/webp" : "image/jpeg";
     parts.push({ inlineData: { mimeType, data: base64Data } });
-  }
-  if (logoBase64) {
-    const logoData = logoBase64.includes(",") ? logoBase64.split(",")[1] : logoBase64;
-    const logoMime = logoBase64.startsWith("data:image/png") ? "image/png"
-      : logoBase64.startsWith("data:image/svg") ? "image/png" : "image/png";
-    parts.push({ text: "The following image is the LOGO to be placed in the banner:" });
-    parts.push({ inlineData: { mimeType: logoMime, data: logoData } });
   }
 
   for (let attempt = 0; attempt <= retries; attempt++) {
@@ -175,7 +169,7 @@ async function generateGemini(prompt: string, imageBase64: string | null, logoBa
   return null;
 }
 
-async function generateOpenAI(prompt: string, imageBase64: string | null, logoBase64: string | null, model: string, width: number, height: number, isUltra: boolean, retries: number): Promise<string | null> {
+async function generateOpenAI(prompt: string, imageBase64: string | null, model: string, width: number, height: number, isUltra: boolean, retries: number): Promise<string | null> {
   const apiKey = Deno.env.get("OPENAI_API_KEY");
   if (!apiKey) throw new Error("OPENAI_API_KEY not configured");
 
@@ -200,20 +194,7 @@ async function generateOpenAI(prompt: string, imageBase64: string | null, logoBa
         const form = new FormData();
         form.append("model", model);
         form.append("image", blob, "vehicle.png");
-        
-        // Add logo as additional image if provided
-        let logoPromptAddition = "";
-        if (logoBase64) {
-          const logoRaw = logoBase64.includes(",") ? logoBase64.split(",")[1] : logoBase64;
-          const logoBinaryStr = atob(logoRaw);
-          const logoBytes = new Uint8Array(logoBinaryStr.length);
-          for (let j = 0; j < logoBinaryStr.length; j++) logoBytes[j] = logoBinaryStr.charCodeAt(j);
-          const logoBlob = new Blob([logoBytes], { type: "image/png" });
-          form.append("image", logoBlob, "logo.png");
-          logoPromptAddition = "\n\nA LOGO image is also provided. Place it prominently in the banner (corner or near headline). Keep the logo 100% identical.";
-        }
-        
-        form.append("prompt", `${prompt}\n\nIMPORTANT: Use the provided vehicle image as the central hero element. Keep it 100% identical.${logoPromptAddition}`);
+        form.append("prompt", `${prompt}\n\nIMPORTANT: Use the provided vehicle image as the central hero element. Keep it 100% identical.`);
         form.append("n", "1");
         form.append("size", size);
         if (isUltra) form.append("quality", "high");

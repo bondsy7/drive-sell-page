@@ -17,32 +17,18 @@ serve(async (req) => {
     const OUTVIN_API_KEY = Deno.env.get("OUTVIN_API_KEY");
     if (!OUTVIN_API_KEY) throw new Error("OUTVIN_API_KEY not configured");
 
-    let response: Response | null = null;
-    const maxRetries = 3;
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      response = await fetch(`https://www.outvin.com/api/v1/vehicle/${encodeURIComponent(vin)}`, {
-        method: "GET",
-        headers: {
-          "Authorization": `Basic ${OUTVIN_API_KEY}`,
-          "Accept": "application/json",
-        },
-      });
+    const response = await fetch(`https://www.outvin.com/api/v1/vehicle/${encodeURIComponent(vin)}`, {
+      method: "GET",
+      headers: {
+        "Authorization": `Basic ${OUTVIN_API_KEY}`,
+        "Accept": "application/json",
+      },
+    });
 
-      if (response.ok) break;
-
+    if (!response.ok) {
       const errText = await response.text();
-      console.error(`OutVin API error (attempt ${attempt}/${maxRetries}):`, response.status, errText);
-
-      if ((response.status === 503 || response.status === 429 || response.status >= 500) && attempt < maxRetries) {
-        await new Promise(r => setTimeout(r, attempt * 2000));
-        continue;
-      }
-
+      console.error("OutVin API error:", response.status, errText);
       throw new Error(`OutVin API error: ${response.status}`);
-    }
-
-    if (!response || !response.ok) {
-      throw new Error("OutVin API failed after retries");
     }
 
     const data = await response.json();

@@ -257,20 +257,12 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    // 1. Parse request – support single or multiple PDFs
-    const reqBody = await req.json();
-    const pdfBase64Array: string[] = reqBody.pdfBase64Array
-      ? reqBody.pdfBase64Array
-      : reqBody.pdfBase64
-        ? [reqBody.pdfBase64]
-        : [];
-    if (pdfBase64Array.length === 0) throw new Error("No PDF data provided");
-
-    const pdfCount = pdfBase64Array.length;
-
-    // Authenticate & deduct credits (1 per PDF)
-    const authResult = await authenticateAndDeductCredits(req, "pdf_analysis", pdfCount);
+    // 1. Authenticate & deduct credits
+    const authResult = await authenticateAndDeductCredits(req, "pdf_analysis", 1);
     if (authResult instanceof Response) return authResult;
+
+    const { pdfBase64 } = await req.json();
+    if (!pdfBase64) throw new Error("No PDF data provided");
 
     const GEMINI_API_KEY = await getSecret("GEMINI_API_KEY");
     if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
@@ -278,8 +270,7 @@ serve(async (req) => {
     // 2. Load custom prompt
     const systemPrompt = await getCustomPrompt("pdf_analysis", DEFAULT_SYSTEM_PROMPT);
 
-    const userText = pdfCount === 1
-      ? `Analysiere dieses Fahrzeug-PDF vollständig. Extrahiere ALLE verfügbaren Daten:
+    const userText = `Analysiere dieses Fahrzeug-PDF vollständig. Extrahiere ALLE verfügbaren Daten:
 - Fahrzeugdaten (Marke, Modell, Variante, Farbe, Leistung, Getriebe, Baujahr)
 - Finanzierung/Leasing (Rate, Laufzeit, Anzahlung, Sonderzahlung, Restwert, Preis)
 - Händler (Name, Adresse, Telefon, E-Mail, Website)
@@ -291,44 +282,11 @@ serve(async (req) => {
 - Bei Plug-in-Hybrid: gewichtete UND entladene Werte, Stromverbrauch, E-Reichweite
 
 Wenn CO₂-Klasse nicht angegeben aber g/km-Wert vorhanden: Klasse ableiten!
-Gib das Ergebnis als JSON zurück.`
-      : `Du erhältst ${pdfCount} verschiedene PDF-Dokumente, die ALLE zum GLEICHEN Fahrzeug gehören. 
-Jedes Dokument kann unterschiedliche Informationen enthalten:
-- Ein PDF kann Leasing-/Finanzierungsdaten haben
-- Ein anderes die Ausstattungsliste
-- Ein weiteres technische Daten oder Verbrauchswerte
-- Wieder ein anderes die Händlerinformationen
-
-DEINE AUFGABE: Führe die Informationen aus ALLEN PDFs zu EINEM vollständigen Datensatz zusammen.
-Wenn dasselbe Feld in mehreren PDFs vorkommt, verwende den spezifischeren/detaillierteren Wert.
-Gib das Ergebnis als EIN einziges JSON-Objekt zurück.
-
-Extrahiere:
-- Fahrzeugdaten (Marke, Modell, Variante, Farbe, Leistung, Getriebe, Baujahr)
-- Finanzierung/Leasing (Rate, Laufzeit, Anzahlung, Sonderzahlung, Restwert, Preis)
-- Händler (Name, Adresse, Telefon, E-Mail, Website)
-- ALLE Verbrauchswerte (kombiniert, Stadt, Landstraße, Autobahn)
-- CO₂-Emissionen und CO₂-Klasse (bei PHEV: BEIDE Klassen!)
-- Energiekosten, Kraftstoffpreis, CO₂-Kosten, Kfz-Steuer
-- Ausstattungs-HIGHLIGHTS (max 15-20, keine "Ohne"-Einträge, keine Trivialausstattung)
-- Fahrzeugbeschreibung: 2-3 verkaufsfördernde Sätze über das Fahrzeug
-- Bei Plug-in-Hybrid: gewichtete UND entladene Werte, Stromverbrauch, E-Reichweite
-
-Wenn CO₂-Klasse nicht angegeben aber g/km-Wert vorhanden: Klasse ableiten!
 Gib das Ergebnis als JSON zurück.`;
 
-    // Build content parts: text + all PDFs
-    const contentParts: any[] = [{ text: userText }];
-    for (let i = 0; i < pdfBase64Array.length; i++) {
-      if (pdfCount > 1) {
-        contentParts.push({ text: `--- PDF-Dokument ${i + 1} von ${pdfCount} ---` });
-      }
-      contentParts.push({ inlineData: { mimeType: "application/pdf", data: pdfBase64Array[i] } });
-    }
-
-    // 3. Call Gemini API
+    // 3. Call Gemini API directly
     const geminiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
-    console.log(`[analyze-pdf] Calling Gemini API with ${pdfCount} PDF(s)...`);
+    console.log("[analyze-pdf] Calling Gemini API...");
     const response = await fetch(geminiUrl, {
       method: "POST",
       headers: {
@@ -337,7 +295,12 @@ Gib das Ergebnis als JSON zurück.`;
       },
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: systemPrompt }] },
-        contents: [{ parts: contentParts }],
+        contents: [{
+          parts: [
+            { text: userText },
+            { inlineData: { mimeType: "application/pdf", data: pdfBase64 } },
+          ],
+        }],
         generationConfig: {
           responseMimeType: "application/json",
           temperature: 0.1,

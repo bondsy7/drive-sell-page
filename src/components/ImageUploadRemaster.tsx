@@ -6,9 +6,8 @@ import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import RemasterOptions from '@/components/RemasterOptions';
-import { type RemasterConfig, buildMasterPrompt, fetchPromptOverrides } from '@/lib/remaster-prompt';
+import { type RemasterConfig, buildMasterPrompt } from '@/lib/remaster-prompt';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
-import { compressImageForAI } from '@/lib/image-compress';
 
 interface ImageUploadRemasterProps {
   vehicleDescription: string;
@@ -36,6 +35,35 @@ function fileToBase64(file: File): Promise<string> {
     reader.onload = () => resolve(reader.result as string);
     reader.onerror = reject;
     reader.readAsDataURL(file);
+  });
+}
+
+function compressImage(dataUrl: string, maxDim = 2048, quality = 0.85): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > maxDim || height > maxDim) {
+        const scale = maxDim / Math.max(width, height);
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('Canvas not supported'));
+        return;
+      }
+
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => reject(new Error('Image load failed'));
+    img.src = dataUrl;
   });
 }
 
@@ -78,7 +106,7 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
       }
 
       const rawBase64 = await fileToBase64(file);
-      const base64 = await compressImageForAI(rawBase64, 1024, 0.8).catch(() => rawBase64);
+      const base64 = await compressImage(rawBase64).catch(() => rawBase64);
 
       newImages.push({
         id: crypto.randomUUID(),
@@ -115,8 +143,7 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
     // Mark all as processing
     setImages(prev => prev.map(x => pending.some(p => p.id === x.id) ? { ...x, status: 'processing' } : x));
 
-    const promptOverrides = await fetchPromptOverrides();
-    const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription, undefined, promptOverrides);
+    const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription);
 
     const processImage = async (img: UploadedImage) => {
       try {
@@ -166,8 +193,7 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
     setImages(prev => prev.map(x => x.id === id ? { ...x, status: 'processing', error: undefined } : x));
     setRegeneratingIds(prev => new Set(prev).add(id));
     try {
-      const overrides = await fetchPromptOverrides();
-      const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription, undefined, overrides);
+      const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription);
       const { data, error } = await invokeRemasterVehicleImage({
         imageBase64: img.originalBase64,
         vehicleDescription,

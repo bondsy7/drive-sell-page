@@ -1,44 +1,6 @@
-import { useMemo, useState, useEffect, useRef } from 'react';
+import { useMemo, useState } from 'react';
 import { Image, FolderOpen, ChevronDown, ChevronRight, Trash2 } from 'lucide-react';
 import { type ProjectImage, getImageSrc } from './types';
-import { PIPELINE_JOBS } from '@/lib/pipeline-jobs';
-
-/* ── Fixed sort order for images within a gallery folder ── */
-const REMASTER_ORDER: string[] = [
-  '3/4 Front', 'Seite', 'Hinten', 'Interieur Fahrersitz', 'Interieur Rücksitz',
-];
-
-// Build pipeline label → sort index from the canonical PIPELINE_JOBS array
-const PIPELINE_LABEL_ORDER = new Map<string, number>();
-PIPELINE_JOBS.forEach((j, i) => {
-  PIPELINE_LABEL_ORDER.set(j.labelDe, i);
-  PIPELINE_LABEL_ORDER.set(j.label, i);
-});
-
-export function getImageSortKey(perspective: string | null): number {
-  if (!perspective) return 90000;
-
-  // Remastered images come first (indices 0-99)
-  const remasterIdx = REMASTER_ORDER.indexOf(perspective);
-  if (remasterIdx >= 0) return remasterIdx;
-
-  // Pipeline images come second (indices 100+)
-  if (perspective.startsWith('Pipeline: ')) {
-    const label = perspective
-      .replace(/^Pipeline:\s*/, '')
-      .replace(/\s*\(Retry\)$/, '')
-      .replace(/\s*\(Regen\)$/, '');
-    const pIdx = PIPELINE_LABEL_ORDER.get(label);
-    if (pIdx !== undefined) return 100 + pIdx;
-    return 100 + 9000; // unknown pipeline job → end of pipeline section
-  }
-
-  // Generic "Bild N" or unknown → end
-  const bildMatch = perspective.match(/^Bild\s+(\d+)$/);
-  if (bildMatch) return 50 + parseInt(bildMatch[1], 10);
-
-  return 90000;
-}
 import { useDeleteGalleryImage, useDeleteGalleryFolder } from '@/hooks/useDashboardData';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -47,23 +9,13 @@ import {
 
 interface Props {
   images: ProjectImage[];
-  onLightbox: (folder: string, indexInFolder: number) => void;
-  highlightFolder?: string | null;
+  onLightbox: (globalIndex: number) => void;
 }
 
-export default function GalleryTab({ images, onLightbox, highlightFolder }: Props) {
+export default function GalleryTab({ images, onLightbox }: Props) {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(() => {
-    if (highlightFolder) return new Set([highlightFolder]);
     return new Set(images.map(i => i.gallery_folder || 'Ohne Ordner'));
   });
-  const highlightRef = useRef<HTMLDivElement>(null);
-
-  // Scroll to highlighted folder on mount
-  useEffect(() => {
-    if (highlightFolder && highlightRef.current) {
-      highlightRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, [highlightFolder]);
 
   const [confirmDeleteImage, setConfirmDeleteImage] = useState<string | null>(null);
   const [confirmDeleteFolder, setConfirmDeleteFolder] = useState<{ folder: string; count: number } | null>(null);
@@ -78,17 +30,12 @@ export default function GalleryTab({ images, onLightbox, highlightFolder }: Prop
       if (!groups[folder]) groups[folder] = [];
       groups[folder].push(img);
     }
-    // Sort images within each folder by fixed perspective order
-    for (const key of Object.keys(groups)) {
-      groups[key].sort((a, b) => getImageSortKey(a.perspective) - getImageSortKey(b.perspective));
-    }
-    // Sort folders by newest image first
     const sortedKeys = Object.keys(groups).sort((a, b) => {
       if (a === 'Ohne Ordner') return 1;
       if (b === 'Ohne Ordner') return -1;
-      const latestA = Math.max(...groups[a].map(i => new Date(i.created_at || 0).getTime()));
-      const latestB = Math.max(...groups[b].map(i => new Date(i.created_at || 0).getTime()));
-      return latestB - latestA;
+      if (a.startsWith('NO_VIN') && !b.startsWith('NO_VIN')) return 1;
+      if (!a.startsWith('NO_VIN') && b.startsWith('NO_VIN')) return -1;
+      return a.localeCompare(b);
     });
     return sortedKeys.map(key => ({ folder: key, images: groups[key] }));
   }, [images]);
@@ -117,7 +64,7 @@ export default function GalleryTab({ images, onLightbox, highlightFolder }: Prop
           const isExpanded = expandedFolders.has(folder);
           const isVin = folder !== 'Ohne Ordner' && !folder.startsWith('NO_VIN');
           return (
-            <div key={folder} ref={folder === highlightFolder ? highlightRef : undefined} className={`bg-card rounded-xl border overflow-hidden ${folder === highlightFolder ? 'border-accent ring-2 ring-accent/20' : 'border-border'}`}>
+            <div key={folder} className="bg-card rounded-xl border border-border overflow-hidden">
               <div className="flex items-center">
                 <button
                   onClick={() => toggleFolder(folder)}
@@ -138,10 +85,11 @@ export default function GalleryTab({ images, onLightbox, highlightFolder }: Prop
               </div>
               {isExpanded && (
                 <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 p-3 pt-0">
-                  {folderImages.map((img, idxInFolder) => {
+                  {folderImages.map((img) => {
+                    const globalIdx = images.findIndex(i => i.id === img.id);
                     return (
                       <div key={img.id} className="bg-muted rounded-lg overflow-hidden group relative">
-                        <div className="cursor-pointer" onClick={() => onLightbox(folder, idxInFolder)}>
+                        <div className="cursor-pointer" onClick={() => onLightbox(globalIdx)}>
                           <div className="aspect-video">
                             <img src={getImageSrc(img)} alt={img.perspective || 'Fahrzeugbild'} className="w-full h-full object-cover" />
                           </div>

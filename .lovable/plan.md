@@ -1,135 +1,58 @@
+# Zusätzliche Detailbilder im Fotoaufnahme-Prozess
 
+## Ziel
 
-# Prompt-System Komplett-Überarbeitung nach Gemini-Empfehlungen
-
-## Problemanalyse
-
-Die aktuelle Prompt-Architektur hat mehrere Schwächen:
-
-1. **Sprache**: Remaster-Prompt ist Deutsch, Pipeline-Prompt ist Englisch — inkonsistent. Gemini-Bildmodelle reagieren präziser auf **strukturiertes Englisch mit XML-Tags**.
-2. **Logo-Inkonsistenz**: Logo-Anweisungen gehen in der Masse des Textes unter. Gemini empfiehlt, `<CRITICAL_ASSET_INTEGRATION>` als **erstes** Element im Prompt zu platzieren.
-3. **Fließtext statt Struktur**: Prompts sind als lange Absätze formuliert. XML-Tags (`<IDENTITY_LOCK>`, `<SCENE>`, `<NEGATIVE_CONSTRAINTS>`) helfen dem Modell, Prioritäten zu erkennen.
-4. **Redundanz**: Interior-Regeln werden im Remaster-Prompt *immer* angehängt (auch bei Exterior-Shots), was den Prompt unnötig aufbläht und den Fokus verwässert.
-5. **Pipeline-Prompts**: Uneinheitliche Showroom/Logo-Referenzen — manche CI-Jobs erwähnen kein Logo, was zum "Vergessen" führt.
-
-## Plan
-
-### 1. Neuer modularer Base-Prompt (remaster-prompt.ts)
-
-Kompletter Rewrite von `buildMasterPrompt()` mit folgender Struktur:
-
-```text
-You are a top-tier professional automotive commercial photographer and retoucher.
-TASK: Remaster the provided reference vehicle photo into a flawless, dealership-quality promotional image.
-
-<CRITICAL_ASSET_INTEGRATION>
-  [Logo-Anweisungen — NUR wenn Logo
-
-<lov-plan>
-
-# Prompt-System Komplett-Überarbeitung nach Gemini-Empfehlungen
-
-## Problemanalyse
-
-1. **Sprache**: Remaster-Prompt Deutsch, Pipeline Englisch — inkonsistent. Gemini-Bildmodelle reagieren präziser auf **strukturiertes Englisch mit XML-Tags**.
-2. **Logo geht unter**: Logo-Anweisungen versteckt in der Mitte. Gemini empfiehlt `<CRITICAL_ASSET_INTEGRATION>` als **erstes** Element.
-3. **Fließtext statt Struktur**: XML-Tags helfen dem Modell, Prioritäten zu erkennen.
-4. **Redundanz**: Interior-Regeln werden IMMER angehängt (auch bei Exterior), bläht Prompt auf und verwässert Fokus.
-5. **Pipeline-Inkonsistenz**: Manche CI-Jobs erwähnen kein Logo/Showroom, was zum "Vergessen" führt.
+Unterhalb des Perspektiven-Grids in `ImageCaptureGrid` wird ein Multi-Upload-Bereich für zusätzliche Detailaufnahmen hinzugefügt (z.B. Felgen, Schäden, Logos, Motorraum). Diese Bilder werden als `additionalImages` an die Remaster-API gesendet, damit die KI sie als Referenz für bessere Ergebnisse nutzen kann.
 
 ## Änderungen
 
-### 1. `src/lib/remaster-prompt.ts` — Kompletter Rewrite von `buildMasterPrompt()`
+### 1. ImageCaptureGrid.tsx — Neuer Upload-Bereich + State
 
-Neuer modularer Aufbau in **Englisch** mit XML-Tags nach Gemini-Empfehlung:
+- Neuer State: `detailImages: string[]` (base64-Array, max 10 Bilder)
+- Neuer Drag&Drop/Click-Upload-Bereich zwischen den RemasterOptions und dem VIN-Display
+- Vorschau-Grid der hochgeladenen Detailbilder mit Entfernen-Button
+- Label: "Weitere Detailaufnahmen" mit Hinweis "Felgen, Schäden, Logos, Motorraum etc."
+- Bilder werden komprimiert (gleiche `compressImage`-Funktion)
 
-```text
-You are a top-tier professional automotive commercial photographer.
-TASK: Remaster the provided reference vehicle photo into a flawless, dealership-quality image.
+### 2. ImageCaptureGrid.tsx — Detailbilder an Remaster übergeben
 
-<CRITICAL_ASSET_INTEGRATION>        ← Logo ZUERST, höchste Priorität
-  [nur wenn Logo aktiviert]
-</CRITICAL_ASSET_INTEGRATION>
+- In `startRemastering()` und `retrySingleSlot()`: `additionalImages: detailImages` zum `invokeRemasterVehicleImage`-Payload hinzufügen
+- In `allCapturedBase64` / `allOriginalBase64` für die Pipeline ebenfalls übergeben
 
-<IDENTITY_LOCK>                     ← Fahrzeug-Identität schützen
-  Paint, Wheels, Lights, Grille, Body, Materials
-</IDENTITY_LOCK>
+### 3. PipelineRunner — additionalImages durchreichen
 
-<SCENE_AND_LIGHTING>                ← Szene/Showroom
-  [dynamisch je nach config.scene]
-</SCENE_AND_LIGHTING>
+- Neue optionale Prop `additionalImages?: string[]`
+- Wird an `invokeRemasterVehicleImage` in `generateOneImage` weitergereicht
 
-<LICENSE_PLATE>                     ← Kennzeichen-Handling
-</LICENSE_PLATE>
+### 4. Edge Function (remaster-vehicle-image)
 
-<INTERIOR_RULES>                    ← NUR bei Interior-Slots anhängen
-  [Composition, Zero Invention, Cleanup, Structural Integrity]
-</INTERIOR_RULES>
+- `additionalImages` wird bereits im Payload-Interface akzeptiert
+- Sicherstellen, dass die Bilder als Referenz-Inline-Images mit beschreibendem Text ("Zusätzliche Detailaufnahme des Fahrzeugs als Referenz") in den Gemini-Request eingefügt werden
 
-<STRICT_NEGATIVE_CONSTRAINTS>       ← Am Ende als Absicherung
-</STRICT_NEGATIVE_CONSTRAINTS>
-
-<CURRENT_PERSPECTIVE>               ← Dynamischer Perspektiv-Block
-  [je nach slotKey]
-</CURRENT_PERSPECTIVE>
-```
-
-Kernänderungen:
-- **Interior-Regeln nur bei Interior-Shots** (slotKey enthält "interior"), nicht bei Exterior
-- **Logo-Block steht ganz oben** — nicht mehr in der Mitte versteckt
-- **Komplett Englisch** — alle Gemini-Bildmodelle performen besser damit
-- **Kürzerer, fokussierter Prompt** — kein doppeltes Wiederholen derselben Regeln
-
-### 2. `src/lib/pipeline-jobs.ts` — Pipeline-Prompts modernisieren
-
-- `IDENTITY_LOCK` kürzen und fokussieren (aktuell ~60 Zeilen, Ziel ~30 Zeilen)
-- `INTERIOR_RULES` nur bei Interior-Jobs, nicht mehr als globaler Prefix
-- **Jeden Pipeline-Job als `<CURRENT_PIPELINE_SHOT>`-Block** strukturieren mit klaren Feldern:
-  - `SHOT_TYPE`, `CAMERA_ANGLE`, `FRAMING`, `FOCUS_ELEMENTS`, `ENVIRONMENT_INTERACTION`
-- **Logo-Referenz in JEDEM Job** explizit erwähnen: `"The provided company logo MUST be integrated on the background wall"`
-- CI-Jobs: `BRAND_ENVIRONMENT_OVERRIDE` Block der den generischen Showroom überschreibt
-- Perspektiv-Prompts nach Gemini-Empfehlung verschärfen (z.B. "mathematically centered", "perfectly circular steering wheel")
-
-### 3. `supabase/functions/remaster-vehicle-image/index.ts` — Edge Function anpassen
-
-- `DEFAULT_PROMPT` auf das neue englische XML-Format umstellen (Fallback wenn kein dynamicPrompt kommt)
-- Logo-Injection-Text kürzen und als `<LOGO_REFERENCE>` taggen
-- Interior-Detection: Wenn `dynamicPrompt` das Wort "interior" enthält, Interior-spezifische Anweisungen automatisch anhängen
-
-### 4. Perspektiv-Prompts verbessern (`PERSPECTIVE_PROMPTS` in remaster-prompt.ts)
-
-Aktuell Deutsch und vage. Neu in Englisch mit Gemini-empfohlener Präzision:
+## Technische Details
 
 ```text
-'34front': '<CURRENT_PERSPECTIVE>
-  SHOT_TYPE: Exterior - Front 3/4 Hero View
-  CAMERA_ANGLE: Eye-level, 30-45° left of center axis
-  FRAMING: Front fascia and one full side visible. Both wheels on visible side in frame.
-  ENVIRONMENT: Logo MUST be visible on background wall.
-</CURRENT_PERSPECTIVE>'
-
-'interior-front': '<CURRENT_PERSPECTIVE>
-  SHOT_TYPE: Interior - Rear Seat POV Looking Forward
-  CAMERA_ANGLE: From center of rear seat, looking at dashboard and windshield
-  STRUCTURAL: Complete roof, ALL A/B pillars, headliner, rearview mirror MUST be fully visible
-  FORBIDDEN: Do NOT crop roof, do NOT shoot from above without roof
-</CURRENT_PERSPECTIVE>'
+┌─────────────────────────────────────┐
+│  Perspektiven-Grid (6 Slots)        │
+├─────────────────────────────────────┤
+│  + Weitere Detailaufnahmen          │
+│  [img] [img] [img] [+ Upload]       │
+│  Drag & Drop oder klicken           │
+├─────────────────────────────────────┤
+│  Remaster-Optionen                  │
+├─────────────────────────────────────┤
+│  VIN / Progress / Actions           │
+└─────────────────────────────────────┘
 ```
 
-## Nicht geändert
+- Max 10 Detailbilder, je max 10MB
+- Gleiche Komprimierung wie Perspektiv-Bilder
+- Werden NICHT selbst remastert, sondern nur als Kontext/Referenz mitgesendet
+- Edge Function fügt sie als `inlineData`-Parts mit Label ein
+- Füge das in allen pipelines hinzu
 
-- Keine Änderungen an der technischen Pipeline-Logik (PipelineContext, ImageCaptureGrid)
-- Keine Änderungen am Logo-Caching (ensureLogoCachedAsPng bleibt)
-- Keine Änderungen an der Edge Function Retry/Fallback-Logik
+### Betroffene Dateien
 
-## Zusammenfassung der Verbesserungen
-
-| Vorher | Nachher |
-|--------|---------|
-| Deutsch + Fließtext | Englisch + XML-Tags |
-| Logo in der Mitte versteckt | Logo als erstes Element |
-| Interior-Regeln immer angehängt | Nur bei Interior-Shots |
-| Pipeline-Jobs ohne Logo-Referenz | Jeder Job referenziert Logo |
-| Vage Perspektiv-Beschreibungen | Strukturiert (SHOT_TYPE, ANGLE, FRAMING) |
-| ~3000 Wörter pro Prompt | ~1500 Wörter, fokussierter |
-
+- `src/components/ImageCaptureGrid.tsx` (Upload-UI + State + Payload)
+- `src/components/PipelineRunner.tsx` (neue Prop + Weiterleitung)
+- `supabase/functions/remaster-vehicle-image/index.ts` (Referenz-Bilder einfügen)
