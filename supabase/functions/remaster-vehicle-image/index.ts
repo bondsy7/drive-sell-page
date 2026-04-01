@@ -223,10 +223,24 @@ serve(async (req) => {
     // Build Gemini content parts
     const parts: any[] = [
       { text: prompt },
-      toInlineData(imageBase64),
     ];
-    // Add additional reference images
-    if (Array.isArray(additionalImages) && additionalImages.length > 0) {
+
+    // Main image: prefer file_data URI if available, otherwise inline_data
+    if (mainImageFileUri?.uri) {
+      parts.push({ file_data: { mime_type: mainImageFileUri.mimeType, file_uri: mainImageFileUri.uri } });
+      console.log(`[remaster] Main image via file_uri`);
+    } else {
+      parts.push(toInlineData(imageBase64));
+    }
+
+    // Additional reference images: prefer file URIs over base64
+    if (Array.isArray(additionalFileUris) && additionalFileUris.length > 0) {
+      parts.push({ text: "The following images are additional detail reference photos of the vehicle. Use them as reference to reproduce the vehicle with maximum accuracy:" });
+      for (const fu of additionalFileUris) {
+        parts.push({ file_data: { mime_type: fu.mimeType, file_uri: fu.uri } });
+      }
+      console.log(`[remaster] ${additionalFileUris.length} additional images via file_uri`);
+    } else if (Array.isArray(additionalImages) && additionalImages.length > 0) {
       parts.push({ text: "The following images are additional detail reference photos of the vehicle (e.g. wheels, damage, logos, engine bay). Use them as reference to reproduce the vehicle with maximum accuracy:" });
       for (const img of additionalImages.slice(0, 10)) {
         parts.push(toInlineData(img));
