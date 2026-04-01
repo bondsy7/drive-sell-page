@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import RemasterOptions from '@/components/RemasterOptions';
 import { type RemasterConfig, buildMasterPrompt, fetchPromptOverrides } from '@/lib/remaster-prompt';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
+import { compressImageForAI, fileToBase64 } from '@/lib/image-compress';
 
 interface ImageUploadRemasterProps {
   vehicleDescription: string;
