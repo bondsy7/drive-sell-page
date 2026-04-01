@@ -24,6 +24,8 @@ const BANNER_FORMATS = [
   { id: 'fb-ad', label: 'Facebook Ad', w: 1200, h: 628, ratio: '16:9' },
   { id: 'hero', label: 'Website Banner', w: 1920, h: 1080, ratio: '16:9' },
   { id: 'half-page', label: 'Google Half Page', w: 300, h: 600, ratio: '1:2' },
+  { id: 'billboard', label: 'Google Ads Billboard', w: 970, h: 250, ratio: '97:25' },
+  { id: 'wide-skyscraper', label: 'Google Ads Wide Skyscraper', w: 160, h: 600, ratio: '4:15' },
 ] as const;
 
 const OCCASIONS = [
