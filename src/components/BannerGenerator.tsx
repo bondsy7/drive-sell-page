@@ -604,7 +604,78 @@ ${showLogo && logoBase64 ? '- The provided logo MUST appear in the banner exactl
             placeholder={extractedData?.vehicleTitle || 'z.B. BMW M3 Competition'} className="h-9 text-sm" />
         </div>
 
-        {/* Format + Occasion Row */}
+        {/* ─── Logo Section ─── */}
+        <div className="space-y-3 p-3 rounded-lg border border-border/50 bg-muted/30">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Shield className="w-3.5 h-3.5 text-muted-foreground" />
+              <span className="text-xs font-semibold text-foreground">Logo einblenden</span>
+            </div>
+            <Switch checked={showLogo} onCheckedChange={setShowLogo} />
+          </div>
+
+          {showLogo && (
+            <div className="space-y-3">
+              <RadioGroup value={logoSource} onValueChange={(v) => setLogoSource(v as 'dealer' | 'manufacturer')} className="gap-2">
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="dealer" id="logo-dealer" />
+                  <Label htmlFor="logo-dealer" className="text-xs cursor-pointer flex items-center gap-1.5">
+                    <Building2 className="w-3.5 h-3.5" /> Eigenes Logo (aus Profil)
+                  </Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="manufacturer" id="logo-manufacturer" />
+                  <Label htmlFor="logo-manufacturer" className="text-xs cursor-pointer">
+                    🏭 Hersteller-Logo
+                  </Label>
+                </div>
+              </RadioGroup>
+
+              {logoSource === 'dealer' && (
+                <div>
+                  {dealerLogoUrl ? (
+                    <div className="flex items-center gap-2 bg-accent/10 rounded-lg px-3 py-2">
+                      <img src={dealerLogoUrl} alt="Dealer Logo" className="w-8 h-8 object-contain" />
+                      <span className="text-[11px] text-accent-foreground font-medium">Eigenes Logo wird verwendet</span>
+                    </div>
+                  ) : (
+                    <p className="text-[10px] text-muted-foreground">
+                      Kein Logo im Profil hinterlegt. Bitte zuerst unter „Profil" ein Logo hochladen.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {logoSource === 'manufacturer' && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium">Hersteller wählen</Label>
+                  <Select value={selectedLogoBrand} onValueChange={setSelectedLogoBrand}>
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="Marke auswählen" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {makes.map(m => (
+                        <SelectItem key={m.key} value={m.key}>{m.key}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {selectedLogoBrand && logoBase64 && (
+                    <div className="flex items-center gap-2 bg-accent/10 rounded-lg px-3 py-2">
+                      <img src={logoBase64} alt={selectedLogoBrand} className="w-8 h-8 object-contain" />
+                      <span className="text-[11px] text-accent-foreground font-medium">
+                        Logo für „{selectedLogoBrand}" wird verwendet
+                      </span>
+                    </div>
+                  )}
+                  {selectedLogoBrand && !logoBase64 && (
+                    <p className="text-[10px] text-destructive">Kein Logo für diese Marke gefunden.</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label className="text-xs font-medium">Format *</Label>
