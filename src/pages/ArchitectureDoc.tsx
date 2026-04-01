@@ -90,7 +90,7 @@ export default function ArchitectureDoc() {
           </div>
           <h1 className="text-4xl font-bold text-foreground mb-3 print:text-3xl">Autohaus.AI</h1>
           <p className="text-xl text-muted-foreground mb-2 print:text-lg">System- & Softwarearchitektur</p>
-          <p className="text-sm text-muted-foreground">Version 2.2 · Stand: 21. März 2026</p>
+          <p className="text-sm text-muted-foreground">Version 2.3 · Stand: 1. April 2026</p>
           <p className="text-sm text-muted-foreground">Für Entwickler-Onboarding & Kunden-Dokumentation</p>
           
           <div className="mt-12 print:mt-8">
@@ -161,7 +161,7 @@ export default function ArchitectureDoc() {
 │           SUPABASE (Backend-as-a-Service)        │
 │                via Lovable Cloud                 │
 │                                                 │
-│  28 Edge Funcs │ 32 DB-Tabellen │ 6 Buckets     │
+│  29 Edge Funcs │ 32 DB-Tabellen │ 6 Buckets     │
 │  3 Shared Module │ Auth (Email+OAuth) │ Realtime │
 └──────────────────┬──────────────────────────────┘
                    │
@@ -208,9 +208,12 @@ export default function ArchitectureDoc() {
             <Table
               headers={['Modell', 'Einsatz', 'API']}
               rows={[
-                ['Gemini 2.5 Flash', 'PDF-Analyse, VIN-OCR, Text, Sales-Chat, 360° Spin, Bildgenerierung', 'Gemini REST (direkt)'],
+                ['Gemini 2.5 Flash', 'PDF-Analyse, VIN-OCR, Text, Sales-Chat, 360° Spin', 'Gemini REST (direkt)'],
                 ['Gemini 2.5 Flash Lite', 'Equipment-Übersetzung, Subject-Generierung', 'Gemini REST (direkt)'],
-                ['OpenAI gpt-image-1', 'Bildgenerierung (Premium/Ultra)', 'OpenAI REST (direkt)'],
+                ['Gemini 2.5 Flash Image', 'Bildgenerierung (Schnell)', 'Gemini REST (direkt)'],
+                ['Gemini 3.1 Flash Image', 'Bildgenerierung (Qualität/Turbo)', 'Gemini REST (direkt)'],
+                ['Gemini 3 Pro Image', 'Bildgenerierung (Premium/Ultra)', 'Gemini REST (direkt)'],
+                ['OpenAI gpt-image-1', 'Bildgenerierung (Banner)', 'OpenAI REST (direkt)'],
                 ['Google Veo 3.1', 'Video-Generierung', 'Gemini REST (direkt)'],
               ]}
             />
@@ -274,7 +277,8 @@ export default function ArchitectureDoc() {
               rows={[
                 ['analyze-pdf', 'pdfBase64', 'VehicleData JSON', '1'],
                 ['generate-vehicle-image', 'imagePrompt(s), modelTier', 'Base64 Bild(er)', '3-10'],
-                ['remaster-vehicle-image', 'imageBase64, vehicleDesc, ...', 'Remastertes Bild', '3-10'],
+                ['remaster-vehicle-image', 'imageBase64, vehicleDesc, ...', 'Remastertes Bild', '2-7'],
+                ['upload-pipeline-images', 'images[]', 'fileUris[]', '0'],
                 ['generate-banner', 'prompt, imageBase64, size', 'Banner Bild', '5-10'],
                 ['generate-video', 'imageBase64 (start/poll)', 'Storage-URL Video', '10'],
                 ['generate-landing-page', 'brand, model, pageType', 'HTML + JSON + Bilder', '3'],
@@ -500,11 +504,11 @@ Grundsatz: Alle KI-Aufrufe nutzen bevorzugt eigene API-Keys.`}</CodeBlock>
             <Table
               headers={['Tier', 'Modell', 'Engine', 'EK/Bild', 'Credits']}
               rows={[
-                ['Schnell', 'gemini-2.5-flash-image', 'Gemini', '~$0.039', '3'],
-                ['Qualität', 'gemini-3.1-flash-image-preview', 'Gemini', '~$0.045–0.067', '5'],
-                ['Premium', 'gemini-3-pro-image-preview', 'Gemini', '~$0.134', '8'],
-                ['Turbo', 'gpt-image-1', 'OpenAI', '~$0.04–0.17', '6'],
-                ['Ultra', 'gpt-image-1 (HD)', 'OpenAI', '~$0.08–0.17', '10'],
+                ['Schnell', 'gemini-2.5-flash-image', 'Gemini', '~$0.039', '2'],
+                ['Qualität', 'gemini-3.1-flash-image-preview', 'Gemini', '~$0.045–0.067', '3'],
+                ['Premium', 'gemini-3-pro-image-preview', 'Gemini', '~$0.134', '5'],
+                ['Turbo', 'gemini-3.1-flash-image-preview', 'Gemini', '~$0.045–0.067', '4'],
+                ['Ultra', 'gemini-3-pro-image-preview', 'Gemini', '~$0.134', '7'],
               ]}
             />
           </SubSection>
@@ -535,11 +539,11 @@ Grundsatz: Alle KI-Aufrufe nutzen bevorzugt eigene API-Keys.`}</CodeBlock>
               rows={[
                 ['PDF-Analyse', '2'],
                 ['VIN-OCR', '1'],
-                ['Bildgenerierung (Schnell)', '3'],
-                ['Bildgenerierung (Qualität)', '5'],
-                ['Bildgenerierung (Turbo)', '6'],
-                ['Bildgenerierung (Premium)', '8'],
-                ['Bildgenerierung (Ultra)', '10'],
+                ['Bildgenerierung (Schnell)', '2'],
+                ['Bildgenerierung (Qualität)', '3'],
+                ['Bildgenerierung (Turbo)', '4'],
+                ['Bildgenerierung (Premium)', '5'],
+                ['Bildgenerierung (Ultra)', '7'],
                 ['Video (Veo Fast)', '10'],
                 ['Video (Veo Standard)', '15'],
                 ['Video (Veo Std + Audio)', '20'],
@@ -609,7 +613,7 @@ Grundsatz: Alle KI-Aufrufe nutzen bevorzugt eigene API-Keys.`}</CodeBlock>
                 ['Fotos & Remastering', 'Fotos aufnehmen/hochladen → KI-Remastering', 'Showroom-Bilder'],
                 ['PDF → Angebotsseite', 'PDF → KI-Analyse → Editor → Template → Export', 'HTML-Angebotsseite'],
                 ['Landing Page manuell', 'Marke+Modell+Typ → KI-Text+Bilder → Editor', 'SEO-Landing-Page'],
-                ['Banner Generator', 'Projekt/Bild → Prompt → KI-Banner', 'Social-Media-Banner'],
+                ['Banner Generator', 'Projekt/Bild → Prompt → KI-Banner (7 Formate parallel)', 'Social-Media-Banner'],
                 ['Video Erstellung', 'Bild → Veo 3.1 → Video', 'Showroom-Video'],
               ]}
             />
@@ -1061,7 +1065,7 @@ Edge Function → Resend API
             © 2026 Autohaus.AI – Dieses Dokument ist vertraulich und nur für autorisierte Empfänger bestimmt.
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            Version 2.2 · Generiert am {new Date().toLocaleDateString('de-DE')}
+            Version 2.3 · Generiert am {new Date().toLocaleDateString('de-DE')}
           </p>
         </div>
       </div>

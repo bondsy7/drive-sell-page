@@ -1,6 +1,6 @@
 # Autohaus.AI – System- & Softwarearchitektur
 
-> **Version:** 2.2 · **Stand:** 21. März 2026  
+> **Version:** 2.3 · **Stand:** 1. April 2026  
 > **Zielgruppe:** Anfänger, Entwickler-Onboarding, technische Stakeholder, Kunden-Dokumentation
 
 ---
@@ -69,7 +69,7 @@ Das System folgt einer **modularen Workflow-Architektur** mit einem zentralen Ac
 │                                                              │
 │  ┌──────────────┐ ┌──────────┐ ┌────────┐ ┌──────────────┐  │
 │  │ Edge Funcs   │ │ Database │ │Storage │ │    Auth       │  │
-│  │ (28 Funcs)   │ │ (32 Tab) │ │(6 Buck)│ │ Email+OAuth  │  │
+│  │ (29 Funcs)   │ │ (32 Tab) │ │(6 Buck)│ │ Email+OAuth  │  │
 │  └──────┬───────┘ └────┬─────┘ └───┬────┘ └──────────────┘  │
 └─────────┼──────────────┼───────────┼─────────────────────────┘
           │              │           │
@@ -133,7 +133,9 @@ Das System folgt einer **modularen Workflow-Architektur** mit einem zentralen Ac
 | `gemini-2.5-flash` | PDF-Analyse, VIN-OCR, Text-Generierung, Marken-Erkennung, Sales-Chat, 360° Spin | Gemini REST (direkt) |
 | `gemini-2.5-flash-lite` | Equipment-Übersetzung (VIN), Subject-Generierung | Gemini REST (direkt) |
 | `gemini-2.5-flash-image` | Bildgenerierung (Schnell-Tier) | Gemini REST (direkt) |
-| `openai/gpt-image-1` | Bildgenerierung (Premium/Ultra-Tier), Banner | OpenAI REST (direkt) |
+| `gemini-3.1-flash-image-preview` | Bildgenerierung (Qualität/Turbo-Tier) | Gemini REST (direkt) |
+| `gemini-3-pro-image-preview` | Bildgenerierung (Premium/Ultra-Tier) | Gemini REST (direkt) |
+| `openai/gpt-image-1` | Bildgenerierung (Banner) | OpenAI REST (direkt) |
 | `Google Veo 3.1` | Video-Generierung (asynchron) | Gemini REST (direkt) |
 
 ---
@@ -217,7 +219,7 @@ src/
 │   ├── ImageCaptureGrid.tsx       # Perspektiven-Raster für Fahrzeugfotos
 │   ├── ImageUploadRemaster.tsx    # Upload → Remaster Workflow
 │   ├── RemasterOptions.tsx        # Master-Prompt-UI (Szene, Kennzeichen, Logo)
-│   ├── PipelineRunner.tsx         # Batch-Bildgenerierung (Worker-Pool, 4 parallel)
+│   ├── PipelineRunner.tsx         # Batch-Bildgenerierung (Worker-Pool, 6 parallel)
 │   │
 │   ├── # 360° Spin
 │   ├── spin360/
@@ -234,7 +236,7 @@ src/
 │   ├── LandingPagePreview.tsx      # Vorschau-Rendering
 │   │
 │   ├── # Banner & Video
-│   ├── BannerGenerator.tsx         # Banner-Erstellung mit Prompt-Builder
+│   ├── BannerGenerator.tsx         # Banner-Erstellung mit Multi-Format-Generierung + Lightbox
 │   ├── VideoGenerator.tsx          # Video-Erstellung via Veo API
 │   │
 │   ├── # Sales Assistant
@@ -376,7 +378,7 @@ src/
 
 ## 4. Backend-Architektur (Edge Functions)
 
-Alle Backend-Logik läuft in **28 Supabase Edge Functions** (Deno-Runtime) + Shared-Module:
+Alle Backend-Logik läuft in **29 Supabase Edge Functions** (Deno-Runtime) + Shared-Module:
 
 ### 4.1 KI-Verarbeitungs-Functions
 
@@ -384,7 +386,8 @@ Alle Backend-Logik läuft in **28 Supabase Edge Functions** (Deno-Runtime) + Sha
 |---|---|---|---|---|
 | `analyze-pdf` | `{ pdfBase64 }` | Strukturiertes JSON (VehicleData) | 1 | Gemini 2.5 Flash |
 | `generate-vehicle-image` | `{ imagePrompt(s), modelTier }` | Base64 Bild(er) | 3-10 | Gemini Flash/Pro, OpenAI |
-| `remaster-vehicle-image` | `{ imageBase64, vehicleDescription, ... }` | Base64 remastertes Bild | 3-10 | Gemini 3 Pro/Flash Image |
+| `remaster-vehicle-image` | `{ imageBase64, vehicleDescription, ... }` | Base64 remastertes Bild | 2-7 | Gemini Flash/Pro Image (Fallback-Chain) |
+| `upload-pipeline-images` | `{ images[] }` | `{ fileUris[] }` | 0 | – (Gemini File API Upload) |
 | `generate-banner` | `{ prompt, imageBase64?, modelTier, width, height }` | Base64 Banner | 5-10 | Gemini/OpenAI |
 | `generate-video` | `{ imageBase64, prompt }` (start/poll) | Storage-URL Video | 10 | Google Veo 3.1 |
 | `generate-landing-page` | `{ brand, model, pageType, dealer }` | HTML + JSON + Bilder | 3 | Gemini 2.5 Flash + Image |
@@ -429,6 +432,9 @@ Alle Backend-Logik läuft in **28 Supabase Edge Functions** (Deno-Runtime) + Sha
 | Modul | Datei | Zweck |
 |---|---|---|
 | `getSecret()` | `_shared/get-secret.ts` | Liest API-Keys aus `admin_secrets` DB-Tabelle, Fallback auf `Deno.env`. 5-Minuten-Cache. |
+| `authenticateRequest()` | `_shared/auth.ts` | Auth-Token validieren, User + Admin-Client zurückgeben |
+| `handleCors()` | `_shared/cors.ts` | CORS-Header + OPTIONS Preflight + JSON-Response-Helfer |
+| `deductCredits()` | `_shared/credits.ts` | Credit-Deduction via RPC mit Fehlerbehandlung |
 
 ```typescript
 // Verwendung in Edge Functions:
@@ -755,11 +761,11 @@ Format:    systemInstruction + contents (Gemini-natives Format)
 
 | Tier | Modell | Engine | Credits | EK/Bild (ca.) | Einsatz |
 |---|---|---|---|---|---|
-| `schnell` | `gemini-2.5-flash-image` | Gemini | 3 | ~$0.039 (~0,036 €) | Schnelle Vorschau, Prototyping |
-| `qualitaet` | `gemini-3.1-flash-image-preview` | Gemini | 5 | ~$0.045–0.067 (~0,042–0,062 €) | Standard-Qualität, Remastering |
-| `turbo` | `gemini-3.1-flash-image-preview` | Gemini | 6 | ~$0.045–0.067 (~0,042–0,062 €) | Schnell + gute Qualität |
-| `premium` | `gemini-3-pro-image-preview` | Gemini | 8 | ~$0.134 (~0,124 €) | Premium-Qualität |
-| `ultra` | `gpt-image-1` (HD, quality: high) | OpenAI | 10 | ~$0.08–0.17 (~0,08–0,16 €) | Höchste Qualität |
+| `schnell` | `gemini-2.5-flash-image` | Gemini | 2 | ~$0.039 (~0,036 €) | Schnelle Vorschau, Prototyping |
+| `qualitaet` | `gemini-3.1-flash-image-preview` | Gemini | 3 | ~$0.045–0.067 (~0,042–0,062 €) | Standard-Qualität, Remastering |
+| `turbo` | `gemini-3.1-flash-image-preview` | Gemini | 4 | ~$0.045–0.067 (~0,042–0,062 €) | Schnell + gute Qualität |
+| `premium` | `gemini-3-pro-image-preview` | Gemini | 5 | ~$0.134 (~0,124 €) | Premium-Qualität |
+| `ultra` | `gemini-3-pro-image-preview` | Gemini | 7 | ~$0.134 (~0,124 €) | Höchste Qualität |
 
 **Preisquellen (Stand März 2026):**
 - gemini-2.5-flash-image: $30/1M Output-Tokens, ~1.290 Tokens/Bild (1024px) → **$0.039/Bild**
@@ -789,7 +795,10 @@ Zusammengesetzter Prompt-String → Edge Function → KI-API
 - Interieur-Aufnahmen: Strikte Perspektive-Beibehaltung (kein Drehen/Spiegeln)
 - Originale Roh-Uploads als primäre Referenz
 - Logo-Rendering: Fotorealistisches 3D auf dunkelgrauer, matter Wand mit LED-Halo
-- Pipeline-Runner: Worker-Pool mit **4 parallelen Instanzen** (CONCURRENCY = 4)
+- Pipeline-Runner: Worker-Pool mit **6 parallelen Instanzen** (CONCURRENCY = 6)
+- Gemini File API: Bilder werden einmalig via `upload-pipeline-images` hochgeladen; Folgejobs referenzieren via `file_uri` (massiver Payload-Gewinn)
+- Prompt-Architektur: Globale Regeln (Identity Lock, Scale Lock) nur zentral in `buildMasterPrompt`; `pipeline-jobs.ts` enthält nur perspektiv-spezifische Instruktionen
+- Fallback-Prompts: Edge Function baut dynamisch aus Admin-überschreibbaren Modulblöcken (remaster_base_instruction, remaster_identity_lock, etc.)
 
 ### 7.4 Video-Generierung
 
@@ -844,12 +853,12 @@ Bild-Upload → detect-vehicle-brand (Edge Function)
 | VIN-OCR | 1 | Pro Bild |
 | Marken-Erkennung | 0 | Kostenlos |
 | VIN-Lookup | 0 | Kostenlos (OutVin API-Kosten intern) |
-| Bildgenerierung (Schnell) | 3 | Pro Bild |
-| Bildgenerierung (Qualität) | 5 | Pro Bild |
-| Bildgenerierung (Turbo) | 6 | Pro Bild |
-| Bildgenerierung (Premium) | 8 | Pro Bild |
-| Bildgenerierung (Ultra) | 10 | Pro Bild |
-| Bild-Remastering | 3-10 | Abhängig vom gewählten Tier |
+| Bildgenerierung (Schnell) | 2 | Pro Bild |
+| Bildgenerierung (Qualität) | 3 | Pro Bild |
+| Bildgenerierung (Turbo) | 4 | Pro Bild |
+| Bildgenerierung (Premium) | 5 | Pro Bild |
+| Bildgenerierung (Ultra) | 7 | Pro Bild |
+| Bild-Remastering | 2-7 | Abhängig vom gewählten Tier |
 | Video-Generierung | 10 | Pro Video |
 | Landing Page | 3 | Text + Bilder |
 | 360° Spin | 10-20 | 36 Frames (abhängig von Batch-Größe) |
@@ -1050,7 +1059,7 @@ stripe-webhook empfängt Event
 | 1 | **Fotos & Remastering** | Fotos aufnehmen/hochladen → Perspektiven-Grid → KI-Remastering → Pipeline | Showroom-Bilder (Storage) |
 | 2 | **PDF → Angebotsseite** | PDF hochladen → KI-Analyse → Daten-Editor → Template wählen → Export | HTML-Angebotsseite |
 | 3 | **Landing Page manuell** | Marke+Modell+Typ → KI generiert Text+Bilder → Editor → Export | SEO-Landing-Page |
-| 4 | **Banner Generator** | Projekt wählen/Bild hochladen → Prompt bauen → KI rendert Banner | Social-Media-Banner |
+| 4 | **Banner Generator** | Projekt wählen/Bild hochladen → Prompt bauen → KI rendert Banner (Multi-Format parallel, Lightbox) | Social-Media-Banner (7 Formate) |
 | 5 | **Video Erstellung** | Bild hochladen → KI-Video generieren (Veo 3.1) | Showroom-Video |
 | 6 | **KI Verkaufsassistent** | Lead wählen → Kontext eingeben → KI generiert Antwort | E-Mail/WhatsApp-Antwort |
 
@@ -1774,7 +1783,8 @@ VITE_SUPABASE_PROJECT_ID=rauzclzphdnhzflovrya
 |---|---|---|
 | `analyze-pdf/index.ts` | ~417 | PDF-Analyse, JSON-Extraktion, CO₂-Post-Processing |
 | `generate-vehicle-image/index.ts` | ~230 | Multi-Engine Bildgenerierung (Gemini/OpenAI) |
-| `remaster-vehicle-image/index.ts` | ~204 | Master-Prompt Remastering mit bis zu 4 Referenzbildern |
+| `remaster-vehicle-image/index.ts` | ~441 | Master-Prompt Remastering mit Referenzbildern, Logos, Showroom, Kennzeichen, Fallback-Chain |
+| `upload-pipeline-images/index.ts` | ~120 | Gemini File API Upload für Pipeline-Payload-Optimierung |
 | `generate-banner/index.ts` | ~243 | Banner-Rendering (Gemini/OpenAI, beliebige Formate) |
 | `generate-video/index.ts` | ~231 | Async Video (Veo 3.1, Start/Poll-Pattern) |
 | `generate-landing-page/index.ts` | ~626 | Dual-Prompt Landing Page (Text-JSON → Bilder → HTML) |
@@ -1803,6 +1813,18 @@ VITE_SUPABASE_PROJECT_ID=rauzclzphdnhzflovrya
 
 ---
 
+### Changelog v2.3 (1. April 2026)
+
+- **Pipeline-Concurrency**: Worker-Pool von 4 auf **6 parallele Instanzen** erhöht
+- **Gemini File API**: Neue Edge Function `upload-pipeline-images` – Bilder werden einmalig hochgeladen, Folgejobs nutzen `file_uri` statt Base64 (massiver Payload-Gewinn: ~156 MB → ~2 MB bei 13 Jobs)
+- **Prompt-Architektur bereinigt**: Redundante globale Regeln (Identity Lock, Scale Lock) nur noch zentral in `buildMasterPrompt`; `pipeline-jobs.ts` enthält nur perspektiv-spezifische Instruktionen
+- **Admin-Prompts bereinigt**: Veralteter `image_remaster` Default-Prompt aus Admin UI entfernt; Edge Function Fallback baut dynamisch aus modularen Admin-Blöcken (remaster_base_instruction, remaster_identity_lock, etc.)
+- **Remaster-Modell-Tiers aktualisiert**: `gemini-3.1-flash-image-preview` (Qualität/Turbo), `gemini-3-pro-image-preview` (Premium/Ultra) mit Fallback-Chain
+- **Credit-Kosten angepasst**: Schnell 2, Qualität 3, Turbo 4, Premium 5, Ultra 7
+- **Banner Generator**: Multi-Format-Generierung (7 Formate parallel, Concurrency 4), Ergebnis-Grid unterhalb des Formulars mit Lightbox-Navigation
+- **Bildkompression**: Clientseitige Kompression via `compressImageForAI` (max. 1024px, WebP 80%) vor Upload (~100-200KB pro Bild)
+- **Smart Routing**: Nur kategorie-relevante Referenzbilder pro Job (Interior: 0, Detail: Alle, Exterior/Hero: max. 5)
+
 ### Changelog v2.2 (21. März 2026)
 
 - **API-Migration**: Alle 4 Edge Functions (sales-chat, auto-process-lead, lookup-vin, generate-360-spin) vom Lovable AI Gateway auf direkte Google Gemini REST API mit eigenem `GEMINI_API_KEY` migriert
@@ -1820,4 +1842,4 @@ VITE_SUPABASE_PROJECT_ID=rauzclzphdnhzflovrya
 
 ---
 
-*© 2026 Autohaus.AI – Version 2.2 – Dieses Dokument ist vertraulich und nur für autorisierte Empfänger bestimmt.*
+*© 2026 Autohaus.AI – Version 2.3 – Dieses Dokument ist vertraulich und nur für autorisierte Empfänger bestimmt.*
