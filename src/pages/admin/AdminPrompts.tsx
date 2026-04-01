@@ -559,6 +559,8 @@ const CATEGORIES = Array.from(new Set(Object.values(PROMPT_META).map(m => m.cate
 const CATEGORY_ORDER = [
   'PDF & Analyse',
   'Bild-Verarbeitung',
+  'Remastering – Bausteine',
+  'Remastering – Szenen',
   'Video',
   '360° Spin',
   'Landing Page',
