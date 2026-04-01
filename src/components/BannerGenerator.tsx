@@ -410,6 +410,7 @@ ${showLogo && logoBase64 ? '- The provided logo MUST appear in the banner exactl
           body: {
             prompt: variantPrompt,
             imageBase64: vehicleImage,
+            logoBase64: showLogo && logoBase64 ? logoBase64 : undefined,
             modelTier,
             width: fmt.w,
             height: fmt.h,
