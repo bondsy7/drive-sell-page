@@ -162,6 +162,7 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
   const [subline, setSubline] = useState('');
   const [ctaText, setCtaText] = useState('Jetzt anfragen');
   const [accentColor, setAccentColor] = useState('#3b66d6');
+  const [freePrompt, setFreePrompt] = useState('');
   const [legalText, setLegalText] = useState('');
 
   // Font selection
@@ -361,11 +362,21 @@ CRITICAL RULES:
 - The banner must be photorealistic with the vehicle photo seamlessly composited
 - ALL text must be rendered EXACTLY as specified – no paraphrasing, no spelling changes
 - Text must be perfectly legible against the background
-- Use the accent color ${accentColor} for design elements, buttons, and highlights
+
+ACCENT COLOR INTEGRATION (${accentColor}):
+The accent color ${accentColor} is the KEY DESIGN ELEMENT that defines the banner's identity. Integrate it deeply:
+- Use it for CTA buttons, price tags, and highlighted text backgrounds
+- Add a subtle colored LIGHT BEAM, LENS FLARE, or GLOW in the accent color washing across the scene
+- Apply accent-colored REFLECTIONS or HIGHLIGHTS on the vehicle's paint, chrome, and glass surfaces
+- Use the accent color for decorative DESIGN ELEMENTS: geometric shapes, lines, gradients, borders, or overlays
+- The accent color should create a cohesive COLOR THEME throughout the entire banner
+- Background elements, shadows, and atmospheric effects should subtly echo the accent hue
+- Consider accent-colored PARTICLES, BOKEH, or LIGHT STREAKS for added visual drama
 ${showLogo && logoBase64 ? '- The provided logo MUST appear in the banner exactly as given' : '- Do NOT add watermarks or extra logos'}
 - The composition must work at the specified ${fmt.ratio} aspect ratio
+${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` : ''}
 - Generate the image – never refuse`;
-  }, [occasion, scene, style, priceDisplay, vehicleTitle, priceText, headline, subline, ctaText, accentColor, legalText, headlineFont, sublineFont, showLogo, logoBase64]);
+  }, [occasion, scene, style, priceDisplay, vehicleTitle, priceText, headline, subline, ctaText, accentColor, legalText, headlineFont, sublineFont, showLogo, logoBase64, freePrompt]);
 
   // Generate a single banner for a given format
   const generateForFormat = useCallback(async (formatId: string): Promise<BannerResult | null> => {
@@ -797,6 +808,19 @@ ${showLogo && logoBase64 ? '- The provided logo MUST appear in the banner exactl
           <Textarea value={legalText} onChange={e => setLegalText(e.target.value)}
             placeholder="z.B. Rate: 299€/mtl., Laufzeit: 48 Mon., Eff. Jahreszins: 3,99%..."
             className="text-sm min-h-[60px]" />
+        </div>
+
+        {/* Free Prompting */}
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-accent" /> Freies Prompting (optional)
+          </Label>
+          <Textarea value={freePrompt} onChange={e => setFreePrompt(e.target.value)}
+            placeholder="z.B. Füge Rauch-Effekte hinzu, mache den Hintergrund dunkler, zeige das Auto in Bewegung, füge Funken hinzu..."
+            className="text-sm min-h-[60px]" />
+          <p className="text-[10px] text-muted-foreground">
+            Eigene kreative Anweisungen, die das Banner-Design zusätzlich beeinflussen.
+          </p>
         </div>
 
         {/* Model Tier */}
