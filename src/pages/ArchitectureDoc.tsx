@@ -277,7 +277,8 @@ export default function ArchitectureDoc() {
               rows={[
                 ['analyze-pdf', 'pdfBase64', 'VehicleData JSON', '1'],
                 ['generate-vehicle-image', 'imagePrompt(s), modelTier', 'Base64 Bild(er)', '3-10'],
-                ['remaster-vehicle-image', 'imageBase64, vehicleDesc, ...', 'Remastertes Bild', '3-10'],
+                ['remaster-vehicle-image', 'imageBase64, vehicleDesc, ...', 'Remastertes Bild', '2-7'],
+                ['upload-pipeline-images', 'images[]', 'fileUris[]', '0'],
                 ['generate-banner', 'prompt, imageBase64, size', 'Banner Bild', '5-10'],
                 ['generate-video', 'imageBase64 (start/poll)', 'Storage-URL Video', '10'],
                 ['generate-landing-page', 'brand, model, pageType', 'HTML + JSON + Bilder', '3'],
