@@ -326,11 +326,11 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
     reader.onload = () => {
       const result = reader.result as string;
       setVehicleImage(result);
-      // Auto-analyze the uploaded image
-      analyzeOfferImage(result);
+      // Only auto-analyze if user enabled it
+      if (autoAnalyze) analyzeOfferImage(result);
     };
     reader.readAsDataURL(file);
-  }, [analyzeOfferImage]);
+  }, [analyzeOfferImage, autoAnalyze]);
 
   // Build the structured prompt
   const buildPrompt = useCallback(() => {
