@@ -793,7 +793,10 @@ Zusammengesetzter Prompt-String → Edge Function → KI-API
 - Interieur-Aufnahmen: Strikte Perspektive-Beibehaltung (kein Drehen/Spiegeln)
 - Originale Roh-Uploads als primäre Referenz
 - Logo-Rendering: Fotorealistisches 3D auf dunkelgrauer, matter Wand mit LED-Halo
-- Pipeline-Runner: Worker-Pool mit **4 parallelen Instanzen** (CONCURRENCY = 4)
+- Pipeline-Runner: Worker-Pool mit **6 parallelen Instanzen** (CONCURRENCY = 6)
+- Gemini File API: Bilder werden einmalig via `upload-pipeline-images` hochgeladen; Folgejobs referenzieren via `file_uri` (massiver Payload-Gewinn)
+- Prompt-Architektur: Globale Regeln (Identity Lock, Scale Lock) nur zentral in `buildMasterPrompt`; `pipeline-jobs.ts` enthält nur perspektiv-spezifische Instruktionen
+- Fallback-Prompts: Edge Function baut dynamisch aus Admin-überschreibbaren Modulblöcken (remaster_base_instruction, remaster_identity_lock, etc.)
 
 ### 7.4 Video-Generierung
 
