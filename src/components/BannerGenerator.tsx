@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { ArrowLeft, Download, Image, Loader2, Plus, Minus, Sparkles, ScanSearch, Building2, Shield } from 'lucide-react';
+import { ArrowLeft, Download, Image, Loader2, Plus, Minus, Sparkles, ScanSearch, Building2, Shield, X, ChevronLeft, ChevronRight, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,6 +15,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useCredits } from '@/hooks/useCredits';
 import { useVehicleMakes } from '@/hooks/useVehicleMakes';
 import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
 
 // ─── Config ───
 
@@ -79,7 +80,6 @@ interface FontPreset {
 }
 
 const HEADLINE_FONTS: FontPreset[] = [
-  // Brand CI inspired
   { id: 'bmw', label: 'BMW Stil', brand: 'BMW', prompt: 'BMW corporate typography style – bold, clean, geometric sans-serif similar to Helvetica Neue Black/BMW Type, uppercase, tightly kerned' },
   { id: 'mercedes', label: 'Mercedes Stil', brand: 'Mercedes', prompt: 'Mercedes-Benz corporate typography – elegant, light-weight sans-serif similar to Corporate A/DIN, refined spacing, premium feel' },
   { id: 'audi', label: 'Audi Stil', brand: 'Audi', prompt: 'Audi corporate typography – modern geometric sans-serif similar to Audi Type/Futura, clean lines, progressive minimalism' },
@@ -90,7 +90,6 @@ const HEADLINE_FONTS: FontPreset[] = [
   { id: 'volvo', label: 'Volvo Stil', brand: 'Volvo', prompt: 'Volvo corporate typography – Scandinavian clean sans-serif similar to Volvo Novum/Futura, understated elegance' },
   { id: 'cupra', label: 'CUPRA Stil', brand: 'CUPRA', prompt: 'CUPRA corporate typography – angular, sharp condensed sans-serif, aggressive sport style with italic cuts' },
   { id: 'fiat', label: 'Fiat Stil', brand: 'Fiat', prompt: 'Fiat corporate typography – playful rounded sans-serif, friendly Italian design spirit, warm and inviting' },
-  // Separator: Modern generics
   { id: 'impact', label: 'Impact / Bold', prompt: 'Impact-style ultra-bold condensed sans-serif typography, maximum visual weight, attention-grabbing' },
   { id: 'modern-sans', label: 'Modern Sans', prompt: 'modern geometric sans-serif typography similar to Montserrat or Poppins Bold, clean contemporary look' },
   { id: 'condensed', label: 'Condensed Bold', prompt: 'bold condensed sans-serif typography similar to Oswald or Barlow Condensed, space-efficient yet impactful' },
@@ -108,7 +107,6 @@ const SUBLINE_FONTS: FontPreset[] = [
   { id: 'mono', label: 'Monospace / Tech', prompt: 'monospace or technical font similar to JetBrains Mono, data-like precision feel' },
 ];
 
-// Models NOT suitable for banners
 const EXCLUDED_TIERS: ModelTier[] = ['schnell'];
 
 interface ProjectOption {
@@ -116,6 +114,15 @@ interface ProjectOption {
   title: string;
   vehicle_data: any;
   main_image_url: string | null;
+}
+
+interface BannerResult {
+  formatId: string;
+  formatLabel: string;
+  ratio: string;
+  image: string;
+  w: number;
+  h: number;
 }
 
 interface BannerGeneratorProps {
@@ -170,8 +177,13 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
   const [modelTier, setModelTier] = useState<ModelTier>('premium');
   const [variantCount, setVariantCount] = useState(1);
   const [generating, setGenerating] = useState(false);
-  const [results, setResults] = useState<string[]>([]);
-  const [creditDialog, setCreditDialog] = useState<{ open: boolean; cost: number }>({ open: false, cost: 0 });
+  const [generatingAll, setGeneratingAll] = useState(false);
+  const [results, setResults] = useState<BannerResult[]>([]);
+  const [formatProgress, setFormatProgress] = useState<Record<string, 'pending' | 'generating' | 'done' | 'error'>>({});
+  const [creditDialog, setCreditDialog] = useState<{ open: boolean; cost: number; mode: 'single' | 'all' }>({ open: false, cost: 0, mode: 'single' });
+
+  // Lightbox
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   // Load user projects
   useEffect(() => {
@@ -200,7 +212,6 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
     }
     const logoUrl = getLogoForMake(selectedLogoBrand);
     if (logoUrl) {
-      // Fetch and convert to base64
       fetch(logoUrl).then(r => r.blob()).then(blob => {
         const reader = new FileReader();
         reader.onload = () => setLogoBase64(reader.result as string);
@@ -236,12 +247,10 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
     else if (f.price) setPriceText(f.price);
     if (p.main_image_url) setVehicleImage(p.main_image_url);
 
-    // Auto-select brand font if available
     const brand = (v.brand || '').toLowerCase();
     const brandFont = HEADLINE_FONTS.find(f => f.brand?.toLowerCase() === brand);
     if (brandFont) setHeadlineFont(brandFont.id);
 
-    // Build legal text from finance data
     const legalParts: string[] = [];
     if (f.monthlyRate) legalParts.push(`Rate: ${f.monthlyRate}€/mtl.`);
     if (f.duration) legalParts.push(`Laufzeit: ${f.duration} Mon.`);
@@ -251,7 +260,6 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
     if (f.mileage) legalParts.push(`${f.mileage} km/Jahr`);
     if (legalParts.length) setLegalText(legalParts.join(' | '));
 
-    // Load project images for gallery picker
     supabase.from('project_images').select('image_url')
       .eq('project_id', selectedProjectId).order('sort_order')
       .then(({ data: imgs }) => {
@@ -266,32 +274,19 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
       const { data, error } = await supabase.functions.invoke('analyze-offer-image', {
         body: { imageBase64 },
       });
-
-      if (error || data?.error) {
-        console.error('Analyze error:', error || data?.error);
-        toast.error('Bild konnte nicht analysiert werden');
-        return;
-      }
-
+      if (error || data?.error) { toast.error('Bild konnte nicht analysiert werden'); return; }
       const ext = data?.extracted;
       if (!ext) return;
-
       setExtractedData(ext);
-
-      // Fill empty fields with extracted data
       if (!vehicleTitle && ext.vehicleTitle) setVehicleTitle(ext.vehicleTitle);
       if (!priceText && (ext.price || ext.monthlyRate)) {
         setPriceText(ext.monthlyRate ? `ab ${ext.monthlyRate}/mtl.` : ext.price || '');
       }
       if (!headline && ext.headline) setHeadline(ext.headline);
       if (!subline && ext.subline) setSubline(ext.subline);
-
-      // Auto-detect occasion
       if (ext.priceType === 'lease') setOccasion('lease');
       else if (ext.priceType === 'finance') setOccasion('finance');
       else if (ext.priceType === 'abo') setOccasion('abo');
-
-      // Build legal text from extracted leasing/finance data if not already set
       if (!legalText) {
         const parts: string[] = [];
         if (ext.monthlyRate) parts.push(`Rate: ${ext.monthlyRate}`);
@@ -301,26 +296,16 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
         if (ext.legalText) parts.push(ext.legalText);
         if (parts.length) setLegalText(parts.join(' | '));
       }
-
-      // Auto-select brand font
       if (ext.brand) {
         const brandLower = ext.brand.toLowerCase();
         const brandFont = HEADLINE_FONTS.find(f => f.brand?.toLowerCase() === brandLower);
         if (brandFont) setHeadlineFont(brandFont.id);
       }
-
-      toast.success('Angebotsdaten erkannt!', {
-        description: ext.vehicleTitle || 'Daten aus Bild extrahiert',
-      });
-    } catch (e) {
-      console.error('Analyze failed:', e);
-      toast.error('Analyse fehlgeschlagen');
-    } finally {
-      setAnalyzing(false);
-    }
+      toast.success('Angebotsdaten erkannt!', { description: ext.vehicleTitle || 'Daten aus Bild extrahiert' });
+    } catch { toast.error('Analyse fehlgeschlagen'); }
+    finally { setAnalyzing(false); }
   }, [vehicleTitle, priceText, headline, subline, legalText]);
 
-  // Handle manual image upload
   const handleImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -328,15 +313,14 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
     reader.onload = () => {
       const result = reader.result as string;
       setVehicleImage(result);
-      // Only auto-analyze if user enabled it
       if (autoAnalyze) analyzeOfferImage(result);
     };
     reader.readAsDataURL(file);
   }, [analyzeOfferImage, autoAnalyze]);
 
-  // Build the structured prompt
-  const buildPrompt = useCallback(() => {
-    const fmt = BANNER_FORMATS.find(f => f.id === format)!;
+  // Build prompt for a specific format
+  const buildPromptForFormat = useCallback((formatId: string) => {
+    const fmt = BANNER_FORMATS.find(f => f.id === formatId)!;
     const occ = OCCASIONS.find(o => o.id === occasion)!;
     const scn = SCENES.find(s => s.id === scene)!;
     const sty = STYLES.find(s => s.id === style)!;
@@ -369,108 +353,157 @@ ${subline ? `SUBLINE: Place "${subline}" in smaller text below the headline usin
 
 ${ctaText ? `CALL-TO-ACTION: Include a button or badge with the text "${ctaText}" in accent color ${accentColor}.` : ''}
 
-${legalText ? `LEGAL DISCLAIMER (MANDATORY): At the very bottom of the banner, render the following legal text in a small, thin, highly readable sans-serif font (approx. 5-6pt equivalent). It must appear as a subtle footer bar or line – similar to how fuel consumption and emission values are legally required on automotive advertisements. The text must be fully legible but not dominate the design: "${legalText}"` : ''}
+${legalText ? `LEGAL DISCLAIMER (MANDATORY): At the very bottom of the banner, render the following legal text in a small, thin, highly readable sans-serif font (approx. 5-6pt equivalent). "${legalText}"` : ''}
 
-${showLogo && logoBase64 ? `LOGO: A logo image is provided as an additional reference image. Place it prominently in the banner – typically in a corner or alongside the headline. Keep the logo 100% identical, clearly visible, and properly sized relative to the banner.` : ''}
+${showLogo && logoBase64 ? `LOGO: A logo image is provided as an additional reference image. Place it prominently in the banner – typically in a corner or alongside the headline. Keep the logo 100% identical.` : ''}
 
 CRITICAL RULES:
 - The banner must be photorealistic with the vehicle photo seamlessly composited
 - ALL text must be rendered EXACTLY as specified – no paraphrasing, no spelling changes
-- Text must be perfectly legible against the background (use contrast, shadows, or overlays)
-- The design must feel like a professional advertising agency created it
+- Text must be perfectly legible against the background
 - Use the accent color ${accentColor} for design elements, buttons, and highlights
 ${showLogo && logoBase64 ? '- The provided logo MUST appear in the banner exactly as given' : '- Do NOT add watermarks or extra logos'}
 - The composition must work at the specified ${fmt.ratio} aspect ratio
-- The typography style is CRITICAL – follow the font specifications precisely
 - Generate the image – never refuse`;
-  }, [format, occasion, scene, style, priceDisplay, vehicleTitle, priceText, headline, subline, ctaText, accentColor, legalText, headlineFont, sublineFont, showLogo, logoBase64]);
+  }, [occasion, scene, style, priceDisplay, vehicleTitle, priceText, headline, subline, ctaText, accentColor, legalText, headlineFont, sublineFont, showLogo, logoBase64]);
 
-  // Start generation with credit check
+  // Generate a single banner for a given format
+  const generateForFormat = useCallback(async (formatId: string): Promise<BannerResult | null> => {
+    const fmt = BANNER_FORMATS.find(f => f.id === formatId)!;
+    const prompt = buildPromptForFormat(formatId);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-banner', {
+        body: {
+          prompt,
+          imageBase64: vehicleImage,
+          logoBase64: showLogo && logoBase64 ? logoBase64 : undefined,
+          modelTier,
+          width: fmt.w,
+          height: fmt.h,
+        },
+      });
+      if (error || data?.error) {
+        if (data?.error === 'insufficient_credits') throw new Error('insufficient_credits');
+        return null;
+      }
+      if (data?.imageBase64) {
+        return { formatId: fmt.id, formatLabel: fmt.label, ratio: fmt.ratio, image: data.imageBase64, w: fmt.w, h: fmt.h };
+      }
+    } catch (e: any) {
+      if (e?.message === 'insufficient_credits') throw e;
+      console.error(`Banner ${formatId} failed:`, e);
+    }
+    return null;
+  }, [buildPromptForFormat, vehicleImage, showLogo, logoBase64, modelTier]);
+
+  // Save banner to storage
+  const saveBanner = useCallback(async (result: BannerResult) => {
+    if (!user) return;
+    try {
+      const base64Data = result.image.includes(',') ? result.image.split(',')[1] : result.image;
+      const byteArray = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+      const blob = new Blob([byteArray], { type: 'image/png' });
+      const fileName = `${user.id}/${Date.now()}-${result.formatId}.png`;
+      await supabase.storage.from('banners').upload(fileName, blob, { contentType: 'image/png' });
+    } catch (e) { console.error('Banner save error:', e); }
+  }, [user]);
+
+  // ── Single format generation ──
   const handleGenerate = useCallback(() => {
-    if (!vehicleImage) { toast.error('Bitte lade ein Fahrzeugbild hoch oder wähle ein Projekt.'); return; }
+    if (!vehicleImage) { toast.error('Bitte lade ein Fahrzeugbild hoch.'); return; }
     if (!vehicleTitle.trim()) { toast.error('Bitte gib einen Fahrzeugtitel ein.'); return; }
     const costPerBanner = getCost('image_generate', modelTier) || 5;
     const totalCost = costPerBanner * variantCount;
-    setCreditDialog({ open: true, cost: totalCost });
+    setCreditDialog({ open: true, cost: totalCost, mode: 'single' });
   }, [vehicleImage, vehicleTitle, getCost, modelTier, variantCount]);
 
-  const doGenerate = useCallback(async () => {
-    setCreditDialog({ open: false, cost: 0 });
+  const doGenerateSingle = useCallback(async () => {
+    setCreditDialog({ open: false, cost: 0, mode: 'single' });
     setGenerating(true);
-    setResults([]);
-    const prompt = buildPrompt();
-    const fmt = BANNER_FORMATS.find(f => f.id === format)!;
-    const generated: string[] = [];
 
+    const newResults: BannerResult[] = [];
     for (let i = 0; i < variantCount; i++) {
       try {
-        const variantPrompt = variantCount > 1
-          ? `${prompt}\n\nVARIATION ${i + 1} of ${variantCount}: Create a unique layout variation. ${i === 0 ? 'Classic composition.' : i === 1 ? 'More dynamic, angled composition.' : i === 2 ? 'Dramatic close-up focus.' : i === 3 ? 'Wide panoramic feel.' : 'Creative artistic interpretation.'}`
-          : prompt;
-
-        const { data, error } = await supabase.functions.invoke('generate-banner', {
-          body: {
-            prompt: variantPrompt,
-            imageBase64: vehicleImage,
-            logoBase64: showLogo && logoBase64 ? logoBase64 : undefined,
-            modelTier,
-            width: fmt.w,
-            height: fmt.h,
-          },
-        });
-
-        if (error) { console.error('Banner error:', error); toast.error(`Fehler bei Variante ${i + 1}`); continue; }
-        if (data?.error) {
-          if (data.error === 'insufficient_credits') { toast.error('Nicht genügend Credits.'); break; }
-          toast.error(data.error); continue;
+        const result = await generateForFormat(format);
+        if (result) {
+          const labeled = { ...result, formatLabel: `${result.formatLabel}${variantCount > 1 ? ` #${i + 1}` : ''}` };
+          newResults.push(labeled);
+          setResults(prev => [...prev, labeled]);
+          await saveBanner(labeled);
         }
-        if (data?.imageBase64) {
-          generated.push(data.imageBase64);
-          setResults([...generated]);
-        }
-      } catch (e) {
-        console.error(`Variant ${i + 1} failed:`, e);
+      } catch (e: any) {
+        if (e?.message === 'insufficient_credits') { toast.error('Nicht genügend Credits.'); break; }
       }
     }
 
-    // Auto-save to storage
-    if (generated.length > 0 && user) {
-      const saved: string[] = [];
-      for (let i = 0; i < generated.length; i++) {
-        try {
-          const base64 = generated[i];
-          const base64Data = base64.includes(',') ? base64.split(',')[1] : base64;
-          const byteArray = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
-          const blob = new Blob([byteArray], { type: 'image/png' });
-          const fileName = `${user.id}/${Date.now()}-${format}-${i}.png`;
-          const { error: uploadErr } = await supabase.storage.from('banners').upload(fileName, blob, { contentType: 'image/png' });
-          if (!uploadErr) {
-            const { data: urlData } = supabase.storage.from('banners').getPublicUrl(fileName);
-            saved.push(urlData.publicUrl);
-          }
-        } catch (e) {
-          console.error('Banner save error:', e);
-        }
-      }
-      if (saved.length > 0) toast.success(`${generated.length} Banner erstellt & gespeichert!`);
-      else toast.success(`${generated.length} Banner erstellt!`);
-    } else if (generated.length === 0) {
-      toast.error('Keine Banner generiert.');
-    }
-
+    if (newResults.length > 0) toast.success(`${newResults.length} Banner erstellt!`);
+    else toast.error('Keine Banner generiert.');
     setGenerating(false);
-  }, [buildPrompt, format, variantCount, vehicleImage, modelTier, user]);
+  }, [format, variantCount, generateForFormat, saveBanner]);
+
+  // ── All formats generation (parallel) ──
+  const handleGenerateAll = useCallback(() => {
+    if (!vehicleImage) { toast.error('Bitte lade ein Fahrzeugbild hoch.'); return; }
+    if (!vehicleTitle.trim()) { toast.error('Bitte gib einen Fahrzeugtitel ein.'); return; }
+    const costPerBanner = getCost('image_generate', modelTier) || 5;
+    const totalCost = costPerBanner * BANNER_FORMATS.length;
+    setCreditDialog({ open: true, cost: totalCost, mode: 'all' });
+  }, [vehicleImage, vehicleTitle, getCost, modelTier]);
+
+  const doGenerateAll = useCallback(async () => {
+    setCreditDialog({ open: false, cost: 0, mode: 'single' });
+    setGeneratingAll(true);
+
+    // Initialize progress
+    const progress: Record<string, 'pending' | 'generating' | 'done' | 'error'> = {};
+    BANNER_FORMATS.forEach(f => { progress[f.id] = 'pending'; });
+    setFormatProgress({ ...progress });
+
+    // Run in parallel with concurrency limit of 4
+    const queue = [...BANNER_FORMATS];
+    const CONCURRENCY = 4;
+    let aborted = false;
+
+    const runNext = async (): Promise<void> => {
+      while (queue.length > 0 && !aborted) {
+        const fmt = queue.shift()!;
+        setFormatProgress(prev => ({ ...prev, [fmt.id]: 'generating' }));
+        try {
+          const result = await generateForFormat(fmt.id);
+          if (result) {
+            setResults(prev => [...prev, result]);
+            setFormatProgress(prev => ({ ...prev, [fmt.id]: 'done' }));
+            await saveBanner(result);
+          } else {
+            setFormatProgress(prev => ({ ...prev, [fmt.id]: 'error' }));
+          }
+        } catch (e: any) {
+          if (e?.message === 'insufficient_credits') { toast.error('Nicht genügend Credits.'); aborted = true; return; }
+          setFormatProgress(prev => ({ ...prev, [fmt.id]: 'error' }));
+        }
+      }
+    };
+
+    const workers = Array.from({ length: Math.min(CONCURRENCY, queue.length) }, () => runNext());
+    await Promise.all(workers);
+
+    const doneCount = Object.values(formatProgress).filter(s => s === 'done').length;
+    if (!aborted) toast.success(`${BANNER_FORMATS.length} Formate verarbeitet!`);
+    setGeneratingAll(false);
+  }, [generateForFormat, saveBanner]);
 
   // Download banner
-  const downloadBanner = useCallback((base64: string, index: number) => {
+  const downloadBanner = useCallback((result: BannerResult) => {
     const a = document.createElement('a');
-    a.href = base64;
-    a.download = `banner-${format}-${index + 1}.png`;
+    a.href = result.image;
+    a.download = `banner-${result.formatId}-${result.w}x${result.h}.png`;
     a.click();
-  }, [format]);
+  }, []);
 
   const costPerBanner = getCost('image_generate', modelTier) || 5;
   const filteredTiers = (tier: ModelTier) => !EXCLUDED_TIERS.includes(tier);
+  const isGenerating = generating || generatingAll;
 
   return (
     <div className="space-y-6">
@@ -484,29 +517,6 @@ ${showLogo && logoBase64 ? '- The provided logo MUST appear in the banner exactl
           <p className="text-xs sm:text-sm text-muted-foreground">Erstelle professionelle Werbebanner für dein Fahrzeug</p>
         </div>
       </div>
-
-      {/* ─── Results Grid ─── */}
-      {results.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-foreground">Ergebnisse</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {results.map((img, i) => (
-              <div key={i} className="relative group rounded-xl overflow-hidden border border-border bg-card">
-                <img src={img} alt={`Banner ${i + 1}`} className="w-full h-auto" />
-                <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/30 transition-colors flex items-center justify-center">
-                  <Button
-                    size="sm"
-                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => downloadBanner(img, i)}
-                  >
-                    <Download className="w-4 h-4 mr-1" /> Download
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* ─── Form ─── */}
       <div className="space-y-5 p-4 sm:p-5 rounded-xl border border-border bg-card">
@@ -529,8 +539,6 @@ ${showLogo && logoBase64 ? '- The provided logo MUST appear in the banner exactl
         {/* Vehicle Image */}
         <div className="space-y-1.5">
           <Label className="text-xs font-medium">Fahrzeugbild / Angebotsfoto *</Label>
-
-          {/* Auto-Analyze Toggle */}
           <div className="flex items-center justify-between p-2.5 rounded-lg border border-border/50 bg-muted/30">
             <div className="flex items-center gap-2">
               <ScanSearch className="w-3.5 h-3.5 text-muted-foreground" />
@@ -539,9 +547,7 @@ ${showLogo && logoBase64 ? '- The provided logo MUST appear in the banner exactl
             <Switch checked={autoAnalyze} onCheckedChange={setAutoAnalyze} />
           </div>
           <p className="text-[10px] text-muted-foreground">
-            {autoAnalyze
-              ? '✓ Beim Hochladen werden Fahrzeugdaten automatisch aus dem Bild extrahiert.'
-              : 'Deaktiviert – Felder müssen manuell ausgefüllt werden.'}
+            {autoAnalyze ? '✓ Beim Hochladen werden Fahrzeugdaten automatisch extrahiert.' : 'Deaktiviert – Felder müssen manuell ausgefüllt werden.'}
           </p>
 
           {vehicleImage ? (
@@ -560,8 +566,7 @@ ${showLogo && logoBase64 ? '- The provided logo MUST appear in the banner exactl
               {analyzing && (
                 <div className="absolute inset-0 bg-background/70 flex items-center justify-center">
                   <div className="flex items-center gap-2 text-sm text-foreground">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Angebot wird analysiert…
+                    <Loader2 className="w-4 h-4 animate-spin" /> Angebot wird analysiert…
                   </div>
                 </div>
               )}
@@ -579,7 +584,6 @@ ${showLogo && logoBase64 ? '- The provided logo MUST appear in the banner exactl
               <label className="flex flex-col items-center justify-center h-28 rounded-lg border-2 border-dashed border-border hover:border-accent/50 cursor-pointer transition-colors">
                 <Image className="w-6 h-6 text-muted-foreground mb-1" />
                 <span className="text-xs text-muted-foreground">Bild hochladen oder Angebots-Screenshot</span>
-                {autoAnalyze && <span className="text-[10px] text-muted-foreground/60">Texte werden automatisch erkannt</span>}
                 <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
               </label>
               {projectImages.length > 0 && (
@@ -606,7 +610,7 @@ ${showLogo && logoBase64 ? '- The provided logo MUST appear in the banner exactl
             placeholder={extractedData?.vehicleTitle || 'z.B. BMW M3 Competition'} className="h-9 text-sm" />
         </div>
 
-        {/* ─── Logo Section ─── */}
+        {/* Logo Section */}
         <div className="space-y-3 p-3 rounded-lg border border-border/50 bg-muted/30">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -615,7 +619,6 @@ ${showLogo && logoBase64 ? '- The provided logo MUST appear in the banner exactl
             </div>
             <Switch checked={showLogo} onCheckedChange={setShowLogo} />
           </div>
-
           {showLogo && (
             <div className="space-y-3">
               <RadioGroup value={logoSource} onValueChange={(v) => setLogoSource(v as 'dealer' | 'manufacturer')} className="gap-2">
@@ -627,50 +630,33 @@ ${showLogo && logoBase64 ? '- The provided logo MUST appear in the banner exactl
                 </div>
                 <div className="flex items-center gap-2">
                   <RadioGroupItem value="manufacturer" id="logo-manufacturer" />
-                  <Label htmlFor="logo-manufacturer" className="text-xs cursor-pointer">
-                    🏭 Hersteller-Logo
-                  </Label>
+                  <Label htmlFor="logo-manufacturer" className="text-xs cursor-pointer">🏭 Hersteller-Logo</Label>
                 </div>
               </RadioGroup>
-
               {logoSource === 'dealer' && (
-                <div>
-                  {dealerLogoUrl ? (
-                    <div className="flex items-center gap-2 bg-accent/10 rounded-lg px-3 py-2">
-                      <img src={dealerLogoUrl} alt="Dealer Logo" className="w-8 h-8 object-contain" />
-                      <span className="text-[11px] text-accent-foreground font-medium">Eigenes Logo wird verwendet</span>
-                    </div>
-                  ) : (
-                    <p className="text-[10px] text-muted-foreground">
-                      Kein Logo im Profil hinterlegt. Bitte zuerst unter „Profil" ein Logo hochladen.
-                    </p>
-                  )}
-                </div>
+                dealerLogoUrl ? (
+                  <div className="flex items-center gap-2 bg-accent/10 rounded-lg px-3 py-2">
+                    <img src={dealerLogoUrl} alt="Dealer Logo" className="w-8 h-8 object-contain" />
+                    <span className="text-[11px] text-accent-foreground font-medium">Eigenes Logo wird verwendet</span>
+                  </div>
+                ) : (
+                  <p className="text-[10px] text-muted-foreground">Kein Logo im Profil hinterlegt.</p>
+                )
               )}
-
               {logoSource === 'manufacturer' && (
                 <div className="space-y-1.5">
                   <Label className="text-xs font-medium">Hersteller wählen</Label>
                   <Select value={selectedLogoBrand} onValueChange={setSelectedLogoBrand}>
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue placeholder="Marke auswählen" />
-                    </SelectTrigger>
+                    <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Marke auswählen" /></SelectTrigger>
                     <SelectContent>
-                      {makes.map(m => (
-                        <SelectItem key={m.key} value={m.key}>{m.key}</SelectItem>
-                      ))}
+                      {makes.map(m => (<SelectItem key={m.key} value={m.key}>{m.key}</SelectItem>))}
                     </SelectContent>
                   </Select>
                   {selectedLogoBrand && logoBase64 && (
                     <div className="flex items-center gap-2 bg-accent/10 rounded-lg px-3 py-2">
                       <img src={logoBase64} alt={selectedLogoBrand} className="w-8 h-8 object-contain" />
-                      <span className="text-[11px] text-accent-foreground font-medium">
-                        Logo für „{selectedLogoBrand}" wird verwendet
-                      </span>
+                      <span className="text-[11px] text-accent-foreground font-medium">Logo für „{selectedLogoBrand}"</span>
                     </div>
-                  )}
-                  {selectedLogoBrand && !logoBase64 && (
-                    <p className="text-[10px] text-destructive">Kein Logo für diese Marke gefunden.</p>
                   )}
                 </div>
               )}
@@ -695,24 +681,19 @@ ${showLogo && logoBase64 ? '- The provided logo MUST appear in the banner exactl
             <Select value={occasion} onValueChange={setOccasion}>
               <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {OCCASIONS.map(o => (
-                  <SelectItem key={o.id} value={o.id}>{o.label}</SelectItem>
-                ))}
+                {OCCASIONS.map(o => (<SelectItem key={o.id} value={o.id}>{o.label}</SelectItem>))}
               </SelectContent>
             </Select>
           </div>
         </div>
 
-        {/* Scene + Style Row */}
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label className="text-xs font-medium">Szene / Ort</Label>
             <Select value={scene} onValueChange={setScene}>
               <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {SCENES.map(s => (
-                  <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>
-                ))}
+                {SCENES.map(s => (<SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>))}
               </SelectContent>
             </Select>
           </div>
@@ -721,15 +702,13 @@ ${showLogo && logoBase64 ? '- The provided logo MUST appear in the banner exactl
             <Select value={style} onValueChange={setStyle}>
               <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {STYLES.map(s => (
-                  <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>
-                ))}
+                {STYLES.map(s => (<SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>))}
               </SelectContent>
             </Select>
           </div>
         </div>
 
-        {/* ─── Typography Section ─── */}
+        {/* Typography */}
         <div className="space-y-3 p-3 rounded-lg border border-border/50 bg-muted/30">
           <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
             <span className="text-base">🔤</span> Typografie
@@ -740,15 +719,11 @@ ${showLogo && logoBase64 ? '- The provided logo MUST appear in the banner exactl
               <Select value={headlineFont} onValueChange={setHeadlineFont}>
                 <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__brand-header" disabled className="text-[10px] text-muted-foreground font-semibold">
-                    — Hersteller CI —
-                  </SelectItem>
+                  <SelectItem value="__brand-header" disabled className="text-[10px] text-muted-foreground font-semibold">— Hersteller CI —</SelectItem>
                   {HEADLINE_FONTS.filter(f => f.brand).map(f => (
                     <SelectItem key={f.id} value={f.id}>{f.label}</SelectItem>
                   ))}
-                  <SelectItem value="__generic-header" disabled className="text-[10px] text-muted-foreground font-semibold">
-                    — Modern —
-                  </SelectItem>
+                  <SelectItem value="__generic-header" disabled className="text-[10px] text-muted-foreground font-semibold">— Modern —</SelectItem>
                   {HEADLINE_FONTS.filter(f => !f.brand).map(f => (
                     <SelectItem key={f.id} value={f.id}>{f.label}</SelectItem>
                   ))}
@@ -760,16 +735,14 @@ ${showLogo && logoBase64 ? '- The provided logo MUST appear in the banner exactl
               <Select value={sublineFont} onValueChange={setSublineFont}>
                 <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {SUBLINE_FONTS.map(f => (
-                    <SelectItem key={f.id} value={f.id}>{f.label}</SelectItem>
-                  ))}
+                  {SUBLINE_FONTS.map(f => (<SelectItem key={f.id} value={f.id}>{f.label}</SelectItem>))}
                 </SelectContent>
               </Select>
             </div>
           </div>
         </div>
 
-        {/* Price + Price Display */}
+        {/* Price + Display */}
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label className="text-xs font-medium">Preis / Rate</Label>
@@ -781,15 +754,12 @@ ${showLogo && logoBase64 ? '- The provided logo MUST appear in the banner exactl
             <Select value={priceDisplay} onValueChange={setPriceDisplay}>
               <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {PRICE_DISPLAYS.map(p => (
-                  <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
-                ))}
+                {PRICE_DISPLAYS.map(p => (<SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>))}
               </SelectContent>
             </Select>
           </div>
         </div>
 
-        {/* Headline + Subline */}
         <div className="space-y-1.5">
           <Label className="text-xs font-medium">Headline</Label>
           <Input value={headline} onChange={e => setHeadline(e.target.value)}
@@ -801,16 +771,13 @@ ${showLogo && logoBase64 ? '- The provided logo MUST appear in the banner exactl
             placeholder={extractedData?.subline || 'z.B. Nur noch 3 verfügbar'} className="h-9 text-sm" />
         </div>
 
-        {/* CTA + Accent Color */}
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label className="text-xs font-medium">Call-to-Action</Label>
             <Select value={ctaText} onValueChange={setCtaText}>
               <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {CTA_OPTIONS.map(c => (
-                  <SelectItem key={c} value={c}>{c}</SelectItem>
-                ))}
+                {CTA_OPTIONS.map(c => (<SelectItem key={c} value={c}>{c}</SelectItem>))}
               </SelectContent>
             </Select>
           </div>
@@ -825,26 +792,18 @@ ${showLogo && logoBase64 ? '- The provided logo MUST appear in the banner exactl
           </div>
         </div>
 
-        {/* Legal Text */}
         <div className="space-y-1.5">
           <Label className="text-xs font-medium">Pflichtangaben / Fußzeile</Label>
           <Textarea value={legalText} onChange={e => setLegalText(e.target.value)}
             placeholder="z.B. Rate: 299€/mtl., Laufzeit: 48 Mon., Eff. Jahreszins: 3,99%..."
             className="text-sm min-h-[60px]" />
-          <p className="text-[10px] text-muted-foreground">
-            Bei Leasing/Finanzierung gem. PAngV Pflicht: Rate, Laufzeit, Anzahlung, Eff. Jahreszins, Gesamtbetrag.
-            {legalText && ' ✓ Wird als dezente Fußzeile im Banner dargestellt.'}
-          </p>
         </div>
 
-        {/* Model Tier – filter out 'schnell' */}
+        {/* Model Tier */}
         <div className="space-y-1.5">
           <Label className="text-xs font-medium">KI-Modell</Label>
           <ModelSelector actionType="image_generate" value={modelTier}
             onChange={(t) => { if (filteredTiers(t)) setModelTier(t); else toast.info('"Schnell" ist für Banner nicht geeignet.'); }} />
-          {modelTier === 'schnell' && (
-            <p className="text-xs text-destructive">Schnell ist für Banner nicht geeignet. Bitte wähle ein anderes Modell.</p>
-          )}
         </div>
 
         {/* Variant Count */}
@@ -867,24 +826,143 @@ ${showLogo && logoBase64 ? '- The provided logo MUST appear in the banner exactl
           </p>
         </div>
 
-        {/* Generate Button */}
-        <Button onClick={handleGenerate} disabled={generating || !vehicleImage || !vehicleTitle.trim() || modelTier === 'schnell'}
-          className="w-full h-11 text-sm font-semibold">
-          {generating ? (
-            <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Wird generiert...</>
-          ) : (
-            <><Sparkles className="w-4 h-4 mr-2" /> {variantCount} Banner generieren ({costPerBanner * variantCount} Cr.)</>
-          )}
-        </Button>
+        {/* Generate Buttons */}
+        <div className="space-y-2">
+          <Button onClick={handleGenerate} disabled={isGenerating || !vehicleImage || !vehicleTitle.trim() || modelTier === 'schnell'}
+            className="w-full h-11 text-sm font-semibold">
+            {generating ? (
+              <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Wird generiert...</>
+            ) : (
+              <><Sparkles className="w-4 h-4 mr-2" /> {variantCount} Banner generieren ({costPerBanner * variantCount} Cr.)</>
+            )}
+          </Button>
+
+          <Button variant="outline" onClick={handleGenerateAll}
+            disabled={isGenerating || !vehicleImage || !vehicleTitle.trim() || modelTier === 'schnell'}
+            className="w-full h-10 text-sm font-medium">
+            {generatingAll ? (
+              <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Alle Formate werden generiert...</>
+            ) : (
+              <><Copy className="w-4 h-4 mr-2" /> Alle {BANNER_FORMATS.length} Formate generieren ({costPerBanner * BANNER_FORMATS.length} Cr.)</>
+            )}
+          </Button>
+        </div>
+
+        {/* All-formats progress */}
+        {generatingAll && Object.keys(formatProgress).length > 0 && (
+          <div className="space-y-1.5 p-3 rounded-lg border border-border/50 bg-muted/30">
+            <p className="text-xs font-semibold text-foreground mb-2">Fortschritt</p>
+            <div className="grid grid-cols-2 gap-1.5">
+              {BANNER_FORMATS.map(f => {
+                const status = formatProgress[f.id];
+                return (
+                  <div key={f.id} className="flex items-center gap-2 text-xs">
+                    {status === 'generating' && <Loader2 className="w-3 h-3 animate-spin text-accent" />}
+                    {status === 'done' && <span className="text-green-500">✓</span>}
+                    {status === 'error' && <span className="text-destructive">✗</span>}
+                    {status === 'pending' && <span className="text-muted-foreground">○</span>}
+                    <span className={status === 'done' ? 'text-foreground' : 'text-muted-foreground'}>{f.label}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* ─── Results Grid (BELOW the form) ─── */}
+      {results.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-foreground">Ergebnisse ({results.length})</h3>
+            <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setResults([])}>
+              Alle entfernen
+            </Button>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {results.map((result, i) => (
+              <div key={i} className="relative group rounded-xl overflow-hidden border border-border bg-card cursor-pointer"
+                onClick={() => setLightboxIndex(i)}>
+                <div className="aspect-video flex items-center justify-center bg-muted/30 p-2">
+                  <img src={result.image} alt={result.formatLabel}
+                    className="max-w-full max-h-full object-contain" />
+                </div>
+                <div className="px-2.5 py-1.5 border-t border-border/50">
+                  <p className="text-[11px] font-medium text-foreground truncate">{result.formatLabel}</p>
+                  <p className="text-[10px] text-muted-foreground">{result.w}×{result.h} · {result.ratio}</p>
+                </div>
+                <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/10 transition-colors" />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ─── Lightbox ─── */}
+      {lightboxIndex !== null && results[lightboxIndex] && (
+        <div className="fixed inset-0 z-50 bg-background/90 backdrop-blur-sm flex items-center justify-center"
+          onClick={() => setLightboxIndex(null)}>
+          <div className="relative max-w-[90vw] max-h-[90vh] flex flex-col items-center"
+            onClick={e => e.stopPropagation()}>
+            {/* Close */}
+            <Button variant="ghost" size="icon"
+              className="absolute top-2 right-2 z-10 bg-background/80 rounded-full"
+              onClick={() => setLightboxIndex(null)}>
+              <X className="w-5 h-5" />
+            </Button>
+
+            {/* Nav arrows */}
+            {results.length > 1 && (
+              <>
+                <Button variant="ghost" size="icon"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-background/80 rounded-full"
+                  onClick={() => setLightboxIndex((lightboxIndex - 1 + results.length) % results.length)}>
+                  <ChevronLeft className="w-5 h-5" />
+                </Button>
+                <Button variant="ghost" size="icon"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-background/80 rounded-full"
+                  onClick={() => setLightboxIndex((lightboxIndex + 1) % results.length)}>
+                  <ChevronRight className="w-5 h-5" />
+                </Button>
+              </>
+            )}
+
+            <img src={results[lightboxIndex].image} alt={results[lightboxIndex].formatLabel}
+              className="max-w-full max-h-[80vh] object-contain rounded-lg" />
+
+            {/* Info bar */}
+            <div className="mt-3 flex items-center gap-3">
+              <Badge variant="secondary" className="text-xs">
+                {results[lightboxIndex].formatLabel} · {results[lightboxIndex].w}×{results[lightboxIndex].h}
+              </Badge>
+              <Button size="sm" variant="outline" className="h-8 text-xs"
+                onClick={() => downloadBanner(results[lightboxIndex])}>
+                <Download className="w-3.5 h-3.5 mr-1" /> Download
+              </Button>
+            </div>
+
+            {/* Thumbnails */}
+            {results.length > 1 && (
+              <div className="mt-3 flex gap-2 overflow-x-auto max-w-[80vw] pb-1">
+                {results.map((r, i) => (
+                  <button key={i} onClick={() => setLightboxIndex(i)}
+                    className={`flex-shrink-0 w-14 h-14 rounded-md overflow-hidden border-2 transition-colors ${i === lightboxIndex ? 'border-accent' : 'border-border/50 hover:border-border'}`}>
+                    <img src={r.image} alt={r.formatLabel} className="w-full h-full object-contain bg-muted/30" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <CreditConfirmDialog
         open={creditDialog.open}
         cost={creditDialog.cost}
         balance={balance}
-        actionLabel={`${variantCount} Banner generieren`}
-        onConfirm={doGenerate}
-        onCancel={() => setCreditDialog({ open: false, cost: 0 })}
+        actionLabel={creditDialog.mode === 'all' ? `Alle ${BANNER_FORMATS.length} Formate generieren` : `${variantCount} Banner generieren`}
+        onConfirm={creditDialog.mode === 'all' ? doGenerateAll : doGenerateSingle}
+        onCancel={() => setCreditDialog({ open: false, cost: 0, mode: 'single' })}
       />
     </div>
   );
