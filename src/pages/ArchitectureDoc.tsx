@@ -208,9 +208,12 @@ export default function ArchitectureDoc() {
             <Table
               headers={['Modell', 'Einsatz', 'API']}
               rows={[
-                ['Gemini 2.5 Flash', 'PDF-Analyse, VIN-OCR, Text, Sales-Chat, 360° Spin, Bildgenerierung', 'Gemini REST (direkt)'],
+                ['Gemini 2.5 Flash', 'PDF-Analyse, VIN-OCR, Text, Sales-Chat, 360° Spin', 'Gemini REST (direkt)'],
                 ['Gemini 2.5 Flash Lite', 'Equipment-Übersetzung, Subject-Generierung', 'Gemini REST (direkt)'],
-                ['OpenAI gpt-image-1', 'Bildgenerierung (Premium/Ultra)', 'OpenAI REST (direkt)'],
+                ['Gemini 2.5 Flash Image', 'Bildgenerierung (Schnell)', 'Gemini REST (direkt)'],
+                ['Gemini 3.1 Flash Image', 'Bildgenerierung (Qualität/Turbo)', 'Gemini REST (direkt)'],
+                ['Gemini 3 Pro Image', 'Bildgenerierung (Premium/Ultra)', 'Gemini REST (direkt)'],
+                ['OpenAI gpt-image-1', 'Bildgenerierung (Banner)', 'OpenAI REST (direkt)'],
                 ['Google Veo 3.1', 'Video-Generierung', 'Gemini REST (direkt)'],
               ]}
             />
