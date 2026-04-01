@@ -166,7 +166,8 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
   const handleShowroomUpload = async (file: File) => {
     if (!file.type.startsWith('image/')) { toast.error('Bitte ein Bild auswählen.'); return; }
     if (file.size > 10 * 1024 * 1024) { toast.error('Max. 10MB.'); return; }
-    const base64 = await fileToBase64(file);
+    const raw = await fileToBase64(file);
+    const base64 = await compressImageForAI(raw, 1024).catch(() => raw);
     update({ customShowroomBase64: base64 });
 
     if (user) {
