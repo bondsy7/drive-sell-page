@@ -90,9 +90,9 @@ serve(async (req) => {
     const maxRetries = 3;
 
     if (config.engine === "gemini") {
-      resultImage = await generateGemini(prompt, imageBase64, config.model, maxRetries);
+      resultImage = await generateGemini(prompt, imageBase64, logoBase64, config.model, maxRetries);
     } else {
-      resultImage = await generateOpenAI(prompt, imageBase64, config.model, width, height, modelTier === "ultra", maxRetries);
+      resultImage = await generateOpenAI(prompt, imageBase64, logoBase64, config.model, width, height, modelTier === "ultra", maxRetries);
     }
 
     if (!resultImage) throw new Error("Kein Banner generiert. Bitte versuche es erneut.");
