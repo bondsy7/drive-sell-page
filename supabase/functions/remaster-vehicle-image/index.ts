@@ -278,7 +278,17 @@ CAMERA PERSPECTIVE:
 
 NOTE: For INTERIOR vehicle shots, do NOT change the background – only improve interior lighting.
 </CUSTOM_SHOWROOM_INSTRUCTION>` });
-      parts.push(toInlineData(customShowroomBase64));
+      // Prefer file_uri if available
+      if (customShowroomFileUri?.uri) {
+        parts.push({ file_data: { mime_type: customShowroomFileUri.mimeType, file_uri: customShowroomFileUri.uri } });
+        console.log(`[remaster] Showroom via file_uri`);
+      } else {
+        parts.push(toInlineData(customShowroomBase64));
+      }
+    } else if (customShowroomFileUri?.uri) {
+      // Showroom provided as file_uri only (no base64)
+      parts.push({ text: `<CUSTOM_SHOWROOM_INSTRUCTION>The following is the CUSTOM SHOWROOM BACKGROUND. This is an IMMUTABLE ASSET. Place the vehicle naturally in this showroom.</CUSTOM_SHOWROOM_INSTRUCTION>` });
+      parts.push({ file_data: { mime_type: customShowroomFileUri.mimeType, file_uri: customShowroomFileUri.uri } });
     }
     if (customPlateImageBase64) {
       parts.push({ text: "CRITICAL – CUSTOM LICENSE PLATE IMAGE: The following image is the EXACT license plate you MUST use. Replace the vehicle's existing plate with this plate PIXEL-FOR-PIXEL. Reproduce every character, color, seal, EU badge, and spacing exactly. Do NOT invent or modify any element. This is an IMMUTABLE ASSET:" });
