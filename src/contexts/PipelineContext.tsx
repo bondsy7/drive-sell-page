@@ -263,7 +263,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       modelTier: cfg.modelTier,
       dynamicPrompt: fullPrompt,
       customShowroomBase64: hasFileUris ? null : showroomBase64ForRequest,
-      customShowroomFileUri: !isInteriorJob ? fileCache.showroom : null,
+      customShowroomFileUri: fileCache.showroom || null,
       customPlateImageBase64: isInteriorJob ? null : (cfg.remasterConfig.customPlateImageBase64 || null),
       dealerLogoUrl: dealerLogoBase64 ? null : (cfg.remasterConfig.showDealerLogo ? cfg.remasterConfig.dealerLogoUrl : null),
       dealerLogoBase64: dealerLogoBase64,
