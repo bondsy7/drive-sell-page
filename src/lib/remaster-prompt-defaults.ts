@@ -34,13 +34,15 @@ MATERIALS: Match exact finishes – chrome vs. gloss black vs. matte vs. satin. 
     label: 'Vehicle Scale Lock (Größe & Position)',
     description: 'Regeln für konsistente Fahrzeuggröße (55-65% Bildbreite), Zentrierung und Bodenkontakt.',
     prompt: `ABSOLUTE SCALE AND POSITION RULES – ZERO DEVIATION BETWEEN IMAGES:
-1. CONSISTENT SIZE: The vehicle MUST occupy EXACTLY 55-65% of the image WIDTH in EVERY full-body exterior shot. NOT more, NOT less.
+1. CONSISTENT SIZE: The vehicle MUST occupy EXACTLY 40-50% of the image WIDTH in EVERY full-body exterior shot. NOT more, NOT less. The vehicle should appear as if photographed from a moderate distance – NOT filling the frame.
 2. VERTICAL CENTER: The vehicle's vertical center (wheel-to-roof midpoint) MUST be at approximately 55% from the top of the image.
 3. HORIZONTAL CENTER: The vehicle's center of mass MUST be horizontally centered (50% ± 5%) for symmetric views. For 3/4 views, shift up to 10% toward the camera side.
-4. GROUND PLANE: ALL four wheels MUST sit on the SAME ground plane. The floor line MUST be at approximately 75-80% from the top.
+4. GROUND PLANE: ALL four wheels MUST sit on the SAME ground plane. The floor line MUST be at approximately 72-78% from the top.
 5. NO VARIATION: The vehicle must appear the EXACT same physical size across ALL perspectives – front, side, rear, 3/4.
-6. BREATHING ROOM: Maintain at least 10% padding between vehicle and image edge.
-7. PERSPECTIVE CONSISTENCY: Even when camera angle changes, the apparent size must remain constant. Wide-angle distortion is FORBIDDEN.`,
+6. BREATHING ROOM: Maintain at least 15% padding between vehicle and image edge on all sides. The scene/showroom MUST be generously visible around the car.
+7. PERSPECTIVE CONSISTENCY: Even when camera angle changes, the apparent size must remain constant. Wide-angle distortion is FORBIDDEN.
+8. FULL BLEED: The generated image MUST fill the ENTIRE canvas edge-to-edge. There must be ZERO white borders, ZERO blank margins, ZERO unfilled edges. The background/scene MUST extend to every pixel of the image boundary.
+9. DEPTH PLACEMENT: The vehicle should appear to be standing a few meters INSIDE the scene – NOT pressed against the camera. There should be visible floor/ground BETWEEN the camera and the front of the vehicle, creating natural depth.`,
   },
 
   anti_cropping: {
