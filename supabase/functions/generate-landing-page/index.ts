@@ -458,7 +458,7 @@ ${!uploadedImages?.length ? `\nWICHTIG: Es wurden KEINE eigenen Bilder hochgelad
     const remainingPrompts = imagePrompts.filter(p => !imageResults[p.key]);
     console.log(`User images: ${userImageUrls.length}, Generating ${remainingPrompts.length} AI images...`);
 
-    const imageGenModel = "gemini-2.0-flash-exp";
+    const imageGenModel = "gemini-2.5-flash-preview-05-20";
     const imageGenUrl = `https://generativelanguage.googleapis.com/v1beta/models/${imageGenModel}:generateContent`;
 
     for (let i = 0; i < remainingPrompts.length; i += 3) {
