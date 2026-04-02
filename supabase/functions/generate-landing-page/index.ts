@@ -371,11 +371,10 @@ ${!uploadedImages?.length ? `\nWICHTIG: Es wurden KEINE eigenen Bilder hochgelad
 
     const contentData = await contentResponse.json();
     let rawContent = contentData.candidates?.[0]?.content?.parts?.[0]?.text || "";
-    rawContent = rawContent.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
-
+    
     let pageContent;
     try {
-      pageContent = JSON.parse(rawContent);
+      pageContent = extractJsonFromResponse(rawContent);
     } catch (e) {
       console.error("JSON parse error:", e, "Raw:", rawContent.substring(0, 500));
       return new Response(
