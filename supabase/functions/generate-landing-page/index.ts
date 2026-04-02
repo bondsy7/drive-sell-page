@@ -381,7 +381,11 @@ ${!uploadedImages?.length ? `\nWICHTIG: KEINE eigenen Bilder hochgeladen. Du MUS
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: systemPrompt }] },
         contents: [{ parts: [{ text: userPrompt }] }],
-        generationConfig: { maxOutputTokens: 16384 },
+        generationConfig: {
+          maxOutputTokens: 16384,
+          responseMimeType: "application/json",
+          temperature: 0.6,
+        },
       }),
     });
 
@@ -395,14 +399,19 @@ ${!uploadedImages?.length ? `\nWICHTIG: KEINE eigenen Bilder hochgeladen. Du MUS
     }
 
     const contentData = await contentResponse.json();
-    const rawContent = contentData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const rawContent = extractTextFromGeminiResponse(contentData);
 
     let pageContent: any;
     try {
       pageContent = extractJsonFromResponse(rawContent);
     } catch (e) {
-      console.error("JSON parse error:", e, "Raw:", rawContent.substring(0, 500));
-      return new Response(JSON.stringify({ error: "KI-Antwort konnte nicht verarbeitet werden" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      console.error("JSON parse error:", e, "Raw:", rawContent.substring(0, 1500));
+      try {
+        pageContent = await repairJsonResponse(GEMINI_API_KEY!, rawContent);
+      } catch (repairError) {
+        console.error("JSON repair failed:", repairError);
+        return new Response(JSON.stringify({ error: "KI-Antwort konnte nicht verarbeitet werden" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
     }
 
     // ─── Step 2: Collect all image prompts ───
