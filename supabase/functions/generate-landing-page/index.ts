@@ -397,6 +397,7 @@ ${!uploadedImages?.length ? `\nWICHTIG: Es wurden KEINE eigenen Bilder hochgelad
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: systemPrompt }] },
         contents: [{ parts: [{ text: userPrompt }] }],
+        generationConfig: { maxOutputTokens: 8192 },
       }),
     });
 
