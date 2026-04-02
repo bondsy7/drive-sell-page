@@ -82,9 +82,11 @@ LIGHTING: Bright, even, professional interior lighting. Improve existing lightin
 - The vehicle must CAST SOFT, REALISTIC SHADOWS onto the showroom floor – not overly dark or sharp. Real showroom lighting creates DIFFUSED shadows.
 - The showroom floor must show a SUBTLE REFLECTION of the vehicle (if the floor is reflective in the reference) – not mirror-perfect, but natural.
 - The vehicle must be PROPORTIONALLY CORRECT relative to the showroom architecture. Compare vehicle height to door frames, windows, ceiling. A sedan is ~1.4m tall, an SUV ~1.7m.
+- VEHICLE SIZE IN SHOWROOM: The vehicle MUST appear SMALL relative to the showroom – as if standing several meters AWAY from the camera, DEEP INSIDE the showroom. The car should occupy only 40-50% of the image width. There must be GENEROUS visible floor space in front of and around the vehicle. The showroom architecture (ceiling, walls, windows) must DOMINATE the image composition – the vehicle is an element WITHIN the space, not filling it.
 - The camera perspective of the showroom must MATCH the camera perspective of the vehicle shot.
 - ALL architectural details, wall logos, branding, furniture MUST remain in their EXACT positions.
-- Do NOT overlay or collage. The room MUST be fully visible and recognizable.`,
+- Do NOT overlay or collage. The room MUST be fully visible and recognizable.
+- ZERO WHITE BORDERS: The showroom MUST fill the ENTIRE image canvas. Every pixel of every edge MUST show showroom content (walls, floor, ceiling, windows). There must be ABSOLUTELY NO white margins, blank areas, or unfilled edges anywhere in the output.`,
   },
 
   negative_constraints: {
