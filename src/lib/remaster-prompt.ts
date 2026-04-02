@@ -159,11 +159,12 @@ export function buildMasterPrompt(
       logoLines.push(`MANUFACTURER LOGO:
 - You are provided with a specific reference image of the manufacturer logo.
 - Reproduce this EXACT logo PIXEL-FOR-PIXEL: every color, shape, text element, and proportion.
-- Render as a backlit wall element with subtle LED halo effect.
+- Render as a FROSTED GLASS or TRANSPARENT GLASS element mounted on the showroom wall. The logo should appear as if etched or printed onto a premium glass panel – subtle, elegant, and high-end.
+- Do NOT add any glow, LED halo, backlight, neon, or illumination effect around or behind the logo. NO light emission of any kind.
 - KEEP ALL ORIGINAL COLORS – do NOT convert to silver/chrome/monochrome.
 - Position: centered on showroom back wall, at eye level, slightly above vehicle roofline.
 - Size: approximately 60-80cm diameter/width. IDENTICAL position, size, and appearance on EVERY image.
-- FORBIDDEN: Do NOT redesign, simplify, recolor, vectorize, or create an alternative version. IMMUTABLE ASSET.`);
+- FORBIDDEN: Do NOT redesign, simplify, recolor, vectorize, or create an alternative version. Do NOT add glow or lighting effects. IMMUTABLE ASSET.`);
     }
     if (config.showDealerLogo && config.dealerLogoUrl) {
       logoLines.push(`DEALER LOGO:
