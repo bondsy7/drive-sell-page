@@ -397,13 +397,17 @@ Section-Types "specs", "comparison", "benefits" werden speziell gerendert – nu
     // Assign user images to first slots, generate rest
     const imageResults: Record<string, string> = {};
     let userImgIdx = 0;
+    const hasUserImages = userImageUrls.length > 0;
 
-    for (let i = 0; i < imagePrompts.length && userImgIdx < userImageUrls.length; i++) {
-      imageResults[imagePrompts[i].key] = userImageUrls[userImgIdx];
-      userImgIdx++;
+    if (hasUserImages) {
+      // Only assign user images when provided
+      for (let i = 0; i < imagePrompts.length && userImgIdx < userImageUrls.length; i++) {
+        imageResults[imagePrompts[i].key] = userImageUrls[userImgIdx];
+        userImgIdx++;
+      }
     }
 
-    // Generate remaining images in batches of 3
+    // Generate ALL remaining images (when no user images: generate everything)
     const remainingPrompts = imagePrompts.filter(p => !imageResults[p.key]);
     console.log(`User images: ${userImageUrls.length}, Generating ${remainingPrompts.length} AI images...`);
 
