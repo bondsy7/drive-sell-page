@@ -337,7 +337,8 @@ Antworte AUSSCHLIESSLICH als JSON mit folgender Struktur:
 }
 
 Erstelle genau ${config.sectionCount} sections. Davon sollen ${config.imageCount} ein imagePrompt haben, der Rest null.
-Section-Types "specs", "comparison", "benefits" werden speziell gerendert – nutze sie wo sinnvoll.`;
+Section-Types "specs", "comparison", "benefits" werden speziell gerendert – nutze sie wo sinnvoll.
+${!uploadedImages?.length ? `\nWICHTIG: Es wurden KEINE eigenen Bilder hochgeladen. Du MUSST für JEDE visuelle Section einen detaillierten imagePrompt generieren, damit automatisch passende KI-Bilder erstellt werden. Generiere mindestens ${config.imageCount} imagePrompts. Jedes Bild soll thematisch exakt zur Section passen.` : ''}`;
 
     const userPrompt = `Erstelle eine ${config.label}-Landingpage für:\nMarke: ${brand}\nModell: ${model}${variantInfo}${colorInfo}\n${additionalInfo ? `Zusätzliche Informationen / Highlights: ${additionalInfo}` : ""}`;
 
@@ -397,13 +398,17 @@ Section-Types "specs", "comparison", "benefits" werden speziell gerendert – nu
     // Assign user images to first slots, generate rest
     const imageResults: Record<string, string> = {};
     let userImgIdx = 0;
+    const hasUserImages = userImageUrls.length > 0;
 
-    for (let i = 0; i < imagePrompts.length && userImgIdx < userImageUrls.length; i++) {
-      imageResults[imagePrompts[i].key] = userImageUrls[userImgIdx];
-      userImgIdx++;
+    if (hasUserImages) {
+      // Only assign user images when provided
+      for (let i = 0; i < imagePrompts.length && userImgIdx < userImageUrls.length; i++) {
+        imageResults[imagePrompts[i].key] = userImageUrls[userImgIdx];
+        userImgIdx++;
+      }
     }
 
-    // Generate remaining images in batches of 3
+    // Generate ALL remaining images (when no user images: generate everything)
     const remainingPrompts = imagePrompts.filter(p => !imageResults[p.key]);
     console.log(`User images: ${userImageUrls.length}, Generating ${remainingPrompts.length} AI images...`);
 
@@ -655,13 +660,30 @@ function buildHTML(
         return `<section style="${bg};padding:64px 24px"><div style="max-width:960px;margin:0 auto"><h2 style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;color:${headlineColor};margin-bottom:32px;text-align:center">${s.headline}</h2>${img ? `<img src="${img}" alt="${s.headline}" style="width:100%;border-radius:12px;object-fit:cover;max-height:500px" loading="lazy" />` : ""}<div style="font-size:15px;line-height:1.8;color:${subColor};margin-top:20px">${s.content}</div></div></section>`;
       }
 
-      // Default content with image
+      // Default content with image – stunning split-screen with background overlay
       const hasImage = !!img;
       const imageOnLeft = idx % 2 === 0;
       if (hasImage) {
-        const imgBlock = `<div style="flex:1;min-width:280px"><img src="${img}" alt="${s.headline}" style="width:100%;border-radius:12px;object-fit:cover;max-height:400px" loading="lazy" /><p style="font-size:11px;color:#94a3b8;margin-top:8px;text-align:center;font-style:italic">${s.headline}</p></div>`;
-        const textBlock = `<div style="flex:1;min-width:280px"><h2 style="font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;color:${headlineColor};margin-bottom:16px">${s.headline}</h2><div style="font-size:15px;line-height:1.8;color:${subColor}">${s.content}</div></div>`;
-        return `<section style="${bg};padding:64px 24px"><div style="max-width:960px;margin:0 auto;display:flex;flex-wrap:wrap;gap:40px;align-items:center">${imageOnLeft ? imgBlock + textBlock : textBlock + imgBlock}</div></section>`;
+        // Full-width split-screen: image as background on one side, content on the other
+        const overlayGradient = imageOnLeft
+          ? "linear-gradient(to right, rgba(0,0,0,0.0) 0%, rgba(0,0,0,0.0) 40%, rgba(255,255,255,0.95) 50%, rgba(255,255,255,1) 55%)"
+          : "linear-gradient(to left, rgba(0,0,0,0.0) 0%, rgba(0,0,0,0.0) 40%, rgba(255,255,255,0.95) 50%, rgba(255,255,255,1) 55%)";
+        const darkOverlayGradient = imageOnLeft
+          ? "linear-gradient(to right, rgba(15,23,42,0.0) 0%, rgba(15,23,42,0.0) 40%, rgba(15,23,42,0.95) 50%, rgba(15,23,42,1) 55%)"
+          : "linear-gradient(to left, rgba(15,23,42,0.0) 0%, rgba(15,23,42,0.0) 40%, rgba(15,23,42,0.95) 50%, rgba(15,23,42,1) 55%)";
+        const useOverlay = isDark ? darkOverlayGradient : overlayGradient;
+        const textAlign = imageOnLeft ? "right" : "left";
+        const textPadding = imageOnLeft ? "padding:64px 48px 64px 55%" : "padding:64px 55% 64px 48px";
+        const bgPos = imageOnLeft ? "left center" : "right center";
+
+        return `<section style="position:relative;min-height:420px;overflow:hidden;${bg}">
+  <div style="position:absolute;inset:0;background:url('${img}') ${bgPos}/50% 100% no-repeat"></div>
+  <div style="position:absolute;inset:0;background:${useOverlay}"></div>
+  <div style="position:relative;z-index:1;max-width:1200px;margin:0 auto;${textPadding}">
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;color:${headlineColor};margin-bottom:16px">${s.headline}</h2>
+    <div style="font-size:15px;line-height:1.8;color:${subColor}">${s.content}</div>
+  </div>
+</section>`;
       }
 
       return `<section style="${bg};padding:64px 24px"><div style="max-width:760px;margin:0 auto"><h2 style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;color:${headlineColor};margin-bottom:20px;text-align:center">${s.headline}</h2><div style="font-size:15px;line-height:1.8;color:${subColor}">${s.content}</div></div></section>`;
@@ -702,6 +724,9 @@ function buildHTML(
       .hero-content h1{font-size:28px !important}
       table{font-size:12px}
       th,td{padding:6px 8px}
+      section[style*="min-height:420px"] > div:last-child{padding:40px 24px !important}
+      section[style*="min-height:420px"] > div:first-child{background-size:cover !important}
+      section[style*="min-height:420px"] > div:nth-child(2){background:linear-gradient(to bottom,rgba(0,0,0,0) 0%,rgba(255,255,255,0.9) 30%,rgba(255,255,255,1) 40%) !important}
     }
   </style>
 </head>
