@@ -129,13 +129,25 @@ function renderGallery(s: LandingPageSection, img: string, colors: ReturnType<ty
 
 function renderContentWithImage(s: LandingPageSection, img: string, idx: number, colors: ReturnType<typeof getColors>): string {
   const imageOnLeft = idx % 2 === 0;
-  const imgBlock = `<div style="flex:1;min-width:280px"><img src="${img}" alt="${s.headline}" style="width:100%;border-radius:12px;object-fit:cover;max-height:400px" loading="lazy" /><p style="font-size:11px;color:#94a3b8;margin-top:8px;text-align:center;font-style:italic">${s.headline}</p></div>`;
-  const textBlock = `<div style="flex:1;min-width:280px"><h2 style="font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;color:${colors.headlineColor};margin-bottom:16px">${s.headline}</h2><div style="font-size:15px;line-height:1.8;color:${colors.subColor}">${s.content}</div></div>`;
+  const isDark = s.bgStyle === 'dark' || s.bgStyle === 'accent';
+  const overlayGradient = imageOnLeft
+    ? isDark
+      ? "linear-gradient(to right, rgba(15,23,42,0.0) 0%, rgba(15,23,42,0.0) 40%, rgba(15,23,42,0.95) 50%, rgba(15,23,42,1) 55%)"
+      : "linear-gradient(to right, rgba(255,255,255,0.0) 0%, rgba(255,255,255,0.0) 40%, rgba(255,255,255,0.95) 50%, rgba(255,255,255,1) 55%)"
+    : isDark
+      ? "linear-gradient(to left, rgba(15,23,42,0.0) 0%, rgba(15,23,42,0.0) 40%, rgba(15,23,42,0.95) 50%, rgba(15,23,42,1) 55%)"
+      : "linear-gradient(to left, rgba(255,255,255,0.0) 0%, rgba(255,255,255,0.0) 40%, rgba(255,255,255,0.95) 50%, rgba(255,255,255,1) 55%)";
+  const textPadding = imageOnLeft ? "padding:64px 48px 64px 55%" : "padding:64px 55% 64px 48px";
+  const bgPos = imageOnLeft ? "left center" : "right center";
 
-  return renderSectionBase(colors.bg,
-    `<div style="max-width:960px;margin:0 auto;display:flex;flex-wrap:wrap;gap:40px;align-items:center">
-      ${imageOnLeft ? imgBlock + textBlock : textBlock + imgBlock}
-    </div>`);
+  return `<section style="position:relative;min-height:420px;overflow:hidden;${colors.bg}">
+  <div style="position:absolute;inset:0;background:url('${img}') ${bgPos}/50% 100% no-repeat"></div>
+  <div style="position:absolute;inset:0;background:${overlayGradient}"></div>
+  <div style="position:relative;z-index:1;max-width:1200px;margin:0 auto;${textPadding}">
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;color:${colors.headlineColor};margin-bottom:16px">${s.headline}</h2>
+    <div style="font-size:15px;line-height:1.8;color:${colors.subColor}">${s.content}</div>
+  </div>
+</section>`;
 }
 
 function renderContentOnly(s: LandingPageSection, colors: ReturnType<typeof getColors>): string {
