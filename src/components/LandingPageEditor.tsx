@@ -41,7 +41,12 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
   brand, model, brandLogoUrl, onBack,
 }) => {
   const { user } = useAuth();
-  const [content, setContent] = useState<LandingPageContent>(initialContent);
+  const [content, setContent] = useState<LandingPageContent>({
+    meta: initialContent?.meta || { title: '', description: '', h1: '' },
+    hero: initialContent?.hero || { headline: '', subheadline: '', ctaText: '' },
+    sections: initialContent?.sections || [],
+    seo: initialContent?.seo,
+  });
   const [images, setImages] = useState<Record<string, string>>(initialImages);
   const [dealer, setDealer] = useState<LandingPageDealer>(initialDealer);
   const [viewMode, setViewMode] = useState<'preview' | 'edit'>('edit');
