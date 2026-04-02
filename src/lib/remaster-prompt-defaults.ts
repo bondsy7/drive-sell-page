@@ -32,7 +32,7 @@ MATERIALS: Match exact finishes – chrome vs. gloss black vs. matte vs. satin. 
   vehicle_scale_lock: {
     key: 'remaster_vehicle_scale_lock',
     label: 'Vehicle Scale Lock (Größe & Position)',
-    description: 'Regeln für konsistente Fahrzeuggröße (55-65% Bildbreite), Zentrierung und Bodenkontakt.',
+    description: 'Regeln für konsistente Fahrzeuggröße (40-50% Bildbreite), Zentrierung, Bodenkontakt und Anti-Weißrand.',
     prompt: `ABSOLUTE SCALE AND POSITION RULES – ZERO DEVIATION BETWEEN IMAGES:
 1. CONSISTENT SIZE: The vehicle MUST occupy EXACTLY 40-50% of the image WIDTH in EVERY full-body exterior shot. NOT more, NOT less. The vehicle should appear as if photographed from a moderate distance – NOT filling the frame.
 2. VERTICAL CENTER: The vehicle's vertical center (wheel-to-roof midpoint) MUST be at approximately 55% from the top of the image.
