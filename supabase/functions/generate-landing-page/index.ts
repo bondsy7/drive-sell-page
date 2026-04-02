@@ -1,6 +1,52 @@
-// generate-landing-page v4 – Contextual images + Helpful Content
+// generate-landing-page v5 – Robust JSON parsing + contextual images
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+// ─── Robust JSON extraction from AI responses ───
+function extractJsonFromResponse(response: string): unknown {
+  let cleaned = response
+    .replace(/```json\s*/gi, "")
+    .replace(/```\s*/g, "")
+    .trim();
+
+  const jsonStart = cleaned.search(/[\{\[]/);
+  if (jsonStart === -1) throw new Error("No JSON found in response");
+
+  const openChar = cleaned[jsonStart];
+  const closeChar = openChar === '{' ? '}' : ']';
+  const jsonEnd = cleaned.lastIndexOf(closeChar);
+
+  if (jsonEnd === -1 || jsonEnd <= jsonStart) {
+    throw new Error("Truncated JSON response");
+  }
+
+  cleaned = cleaned.substring(jsonStart, jsonEnd + 1);
+
+  // Check for truncation (unbalanced braces)
+  const openBraces = (cleaned.match(/{/g) || []).length;
+  const closeBraces = (cleaned.match(/}/g) || []).length;
+  const openBrackets = (cleaned.match(/\[/g) || []).length;
+  const closeBrackets = (cleaned.match(/\]/g) || []).length;
+
+  if (openBraces !== closeBraces || openBrackets !== closeBrackets) {
+    // Try to repair by closing missing braces/brackets
+    let repaired = cleaned;
+    for (let i = 0; i < openBrackets - closeBrackets; i++) repaired += ']';
+    for (let i = 0; i < openBraces - closeBraces; i++) repaired += '}';
+    cleaned = repaired;
+  }
+
+  try {
+    return JSON.parse(cleaned);
+  } catch (_e) {
+    // Fix common issues: trailing commas, control characters
+    cleaned = cleaned
+      .replace(/,\s*}/g, "}")
+      .replace(/,\s*]/g, "]")
+      .replace(/[\x00-\x1F\x7F]/g, (ch) => ch === '\n' || ch === '\t' ? ch : '');
+    return JSON.parse(cleaned);
+  }
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
