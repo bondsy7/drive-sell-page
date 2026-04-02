@@ -32,15 +32,17 @@ MATERIALS: Match exact finishes – chrome vs. gloss black vs. matte vs. satin. 
   vehicle_scale_lock: {
     key: 'remaster_vehicle_scale_lock',
     label: 'Vehicle Scale Lock (Größe & Position)',
-    description: 'Regeln für konsistente Fahrzeuggröße (55-65% Bildbreite), Zentrierung und Bodenkontakt.',
+    description: 'Regeln für konsistente Fahrzeuggröße (40-50% Bildbreite), Zentrierung, Bodenkontakt und Anti-Weißrand.',
     prompt: `ABSOLUTE SCALE AND POSITION RULES – ZERO DEVIATION BETWEEN IMAGES:
-1. CONSISTENT SIZE: The vehicle MUST occupy EXACTLY 55-65% of the image WIDTH in EVERY full-body exterior shot. NOT more, NOT less.
+1. CONSISTENT SIZE: The vehicle MUST occupy EXACTLY 40-50% of the image WIDTH in EVERY full-body exterior shot. NOT more, NOT less. The vehicle should appear as if photographed from a moderate distance – NOT filling the frame.
 2. VERTICAL CENTER: The vehicle's vertical center (wheel-to-roof midpoint) MUST be at approximately 55% from the top of the image.
 3. HORIZONTAL CENTER: The vehicle's center of mass MUST be horizontally centered (50% ± 5%) for symmetric views. For 3/4 views, shift up to 10% toward the camera side.
-4. GROUND PLANE: ALL four wheels MUST sit on the SAME ground plane. The floor line MUST be at approximately 75-80% from the top.
+4. GROUND PLANE: ALL four wheels MUST sit on the SAME ground plane. The floor line MUST be at approximately 72-78% from the top.
 5. NO VARIATION: The vehicle must appear the EXACT same physical size across ALL perspectives – front, side, rear, 3/4.
-6. BREATHING ROOM: Maintain at least 10% padding between vehicle and image edge.
-7. PERSPECTIVE CONSISTENCY: Even when camera angle changes, the apparent size must remain constant. Wide-angle distortion is FORBIDDEN.`,
+6. BREATHING ROOM: Maintain at least 15% padding between vehicle and image edge on all sides. The scene/showroom MUST be generously visible around the car.
+7. PERSPECTIVE CONSISTENCY: Even when camera angle changes, the apparent size must remain constant. Wide-angle distortion is FORBIDDEN.
+8. FULL BLEED: The generated image MUST fill the ENTIRE canvas edge-to-edge. There must be ZERO white borders, ZERO blank margins, ZERO unfilled edges. The background/scene MUST extend to every pixel of the image boundary.
+9. DEPTH PLACEMENT: The vehicle should appear to be standing a few meters INSIDE the scene – NOT pressed against the camera. There should be visible floor/ground BETWEEN the camera and the front of the vehicle, creating natural depth.`,
   },
 
   anti_cropping: {
@@ -80,9 +82,11 @@ LIGHTING: Bright, even, professional interior lighting. Improve existing lightin
 - The vehicle must CAST SOFT, REALISTIC SHADOWS onto the showroom floor – not overly dark or sharp. Real showroom lighting creates DIFFUSED shadows.
 - The showroom floor must show a SUBTLE REFLECTION of the vehicle (if the floor is reflective in the reference) – not mirror-perfect, but natural.
 - The vehicle must be PROPORTIONALLY CORRECT relative to the showroom architecture. Compare vehicle height to door frames, windows, ceiling. A sedan is ~1.4m tall, an SUV ~1.7m.
+- VEHICLE SIZE IN SHOWROOM: The vehicle MUST appear SMALL relative to the showroom – as if standing several meters AWAY from the camera, DEEP INSIDE the showroom. The car should occupy only 40-50% of the image width. There must be GENEROUS visible floor space in front of and around the vehicle. The showroom architecture (ceiling, walls, windows) must DOMINATE the image composition – the vehicle is an element WITHIN the space, not filling it.
 - The camera perspective of the showroom must MATCH the camera perspective of the vehicle shot.
 - ALL architectural details, wall logos, branding, furniture MUST remain in their EXACT positions.
-- Do NOT overlay or collage. The room MUST be fully visible and recognizable.`,
+- Do NOT overlay or collage. The room MUST be fully visible and recognizable.
+- ZERO WHITE BORDERS: The showroom MUST fill the ENTIRE image canvas. Every pixel of every edge MUST show showroom content (walls, floor, ceiling, windows). There must be ABSOLUTELY NO white margins, blank areas, or unfilled edges anywhere in the output.`,
   },
 
   negative_constraints: {
