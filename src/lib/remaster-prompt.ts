@@ -202,9 +202,15 @@ The showroom wall must remain CLEAN and EMPTY – no manufacturer logos, no deal
   if (scenePrompt) {
     if (interior) {
       const interiorLighting = getBlock(overrides, 'scene_lighting_interior');
+      const isCustomShowroom = config.scene === 'custom-showroom';
       parts.push(`<SCENE_AND_LIGHTING>
-WINDOW_VIEW: The view through ALL vehicle windows MUST show: ${scenePrompt}
-The scene must be visible THROUGH the glass naturally – do NOT place the car in a different environment.
+WINDOW_VIEW (MANDATORY – NON-NEGOTIABLE):
+The view through ALL vehicle windows (windshield, side windows, rear window) MUST show: ${scenePrompt}
+${isCustomShowroom ? `A REFERENCE IMAGE of the custom showroom is provided as an additional input image.
+The showroom architecture, walls, floor, ceiling, logos, and branding MUST be clearly recognizable THROUGH the vehicle windows.
+This is the SAME showroom used for exterior shots – maintain visual consistency.` : ''}
+The scene MUST be visible THROUGH the glass naturally and realistically – correct perspective, depth, and lighting.
+Do NOT show a random outdoor scene, generic background, or black/dark void through the windows.
 Use the EXACT SAME scene visible through windows on EVERY interior image.
 ${interiorLighting}
 </SCENE_AND_LIGHTING>`);

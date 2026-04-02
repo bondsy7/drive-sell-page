@@ -275,7 +275,11 @@ CAMERA PERSPECTIVE:
 - Adapt the showroom view to match front, side, rear, or 3/4 angles naturally.
 - The showroom must ALWAYS be fully visible – never cropped out or replaced.
 
-NOTE: For INTERIOR vehicle shots, do NOT change the background – only improve interior lighting.
+INTERIOR SHOTS WITH CUSTOM SHOWROOM:
+For INTERIOR vehicle shots, the custom showroom MUST be visible THROUGH ALL vehicle windows (windshield, side windows, rear window).
+The showroom architecture, walls, floor, ceiling, and any logos/branding MUST be clearly recognizable through the glass.
+Do NOT show a random outdoor scene or generic background through the windows – it MUST be THIS showroom.
+The interior itself should only receive improved lighting – do NOT change the dashboard, seats, or any interior elements.
 </CUSTOM_SHOWROOM_INSTRUCTION>` });
       if (customShowroomFileUri?.uri) {
         parts.push({ file_data: { mime_type: customShowroomFileUri.mimeType, file_uri: customShowroomFileUri.uri } });

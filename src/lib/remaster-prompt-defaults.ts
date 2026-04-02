@@ -67,8 +67,9 @@ LIGHTING: Use NATURAL, realistic lighting that matches the scene. Avoid overly d
     key: 'remaster_scene_lighting_interior',
     label: 'Scene & Lighting (Interieur)',
     description: 'Beleuchtung und Fensteransicht für Innenraumaufnahmen.',
-    prompt: `REFLECTIONS: Re-render all glass reflections to match the scene visible through windows.
-LIGHTING: Bright, even, professional interior lighting. Improve existing lighting to showroom quality.`,
+    prompt: `WINDOW VIEW (CRITICAL): The selected showroom or scene MUST be clearly visible THROUGH ALL vehicle windows (windshield, side windows, rear window). The showroom architecture, floor, walls, ceiling, and any logos MUST be recognizable through the glass. Do NOT show darkness, random outdoor scenes, or generic backgrounds through windows.
+REFLECTIONS: Re-render all glass reflections to match the showroom/scene visible through windows. Interior surfaces (dashboard, trim) should subtly reflect the showroom environment.
+LIGHTING: Bright, even, professional interior lighting that matches the showroom's light sources. Improve existing lighting to showroom quality. Light coming through windows should match the showroom's ambient lighting.`,
   },
 
   custom_showroom_instruction: {
