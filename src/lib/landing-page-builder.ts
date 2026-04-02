@@ -264,6 +264,9 @@ export function buildLandingPageHTML(
       .hero-content h1{font-size:28px !important}
       table{font-size:12px}
       th,td{padding:6px 8px}
+      section[style*="min-height:420px"] > div:last-child{padding:40px 24px !important}
+      section[style*="min-height:420px"] > div:first-child{background-size:cover !important}
+      section[style*="min-height:420px"] > div:nth-child(2){background:linear-gradient(to bottom,rgba(0,0,0,0) 0%,rgba(255,255,255,0.9) 30%,rgba(255,255,255,1) 40%) !important}
     }
   </style>
 </head>
