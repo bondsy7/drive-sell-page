@@ -458,41 +458,68 @@ ${!uploadedImages?.length ? `\nWICHTIG: Es wurden KEINE eigenen Bilder hochgelad
     const remainingPrompts = imagePrompts.filter(p => !imageResults[p.key]);
     console.log(`User images: ${userImageUrls.length}, Generating ${remainingPrompts.length} AI images...`);
 
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const imageGenUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
+
     for (let i = 0; i < remainingPrompts.length; i += 3) {
       const batch = remainingPrompts.slice(i, i + 3);
       const results = await Promise.allSettled(
         batch.map(async ({ key, prompt }) => {
           try {
-            const imgResp = await fetch(geminiUrl, {
-              method: "POST",
-              headers: { "x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json" },
-              body: JSON.stringify({
-                contents: [{
-                  parts: [{
-                    text: `Generate a professional, high-quality automotive marketing photo: ${prompt}. Style: Modern, clean, professional. Aspect ratio: 16:9. No text overlays, no watermarks.`,
-                  }],
-                }],
-                generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
-              }),
-            });
-            if (!imgResp.ok) { console.error(`Image gen failed for ${key}:`, imgResp.status); return { key, url: null }; }
-            const imgData = await imgResp.json();
-            let base64: string | null = null;
-            const respParts = imgData.candidates?.[0]?.content?.parts;
-            if (respParts) {
-              for (const part of respParts) {
-                if (part.inlineData?.data) {
-                  const mime = part.inlineData.mimeType || "image/png";
-                  base64 = `data:${mime};base64,${part.inlineData.data}`;
-                  break;
+            const apiKey = LOVABLE_API_KEY || GEMINI_API_KEY;
+            const useGateway = !!LOVABLE_API_KEY;
+
+            if (useGateway) {
+              const imgResp = await fetch(imageGenUrl, {
+                method: "POST",
+                headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  model: "google/gemini-2.5-flash-image",
+                  messages: [{ role: "user", content: `Generate a professional, high-quality automotive marketing photo: ${prompt}. Style: Modern, clean, professional. Aspect ratio: 16:9. No text overlays, no watermarks.` }],
+                  modalities: ["image", "text"],
+                }),
+              });
+              if (!imgResp.ok) {
+                const errText = await imgResp.text();
+                console.error(`Image gen failed for ${key}:`, imgResp.status, errText.substring(0, 200));
+                return { key, url: null };
+              }
+              const imgData = await imgResp.json();
+              const imageUrl = imgData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+              if (imageUrl) {
+                const url = await uploadGeneratedImage(supabase, imageUrl, authResult.userId, key);
+                return { key, url: url || null };
+              }
+              return { key, url: null };
+            } else {
+              // Fallback: direct Gemini API with imagen model
+              const imgResp = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent", {
+                method: "POST",
+                headers: { "x-goog-api-key": GEMINI_API_KEY!, "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  contents: [{ parts: [{ text: `Generate a professional, high-quality automotive marketing photo: ${prompt}. Style: Modern, clean, professional. Aspect ratio: 16:9. No text overlays, no watermarks.` }] }],
+                  generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
+                }),
+              });
+              if (!imgResp.ok) { console.error(`Image gen failed for ${key}:`, imgResp.status); return { key, url: null }; }
+              const imgData = await imgResp.json();
+              let base64: string | null = null;
+              const respParts = imgData.candidates?.[0]?.content?.parts;
+              if (respParts) {
+                for (const part of respParts) {
+                  if (part.inlineData?.data) {
+                    const mime = part.inlineData.mimeType || "image/png";
+                    base64 = `data:${mime};base64,${part.inlineData.data}`;
+                    break;
+                  }
                 }
               }
+              if (base64) {
+                const url = await uploadGeneratedImage(supabase, base64, authResult.userId, key);
+                return { key, url: url || base64 };
+              }
+              return { key, url: null };
             }
-            if (base64) {
-              const url = await uploadGeneratedImage(supabase, base64, authResult.userId, key);
-              return { key, url: url || base64 };
-            }
-            return { key, url: null };
           } catch (e) { console.error(`Image gen error for ${key}:`, e); return { key, url: null }; }
         })
       );
