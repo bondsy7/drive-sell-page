@@ -20,10 +20,55 @@ function extractJsonFromResponse(response: string): unknown {
     for (let i = 0; i < obr - cbr; i++) cleaned += ']';
     for (let i = 0; i < ob - cb; i++) cleaned += '}';
   }
-  try { return JSON.parse(cleaned); } catch (_e) {
-    cleaned = cleaned.replace(/,\s*}/g, "}").replace(/,\s*]/g, "]").replace(/[\x00-\x1F\x7F]/g, (ch) => ch === '\n' || ch === '\t' ? ch : '');
+  try {
+    return JSON.parse(cleaned);
+  } catch (_e) {
+    cleaned = cleaned
+      .replace(/,\s*}/g, "}")
+      .replace(/,\s*]/g, "]")
+      .replace(/[\x00-\x1F\x7F]/g, (ch) => ch === '\n' || ch === '\t' ? ch : '');
     return JSON.parse(cleaned);
   }
+}
+
+function extractTextFromGeminiResponse(data: any): string {
+  const parts = data?.candidates?.[0]?.content?.parts;
+  if (!Array.isArray(parts)) return "";
+  return parts
+    .map((part: any) => typeof part?.text === "string" ? part.text : "")
+    .filter(Boolean)
+    .join("\n")
+    .trim();
+}
+
+async function repairJsonResponse(apiKey: string, brokenResponse: string): Promise<unknown> {
+  const geminiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+  const repairResponse = await fetch(geminiUrl, {
+    method: "POST",
+    headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{
+        parts: [{
+          text: `Repariere den folgenden JSON-Text. Gib ausschließlich gültiges JSON zurück. Behalte Struktur und Inhalte soweit möglich bei, escape alle Strings korrekt und ergänze nur minimal, wenn der Text abgeschnitten wurde.\n\n${brokenResponse}`,
+        }],
+      }],
+      generationConfig: {
+        responseMimeType: "application/json",
+        maxOutputTokens: 16384,
+        temperature: 0,
+      },
+    }),
+  });
+
+  if (!repairResponse.ok) {
+    const errText = await repairResponse.text();
+    throw new Error(`JSON repair failed: ${repairResponse.status} ${errText.substring(0, 400)}`);
+  }
+
+  const repairData = await repairResponse.json();
+  const repairedText = extractTextFromGeminiResponse(repairData);
+  if (!repairedText) throw new Error("Repair response was empty");
+  return extractJsonFromResponse(repairedText);
 }
 
 const corsHeaders = {
