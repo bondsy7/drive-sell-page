@@ -233,8 +233,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       ? (cachedDealerLogoBase64Ref.current || cfg.remasterConfig.dealerLogoBase64 || null)
       : null;
 
-    // For interior jobs: do NOT send the custom showroom image
-    const showroomBase64ForRequest = isInteriorJob ? null : (cfg.remasterConfig.customShowroomBase64 || null);
+    // For interior jobs: ALSO send the custom showroom image so it's visible through windows
+    const showroomBase64ForRequest = cfg.remasterConfig.customShowroomBase64 || null;
 
     // Phase 4: Use cached Gemini File URIs when available
     const fileCache = cachedFileUrisRef.current;
@@ -263,7 +263,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       modelTier: cfg.modelTier,
       dynamicPrompt: fullPrompt,
       customShowroomBase64: hasFileUris ? null : showroomBase64ForRequest,
-      customShowroomFileUri: !isInteriorJob ? fileCache.showroom : null,
+      customShowroomFileUri: fileCache.showroom || null,
       customPlateImageBase64: isInteriorJob ? null : (cfg.remasterConfig.customPlateImageBase64 || null),
       dealerLogoUrl: dealerLogoBase64 ? null : (cfg.remasterConfig.showDealerLogo ? cfg.remasterConfig.dealerLogoUrl : null),
       dealerLogoBase64: dealerLogoBase64,
