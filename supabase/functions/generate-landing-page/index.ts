@@ -118,8 +118,7 @@ async function uploadUserImage(supabase: any, base64: string, userId: string, in
 
 // ─── Generate a single image via Gemini ───
 async function generateImage(apiKey: string, prompt: string, aspectHint: string): Promise<string | null> {
-  // Try gemini-2.0-flash-exp first (proven image gen support)
-  const models = ["gemini-2.0-flash-exp"];
+  const models = ["gemini-2.5-flash-preview-05-20"];
   
   for (const model of models) {
     try {
@@ -129,7 +128,7 @@ async function generateImage(apiKey: string, prompt: string, aspectHint: string)
         headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ parts: [{ text: `Generate a single high-quality professional automotive marketing photograph. ${aspectHint}. ${prompt}. Photorealistic, no text overlays, no watermarks, no logos, professional lighting.` }] }],
-          generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
+          generationConfig: { responseModalities: ["TEXT", "IMAGE"], temperature: 1.0 },
         }),
       });
       
