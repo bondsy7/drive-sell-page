@@ -171,7 +171,7 @@ async function uploadUserImage(supabase: any, base64: string, userId: string, in
 
 // ─── Generate a single image via Gemini ───
 async function generateImage(apiKey: string, prompt: string, aspectHint: string): Promise<string | null> {
-  const models = ["gemini-2.5-flash"];
+  const models = ["gemini-2.5-flash-image"];
   
   for (const model of models) {
     try {
