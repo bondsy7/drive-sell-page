@@ -337,7 +337,8 @@ Antworte AUSSCHLIESSLICH als JSON mit folgender Struktur:
 }
 
 Erstelle genau ${config.sectionCount} sections. Davon sollen ${config.imageCount} ein imagePrompt haben, der Rest null.
-Section-Types "specs", "comparison", "benefits" werden speziell gerendert – nutze sie wo sinnvoll.`;
+Section-Types "specs", "comparison", "benefits" werden speziell gerendert – nutze sie wo sinnvoll.
+${!uploadedImages?.length ? `\nWICHTIG: Es wurden KEINE eigenen Bilder hochgeladen. Du MUSST für JEDE visuelle Section einen detaillierten imagePrompt generieren, damit automatisch passende KI-Bilder erstellt werden. Generiere mindestens ${config.imageCount} imagePrompts. Jedes Bild soll thematisch exakt zur Section passen.` : ''}`;
 
     const userPrompt = `Erstelle eine ${config.label}-Landingpage für:\nMarke: ${brand}\nModell: ${model}${variantInfo}${colorInfo}\n${additionalInfo ? `Zusätzliche Informationen / Highlights: ${additionalInfo}` : ""}`;
 
