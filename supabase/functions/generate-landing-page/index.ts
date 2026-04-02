@@ -92,15 +92,23 @@ async function getCustomPrompt(key: string, defaultPrompt: string): Promise<stri
 
 async function authenticateAndDeductCredits(req: Request, cost: number): Promise<{ userId: string } | Response> {
   const authHeader = req.headers.get("Authorization");
-  if (!authHeader) return new Response(JSON.stringify({ error: "Nicht authentifiziert" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-  const supabase = createServiceClient();
+  if (!authHeader?.startsWith("Bearer ")) return new Response(JSON.stringify({ error: "Nicht authentifiziert" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   const token = authHeader.replace("Bearer ", "");
-  const { data: { user } } = await supabase.auth.getUser(token);
-  if (!user) return new Response(JSON.stringify({ error: "Nicht authentifiziert" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-  const { data, error } = await supabase.rpc("deduct_credits", { _user_id: user.id, _amount: cost, _action_type: "landing_page_export", _model: "gemini", _description: "Landing Page Generator" });
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!,
+    { global: { headers: { Authorization: authHeader } } }
+  );
+  const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+  if (claimsError || !claimsData?.claims?.sub) {
+    return new Response(JSON.stringify({ error: "Nicht authentifiziert" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+  const userId = claimsData.claims.sub as string;
+  const serviceClient = createServiceClient();
+  const { data, error } = await serviceClient.rpc("deduct_credits", { _user_id: userId, _amount: cost, _action_type: "landing_page_export", _model: "gemini", _description: "Landing Page Generator" });
   if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   if (!data?.success) return new Response(JSON.stringify({ error: "insufficient_credits", balance: data?.balance, cost }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-  return { userId: user.id };
+  return { userId };
 }
 
 // ─── Brand logo lookup ───
