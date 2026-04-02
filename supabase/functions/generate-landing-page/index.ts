@@ -485,11 +485,13 @@ ${!uploadedImages?.length ? `\nWICHTIG: Es wurden KEINE eigenen Bilder hochgelad
                 return { key, url: null };
               }
               const imgData = await imgResp.json();
+              console.log(`Image gen response for ${key}: choices=${imgData.choices?.length}, hasImages=${!!imgData.choices?.[0]?.message?.images?.length}`);
               const imageUrl = imgData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
               if (imageUrl) {
                 const url = await uploadGeneratedImage(supabase, imageUrl, authResult.userId, key);
                 return { key, url: url || null };
               }
+              console.error(`No image data in response for ${key}:`, JSON.stringify(imgData).substring(0, 300));
               return { key, url: null };
             } else {
               // Fallback: direct Gemini API with imagen model
