@@ -37,6 +37,7 @@ interface PipelineRunnerProps {
   vin?: string | null;
   onComplete: () => void;
   onBack: () => void;
+  onFollowUpAction?: (action: 'banner' | 'manual-landing' | 'video') => void;
 }
 
 /* ─── Constants ─── */
@@ -55,6 +56,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   vin,
   onComplete,
   onBack,
+  onFollowUpAction,
 }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
