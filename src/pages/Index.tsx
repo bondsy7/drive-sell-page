@@ -555,6 +555,7 @@ const Index = () => {
                 onVehicleDataChange={setVehicleData}
                 onBack={() => setAppState('standalone-photo-choice')}
                 onPipelineComplete={() => navigate('/dashboard?tab=gallery')}
+                onFollowUpAction={handlePipelineFollowUp}
               />
             </div>
           )}
