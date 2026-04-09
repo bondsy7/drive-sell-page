@@ -25,6 +25,7 @@ interface ImageCaptureGridProps {
   onVehicleDataChange?: (data: VehicleData) => void;
   onBack: () => void;
   onPipelineComplete?: () => void;
+  onFollowUpAction?: (action: 'banner' | 'manual-landing' | 'video') => void;
 }
 
 interface PerspectiveSlot {
@@ -621,6 +622,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
           }
         }}
         onBack={() => setShowPipeline(false)}
+        onFollowUpAction={onFollowUpAction}
       />
     );
   }
