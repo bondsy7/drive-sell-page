@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Timer } from 'lucide-react';
-import { Loader2, Check, AlertCircle, Zap, ArrowRight, ChevronDown, ChevronUp, Image, Images, RotateCcw, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Check, AlertCircle, Zap, ArrowRight, ChevronDown, ChevronUp, Image, Images, RotateCcw, Eye, EyeOff, Sparkles, Layout, Video as VideoIcon } from 'lucide-react';
 import ImagePreviewLightbox from '@/components/ImagePreviewLightbox';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -37,6 +37,7 @@ interface PipelineRunnerProps {
   vin?: string | null;
   onComplete: () => void;
   onBack: () => void;
+  onFollowUpAction?: (action: 'banner' | 'manual-landing' | 'video') => void;
 }
 
 /* ─── Constants ─── */
@@ -55,6 +56,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   vin,
   onComplete,
   onBack,
+  onFollowUpAction,
 }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -605,6 +607,57 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
         </p>
       )}
 
+      {/* Post-Pipeline Follow-Up Actions */}
+      {finished && allResultImages.length > 0 && onFollowUpAction && (
+        <div className="rounded-xl border border-accent/20 bg-accent/5 p-4 space-y-3">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-accent" />
+            Weiter mit deinen Bildern
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            Nutze deine Pipeline-Bilder direkt für weitere Aktionen – ohne erneuten Upload.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <button
+              onClick={() => onFollowUpAction!('banner')}
+              className="flex items-center gap-2 p-3 rounded-lg border border-border bg-card hover:border-accent/50 hover:shadow-sm transition-all text-left"
+            >
+              <div className="w-8 h-8 rounded-md bg-accent/10 text-accent flex items-center justify-center shrink-0">
+                <Image className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-foreground">Banner</p>
+                <p className="text-[10px] text-muted-foreground">Social Media & Ads</p>
+              </div>
+            </button>
+            <button
+              onClick={() => onFollowUpAction!('manual-landing')}
+              className="flex items-center gap-2 p-3 rounded-lg border border-border bg-card hover:border-accent/50 hover:shadow-sm transition-all text-left"
+            >
+              <div className="w-8 h-8 rounded-md bg-accent/10 text-accent flex items-center justify-center shrink-0">
+                <Layout className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-foreground">Landing Page</p>
+                <p className="text-[10px] text-muted-foreground">SEO-Angebotsseite</p>
+              </div>
+            </button>
+            <button
+              onClick={() => onFollowUpAction!('video')}
+              className="flex items-center gap-2 p-3 rounded-lg border border-border bg-card hover:border-accent/50 hover:shadow-sm transition-all text-left"
+            >
+              <div className="w-8 h-8 rounded-md bg-accent/10 text-accent flex items-center justify-center shrink-0">
+                <VideoIcon className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-foreground">Video</p>
+                <p className="text-[10px] text-muted-foreground">Showroom-Video</p>
+              </div>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Actions */}
       <div className="flex items-center justify-between gap-2 px-1">
         <Button variant="outline" size="sm" onClick={onBack} disabled={running} className="text-xs sm:text-sm">
@@ -624,23 +677,13 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
             )}
           </Button>
         ) : (
-          <div className="flex items-center gap-2">
-            <Button
-              onClick={onComplete}
-              variant="outline"
-              className="gap-1.5 sm:gap-2 text-xs sm:text-sm"
-            >
-              <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Zur Galerie
-            </Button>
-            {savedProjectId && (
-              <Button
-                onClick={() => navigate(`/project/${savedProjectId}`)}
-                className="gap-1.5 sm:gap-2 gradient-accent text-accent-foreground font-semibold text-xs sm:text-sm"
-              >
-                <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Zur Landing Page
-              </Button>
-            )}
-          </div>
+          <Button
+            onClick={onComplete}
+            variant="outline"
+            className="gap-1.5 sm:gap-2 text-xs sm:text-sm"
+          >
+            <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Zur Galerie
+          </Button>
         )}
       </div>
 

@@ -383,8 +383,25 @@ const Index = () => {
     navigate('/dashboard?tab=gallery');
   }, [selectedModelTier, saveStandaloneImages, navigate]);
 
+  // ─── Pipeline Follow-Up Action Handler ───
+  const handlePipelineFollowUp = useCallback((action: 'banner' | 'manual-landing' | 'video') => {
+    // Use the first pipeline result image as preloaded image for follow-up actions
+    const firstImage = standalonePhotoResults.length > 0 ? standalonePhotoResults[0] : undefined;
+    // Save pipeline images so they're available
+    switch (action) {
+      case 'banner':
+        setAppState('banner');
+        break;
+      case 'manual-landing':
+        setAppState('manual-landing');
+        break;
+      case 'video':
+        setAppState('video');
+        break;
+    }
+  }, [standalonePhotoResults]);
 
-  // ─── Hub Action Handler ───
+
   const handleHubAction = useCallback((action: HubAction) => {
     switch (action) {
       case 'photos':
@@ -555,6 +572,7 @@ const Index = () => {
                 onVehicleDataChange={setVehicleData}
                 onBack={() => setAppState('standalone-photo-choice')}
                 onPipelineComplete={() => navigate('/dashboard?tab=gallery')}
+                onFollowUpAction={handlePipelineFollowUp}
               />
             </div>
           )}
@@ -681,7 +699,7 @@ const Index = () => {
 
           {appState === 'capturing-images' && (
             <div className="mt-8">
-              <ImageCaptureGrid vehicleDescription={vehicleDescription} vehicleData={vehicleData || undefined} modelTier={selectedModelTier} projectId={savedProjectId} onComplete={handleCaptureComplete} onVehicleDataChange={setVehicleData} onBack={() => setAppState('choosing-image-source')} onPipelineComplete={() => navigate('/dashboard?tab=gallery')} />
+              <ImageCaptureGrid vehicleDescription={vehicleDescription} vehicleData={vehicleData || undefined} modelTier={selectedModelTier} projectId={savedProjectId} onComplete={handleCaptureComplete} onVehicleDataChange={setVehicleData} onBack={() => setAppState('choosing-image-source')} onPipelineComplete={() => navigate('/dashboard?tab=gallery')} onFollowUpAction={handlePipelineFollowUp} />
             </div>
           )}
 
