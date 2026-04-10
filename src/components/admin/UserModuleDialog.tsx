@@ -5,7 +5,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { MODULE_KEYS, MODULE_LABELS, type ModuleKey } from '@/hooks/useModuleAccess';
+import { MODULE_KEYS, MODULE_LABELS, MODULE_CHILDREN, type ModuleKey } from '@/hooks/useModuleAccess';
 
 interface Props {
   userId: string;
@@ -13,6 +13,11 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
+
+/** Top-level keys (not children of another module) */
+const TOP_LEVEL_KEYS = MODULE_KEYS.filter(
+  k => !Object.values(MODULE_CHILDREN).some(children => children?.includes(k))
+);
 
 export default function UserModuleDialog({ userId, userEmail, open, onOpenChange }: Props) {
   const [modules, setModules] = useState<Record<ModuleKey, boolean>>(() => {
@@ -24,7 +29,6 @@ export default function UserModuleDialog({ userId, userEmail, open, onOpenChange
 
   useEffect(() => {
     if (!open) return;
-    // Reset to all enabled, then load overrides
     const init: any = {};
     MODULE_KEYS.forEach(k => init[k] = true);
 
@@ -44,7 +48,6 @@ export default function UserModuleDialog({ userId, userEmail, open, onOpenChange
 
   const save = async () => {
     setSaving(true);
-    // Upsert all module settings
     const rows = MODULE_KEYS.map(key => ({
       user_id: userId,
       module_key: key,
@@ -65,20 +68,30 @@ export default function UserModuleDialog({ userId, userEmail, open, onOpenChange
     setSaving(false);
   };
 
+  const renderSwitch = (key: ModuleKey, indent = false) => (
+    <div key={key} className={`flex items-center justify-between py-1.5 ${indent ? 'pl-6' : ''}`}>
+      <Label className={`text-sm ${indent ? 'text-muted-foreground' : 'font-medium'}`}>
+        {MODULE_LABELS[key]}
+      </Label>
+      <Switch
+        checked={modules[key]}
+        onCheckedChange={v => setModules(prev => ({ ...prev, [key]: v }))}
+        disabled={indent && !modules[Object.entries(MODULE_CHILDREN).find(([, children]) => children?.includes(key))?.[0] as ModuleKey]}
+      />
+    </div>
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogTitle>Module verwalten</DialogTitle>
         <DialogDescription className="text-xs">{userEmail}</DialogDescription>
         <div className="space-y-3 mt-4">
-          {MODULE_KEYS.map(key => (
-            <div key={key} className="flex items-center justify-between py-1.5">
-              <Label className="text-sm font-medium">{MODULE_LABELS[key]}</Label>
-              <Switch
-                checked={modules[key]}
-                onCheckedChange={v => setModules(prev => ({ ...prev, [key]: v }))}
-              />
-            </div>
+          {TOP_LEVEL_KEYS.map(key => (
+            <React.Fragment key={key}>
+              {renderSwitch(key)}
+              {MODULE_CHILDREN[key]?.map(child => renderSwitch(child, true))}
+            </React.Fragment>
           ))}
         </div>
         <div className="flex justify-end gap-2 pt-4">
