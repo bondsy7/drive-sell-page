@@ -4,6 +4,9 @@ import { useAuth } from '@/hooks/useAuth';
 
 export const MODULE_KEYS = [
   'photos',
+  'photos-preset',
+  'photos-multi',
+  'photos-spin360',
   'pdf-landing',
   'manual-landing',
   'banner',
@@ -15,11 +18,19 @@ export type ModuleKey = typeof MODULE_KEYS[number];
 
 export const MODULE_LABELS: Record<ModuleKey, string> = {
   'photos': 'Fotos & Remastering',
+  'photos-preset': 'Bildergenerator',
+  'photos-multi': 'Mehrfach-Perspektiven',
+  'photos-spin360': '360° Spin',
   'pdf-landing': 'PDF → Angebotsseite',
   'manual-landing': 'Landing Page manuell',
   'banner': 'Banner Generator',
   'video': 'Video Erstellung',
   'sales-assistant': 'KI Verkaufsassistent',
+};
+
+/** Sub-modules grouped under a parent module */
+export const MODULE_CHILDREN: Partial<Record<ModuleKey, ModuleKey[]>> = {
+  'photos': ['photos-preset', 'photos-multi', 'photos-spin360'],
 };
 
 /**
