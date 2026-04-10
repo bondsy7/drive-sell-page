@@ -8,6 +8,7 @@ import {
   Smartphone, Zap, RotateCcw
 } from 'lucide-react';
 import auto3Logo from '@/assets/auto3-logo.png';
+import heroShowroom from '@/assets/hero-showroom.webp';
 
 /* ─── POA Feature Cards ─── */
 const POA_STEPS = [
@@ -128,45 +129,51 @@ const Landing = () => {
       </header>
 
       {/* ── Hero ── */}
-      <section className="relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 py-20 md:py-32">
+      <section className="relative overflow-hidden min-h-[85vh] flex items-center">
+        {/* Hero background image */}
+        <div className="absolute inset-0">
+          <img
+            src={heroShowroom}
+            alt="KI-generierte Showroom-Perspektiven"
+            className="w-full h-full object-cover"
+          />
+          {/* Dark overlay gradient for readability */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/55 to-black/80" />
+        </div>
+
+        <div className="relative max-w-7xl mx-auto px-4 py-24 md:py-36 z-10">
           <div className="max-w-3xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/8 border border-accent/15 text-accent text-xs font-bold mb-8 tracking-wide uppercase">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/20 text-white text-xs font-bold mb-8 tracking-wide uppercase backdrop-blur-sm">
               <Zap className="w-3.5 h-3.5" />
               POA – Point of Arrival
             </div>
-            <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-foreground mb-6 leading-[1.08] tracking-tight">
+            <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-[1.08] tracking-tight">
               Verwandle die Ankunft
               <span className="block text-accent">in ein Erlebnis.</span>
             </h1>
-            <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-lg md:text-xl text-white/75 mb-10 max-w-2xl mx-auto leading-relaxed">
               AUTO3 ist der Moment, in dem ein einfaches Handyfoto zur fotorealistischen
               Showroom-Inszenierung wird. Minimale Standzeiten, maximale Marge – durch KI-gestützte Ästhetik.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link to={user ? '/generator' : '/auth'}>
-                <Button size="lg" className="gradient-accent text-accent-foreground text-base px-8 h-13 gap-2 shadow-glow">
+                <Button size="lg" className="gradient-accent text-accent-foreground text-lg px-10 h-14 gap-2.5 shadow-glow hover:scale-105 transition-transform font-bold">
                   <Sparkles className="w-5 h-5" />
                   {user ? 'Zum Generator' : 'Jetzt kostenlos starten'}
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="w-5 h-5" />
                 </Button>
               </Link>
               <a href="#poa">
-                <Button variant="outline" size="lg" className="text-base px-8 h-13 border-border hover:bg-secondary">
+                <Button variant="outline" size="lg" className="text-base px-8 h-14 border-white/30 text-white hover:bg-white/10 backdrop-blur-sm">
                   So funktioniert's
                 </Button>
               </a>
             </div>
-            <p className="text-muted-foreground/60 text-xs mt-6">
+            <p className="text-white/50 text-xs mt-6">
               10 kostenlose Credits · Kein Abo nötig · Sofort loslegen
             </p>
           </div>
         </div>
-        {/* Subtle decorative dots */}
-        <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{
-          backgroundImage: `radial-gradient(circle at 1px 1px, hsl(var(--foreground)) 0.5px, transparent 0)`,
-          backgroundSize: '40px 40px',
-        }} />
       </section>
 
       {/* ── Stats Strip ── */}
