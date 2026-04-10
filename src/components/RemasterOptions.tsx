@@ -391,7 +391,7 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
       {/* Logo Configuration */}
       <div className="space-y-3">
         <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-          <Building2 className="w-3.5 h-3.5" /> Logo-Konfiguration
+          <Building2 className="w-3.5 h-3.5" /> Logo-Konfiguration <span className="text-destructive">*</span>
         </Label>
 
         {/* Manufacturer Logo Toggle – always enabled */}
