@@ -84,6 +84,21 @@ function compressImage(dataUrl: string, maxDim = 2048, quality = 0.85): Promise<
   });
 }
 
+const DETAIL_CATEGORIES = [
+  { icon: '🎛️', label: 'Mittelkonsole' },
+  { icon: '📊', label: 'Armaturenbrett' },
+  { icon: '📺', label: 'Infotainment' },
+  { icon: '🎡', label: 'Lenkrad' },
+  { icon: '🛞', label: 'Reifen' },
+  { icon: '🪞', label: 'Außenspiegel' },
+  { icon: '🔍', label: 'Innenspiegel' },
+  { icon: '🧳', label: 'Kofferraum' },
+  { icon: '💡', label: 'Lichter (Vorne)' },
+  { icon: '🔴', label: 'Rücklichter' },
+  { icon: '🔧', label: 'Motorraum' },
+  { icon: '📐', label: 'Bodenfreiheit' },
+];
+
 const DEFAULT_CONFIG: RemasterConfig = {
   scene: '',
   licensePlate: '',
