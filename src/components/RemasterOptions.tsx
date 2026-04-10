@@ -253,10 +253,12 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
 
       {/* Scene Dropdown */}
       <div className="space-y-2">
-        <Label className="text-xs font-medium text-muted-foreground">Szene</Label>
+        <Label className="text-xs font-medium text-muted-foreground">Szene <span className="text-destructive">*</span></Label>
         <p className="text-[11px] text-muted-foreground/70">Wähle eine spezielle Szene für den Hintergrund</p>
-        <Select value={config.scene} onValueChange={(v) => update({ scene: v })}>
-          <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+        <Select value={config.scene || undefined} onValueChange={(v) => update({ scene: v })}>
+          <SelectTrigger className={`w-full ${!config.scene ? 'border-destructive/50' : ''}`}>
+            <SelectValue placeholder="Bitte wählen" />
+          </SelectTrigger>
           <SelectContent>
             {SCENE_OPTIONS.map(opt => (
               <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
@@ -320,11 +322,13 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
       {/* License Plate */}
       <div className="space-y-2">
         <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-          <Tag className="w-3.5 h-3.5" /> Nummernschild
+          <Tag className="w-3.5 h-3.5" /> Nummernschild <span className="text-destructive">*</span>
         </Label>
         <p className="text-[11px] text-muted-foreground/70">Was soll mit dem Nummernschild passieren?</p>
-        <Select value={config.licensePlate} onValueChange={(v) => update({ licensePlate: v })}>
-          <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+        <Select value={config.licensePlate || undefined} onValueChange={(v) => update({ licensePlate: v })}>
+          <SelectTrigger className={`w-full ${!config.licensePlate ? 'border-destructive/50' : ''}`}>
+            <SelectValue placeholder="Bitte wählen" />
+          </SelectTrigger>
           <SelectContent>
             {LICENSE_PLATE_OPTIONS.map(opt => (
               <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>

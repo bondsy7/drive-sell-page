@@ -33,8 +33,8 @@ const MAX_SIZE_MB = 10;
 // fileToBase64 and compressImageForAI imported from '@/lib/image-compress'
 
 const DEFAULT_CONFIG: RemasterConfig = {
-  scene: 'none',
-  licensePlate: 'keep',
+  scene: '',
+  licensePlate: '',
   changeColor: false,
   showManufacturerLogo: false,
   showDealerLogo: false,
