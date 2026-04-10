@@ -426,7 +426,14 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   const cachedMfgLogoRef = useRef<string | null>(null);
   const cachedDealerLogoRef = useRef<string | null>(null);
 
+  const isRemasterConfigValid = remasterConfig.scene && remasterConfig.licensePlate;
+
   const startRemastering = async () => {
+    if (!remasterConfig.scene || !remasterConfig.licensePlate) {
+      toast.error('Bitte wähle zuerst Szene und Nummernschild-Option aus.');
+      return;
+    }
+
     const toProcess = vehicleSlots.filter(s => captures[s.key] && captures[s.key].status !== 'done');
     if (toProcess.length === 0) {
       finishUp();
@@ -839,7 +846,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
           {!allVehicleDone ? (
             <Button
               onClick={startRemastering}
-              disabled={capturedVehicleImages.length === 0 || isProcessing}
+              disabled={capturedVehicleImages.length === 0 || isProcessing || !isRemasterConfigValid}
               className="gap-2 gradient-accent text-accent-foreground font-semibold"
             >
               {isProcessing ? (
