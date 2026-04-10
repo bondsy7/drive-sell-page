@@ -732,20 +732,20 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       <div className="space-y-3">
         <h3 className="text-sm font-semibold text-foreground">Weitere Detailaufnahmen (Multiupload)</h3>
 
-        {/* Category icons grid */}
-        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-          {DETAIL_CATEGORIES.map((cat) => (
-            <button
-              key={cat.label}
-              type="button"
-              onClick={() => detailFileRef.current?.click()}
-              disabled={isProcessing || detailImages.length >= 10}
-              className="flex flex-col items-center justify-center gap-1.5 p-2.5 rounded-xl border border-border bg-card hover:border-accent hover:bg-muted/50 transition-colors text-center"
-            >
-              <span className="text-xl">{cat.icon}</span>
-              <span className="text-[9px] leading-tight font-medium text-muted-foreground">{cat.label}</span>
-            </button>
-          ))}
+        {/* Guide image showing what details to capture */}
+        <div
+          onClick={() => detailFileRef.current?.click()}
+          className="cursor-pointer rounded-xl border-2 border-dashed border-border hover:border-accent bg-card hover:bg-muted/30 transition-colors overflow-hidden"
+        >
+          <img
+            src="/images/detail-upload-guide.png"
+            alt="Detailaufnahmen Guide – Mittelkonsole, Armaturenbrett, Infotainment, Lenkrad, Reifen, etc."
+            className="w-full h-auto opacity-60 hover:opacity-80 transition-opacity"
+          />
+          <div className="flex items-center justify-center gap-2 py-3 border-t border-border">
+            <Upload className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm font-medium text-muted-foreground">Durchsuchen und Hinzufügen</span>
+          </div>
         </div>
 
         {/* Uploaded detail images */}
@@ -775,18 +775,6 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
               </button>
             )}
           </div>
-        )}
-
-        {/* Upload button when no details yet */}
-        {detailImages.length === 0 && (
-          <button
-            onClick={() => detailFileRef.current?.click()}
-            disabled={isProcessing}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-border hover:border-accent bg-card hover:bg-muted/50 transition-colors"
-          >
-            <Upload className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm font-medium text-muted-foreground">Durchsuchen und Hinzufügen</span>
-          </button>
         )}
 
         <p className="text-xs text-muted-foreground leading-relaxed">
