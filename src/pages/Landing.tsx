@@ -168,7 +168,7 @@ const Landing = () => {
                 </Button>
               </Link>
               <a href="#poa">
-                <Button variant="outline" size="lg" className="text-base px-8 h-[56px] border-white/60 text-white font-semibold hover:bg-white/20 hover:border-white/80 backdrop-blur-md rounded-xl transition-all duration-300">
+                <Button variant="outline" size="lg" className="text-base px-8 h-[56px] bg-white/90 border-white text-black font-semibold hover:bg-white hover:text-black rounded-xl transition-all duration-300">
                   So funktioniert's
                 </Button>
               </a>
