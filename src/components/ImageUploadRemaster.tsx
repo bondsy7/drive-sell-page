@@ -92,10 +92,10 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
     handleFiles(e.dataTransfer.files);
   }, [handleFiles]);
 
-  const isRemasterConfigValid = config.scene && config.licensePlate;
+  const isRemasterConfigValid = remasterConfig.scene && remasterConfig.licensePlate;
 
   const startRemastering = async () => {
-    if (!config.scene || !config.licensePlate) {
+    if (!remasterConfig.scene || !remasterConfig.licensePlate) {
       toast.error('Bitte wähle zuerst Szene und Nummernschild-Option aus.');
       return;
     }
