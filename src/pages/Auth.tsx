@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Mail, Lock, User, Chrome, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { STRIPE_PRICES } from '@/lib/stripe-plans';
-import logoLight from '@/assets/logo-light.png';
+import auto3Logo from '@/assets/auto3-logo.png';
 
 const Auth = () => {
   const { user, loading } = useAuth();
@@ -116,7 +116,7 @@ const Auth = () => {
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-4">
           <Link to="/">
-            <img src={logoLight} alt="Autohaus.AI" className="h-14 mx-auto" />
+            <img src={auto3Logo} alt="AUTO3" className="h-14 mx-auto" />
           </Link>
           <p className="text-sm text-muted-foreground">
             {isLogin ? 'Melde dich an' : 'Erstelle deinen Account'}
