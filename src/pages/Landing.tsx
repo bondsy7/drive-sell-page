@@ -2,52 +2,75 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import {
-  FileText, Sparkles, Image, Calculator, LayoutDashboard,
-  Zap, ArrowRight, Shield, Clock, Globe, ChevronRight,
-  Bot, Palette, BarChart3, Car, Users, LogOut, User
+  Camera, Sparkles, Image, Globe, ArrowRight, ChevronRight,
+  Bot, Palette, BarChart3, Car, Users, LogOut, User,
+  LayoutDashboard, Video, FileText, Megaphone, Shield, ScanLine,
+  Smartphone, Zap, RotateCcw
 } from 'lucide-react';
-import logoDark from '@/assets/logo-dark.png';
-import logoLight from '@/assets/logo-light.png';
-import heroBg from '@/assets/hero-bg.png';
+import auto3Logo from '@/assets/auto3-logo.png';
 
-const FEATURES = [
+/* ─── POA Feature Cards ─── */
+const POA_STEPS = [
   {
-    icon: FileText,
-    title: 'PDF hochladen',
-    desc: 'Lade ein Fahrzeugangebot als PDF hoch – unsere KI erkennt automatisch alle relevanten Daten wie Marke, Modell, Preis, Ausstattung und Verbrauchswerte.',
+    num: '01',
+    icon: Camera,
+    title: 'Ankunft am Hof',
+    subtitle: 'Handyfoto & VIN-Scan',
+    desc: 'Auto kommt an – Handy zücken, Foto machen. Unsere KI erkennt Marke, Modell und Ausstattung sofort per VIN/WMI-Lookup.',
   },
   {
-    icon: Bot,
-    title: 'KI-Analyse',
-    desc: 'Gemini 2.5 Flash analysiert dein PDF in Sekunden und extrahiert alle Fahrzeugdaten – Leasing, Finanzierung oder Kauf werden automatisch erkannt.',
+    num: '02',
+    icon: Sparkles,
+    title: 'KI-Veredelung',
+    subtitle: 'Fotorealistischer Showroom',
+    desc: 'In Sekunden generiert AUTO3 aus deinem Handyfoto 18+ fotorealistische Perspektiven im Premium-Showroom – inklusive 360°-Spin.',
   },
   {
-    icon: Image,
-    title: 'Bildgenerierung & Remastering',
-    desc: 'Generiere fotorealistische Showroom-Bilder mit KI oder lade eigene Fotos hoch und lasse sie professionell aufbereiten.',
-  },
-  {
-    icon: Palette,
-    title: 'Template-System',
-    desc: 'Wähle aus professionellen Templates wie Autohaus, Modern, Klassisch oder Minimalist – sofort anpassbar und responsive.',
-  },
-  {
-    icon: Calculator,
-    title: 'Finanzrechner',
-    desc: 'Integrierte Leasing- und Finanzierungsrechner mit Bankauswahl und rechtlichen Hinweisen direkt in der Angebotsseite.',
-  },
-  {
-    icon: Globe,
-    title: 'HTML-Export',
-    desc: 'Exportiere fertige Landingpages als standalone HTML-Datei – mit CO₂-Label, Kontaktformular und allen Bildern.',
+    num: '03',
+    icon: Megaphone,
+    title: 'Sofort vermarkten',
+    subtitle: 'Banner, Videos & Landing Pages',
+    desc: 'Banner für Social Media, Reels-Videos und SEO-optimierte Angebotsseiten – alles vollautomatisch in Minuten fertig.',
   },
 ];
 
-const STATS = [
-  { value: '< 30s', label: 'PDF-Analyse' },
-  { value: '7+', label: 'KI-Perspektiven' },
-  { value: '4', label: 'Templates' },
-  { value: '100%', label: 'WLTP-konform' },
+const TOOLS = [
+  {
+    icon: Image,
+    title: 'Visual AI Engine',
+    desc: 'Fotorealistische Showroom-Bilder aus einfachen Handyfotos. 18+ Perspektiven, Innenraum & Außenansicht.',
+  },
+  {
+    icon: RotateCcw,
+    title: '360° Spin Generator',
+    desc: 'Interaktive 360°-Fahrzeugansichten aus Bildern oder Videos. Bis zu 72 Frames für maximale Immersion.',
+  },
+  {
+    icon: Palette,
+    title: 'Banner Architect',
+    desc: 'Verkaufsfertige Werbemittel für alle Social-Media-Formate. Instagram, Facebook, TikTok – ein Klick.',
+  },
+  {
+    icon: Video,
+    title: 'Cinematic Video Engine',
+    desc: 'Dynamische Showroom-Videos für Reels & Stories. Maximale Aufmerksamkeit auf allen Kanälen.',
+  },
+  {
+    icon: FileText,
+    title: 'PDF Intelligence Converter',
+    desc: 'Einkaufs-PDFs werden zu SEO-optimierten HTML-Landingpages mit CO₂-Label, Finanzrechner und Kontaktformular.',
+  },
+  {
+    icon: Bot,
+    title: 'KI-Verkaufsassistent',
+    desc: 'Lead-Management & automatisierte Kundenkommunikation rund um die Uhr. CRM inklusive.',
+  },
+];
+
+const AUDIENCES = [
+  { icon: Car, title: 'Autohäuser', desc: 'Maximiere deine Marge durch minimale Standzeiten und professionelle CI-Pipelines.' },
+  { icon: BarChart3, title: 'Freie Händler', desc: 'Nutze High-End-Technologie ohne teure Agenturkosten.' },
+  { icon: Users, title: 'Privatpersonen', desc: 'Verkaufe dein Auto wie ein Profi mit Bildern, die Käufer begeistern.' },
 ];
 
 const Landing = () => {
@@ -55,45 +78,43 @@ const Landing = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <header className="border-b border-border/50 bg-primary/95 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 h-14 sm:h-16 flex items-center justify-between">
+      {/* ── Navigation ── */}
+      <header className="border-b border-border/60 bg-background/90 backdrop-blur-md sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center">
-            <img src={logoDark} alt="Autohaus.AI" className="h-8 sm:h-10" />
+            <img src={auto3Logo} alt="AUTO3" className="h-8 sm:h-10" />
           </Link>
-          <nav className="hidden md:flex items-center gap-6">
-            <a href="#features" className="text-primary-foreground/70 hover:text-primary-foreground text-sm font-medium transition-colors">Features</a>
-            <a href="#workflow" className="text-primary-foreground/70 hover:text-primary-foreground text-sm font-medium transition-colors">So funktioniert's</a>
-            <Link to="/pricing" className="text-primary-foreground/70 hover:text-primary-foreground text-sm font-medium transition-colors">Preise</Link>
+          <nav className="hidden md:flex items-center gap-8">
+            <a href="#poa" className="text-foreground/60 hover:text-foreground text-sm font-medium transition-colors">So funktioniert's</a>
+            <a href="#tools" className="text-foreground/60 hover:text-foreground text-sm font-medium transition-colors">Werkzeuge</a>
+            <Link to="/pricing" className="text-foreground/60 hover:text-foreground text-sm font-medium transition-colors">Preise</Link>
           </nav>
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="flex items-center gap-2">
             {user ? (
               <>
                 <Link to="/generator">
                   <Button size="sm" className="gradient-accent text-accent-foreground gap-1.5 text-xs sm:text-sm">
-                    <Sparkles className="w-3.5 h-3.5" /> <span className="hidden xs:inline">Generator</span>
+                    <Sparkles className="w-3.5 h-3.5" /> Generator
                   </Button>
                 </Link>
                 <Link to="/dashboard" className="hidden sm:inline-flex">
-                  <Button variant="ghost" size="sm" className="text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10 gap-1.5">
+                  <Button variant="ghost" size="sm" className="gap-1.5 text-foreground/60 hover:text-foreground">
                     <LayoutDashboard className="w-3.5 h-3.5" /> <span className="hidden md:inline">Dashboard</span>
                   </Button>
                 </Link>
                 <Link to="/profile" className="hidden sm:inline-flex">
-                  <Button variant="ghost" size="icon" className="text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10">
+                  <Button variant="ghost" size="icon" className="text-foreground/60 hover:text-foreground">
                     <User className="w-4 h-4" />
                   </Button>
                 </Link>
-                <Button variant="ghost" size="icon" onClick={signOut} className="text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10">
+                <Button variant="ghost" size="icon" onClick={signOut} className="text-foreground/60 hover:text-foreground">
                   <LogOut className="w-4 h-4" />
                 </Button>
               </>
             ) : (
               <>
                 <Link to="/auth" className="hidden sm:inline-flex">
-                  <Button variant="ghost" size="sm" className="text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10">
-                    Anmelden
-                  </Button>
+                  <Button variant="ghost" size="sm" className="text-foreground/60 hover:text-foreground">Anmelden</Button>
                 </Link>
                 <Link to="/auth">
                   <Button size="sm" className="gradient-accent text-accent-foreground text-xs sm:text-sm">
@@ -106,96 +127,91 @@ const Landing = () => {
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="relative overflow-hidden min-h-[60vh] md:min-h-[70vh] flex items-center">
-        {/* Background image */}
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: `url(${heroBg})` }}
-        />
-        {/* Dark overlay for text readability */}
-        <div className="absolute inset-0 bg-primary/75" />
-        {/* Subtle accent dots */}
-        <div className="absolute inset-0 opacity-[0.04]" style={{
-          backgroundImage: `radial-gradient(circle at 1px 1px, hsl(var(--accent)) 1px, transparent 0)`,
-          backgroundSize: '32px 32px',
-        }} />
-        <div className="relative max-w-7xl mx-auto px-4 py-24 md:py-36 w-full">
+      {/* ── Hero ── */}
+      <section className="relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 py-20 md:py-32">
           <div className="max-w-3xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/15 border border-accent/20 text-accent text-xs font-semibold mb-8 backdrop-blur-sm">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/8 border border-accent/15 text-accent text-xs font-bold mb-8 tracking-wide uppercase">
               <Zap className="w-3.5 h-3.5" />
-              Powered by Automotive Intelligence
+              POA – Point of Arrival
             </div>
-            <h1 className="font-display text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold text-primary-foreground mb-6 leading-[1.1] tracking-tight">
-              Fahrzeugangebote in
-              <span className="block bg-gradient-to-r from-accent to-blue-400 bg-clip-text text-transparent">
-                Sekunden erstellen
-              </span>
+            <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-foreground mb-6 leading-[1.08] tracking-tight">
+              Verwandle die Ankunft
+              <span className="block text-accent">in ein Erlebnis.</span>
             </h1>
-            <p className="text-lg md:text-xl text-primary-foreground/80 mb-10 max-w-2xl mx-auto leading-relaxed">
-              Lade ein Fahrzeugangebot als PDF hoch – unsere KI erstellt daraus eine
-              professionelle Verkaufsseite mit Bildern, Finanzierung und CO₂-Label.
+            <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto leading-relaxed">
+              AUTO3 ist der Moment, in dem ein einfaches Handyfoto zur fotorealistischen
+              Showroom-Inszenierung wird. Minimale Standzeiten, maximale Marge – durch KI-gestützte Ästhetik.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link to={user ? '/generator' : '/auth'}>
-                <Button size="lg" className="gradient-accent text-accent-foreground text-base px-8 h-12 gap-2 shadow-glow">
+                <Button size="lg" className="gradient-accent text-accent-foreground text-base px-8 h-13 gap-2 shadow-glow">
                   <Sparkles className="w-5 h-5" />
                   {user ? 'Zum Generator' : 'Jetzt kostenlos starten'}
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>
-              <a href="#features">
-                <Button variant="outline" size="lg" className="border-primary-foreground/20 text-primary-foreground bg-transparent hover:bg-primary-foreground/10 text-base px-8 h-12">
-                  Features entdecken
+              <a href="#poa">
+                <Button variant="outline" size="lg" className="text-base px-8 h-13 border-border hover:bg-secondary">
+                  So funktioniert's
                 </Button>
               </a>
             </div>
-            <p className="text-primary-foreground/40 text-xs mt-6">
+            <p className="text-muted-foreground/60 text-xs mt-6">
               10 kostenlose Credits · Kein Abo nötig · Sofort loslegen
             </p>
           </div>
         </div>
-        {/* Gradient fade at bottom */}
-        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent" />
+        {/* Subtle decorative dots */}
+        <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{
+          backgroundImage: `radial-gradient(circle at 1px 1px, hsl(var(--foreground)) 0.5px, transparent 0)`,
+          backgroundSize: '40px 40px',
+        }} />
       </section>
 
-      {/* Stats Bar */}
-      <section className="border-b border-border bg-card">
+      {/* ── Stats Strip ── */}
+      <section className="border-y border-border bg-card">
         <div className="max-w-5xl mx-auto px-4 py-8 grid grid-cols-2 md:grid-cols-4 gap-6">
-          {STATS.map((stat) => (
-            <div key={stat.label} className="text-center">
-              <div className="font-display text-2xl md:text-3xl font-bold text-accent">{stat.value}</div>
-              <div className="text-sm text-muted-foreground mt-1">{stat.label}</div>
+          {[
+            { value: '< 30s', label: 'Verarbeitungszeit' },
+            { value: '18+', label: 'KI-Perspektiven' },
+            { value: '360°', label: 'Interaktive Spins' },
+            { value: '100%', label: 'WLTP-konform' },
+          ].map((s) => (
+            <div key={s.label} className="text-center">
+              <div className="font-display text-2xl md:text-3xl font-bold text-accent">{s.value}</div>
+              <div className="text-sm text-muted-foreground mt-1">{s.label}</div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Workflow Section */}
-      <section id="workflow" className="py-20 md:py-28">
-        <div className="max-w-5xl mx-auto px-4">
+      {/* ── POA Workflow ── */}
+      <section id="poa" className="py-20 md:py-28">
+        <div className="max-w-6xl mx-auto px-4">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/10 text-accent text-xs font-semibold mb-4">
-              <Clock className="w-3.5 h-3.5" />
-              In 3 einfachen Schritten
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/8 text-accent text-xs font-bold mb-4 tracking-wide uppercase">
+              <Smartphone className="w-3.5 h-3.5" />
+              Der POA-Workflow
             </div>
-            <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground">
-              So funktioniert's
+            <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-3">
+              Vom Hof ins Internet in 3 Akten
             </h2>
+            <p className="text-muted-foreground max-w-lg mx-auto">
+              Point of Arrival – das Fahrzeug kommt an und alles passiert automatisch.
+            </p>
           </div>
+
           <div className="grid md:grid-cols-3 gap-8">
-            {[
-              { num: '01', title: 'PDF hochladen', desc: 'Ziehe dein Fahrzeugangebot per Drag & Drop in die App. Leasing, Kauf oder Finanzierung – alles wird erkannt.', icon: FileText },
-              { num: '02', title: 'KI analysiert', desc: 'In unter 30 Sekunden extrahiert unsere KI alle Daten: Fahrzeug, Preis, Ausstattung, Verbrauch und mehr.', icon: Bot },
-              { num: '03', title: 'Bearbeiten & exportieren', desc: 'Wähle ein Template, bearbeite die Daten und exportiere als fertige HTML-Landingpage mit Bildern und CO₂-Label.', icon: Globe },
-            ].map((step) => (
+            {POA_STEPS.map((step) => (
               <div key={step.num} className="relative group">
-                <div className="bg-card border border-border rounded-2xl p-8 h-full transition-all hover:shadow-elevated hover:border-accent/30">
-                  <div className="text-accent/20 font-display text-5xl font-bold mb-4">{step.num}</div>
-                  <div className="w-10 h-10 rounded-xl gradient-accent flex items-center justify-center mb-4">
+                <div className="bg-card border border-border rounded-2xl p-8 h-full transition-all hover:shadow-elevated hover:border-accent/25">
+                  <div className="text-accent/15 font-display text-6xl font-bold mb-3 leading-none">{step.num}</div>
+                  <div className="w-11 h-11 rounded-xl gradient-accent flex items-center justify-center mb-4">
                     <step.icon className="w-5 h-5 text-accent-foreground" />
                   </div>
-                  <h3 className="font-display font-bold text-foreground text-lg mb-2">{step.title}</h3>
+                  <h3 className="font-display font-bold text-foreground text-lg mb-1">{step.title}</h3>
+                  <p className="text-accent text-sm font-medium mb-3">{step.subtitle}</p>
                   <p className="text-muted-foreground text-sm leading-relaxed">{step.desc}</p>
                 </div>
               </div>
@@ -204,74 +220,71 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section id="features" className="py-20 md:py-28 bg-muted/50">
+      {/* ── Tool Suite ── */}
+      <section id="tools" className="py-20 md:py-28 bg-card">
         <div className="max-w-6xl mx-auto px-4">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/10 text-accent text-xs font-semibold mb-4">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/8 text-accent text-xs font-bold mb-4 tracking-wide uppercase">
               <Sparkles className="w-3.5 h-3.5" />
-              Alles was du brauchst
+              Die Werkzeuge
             </div>
             <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-3">
-              Leistungsstarke Features
+              Marketing & Sales Intelligence
             </h2>
             <p className="text-muted-foreground max-w-lg mx-auto">
-              Von der PDF-Analyse bis zum fertigen HTML-Export – alles in einer Anwendung.
+              Alles, was du brauchst – von der Bildveredelung bis zum Verkaufsabschluss.
             </p>
           </div>
+
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {FEATURES.map((feature) => (
+            {TOOLS.map((tool) => (
               <div
-                key={feature.title}
-                className="bg-card border border-border rounded-2xl p-6 transition-all hover:shadow-elevated hover:border-accent/30 group"
+                key={tool.title}
+                className="bg-background border border-border rounded-2xl p-6 transition-all hover:shadow-elevated hover:border-accent/25 group"
               >
-                <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center mb-4 group-hover:gradient-accent transition-all">
-                  <feature.icon className="w-5 h-5 text-accent group-hover:text-accent-foreground transition-colors" />
+                <div className="w-11 h-11 rounded-xl bg-accent/8 flex items-center justify-center mb-4 group-hover:gradient-accent transition-all">
+                  <tool.icon className="w-5 h-5 text-accent group-hover:text-accent-foreground transition-colors" />
                 </div>
-                <h3 className="font-display font-bold text-foreground mb-2">{feature.title}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">{feature.desc}</p>
+                <h3 className="font-display font-bold text-foreground mb-2">{tool.title}</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">{tool.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Who is it for */}
+      {/* ── Audiences ── */}
       <section className="py-20 md:py-28">
         <div className="max-w-5xl mx-auto px-4">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/10 text-accent text-xs font-semibold mb-4">
-              <Users className="w-3.5 h-3.5" />
-              Für wen?
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/8 text-accent text-xs font-bold mb-4 tracking-wide uppercase">
+              <Shield className="w-3.5 h-3.5" />
+              Perfekt für die Automobilbranche
             </div>
             <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground">
-              Perfekt für die Automobilbranche
+              Unsere Zielgruppen
             </h2>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
-            {[
-              { title: 'Autohäuser', desc: 'Erstelle in Minuten professionelle Angebotsseiten für jeden Neuwagen – mit CO₂-Label und Finanzierung.', icon: Car },
-              { title: 'Freie Händler', desc: 'Spare dir teure Agenturen. Generiere Verkaufsseiten direkt aus bestehenden PDFs deiner Hersteller.', icon: BarChart3 },
-              { title: 'Flottenmanager', desc: 'Verwalte Angebote effizient mit Dashboard, Lead-Management und Batch-Export.', icon: Shield },
-            ].map((item) => (
-              <div key={item.title} className="bg-card border border-border rounded-2xl p-8 text-center">
-                <div className="w-12 h-12 rounded-xl gradient-accent flex items-center justify-center mx-auto mb-4">
-                  <item.icon className="w-6 h-6 text-accent-foreground" />
+            {AUDIENCES.map((a) => (
+              <div key={a.title} className="bg-card border border-border rounded-2xl p-8 text-center transition-all hover:shadow-elevated">
+                <div className="w-14 h-14 rounded-xl gradient-accent flex items-center justify-center mx-auto mb-5">
+                  <a.icon className="w-7 h-7 text-accent-foreground" />
                 </div>
-                <h3 className="font-display font-bold text-foreground text-lg mb-2">{item.title}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">{item.desc}</p>
+                <h3 className="font-display font-bold text-foreground text-lg mb-2">{a.title}</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">{a.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
+      {/* ── CTA ── */}
       <section className="py-20 md:py-28">
         <div className="max-w-3xl mx-auto px-4">
           <div className="relative rounded-3xl overflow-hidden">
             <div className="absolute inset-0 gradient-hero" />
-            <div className="absolute inset-0 opacity-[0.05]" style={{
+            <div className="absolute inset-0 opacity-[0.04]" style={{
               backgroundImage: `radial-gradient(circle at 1px 1px, hsl(var(--accent)) 1px, transparent 0)`,
               backgroundSize: '24px 24px',
             }} />
@@ -280,7 +293,7 @@ const Landing = () => {
                 Bereit für den Start?
               </h2>
               <p className="text-primary-foreground/70 mb-8 max-w-md mx-auto">
-                10 kostenlose Credits – kein Abo, keine Kreditkarte. Erstelle deine erste Angebotsseite in unter 2 Minuten.
+                10 kostenlose Credits – kein Abo, keine Kreditkarte. Erlebe POA live in unter 2 Minuten.
               </p>
               <Link to={user ? '/generator' : '/auth'}>
                 <Button size="lg" className="gradient-accent text-accent-foreground text-base px-8 h-12 gap-2 shadow-glow">
@@ -294,16 +307,16 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Footer */}
+      {/* ── Footer ── */}
       <footer className="border-t border-border bg-card py-10">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <img src={logoLight} alt="Autohaus.AI" className="h-8 opacity-70" />
+            <img src={auto3Logo} alt="AUTO3" className="h-7 opacity-60" />
             <div className="flex items-center gap-6 text-sm text-muted-foreground">
               <Link to="/pricing" className="hover:text-foreground transition-colors">Preise</Link>
               <Link to="/auth" className="hover:text-foreground transition-colors">Anmelden</Link>
             </div>
-            <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} Autohaus.AI · Alle Rechte vorbehalten</p>
+            <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} AUTO3 · Alle Rechte vorbehalten</p>
           </div>
         </div>
       </footer>
