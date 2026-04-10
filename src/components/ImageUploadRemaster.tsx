@@ -33,8 +33,8 @@ const MAX_SIZE_MB = 10;
 // fileToBase64 and compressImageForAI imported from '@/lib/image-compress'
 
 const DEFAULT_CONFIG: RemasterConfig = {
-  scene: 'none',
-  licensePlate: 'keep',
+  scene: '',
+  licensePlate: '',
   changeColor: false,
   showManufacturerLogo: false,
   showDealerLogo: false,
@@ -92,10 +92,16 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
     handleFiles(e.dataTransfer.files);
   }, [handleFiles]);
 
+  const isRemasterConfigValid = remasterConfig.scene && remasterConfig.licensePlate;
+
   const startRemastering = async () => {
+    if (!remasterConfig.scene || !remasterConfig.licensePlate) {
+      toast.error('Bitte wähle zuerst Szene und Nummernschild-Option aus.');
+      return;
+    }
+
     const pending = images.filter(img => img.status === 'pending' || img.status === 'error');
     if (pending.length === 0) {
-      // All done already, just complete
       finishUp();
       return;
     }
@@ -354,7 +360,7 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
           {!allDone ? (
             <Button
               onClick={startRemastering}
-              disabled={images.length === 0 || isProcessing}
+              disabled={images.length === 0 || isProcessing || !isRemasterConfigValid}
               className="gap-2 gradient-accent text-accent-foreground font-semibold"
             >
               {isProcessing ? (
