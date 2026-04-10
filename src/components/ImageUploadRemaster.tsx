@@ -92,10 +92,16 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
     handleFiles(e.dataTransfer.files);
   }, [handleFiles]);
 
+  const isRemasterConfigValid = config.scene && config.licensePlate;
+
   const startRemastering = async () => {
+    if (!config.scene || !config.licensePlate) {
+      toast.error('Bitte wähle zuerst Szene und Nummernschild-Option aus.');
+      return;
+    }
+
     const pending = images.filter(img => img.status === 'pending' || img.status === 'error');
     if (pending.length === 0) {
-      // All done already, just complete
       finishUp();
       return;
     }
@@ -354,7 +360,7 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
           {!allDone ? (
             <Button
               onClick={startRemastering}
-              disabled={images.length === 0 || isProcessing}
+              disabled={images.length === 0 || isProcessing || !isRemasterConfigValid}
               className="gap-2 gradient-accent text-accent-foreground font-semibold"
             >
               {isProcessing ? (
