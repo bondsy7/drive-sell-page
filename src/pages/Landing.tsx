@@ -129,49 +129,55 @@ const Landing = () => {
       </header>
 
       {/* ── Hero ── */}
-      <section className="relative overflow-hidden min-h-[85vh] flex items-center">
+      <section className="relative overflow-hidden min-h-[90vh] flex items-center">
         {/* Hero background image */}
         <div className="absolute inset-0">
           <img
             src={heroShowroom}
             alt="KI-generierte Showroom-Perspektiven"
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover scale-105"
           />
-          {/* Dark overlay gradient for readability */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/55 to-black/80" />
+          {/* Refined multi-layer overlay */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/60 to-black/85" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-black/30" />
+          {/* Subtle radial spotlight on center content */}
+          <div className="absolute inset-0" style={{
+            background: 'radial-gradient(ellipse 60% 50% at 50% 55%, transparent 0%, rgba(0,0,0,0.35) 100%)',
+          }} />
         </div>
 
-        <div className="relative max-w-7xl mx-auto px-4 py-24 md:py-36 z-10">
+        <div className="relative max-w-7xl mx-auto px-4 py-28 md:py-40 z-10">
           <div className="max-w-3xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/20 text-white text-xs font-bold mb-8 tracking-wide uppercase backdrop-blur-sm">
-              <Zap className="w-3.5 h-3.5" />
+            <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 border border-white/15 text-white/90 text-xs font-semibold mb-10 tracking-widest uppercase backdrop-blur-md">
+              <Zap className="w-3.5 h-3.5 text-accent" />
               POA – Point of Arrival
             </div>
-            <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-[1.08] tracking-tight">
+            <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-5 leading-[1.05] tracking-tight drop-shadow-lg">
               Verwandle die Ankunft
-              <span className="block text-accent">in ein Erlebnis.</span>
+              <span className="block mt-1 bg-gradient-to-r from-red-500 via-accent to-red-400 bg-clip-text text-transparent">in ein Erlebnis.</span>
             </h1>
-            <p className="text-lg md:text-xl text-white/75 mb-10 max-w-2xl mx-auto leading-relaxed">
-              AUTO3 ist der Moment, in dem ein einfaches Handyfoto zur fotorealistischen
-              Showroom-Inszenierung wird. Minimale Standzeiten, maximale Marge – durch KI-gestützte Ästhetik.
+            <p className="text-base md:text-lg text-white/70 mb-12 max-w-xl mx-auto leading-relaxed font-light">
+              Ein Handyfoto. Fotorealistische Showroom-Bilder. Minimale Standzeiten, maximale Marge – durch KI-gestützte Ästhetik.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link to={user ? '/generator' : '/auth'}>
-                <Button size="lg" className="gradient-accent text-accent-foreground text-lg px-10 h-14 gap-2.5 shadow-glow hover:scale-105 transition-transform font-bold">
+                <Button size="lg" className="gradient-accent text-white text-lg px-12 h-[56px] gap-3 shadow-[0_0_30px_hsl(0_100%_45%/0.35)] hover:shadow-[0_0_40px_hsl(0_100%_45%/0.5)] hover:scale-[1.03] transition-all duration-300 font-bold rounded-xl">
                   <Sparkles className="w-5 h-5" />
                   {user ? 'Zum Generator' : 'Jetzt kostenlos starten'}
                   <ArrowRight className="w-5 h-5" />
                 </Button>
               </Link>
               <a href="#poa">
-                <Button variant="outline" size="lg" className="text-base px-8 h-14 border-white/30 text-white hover:bg-white/10 backdrop-blur-sm">
+                <Button variant="outline" size="lg" className="text-base px-8 h-[56px] border-white/25 text-white/90 hover:bg-white/10 hover:border-white/40 backdrop-blur-md rounded-xl transition-all duration-300">
                   So funktioniert's
                 </Button>
               </a>
             </div>
-            <p className="text-white/50 text-xs mt-6">
-              10 kostenlose Credits · Kein Abo nötig · Sofort loslegen
-            </p>
+            <div className="flex items-center justify-center gap-6 mt-8 text-white/40 text-xs">
+              <span>✦ 10 kostenlose Credits</span>
+              <span>✦ Kein Abo nötig</span>
+              <span>✦ Sofort loslegen</span>
+            </div>
           </div>
         </div>
       </section>
