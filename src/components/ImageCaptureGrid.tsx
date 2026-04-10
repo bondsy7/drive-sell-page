@@ -85,8 +85,8 @@ function compressImage(dataUrl: string, maxDim = 2048, quality = 0.85): Promise<
 }
 
 const DEFAULT_CONFIG: RemasterConfig = {
-  scene: 'none',
-  licensePlate: 'keep',
+  scene: '',
+  licensePlate: '',
   changeColor: false,
   showManufacturerLogo: false,
   showDealerLogo: false,
