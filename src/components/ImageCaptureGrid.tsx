@@ -751,7 +751,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       <div className="space-y-3">
         <div>
           <h3 className="text-sm font-semibold text-foreground">Weitere Detailaufnahmen</h3>
-          <p className="text-xs text-muted-foreground">Felgen, Schäden, Logos, Motorraum etc. – werden als Referenz für bessere Ergebnisse mitgesendet (max. 10)</p>
+          <p className="text-sm font-semibold text-destructive bg-destructive/10 border border-destructive/30 rounded-lg px-3 py-2">⚠️ Um ein optimales Ergebnis zu erzielen, laden Sie bitte bis zu zehn weitere Detailaufnahmen hoch – Innenraum (Mittelkonsole, Lenkrad, Infotainment), Exterieur (Felgen, Kofferraum), Schäden, Logos, Motorraum etc.</p>
         </div>
         <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
           {detailImages.map((img, idx) => (
