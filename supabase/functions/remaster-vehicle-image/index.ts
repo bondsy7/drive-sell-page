@@ -357,6 +357,32 @@ The showroom wall must remain CLEAN and EMPTY. No manufacturer logos, no dealer 
       console.log("No logos provided – injected NO_LOGO_INSTRUCTION");
     }
 
+    // ── DEBUG: Log full payload summary ──
+    const debugSummary = {
+      totalParts: parts.length,
+      textParts: parts.filter((p: any) => p.text).length,
+      imageParts: parts.filter((p: any) => p.inlineData || p.file_data).length,
+      inlineImages: parts.filter((p: any) => p.inlineData).map((p: any, i: number) => ({
+        index: i,
+        mimeType: p.inlineData.mimeType,
+        sizeKB: Math.round(p.inlineData.data.length * 0.75 / 1024),
+      })),
+      fileUriImages: parts.filter((p: any) => p.file_data).map((p: any) => ({
+        mimeType: p.file_data.mime_type,
+        uri: p.file_data.file_uri,
+      })),
+      promptLength: prompt.length,
+      promptFirst500: prompt.substring(0, 500),
+      promptLast300: prompt.substring(prompt.length - 300),
+      allTextBlocks: parts.filter((p: any) => p.text).map((p: any, i: number) => ({
+        index: i,
+        length: p.text.length,
+        preview: p.text.substring(0, 120) + (p.text.length > 120 ? '...' : ''),
+      })),
+    };
+    console.log(`[remaster] === FULL PAYLOAD DEBUG ===`);
+    console.log(JSON.stringify(debugSummary, null, 2));
+
     // 3. Call Gemini with fallback chain
     const FALLBACK_ORDER: Record<string, string[]> = {
       'gemini-3-pro-image-preview': ['gemini-3.1-flash-image-preview', 'gemini-2.5-flash-image'],
