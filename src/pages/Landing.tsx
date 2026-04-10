@@ -8,6 +8,7 @@ import {
   Smartphone, Zap, RotateCcw
 } from 'lucide-react';
 import auto3Logo from '@/assets/auto3-logo.png';
+import heroShowroom from '@/assets/hero-showroom.webp';
 
 /* ─── POA Feature Cards ─── */
 const POA_STEPS = [
