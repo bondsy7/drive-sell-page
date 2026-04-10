@@ -777,7 +777,8 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
           </div>
         )}
 
-        <p className="text-xs text-muted-foreground leading-relaxed">
+        <p className="text-sm font-semibold text-destructive bg-destructive/10 border border-destructive/30 rounded-lg px-3 py-2 flex items-start gap-2">
+          <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
           Um ein optimales Ergebnis zu erzielen, laden Sie bitte bis zu zehn weitere Detailaufnahmen hoch – Innenraum (Mittelkonsole, Lenkrad, Infotainment), Exterieur (Felgen, Kofferraum), Schäden, Logos, Motorraum etc.
         </p>
 
