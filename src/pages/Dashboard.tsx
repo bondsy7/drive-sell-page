@@ -43,7 +43,7 @@ const Dashboard = () => {
   const [tab, setTab] = useState<TabKey>(initialTab);
 
   // Map module keys to dashboard tab keys
-  const moduleToTabs: Record<ModuleKey, TabKey[]> = {
+  const moduleToTabs: Partial<Record<ModuleKey, TabKey[]>> = {
     'photos': ['gallery'],
     'pdf-landing': ['landings'],
     'manual-landing': ['landings'],
