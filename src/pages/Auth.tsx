@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Mail, Lock, User, Chrome, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { STRIPE_PRICES } from '@/lib/stripe-plans';
-import logoLight from '@/assets/logo-light.png';
+import auto3Logo from '@/assets/auto3-logo.png';
 
 const Auth = () => {
   const { user, loading } = useAuth();
