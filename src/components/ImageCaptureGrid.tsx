@@ -743,63 +743,71 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         })}
       </div>
 
-      {/* Remaster Options */}
-      <RemasterOptions
-        config={remasterConfig}
-        onChange={setRemasterConfig}
-        vehicleBrand={vehicleData?.vehicle?.brand}
-        vehicleModel={vehicleData?.vehicle?.model}
-        brandDetectionStatus={brandDetectionStatus}
-        onBrandChange={(brand) => {
-          if (vehicleData && onVehicleDataChange) {
-            onVehicleDataChange({
-              ...vehicleData,
-              vehicle: { ...vehicleData.vehicle, brand },
-            });
-          }
-          if (brand) setBrandDetectionStatus('found');
-        }}
-        onModelChange={(model) => {
-          if (vehicleData && onVehicleDataChange) {
-            onVehicleDataChange({
-              ...vehicleData,
-              vehicle: { ...vehicleData.vehicle, model },
-            });
-          }
-        }}
-      />
-
-      {/* Detail image upload */}
+      {/* Detail image upload – directly below main grid */}
       <div className="space-y-3">
-        <div>
-          <h3 className="text-sm font-semibold text-foreground">Weitere Detailaufnahmen</h3>
-          <p className="text-sm font-semibold text-destructive bg-destructive/10 border border-destructive/30 rounded-lg px-3 py-2">⚠️ Um ein optimales Ergebnis zu erzielen, laden Sie bitte bis zu zehn weitere Detailaufnahmen hoch – Innenraum (Mittelkonsole, Lenkrad, Infotainment), Exterieur (Felgen, Kofferraum), Schäden, Logos, Motorraum etc.</p>
-        </div>
-        <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
-          {detailImages.map((img, idx) => (
-            <div key={idx} className="relative group aspect-square rounded-xl overflow-hidden border border-border bg-card">
-              <img src={img} alt={`Detail ${idx + 1}`} className="w-full h-full object-cover" />
-              {!isProcessing && (
-                <button
-                  onClick={() => setDetailImages(prev => prev.filter((_, i) => i !== idx))}
-                  className="absolute top-1 right-1 w-5 h-5 rounded-full bg-background/80 hover:bg-destructive hover:text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              )}
-            </div>
-          ))}
-          {detailImages.length < 10 && (
+        <h3 className="text-sm font-semibold text-foreground">Weitere Detailaufnahmen (Multiupload)</h3>
+
+        {/* Category icons grid */}
+        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+          {DETAIL_CATEGORIES.map((cat) => (
             <button
+              key={cat.label}
+              type="button"
               onClick={() => detailFileRef.current?.click()}
-              className="aspect-square rounded-xl border-2 border-dashed border-border hover:border-accent bg-card flex flex-col items-center justify-center gap-1 transition-colors"
-              disabled={isProcessing}
+              disabled={isProcessing || detailImages.length >= 10}
+              className="flex flex-col items-center justify-center gap-1.5 p-2.5 rounded-xl border border-border bg-card hover:border-accent hover:bg-muted/50 transition-colors text-center"
             >
-              <Upload className="w-4 h-4 text-muted-foreground" />
-              <span className="text-[10px] text-muted-foreground">Hinzufügen</span>
+              <span className="text-xl">{cat.icon}</span>
+              <span className="text-[9px] leading-tight font-medium text-muted-foreground">{cat.label}</span>
             </button>
-          )}
+          ))}
         </div>
+
+        {/* Uploaded detail images */}
+        {detailImages.length > 0 && (
+          <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+            {detailImages.map((img, idx) => (
+              <div key={idx} className="relative group aspect-square rounded-xl overflow-hidden border border-border bg-card">
+                <img src={img} alt={`Detail ${idx + 1}`} className="w-full h-full object-cover" />
+                {!isProcessing && (
+                  <button
+                    onClick={() => setDetailImages(prev => prev.filter((_, i) => i !== idx))}
+                    className="absolute top-1 right-1 w-5 h-5 rounded-full bg-background/80 hover:bg-destructive hover:text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+            ))}
+            {detailImages.length < 10 && (
+              <button
+                onClick={() => detailFileRef.current?.click()}
+                className="aspect-square rounded-xl border-2 border-dashed border-border hover:border-accent bg-card flex flex-col items-center justify-center gap-1 transition-colors"
+                disabled={isProcessing}
+              >
+                <Upload className="w-4 h-4 text-muted-foreground" />
+                <span className="text-[10px] text-muted-foreground">Mehr</span>
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Upload button when no details yet */}
+        {detailImages.length === 0 && (
+          <button
+            onClick={() => detailFileRef.current?.click()}
+            disabled={isProcessing}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-border hover:border-accent bg-card hover:bg-muted/50 transition-colors"
+          >
+            <Upload className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm font-medium text-muted-foreground">Durchsuchen und Hinzufügen</span>
+          </button>
+        )}
+
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          Um ein optimales Ergebnis zu erzielen, laden Sie bitte bis zu zehn weitere Detailaufnahmen hoch – Innenraum (Mittelkonsole, Lenkrad, Infotainment), Exterieur (Felgen, Kofferraum), Schäden, Logos, Motorraum etc.
+        </p>
+
         <input
           ref={detailFileRef}
           type="file"
@@ -827,6 +835,32 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
           }}
         />
       </div>
+
+      {/* Remaster Options */}
+      <RemasterOptions
+        config={remasterConfig}
+        onChange={setRemasterConfig}
+        vehicleBrand={vehicleData?.vehicle?.brand}
+        vehicleModel={vehicleData?.vehicle?.model}
+        brandDetectionStatus={brandDetectionStatus}
+        onBrandChange={(brand) => {
+          if (vehicleData && onVehicleDataChange) {
+            onVehicleDataChange({
+              ...vehicleData,
+              vehicle: { ...vehicleData.vehicle, brand },
+            });
+          }
+          if (brand) setBrandDetectionStatus('found');
+        }}
+        onModelChange={(model) => {
+          if (vehicleData && onVehicleDataChange) {
+            onVehicleDataChange({
+              ...vehicleData,
+              vehicle: { ...vehicleData.vehicle, model },
+            });
+          }
+        }}
+      />
 
       {detectedVin && (
         <div className="flex items-center gap-2 bg-accent/10 text-accent px-4 py-2.5 rounded-xl text-sm font-medium">
