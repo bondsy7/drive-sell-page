@@ -256,7 +256,7 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
         <Label className="text-xs font-medium text-muted-foreground">Szene <span className="text-destructive">*</span></Label>
         <p className="text-[11px] text-muted-foreground/70">Wähle eine spezielle Szene für den Hintergrund</p>
         <Select value={config.scene || undefined} onValueChange={(v) => update({ scene: v })}>
-          <SelectTrigger className={`w-full ${!config.scene ? 'border-destructive/50' : ''}`}>
+          <SelectTrigger className={`w-full ${!config.scene ? 'border-accent/50' : ''}`}>
             <SelectValue placeholder="Bitte wählen" />
           </SelectTrigger>
           <SelectContent>
@@ -326,7 +326,7 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
         </Label>
         <p className="text-[11px] text-muted-foreground/70">Was soll mit dem Nummernschild passieren?</p>
         <Select value={config.licensePlate || undefined} onValueChange={(v) => update({ licensePlate: v })}>
-          <SelectTrigger className={`w-full ${!config.licensePlate ? 'border-destructive/50' : ''}`}>
+          <SelectTrigger className={`w-full ${!config.licensePlate ? 'border-accent/50' : ''}`}>
             <SelectValue placeholder="Bitte wählen" />
           </SelectTrigger>
           <SelectContent>
