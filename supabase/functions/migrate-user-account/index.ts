@@ -17,12 +17,15 @@ serve(async (req) => {
     { auth: { persistSession: false } }
   );
 
-  // Verify service role key (internal use only)
+  // Allow service role key OR admin auth
+  const migrationSecret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+  const apiKey = req.headers.get("apikey") || "";
   const authHeader = req.headers.get("Authorization") || "";
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
   const token = authHeader.replace("Bearer ", "");
-  if (token !== serviceKey) {
-    // Also allow admin users
+  
+  const isServiceRole = (token === migrationSecret) || (apiKey === migrationSecret);
+  
+  if (!isServiceRole) {
     const { data: { user: caller } } = await supabase.auth.getUser(token);
     if (!caller) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
