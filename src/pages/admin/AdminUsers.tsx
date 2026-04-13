@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { Search, Plus, Minus, Shield, ShieldCheck, User, Crown, Trash2, XCircle, Settings2 } from 'lucide-react';
+import { Search, Plus, Minus, Shield, ShieldCheck, User, Crown, Trash2, XCircle, Settings2, QrCode } from 'lucide-react';
 import UserModuleDialog from '@/components/admin/UserModuleDialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -393,6 +394,10 @@ export default function AdminUsers() {
                           </AlertDialogContent>
                         </AlertDialog>
                       )}
+
+                      <Button size="sm" variant="outline" className="h-7 px-2" title="QR-Code Login" onClick={() => navigate(`/admin/qr-login?email=${encodeURIComponent(u.email || '')}`)}>
+                        <QrCode className="w-3.5 h-3.5" />
+                      </Button>
 
                       <Button size="sm" variant="outline" className="h-7 px-2" title="Module verwalten" onClick={() => setModuleDialogUser({ id: u.id, email: u.email || '' })}>
                         <Settings2 className="w-3.5 h-3.5" />
