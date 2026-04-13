@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, ChevronLeft, ChevronRight, RotateCcw, Loader2, Download } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, RotateCcw, Loader2, Download, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface PreviewImage {
@@ -15,11 +15,12 @@ interface ImagePreviewLightboxProps {
   open: boolean;
   onClose: () => void;
   onRegenerate?: (id: string) => void;
+  onDelete?: (id: string) => void;
   regeneratingIds?: Set<string>;
 }
 
 const ImagePreviewLightbox: React.FC<ImagePreviewLightboxProps> = ({
-  images, initialIndex, open, onClose, onRegenerate, regeneratingIds,
+  images, initialIndex, open, onClose, onRegenerate, onDelete, regeneratingIds,
 }) => {
   const [index, setIndex] = useState(initialIndex);
 
@@ -70,6 +71,16 @@ const ImagePreviewLightbox: React.FC<ImagePreviewLightboxProps> = ({
               ) : (
                 <><RotateCcw className="w-4 h-4" /> Neu generieren</>
               )}
+           </Button>
+          )}
+          {onDelete && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => onDelete(current.id)}
+              className="gap-1.5 text-destructive hover:text-destructive"
+            >
+              <Trash2 className="w-4 h-4" /> Löschen
             </Button>
           )}
           <button onClick={onClose} className="text-background hover:text-background/80 transition-colors ml-2">
