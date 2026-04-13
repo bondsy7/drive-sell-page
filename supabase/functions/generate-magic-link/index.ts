@@ -8,7 +8,7 @@ const corsHeaders = {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
@@ -18,6 +18,7 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
+    // Verify caller is admin
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -33,38 +34,49 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { email, redirectTo } = await req.json();
+    const { email, redirectPath, expiresInHours, maxUses, appDomain } = await req.json();
     if (!email) {
       return new Response(JSON.stringify({ error: "Email is required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const targetUrl = new URL(redirectTo || "https://drive-sell-page.lovable.app/generator");
-
-    const { data, error } = await supabase.auth.admin.generateLink({
-      type: "magiclink",
-      email,
-      options: {
-        redirectTo: redirectTo || targetUrl.toString(),
-      },
-    });
-
-    if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    // Find user by email
+    const { data: users, error: listErr } = await supabase.auth.admin.listUsers();
+    if (listErr) throw listErr;
+    const targetUser = users.users.find((u: any) => u.email === email);
+    if (!targetUser) {
+      return new Response(JSON.stringify({ error: `Kein Benutzer mit E-Mail ${email} gefunden` }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const tokenHash = data?.properties?.hashed_token;
-    if (!tokenHash) {
-      return new Response(JSON.stringify({ error: "Magic link token could not be generated" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    // Calculate expiry (null = unlimited)
+    let expiresAt: string | null = null;
+    if (expiresInHours && expiresInHours > 0) {
+      expiresAt = new Date(Date.now() + expiresInHours * 60 * 60 * 1000).toISOString();
     }
 
-    const loginUrl = new URL("/qr-login", targetUrl.origin);
-    loginUrl.searchParams.set("token_hash", tokenHash);
-    loginUrl.searchParams.set("type", "magiclink");
-    loginUrl.searchParams.set("next", `${targetUrl.pathname}${targetUrl.search}${targetUrl.hash}` || "/generator");
+    // Create token
+    const { data: tokenRow, error: insertErr } = await supabase
+      .from("qr_login_tokens")
+      .insert({
+        user_id: targetUser.id,
+        email,
+        redirect_path: redirectPath || "/generator",
+        expires_at: expiresAt,
+        max_uses: maxUses || null,
+        created_by: caller.id,
+      })
+      .select("token, expires_at")
+      .single();
+
+    if (insertErr) throw insertErr;
+
+    const domain = appDomain || "https://pdf.anzeige.ai";
+    const loginUrl = `${domain}/qr-login?token=${tokenRow.token}`;
 
     return new Response(JSON.stringify({
-      expiresIn: "24 hours",
-      link: loginUrl.toString(),
+      link: loginUrl,
+      token: tokenRow.token,
+      expiresAt: tokenRow.expires_at,
+      expiresInHours: expiresInHours || null,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
