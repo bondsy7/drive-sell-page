@@ -74,6 +74,19 @@ const Index = () => {
     if (tool && TOOL_TO_STATE[tool]) return TOOL_TO_STATE[tool];
     return 'hub';
   });
+
+  // Sync appState → URL
+  useEffect(() => {
+    const toolSlug = STATE_TO_TOOL[appState];
+    const currentPath = window.location.pathname;
+    if (appState === 'hub') {
+      if (currentPath !== '/generator') navigate('/generator', { replace: true });
+    } else if (toolSlug) {
+      const target = `/generator/${toolSlug}`;
+      if (currentPath !== target) navigate(target, { replace: true });
+    }
+  }, [appState, navigate]);
+
   const [fileName, setFileName] = useState('');
   const [vehicleData, setVehicleData] = useState<VehicleData | null>(null);
   const [imageBase64, setImageBase64] = useState<string | null>(null);
