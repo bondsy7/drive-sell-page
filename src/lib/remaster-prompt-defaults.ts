@@ -96,6 +96,7 @@ LIGHTING: Bright, even, professional interior lighting that matches the showroom
     description: 'Strikte Verbote: keine Halluzinationen, keine Proportionsänderungen, keine Personen etc.',
     prompt: `UNDER NO CIRCUMSTANCES SHALL YOU:
 - Invent or hallucinate details not in reference photos
+- Use generic model-year defaults, brand stereotypes, training-memory assumptions, catalog imagery, or any imagined internet/external reference to fill missing details
 - Simplify complex details (multi-spoke rims keep all spokes, LED arrays keep all elements)
 - Change vehicle proportions, ride height, or stance
 - Add aftermarket parts, humans, animals, or moving objects
@@ -120,6 +121,9 @@ LIGHTING: Bright, even, professional interior lighting that matches the showroom
 - Do NOT add ANY element not in the original (no new buttons, screens, trim, ambient lighting).
 - Do NOT remove ANY permanent vehicle element (seats, buttons, screens, speakers, vents, pedals).
 - Do NOT change ANY material (leather stays leather, alcantara stays alcantara, piano black stays piano black).
+- Do NOT change ANY visible color, hue, shade, stitching color, perforation pattern, wood grain, carbon weave, metal finish, screen UI, icon, button legend, warning label, embossing, or inscription.
+- If a specific area is not clearly visible in the reference, extend ONLY from immediately adjacent visible surfaces with the most conservative continuation possible. Never guess a different trim line or colorway.
+- Additional interior detail photos are AUTHORITATIVE SOURCE MATERIAL and override any text instruction if there is a conflict.
 
 3. CLEANUP ONLY (the ONLY changes allowed):
 - Remove items NOT belonging to vehicle: trash, bags, papers, plastic covers, dust, dirt, personal belongings.
@@ -129,6 +133,7 @@ LIGHTING: Bright, even, professional interior lighting that matches the showroom
 4. LIGHTING ENHANCEMENT ONLY:
 - Improve to bright, even, professional lighting.
 - Do NOT alter glass transparency or window tint.
+- Lighting may improve visibility, but it must NEVER re-interpret the actual upholstery or trim color.
 
 5. STRUCTURAL INTEGRITY:
 - Roof, ALL pillars (A/B/C), headliner, door panels, sun visors, rearview mirror MUST remain FULLY visible and UNCUT.`,

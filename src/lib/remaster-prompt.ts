@@ -108,6 +108,7 @@ FRAMING: Both taillights, exhaust outlets, rear badge, and model designation sym
 SHOT_TYPE: Interior - Rear Seat POV Looking Forward
 CAMERA_ANGLE: From center of rear seat, looking at dashboard, steering wheel, and windshield.
 STRUCTURAL_INTEGRITY: Complete roof, ALL A/B pillars, headliner, and rearview mirror MUST be FULLY visible and UNCUT.
+PRESERVATION_PRIORITY: Dashboard layout, steering wheel shape, upholstery colors, trim finishes, button legends, screen content, icons, and all visible inscriptions MUST match the reference images exactly.
 FORBIDDEN: Do NOT crop roof. Do NOT shoot from above without roof. Do NOT generate an exterior view.
 WINDOW_VIEW: The selected showroom/scene MUST be visible THROUGH the windshield – NOT a random outdoor scene.
 </CURRENT_PERSPECTIVE>`,
@@ -116,6 +117,7 @@ WINDOW_VIEW: The selected showroom/scene MUST be visible THROUGH the windshield 
 SHOT_TYPE: Interior - Driver Seat POV Looking Backward
 CAMERA_ANGLE: From driver seat position, looking at rear seats, headrests, and rear bench.
 STRUCTURAL_INTEGRITY: Complete roof, ALL B/C pillars, headliner, and rear window MUST be FULLY visible and UNCUT.
+PRESERVATION_PRIORITY: Rear bench shape, upholstery color, stitching, perforation, seatbelt colors, trim materials, speaker grilles, and all visible inscriptions MUST match the reference images exactly.
 FORBIDDEN: Do NOT crop roof. Do NOT shoot from above without roof. Do NOT generate an exterior view.
 WINDOW_VIEW: The selected showroom/scene MUST be visible THROUGH the rear window – NOT a random outdoor scene.
 </CURRENT_PERSPECTIVE>`,
@@ -130,6 +132,13 @@ function isInteriorSlot(slotKey?: string): boolean {
   if (!slotKey) return false;
   return slotKey.startsWith('interior');
 }
+
+const REFERENCE_TRUTH_PROTOCOL = `REFERENCE IMAGES ARE THE ONLY SOURCE OF TRUTH.
+- Use ONLY the provided vehicle photos, detail shots, and immutable assets. Do NOT rely on generic brand/model knowledge, training-memory defaults, catalog imagery, or any imagined external source.
+- Every visible attribute must match the reference images exactly: color, material, texture, stitching, perforation, trim finish, icons, labels, inscriptions, screen UI, geometry, seams, wear patterns, and proportions.
+- Additional detail photos OVERRIDE text instructions whenever there is any conflict.
+- If a region is not visible, extend ONLY from immediately adjacent visible evidence with the most conservative continuation possible.
+- Never invent a new interior color, upholstery variant, trim insert, ambient light color, badge, text, button legend, or equipment line.`;
 
 /**
  * Build the master prompt from admin-editable blocks.
@@ -149,6 +158,9 @@ export function buildMasterPrompt(
 
   // ── Base instruction ──
   parts.push(getBlock(overrides, 'base_instruction'));
+  parts.push(`<REFERENCE_TRUTH_PROTOCOL>
+${REFERENCE_TRUTH_PROTOCOL}
+</REFERENCE_TRUTH_PROTOCOL>`);
 
   // ── CRITICAL ASSET INTEGRATION (logos FIRST – highest priority) ──
   const hasAnyLogo = (config.showManufacturerLogo && config.manufacturerLogoUrl) || (config.showDealerLogo && config.dealerLogoUrl);

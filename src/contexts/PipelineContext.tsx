@@ -81,6 +81,12 @@ function inferPrimaryReferenceIndex(job: PipelineJob | undefined, promptText: st
   return 0;
 }
 
+function getInteriorReferenceIndices(availableCount: number): number[] {
+  if (availableCount >= 5) return [3, 4];
+  if (availableCount >= 4) return [3];
+  return [];
+}
+
 function buildTaskOutputLock(job: PipelineJob | undefined): string {
   const jobName = job?.labelDe || job?.label || 'angeforderte Pipeline-Ansicht';
   return `TASK OUTPUT LOCK (ABSOLUTE PRIORITY):
@@ -90,6 +96,7 @@ function buildTaskOutputLock(job: PipelineJob | undefined): string {
 - Interior means interior only. Detail means detail only. Do NOT switch between exterior, interior, and detail shots.
 - Do NOT add, remove, redesign, simplify, restyle, or reinterpret any logo, badge, emblem, lettering, wall logo, or brand mark.
 - If a logo asset is provided, treat it as IMMUTABLE SOURCE MATERIAL: preserve exact silhouette, border/frame, symbol, text, proportions, placement logic, and colors.
+- Reference images are the ONLY source of truth for visible vehicle details. Never replace uncertainty with generic OEM defaults, remembered catalog imagery, or guessed trim/material variants.
 - Do NOT invent any missing view information. Use the matching reference image and detail photos to reproduce exactly what was requested.`;
 }
 
@@ -147,10 +154,9 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   // Cached Gemini File API URIs – uploaded ONCE, reused for all jobs (Phase 4)
   const cachedFileUrisRef = useRef<{
-    mainImage: { uri: string; mimeType: string } | null;
     references: { uri: string; mimeType: string }[];
     showroom: { uri: string; mimeType: string } | null;
-  }>({ mainImage: null, references: [], showroom: null });
+  }>({ references: [], showroom: null });
 
   // Helper to fetch a URL and convert to data URL (base64)
   const fetchUrlToBase64 = useCallback(async (url: string): Promise<string | null> => {
@@ -174,6 +180,10 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const referenceImages = cfg.originalImages.length > 0 ? cfg.originalImages : cfg.inputImages;
     const primaryReferenceIndex = inferPrimaryReferenceIndex(job, prompt, referenceImages.length);
     const primaryReference = referenceImages[primaryReferenceIndex] || referenceImages[0];
+    const interiorReferenceIndices = getInteriorReferenceIndices(referenceImages.length);
+    const interiorSupportReferences = interiorReferenceIndices
+      .filter(index => index != primaryReferenceIndex && index < referenceImages.length)
+      .map(index => referenceImages[index]);
 
     // ── Phase 3: Smart Image Routing ──
     // Filter supporting references based on job category to reduce payload
@@ -183,9 +193,10 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     let supportingReferences: string[];
     switch (category) {
       case 'interior':
-        // Interior jobs: NO exterior reference images, NO detail images
-        // Only the primary interior reference is needed
-        supportingReferences = [];
+        supportingReferences = [
+          ...interiorSupportReferences,
+          ...cfg.additionalImages.slice(0, 4),
+        ].slice(0, 5);
         break;
       case 'detail':
         // Detail jobs: Send ALL additional detail images (they are the authoritative source)
@@ -210,8 +221,10 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const promptOverrides = await fetchPromptOverrides();
     const isInteriorJob = job?.category === 'interior';
 
-    // Pass interior slotKey so buildMasterPrompt includes INTERIOR_RULES only when needed
-    const interiorSlotKey = isInteriorJob ? 'interior-front' : undefined;
+    // Pass the matching interior slotKey so front/rear cabin prompts stay aligned with the actual requested shot
+    const interiorSlotKey = isInteriorJob
+      ? (REAR_INTERIOR_PATTERNS.test(`${job?.key || ''} ${job?.label || ''} ${job?.labelDe || ''}`) ? 'interior-rear' : 'interior-front')
+      : undefined;
     const baseContext = buildMasterPrompt(cfg.remasterConfig, cfg.vehicleDescription, interiorSlotKey, promptOverrides);
     const taskLock = buildTaskOutputLock(job);
 
@@ -238,27 +251,34 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     // Phase 4: Use cached Gemini File URIs when available
     const fileCache = cachedFileUrisRef.current;
-    const hasFileUris = !!(fileCache.mainImage || fileCache.references.length > 0);
+    const hasFileUris = fileCache.references.length > 0;
+    const mainImageFileUri = hasFileUris && primaryReferenceIndex < fileCache.references.length
+      ? fileCache.references[primaryReferenceIndex]
+      : null;
 
     // Build file URI arrays for this specific job based on smart routing
     let additionalFileUris: { uri: string; mimeType: string }[] | undefined;
+    let inlineSupportingImages: string[] | undefined;
     if (hasFileUris && fileCache.references.length > 0) {
-      // Map supporting references to their file URIs
-      // The file URIs correspond to ALL original references uploaded at pipeline start
       const allRefs = cfg.originalImages.length > 0 ? cfg.originalImages : cfg.inputImages;
-      additionalFileUris = supportingReferences
+      const referenceBackedSupportingImages = supportingReferences.filter(ref => allRefs.includes(ref));
+      inlineSupportingImages = supportingReferences.filter(ref => !allRefs.includes(ref));
+
+      additionalFileUris = referenceBackedSupportingImages
         .map(ref => {
           const idx = allRefs.indexOf(ref);
           return idx >= 0 && idx < fileCache.references.length ? fileCache.references[idx] : null;
         })
         .filter((fu): fu is { uri: string; mimeType: string } => fu !== null);
+    } else if (supportingReferences.length > 0) {
+      inlineSupportingImages = supportingReferences;
     }
 
     const { data, error } = await invokeRemasterVehicleImage({
       imageBase64: primaryReference,
-      additionalImages: hasFileUris ? undefined : (supportingReferences.length > 0 ? supportingReferences : undefined),
+      additionalImages: inlineSupportingImages && inlineSupportingImages.length > 0 ? inlineSupportingImages : undefined,
       additionalFileUris: additionalFileUris && additionalFileUris.length > 0 ? additionalFileUris : undefined,
-      mainImageFileUri: fileCache.mainImage || null,
+      mainImageFileUri: mainImageFileUri,
       vehicleDescription: cfg.vehicleDescription,
       modelTier: cfg.modelTier,
       dynamicPrompt: fullPrompt,
@@ -350,7 +370,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       // ── Phase 4: Upload images to Gemini File API ONCE ──
       // This avoids sending MB of base64 with every single job request
-      cachedFileUrisRef.current = { mainImage: null, references: [], showroom: null };
+      cachedFileUrisRef.current = { references: [], showroom: null };
       try {
         const referenceImages = cfg.originalImages.length > 0 ? cfg.originalImages : cfg.inputImages;
         const imagesToUpload: string[] = [...referenceImages];
@@ -372,7 +392,6 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
             // Map file URIs back to their roles
             if (fileUris.length > 0) {
-              cachedFileUrisRef.current.mainImage = fileUris[0]; // First reference = main image
               cachedFileUrisRef.current.references = fileUris.slice(0, referenceImages.length);
             }
             if (showroomIdx >= 0 && fileUris[showroomIdx]) {
