@@ -670,6 +670,18 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
         open={lightboxOpen}
         onClose={() => setLightboxOpen(false)}
         onRegenerate={(id) => retrySinglePipelineImage(id)}
+        onDelete={(id) => {
+          const img = lightboxImages.find(i => i.id === id);
+          if (img) {
+            const parts = img.id.split('__result__');
+            if (parts.length === 2) {
+              pipeline.removeResult(parts[0], parseInt(parts[1], 10));
+            }
+          }
+          if (lightboxImages.length <= 1) {
+            setLightboxOpen(false);
+          }
+        }}
         regeneratingIds={regeneratingIds}
       />
     </div>
