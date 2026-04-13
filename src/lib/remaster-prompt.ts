@@ -224,7 +224,7 @@ The showroom architecture, walls, floor, ceiling, logos, and branding MUST be cl
 This is the SAME showroom used for exterior shots – maintain visual consistency.` : ''}
 The scene MUST be visible THROUGH the glass naturally and realistically – correct perspective, depth, and lighting.
 Do NOT show a random outdoor scene, generic background, or black/dark void through the windows.
-Use the EXACT SAME scene visible through windows on EVERY interior image.
+The EXACT SAME showroom/scene (same walls, same floor, same ceiling, same lighting) must be visible through windows on EVERY interior image – no variation allowed.
 ${interiorLighting}
 </SCENE_AND_LIGHTING>`);
     } else {
