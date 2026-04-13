@@ -22,11 +22,49 @@ This applies to EVERY generated image without exception.
     key: 'remaster_identity_lock',
     label: 'Identity Lock (Fahrzeug-Treue)',
     description: 'Sichert die exakte Reproduktion von Lack, Felgen, Lichtern, Grill und Karosseriedetails.',
-    prompt: `WHEELS: EXACT rim design – spoke count, shape, concavity, finish (polished/matte/bi-color/diamond-cut). Hub cap with brand logo. EXACT tire profile. NEVER crop any wheel at image edges.
-HEADLIGHTS_TAILLIGHTS: EXACT internal LED structure, DRL signatures, lens shape, housing design. NEVER crop or alter.
-GRILLE_BADGES: EXACT grille mesh pattern, badge shape, material, model designation in exact position, size, font.
-BODY_DETAILS: EXACT body lines, creases, fender flares, air intakes, roof rails, spoilers, exhaust tips, mirror shapes, door handles.
-MATERIALS: Match exact finishes – chrome vs. gloss black vs. matte vs. satin. Do NOT substitute.`,
+    prompt: `<DETAIL_FIDELITY_PROTOCOL>
+CRITICAL – EVERY VEHICLE DETAIL MUST BE PIXEL-ACCURATE TO THE REFERENCE IMAGES:
+
+GRILLE (HIGHEST PRIORITY):
+- Count the EXACT number of slats, bars, or mesh elements in the reference photo grille.
+- Reproduce the EXACT pattern: vertical bars, horizontal bars, honeycomb, diamond, dot-matrix, or mesh – whatever the reference shows.
+- The grille shape, outline, and proportions MUST match the reference EXACTLY. Do NOT use a generic brand grille from memory.
+- Chrome vs. gloss black vs. matte vs. body-colored surrounds: match the reference EXACTLY.
+- Any integrated sensors, cameras, or active shutters visible in the reference MUST appear in the output.
+- FORBIDDEN: Do NOT substitute the grille design with a different model year, trim level, or facelift version. The reference image is the ONLY truth.
+
+HEADLIGHTS & TAILLIGHTS:
+- Reproduce the EXACT internal LED module layout: count individual LED elements, DRL strip routing, turn signal positions.
+- Lens shape, housing contour, and reflector geometry MUST match reference pixel-for-pixel.
+- Light signatures (C-shape, L-shape, Thor's Hammer, etc.) are UNIQUE identifiers – reproduce EXACTLY as shown.
+- FORBIDDEN: Do NOT use a different generation or facelift headlight design.
+
+WHEELS:
+- EXACT rim design – count spokes, reproduce spoke shape, concavity, finish (polished/matte/bi-color/diamond-cut).
+- Hub cap with brand logo in correct orientation. EXACT tire sidewall profile.
+- NEVER crop any wheel at image edges.
+
+BADGES & EMBLEMS:
+- Front badge: EXACT shape, size, material, and mounting position from reference.
+- Model designation text: EXACT font, size, spacing, and position on the vehicle.
+- Any trim badges (e.g., "Inscription", "R-Design", "AMG", "M Sport") MUST match reference.
+
+BODY DETAILS:
+- EXACT body lines, creases, fender flares, air intakes, roof rails, spoilers, exhaust tips, mirror shapes, door handles.
+- Window trim, B-pillar finish, roof antenna style – ALL from reference images ONLY.
+
+MATERIALS:
+- Match exact finishes – chrome vs. gloss black vs. matte vs. satin vs. brushed aluminum. Do NOT substitute any material.
+- If the reference shows chrome window trim, the output MUST show chrome window trim – not black or body-colored.
+
+VERIFICATION CHECKLIST (apply before finalizing):
+1. Does the grille pattern EXACTLY match the reference? Count the bars/elements.
+2. Do the headlight LED signatures EXACTLY match? Compare shapes.
+3. Are all badges in the correct position with correct text?
+4. Do wheel spoke count and design match?
+5. Are all material finishes (chrome/black/matte) correct?
+If ANY check fails, regenerate that detail from the reference image.
+</DETAIL_FIDELITY_PROTOCOL>`,
   },
 
   vehicle_scale_lock: {
