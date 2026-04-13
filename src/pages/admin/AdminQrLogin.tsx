@@ -5,19 +5,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { QRCodeSVG } from 'qrcode.react';
 import { toast } from 'sonner';
-import { QrCode, Copy, RefreshCw, ArrowLeft, ExternalLink } from 'lucide-react';
+import { QrCode, Copy, RefreshCw, ArrowLeft, ExternalLink, Clock } from 'lucide-react';
 
-const PUBLISHED_APP_URL = 'https://drive-sell-page.lovable.app';
+const APP_DOMAIN = 'https://pdf.anzeige.ai';
 
-const getDefaultRedirect = () => {
-  const isPreviewHost =
-    window.location.hostname.includes('lovableproject.com') ||
-    window.location.hostname.includes('id-preview--');
-
-  return `${isPreviewHost ? PUBLISHED_APP_URL : window.location.origin}/generator`;
-};
+const EXPIRY_OPTIONS = [
+  { value: '1', label: '1 Stunde' },
+  { value: '24', label: '24 Stunden' },
+  { value: '168', label: '7 Tage' },
+  { value: '720', label: '30 Tage' },
+  { value: '8760', label: '1 Jahr' },
+  { value: '0', label: 'Unbegrenzt' },
+];
 
 const AdminQrLogin = () => {
   const [searchParams] = useSearchParams();
@@ -27,7 +29,9 @@ const AdminQrLogin = () => {
   const [email, setEmail] = useState(emailParam);
   const [magicLink, setMagicLink] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [redirectTo, setRedirectTo] = useState(getDefaultRedirect);
+  const [redirectPath, setRedirectPath] = useState('/generator');
+  const [expiresInHours, setExpiresInHours] = useState('720'); // 30 days default
+  const [expiresAt, setExpiresAt] = useState<string | null>(null);
 
   const generateLink = async () => {
     if (!email) {
@@ -38,7 +42,12 @@ const AdminQrLogin = () => {
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-magic-link', {
-        body: { email, redirectTo },
+        body: {
+          email,
+          redirectPath,
+          expiresInHours: parseInt(expiresInHours) || null,
+          appDomain: APP_DOMAIN,
+        },
       });
 
       if (error) throw error;
@@ -46,7 +55,8 @@ const AdminQrLogin = () => {
       if (!data?.link) throw new Error('Kein Login-Link erhalten');
 
       setMagicLink(data.link);
-      toast.success('Direkter QR-Login-Link generiert');
+      setExpiresAt(data.expiresAt);
+      toast.success('QR-Login-Link generiert!');
     } catch (err: any) {
       toast.error(err.message || 'Fehler beim Generieren');
     } finally {
@@ -60,6 +70,10 @@ const AdminQrLogin = () => {
     toast.success('Link kopiert!');
   };
 
+  const expiryLabel = expiresAt
+    ? new Date(expiresAt).toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' })
+    : 'Unbegrenzt';
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
@@ -69,7 +83,7 @@ const AdminQrLogin = () => {
         <div>
           <h1 className="text-2xl font-bold">QR-Code Login</h1>
           <p className="text-sm text-muted-foreground">
-            Der Code öffnet direkt deine App-Route und loggt den Benutzer dort automatisch ein.
+            Generiere einen QR-Code-Link auf <span className="font-medium">{APP_DOMAIN}</span> mit konfigurierbarer Ablaufzeit.
           </p>
         </div>
       </div>
@@ -79,36 +93,43 @@ const AdminQrLogin = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <QrCode className="h-5 w-5" />
-              Direkten Login-Link generieren
+              Login-Link konfigurieren
             </CardTitle>
             <CardDescription>
-              Kein externer Verify-Link mehr – der QR-Code zeigt direkt auf <span className="font-medium">/qr-login</span> deiner App.
+              Der Link zeigt direkt auf {APP_DOMAIN}/qr-login und loggt dort automatisch ein.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="qr-email">E-Mail des Benutzers</Label>
-              <Input
-                id="qr-email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="user@example.com"
-              />
+              <Input id="qr-email" value={email} onChange={e => setEmail(e.target.value)} placeholder="user@example.com" />
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="qr-redirect">Ziel nach dem Login</Label>
-              <Input
-                id="qr-redirect"
-                value={redirectTo}
-                onChange={(e) => setRedirectTo(e.target.value)}
-                placeholder={`${PUBLISHED_APP_URL}/generator`}
-              />
+              <Label htmlFor="qr-redirect">Ziel nach Login</Label>
+              <Input id="qr-redirect" value={redirectPath} onChange={e => setRedirectPath(e.target.value)} placeholder="/generator" />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5" />
+                Gültigkeit
+              </Label>
+              <Select value={expiresInHours} onValueChange={setExpiresInHours}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {EXPIRY_OPTIONS.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <Button onClick={generateLink} disabled={loading} className="w-full">
               {loading ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <QrCode className="mr-2 h-4 w-4" />}
-              {magicLink ? 'QR-Code neu generieren' : 'QR-Code generieren'}
+              {magicLink ? 'Neu generieren' : 'QR-Code generieren'}
             </Button>
           </CardContent>
         </Card>
@@ -117,7 +138,10 @@ const AdminQrLogin = () => {
           <Card>
             <CardHeader>
               <CardTitle>QR-Code für {email}</CardTitle>
-              <CardDescription>Öffnet direkt den Login in deiner App und leitet danach zu /generator weiter.</CardDescription>
+              <CardDescription className="flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5" />
+                Gültig bis: {expiryLabel}
+              </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col items-center gap-4">
               <div className="rounded-xl bg-white p-4 shadow-sm">

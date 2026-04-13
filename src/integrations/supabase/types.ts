@@ -959,6 +959,48 @@ export type Database = {
         }
         Relationships: []
       }
+      qr_login_tokens: {
+        Row: {
+          created_at: string
+          created_by: string
+          email: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          max_uses: number | null
+          redirect_path: string
+          token: string
+          used_count: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          email: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          redirect_path?: string
+          token?: string
+          used_count?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          email?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          redirect_path?: string
+          token?: string
+          used_count?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       sales_assistant_conversations: {
         Row: {
           conversation_title: string | null

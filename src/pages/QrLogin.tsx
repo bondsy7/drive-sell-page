@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import type { EmailOtpType } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,46 +11,67 @@ const QrLogin = () => {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [errorMessage, setErrorMessage] = useState('');
 
-  const tokenHash = searchParams.get('token_hash');
-  const next = searchParams.get('next') || '/generator';
-  const otpType = useMemo(() => {
-    const rawType = searchParams.get('type');
-    return (rawType === 'magiclink' ? rawType : 'magiclink') as EmailOtpType;
-  }, [searchParams]);
+  const token = searchParams.get('token');
 
   useEffect(() => {
     let cancelled = false;
 
     const verify = async () => {
-      if (!tokenHash) {
+      if (!token) {
         setStatus('error');
         setErrorMessage('Der QR-Login-Link ist ungültig.');
         return;
       }
 
-      const { error } = await supabase.auth.verifyOtp({
-        token_hash: tokenHash,
-        type: otpType,
-      });
+      try {
+        // Step 1: Exchange our custom token for a Supabase magic link hash
+        const res = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-qr-token`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            },
+            body: JSON.stringify({ token }),
+          }
+        );
 
-      if (cancelled) return;
+        const data = await res.json();
+        if (!res.ok || data.error) {
+          if (cancelled) return;
+          setStatus('error');
+          setErrorMessage(data.error || 'Login fehlgeschlagen');
+          return;
+        }
 
-      if (error) {
+        // Step 2: Use the hashed token to create a session
+        const { error: otpErr } = await supabase.auth.verifyOtp({
+          token_hash: data.tokenHash,
+          type: 'magiclink',
+        });
+
+        if (cancelled) return;
+
+        if (otpErr) {
+          setStatus('error');
+          setErrorMessage(otpErr.message || 'Session konnte nicht erstellt werden');
+          return;
+        }
+
+        setStatus('success');
+        const redirectPath = data.redirectPath || '/generator';
+        setTimeout(() => navigate(redirectPath, { replace: true }), 600);
+      } catch (err: any) {
+        if (cancelled) return;
         setStatus('error');
-        setErrorMessage(error.message || 'Der QR-Login-Link ist abgelaufen oder ungültig.');
-        return;
+        setErrorMessage(err.message || 'Ein unerwarteter Fehler ist aufgetreten');
       }
-
-      setStatus('success');
-      window.setTimeout(() => navigate(next, { replace: true }), 700);
     };
 
     verify();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [navigate, next, otpType, tokenHash]);
+    return () => { cancelled = true; };
+  }, [navigate, token]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -71,15 +91,14 @@ const QrLogin = () => {
         </CardHeader>
         <CardContent className="space-y-4 text-center">
           {status === 'error' && (
-            <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4 text-sm text-destructive">
-              {errorMessage}
-            </div>
-          )}
-
-          {status === 'error' && (
-            <Button onClick={() => navigate('/auth', { replace: true })} className="w-full">
-              Normal anmelden
-            </Button>
+            <>
+              <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4 text-sm text-destructive">
+                {errorMessage}
+              </div>
+              <Button onClick={() => navigate('/auth', { replace: true })} className="w-full">
+                Normal anmelden
+              </Button>
+            </>
           )}
         </CardContent>
       </Card>
