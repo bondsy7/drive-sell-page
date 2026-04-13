@@ -44,8 +44,8 @@ const PERSPECTIVES = [
 ];
 
 const TOOL_TO_STATE: Record<string, ExtendedAppState> = {
-  'fotos': 'standalone-photo-mode',
-  'photos': 'standalone-photo-mode',
+  'fotos': 'standalone-capture',
+  'photos': 'standalone-capture',
   'pdf-landing': 'idle',
   'banner': 'banner',
   'video': 'video',
