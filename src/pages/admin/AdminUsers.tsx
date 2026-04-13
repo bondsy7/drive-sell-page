@@ -60,6 +60,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 export default function AdminUsers() {
+  const navigate = useNavigate();
   const [users, setUsers] = useState<UserRow[]>([]);
   const [plans, setPlans] = useState<AvailablePlan[]>([]);
   const [search, setSearch] = useState('');
