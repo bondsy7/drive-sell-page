@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Timer } from 'lucide-react';
-import { Loader2, Check, AlertCircle, Zap, ArrowRight, ChevronDown, ChevronUp, Image, Images, RotateCcw, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Check, AlertCircle, Zap, ArrowRight, ChevronDown, ChevronUp, Image, Images, RotateCcw, Eye, EyeOff, Trash2 } from 'lucide-react';
 import ImagePreviewLightbox from '@/components/ImagePreviewLightbox';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -581,16 +581,25 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
                   <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent p-1.5 sm:p-2">
                     <p className="text-[9px] sm:text-[10px] text-white font-medium truncate">{img.label}</p>
                   </div>
-                  {/* Regenerate button on hover */}
-                  <button
-                    onClick={(e) => { e.stopPropagation(); retrySinglePipelineImage(img.key); }}
-                    className="absolute top-1.5 right-1.5 w-7 h-7 rounded-full bg-background/80 hover:bg-accent hover:text-accent-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Neu generieren"
-                  >
-                    {regeneratingIds.has(img.key)
-                      ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      : <RotateCcw className="w-3.5 h-3.5" />}
-                  </button>
+                  {/* Action buttons on hover */}
+                  <div className="absolute top-1.5 right-1.5 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); retrySinglePipelineImage(img.key); }}
+                      className="w-7 h-7 rounded-full bg-background/80 hover:bg-accent hover:text-accent-foreground flex items-center justify-center"
+                      title="Neu generieren"
+                    >
+                      {regeneratingIds.has(img.key)
+                        ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        : <RotateCcw className="w-3.5 h-3.5" />}
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); pipeline.removeResult(img.jobKey, img.promptIndex); }}
+                      className="w-7 h-7 rounded-full bg-background/80 hover:bg-destructive hover:text-destructive-foreground flex items-center justify-center"
+                      title="Löschen"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

@@ -60,6 +60,7 @@ interface PipelineContextValue {
   startPipeline: (config: PipelineConfig) => void;
   retryJob: (jobKey: string) => Promise<void>;
   retrySingleImage: (resultId: string, allResultImages: ResultImage[]) => Promise<void>;
+  removeResult: (jobKey: string, resultIndex: number) => void;
   clearPipeline: () => void;
 }
 
@@ -639,6 +640,16 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, [config, generateOneImage]);
 
+  const removeResult = useCallback((jobKey: string, resultIndex: number) => {
+    setJobs(prev => {
+      const job = prev[jobKey];
+      if (!job) return prev;
+      const newResults = [...job.results];
+      newResults.splice(resultIndex, 1);
+      return { ...prev, [jobKey]: { ...job, results: newResults } };
+    });
+  }, []);
+
   const clearPipeline = useCallback(() => {
     setStatus('idle');
     setJobs({});
@@ -655,7 +666,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       status, isRunning: status === 'running', isFinished: status === 'finished',
       jobs, startTime, endTime, elapsedMs, config, savedProjectId, galleryFolder,
       totalImages: config?.totalImages ?? 0,
-      startPipeline, retryJob, retrySingleImage, clearPipeline,
+      startPipeline, retryJob, retrySingleImage, removeResult, clearPipeline,
     }}>
       {children}
     </PipelineContext.Provider>
