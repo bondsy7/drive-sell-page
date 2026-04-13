@@ -195,7 +195,16 @@ The showroom wall must remain CLEAN and EMPTY – no manufacturer logos, no deal
 
   // ── IDENTITY LOCK ──
   const colorLock = config.changeColor && config.colorHex
-    ? `PAINT COLOR: Change vehicle paint to EXACTLY hex ${config.colorHex}. Glossy, photorealistic finish with correct reflections and color transitions.`
+    ? `<COLOR_CHANGE_MANDATE>
+PAINT COLOR CHANGE – ABSOLUTE, NON-NEGOTIABLE, APPLIES TO EVERY IMAGE:
+1. Change the ENTIRE vehicle exterior paint to EXACTLY hex ${config.colorHex}.
+2. This color MUST be applied to ALL body panels, bumpers, fenders, doors, hood, trunk, roof, mirrors, side skirts, rear diffuser, and ANY other painted surface – with ZERO exceptions.
+3. Do NOT keep the original color on ANY part of the vehicle. The ENTIRE car must be ${config.colorHex}.
+4. Do NOT mix old and new colors. Do NOT leave some panels in the original color. EVERY painted surface is ${config.colorHex}.
+5. The finish must be glossy and photorealistic with correct reflections, specular highlights, and color transitions matching the new color.
+6. This color change applies to ALL images in this batch – front, rear, side, 3/4, hero, low-angle – EVERY SINGLE ONE must show the vehicle in ${config.colorHex}.
+7. VERIFICATION: Before finalizing, confirm that NO original paint color is visible ANYWHERE on the vehicle body.
+</COLOR_CHANGE_MANDATE>`
     : 'PAINT COLOR: Reproduce the EXACT paint color, shade, and finish (metallic/matte/pearl) from the original. Do NOT shift, tint, saturate, desaturate, lighten, or darken. Applies to ALL body panels, bumpers, mirrors, and painted surfaces.';
 
   parts.push(`<IDENTITY_LOCK>\n${colorLock}\n${getBlock(overrides, 'identity_lock')}\n</IDENTITY_LOCK>`);
