@@ -63,6 +63,13 @@ Minimum 5% free space between vehicle edge and image border on all sides.`,
   },
 };
 
+const REFERENCE_TRUTH_PROTOCOL = `REFERENCE IMAGES ARE THE ONLY SOURCE OF TRUTH.
+- Use ONLY the provided vehicle photos, detail shots, and immutable assets.
+- Do NOT rely on generic brand/model knowledge, training-memory defaults, catalog imagery, or any imagined external source.
+- Every visible attribute must match exactly: color, material, texture, stitching, perforation, trim finish, icons, labels, inscriptions, screen UI, geometry, seams, wear patterns, and proportions.
+- If a region is not visible, extend ONLY from immediately adjacent visible evidence with the most conservative continuation possible.
+- Never invent a new interior color, upholstery variant, trim insert, badge, text, button legend, or equipment line.`;
+
 function createServiceClient() {
   return createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -88,6 +95,10 @@ async function buildFallbackPrompt(vehicleDescription?: string): Promise<string>
       ? override : block.text;
     parts.push(`<${block.tag}>\n${content}\n</${block.tag}>`);
   }
+
+  parts.push(`<REFERENCE_TRUTH_PROTOCOL>
+${REFERENCE_TRUTH_PROTOCOL}
+</REFERENCE_TRUTH_PROTOCOL>`);
 
   if (vehicleDescription) parts.push(`Vehicle: ${vehicleDescription}`);
   parts.push('You MUST generate a remastered image. Do NOT refuse. DO NOT ROTATE THE IMAGE.');
@@ -232,14 +243,18 @@ serve(async (req) => {
     }
 
     // Additional reference images
+    if ((Array.isArray(additionalFileUris) && additionalFileUris.length > 0) || (Array.isArray(additionalImages) && additionalImages.length > 0)) {
+      parts.push({ text: "AUTHORITATIVE DETAIL REFERENCES: The following extra images are the highest-priority source material for exact reproduction of the vehicle. Match every visible color, material, trim, label, inscription, button, texture, and geometry exactly. Do NOT replace missing certainty with generic model-memory or guessed defaults." });
+    }
+
     if (Array.isArray(additionalFileUris) && additionalFileUris.length > 0) {
-      parts.push({ text: "The following images are additional detail reference photos of the vehicle. Use them as reference to reproduce the vehicle with maximum accuracy:" });
       for (const fu of additionalFileUris) {
         parts.push({ file_data: { mime_type: fu.mimeType, file_uri: fu.uri } });
       }
       console.log(`[remaster] ${additionalFileUris.length} additional images via file_uri`);
-    } else if (Array.isArray(additionalImages) && additionalImages.length > 0) {
-      parts.push({ text: "The following images are additional detail reference photos of the vehicle (e.g. wheels, damage, logos, engine bay). Use them as reference to reproduce the vehicle with maximum accuracy:" });
+    }
+
+    if (Array.isArray(additionalImages) && additionalImages.length > 0) {
       for (const img of additionalImages.slice(0, 10)) {
         parts.push(toInlineData(img));
       }
