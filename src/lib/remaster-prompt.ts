@@ -224,7 +224,7 @@ The showroom architecture, walls, floor, ceiling, logos, and branding MUST be cl
 This is the SAME showroom used for exterior shots – maintain visual consistency.` : ''}
 The scene MUST be visible THROUGH the glass naturally and realistically – correct perspective, depth, and lighting.
 Do NOT show a random outdoor scene, generic background, or black/dark void through the windows.
-Use the EXACT SAME scene visible through windows on EVERY interior image.
+The EXACT SAME showroom/scene (same walls, same floor, same ceiling, same lighting) must be visible through windows on EVERY interior image – no variation allowed.
 ${interiorLighting}
 </SCENE_AND_LIGHTING>`);
     } else {
@@ -232,7 +232,17 @@ ${interiorLighting}
       const exteriorLighting = getBlock(overrides, 'scene_lighting_exterior');
       parts.push(`<SCENE_AND_LIGHTING>
 ENVIRONMENT: ${scenePrompt}
-Use the EXACT SAME environment on EVERY image – same walls, floor, windows, lighting.
+
+<ENVIRONMENT_CONSISTENCY_LOCK>
+CRITICAL – ABSOLUTE CONSISTENCY ACROSS ALL IMAGES:
+1. FLOOR: The floor material, color, texture, tile pattern, reflectivity, and surface finish MUST be PIXEL-IDENTICAL in EVERY image. If the floor is polished gray concrete, it is polished gray concrete in ALL images – never marble, never wood, never a different shade of gray.
+2. WALLS: The wall color, material, texture, and any architectural features MUST be IDENTICAL in EVERY image. Same paint color, same panel style, same window positions.
+3. CEILING: Same ceiling type, same light fixtures, same lighting positions in EVERY image.
+4. LIGHTING DIRECTION: Light sources come from the SAME direction and have the SAME color temperature in EVERY image.
+5. CAMERA ENVIRONMENT: When the camera angle changes (front, side, rear, 3/4), you are rotating AROUND the vehicle inside the SAME room. The room does NOT change – only the viewing angle changes.
+6. FORBIDDEN VARIATION: Do NOT randomly change floor color, wall texture, lighting mood, or architectural style between images. Every image must look like it was taken in the SAME physical location during the SAME photo session.
+</ENVIRONMENT_CONSISTENCY_LOCK>
+
 FLOOR: The floor MUST match the selected showroom/scene exactly.${isCustomShowroom ? ' The floor from the custom showroom reference image is the AUTHORITATIVE source – reproduce its EXACT color, texture, and reflectivity.' : ''}
 ${exteriorLighting}
 ${isCustomShowroom ? getBlock(overrides, 'custom_showroom_instruction') : ''}
