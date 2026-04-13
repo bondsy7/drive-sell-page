@@ -44,6 +44,7 @@ const PERSPECTIVES = [
 ];
 
 const TOOL_TO_STATE: Record<string, ExtendedAppState> = {
+  'fotos': 'standalone-photo-mode',
   'photos': 'standalone-photo-mode',
   'pdf-landing': 'idle',
   'banner': 'banner',
@@ -53,11 +54,11 @@ const TOOL_TO_STATE: Record<string, ExtendedAppState> = {
 };
 
 const STATE_TO_TOOL: Partial<Record<ExtendedAppState, string>> = {
-  'standalone-photo-mode': 'photos',
-  'standalone-photo-choice': 'photos',
-  'standalone-capture': 'photos',
-  'standalone-upload': 'photos',
-  'preset-upload': 'photos',
+  'standalone-photo-mode': 'fotos',
+  'standalone-photo-choice': 'fotos',
+  'standalone-capture': 'fotos',
+  'standalone-upload': 'fotos',
+  'preset-upload': 'fotos',
   'idle': 'pdf-landing',
   'banner': 'banner',
   'video': 'video',
