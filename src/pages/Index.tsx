@@ -43,11 +43,37 @@ const PERSPECTIVES = [
   { key: 'interior', label: 'Interieur', prompt: 'Interior view from driver door, showing dashboard, steering wheel, seats, and center console' },
 ];
 
+const TOOL_TO_STATE: Record<string, ExtendedAppState> = {
+  'photos': 'standalone-photo-mode',
+  'pdf-landing': 'idle',
+  'banner': 'banner',
+  'video': 'video',
+  'manual-landing': 'manual-landing',
+  'spin360': 'spin360',
+};
+
+const STATE_TO_TOOL: Partial<Record<ExtendedAppState, string>> = {
+  'standalone-photo-mode': 'photos',
+  'standalone-photo-choice': 'photos',
+  'standalone-capture': 'photos',
+  'standalone-upload': 'photos',
+  'preset-upload': 'photos',
+  'idle': 'pdf-landing',
+  'banner': 'banner',
+  'video': 'video',
+  'manual-landing': 'manual-landing',
+  'spin360': 'spin360',
+};
+
 const Index = () => {
   const { user } = useAuth();
   const { balance, getCost } = useCredits();
   const navigate = useNavigate();
-  const [appState, setAppState] = useState<ExtendedAppState>('hub');
+  const { tool } = useParams<{ tool?: string }>();
+  const [appState, setAppState] = useState<ExtendedAppState>(() => {
+    if (tool && TOOL_TO_STATE[tool]) return TOOL_TO_STATE[tool];
+    return 'hub';
+  });
   const [fileName, setFileName] = useState('');
   const [vehicleData, setVehicleData] = useState<VehicleData | null>(null);
   const [imageBase64, setImageBase64] = useState<string | null>(null);
