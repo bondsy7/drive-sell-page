@@ -257,7 +257,7 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
         <p className="text-[11px] text-muted-foreground/70">Wähle eine spezielle Szene für den Hintergrund</p>
         <Select value={config.scene || undefined} onValueChange={(v) => update({ scene: v })}>
           <SelectTrigger className={`w-full ${!config.scene ? 'border-accent/50' : ''}`}>
-            <SelectValue placeholder="Bitte wählen" />
+            <SelectValue placeholder="Bitte wählen *" />
           </SelectTrigger>
           <SelectContent>
             {SCENE_OPTIONS.map(opt => (
@@ -322,7 +322,7 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
       {/* License Plate */}
       <div className="space-y-2">
         <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-          <Tag className="w-3.5 h-3.5" /> Nummernschild <span className="text-destructive">*</span>
+          <Tag className="w-3.5 h-3.5" /> Nummernschild
         </Label>
         <p className="text-[11px] text-muted-foreground/70">Was soll mit dem Nummernschild passieren?</p>
         <Select value={config.licensePlate || undefined} onValueChange={(v) => update({ licensePlate: v })}>
@@ -391,7 +391,7 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
       {/* Logo Configuration */}
       <div className="space-y-3">
         <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-          <Building2 className="w-3.5 h-3.5" /> Logo-Konfiguration <span className="text-destructive">*</span>
+          <Building2 className="w-3.5 h-3.5" /> Logo-Konfiguration
         </Label>
 
         {/* Manufacturer Logo Toggle – always enabled */}

@@ -34,7 +34,7 @@ const MAX_SIZE_MB = 10;
 
 const DEFAULT_CONFIG: RemasterConfig = {
   scene: '',
-  licensePlate: '',
+  licensePlate: 'keep',
   changeColor: false,
   showManufacturerLogo: false,
   showDealerLogo: false,
@@ -92,7 +92,7 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
     handleFiles(e.dataTransfer.files);
   }, [handleFiles]);
 
-  const isRemasterConfigValid = remasterConfig.scene && remasterConfig.licensePlate;
+  const isRemasterConfigValid = !!remasterConfig.scene;
 
   const startRemastering = async () => {
     if (!remasterConfig.scene || !remasterConfig.licensePlate) {
