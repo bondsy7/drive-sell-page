@@ -856,50 +856,74 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       )}
 
       {/* Actions */}
-      <div className="flex items-center justify-between">
-        <Button variant="outline" size="sm" onClick={onBack} disabled={isProcessing}>
-          Zurück
-        </Button>
-        <div className="flex items-center gap-3">
-          {capturedVehicleImages.length > 0 && (
-            <span className="text-xs text-muted-foreground">
-              {capturedVehicleImages.length} von {vehicleSlots.length} Perspektiven
-            </span>
-          )}
-          {!allVehicleDone ? (
-            <Button
-              onClick={startRemastering}
-              disabled={capturedVehicleImages.length === 0 || isProcessing || !isRemasterConfigValid}
-              className="gap-2 gradient-accent text-accent-foreground font-semibold"
-            >
-              {isProcessing ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> Verarbeite…</>
-              ) : (
-                <><Camera className="w-4 h-4" /> Bilder remastern</>
-              )}
-            </Button>
-          ) : (
-            <div className="flex items-center gap-2">
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <Button variant="outline" size="sm" onClick={onBack} disabled={isProcessing}>
+            Zurück
+          </Button>
+          <div className="flex items-center gap-3">
+            {capturedVehicleImages.length > 0 && (
+              <span className="text-xs text-muted-foreground">
+                {capturedVehicleImages.length} von {vehicleSlots.length} Perspektiven
+              </span>
+            )}
+            {!allVehicleDone ? (
               <Button
-                variant="outline"
-                size="sm"
-                onClick={finishUp}
+                onClick={startRemastering}
+                disabled={capturedVehicleImages.length === 0 || isProcessing || !isRemasterConfigValid}
+                className="gap-2 gradient-accent text-accent-foreground font-semibold hidden sm:inline-flex"
               >
-                {projectId ? (
-                  <><Check className="w-4 h-4 mr-1" /> Weiter zur Landing Page</>
+                {isProcessing ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Verarbeite…</>
                 ) : (
-                  <><ImageIcon className="w-4 h-4 mr-1" /> Zur Galerie</>
+                  <><Camera className="w-4 h-4" /> Bilder remastern</>
                 )}
               </Button>
-              <Button
-                onClick={() => setShowPipeline(true)}
-                className="gap-2 gradient-accent text-accent-foreground font-semibold"
-              >
-                <Zap className="w-4 h-4" /> Pipeline starten
-              </Button>
-            </div>
-          )}
+            ) : (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={finishUp}
+                >
+                  {projectId ? (
+                    <><Check className="w-4 h-4 mr-1" /> Weiter zur Landing Page</>
+                  ) : (
+                    <><ImageIcon className="w-4 h-4 mr-1" /> Zur Galerie</>
+                  )}
+                </Button>
+                <Button
+                  onClick={() => setShowPipeline(true)}
+                  className="gap-2 gradient-accent text-accent-foreground font-semibold hidden sm:inline-flex"
+                >
+                  <Zap className="w-4 h-4" /> Bilderset generieren
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* Mobile full-width buttons */}
+        {!allVehicleDone ? (
+          <Button
+            onClick={startRemastering}
+            disabled={capturedVehicleImages.length === 0 || isProcessing || !isRemasterConfigValid}
+            className="w-full gap-2 gradient-accent text-accent-foreground font-semibold sm:hidden"
+          >
+            {isProcessing ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Verarbeite…</>
+            ) : (
+              <><Camera className="w-4 h-4" /> Bilder remastern</>
+            )}
+          </Button>
+        ) : (
+          <Button
+            onClick={() => setShowPipeline(true)}
+            className="w-full gap-2 gradient-accent text-accent-foreground font-semibold sm:hidden"
+          >
+            <Zap className="w-4 h-4" /> Bilderset generieren
+          </Button>
+        )}
       </div>
 
       {/* VIN Data Dialog */}
