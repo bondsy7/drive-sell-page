@@ -47,7 +47,7 @@ const TIERS: { id: ModelTier; label: string; sublabel: string; icon: React.React
 
 const DEFAULT_CONFIG: RemasterConfig = {
   scene: '',
-  licensePlate: '',
+  licensePlate: 'keep',
   changeColor: false,
   showManufacturerLogo: false,
   showDealerLogo: false,

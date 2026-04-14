@@ -86,7 +86,7 @@ function compressImage(dataUrl: string, maxDim = 2048, quality = 0.85): Promise<
 
 const DEFAULT_CONFIG: RemasterConfig = {
   scene: '',
-  licensePlate: '',
+  licensePlate: 'keep',
   changeColor: false,
   showManufacturerLogo: false,
   showDealerLogo: false,
@@ -426,7 +426,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   const cachedMfgLogoRef = useRef<string | null>(null);
   const cachedDealerLogoRef = useRef<string | null>(null);
 
-  const isRemasterConfigValid = remasterConfig.scene && remasterConfig.licensePlate;
+  const isRemasterConfigValid = !!remasterConfig.scene;
 
   const startRemastering = async () => {
     if (!remasterConfig.scene || !remasterConfig.licensePlate) {
