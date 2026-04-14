@@ -257,7 +257,7 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
         <p className="text-[11px] text-muted-foreground/70">Wähle eine spezielle Szene für den Hintergrund</p>
         <Select value={config.scene || undefined} onValueChange={(v) => update({ scene: v })}>
           <SelectTrigger className={`w-full ${!config.scene ? 'border-accent/50' : ''}`}>
-            <SelectValue placeholder="Bitte wählen" />
+            <SelectValue placeholder="Bitte wählen *" />
           </SelectTrigger>
           <SelectContent>
             {SCENE_OPTIONS.map(opt => (
