@@ -1,8 +1,8 @@
 import React from 'react';
 import { useCredits } from '@/hooks/useCredits';
-import { Sparkles, Zap, Crown, Rocket, Diamond } from 'lucide-react';
+import { Sparkles, Zap, Crown, Rocket, Diamond, BadgePlus } from 'lucide-react';
 
-export type ModelTier = 'schnell' | 'qualitaet' | 'premium' | 'turbo' | 'ultra';
+export type ModelTier = 'schnell' | 'qualitaet' | 'premium' | 'turbo' | 'ultra' | 'neu';
 
 interface ModelSelectorProps {
   actionType: string;
@@ -16,6 +16,7 @@ const TIERS: { id: ModelTier; label: string; sublabel: string; icon?: React.Reac
   { id: 'premium', label: 'Premium', sublabel: 'beste Ergebnisse', icon: <Crown className="w-3 h-3" />, group: 'A' },
   { id: 'turbo', label: 'Turbo', sublabel: 'schnell & kreativ', icon: <Rocket className="w-3 h-3" />, group: 'B' },
   { id: 'ultra', label: 'Ultra', sublabel: 'höchste Qualität', icon: <Diamond className="w-3 h-3" />, group: 'B' },
+  { id: 'neu', label: 'Neu', sublabel: 'GPT Image 2', icon: <BadgePlus className="w-3 h-3" />, group: 'B' },
 ];
 
 export default function ModelSelector({ actionType, value, onChange }: ModelSelectorProps) {
@@ -35,7 +36,7 @@ export default function ModelSelector({ actionType, value, onChange }: ModelSele
                 onClick={() => onChange(tier.id)}
                 className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
                   isActive
-                    ? tier.id === 'premium' || tier.id === 'ultra'
+                    ? tier.id === 'premium' || tier.id === 'ultra' || tier.id === 'neu'
                       ? 'bg-accent text-accent-foreground shadow-sm'
                       : 'bg-card text-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground'

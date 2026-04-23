@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, lazy, Suspense } from 'react';
-import { Upload, X, Loader2, Check, AlertCircle, Image as ImageIcon, RotateCcw, ZoomIn, Sparkles, Zap, Crown, Rocket, Diamond, ArrowLeft } from 'lucide-react';
+import { Upload, X, Loader2, Check, AlertCircle, Image as ImageIcon, RotateCcw, ZoomIn, Sparkles, Zap, Crown, Rocket, Diamond, ArrowLeft, BadgePlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -41,6 +41,7 @@ const TIERS: { id: ModelTier; label: string; sublabel: string; icon: React.React
   { id: 'premium', label: 'Premium', sublabel: 'beste Ergebnisse', icon: <Crown className="w-3 h-3" /> },
   { id: 'turbo', label: 'Turbo', sublabel: 'schnell & kreativ', icon: <Rocket className="w-3 h-3" /> },
   { id: 'ultra', label: 'Ultra', sublabel: 'höchste Qualität', icon: <Diamond className="w-3 h-3" /> },
+  { id: 'neu', label: 'Neu', sublabel: 'GPT Image 2', icon: <BadgePlus className="w-3 h-3" /> },
 ];
 
 // fileToBase64 and compressImageForAI imported from '@/lib/image-compress'
