@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, ChevronLeft, ChevronRight, RotateCcw, Loader2, Download, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useSwipeNavigation } from '@/hooks/use-swipe-navigation';
 
 interface PreviewImage {
   id: string;
@@ -23,19 +24,26 @@ const ImagePreviewLightbox: React.FC<ImagePreviewLightboxProps> = ({
   images, initialIndex, open, onClose, onRegenerate, onDelete, regeneratingIds,
 }) => {
   const [index, setIndex] = useState(initialIndex);
+  const goPrev = () => setIndex(i => Math.max(i - 1, 0));
+  const goNext = () => setIndex(i => Math.min(i + 1, images.length - 1));
+  const swipeHandlers = useSwipeNavigation({
+    enabled: open && images.length > 1,
+    onSwipeLeft: goNext,
+    onSwipeRight: goPrev,
+  });
 
   useEffect(() => { setIndex(initialIndex); }, [initialIndex]);
 
   useEffect(() => {
     if (!open) return;
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowRight') setIndex(i => Math.min(i + 1, images.length - 1));
-      if (e.key === 'ArrowLeft') setIndex(i => Math.max(i - 1, 0));
+      if (e.key === 'ArrowRight') goNext();
+      if (e.key === 'ArrowLeft') goPrev();
       if (e.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [open, images.length, onClose]);
+  }, [goNext, goPrev, open, images.length, onClose]);
 
   const current = images[index];
   if (!open || !current) return null;
@@ -91,7 +99,7 @@ const ImagePreviewLightbox: React.FC<ImagePreviewLightboxProps> = ({
         {/* Navigation */}
         {index > 0 && (
           <button
-            onClick={() => setIndex(i => i - 1)}
+            onClick={goPrev}
             className="absolute left-4 top-1/2 -translate-y-1/2 bg-background/20 hover:bg-background/40 backdrop-blur rounded-full p-2 transition-colors"
           >
             <ChevronLeft className="w-8 h-8 text-background" />
@@ -99,7 +107,7 @@ const ImagePreviewLightbox: React.FC<ImagePreviewLightboxProps> = ({
         )}
         {index < images.length - 1 && (
           <button
-            onClick={() => setIndex(i => i + 1)}
+            onClick={goNext}
             className="absolute right-4 top-1/2 -translate-y-1/2 bg-background/20 hover:bg-background/40 backdrop-blur rounded-full p-2 transition-colors"
           >
             <ChevronRight className="w-8 h-8 text-background" />
@@ -112,6 +120,7 @@ const ImagePreviewLightbox: React.FC<ImagePreviewLightboxProps> = ({
             src={current.src}
             alt={current.label || 'Vorschau'}
             className="max-h-[80vh] max-w-[90vw] object-contain rounded-xl shadow-2xl"
+            {...swipeHandlers}
           />
           {isRegenerating && (
             <div className="absolute inset-0 bg-background/60 backdrop-blur-sm rounded-xl flex items-center justify-center">

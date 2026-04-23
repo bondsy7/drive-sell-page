@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, type TouchEvent } from 'react';
 
 interface UseSwipeNavigationOptions {
   enabled?: boolean;
@@ -18,14 +18,14 @@ export function useSwipeNavigation({
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
 
-  const onTouchStart = useCallback((event: React.TouchEvent<HTMLElement>) => {
+  const onTouchStart = useCallback((event: TouchEvent<HTMLElement>) => {
     if (!enabled) return;
     const touch = event.changedTouches[0];
     touchStartX.current = touch.clientX;
     touchStartY.current = touch.clientY;
   }, [enabled]);
 
-  const onTouchEnd = useCallback((event: React.TouchEvent<HTMLElement>) => {
+  const onTouchEnd = useCallback((event: TouchEvent<HTMLElement>) => {
     if (!enabled || touchStartX.current === null || touchStartY.current === null) return;
 
     const touch = event.changedTouches[0];
