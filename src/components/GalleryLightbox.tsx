@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, ChevronLeft, ChevronRight, Download, FolderPlus, RotateCcw, Loader2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useSwipeNavigation } from '@/hooks/use-swipe-navigation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
@@ -50,6 +51,11 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
   // Wrap-around navigation
   const goPrev = () => setIndex(i => (i <= 0 ? images.length - 1 : i - 1));
   const goNext = () => setIndex(i => (i >= images.length - 1 ? 0 : i + 1));
+  const swipeHandlers = useSwipeNavigation({
+    enabled: open && images.length > 1,
+    onSwipeLeft: goNext,
+    onSwipeRight: goPrev,
+  });
 
   useEffect(() => {
     if (!open) return;
@@ -218,6 +224,7 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
             src={current.src}
             alt={current.perspective || 'Fahrzeugbild'}
             className="max-h-[80vh] max-w-[90vw] object-contain rounded-xl shadow-2xl"
+            {...swipeHandlers}
           />
           {regenerating && (
             <div className="absolute inset-0 bg-background/60 backdrop-blur-sm rounded-xl flex items-center justify-center">

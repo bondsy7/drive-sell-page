@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, ChevronLeft, ChevronRight, Download, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useSwipeNavigation } from '@/hooks/use-swipe-navigation';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -24,6 +25,11 @@ const BannerLightbox: React.FC<Props> = ({ banners, initialIndex, open, onClose,
 
   const goPrev = () => setIndex(i => (i <= 0 ? banners.length - 1 : i - 1));
   const goNext = () => setIndex(i => (i >= banners.length - 1 ? 0 : i + 1));
+  const swipeHandlers = useSwipeNavigation({
+    enabled: open && banners.length > 1,
+    onSwipeLeft: goNext,
+    onSwipeRight: goPrev,
+  });
 
   useEffect(() => {
     if (!open) return;
@@ -91,6 +97,7 @@ const BannerLightbox: React.FC<Props> = ({ banners, initialIndex, open, onClose,
           src={current.url}
           alt={current.name}
           className="max-h-[80vh] max-w-[90vw] object-contain rounded-xl shadow-2xl"
+        {...swipeHandlers}
         />
 
         <p className="text-sm text-background/70 mt-3">
