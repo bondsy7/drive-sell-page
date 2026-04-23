@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Sparkles, Eye, Check, X } from "lucide-react";
-import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 export interface PresetData {
   id: string;
@@ -84,10 +83,10 @@ export default function PresetSelectionModal({
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-4xl h-[85vh] max-h-[750px] p-0 flex flex-col">
-          <VisuallyHidden>
+          <div className="sr-only">
             <DialogTitle>Preset auswählen</DialogTitle>
             <DialogDescription>Wähle eine Vorlage für deine Bildbearbeitung</DialogDescription>
-          </VisuallyHidden>
+          </div>
 
           <div className="flex flex-col h-full min-h-0">
             {/* Header */}
