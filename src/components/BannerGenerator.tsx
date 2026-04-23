@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useCredits } from '@/hooks/useCredits';
 import { useVehicleMakes } from '@/hooks/useVehicleMakes';
+import { useSwipeNavigation } from '@/hooks/use-swipe-navigation';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 
@@ -185,6 +186,17 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
 
   // Lightbox
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const goPrevLightbox = useCallback(() => {
+    setLightboxIndex((current) => (current === null ? 0 : (current - 1 + results.length) % results.length));
+  }, [results.length]);
+  const goNextLightbox = useCallback(() => {
+    setLightboxIndex((current) => (current === null ? 0 : (current + 1) % results.length));
+  }, [results.length]);
+  const lightboxSwipeHandlers = useSwipeNavigation({
+    enabled: lightboxIndex !== null && results.length > 1,
+    onSwipeLeft: goNextLightbox,
+    onSwipeRight: goPrevLightbox,
+  });
 
   // Load user projects
   useEffect(() => {
@@ -947,19 +959,19 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
               <>
                 <Button variant="ghost" size="icon"
                   className="absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-background/80 rounded-full"
-                  onClick={() => setLightboxIndex((lightboxIndex - 1 + results.length) % results.length)}>
+                  onClick={goPrevLightbox}>
                   <ChevronLeft className="w-5 h-5" />
                 </Button>
                 <Button variant="ghost" size="icon"
                   className="absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-background/80 rounded-full"
-                  onClick={() => setLightboxIndex((lightboxIndex + 1) % results.length)}>
+                  onClick={goNextLightbox}>
                   <ChevronRight className="w-5 h-5" />
                 </Button>
               </>
             )}
 
             <img src={results[lightboxIndex].image} alt={results[lightboxIndex].formatLabel}
-              className="max-w-full max-h-[80vh] object-contain rounded-lg" />
+              className="max-w-full max-h-[80vh] object-contain rounded-lg" {...lightboxSwipeHandlers} />
 
             {/* Info bar */}
             <div className="mt-3 flex items-center gap-3">
