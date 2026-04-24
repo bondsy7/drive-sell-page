@@ -152,7 +152,7 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
   const [logoBase64, setLogoBase64] = useState<string | null>(null);
 
   // Prompt builder state
-  const [format, setFormat] = useState<string>('post');
+  const [format, setFormat] = useState<string>('story');
   const [occasion, setOccasion] = useState<string>('buy');
   const [scene, setScene] = useState<string>('showroom');
   const [style, setStyle] = useState<string>('premium');
