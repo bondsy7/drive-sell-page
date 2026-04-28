@@ -112,7 +112,7 @@ serve(async (req) => {
 });
 
 async function generateGemini(prompt: string, imageBase64: string | null, logoBase64: string | null, model: string, retries: number): Promise<string | null> {
-  const apiKey = Deno.env.get("GEMINI_API_KEY");
+  const apiKey = await getSecret("GEMINI_API_KEY");
   if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
@@ -146,6 +146,9 @@ async function generateGemini(prompt: string, imageBase64: string | null, logoBa
       if (!response.ok) {
         const errText = await response.text();
         console.error(`Gemini banner attempt ${attempt + 1}:`, response.status, errText);
+        if ([400, 401, 403].includes(response.status) && /API_KEY_INVALID|API Key not found|invalid api key/i.test(errText)) {
+          throw new Error("GEMINI_API_KEY ungültig oder nicht für Gemini freigeschaltet");
+        }
         if (response.status === 429 && attempt < retries) {
           await new Promise(r => setTimeout(r, 3000 * (attempt + 1)));
           continue;
@@ -179,7 +182,7 @@ async function generateGemini(prompt: string, imageBase64: string | null, logoBa
 }
 
 async function generateOpenAI(prompt: string, imageBase64: string | null, logoBase64: string | null, model: string, width: number, height: number, isUltra: boolean, retries: number): Promise<string | null> {
-  const apiKey = Deno.env.get("OPENAI_API_KEY");
+  const apiKey = await getSecret("OPENAI_API_KEY");
   if (!apiKey) throw new Error("OPENAI_API_KEY not configured");
 
   const size = getOpenAISize(width, height);
@@ -240,6 +243,9 @@ async function generateOpenAI(prompt: string, imageBase64: string | null, logoBa
       if (!response.ok) {
         const errText = await response.text();
         console.error(`OpenAI banner attempt ${attempt + 1}:`, response.status, errText);
+        if ([400, 401, 403].includes(response.status) && /invalid_api_key|Incorrect API key|Unauthorized|forbidden/i.test(errText)) {
+          throw new Error("OPENAI_API_KEY ungültig oder nicht freigeschaltet");
+        }
         if (response.status === 429 && attempt < retries) {
           await new Promise(r => setTimeout(r, 3000 * (attempt + 1)));
           continue;
