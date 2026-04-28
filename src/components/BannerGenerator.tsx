@@ -442,7 +442,6 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
   // ── Single format generation ──
   const handleGenerate = useCallback(() => {
     if (!vehicleImage) { toast.error('Bitte lade ein Fahrzeugbild hoch.'); return; }
-    if (!vehicleTitle.trim()) { toast.error('Bitte gib einen Fahrzeugtitel ein.'); return; }
     const costPerBanner = getCost('image_generate', modelTier) || 5;
     const totalCost = costPerBanner * variantCount;
     setCreditDialog({ open: true, cost: totalCost, mode: 'single' });
@@ -475,7 +474,7 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
   // ── All formats generation (parallel) ──
   const handleGenerateAll = useCallback(() => {
     if (!vehicleImage) { toast.error('Bitte lade ein Fahrzeugbild hoch.'); return; }
-    if (!vehicleTitle.trim()) { toast.error('Bitte gib einen Fahrzeugtitel ein.'); return; }
+    
     const costPerBanner = getCost('image_generate', modelTier) || 5;
     const totalCost = costPerBanner * BANNER_FORMATS.length;
     setCreditDialog({ open: true, cost: totalCost, mode: 'all' });
@@ -551,20 +550,6 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
       {/* ─── Form ─── */}
       <div className="space-y-5 p-4 sm:p-5 rounded-xl border border-border bg-card">
 
-        {/* Project Picker */}
-        <div className="space-y-1.5">
-          <Label className="text-xs font-medium">Projekt verknüpfen (optional)</Label>
-          <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
-            <SelectTrigger className="h-9 text-sm">
-              <SelectValue placeholder="Projekt wählen oder manuell eingeben" />
-            </SelectTrigger>
-            <SelectContent>
-              {projects.map(p => (
-                <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
 
         {/* Vehicle Image */}
         <div className="space-y-1.5">
@@ -635,7 +620,7 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
 
         {/* Vehicle Title */}
         <div className="space-y-1.5">
-          <Label className="text-xs font-medium">Fahrzeugtitel *</Label>
+          <Label className="text-xs font-medium">Fahrzeugtitel</Label>
           <Input value={vehicleTitle} onChange={e => setVehicleTitle(e.target.value)}
             placeholder={extractedData?.vehicleTitle || 'z.B. BMW M3 Competition'} className="h-9 text-sm" />
         </div>
