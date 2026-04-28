@@ -21,16 +21,8 @@ serve(async (req) => {
     const mimeType = imageBase64.startsWith("data:image/png") ? "image/png"
       : imageBase64.startsWith("data:image/webp") ? "image/webp" : "image/jpeg";
 
-    const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
-
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            {
-              text: `Analysiere dieses Bild eines Fahrzeugangebots (z.B. von mobile.de, autoscout24, leasingmarkt.de, carwow etc.) und extrahiere alle relevanten Informationen.
+    const models = ["gemini-2.5-flash", "gemini-2.5-flash-lite"];
+    const promptText = `Analysiere dieses Bild eines Fahrzeugangebots (z.B. von mobile.de, autoscout24, leasingmarkt.de, carwow etc.) und extrahiere alle relevanten Informationen.
 
 Antworte NUR mit einem JSON-Objekt im folgenden Format (keine Markdown-Formatierung, kein Codeblock):
 {
@@ -69,19 +61,42 @@ Antworte NUR mit einem JSON-Objekt im folgenden Format (keine Markdown-Formatier
   "confidence": "high" oder "medium" oder "low"
 }
 
-Wenn ein Feld nicht erkennbar ist, setze es auf null. Extrahiere so viel wie möglich, auch von Datenblättern, Preislisten, WLTP-Tabellen, CO2-Labels.`
-            },
-            { inlineData: { mimeType, data: base64Data } }
-          ]
-        }],
-        generationConfig: { temperature: 0.1 },
-      }),
+Wenn ein Feld nicht erkennbar ist, setze es auf null. Extrahiere so viel wie möglich, auch von Datenblättern, Preislisten, WLTP-Tabellen, CO2-Labels.`;
+
+    const body = JSON.stringify({
+      contents: [{
+        parts: [
+          { text: promptText },
+          { inlineData: { mimeType, data: base64Data } }
+        ]
+      }],
+      generationConfig: { temperature: 0.1 },
     });
 
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error("Gemini analyze error:", response.status, errText);
-      return errorResponse(`Analyse fehlgeschlagen: ${response.status}`, 500);
+    let response: Response | null = null;
+    let lastErr = "";
+    outer: for (const model of models) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const r = await fetch(url, {
+          method: "POST",
+          headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
+          body,
+        });
+        if (r.ok) { response = r; break outer; }
+        lastErr = await r.text();
+        console.error(`Gemini ${model} attempt ${attempt + 1}: ${r.status}`, lastErr);
+        // Retry only on overload / rate-limit
+        if (r.status === 503 || r.status === 429 || r.status >= 500) {
+          await new Promise(res => setTimeout(res, 1500 * (attempt + 1)));
+          continue;
+        }
+        break; // hard error – try next model
+      }
+    }
+
+    if (!response) {
+      return errorResponse(`Analyse-Service vorübergehend überlastet. Bitte in einigen Sekunden erneut versuchen.`, 503);
     }
 
     const data = await response.json();
