@@ -5,6 +5,12 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { Eye, EyeOff, Save, ShieldCheck, AlertTriangle } from 'lucide-react';
 
+const maskValue = (val: string) => {
+  if (!val) return '';
+  if (val.length <= 8) return '••••••••';
+  return val.slice(0, 4) + '••••••••' + val.slice(-4);
+};
+
 interface SecretRow {
   id: string;
   key: string;
@@ -52,15 +58,10 @@ export default function AdminSecrets() {
       toast.error(`Fehler beim Speichern von "${key}"`);
     } else {
       toast.success(`"${key}" gespeichert`);
-      loadSecrets();
+      await loadSecrets();
+      setVisible(prev => ({ ...prev, [key]: false }));
     }
     setSaving(prev => ({ ...prev, [key]: false }));
-  };
-
-  const maskValue = (val: string) => {
-    if (!val) return '';
-    if (val.length <= 8) return '••••••••';
-    return val.slice(0, 4) + '••••••••' + val.slice(-4);
   };
 
   if (loading) {
