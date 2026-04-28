@@ -2,6 +2,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders, handleCors, jsonResponse, errorResponse } from "../_shared/cors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
+import { getSecret } from "../_shared/get-secret.ts";
 
 serve(async (req) => {
   const cors = handleCors(req);
@@ -12,7 +13,7 @@ serve(async (req) => {
     const { imageBase64 } = await req.json();
     if (!imageBase64) return errorResponse("Kein Bild übermittelt", 400);
 
-    const apiKey = Deno.env.get("GEMINI_API_KEY");
+    const apiKey = await getSecret("GEMINI_API_KEY");
     if (!apiKey) return errorResponse("GEMINI_API_KEY not configured", 500);
 
     // Strip data URL prefix
