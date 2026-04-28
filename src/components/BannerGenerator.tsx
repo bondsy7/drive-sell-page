@@ -175,6 +175,11 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
   const [analyzing, setAnalyzing] = useState(false);
   const [extractedData, setExtractedData] = useState<any>(null);
 
+  // Datenblatt / Preisliste (Zusatz-Upload)
+  const [dataSheetImage, setDataSheetImage] = useState<string | null>(null);
+  const [analyzingDataSheet, setAnalyzingDataSheet] = useState(false);
+  const [dataSheetData, setDataSheetData] = useState<any>(null);
+
   // Generation
   const [modelTier, setModelTier] = useState<ModelTier>('premium');
   const [variantCount, setVariantCount] = useState(1);
