@@ -1,6 +1,7 @@
 // generate-banner v3 – uses /v1/images/edits for image input
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getSecret } from "../_shared/get-secret.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -48,15 +49,17 @@ async function authenticateAndDeductCredits(req: Request, cost: number): Promise
   const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
     global: { headers: { Authorization: authHeader } },
   });
-  const { data: { user }, error } = await sb.auth.getUser();
-  if (error || !user) {
+  const token = authHeader.replace(/^Bearer\s+/i, "");
+  const { data, error } = await sb.auth.getClaims(token);
+  const userId = data?.claims?.sub;
+  if (error || !userId) {
     return new Response(JSON.stringify({ error: "Nicht authentifiziert" }), {
       status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
   const serviceSb = createServiceClient();
   const { data: result, error: deductError } = await serviceSb.rpc("deduct_credits", {
-    _user_id: user.id, _amount: cost, _action_type: "image_generate",
+    _user_id: userId, _amount: cost, _action_type: "image_generate",
     _description: `Banner-Generierung (${cost} Cr.)`,
   });
   if (deductError) {
@@ -70,7 +73,7 @@ async function authenticateAndDeductCredits(req: Request, cost: number): Promise
       status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-  return { userId: user.id };
+  return { userId };
 }
 
 serve(async (req) => {
@@ -87,7 +90,7 @@ serve(async (req) => {
     if (authResult instanceof Response) return authResult;
 
     let resultImage: string | null = null;
-    const maxRetries = 3;
+    const maxRetries = 2;
 
     if (config.engine === "gemini") {
       resultImage = await generateGemini(prompt, imageBase64, logoBase64, config.model, maxRetries);
@@ -109,7 +112,7 @@ serve(async (req) => {
 });
 
 async function generateGemini(prompt: string, imageBase64: string | null, logoBase64: string | null, model: string, retries: number): Promise<string | null> {
-  const apiKey = Deno.env.get("GEMINI_API_KEY");
+  const apiKey = await getSecret("GEMINI_API_KEY");
   if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
@@ -143,6 +146,9 @@ async function generateGemini(prompt: string, imageBase64: string | null, logoBa
       if (!response.ok) {
         const errText = await response.text();
         console.error(`Gemini banner attempt ${attempt + 1}:`, response.status, errText);
+        if ([400, 401, 403].includes(response.status) && /API_KEY_INVALID|API Key not found|invalid api key/i.test(errText)) {
+          throw new Error("GEMINI_API_KEY ungültig oder nicht für Gemini freigeschaltet");
+        }
         if (response.status === 429 && attempt < retries) {
           await new Promise(r => setTimeout(r, 3000 * (attempt + 1)));
           continue;
@@ -176,7 +182,7 @@ async function generateGemini(prompt: string, imageBase64: string | null, logoBa
 }
 
 async function generateOpenAI(prompt: string, imageBase64: string | null, logoBase64: string | null, model: string, width: number, height: number, isUltra: boolean, retries: number): Promise<string | null> {
-  const apiKey = Deno.env.get("OPENAI_API_KEY");
+  const apiKey = await getSecret("OPENAI_API_KEY");
   if (!apiKey) throw new Error("OPENAI_API_KEY not configured");
 
   const size = getOpenAISize(width, height);
@@ -237,6 +243,9 @@ async function generateOpenAI(prompt: string, imageBase64: string | null, logoBa
       if (!response.ok) {
         const errText = await response.text();
         console.error(`OpenAI banner attempt ${attempt + 1}:`, response.status, errText);
+        if ([400, 401, 403].includes(response.status) && /invalid_api_key|Incorrect API key|Unauthorized|forbidden/i.test(errText)) {
+          throw new Error("OPENAI_API_KEY ungültig oder nicht freigeschaltet");
+        }
         if (response.status === 429 && attempt < retries) {
           await new Promise(r => setTimeout(r, 3000 * (attempt + 1)));
           continue;
