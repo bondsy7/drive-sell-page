@@ -1,6 +1,7 @@
 // generate-banner v3 – uses /v1/images/edits for image input
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getSecret } from "../_shared/get-secret.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -48,15 +49,17 @@ async function authenticateAndDeductCredits(req: Request, cost: number): Promise
   const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
     global: { headers: { Authorization: authHeader } },
   });
-  const { data: { user }, error } = await sb.auth.getUser();
-  if (error || !user) {
+  const token = authHeader.replace(/^Bearer\s+/i, "");
+  const { data, error } = await sb.auth.getClaims(token);
+  const userId = data?.claims?.sub;
+  if (error || !userId) {
     return new Response(JSON.stringify({ error: "Nicht authentifiziert" }), {
       status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
   const serviceSb = createServiceClient();
   const { data: result, error: deductError } = await serviceSb.rpc("deduct_credits", {
-    _user_id: user.id, _amount: cost, _action_type: "image_generate",
+    _user_id: userId, _amount: cost, _action_type: "image_generate",
     _description: `Banner-Generierung (${cost} Cr.)`,
   });
   if (deductError) {
@@ -70,7 +73,7 @@ async function authenticateAndDeductCredits(req: Request, cost: number): Promise
       status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-  return { userId: user.id };
+  return { userId };
 }
 
 serve(async (req) => {
@@ -87,7 +90,7 @@ serve(async (req) => {
     if (authResult instanceof Response) return authResult;
 
     let resultImage: string | null = null;
-    const maxRetries = 3;
+    const maxRetries = 2;
 
     if (config.engine === "gemini") {
       resultImage = await generateGemini(prompt, imageBase64, logoBase64, config.model, maxRetries);
