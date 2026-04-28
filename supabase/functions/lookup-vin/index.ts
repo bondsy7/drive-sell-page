@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { getSecret } from "../_shared/get-secret.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,7 +15,7 @@ serve(async (req) => {
       throw new Error("Invalid VIN: must be exactly 17 characters");
     }
 
-    const OUTVIN_API_KEY = Deno.env.get("OUTVIN_API_KEY");
+    const OUTVIN_API_KEY = await getSecret("OUTVIN_API_KEY");
     if (!OUTVIN_API_KEY) throw new Error("OUTVIN_API_KEY not configured");
 
     let response: Response | null = null;
@@ -96,7 +97,7 @@ serve(async (req) => {
     let translatedEquipment: string[] = rawEquipment;
     if (equipmentForTranslation.length > 0) {
       try {
-        const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+        const GEMINI_API_KEY = await getSecret("GEMINI_API_KEY");
         if (GEMINI_API_KEY) {
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 25000);

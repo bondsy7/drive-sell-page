@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { getSecret } from "../_shared/get-secret.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -104,7 +105,7 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
 }
 
 async function callGeminiFlash(prompt: string, imageUrls: string[], responseType: "json" | "text" = "json"): Promise<any> {
-  const apiKey = Deno.env.get("GEMINI_API_KEY");
+  const apiKey = await getSecret("GEMINI_API_KEY");
   if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
 
   const parts: any[] = [{ text: prompt }];
@@ -144,7 +145,7 @@ async function callGeminiFlash(prompt: string, imageUrls: string[], responseType
 }
 
 async function callImageGeneration(prompt: string, referenceImageUrl: string, model: string = "gemini-2.5-flash"): Promise<string | null> {
-  const apiKey = Deno.env.get("GEMINI_API_KEY");
+  const apiKey = await getSecret("GEMINI_API_KEY");
   if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
 
   // Download reference image and convert to base64

@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { getSecret } from "../_shared/get-secret.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -334,7 +335,7 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+  const GEMINI_API_KEY = await getSecret("GEMINI_API_KEY");
   if (!GEMINI_API_KEY) {
     return new Response(JSON.stringify({ error: "GEMINI_API_KEY nicht konfiguriert" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
