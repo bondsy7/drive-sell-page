@@ -689,6 +689,57 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
           )}
         </div>
 
+        {/* Datenblatt / Preisliste (zusätzliches Bild) */}
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium flex items-center gap-1.5">
+            <ScanSearch className="w-3.5 h-3.5 text-accent" /> Datenblatt / Preisliste (optional)
+          </Label>
+          <p className="text-[10px] text-muted-foreground">
+            Lade ein zusätzliches Bild mit Preisen, WLTP-Verbrauch, CO₂-Werten, Effizienzklasse oder Ausstattungsdaten hoch — wird automatisch analysiert und in die richtigen Felder & Pflichtangaben übernommen.
+          </p>
+
+          {dataSheetImage ? (
+            <div className="relative rounded-lg overflow-hidden border border-border">
+              <img src={dataSheetImage} alt="Datenblatt" className="w-full h-32 sm:h-40 object-contain bg-muted/30" />
+              <div className="absolute top-2 right-2 flex gap-1.5">
+                {!analyzingDataSheet && (
+                  <Button variant="secondary" size="sm" className="h-7 text-xs"
+                    onClick={() => analyzeDataSheet(dataSheetImage)}>
+                    <ScanSearch className="w-3.5 h-3.5 mr-1" /> Erneut analysieren
+                  </Button>
+                )}
+                <Button variant="destructive" size="sm" className="h-7 text-xs"
+                  onClick={() => { setDataSheetImage(null); setDataSheetData(null); }}>Entfernen</Button>
+              </div>
+              {analyzingDataSheet && (
+                <div className="absolute inset-0 bg-background/70 flex items-center justify-center">
+                  <div className="flex items-center gap-2 text-sm text-foreground">
+                    <Loader2 className="w-4 h-4 animate-spin" /> Datenblatt wird analysiert…
+                  </div>
+                </div>
+              )}
+              {dataSheetData && !analyzingDataSheet && (
+                <div className="absolute bottom-0 left-0 right-0 bg-accent/10 border-t border-accent/30 px-3 py-1.5">
+                  <p className="text-[10px] text-accent-foreground truncate">
+                    ✓ {[
+                      dataSheetData.consumptionCombined && `Verbrauch ${dataSheetData.consumptionCombined}`,
+                      dataSheetData.co2Emissions && `CO₂ ${dataSheetData.co2Emissions}`,
+                      dataSheetData.co2Class && `Klasse ${dataSheetData.co2Class}`,
+                      dataSheetData.price && dataSheetData.price,
+                    ].filter(Boolean).join(' · ') || 'Daten erkannt'}
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <label className="flex flex-col items-center justify-center h-24 rounded-lg border-2 border-dashed border-border hover:border-accent/50 cursor-pointer transition-colors">
+              <Image className="w-5 h-5 text-muted-foreground mb-1" />
+              <span className="text-xs text-muted-foreground">Datenblatt / Preisliste / WLTP-Tabelle hochladen</span>
+              <input type="file" accept="image/*" className="hidden" onChange={handleDataSheetUpload} />
+            </label>
+          )}
+        </div>
+
         {/* Vehicle Title */}
         <div className="space-y-1.5">
           <Label className="text-xs font-medium">Fahrzeugtitel</Label>
