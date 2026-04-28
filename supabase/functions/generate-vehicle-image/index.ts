@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getSecret } from "../_shared/get-secret.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -129,7 +130,7 @@ async function generateImage(prompt: string, config: ModelConfig, retries = 2): 
 }
 
 async function generateImageGemini(prompt: string, model: string, retries: number): Promise<{ imageBase64: string | null; error?: string }> {
-  const apiKey = Deno.env.get("GEMINI_API_KEY");
+  const apiKey = await getSecret("GEMINI_API_KEY");
   if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
@@ -175,7 +176,7 @@ async function generateImageGemini(prompt: string, model: string, retries: numbe
 }
 
 async function generateImageOpenAI(prompt: string, model: string, retries: number): Promise<{ imageBase64: string | null; error?: string }> {
-  const apiKey = Deno.env.get("OPENAI_API_KEY");
+  const apiKey = await getSecret("OPENAI_API_KEY");
   if (!apiKey) throw new Error("OPENAI_API_KEY not configured");
 
   const url = "https://api.openai.com/v1/images/generations";

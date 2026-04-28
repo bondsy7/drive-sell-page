@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getSecret } from "../_shared/get-secret.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -26,9 +27,9 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const resendApiKey = Deno.env.get("RESEND_API_KEY");
-    const resendFromEmail = Deno.env.get("RESEND_FROM_EMAIL");
-    const resendReplyTo = Deno.env.get("RESEND_REPLY_TO") || null;
+    const resendApiKey = await getSecret("RESEND_API_KEY");
+    const resendFromEmail = await getSecret("RESEND_FROM_EMAIL");
+    const resendReplyTo = (await getSecret("RESEND_REPLY_TO")) || null;
 
     const adminSupabase = createClient(supabaseUrl, serviceKey);
 

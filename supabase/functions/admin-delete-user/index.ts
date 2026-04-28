@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import Stripe from "https://esm.sh/stripe@18.5.0";
+import { getSecret } from "../_shared/get-secret.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -38,7 +39,7 @@ serve(async (req) => {
 
   try {
     if (action === "cancel_subscription" && subscriptionId) {
-      const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2025-08-27.basil" });
+      const stripe = new Stripe((await getSecret("STRIPE_SECRET_KEY")) || "", { apiVersion: "2025-08-27.basil" });
       await stripe.subscriptions.cancel(subscriptionId);
       
       // Update DB
@@ -57,7 +58,7 @@ serve(async (req) => {
         .select("stripe_subscription_id")
         .eq("user_id", userId);
 
-      const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2025-08-27.basil" });
+      const stripe = new Stripe((await getSecret("STRIPE_SECRET_KEY")) || "", { apiVersion: "2025-08-27.basil" });
       for (const sub of subs || []) {
         if (sub.stripe_subscription_id) {
           try { await stripe.subscriptions.cancel(sub.stripe_subscription_id); } catch { /* already cancelled */ }

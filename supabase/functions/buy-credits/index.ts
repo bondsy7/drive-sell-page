@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { handleCors, jsonResponse } from "../_shared/cors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
+import { getSecret } from "../_shared/get-secret.ts";
 
 // Credit pack mapping: priceId -> credits
 const CREDIT_PACKS: Record<string, number> = {
@@ -20,7 +21,7 @@ serve(async (req) => {
     const { priceId } = await req.json();
     if (!priceId || !CREDIT_PACKS[priceId]) throw new Error("Ungültiges Credit-Paket");
 
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+    const stripe = new Stripe((await getSecret("STRIPE_SECRET_KEY")) || "", {
       apiVersion: "2025-08-27.basil",
     });
 

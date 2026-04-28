@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { getSecret } from "../_shared/get-secret.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -43,7 +44,7 @@ serve(async (req) => {
 
     if (!userEmail) throw new Error("Nicht authentifiziert und keine E-Mail angegeben");
 
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+    const stripe = new Stripe((await getSecret("STRIPE_SECRET_KEY")) || "", {
       apiVersion: "2025-08-27.basil",
     });
 
