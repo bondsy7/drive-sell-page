@@ -336,6 +336,72 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
     reader.readAsDataURL(file);
   }, [analyzeOfferImage, autoAnalyze]);
 
+  // ─── Datenblatt / Preisliste analysieren (zusätzliche Daten) ───
+  const analyzeDataSheet = useCallback(async (imageBase64: string) => {
+    setAnalyzingDataSheet(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('analyze-offer-image', {
+        body: { imageBase64 },
+      });
+      if (error || data?.error) { toast.error('Datenblatt konnte nicht analysiert werden'); return; }
+      const ext = data?.extracted;
+      if (!ext) return;
+      setDataSheetData(ext);
+
+      // Befülle/überschreibe Felder mit Datenblatt-Werten (priorisiert ggü. Fahrzeugbild)
+      if (ext.vehicleTitle) setVehicleTitle(prev => prev || ext.vehicleTitle);
+      if (ext.price || ext.monthlyRate) {
+        setPriceText(prev => prev || (ext.monthlyRate ? `ab ${ext.monthlyRate}/mtl.` : ext.price || ''));
+      }
+      if (ext.headline) setHeadline(prev => prev || ext.headline);
+      if (ext.subline) setSubline(prev => prev || ext.subline);
+      if (ext.priceType === 'lease') setOccasion('lease');
+      else if (ext.priceType === 'finance') setOccasion('finance');
+      else if (ext.priceType === 'abo') setOccasion('abo');
+
+      // Pflichtangaben (Fußzeile) komplett aus Datenblatt-Werten zusammenbauen
+      const parts: string[] = [];
+      if (ext.monthlyRate) parts.push(`Rate: ${ext.monthlyRate}`);
+      if (ext.duration) parts.push(`Laufzeit: ${ext.duration} Mon.`);
+      if (ext.mileage) parts.push(`Fahrleistung: ${ext.mileage}/Jahr`);
+      if (ext.downPayment) parts.push(`Anzahlung: ${ext.downPayment}`);
+      if (ext.consumptionCombined) parts.push(`Verbrauch komb.: ${ext.consumptionCombined}`);
+      if (ext.co2Emissions) parts.push(`CO₂ komb.: ${ext.co2Emissions}`);
+      if (ext.co2Class) parts.push(`CO₂-Klasse: ${ext.co2Class}`);
+      if (ext.consumptionCombinedDischarged) parts.push(`Verbrauch entladen: ${ext.consumptionCombinedDischarged}`);
+      if (ext.co2ClassDischarged) parts.push(`CO₂-Klasse entladen: ${ext.co2ClassDischarged}`);
+      if (ext.electricRange) parts.push(`E-Reichweite: ${ext.electricRange}`);
+      if (ext.energyCostPerYear) parts.push(`Energiekosten/Jahr: ${ext.energyCostPerYear}`);
+      if (ext.vehicleTax) parts.push(`Kfz-Steuer/Jahr: ${ext.vehicleTax}`);
+      if (ext.legalText) parts.push(ext.legalText);
+      if (parts.length) {
+        setLegalText(prev => prev ? `${prev}${prev.endsWith('|') ? '' : ' | '}${parts.join(' | ')}` : parts.join(' | '));
+      }
+
+      if (ext.brand) {
+        const brandLower = ext.brand.toLowerCase();
+        const brandFont = HEADLINE_FONTS.find(f => f.brand?.toLowerCase() === brandLower);
+        if (brandFont) setHeadlineFont(brandFont.id);
+      }
+      toast.success('Datenblatt analysiert!', {
+        description: `${[ext.consumptionCombined && 'Verbrauch', ext.co2Emissions && 'CO₂', ext.co2Class && 'Klasse', ext.price && 'Preis'].filter(Boolean).join(', ') || 'Daten extrahiert'}`,
+      });
+    } catch { toast.error('Analyse des Datenblatts fehlgeschlagen'); }
+    finally { setAnalyzingDataSheet(false); }
+  }, []);
+
+  const handleDataSheetUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      setDataSheetImage(result);
+      analyzeDataSheet(result);
+    };
+    reader.readAsDataURL(file);
+  }, [analyzeDataSheet]);
+
   // Build prompt for a specific format
   const buildPromptForFormat = useCallback((formatId: string) => {
     const fmt = BANNER_FORMATS.find(f => f.id === formatId)!;
