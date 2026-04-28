@@ -856,7 +856,7 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
 
         {/* Generate Buttons */}
         <div className="space-y-2">
-          <Button onClick={handleGenerate} disabled={isGenerating || !vehicleImage || !vehicleTitle.trim() || modelTier === 'schnell'}
+          <Button onClick={handleGenerate} disabled={isGenerating || !vehicleImage || modelTier === 'schnell'}
             className="w-full h-11 text-sm font-semibold">
             {generating ? (
               <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Wird generiert...</>
@@ -866,7 +866,7 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
           </Button>
 
           <Button variant="outline" onClick={handleGenerateAll}
-            disabled={isGenerating || !vehicleImage || !vehicleTitle.trim() || modelTier === 'schnell'}
+            disabled={isGenerating || !vehicleImage || modelTier === 'schnell'}
             className="w-full h-10 text-sm font-medium">
             {generatingAll ? (
               <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Alle Formate werden generiert...</>
