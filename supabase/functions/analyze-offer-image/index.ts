@@ -50,11 +50,26 @@ Antworte NUR mit einem JSON-Objekt im folgenden Format (keine Markdown-Formatier
   "location": "Standort/Stadt falls sichtbar",
   "headline": "Vorschlag für eine kurze, knackige Headline für ein Werbebanner",
   "subline": "Vorschlag für eine Subline",
-  "legalText": "Alle rechtlichen Pflichtangaben die sichtbar sind (Verbrauch, CO2, Effizienzklasse, PAngV-Daten etc.)",
+  "consumptionCombined": "Verbrauch kombiniert z.B. '5,8 l/100km' oder '15,2 kWh/100km'",
+  "consumptionCity": "Verbrauch innerorts falls vorhanden",
+  "consumptionHighway": "Verbrauch außerorts/Autobahn falls vorhanden",
+  "co2Emissions": "CO2-Emissionen kombiniert z.B. '132 g/km'",
+  "co2Class": "CO2-Effizienzklasse z.B. 'A', 'B', 'C', 'D', 'E', 'F', 'G'",
+  "co2ClassDischarged": "CO2-Klasse bei entladener Batterie (nur PHEV) z.B. 'F'",
+  "consumptionCombinedDischarged": "Verbrauch entladene Batterie (nur PHEV)",
+  "electricRange": "Elektrische Reichweite (nur PHEV/BEV) z.B. '52 km'",
+  "wltpRange": "WLTP-Reichweite gesamt falls angegeben",
+  "energyCostPerYear": "Energiekosten pro Jahr falls vorhanden z.B. '1.450 €'",
+  "vehicleTax": "Kfz-Steuer pro Jahr falls vorhanden z.B. '120 €'",
+  "year": "Erstzulassungsjahr z.B. '2023'",
+  "color": "Farbe z.B. 'Mineralweiß Metallic'",
+  "vin": "Fahrgestellnummer / VIN falls sichtbar",
+  "features": ["Liste der Ausstattungsmerkmale falls sichtbar"],
+  "legalText": "Alle rechtlichen Pflichtangaben die sichtbar sind (PAngV-Daten, Hinweise zu Verbrauch/CO2 etc., aber NICHT die Werte selbst doppelt)",
   "confidence": "high" oder "medium" oder "low"
 }
 
-Wenn ein Feld nicht erkennbar ist, setze es auf null. Extrahiere so viel wie möglich.`
+Wenn ein Feld nicht erkennbar ist, setze es auf null. Extrahiere so viel wie möglich, auch von Datenblättern, Preislisten, WLTP-Tabellen, CO2-Labels.`
             },
             { inlineData: { mimeType, data: base64Data } }
           ]
