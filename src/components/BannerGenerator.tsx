@@ -175,6 +175,11 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
   const [analyzing, setAnalyzing] = useState(false);
   const [extractedData, setExtractedData] = useState<any>(null);
 
+  // Datenblatt / Preisliste (Zusatz-Upload)
+  const [dataSheetImage, setDataSheetImage] = useState<string | null>(null);
+  const [analyzingDataSheet, setAnalyzingDataSheet] = useState(false);
+  const [dataSheetData, setDataSheetData] = useState<any>(null);
+
   // Generation
   const [modelTier, setModelTier] = useState<ModelTier>('premium');
   const [variantCount, setVariantCount] = useState(1);
@@ -330,6 +335,72 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
     };
     reader.readAsDataURL(file);
   }, [analyzeOfferImage, autoAnalyze]);
+
+  // ─── Datenblatt / Preisliste analysieren (zusätzliche Daten) ───
+  const analyzeDataSheet = useCallback(async (imageBase64: string) => {
+    setAnalyzingDataSheet(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('analyze-offer-image', {
+        body: { imageBase64 },
+      });
+      if (error || data?.error) { toast.error('Datenblatt konnte nicht analysiert werden'); return; }
+      const ext = data?.extracted;
+      if (!ext) return;
+      setDataSheetData(ext);
+
+      // Befülle/überschreibe Felder mit Datenblatt-Werten (priorisiert ggü. Fahrzeugbild)
+      if (ext.vehicleTitle) setVehicleTitle(prev => prev || ext.vehicleTitle);
+      if (ext.price || ext.monthlyRate) {
+        setPriceText(prev => prev || (ext.monthlyRate ? `ab ${ext.monthlyRate}/mtl.` : ext.price || ''));
+      }
+      if (ext.headline) setHeadline(prev => prev || ext.headline);
+      if (ext.subline) setSubline(prev => prev || ext.subline);
+      if (ext.priceType === 'lease') setOccasion('lease');
+      else if (ext.priceType === 'finance') setOccasion('finance');
+      else if (ext.priceType === 'abo') setOccasion('abo');
+
+      // Pflichtangaben (Fußzeile) komplett aus Datenblatt-Werten zusammenbauen
+      const parts: string[] = [];
+      if (ext.monthlyRate) parts.push(`Rate: ${ext.monthlyRate}`);
+      if (ext.duration) parts.push(`Laufzeit: ${ext.duration} Mon.`);
+      if (ext.mileage) parts.push(`Fahrleistung: ${ext.mileage}/Jahr`);
+      if (ext.downPayment) parts.push(`Anzahlung: ${ext.downPayment}`);
+      if (ext.consumptionCombined) parts.push(`Verbrauch komb.: ${ext.consumptionCombined}`);
+      if (ext.co2Emissions) parts.push(`CO₂ komb.: ${ext.co2Emissions}`);
+      if (ext.co2Class) parts.push(`CO₂-Klasse: ${ext.co2Class}`);
+      if (ext.consumptionCombinedDischarged) parts.push(`Verbrauch entladen: ${ext.consumptionCombinedDischarged}`);
+      if (ext.co2ClassDischarged) parts.push(`CO₂-Klasse entladen: ${ext.co2ClassDischarged}`);
+      if (ext.electricRange) parts.push(`E-Reichweite: ${ext.electricRange}`);
+      if (ext.energyCostPerYear) parts.push(`Energiekosten/Jahr: ${ext.energyCostPerYear}`);
+      if (ext.vehicleTax) parts.push(`Kfz-Steuer/Jahr: ${ext.vehicleTax}`);
+      if (ext.legalText) parts.push(ext.legalText);
+      if (parts.length) {
+        setLegalText(prev => prev ? `${prev}${prev.endsWith('|') ? '' : ' | '}${parts.join(' | ')}` : parts.join(' | '));
+      }
+
+      if (ext.brand) {
+        const brandLower = ext.brand.toLowerCase();
+        const brandFont = HEADLINE_FONTS.find(f => f.brand?.toLowerCase() === brandLower);
+        if (brandFont) setHeadlineFont(brandFont.id);
+      }
+      toast.success('Datenblatt analysiert!', {
+        description: `${[ext.consumptionCombined && 'Verbrauch', ext.co2Emissions && 'CO₂', ext.co2Class && 'Klasse', ext.price && 'Preis'].filter(Boolean).join(', ') || 'Daten extrahiert'}`,
+      });
+    } catch { toast.error('Analyse des Datenblatts fehlgeschlagen'); }
+    finally { setAnalyzingDataSheet(false); }
+  }, []);
+
+  const handleDataSheetUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      setDataSheetImage(result);
+      analyzeDataSheet(result);
+    };
+    reader.readAsDataURL(file);
+  }, [analyzeDataSheet]);
 
   // Build prompt for a specific format
   const buildPromptForFormat = useCallback((formatId: string) => {
@@ -615,6 +686,57 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
                 </div>
               )}
             </div>
+          )}
+        </div>
+
+        {/* Datenblatt / Preisliste (zusätzliches Bild) */}
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium flex items-center gap-1.5">
+            <ScanSearch className="w-3.5 h-3.5 text-accent" /> Datenblatt / Preisliste (optional)
+          </Label>
+          <p className="text-[10px] text-muted-foreground">
+            Lade ein zusätzliches Bild mit Preisen, WLTP-Verbrauch, CO₂-Werten, Effizienzklasse oder Ausstattungsdaten hoch — wird automatisch analysiert und in die richtigen Felder & Pflichtangaben übernommen.
+          </p>
+
+          {dataSheetImage ? (
+            <div className="relative rounded-lg overflow-hidden border border-border">
+              <img src={dataSheetImage} alt="Datenblatt" className="w-full h-32 sm:h-40 object-contain bg-muted/30" />
+              <div className="absolute top-2 right-2 flex gap-1.5">
+                {!analyzingDataSheet && (
+                  <Button variant="secondary" size="sm" className="h-7 text-xs"
+                    onClick={() => analyzeDataSheet(dataSheetImage)}>
+                    <ScanSearch className="w-3.5 h-3.5 mr-1" /> Erneut analysieren
+                  </Button>
+                )}
+                <Button variant="destructive" size="sm" className="h-7 text-xs"
+                  onClick={() => { setDataSheetImage(null); setDataSheetData(null); }}>Entfernen</Button>
+              </div>
+              {analyzingDataSheet && (
+                <div className="absolute inset-0 bg-background/70 flex items-center justify-center">
+                  <div className="flex items-center gap-2 text-sm text-foreground">
+                    <Loader2 className="w-4 h-4 animate-spin" /> Datenblatt wird analysiert…
+                  </div>
+                </div>
+              )}
+              {dataSheetData && !analyzingDataSheet && (
+                <div className="absolute bottom-0 left-0 right-0 bg-accent/10 border-t border-accent/30 px-3 py-1.5">
+                  <p className="text-[10px] text-accent-foreground truncate">
+                    ✓ {[
+                      dataSheetData.consumptionCombined && `Verbrauch ${dataSheetData.consumptionCombined}`,
+                      dataSheetData.co2Emissions && `CO₂ ${dataSheetData.co2Emissions}`,
+                      dataSheetData.co2Class && `Klasse ${dataSheetData.co2Class}`,
+                      dataSheetData.price && dataSheetData.price,
+                    ].filter(Boolean).join(' · ') || 'Daten erkannt'}
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <label className="flex flex-col items-center justify-center h-24 rounded-lg border-2 border-dashed border-border hover:border-accent/50 cursor-pointer transition-colors">
+              <Image className="w-5 h-5 text-muted-foreground mb-1" />
+              <span className="text-xs text-muted-foreground">Datenblatt / Preisliste / WLTP-Tabelle hochladen</span>
+              <input type="file" accept="image/*" className="hidden" onChange={handleDataSheetUpload} />
+            </label>
           )}
         </div>
 
