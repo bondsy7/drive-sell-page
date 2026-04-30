@@ -428,7 +428,7 @@ The showroom wall must remain CLEAN and EMPTY. No manufacturer logos, no dealer 
       for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
           console.log(`Remaster model=${currentModel} attempt ${attempt + 1}/${maxRetries}, parts: ${parts.length}`);
-          const response = await fetch(geminiUrl, {
+          const response = await fetchWithTimeout(geminiUrl, {
             method: "POST",
             headers: {
               "x-goog-api-key": GEMINI_API_KEY,
@@ -438,7 +438,7 @@ The showroom wall must remain CLEAN and EMPTY. No manufacturer logos, no dealer 
               contents: [{ parts }],
               generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
             }),
-          });
+          }, 95_000);
 
           if (!response.ok) {
             const errText = await response.text();
@@ -448,7 +448,7 @@ The showroom wall must remain CLEAN and EMPTY. No manufacturer logos, no dealer 
             if (isRetryable && attempt < maxRetries - 1) {
               const delay = 3000 * (attempt + 1);
               console.warn(`Retryable ${response.status}, waiting ${delay}ms...`);
-              await new Promise(r => setTimeout(r, delay));
+              await sleep(delay);
               continue;
             }
             console.warn(`Model ${currentModel} exhausted (${response.status}), trying fallback...`);
@@ -475,11 +475,14 @@ The showroom wall must remain CLEAN and EMPTY. No manufacturer logos, no dealer 
           console.warn(`Attempt ${attempt + 1}: No image in response, retrying...`);
           lastError = "Kein Bild generiert";
           if (attempt < maxRetries - 1) {
-            await new Promise(r => setTimeout(r, 1500));
+            await sleep(1500);
           }
         } catch (retryErr) {
           console.error(`Attempt ${attempt + 1} failed:`, retryErr);
-          lastError = retryErr instanceof Error ? retryErr.message : "Unknown error";
+          lastError = retryErr instanceof DOMException && retryErr.name === "AbortError"
+            ? "Zeitüberschreitung beim KI-Modell"
+            : retryErr instanceof Error ? retryErr.message : "Unknown error";
+          if (attempt < maxRetries - 1) await sleep(2500 * (attempt + 1));
         }
       }
     }
