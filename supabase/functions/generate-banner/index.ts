@@ -94,7 +94,7 @@ serve(async (req) => {
     if (authResult instanceof Response) return authResult;
 
     let resultImage: string | null = null;
-    const maxRetries = 1;
+    const maxRetries = 0;
 
     if (config.engine === "gemini") {
       const geminiModels = Array.from(new Set([
@@ -170,7 +170,7 @@ async function generateGemini(prompt: string, imageBase64: string | null, logoBa
           contents: [{ parts }],
           generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
         }),
-      }, 55_000);
+      }, 45_000);
 
       if (!response.ok) {
         const errText = await response.text();
@@ -205,7 +205,7 @@ async function generateGemini(prompt: string, imageBase64: string | null, logoBa
     } catch (e: any) {
       const isAbort = e?.name === "AbortError";
       console.error(`Gemini banner attempt ${attempt + 1} failed${isAbort ? " (timeout)" : ""}:`, e?.message);
-      if (attempt >= retries) throw isAbort ? new Error("Gemini timeout (55s)") : e;
+      if (attempt >= retries) throw isAbort ? new Error("Gemini timeout (45s)") : e;
       await new Promise(r => setTimeout(r, 1500));
     }
   }
