@@ -117,10 +117,17 @@ async function invokeWithRetry<T = any>(
   let lastData: any = null;
   for (let attempt = 0; attempt <= retries; attempt++) {
     const { data, error } = await supabase.functions.invoke(fnName, { body });
+    let enrichedError = error;
+    if (error?.context instanceof Response) {
+      const status = error.context.status;
+      let details = '';
+      try { details = await error.context.clone().text(); } catch { /* ignore */ }
+      enrichedError = new Error(`${error.message || 'Edge Function error'} (${status}) ${details}`);
+    }
     if (!error && !data?.error) return { data: data as T, error: null };
-    lastErr = error; lastData = data;
-    if (attempt >= retries || !isTransientEdgeError(error, data)) {
-      return { data: data as T, error: error || new Error(data?.error || 'Edge error') };
+    lastErr = enrichedError; lastData = data;
+    if (attempt >= retries || !isTransientEdgeError(enrichedError, data)) {
+      return { data: data as T, error: enrichedError || new Error(data?.error || 'Edge error') };
     }
     await sleep(baseDelay * (attempt + 1));
   }
