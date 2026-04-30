@@ -90,7 +90,7 @@ serve(async (req) => {
     if (authResult instanceof Response) return authResult;
 
     let resultImage: string | null = null;
-    const maxRetries = 2;
+    const maxRetries = 1;
 
     if (config.engine === "gemini") {
       resultImage = await generateGemini(prompt, imageBase64, logoBase64, config.model, maxRetries);
@@ -110,6 +110,16 @@ serve(async (req) => {
     });
   }
 });
+
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController();
+  const t = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(t);
+  }
+}
 
 async function generateGemini(prompt: string, imageBase64: string | null, logoBase64: string | null, model: string, retries: number): Promise<string | null> {
   const apiKey = await getSecret("GEMINI_API_KEY");
@@ -134,14 +144,14 @@ async function generateGemini(prompt: string, imageBase64: string | null, logoBa
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const response = await fetch(url, {
+      const response = await fetchWithTimeout(url, {
         method: "POST",
         headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ parts }],
           generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
         }),
-      });
+      }, 55_000);
 
       if (!response.ok) {
         const errText = await response.text();
@@ -153,14 +163,14 @@ async function generateGemini(prompt: string, imageBase64: string | null, logoBa
           await new Promise(r => setTimeout(r, 3000 * (attempt + 1)));
           continue;
         }
-        if (attempt < retries) { await new Promise(r => setTimeout(r, 2000)); continue; }
+        if (attempt < retries) { await new Promise(r => setTimeout(r, 1500)); continue; }
         throw new Error(`Gemini error: ${response.status}`);
       }
 
       const data = await response.json();
       const respParts = data.candidates?.[0]?.content?.parts;
       if (!respParts) {
-        if (attempt < retries) { await new Promise(r => setTimeout(r, 2000)); continue; }
+        if (attempt < retries) { await new Promise(r => setTimeout(r, 1500)); continue; }
         throw new Error("No banner generated (Gemini)");
       }
 
@@ -171,11 +181,13 @@ async function generateGemini(prompt: string, imageBase64: string | null, logoBa
         }
       }
 
-      if (attempt < retries) { await new Promise(r => setTimeout(r, 2000)); continue; }
+      if (attempt < retries) { await new Promise(r => setTimeout(r, 1500)); continue; }
       throw new Error("No image data in Gemini response");
-    } catch (e) {
-      if (attempt >= retries) throw e;
-      await new Promise(r => setTimeout(r, 2000));
+    } catch (e: any) {
+      const isAbort = e?.name === "AbortError";
+      console.error(`Gemini banner attempt ${attempt + 1} failed${isAbort ? " (timeout)" : ""}:`, e?.message);
+      if (attempt >= retries) throw isAbort ? new Error("Gemini timeout (55s)") : e;
+      await new Promise(r => setTimeout(r, 1500));
     }
   }
   return null;
@@ -224,20 +236,20 @@ async function generateOpenAI(prompt: string, imageBase64: string | null, logoBa
         form.append("size", size);
         if (isUltra) form.append("quality", "high");
 
-        response = await fetch(url, {
+        response = await fetchWithTimeout(url, {
           method: "POST",
           headers: { Authorization: `Bearer ${apiKey}` },
           body: form,
-        });
+        }, 90_000);
       } else {
         const body: any = { model, prompt, n: 1, size };
         if (isUltra) body.quality = "high";
 
-        response = await fetch(url, {
+        response = await fetchWithTimeout(url, {
           method: "POST",
           headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
           body: JSON.stringify(body),
-        });
+        }, 90_000);
       }
 
       if (!response.ok) {
