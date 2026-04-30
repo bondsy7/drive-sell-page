@@ -236,20 +236,20 @@ async function generateOpenAI(prompt: string, imageBase64: string | null, logoBa
         form.append("size", size);
         if (isUltra) form.append("quality", "high");
 
-        response = await fetch(url, {
+        response = await fetchWithTimeout(url, {
           method: "POST",
           headers: { Authorization: `Bearer ${apiKey}` },
           body: form,
-        });
+        }, 90_000);
       } else {
         const body: any = { model, prompt, n: 1, size };
         if (isUltra) body.quality = "high";
 
-        response = await fetch(url, {
+        response = await fetchWithTimeout(url, {
           method: "POST",
           headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
           body: JSON.stringify(body),
-        });
+        }, 90_000);
       }
 
       if (!response.ok) {
