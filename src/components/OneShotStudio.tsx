@@ -1184,19 +1184,92 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
             )}
           </div>
 
-          {/* Pipeline status (uses global PipelineContext) */}
+          {/* Pipeline status (uses global PipelineContext) — shows results live */}
           {pipelineKicked && pipelineCtx && (
-            <div className="rounded-xl border border-border bg-card p-4 space-y-2">
+            <div className="rounded-xl border border-border bg-card p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-sm">2. Pipeline-Bilder</h3>
-                {pipelineCtx.isRunning && <Loader2 className="w-4 h-4 animate-spin text-accent" />}
-                {pipelineCtx.isFinished && (
-                  <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20">fertig</Badge>
-                )}
+                <div className="flex items-center gap-2">
+                  {(() => {
+                    const allJobs = Object.entries(pipelineCtx.jobs);
+                    const totalImgs = allJobs.reduce((acc, [, j]) => acc + (j.results?.length || 0), 0);
+                    const expected = pipelineCtx.config?.totalImages || 0;
+                    return (
+                      <span className="text-[11px] text-muted-foreground">
+                        {totalImgs}{expected ? ` / ${expected}` : ''} Bilder
+                      </span>
+                    );
+                  })()}
+                  {pipelineCtx.isRunning && <Loader2 className="w-4 h-4 animate-spin text-accent" />}
+                  {pipelineCtx.isFinished && (
+                    <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20">fertig</Badge>
+                  )}
+                </div>
               </div>
-              <p className="text-[11px] text-muted-foreground">
-                Läuft im Hintergrund — Status auch im Pipeline-Indikator oben rechts sichtbar.
-              </p>
+
+              {/* Live grid of all results that have arrived so far */}
+              {(() => {
+                const items: { jobKey: string; label: string; img: string; idx: number; status: string }[] = [];
+                for (const [jobKey, state] of Object.entries(pipelineCtx.jobs)) {
+                  const job = (pipelineCtx.config?.selectedJobs || []).find((j: any) => j.key === jobKey);
+                  const label = job?.labelDe || jobKey;
+                  (state.results || []).forEach((img, i) => {
+                    items.push({ jobKey, label, img, idx: i, status: state.status });
+                  });
+                }
+                if (items.length === 0) {
+                  return (
+                    <p className="text-[11px] text-muted-foreground">
+                      Noch keine Pipeline-Bilder fertig — sie erscheinen hier sobald sie generiert sind.
+                    </p>
+                  );
+                }
+                return (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                    {items.map((it) => (
+                      <div key={`${it.jobKey}-${it.idx}`} className="rounded-lg border border-border overflow-hidden bg-muted/30 group relative">
+                        <img src={it.img} alt={it.label} className="w-full aspect-square object-cover" />
+                        <div className="absolute bottom-0 left-0 right-0 bg-background/85 backdrop-blur px-2 py-1 flex items-center justify-between">
+                          <span className="text-[10px] font-medium truncate">{it.label}</span>
+                          <button
+                            onClick={() => {
+                              const a = document.createElement('a');
+                              a.href = it.img;
+                              a.download = `pipeline-${it.jobKey}-${it.idx + 1}.png`;
+                              a.click();
+                            }}
+                            className="text-[10px] text-accent hover:underline ml-1 shrink-0"
+                          >
+                            DL
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+
+              {/* Per-job progress chips */}
+              <div className="flex flex-wrap gap-1.5">
+                {Object.entries(pipelineCtx.jobs).map(([jobKey, state]) => {
+                  const job = (pipelineCtx.config?.selectedJobs || []).find((j: any) => j.key === jobKey);
+                  const label = job?.labelDe || jobKey;
+                  const cls =
+                    state.status === 'done' ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' :
+                    state.status === 'running' ? 'bg-accent/15 text-accent' :
+                    state.status === 'error' ? 'bg-destructive/15 text-destructive' :
+                    'bg-muted text-muted-foreground';
+                  return (
+                    <span key={jobKey} className={`text-[10px] px-1.5 py-0.5 rounded ${cls}`}>
+                      {label}
+                      {state.status === 'running' && ' …'}
+                      {state.status === 'done' && state.results.length > 0 && ` ✓${state.results.length}`}
+                      {state.status === 'error' && ' ✕'}
+                    </span>
+                  );
+                })}
+              </div>
+
               {pipelineCtx.isFinished && pipelineCtx.galleryFolder && (
                 <Button variant="outline" size="sm" onClick={() => navigate('/dashboard?tab=gallery')}>
                   Galerie öffnen
