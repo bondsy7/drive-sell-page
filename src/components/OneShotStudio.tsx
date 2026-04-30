@@ -125,6 +125,20 @@ async function invokeWithRetry<T = any>(
   return { data: lastData, error: lastErr };
 }
 
+async function uploadGenerationRefs(images: ClassifiedImage[]): Promise<{ uri: string; mimeType: string }[] | null> {
+  if (images.length === 0) return null;
+  const { data, error } = await invokeWithRetry<{ fileUris?: { uri: string; mimeType: string }[] }>(
+    'upload-pipeline-images',
+    { images: images.map((i) => i.base64) },
+    { retries: 2, baseDelayMs: 1200 },
+  );
+  if (error || !data?.fileUris?.length) {
+    console.warn('[OneShot] File API upload failed, using inline image fallback:', error || data);
+    return null;
+  }
+  return data.fileUris;
+}
+
 /** Pick the first image whose category matches one of priorities. */
 function pickByCategory(images: ClassifiedImage[], priorities: ImageCategory[]): ClassifiedImage | null {
   for (const cat of priorities) {
