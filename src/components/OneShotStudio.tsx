@@ -519,19 +519,17 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
       const overrides = await fetchPromptOverrides();
       const [withOverrides] = applyPromptOverrides([masterJob], overrides);
 
-      const { data, error } = await supabase.functions.invoke('remaster-vehicle-image', {
-        body: {
-          imageBase64: heroSourceImage.base64,
-          additionalImages: orderedInputImages
-            .filter((i) => i.id !== heroSourceImage.id)
-            .slice(0, 4)
-            .map((i) => i.base64),
-          vehicleDescription: `${form.brand} ${form.model} ${form.variant}`.trim(),
-          modelTier,
-          dynamicPrompt: withOverrides.prompt,
-        },
+      const { data, error } = await invokeWithRetry('remaster-vehicle-image', {
+        imageBase64: heroSourceImage.base64,
+        additionalImages: orderedInputImages
+          .filter((i) => i.id !== heroSourceImage.id)
+          .slice(0, 4)
+          .map((i) => i.base64),
+        vehicleDescription: `${form.brand} ${form.model} ${form.variant}`.trim(),
+        modelTier,
+        dynamicPrompt: withOverrides.prompt,
       });
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(error.message || 'Hero-Generierung fehlgeschlagen');
       if (data?.error) throw new Error(data.error);
       const b64 = data?.imageBase64;
       if (!b64) throw new Error('Keine Bilddaten erhalten');
