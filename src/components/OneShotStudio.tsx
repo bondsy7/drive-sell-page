@@ -87,6 +87,43 @@ const HERO_CATEGORY_PRIORITY: ImageCategory[] = [
 /* ─── Helpers ─── */
 const stripDataPrefix = (b: string) => (b.includes(',') ? b.split(',')[1] : b);
 const newId = () => Math.random().toString(36).slice(2, 10);
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** Detect transient edge-function failures (cold-start boot, 503, 429). */
+function isTransientEdgeError(err: any, data: any): boolean {
+  const msg = String(err?.message || data?.error || '').toLowerCase();
+  return (
+    msg.includes('boot_error') ||
+    msg.includes('failed to start') ||
+    msg.includes('503') ||
+    msg.includes('429') ||
+    msg.includes('overloaded') ||
+    msg.includes('rate limit') ||
+    msg.includes('timeout')
+  );
+}
+
+/** Invoke an edge function with retry on transient boot/rate errors. */
+async function invokeWithRetry<T = any>(
+  fnName: string,
+  body: any,
+  opts: { retries?: number; baseDelayMs?: number } = {},
+): Promise<{ data: T | null; error: any }> {
+  const retries = opts.retries ?? 2;
+  const baseDelay = opts.baseDelayMs ?? 1500;
+  let lastErr: any = null;
+  let lastData: any = null;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const { data, error } = await supabase.functions.invoke(fnName, { body });
+    if (!error && !data?.error) return { data: data as T, error: null };
+    lastErr = error; lastData = data;
+    if (attempt >= retries || !isTransientEdgeError(error, data)) {
+      return { data: data as T, error: error || new Error(data?.error || 'Edge error') };
+    }
+    await sleep(baseDelay * (attempt + 1));
+  }
+  return { data: lastData, error: lastErr };
+}
 
 /** Pick the first image whose category matches one of priorities. */
 function pickByCategory(images: ClassifiedImage[], priorities: ImageCategory[]): ClassifiedImage | null {
@@ -482,19 +519,17 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
       const overrides = await fetchPromptOverrides();
       const [withOverrides] = applyPromptOverrides([masterJob], overrides);
 
-      const { data, error } = await supabase.functions.invoke('remaster-vehicle-image', {
-        body: {
-          imageBase64: heroSourceImage.base64,
-          additionalImages: orderedInputImages
-            .filter((i) => i.id !== heroSourceImage.id)
-            .slice(0, 4)
-            .map((i) => i.base64),
-          vehicleDescription: `${form.brand} ${form.model} ${form.variant}`.trim(),
-          modelTier,
-          dynamicPrompt: withOverrides.prompt,
-        },
+      const { data, error } = await invokeWithRetry('remaster-vehicle-image', {
+        imageBase64: heroSourceImage.base64,
+        additionalImages: orderedInputImages
+          .filter((i) => i.id !== heroSourceImage.id)
+          .slice(0, 4)
+          .map((i) => i.base64),
+        vehicleDescription: `${form.brand} ${form.model} ${form.variant}`.trim(),
+        modelTier,
+        dynamicPrompt: withOverrides.prompt,
       });
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(error.message || 'Hero-Generierung fehlgeschlagen');
       if (data?.error) throw new Error(data.error);
       const b64 = data?.imageBase64;
       if (!b64) throw new Error('Keine Bilddaten erhalten');
@@ -559,22 +594,23 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
     });
     setBannerOutputs(outputs);
 
+    // Stagger kicks slightly to reduce edge cold-start storms.
+    const ids = Array.from(selectedBannerFormats);
     await Promise.all(
-      Array.from(selectedBannerFormats).map(async (id) => {
+      ids.map(async (id, idx) => {
+        await sleep(idx * 600);
         const fmt = ONESHOT_BANNER_FORMATS.find((f) => f.id === id)!;
         setBannerOutputs((prev) => prev.map((o) => (o.formatId === id ? { ...o, status: 'running' } : o)));
 
         const prompt = buildBannerPrompt(form, fmt);
         try {
-          const { data, error } = await supabase.functions.invoke('generate-banner', {
-            body: {
-              prompt,
-              imageBase64: heroB64,
-              modelTier,
-              width: fmt.w,
-              height: fmt.h,
-            },
-          });
+          const { data, error } = await invokeWithRetry('generate-banner', {
+            prompt,
+            imageBase64: heroB64,
+            modelTier,
+            width: fmt.w,
+            height: fmt.h,
+          }, { retries: 3, baseDelayMs: 2000 });
           if (error || data?.error) throw new Error(data?.error || error?.message || 'Fehler');
           const b64 = data?.imageBase64;
           if (!b64) throw new Error('Keine Banner-Daten');
@@ -606,14 +642,12 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
     setVideoState('starting');
     setVideoError(null);
     try {
-      const { data, error } = await supabase.functions.invoke('generate-video', {
-        body: {
-          action: 'start',
-          imageBase64: heroB64,
-          prompt: videoPrompt || undefined,
-        },
-      });
-      if (error) throw new Error(error.message);
+      const { data, error } = await invokeWithRetry('generate-video', {
+        action: 'start',
+        imageBase64: heroB64,
+        prompt: videoPrompt || undefined,
+      }, { retries: 3, baseDelayMs: 2000 });
+      if (error) throw new Error(error.message || 'Video-Start fehlgeschlagen');
       if (data?.error) {
         if (data.error === 'insufficient_credits') throw new Error('Nicht genügend Credits für Video');
         throw new Error(data.error);
