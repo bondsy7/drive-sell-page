@@ -1,9 +1,10 @@
 import React from 'react';
-import { Camera, FileText, Layout, Image, Video, Sparkles, Lock } from 'lucide-react';
+import { Camera, FileText, Layout, Image, Video, Sparkles, Lock, Zap } from 'lucide-react';
 import { useCredits } from '@/hooks/useCredits';
 import { useModuleAccess } from '@/hooks/useModuleAccess';
 
 export type HubAction = 
+  | 'studio'          // 🚀 One-Shot Studio (Beta) — Bilder + Banner + Video in einem Rutsch
   | 'photos'          // Fotos aufnehmen & remastern
   | 'pdf-landing'     // PDF → Landing Page
   | 'manual-landing'  // Landing Page ohne PDF
@@ -21,6 +22,13 @@ interface ActionTile {
 }
 
 const TILES: ActionTile[] = [
+  {
+    id: 'studio',
+    icon: <Zap className="w-7 h-7" />,
+    title: 'One-Shot Studio',
+    description: 'Power-Button: Fahrzeugfotos + komplettes Bilderset + Banner & Video in einem Rutsch.',
+    badge: 'BETA',
+  },
   {
     id: 'photos',
     icon: <Camera className="w-7 h-7" />,
@@ -93,7 +101,7 @@ const ActionHub: React.FC<ActionHubProps> = ({ onSelect }) => {
       {/* Tile Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {TILES.map((tile) => {
-          const isDisabledByAdmin = disabledModules.has(tile.id);
+          const isDisabledByAdmin = disabledModules.has(tile.id as any);
           const isDisabled = tile.disabled || isDisabledByAdmin;
 
           return (
