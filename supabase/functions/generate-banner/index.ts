@@ -97,7 +97,22 @@ serve(async (req) => {
     const maxRetries = 1;
 
     if (config.engine === "gemini") {
-      resultImage = await generateGemini(prompt, imageBase64, logoBase64, config.model, maxRetries);
+      const geminiModels = Array.from(new Set([
+        config.model,
+        ...(config.model === "gemini-3.1-flash-image-preview" ? ["gemini-2.5-flash-image"] : []),
+        ...(config.model === "gemini-3-pro-image-preview" ? ["gemini-3.1-flash-image-preview", "gemini-2.5-flash-image"] : []),
+      ]));
+      let lastGeminiError = "";
+      for (const geminiModel of geminiModels) {
+        try {
+          resultImage = await generateGemini(prompt, imageBase64, logoBase64, geminiModel, maxRetries);
+          if (resultImage) break;
+        } catch (err) {
+          lastGeminiError = err instanceof Error ? err.message : "Gemini error";
+          console.warn(`Banner model ${geminiModel} failed, trying fallback if available:`, lastGeminiError);
+        }
+      }
+      if (!resultImage && lastGeminiError) throw new Error(lastGeminiError);
     } else {
       resultImage = await generateOpenAI(prompt, imageBase64, logoBase64, config.model, width, height, tier === "ultra", maxRetries);
     }
