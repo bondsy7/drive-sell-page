@@ -17,6 +17,7 @@ import ManualLandingGenerator from '@/components/ManualLandingGenerator';
 import CreditConfirmDialog from '@/components/CreditConfirmDialog';
 import VideoGenerator from '@/components/VideoGenerator';
 import BannerGenerator from '@/components/BannerGenerator';
+import OneShotStudio from '@/components/OneShotStudio';
 import VehicleSelectBeforeGenerate from '@/components/VehicleSelectBeforeGenerate';
 import { PhotoModeSelector, Spin360Workflow } from '@/components/spin360';
 import type { PhotoMode } from '@/components/spin360';
@@ -31,7 +32,7 @@ import type { ModelTier } from '@/components/ModelSelector';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-type ExtendedAppState = AppState | 'capturing-images' | 'hub' | 'standalone-photo-choice' | 'standalone-photo-mode' | 'standalone-capture' | 'standalone-upload' | 'standalone-generate-select' | 'standalone-generating' | 'spin360' | 'video' | 'banner' | 'manual-landing' | 'manual-landing-preview' | 'preset-upload';
+type ExtendedAppState = AppState | 'capturing-images' | 'hub' | 'standalone-photo-choice' | 'standalone-photo-mode' | 'standalone-capture' | 'standalone-upload' | 'standalone-generate-select' | 'standalone-generating' | 'spin360' | 'video' | 'banner' | 'manual-landing' | 'manual-landing-preview' | 'preset-upload' | 'studio';
 
 const PERSPECTIVES = [
   { key: 'front', label: 'Frontansicht', prompt: 'Front view, straight on, symmetrical composition' },
@@ -51,6 +52,8 @@ const TOOL_TO_STATE: Record<string, ExtendedAppState> = {
   'video': 'video',
   'manual-landing': 'manual-landing',
   'spin360': 'spin360',
+  'beta': 'studio',
+  'studio': 'studio',
 };
 
 const STATE_TO_TOOL: Partial<Record<ExtendedAppState, string>> = {
@@ -64,6 +67,7 @@ const STATE_TO_TOOL: Partial<Record<ExtendedAppState, string>> = {
   'video': 'video',
   'manual-landing': 'manual-landing',
   'spin360': 'spin360',
+  'studio': 'beta',
 };
 
 const Index = () => {
@@ -427,6 +431,9 @@ const Index = () => {
   // ─── Hub Action Handler ───
   const handleHubAction = useCallback((action: HubAction) => {
     switch (action) {
+      case 'studio':
+        setAppState('studio' as ExtendedAppState);
+        break;
       case 'photos':
         setAppState('standalone-photo-mode' as ExtendedAppState);
         break;
