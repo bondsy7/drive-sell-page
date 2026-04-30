@@ -438,7 +438,7 @@ The showroom wall must remain CLEAN and EMPTY. No manufacturer logos, no dealer 
               contents: [{ parts }],
               generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
             }),
-          }, 65_000);
+          }, 55_000);
 
           if (!response.ok) {
             const errText = await response.text();
