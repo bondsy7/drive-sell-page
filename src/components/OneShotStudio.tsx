@@ -639,7 +639,7 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
     const ids = Array.from(selectedBannerFormats);
     await Promise.all(
       ids.map(async (id, idx) => {
-        await sleep(idx * 600);
+        await sleep(idx * 1500);
         const fmt = ONESHOT_BANNER_FORMATS.find((f) => f.id === id)!;
         setBannerOutputs((prev) => prev.map((o) => (o.formatId === id ? { ...o, status: 'running' } : o)));
 
@@ -651,7 +651,7 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
             modelTier,
             width: fmt.w,
             height: fmt.h,
-          }, { retries: 3, baseDelayMs: 2000 });
+          }, { retries: 1, baseDelayMs: 3000 });
           if (error || data?.error) throw new Error(data?.error || error?.message || 'Fehler');
           const b64 = data?.imageBase64;
           if (!b64) throw new Error('Keine Banner-Daten');
