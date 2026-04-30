@@ -90,7 +90,7 @@ serve(async (req) => {
     if (authResult instanceof Response) return authResult;
 
     let resultImage: string | null = null;
-    const maxRetries = 2;
+    const maxRetries = 1;
 
     if (config.engine === "gemini") {
       resultImage = await generateGemini(prompt, imageBase64, logoBase64, config.model, maxRetries);
