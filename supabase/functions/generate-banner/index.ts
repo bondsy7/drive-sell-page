@@ -16,12 +16,14 @@ interface ModelConfig {
 }
 
 const MODEL_MAP: Record<string, ModelConfig> = {
+  schnell:   { engine: "gemini", model: "gemini-2.5-flash-image", cost: 3 },
   qualitaet: { engine: "gemini", model: "gemini-3.1-flash-image-preview", cost: 5 },
   premium:   { engine: "gemini", model: "gemini-3-pro-image-preview", cost: 8 },
   turbo:     { engine: "openai", model: "gpt-image-1", cost: 6, supportsSize: true },
   ultra:     { engine: "openai", model: "gpt-image-1", cost: 10, supportsSize: true },
+  neu:       { engine: "openai", model: "gpt-image-1", cost: 3, supportsSize: true },
   // Fallbacks
-  standard:  { engine: "gemini", model: "gemini-3-pro-image-preview", cost: 8 },
+  standard:  { engine: "gemini", model: "gemini-3.1-flash-image-preview", cost: 5 },
   pro:       { engine: "gemini", model: "gemini-3-pro-image-preview", cost: 8 },
 };
 
@@ -83,19 +85,36 @@ serve(async (req) => {
     const { prompt, imageBase64, logoBase64, modelTier, width, height } = await req.json();
     if (!prompt) throw new Error("No prompt provided");
 
-    const config = MODEL_MAP[modelTier] || MODEL_MAP["premium"];
+    const requestedTier = typeof modelTier === "string" ? modelTier : "qualitaet";
+    const tier = requestedTier === "standard" ? "qualitaet" : requestedTier;
+    const config = MODEL_MAP[tier] || MODEL_MAP["qualitaet"];
 
     // Auth & credits
     const authResult = await authenticateAndDeductCredits(req, config.cost);
     if (authResult instanceof Response) return authResult;
 
     let resultImage: string | null = null;
-    const maxRetries = 1;
+    const maxRetries = 0;
 
     if (config.engine === "gemini") {
-      resultImage = await generateGemini(prompt, imageBase64, logoBase64, config.model, maxRetries);
+      const geminiModels = Array.from(new Set([
+        config.model,
+        ...(config.model === "gemini-3.1-flash-image-preview" ? ["gemini-2.5-flash-image"] : []),
+        ...(config.model === "gemini-3-pro-image-preview" ? ["gemini-3.1-flash-image-preview", "gemini-2.5-flash-image"] : []),
+      ]));
+      let lastGeminiError = "";
+      for (const geminiModel of geminiModels) {
+        try {
+          resultImage = await generateGemini(prompt, imageBase64, logoBase64, geminiModel, maxRetries);
+          if (resultImage) break;
+        } catch (err) {
+          lastGeminiError = err instanceof Error ? err.message : "Gemini error";
+          console.warn(`Banner model ${geminiModel} failed, trying fallback if available:`, lastGeminiError);
+        }
+      }
+      if (!resultImage && lastGeminiError) throw new Error(lastGeminiError);
     } else {
-      resultImage = await generateOpenAI(prompt, imageBase64, logoBase64, config.model, width, height, modelTier === "ultra", maxRetries);
+      resultImage = await generateOpenAI(prompt, imageBase64, logoBase64, config.model, width, height, tier === "ultra", maxRetries);
     }
 
     if (!resultImage) throw new Error("Kein Banner generiert. Bitte versuche es erneut.");
@@ -151,7 +170,7 @@ async function generateGemini(prompt: string, imageBase64: string | null, logoBa
           contents: [{ parts }],
           generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
         }),
-      }, 55_000);
+      }, 45_000);
 
       if (!response.ok) {
         const errText = await response.text();
@@ -186,7 +205,7 @@ async function generateGemini(prompt: string, imageBase64: string | null, logoBa
     } catch (e: any) {
       const isAbort = e?.name === "AbortError";
       console.error(`Gemini banner attempt ${attempt + 1} failed${isAbort ? " (timeout)" : ""}:`, e?.message);
-      if (attempt >= retries) throw isAbort ? new Error("Gemini timeout (55s)") : e;
+      if (attempt >= retries) throw isAbort ? new Error("Gemini timeout (45s)") : e;
       await new Promise(r => setTimeout(r, 1500));
     }
   }
