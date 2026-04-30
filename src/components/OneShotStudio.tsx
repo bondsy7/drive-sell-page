@@ -546,17 +546,21 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
 
       const overrides = await fetchPromptOverrides();
       const [withOverrides] = applyPromptOverrides([masterJob], overrides);
+      const referenceImages = [
+        heroSourceImage,
+        ...orderedInputImages.filter((i) => i.id !== heroSourceImage.id).slice(0, 4),
+      ];
+      const fileUris = await uploadGenerationRefs(referenceImages);
 
       const { data, error } = await invokeWithRetry('remaster-vehicle-image', {
         imageBase64: heroSourceImage.base64,
-        additionalImages: orderedInputImages
-          .filter((i) => i.id !== heroSourceImage.id)
-          .slice(0, 4)
-          .map((i) => i.base64),
+        additionalImages: fileUris ? undefined : referenceImages.slice(1).map((i) => i.base64),
+        mainImageFileUri: fileUris?.[0] || null,
+        additionalFileUris: fileUris?.slice(1) || undefined,
         vehicleDescription: `${form.brand} ${form.model} ${form.variant}`.trim(),
         modelTier,
         dynamicPrompt: withOverrides.prompt,
-      });
+      }, { retries: 3, baseDelayMs: 2500 });
       if (error) throw new Error(error.message || 'Hero-Generierung fehlgeschlagen');
       if (data?.error) throw new Error(data.error);
       const b64 = data?.imageBase64;
