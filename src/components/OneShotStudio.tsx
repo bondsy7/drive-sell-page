@@ -1,515 +1,1271 @@
-import React, { useState, useCallback, useRef } from 'react';
-import { ArrowLeft, ScanSearch, Camera, Image as ImageIcon, Video, Sparkles, Loader2, Upload, X, ChevronRight, Zap } from 'lucide-react';
+// OneShotStudio – Beta Power-Button Workflow (v2)
+//
+// Step 1 "Aufnahme":
+//   - Multi-Upload für 5–15 Fahrzeugbilder (gemischt) + optionales Datenblatt
+//   - Parallel im Hintergrund:
+//       • analyze-offer-image (Datenblatt)
+//       • classify-vehicle-images (alle Fahrzeugbilder in einem Call)
+//       • ocr-vin → lookup-vin (für Bilder die als VIN klassifiziert wurden)
+//
+// Step 2 "Setup":
+//   - Komplette Banner-Felder vorbefüllt aus Scan/VIN-Lookup
+//   - Quellen-Badges zeigen "manuell / Datenblatt / VIN / aus Bild"
+//   - Pipeline-Optionen via RemasterOptions (Szene, Plate, Logos)
+//   - Banner-Format-Auswahl (mehrfach), Video an/aus + Prompt
+//
+// Step 3 "Generierung":
+//   - Hero zuerst (Master-Image), dann Rest der Pipeline + Banner + Video parallel
+//   - Bilder werden klassifiziert und automatisch der richtigen Pipeline-Position zugeordnet
+//
+// Bestehende Komponenten (BannerGenerator, ImageCaptureGrid, /generator/fotos)
+// bleiben unangetastet — wir orchestrieren nur.
+
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import {
+  ArrowLeft, ScanSearch, Loader2, Upload, X, ChevronRight, Zap, Image as ImageIcon,
+  Video, FileText, Hash, Layers, AlertCircle, Sparkles, Camera,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
+
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
-import ImageCaptureGrid from '@/components/ImageCaptureGrid';
-import BannerGenerator from '@/components/BannerGenerator';
-import VideoGenerator from '@/components/VideoGenerator';
-import VehicleBrandModelPicker from '@/components/VehicleBrandModelPicker';
-import ModelSelector, { type ModelTier } from '@/components/ModelSelector';
-import type { VehicleData } from '@/types/vehicle';
+import { useCredits } from '@/hooks/useCredits';
 
-/**
- * OneShotStudio — Beta Power-Button Workflow
- *
- * Step 1: Setup & Scan
- *   - Optional: Datenblatt-Scan → automatisch Marke/Modell/Preis befüllen
- *   - Manuelle Eingabe Marke/Modell/Preis (nur einmal!)
- *   - Toggles: Banner gewünscht? Video gewünscht?
- *
- * Step 2: Fotos & Remaster
- *   - Wiederverwendung von ImageCaptureGrid (= bestehender Flow)
- *   - Nach Pipeline-Complete: Hauptbild fließt in Banner / Video
- *
- * Step 3: Marketing-Output
- *   - Banner-Generator (preloaded mit Hauptbild + Daten)
- *   - Video-Generator (preloaded mit Hauptbild)
- *
- * Wir verändern keine bestehenden Komponenten — wir orchestrieren nur.
- */
+import RemasterOptions from '@/components/RemasterOptions';
+import ModelSelector, { type ModelTier } from '@/components/ModelSelector';
+import {
+  type RemasterConfig, SCENE_OPTIONS,
+} from '@/lib/remaster-prompt';
+import {
+  PIPELINE_JOBS, PIPELINE_CATEGORIES, applyPromptOverrides,
+  detectBrandFromDescription, getTotalImageCount, type PipelineJob,
+} from '@/lib/pipeline-jobs';
+import { fetchPromptOverrides } from '@/lib/remaster-prompt';
+import { resolveCanonicalBrand, normalizeBrand } from '@/lib/brand-aliases';
+import { lookupBrandFromVin } from '@/lib/vin-wmi-lookup';
+import { usePipelineSafe } from '@/contexts/PipelineContext';
+import { compressImageForAI, fileToBase64 } from '@/lib/image-compress';
+import { useVehicleMakes } from '@/hooks/useVehicleMakes';
+
+import OneShotMarketingForm from './oneshot/OneShotMarketingForm';
+import {
+  DEFAULT_FORM, DEFAULT_SOURCES, ONESHOT_BANNER_FORMATS,
+  type ClassifiedImage, type ImageCategory, type MarketingForm,
+  type FieldSources, type ScanData, type BannerFormatId,
+} from './oneshot/oneshot-types';
 
 interface OneShotStudioProps {
   onBack: () => void;
 }
 
-type Step = 'setup' | 'capture' | 'marketing';
+type Step = 'aufnahme' | 'setup' | 'generierung';
 
-interface ScanResult {
-  vehicleTitle?: string;
-  brand?: string;
-  model?: string;
-  variant?: string;
-  price?: string;
-  monthlyRate?: string;
-  duration?: string;
-  mileage?: string;
-  downPayment?: string;
-  consumptionCombined?: string;
-  co2Emissions?: string;
-  co2Class?: string;
-  electricRange?: string;
-  energyCostPerYear?: string;
-  vehicleTax?: string;
-  legalText?: string;
-  priceType?: string;
-  headline?: string;
-  subline?: string;
+interface BannerOutput {
+  formatId: BannerFormatId;
+  formatLabel: string;
+  ratio: string;
+  imageBase64: string;
+  status: 'pending' | 'running' | 'done' | 'error';
+  error?: string;
+}
+
+const HERO_CATEGORY_PRIORITY: ImageCategory[] = [
+  'exterior_34_front',
+  'exterior_front',
+  'exterior_34_rear',
+  'exterior_side_left',
+  'exterior_side_right',
+  'exterior_rear',
+];
+
+/* ─── Helpers ─── */
+const stripDataPrefix = (b: string) => (b.includes(',') ? b.split(',')[1] : b);
+const newId = () => Math.random().toString(36).slice(2, 10);
+
+/** Pick the first image whose category matches one of priorities. */
+function pickByCategory(images: ClassifiedImage[], priorities: ImageCategory[]): ClassifiedImage | null {
+  for (const cat of priorities) {
+    const m = images.find((i) => i.category === cat);
+    if (m) return m;
+  }
+  return null;
 }
 
 const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
   const { user } = useAuth();
+  const { balance, getCost } = useCredits();
+  const { getLogoForMake } = useVehicleMakes();
   const navigate = useNavigate();
+  const pipelineCtx = usePipelineSafe();
 
-  const [step, setStep] = useState<Step>('setup');
+  const [step, setStep] = useState<Step>('aufnahme');
 
-  // ─── Setup state ───
-  const [brand, setBrand] = useState('');
-  const [model, setModel] = useState('');
-  const [variant, setVariant] = useState('');
-  const [priceText, setPriceText] = useState('');
-  const [monthlyRate, setMonthlyRate] = useState('');
-  const [scanData, setScanData] = useState<ScanResult | null>(null);
-  const [scanning, setScanning] = useState(false);
-  const [dataSheetImage, setDataSheetImage] = useState<string | null>(null);
+  /* ─── Step 1: Uploads ─── */
+  const [vehicleImages, setVehicleImages] = useState<ClassifiedImage[]>([]);
+  const [dataSheetBase64, setDataSheetBase64] = useState<string | null>(null);
 
-  // Output toggles
-  const [wantBanner, setWantBanner] = useState(true);
+  const [classifying, setClassifying] = useState(false);
+  const [analyzingSheet, setAnalyzingSheet] = useState(false);
+  const [vinLookingUp, setVinLookingUp] = useState(false);
+
+  const [scanData, setScanData] = useState<ScanData | null>(null);
+  const [vin, setVin] = useState<string | null>(null);
+
+  const filesInputRef = useRef<HTMLInputElement>(null);
+  const sheetInputRef = useRef<HTMLInputElement>(null);
+
+  /* ─── Step 2: Form ─── */
+  const [form, setForm] = useState<MarketingForm>({ ...DEFAULT_FORM });
+  const [sources, setSources] = useState<FieldSources>({ ...DEFAULT_SOURCES });
+
+  const [remasterConfig, setRemasterConfig] = useState<RemasterConfig>({
+    scene: 'showroom-1',
+    licensePlate: 'keep',
+    changeColor: false,
+    showManufacturerLogo: false,
+    showDealerLogo: false,
+  });
+
+  // Pipeline job selection
+  const [selectedJobKeys, setSelectedJobKeys] = useState<Set<string>>(() => {
+    return new Set(PIPELINE_JOBS.filter((j) => j.defaultSelected && !j.brand).map((j) => j.key));
+  });
+
+  // Banner formats
+  const [selectedBannerFormats, setSelectedBannerFormats] = useState<Set<BannerFormatId>>(new Set(['story']));
+  // Video
   const [wantVideo, setWantVideo] = useState(false);
   const [videoPrompt, setVideoPrompt] = useState('');
+  // Model tier
   const [modelTier, setModelTier] = useState<ModelTier>('qualitaet');
 
-  const dataSheetInputRef = useRef<HTMLInputElement>(null);
+  /* ─── Step 3: Generation runtime ─── */
+  const [heroBase64, setHeroBase64] = useState<string | null>(null);
+  const [heroError, setHeroError] = useState<string | null>(null);
+  const [heroRunning, setHeroRunning] = useState(false);
 
-  // ─── Capture / Pipeline result ───
-  const [mainImage, setMainImage] = useState<string | null>(null);
-  const [galleryImages, setGalleryImages] = useState<string[]>([]);
-  const [vehicleDataState, setVehicleDataState] = useState<VehicleData | null>(null);
+  const [bannerOutputs, setBannerOutputs] = useState<BannerOutput[]>([]);
+  const [videoState, setVideoState] = useState<'idle' | 'starting' | 'polling' | 'done' | 'error'>('idle');
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [videoError, setVideoError] = useState<string | null>(null);
+  const [pipelineKicked, setPipelineKicked] = useState(false);
 
-  // ─── Datenblatt-Scan ───
-  const handleScan = useCallback(async (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      toast.error('Bitte ein Bild des Datenblatts hochladen.');
+  /* ─────────────────────────────────────────────────────────────
+   * STEP 1: Upload + parallel analysis
+   * ───────────────────────────────────────────────────────────── */
+
+  const handleVehicleImagesUpload = useCallback(async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const arr = Array.from(files).slice(0, 15 - vehicleImages.length);
+    if (arr.length === 0) {
+      toast.error('Maximal 15 Bilder');
       return;
     }
-    setScanning(true);
-    try {
-      const reader = new FileReader();
-      const dataUrl: string = await new Promise((res, rej) => {
-        reader.onload = () => res(reader.result as string);
-        reader.onerror = rej;
-        reader.readAsDataURL(file);
-      });
-      setDataSheetImage(dataUrl);
 
-      const { data, error } = await supabase.functions.invoke('analyze-offer-image', {
-        body: { imageBase64: dataUrl },
+    // Compress + read all in parallel
+    const newOnes: ClassifiedImage[] = await Promise.all(
+      arr.map(async (file) => {
+        const raw = await fileToBase64(file);
+        const compressed = await compressImageForAI(raw, 1600, 0.85).catch(() => raw);
+        return {
+          id: newId(),
+          base64: compressed,
+          category: 'unknown' as ImageCategory,
+          confidence: 'low' as const,
+          labelDe: 'Wird analysiert…',
+          isExterior: false,
+          isInterior: false,
+          isDetail: false,
+          fileName: file.name,
+        };
+      }),
+    );
+
+    const merged = [...vehicleImages, ...newOnes];
+    setVehicleImages(merged);
+
+    // Kick off classification for the new images only
+    void classifyImages(newOnes, merged);
+  }, [vehicleImages]);
+
+  const classifyImages = useCallback(async (newOnes: ClassifiedImage[], all: ClassifiedImage[]) => {
+    if (newOnes.length === 0) return;
+    setClassifying(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('classify-vehicle-images', {
+        body: { images: newOnes.map((i) => ({ id: i.id, imageBase64: i.base64 })) },
       });
       if (error || data?.error) {
-        toast.error('Datenblatt konnte nicht analysiert werden.');
+        toast.error('Klassifikation fehlgeschlagen', { description: data?.error || error?.message });
         return;
       }
-      const ext: ScanResult = data?.extracted || {};
-      setScanData(ext);
+      const items = (data?.items || []) as Array<{
+        id: string; category: ImageCategory; confidence: 'high' | 'medium' | 'low';
+        labelDe: string; isExterior: boolean; isInterior: boolean; isDetail: boolean;
+      }>;
 
-      // Auto-fill (nur leere Felder)
-      if (ext.brand && !brand) setBrand(ext.brand);
-      if (ext.model && !model) setModel(ext.model);
-      if (ext.variant && !variant) setVariant(ext.variant);
-      if (ext.price && !priceText) setPriceText(ext.price);
-      if (ext.monthlyRate && !monthlyRate) setMonthlyRate(ext.monthlyRate);
+      const map = new Map(items.map((it) => [it.id, it]));
+      setVehicleImages((cur) =>
+        cur.map((img) => {
+          const r = map.get(img.id);
+          if (!r) return img;
+          return { ...img, ...r };
+        }),
+      );
 
-      toast.success('Datenblatt erkannt!', {
-        description: [ext.vehicleTitle, ext.price && `${ext.price}`].filter(Boolean).join(' · '),
+      // After classification: if any image is VIN, run OCR + lookup
+      const updated = all.map((img) => {
+        const r = map.get(img.id);
+        return r ? { ...img, ...r } : img;
       });
-    } catch (e) {
-      console.error('Scan error:', e);
-      toast.error('Analyse fehlgeschlagen.');
+      const vinImg = updated.find((i) => i.category === 'vin_plate');
+      if (vinImg && !vin) void runVinFlow(vinImg);
+
+      const exteriorCount = updated.filter((i) => i.isExterior).length;
+      const interiorCount = updated.filter((i) => i.isInterior).length;
+      toast.success(`${items.length} Bilder klassifiziert`, {
+        description: `${exteriorCount} Exterieur · ${interiorCount} Interieur`,
+      });
+    } catch (e: any) {
+      console.error('classify error', e);
+      toast.error('Klassifikation fehlgeschlagen');
     } finally {
-      setScanning(false);
+      setClassifying(false);
     }
-  }, [brand, model, variant, priceText, monthlyRate]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vin]);
 
-  // ─── Build vehicleData & jump to capture ───
-  const startCapture = useCallback(() => {
-    if (!brand.trim() || !model.trim()) {
-      toast.error('Bitte Marke und Modell eingeben (oder Datenblatt scannen).');
-      return;
-    }
-
-    // Build minimal VehicleData für ImageCaptureGrid + spätere Banner
-    const vData: VehicleData = {
-      category: 'gebrauchtwagen',
-      vehicle: {
-        brand: brand.trim(),
-        model: model.trim(),
-        variant: variant.trim(),
-        year: new Date().getFullYear(),
-        color: '',
-        fuelType: '',
-        transmission: '',
-        power: '',
-        features: [],
-      },
-      finance: {
-        monthlyRate: monthlyRate || '',
-        downPayment: scanData?.downPayment || '',
-        duration: scanData?.duration || '',
-        totalPrice: priceText || '',
-        annualMileage: scanData?.mileage || '',
-        specialPayment: '',
-        residualValue: '',
-        interestRate: '',
-      },
-      dealer: {
-        name: '', address: '', postalCode: '', city: '', phone: '', email: '',
-        website: '', taxId: '', logoUrl: '',
-        facebookUrl: '', instagramUrl: '', xUrl: '', tiktokUrl: '', youtubeUrl: '', whatsappNumber: '',
-        leasingBank: '', leasingLegalText: '',
-        financingBank: '', financingLegalText: '',
-        defaultLegalText: '',
-      },
-      consumption: {
-        origin: '', mileage: '', displacement: '', power: '', driveType: '',
-        fuelType: '',
-        consumptionCombined: scanData?.consumptionCombined || '',
-        co2Emissions: scanData?.co2Emissions || '',
-        co2Class: scanData?.co2Class || '',
-        consumptionCity: '', consumptionSuburban: '', consumptionRural: '', consumptionHighway: '',
-        energyCostPerYear: scanData?.energyCostPerYear || '',
-        fuelPrice: '', co2CostMedium: '', co2CostLow: '', co2CostHigh: '',
-        vehicleTax: scanData?.vehicleTax || '',
-        isPluginHybrid: false,
-        co2EmissionsDischarged: '', co2ClassDischarged: '', consumptionCombinedDischarged: '',
-        electricRange: scanData?.electricRange || '',
-        consumptionElectric: '',
-        hsnTsn: '', electricMotorPower: '', electricMotorTorque: '', gearboxType: '',
-        topSpeed: '', acceleration: '', curbWeight: '', grossWeight: '', warranty: '', paintColor: '',
-      },
-    };
-    setVehicleDataState(vData);
-    setStep('capture');
-  }, [brand, model, variant, monthlyRate, priceText, scanData]);
-
-  // ─── Capture complete callback ───
-  const handleCaptureComplete = useCallback((mainImg: string, gallery: string[]) => {
-    setMainImage(mainImg);
-    setGalleryImages(gallery);
+  const removeVehicleImage = useCallback((id: string) => {
+    setVehicleImages((cur) => cur.filter((i) => i.id !== id));
   }, []);
 
-  const handlePipelineDone = useCallback(() => {
-    // Pipeline runs in background via PipelineContext.
-    // If user wants banner/video, jump to marketing step.
-    if (wantBanner || wantVideo) {
-      setStep('marketing');
-    } else {
-      toast.success('Alle Bilder erstellt – Galerie wird geöffnet.');
-      navigate('/dashboard?tab=gallery');
+  // ── VIN flow
+  const runVinFlow = useCallback(async (img: ClassifiedImage) => {
+    setVinLookingUp(true);
+    try {
+      const { data: ocr, error: ocrErr } = await supabase.functions.invoke('ocr-vin', {
+        body: { imageBase64: img.base64 },
+      });
+      if (ocrErr || !ocr?.vin) {
+        if (ocr?.vin === null) toast.message('VIN auf Bild nicht lesbar');
+        return;
+      }
+      const detectedVin = ocr.vin as string;
+      setVin(detectedVin);
+
+      const { data: lookup } = await supabase.functions.invoke('lookup-vin', {
+        body: { vin: detectedVin },
+      });
+      const v = lookup?.vehicle || lookup?.data || lookup;
+      if (!v) {
+        toast.success('VIN erkannt: ' + detectedVin);
+        return;
+      }
+      setForm((f) => ({
+        ...f,
+        brand: f.brand || v.make || v.brand || '',
+        model: f.model || v.model || '',
+        variant: f.variant || v.trim || v.variant || '',
+        vehicleTitle: f.vehicleTitle || `${v.make || v.brand || ''} ${v.model || ''} ${v.trim || v.variant || ''}`.trim(),
+      }));
+      setSources((s) => ({
+        ...s,
+        brand: !form.brand && (v.make || v.brand) ? 'vin' : s.brand,
+        model: !form.model && v.model ? 'vin' : s.model,
+        variant: !form.variant && (v.trim || v.variant) ? 'vin' : s.variant,
+        vehicleTitle: !form.vehicleTitle ? 'vin' : s.vehicleTitle,
+      }));
+      toast.success('VIN-Daten geladen', { description: `${v.make || ''} ${v.model || ''}`.trim() });
+    } catch (e: any) {
+      console.error('VIN flow error', e);
+    } finally {
+      setVinLookingUp(false);
     }
-  }, [wantBanner, wantVideo, navigate]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const vehicleDescription = vehicleDataState
-    ? `${vehicleDataState.vehicle.brand} ${vehicleDataState.vehicle.model} ${vehicleDataState.vehicle.variant || ''}`.trim()
-    : `${brand} ${model} ${variant}`.trim();
+  // ── Datasheet upload + analyze
+  const handleDataSheetUpload = useCallback(async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast.error('Bitte ein Bild des Datenblatts hochladen');
+      return;
+    }
+    const raw = await fileToBase64(file);
+    const compressed = await compressImageForAI(raw, 1800, 0.9).catch(() => raw);
+    setDataSheetBase64(compressed);
 
-  // ─── Render ───
+    setAnalyzingSheet(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('analyze-offer-image', {
+        body: { imageBase64: compressed },
+      });
+      if (error || data?.error) {
+        toast.error('Datenblatt konnte nicht analysiert werden', { description: data?.error || error?.message });
+        return;
+      }
+      const ext = (data?.extracted || {}) as ScanData;
+      setScanData(ext);
+      mergeScanIntoForm(ext, 'datasheet');
+      toast.success('Datenblatt analysiert!', {
+        description: [ext.vehicleTitle, ext.price].filter(Boolean).join(' · ') || 'Daten extrahiert',
+      });
+    } catch (e: any) {
+      console.error('sheet error', e);
+      toast.error('Analyse fehlgeschlagen');
+    } finally {
+      setAnalyzingSheet(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /** Merge analysed data into form (only fill empty fields, mark source). */
+  const mergeScanIntoForm = useCallback((ext: ScanData, source: 'datasheet' | 'image') => {
+    setForm((f) => {
+      const next: MarketingForm = { ...f };
+      const setIfEmpty = <K extends keyof MarketingForm>(key: K, val?: string | null) => {
+        if (val && !next[key]) next[key] = val as MarketingForm[K];
+      };
+      setIfEmpty('brand', ext.brand);
+      setIfEmpty('model', ext.model);
+      setIfEmpty('variant', ext.variant);
+      setIfEmpty('vehicleTitle', ext.vehicleTitle);
+      setIfEmpty('priceText', ext.price || (ext.monthlyRate ? `ab ${ext.monthlyRate}/mtl.` : ''));
+      setIfEmpty('monthlyRate', ext.monthlyRate);
+      setIfEmpty('duration', ext.duration);
+      setIfEmpty('downPayment', ext.downPayment);
+      setIfEmpty('mileage', ext.mileage);
+      setIfEmpty('headline', ext.headline);
+      setIfEmpty('subline', ext.subline);
+
+      if (ext.priceType && next.priceType === 'buy') {
+        next.priceType = ext.priceType;
+        next.occasion = ext.priceType;
+      }
+
+      // Build legal-text footer if empty
+      if (!next.legalText) {
+        const parts: string[] = [];
+        if (ext.monthlyRate) parts.push(`Rate: ${ext.monthlyRate}`);
+        if (ext.duration) parts.push(`Laufzeit: ${ext.duration} Mon.`);
+        if (ext.mileage) parts.push(`Fahrleistung: ${ext.mileage}/Jahr`);
+        if (ext.downPayment) parts.push(`Anzahlung: ${ext.downPayment}`);
+        if (ext.consumptionCombined) parts.push(`Verbrauch komb.: ${ext.consumptionCombined}`);
+        if (ext.co2Emissions) parts.push(`CO₂ komb.: ${ext.co2Emissions}`);
+        if (ext.co2Class) parts.push(`CO₂-Klasse: ${ext.co2Class}`);
+        if (ext.electricRange) parts.push(`E-Reichweite: ${ext.electricRange}`);
+        if (ext.legalText) parts.push(ext.legalText);
+        if (parts.length) next.legalText = parts.join(' | ');
+      }
+      return next;
+    });
+
+    setSources((s) => ({
+      ...s,
+      brand: ext.brand && s.brand === 'manual' ? source : s.brand,
+      model: ext.model && s.model === 'manual' ? source : s.model,
+      variant: ext.variant && s.variant === 'manual' ? source : s.variant,
+      vehicleTitle: ext.vehicleTitle && s.vehicleTitle === 'manual' ? source : s.vehicleTitle,
+      priceText: (ext.price || ext.monthlyRate) && s.priceText === 'manual' ? source : s.priceText,
+      priceType: ext.priceType && s.priceType === 'manual' ? source : s.priceType,
+      monthlyRate: ext.monthlyRate && s.monthlyRate === 'manual' ? source : s.monthlyRate,
+      duration: ext.duration && s.duration === 'manual' ? source : s.duration,
+      downPayment: ext.downPayment && s.downPayment === 'manual' ? source : s.downPayment,
+      mileage: ext.mileage && s.mileage === 'manual' ? source : s.mileage,
+      headline: ext.headline && s.headline === 'manual' ? source : s.headline,
+      subline: ext.subline && s.subline === 'manual' ? source : s.subline,
+      legalText: s.legalText === 'manual' ? source : s.legalText,
+    }));
+  }, []);
+
+  /* ─────────────────────────────────────────────────────────────
+   * STEP 2: Helpers
+   * ───────────────────────────────────────────────────────────── */
+
+  const onUserEdit = useCallback((field: keyof FieldSources) => {
+    setSources((s) => ({ ...s, [field]: 'manual' }));
+  }, []);
+
+  const onFormChange = useCallback((patch: Partial<MarketingForm>) => {
+    setForm((f) => ({ ...f, ...patch }));
+  }, []);
+
+  // Toggle pipeline job
+  const toggleJob = (key: string) => {
+    setSelectedJobKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const toggleBannerFormat = (id: BannerFormatId) => {
+    setSelectedBannerFormats((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  // Brand-detected canonical key
+  const canonicalBrand = useMemo(() => {
+    const candidate = form.brand || scanData?.brand || '';
+    if (!candidate) return null;
+    return resolveCanonicalBrand(normalizeBrand(candidate));
+  }, [form.brand, scanData?.brand]);
+
+  /** All jobs available for this brand (CI jobs filtered by brand match). */
+  const availableJobs = useMemo<PipelineJob[]>(() => {
+    return PIPELINE_JOBS.filter((j) => {
+      if (!j.brand) return true;
+      return canonicalBrand && j.brand === canonicalBrand;
+    });
+  }, [canonicalBrand]);
+
+  /* ─────────────────────────────────────────────────────────────
+   * STEP 3: Generation
+   * ───────────────────────────────────────────────────────────── */
+
+  /** Pick hero source image from classified pile. */
+  const heroSourceImage = useMemo(() => {
+    if (vehicleImages.length === 0) return null;
+    return pickByCategory(vehicleImages, HERO_CATEGORY_PRIORITY) ?? vehicleImages.find((i) => i.isExterior) ?? vehicleImages[0];
+  }, [vehicleImages]);
+
+  /** Build inputImages (max 5, exterior-first ordered). */
+  const orderedInputImages = useMemo<ClassifiedImage[]>(() => {
+    if (vehicleImages.length === 0) return [];
+    const order: ImageCategory[] = [
+      'exterior_34_front', 'exterior_front', 'exterior_side_left',
+      'exterior_rear', 'exterior_34_rear', 'exterior_side_right',
+      'interior_front', 'interior_dashboard', 'interior_rear',
+    ];
+    const seen = new Set<string>();
+    const result: ClassifiedImage[] = [];
+    for (const cat of order) {
+      const m = vehicleImages.find((i) => i.category === cat && !seen.has(i.id));
+      if (m) { result.push(m); seen.add(m.id); }
+    }
+    // Fill up with whatever exterior is left, then unknown
+    for (const i of vehicleImages) {
+      if (seen.has(i.id) || i.category === 'vin_plate' || i.category === 'datasheet') continue;
+      result.push(i); seen.add(i.id);
+      if (result.length >= 6) break;
+    }
+    return result;
+  }, [vehicleImages]);
+
+  /** Detail / additional images for the pipeline. */
+  const additionalImages = useMemo<string[]>(() => {
+    return vehicleImages.filter((i) => i.isDetail).map((i) => i.base64);
+  }, [vehicleImages]);
+
+  /** Generate the hero (Master) image as a single remaster pass. */
+  const generateHero = useCallback(async (): Promise<string | null> => {
+    if (!heroSourceImage) return null;
+    setHeroRunning(true);
+    setHeroError(null);
+    try {
+      // Use the MASTER_IMAGE prompt, route via pipeline-jobs
+      const masterJob = availableJobs.find((j) => j.key === 'MASTER_IMAGE');
+      if (!masterJob) throw new Error('Master-Job nicht gefunden');
+
+      const overrides = await fetchPromptOverrides();
+      const [withOverrides] = applyPromptOverrides([masterJob], overrides);
+
+      const { data, error } = await supabase.functions.invoke('remaster-vehicle-image', {
+        body: {
+          imageBase64: heroSourceImage.base64,
+          additionalImages: orderedInputImages
+            .filter((i) => i.id !== heroSourceImage.id)
+            .slice(0, 4)
+            .map((i) => i.base64),
+          vehicleDescription: `${form.brand} ${form.model} ${form.variant}`.trim(),
+          modelTier,
+          dynamicPrompt: withOverrides.prompt,
+        },
+      });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+      const b64 = data?.imageBase64;
+      if (!b64) throw new Error('Keine Bilddaten erhalten');
+      setHeroBase64(b64);
+      toast.success('Hero-Bild fertig!');
+      return b64;
+    } catch (e: any) {
+      const msg = e?.message || 'Hero-Generierung fehlgeschlagen';
+      setHeroError(msg);
+      toast.error(msg);
+      return null;
+    } finally {
+      setHeroRunning(false);
+    }
+  }, [heroSourceImage, orderedInputImages, form.brand, form.model, form.variant, modelTier, availableJobs]);
+
+  /** Kick off pipeline (rest of the jobs) via global PipelineContext. */
+  const startPipelineRest = useCallback(async (heroB64: string | null) => {
+    if (!pipelineCtx || pipelineCtx.isRunning) return;
+    if (!user) return;
+
+    const overrides = await fetchPromptOverrides();
+    const selectedJobs = applyPromptOverrides(
+      availableJobs.filter((j) => selectedJobKeys.has(j.key) && j.key !== 'MASTER_IMAGE'),
+      overrides,
+    );
+    if (selectedJobs.length === 0) return;
+
+    const inputs = orderedInputImages.map((i) => i.base64);
+    const totalImages = getTotalImageCount(new Set(selectedJobs.map((j) => j.key)));
+
+    pipelineCtx.startPipeline({
+      inputImages: inputs,
+      originalImages: inputs,
+      additionalImages,
+      vehicleDescription: `${form.brand} ${form.model} ${form.variant}`.trim(),
+      remasterConfig,
+      modelTier,
+      projectId: null,
+      vin,
+      selectedJobs,
+      availableJobs,
+      resolvedManufacturerLogoUrl: canonicalBrand ? getLogoForMake(canonicalBrand) || null : null,
+      userId: user.id,
+      detectedBrand: canonicalBrand,
+      totalImages,
+    });
+    setPipelineKicked(true);
+  }, [
+    pipelineCtx, user, availableJobs, selectedJobKeys, orderedInputImages, additionalImages,
+    form.brand, form.model, form.variant, remasterConfig, modelTier, vin,
+    canonicalBrand, getLogoForMake,
+  ]);
+
+  /** Fire all selected banner formats in parallel using the hero image. */
+  const generateBanners = useCallback(async (heroB64: string) => {
+    if (selectedBannerFormats.size === 0) return;
+
+    const outputs: BannerOutput[] = Array.from(selectedBannerFormats).map((id) => {
+      const fmt = ONESHOT_BANNER_FORMATS.find((f) => f.id === id)!;
+      return { formatId: id, formatLabel: fmt.label, ratio: fmt.ratio, imageBase64: '', status: 'pending' };
+    });
+    setBannerOutputs(outputs);
+
+    await Promise.all(
+      Array.from(selectedBannerFormats).map(async (id) => {
+        const fmt = ONESHOT_BANNER_FORMATS.find((f) => f.id === id)!;
+        setBannerOutputs((prev) => prev.map((o) => (o.formatId === id ? { ...o, status: 'running' } : o)));
+
+        const prompt = buildBannerPrompt(form, fmt);
+        try {
+          const { data, error } = await supabase.functions.invoke('generate-banner', {
+            body: {
+              prompt,
+              imageBase64: heroB64,
+              modelTier,
+              width: fmt.w,
+              height: fmt.h,
+            },
+          });
+          if (error || data?.error) throw new Error(data?.error || error?.message || 'Fehler');
+          const b64 = data?.imageBase64;
+          if (!b64) throw new Error('Keine Banner-Daten');
+
+          setBannerOutputs((prev) => prev.map((o) =>
+            o.formatId === id ? { ...o, status: 'done', imageBase64: b64 } : o,
+          ));
+
+          // Save to storage (best-effort)
+          try {
+            const base64Data = b64.includes(',') ? b64.split(',')[1] : b64;
+            const bytes = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
+            const blob = new Blob([bytes], { type: 'image/png' });
+            const fileName = `${user!.id}/${Date.now()}-oneshot-${id}.png`;
+            await supabase.storage.from('banners').upload(fileName, blob, { contentType: 'image/png' });
+          } catch { /* ignore */ }
+        } catch (e: any) {
+          setBannerOutputs((prev) => prev.map((o) =>
+            o.formatId === id ? { ...o, status: 'error', error: e?.message } : o,
+          ));
+        }
+      }),
+    );
+  }, [selectedBannerFormats, form, modelTier, user]);
+
+  /** Start video generation with hero + optional rear reference. */
+  const generateVideo = useCallback(async (heroB64: string) => {
+    if (!wantVideo) return;
+    setVideoState('starting');
+    setVideoError(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-video', {
+        body: {
+          action: 'start',
+          imageBase64: heroB64,
+          prompt: videoPrompt || undefined,
+        },
+      });
+      if (error) throw new Error(error.message);
+      if (data?.error) {
+        if (data.error === 'insufficient_credits') throw new Error('Nicht genügend Credits für Video');
+        throw new Error(data.error);
+      }
+      const operationName = data?.operationName;
+      if (!operationName) throw new Error('Keine Operation-ID erhalten');
+
+      setVideoState('polling');
+      const maxAttempts = 60;
+      let attempts = 0;
+      const intv = setInterval(async () => {
+        attempts++;
+        try {
+          const { data: pollData } = await supabase.functions.invoke('generate-video', {
+            body: { action: 'poll', operationName },
+          });
+          if (pollData?.done) {
+            clearInterval(intv);
+            const url = pollData.videoUrl || pollData.videoBase64 || pollData.videoUri;
+            if (url) {
+              setVideoUrl(url);
+              setVideoState('done');
+              toast.success('Video fertig!');
+            } else {
+              setVideoState('error');
+              setVideoError(pollData.error || 'Unbekannter Fehler');
+            }
+          }
+          if (attempts >= maxAttempts) {
+            clearInterval(intv);
+            setVideoState('error');
+            setVideoError('Zeitüberschreitung');
+          }
+        } catch { /* keep polling */ }
+      }, 5000);
+    } catch (e: any) {
+      setVideoState('error');
+      setVideoError(e?.message || 'Video-Generierung fehlgeschlagen');
+      toast.error(e?.message || 'Video-Generierung fehlgeschlagen');
+    }
+  }, [wantVideo, videoPrompt]);
+
+  /** Power-button: hero → (pipeline + banners + video) parallel. */
+  const startEverything = useCallback(async () => {
+    if (heroRunning || heroBase64) return;
+    setBannerOutputs([]);
+    setVideoState('idle');
+    setVideoUrl(null);
+
+    const hero = await generateHero();
+    if (!hero) return;
+
+    // Fire all three in parallel — they all use the hero image.
+    void startPipelineRest(hero);
+    void generateBanners(hero);
+    void generateVideo(hero);
+  }, [heroRunning, heroBase64, generateHero, startPipelineRest, generateBanners, generateVideo]);
+
+  /* ─────────────────────────────────────────────────────────────
+   * Step 1 → 2 transition
+   * ───────────────────────────────────────────────────────────── */
+  const canGoToSetup = vehicleImages.length >= 2 && !classifying;
+
+  const goToSetup = useCallback(() => {
+    if (!canGoToSetup) {
+      toast.error('Bitte mindestens 2 Fahrzeugbilder hochladen');
+      return;
+    }
+    // If form still empty AND we have a brand from anywhere, set vehicle title
+    setForm((f) => {
+      const next = { ...f };
+      if (!next.vehicleTitle && (next.brand || next.model)) {
+        next.vehicleTitle = `${next.brand} ${next.model} ${next.variant}`.trim();
+      }
+      return next;
+    });
+    setStep('setup');
+  }, [canGoToSetup]);
+
+  const goToGen = useCallback(() => {
+    if (!form.vehicleTitle.trim() && !(form.brand.trim() && form.model.trim())) {
+      toast.error('Bitte mindestens Marke + Modell oder Fahrzeugtitel angeben');
+      return;
+    }
+    setStep('generierung');
+  }, [form.vehicleTitle, form.brand, form.model]);
+
+  /* ─────────────────────────────────────────────────────────────
+   * Render
+   * ───────────────────────────────────────────────────────────── */
+
+  const StepIndicator = (
+    <div className="flex items-center justify-center gap-1.5 mb-2 flex-wrap">
+      {([
+        { num: 1, label: 'Aufnahme', key: 'aufnahme' as Step },
+        { num: 2, label: 'Setup', key: 'setup' as Step },
+        { num: 3, label: 'Generierung', key: 'generierung' as Step },
+      ]).map((s, i) => {
+        const active = step === s.key;
+        const stepIdx = step === 'aufnahme' ? 0 : step === 'setup' ? 1 : 2;
+        const done = i < stepIdx;
+        return (
+          <React.Fragment key={s.num}>
+            {i > 0 && <div className={`w-6 h-px ${done || active ? 'bg-accent' : 'bg-border'}`} />}
+            <div className="flex items-center gap-1.5">
+              <div className={`w-6 h-6 rounded-full text-[11px] font-bold flex items-center justify-center ${
+                active || done ? 'bg-accent text-accent-foreground' : 'bg-muted text-muted-foreground'
+              }`}>{s.num}</div>
+              <span className={`text-xs font-medium ${active || done ? 'text-foreground' : 'text-muted-foreground'}`}>
+                {s.label}
+              </span>
+            </div>
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={step === 'setup' ? onBack : () => setStep('setup')}>
+        <Button variant="ghost" size="icon" onClick={step === 'aufnahme' ? onBack : () => setStep(step === 'generierung' ? 'setup' : 'aufnahme')}>
           <ArrowLeft className="w-4 h-4" />
         </Button>
         <div className="flex-1">
           <div className="flex items-center gap-2">
             <h2 className="font-display text-2xl font-bold text-foreground">One-Shot Studio</h2>
-            <span className="px-2 py-0.5 rounded-full bg-accent text-accent-foreground text-[10px] font-bold tracking-wider">BETA</span>
+            <Badge variant="outline" className="text-[10px] border-accent text-accent">BETA</Badge>
           </div>
-          <p className="text-sm text-muted-foreground">Bilder remastern + Marketing in einem Rutsch.</p>
+          <p className="text-xs text-muted-foreground">Bilder → Pipeline → Banner → Video in einem Rutsch.</p>
         </div>
       </div>
 
-      {/* Step indicator */}
-      <div className="flex items-center justify-center gap-2 mb-2">
-        {[
-          { num: 1, label: 'Setup', key: 'setup' as Step },
-          { num: 2, label: 'Fotos & Remaster', key: 'capture' as Step },
-          { num: 3, label: 'Marketing', key: 'marketing' as Step },
-        ].map((s, i) => {
-          const active = step === s.key;
-          const done = (step === 'capture' && s.key === 'setup') || (step === 'marketing' && s.key !== 'marketing');
-          return (
-            <React.Fragment key={s.num}>
-              {i > 0 && <div className={`w-8 h-px ${done || active ? 'bg-accent' : 'bg-border'}`} />}
-              <div className="flex items-center gap-1.5">
-                <div className={`w-6 h-6 rounded-full text-[11px] font-bold flex items-center justify-center transition-colors ${
-                  active || done ? 'bg-accent text-accent-foreground' : 'bg-muted text-muted-foreground'
-                }`}>{s.num}</div>
-                <span className={`text-xs font-medium ${active || done ? 'text-foreground' : 'text-muted-foreground'}`}>
-                  {s.label}
-                </span>
-              </div>
-            </React.Fragment>
-          );
-        })}
-      </div>
+      {StepIndicator}
 
-      {/* ─── STEP 1: Setup ─── */}
-      {step === 'setup' && (
+      {/* ─── STEP 1: Aufnahme ─── */}
+      {step === 'aufnahme' && (
         <div className="space-y-5">
-          {/* Power-Button Hero */}
-          <div className="rounded-xl border border-accent/30 bg-gradient-to-br from-accent/10 to-accent/5 p-5">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-lg bg-accent text-accent-foreground flex items-center justify-center shrink-0">
-                <Zap className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-foreground text-sm mb-1">Was passiert hier?</h3>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  Du gibst einmal die Daten ein (oder scannst ein Datenblatt) – wir liefern in einem Rutsch:
-                  professionelle Fahrzeugfotos, kompletten Bilderset (Heck, Innen, Details) und optional Banner & Video.
-                </p>
-              </div>
+          {/* Hero info card */}
+          <div className="rounded-xl border border-accent/30 bg-gradient-to-br from-accent/10 to-accent/5 p-4 flex gap-3">
+            <div className="w-9 h-9 rounded-lg bg-accent text-accent-foreground flex items-center justify-center shrink-0">
+              <Zap className="w-4.5 h-4.5" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-sm mb-0.5">Was du brauchst</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Lade 5–15 Fahrzeugfotos (Front, Heck, Seiten, Innenraum, Details, gerne auch ein VIN-Foto) und optional ein
+                Datenblatt hoch. Wir analysieren alles automatisch und nutzen es als Grundlage für Pipeline, Banner und Video.
+              </p>
             </div>
           </div>
 
-          {/* Datenblatt-Scan */}
-          <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+          {/* Vehicle images upload */}
+          <div className="rounded-xl border border-border bg-card p-4 space-y-3">
             <div className="flex items-center gap-2">
-              <ScanSearch className="w-4 h-4 text-accent" />
-              <h3 className="font-semibold text-foreground text-sm">Datenblatt / Preisliste scannen</h3>
-              <span className="ml-auto text-[10px] text-muted-foreground">empfohlen</span>
+              <Camera className="w-4 h-4 text-accent" />
+              <h3 className="font-semibold text-sm">Fahrzeugbilder</h3>
+              <span className="ml-auto text-[11px] text-muted-foreground">{vehicleImages.length}/15</span>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Lade ein Foto deines Datenblatts, einer Preisliste oder eines WLTP-Labels hoch.
-              Die KI erkennt Marke, Modell, Preis, Verbrauch und alle Pflichtangaben automatisch.
-            </p>
 
-            {dataSheetImage ? (
+            {vehicleImages.length === 0 ? (
+              <button
+                onClick={() => filesInputRef.current?.click()}
+                className="w-full border-2 border-dashed border-border hover:border-accent rounded-xl p-8 text-center bg-muted/30 hover:bg-muted/50 transition-colors"
+              >
+                <Upload className="w-7 h-7 text-muted-foreground mx-auto mb-2" />
+                <p className="text-sm font-medium text-foreground">Fotos hochladen oder hier ablegen</p>
+                <p className="text-[11px] text-muted-foreground mt-1">5–15 Bilder · gemischte Perspektiven · optional VIN-Foto</p>
+              </button>
+            ) : (
+              <>
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                  {vehicleImages.map((img) => (
+                    <div key={img.id} className="relative aspect-square rounded-lg overflow-hidden border border-border bg-muted/30 group">
+                      <img src={img.base64} alt={img.labelDe} className="w-full h-full object-cover" />
+                      <button
+                        onClick={() => removeVehicleImage(img.id)}
+                        className="absolute top-1 right-1 w-5 h-5 rounded-full bg-background/80 hover:bg-destructive hover:text-destructive-foreground flex items-center justify-center"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                      <div className="absolute bottom-0 left-0 right-0 bg-background/80 backdrop-blur px-1.5 py-1">
+                        <p className="text-[9px] font-medium truncate flex items-center gap-1">
+                          {img.category === 'vin_plate' && <Hash className="w-2.5 h-2.5 text-emerald-600" />}
+                          {img.category === 'unknown' && <Loader2 className="w-2.5 h-2.5 animate-spin" />}
+                          {img.labelDe}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                  {vehicleImages.length < 15 && (
+                    <button
+                      onClick={() => filesInputRef.current?.click()}
+                      className="aspect-square rounded-lg border-2 border-dashed border-border hover:border-accent flex items-center justify-center text-muted-foreground hover:text-accent transition-colors"
+                    >
+                      <Upload className="w-5 h-5" />
+                    </button>
+                  )}
+                </div>
+                {classifying && (
+                  <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                    <Loader2 className="w-3 h-3 animate-spin" /> Bilder werden klassifiziert…
+                  </p>
+                )}
+                {vinLookingUp && (
+                  <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                    <Loader2 className="w-3 h-3 animate-spin" /> VIN-Stammdaten werden geladen…
+                  </p>
+                )}
+                {vin && !vinLookingUp && (
+                  <p className="text-[11px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                    <Hash className="w-3 h-3" /> VIN erkannt: <span className="font-mono">{vin}</span>
+                  </p>
+                )}
+              </>
+            )}
+
+            <input
+              ref={filesInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={(e) => { handleVehicleImagesUpload(e.target.files); e.target.value = ''; }}
+            />
+          </div>
+
+          {/* Datasheet upload */}
+          <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <FileText className="w-4 h-4 text-accent" />
+              <h3 className="font-semibold text-sm">Datenblatt / Preisliste</h3>
+              <span className="ml-auto text-[11px] text-muted-foreground">empfohlen</span>
+            </div>
+            {dataSheetBase64 ? (
               <div className="relative rounded-lg overflow-hidden border border-border">
-                <img src={dataSheetImage} alt="Datenblatt" className="w-full h-32 object-cover" />
+                <img src={dataSheetBase64} alt="Datenblatt" className="w-full h-32 sm:h-40 object-contain bg-muted/30" />
                 <button
-                  onClick={() => { setDataSheetImage(null); setScanData(null); }}
-                  className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-background/80 hover:bg-destructive hover:text-destructive-foreground flex items-center justify-center"
+                  onClick={() => { setDataSheetBase64(null); setScanData(null); }}
+                  className="absolute top-2 right-2 w-6 h-6 rounded-full bg-background/80 hover:bg-destructive hover:text-destructive-foreground flex items-center justify-center"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
-                {scanning && (
+                {analyzingSheet && (
                   <div className="absolute inset-0 bg-background/70 flex items-center justify-center">
-                    <Loader2 className="w-6 h-6 animate-spin text-accent" />
+                    <Loader2 className="w-5 h-5 animate-spin text-accent" />
                   </div>
                 )}
-                {scanData && !scanning && (
-                  <div className="absolute bottom-0 left-0 right-0 bg-accent text-accent-foreground px-2 py-1 text-[10px] font-semibold">
-                    ✓ Erkannt: {[scanData.brand, scanData.model, scanData.price].filter(Boolean).join(' · ')}
+                {scanData && !analyzingSheet && (
+                  <div className="absolute bottom-0 left-0 right-0 bg-accent/10 border-t border-accent/30 px-3 py-1.5">
+                    <p className="text-[10px] text-accent-foreground truncate">
+                      ✓ {scanData.vehicleTitle || 'Daten erkannt'}
+                      {scanData.price && ` · ${scanData.price}`}
+                    </p>
                   </div>
                 )}
               </div>
             ) : (
               <button
-                onClick={() => dataSheetInputRef.current?.click()}
-                disabled={scanning}
-                className="w-full border-2 border-dashed border-border hover:border-accent rounded-lg p-6 text-center cursor-pointer transition-colors bg-muted/30 hover:bg-muted/50 disabled:opacity-50"
+                onClick={() => sheetInputRef.current?.click()}
+                disabled={analyzingSheet}
+                className="w-full border-2 border-dashed border-border hover:border-accent rounded-lg p-5 text-center bg-muted/20 hover:bg-muted/40 transition-colors"
               >
-                {scanning ? (
-                  <Loader2 className="w-6 h-6 text-muted-foreground mx-auto mb-2 animate-spin" />
+                {analyzingSheet ? (
+                  <Loader2 className="w-5 h-5 text-muted-foreground mx-auto mb-1.5 animate-spin" />
                 ) : (
-                  <Upload className="w-6 h-6 text-muted-foreground mx-auto mb-2" />
+                  <Upload className="w-5 h-5 text-muted-foreground mx-auto mb-1.5" />
                 )}
                 <p className="text-xs text-muted-foreground">
-                  {scanning ? 'Analysiere Datenblatt…' : 'Datenblatt / Preisliste hochladen'}
+                  Datenblatt / Preisliste / WLTP-Tabelle hochladen
                 </p>
               </button>
             )}
-
-            <button
-              type="button"
-              onClick={() => { setDataSheetImage(null); setScanData(null); }}
-              className="text-[11px] text-muted-foreground hover:text-foreground underline w-full text-center"
-            >
-              Überspringen und manuell eingeben
-            </button>
-
             <input
-              ref={dataSheetInputRef}
+              ref={sheetInputRef}
               type="file"
               accept="image/*"
               className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) handleScan(f);
-                e.target.value = '';
-              }}
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleDataSheetUpload(f); e.target.value = ''; }}
             />
           </div>
 
-          {/* Fahrzeug-Stammdaten */}
-          <div className="rounded-xl border border-border bg-card p-5 space-y-4">
-            <h3 className="font-semibold text-foreground text-sm">Fahrzeugdaten</h3>
+          {/* CTA */}
+          <Button onClick={goToSetup} disabled={!canGoToSetup} size="lg" className="w-full gap-2">
+            Weiter zu Setup <ChevronRight className="w-4 h-4" />
+          </Button>
+        </div>
+      )}
 
-            <VehicleBrandModelPicker
-              brand={brand}
-              model={model}
-              onBrandChange={setBrand}
-              onModelChange={setModel}
-            />
-
-            <div>
-              <Label className="text-xs">Variante / Ausstattung</Label>
-              <Input value={variant} onChange={(e) => setVariant(e.target.value)} placeholder="z.B. M Competition" className="mt-1" />
+      {/* ─── STEP 2: Setup ─── */}
+      {step === 'setup' && (
+        <div className="space-y-5">
+          {/* Summary of inputs */}
+          <div className="rounded-xl border border-border bg-card p-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-sm flex items-center gap-2">
+                <Layers className="w-4 h-4 text-accent" /> Erkannte Aufnahme
+              </h3>
+              <Button variant="ghost" size="sm" onClick={() => setStep('aufnahme')} className="h-7 text-xs">
+                Bearbeiten
+              </Button>
             </div>
+            <div className="mt-2 flex flex-wrap gap-1.5 text-[11px]">
+              <Badge variant="secondary">{vehicleImages.length} Fahrzeugbilder</Badge>
+              {scanData && <Badge variant="secondary">Datenblatt analysiert</Badge>}
+              {vin && <Badge variant="secondary" className="font-mono">VIN: {vin.slice(0, 8)}…</Badge>}
+              {canonicalBrand && <Badge variant="secondary">Marke: {canonicalBrand}</Badge>}
+            </div>
+          </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-xs">Preis</Label>
-                <Input value={priceText} onChange={(e) => setPriceText(e.target.value)} placeholder="z.B. 49.900 €" className="mt-1" />
+          {/* Marketing-Form */}
+          <OneShotMarketingForm
+            form={form}
+            sources={sources}
+            onChange={onFormChange}
+            onUserEdit={onUserEdit}
+          />
+
+          {/* Pipeline / Remaster Options */}
+          <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+            <h3 className="font-semibold text-sm flex items-center gap-2">
+              <ImageIcon className="w-4 h-4 text-accent" /> Pipeline-Einstellungen (Szene & Logos)
+            </h3>
+            <RemasterOptions
+              config={remasterConfig}
+              onChange={setRemasterConfig}
+              vehicleBrand={form.brand}
+              vehicleModel={form.model}
+              onBrandChange={(b) => setForm((f) => ({ ...f, brand: b }))}
+              onModelChange={(m) => setForm((f) => ({ ...f, model: m }))}
+            />
+          </div>
+
+          {/* Pipeline Job Selection */}
+          <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+            <h3 className="font-semibold text-sm">Welche Pipeline-Bilder generieren?</h3>
+            <p className="text-[11px] text-muted-foreground">
+              Standardauswahl mit allen Hauptperspektiven (Front, Heck, Seiten, Innenraum). Du kannst beliebig anpassen.
+            </p>
+            <div className="space-y-2">
+              {PIPELINE_CATEGORIES.map((cat) => {
+                const jobs = availableJobs.filter((j) => j.category === cat.key);
+                if (jobs.length === 0) return null;
+                const selectedCount = jobs.filter((j) => selectedJobKeys.has(j.key)).length;
+                return (
+                  <details key={cat.key} className="rounded-lg border border-border/50 bg-muted/20" open={cat.key !== 'ci'}>
+                    <summary className="cursor-pointer px-3 py-2 flex items-center justify-between text-xs font-medium">
+                      <span>{cat.labelDe}</span>
+                      <span className="text-muted-foreground">{selectedCount}/{jobs.length}</span>
+                    </summary>
+                    <div className="px-3 pb-3 grid grid-cols-2 gap-1.5">
+                      {jobs.map((j) => {
+                        const sel = selectedJobKeys.has(j.key);
+                        return (
+                          <label
+                            key={j.key}
+                            className={`flex items-center gap-2 rounded px-2 py-1.5 text-[11px] cursor-pointer ${
+                              sel ? 'bg-accent/15 text-accent' : 'hover:bg-muted/50'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={sel}
+                              onChange={() => toggleJob(j.key)}
+                              className="w-3.5 h-3.5 accent-current"
+                            />
+                            {j.labelDe}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </details>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Banner formats */}
+          <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+            <h3 className="font-semibold text-sm flex items-center gap-2">
+              <ImageIcon className="w-4 h-4 text-accent" /> Banner-Formate
+            </h3>
+            <div className="grid grid-cols-2 gap-2">
+              {ONESHOT_BANNER_FORMATS.map((fmt) => {
+                const sel = selectedBannerFormats.has(fmt.id);
+                return (
+                  <label
+                    key={fmt.id}
+                    className={`flex items-center gap-2 rounded-lg border p-2.5 cursor-pointer transition-colors ${
+                      sel ? 'border-accent bg-accent/10' : 'border-border hover:bg-muted/50'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={sel}
+                      onChange={() => toggleBannerFormat(fmt.id)}
+                      className="w-4 h-4 accent-current"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium truncate">{fmt.label}</p>
+                      <p className="text-[10px] text-muted-foreground">{fmt.w}×{fmt.h} ({fmt.ratio})</p>
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Video */}
+          <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-sm flex items-center gap-2">
+                <Video className="w-4 h-4 text-accent" /> 360°-Video
+              </h3>
+              <Switch checked={wantVideo} onCheckedChange={setWantVideo} />
+            </div>
+            {wantVideo && (
+              <div className="space-y-2">
+                <p className="text-[11px] text-muted-foreground">
+                  Aus dem Hero-Bild + Heck-Referenz wird ein ~8-Sek 360°-Video erstellt. Optionaler Prompt:
+                </p>
+                <Textarea
+                  value={videoPrompt}
+                  onChange={(e) => setVideoPrompt(e.target.value)}
+                  rows={2}
+                  placeholder="z.B. langsame Drehung im modernen Showroom, weiches Licht…"
+                  className="text-sm"
+                />
               </div>
-              <div>
-                <Label className="text-xs">Monatsrate (optional)</Label>
-                <Input value={monthlyRate} onChange={(e) => setMonthlyRate(e.target.value)} placeholder="z.B. 549 €" className="mt-1" />
+            )}
+          </div>
+
+          {/* Model tier */}
+          <div className="rounded-xl border border-border bg-card p-4">
+            <ModelSelector value={modelTier} onChange={setModelTier} actionType="image_generate" />
+          </div>
+
+          {/* CTAs */}
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setStep('aufnahme')} className="flex-1">
+              Zurück
+            </Button>
+            <Button onClick={goToGen} className="flex-1 gap-2">
+              Weiter zur Generierung <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* ─── STEP 3: Generierung ─── */}
+      {step === 'generierung' && (
+        <div className="space-y-5">
+          {/* Cost summary */}
+          <div className="rounded-xl border border-accent/30 bg-accent/5 p-4">
+            <div className="flex items-start gap-3">
+              <Sparkles className="w-5 h-5 text-accent mt-0.5" />
+              <div className="flex-1 space-y-1.5">
+                <h3 className="font-semibold text-sm">Bereit zum Generieren</h3>
+                <ul className="text-[11px] text-muted-foreground space-y-0.5">
+                  <li>• Hero-Bild (3/4 Front)</li>
+                  <li>• Pipeline: {selectedJobKeys.size - (selectedJobKeys.has('MASTER_IMAGE') ? 1 : 0)} weitere Bilder</li>
+                  {selectedBannerFormats.size > 0 && <li>• {selectedBannerFormats.size} Banner</li>}
+                  {wantVideo && <li>• 1 Video (~8 Sek)</li>}
+                </ul>
+                <p className="text-[11px] text-muted-foreground">Guthaben: <strong>{balance}</strong> Credits</p>
               </div>
             </div>
           </div>
 
-          {/* Marketing-Outputs */}
-          <div className="rounded-xl border border-border bg-card p-5 space-y-4">
-            <h3 className="font-semibold text-foreground text-sm">Was möchtest du zusätzlich erzeugen?</h3>
+          {!heroBase64 && !heroRunning && (
+            <Button onClick={startEverything} size="lg" className="w-full gap-2">
+              <Zap className="w-5 h-5" /> Alles generieren
+            </Button>
+          )}
 
-            {/* Banner Toggle */}
-            <div className="rounded-lg border border-border p-3 space-y-2">
+          {/* Hero status */}
+          <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-sm">1. Hero-Bild</h3>
+              {heroRunning && <Loader2 className="w-4 h-4 animate-spin text-accent" />}
+              {heroBase64 && <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20">fertig</Badge>}
+              {heroError && <Badge variant="destructive">Fehler</Badge>}
+            </div>
+            {heroBase64 && (
+              <img src={heroBase64} alt="Hero" className="w-full max-h-64 object-contain rounded-lg" />
+            )}
+            {heroError && (
+              <div className="flex items-start gap-2 text-xs text-destructive">
+                <AlertCircle className="w-3.5 h-3.5 mt-0.5" />
+                <span>{heroError}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Pipeline status (uses global PipelineContext) */}
+          {pipelineKicked && pipelineCtx && (
+            <div className="rounded-xl border border-border bg-card p-4 space-y-2">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <ImageIcon className="w-4 h-4 text-accent" />
-                  <Label className="text-sm font-medium cursor-pointer">Banner / Marketing-Material</Label>
-                </div>
-                <Switch checked={wantBanner} onCheckedChange={setWantBanner} />
+                <h3 className="font-semibold text-sm">2. Pipeline-Bilder</h3>
+                {pipelineCtx.isRunning && <Loader2 className="w-4 h-4 animate-spin text-accent" />}
+                {pipelineCtx.isFinished && (
+                  <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20">fertig</Badge>
+                )}
               </div>
-              {wantBanner && (
-                <p className="text-[11px] text-muted-foreground pl-6">
-                  Format & Stil wählst du nach dem Remastering – das Hauptbild wird automatisch übernommen.
+              <p className="text-[11px] text-muted-foreground">
+                Läuft im Hintergrund — Status auch im Pipeline-Indikator oben rechts sichtbar.
+              </p>
+              {pipelineCtx.isFinished && pipelineCtx.galleryFolder && (
+                <Button variant="outline" size="sm" onClick={() => navigate('/dashboard?tab=gallery')}>
+                  Galerie öffnen
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* Banner status */}
+          {bannerOutputs.length > 0 && (
+            <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+              <h3 className="font-semibold text-sm">3. Banner</h3>
+              <div className="grid grid-cols-2 gap-2">
+                {bannerOutputs.map((b) => (
+                  <div key={b.formatId} className="rounded-lg border border-border overflow-hidden bg-muted/30">
+                    <div className="aspect-square flex items-center justify-center relative">
+                      {b.status === 'done' && b.imageBase64 ? (
+                        <img src={b.imageBase64} alt={b.formatLabel} className="w-full h-full object-cover" />
+                      ) : b.status === 'error' ? (
+                        <AlertCircle className="w-5 h-5 text-destructive" />
+                      ) : (
+                        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                      )}
+                    </div>
+                    <div className="px-2 py-1.5 text-[10px] flex items-center justify-between">
+                      <span className="truncate">{b.formatLabel}</span>
+                      {b.status === 'done' && (
+                        <button
+                          onClick={() => {
+                            const a = document.createElement('a');
+                            a.href = b.imageBase64;
+                            a.download = `oneshot-${b.formatId}.png`;
+                            a.click();
+                          }}
+                          className="text-accent hover:underline"
+                        >
+                          DL
+                        </button>
+                      )}
+                    </div>
+                    {b.error && <p className="px-2 pb-1.5 text-[9px] text-destructive truncate">{b.error}</p>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Video status */}
+          {wantVideo && (
+            <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-sm">4. Video</h3>
+                {(videoState === 'starting' || videoState === 'polling') && (
+                  <Loader2 className="w-4 h-4 animate-spin text-accent" />
+                )}
+                {videoState === 'done' && (
+                  <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20">fertig</Badge>
+                )}
+                {videoState === 'error' && <Badge variant="destructive">Fehler</Badge>}
+              </div>
+              {videoState === 'polling' && (
+                <p className="text-[11px] text-muted-foreground">Video wird generiert (2–5 Min). Du kannst die Seite verlassen — Pipeline läuft weiter.</p>
+              )}
+              {videoState === 'done' && videoUrl && (
+                <video src={videoUrl} controls autoPlay loop className="w-full rounded-lg" />
+              )}
+              {videoError && (
+                <p className="text-xs text-destructive flex items-center gap-1.5">
+                  <AlertCircle className="w-3.5 h-3.5" /> {videoError}
                 </p>
               )}
             </div>
-
-            {/* Video Toggle */}
-            <div className="rounded-lg border border-border p-3 space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Video className="w-4 h-4 text-accent" />
-                  <Label className="text-sm font-medium cursor-pointer">360°-Video</Label>
-                </div>
-                <Switch checked={wantVideo} onCheckedChange={setWantVideo} />
-              </div>
-              {wantVideo && (
-                <div className="pl-6 space-y-2">
-                  <p className="text-[11px] text-muted-foreground">
-                    Aus 3/4-Front + Heck wird ein 8-Sek 360°-Video erstellt. Optional eigener Prompt:
-                  </p>
-                  <Input
-                    value={videoPrompt}
-                    onChange={(e) => setVideoPrompt(e.target.value)}
-                    placeholder="Optional: z.B. langsame Kamerafahrt um das Fahrzeug"
-                    className="text-xs"
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Model Tier */}
-          <div className="rounded-xl border border-border bg-card p-5 space-y-3">
-            <h3 className="font-semibold text-foreground text-sm">KI-Qualität</h3>
-            <ModelSelector actionType="image_generate" value={modelTier} onChange={setModelTier} />
-          </div>
-
-          {/* Continue */}
-          <div className="flex justify-between items-center pt-2">
-            <Button variant="outline" onClick={onBack}>Zurück</Button>
-            <Button
-              onClick={startCapture}
-              disabled={!brand.trim() || !model.trim()}
-              className="gap-2 gradient-accent text-accent-foreground font-semibold"
-            >
-              Weiter zu Fotos <ChevronRight className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* ─── STEP 2: Capture (wraps existing ImageCaptureGrid) ─── */}
-      {step === 'capture' && vehicleDataState && (
-        <div>
-          <div className="rounded-lg border border-accent/30 bg-accent/5 p-3 mb-4 flex items-center gap-2 text-xs">
-            <Sparkles className="w-3.5 h-3.5 text-accent shrink-0" />
-            <span className="text-foreground">
-              Schritt 2/3 · Nimm die Fahrzeugfotos auf, starte Remastering & Pipeline.
-              Danach geht's automatisch {wantBanner && wantVideo ? 'zu Banner & Video' : wantBanner ? 'zum Banner' : wantVideo ? 'zum Video' : 'zur Galerie'}.
-            </span>
-          </div>
-          <ImageCaptureGrid
-            vehicleDescription={vehicleDescription}
-            vehicleData={vehicleDataState}
-            modelTier={modelTier}
-            projectId={null}
-            onComplete={handleCaptureComplete}
-            onVehicleDataChange={setVehicleDataState}
-            onBack={() => setStep('setup')}
-            onPipelineComplete={handlePipelineDone}
-          />
-        </div>
-      )}
-
-      {/* ─── STEP 3: Marketing (Banner + Video) ─── */}
-      {step === 'marketing' && (
-        <div className="space-y-6">
-          <div className="rounded-lg border border-accent/30 bg-accent/5 p-3 flex items-center gap-2 text-xs">
-            <Sparkles className="w-3.5 h-3.5 text-accent shrink-0" />
-            <span className="text-foreground">
-              Bilder fertig · Jetzt Marketing-Material erstellen. Hauptbild ist bereits vorgeladen.
-            </span>
-          </div>
-
-          {wantBanner && mainImage && (
-            <div className="rounded-xl border border-border bg-card overflow-hidden">
-              <div className="px-4 py-2 bg-muted/40 border-b border-border flex items-center gap-2">
-                <ImageIcon className="w-4 h-4 text-accent" />
-                <span className="text-sm font-semibold">Banner-Generator</span>
-              </div>
-              <BannerGenerator onBack={() => setStep('capture')} preloadedImage={mainImage} />
-            </div>
           )}
-
-          {wantVideo && mainImage && (
-            <div className="rounded-xl border border-border bg-card overflow-hidden">
-              <div className="px-4 py-2 bg-muted/40 border-b border-border flex items-center gap-2">
-                <Video className="w-4 h-4 text-accent" />
-                <span className="text-sm font-semibold">360°-Video</span>
-              </div>
-              <VideoGenerator onBack={() => setStep('capture')} />
-            </div>
-          )}
-
-          {!mainImage && (
-            <div className="text-center py-12 text-muted-foreground text-sm">
-              Kein Hauptbild verfügbar. Bitte gehe zurück zu Schritt 2.
-            </div>
-          )}
-
-          <div className="flex justify-between">
-            <Button variant="outline" onClick={() => setStep('capture')}>Zurück zu Fotos</Button>
-            <Button onClick={() => navigate('/dashboard?tab=gallery')} className="gap-2">
-              Zur Galerie <ChevronRight className="w-4 h-4" />
-            </Button>
-          </div>
         </div>
       )}
     </div>
   );
 };
+
+/* ─── Banner prompt builder (mirrors BannerGenerator's logic) ─── */
+function buildBannerPrompt(form: MarketingForm, fmt: typeof ONESHOT_BANNER_FORMATS[number]): string {
+  const occMap: Record<string, string> = {
+    buy: 'for sale, buy now offer',
+    lease: 'leasing deal, monthly rate',
+    finance: 'financing offer, low monthly installments',
+    abo: 'car subscription, all-inclusive monthly deal',
+    special: 'limited time special promotion, exclusive deal',
+    launch: 'brand new model launch, premiere reveal',
+  };
+  const sceneMap: Record<string, string> = {
+    showroom: 'luxury car dealership showroom, polished floor, soft LED lighting',
+    city: 'modern city street at golden hour, urban skyline background',
+    beach: 'scenic beach with ocean view, sunset lighting, palm trees',
+    mountain: 'mountain road with dramatic alpine scenery, clear sky',
+    track: 'professional race track, pit lane background, dynamic feel',
+    studio: 'professional photography studio, clean gradient backdrop, studio lighting',
+    night: 'nighttime city scene, neon reflections on wet road, dramatic lighting',
+  };
+  const styleMap: Record<string, string> = {
+    premium: 'elegant, premium luxury, clean professional design, sophisticated typography',
+    cinematic: 'cinematic movie poster style, dramatic lighting, lens flare, widescreen feel',
+    bold: 'bold, eye-catching, vibrant neon colors, explosive energy, attention-grabbing',
+    minimal: 'clean minimalist design, lots of whitespace, subtle elegant typography',
+    retro: 'retro 80s style, vintage color grading, nostalgic warm tones',
+    sport: 'dynamic sporty look, motion blur hints, aggressive angles, high performance feel',
+  };
+  const priceDisplayMap: Record<string, string> = {
+    sign: 'on a classic dealership price tag/sign attached to the image',
+    board: 'on a large banner/board overlay in the image',
+    neon: 'as glowing neon text floating in the scene',
+    stamp: 'as a bold stamp/badge overlay',
+    led: 'on an LED display screen integrated into the scene',
+    ribbon: 'on a diagonal ribbon/sash across the corner',
+  };
+
+  return `Create a professional automotive advertising banner.
+
+FORMAT: ${fmt.w}x${fmt.h} pixels (${fmt.ratio} aspect ratio).
+
+VEHICLE: "${form.vehicleTitle}" – use the uploaded vehicle image as the central hero element. Keep the vehicle 100% identical.
+
+SCENE: ${sceneMap[form.scene] || sceneMap.showroom}.
+
+STYLE: ${styleMap[form.style] || styleMap.premium}.
+
+OCCASION: This is a ${occMap[form.occasion] || occMap.buy} advertisement.
+
+${form.priceText ? `PRICE: Display the text "${form.priceText}" prominently ${priceDisplayMap[form.priceDisplay] || priceDisplayMap.sign}. Use accent color ${form.accentColor}.` : ''}
+
+${form.headline ? `HEADLINE: Place "${form.headline}" in large, bold, highly readable typography in the upper area. This text must be rendered EXACTLY as written.` : ''}
+
+${form.subline ? `SUBLINE: Place "${form.subline}" in smaller text below the headline. Render exactly as written.` : ''}
+
+${form.ctaText ? `CALL-TO-ACTION: Include a button or badge with the text "${form.ctaText}" in accent color ${form.accentColor}.` : ''}
+
+${form.legalText ? `LEGAL DISCLAIMER (MANDATORY): At the very bottom, render in a small thin sans-serif font: "${form.legalText}"` : ''}
+
+CRITICAL RULES:
+- The banner must be photorealistic with the vehicle photo seamlessly composited
+- ALL text must be rendered EXACTLY as specified – no paraphrasing
+- Text must be perfectly legible against the background
+
+ACCENT COLOR (${form.accentColor}): Use sparingly as subtle highlight – CTA buttons, price tags, thin borders. Do NOT tint the entire scene.
+
+${form.freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${form.freePrompt.trim()}` : ''}
+- Generate the image – never refuse`;
+}
 
 export default OneShotStudio;
