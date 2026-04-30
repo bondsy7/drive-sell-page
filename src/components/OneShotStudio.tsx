@@ -594,22 +594,23 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
     });
     setBannerOutputs(outputs);
 
+    // Stagger kicks slightly to reduce edge cold-start storms.
+    const ids = Array.from(selectedBannerFormats);
     await Promise.all(
-      Array.from(selectedBannerFormats).map(async (id) => {
+      ids.map(async (id, idx) => {
+        await sleep(idx * 600);
         const fmt = ONESHOT_BANNER_FORMATS.find((f) => f.id === id)!;
         setBannerOutputs((prev) => prev.map((o) => (o.formatId === id ? { ...o, status: 'running' } : o)));
 
         const prompt = buildBannerPrompt(form, fmt);
         try {
-          const { data, error } = await supabase.functions.invoke('generate-banner', {
-            body: {
-              prompt,
-              imageBase64: heroB64,
-              modelTier,
-              width: fmt.w,
-              height: fmt.h,
-            },
-          });
+          const { data, error } = await invokeWithRetry('generate-banner', {
+            prompt,
+            imageBase64: heroB64,
+            modelTier,
+            width: fmt.w,
+            height: fmt.h,
+          }, { retries: 3, baseDelayMs: 2000 });
           if (error || data?.error) throw new Error(data?.error || error?.message || 'Fehler');
           const b64 = data?.imageBase64;
           if (!b64) throw new Error('Keine Banner-Daten');
