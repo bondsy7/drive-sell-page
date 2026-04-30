@@ -7,6 +7,18 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 // ── Fallback block keys (match REMASTER_PROMPT_BLOCKS in client) ──
 const FALLBACK_BLOCK_KEYS = [
   'remaster_base_instruction',
@@ -400,12 +412,12 @@ The showroom wall must remain CLEAN and EMPTY. No manufacturer logos, no dealer 
 
     // 3. Call Gemini with fallback chain
     const FALLBACK_ORDER: Record<string, string[]> = {
-      'gemini-3-pro-image-preview': ['gemini-3.1-flash-image-preview', 'gemini-2.5-flash-image'],
-      'gemini-3.1-flash-image-preview': ['gemini-2.5-flash-image'],
+      'gemini-3-pro-image-preview': ['gemini-3.1-flash-image-preview'],
+      'gemini-3.1-flash-image-preview': ['gemini-3-pro-image-preview'],
       'gemini-2.5-flash-image': ['gemini-3.1-flash-image-preview'],
     };
-    const modelsToTry = [geminiModel, ...(FALLBACK_ORDER[geminiModel] || ['gemini-2.5-flash-image'])];
-    const maxRetries = 3;
+    const modelsToTry = Array.from(new Set([geminiModel, ...(FALLBACK_ORDER[geminiModel] || ['gemini-3.1-flash-image-preview'])])).slice(0, 2);
+    const maxRetries = 1;
     let resultImage: string | null = null;
     let lastError = "";
 
@@ -416,7 +428,7 @@ The showroom wall must remain CLEAN and EMPTY. No manufacturer logos, no dealer 
       for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
           console.log(`Remaster model=${currentModel} attempt ${attempt + 1}/${maxRetries}, parts: ${parts.length}`);
-          const response = await fetch(geminiUrl, {
+          const response = await fetchWithTimeout(geminiUrl, {
             method: "POST",
             headers: {
               "x-goog-api-key": GEMINI_API_KEY,
@@ -426,7 +438,7 @@ The showroom wall must remain CLEAN and EMPTY. No manufacturer logos, no dealer 
               contents: [{ parts }],
               generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
             }),
-          });
+          }, 55_000);
 
           if (!response.ok) {
             const errText = await response.text();
@@ -436,7 +448,7 @@ The showroom wall must remain CLEAN and EMPTY. No manufacturer logos, no dealer 
             if (isRetryable && attempt < maxRetries - 1) {
               const delay = 3000 * (attempt + 1);
               console.warn(`Retryable ${response.status}, waiting ${delay}ms...`);
-              await new Promise(r => setTimeout(r, delay));
+              await sleep(delay);
               continue;
             }
             console.warn(`Model ${currentModel} exhausted (${response.status}), trying fallback...`);
@@ -463,11 +475,14 @@ The showroom wall must remain CLEAN and EMPTY. No manufacturer logos, no dealer 
           console.warn(`Attempt ${attempt + 1}: No image in response, retrying...`);
           lastError = "Kein Bild generiert";
           if (attempt < maxRetries - 1) {
-            await new Promise(r => setTimeout(r, 1500));
+            await sleep(1500);
           }
         } catch (retryErr) {
           console.error(`Attempt ${attempt + 1} failed:`, retryErr);
-          lastError = retryErr instanceof Error ? retryErr.message : "Unknown error";
+          lastError = retryErr instanceof DOMException && retryErr.name === "AbortError"
+            ? "Zeitüberschreitung beim KI-Modell"
+            : retryErr instanceof Error ? retryErr.message : "Unknown error";
+          if (attempt < maxRetries - 1) await sleep(2500 * (attempt + 1));
         }
       }
     }

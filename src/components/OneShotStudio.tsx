@@ -98,8 +98,10 @@ function isTransientEdgeError(err: any, data: any): boolean {
     msg.includes('503') ||
     msg.includes('429') ||
     msg.includes('overloaded') ||
+    msg.includes('unavailable') ||
     msg.includes('rate limit') ||
-    msg.includes('timeout')
+    msg.includes('timeout') ||
+    msg.includes('zeitüberschreitung')
   );
 }
 
@@ -115,14 +117,35 @@ async function invokeWithRetry<T = any>(
   let lastData: any = null;
   for (let attempt = 0; attempt <= retries; attempt++) {
     const { data, error } = await supabase.functions.invoke(fnName, { body });
+    let enrichedError = error;
+    if (error?.context instanceof Response) {
+      const status = error.context.status;
+      let details = '';
+      try { details = await error.context.clone().text(); } catch { /* ignore */ }
+      enrichedError = new Error(`${error.message || 'Edge Function error'} (${status}) ${details}`);
+    }
     if (!error && !data?.error) return { data: data as T, error: null };
-    lastErr = error; lastData = data;
-    if (attempt >= retries || !isTransientEdgeError(error, data)) {
-      return { data: data as T, error: error || new Error(data?.error || 'Edge error') };
+    lastErr = enrichedError; lastData = data;
+    if (attempt >= retries || !isTransientEdgeError(enrichedError, data)) {
+      return { data: data as T, error: enrichedError || new Error(data?.error || 'Edge error') };
     }
     await sleep(baseDelay * (attempt + 1));
   }
   return { data: lastData, error: lastErr };
+}
+
+async function uploadGenerationRefs(images: ClassifiedImage[]): Promise<{ uri: string; mimeType: string }[] | null> {
+  if (images.length === 0) return null;
+  const { data, error } = await invokeWithRetry<{ fileUris?: { uri: string; mimeType: string }[] }>(
+    'upload-pipeline-images',
+    { images: images.map((i) => i.base64) },
+    { retries: 2, baseDelayMs: 1200 },
+  );
+  if (error || !data?.fileUris?.length) {
+    console.warn('[OneShot] File API upload failed, using inline image fallback:', error || data);
+    return null;
+  }
+  return data.fileUris;
 }
 
 /** Pick the first image whose category matches one of priorities. */
@@ -532,17 +555,21 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
 
       const overrides = await fetchPromptOverrides();
       const [withOverrides] = applyPromptOverrides([masterJob], overrides);
+      const referenceImages = [
+        heroSourceImage,
+        ...orderedInputImages.filter((i) => i.id !== heroSourceImage.id).slice(0, 4),
+      ];
+      const fileUris = await uploadGenerationRefs(referenceImages);
 
       const { data, error } = await invokeWithRetry('remaster-vehicle-image', {
         imageBase64: heroSourceImage.base64,
-        additionalImages: orderedInputImages
-          .filter((i) => i.id !== heroSourceImage.id)
-          .slice(0, 4)
-          .map((i) => i.base64),
+        additionalImages: fileUris ? undefined : referenceImages.slice(1).map((i) => i.base64),
+        mainImageFileUri: fileUris?.[0] || null,
+        additionalFileUris: fileUris?.slice(1) || undefined,
         vehicleDescription: `${form.brand} ${form.model} ${form.variant}`.trim(),
         modelTier,
         dynamicPrompt: withOverrides.prompt,
-      });
+      }, { retries: 3, baseDelayMs: 2500 });
       if (error) throw new Error(error.message || 'Hero-Generierung fehlgeschlagen');
       if (data?.error) throw new Error(data.error);
       const b64 = data?.imageBase64;
