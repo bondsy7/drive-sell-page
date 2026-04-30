@@ -98,8 +98,10 @@ function isTransientEdgeError(err: any, data: any): boolean {
     msg.includes('503') ||
     msg.includes('429') ||
     msg.includes('overloaded') ||
+    msg.includes('unavailable') ||
     msg.includes('rate limit') ||
-    msg.includes('timeout')
+    msg.includes('timeout') ||
+    msg.includes('zeitüberschreitung')
   );
 }
 
