@@ -100,7 +100,7 @@ function pickByCategory(images: ClassifiedImage[], priorities: ImageCategory[]):
 const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
   const { user } = useAuth();
   const { balance, getCost } = useCredits();
-  const { getLogoForMake } = useVehicleMakes();
+  const { getLogoForMake, makes } = useVehicleMakes();
   const navigate = useNavigate();
   const pipelineCtx = usePipelineSafe();
 
@@ -418,8 +418,10 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
   const canonicalBrand = useMemo(() => {
     const candidate = form.brand || scanData?.brand || '';
     if (!candidate) return null;
-    return resolveCanonicalBrand(normalizeBrand(candidate));
-  }, [form.brand, scanData?.brand]);
+    const makeKeys = (makes || []).map((m) => m.key);
+    if (makeKeys.length === 0) return null;
+    return resolveCanonicalBrand(candidate, makeKeys);
+  }, [form.brand, scanData?.brand, makes]);
 
   /** All jobs available for this brand (CI jobs filtered by brand match). */
   const availableJobs = useMemo<PipelineJob[]>(() => {
