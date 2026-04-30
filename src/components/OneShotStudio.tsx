@@ -642,14 +642,12 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
     setVideoState('starting');
     setVideoError(null);
     try {
-      const { data, error } = await supabase.functions.invoke('generate-video', {
-        body: {
-          action: 'start',
-          imageBase64: heroB64,
-          prompt: videoPrompt || undefined,
-        },
-      });
-      if (error) throw new Error(error.message);
+      const { data, error } = await invokeWithRetry('generate-video', {
+        action: 'start',
+        imageBase64: heroB64,
+        prompt: videoPrompt || undefined,
+      }, { retries: 3, baseDelayMs: 2000 });
+      if (error) throw new Error(error.message || 'Video-Start fehlgeschlagen');
       if (data?.error) {
         if (data.error === 'insufficient_credits') throw new Error('Nicht genügend Credits für Video');
         throw new Error(data.error);
