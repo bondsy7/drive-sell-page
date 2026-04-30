@@ -87,6 +87,43 @@ const HERO_CATEGORY_PRIORITY: ImageCategory[] = [
 /* ─── Helpers ─── */
 const stripDataPrefix = (b: string) => (b.includes(',') ? b.split(',')[1] : b);
 const newId = () => Math.random().toString(36).slice(2, 10);
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** Detect transient edge-function failures (cold-start boot, 503, 429). */
+function isTransientEdgeError(err: any, data: any): boolean {
+  const msg = String(err?.message || data?.error || '').toLowerCase();
+  return (
+    msg.includes('boot_error') ||
+    msg.includes('failed to start') ||
+    msg.includes('503') ||
+    msg.includes('429') ||
+    msg.includes('overloaded') ||
+    msg.includes('rate limit') ||
+    msg.includes('timeout')
+  );
+}
+
+/** Invoke an edge function with retry on transient boot/rate errors. */
+async function invokeWithRetry<T = any>(
+  fnName: string,
+  body: any,
+  opts: { retries?: number; baseDelayMs?: number } = {},
+): Promise<{ data: T | null; error: any }> {
+  const retries = opts.retries ?? 2;
+  const baseDelay = opts.baseDelayMs ?? 1500;
+  let lastErr: any = null;
+  let lastData: any = null;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const { data, error } = await supabase.functions.invoke(fnName, { body });
+    if (!error && !data?.error) return { data: data as T, error: null };
+    lastErr = error; lastData = data;
+    if (attempt >= retries || !isTransientEdgeError(error, data)) {
+      return { data: data as T, error: error || new Error(data?.error || 'Edge error') };
+    }
+    await sleep(baseDelay * (attempt + 1));
+  }
+  return { data: lastData, error: lastErr };
+}
 
 /** Pick the first image whose category matches one of priorities. */
 function pickByCategory(images: ClassifiedImage[], priorities: ImageCategory[]): ClassifiedImage | null {
