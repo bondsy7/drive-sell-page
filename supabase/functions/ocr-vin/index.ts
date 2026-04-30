@@ -90,27 +90,47 @@ serve(async (req) => {
     const mimeType = imageBase64.startsWith("data:image/png") ? "image/png"
       : imageBase64.startsWith("data:image/webp") ? "image/webp" : "image/jpeg";
 
-    const geminiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
-    const response = await fetch(geminiUrl, {
-      method: "POST",
-      headers: {
-        "x-goog-api-key": GEMINI_API_KEY,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            { text: prompt },
-            { inlineData: { mimeType, data: base64Data } },
-          ],
-        }],
-      }),
+    const geminiBody = JSON.stringify({
+      contents: [{
+        parts: [
+          { text: prompt },
+          { inlineData: { mimeType, data: base64Data } },
+        ],
+      }],
     });
 
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error("OCR error:", response.status, errText);
-      throw new Error(`OCR error: ${response.status}`);
+    const models = ["gemini-2.5-flash", "gemini-2.5-flash-lite"];
+    let response: Response | null = null;
+    let lastStatus = 0;
+    let lastErrText = "";
+    outer: for (const model of models) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const r = await fetch(url, {
+          method: "POST",
+          headers: { "x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json" },
+          body: geminiBody,
+        });
+        if (r.ok) { response = r; break outer; }
+        lastStatus = r.status;
+        lastErrText = await r.text();
+        console.error(`ocr-vin ${model} attempt ${attempt + 1}: ${r.status}`, lastErrText);
+        if (r.status === 503 || r.status === 429 || r.status >= 500) {
+          await new Promise((res) => setTimeout(res, 1500 * (attempt + 1)));
+          continue;
+        }
+        break;
+      }
+    }
+
+    if (!response) {
+      // Graceful fallback: don't crash the client, allow manual VIN entry
+      return new Response(JSON.stringify({
+        vin: null,
+        fallback: true,
+        error: "OCR_SERVICE_UNAVAILABLE",
+        status: lastStatus,
+      }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const data = await response.json();
