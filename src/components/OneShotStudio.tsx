@@ -363,14 +363,28 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
 
   /** Merge analysed data into form (only fill empty fields, mark source). */
   const mergeScanIntoForm = useCallback((ext: ScanData, source: 'datasheet' | 'image') => {
+    // Derive model from vehicleTitle if missing (e.g. "Mercedes-Benz S-Klasse S 450 4Matic" → "S-Klasse")
+    let derivedModel = ext.model || '';
+    let derivedVariant = ext.variant || '';
+    if ((!derivedModel || !derivedVariant) && ext.vehicleTitle && ext.brand) {
+      const rest = ext.vehicleTitle
+        .replace(new RegExp(`^\\s*${ext.brand.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*`, 'i'), '')
+        .trim();
+      if (rest) {
+        const parts = rest.split(/\s+/);
+        if (!derivedModel) derivedModel = parts[0] || '';
+        if (!derivedVariant && parts.length > 1) derivedVariant = parts.slice(1).join(' ');
+      }
+    }
+
     setForm((f) => {
       const next: MarketingForm = { ...f };
       const setIfEmpty = <K extends keyof MarketingForm>(key: K, val?: string | null) => {
         if (val && !next[key]) next[key] = val as MarketingForm[K];
       };
       setIfEmpty('brand', ext.brand);
-      setIfEmpty('model', ext.model);
-      setIfEmpty('variant', ext.variant);
+      setIfEmpty('model', derivedModel);
+      setIfEmpty('variant', derivedVariant);
       setIfEmpty('vehicleTitle', ext.vehicleTitle);
       setIfEmpty('priceText', ext.price || (ext.monthlyRate ? `ab ${ext.monthlyRate}/mtl.` : ''));
       setIfEmpty('monthlyRate', ext.monthlyRate);
@@ -405,8 +419,8 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
     setSources((s) => ({
       ...s,
       brand: ext.brand && s.brand === 'manual' ? source : s.brand,
-      model: ext.model && s.model === 'manual' ? source : s.model,
-      variant: ext.variant && s.variant === 'manual' ? source : s.variant,
+      model: derivedModel && s.model === 'manual' ? source : s.model,
+      variant: derivedVariant && s.variant === 'manual' ? source : s.variant,
       vehicleTitle: ext.vehicleTitle && s.vehicleTitle === 'manual' ? source : s.vehicleTitle,
       priceText: (ext.price || ext.monthlyRate) && s.priceText === 'manual' ? source : s.priceText,
       priceType: ext.priceType && s.priceType === 'manual' ? source : s.priceType,
