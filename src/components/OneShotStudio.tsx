@@ -424,7 +424,7 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
           {/* Model Tier */}
           <div className="rounded-xl border border-border bg-card p-5 space-y-3">
             <h3 className="font-semibold text-foreground text-sm">KI-Qualität</h3>
-            <ModelSelector value={modelTier} onChange={setModelTier} />
+            <ModelSelector actionType="image_generate" value={modelTier} onChange={setModelTier} />
           </div>
 
           {/* Continue */}
