@@ -170,9 +170,12 @@ serve(async (req) => {
     }
     const { imageBase64, additionalImages, additionalFileUris, mainImageFileUri, customShowroomFileUri, vehicleDescription, modelTier, dynamicPrompt, customShowroomBase64, customPlateImageBase64, dealerLogoUrl, dealerLogoBase64, manufacturerLogoUrl, manufacturerLogoBase64 } = JSON.parse(bodyText);
     
-    // Read cost dynamically from admin_settings
+    // Read cost dynamically from admin_settings. Normalize legacy/unknown tiers so
+    // "Qualität" always routes to Nano Banana 2, never to the Pro image model.
+    const TIER_ALIASES: Record<string, string> = { standard: 'qualitaet', pro: 'premium' };
     const REMASTER_DEFAULTS: Record<string, number> = { schnell: 2, qualitaet: 3, premium: 5, turbo: 4, ultra: 7 };
-    const tier = modelTier || 'schnell';
+    const requestedTier = typeof modelTier === 'string' ? modelTier : 'schnell';
+    const tier = TIER_ALIASES[requestedTier] || requestedTier;
     let cost = REMASTER_DEFAULTS[tier] ?? 2;
     try {
       const adminSb = createServiceClient();
@@ -412,8 +415,8 @@ The showroom wall must remain CLEAN and EMPTY. No manufacturer logos, no dealer 
 
     // 3. Call Gemini with fallback chain
     const FALLBACK_ORDER: Record<string, string[]> = {
-      'gemini-3-pro-image-preview': ['gemini-3.1-flash-image-preview'],
-      'gemini-3.1-flash-image-preview': ['gemini-3-pro-image-preview'],
+      'gemini-3-pro-image-preview': ['gemini-3.1-flash-image-preview', 'gemini-2.5-flash-image'],
+      'gemini-3.1-flash-image-preview': ['gemini-2.5-flash-image'],
       'gemini-2.5-flash-image': ['gemini-3.1-flash-image-preview'],
     };
     const modelsToTry = Array.from(new Set([geminiModel, ...(FALLBACK_ORDER[geminiModel] || ['gemini-3.1-flash-image-preview'])])).slice(0, 2);
