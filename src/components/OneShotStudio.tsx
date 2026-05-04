@@ -512,31 +512,52 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Datasheet upload + analyze
-  const handleDataSheetUpload = useCallback(async (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      toast.error('Bitte ein Bild des Datenblatts hochladen');
+  // ── Datasheet upload (multiple supported) + analyze with merge
+  const handleDataSheetUpload = useCallback(async (files: FileList | File[]) => {
+    const list = Array.from(files);
+    const imageFiles = list.filter(f => f.type.startsWith('image/'));
+    if (!imageFiles.length) {
+      toast.error('Bitte Bilder von Datenblatt / Preisliste / WLTP-Tabelle hochladen');
       return;
     }
-    const raw = await fileToBase64(file);
-    const compressed = await compressImageForAI(raw, 1800, 0.9).catch(() => raw);
-    setDataSheetBase64(compressed);
+    if (imageFiles.length !== list.length) {
+      toast.warning(`${list.length - imageFiles.length} Datei(en) übersprungen (nur Bilder erlaubt)`);
+    }
+
+    // Compress all in parallel
+    const compressedAll = await Promise.all(
+      imageFiles.map(async (file) => {
+        const raw = await fileToBase64(file);
+        return compressImageForAI(raw, 1800, 0.9).catch(() => raw);
+      }),
+    );
+
+    // Merge with existing (cap at 6 to match edge function limit)
+    const merged = [...dataSheetBase64s, ...compressedAll].slice(0, 6);
+    if (dataSheetBase64s.length + compressedAll.length > 6) {
+      toast.warning('Maximal 6 Datenblätter — Überzählige wurden ignoriert');
+    }
+    setDataSheetBase64s(merged);
+    setDataSheetBase64(merged[0]);
 
     setAnalyzingSheet(true);
     try {
       const { data, error } = await supabase.functions.invoke('analyze-offer-image', {
-        body: { imageBase64: compressed },
+        body: { imageBase64s: merged },
       });
       if (error || data?.error) {
-        toast.error('Datenblatt konnte nicht analysiert werden', { description: data?.error || error?.message });
+        toast.error('Datenblätter konnten nicht analysiert werden', { description: data?.error || error?.message });
         return;
       }
       const ext = (data?.extracted || {}) as ScanData;
       setScanData(ext);
       mergeScanIntoForm(ext, 'datasheet');
-      toast.success('Datenblatt analysiert!', {
-        description: [ext.vehicleTitle, ext.price].filter(Boolean).join(' · ') || 'Daten extrahiert',
-      });
+      toast.success(
+        merged.length > 1
+          ? `${merged.length} Datenblätter zusammengeführt!`
+          : 'Datenblatt analysiert!',
+        { description: [ext.vehicleTitle, ext.price].filter(Boolean).join(' · ') || 'Daten extrahiert' },
+      );
     } catch (e: any) {
       console.error('sheet error', e);
       toast.error('Analyse fehlgeschlagen');
@@ -544,7 +565,32 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
       setAnalyzingSheet(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [dataSheetBase64s]);
+
+  const removeDataSheet = useCallback(async (idx: number) => {
+    const next = dataSheetBase64s.filter((_, i) => i !== idx);
+    setDataSheetBase64s(next);
+    setDataSheetBase64(next[0] || null);
+    if (!next.length) {
+      setScanData(null);
+      return;
+    }
+    // Re-analyze remaining sheets
+    setAnalyzingSheet(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('analyze-offer-image', {
+        body: { imageBase64s: next },
+      });
+      if (!error && data?.extracted) {
+        const ext = data.extracted as ScanData;
+        setScanData(ext);
+        mergeScanIntoForm(ext, 'datasheet');
+      }
+    } finally {
+      setAnalyzingSheet(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dataSheetBase64s]);
 
   /** Merge analysed data into form (only fill empty fields, mark source). */
   const mergeScanIntoForm = useCallback((ext: ScanData, source: 'datasheet' | 'image') => {
