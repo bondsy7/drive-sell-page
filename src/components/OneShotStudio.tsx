@@ -23,8 +23,9 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import {
   ArrowLeft, ScanSearch, Loader2, Upload, X, ChevronRight, Zap, Image as ImageIcon,
-  Video, FileText, Hash, Layers, AlertCircle, Sparkles, Camera,
+  Video, FileText, Hash, Layers, AlertCircle, Sparkles, Camera, Database, Car,
 } from 'lucide-react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
