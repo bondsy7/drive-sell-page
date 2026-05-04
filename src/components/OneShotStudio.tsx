@@ -863,7 +863,7 @@ ABSOLUTE PRIORITY – this is the marketing master image:
   }, [
     pipelineCtx, user, availableJobs, selectedJobKeys, orderedInputImages, additionalImages,
     form.brand, form.model, form.variant, remasterConfig, modelTier, vin,
-    canonicalBrand, getLogoForMake,
+    canonicalBrand, getLogoForMake, savedVehicleId,
   ]);
 
   /** Fire all selected banner formats in parallel using the hero image. */
