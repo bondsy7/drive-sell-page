@@ -549,17 +549,43 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
     setHeroRunning(true);
     setHeroError(null);
     try {
-      // Use the MASTER_IMAGE prompt, route via pipeline-jobs
+      // Use the MASTER_IMAGE perspective prompt
       const masterJob = availableJobs.find((j) => j.key === 'MASTER_IMAGE');
       if (!masterJob) throw new Error('Master-Job nicht gefunden');
 
       const overrides = await fetchPromptOverrides();
       const [withOverrides] = applyPromptOverrides([masterJob], overrides);
+
+      // Build the FULL master prompt (scene, logos, plate, identity-lock, scale, etc.)
+      // — same composition the pipeline uses, so the chosen showroom is enforced on the Hero.
+      const baseContext = buildMasterPrompt(remasterConfig, `${form.brand} ${form.model} ${form.variant}`.trim(), undefined, overrides);
+      const hasLogo = !!(remasterConfig.showManufacturerLogo || remasterConfig.showDealerLogo);
+      const perspective = injectLogoPlaceholder(withOverrides.prompt, hasLogo);
+
+      // Hard rules to wipe old branding/text from the source image and force showroom integration
+      const HERO_INTEGRATION_LOCK = `
+<HERO_INTEGRATION_LOCK>
+ABSOLUTE PRIORITY – this is the marketing master image:
+1. SHOWROOM PLACEMENT: The vehicle MUST be placed inside the chosen showroom/scene. The original background of the source photo MUST be completely replaced – no street, no driveway, no foreign environment leaking through.
+2. LIGHT & SHADOW MATCHING: Re-light the vehicle so highlights, reflections, ambient occlusion and ground shadows EXACTLY match the showroom's light direction, color temperature and intensity. The car must look physically present in the room – not pasted on.
+3. FLOOR CONTACT: Render a realistic, soft contact shadow under the wheels and a subtle reflection of the car body on the showroom floor (only if the floor is reflective).
+4. STRIP OLD BRANDING: REMOVE every dealer logo, watermark, sticker, price tag, license-plate frame, lettering, web URL, phone number, and any overlaid text or graphic that came from the original photograph. The body, windows, ground and background must be CLEAN of any foreign text or logo.
+5. KEEP ONLY THE PROVIDED LOGOS: Only the manufacturer/dealer logos that are explicitly provided as reference images (if any) may appear – nowhere else.
+6. PHOTOREALISM: Output must look like a high-end automotive studio photograph, not a composite.
+</HERO_INTEGRATION_LOCK>`;
+
+      const fullPrompt = `${baseContext}\n\n${perspective}\n\n${HERO_INTEGRATION_LOCK}`;
+
       const referenceImages = [
         heroSourceImage,
         ...orderedInputImages.filter((i) => i.id !== heroSourceImage.id).slice(0, 4),
       ];
       const fileUris = await uploadGenerationRefs(referenceImages);
+
+      // Resolve manufacturer logo URL for hero
+      const manufacturerLogoUrl = remasterConfig.showManufacturerLogo && canonicalBrand
+        ? (getLogoForMake(canonicalBrand) || null)
+        : null;
 
       const { data, error } = await invokeWithRetry('remaster-vehicle-image', {
         imageBase64: heroSourceImage.base64,
@@ -568,7 +594,11 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
         additionalFileUris: fileUris?.slice(1) || undefined,
         vehicleDescription: `${form.brand} ${form.model} ${form.variant}`.trim(),
         modelTier,
-        dynamicPrompt: withOverrides.prompt,
+        dynamicPrompt: fullPrompt,
+        customShowroomBase64: remasterConfig.customShowroomBase64 || null,
+        customPlateImageBase64: remasterConfig.customPlateImageBase64 || null,
+        manufacturerLogoUrl,
+        dealerLogoUrl: remasterConfig.showDealerLogo ? (remasterConfig.dealerLogoUrl || null) : null,
       }, { retries: 3, baseDelayMs: 2500 });
       if (error) throw new Error(error.message || 'Hero-Generierung fehlgeschlagen');
       if (data?.error) throw new Error(data.error);
@@ -585,7 +615,7 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
     } finally {
       setHeroRunning(false);
     }
-  }, [heroSourceImage, orderedInputImages, form.brand, form.model, form.variant, modelTier, availableJobs]);
+  }, [heroSourceImage, orderedInputImages, form.brand, form.model, form.variant, modelTier, availableJobs, remasterConfig, canonicalBrand, getLogoForMake]);
 
   /** Kick off pipeline (rest of the jobs) via global PipelineContext. */
   const startPipelineRest = useCallback(async (heroB64: string | null) => {
