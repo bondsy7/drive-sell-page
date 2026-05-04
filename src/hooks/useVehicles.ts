@@ -169,16 +169,47 @@ export function useUpdateVehicle() {
 }
 
 export function useDeleteVehicle() {
+  const { user } = useAuth();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
+      if (!user) throw new Error('Nicht eingeloggt');
+
+      // 1) Storage cleanup across all per-vehicle prefixes
+      const prefix = `${user.id}/${id}`;
+      const buckets: Array<{ name: string; sub?: string }> = [
+        { name: 'originals' },
+        { name: 'banners' },
+        { name: 'vehicle-images', sub: 'videos' },
+      ];
+      for (const b of buckets) {
+        const path = b.sub ? `${prefix}/${b.sub}` : prefix;
+        const { data: files } = await supabase.storage.from(b.name).list(path, { limit: 1000 });
+        const paths = (files || [])
+          .filter(f => f.name && !f.name.startsWith('.'))
+          .map(f => `${path}/${f.name}`);
+        if (paths.length > 0) {
+          await supabase.storage.from(b.name).remove(paths);
+        }
+      }
+
+      // 2) DB cleanup (RLS-protected; user_id check enforced by policies)
+      await Promise.all([
+        supabase.from('project_images').delete().eq('vehicle_id', id),
+        supabase.from('leads').delete().eq('vehicle_id', id),
+        supabase.from('spin360_jobs').delete().eq('vehicle_id', id),
+        supabase.from('projects').delete().eq('vehicle_id', id),
+      ]);
+
+      // 3) Finally the vehicle row itself
       const { error } = await supabase.from('vehicles').delete().eq('id', id);
       if (error) throw error;
       return id;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['vehicles'] });
-      toast.success('Fahrzeug gelöscht');
+      qc.invalidateQueries({ queryKey: ['vehicle'] });
+      toast.success('Fahrzeug und alle zugehörigen Daten gelöscht');
     },
     onError: (e: Error) => toast.error(`Fehler: ${e.message}`),
   });
