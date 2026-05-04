@@ -22,9 +22,19 @@ type TabKey = 'originals' | 'gallery' | 'landings' | 'projects' | 'banners' | 'v
 
 export default function VehicleView() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { data: vehicle, isLoading } = useVehicle(id);
+  const deleteVehicle = useDeleteVehicle();
   const [tab, setTab] = useState<TabKey>('originals');
+
+  const handleDelete = async () => {
+    if (!vehicle) return;
+    const label = vehicle.title || vehicle.vin;
+    if (!confirm(`"${label}" und ALLE zugehörigen Bilder, Landing Pages, Banner, Videos und Anfragen unwiderruflich löschen?`)) return;
+    await deleteVehicle.mutateAsync(vehicle.id);
+    navigate('/dashboard');
+  };
 
   // Per-vehicle data queries (only fire when vehicle exists)
   const { data: projects = [] } = useQuery({
