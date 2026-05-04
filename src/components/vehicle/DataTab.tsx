@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Download, Save, FileJson, FileText, Database } from 'lucide-react';
+import { Download, Save, FileJson, FileText, Database, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useUpdateVehicle, type Vehicle } from '@/hooks/useVehicles';
+import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Structured vehicle data record stored in `vehicles.vehicle_data`.
@@ -239,6 +240,7 @@ export default function DataTab({ vehicle }: Props) {
   const initial = useMemo(() => seedFromVehicle(vehicle), [vehicle]);
   const [rec, setRec] = useState<VehicleDataRecord>(initial);
   const [dirty, setDirty] = useState(false);
+  const [vinLoading, setVinLoading] = useState(false);
 
   useEffect(() => {
     setRec(initial);
@@ -248,6 +250,61 @@ export default function DataTab({ vehicle }: Props) {
   const set = <K extends keyof VehicleDataRecord>(key: K, val: string) => {
     setRec(prev => ({ ...prev, [key]: val }));
     setDirty(true);
+  };
+
+  /** Fill empty fields from OUTVIN VIN lookup. Existing values are preserved. */
+  const fillFromOutvin = async () => {
+    const vin = (rec.vin || vehicle.vin || '').trim().toUpperCase();
+    if (vin.length !== 17) {
+      toast.error('Bitte zuerst eine gültige 17-stellige VIN eintragen.');
+      return;
+    }
+    setVinLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('lookup-vin', { body: { vin } });
+      if (error || !data?.success) {
+        throw new Error(data?.error || error?.message || 'OUTVIN-Abfrage fehlgeschlagen');
+      }
+      const v = data.vehicle as Record<string, unknown>;
+      const equipment = Array.isArray(v.equipment) ? (v.equipment as string[]) : [];
+
+      const merge: Partial<VehicleDataRecord> = {};
+      const fillIfEmpty = (key: keyof VehicleDataRecord, val: unknown) => {
+        const s = val == null ? '' : String(val).trim();
+        if (s && !((rec[key] || '').toString().trim())) merge[key] = s;
+      };
+      fillIfEmpty('vin', vin);
+      fillIfEmpty('brand', v.brand);
+      fillIfEmpty('model', v.model);
+      fillIfEmpty('variant', v.variant);
+      fillIfEmpty('year', v.year);
+      fillIfEmpty('fuelType', v.fuelType);
+      fillIfEmpty('transmission', v.transmission);
+      fillIfEmpty('power', v.power);
+      fillIfEmpty('color', v.color);
+      fillIfEmpty('displacement', v.displacement);
+      fillIfEmpty('driveType', v.driveType);
+      fillIfEmpty('bodyType', v.bodyType);
+      fillIfEmpty('doors', v.doors);
+      fillIfEmpty('seats', v.seats);
+
+      if (equipment.length && !(rec.features || '').trim()) {
+        merge.features = equipment.join('\n');
+      }
+
+      const filledCount = Object.keys(merge).length;
+      if (filledCount === 0) {
+        toast.info('Keine neuen Daten — alle Felder sind bereits gefüllt.');
+      } else {
+        setRec(prev => ({ ...prev, ...merge }));
+        setDirty(true);
+        toast.success(`${filledCount} Feld${filledCount !== 1 ? 'er' : ''} aus OUTVIN befüllt.`);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'OUTVIN-Abfrage fehlgeschlagen');
+    } finally {
+      setVinLoading(false);
+    }
   };
 
   const save = async () => {
@@ -286,6 +343,10 @@ export default function DataTab({ vehicle }: Props) {
           Strukturierte Fahrzeugdaten — Quelle für Export &amp; spätere DMS-API.
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button size="sm" variant="secondary" onClick={fillFromOutvin} disabled={vinLoading}>
+            {vinLoading ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1.5" />}
+            {vinLoading ? 'OUTVIN…' : 'Mit OUTVIN befüllen'}
+          </Button>
           <Button size="sm" variant="outline" onClick={exportCsv}>
             <Download className="w-4 h-4 mr-1.5" /> CSV
           </Button>
