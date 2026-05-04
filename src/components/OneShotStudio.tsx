@@ -1608,6 +1608,17 @@ ABSOLUTE PRIORITY – this is the marketing master image:
             </div>
           </div>
 
+          {savedVehicleId && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full gap-2"
+              onClick={() => navigate(`/vehicle/${savedVehicleId}`)}
+            >
+              <Car className="w-4 h-4" /> Zum Fahrzeug-Hub (alle Module sichtbar)
+            </Button>
+          )}
+
           {!heroBase64 && !heroRunning && (
             <Button onClick={startEverything} size="lg" className="w-full gap-2">
               <Zap className="w-5 h-5" /> Alles generieren
