@@ -131,12 +131,12 @@ export function useUpsertVehicle() {
         year: input.year ?? null,
         color: input.color ?? null,
         title: input.title ?? null,
-        vehicle_data: input.vehicle_data ?? {},
+        vehicle_data: (input.vehicle_data ?? {}) as never,
         cover_image_url: input.cover_image_url ?? null,
       };
       const { data, error } = await supabase
         .from('vehicles')
-        .upsert(payload, { onConflict: 'user_id,vin' })
+        .upsert([payload], { onConflict: 'user_id,vin' })
         .select()
         .single();
       if (error) throw error;
@@ -154,7 +154,7 @@ export function useUpdateVehicle() {
     mutationFn: async ({ id, patch }: { id: string; patch: Partial<UpsertVehicleInput> }) => {
       const { data, error } = await supabase
         .from('vehicles')
-        .update(patch)
+        .update(patch as never)
         .eq('id', id)
         .select()
         .single();
