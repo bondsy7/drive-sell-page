@@ -316,6 +316,7 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
   /* ─── Step 1: Uploads ─── */
   const [vehicleImages, setVehicleImages] = useState<ClassifiedImage[]>([]);
   const [dataSheetBase64, setDataSheetBase64] = useState<string | null>(null);
+  const [dataSheetBase64s, setDataSheetBase64s] = useState<string[]>([]);
 
   const [classifying, setClassifying] = useState(false);
   const [analyzingSheet, setAnalyzingSheet] = useState(false);
