@@ -412,6 +412,15 @@ export default function VehicleView() {
           onClose={() => { setViewerJobId(null); setViewerFrames([]); }}
         />
       )}
+
+      <EditVehicleDialog open={editOpen} onOpenChange={setEditOpen} vehicle={vehicle} />
+      <CoverPickerDialog
+        open={coverOpen}
+        onOpenChange={setCoverOpen}
+        vehicleId={vehicle.id}
+        currentCover={vehicle.cover_image_url}
+        images={images}
+      />
     </div>
   );
 }
