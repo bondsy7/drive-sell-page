@@ -57,11 +57,11 @@ export default function AppHeader({ leftActions, variant = 'card' }: AppHeaderPr
 
             {user ? (
               <>
-                {/* New Project */}
+                {/* New Vehicle */}
                 <Link to="/generator">
                   <Button size="sm" className="gap-1.5 text-xs sm:text-sm">
                     <Plus className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Neues Projekt</span>
+                    <span className="hidden sm:inline">Neues Fahrzeug</span>
                     <span className="sm:hidden">Neu</span>
                   </Button>
                 </Link>
