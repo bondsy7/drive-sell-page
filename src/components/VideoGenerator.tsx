@@ -9,6 +9,8 @@ interface VideoGeneratorProps {
   onBack: () => void;
   /** Pre-loaded image from another workflow */
   preloadedImage?: string;
+  /** When set, the generated video is stored under {userId}/{vehicleId}/videos/... so it appears in the vehicle's Videos tab. */
+  vehicleId?: string | null;
 }
 
 type VideoState = 'idle' | 'uploading' | 'generating' | 'polling' | 'done' | 'error';
@@ -22,7 +24,7 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
-const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onBack, preloadedImage }) => {
+const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onBack, preloadedImage, vehicleId }) => {
   const [imageBase64, setImageBase64] = useState<string | null>(preloadedImage || null);
   const [videoState, setVideoState] = useState<VideoState>('idle');
   const [videoBase64, setVideoBase64] = useState<string | null>(null);
