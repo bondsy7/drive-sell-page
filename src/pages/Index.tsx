@@ -127,6 +127,16 @@ const Index = () => {
       const urls = await uploadImagesToStorage(allImages, user.id, project.id);
       if (urls.length > 0) {
         await supabase.from('projects').update({ main_image_url: urls[0] }).eq('id', project.id);
+        // Seed vehicle cover (best-effort, only if missing)
+        if (vehicleId) {
+          try {
+            const { data: vRow } = await supabase
+              .from('vehicles').select('cover_image_url').eq('id', vehicleId).maybeSingle();
+            if (vRow && !(vRow as any).cover_image_url) {
+              await supabase.from('vehicles').update({ cover_image_url: urls[0] }).eq('id', vehicleId);
+            }
+          } catch { /* ignore */ }
+        }
       }
       const imageRows = urls.map((url, i) => ({
         project_id: project.id, vehicle_id: vehicleId || null, user_id: user.id,
