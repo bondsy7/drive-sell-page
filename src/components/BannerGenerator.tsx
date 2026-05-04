@@ -488,6 +488,12 @@ CRITICAL RULES:
 - ALL text must be rendered EXACTLY as specified – no paraphrasing, no spelling changes
 - Text must be perfectly legible against the background
 
+REFLECTION PURGE (ZERO TOLERANCE – NON-NEGOTIABLE):
+- The provided vehicle reference photo was taken in a DIFFERENT environment. EVERY reflection on EVERY reflective surface (paint, windows, side mirrors, chrome, headlights, taillights, wheel rims, glossy black trim, sunroof) MUST be COMPLETELY ERASED and RE-RENDERED to match ONLY the new banner scene.
+- ABSOLUTELY FORBIDDEN in any reflection or through any window: trees, sky, clouds, other cars, buildings, dealerships, people, photographers, asphalt patterns, parking lines, old dealer logos, banners, watermarks, price tags, or ANY trace of the original photo's environment — not even faintly.
+- Through the windows the viewer must see ONLY the new scene — never the old environment, never a generic outdoor view, never a black void.
+- Verify hood, doors, glass, mirrors, chrome and rims before finalizing: zero foreign reflection content.
+
 ACCENT COLOR (${accentColor}):
 Use the accent color ${accentColor} sparingly and elegantly as a SUBTLE HIGHLIGHT – NOT as a dominant color:
 - Use it ONLY for small UI elements: CTA buttons, price tags, thin borders, or small text highlights
