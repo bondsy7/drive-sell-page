@@ -308,6 +308,11 @@ SHOWROOM PRESERVATION (CRITICAL):
 - When camera perspective changes, architectural elements and logos shift naturally by 3D perspective – but NEVER disappear or change.
 - The showroom MUST be CLEARLY RECOGNIZABLE as the SAME room in EVERY generated image.
 
+ORIGINAL ENVIRONMENT REMOVAL (ZERO TOLERANCE):
+- The reference vehicle photo may contain an OLD showroom, OLD studio, dealer banner strips, abbinder footer bars, slogan text (e.g. "AUTOS KAUFT MAN BEI ..."), URLs, watermarks, advertising overlays, sticker prints, or any branded backdrop.
+- ALL of these MUST be FULLY REMOVED. They MUST NOT appear in the output – not as text, not as a strip, not as a faint trace, not on walls, not on the floor, not on the vehicle body.
+- Only the VEHICLE is taken from the reference. The ENTIRE environment is replaced by the custom showroom asset above. Zero pixel of the old environment may survive.
+
 CAMERA PERSPECTIVE:
 - The camera perspective of the showroom MUST match the requested vehicle perspective.
 - Adapt the showroom view to match front, side, rear, or 3/4 angles naturally.
@@ -360,8 +365,9 @@ REPRODUCTION RULES (ZERO DEVIATION ALLOWED):
 4. POSITION: Always centered on back wall, at eye level, slightly above vehicle roofline. EXACT same position on EVERY image.
 5. SIZE: Approximately 60-80cm diameter/width – IDENTICAL on EVERY image.
 6. RENDERING: As backlit wall element with subtle LED halo effect. Logo keeps its ORIGINAL COLORS and ORIGINAL SHAPE.
-7. FORBIDDEN: No converting to silver/aluminum/chrome. No color changes. No shape simplification.
-8. CONSISTENCY: Logo must look ABSOLUTELY IDENTICAL on ALL generated images – ZERO variation.
+7. FORBIDDEN: No converting to silver/aluminum/chrome. No color changes. No shape simplification. No re-lettering, no mirroring, no rotation.
+8. CONSISTENCY: Logo must look ABSOLUTELY IDENTICAL on ALL generated images – ZERO variation in color, shape, proportions, size, or position.
+9. SOURCE OF TRUTH: This logo asset OVERRIDES any logo, banner, slogan, or text visible in the reference vehicle photo. Ignore old dealer abbinder bars/slogans from the reference – use ONLY this logo.
 </LOGO_REFERENCE>` });
         parts.push(logoData);
       }

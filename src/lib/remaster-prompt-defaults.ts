@@ -125,7 +125,17 @@ LIGHTING: Bright, even, professional interior lighting that matches the showroom
 - The camera perspective of the showroom must MATCH the camera perspective of the vehicle shot.
 - ALL architectural details, wall logos, branding, furniture MUST remain in their EXACT positions.
 - Do NOT overlay or collage. The room MUST be fully visible and recognizable.
-- ZERO WHITE BORDERS: The showroom MUST fill the ENTIRE image canvas. Every pixel of every edge MUST show showroom content (walls, floor, ceiling, windows). There must be ABSOLUTELY NO white margins, blank areas, or unfilled edges anywhere in the output.`,
+- ZERO WHITE BORDERS: The showroom MUST fill the ENTIRE image canvas. Every pixel of every edge MUST show showroom content (walls, floor, ceiling, windows). There must be ABSOLUTELY NO white margins, blank areas, or unfilled edges anywhere in the output.
+
+ENVIRONMENT REPLACEMENT (NON-NEGOTIABLE):
+- The original environment from the reference photo (old showroom, old studio, old backdrop, dealer banner strip, abbinder bar, slogan footer, URL line, watermark, advertising overlay) MUST be FULLY DISCARDED.
+- Replace it ENTIRELY with the provided custom showroom. ZERO trace of the previous backdrop or any text/graphic overlay may survive — not on the floor, not on walls, not as a faint shadow, not on the vehicle.
+- Only the vehicle itself is reused from the reference. Everything else comes from the custom showroom asset.
+
+LOGO CONSISTENCY LOCK:
+- The provided logo asset is the SINGLE SOURCE OF TRUTH for any logo on the wall.
+- The logo MUST look ABSOLUTELY IDENTICAL across every generated image: same colors, same shape, same proportions, same position, same size, same rendering style.
+- Do NOT recolor, restyle, re-letter, mirror, rotate, animate, or "improve" the logo. PIXEL-FOR-PIXEL only.`,
   },
 
   negative_constraints: {
@@ -142,7 +152,14 @@ LIGHTING: Bright, even, professional interior lighting that matches the showroom
 - Rotate, flip, or mirror the image
 - Carry over reflections from original environment
 - Add ANY logo, brand mark, or wall decoration UNLESS a logo image is explicitly provided as a reference asset
-- Create overly dramatic, HDR-style, or artificially enhanced lighting – aim for NATURAL photorealism`,
+- Create overly dramatic, HDR-style, or artificially enhanced lighting – aim for NATURAL photorealism
+
+SOURCE IMAGE OVERLAY REMOVAL (ZERO TOLERANCE — APPLIES EVEN IF VISIBLE IN REFERENCE):
+The reference photo may contain dealer banners, abbinder bars, slogans (e.g. "AUTOS KAUFT MAN BEI ..."), URLs, watermarks, footer strips, advertising overlays, price tags, sticker prints on the body, or studio backdrops with branding.
+- ALL of these MUST be COMPLETELY REMOVED from the output. They MUST NOT appear in the new image — not as text, not as a strip, not as a faint trace, not on the floor, not on the wall, not on the vehicle body.
+- The original studio / showroom / backdrop visible in the reference is REPLACED ENTIRELY by the SELECTED showroom or scene. Zero pixel of the original environment may remain.
+- Only the VEHICLE itself is carried over from the reference — never its environment, never any overlay graphic, never any text artifact.
+- If the reference shows a logo on a wall, ignore it; only logos explicitly provided as separate reference assets are allowed.`,
   },
 
   interior_rules: {
