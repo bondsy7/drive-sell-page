@@ -906,7 +906,8 @@ ABSOLUTE PRIORITY – this is the marketing master image:
             const base64Data = b64.includes(',') ? b64.split(',')[1] : b64;
             const bytes = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
             const blob = new Blob([bytes], { type: 'image/png' });
-            const fileName = `${user!.id}/${Date.now()}-oneshot-${id}.png`;
+            const vehiclePrefix = savedVehicleId ? `${savedVehicleId}/` : '';
+            const fileName = `${user!.id}/${vehiclePrefix}${Date.now()}-oneshot-${id}.png`;
             await supabase.storage.from('banners').upload(fileName, blob, { contentType: 'image/png' });
           } catch { /* ignore */ }
         } catch (e: any) {
