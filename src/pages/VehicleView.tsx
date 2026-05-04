@@ -1,21 +1,36 @@
 import { useMemo, useState } from 'react';
 import { useParams, Link, Navigate, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Car, FileText, Image as ImageIcon, Layout, LayoutGrid, Video, RotateCw, MessageSquare, FolderOpen, Trash2 } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  ArrowLeft, Car, FileText, Image as ImageIcon, Layout, LayoutGrid, Video, RotateCw,
+  MessageSquare, FolderOpen, Trash2,
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import AppHeader from '@/components/AppHeader';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useVehicle, useDeleteVehicle } from '@/hooks/useVehicles';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
+import {
+  useDeleteProject, useDeleteLead, useDeleteVideo, useDeleteBanner, useDeleteSpin360,
+} from '@/hooks/useDashboardData';
+import { downloadHTML } from '@/lib/templates/download';
+import { embedCO2LabelsInHTML } from '@/lib/templates/shared';
+import { compressToWebP } from '@/lib/storage-utils';
 import ProjectsTab from '@/components/dashboard/ProjectsTab';
 import LandingsTab from '@/components/dashboard/LandingsTab';
-import GalleryTab from '@/components/dashboard/GalleryTab';
+import GalleryTab, { getImageSortKey } from '@/components/dashboard/GalleryTab';
 import BannersTab from '@/components/dashboard/BannersTab';
 import VideosTab from '@/components/dashboard/VideosTab';
 import Spin360Tab from '@/components/dashboard/Spin360Tab';
 import LeadsTab from '@/components/dashboard/LeadsTab';
 import OriginalsTab from '@/components/vehicle/OriginalsTab';
+import ExportChoiceDialog, { type ExportMode } from '@/components/ExportChoiceDialog';
+import GalleryLightbox from '@/components/GalleryLightbox';
+import VideoPlayerModal from '@/components/dashboard/VideoPlayerModal';
+import SpinViewerModal from '@/components/dashboard/SpinViewerModal';
+import { getImageSrc } from '@/components/dashboard/types';
 import type { Project, ProjectImage, Lead, Spin360Job, BannerFile, VideoFile } from '@/components/dashboard/types';
 
 type TabKey = 'originals' | 'gallery' | 'landings' | 'projects' | 'banners' | 'videos' | 'spin360' | 'leads';
@@ -23,20 +38,30 @@ type TabKey = 'originals' | 'gallery' | 'landings' | 'projects' | 'banners' | 'v
 export default function VehicleView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const { user } = useAuth();
   const { data: vehicle, isLoading } = useVehicle(id);
   const deleteVehicle = useDeleteVehicle();
+  const deleteProject = useDeleteProject();
+  const deleteLead = useDeleteLead();
+  const deleteVideo = useDeleteVideo();
+  const deleteBanner = useDeleteBanner();
+  const deleteSpin360 = useDeleteSpin360();
+
   const [tab, setTab] = useState<TabKey>('originals');
 
-  const handleDelete = async () => {
-    if (!vehicle) return;
-    const label = vehicle.title || vehicle.vin;
-    if (!confirm(`"${label}" und ALLE zugehörigen Bilder, Landing Pages, Banner, Videos und Anfragen unwiderruflich löschen?`)) return;
-    await deleteVehicle.mutateAsync(vehicle.id);
-    navigate('/dashboard');
-  };
+  // Modals
+  const [lightboxIndex, setLightboxIndex] = useState(-1);
+  const [lightboxFolder, setLightboxFolder] = useState<string | null>(null);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
+  const [exportProject, setExportProject] = useState<Project | null>(null);
+  const [playerVideo, setPlayerVideo] = useState<VideoFile | null>(null);
+  const [viewerJobId, setViewerJobId] = useState<string | null>(null);
+  const [viewerFrames, setViewerFrames] = useState<string[]>([]);
+  const [viewerLoading, setViewerLoading] = useState(false);
 
-  // Per-vehicle data queries (only fire when vehicle exists)
+  // Per-vehicle data queries
   const { data: projects = [] } = useQuery({
     queryKey: ['vehicle-projects', id],
     enabled: !!id && !!vehicle,
@@ -89,7 +114,6 @@ export default function VehicleView() {
     },
   });
 
-  // Banners + videos via storage path convention
   const { data: banners = [] } = useQuery({
     queryKey: ['vehicle-banners', id, user?.id],
     enabled: !!id && !!vehicle && !!user,
@@ -125,6 +149,96 @@ export default function VehicleView() {
   const regularProjects = useMemo(() => projects.filter(p => p.template_id !== 'landing-page'), [projects]);
   const landingProjects = useMemo(() => projects.filter(p => p.template_id === 'landing-page'), [projects]);
 
+  // ─── Handlers ─────────────────────────────────────────────
+
+  const invalidateAll = () => {
+    qc.invalidateQueries({ queryKey: ['vehicle-projects', id] });
+    qc.invalidateQueries({ queryKey: ['vehicle-images', id] });
+    qc.invalidateQueries({ queryKey: ['vehicle-spin', id] });
+    qc.invalidateQueries({ queryKey: ['vehicle-leads', id] });
+    qc.invalidateQueries({ queryKey: ['vehicle-banners', id, user?.id] });
+    qc.invalidateQueries({ queryKey: ['vehicle-videos', id, user?.id] });
+  };
+
+  const handleDeleteVehicle = async () => {
+    if (!vehicle) return;
+    const label = vehicle.title || vehicle.vin;
+    if (!confirm(`"${label}" und ALLE zugehörigen Bilder, Landing Pages, Banner, Videos und Anfragen unwiderruflich löschen?`)) return;
+    await deleteVehicle.mutateAsync(vehicle.id);
+    navigate('/dashboard');
+  };
+
+  const downloadFile = async (url: string, name: string) => {
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = name;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 3000);
+    } catch {
+      window.open(url, '_blank');
+    }
+  };
+
+  const openExportDialog = (project: Project) => {
+    if (!project.html_content) { toast.error('Keine HTML-Daten vorhanden'); return; }
+    setExportProject(project);
+    setExportDialogOpen(true);
+  };
+
+  const handleExportHTML = async (mode: ExportMode) => {
+    if (!exportProject?.html_content) return;
+    setExportLoading(true);
+    try {
+      const vd = exportProject.vehicle_data;
+      const brand = (vd as Record<string, Record<string, string>>)?.vehicle?.brand || 'fahrzeug';
+      const model = (vd as Record<string, Record<string, string>>)?.vehicle?.model || 'page';
+      const filename = `${brand}-${model}.html`;
+      let html = exportProject.html_content;
+      if (mode === 'offline') {
+        const imgRegex = /<img\s+[^>]*src="(https?:\/\/[^"]+)"[^>]*>/g;
+        const matches = [...html.matchAll(imgRegex)];
+        const uniqueUrls = [...new Set(matches.map(m => m[1]))];
+        const urlMap = new Map<string, string>();
+        await Promise.all(uniqueUrls.map(async (url) => { urlMap.set(url, await compressToWebP(url)); }));
+        for (const [url, webp] of urlMap) html = html.split(`src="${url}"`).join(`src="${webp}"`);
+      }
+      html = await embedCO2LabelsInHTML(html);
+      downloadHTML(html, filename);
+    } finally {
+      setExportLoading(false); setExportDialogOpen(false); setExportProject(null);
+    }
+  };
+
+  const openSpinViewer = async (jobId: string) => {
+    setViewerJobId(jobId); setViewerLoading(true); setViewerFrames([]);
+    const { data } = await supabase
+      .from('spin360_generated_frames')
+      .select('image_url, frame_index')
+      .eq('job_id', jobId)
+      .eq('validation_status', 'passed')
+      .order('frame_index', { ascending: true });
+    const uniqueFrames = new Map<number, string>();
+    for (const f of (data || [])) {
+      if (!uniqueFrames.has(f.frame_index)) uniqueFrames.set(f.frame_index, f.image_url);
+    }
+    setViewerFrames(Array.from(uniqueFrames.entries()).sort((a, b) => a[0] - b[0]).map(e => e[1]));
+    setViewerLoading(false);
+  };
+
+  // Wrap delete-mutations to refresh per-vehicle queries afterwards
+  const onDeleteProject = (pid: string) => deleteProject.mutate(pid, { onSuccess: invalidateAll });
+  const onDeleteLead = (lid: string) => deleteLead.mutate(lid, { onSuccess: invalidateAll });
+  const onDeleteVideo = (name: string) => deleteVideo.mutate(name, { onSuccess: invalidateAll });
+  const onDeleteBanner = (fp: string) => deleteBanner.mutate(fp, { onSuccess: invalidateAll });
+  const onDeleteSpin = (sid: string) => deleteSpin360.mutate(sid, { onSuccess: invalidateAll });
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -159,19 +273,25 @@ export default function VehicleView() {
       case 'originals':
         return <OriginalsTab vehicleId={vehicle.id} />;
       case 'gallery':
-        return <GalleryTab images={images} onLightbox={() => {}} highlightFolder={null} />;
+        return (
+          <GalleryTab
+            images={images}
+            onLightbox={(folder, idx) => { setLightboxFolder(folder); setLightboxIndex(idx); }}
+            highlightFolder={null}
+          />
+        );
       case 'landings':
-        return <LandingsTab projects={landingProjects} onExport={() => {}} onDelete={() => {}} />;
+        return <LandingsTab projects={landingProjects} onExport={openExportDialog} onDelete={onDeleteProject} />;
       case 'projects':
-        return <ProjectsTab projects={regularProjects} onExport={() => {}} onDelete={() => {}} />;
+        return <ProjectsTab projects={regularProjects} onExport={openExportDialog} onDelete={onDeleteProject} />;
       case 'banners':
-        return <BannersTab banners={banners} onDownload={() => {}} onDelete={() => {}} />;
+        return <BannersTab banners={banners} onDownload={(b) => downloadFile(b.url, b.name)} onDelete={(fp) => onDeleteBanner(fp)} />;
       case 'videos':
-        return <VideosTab videos={videos} onPlay={() => {}} onDownload={() => {}} onDelete={() => {}} />;
+        return <VideosTab videos={videos} onPlay={setPlayerVideo} onDownload={(v) => downloadFile(v.url, v.name)} onDelete={onDeleteVideo} />;
       case 'spin360':
-        return <Spin360Tab jobs={spinJobs} onOpen={() => {}} onDelete={() => {}} />;
+        return <Spin360Tab jobs={spinJobs} onOpen={openSpinViewer} onDelete={onDeleteSpin} />;
       case 'leads':
-        return <LeadsTab leads={leads} onDelete={() => {}} />;
+        return <LeadsTab leads={leads} onDelete={onDeleteLead} />;
     }
   };
 
@@ -198,7 +318,7 @@ export default function VehicleView() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={handleDelete}
+            onClick={handleDeleteVehicle}
             disabled={deleteVehicle.isPending}
             className="text-destructive hover:text-destructive hover:bg-destructive/10"
             aria-label="Fahrzeug löschen"
@@ -234,6 +354,46 @@ export default function VehicleView() {
 
         {renderTab()}
       </main>
+
+      <ExportChoiceDialog
+        open={exportDialogOpen}
+        onOpenChange={setExportDialogOpen}
+        onChoose={handleExportHTML}
+        loading={exportLoading}
+        projectId={exportProject?.id}
+      />
+
+      <GalleryLightbox
+        images={
+          (lightboxFolder
+            ? images.filter(img => (img.gallery_folder || 'Ohne Ordner') === lightboxFolder)
+            : [...images]
+          )
+            .sort((a, b) => getImageSortKey(a.perspective) - getImageSortKey(b.perspective))
+            .map(img => ({ id: img.id, src: getImageSrc(img), perspective: img.perspective, project_id: img.project_id }))
+        }
+        initialIndex={lightboxIndex}
+        open={lightboxIndex >= 0}
+        onClose={() => { setLightboxIndex(-1); setLightboxFolder(null); }}
+        onAssigned={invalidateAll}
+        onRegenerated={invalidateAll}
+        onDeleted={invalidateAll}
+      />
+
+      {playerVideo && (
+        <VideoPlayerModal
+          video={playerVideo}
+          onClose={() => setPlayerVideo(null)}
+          onDownload={(v) => downloadFile(v.url, v.name)}
+        />
+      )}
+      {viewerJobId && (
+        <SpinViewerModal
+          loading={viewerLoading}
+          frames={viewerFrames}
+          onClose={() => { setViewerJobId(null); setViewerFrames([]); }}
+        />
+      )}
     </div>
   );
 }
