@@ -346,11 +346,42 @@ export default function VehicleView() {
         </div>
 
         {/* Tag chips */}
-        <div className="flex flex-wrap gap-1.5 mb-6">
+        <div className="flex flex-wrap gap-1.5 mb-4">
           {vehicle.brand && <Badge variant="secondary">{vehicle.brand}</Badge>}
           {vehicle.model && <Badge variant="secondary">{vehicle.model}</Badge>}
           {vehicle.year && <Badge variant="secondary">{vehicle.year}</Badge>}
           {vehicle.color && <Badge variant="secondary">{vehicle.color}</Badge>}
+        </div>
+
+        {/* Quick actions: launch generators with this vehicle preselected */}
+        <div className="flex flex-wrap gap-2 mb-6">
+          {(() => {
+            const cover = vehicle.cover_image_url ? `&image=${encodeURIComponent(vehicle.cover_image_url)}` : '';
+            return (
+              <>
+                <Button asChild size="sm" variant="outline">
+                  <Link to={`/generator/banner?vehicle=${vehicle.id}${cover}`}>
+                    <LayoutGrid className="w-4 h-4 mr-1.5" /> Banner erstellen
+                  </Link>
+                </Button>
+                <Button asChild size="sm" variant="outline">
+                  <Link to={`/generator/video?vehicle=${vehicle.id}${cover}`}>
+                    <Video className="w-4 h-4 mr-1.5" /> Video erstellen
+                  </Link>
+                </Button>
+                <Button asChild size="sm" variant="outline">
+                  <Link to={`/generator/spin360?vehicle=${vehicle.id}`}>
+                    <RotateCw className="w-4 h-4 mr-1.5" /> 360° erstellen
+                  </Link>
+                </Button>
+                <Button asChild size="sm" variant="outline">
+                  <Link to={`/generator/manual-landing?vehicle=${vehicle.id}`}>
+                    <Sparkles className="w-4 h-4 mr-1.5" /> Landing Page
+                  </Link>
+                </Button>
+              </>
+            );
+          })()}
         </div>
 
         {/* Tabs */}
