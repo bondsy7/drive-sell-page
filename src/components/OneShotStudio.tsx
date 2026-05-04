@@ -1029,6 +1029,44 @@ ABSOLUTE PRIORITY – this is the marketing master image:
                             {[vinVehicle.brand, vinVehicle.model, vinVehicle.variant].filter(Boolean).join(' ') || '—'}
                           </div>
 
+                          {/* Fahrzeugzustand (Pkw-EnVKV) */}
+                          {(() => {
+                            const info = deriveVehicleCondition({
+                              firstRegistration: scanData?.firstRegistration || (vinVehicle.year ? `01/${vinVehicle.year}` : ''),
+                              mileageKm: scanData?.mileage || '',
+                              explicitCondition: scanData?.condition || null,
+                            });
+                            const tone =
+                              info.condition === 'Neuwagen' ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
+                              : info.condition === 'Tageszulassung' ? 'bg-sky-500/10 text-sky-700 dark:text-sky-400 border-sky-500/30'
+                              : info.condition === 'Jahreswagen' ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30'
+                              : info.condition === 'Gebrauchtwagen' ? 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/30'
+                              : 'bg-muted text-muted-foreground border-border';
+                            return (
+                              <div className={`rounded-md border px-3 py-2 ${tone}`}>
+                                <div className="flex items-center justify-between gap-2 mb-1">
+                                  <span className="text-[10px] uppercase tracking-wide opacity-70">Fahrzeugzustand</span>
+                                  <Badge variant="outline" className="text-[10px] h-4 px-1.5 bg-background/70 border-current">
+                                    {info.condition}
+                                  </Badge>
+                                </div>
+                                <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[11px]">
+                                  <div>
+                                    <span className="opacity-60">Erstzulassung: </span>
+                                    <span className="font-medium">{info.firstReg || '—'}</span>
+                                  </div>
+                                  <div>
+                                    <span className="opacity-60">Kilometerstand: </span>
+                                    <span className="font-medium">{info.km !== null ? `${info.km.toLocaleString('de-DE')} km` : '—'}</span>
+                                  </div>
+                                </div>
+                                <div className="mt-1.5 text-[10px] opacity-80 leading-tight">
+                                  <span className="font-semibold">Regel:</span> {info.rule}
+                                </div>
+                              </div>
+                            );
+                          })()}
+
                           {/* Specs grid */}
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-1.5 text-[11px]">
                             {([
