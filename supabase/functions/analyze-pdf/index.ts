@@ -20,8 +20,10 @@ EXTRAKTIONS-STRATEGIE:
 6. Finanzierungsdaten können in Tabellen, Hervorhebungen oder separaten Abschnitten stehen
 7. Ausstattungsmerkmale stehen oft als Aufzählungen, Listen oder in Paketen
 
-CO₂-KLASSE ABLEITUNG (AUTOFILL):
-Wenn die CO₂-Klasse NICHT explizit im PDF steht, aber CO₂-Emissionen vorhanden sind, leite die Klasse automatisch ab:
+CO₂-KLASSE (NUR A bis G, KEINE Plus-Klassen mehr!):
+WICHTIG: Seit der neuen Pkw-EnVKV gibt es NUR NOCH die Klassen A bis G.
+Klassen wie "A+", "A++", "A+++" sind UNGÜLTIG und dürfen NICHT mehr ausgegeben werden.
+Wenn im PDF "A+++" o.ä. steht, IGNORIERE diesen Wert und leite die Klasse aus den g/km-Werten ab:
 - 0 g/km → A
 - 1–95 g/km → B  
 - 96–115 g/km → C
@@ -29,6 +31,7 @@ Wenn die CO₂-Klasse NICHT explizit im PDF steht, aber CO₂-Emissionen vorhand
 - 136–155 g/km → E
 - 156–175 g/km → F
 - >175 g/km → G
+Bei PHEVs: co2Class = aus gewichteten g/km, co2ClassDischarged = aus entladenen g/km. Diese können stark abweichen (z.B. C gewichtet, G entladen).
 
 PLUGIN-HYBRID (PHEV) ERKENNUNG:
 Erkenne PHEVs anhand folgender Hinweise:
@@ -76,6 +79,8 @@ JSON-Schema:
     "model": "string (volles Modell, z.B. 'X3 xDrive30e')",
     "variant": "string (Ausstattungslinie/Variante, z.B. 'M Sport, xLine')",
     "year": "number (Modelljahr oder EZ-Jahr)",
+    "firstRegistration": "string (Erstzulassungsdatum, Format 'MM/YYYY' oder 'TT.MM.YYYY', z.B. '03/2023'. Leer bei Neuwagen ohne Zulassung)",
+    "condition": "Neuwagen|Gebrauchtwagen|Tageszulassung|Vorführwagen|Jahreswagen (Fahrzeugzustand)",
     "color": "string (Außenfarbe, z.B. 'Alpinweiß uni')",
     "fuelType": "Benzin|Diesel|Elektro|Hybrid|Plug-in-Hybrid",
     "transmission": "Automatik|Manuell|Doppelkupplungsgetriebe|CVT",
@@ -147,6 +152,16 @@ Erkenne den Angebotstyp so dynamisch wie möglich:
 - "Tageszulassung" → Wenn "Tageszulassung", "TZ", niedriger km-Stand (< 100 km) mit Erstzulassung
 Kombiniere wenn nötig: Ein Gebrauchtwagen kann per Finanzierung angeboten werden → dann "Finanzierung". Der Angebotstyp (Leasing/Finanzierung/Barkauf) hat VORRANG vor dem Fahrzeugzustand.
 
+FAHRZEUGZUSTAND-ERKENNUNG (vehicle.condition) — gemäß Pkw-EnVKV:
+Bestimme den Zustand ROBUST aus Erstzulassung + Kilometerstand + Begriffen:
+- "Neuwagen" → KEINE Erstzulassung vorhanden ODER mileage = 0/leer ODER "Neufahrzeug", "Konfigurator", "Bestellung"
+- "Tageszulassung" → Erstzulassung < 14 Tage alt UND mileage < 100 km, oder explizit "Tageszulassung"/"TZ"
+- "Vorführwagen" → Begriffe "Vorführwagen", "Vorführfahrzeug", "Demo" (meist < 6 Monate alt, < 10.000 km)
+- "Jahreswagen" → Erstzulassung 6–18 Monate alt, mileage < 25.000 km, oder explizit "Jahreswagen"
+- "Gebrauchtwagen" → Erstzulassung > 18 Monate alt ODER mileage > 25.000 km ODER "Gebrauchtwagen"/"Vorbesitzer"
+WICHTIG: Wenn Erstzulassung UND mileage vorhanden sind, haben diese VORRANG vor Begriffen.
+Setze IMMER vehicle.firstRegistration und vehicle.condition wenn ableitbar.
+
 DOKUMENTTYP-ERKENNUNG:
 Prüfe ZUERST, ob es sich um ein Fahrzeug-Angebot handelt (Leasing, Finanzierung, Kauf, Barkauf, Neuwagen, Gebrauchtwagen, Tageszulassung).
 Wenn das Dokument KEIN Fahrzeugangebot ist (z.B. Rechnung, Versicherung, Werkstattrechnung, Mietvertrag, 
@@ -162,12 +177,13 @@ Wenn es ein Fahrzeugangebot IST, setze "isVehicleOffer": true im Root-Objekt und
 ABSOLUTE REGELN:
 1. ZUERST prüfen ob Fahrzeugangebot - wenn nicht, sofort ablehnen
 2. Extrahiere JEDEN Wert der im PDF steht - lieber zu viel als zu wenig
-3. Leite co2Class und co2ClassDischarged IMMER aus den g/km-Werten ab wenn nicht explizit angegeben
-4. Setze isPluginHybrid=true sobald irgendein PHEV-Hinweis erkannt wird
-5. Features: NUR Highlights (max 15-20), keine "Ohne/Kein"-Einträge, keine Trivialausstattung
-6. Einheiten IMMER mit angeben (€, km, l/100km, g/km, kW, PS, cm³, kWh/100km)
-7. Fehlende Werte = leerer String "", fehlende booleans = false
-8. Antworte NUR mit JSON`;
+3. Leite co2Class und co2ClassDischarged IMMER aus den g/km-Werten ab. NUR A-G erlaubt, NIE A+/A++/A+++!
+4. Setze isPluginHybrid=true sobald irgendein PHEV-Hinweis erkannt wird. Bei PHEV IMMER beide Werte (gewichtet + entladen) ausgeben.
+5. Bestimme vehicle.condition aus Erstzulassung + Kilometerstand (siehe FAHRZEUGZUSTAND-ERKENNUNG)
+6. Features: NUR Highlights (max 15-20), keine "Ohne/Kein"-Einträge, keine Trivialausstattung
+7. Einheiten IMMER mit angeben (€, km, l/100km, g/km, kW, PS, cm³, kWh/100km)
+8. Fehlende Werte = leerer String "", fehlende booleans = false
+9. Antworte NUR mit JSON`;
 
 // ── Helpers ──
 
@@ -443,9 +459,38 @@ Gib das Ergebnis als JSON zurück.`;
       }
     }
 
-    // Auto-derive CO₂ classes
-    if (!c.co2Class && c.co2Emissions) c.co2Class = deriveCO2Class(c.co2Emissions);
-    if (!c.co2ClassDischarged && c.co2EmissionsDischarged) c.co2ClassDischarged = deriveCO2Class(c.co2EmissionsDischarged);
+    // Auto-derive CO₂ classes (NUR A-G, alle Plus-Klassen verwerfen!)
+    const isValidCO2Class = (v: string) => /^[A-G]$/i.test((v || '').trim());
+    if (!isValidCO2Class(c.co2Class) && c.co2Emissions) c.co2Class = deriveCO2Class(c.co2Emissions);
+    else if (c.co2Class) c.co2Class = c.co2Class.trim().toUpperCase().replace(/\+/g, '').slice(0, 1);
+    if (!isValidCO2Class(c.co2ClassDischarged) && c.co2EmissionsDischarged) c.co2ClassDischarged = deriveCO2Class(c.co2EmissionsDischarged);
+    else if (c.co2ClassDischarged) c.co2ClassDischarged = c.co2ClassDischarged.trim().toUpperCase().replace(/\+/g, '').slice(0, 1);
+
+    // Auto-derive vehicle.condition aus Erstzulassung + Kilometerstand (Pkw-EnVKV)
+    if (parsed.vehicle && !parsed.vehicle.condition) {
+      const fr = String(parsed.vehicle.firstRegistration || '').trim();
+      const kmMatch = String(c.mileage || '').match(/([\d.,]+)/);
+      const km = kmMatch ? parseInt(kmMatch[1].replace(/[.,]/g, ''), 10) : NaN;
+      let monthsOld = NaN;
+      const dateMatch = fr.match(/(\d{1,2})[./](\d{4})|(\d{1,2})[./](\d{1,2})[./](\d{4})/);
+      if (dateMatch) {
+        const month = parseInt(dateMatch[1] || dateMatch[3] || '1', 10);
+        const year = parseInt(dateMatch[2] || dateMatch[5] || '0', 10);
+        if (year > 1990) {
+          const now = new Date();
+          monthsOld = (now.getFullYear() - year) * 12 + (now.getMonth() + 1 - month);
+        }
+      }
+      if (!fr || (!isNaN(km) && km < 50 && isNaN(monthsOld))) {
+        parsed.vehicle.condition = 'Neuwagen';
+      } else if (!isNaN(monthsOld) && monthsOld <= 1 && !isNaN(km) && km < 100) {
+        parsed.vehicle.condition = 'Tageszulassung';
+      } else if (!isNaN(monthsOld) && monthsOld <= 18 && !isNaN(km) && km < 25000) {
+        parsed.vehicle.condition = 'Jahreswagen';
+      } else {
+        parsed.vehicle.condition = 'Gebrauchtwagen';
+      }
+    }
 
     // Copy power/fuelType from vehicle to consumption if missing
     if (!c.power && parsed.vehicle?.power) c.power = parsed.vehicle.power;

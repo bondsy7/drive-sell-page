@@ -40,6 +40,8 @@ export interface ScanData {
   variant?: string;
   price?: string;
   priceType?: 'buy' | 'lease' | 'finance' | 'abo';
+  firstRegistration?: string;
+  condition?: 'Neuwagen' | 'Gebrauchtwagen' | 'Tageszulassung' | 'Vorführwagen' | 'Jahreswagen' | string;
   monthlyRate?: string;
   duration?: string;
   mileage?: string;
