@@ -134,8 +134,11 @@ Wenn ein Feld nicht erkennbar ist, setze es auf null. Extrahiere so viel wie mö
       contents: [{
         parts: [
           { text: promptText },
-          { inlineData: { mimeType, data: base64Data } }
-        ]
+          ...imageParts.map((p, i) => ([
+            { text: `--- Bild ${i + 1} von ${imageParts.length} ---` },
+            p,
+          ])).flat(),
+        ],
       }],
       generationConfig: { temperature: 0 },
     });
