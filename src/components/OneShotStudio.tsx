@@ -178,6 +178,8 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
 
   const [scanData, setScanData] = useState<ScanData | null>(null);
   const [vin, setVin] = useState<string | null>(null);
+  const [vinVehicle, setVinVehicle] = useState<Record<string, any> | null>(null);
+  const [vinEquipment, setVinEquipment] = useState<string[]>([]);
 
   const filesInputRef = useRef<HTMLInputElement>(null);
   const sheetInputRef = useRef<HTMLInputElement>(null);
