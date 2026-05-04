@@ -70,7 +70,8 @@ Minimum 5% free space between vehicle edge and image border on all sides.`,
 - Add aftermarket parts, humans, animals, or moving objects
 - Show other vehicles in background or reflections
 - Rotate, flip, or mirror the image
-- Carry over reflections from original environment
+- Carry over ANY reflections, mirror images, or window content from the original environment — every reflective surface (paint, glass, side mirrors, chrome, headlights, taillights, wheel rims, glossy trim) MUST mirror ONLY the new scene
+- Allow ANY trace of the original surroundings (trees, sky, other cars, buildings, people, photographers, asphalt, parking lines, old dealer logos, banners, watermarks) to appear in reflections, on glass, on chrome, on the paint, or through the windows — NOT EVEN FAINTLY
 - Add ANY logo, brand mark, or wall decoration UNLESS explicitly provided`,
   },
 };
