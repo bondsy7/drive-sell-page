@@ -3,7 +3,7 @@ import { useParams, Link, Navigate, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft, Car, FileText, Image as ImageIcon, Layout, LayoutGrid, Video, RotateCw,
-  MessageSquare, FolderOpen, Trash2,
+  MessageSquare, FolderOpen, Trash2, Pencil,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
