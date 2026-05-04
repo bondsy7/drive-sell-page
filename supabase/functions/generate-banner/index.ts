@@ -115,7 +115,7 @@ serve(async (req) => {
       }
       if (!resultImage && lastGeminiError) throw new Error(lastGeminiError);
     } else {
-      resultImage = await generateOpenAI(prompt, imageBase64, logoBase64, config.model, width, height, tier === "ultra", maxRetries);
+      resultImage = await generateOpenAI(prompt, imageBase64, logoBase64, config.model, width, height, tier === "ultra" || tier === "neu", maxRetries);
     }
 
     if (!resultImage) throw new Error("Kein Banner generiert. Bitte versuche es erneut.");
