@@ -140,7 +140,7 @@ JSON-Schema:
   "imagePrompt": "Detaillierter englischer Prompt für fotorealistische Fahrzeug-Bildgenerierung"
 }
 
-Für den imagePrompt: Erstelle einen detaillierten englischen Prompt mit exaktem Fahrzeugmodell (Marke, Modell, Farbe, Karosserieform) in einem modernen, hellen Autohaus-Showroom. Beschreibe Licht, Reflexionen, Boden und Atmosphäre.
+Für den imagePrompt: Erstelle einen detaillierten englischen Prompt mit exaktem Fahrzeugmodell (Marke, Modell, Farbe, Karosserieform) in einem modernen, hellen Autohaus-Showroom. Der Prompt MUSS eine professionelle Automotive-Aufnahme beschreiben: sichtbare Decken-LEDs/Fensterlicht als Lichtquellen, natürliche neue Reflexionen dieser Lichtquellen in Lack, Glas, Chrom und Felgen, weiche Kontaktschatten unter den Reifen, dezente Bodenreflexion auf poliertem Boden und vollständige Entfernung fremder/alter Reflexionen. Keine Personen, keine anderen Fahrzeuge, keine Wasserzeichen, keine alten Händlerlogos oder Textartefakte.
 
 KATEGORIE-ERKENNUNG (WICHTIG!):
 Erkenne den Angebotstyp so dynamisch wie möglich:
