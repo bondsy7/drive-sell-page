@@ -971,7 +971,7 @@ ABSOLUTE PRIORITY – this is the marketing master image:
       setVideoError(e?.message || 'Video-Generierung fehlgeschlagen');
       toast.error(e?.message || 'Video-Generierung fehlgeschlagen');
     }
-  }, [wantVideo, videoPrompt]);
+  }, [wantVideo, videoPrompt, savedVehicleId]);
 
   /** Power-button: hero → (pipeline + banners + video) parallel. */
   const startEverything = useCallback(async () => {
