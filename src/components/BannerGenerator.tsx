@@ -360,23 +360,54 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
       else if (ext.priceType === 'finance') setOccasion('finance');
       else if (ext.priceType === 'abo') setOccasion('abo');
 
-      // Pflichtangaben (Fußzeile) komplett aus Datenblatt-Werten zusammenbauen
-      const parts: string[] = [];
-      if (ext.monthlyRate) parts.push(`Rate: ${ext.monthlyRate}`);
-      if (ext.duration) parts.push(`Laufzeit: ${ext.duration} Mon.`);
-      if (ext.mileage) parts.push(`Fahrleistung: ${ext.mileage}/Jahr`);
-      if (ext.downPayment) parts.push(`Anzahlung: ${ext.downPayment}`);
-      if (ext.consumptionCombined) parts.push(`Verbrauch komb.: ${ext.consumptionCombined}`);
-      if (ext.co2Emissions) parts.push(`CO₂ komb.: ${ext.co2Emissions}`);
-      if (ext.co2Class) parts.push(`CO₂-Klasse: ${ext.co2Class}`);
-      if (ext.consumptionCombinedDischarged) parts.push(`Verbrauch entladen: ${ext.consumptionCombinedDischarged}`);
-      if (ext.co2ClassDischarged) parts.push(`CO₂-Klasse entladen: ${ext.co2ClassDischarged}`);
-      if (ext.electricRange) parts.push(`E-Reichweite: ${ext.electricRange}`);
-      if (ext.energyCostPerYear) parts.push(`Energiekosten/Jahr: ${ext.energyCostPerYear}`);
-      if (ext.vehicleTax) parts.push(`Kfz-Steuer/Jahr: ${ext.vehicleTax}`);
-      if (ext.legalText) parts.push(ext.legalText);
-      if (parts.length) {
-        setLegalText(prev => prev ? `${prev}${prev.endsWith('|') ? '' : ' | '}${parts.join(' | ')}` : parts.join(' | '));
+      // Pflichtangaben (Fußzeile) gemäß Pkw-EnVKV (WLTP) zusammenbauen.
+      // 1) Vehicle/Verbrauch/CO₂ als ein konsolidierter Pkw-EnVKV-Satz.
+      // 2) Finanz-/Bank-Pflichtangaben separat, da sie zusätzlich erforderlich sind.
+      // WICHTIG: DAT-spezifische Angaben werden bewusst NICHT in die Pflichtangaben übernommen.
+      const envkvLine = formatMandatoryDisclosure({
+        condition: ext.condition,
+        powerKw: ext.powerKw,
+        powerPs: ext.powerPs,
+        fuelType: ext.fuelType,
+        driveType: ext.driveType,
+        consumptionCombined: ext.consumptionCombined,
+        consumptionElectric: ext.consumptionElectric,
+        consumptionCombinedDischarged: ext.consumptionCombinedDischarged,
+        co2Emissions: ext.co2Emissions,
+        co2EmissionsDischarged: ext.co2EmissionsDischarged,
+        co2Class: ext.co2Class,
+        co2ClassDischarged: ext.co2ClassDischarged,
+        isPluginHybrid: !!(ext.consumptionElectric || ext.consumptionCombinedDischarged || ext.co2ClassDischarged),
+      });
+
+      const financeParts: string[] = [];
+      const pushFin = (label: string, value?: string) => {
+        if (!value || isDatOnlyValue(value)) return;
+        financeParts.push(`${label}: ${value}`);
+      };
+      pushFin('Rate', ext.monthlyRate);
+      pushFin('Laufzeit', ext.duration ? `${ext.duration} Mon.` : '');
+      pushFin('Fahrleistung', ext.mileage ? `${ext.mileage}/Jahr` : '');
+      pushFin('Anzahlung', ext.downPayment);
+      pushFin('Sonderzahlung', ext.specialPayment);
+      pushFin('Schlussrate', ext.residualValue);
+      pushFin('Effektiver Jahreszins', ext.effectiveInterestRate);
+      pushFin('Sollzins (geb.)', ext.fixedInterestRate);
+      pushFin('Gesamtbetrag', ext.totalAmount);
+      pushFin('Bank', ext.financingBank || ext.leasingBank);
+
+      // Optionale weitere Verbraucherinfos (nicht aus DAT)
+      if (ext.electricRange && !isDatOnlyValue(ext.electricRange)) {
+        financeParts.push(`E-Reichweite: ${ext.electricRange}`);
+      }
+
+      if (ext.legalText && !isDatOnlyValue(ext.legalText)) {
+        financeParts.push(ext.legalText);
+      }
+
+      const combined = [envkvLine, ...financeParts].filter(Boolean).join(' | ');
+      if (combined) {
+        setLegalText(prev => prev ? `${prev}${prev.endsWith('|') ? '' : ' | '}${combined}` : combined);
       }
 
       if (ext.brand) {
