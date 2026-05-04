@@ -20,8 +20,10 @@ EXTRAKTIONS-STRATEGIE:
 6. Finanzierungsdaten können in Tabellen, Hervorhebungen oder separaten Abschnitten stehen
 7. Ausstattungsmerkmale stehen oft als Aufzählungen, Listen oder in Paketen
 
-CO₂-KLASSE ABLEITUNG (AUTOFILL):
-Wenn die CO₂-Klasse NICHT explizit im PDF steht, aber CO₂-Emissionen vorhanden sind, leite die Klasse automatisch ab:
+CO₂-KLASSE (NUR A bis G, KEINE Plus-Klassen mehr!):
+WICHTIG: Seit der neuen Pkw-EnVKV gibt es NUR NOCH die Klassen A bis G.
+Klassen wie "A+", "A++", "A+++" sind UNGÜLTIG und dürfen NICHT mehr ausgegeben werden.
+Wenn im PDF "A+++" o.ä. steht, IGNORIERE diesen Wert und leite die Klasse aus den g/km-Werten ab:
 - 0 g/km → A
 - 1–95 g/km → B  
 - 96–115 g/km → C
@@ -29,6 +31,7 @@ Wenn die CO₂-Klasse NICHT explizit im PDF steht, aber CO₂-Emissionen vorhand
 - 136–155 g/km → E
 - 156–175 g/km → F
 - >175 g/km → G
+Bei PHEVs: co2Class = aus gewichteten g/km, co2ClassDischarged = aus entladenen g/km. Diese können stark abweichen (z.B. C gewichtet, G entladen).
 
 PLUGIN-HYBRID (PHEV) ERKENNUNG:
 Erkenne PHEVs anhand folgender Hinweise:
