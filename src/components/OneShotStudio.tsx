@@ -125,19 +125,65 @@ function deriveVehicleCondition(args: {
   }
 
   // ─── Confidence-Berechnung ───
-  // Basis 30, +Boni für vorhandene & widerspruchsfreie Signale, -Strafe bei Konflikten.
   let confidence = 30;
   const factors: string[] = [];
   const hasFr = !!fr && monthsOld !== null;
   const hasKm = km !== null;
   const hasExplicit = !!args.explicitCondition && ['Vorführwagen', 'Tageszulassung', 'Jahreswagen', 'Neuwagen', 'Gebrauchtwagen'].includes(args.explicitCondition || '');
 
-  if (hasExplicit) { confidence += 40; factors.push('+40 explizite Angabe im Datenblatt'); }
   if (hasFr) { confidence += 25; factors.push('+25 gültige Erstzulassung'); }
   if (hasKm) { confidence += 25; factors.push('+25 Kilometerstand erkannt'); }
   if (hasFr && hasKm) { confidence += 10; factors.push('+10 beide Signale verfügbar'); }
 
-  // Konflikt-Erkennung (z.B. EZ alt aber 0 km, oder EZ neu aber hohe km)
+  // ─── Berechne Zustand aus den ZAHLEN (Pkw-EnVKV) — Daten haben Vorrang ───
+  let derived = 'Unbekannt';
+  let derivedRule = 'Keine Erstzulassung oder Kilometerstand erkannt.';
+  if (!fr && (km === null || km < 50)) {
+    derived = 'Neuwagen';
+    derivedRule = 'Keine Erstzulassung & Kilometerstand < 50 km → Neuwagen (§ 2 Pkw-EnVKV).';
+  } else if (monthsOld !== null && monthsOld <= 1 && km !== null && km < 100) {
+    derived = 'Tageszulassung';
+    derivedRule = `EZ < 1 Monat & ${km} km < 100 km → Tageszulassung.`;
+  } else if (monthsOld !== null && monthsOld <= 18 && km !== null && km < 25000 && km >= 100) {
+    derived = 'Jahreswagen';
+    derivedRule = `EZ ${monthsOld} Mon. alt & ${km.toLocaleString('de-DE')} km → Jahreswagen.`;
+  } else if ((monthsOld !== null && monthsOld > 18) || (km !== null && km >= 25000)) {
+    derived = 'Gebrauchtwagen';
+    const reasons: string[] = [];
+    if (monthsOld !== null && monthsOld > 18) reasons.push(`EZ ${monthsOld} Mon. alt`);
+    if (km !== null && km >= 25000) reasons.push(`${km.toLocaleString('de-DE')} km ≥ 25.000 km`);
+    derivedRule = `${reasons.join(' & ')} → Gebrauchtwagen.`;
+  } else if (km !== null && km > 50) {
+    derived = 'Gebrauchtwagen';
+    derivedRule = `${km.toLocaleString('de-DE')} km gefahren → Gebrauchtwagen.`;
+  }
+
+  // ─── Konflikt-Erkennung zwischen explicit (AI) und berechnetem Wert ───
+  const explicit = args.explicitCondition || '';
+  const conflict = hasExplicit && derived !== 'Unbekannt' && explicit !== derived;
+
+  if (conflict) {
+    // Daten gewinnen IMMER (Pkw-EnVKV). AI-Wert wird verworfen.
+    confidence -= 35;
+    factors.push(`−35 Konflikt: Datenblatt sagt „${explicit}", Zahlen sagen „${derived}"`);
+    confidence = Math.max(0, Math.min(100, confidence));
+    const confidenceLabel: 'Hoch' | 'Mittel' | 'Niedrig' =
+      confidence >= 75 ? 'Hoch' : confidence >= 45 ? 'Mittel' : 'Niedrig';
+    return {
+      condition: derived,
+      firstReg: fr,
+      km,
+      monthsOld,
+      rule: `${derivedRule} (Hinweis: AI las „${explicit}", durch Pkw-EnVKV-Regel überschrieben.)`,
+      confidence,
+      confidenceLabel,
+      confidenceFactors: factors,
+    };
+  }
+
+  if (hasExplicit) { confidence += 40; factors.push('+40 Datenblatt + Zahlen stimmen überein'); }
+
+  // Konflikte ohne explicit: EZ alt & 0 km, oder EZ neu & viele km
   if (hasFr && hasKm && monthsOld !== null && km !== null) {
     if (monthsOld > 24 && km < 100) {
       confidence -= 30;
@@ -157,42 +203,32 @@ function deriveVehicleCondition(args: {
   const confidenceLabel: 'Hoch' | 'Mittel' | 'Niedrig' =
     confidence >= 75 ? 'Hoch' : confidence >= 45 ? 'Mittel' : 'Niedrig';
 
-  // Explicit override (z.B. "Vorführwagen" wurde explizit erkannt)
+  // Wenn explicit vorhanden und kein Konflikt → explicit bestätigt
   if (hasExplicit) {
     return {
-      condition: args.explicitCondition!,
+      condition: explicit,
       firstReg: fr,
       km,
       monthsOld,
-      rule: `Explizit im Datenblatt als „${args.explicitCondition}" ausgewiesen.`,
+      rule: derived !== 'Unbekannt'
+        ? `${derivedRule} Datenblatt bestätigt: „${explicit}".`
+        : `Explizit im Datenblatt als „${explicit}" ausgewiesen.`,
       confidence,
       confidenceLabel,
       confidenceFactors: factors,
     };
   }
 
-  let condition = 'Unbekannt';
-  let rule = 'Keine Erstzulassung oder Kilometerstand erkannt.';
-
-  if (!fr && (km === null || km < 50)) {
-    condition = 'Neuwagen';
-    rule = 'Keine Erstzulassung & Kilometerstand < 50 km → Neuwagen (§ 2 Pkw-EnVKV).';
-  } else if (monthsOld !== null && monthsOld <= 1 && km !== null && km < 100) {
-    condition = 'Tageszulassung';
-    rule = `EZ < 1 Monat & ${km} km < 100 km → Tageszulassung.`;
-  } else if (monthsOld !== null && monthsOld <= 18 && km !== null && km < 25000) {
-    condition = 'Jahreswagen';
-    rule = `EZ ${monthsOld} Mon. alt & ${km.toLocaleString('de-DE')} km < 25.000 km → Jahreswagen.`;
-  } else if (monthsOld !== null || (km !== null && km > 0)) {
-    condition = 'Gebrauchtwagen';
-    const reasons: string[] = [];
-    if (monthsOld !== null && monthsOld > 18) reasons.push(`EZ ${monthsOld} Mon. alt`);
-    if (km !== null && km >= 25000) reasons.push(`${km.toLocaleString('de-DE')} km ≥ 25.000 km`);
-    if (km !== null && km > 0 && reasons.length === 0) reasons.push(`${km.toLocaleString('de-DE')} km gefahren`);
-    rule = `${reasons.join(' & ')} → Gebrauchtwagen.`;
-  }
-
-  return { condition, firstReg: fr, km, monthsOld, rule, confidence, confidenceLabel, confidenceFactors: factors };
+  return {
+    condition: derived,
+    firstReg: fr,
+    km,
+    monthsOld,
+    rule: derivedRule,
+    confidence,
+    confidenceLabel,
+    confidenceFactors: factors,
+  };
 }
 
 
