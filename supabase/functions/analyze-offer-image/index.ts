@@ -156,26 +156,64 @@ Wenn ein Feld nicht erkennbar ist, setze es auf null. Extrahiere so viel wie mö
     parsed.co2Class = cleanClass(parsed.co2Class, parsed.co2Emissions);
     parsed.co2ClassDischarged = cleanClass(parsed.co2ClassDischarged, parsed.consumptionCombinedDischarged || parsed.co2EmissionsDischarged);
 
-    // ── Auto-derive vehicle condition from firstRegistration + mileageKm ──
-    if (!parsed.condition || !['Neuwagen', 'Gebrauchtwagen', 'Tageszulassung', 'Vorführwagen', 'Jahreswagen'].includes(parsed.condition)) {
-      const fr = String(parsed.firstRegistration || '').trim();
-      const kmMatch = String(parsed.mileageKm || '').match(/([\d.,]+)/);
-      const km = kmMatch ? parseInt(kmMatch[1].replace(/[.,]/g, ''), 10) : NaN;
-      let monthsOld = NaN;
-      const dateMatch = fr.match(/(\d{1,2})[./](\d{4})|(\d{1,2})[./](\d{1,2})[./](\d{4})/);
-      if (dateMatch) {
-        const month = parseInt(dateMatch[1] || dateMatch[3] || '1', 10);
-        const year = parseInt(dateMatch[2] || dateMatch[5] || '0', 10);
-        if (year > 1990) {
-          const now = new Date();
-          monthsOld = (now.getFullYear() - year) * 12 + (now.getMonth() + 1 - month);
-        }
+    // ── Vehicle condition: berechne IMMER aus Daten und überschreibe AI-Wert bei Widerspruch ──
+    const fr = String(parsed.firstRegistration || '').trim();
+    const kmMatch = String(parsed.mileageKm || '').match(/([\d.,]+)/);
+    const km = kmMatch ? parseInt(kmMatch[1].replace(/[.,]/g, ''), 10) : NaN;
+    let monthsOld = NaN;
+    // Akzeptiere MM/YYYY, MM.YYYY, TT.MM.YYYY, TT/MM/YYYY
+    const dm = fr.match(/^(\d{1,2})[./](\d{1,2})[./](\d{4})$/) || fr.match(/^(\d{1,2})[./](\d{4})$/);
+    if (dm) {
+      const month = parseInt(dm[1], 10);
+      const year = parseInt(dm[3] || dm[2], 10);
+      if (year > 1990) {
+        const now = new Date();
+        monthsOld = (now.getFullYear() - year) * 12 + (now.getMonth() + 1 - month);
       }
-      if (!fr && (isNaN(km) || km < 50)) parsed.condition = 'Neuwagen';
-      else if (!isNaN(monthsOld) && monthsOld <= 1 && !isNaN(km) && km < 100) parsed.condition = 'Tageszulassung';
-      else if (!isNaN(monthsOld) && monthsOld <= 18 && !isNaN(km) && km < 25000) parsed.condition = 'Jahreswagen';
-      else if (!isNaN(monthsOld) || !isNaN(km)) parsed.condition = 'Gebrauchtwagen';
     }
+
+    let derivedCondition = '';
+    let derivedReason = '';
+    if (!fr && (isNaN(km) || km < 50)) {
+      derivedCondition = 'Neuwagen';
+      derivedReason = 'no firstReg & km<50';
+    } else if (!isNaN(monthsOld) && monthsOld <= 1 && !isNaN(km) && km < 100) {
+      derivedCondition = 'Tageszulassung';
+      derivedReason = `monthsOld<=1 & km<100`;
+    } else if (!isNaN(monthsOld) && monthsOld >= 0 && monthsOld <= 18 && !isNaN(km) && km < 25000 && km >= 100) {
+      derivedCondition = 'Jahreswagen';
+      derivedReason = `monthsOld<=18 & km<25k`;
+    } else if ((!isNaN(monthsOld) && monthsOld > 18) || (!isNaN(km) && km >= 25000)) {
+      derivedCondition = 'Gebrauchtwagen';
+      derivedReason = `monthsOld>18 OR km>=25k`;
+    } else if (!isNaN(km) && km > 50) {
+      derivedCondition = 'Gebrauchtwagen';
+      derivedReason = `km>50, no firstReg`;
+    }
+
+    const validConditions = ['Neuwagen', 'Gebrauchtwagen', 'Tageszulassung', 'Vorführwagen', 'Jahreswagen'];
+    const aiCondition = validConditions.includes(parsed.condition) ? parsed.condition : '';
+
+    // Plausibilitäts-Override: AI-Wert verwerfen, wenn er den Zahlen widerspricht
+    const aiSaysNew = aiCondition === 'Neuwagen';
+    const dataSaysUsed = (!isNaN(km) && km > 1000) || (!isNaN(monthsOld) && monthsOld > 6);
+    const aiSaysUsed = aiCondition === 'Gebrauchtwagen';
+    const dataSaysNew = (isNaN(km) || km < 50) && !fr;
+
+    if (aiSaysNew && dataSaysUsed && derivedCondition) {
+      console.log(`[condition-override] AI sagte "Neuwagen", Daten widersprechen (km=${km}, monthsOld=${monthsOld}) → "${derivedCondition}" (${derivedReason})`);
+      parsed.condition = derivedCondition;
+      parsed.conditionOverridden = true;
+      parsed.conditionOverrideReason = `AI sagte „Neuwagen", aber Kilometerstand/Erstzulassung sprechen für ${derivedCondition} (${derivedReason}).`;
+    } else if (aiSaysUsed && dataSaysNew && derivedCondition) {
+      console.log(`[condition-override] AI sagte "Gebrauchtwagen", Daten widersprechen → "${derivedCondition}"`);
+      parsed.condition = derivedCondition;
+      parsed.conditionOverridden = true;
+      parsed.conditionOverrideReason = `AI sagte „Gebrauchtwagen", aber keine EZ und km<50 → ${derivedCondition}.`;
+    } else if (!aiCondition && derivedCondition) {
+      parsed.condition = derivedCondition;
+    }
+
 
     return jsonResponse({ extracted: parsed });
   } catch (e) {
