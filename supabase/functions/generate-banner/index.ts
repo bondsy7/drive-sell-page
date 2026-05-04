@@ -132,7 +132,7 @@ serve(async (req) => {
       let lastGeminiError = "";
       for (const geminiModel of geminiModels) {
         try {
-          resultImage = await generateGemini(prompt, imageBase64, logoBase64, geminiModel, maxRetries);
+          resultImage = await generateGemini(prompt, imageBase64, logoBase64, geminiModel, maxRetries, width, height);
           if (resultImage) break;
         } catch (err) {
           lastGeminiError = err instanceof Error ? err.message : "Gemini error";
