@@ -364,6 +364,8 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [videoError, setVideoError] = useState<string | null>(null);
   const [pipelineKicked, setPipelineKicked] = useState(false);
+  const [savedVehicleId, setSavedVehicleId] = useState<string | null>(null);
+  const [ensuringVehicle, setEnsuringVehicle] = useState(false);
 
   /* ─── Lightbox ─── */
   const [lightboxItems, setLightboxItems] = useState<LightboxItem[]>([]);
