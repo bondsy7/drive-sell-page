@@ -27,6 +27,16 @@ const MODEL_MAP: Record<string, ModelConfig> = {
   pro:       { engine: "gemini", model: "gemini-3-pro-image-preview", cost: 8 },
 };
 
+const PROFESSIONAL_BANNER_IMAGE_LOCK = `
+
+PROFESSIONAL VEHICLE INTEGRATION LOCK (MANDATORY):
+- Treat the uploaded vehicle photo as identity/reference only. Re-render all lighting, shadows and reflections so the vehicle belongs naturally in the NEW banner scene.
+- ZERO old reflections: remove every trace of the source-photo environment from paint, windows, mirrors, chrome, headlights, taillights, rims, glossy trim and sunroof. Forbidden: trees, sky, clouds, old buildings, old showroom, other cars, people, photographer, asphalt, parking lines, old dealer logos, watermarks, price tags or text — not even faintly.
+- NEW light-source proof: ceiling LEDs, window bands, studio softboxes, sun direction, streetlights or scene lights must create visible natural highlights on hood, roof, windshield, side glass, side panels, chrome and rims.
+- Grounding: tires must visibly touch the floor/ground with soft contact shadows and ambient occlusion. On polished/wet floors, add a faint realistic lower-body reflection.
+- Reflections must be subtle, physically plausible and curved by body geometry — not mirror-perfect CGI and not absent. If any old reflection remains, regenerate those surfaces from scratch.
+`;
+
 // Map requested dimensions to closest OpenAI-supported size
 function getOpenAISize(w: number, h: number): string {
   if (w === h) return "1024x1024";
@@ -123,6 +133,8 @@ serve(async (req) => {
     let resultImage: string | null = null;
     const maxRetries = 0;
 
+    const lockedPrompt = `${prompt}${PROFESSIONAL_BANNER_IMAGE_LOCK}`;
+
     if (config.engine === "gemini") {
       const geminiModels = Array.from(new Set([
         config.model,
@@ -132,7 +144,7 @@ serve(async (req) => {
       let lastGeminiError = "";
       for (const geminiModel of geminiModels) {
         try {
-          resultImage = await generateGemini(prompt, imageBase64, logoBase64, geminiModel, maxRetries, width, height);
+          resultImage = await generateGemini(lockedPrompt, imageBase64, logoBase64, geminiModel, maxRetries, width, height);
           if (resultImage) break;
         } catch (err) {
           lastGeminiError = err instanceof Error ? err.message : "Gemini error";
@@ -141,7 +153,7 @@ serve(async (req) => {
       }
       if (!resultImage && lastGeminiError) throw new Error(lastGeminiError);
     } else {
-      resultImage = await generateOpenAI(prompt, imageBase64, logoBase64, config.model, width, height, tier === "ultra" || tier === "neu", maxRetries);
+      resultImage = await generateOpenAI(lockedPrompt, imageBase64, logoBase64, config.model, width, height, tier === "ultra" || tier === "neu", maxRetries);
     }
 
     if (!resultImage) throw new Error("Kein Banner generiert. Bitte versuche es erneut.");
