@@ -62,6 +62,8 @@ export default function VehicleView() {
   const [viewerJobId, setViewerJobId] = useState<string | null>(null);
   const [viewerFrames, setViewerFrames] = useState<string[]>([]);
   const [viewerLoading, setViewerLoading] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [coverOpen, setCoverOpen] = useState(false);
 
   // Per-vehicle data queries
   const { data: projects = [] } = useQuery({
