@@ -91,6 +91,65 @@ const stripDataPrefix = (b: string) => (b.includes(',') ? b.split(',')[1] : b);
 const newId = () => Math.random().toString(36).slice(2, 10);
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+/**
+ * Bestimmt den Fahrzeugzustand (Pkw-EnVKV) aus Erstzulassung + Kilometerstand
+ * und liefert eine menschenlesbare Begründung mit der getriggerten Regel zurück.
+ */
+function deriveVehicleCondition(args: {
+  firstRegistration?: string | null;
+  mileageKm?: string | null;
+  explicitCondition?: string | null;
+}): { condition: string; firstReg: string; km: number | null; monthsOld: number | null; rule: string } {
+  const fr = String(args.firstRegistration || '').trim();
+  const kmMatch = String(args.mileageKm || '').match(/([\d.,]+)/);
+  const km = kmMatch ? parseInt(kmMatch[1].replace(/[.,]/g, ''), 10) : null;
+
+  let monthsOld: number | null = null;
+  const dateMatch = fr.match(/(\d{1,2})[./](\d{1,2})[./](\d{4})|(\d{1,2})[./](\d{4})/);
+  if (dateMatch) {
+    const month = parseInt(dateMatch[1] || dateMatch[4] || '1', 10);
+    const year = parseInt(dateMatch[3] || dateMatch[5] || '0', 10);
+    if (year > 1990) {
+      const now = new Date();
+      monthsOld = (now.getFullYear() - year) * 12 + (now.getMonth() + 1 - month);
+    }
+  }
+
+  // Explicit override (z.B. "Vorführwagen" wurde explizit erkannt)
+  if (args.explicitCondition && ['Vorführwagen', 'Tageszulassung', 'Jahreswagen', 'Neuwagen', 'Gebrauchtwagen'].includes(args.explicitCondition)) {
+    return {
+      condition: args.explicitCondition,
+      firstReg: fr,
+      km,
+      monthsOld,
+      rule: `Explizit im Datenblatt als „${args.explicitCondition}" ausgewiesen.`,
+    };
+  }
+
+  let condition = 'Unbekannt';
+  let rule = 'Keine Erstzulassung oder Kilometerstand erkannt.';
+
+  if (!fr && (km === null || km < 50)) {
+    condition = 'Neuwagen';
+    rule = 'Keine Erstzulassung & Kilometerstand < 50 km → Neuwagen (§ 2 Pkw-EnVKV).';
+  } else if (monthsOld !== null && monthsOld <= 1 && km !== null && km < 100) {
+    condition = 'Tageszulassung';
+    rule = `EZ < 1 Monat & ${km} km < 100 km → Tageszulassung.`;
+  } else if (monthsOld !== null && monthsOld <= 18 && km !== null && km < 25000) {
+    condition = 'Jahreswagen';
+    rule = `EZ ${monthsOld} Mon. alt & ${km.toLocaleString('de-DE')} km < 25.000 km → Jahreswagen.`;
+  } else if (monthsOld !== null || (km !== null && km > 0)) {
+    condition = 'Gebrauchtwagen';
+    const reasons: string[] = [];
+    if (monthsOld !== null && monthsOld > 18) reasons.push(`EZ ${monthsOld} Mon. alt`);
+    if (km !== null && km >= 25000) reasons.push(`${km.toLocaleString('de-DE')} km ≥ 25.000 km`);
+    if (km !== null && km > 0 && reasons.length === 0) reasons.push(`${km.toLocaleString('de-DE')} km gefahren`);
+    rule = `${reasons.join(' & ')} → Gebrauchtwagen.`;
+  }
+
+  return { condition, firstReg: fr, km, monthsOld, rule };
+}
+
 /** Detect transient edge-function failures (cold-start boot, 503, 429). */
 function isTransientEdgeError(err: any, data: any): boolean {
   const msg = String(err?.message || data?.error || '').toLowerCase();
@@ -969,6 +1028,44 @@ ABSOLUTE PRIORITY – this is the marketing master image:
                           <div className="text-sm font-semibold text-foreground">
                             {[vinVehicle.brand, vinVehicle.model, vinVehicle.variant].filter(Boolean).join(' ') || '—'}
                           </div>
+
+                          {/* Fahrzeugzustand (Pkw-EnVKV) */}
+                          {(() => {
+                            const info = deriveVehicleCondition({
+                              firstRegistration: scanData?.firstRegistration || (vinVehicle.year ? `01/${vinVehicle.year}` : ''),
+                              mileageKm: scanData?.mileage || '',
+                              explicitCondition: scanData?.condition || null,
+                            });
+                            const tone =
+                              info.condition === 'Neuwagen' ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
+                              : info.condition === 'Tageszulassung' ? 'bg-sky-500/10 text-sky-700 dark:text-sky-400 border-sky-500/30'
+                              : info.condition === 'Jahreswagen' ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30'
+                              : info.condition === 'Gebrauchtwagen' ? 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/30'
+                              : 'bg-muted text-muted-foreground border-border';
+                            return (
+                              <div className={`rounded-md border px-3 py-2 ${tone}`}>
+                                <div className="flex items-center justify-between gap-2 mb-1">
+                                  <span className="text-[10px] uppercase tracking-wide opacity-70">Fahrzeugzustand</span>
+                                  <Badge variant="outline" className="text-[10px] h-4 px-1.5 bg-background/70 border-current">
+                                    {info.condition}
+                                  </Badge>
+                                </div>
+                                <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[11px]">
+                                  <div>
+                                    <span className="opacity-60">Erstzulassung: </span>
+                                    <span className="font-medium">{info.firstReg || '—'}</span>
+                                  </div>
+                                  <div>
+                                    <span className="opacity-60">Kilometerstand: </span>
+                                    <span className="font-medium">{info.km !== null ? `${info.km.toLocaleString('de-DE')} km` : '—'}</span>
+                                  </div>
+                                </div>
+                                <div className="mt-1.5 text-[10px] opacity-80 leading-tight">
+                                  <span className="font-semibold">Regel:</span> {info.rule}
+                                </div>
+                              </div>
+                            );
+                          })()}
 
                           {/* Specs grid */}
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-1.5 text-[11px]">
