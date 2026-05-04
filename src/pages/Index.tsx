@@ -114,12 +114,13 @@ const Index = () => {
 
   const currentStep = appState === 'hub' || appState === 'idle' ? 1 : appState === 'preview' ? 3 : 2;
 
-  const saveProject = useCallback(async (vData: VehicleData, mainImg: string | null, allImages: string[], templateId: TemplateId, vin?: string | null) => {
+  const saveProject = useCallback(async (vData: VehicleData, mainImg: string | null, allImages: string[], templateId: TemplateId, vin?: string | null, vehicleId?: string | null) => {
     if (!user) return null;
     const title = `${vData.vehicle.brand} ${vData.vehicle.model} ${vData.vehicle.variant || ''}`.trim();
     const { data: project, error } = await supabase.from('projects').insert({
       user_id: user.id, title, vehicle_data: vData as any, template_id: templateId,
-    }).select('id').single();
+      vehicle_id: vehicleId || null,
+    } as any).select('id').single();
     if (error || !project) { console.error('Save project error:', error); return null; }
     if (allImages.length > 0) {
       const folderName = getGalleryFolderName(vin || (vData.vehicle as any)?.vin);
@@ -128,7 +129,8 @@ const Index = () => {
         await supabase.from('projects').update({ main_image_url: urls[0] }).eq('id', project.id);
       }
       const imageRows = urls.map((url, i) => ({
-        project_id: project.id, user_id: user.id, image_url: url, image_base64: '',
+        project_id: project.id, vehicle_id: vehicleId || null, user_id: user.id,
+        image_url: url, image_base64: '',
         perspective: PERSPECTIVES[i]?.label || `Bild ${i + 1}`, sort_order: i,
         gallery_folder: folderName,
       }));
