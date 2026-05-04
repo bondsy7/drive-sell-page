@@ -22,6 +22,7 @@ export const MODULE_LABELS: Record<ModuleKey, string> = {
   'photos-preset': 'Bildergenerator',
   'photos-multi': 'Mehrfach-Perspektiven',
   'photos-spin360': '360° Spin',
+  'oneshot': 'One-Shot Studio',
   'pdf-landing': 'PDF → Angebotsseite',
   'manual-landing': 'Landing Page manuell',
   'banner': 'Banner Generator',
