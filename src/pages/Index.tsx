@@ -320,29 +320,39 @@ const Index = () => {
       if (vin) setVehicleData(updatedData);
       const allImgs = [mainImage, ...gallery];
       const folderName = getGalleryFolderName(vin || (updatedData.vehicle as any)?.vin);
+
+      // Re-ensure vehicle in case VIN was just captured
+      let vehicleId = savedVehicleId;
+      if (user && vin && !vehicleId) {
+        vehicleId = await ensureVehicle(user.id, vin, updatedData);
+        setSavedVehicleId(vehicleId);
+      }
+
       if (savedProjectId) {
         await supabase.from('projects').update({
           vehicle_data: updatedData as any,
+          vehicle_id: vehicleId || null,
           updated_at: new Date().toISOString(),
-        }).eq('id', savedProjectId);
+        } as any).eq('id', savedProjectId);
         if (user) {
           const urls = await uploadImagesToStorage(allImgs, user.id, savedProjectId);
           if (urls.length > 0) {
             await supabase.from('projects').update({ main_image_url: urls[0] }).eq('id', savedProjectId);
             const imageRows = urls.map((url, i) => ({
-              project_id: savedProjectId, user_id: user.id, image_url: url, image_base64: '',
+              project_id: savedProjectId, vehicle_id: vehicleId || null, user_id: user.id,
+              image_url: url, image_base64: '',
               perspective: `Bild ${i + 1}`, sort_order: i, gallery_folder: folderName,
             }));
             await supabase.from('project_images').insert(imageRows as any);
           }
         }
       } else {
-        const projectId = await saveProject(updatedData, mainImage, allImgs, selectedTemplate, vin);
+        const projectId = await saveProject(updatedData, mainImage, allImgs, selectedTemplate, vin, vehicleId);
         if (projectId) setSavedProjectId(projectId);
       }
     }
     setAppState('preview');
-  }, [vehicleData, saveProject, selectedTemplate, savedProjectId, user]);
+  }, [vehicleData, saveProject, selectedTemplate, savedProjectId, savedVehicleId, user]);
 
   const handleRemasterComplete = useCallback(async (mainImage: string, gallery: string[]) => {
     setImageBase64(mainImage);
