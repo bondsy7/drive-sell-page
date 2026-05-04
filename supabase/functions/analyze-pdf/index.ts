@@ -152,6 +152,16 @@ Erkenne den Angebotstyp so dynamisch wie möglich:
 - "Tageszulassung" → Wenn "Tageszulassung", "TZ", niedriger km-Stand (< 100 km) mit Erstzulassung
 Kombiniere wenn nötig: Ein Gebrauchtwagen kann per Finanzierung angeboten werden → dann "Finanzierung". Der Angebotstyp (Leasing/Finanzierung/Barkauf) hat VORRANG vor dem Fahrzeugzustand.
 
+FAHRZEUGZUSTAND-ERKENNUNG (vehicle.condition) — gemäß Pkw-EnVKV:
+Bestimme den Zustand ROBUST aus Erstzulassung + Kilometerstand + Begriffen:
+- "Neuwagen" → KEINE Erstzulassung vorhanden ODER mileage = 0/leer ODER "Neufahrzeug", "Konfigurator", "Bestellung"
+- "Tageszulassung" → Erstzulassung < 14 Tage alt UND mileage < 100 km, oder explizit "Tageszulassung"/"TZ"
+- "Vorführwagen" → Begriffe "Vorführwagen", "Vorführfahrzeug", "Demo" (meist < 6 Monate alt, < 10.000 km)
+- "Jahreswagen" → Erstzulassung 6–18 Monate alt, mileage < 25.000 km, oder explizit "Jahreswagen"
+- "Gebrauchtwagen" → Erstzulassung > 18 Monate alt ODER mileage > 25.000 km ODER "Gebrauchtwagen"/"Vorbesitzer"
+WICHTIG: Wenn Erstzulassung UND mileage vorhanden sind, haben diese VORRANG vor Begriffen.
+Setze IMMER vehicle.firstRegistration und vehicle.condition wenn ableitbar.
+
 DOKUMENTTYP-ERKENNUNG:
 Prüfe ZUERST, ob es sich um ein Fahrzeug-Angebot handelt (Leasing, Finanzierung, Kauf, Barkauf, Neuwagen, Gebrauchtwagen, Tageszulassung).
 Wenn das Dokument KEIN Fahrzeugangebot ist (z.B. Rechnung, Versicherung, Werkstattrechnung, Mietvertrag, 
