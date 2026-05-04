@@ -34,6 +34,32 @@ function getOpenAISize(w: number, h: number): string {
   return "1024x1536";
 }
 
+// Supported aspect ratios for gemini-3-pro-image-preview / gemini-3.1-flash-image-preview
+const GEMINI_SUPPORTED_RATIOS: Array<{ label: string; value: number }> = [
+  { label: "1:1",  value: 1 / 1 },
+  { label: "2:3",  value: 2 / 3 },
+  { label: "3:2",  value: 3 / 2 },
+  { label: "3:4",  value: 3 / 4 },
+  { label: "4:3",  value: 4 / 3 },
+  { label: "4:5",  value: 4 / 5 },
+  { label: "5:4",  value: 5 / 4 },
+  { label: "9:16", value: 9 / 16 },
+  { label: "16:9", value: 16 / 9 },
+  { label: "21:9", value: 21 / 9 },
+];
+
+function getGeminiAspectRatio(w: number, h: number): string {
+  if (!w || !h) return "1:1";
+  const target = w / h;
+  let best = GEMINI_SUPPORTED_RATIOS[0];
+  let bestDiff = Math.abs(Math.log(target / best.value));
+  for (const r of GEMINI_SUPPORTED_RATIOS) {
+    const diff = Math.abs(Math.log(target / r.value));
+    if (diff < bestDiff) { bestDiff = diff; best = r; }
+  }
+  return best.label;
+}
+
 function createServiceClient() {
   return createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -106,7 +132,7 @@ serve(async (req) => {
       let lastGeminiError = "";
       for (const geminiModel of geminiModels) {
         try {
-          resultImage = await generateGemini(prompt, imageBase64, logoBase64, geminiModel, maxRetries);
+          resultImage = await generateGemini(prompt, imageBase64, logoBase64, geminiModel, maxRetries, width, height);
           if (resultImage) break;
         } catch (err) {
           lastGeminiError = err instanceof Error ? err.message : "Gemini error";
@@ -141,7 +167,7 @@ async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: numbe
   }
 }
 
-async function generateGemini(prompt: string, imageBase64: string | null, logoBase64: string | null, model: string, retries: number): Promise<string | null> {
+async function generateGemini(prompt: string, imageBase64: string | null, logoBase64: string | null, model: string, retries: number, width?: number, height?: number): Promise<string | null> {
   const apiKey = await getSecret("GEMINI_API_KEY");
   if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
 
@@ -162,6 +188,21 @@ async function generateGemini(prompt: string, imageBase64: string | null, logoBa
     parts.push({ inlineData: { mimeType: logoMime, data: logoData } });
   }
 
+  // Inject explicit format instruction so the model composes for the target ratio
+  const aspectLabel = width && height ? getGeminiAspectRatio(width, height) : "1:1";
+  if (width && height) {
+    parts.unshift({
+      text: `OUTPUT FORMAT (STRICT): Generate the banner with an aspect ratio of EXACTLY ${aspectLabel} (target ${width}×${height}px). Compose, crop and frame the entire scene to fill this ${aspectLabel} canvas — do NOT default to a square. Layout, vehicle placement and text must be designed specifically for this ${aspectLabel} format.`,
+    });
+  }
+
+  // gemini-3* image models support imageConfig.aspectRatio; older 2.5 ignores it
+  const supportsAspectField = /^gemini-3/.test(model);
+  const generationConfig: Record<string, unknown> = { responseModalities: ["TEXT", "IMAGE"] };
+  if (supportsAspectField && width && height) {
+    (generationConfig as any).imageConfig = { aspectRatio: aspectLabel };
+  }
+
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const response = await fetchWithTimeout(url, {
@@ -169,7 +210,7 @@ async function generateGemini(prompt: string, imageBase64: string | null, logoBa
         headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ parts }],
-          generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
+          generationConfig,
         }),
       }, 45_000);
 
