@@ -26,6 +26,7 @@ import VideosTab from '@/components/dashboard/VideosTab';
 import Spin360Tab from '@/components/dashboard/Spin360Tab';
 import LeadsTab from '@/components/dashboard/LeadsTab';
 import OriginalsTab from '@/components/vehicle/OriginalsTab';
+import DataTab from '@/components/vehicle/DataTab';
 import ExportChoiceDialog, { type ExportMode } from '@/components/ExportChoiceDialog';
 import GalleryLightbox from '@/components/GalleryLightbox';
 import VideoPlayerModal from '@/components/dashboard/VideoPlayerModal';
