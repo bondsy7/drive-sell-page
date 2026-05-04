@@ -264,8 +264,8 @@ export default function VehicleView() {
   const tabs: { key: TabKey; label: string; icon: React.ElementType; count: number }[] = [
     { key: 'originals', label: 'Originale', icon: FolderOpen, count: 0 },
     { key: 'gallery', label: 'Galerie', icon: ImageIcon, count: images.length },
+    { key: 'projects', label: 'PDF', icon: FileText, count: regularProjects.length },
     { key: 'landings', label: 'Landing Pages', icon: Layout, count: landingProjects.length },
-    { key: 'projects', label: 'Projekte', icon: FileText, count: regularProjects.length },
     { key: 'banners', label: 'Banner', icon: LayoutGrid, count: banners.length },
     { key: 'videos', label: 'Videos', icon: Video, count: videos.length },
     { key: 'spin360', label: '360°', icon: RotateCw, count: spinJobs.length },
