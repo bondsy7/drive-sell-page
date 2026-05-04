@@ -380,26 +380,8 @@ export default function DataTab({ vehicle }: Props) {
     return total;
   };
 
-  /** Auto-fill on mount: projects first (free), then OUTVIN if VIN present. */
-  useEffect(() => {
-    if (autoRanRef.current) return;
-    autoRanRef.current = true;
-    (async () => {
-      setAutoStatus('Lese Daten aus PDF & Datenblättern …');
-      const fromProjects = await fillFromProjects(true);
-      const vin = (rec.vin || vehicle.vin || '').trim();
-      if (vin.length === 17) {
-        setAutoStatus('Frage OUTVIN ab …');
-        const fromVin = await fillFromOutvin(true);
-        const total = fromProjects + fromVin;
-        setAutoStatus(total > 0 ? `${total} Feld${total !== 1 ? 'er' : ''} automatisch befüllt.` : '');
-      } else {
-        setAutoStatus(fromProjects > 0 ? `${fromProjects} Feld${fromProjects !== 1 ? 'er' : ''} aus Projekten übernommen.` : '');
-      }
-      setTimeout(() => setAutoStatus(''), 4000);
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vehicle.id]);
+  // Hinweis: Daten werden NICHT beim Öffnen des Tabs geladen.
+  // Sie werden beim Generieren (One-Shot, Remaster, PDF, Landing Page) der VIN zugeordnet abgelegt.
 
   const save = async () => {
     const merged = { ...(vehicle.vehicle_data || {}), ...rec };
