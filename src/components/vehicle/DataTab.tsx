@@ -434,12 +434,15 @@ export default function DataTab({ vehicle }: Props) {
       <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg border bg-card">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Database className="w-4 h-4" />
-          Strukturierte Fahrzeugdaten — Quelle für Export &amp; spätere DMS-API.
+          {autoStatus || 'Strukturierte Fahrzeugdaten — automatisch befüllt aus PDF, Datenblatt & OUTVIN.'}
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button size="sm" variant="secondary" onClick={fillFromOutvin} disabled={vinLoading}>
+          <Button size="sm" variant="secondary" onClick={() => fillFromOutvin(false)} disabled={vinLoading}>
             {vinLoading ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1.5" />}
-            {vinLoading ? 'OUTVIN…' : 'Mit OUTVIN befüllen'}
+            {vinLoading ? 'OUTVIN…' : 'OUTVIN erneut abfragen'}
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => fillFromProjects(false)}>
+            <FileText className="w-4 h-4 mr-1.5" /> Aus PDF/Landing übernehmen
           </Button>
           <Button size="sm" variant="outline" onClick={exportCsv}>
             <Download className="w-4 h-4 mr-1.5" /> CSV
