@@ -784,7 +784,21 @@ ABSOLUTE PRIORITY – this is the marketing master image:
 6. PHOTOREALISM: Output must look like a high-end automotive studio photograph, not a composite.
 </HERO_INTEGRATION_LOCK>`;
 
-      const fullPrompt = `${baseContext}\n\n${perspective}\n\n${HERO_INTEGRATION_LOCK}`;
+      // Hero-only: amplify ceiling LED + softbox highlights ABOVE the global lighting lock.
+      const HERO_LIGHTING_BOOST = `
+<HERO_LIGHTING_BOOST>
+This is the MARKETING MASTER (Hero) shot — push lighting one notch beyond the standard pipeline images:
+1. CEILING LED EVIDENCE (mandatory): Render clearly visible elongated LED strip / ceiling-panel reflections sliding along the roof, hood and trunk lid. They must read as long, soft, parallel highlight bands — not pinpoint specks. Their direction must follow the body curvature.
+2. STUDIO SOFTBOX HIGHLIGHTS (mandatory): Add two large rectangular softbox reflections — one on each flank — wrapping over the shoulder line and door panels. Edges soft, falloff smooth, no hard rectangles.
+3. KEY / FILL / RIM SETUP: Use a dominant key light from upper-front-left (or matching the showroom's main light), a fill from the opposite side at ~40% intensity, and a subtle rim light separating the rear silhouette from the background.
+4. CHROME, GLASS & WHEELS: Chrome trim, headlight lenses, window glass and rim spokes must show crisp specular catches from the LED ceiling and softboxes — no dull or matte surfaces.
+5. WET-LOOK PAINT (subtle): Paint must read as freshly detailed — deep gloss, micro-clearcoat sheen, no haze, no dust. Metallic flake should sparkle faintly under the highlights.
+6. GROUND INTERACTION: Strong-but-soft contact shadow under the tires; faint mirror reflection of the lower body on a polished floor (only if the showroom floor is reflective). Ambient occlusion in wheel wells and under sills.
+7. LIGHT-SOURCE TRACEABILITY: A viewer must be able to point at the highlights and say "the light came from there." Direction, color temperature and intensity of every highlight must be internally consistent.
+8. NO LEFTOVER LIGHTING: Zero traces of the source photo's original sun, sky, trees, buildings, or dealership lights may remain on paint, glass, chrome or rims.
+</HERO_LIGHTING_BOOST>`;
+
+      const fullPrompt = `${baseContext}\n\n${perspective}\n\n${HERO_INTEGRATION_LOCK}\n\n${HERO_LIGHTING_BOOST}`;
 
       const referenceImages = [
         heroSourceImage,
