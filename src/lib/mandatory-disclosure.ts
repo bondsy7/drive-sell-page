@@ -165,8 +165,9 @@ export function isDatOnlyValue(value?: string | null): boolean {
 
 /** Entfernt DAT-Angaben aus einem Pflichtangaben-Eingabeobjekt (defensive Kopie). */
 export function stripDatValues<T extends Record<string, unknown>>(input: T): T {
-  const clone: Record<string, unknown> = { ...input };
-  for (const [key, val] of Object.entries(clone)) {
+  const clone = { ...input } as Record<string, unknown>;
+  for (const key of Object.keys(clone)) {
+    const val = clone[key];
     if (typeof val === 'string' && isDatOnlyValue(val)) {
       clone[key] = '';
     }
