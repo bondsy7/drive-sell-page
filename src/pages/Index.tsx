@@ -221,8 +221,13 @@ const Index = () => {
       const enriched = await loadProfileIntoDealer(vehicleInfo as VehicleData);
       setVehicleData(enriched);
 
+      // Ensure vehicle row (VIN-keyed) so all downstream assets carry vehicle_id
+      const vin = (enriched.vehicle as any)?.vin || null;
+      const vehicleId = user ? await ensureVehicle(user.id, vin, enriched) : null;
+      setSavedVehicleId(vehicleId);
+
       // Pre-create project so pipeline can use it
-      const projectId = await saveProject(enriched, null, [], selectedTemplate);
+      const projectId = await saveProject(enriched, null, [], selectedTemplate, vin, vehicleId);
       if (projectId) setSavedProjectId(projectId);
 
       // If we have standalone photos already, skip image source choice and go straight to preview
@@ -235,7 +240,8 @@ const Index = () => {
           if (urls.length > 0) {
             await supabase.from('projects').update({ main_image_url: urls[0] }).eq('id', projectId);
             const imageRows = urls.map((url, i) => ({
-              project_id: projectId, user_id: user.id, image_url: url, image_base64: '',
+              project_id: projectId, vehicle_id: vehicleId || null, user_id: user.id,
+              image_url: url, image_base64: '',
               perspective: `Bild ${i + 1}`, sort_order: i,
             }));
             await supabase.from('project_images').insert(imageRows);
