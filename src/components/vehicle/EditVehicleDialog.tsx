@@ -40,7 +40,6 @@ export default function EditVehicleDialog({ open, onOpenChange, vehicle }: Props
       await update.mutateAsync({
         id: vehicle.id,
         patch: {
-          vin: vehicle.vin,
           title: title.trim() || null,
           brand: brand.trim() || null,
           model: model.trim() || null,
