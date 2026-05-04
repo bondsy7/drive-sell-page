@@ -208,7 +208,16 @@ serve(async (req) => {
     if (!imageBase64) throw new Error("No image provided");
 
     // 2. Use dynamic prompt if provided, otherwise build fallback from admin blocks
-    const prompt = dynamicPrompt || await buildFallbackPrompt(vehicleDescription);
+    const basePrompt = dynamicPrompt || await buildFallbackPrompt(vehicleDescription);
+    const PROFESSIONAL_REFLECTION_LIGHTING_LOCK = `<PROFESSIONAL_REFLECTION_LIGHTING_LOCK>
+ABSOLUTE OUTPUT STANDARD: Render this as a professional automotive photograph taken in the NEW scene, not as a vehicle pasted onto a background.
+1. OLD REFLECTION PURGE: Every reflection from the source photo environment must be removed from paint, glass, mirrors, chrome, headlights, taillights, rims, piano-black trim and sunroof. No trees, sky, clouds, old showroom walls, old dealer signage, old studio strips, people, photographer, other cars, asphalt, parking lines, watermarks or text may remain — not even faintly.
+2. NEW LIGHT-SOURCE PROOF: Show where the new light comes from. Ceiling LEDs, window bands, cove lights, streetlights, sun direction or studio softboxes must create visible, physically plausible highlights on hood, roof, windshield, side glass, body sides, chrome and rims.
+3. NEW REFLECTIONS ONLY: Rebuild subtle natural reflections from the new room/scene only: ceiling lights in the hood/roof, wall and window bands on side panels, floor tone on lower doors, approved logos only if provided. Reflections must curve with the body geometry and remain photorealistic, not CGI.
+4. GROUNDING: Tires must visibly contact the floor/ground. Add soft contact shadows, ambient occlusion under the car, and a faint floor reflection on polished or wet surfaces. Shadow direction, length and softness must match the visible light sources.
+5. FINAL CHECK: If any original reflection or old environment content is still visible anywhere on the vehicle or through the windows, regenerate those surfaces from scratch using only the new scene.
+</PROFESSIONAL_REFLECTION_LIGHTING_LOCK>`;
+    const prompt = `${basePrompt}\n\n${PROFESSIONAL_REFLECTION_LIGHTING_LOCK}`;
     console.log(`[remaster] Using ${dynamicPrompt ? 'DYNAMIC' : 'FALLBACK (from admin blocks)'} prompt (${prompt.length} chars), model: ${geminiModel}, tier: ${tier}`);
     const hasLicensePlate = prompt.includes('LICENSE_PLATE');
     const hasScene = prompt.includes('SCENE_AND_LIGHTING') || prompt.includes('CUSTOM_SHOWROOM');
@@ -298,9 +307,11 @@ VEHICLE INTEGRATION:
 1. Place the vehicle NATURALLY in this showroom – it must look PHYSICALLY PRESENT and STANDING on the floor.
 2. The vehicle should occupy approximately 55-65% of the image width. This size MUST be IDENTICAL across ALL perspectives.
 3. The vehicle MUST be lit by the showroom's actual light sources – matching direction, color temperature, and intensity.
-4. Vehicle paint MUST reflect the showroom environment (walls, ceiling, windows, floor).
-5. Vehicle MUST cast realistic shadows onto the showroom floor. Tires MUST make contact with the floor surface.
-6. If the showroom floor is reflective, show a realistic reflection of the vehicle on the floor.
+4. Vehicle paint, glass, chrome, rims and glossy trim MUST reflect the showroom environment (walls, ceiling, windows, floor and light fixtures) — NOT the original source photo environment.
+5. Ceiling lights/window bands from the showroom MUST be visible as soft, natural highlights on hood, roof, windshield, side glass and body sides, showing exactly where the light comes from.
+6. Vehicle MUST cast realistic shadows onto the showroom floor. Tires MUST make contact with the floor surface with subtle ambient occlusion.
+7. If the showroom floor is reflective, show a realistic, faint reflection of the vehicle on the floor.
+8. All old reflections from the source photo MUST be erased: no trees, sky, people, photographer, other cars, asphalt, parking lines, old showroom, old logos, banners, text or watermarks may remain on paint, glass, chrome or rims.
 
 SHOWROOM PRESERVATION (CRITICAL):
 - Do NOT modify, replace, remove, or obscure ANY element in the showroom.
