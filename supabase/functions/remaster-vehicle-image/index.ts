@@ -490,6 +490,16 @@ The showroom wall must remain CLEAN and EMPTY. No manufacturer logos, no dealer 
             if ([400, 401, 403].includes(resp.status) && /invalid_api_key|incorrect api key/i.test(errText)) {
               throw new Error('OPENAI_API_KEY ungültig oder nicht freigeschaltet');
             }
+            // Auto-fallback: gpt-image-2 requires verified org → fall back to gpt-image-1
+            if (resp.status === 403 && engineConfig.model === 'gpt-image-2' && /must be verified|verify organization/i.test(errText)) {
+              console.warn('[remaster][openai] gpt-image-2 nicht freigeschaltet → Fallback auf gpt-image-1');
+              engineConfig.model = 'gpt-image-1';
+              form.set('model', 'gpt-image-1');
+              continue;
+            }
+            if (resp.status === 403) {
+              throw new Error(`OpenAI-Modell '${engineConfig.model}' nicht freigeschaltet. Organisation auf platform.openai.com verifizieren.`);
+            }
             if (attempt < MAX_OPENAI_ATTEMPTS - 1) await sleep(2000 * (attempt + 1));
             continue;
           }
