@@ -3,7 +3,7 @@
 // Prompt blocks are admin-editable via Admin > Prompt-Verwaltung
 
 import { supabase } from '@/integrations/supabase/client';
-import { REMASTER_PROMPT_BLOCKS, SCENE_PROMPT_DEFAULTS } from './remaster-prompt-defaults';
+import { REMASTER_PROMPT_BLOCKS, SCENE_PROMPT_DEFAULTS, SCENE_LIGHTING_PROFILES } from './remaster-prompt-defaults';
 
 export interface RemasterConfig {
   scene: string;
@@ -82,6 +82,23 @@ function getScenePrompt(overrides: Record<string, string>, sceneKey: string): st
   const override = overrides[overrideKey];
   if (override && override.trim() && override.trim().toLowerCase() !== 'default') return override;
   return SCENE_PROMPT_DEFAULTS[sceneKey] || '';
+}
+
+/**
+ * Get the CINEMATIC, scene-specific lighting profile.
+ * Admin can override per scene via key `remaster_scene_lighting_<sceneKey>`.
+ * Falls back to the generic exterior lighting block when no profile exists.
+ */
+function getSceneLightingPrompt(
+  overrides: Record<string, string>,
+  sceneKey: string,
+  fallback: string,
+): string {
+  const overrideKey = `remaster_scene_lighting_${sceneKey}`;
+  const override = overrides[overrideKey];
+  if (override && override.trim() && override.trim().toLowerCase() !== 'default') return override;
+  const profile = SCENE_LIGHTING_PROFILES[sceneKey];
+  return profile ? `${profile}\n\n${fallback}` : fallback;
 }
 
 // ── Perspective prompts (structured XML format) ──
@@ -238,7 +255,8 @@ ${interiorLighting}
 </SCENE_AND_LIGHTING>`);
     } else {
       const isCustomShowroom = config.scene === 'custom-showroom';
-      const exteriorLighting = getBlock(overrides, 'scene_lighting_exterior');
+      const baseExteriorLighting = getBlock(overrides, 'scene_lighting_exterior');
+      const exteriorLighting = getSceneLightingPrompt(overrides, config.scene, baseExteriorLighting);
       parts.push(`<SCENE_AND_LIGHTING>
 ENVIRONMENT: ${scenePrompt}
 
