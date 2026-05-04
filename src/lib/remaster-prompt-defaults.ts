@@ -96,7 +96,7 @@ Maintain minimum 5% free space between vehicle edge and image border on all side
     key: 'remaster_scene_lighting_exterior',
     label: 'Scene & Lighting (Exterieur)',
     description: 'Licht, Reflexionen und Schatten für Außenaufnahmen. Hier liegt oft das Realismus-Problem!',
-    prompt: `REFLECTIONS: Completely re-render ALL vehicle body reflections to match the NEW scene. Remove ALL original reflections from previous environment. The paint must reflect showroom walls, ceiling lights, floor – NOT remnants of original location.
+    prompt: `REFLECTIONS (ZERO TOLERANCE FOR FOREIGN CONTENT): Completely PURGE and RE-RENDER ALL vehicle reflections to match ONLY the NEW scene. Every reflective surface (paint, windows, mirrors, chrome, headlights, taillights, wheel rims, glossy black trim, sunroof) MUST mirror ONLY the new environment — its walls, floor, ceiling and light fixtures. ABSOLUTELY FORBIDDEN in any reflection: trees, sky, clouds, other cars, buildings, people, photographers, asphalt patterns, parking lines, old dealer logos, banners, watermarks, or ANY trace of the original photo's environment. The original surroundings MUST NOT be visible anywhere on the vehicle's body, glass, or chrome — not even faintly. Through the windows, only the new scene may be visible — never the old environment, never a generic outdoor view.
 SHADOWS: Generate realistic, SUBTLE ground shadows and ambient occlusion beneath the vehicle. Shadows must be SOFT and NATURAL – not harsh, overly dark, or exaggerated. Tires MUST make realistic contact with floor surface. Shadow direction matches scene lighting. NO floating or hovering.
 LIGHTING: Use NATURAL, realistic lighting that matches the scene. Avoid overly dramatic, HDR-style, or artificially enhanced lighting. The goal is PHOTOREALISM – the image should look like a real photograph, not a CGI render. Light should be soft, diffused, and even – matching how a real showroom or location would look.`,
   },
@@ -150,7 +150,8 @@ LOGO CONSISTENCY LOCK:
 - Add aftermarket parts, humans, animals, or moving objects
 - Show other vehicles in background or reflections
 - Rotate, flip, or mirror the image
-- Carry over reflections from original environment
+- Carry over reflections, mirror images, or window content from the original environment — every reflective surface (paint, glass, mirrors, chrome, wheels) must show ONLY the new scene
+- Allow ANY trace of the original surroundings (trees, sky, other cars, buildings, people, asphalt, parking lines, old dealer logos, banners, watermarks) to appear in reflections, on glass, on chrome, on the paint, or through the windows — NOT EVEN FAINTLY
 - Add ANY logo, brand mark, or wall decoration UNLESS a logo image is explicitly provided as a reference asset
 - Create overly dramatic, HDR-style, or artificially enhanced lighting – aim for NATURAL photorealism
 
