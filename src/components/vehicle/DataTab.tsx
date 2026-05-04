@@ -235,12 +235,74 @@ function downloadBlob(filename: string, mime: string, content: string) {
 
 interface Props { vehicle: Vehicle; }
 
+/** Map a loose source object (from PDF/datenblatt/OUTVIN) onto our flat record. */
+function mapSourceToRecord(src: Record<string, unknown>): Partial<VehicleDataRecord> {
+  const v = ((src.vehicle as Record<string, unknown>) || src) as Record<string, unknown>;
+  const c = ((src.consumption as Record<string, unknown>) || {}) as Record<string, unknown>;
+  const get = (...keys: string[]) => {
+    for (const k of keys) {
+      const val = (v[k] ?? c[k] ?? (src as Record<string, unknown>)[k]);
+      if (val != null && String(val).trim() !== '') return String(val);
+    }
+    return '';
+  };
+  const equipment = (v.equipment as unknown) || (v.features as unknown) || (src.equipment as unknown);
+  const eqStr = Array.isArray(equipment) ? (equipment as string[]).join('\n') : (typeof equipment === 'string' ? equipment : '');
+  return {
+    vin: get('vin'),
+    brand: get('brand', 'make'),
+    model: get('model'),
+    variant: get('variant', 'trim'),
+    year: get('year', 'modelYear'),
+    color: get('color', 'paintColor', 'exteriorColor'),
+    interiorColor: get('interiorColor'),
+    hsnTsn: get('hsnTsn'),
+    licensePlate: get('licensePlate'),
+    fuelType: get('fuelType'),
+    transmission: get('transmission', 'gearboxType'),
+    driveType: get('driveType'),
+    power: get('power', 'electricMotorPower'),
+    displacement: get('displacement'),
+    cylinders: get('cylinders'),
+    topSpeed: get('topSpeed'),
+    acceleration: get('acceleration'),
+    bodyType: get('bodyType'),
+    doors: get('doors'),
+    seats: get('seats'),
+    curbWeight: get('curbWeight'),
+    grossWeight: get('grossWeight'),
+    payload: get('payload'),
+    trunkVolume: get('trunkVolume'),
+    mileage: get('mileage'),
+    firstRegistration: get('firstRegistration'),
+    previousOwners: get('previousOwners'),
+    inspectionUntil: get('inspectionUntil'),
+    condition: get('condition'),
+    warranty: get('warranty'),
+    consumptionCombined: get('consumptionCombined'),
+    consumptionCity: get('consumptionCity'),
+    consumptionHighway: get('consumptionHighway'),
+    co2Emissions: get('co2Emissions'),
+    co2Class: get('co2Class'),
+    electricRange: get('electricRange'),
+    consumptionElectric: get('consumptionElectric'),
+    netPrice: get('netPrice'),
+    grossPrice: get('grossPrice', 'price'),
+    vatRate: get('vatRate'),
+    internalNumber: get('internalNumber'),
+    location: get('location'),
+    features: eqStr,
+  };
+}
+
 export default function DataTab({ vehicle }: Props) {
   const update = useUpdateVehicle();
   const initial = useMemo(() => seedFromVehicle(vehicle), [vehicle]);
   const [rec, setRec] = useState<VehicleDataRecord>(initial);
   const [dirty, setDirty] = useState(false);
   const [vinLoading, setVinLoading] = useState(false);
+  const [autoStatus, setAutoStatus] = useState<string>('');
+  const autoRanRef = useRef(false);
 
   useEffect(() => {
     setRec(initial);
@@ -252,12 +314,32 @@ export default function DataTab({ vehicle }: Props) {
     setDirty(true);
   };
 
-  /** Fill empty fields from OUTVIN VIN lookup. Existing values are preserved. */
-  const fillFromOutvin = async () => {
+  /** Merge a partial record into state — only fills currently empty fields. */
+  const mergeIntoRec = (partial: Partial<VehicleDataRecord>): number => {
+    let count = 0;
+    setRec(prev => {
+      const next = { ...prev };
+      for (const [k, v] of Object.entries(partial)) {
+        const key = k as keyof VehicleDataRecord;
+        const cur = (prev[key] || '').toString().trim();
+        const incoming = (v || '').toString().trim();
+        if (incoming && !cur) {
+          next[key] = incoming;
+          count++;
+        }
+      }
+      if (count > 0) setDirty(true);
+      return next;
+    });
+    return count;
+  };
+
+  /** OUTVIN VIN lookup — fills empty fields only. */
+  const fillFromOutvin = async (silent = false): Promise<number> => {
     const vin = (rec.vin || vehicle.vin || '').trim().toUpperCase();
     if (vin.length !== 17) {
-      toast.error('Bitte zuerst eine gültige 17-stellige VIN eintragen.');
-      return;
+      if (!silent) toast.error('Bitte zuerst eine gültige 17-stellige VIN eintragen.');
+      return 0;
     }
     setVinLoading(true);
     try {
@@ -265,47 +347,59 @@ export default function DataTab({ vehicle }: Props) {
       if (error || !data?.success) {
         throw new Error(data?.error || error?.message || 'OUTVIN-Abfrage fehlgeschlagen');
       }
-      const v = data.vehicle as Record<string, unknown>;
-      const equipment = Array.isArray(v.equipment) ? (v.equipment as string[]) : [];
-
-      const merge: Partial<VehicleDataRecord> = {};
-      const fillIfEmpty = (key: keyof VehicleDataRecord, val: unknown) => {
-        const s = val == null ? '' : String(val).trim();
-        if (s && !((rec[key] || '').toString().trim())) merge[key] = s;
-      };
-      fillIfEmpty('vin', vin);
-      fillIfEmpty('brand', v.brand);
-      fillIfEmpty('model', v.model);
-      fillIfEmpty('variant', v.variant);
-      fillIfEmpty('year', v.year);
-      fillIfEmpty('fuelType', v.fuelType);
-      fillIfEmpty('transmission', v.transmission);
-      fillIfEmpty('power', v.power);
-      fillIfEmpty('color', v.color);
-      fillIfEmpty('displacement', v.displacement);
-      fillIfEmpty('driveType', v.driveType);
-      fillIfEmpty('bodyType', v.bodyType);
-      fillIfEmpty('doors', v.doors);
-      fillIfEmpty('seats', v.seats);
-
-      if (equipment.length && !(rec.features || '').trim()) {
-        merge.features = equipment.join('\n');
+      const partial = mapSourceToRecord({ ...(data.vehicle || {}), vin });
+      const filled = mergeIntoRec(partial);
+      if (!silent) {
+        if (filled === 0) toast.info('Keine neuen Daten — alle Felder sind bereits gefüllt.');
+        else toast.success(`${filled} Feld${filled !== 1 ? 'er' : ''} aus OUTVIN befüllt.`);
       }
-
-      const filledCount = Object.keys(merge).length;
-      if (filledCount === 0) {
-        toast.info('Keine neuen Daten — alle Felder sind bereits gefüllt.');
-      } else {
-        setRec(prev => ({ ...prev, ...merge }));
-        setDirty(true);
-        toast.success(`${filledCount} Feld${filledCount !== 1 ? 'er' : ''} aus OUTVIN befüllt.`);
-      }
+      return filled;
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'OUTVIN-Abfrage fehlgeschlagen');
+      if (!silent) toast.error(e instanceof Error ? e.message : 'OUTVIN-Abfrage fehlgeschlagen');
+      return 0;
     } finally {
       setVinLoading(false);
     }
   };
+
+  /** Pull data from all related projects (PDF / Landing Page) of this vehicle. */
+  const fillFromProjects = async (silent = false): Promise<number> => {
+    const { data } = await supabase
+      .from('projects')
+      .select('vehicle_data, updated_at')
+      .eq('vehicle_id', vehicle.id)
+      .order('updated_at', { ascending: false });
+    if (!data?.length) return 0;
+    let total = 0;
+    for (const row of data) {
+      const vd = (row.vehicle_data || {}) as Record<string, unknown>;
+      const partial = mapSourceToRecord(vd);
+      total += mergeIntoRec(partial);
+    }
+    if (!silent && total > 0) toast.success(`${total} Feld${total !== 1 ? 'er' : ''} aus PDF / Landing Pages übernommen.`);
+    return total;
+  };
+
+  /** Auto-fill on mount: projects first (free), then OUTVIN if VIN present. */
+  useEffect(() => {
+    if (autoRanRef.current) return;
+    autoRanRef.current = true;
+    (async () => {
+      setAutoStatus('Lese Daten aus PDF & Datenblättern …');
+      const fromProjects = await fillFromProjects(true);
+      const vin = (rec.vin || vehicle.vin || '').trim();
+      if (vin.length === 17) {
+        setAutoStatus('Frage OUTVIN ab …');
+        const fromVin = await fillFromOutvin(true);
+        const total = fromProjects + fromVin;
+        setAutoStatus(total > 0 ? `${total} Feld${total !== 1 ? 'er' : ''} automatisch befüllt.` : '');
+      } else {
+        setAutoStatus(fromProjects > 0 ? `${fromProjects} Feld${fromProjects !== 1 ? 'er' : ''} aus Projekten übernommen.` : '');
+      }
+      setTimeout(() => setAutoStatus(''), 4000);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vehicle.id]);
 
   const save = async () => {
     const merged = { ...(vehicle.vehicle_data || {}), ...rec };
