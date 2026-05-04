@@ -31,15 +31,15 @@ Wenn im Bild "A+++" o.ä. steht, IGNORIERE diesen Wert komplett und LEITE die Kl
 - 0 g/km → A | 1–95 → B | 96–115 → C | 116–135 → D | 136–155 → E | 156–175 → F | >175 → G
 Bei PHEVs: co2Class aus gewichteten g/km, co2ClassDischarged aus entladenen g/km.
 
-⚠️ FAHRZEUGZUSTAND-ERKENNUNG (Pkw-EnVKV) — STRENG NACH DATEN, NICHT RATEN:
+⚠️ FAHRZEUGZUSTAND-ERKENNUNG (Pkw-EnVKV, Fassung seit 23.02.2024) — STRENG NACH DATEN, NICHT RATEN:
 SCHRITT 1: Suche im Bild eine TABELLE oder LISTE mit "Fahrzeugzustand", "Erstzulassung"
 und "Kilometerstand" (oder "km-Stand", "Laufleistung"). Lese die Werte WÖRTLICH ab.
 SCHRITT 2: Bestimme condition NACH ZAHLEN (Daten haben Vorrang vor Begriffen):
-- "Neuwagen" → KEINE Erstzulassung UND mileageKm 0–50 km. Sobald Erstzulassung ODER mileageKm > 50 km vorhanden, ist es KEIN Neuwagen.
+- "Neuwagen" → noch nicht zum Weiterverkauf zugelassen UND (Erstzulassung ≤ 8 Monate ODER Kilometerstand ≤ 1.000 km). § 2 Nr. 1 Pkw-EnVKV.
 - "Tageszulassung" → Erstzulassung < 1 Monat alt UND mileageKm < 100 km
 - "Jahreswagen" → Erstzulassung 6–18 Monate alt UND mileageKm < 25.000 km
-- "Gebrauchtwagen" → Erstzulassung > 18 Monate alt ODER mileageKm > 25.000 km ODER explizit "Gebrauchtwagen"
-- "Vorführwagen" → nur wenn explizit "Vorführwagen"/"Demo" in der Tabelle steht
+- "Gebrauchtwagen" → Erstzulassung > 8 Monate alt UND mileageKm > 1.000 km (also Neuwagen-Definition NICHT erfüllt) ODER explizit „Gebrauchtwagen"
+- "Vorführwagen" → nur wenn explizit „Vorführwagen"/„Demo" in der Tabelle steht
 SCHRITT 3: Bei Widerspruch zwischen Begriff und Zahlen → ZAHLEN gewinnen.
 WICHTIG: NIEMALS condition raten. Wenn unsicher, leer lassen — der Server leitet sie ab.
 WICHTIG: mileageKm IMMER aus der "Kilometerstand"-Zeile übernehmen, NICHT mit Jahresfahrleistung verwechseln.
