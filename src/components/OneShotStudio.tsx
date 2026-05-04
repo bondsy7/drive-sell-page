@@ -99,7 +99,16 @@ function deriveVehicleCondition(args: {
   firstRegistration?: string | null;
   mileageKm?: string | null;
   explicitCondition?: string | null;
-}): { condition: string; firstReg: string; km: number | null; monthsOld: number | null; rule: string } {
+}): {
+  condition: string;
+  firstReg: string;
+  km: number | null;
+  monthsOld: number | null;
+  rule: string;
+  confidence: number;          // 0–100
+  confidenceLabel: 'Hoch' | 'Mittel' | 'Niedrig';
+  confidenceFactors: string[]; // einzelne Begründungen
+} {
   const fr = String(args.firstRegistration || '').trim();
   const kmMatch = String(args.mileageKm || '').match(/([\d.,]+)/);
   const km = kmMatch ? parseInt(kmMatch[1].replace(/[.,]/g, ''), 10) : null;
@@ -115,14 +124,50 @@ function deriveVehicleCondition(args: {
     }
   }
 
+  // ─── Confidence-Berechnung ───
+  // Basis 30, +Boni für vorhandene & widerspruchsfreie Signale, -Strafe bei Konflikten.
+  let confidence = 30;
+  const factors: string[] = [];
+  const hasFr = !!fr && monthsOld !== null;
+  const hasKm = km !== null;
+  const hasExplicit = !!args.explicitCondition && ['Vorführwagen', 'Tageszulassung', 'Jahreswagen', 'Neuwagen', 'Gebrauchtwagen'].includes(args.explicitCondition || '');
+
+  if (hasExplicit) { confidence += 40; factors.push('+40 explizite Angabe im Datenblatt'); }
+  if (hasFr) { confidence += 25; factors.push('+25 gültige Erstzulassung'); }
+  if (hasKm) { confidence += 25; factors.push('+25 Kilometerstand erkannt'); }
+  if (hasFr && hasKm) { confidence += 10; factors.push('+10 beide Signale verfügbar'); }
+
+  // Konflikt-Erkennung (z.B. EZ alt aber 0 km, oder EZ neu aber hohe km)
+  if (hasFr && hasKm && monthsOld !== null && km !== null) {
+    if (monthsOld > 24 && km < 100) {
+      confidence -= 30;
+      factors.push('−30 Konflikt: EZ alt, aber kaum gefahren');
+    }
+    if (monthsOld <= 2 && km > 10000) {
+      confidence -= 25;
+      factors.push('−25 Konflikt: EZ neu, aber viele km');
+    }
+  }
+  if (!hasFr && !hasKm && !hasExplicit) {
+    confidence -= 20;
+    factors.push('−20 keine verlässlichen Signale');
+  }
+
+  confidence = Math.max(0, Math.min(100, confidence));
+  const confidenceLabel: 'Hoch' | 'Mittel' | 'Niedrig' =
+    confidence >= 75 ? 'Hoch' : confidence >= 45 ? 'Mittel' : 'Niedrig';
+
   // Explicit override (z.B. "Vorführwagen" wurde explizit erkannt)
-  if (args.explicitCondition && ['Vorführwagen', 'Tageszulassung', 'Jahreswagen', 'Neuwagen', 'Gebrauchtwagen'].includes(args.explicitCondition)) {
+  if (hasExplicit) {
     return {
-      condition: args.explicitCondition,
+      condition: args.explicitCondition!,
       firstReg: fr,
       km,
       monthsOld,
       rule: `Explizit im Datenblatt als „${args.explicitCondition}" ausgewiesen.`,
+      confidence,
+      confidenceLabel,
+      confidenceFactors: factors,
     };
   }
 
@@ -147,8 +192,9 @@ function deriveVehicleCondition(args: {
     rule = `${reasons.join(' & ')} → Gebrauchtwagen.`;
   }
 
-  return { condition, firstReg: fr, km, monthsOld, rule };
+  return { condition, firstReg: fr, km, monthsOld, rule, confidence, confidenceLabel, confidenceFactors: factors };
 }
+
 
 /** Detect transient edge-function failures (cold-start boot, 503, 429). */
 function isTransientEdgeError(err: any, data: any): boolean {
@@ -1063,9 +1109,38 @@ ABSOLUTE PRIORITY – this is the marketing master image:
                                 <div className="mt-1.5 text-[10px] opacity-80 leading-tight">
                                   <span className="font-semibold">Regel:</span> {info.rule}
                                 </div>
+
+                                {/* Confidence-Score */}
+                                <div className="mt-2 pt-2 border-t border-current/15">
+                                  <div className="flex items-center justify-between text-[10px] mb-1">
+                                    <span className="opacity-70 uppercase tracking-wide">Erkennungssicherheit</span>
+                                    <span className="font-semibold">{info.confidence}% · {info.confidenceLabel}</span>
+                                  </div>
+                                  <div className="h-1.5 w-full rounded-full bg-current/15 overflow-hidden">
+                                    <div
+                                      className={`h-full rounded-full transition-all ${
+                                        info.confidence >= 75 ? 'bg-emerald-500'
+                                        : info.confidence >= 45 ? 'bg-amber-500'
+                                        : 'bg-rose-500'
+                                      }`}
+                                      style={{ width: `${info.confidence}%` }}
+                                    />
+                                  </div>
+                                  {info.confidenceFactors.length > 0 && (
+                                    <details className="mt-1.5 text-[10px] opacity-80">
+                                      <summary className="cursor-pointer hover:opacity-100">Faktoren ({info.confidenceFactors.length})</summary>
+                                      <ul className="mt-1 ml-3 list-disc space-y-0.5">
+                                        {info.confidenceFactors.map((f, i) => (
+                                          <li key={i}>{f}</li>
+                                        ))}
+                                      </ul>
+                                    </details>
+                                  )}
+                                </div>
                               </div>
                             );
                           })()}
+
 
                           {/* Specs grid */}
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-1.5 text-[11px]">
