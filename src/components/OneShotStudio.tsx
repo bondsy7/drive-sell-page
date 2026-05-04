@@ -40,10 +40,10 @@ import { useCredits } from '@/hooks/useCredits';
 import RemasterOptions from '@/components/RemasterOptions';
 import ModelSelector, { type ModelTier } from '@/components/ModelSelector';
 import {
-  type RemasterConfig, SCENE_OPTIONS,
+  type RemasterConfig, SCENE_OPTIONS, buildMasterPrompt,
 } from '@/lib/remaster-prompt';
 import {
-  PIPELINE_JOBS, PIPELINE_CATEGORIES, applyPromptOverrides,
+  PIPELINE_JOBS, PIPELINE_CATEGORIES, applyPromptOverrides, injectLogoPlaceholder,
   detectBrandFromDescription, getTotalImageCount, type PipelineJob,
 } from '@/lib/pipeline-jobs';
 import { fetchPromptOverrides } from '@/lib/remaster-prompt';
@@ -54,6 +54,7 @@ import { compressImageForAI, fileToBase64 } from '@/lib/image-compress';
 import { useVehicleMakes } from '@/hooks/useVehicleMakes';
 
 import OneShotMarketingForm from './oneshot/OneShotMarketingForm';
+import OneShotLightbox, { type LightboxItem } from './oneshot/OneShotLightbox';
 import {
   DEFAULT_FORM, DEFAULT_SOURCES, ONESHOT_BANNER_FORMATS,
   type ClassifiedImage, type ImageCategory, type MarketingForm,
@@ -215,6 +216,16 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [videoError, setVideoError] = useState<string | null>(null);
   const [pipelineKicked, setPipelineKicked] = useState(false);
+
+  /* ─── Lightbox ─── */
+  const [lightboxItems, setLightboxItems] = useState<LightboxItem[]>([]);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const openLightbox = useCallback((items: LightboxItem[], startIndex: number) => {
+    if (!items.length) return;
+    setLightboxItems(items);
+    setLightboxIndex(Math.max(0, Math.min(startIndex, items.length - 1)));
+  }, []);
+  const closeLightbox = useCallback(() => setLightboxItems([]), []);
 
   /* ─────────────────────────────────────────────────────────────
    * STEP 1: Upload + parallel analysis
@@ -549,17 +560,43 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
     setHeroRunning(true);
     setHeroError(null);
     try {
-      // Use the MASTER_IMAGE prompt, route via pipeline-jobs
+      // Use the MASTER_IMAGE perspective prompt
       const masterJob = availableJobs.find((j) => j.key === 'MASTER_IMAGE');
       if (!masterJob) throw new Error('Master-Job nicht gefunden');
 
       const overrides = await fetchPromptOverrides();
       const [withOverrides] = applyPromptOverrides([masterJob], overrides);
+
+      // Build the FULL master prompt (scene, logos, plate, identity-lock, scale, etc.)
+      // — same composition the pipeline uses, so the chosen showroom is enforced on the Hero.
+      const baseContext = buildMasterPrompt(remasterConfig, `${form.brand} ${form.model} ${form.variant}`.trim(), undefined, overrides);
+      const hasLogo = !!(remasterConfig.showManufacturerLogo || remasterConfig.showDealerLogo);
+      const perspective = injectLogoPlaceholder(withOverrides.prompt, hasLogo);
+
+      // Hard rules to wipe old branding/text from the source image and force showroom integration
+      const HERO_INTEGRATION_LOCK = `
+<HERO_INTEGRATION_LOCK>
+ABSOLUTE PRIORITY – this is the marketing master image:
+1. SHOWROOM PLACEMENT: The vehicle MUST be placed inside the chosen showroom/scene. The original background of the source photo MUST be completely replaced – no street, no driveway, no foreign environment leaking through.
+2. LIGHT & SHADOW MATCHING: Re-light the vehicle so highlights, reflections, ambient occlusion and ground shadows EXACTLY match the showroom's light direction, color temperature and intensity. The car must look physically present in the room – not pasted on.
+3. FLOOR CONTACT: Render a realistic, soft contact shadow under the wheels and a subtle reflection of the car body on the showroom floor (only if the floor is reflective).
+4. STRIP OLD BRANDING: REMOVE every dealer logo, watermark, sticker, price tag, license-plate frame, lettering, web URL, phone number, and any overlaid text or graphic that came from the original photograph. The body, windows, ground and background must be CLEAN of any foreign text or logo.
+5. KEEP ONLY THE PROVIDED LOGOS: Only the manufacturer/dealer logos that are explicitly provided as reference images (if any) may appear – nowhere else.
+6. PHOTOREALISM: Output must look like a high-end automotive studio photograph, not a composite.
+</HERO_INTEGRATION_LOCK>`;
+
+      const fullPrompt = `${baseContext}\n\n${perspective}\n\n${HERO_INTEGRATION_LOCK}`;
+
       const referenceImages = [
         heroSourceImage,
         ...orderedInputImages.filter((i) => i.id !== heroSourceImage.id).slice(0, 4),
       ];
       const fileUris = await uploadGenerationRefs(referenceImages);
+
+      // Resolve manufacturer logo URL for hero
+      const manufacturerLogoUrl = remasterConfig.showManufacturerLogo && canonicalBrand
+        ? (getLogoForMake(canonicalBrand) || null)
+        : null;
 
       const { data, error } = await invokeWithRetry('remaster-vehicle-image', {
         imageBase64: heroSourceImage.base64,
@@ -568,7 +605,11 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
         additionalFileUris: fileUris?.slice(1) || undefined,
         vehicleDescription: `${form.brand} ${form.model} ${form.variant}`.trim(),
         modelTier,
-        dynamicPrompt: withOverrides.prompt,
+        dynamicPrompt: fullPrompt,
+        customShowroomBase64: remasterConfig.customShowroomBase64 || null,
+        customPlateImageBase64: remasterConfig.customPlateImageBase64 || null,
+        manufacturerLogoUrl,
+        dealerLogoUrl: remasterConfig.showDealerLogo ? (remasterConfig.dealerLogoUrl || null) : null,
       }, { retries: 3, baseDelayMs: 2500 });
       if (error) throw new Error(error.message || 'Hero-Generierung fehlgeschlagen');
       if (data?.error) throw new Error(data.error);
@@ -585,7 +626,7 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
     } finally {
       setHeroRunning(false);
     }
-  }, [heroSourceImage, orderedInputImages, form.brand, form.model, form.variant, modelTier, availableJobs]);
+  }, [heroSourceImage, orderedInputImages, form.brand, form.model, form.variant, modelTier, availableJobs, remasterConfig, canonicalBrand, getLogoForMake]);
 
   /** Kick off pipeline (rest of the jobs) via global PipelineContext. */
   const startPipelineRest = useCallback(async (heroB64: string | null) => {
@@ -1174,7 +1215,12 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
               {heroError && <Badge variant="destructive">Fehler</Badge>}
             </div>
             {heroBase64 && (
-              <img src={heroBase64} alt="Hero" className="w-full max-h-64 object-contain rounded-lg" />
+              <img
+                src={heroBase64}
+                alt="Hero"
+                className="w-full max-h-64 object-contain rounded-lg cursor-zoom-in hover:opacity-90 transition-opacity"
+                onClick={() => openLightbox([{ src: heroBase64, label: 'Hero-Bild', filename: 'hero.png' }], 0)}
+              />
             )}
             {heroError && (
               <div className="flex items-start gap-2 text-xs text-destructive">
@@ -1226,13 +1272,22 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
                 }
                 return (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                    {items.map((it) => (
+                    {items.map((it, gridIdx) => (
                       <div key={`${it.jobKey}-${it.idx}`} className="rounded-lg border border-border overflow-hidden bg-muted/30 group relative">
-                        <img src={it.img} alt={it.label} className="w-full aspect-square object-cover" />
+                        <img
+                          src={it.img}
+                          alt={it.label}
+                          className="w-full aspect-square object-cover cursor-zoom-in transition-opacity hover:opacity-90"
+                          onClick={() => openLightbox(
+                            items.map((x, i) => ({ src: x.img, label: x.label, filename: `pipeline-${x.jobKey}-${x.idx + 1}.png` })),
+                            gridIdx,
+                          )}
+                        />
                         <div className="absolute bottom-0 left-0 right-0 bg-background/85 backdrop-blur px-2 py-1 flex items-center justify-between">
                           <span className="text-[10px] font-medium truncate">{it.label}</span>
                           <button
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               const a = document.createElement('a');
                               a.href = it.img;
                               a.download = `pipeline-${it.jobKey}-${it.idx + 1}.png`;
@@ -1283,36 +1338,49 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
             <div className="rounded-xl border border-border bg-card p-4 space-y-3">
               <h3 className="font-semibold text-sm">3. Banner</h3>
               <div className="grid grid-cols-2 gap-2">
-                {bannerOutputs.map((b) => (
-                  <div key={b.formatId} className="rounded-lg border border-border overflow-hidden bg-muted/30">
-                    <div className="aspect-square flex items-center justify-center relative">
-                      {b.status === 'done' && b.imageBase64 ? (
-                        <img src={b.imageBase64} alt={b.formatLabel} className="w-full h-full object-cover" />
-                      ) : b.status === 'error' ? (
-                        <AlertCircle className="w-5 h-5 text-destructive" />
-                      ) : (
-                        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-                      )}
+                {bannerOutputs.map((b, bIdx) => {
+                  const doneBanners = bannerOutputs.filter((x) => x.status === 'done' && x.imageBase64);
+                  const inDoneIdx = doneBanners.findIndex((x) => x.formatId === b.formatId);
+                  return (
+                    <div key={b.formatId} className="rounded-lg border border-border overflow-hidden bg-muted/30">
+                      <div className="aspect-square flex items-center justify-center relative">
+                        {b.status === 'done' && b.imageBase64 ? (
+                          <img
+                            src={b.imageBase64}
+                            alt={b.formatLabel}
+                            className="w-full h-full object-cover cursor-zoom-in transition-opacity hover:opacity-90"
+                            onClick={() => openLightbox(
+                              doneBanners.map((x) => ({ src: x.imageBase64, label: `Banner · ${x.formatLabel} (${x.ratio})`, filename: `oneshot-${x.formatId}.png` })),
+                              Math.max(0, inDoneIdx),
+                            )}
+                          />
+                        ) : b.status === 'error' ? (
+                          <AlertCircle className="w-5 h-5 text-destructive" />
+                        ) : (
+                          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                        )}
+                      </div>
+                      <div className="px-2 py-1.5 text-[10px] flex items-center justify-between">
+                        <span className="truncate">{b.formatLabel}</span>
+                        {b.status === 'done' && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const a = document.createElement('a');
+                              a.href = b.imageBase64;
+                              a.download = `oneshot-${b.formatId}.png`;
+                              a.click();
+                            }}
+                            className="text-accent hover:underline"
+                          >
+                            DL
+                          </button>
+                        )}
+                      </div>
+                      {b.error && <p className="px-2 pb-1.5 text-[9px] text-destructive truncate">{b.error}</p>}
                     </div>
-                    <div className="px-2 py-1.5 text-[10px] flex items-center justify-between">
-                      <span className="truncate">{b.formatLabel}</span>
-                      {b.status === 'done' && (
-                        <button
-                          onClick={() => {
-                            const a = document.createElement('a');
-                            a.href = b.imageBase64;
-                            a.download = `oneshot-${b.formatId}.png`;
-                            a.click();
-                          }}
-                          className="text-accent hover:underline"
-                        >
-                          DL
-                        </button>
-                      )}
-                    </div>
-                    {b.error && <p className="px-2 pb-1.5 text-[9px] text-destructive truncate">{b.error}</p>}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -1344,6 +1412,15 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
             </div>
           )}
         </div>
+      )}
+
+      {lightboxItems.length > 0 && (
+        <OneShotLightbox
+          items={lightboxItems}
+          index={lightboxIndex}
+          onClose={closeLightbox}
+          onIndexChange={setLightboxIndex}
+        />
       )}
     </div>
   );
