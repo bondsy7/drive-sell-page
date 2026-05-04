@@ -1272,13 +1272,22 @@ ABSOLUTE PRIORITY – this is the marketing master image:
                 }
                 return (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                    {items.map((it) => (
+                    {items.map((it, gridIdx) => (
                       <div key={`${it.jobKey}-${it.idx}`} className="rounded-lg border border-border overflow-hidden bg-muted/30 group relative">
-                        <img src={it.img} alt={it.label} className="w-full aspect-square object-cover" />
+                        <img
+                          src={it.img}
+                          alt={it.label}
+                          className="w-full aspect-square object-cover cursor-zoom-in transition-opacity hover:opacity-90"
+                          onClick={() => openLightbox(
+                            items.map((x, i) => ({ src: x.img, label: x.label, filename: `pipeline-${x.jobKey}-${x.idx + 1}.png` })),
+                            gridIdx,
+                          )}
+                        />
                         <div className="absolute bottom-0 left-0 right-0 bg-background/85 backdrop-blur px-2 py-1 flex items-center justify-between">
                           <span className="text-[10px] font-medium truncate">{it.label}</span>
                           <button
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               const a = document.createElement('a');
                               a.href = it.img;
                               a.download = `pipeline-${it.jobKey}-${it.idx + 1}.png`;
