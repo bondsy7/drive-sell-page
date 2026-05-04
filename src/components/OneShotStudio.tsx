@@ -217,6 +217,16 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
   const [videoError, setVideoError] = useState<string | null>(null);
   const [pipelineKicked, setPipelineKicked] = useState(false);
 
+  /* ─── Lightbox ─── */
+  const [lightboxItems, setLightboxItems] = useState<LightboxItem[]>([]);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const openLightbox = useCallback((items: LightboxItem[], startIndex: number) => {
+    if (!items.length) return;
+    setLightboxItems(items);
+    setLightboxIndex(Math.max(0, Math.min(startIndex, items.length - 1)));
+  }, []);
+  const closeLightbox = useCallback(() => setLightboxItems([]), []);
+
   /* ─────────────────────────────────────────────────────────────
    * STEP 1: Upload + parallel analysis
    * ───────────────────────────────────────────────────────────── */
