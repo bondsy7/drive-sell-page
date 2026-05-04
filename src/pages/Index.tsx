@@ -76,6 +76,9 @@ const Index = () => {
   const { balance, getCost } = useCredits();
   const navigate = useNavigate();
   const { tool } = useParams<{ tool?: string }>();
+  const [searchParams] = useSearchParams();
+  const deepLinkVehicleId = searchParams.get('vehicle');
+  const deepLinkImage = searchParams.get('image') || undefined;
   const [appState, setAppState] = useState<ExtendedAppState>(() => {
     if (tool && TOOL_TO_STATE[tool]) return TOOL_TO_STATE[tool];
     return 'hub';
