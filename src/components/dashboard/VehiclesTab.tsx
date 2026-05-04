@@ -139,6 +139,7 @@ export default function VehiclesTab() {
         );
       })}
     </div>
+    </div>
   );
 }
 
