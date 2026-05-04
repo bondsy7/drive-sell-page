@@ -7,6 +7,7 @@ export const MODULE_KEYS = [
   'photos-preset',
   'photos-multi',
   'photos-spin360',
+  'oneshot',
   'pdf-landing',
   'manual-landing',
   'banner',
