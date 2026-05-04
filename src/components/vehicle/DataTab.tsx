@@ -416,12 +416,12 @@ export default function DataTab({ vehicle }: Props) {
       <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg border bg-card">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Database className="w-4 h-4" />
-          {autoStatus || 'Strukturierte Fahrzeugdaten — automatisch befüllt aus PDF, Datenblatt & VIN-Lookup.'}
+          {autoStatus || 'Strukturierte Fahrzeugdaten — werden beim Generieren (One-Shot, Remaster, PDF, Landing Page) automatisch der VIN zugeordnet.'}
         </div>
         <div className="flex flex-wrap gap-2">
           <Button size="sm" variant="secondary" onClick={() => fillFromOutvin(false)} disabled={vinLoading}>
             {vinLoading ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1.5" />}
-            {vinLoading ? 'VIN-Lookup…' : 'VIN-Lookup erneut abfragen'}
+            {vinLoading ? 'VIN-Lookup…' : 'VIN-Lookup starten'}
           </Button>
           <Button size="sm" variant="outline" onClick={() => fillFromProjects(false)}>
             <FileText className="w-4 h-4 mr-1.5" /> Aus PDF/Landing übernehmen
