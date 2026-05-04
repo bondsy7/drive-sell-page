@@ -236,6 +236,46 @@ PAINT COLOR CHANGE – ABSOLUTE, NON-NEGOTIABLE, APPLIES TO EVERY IMAGE:
   // ── ANTI-CROPPING ──
   parts.push(`<ANTI_CROPPING>\n${getBlock(overrides, 'anti_cropping')}\n</ANTI_CROPPING>`);
 
+  // ── REFLECTION PURGE (ZERO TOLERANCE for foreign reflections) ──
+  parts.push(`<REFLECTION_PURGE>
+ABSOLUTE ZERO-TOLERANCE RULE FOR FOREIGN REFLECTIONS — NON-NEGOTIABLE:
+
+1. PURGE ALL ORIGINAL REFLECTIONS: The reference photo was taken in a DIFFERENT environment (old dealer lot, parking space, street, foreign showroom, photo booth, garage, outdoor scene). EVERY reflection on EVERY reflective surface of the vehicle from that original environment MUST be COMPLETELY ERASED and REPLACED with reflections of the NEW selected scene.
+
+2. AFFECTED SURFACES (re-render reflections on ALL of these):
+   - Paint (hood, roof, doors, fenders, trunk, bumpers, side skirts)
+   - Windows and windshield (glass reflections)
+   - Side mirrors (mirror glass AND mirror housing)
+   - Headlight and taillight lenses
+   - Chrome trim, window surrounds, grille chrome, exhaust tips
+   - Wheel rims (especially polished/chrome/diamond-cut faces)
+   - Any glossy black trim, piano black panels, badge surfaces
+   - Sunroof / panoramic roof glass
+
+3. FORBIDDEN REFLECTION CONTENT (must NEVER appear anywhere on the vehicle):
+   - Trees, sky, clouds, sun, outdoor scenery from the original photo
+   - Other cars, parked vehicles, traffic from the original location
+   - Buildings, houses, dealership facades, garage doors, signs, billboards from the original
+   - People, photographers, camera operators, tripods, lighting rigs from the original shoot
+   - Asphalt patterns, parking lot lines, curbs, street markings from the original ground
+   - Old dealer logos, banners, price tags, advertising overlays from the original environment
+   - Any text, lettering, URLs, or graphics carried over from the original scene
+
+4. ONLY ALLOWED REFLECTIONS: The vehicle's reflective surfaces may ONLY mirror the NEW selected scene — its walls, floor, ceiling, light fixtures, and (if explicitly provided) approved logos. Nothing else.
+
+5. WINDOW TRANSPARENCY: Through the vehicle's windows the viewer must see the NEW scene only — never the original environment, never a generic outdoor view, never a black void.
+
+6. VERIFICATION CHECKLIST (apply before finalizing):
+   - Scan the hood reflection: does it show ONLY the new ceiling/lights? ✓
+   - Scan the door panels: do they reflect ONLY the new walls/floor? ✓
+   - Scan the windows: do they reflect ONLY the new scene? ✓
+   - Scan side mirrors and chrome: zero foreign content? ✓
+   - Scan wheel rims: no asphalt/old-floor reflections? ✓
+   If ANY check fails, regenerate that surface from scratch using the NEW scene as the only reflection source.
+
+THIS RULE IS HIGHER PRIORITY THAN PRESERVING THE REFERENCE — paint color and shape are preserved, but reflections are FULLY rebuilt from the new environment.
+</REFLECTION_PURGE>`);
+
   // ── SCENE AND LIGHTING ──
   const scenePrompt = getScenePrompt(overrides, config.scene);
   if (scenePrompt) {
