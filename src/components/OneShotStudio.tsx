@@ -40,10 +40,10 @@ import { useCredits } from '@/hooks/useCredits';
 import RemasterOptions from '@/components/RemasterOptions';
 import ModelSelector, { type ModelTier } from '@/components/ModelSelector';
 import {
-  type RemasterConfig, SCENE_OPTIONS,
+  type RemasterConfig, SCENE_OPTIONS, buildMasterPrompt,
 } from '@/lib/remaster-prompt';
 import {
-  PIPELINE_JOBS, PIPELINE_CATEGORIES, applyPromptOverrides,
+  PIPELINE_JOBS, PIPELINE_CATEGORIES, applyPromptOverrides, injectLogoPlaceholder,
   detectBrandFromDescription, getTotalImageCount, type PipelineJob,
 } from '@/lib/pipeline-jobs';
 import { fetchPromptOverrides } from '@/lib/remaster-prompt';
