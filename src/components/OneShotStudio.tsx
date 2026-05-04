@@ -1109,9 +1109,38 @@ ABSOLUTE PRIORITY – this is the marketing master image:
                                 <div className="mt-1.5 text-[10px] opacity-80 leading-tight">
                                   <span className="font-semibold">Regel:</span> {info.rule}
                                 </div>
+
+                                {/* Confidence-Score */}
+                                <div className="mt-2 pt-2 border-t border-current/15">
+                                  <div className="flex items-center justify-between text-[10px] mb-1">
+                                    <span className="opacity-70 uppercase tracking-wide">Erkennungssicherheit</span>
+                                    <span className="font-semibold">{info.confidence}% · {info.confidenceLabel}</span>
+                                  </div>
+                                  <div className="h-1.5 w-full rounded-full bg-current/15 overflow-hidden">
+                                    <div
+                                      className={`h-full rounded-full transition-all ${
+                                        info.confidence >= 75 ? 'bg-emerald-500'
+                                        : info.confidence >= 45 ? 'bg-amber-500'
+                                        : 'bg-rose-500'
+                                      }`}
+                                      style={{ width: `${info.confidence}%` }}
+                                    />
+                                  </div>
+                                  {info.confidenceFactors.length > 0 && (
+                                    <details className="mt-1.5 text-[10px] opacity-80">
+                                      <summary className="cursor-pointer hover:opacity-100">Faktoren ({info.confidenceFactors.length})</summary>
+                                      <ul className="mt-1 ml-3 list-disc space-y-0.5">
+                                        {info.confidenceFactors.map((f, i) => (
+                                          <li key={i}>{f}</li>
+                                        ))}
+                                      </ul>
+                                    </details>
+                                  )}
+                                </div>
                               </div>
                             );
                           })()}
+
 
                           {/* Specs grid */}
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-1.5 text-[11px]">
