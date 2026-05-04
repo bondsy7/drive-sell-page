@@ -583,7 +583,7 @@ const Index = () => {
 
           {/* ─── 360 Spin ─── */}
           {appState === 'spin360' && (
-            <Spin360Workflow onBack={() => setAppState('standalone-photo-mode' as ExtendedAppState)} />
+            <Spin360Workflow onBack={() => setAppState('standalone-photo-mode' as ExtendedAppState)} vehicleId={deepLinkVehicleId} />
           )}
 
           {/* ─── Standalone Photo Choice ─── */}
