@@ -235,7 +235,7 @@ function downloadBlob(filename: string, mime: string, content: string) {
 
 interface Props { vehicle: Vehicle; }
 
-/** Map a loose source object (from PDF/datenblatt/OUTVIN) onto our flat record. */
+/** Map a loose source object (from PDF/Datenblatt/VIN-Lookup) onto our flat record. */
 function mapSourceToRecord(src: Record<string, unknown>): Partial<VehicleDataRecord> {
   const v = ((src.vehicle as Record<string, unknown>) || src) as Record<string, unknown>;
   const c = ((src.consumption as Record<string, unknown>) || {}) as Record<string, unknown>;
@@ -334,7 +334,7 @@ export default function DataTab({ vehicle }: Props) {
     return count;
   };
 
-  /** OUTVIN VIN lookup — fills empty fields only. */
+  /** VIN lookup — fills empty fields only. */
   const fillFromOutvin = async (silent = false): Promise<number> => {
     const vin = (rec.vin || vehicle.vin || '').trim().toUpperCase();
     if (vin.length !== 17) {
@@ -345,17 +345,17 @@ export default function DataTab({ vehicle }: Props) {
     try {
       const { data, error } = await supabase.functions.invoke('lookup-vin', { body: { vin } });
       if (error || !data?.success) {
-        throw new Error(data?.error || error?.message || 'OUTVIN-Abfrage fehlgeschlagen');
+        throw new Error(data?.error || error?.message || 'VIN-Lookup fehlgeschlagen');
       }
       const partial = mapSourceToRecord({ ...(data.vehicle || {}), vin });
       const filled = mergeIntoRec(partial);
       if (!silent) {
         if (filled === 0) toast.info('Keine neuen Daten — alle Felder sind bereits gefüllt.');
-        else toast.success(`${filled} Feld${filled !== 1 ? 'er' : ''} aus OUTVIN befüllt.`);
+        else toast.success(`${filled} Feld${filled !== 1 ? 'er' : ''} aus VIN-Lookup befüllt.`);
       }
       return filled;
     } catch (e) {
-      if (!silent) toast.error(e instanceof Error ? e.message : 'OUTVIN-Abfrage fehlgeschlagen');
+      if (!silent) toast.error(e instanceof Error ? e.message : 'VIN-Lookup fehlgeschlagen');
       return 0;
     } finally {
       setVinLoading(false);
@@ -380,26 +380,8 @@ export default function DataTab({ vehicle }: Props) {
     return total;
   };
 
-  /** Auto-fill on mount: projects first (free), then OUTVIN if VIN present. */
-  useEffect(() => {
-    if (autoRanRef.current) return;
-    autoRanRef.current = true;
-    (async () => {
-      setAutoStatus('Lese Daten aus PDF & Datenblättern …');
-      const fromProjects = await fillFromProjects(true);
-      const vin = (rec.vin || vehicle.vin || '').trim();
-      if (vin.length === 17) {
-        setAutoStatus('Frage OUTVIN ab …');
-        const fromVin = await fillFromOutvin(true);
-        const total = fromProjects + fromVin;
-        setAutoStatus(total > 0 ? `${total} Feld${total !== 1 ? 'er' : ''} automatisch befüllt.` : '');
-      } else {
-        setAutoStatus(fromProjects > 0 ? `${fromProjects} Feld${fromProjects !== 1 ? 'er' : ''} aus Projekten übernommen.` : '');
-      }
-      setTimeout(() => setAutoStatus(''), 4000);
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vehicle.id]);
+  // Hinweis: Daten werden NICHT beim Öffnen des Tabs geladen.
+  // Sie werden beim Generieren (One-Shot, Remaster, PDF, Landing Page) der VIN zugeordnet abgelegt.
 
   const save = async () => {
     const merged = { ...(vehicle.vehicle_data || {}), ...rec };
@@ -434,12 +416,12 @@ export default function DataTab({ vehicle }: Props) {
       <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg border bg-card">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Database className="w-4 h-4" />
-          {autoStatus || 'Strukturierte Fahrzeugdaten — automatisch befüllt aus PDF, Datenblatt & OUTVIN.'}
+          {autoStatus || 'Strukturierte Fahrzeugdaten — werden beim Generieren (One-Shot, Remaster, PDF, Landing Page) automatisch der VIN zugeordnet.'}
         </div>
         <div className="flex flex-wrap gap-2">
           <Button size="sm" variant="secondary" onClick={() => fillFromOutvin(false)} disabled={vinLoading}>
             {vinLoading ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1.5" />}
-            {vinLoading ? 'OUTVIN…' : 'OUTVIN erneut abfragen'}
+            {vinLoading ? 'VIN-Lookup…' : 'VIN-Lookup starten'}
           </Button>
           <Button size="sm" variant="outline" onClick={() => fillFromProjects(false)}>
             <FileText className="w-4 h-4 mr-1.5" /> Aus PDF/Landing übernehmen
