@@ -569,7 +569,7 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
   const removeDataSheet = useCallback(async (idx: number) => {
     const next = dataSheetBase64s.filter((_, i) => i !== idx);
     setDataSheetBase64s(next);
-    setDataSheetBase64(next[0] || null);
+    
     if (!next.length) {
       setScanData(null);
       return;
