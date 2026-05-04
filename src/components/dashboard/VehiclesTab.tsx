@@ -1,11 +1,60 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useVehicles } from '@/hooks/useVehicles';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Car, FileText, Image as ImageIcon, RotateCw, MessageSquare } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Car, FileText, Image as ImageIcon, RotateCw, MessageSquare, Link2, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function VehiclesTab() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
   const { data: vehicles = [], isLoading } = useVehicles();
+  const [reclaiming, setReclaiming] = useState(false);
+
+  const reclaimOrphans = async () => {
+    if (!user) return;
+    setReclaiming(true);
+    try {
+      // Map VIN -> vehicle.id for this user
+      const map = new Map<string, string>();
+      for (const v of vehicles) if (v.vin) map.set(v.vin.trim().toUpperCase(), v.id);
+
+      const { data: orphans } = await supabase
+        .from('project_images')
+        .select('id, gallery_folder')
+        .eq('user_id', user.id)
+        .is('vehicle_id', null)
+        .not('gallery_folder', 'is', null);
+
+      let linked = 0;
+      for (const row of orphans || []) {
+        const key = (row.gallery_folder || '').trim().toUpperCase();
+        const vid = map.get(key);
+        if (!vid) continue;
+        const { error } = await supabase
+          .from('project_images')
+          .update({ vehicle_id: vid })
+          .eq('id', row.id);
+        if (!error) linked++;
+      }
+
+      if (linked > 0) {
+        toast.success(`${linked} Bild(er) einem Fahrzeug zugeordnet`);
+        qc.invalidateQueries({ queryKey: ['vehicles'] });
+      } else {
+        toast.info('Keine zuordenbaren Bilder gefunden');
+      }
+    } catch (e) {
+      toast.error(`Fehler: ${(e as Error).message}`);
+    } finally {
+      setReclaiming(false);
+    }
+  };
 
   if (isLoading) {
     return (
