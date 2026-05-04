@@ -185,7 +185,7 @@ const Index = () => {
 
   const processFiles = useCallback(async (files: File[]) => {
     setFileName(files.map(f => f.name).join(', '));
-    setGalleryImages([]); setImageBase64(null); setSavedProjectId(null);
+    setGalleryImages([]); setImageBase64(null); setSavedProjectId(null); setSavedVehicleId(null);
     try {
       setAppState('uploading');
       const pdfBase64Array: string[] = [];
