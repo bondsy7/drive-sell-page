@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useModuleAccess, type ModuleKey } from '@/hooks/useModuleAccess';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { FileText, Image, Video, MessageSquare, Layout, LayoutGrid } from 'lucide-react';
+import { FileText, Image, Video, MessageSquare, Layout, LayoutGrid, Car } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
 import { toast } from 'sonner';
 import { downloadHTML } from '@/lib/templates/download';
@@ -17,6 +17,7 @@ import { useSearchParams } from 'react-router-dom';
 import type { Project, VideoFile } from '@/components/dashboard/types';
 import { getImageSrc } from '@/components/dashboard/types';
 import { getImageSortKey } from '@/components/dashboard/GalleryTab';
+import VehiclesTab from '@/components/dashboard/VehiclesTab';
 import ProjectsTab from '@/components/dashboard/ProjectsTab';
 import LandingsTab from '@/components/dashboard/LandingsTab';
 import GalleryTab from '@/components/dashboard/GalleryTab';
@@ -32,13 +33,13 @@ import {
   PAGE_SIZE,
 } from '@/hooks/useDashboardData';
 
-type TabKey = 'projects' | 'landings' | 'gallery' | 'banners' | 'videos' | 'leads' | 'spin360';
+type TabKey = 'vehicles' | 'projects' | 'landings' | 'gallery' | 'banners' | 'videos' | 'leads' | 'spin360';
 
 const Dashboard = () => {
   const { user } = useAuth();
   const { disabledModules } = useModuleAccess();
   const [searchParams] = useSearchParams();
-  const initialTab = (searchParams.get('tab') as TabKey) || 'projects';
+  const initialTab = (searchParams.get('tab') as TabKey) || 'vehicles';
   const highlightFolder = searchParams.get('folder') || null;
   const [tab, setTab] = useState<TabKey>(initialTab);
 
@@ -191,6 +192,7 @@ const Dashboard = () => {
     : false;
 
   const tabs: { key: TabKey; icon: React.ElementType; label: string; count: number }[] = [
+    { key: 'vehicles', icon: Car, label: 'Fahrzeuge', count: 0 },
     { key: 'projects', icon: FileText, label: 'Projekte', count: regularProjects.length },
     { key: 'landings', icon: Layout, label: 'Landing Pages', count: landingProjects.length },
     { key: 'gallery', icon: Image, label: 'Galerie', count: tab === 'gallery' ? galleryTotal : (counts?.gallery ?? 0) },
@@ -207,6 +209,7 @@ const Dashboard = () => {
       return <div className="flex justify-center py-20"><div className="animate-spin w-8 h-8 border-2 border-accent border-t-transparent rounded-full" /></div>;
     }
     switch (tab) {
+      case 'vehicles': return <VehiclesTab />;
       case 'projects': return <ProjectsTab projects={regularProjects} onExport={openExportDialog} onDelete={(id) => deleteProject.mutate(id)} />;
       case 'landings': return <LandingsTab projects={landingProjects} onExport={openExportDialog} onDelete={(id) => deleteProject.mutate(id)} />;
       case 'gallery': return (
