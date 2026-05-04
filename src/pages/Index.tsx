@@ -26,6 +26,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useCredits } from '@/hooks/useCredits';
 import { uploadImagesToStorage, saveImagesToGallery, getGalleryFolderName } from '@/lib/storage-utils';
+import { ensureVehicle } from '@/lib/vehicle-utils';
 import type { AppState, VehicleData } from '@/types/vehicle';
 import type { TemplateId } from '@/types/template';
 import type { ModelTier } from '@/components/ModelSelector';
@@ -99,6 +100,7 @@ const Index = () => {
   const [imageProgress, setImageProgress] = useState({ current: 0, total: 0 });
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>('autohaus');
   const [savedProjectId, setSavedProjectId] = useState<string | null>(null);
+  const [savedVehicleId, setSavedVehicleId] = useState<string | null>(null);
   const [selectedModelTier, setSelectedModelTier] = useState<ModelTier>('qualitaet');
   const [creditDialog, setCreditDialog] = useState<{ open: boolean; cost: number; label: string; onConfirm: () => void }>({
     open: false, cost: 0, label: '', onConfirm: () => {},
