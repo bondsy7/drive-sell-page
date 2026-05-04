@@ -945,7 +945,7 @@ ABSOLUTE PRIORITY – this is the marketing master image:
         attempts++;
         try {
           const { data: pollData } = await supabase.functions.invoke('generate-video', {
-            body: { action: 'poll', operationName },
+            body: { action: 'poll', operationName, vehicleId: savedVehicleId },
           });
           if (pollData?.done) {
             clearInterval(intv);
