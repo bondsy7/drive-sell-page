@@ -359,41 +359,55 @@ const Index = () => {
     setGalleryImages(gallery);
     if (vehicleData) {
       const allImgs = [mainImage, ...gallery];
-      const folderName = getGalleryFolderName((vehicleData.vehicle as any)?.vin);
+      const vin = (vehicleData.vehicle as any)?.vin || null;
+      const folderName = getGalleryFolderName(vin);
+
+      let vehicleId = savedVehicleId;
+      if (user && vin && !vehicleId) {
+        vehicleId = await ensureVehicle(user.id, vin, vehicleData);
+        setSavedVehicleId(vehicleId);
+      }
+
       if (savedProjectId) {
         await supabase.from('projects').update({
           vehicle_data: vehicleData as any,
+          vehicle_id: vehicleId || null,
           updated_at: new Date().toISOString(),
-        }).eq('id', savedProjectId);
+        } as any).eq('id', savedProjectId);
         if (user) {
           const urls = await uploadImagesToStorage(allImgs, user.id, savedProjectId);
           if (urls.length > 0) {
             await supabase.from('projects').update({ main_image_url: urls[0] }).eq('id', savedProjectId);
             const imageRows = urls.map((url, i) => ({
-              project_id: savedProjectId, user_id: user.id, image_url: url, image_base64: '',
+              project_id: savedProjectId, vehicle_id: vehicleId || null, user_id: user.id,
+              image_url: url, image_base64: '',
               perspective: `Bild ${i + 1}`, sort_order: i, gallery_folder: folderName,
             }));
             await supabase.from('project_images').insert(imageRows as any);
           }
         }
       } else {
-        const projectId = await saveProject(vehicleData, mainImage, allImgs, selectedTemplate);
+        const projectId = await saveProject(vehicleData, mainImage, allImgs, selectedTemplate, vin, vehicleId);
         if (projectId) setSavedProjectId(projectId);
       }
     }
     setAppState('preview');
-  }, [vehicleData, saveProject, selectedTemplate, savedProjectId, user]);
+  }, [vehicleData, saveProject, selectedTemplate, savedProjectId, savedVehicleId, user]);
 
   // ─── Save standalone images to gallery (NO project creation!) ───
   const saveStandaloneImages = useCallback(async (allImages: string[], vin?: string) => {
     if (!user || allImages.length === 0) return;
     try {
       const folderName = getGalleryFolderName(vin);
+      // VIN-based: ensure vehicle so images are linked even without a project
+      const vehicleId = vin ? await ensureVehicle(user.id, vin, null) : null;
       await saveImagesToGallery(
         allImages,
         user.id,
         folderName,
         allImages.map((_, i) => PERSPECTIVES[i]?.label || `Bild ${i + 1}`),
+        null,
+        vehicleId,
       );
     } catch (e) {
       console.error('Error saving standalone images:', e);
