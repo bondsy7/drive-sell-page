@@ -1338,36 +1338,49 @@ ABSOLUTE PRIORITY – this is the marketing master image:
             <div className="rounded-xl border border-border bg-card p-4 space-y-3">
               <h3 className="font-semibold text-sm">3. Banner</h3>
               <div className="grid grid-cols-2 gap-2">
-                {bannerOutputs.map((b) => (
-                  <div key={b.formatId} className="rounded-lg border border-border overflow-hidden bg-muted/30">
-                    <div className="aspect-square flex items-center justify-center relative">
-                      {b.status === 'done' && b.imageBase64 ? (
-                        <img src={b.imageBase64} alt={b.formatLabel} className="w-full h-full object-cover" />
-                      ) : b.status === 'error' ? (
-                        <AlertCircle className="w-5 h-5 text-destructive" />
-                      ) : (
-                        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-                      )}
+                {bannerOutputs.map((b, bIdx) => {
+                  const doneBanners = bannerOutputs.filter((x) => x.status === 'done' && x.imageBase64);
+                  const inDoneIdx = doneBanners.findIndex((x) => x.formatId === b.formatId);
+                  return (
+                    <div key={b.formatId} className="rounded-lg border border-border overflow-hidden bg-muted/30">
+                      <div className="aspect-square flex items-center justify-center relative">
+                        {b.status === 'done' && b.imageBase64 ? (
+                          <img
+                            src={b.imageBase64}
+                            alt={b.formatLabel}
+                            className="w-full h-full object-cover cursor-zoom-in transition-opacity hover:opacity-90"
+                            onClick={() => openLightbox(
+                              doneBanners.map((x) => ({ src: x.imageBase64, label: `Banner · ${x.formatLabel} (${x.ratio})`, filename: `oneshot-${x.formatId}.png` })),
+                              Math.max(0, inDoneIdx),
+                            )}
+                          />
+                        ) : b.status === 'error' ? (
+                          <AlertCircle className="w-5 h-5 text-destructive" />
+                        ) : (
+                          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                        )}
+                      </div>
+                      <div className="px-2 py-1.5 text-[10px] flex items-center justify-between">
+                        <span className="truncate">{b.formatLabel}</span>
+                        {b.status === 'done' && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const a = document.createElement('a');
+                              a.href = b.imageBase64;
+                              a.download = `oneshot-${b.formatId}.png`;
+                              a.click();
+                            }}
+                            className="text-accent hover:underline"
+                          >
+                            DL
+                          </button>
+                        )}
+                      </div>
+                      {b.error && <p className="px-2 pb-1.5 text-[9px] text-destructive truncate">{b.error}</p>}
                     </div>
-                    <div className="px-2 py-1.5 text-[10px] flex items-center justify-between">
-                      <span className="truncate">{b.formatLabel}</span>
-                      {b.status === 'done' && (
-                        <button
-                          onClick={() => {
-                            const a = document.createElement('a');
-                            a.href = b.imageBase64;
-                            a.download = `oneshot-${b.formatId}.png`;
-                            a.click();
-                          }}
-                          className="text-accent hover:underline"
-                        >
-                          DL
-                        </button>
-                      )}
-                    </div>
-                    {b.error && <p className="px-2 pb-1.5 text-[9px] text-destructive truncate">{b.error}</p>}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
