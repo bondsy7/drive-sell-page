@@ -680,7 +680,8 @@ const Index = () => {
           {appState === 'video' && (
             <VideoGenerator
               onBack={() => setAppState('hub')}
-              preloadedImage={standalonePhotoResults.length > 0 ? standalonePhotoResults[0] : undefined}
+              preloadedImage={standalonePhotoResults.length > 0 ? standalonePhotoResults[0] : deepLinkImage}
+              vehicleId={deepLinkVehicleId}
             />
           )}
 
@@ -698,7 +699,8 @@ const Index = () => {
           {appState === 'banner' && (
             <BannerGenerator
               onBack={() => setAppState('hub')}
-              preloadedImage={standalonePhotoResults.length > 0 ? standalonePhotoResults[0] : undefined}
+              preloadedImage={standalonePhotoResults.length > 0 ? standalonePhotoResults[0] : deepLinkImage}
+              vehicleId={deepLinkVehicleId}
             />
           )}
 
