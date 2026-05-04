@@ -53,6 +53,7 @@ import { lookupBrandFromVin } from '@/lib/vin-wmi-lookup';
 import { usePipelineSafe } from '@/contexts/PipelineContext';
 import { compressImageForAI, fileToBase64 } from '@/lib/image-compress';
 import { useVehicleMakes } from '@/hooks/useVehicleMakes';
+import { ensureVehicle } from '@/lib/vehicle-utils';
 
 import OneShotMarketingForm from './oneshot/OneShotMarketingForm';
 import OneShotLightbox, { type LightboxItem } from './oneshot/OneShotLightbox';
@@ -364,6 +365,8 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [videoError, setVideoError] = useState<string | null>(null);
   const [pipelineKicked, setPipelineKicked] = useState(false);
+  const [savedVehicleId, setSavedVehicleId] = useState<string | null>(null);
+  const [ensuringVehicle, setEnsuringVehicle] = useState(false);
 
   /* ─── Lightbox ─── */
   const [lightboxItems, setLightboxItems] = useState<LightboxItem[]>([]);
@@ -847,7 +850,7 @@ ABSOLUTE PRIORITY – this is the marketing master image:
       remasterConfig,
       modelTier,
       projectId: null,
-      vehicleId: null,
+      vehicleId: savedVehicleId,
       vin,
       selectedJobs,
       availableJobs,
@@ -860,7 +863,7 @@ ABSOLUTE PRIORITY – this is the marketing master image:
   }, [
     pipelineCtx, user, availableJobs, selectedJobKeys, orderedInputImages, additionalImages,
     form.brand, form.model, form.variant, remasterConfig, modelTier, vin,
-    canonicalBrand, getLogoForMake,
+    canonicalBrand, getLogoForMake, savedVehicleId,
   ]);
 
   /** Fire all selected banner formats in parallel using the hero image. */
@@ -903,7 +906,8 @@ ABSOLUTE PRIORITY – this is the marketing master image:
             const base64Data = b64.includes(',') ? b64.split(',')[1] : b64;
             const bytes = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
             const blob = new Blob([bytes], { type: 'image/png' });
-            const fileName = `${user!.id}/${Date.now()}-oneshot-${id}.png`;
+            const vehiclePrefix = savedVehicleId ? `${savedVehicleId}/` : '';
+            const fileName = `${user!.id}/${vehiclePrefix}${Date.now()}-oneshot-${id}.png`;
             await supabase.storage.from('banners').upload(fileName, blob, { contentType: 'image/png' });
           } catch { /* ignore */ }
         } catch (e: any) {
@@ -913,7 +917,7 @@ ABSOLUTE PRIORITY – this is the marketing master image:
         }
       }),
     );
-  }, [selectedBannerFormats, form, modelTier, user]);
+  }, [selectedBannerFormats, form, modelTier, user, savedVehicleId]);
 
   /** Start video generation with hero + optional rear reference. */
   const generateVideo = useCallback(async (heroB64: string) => {
@@ -941,7 +945,7 @@ ABSOLUTE PRIORITY – this is the marketing master image:
         attempts++;
         try {
           const { data: pollData } = await supabase.functions.invoke('generate-video', {
-            body: { action: 'poll', operationName },
+            body: { action: 'poll', operationName, vehicleId: savedVehicleId },
           });
           if (pollData?.done) {
             clearInterval(intv);
@@ -967,7 +971,7 @@ ABSOLUTE PRIORITY – this is the marketing master image:
       setVideoError(e?.message || 'Video-Generierung fehlgeschlagen');
       toast.error(e?.message || 'Video-Generierung fehlgeschlagen');
     }
-  }, [wantVideo, videoPrompt]);
+  }, [wantVideo, videoPrompt, savedVehicleId]);
 
   /** Power-button: hero → (pipeline + banners + video) parallel. */
   const startEverything = useCallback(async () => {
@@ -1006,13 +1010,64 @@ ABSOLUTE PRIORITY – this is the marketing master image:
     setStep('setup');
   }, [canGoToSetup]);
 
-  const goToGen = useCallback(() => {
+  const goToGen = useCallback(async () => {
     if (!form.vehicleTitle.trim() && !(form.brand.trim() && form.model.trim())) {
       toast.error('Bitte mindestens Marke + Modell oder Fahrzeugtitel angeben');
       return;
     }
-    setStep('generierung');
-  }, [form.vehicleTitle, form.brand, form.model]);
+    if (!user) {
+      toast.error('Bitte melde dich an');
+      return;
+    }
+
+    // 1) Ensure a vehicle row (VIN-keyed). Synthesise a placeholder VIN if
+    //    we don't have a real 17-char VIN — every asset must belong to a vehicle.
+    setEnsuringVehicle(true);
+    try {
+      const realVin = (vin || '').trim().toUpperCase();
+      const effectiveVin = realVin && realVin.length >= 5
+        ? realVin
+        : `OS-${Date.now().toString(36).toUpperCase()}`;
+
+      const vehicleData = {
+        vehicle: {
+          brand: form.brand,
+          model: form.model,
+          variant: form.variant,
+          color: '',
+          year: null as any,
+        },
+      };
+      const newVehicleId = await ensureVehicle(user.id, effectiveVin, vehicleData);
+      if (!newVehicleId) {
+        toast.error('Fahrzeug konnte nicht angelegt werden');
+        return;
+      }
+      setSavedVehicleId(newVehicleId);
+
+      // 2) Upload all original photos to originals/{user}/{vehicleId}/...
+      try {
+        const prefix = `${user.id}/${newVehicleId}`;
+        await Promise.all(vehicleImages.map(async (img, idx) => {
+          const base64Data = img.base64.includes(',') ? img.base64.split(',')[1] : img.base64;
+          const bytes = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
+          const blob = new Blob([bytes], { type: 'image/jpeg' });
+          const safe = (img.fileName || `original-${idx}.jpg`).replace(/[^a-zA-Z0-9._-]/g, '_');
+          const path = `${prefix}/${Date.now()}-${idx}-${safe}`;
+          await supabase.storage.from('originals').upload(path, blob, {
+            contentType: 'image/jpeg',
+            upsert: false,
+          });
+        }));
+      } catch (e) {
+        console.warn('[OneShot] originals upload (non-fatal):', e);
+      }
+
+      setStep('generierung');
+    } finally {
+      setEnsuringVehicle(false);
+    }
+  }, [form.vehicleTitle, form.brand, form.model, form.variant, user, vin, vehicleImages]);
 
   /* ─────────────────────────────────────────────────────────────
    * Render
@@ -1526,8 +1581,8 @@ ABSOLUTE PRIORITY – this is the marketing master image:
             <Button variant="outline" onClick={() => setStep('aufnahme')} className="flex-1">
               Zurück
             </Button>
-            <Button onClick={goToGen} className="flex-1 gap-2">
-              Weiter zur Generierung <ChevronRight className="w-4 h-4" />
+            <Button onClick={goToGen} disabled={ensuringVehicle} className="flex-1 gap-2">
+              {ensuringVehicle ? <><Loader2 className="w-4 h-4 animate-spin" /> Lege Fahrzeug an…</> : <>Weiter zur Generierung <ChevronRight className="w-4 h-4" /></>}
             </Button>
           </div>
         </div>
@@ -1552,6 +1607,17 @@ ABSOLUTE PRIORITY – this is the marketing master image:
               </div>
             </div>
           </div>
+
+          {savedVehicleId && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full gap-2"
+              onClick={() => navigate(`/vehicle/${savedVehicleId}`)}
+            >
+              <Car className="w-4 h-4" /> Zum Fahrzeug-Hub (alle Module sichtbar)
+            </Button>
+          )}
 
           {!heroBase64 && !heroRunning && (
             <Button onClick={startEverything} size="lg" className="w-full gap-2">
