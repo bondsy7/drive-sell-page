@@ -508,6 +508,17 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               gallery_folder: folderName,
             }));
             await supabase.from('project_images').insert(imageRows as any);
+
+            // Auto-set vehicle cover image (best-effort, only if missing)
+            if (cfg.vehicleId) {
+              try {
+                const { data: vRow } = await supabase
+                  .from('vehicles').select('cover_image_url').eq('id', cfg.vehicleId).maybeSingle();
+                if (vRow && !(vRow as any).cover_image_url) {
+                  await supabase.from('vehicles').update({ cover_image_url: urls[0] }).eq('id', cfg.vehicleId);
+                }
+              } catch (e) { console.warn('Vehicle cover update skipped:', e); }
+            }
           }
 
           toast.success(`${allResults.length} Pipeline-Bilder in Galerie gespeichert!`);

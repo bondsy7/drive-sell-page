@@ -252,7 +252,7 @@ async function handleVideoStart(req: Request, GEMINI_API_KEY: string, body: any)
 }
 
 async function handlePoll(req: Request, GEMINI_API_KEY: string, body: any): Promise<Response> {
-  const { operationName } = body;
+  const { operationName, vehicleId } = body;
   if (!operationName) {
     return new Response(JSON.stringify({ error: "operationName fehlt" }), {
       status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -304,7 +304,8 @@ async function handlePoll(req: Request, GEMINI_API_KEY: string, body: any): Prom
 
     const videoBytes = await videoResponse.arrayBuffer();
     const sb = createServiceClient();
-    const fileName = `${userId}/videos/${crypto.randomUUID()}.mp4`;
+    const vehiclePrefix = typeof vehicleId === "string" && vehicleId.length > 0 ? `${vehicleId}/` : "";
+    const fileName = `${userId}/${vehiclePrefix}videos/${crypto.randomUUID()}.mp4`;
 
     const { error: uploadError } = await sb.storage
       .from("vehicle-images")

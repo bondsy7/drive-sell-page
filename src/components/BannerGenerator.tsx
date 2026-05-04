@@ -116,6 +116,7 @@ interface ProjectOption {
   title: string;
   vehicle_data: any;
   main_image_url: string | null;
+  vehicle_id: string | null;
 }
 
 interface BannerResult {
@@ -207,7 +208,7 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
   // Load user projects
   useEffect(() => {
     if (!user) return;
-    supabase.from('projects').select('id, title, vehicle_data, main_image_url')
+    supabase.from('projects').select('id, title, vehicle_data, main_image_url, vehicle_id')
       .eq('user_id', user.id).order('updated_at', { ascending: false }).limit(50)
       .then(({ data }) => {
         if (data) setProjects(data as ProjectOption[]);
@@ -537,10 +538,13 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
       const base64Data = result.image.includes(',') ? result.image.split(',')[1] : result.image;
       const byteArray = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
       const blob = new Blob([byteArray], { type: 'image/png' });
-      const fileName = `${user.id}/${Date.now()}-${result.formatId}.png`;
+      // Prefix with vehicle_id when known so VehicleView can list per-vehicle
+      const proj = projects.find(p => p.id === selectedProjectId);
+      const vehiclePrefix = proj?.vehicle_id ? `${proj.vehicle_id}/` : '';
+      const fileName = `${user.id}/${vehiclePrefix}${Date.now()}-${result.formatId}.png`;
       await supabase.storage.from('banners').upload(fileName, blob, { contentType: 'image/png' });
     } catch (e) { console.error('Banner save error:', e); }
-  }, [user]);
+  }, [user, projects, selectedProjectId]);
 
   // ── Single format generation ──
   const handleGenerate = useCallback(() => {

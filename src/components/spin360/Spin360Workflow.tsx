@@ -14,6 +14,8 @@ import { uploadImageToStorage } from '@/lib/storage-utils';
 
 interface Spin360WorkflowProps {
   onBack: () => void;
+  /** When set, the spin360 job is linked to this vehicle. */
+  vehicleId?: string | null;
 }
 
 const SPIN360_VIDEO_PROMPT = `Create an EXACT identity-locked 8-second turntable video of the SAME car shown in the reference images. The car must complete one full 360-degree rotation from front 3/4 view back to front 3/4 view within the full 8-second duration at a FAST, perfectly constant speed. The FIRST frame must already show the fully transformed car inside the showroom. Never show the original source photo, outdoor background, dissolve, crossfade, ghost image, fade-in, or transition. The rear of the car must match the rear reference exactly: taillights, trunk shape, bumper, diffuser, exhaust layout, license plate area, wheels, paint, and body lines must stay consistent. Locked tripod camera, no camera movement, no zoom, no flicker, no background drift, no audio.`;
@@ -54,7 +56,7 @@ const createSpinReferenceComposite = async (frontBase64: string, rearBase64: str
   return canvas.toDataURL('image/jpeg', 0.98);
 };
 
-const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack }) => {
+const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) => {
   const { user } = useAuth();
   const { balance, getCost } = useCredits();
   const [phase, setPhase] = useState<'upload' | 'confirm' | 'processing' | 'video_extracting' | 'result'>('upload');
@@ -107,7 +109,7 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack }) => {
 
       const { data: job, error: jobErr } = await supabase
         .from('spin360_jobs' as any)
-        .insert({ user_id: user.id, status: 'uploaded', target_frame_count: 36 } as any)
+        .insert({ user_id: user.id, vehicle_id: vehicleId || null, status: 'uploaded', target_frame_count: 36 } as any)
         .select('id').single();
 
       if (jobErr || !job) {
@@ -206,7 +208,7 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack }) => {
       // Create spin job with video mode
       const { data: job, error: jobErr } = await supabase
         .from('spin360_jobs' as any)
-        .insert({ user_id: user.id, status: 'generating_video', target_frame_count: 60 } as any)
+        .insert({ user_id: user.id, vehicle_id: vehicleId || null, status: 'generating_video', target_frame_count: 60 } as any)
         .select('id').single();
 
       if (jobErr || !job) {
