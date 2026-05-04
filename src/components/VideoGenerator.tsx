@@ -93,7 +93,7 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onBack, preloadedImage 
 
         try {
           const { data: pollData, error: pollError } = await supabase.functions.invoke('generate-video', {
-            body: { action: 'poll', operationName },
+            body: { action: 'poll', operationName, vehicleId: vehicleId || undefined },
           });
 
           if (pollError) {
