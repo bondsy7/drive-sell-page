@@ -308,6 +308,11 @@ SHOWROOM PRESERVATION (CRITICAL):
 - When camera perspective changes, architectural elements and logos shift naturally by 3D perspective – but NEVER disappear or change.
 - The showroom MUST be CLEARLY RECOGNIZABLE as the SAME room in EVERY generated image.
 
+ORIGINAL ENVIRONMENT REMOVAL (ZERO TOLERANCE):
+- The reference vehicle photo may contain an OLD showroom, OLD studio, dealer banner strips, abbinder footer bars, slogan text (e.g. "AUTOS KAUFT MAN BEI ..."), URLs, watermarks, advertising overlays, sticker prints, or any branded backdrop.
+- ALL of these MUST be FULLY REMOVED. They MUST NOT appear in the output – not as text, not as a strip, not as a faint trace, not on walls, not on the floor, not on the vehicle body.
+- Only the VEHICLE is taken from the reference. The ENTIRE environment is replaced by the custom showroom asset above. Zero pixel of the old environment may survive.
+
 CAMERA PERSPECTIVE:
 - The camera perspective of the showroom MUST match the requested vehicle perspective.
 - Adapt the showroom view to match front, side, rear, or 3/4 angles naturally.
