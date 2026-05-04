@@ -34,6 +34,7 @@ interface PipelineRunnerProps {
   remasterConfig: RemasterConfig;
   modelTier?: string;
   projectId?: string | null;
+  vehicleId?: string | null;
   vin?: string | null;
   onComplete: () => void;
   onBack: () => void;
@@ -52,6 +53,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   remasterConfig,
   modelTier = 'standard',
   projectId,
+  vehicleId,
   vin,
   onComplete,
   onBack,
@@ -237,7 +239,8 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
             await supabase.from('projects').update({ main_image_url: urls[0] }).eq('id', projectId);
             const perspectives = ['3/4 Front', 'Seite', 'Hinten', 'Interieur Fahrersitz', 'Interieur Rücksitz'];
             const imageRows = urls.map((url, i) => ({
-              project_id: projectId, user_id: user.id, image_url: url,
+              project_id: projectId, vehicle_id: vehicleId || null,
+              user_id: user.id, image_url: url,
               image_base64: '', perspective: perspectives[i] || `Bild ${i + 1}`, sort_order: i,
               gallery_folder: folderName,
             }));
@@ -257,7 +260,8 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
         if (urls.length > 0) {
           const perspectives = ['3/4 Front', 'Seite', 'Hinten', 'Interieur Fahrersitz', 'Interieur Rücksitz'];
           const imageRows = urls.map((url, i) => ({
-            project_id: null, user_id: user.id, image_url: url,
+            project_id: null, vehicle_id: vehicleId || null,
+            user_id: user.id, image_url: url,
             image_base64: '', perspective: perspectives[i] || `Bild ${i + 1}`, sort_order: i,
             gallery_folder: folderName,
           }));
@@ -287,6 +291,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       remasterConfig,
       modelTier,
       projectId: projectId || null,
+      vehicleId: vehicleId || null,
       vin: vin || null,
       selectedJobs: localSelectedJobs,
       availableJobs: localAvailableJobs,
@@ -295,7 +300,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       detectedBrand: detectedBrand || null,
       totalImages: getTotalImageCount(selectedKeys),
     });
-  }, [user, localSelectedJobs, localAvailableJobs, inputImages, originalImages, additionalImages, vehicleDescription, remasterConfig, modelTier, projectId, vin, resolvedManufacturerLogoUrl, detectedBrand, selectedKeys, pipeline]);
+  }, [user, localSelectedJobs, localAvailableJobs, inputImages, originalImages, additionalImages, vehicleDescription, remasterConfig, modelTier, projectId, vehicleId, vin, resolvedManufacturerLogoUrl, detectedBrand, selectedKeys, pipeline]);
 
   /* ─── Credit pre-check ─── */
   const handleStartClick = () => {
