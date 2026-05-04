@@ -1,78 +1,157 @@
+# Refactor: Projekt-basiert → VIN-basierte Datenarchitektur
 
-
-## Plan: Landing Page Generator – Kontextuelle Bilder & Helpful Content Overhaul
-
-### Ziel
-Der Landing Page Generator soll zu einem echten Conversion-Tool werden: Jede Section bekommt ein thematisch passendes Bild (Motor → Motorbild, Innenraum → Interieur, etc.), der Content wird als "Helpful Content" aufgebaut, und die Bedienung wird maximal vereinfacht.
+**Status:** PLAN — wartet auf Freigabe. Keine Datei wurde geändert.
+**Ziel:** VIN als primärer Anker. Eine `vehicles`-Tabelle als oberste Hierarchieebene; alle Asset-Tabellen verweisen via `vehicle_id` (Cascade).
 
 ---
 
-### 1. Frontend vereinfachen (`src/components/ManualLandingGenerator.tsx`)
+## 1. Datenbank-Migrationen
 
-**Auto-Load Dealer-Profil**: Beim Mount automatisch das Profil laden und als Badge anzeigen ("Händlerdaten geladen ✓"). Kein manueller Dealer-Input mehr nötig.
+### 1.1 Neue Tabelle `vehicles`
+```sql
+CREATE TABLE public.vehicles (
+  id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id       uuid NOT NULL,
+  vin           text NOT NULL,
+  brand         text,
+  model         text,
+  year          integer,
+  color         text,
+  title         text,                       -- z.B. "BMW X7 XDRIVE40I CW23"
+  vehicle_data  jsonb NOT NULL DEFAULT '{}',-- Specs, OutVIN-Payload, Equipment
+  cover_image_url text,
+  created_at    timestamptz NOT NULL DEFAULT now(),
+  updated_at    timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (user_id, vin)
+);
 
-**Formular auf 2 Schritte reduzieren**:
-- **Schritt 1 – Fahrzeug & Angebot**: Brand/Model Picker, Variante, Farbe, Seitentyp, Preis/Rate – alles in einem Block.
-- **Schritt 2 – Stil & Extras**: Tonalität, Bild-Stil, Highlights/USPs, eigene Bilder (max 5 statt 3).
+ALTER TABLE public.vehicles ENABLE ROW LEVEL SECURITY;
 
-**Mehr Bilder erlauben**: Upload-Limit von 3 auf 5 erhöhen, damit Nutzer z.B. Innenraum, Motor, Detail-Shots mitgeben können.
+CREATE POLICY "Users manage own vehicles" ON public.vehicles
+  FOR ALL TO authenticated
+  USING  (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
 
-**Progress-Anzeige verbessern**: Fortschritt mit Schritten anzeigen ("Texte generieren... Bilder generieren 3/7...").
+CREATE POLICY "Admins view all vehicles" ON public.vehicles
+  FOR SELECT TO authenticated
+  USING (has_role(auth.uid(), 'admin'));
 
----
-
-### 2. Edge Function überarbeiten (`supabase/functions/generate-landing-page/index.ts`)
-
-**Kontextuelle Bild-Prompts**: Der System-Prompt wird so umgebaut, dass die KI für JEDE Section einen thematisch exakten `imagePrompt` generiert, der zum Inhalt passt:
-
-```text
-Für JEDE Section MUSS ein imagePrompt generiert werden.
-Der imagePrompt MUSS exakt zum Sektionsinhalt passen:
-- Sektion über Motor/Leistung → Motorraum, Auspuff, Bremsen
-- Sektion über Innenraum/Komfort → Cockpit, Sitze, Infotainment  
-- Sektion über Design/Exterieur → Seitenansicht, Heck, Details
-- Sektion über Technologie → Display, Ladeport, Assistenzsysteme
-- Sektion über Sicherheit → Airbags, Sensoren, Crash-Test Szenario
-- FAQ/Steps/CTA Sektionen → kein Bild (imagePrompt: null)
+CREATE INDEX idx_vehicles_user        ON public.vehicles(user_id);
+CREATE INDEX idx_vehicles_user_vin    ON public.vehicles(user_id, vin);
 ```
 
-**Mehr Bilder generieren**: `imageCount` pro Typ erhöhen (5-7 statt 3-5). Parallel-Batch von 2 auf 3 erhöhen.
+### 1.2 `vehicle_id` an bestehende Tabellen anhängen
+```sql
+ALTER TABLE public.projects        ADD COLUMN vehicle_id uuid
+  REFERENCES public.vehicles(id) ON DELETE CASCADE;
+ALTER TABLE public.project_images  ADD COLUMN vehicle_id uuid
+  REFERENCES public.vehicles(id) ON DELETE CASCADE;
+ALTER TABLE public.spin360_jobs    ADD COLUMN vehicle_id uuid
+  REFERENCES public.vehicles(id) ON DELETE CASCADE;
+ALTER TABLE public.leads           ADD COLUMN vehicle_id uuid
+  REFERENCES public.vehicles(id) ON DELETE SET NULL;
 
-**Helpful Content Prompt**: Den Content-Prompt erweitern:
-- Jede Section muss echten Informationswert bieten
-- Konkrete technische Daten, Vergleiche, Praxisbeispiele
-- Kaufberatungs-Charakter: "Was bedeutet das für Sie im Alltag?"
-- Strukturierte Inhalte: Bullet-Points, Vergleichstabellen, Checklisten
-- SEO: Natürliche Long-Tail-Keywords, FAQ mit echten Fragen
+CREATE INDEX idx_projects_vehicle       ON public.projects(vehicle_id);
+CREATE INDEX idx_project_images_vehicle ON public.project_images(vehicle_id);
+CREATE INDEX idx_spin360_vehicle        ON public.spin360_jobs(vehicle_id);
+CREATE INDEX idx_leads_vehicle          ON public.leads(vehicle_id);
+```
+**Nullable** halten → Bestandsdaten brechen nicht. Backfill-Skript optional (siehe §5).
 
-**Section-Types erweitern**: Neue Typen hinzufügen:
-- `specs` – Technische Daten mit Bild
-- `comparison` – Vergleichstabelle
-- `benefits` – Vorteilsliste mit Icons
-- `gallery` – Bildergalerie-Section
+### 1.3 `update_updated_at`-Trigger für `vehicles`
+Standard-Trigger auf `update_updated_at_column()`.
+
+### 1.4 Storage-Konvention (kein DB-Change)
+- `vehicle-images/{user_id}/{vehicle_id}/...`
+- `banners/{user_id}/{vehicle_id}/...`
+- `videos/{user_id}/{vehicle_id}/...`
+- Neuer Pfad: `originals/{user_id}/{vehicle_id}/...` (raw uploads)
+
+Bucket `originals` ggf. neu anlegen (private; Owner-RLS).
 
 ---
 
-### 3. HTML Builder erweitern (Edge Function + `src/lib/landing-page-builder.ts`)
+## 2. Frontend — neue Dateien
 
-**Neue Section-Layouts**: 
-- `specs`: Zwei-Spalten-Layout mit großem Bild links, Daten rechts
-- `comparison`: Responsive Tabelle
-- `benefits`: Icon-Grid mit Bildern
-- `gallery`: 2-3 Spalten Bildergalerie
+| Datei | Zweck |
+|---|---|
+| `src/hooks/useVehicles.ts` | `useVehicles()` (Liste mit aggregierten Counts), `useVehicle(id)`, `useCreateVehicle()`, `useUpdateVehicle()`, `useDeleteVehicle()` |
+| `src/pages/VehicleView.tsx` | Detail-Seite `/vehicle/:id` mit Tabs `originals \| gallery \| landings \| banners \| videos \| spin360 \| leads \| exposé` |
+| `src/components/dashboard/VehiclesTab.tsx` | Default-Tab im Dashboard, Karten mit Counts |
+| `src/components/vehicle/VehicleHeader.tsx` | Titel/VIN/Tags/Cover, "Exposé" + "Aktion"-CTAs |
+| `src/components/vehicle/OriginalsTab.tsx` | Auflistung von `originals/{user}/{vehicle}/` |
+| `src/components/vehicle/ExposeBuilder.tsx` | bündelt Originals + Galerie + Banner zu einem Marketing-Dokument |
 
-**Bessere Bild-Integration**: Jedes Bild bekommt eine semantische Caption basierend auf dem Sektions-Headline.
+`useVehicles` Implementierung (Skizze):
+```ts
+const { data: vs } = await sb.from('vehicles')
+  .select('*').eq('user_id', uid).order('updated_at', { ascending: false });
+const ids = vs.map(v => v.id);
+const [{ data: pr }, { data: pi }, { data: sp }, { data: ld }] = await Promise.all([
+  sb.from('projects').select('id,vehicle_id').in('vehicle_id', ids),
+  sb.from('project_images').select('id,vehicle_id').in('vehicle_id', ids),
+  sb.from('spin360_jobs').select('id,vehicle_id').in('vehicle_id', ids),
+  sb.from('leads').select('id,vehicle_id').in('vehicle_id', ids),
+]);
+// counts pro vehicle_id zusammenführen
+```
 
 ---
 
-### Dateien die geändert werden
+## 3. Frontend — Anpassungen bestehender Dateien
 
 | Datei | Änderung |
 |---|---|
-| `src/components/ManualLandingGenerator.tsx` | Vereinfachtes 2-Step-Formular, Auto-Profil-Load, 5 Bilder, besserer Progress |
-| `supabase/functions/generate-landing-page/index.ts` | Kontextuelle Image-Prompts, Helpful Content Prompt, mehr Bilder, neue Section-Types, Batch-Size 3 |
-| `src/lib/landing-page-builder.ts` | Neue Section-Layouts (specs, comparison, benefits, gallery) |
+| `src/App.tsx` | Route `/vehicle/:id → VehicleView` |
+| `src/pages/Dashboard.tsx` | Default-Tab → `vehicles`; alte Tabs bleiben als globale Filtersicht |
+| `src/components/dashboard/types.ts` | Neuer `Vehicle`-Typ + `vehicle_id` an `Project`, `ProjectImage`, `Lead`, `Spin360Job` |
+| `src/hooks/useDashboardData.ts` | optional: `vehicle_id` in Selects mit aufnehmen |
+| `src/components/PipelineRunner.tsx` | nach erfolgreichem Generierungslauf `vehicle_id` an `projects`/`project_images` schreiben |
+| `src/components/BannerGenerator.tsx` | Storage-Pfad → `banners/{user}/{vehicle}/...` |
+| `src/components/VideoGenerator.tsx` | Storage-Pfad → `videos/{user}/{vehicle}/...` |
+| `src/components/spin360/Spin360Workflow.tsx` | `vehicle_id` an `spin360_jobs` |
+| `src/components/PDFUpload.tsx` / OutVIN-Flow | nach VIN-Lookup: `vehicles` upserten (`onConflict: user_id,vin`) → `vehicle_id` in App-State |
+| `src/contexts/PipelineContext.tsx` | `currentVehicleId` führen, an Edge-Function-Calls weiterreichen |
 
-### Credits
-Kosten bleiben bei 3 Credits (mehr Bilder werden intern generiert, kein Aufpreis).
+---
 
+## 4. Edge Functions — Anpassungen
+
+Alle setzen `vehicle_id` aus dem Request-Body in INSERTs:
+- `generate-360-spin` → `spin360_jobs.vehicle_id`
+- `submit-lead` → `leads.vehicle_id`
+- `auto-process-lead` → `leads.vehicle_id` (best-effort match VIN→vehicle)
+- `generate-video`, `generate-banner`, `remaster-vehicle-image` → Storage-Pfad mit `{vehicle_id}`
+- `api-vehicles` (Public-API) → optional: separater Endpoint `GET /vehicles`
+
+Keine Auth-Änderungen — bestehender `sb.auth.getClaims(token)`-Pfad bleibt.
+
+---
+
+## 5. Backfill (optional, separates Skript)
+Für Bestandsdaten: pro `projects.vehicle_data->>'vin'` einen `vehicles`-Row anlegen, dann `projects.vehicle_id`/`project_images.vehicle_id`/`leads.vehicle_id` zurückschreiben. Wird nach dem Schema-Change in einer `supabase--insert`-Operation ausgeführt — separat freigeben.
+
+---
+
+## 6. Reihenfolge der Umsetzung (nach deinem Go)
+
+1. **Migration 1** — `vehicles`-Tabelle + RLS + Trigger
+2. **Migration 2** — `vehicle_id`-Spalten + Indizes
+3. **Migration 3** — Bucket `originals` + Policies
+4. Types regenerieren (automatisch durch Migration)
+5. `useVehicles.ts`, `VehiclesTab`, `VehicleView` + Subkomponenten
+6. Route + Dashboard-Default-Tab
+7. PipelineContext + alle Generator-Komponenten + Edge Functions auf `vehicle_id`
+8. (optional) Backfill-Skript
+9. (optional) Memory-Update in `mem://architecture/vin-centric`
+
+---
+
+## 7. Nicht-Ziele / Bewusst weggelassen
+- Keine Umbenennung von `projects` → "landing_pages" (zu invasiv; nur logischer Rename in UI-Texten).
+- Kein Hard-Delete der alten flachen Tabs — bleiben als globale Suche.
+- Keine OutVIN-Re-Calls bei vorhandener VIN — `vehicles.vehicle_data` ist Cache.
+
+---
+
+**Bitte bestätigen mit "go" oder Korrekturen anbringen — dann fange ich mit Schritt 1 (Migration `vehicles`-Tabelle) an.**
