@@ -304,7 +304,7 @@ async function generateOpenAI(prompt: string, imageBase64: string | null, logoBa
           logoPromptAddition = "\n\nA LOGO image is also provided. Place it prominently in the banner (corner or near headline). Keep the logo 100% identical.";
         }
         
-        form.append("prompt", `${prompt}\n\nIMPORTANT: Use the provided vehicle image as the central hero element. Keep it 100% identical.${logoPromptAddition}`);
+        form.append("prompt", `${prompt}\n\nIMPORTANT: Use the provided vehicle image as the central hero element. Keep vehicle identity, shape, colour, trim, wheels and proportions accurate, but re-render lighting, shadows and all reflections to match the NEW scene only.${logoPromptAddition}`);
         form.append("n", "1");
         form.append("size", size);
         if (isUltra) form.append("quality", "high");
