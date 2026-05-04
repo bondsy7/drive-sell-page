@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react';
-import { useParams, Link, Navigate } from 'react-router-dom';
+import { useParams, Link, Navigate, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Car, FileText, Image as ImageIcon, Layout, LayoutGrid, Video, RotateCw, MessageSquare, FolderOpen } from 'lucide-react';
+import { ArrowLeft, Car, FileText, Image as ImageIcon, Layout, LayoutGrid, Video, RotateCw, MessageSquare, FolderOpen, Trash2 } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useVehicle } from '@/hooks/useVehicles';
+import { useVehicle, useDeleteVehicle } from '@/hooks/useVehicles';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import ProjectsTab from '@/components/dashboard/ProjectsTab';
