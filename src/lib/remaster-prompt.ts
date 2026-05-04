@@ -84,6 +84,23 @@ function getScenePrompt(overrides: Record<string, string>, sceneKey: string): st
   return SCENE_PROMPT_DEFAULTS[sceneKey] || '';
 }
 
+/**
+ * Get the CINEMATIC, scene-specific lighting profile.
+ * Admin can override per scene via key `remaster_scene_lighting_<sceneKey>`.
+ * Falls back to the generic exterior lighting block when no profile exists.
+ */
+function getSceneLightingPrompt(
+  overrides: Record<string, string>,
+  sceneKey: string,
+  fallback: string,
+): string {
+  const overrideKey = `remaster_scene_lighting_${sceneKey}`;
+  const override = overrides[overrideKey];
+  if (override && override.trim() && override.trim().toLowerCase() !== 'default') return override;
+  const profile = SCENE_LIGHTING_PROFILES[sceneKey];
+  return profile ? `${profile}\n\n${fallback}` : fallback;
+}
+
 // ── Perspective prompts (structured XML format) ──
 const PERSPECTIVE_PROMPTS: Record<string, string> = {
   '34front': `<CURRENT_PERSPECTIVE>
