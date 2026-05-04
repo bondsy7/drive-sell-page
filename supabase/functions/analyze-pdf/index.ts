@@ -459,9 +459,38 @@ Gib das Ergebnis als JSON zurück.`;
       }
     }
 
-    // Auto-derive CO₂ classes
-    if (!c.co2Class && c.co2Emissions) c.co2Class = deriveCO2Class(c.co2Emissions);
-    if (!c.co2ClassDischarged && c.co2EmissionsDischarged) c.co2ClassDischarged = deriveCO2Class(c.co2EmissionsDischarged);
+    // Auto-derive CO₂ classes (NUR A-G, alle Plus-Klassen verwerfen!)
+    const isValidCO2Class = (v: string) => /^[A-G]$/i.test((v || '').trim());
+    if (!isValidCO2Class(c.co2Class) && c.co2Emissions) c.co2Class = deriveCO2Class(c.co2Emissions);
+    else if (c.co2Class) c.co2Class = c.co2Class.trim().toUpperCase().replace(/\+/g, '').slice(0, 1);
+    if (!isValidCO2Class(c.co2ClassDischarged) && c.co2EmissionsDischarged) c.co2ClassDischarged = deriveCO2Class(c.co2EmissionsDischarged);
+    else if (c.co2ClassDischarged) c.co2ClassDischarged = c.co2ClassDischarged.trim().toUpperCase().replace(/\+/g, '').slice(0, 1);
+
+    // Auto-derive vehicle.condition aus Erstzulassung + Kilometerstand (Pkw-EnVKV)
+    if (parsed.vehicle && !parsed.vehicle.condition) {
+      const fr = String(parsed.vehicle.firstRegistration || '').trim();
+      const kmMatch = String(c.mileage || '').match(/([\d.,]+)/);
+      const km = kmMatch ? parseInt(kmMatch[1].replace(/[.,]/g, ''), 10) : NaN;
+      let monthsOld = NaN;
+      const dateMatch = fr.match(/(\d{1,2})[./](\d{4})|(\d{1,2})[./](\d{1,2})[./](\d{4})/);
+      if (dateMatch) {
+        const month = parseInt(dateMatch[1] || dateMatch[3] || '1', 10);
+        const year = parseInt(dateMatch[2] || dateMatch[5] || '0', 10);
+        if (year > 1990) {
+          const now = new Date();
+          monthsOld = (now.getFullYear() - year) * 12 + (now.getMonth() + 1 - month);
+        }
+      }
+      if (!fr || (!isNaN(km) && km < 50 && isNaN(monthsOld))) {
+        parsed.vehicle.condition = 'Neuwagen';
+      } else if (!isNaN(monthsOld) && monthsOld <= 1 && !isNaN(km) && km < 100) {
+        parsed.vehicle.condition = 'Tageszulassung';
+      } else if (!isNaN(monthsOld) && monthsOld <= 18 && !isNaN(km) && km < 25000) {
+        parsed.vehicle.condition = 'Jahreswagen';
+      } else {
+        parsed.vehicle.condition = 'Gebrauchtwagen';
+      }
+    }
 
     // Copy power/fuelType from vehicle to consumption if missing
     if (!c.power && parsed.vehicle?.power) c.power = parsed.vehicle.power;
