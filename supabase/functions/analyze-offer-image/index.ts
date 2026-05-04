@@ -97,28 +97,44 @@ Wenn ein Feld nicht erkennbar ist, setze es auf null. Extrahiere so viel wie mö
 
     let response: Response | null = null;
     let lastErr = "";
+    // Per-attempt timeout to avoid hitting the 150s function idle limit.
+    // Budget: max 2 models × 2 attempts × 35s = 140s worst case.
+    const ATTEMPT_TIMEOUT_MS = 35_000;
+    const MAX_ATTEMPTS = 2;
     outer: for (const model of models) {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
-      for (let attempt = 0; attempt < 3; attempt++) {
-        const r = await fetch(url, {
-          method: "POST",
-          headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
-          body,
-        });
-        if (r.ok) { response = r; break outer; }
-        lastErr = await r.text();
-        console.error(`Gemini ${model} attempt ${attempt + 1}: ${r.status}`, lastErr);
-        // Retry only on overload / rate-limit
-        if (r.status === 503 || r.status === 429 || r.status >= 500) {
-          await new Promise(res => setTimeout(res, 1500 * (attempt + 1)));
+      for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), ATTEMPT_TIMEOUT_MS);
+        try {
+          const r = await fetch(url, {
+            method: "POST",
+            headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
+            body,
+            signal: ctrl.signal,
+          });
+          clearTimeout(t);
+          if (r.ok) { response = r; break outer; }
+          lastErr = await r.text();
+          console.error(`Gemini ${model} attempt ${attempt + 1}: ${r.status}`, lastErr);
+          if (r.status === 503 || r.status === 429 || r.status >= 500) {
+            await new Promise(res => setTimeout(res, 1000 * (attempt + 1)));
+            continue;
+          }
+          break; // hard error – try next model
+        } catch (err) {
+          clearTimeout(t);
+          const msg = err instanceof Error ? err.message : String(err);
+          console.error(`Gemini ${model} attempt ${attempt + 1} aborted/failed:`, msg);
+          lastErr = msg;
+          // On timeout/abort, move to next attempt or model immediately
           continue;
         }
-        break; // hard error – try next model
       }
     }
 
     if (!response) {
-      return errorResponse(`Analyse-Service vorübergehend überlastet. Bitte in einigen Sekunden erneut versuchen.`, 503);
+      return errorResponse(`Analyse-Service vorübergehend überlastet (${lastErr.slice(0, 120)}). Bitte in einigen Sekunden erneut versuchen.`, 503);
     }
 
     const data = await response.json();
