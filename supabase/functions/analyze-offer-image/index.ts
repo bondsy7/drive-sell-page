@@ -262,6 +262,21 @@ Wenn ein Feld nicht erkennbar ist, setze es auf null. Extrahiere so viel wie mö
       parsed.condition = derivedCondition;
     }
 
+    // ── PHEV-Plausibilität: bei Plug-in-Hybrid müssen entladene Werte vorhanden sein ──
+    const fuelLower = String(parsed.fuelType || '').toLowerCase();
+    const isPHEV = /plug.?in|hybrid.*benzin|hybrid.*elektro|benzin.*elektro/.test(fuelLower)
+      && /\+|kwh.*l|l.*kwh/i.test(String(parsed.consumptionCombined || ''));
+    if (isPHEV) {
+      const missing: string[] = [];
+      if (!parsed.consumptionCombinedDischarged) missing.push('Verbrauch entladen');
+      if (!parsed.co2ClassDischarged) missing.push('CO₂-Klasse entladen');
+      if (!parsed.electricRange) missing.push('elektr. Reichweite');
+      if (missing.length) {
+        parsed.phevDataIncomplete = true;
+        parsed.phevMissingFields = missing;
+        console.warn(`[phev-incomplete] Fehlende PHEV-Pflichtfelder: ${missing.join(', ')}`);
+      }
+    }
 
     return jsonResponse({ extracted: parsed });
   } catch (e) {
