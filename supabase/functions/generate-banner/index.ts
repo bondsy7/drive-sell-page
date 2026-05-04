@@ -21,7 +21,7 @@ const MODEL_MAP: Record<string, ModelConfig> = {
   premium:   { engine: "gemini", model: "gemini-3-pro-image-preview", cost: 8 },
   turbo:     { engine: "openai", model: "gpt-image-1", cost: 6, supportsSize: true },
   ultra:     { engine: "openai", model: "gpt-image-1", cost: 10, supportsSize: true },
-  neu:       { engine: "openai", model: "gpt-image-1", cost: 3, supportsSize: true },
+  neu:       { engine: "openai", model: "gpt-image-2", cost: 8, supportsSize: true },
   // Fallbacks
   standard:  { engine: "gemini", model: "gemini-3.1-flash-image-preview", cost: 5 },
   pro:       { engine: "gemini", model: "gemini-3-pro-image-preview", cost: 8 },
@@ -88,6 +88,7 @@ serve(async (req) => {
     const requestedTier = typeof modelTier === "string" ? modelTier : "qualitaet";
     const tier = requestedTier === "standard" ? "qualitaet" : requestedTier;
     const config = MODEL_MAP[tier] || MODEL_MAP["qualitaet"];
+    console.log(`[banner] Engine=${config.engine} Model=${config.model} Tier=${tier} (user-selected, binding)`);
 
     // Auth & credits
     const authResult = await authenticateAndDeductCredits(req, config.cost);
@@ -114,7 +115,7 @@ serve(async (req) => {
       }
       if (!resultImage && lastGeminiError) throw new Error(lastGeminiError);
     } else {
-      resultImage = await generateOpenAI(prompt, imageBase64, logoBase64, config.model, width, height, tier === "ultra", maxRetries);
+      resultImage = await generateOpenAI(prompt, imageBase64, logoBase64, config.model, width, height, tier === "ultra" || tier === "neu", maxRetries);
     }
 
     if (!resultImage) throw new Error("Kein Banner generiert. Bitte versuche es erneut.");

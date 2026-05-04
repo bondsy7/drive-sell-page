@@ -173,7 +173,7 @@ serve(async (req) => {
     // Read cost dynamically from admin_settings. Normalize legacy/unknown tiers so
     // "Qualität" always routes to Nano Banana 2, never to the Pro image model.
     const TIER_ALIASES: Record<string, string> = { standard: 'qualitaet', pro: 'premium' };
-    const REMASTER_DEFAULTS: Record<string, number> = { schnell: 2, qualitaet: 3, premium: 5, turbo: 4, ultra: 7 };
+    const REMASTER_DEFAULTS: Record<string, number> = { schnell: 2, qualitaet: 3, premium: 5, turbo: 4, ultra: 7, neu: 8 };
     const requestedTier = typeof modelTier === 'string' ? modelTier : 'schnell';
     const tier = TIER_ALIASES[requestedTier] || requestedTier;
     let cost = REMASTER_DEFAULTS[tier] ?? 2;
@@ -186,16 +186,24 @@ serve(async (req) => {
     const authResult = await authenticateAndDeductCredits(req, "image_remaster", cost);
     if (authResult instanceof Response) return authResult;
 
-    const GEMINI_MODELS: Record<string, string> = {
-      schnell: 'gemini-2.5-flash-image',
-      qualitaet: 'gemini-3.1-flash-image-preview',
-      premium: 'gemini-3-pro-image-preview',
-      turbo: 'gemini-3.1-flash-image-preview',
-      ultra: 'gemini-3-pro-image-preview',
+    // Engine routing per user-selected tier (binding, no cross-engine fallback)
+    interface EngineConfig { engine: 'gemini' | 'openai'; model: string }
+    const ENGINE_MAP: Record<string, EngineConfig> = {
+      schnell:   { engine: 'gemini', model: 'gemini-2.5-flash-image' },
+      qualitaet: { engine: 'gemini', model: 'gemini-3.1-flash-image-preview' },
+      premium:   { engine: 'gemini', model: 'gemini-3-pro-image-preview' },
+      turbo:     { engine: 'openai', model: 'gpt-image-1' },
+      ultra:     { engine: 'openai', model: 'gpt-image-1' },
+      neu:       { engine: 'openai', model: 'gpt-image-2' },
     };
-    const geminiModel = GEMINI_MODELS[tier] || 'gemini-3.1-flash-image-preview';
-    const GEMINI_API_KEY = await getSecret("GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
+    const engineConfig = ENGINE_MAP[tier] || ENGINE_MAP['qualitaet'];
+    const geminiModel = engineConfig.model; // legacy var name kept for downstream Gemini path
+    console.log(`[remaster] Engine=${engineConfig.engine} Model=${engineConfig.model} Tier=${tier} (user-selected, binding)`);
+
+    const GEMINI_API_KEY = engineConfig.engine === 'gemini' ? await getSecret("GEMINI_API_KEY") : null;
+    const OPENAI_API_KEY = engineConfig.engine === 'openai' ? await getSecret("OPENAI_API_KEY") : null;
+    if (engineConfig.engine === 'gemini' && !GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
+    if (engineConfig.engine === 'openai' && !OPENAI_API_KEY) throw new Error("OPENAI_API_KEY not configured");
     if (!imageBase64) throw new Error("No image provided");
 
     // 2. Use dynamic prompt if provided, otherwise build fallback from admin blocks
@@ -413,7 +421,105 @@ The showroom wall must remain CLEAN and EMPTY. No manufacturer logos, no dealer 
     console.log(`[remaster] === FULL PAYLOAD DEBUG ===`);
     console.log(JSON.stringify(debugSummary, null, 2));
 
-    // 3. Call Gemini with fallback chain
+    let resultImage: string | null = null;
+    let lastError = "";
+
+    // ─────────────────────────────────────────────────────────────
+    // OPENAI ENGINE (turbo / ultra / neu) — uses /v1/images/edits
+    // ─────────────────────────────────────────────────────────────
+    if (engineConfig.engine === 'openai') {
+      // Collect all text parts into one prompt + all image data parts as multipart files
+      const promptText = parts
+        .filter((p: any) => typeof p.text === 'string')
+        .map((p: any) => p.text)
+        .join('\n\n');
+      const inlineImageParts = parts.filter((p: any) => p.inlineData?.data);
+      const fileUriParts = parts.filter((p: any) => p.file_data?.file_uri);
+
+      // Materialize file_uri images by fetching them (OpenAI has no file_uri concept)
+      const allImages: { mime: string; data: string }[] = [];
+      for (const ip of inlineImageParts) {
+        allImages.push({ mime: ip.inlineData.mimeType || 'image/png', data: ip.inlineData.data });
+      }
+      for (const fp of fileUriParts) {
+        try {
+          const r = await fetch(fp.file_data.file_uri);
+          if (r.ok) {
+            const buf = new Uint8Array(await r.arrayBuffer());
+            let bin = ''; for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
+            allImages.push({ mime: fp.file_data.mime_type || 'image/png', data: btoa(bin) });
+          }
+        } catch (e) { console.warn('[remaster][openai] file_uri fetch failed', e); }
+      }
+
+      // OpenAI /v1/images/edits accepts up to 16 image inputs
+      const limited = allImages.slice(0, 16);
+      console.log(`[remaster][openai] model=${engineConfig.model}, images=${limited.length}, promptLen=${promptText.length}`);
+
+      const form = new FormData();
+      form.append('model', engineConfig.model);
+      // Output: 1536x1024 (landscape 3:2 ≈ 4:3) is closest supported size
+      form.append('size', '1536x1024');
+      form.append('n', '1');
+      form.append('quality', tier === 'ultra' || tier === 'neu' ? 'high' : 'medium');
+      form.append('prompt', promptText);
+
+      for (let i = 0; i < limited.length; i++) {
+        const im = limited[i];
+        const binStr = atob(im.data);
+        const bytes = new Uint8Array(binStr.length);
+        for (let j = 0; j < binStr.length; j++) bytes[j] = binStr.charCodeAt(j);
+        const ext = im.mime.includes('png') ? 'png' : im.mime.includes('webp') ? 'webp' : 'jpg';
+        const blob = new Blob([bytes], { type: im.mime });
+        form.append('image', blob, `ref_${i}.${ext}`);
+      }
+
+      const MAX_OPENAI_ATTEMPTS = 2;
+      for (let attempt = 0; attempt < MAX_OPENAI_ATTEMPTS && !resultImage; attempt++) {
+        try {
+          const resp = await fetchWithTimeout('https://api.openai.com/v1/images/edits', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
+            body: form,
+          }, 90_000);
+
+          if (!resp.ok) {
+            const errText = await resp.text();
+            console.error(`[remaster][openai] attempt ${attempt + 1} status=${resp.status}: ${errText.slice(0, 300)}`);
+            lastError = `OpenAI ${engineConfig.model} error (${resp.status})`;
+            if ([400, 401, 403].includes(resp.status) && /invalid_api_key|incorrect api key/i.test(errText)) {
+              throw new Error('OPENAI_API_KEY ungültig oder nicht freigeschaltet');
+            }
+            if (attempt < MAX_OPENAI_ATTEMPTS - 1) await sleep(2000 * (attempt + 1));
+            continue;
+          }
+          const data = await resp.json();
+          const b64 = data?.data?.[0]?.b64_json;
+          if (b64) {
+            resultImage = `data:image/png;base64,${b64}`;
+            console.log(`[remaster][openai] success with ${engineConfig.model}`);
+            break;
+          }
+          lastError = 'OpenAI: kein Bild im Response';
+        } catch (e: any) {
+          const isAbort = e?.name === 'AbortError';
+          lastError = isAbort ? 'OpenAI Zeitüberschreitung (90s)' : (e?.message || 'OpenAI error');
+          console.error(`[remaster][openai] attempt ${attempt + 1} threw:`, lastError);
+          if (attempt < MAX_OPENAI_ATTEMPTS - 1) await sleep(2000 * (attempt + 1));
+        }
+      }
+
+      if (!resultImage) throw new Error(lastError || 'OpenAI: Kein Bild generiert.');
+
+      return new Response(JSON.stringify({ imageBase64: resultImage, engine: 'openai', model: engineConfig.model }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // GEMINI ENGINE (schnell / qualitaet / premium) — original path
+    // Same-engine fallback only (never crosses to OpenAI)
+    // ─────────────────────────────────────────────────────────────
     const FALLBACK_ORDER: Record<string, string[]> = {
       'gemini-3-pro-image-preview': ['gemini-3.1-flash-image-preview', 'gemini-2.5-flash-image'],
       'gemini-3.1-flash-image-preview': ['gemini-2.5-flash-image'],
@@ -421,8 +527,6 @@ The showroom wall must remain CLEAN and EMPTY. No manufacturer logos, no dealer 
     };
     const modelsToTry = Array.from(new Set([geminiModel, ...(FALLBACK_ORDER[geminiModel] || ['gemini-3.1-flash-image-preview'])])).slice(0, 2);
     const maxRetries = 1;
-    let resultImage: string | null = null;
-    let lastError = "";
 
     for (const currentModel of modelsToTry) {
       if (resultImage) break;
@@ -434,7 +538,7 @@ The showroom wall must remain CLEAN and EMPTY. No manufacturer logos, no dealer 
           const response = await fetchWithTimeout(geminiUrl, {
             method: "POST",
             headers: {
-              "x-goog-api-key": GEMINI_API_KEY,
+              "x-goog-api-key": GEMINI_API_KEY!,
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
