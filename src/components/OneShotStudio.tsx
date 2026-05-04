@@ -1413,6 +1413,15 @@ ABSOLUTE PRIORITY – this is the marketing master image:
           )}
         </div>
       )}
+
+      {lightboxItems.length > 0 && (
+        <OneShotLightbox
+          items={lightboxItems}
+          index={lightboxIndex}
+          onClose={closeLightbox}
+          onIndexChange={setLightboxIndex}
+        />
+      )}
     </div>
   );
 };
