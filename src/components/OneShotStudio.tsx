@@ -950,6 +950,72 @@ ABSOLUTE PRIORITY – this is the marketing master image:
                     <Hash className="w-3 h-3" /> VIN erkannt: <span className="font-mono">{vin}</span>
                   </p>
                 )}
+                {vinVehicle && (
+                  <Accordion type="single" collapsible className="w-full border border-border rounded-lg bg-muted/20 px-3">
+                    <AccordionItem value="vin-data" className="border-b-0">
+                      <AccordionTrigger className="py-2.5 text-xs font-medium hover:no-underline">
+                        <span className="flex items-center gap-2">
+                          <Database className="w-3.5 h-3.5 text-accent" />
+                          Stammdaten aus VIN
+                          <Badge variant="secondary" className="text-[10px] h-4 px-1.5">
+                            {Object.entries(vinVehicle).filter(([k, v]) => k !== '_raw' && k !== 'equipment' && v).length} Felder
+                            {vinEquipment.length > 0 && ` · ${vinEquipment.length} Ausstattung`}
+                          </Badge>
+                        </span>
+                      </AccordionTrigger>
+                      <AccordionContent className="pb-3">
+                        <div className="space-y-3">
+                          {/* Vehicle title */}
+                          <div className="text-sm font-semibold text-foreground">
+                            {[vinVehicle.brand, vinVehicle.model, vinVehicle.variant].filter(Boolean).join(' ') || '—'}
+                          </div>
+
+                          {/* Specs grid */}
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-1.5 text-[11px]">
+                            {([
+                              ['Marke', vinVehicle.brand],
+                              ['Modell', vinVehicle.model],
+                              ['Variante', vinVehicle.variant],
+                              ['Baujahr', vinVehicle.year],
+                              ['Kraftstoff', vinVehicle.fuelType],
+                              ['Getriebe', vinVehicle.transmission],
+                              ['Leistung', vinVehicle.power],
+                              ['Hubraum', vinVehicle.displacement],
+                              ['Antrieb', vinVehicle.driveType],
+                              ['Karosserie', vinVehicle.bodyType],
+                              ['Türen', vinVehicle.doors],
+                              ['Sitze', vinVehicle.seats],
+                              ['Farbe', vinVehicle.color],
+                            ] as Array<[string, any]>)
+                              .filter(([, v]) => v !== null && v !== undefined && v !== '')
+                              .map(([label, value]) => (
+                                <div key={label} className="flex flex-col">
+                                  <span className="text-muted-foreground text-[10px] uppercase tracking-wide">{label}</span>
+                                  <span className="font-medium text-foreground truncate">{String(value)}</span>
+                                </div>
+                              ))}
+                          </div>
+
+                          {/* Equipment */}
+                          {vinEquipment.length > 0 && (
+                            <div>
+                              <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1.5">
+                                Ausstattung ({vinEquipment.length})
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                {vinEquipment.map((item, i) => (
+                                  <Badge key={i} variant="outline" className="text-[10px] font-normal py-0 px-1.5 bg-background">
+                                    {item}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+                )}
               </>
             )}
 
