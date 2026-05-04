@@ -177,12 +177,13 @@ Wenn es ein Fahrzeugangebot IST, setze "isVehicleOffer": true im Root-Objekt und
 ABSOLUTE REGELN:
 1. ZUERST prüfen ob Fahrzeugangebot - wenn nicht, sofort ablehnen
 2. Extrahiere JEDEN Wert der im PDF steht - lieber zu viel als zu wenig
-3. Leite co2Class und co2ClassDischarged IMMER aus den g/km-Werten ab wenn nicht explizit angegeben
-4. Setze isPluginHybrid=true sobald irgendein PHEV-Hinweis erkannt wird
-5. Features: NUR Highlights (max 15-20), keine "Ohne/Kein"-Einträge, keine Trivialausstattung
-6. Einheiten IMMER mit angeben (€, km, l/100km, g/km, kW, PS, cm³, kWh/100km)
-7. Fehlende Werte = leerer String "", fehlende booleans = false
-8. Antworte NUR mit JSON`;
+3. Leite co2Class und co2ClassDischarged IMMER aus den g/km-Werten ab. NUR A-G erlaubt, NIE A+/A++/A+++!
+4. Setze isPluginHybrid=true sobald irgendein PHEV-Hinweis erkannt wird. Bei PHEV IMMER beide Werte (gewichtet + entladen) ausgeben.
+5. Bestimme vehicle.condition aus Erstzulassung + Kilometerstand (siehe FAHRZEUGZUSTAND-ERKENNUNG)
+6. Features: NUR Highlights (max 15-20), keine "Ohne/Kein"-Einträge, keine Trivialausstattung
+7. Einheiten IMMER mit angeben (€, km, l/100km, g/km, kW, PS, cm³, kWh/100km)
+8. Fehlende Werte = leerer String "", fehlende booleans = false
+9. Antworte NUR mit JSON`;
 
 // ── Helpers ──
 
