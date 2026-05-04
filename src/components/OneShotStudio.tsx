@@ -917,7 +917,7 @@ ABSOLUTE PRIORITY – this is the marketing master image:
         }
       }),
     );
-  }, [selectedBannerFormats, form, modelTier, user]);
+  }, [selectedBannerFormats, form, modelTier, user, savedVehicleId]);
 
   /** Start video generation with hero + optional rear reference. */
   const generateVideo = useCallback(async (heroB64: string) => {
