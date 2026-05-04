@@ -30,6 +30,8 @@ import ExportChoiceDialog, { type ExportMode } from '@/components/ExportChoiceDi
 import GalleryLightbox from '@/components/GalleryLightbox';
 import VideoPlayerModal from '@/components/dashboard/VideoPlayerModal';
 import SpinViewerModal from '@/components/dashboard/SpinViewerModal';
+import EditVehicleDialog from '@/components/vehicle/EditVehicleDialog';
+import CoverPickerDialog from '@/components/vehicle/CoverPickerDialog';
 import { getImageSrc } from '@/components/dashboard/types';
 import type { Project, ProjectImage, Lead, Spin360Job, BannerFile, VideoFile } from '@/components/dashboard/types';
 
