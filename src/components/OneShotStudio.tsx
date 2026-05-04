@@ -1288,41 +1288,60 @@ ABSOLUTE PRIORITY – this is the marketing master image:
             />
           </div>
 
-          {/* Datasheet upload */}
+          {/* Datasheets upload (multiple) */}
           <div className="rounded-xl border border-border bg-card p-4 space-y-3">
             <div className="flex items-center gap-2">
               <FileText className="w-4 h-4 text-accent" />
               <h3 className="font-semibold text-sm">Datenblatt / Preisliste</h3>
-              <span className="ml-auto text-[11px] text-muted-foreground">empfohlen</span>
+              <span className="ml-auto text-[11px] text-muted-foreground">
+                empfohlen · bis zu 6 Dokumente
+              </span>
             </div>
-            {dataSheetBase64 ? (
-              <div className="relative rounded-lg overflow-hidden border border-border">
-                <img src={dataSheetBase64} alt="Datenblatt" className="w-full h-32 sm:h-40 object-contain bg-muted/30" />
-                <button
-                  onClick={() => { setDataSheetBase64(null); setScanData(null); }}
-                  className="absolute top-2 right-2 w-6 h-6 rounded-full bg-background/80 hover:bg-destructive hover:text-destructive-foreground flex items-center justify-center"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-                {analyzingSheet && (
-                  <div className="absolute inset-0 bg-background/70 flex items-center justify-center">
-                    <Loader2 className="w-5 h-5 animate-spin text-accent" />
+
+            {dataSheetBase64s.length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {dataSheetBase64s.map((src, idx) => (
+                  <div key={idx} className="relative rounded-lg overflow-hidden border border-border group">
+                    <img src={src} alt={`Datenblatt ${idx + 1}`} className="w-full h-24 sm:h-28 object-contain bg-muted/30" />
+                    <button
+                      onClick={() => removeDataSheet(idx)}
+                      disabled={analyzingSheet}
+                      className="absolute top-1 right-1 w-5 h-5 rounded-full bg-background/80 hover:bg-destructive hover:text-destructive-foreground flex items-center justify-center"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                    <span className="absolute bottom-1 left-1 text-[9px] px-1.5 py-0.5 rounded bg-background/80 font-medium">
+                      #{idx + 1}
+                    </span>
                   </div>
-                )}
-                {scanData && !analyzingSheet && (
-                  <div className="absolute bottom-0 left-0 right-0 bg-accent/10 border-t border-accent/30 px-3 py-1.5">
-                    <p className="text-[10px] text-accent-foreground truncate">
-                      ✓ {scanData.vehicleTitle || 'Daten erkannt'}
-                      {scanData.price && ` · ${scanData.price}`}
-                    </p>
-                  </div>
-                )}
+                ))}
               </div>
-            ) : (
+            )}
+
+            {analyzingSheet && (
+              <div className="flex items-center justify-center gap-2 py-2 text-xs text-muted-foreground">
+                <Loader2 className="w-4 h-4 animate-spin text-accent" />
+                {dataSheetBase64s.length > 1
+                  ? `${dataSheetBase64s.length} Dokumente werden zusammengeführt …`
+                  : 'Analysiere Datenblatt …'}
+              </div>
+            )}
+
+            {scanData && !analyzingSheet && dataSheetBase64s.length > 0 && (
+              <div className="rounded-md bg-accent/10 border border-accent/30 px-3 py-1.5">
+                <p className="text-[11px] text-accent-foreground truncate">
+                  ✓ {scanData.vehicleTitle || 'Daten erkannt'}
+                  {scanData.price && ` · ${scanData.price}`}
+                  {dataSheetBase64s.length > 1 && ` · aus ${dataSheetBase64s.length} Dokumenten zusammengeführt`}
+                </p>
+              </div>
+            )}
+
+            {dataSheetBase64s.length < 6 && (
               <button
                 onClick={() => sheetInputRef.current?.click()}
                 disabled={analyzingSheet}
-                className="w-full border-2 border-dashed border-border hover:border-accent rounded-lg p-5 text-center bg-muted/20 hover:bg-muted/40 transition-colors"
+                className="w-full border-2 border-dashed border-border hover:border-accent rounded-lg p-4 text-center bg-muted/20 hover:bg-muted/40 transition-colors"
               >
                 {analyzingSheet ? (
                   <Loader2 className="w-5 h-5 text-muted-foreground mx-auto mb-1.5 animate-spin" />
@@ -1330,16 +1349,20 @@ ABSOLUTE PRIORITY – this is the marketing master image:
                   <Upload className="w-5 h-5 text-muted-foreground mx-auto mb-1.5" />
                 )}
                 <p className="text-xs text-muted-foreground">
-                  Datenblatt / Preisliste / WLTP-Tabelle hochladen
+                  {dataSheetBase64s.length === 0
+                    ? 'Datenblatt / Preisliste / WLTP-Tabelle hochladen (mehrere möglich)'
+                    : `Weiteres Dokument hinzufügen (${dataSheetBase64s.length}/6)`}
                 </p>
               </button>
             )}
+
             <input
               ref={sheetInputRef}
               type="file"
               accept="image/*"
+              multiple
               className="hidden"
-              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleDataSheetUpload(f); e.target.value = ''; }}
+              onChange={(e) => { if (e.target.files?.length) handleDataSheetUpload(e.target.files); e.target.value = ''; }}
             />
           </div>
 
