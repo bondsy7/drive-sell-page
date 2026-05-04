@@ -278,6 +278,8 @@ export default function VehicleView() {
     switch (tab) {
       case 'originals':
         return <OriginalsTab vehicleId={vehicle.id} />;
+      case 'data':
+        return <DataTab vehicle={vehicle} />;
       case 'gallery':
         return (
           <GalleryTab
