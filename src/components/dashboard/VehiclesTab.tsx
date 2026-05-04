@@ -78,6 +78,14 @@ export default function VehiclesTab() {
   }
 
   return (
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button onClick={reclaimOrphans} disabled={reclaiming} variant="outline" size="sm">
+          {reclaiming
+            ? <><Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> Verknüpfe…</>
+            : <><Link2 className="w-4 h-4 mr-1.5" /> Verwaiste Bilder per VIN zuordnen</>}
+        </Button>
+      </div>
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {vehicles.map(v => {
         const title =
