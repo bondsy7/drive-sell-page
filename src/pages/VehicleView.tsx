@@ -36,7 +36,7 @@ import CoverPickerDialog from '@/components/vehicle/CoverPickerDialog';
 import { getImageSrc } from '@/components/dashboard/types';
 import type { Project, ProjectImage, Lead, Spin360Job, BannerFile, VideoFile } from '@/components/dashboard/types';
 
-type TabKey = 'originals' | 'gallery' | 'landings' | 'projects' | 'banners' | 'videos' | 'spin360' | 'leads';
+type TabKey = 'originals' | 'gallery' | 'data' | 'projects' | 'landings' | 'banners' | 'videos' | 'spin360' | 'leads';
 
 export default function VehicleView() {
   const { id } = useParams<{ id: string }>();
