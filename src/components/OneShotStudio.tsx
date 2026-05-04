@@ -53,6 +53,7 @@ import { lookupBrandFromVin } from '@/lib/vin-wmi-lookup';
 import { usePipelineSafe } from '@/contexts/PipelineContext';
 import { compressImageForAI, fileToBase64 } from '@/lib/image-compress';
 import { useVehicleMakes } from '@/hooks/useVehicleMakes';
+import { ensureVehicle } from '@/lib/vehicle-utils';
 
 import OneShotMarketingForm from './oneshot/OneShotMarketingForm';
 import OneShotLightbox, { type LightboxItem } from './oneshot/OneShotLightbox';
