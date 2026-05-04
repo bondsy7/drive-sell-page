@@ -135,27 +135,31 @@ function deriveVehicleCondition(args: {
   if (hasKm) { confidence += 25; factors.push('+25 Kilometerstand erkannt'); }
   if (hasFr && hasKm) { confidence += 10; factors.push('+10 beide Signale verfügbar'); }
 
-  // ─── Berechne Zustand aus den ZAHLEN (Pkw-EnVKV) — Daten haben Vorrang ───
+  // ─── Berechne Zustand aus den ZAHLEN — Pkw-EnVKV (Fassung seit 23.02.2024) ───
+  // § 2 Nr. 1: Neuwagen = noch nicht zum Weiterverkauf zugelassen UND
+  //            (Erstzulassung ≤ 8 Monate ODER Kilometerstand ≤ 1.000 km).
   let derived = 'Unbekannt';
   let derivedRule = 'Keine Erstzulassung oder Kilometerstand erkannt.';
-  if (!fr && (km === null || km < 50)) {
+  const isNew = (monthsOld === null || monthsOld <= 8) && (km === null || km <= 1000);
+
+  if (isNew) {
     derived = 'Neuwagen';
-    derivedRule = 'Keine Erstzulassung & Kilometerstand < 50 km → Neuwagen (§ 2 Pkw-EnVKV).';
+    const partsN: string[] = [];
+    partsN.push(monthsOld !== null ? `EZ ${monthsOld} Mon. ≤ 8 Mon.` : 'keine Erstzulassung');
+    partsN.push(km !== null ? `${km.toLocaleString('de-DE')} km ≤ 1.000 km` : 'km ≤ 1.000');
+    derivedRule = `${partsN.join(' & ')} → Neuwagen (§ 2 Nr. 1 Pkw-EnVKV).`;
   } else if (monthsOld !== null && monthsOld <= 1 && km !== null && km < 100) {
     derived = 'Tageszulassung';
     derivedRule = `EZ < 1 Monat & ${km} km < 100 km → Tageszulassung.`;
-  } else if (monthsOld !== null && monthsOld <= 18 && km !== null && km < 25000 && km >= 100) {
+  } else if (monthsOld !== null && monthsOld <= 18 && km !== null && km < 25000) {
     derived = 'Jahreswagen';
     derivedRule = `EZ ${monthsOld} Mon. alt & ${km.toLocaleString('de-DE')} km → Jahreswagen.`;
-  } else if ((monthsOld !== null && monthsOld > 18) || (km !== null && km >= 25000)) {
+  } else {
     derived = 'Gebrauchtwagen';
     const reasons: string[] = [];
-    if (monthsOld !== null && monthsOld > 18) reasons.push(`EZ ${monthsOld} Mon. alt`);
-    if (km !== null && km >= 25000) reasons.push(`${km.toLocaleString('de-DE')} km ≥ 25.000 km`);
-    derivedRule = `${reasons.join(' & ')} → Gebrauchtwagen.`;
-  } else if (km !== null && km > 50) {
-    derived = 'Gebrauchtwagen';
-    derivedRule = `${km.toLocaleString('de-DE')} km gefahren → Gebrauchtwagen.`;
+    if (monthsOld !== null && monthsOld > 8) reasons.push(`EZ ${monthsOld} Mon. > 8 Mon.`);
+    if (km !== null && km > 1000) reasons.push(`${km.toLocaleString('de-DE')} km > 1.000 km`);
+    derivedRule = `${reasons.join(' & ') || 'Neuwagen-Definition nicht erfüllt'} → Gebrauchtwagen (§ 2 Nr. 1 Pkw-EnVKV).`;
   }
 
   // ─── Konflikt-Erkennung zwischen explicit (AI) und berechnetem Wert ───

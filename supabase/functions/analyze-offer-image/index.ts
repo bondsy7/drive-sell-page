@@ -31,15 +31,15 @@ Wenn im Bild "A+++" o.ä. steht, IGNORIERE diesen Wert komplett und LEITE die Kl
 - 0 g/km → A | 1–95 → B | 96–115 → C | 116–135 → D | 136–155 → E | 156–175 → F | >175 → G
 Bei PHEVs: co2Class aus gewichteten g/km, co2ClassDischarged aus entladenen g/km.
 
-⚠️ FAHRZEUGZUSTAND-ERKENNUNG (Pkw-EnVKV) — STRENG NACH DATEN, NICHT RATEN:
+⚠️ FAHRZEUGZUSTAND-ERKENNUNG (Pkw-EnVKV, Fassung seit 23.02.2024) — STRENG NACH DATEN, NICHT RATEN:
 SCHRITT 1: Suche im Bild eine TABELLE oder LISTE mit "Fahrzeugzustand", "Erstzulassung"
 und "Kilometerstand" (oder "km-Stand", "Laufleistung"). Lese die Werte WÖRTLICH ab.
 SCHRITT 2: Bestimme condition NACH ZAHLEN (Daten haben Vorrang vor Begriffen):
-- "Neuwagen" → KEINE Erstzulassung UND mileageKm 0–50 km. Sobald Erstzulassung ODER mileageKm > 50 km vorhanden, ist es KEIN Neuwagen.
+- "Neuwagen" → noch nicht zum Weiterverkauf zugelassen UND (Erstzulassung ≤ 8 Monate ODER Kilometerstand ≤ 1.000 km). § 2 Nr. 1 Pkw-EnVKV.
 - "Tageszulassung" → Erstzulassung < 1 Monat alt UND mileageKm < 100 km
 - "Jahreswagen" → Erstzulassung 6–18 Monate alt UND mileageKm < 25.000 km
-- "Gebrauchtwagen" → Erstzulassung > 18 Monate alt ODER mileageKm > 25.000 km ODER explizit "Gebrauchtwagen"
-- "Vorführwagen" → nur wenn explizit "Vorführwagen"/"Demo" in der Tabelle steht
+- "Gebrauchtwagen" → Erstzulassung > 8 Monate alt UND mileageKm > 1.000 km (also Neuwagen-Definition NICHT erfüllt) ODER explizit „Gebrauchtwagen"
+- "Vorführwagen" → nur wenn explizit „Vorführwagen"/„Demo" in der Tabelle steht
 SCHRITT 3: Bei Widerspruch zwischen Begriff und Zahlen → ZAHLEN gewinnen.
 WICHTIG: NIEMALS condition raten. Wenn unsicher, leer lassen — der Server leitet sie ab.
 WICHTIG: mileageKm IMMER aus der "Kilometerstand"-Zeile übernehmen, NICHT mit Jahresfahrleistung verwechseln.
@@ -172,33 +172,42 @@ Wenn ein Feld nicht erkennbar ist, setze es auf null. Extrahiere so viel wie mö
       }
     }
 
+    // Pkw-EnVKV (Fassung seit 23.02.2024) — § 2 Nr. 1: Neuwagen = noch nicht zum
+    // Weiterverkauf zugelassen UND (Erstzulassung ≤ 8 Monate ODER ≤ 1.000 km).
     let derivedCondition = '';
     let derivedReason = '';
-    if (!fr && (isNaN(km) || km < 50)) {
+    const isNew = (isNaN(monthsOld) || monthsOld <= 8) && (isNaN(km) || km <= 1000);
+
+    if (isNew) {
       derivedCondition = 'Neuwagen';
-      derivedReason = 'no firstReg & km<50';
+      const partsN: string[] = [];
+      if (!isNaN(monthsOld)) partsN.push(`EZ ${monthsOld} Mon. ≤ 8 Mon.`);
+      else partsN.push('keine Erstzulassung');
+      if (!isNaN(km)) partsN.push(`${km.toLocaleString('de-DE')} km ≤ 1.000 km`);
+      else partsN.push('km ≤ 1.000');
+      derivedReason = `${partsN.join(' & ')} → Neuwagen (§ 2 Nr. 1 Pkw-EnVKV).`;
     } else if (!isNaN(monthsOld) && monthsOld <= 1 && !isNaN(km) && km < 100) {
       derivedCondition = 'Tageszulassung';
-      derivedReason = `monthsOld<=1 & km<100`;
-    } else if (!isNaN(monthsOld) && monthsOld >= 0 && monthsOld <= 18 && !isNaN(km) && km < 25000 && km >= 100) {
+      derivedReason = `EZ < 1 Mon. & km < 100 → Tageszulassung.`;
+    } else if (!isNaN(monthsOld) && monthsOld <= 18 && !isNaN(km) && km < 25000) {
       derivedCondition = 'Jahreswagen';
-      derivedReason = `monthsOld<=18 & km<25k`;
-    } else if ((!isNaN(monthsOld) && monthsOld > 18) || (!isNaN(km) && km >= 25000)) {
+      derivedReason = `EZ ${monthsOld} Mon. & ${km.toLocaleString('de-DE')} km → Jahreswagen.`;
+    } else {
       derivedCondition = 'Gebrauchtwagen';
-      derivedReason = `monthsOld>18 OR km>=25k`;
-    } else if (!isNaN(km) && km > 50) {
-      derivedCondition = 'Gebrauchtwagen';
-      derivedReason = `km>50, no firstReg`;
+      const reasonsG: string[] = [];
+      if (!isNaN(monthsOld) && monthsOld > 8) reasonsG.push(`EZ ${monthsOld} Mon. > 8 Mon.`);
+      if (!isNaN(km) && km > 1000) reasonsG.push(`${km.toLocaleString('de-DE')} km > 1.000 km`);
+      derivedReason = `${reasonsG.join(' & ') || 'Daten widersprechen Neuwagen-Definition'} → Gebrauchtwagen.`;
     }
 
     const validConditions = ['Neuwagen', 'Gebrauchtwagen', 'Tageszulassung', 'Vorführwagen', 'Jahreswagen'];
     const aiCondition = validConditions.includes(parsed.condition) ? parsed.condition : '';
 
-    // Plausibilitäts-Override: AI-Wert verwerfen, wenn er den Zahlen widerspricht
+    // Plausibilitäts-Override gemäß neuer Pkw-EnVKV-Schwellen (8 Mon. / 1.000 km)
     const aiSaysNew = aiCondition === 'Neuwagen';
-    const dataSaysUsed = (!isNaN(km) && km > 1000) || (!isNaN(monthsOld) && monthsOld > 6);
+    const dataSaysUsed = (!isNaN(km) && km > 1000) || (!isNaN(monthsOld) && monthsOld > 8);
     const aiSaysUsed = aiCondition === 'Gebrauchtwagen';
-    const dataSaysNew = (isNaN(km) || km < 50) && !fr;
+    const dataSaysNew = (isNaN(km) || km <= 1000) && (isNaN(monthsOld) || monthsOld <= 8);
 
     if (aiSaysNew && dataSaysUsed && derivedCondition) {
       console.log(`[condition-override] AI sagte "Neuwagen", Daten widersprechen (km=${km}, monthsOld=${monthsOld}) → "${derivedCondition}" (${derivedReason})`);
