@@ -341,6 +341,8 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
         toast.success('VIN erkannt: ' + detectedVin);
         return;
       }
+      setVinVehicle(v as Record<string, any>);
+      if (Array.isArray(v.equipment)) setVinEquipment(v.equipment as string[]);
       setForm((f) => ({
         ...f,
         brand: f.brand || v.make || v.brand || '',
