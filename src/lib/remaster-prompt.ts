@@ -255,7 +255,8 @@ ${interiorLighting}
 </SCENE_AND_LIGHTING>`);
     } else {
       const isCustomShowroom = config.scene === 'custom-showroom';
-      const exteriorLighting = getBlock(overrides, 'scene_lighting_exterior');
+      const baseExteriorLighting = getBlock(overrides, 'scene_lighting_exterior');
+      const exteriorLighting = getSceneLightingPrompt(overrides, config.scene, baseExteriorLighting);
       parts.push(`<SCENE_AND_LIGHTING>
 ENVIRONMENT: ${scenePrompt}
 
