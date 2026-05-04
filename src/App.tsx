@@ -15,6 +15,7 @@ const Auth = lazy(() => import("./pages/Auth"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Profile = lazy(() => import("./pages/Profile"));
 const ProjectView = lazy(() => import("./pages/ProjectView"));
+const VehicleView = lazy(() => import("./pages/VehicleView"));
 const LeasingCalculator = lazy(() => import("./pages/LeasingCalculator"));
 const FinancingCalculator = lazy(() => import("./pages/FinancingCalculator"));
 const KfzSteuerRechner = lazy(() => import("./pages/KfzSteuerRechner"));
@@ -107,6 +108,7 @@ const App = () => (
               <Route path="/dashboard" element={<ProtectedRoute><ErrorBoundary moduleName="Dashboard"><Dashboard /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/project/:id" element={<ProtectedRoute><ErrorBoundary moduleName="Projekt"><ProjectView /></ErrorBoundary></ProtectedRoute>} />
+              <Route path="/vehicle/:id" element={<ProtectedRoute><ErrorBoundary moduleName="Fahrzeug"><VehicleView /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/leasing-rechner" element={<ProtectedRoute><LeasingCalculator /></ProtectedRoute>} />
               <Route path="/finanzierungsrechner" element={<ProtectedRoute><FinancingCalculator /></ProtectedRoute>} />
               <Route path="/kfz-steuer-rechner" element={<ProtectedRoute><KfzSteuerRechner /></ProtectedRoute>} />
