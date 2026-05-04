@@ -451,7 +451,7 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
 
 FORMAT: ${fmt.w}x${fmt.h} pixels (${fmt.ratio} aspect ratio). The output image MUST be exactly this size.
 
-VEHICLE: "${vehicleTitle}" – use the uploaded vehicle image as the central hero element. Keep the vehicle 100% identical.
+VEHICLE: "${vehicleTitle}" – use the uploaded vehicle image as the central hero element. Keep vehicle identity, shape, colour, trim, wheels and proportions accurate, but re-render lighting, shadows and reflections to match the NEW scene.
 
 SCENE: ${scn.prompt}. Place the vehicle naturally in this environment.
 
