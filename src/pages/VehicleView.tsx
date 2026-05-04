@@ -3,7 +3,7 @@ import { useParams, Link, Navigate, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft, Car, FileText, Image as ImageIcon, Layout, LayoutGrid, Video, RotateCw,
-  MessageSquare, FolderOpen, Trash2,
+  MessageSquare, FolderOpen, Trash2, Pencil,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,6 +30,8 @@ import ExportChoiceDialog, { type ExportMode } from '@/components/ExportChoiceDi
 import GalleryLightbox from '@/components/GalleryLightbox';
 import VideoPlayerModal from '@/components/dashboard/VideoPlayerModal';
 import SpinViewerModal from '@/components/dashboard/SpinViewerModal';
+import EditVehicleDialog from '@/components/vehicle/EditVehicleDialog';
+import CoverPickerDialog from '@/components/vehicle/CoverPickerDialog';
 import { getImageSrc } from '@/components/dashboard/types';
 import type { Project, ProjectImage, Lead, Spin360Job, BannerFile, VideoFile } from '@/components/dashboard/types';
 
@@ -60,6 +62,8 @@ export default function VehicleView() {
   const [viewerJobId, setViewerJobId] = useState<string | null>(null);
   const [viewerFrames, setViewerFrames] = useState<string[]>([]);
   const [viewerLoading, setViewerLoading] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [coverOpen, setCoverOpen] = useState(false);
 
   // Per-vehicle data queries
   const { data: projects = [] } = useQuery({
@@ -305,16 +309,30 @@ export default function VehicleView() {
             <Link to="/dashboard" aria-label="Zurück"><ArrowLeft className="w-5 h-5" /></Link>
           </Button>
           <div className="flex items-center gap-3 flex-1 min-w-0">
-            <div className="w-12 h-12 rounded-md bg-muted overflow-hidden flex items-center justify-center shrink-0">
+            <button
+              type="button"
+              onClick={() => setCoverOpen(true)}
+              className="w-12 h-12 rounded-md bg-muted overflow-hidden flex items-center justify-center shrink-0 hover:ring-2 hover:ring-accent transition-all"
+              aria-label="Cover-Bild ändern"
+              title="Cover-Bild ändern"
+            >
               {vehicle.cover_image_url
                 ? <img src={vehicle.cover_image_url} alt="" className="w-full h-full object-cover" />
                 : <Car className="w-5 h-5 text-muted-foreground" />}
-            </div>
+            </button>
             <div className="min-w-0">
               <h1 className="text-lg sm:text-xl font-bold text-foreground truncate">{title}</h1>
               <p className="text-xs text-muted-foreground font-mono truncate">{vehicle.vin}</p>
             </div>
           </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setEditOpen(true)}
+            aria-label="Fahrzeug bearbeiten"
+          >
+            <Pencil className="w-5 h-5" />
+          </Button>
           <Button
             variant="ghost"
             size="icon"
@@ -394,6 +412,15 @@ export default function VehicleView() {
           onClose={() => { setViewerJobId(null); setViewerFrames([]); }}
         />
       )}
+
+      <EditVehicleDialog open={editOpen} onOpenChange={setEditOpen} vehicle={vehicle} />
+      <CoverPickerDialog
+        open={coverOpen}
+        onOpenChange={setCoverOpen}
+        vehicleId={vehicle.id}
+        currentCover={vehicle.cover_image_url}
+        images={images}
+      />
     </div>
   );
 }
