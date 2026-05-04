@@ -130,6 +130,48 @@ Wenn ein Feld nicht erkennbar ist, setze es auf null. Extrahiere so viel wie mö
       return errorResponse("Analyse-Format ungültig", 500);
     }
 
+    // ── Sanitize: enforce A-G only (Pkw-EnVKV / WLTP) ──
+    const deriveClass = (emissionsStr: string): string => {
+      const m = String(emissionsStr || '').match(/(\d+)/);
+      if (!m) return '';
+      const g = parseInt(m[1], 10);
+      if (g === 0) return 'A';
+      if (g <= 95) return 'B';
+      if (g <= 115) return 'C';
+      if (g <= 135) return 'D';
+      if (g <= 155) return 'E';
+      if (g <= 175) return 'F';
+      return 'G';
+    };
+    const cleanClass = (raw: any, emissions: any): string => {
+      const v = String(raw || '').trim().toUpperCase().replace(/\+/g, '').slice(0, 1);
+      if (/^[A-G]$/.test(v)) return v;
+      return deriveClass(emissions);
+    };
+    parsed.co2Class = cleanClass(parsed.co2Class, parsed.co2Emissions);
+    parsed.co2ClassDischarged = cleanClass(parsed.co2ClassDischarged, parsed.consumptionCombinedDischarged || parsed.co2EmissionsDischarged);
+
+    // ── Auto-derive vehicle condition from firstRegistration + mileageKm ──
+    if (!parsed.condition || !['Neuwagen', 'Gebrauchtwagen', 'Tageszulassung', 'Vorführwagen', 'Jahreswagen'].includes(parsed.condition)) {
+      const fr = String(parsed.firstRegistration || '').trim();
+      const kmMatch = String(parsed.mileageKm || '').match(/([\d.,]+)/);
+      const km = kmMatch ? parseInt(kmMatch[1].replace(/[.,]/g, ''), 10) : NaN;
+      let monthsOld = NaN;
+      const dateMatch = fr.match(/(\d{1,2})[./](\d{4})|(\d{1,2})[./](\d{1,2})[./](\d{4})/);
+      if (dateMatch) {
+        const month = parseInt(dateMatch[1] || dateMatch[3] || '1', 10);
+        const year = parseInt(dateMatch[2] || dateMatch[5] || '0', 10);
+        if (year > 1990) {
+          const now = new Date();
+          monthsOld = (now.getFullYear() - year) * 12 + (now.getMonth() + 1 - month);
+        }
+      }
+      if (!fr && (isNaN(km) || km < 50)) parsed.condition = 'Neuwagen';
+      else if (!isNaN(monthsOld) && monthsOld <= 1 && !isNaN(km) && km < 100) parsed.condition = 'Tageszulassung';
+      else if (!isNaN(monthsOld) && monthsOld <= 18 && !isNaN(km) && km < 25000) parsed.condition = 'Jahreswagen';
+      else if (!isNaN(monthsOld) || !isNaN(km)) parsed.condition = 'Gebrauchtwagen';
+    }
+
     return jsonResponse({ extracted: parsed });
   } catch (e) {
     console.error("analyze-offer-image error:", e);
