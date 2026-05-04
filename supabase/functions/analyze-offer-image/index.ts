@@ -21,8 +21,31 @@ serve(async (req) => {
     const mimeType = imageBase64.startsWith("data:image/png") ? "image/png"
       : imageBase64.startsWith("data:image/webp") ? "image/webp" : "image/jpeg";
 
-    const models = ["gemini-2.5-flash", "gemini-2.5-flash-lite"];
-    const promptText = `Analysiere dieses Bild eines Fahrzeugangebots (z.B. von mobile.de, autoscout24, leasingmarkt.de, carwow etc.) und extrahiere alle relevanten Informationen.
+    // gemini-2.5-pro liest dichte Tabellen (Verbrauch, Anzahlung, CO₂) deutlich
+    // zuverlässiger als flash. Flash bleibt nur als Fallback.
+    const models = ["gemini-2.5-pro", "gemini-2.5-flash"];
+    const promptText = `Analysiere dieses Bild eines Fahrzeugangebots (z.B. von mobile.de, autoscout24, leasingmarkt.de, carwow, meinauto.de etc.) und extrahiere alle relevanten Informationen.
+
+⚠️ ABSOLUTE GRUNDREGEL — KEINE ERFINDUNGEN:
+- Lies ALLE Werte WÖRTLICH aus dem Bild ab (Tabellenzellen, Listen, Labels).
+- Wenn ein Wert nicht klar lesbar ist → setze das Feld auf null. NIEMALS schätzen, runden, interpolieren oder aus Erfahrung „ergänzen".
+- Achte besonders auf deutsche Zahlenformate: „1.000" = 1000 (Tausenderpunkt), „17,2" = 17.2 (Komma-Dezimal). Übernimm den String exakt wie er da steht.
+
+⚠️ ANZAHLUNG / SONDERZAHLUNG (kritisch):
+Suche im Leasing-/Finanzierungs-Block nach „Anzahlung", „Sonderzahlung" oder „Leasingsonderzahlung".
+- Wenn dort z.B. „1.000 €" steht → downPayment: "1.000 €". 
+- NUR wenn explizit „0 €" oder „keine Anzahlung" steht → "0 €".
+- Wenn das Feld nicht sichtbar ist → null. NIEMALS 0 raten.
+
+⚠️ PHEV / PLUG-IN-HYBRID — PFLICHT (Pkw-EnVKV):
+Bei fuelType = „Plug-in-Hybrid" oder „Hybrid (Benzin/Elektro)" MÜSSEN folgende Felder befüllt sein, sonst ist die Analyse unvollständig:
+- consumptionCombined: gewichteter komb. Verbrauch, Format „X,X l/100km + YY,Y kWh/100km" (z.B. "0,9 l/100km + 20,1 kWh/100km")
+- consumptionCombinedDischarged: Verbrauch entladene Batterie, Format „X,X l/100km" (z.B. "8,0 l/100km")
+- co2Emissions: gewichtete g/km (z.B. "21 g/km")
+- co2Class: A–G aus den GEWICHTETEN g/km
+- co2ClassDischarged: A–G aus den ENTLADENEN g/km (meist F oder G bei PHEV!)
+- electricRange: elektrische Reichweite (z.B. "69 km")
+Suche diese Werte in der „Verbrauch & Emissionen"-Tabelle. Bei meinauto.de stehen sie typischerweise zweispaltig (geladen | entladen).
 
 ⚠️ CO₂-KLASSE — STRENGE REGEL (Pkw-EnVKV / WLTP):
 Seit der neuen Pkw-EnVKV (WLTP) gibt es NUR NOCH die Klassen A, B, C, D, E, F, G.
