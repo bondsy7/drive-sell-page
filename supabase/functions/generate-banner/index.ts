@@ -188,6 +188,21 @@ async function generateGemini(prompt: string, imageBase64: string | null, logoBa
     parts.push({ inlineData: { mimeType: logoMime, data: logoData } });
   }
 
+  // Inject explicit format instruction so the model composes for the target ratio
+  const aspectLabel = width && height ? getGeminiAspectRatio(width, height) : "1:1";
+  if (width && height) {
+    parts.unshift({
+      text: `OUTPUT FORMAT (STRICT): Generate the banner with an aspect ratio of EXACTLY ${aspectLabel} (target ${width}×${height}px). Compose, crop and frame the entire scene to fill this ${aspectLabel} canvas — do NOT default to a square. Layout, vehicle placement and text must be designed specifically for this ${aspectLabel} format.`,
+    });
+  }
+
+  // gemini-3* image models support imageConfig.aspectRatio; older 2.5 ignores it
+  const supportsAspectField = /^gemini-3/.test(model);
+  const generationConfig: Record<string, unknown> = { responseModalities: ["TEXT", "IMAGE"] };
+  if (supportsAspectField && width && height) {
+    (generationConfig as any).imageConfig = { aspectRatio: aspectLabel };
+  }
+
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const response = await fetchWithTimeout(url, {
@@ -195,7 +210,7 @@ async function generateGemini(prompt: string, imageBase64: string | null, logoBa
         headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ parts }],
-          generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
+          generationConfig,
         }),
       }, 45_000);
 
