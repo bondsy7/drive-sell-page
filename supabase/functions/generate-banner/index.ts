@@ -21,7 +21,7 @@ const MODEL_MAP: Record<string, ModelConfig> = {
   premium:   { engine: "gemini", model: "gemini-3-pro-image-preview", cost: 8 },
   turbo:     { engine: "openai", model: "gpt-image-1", cost: 6, supportsSize: true },
   ultra:     { engine: "openai", model: "gpt-image-1", cost: 10, supportsSize: true },
-  neu:       { engine: "openai", model: "gpt-image-1", cost: 3, supportsSize: true },
+  neu:       { engine: "openai", model: "gpt-image-2", cost: 8, supportsSize: true },
   // Fallbacks
   standard:  { engine: "gemini", model: "gemini-3.1-flash-image-preview", cost: 5 },
   pro:       { engine: "gemini", model: "gemini-3-pro-image-preview", cost: 8 },
