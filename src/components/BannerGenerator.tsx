@@ -131,9 +131,11 @@ interface BannerResult {
 interface BannerGeneratorProps {
   onBack: () => void;
   preloadedImage?: string;
+  /** When set, generated banners are stored under {userId}/{vehicleId}/... so they appear in the vehicle's Banner tab — even without a project. */
+  vehicleId?: string | null;
 }
 
-const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImage }) => {
+const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImage, vehicleId }) => {
   const { user } = useAuth();
   const { balance, getCost } = useCredits();
   const { makes, getLogoForMake } = useVehicleMakes();
