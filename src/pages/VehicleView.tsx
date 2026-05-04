@@ -3,7 +3,7 @@ import { useParams, Link, Navigate, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft, Car, FileText, Image as ImageIcon, Layout, LayoutGrid, Video, RotateCw,
-  MessageSquare, FolderOpen, Trash2, Pencil, Sparkles,
+  MessageSquare, FolderOpen, Trash2, Pencil, Sparkles, Database,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,6 +26,7 @@ import VideosTab from '@/components/dashboard/VideosTab';
 import Spin360Tab from '@/components/dashboard/Spin360Tab';
 import LeadsTab from '@/components/dashboard/LeadsTab';
 import OriginalsTab from '@/components/vehicle/OriginalsTab';
+import DataTab from '@/components/vehicle/DataTab';
 import ExportChoiceDialog, { type ExportMode } from '@/components/ExportChoiceDialog';
 import GalleryLightbox from '@/components/GalleryLightbox';
 import VideoPlayerModal from '@/components/dashboard/VideoPlayerModal';
@@ -35,7 +36,7 @@ import CoverPickerDialog from '@/components/vehicle/CoverPickerDialog';
 import { getImageSrc } from '@/components/dashboard/types';
 import type { Project, ProjectImage, Lead, Spin360Job, BannerFile, VideoFile } from '@/components/dashboard/types';
 
-type TabKey = 'originals' | 'gallery' | 'landings' | 'projects' | 'banners' | 'videos' | 'spin360' | 'leads';
+type TabKey = 'originals' | 'gallery' | 'data' | 'projects' | 'landings' | 'banners' | 'videos' | 'spin360' | 'leads';
 
 export default function VehicleView() {
   const { id } = useParams<{ id: string }>();
@@ -263,6 +264,7 @@ export default function VehicleView() {
 
   const tabs: { key: TabKey; label: string; icon: React.ElementType; count: number }[] = [
     { key: 'originals', label: 'Originale', icon: FolderOpen, count: 0 },
+    { key: 'data', label: 'Daten', icon: Database, count: 0 },
     { key: 'gallery', label: 'Galerie', icon: ImageIcon, count: images.length },
     { key: 'projects', label: 'PDF', icon: FileText, count: regularProjects.length },
     { key: 'landings', label: 'Landing Pages', icon: Layout, count: landingProjects.length },
@@ -276,6 +278,8 @@ export default function VehicleView() {
     switch (tab) {
       case 'originals':
         return <OriginalsTab vehicleId={vehicle.id} />;
+      case 'data':
+        return <DataTab vehicle={vehicle} />;
       case 'gallery':
         return (
           <GalleryTab
