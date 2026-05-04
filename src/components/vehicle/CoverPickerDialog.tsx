@@ -19,7 +19,7 @@ export default function CoverPickerDialog({ open, onOpenChange, vehicleId, curre
 
   const pick = async (url: string | null) => {
     try {
-      await update.mutateAsync({ id: vehicleId, patch: { vin: '', cover_image_url: url } as never });
+      await update.mutateAsync({ id: vehicleId, patch: { cover_image_url: url } });
       toast.success(url ? 'Cover aktualisiert' : 'Cover entfernt');
       onOpenChange(false);
     } catch (e) {
