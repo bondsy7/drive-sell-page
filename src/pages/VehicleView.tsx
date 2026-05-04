@@ -195,6 +195,16 @@ export default function VehicleView() {
               <p className="text-xs text-muted-foreground font-mono truncate">{vehicle.vin}</p>
             </div>
           </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleDelete}
+            disabled={deleteVehicle.isPending}
+            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+            aria-label="Fahrzeug löschen"
+          >
+            <Trash2 className="w-5 h-5" />
+          </Button>
         </div>
 
         {/* Tag chips */}
