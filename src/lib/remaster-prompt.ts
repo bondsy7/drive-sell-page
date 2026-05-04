@@ -236,9 +236,18 @@ PAINT COLOR CHANGE – ABSOLUTE, NON-NEGOTIABLE, APPLIES TO EVERY IMAGE:
   // ── ANTI-CROPPING ──
   parts.push(`<ANTI_CROPPING>\n${getBlock(overrides, 'anti_cropping')}\n</ANTI_CROPPING>`);
 
-  // ── REFLECTION PURGE (ZERO TOLERANCE for foreign reflections) ──
+  // ── PROFESSIONAL LIGHTING + REFLECTION PURGE (ZERO TOLERANCE for foreign reflections) ──
   parts.push(`<REFLECTION_PURGE>
 ABSOLUTE ZERO-TOLERANCE RULE FOR FOREIGN REFLECTIONS — NON-NEGOTIABLE:
+
+PROFESSIONAL AUTOMOTIVE PHOTO STANDARD:
+The output must look like a real professional automotive shoot in the selected scene — not a cut-out, not a background swap, not a pasted vehicle. Re-render the vehicle, floor, shadows, glass and reflections as one physically coherent photograph.
+
+VISIBLE LIGHT-SOURCE PROOF:
+- The image must clearly show where the light comes from: ceiling LEDs, window bands, LED strips, cove lights, streetlights, sun direction, or studio softboxes depending on the selected scene.
+- These NEW light sources MUST appear as natural highlights on the hood, roof, windshield, side windows, shoulder line, chrome trim, rims and glossy black surfaces.
+- If the scene has ceiling lights, the hood/roof/paint MUST show soft ceiling-light streaks or shapes. If the scene has windows, glass and paint MUST show window-band reflections. If outdoors, the sun direction must explain the highlights and shadows.
+- Do NOT use flat pasted lighting. Do NOT keep the original photo's highlight pattern if it does not match the new scene.
 
 1. PURGE ALL ORIGINAL REFLECTIONS: The reference photo was taken in a DIFFERENT environment (old dealer lot, parking space, street, foreign showroom, photo booth, garage, outdoor scene). EVERY reflection on EVERY reflective surface of the vehicle from that original environment MUST be COMPLETELY ERASED and REPLACED with reflections of the NEW selected scene.
 
@@ -262,6 +271,8 @@ ABSOLUTE ZERO-TOLERANCE RULE FOR FOREIGN REFLECTIONS — NON-NEGOTIABLE:
    - Any text, lettering, URLs, or graphics carried over from the original scene
 
 4. ONLY ALLOWED REFLECTIONS: The vehicle's reflective surfaces may ONLY mirror the NEW selected scene — its walls, floor, ceiling, light fixtures, and (if explicitly provided) approved logos. Nothing else.
+
+4B. NATURAL INTEGRATION: Reflections must be subtle, curved by body geometry, and physically plausible — not mirror-perfect CGI and not absent. The floor must receive a believable contact shadow and, on polished/wet floors, a faint natural reflection of the lower body and tires. Tire contact points need ambient occlusion so the vehicle is visibly grounded.
 
 5. WINDOW TRANSPARENCY: Through the vehicle's windows the viewer must see the NEW scene only — never the original environment, never a generic outdoor view, never a black void.
 

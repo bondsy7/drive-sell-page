@@ -140,7 +140,7 @@ JSON-Schema:
   "imagePrompt": "Detaillierter englischer Prompt für fotorealistische Fahrzeug-Bildgenerierung"
 }
 
-Für den imagePrompt: Erstelle einen detaillierten englischen Prompt mit exaktem Fahrzeugmodell (Marke, Modell, Farbe, Karosserieform) in einem modernen, hellen Autohaus-Showroom. Beschreibe Licht, Reflexionen, Boden und Atmosphäre.
+Für den imagePrompt: Erstelle einen detaillierten englischen Prompt mit exaktem Fahrzeugmodell (Marke, Modell, Farbe, Karosserieform) in einem modernen, hellen Autohaus-Showroom. Der Prompt MUSS eine professionelle Automotive-Aufnahme beschreiben: sichtbare Decken-LEDs/Fensterlicht als Lichtquellen, natürliche neue Reflexionen dieser Lichtquellen in Lack, Glas, Chrom und Felgen, weiche Kontaktschatten unter den Reifen, dezente Bodenreflexion auf poliertem Boden und vollständige Entfernung fremder/alter Reflexionen. Keine Personen, keine anderen Fahrzeuge, keine Wasserzeichen, keine alten Händlerlogos oder Textartefakte.
 
 KATEGORIE-ERKENNUNG (WICHTIG!):
 Erkenne den Angebotstyp so dynamisch wie möglich:
@@ -227,8 +227,10 @@ async function authenticateAndDeductCredits(req: Request, actionType: string, co
     { global: { headers: { Authorization: authHeader } } },
   );
 
-  const { data: { user }, error } = await sb.auth.getUser();
-  if (error || !user) {
+  const token = authHeader.replace(/^Bearer\s+/i, "");
+  const { data, error } = await sb.auth.getClaims(token);
+  const userId = data?.claims?.sub as string | undefined;
+  if (error || !userId) {
     return new Response(JSON.stringify({ error: "Nicht authentifiziert" }), {
       status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
@@ -237,7 +239,7 @@ async function authenticateAndDeductCredits(req: Request, actionType: string, co
   // Deduct credits using service role client
   const serviceSb = createServiceClient();
   const { data: result, error: deductError } = await serviceSb.rpc("deduct_credits", {
-    _user_id: user.id,
+    _user_id: userId,
     _amount: cost,
     _action_type: actionType,
     _description: `${actionType} (serverseitig)`,
@@ -261,7 +263,7 @@ async function authenticateAndDeductCredits(req: Request, actionType: string, co
     });
   }
 
-  return { userId: user.id };
+  return { userId };
 }
 
 function deriveCO2Class(emissionsStr: string): string {

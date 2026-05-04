@@ -173,6 +173,7 @@ async function uploadUserImage(supabase: any, base64: string, userId: string, in
 // ─── Generate a single image via Gemini ───
 async function generateImage(apiKey: string, prompt: string, aspectHint: string): Promise<string | null> {
   const models = ["gemini-2.5-flash-image"];
+  const professionalPhotoLock = `Professional automotive commercial photograph. The vehicle must be naturally integrated into the NEW scene with visible light-source logic: ceiling LEDs/window bands/sun/streetlights create soft believable highlights on hood, roof, windshield, side glass, chrome, rims and body panels. Render subtle natural floor/ground contact shadows, ambient occlusion at the tires, and faint lower-body floor reflections where the surface is polished or wet. All reflections must belong ONLY to the described scene; no foreign reflections, no old showroom/street, no other cars, no people, no photographer, no watermarks, no text/logos unless explicitly requested. Photorealistic, premium dealership/editorial quality, not CGI, not pasted.`;
   
   for (const model of models) {
     try {
@@ -181,7 +182,7 @@ async function generateImage(apiKey: string, prompt: string, aspectHint: string)
         method: "POST",
         headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: `Generate a single high-quality professional automotive marketing photograph. ${aspectHint}. ${prompt}. Photorealistic, no text overlays, no watermarks, no logos, professional lighting.` }] }],
+          contents: [{ parts: [{ text: `Generate a single high-quality professional automotive marketing photograph. ${aspectHint}. ${prompt}. ${professionalPhotoLock}` }] }],
           generationConfig: { responseModalities: ["TEXT", "IMAGE"], temperature: 1.0 },
         }),
       });
@@ -337,6 +338,7 @@ HELPFUL CONTENT RICHTLINIEN:
 
 BILD-PROMPT REGELN (KRITISCH):
 Für den Hero: Erstelle einen cinematic wide-angle shot (3:1 Panorama). Das Bild muss breit und flach sein!
+Für ALLE Bilder: Die Prompts müssen eine professionelle Automotive-Aufnahme beschreiben, bei der das Fahrzeug sichtbar durch die neue Umgebung beleuchtet wird. Nenne klare Lichtquellen (Decken-LEDs, Fensterlicht, Sonne, Studio-Softboxen), natürliche Lack-/Glas-/Chrom-Reflexionen der neuen Szene, weiche Bodenschatten, Reifen-Kontakt und dezente Bodenreflexionen. Keine fremden/alten Reflexionen, keine Personen, keine anderen Fahrzeuge, keine Wasserzeichen, keine zufälligen Logos.
 Für JEDE Content-Section die ein Bild braucht, MUSS der imagePrompt EXAKT zum Sektionsinhalt passen:
 - Motor/Leistung → "Close-up engine bay / exhaust / brake calipers of a ${vehicleDesc}"
 - Innenraum/Komfort → "Interior cockpit showing dashboard, steering wheel, infotainment of a ${vehicleDesc}"
@@ -356,7 +358,7 @@ Antworte AUSSCHLIESSLICH als JSON:
     "headline": "Emotionale Headline",
     "subheadline": "Untertitel mit Kernvorteil",
     "ctaText": "CTA Button Text",
-    "imagePrompt": "Cinematic wide panoramic 3:1 aspect ratio hero shot of a ${vehicleDesc} from dramatic low front 3/4 angle, ${imgStyleSuffix}, wide landscape composition, ultra-wide cinematic framing"
+    "imagePrompt": "Cinematic wide panoramic 3:1 aspect ratio hero shot of a ${vehicleDesc} from dramatic low front 3/4 angle, ${imgStyleSuffix}, visible professional light sources, ceiling/window/sun highlights reflected naturally in paint and glass, soft contact shadows, subtle floor reflection, no foreign reflections, wide landscape composition, ultra-wide cinematic framing"
   },
   "sections": [
     {

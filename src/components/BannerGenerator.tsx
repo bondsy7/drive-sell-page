@@ -451,7 +451,7 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
 
 FORMAT: ${fmt.w}x${fmt.h} pixels (${fmt.ratio} aspect ratio). The output image MUST be exactly this size.
 
-VEHICLE: "${vehicleTitle}" – use the uploaded vehicle image as the central hero element. Keep the vehicle 100% identical.
+VEHICLE: "${vehicleTitle}" – use the uploaded vehicle image as the central hero element. Keep vehicle identity, shape, colour, trim, wheels and proportions accurate, but re-render lighting, shadows and reflections to match the NEW scene.
 
 SCENE: ${scn.prompt}. Place the vehicle naturally in this environment.
 
@@ -484,14 +484,22 @@ A logo image is provided as a separate reference image. You MUST place this logo
 - The logo MUST NOT be omitted, hidden, or obscured under any circumstances` : ''}
 
 CRITICAL RULES:
-- The banner must be photorealistic with the vehicle photo seamlessly composited
+- The banner must be photorealistic with the vehicle fully re-lit and naturally integrated into the new scene — never pasted in as a cut-out
 - ALL text must be rendered EXACTLY as specified – no paraphrasing, no spelling changes
 - Text must be perfectly legible against the background
+
+PROFESSIONAL LIGHTING & INTEGRATION (MANDATORY):
+- Render this like a professional automotive advertising photograph in the NEW scene.
+- Clearly show where the light comes from: ceiling LEDs, window bands, streetlights, sun direction, studio softboxes or showroom cove lights must create believable highlights on hood, roof, windshield, side glass, chrome, rims and body lines.
+- The vehicle must cast a soft realistic contact shadow and ambient occlusion; tires must visibly touch the floor/ground.
+- On polished/wet floors, add a subtle natural reflection of the lower body and tires. Keep it realistic, not mirror-perfect CGI.
+- The paint must receive new soft specular highlights from the selected scene; do not keep the highlight/reflection pattern from the uploaded photo if it belongs to another location.
 
 REFLECTION PURGE (ZERO TOLERANCE – NON-NEGOTIABLE):
 - The provided vehicle reference photo was taken in a DIFFERENT environment. EVERY reflection on EVERY reflective surface (paint, windows, side mirrors, chrome, headlights, taillights, wheel rims, glossy black trim, sunroof) MUST be COMPLETELY ERASED and RE-RENDERED to match ONLY the new banner scene.
 - ABSOLUTELY FORBIDDEN in any reflection or through any window: trees, sky, clouds, other cars, buildings, dealerships, people, photographers, asphalt patterns, parking lines, old dealer logos, banners, watermarks, price tags, or ANY trace of the original photo's environment — not even faintly.
 - Through the windows the viewer must see ONLY the new scene — never the old environment, never a generic outdoor view, never a black void.
+- Rebuild only new-scene reflections: ceiling lights on hood/roof, wall/window bands along side panels, floor tone in lower doors, scene lights in chrome/rims, and approved logo reflections only if a logo asset is provided.
 - Verify hood, doors, glass, mirrors, chrome and rims before finalizing: zero foreign reflection content.
 
 ACCENT COLOR (${accentColor}):
