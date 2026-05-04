@@ -115,7 +115,7 @@ Wenn ein Feld nicht erkennbar ist, setze es auf null. Extrahiere so viel wie mö
           { inlineData: { mimeType, data: base64Data } }
         ]
       }],
-      generationConfig: { temperature: 0.1 },
+      generationConfig: { temperature: 0 },
     });
 
     let response: Response | null = null;
