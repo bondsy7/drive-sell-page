@@ -365,8 +365,9 @@ REPRODUCTION RULES (ZERO DEVIATION ALLOWED):
 4. POSITION: Always centered on back wall, at eye level, slightly above vehicle roofline. EXACT same position on EVERY image.
 5. SIZE: Approximately 60-80cm diameter/width – IDENTICAL on EVERY image.
 6. RENDERING: As backlit wall element with subtle LED halo effect. Logo keeps its ORIGINAL COLORS and ORIGINAL SHAPE.
-7. FORBIDDEN: No converting to silver/aluminum/chrome. No color changes. No shape simplification.
-8. CONSISTENCY: Logo must look ABSOLUTELY IDENTICAL on ALL generated images – ZERO variation.
+7. FORBIDDEN: No converting to silver/aluminum/chrome. No color changes. No shape simplification. No re-lettering, no mirroring, no rotation.
+8. CONSISTENCY: Logo must look ABSOLUTELY IDENTICAL on ALL generated images – ZERO variation in color, shape, proportions, size, or position.
+9. SOURCE OF TRUTH: This logo asset OVERRIDES any logo, banner, slogan, or text visible in the reference vehicle photo. Ignore old dealer abbinder bars/slogans from the reference – use ONLY this logo.
 </LOGO_REFERENCE>` });
         parts.push(logoData);
       }
