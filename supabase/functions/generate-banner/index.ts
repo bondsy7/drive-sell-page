@@ -278,6 +278,12 @@ async function generateOpenAI(prompt: string, imageBase64: string | null, logoBa
         if ([400, 401, 403].includes(response.status) && /invalid_api_key|Incorrect API key|Unauthorized|forbidden/i.test(errText)) {
           throw new Error("OPENAI_API_KEY ungültig oder nicht freigeschaltet");
         }
+        // Auto-fallback: gpt-image-2 requires verified org → fall back to gpt-image-1
+        if (response.status === 403 && model === "gpt-image-2" && /must be verified|verify organization/i.test(errText)) {
+          console.warn("[banner][openai] gpt-image-2 nicht freigeschaltet → Fallback auf gpt-image-1");
+          model = "gpt-image-1";
+          continue;
+        }
         if (response.status === 429 && attempt < retries) {
           await new Promise(r => setTimeout(r, 3000 * (attempt + 1)));
           continue;
