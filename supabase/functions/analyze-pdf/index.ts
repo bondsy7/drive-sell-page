@@ -79,6 +79,8 @@ JSON-Schema:
     "model": "string (volles Modell, z.B. 'X3 xDrive30e')",
     "variant": "string (Ausstattungslinie/Variante, z.B. 'M Sport, xLine')",
     "year": "number (Modelljahr oder EZ-Jahr)",
+    "firstRegistration": "string (Erstzulassungsdatum, Format 'MM/YYYY' oder 'TT.MM.YYYY', z.B. '03/2023'. Leer bei Neuwagen ohne Zulassung)",
+    "condition": "Neuwagen|Gebrauchtwagen|Tageszulassung|Vorführwagen|Jahreswagen (Fahrzeugzustand)",
     "color": "string (Außenfarbe, z.B. 'Alpinweiß uni')",
     "fuelType": "Benzin|Diesel|Elektro|Hybrid|Plug-in-Hybrid",
     "transmission": "Automatik|Manuell|Doppelkupplungsgetriebe|CVT",
