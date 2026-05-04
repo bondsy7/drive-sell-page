@@ -1581,8 +1581,8 @@ ABSOLUTE PRIORITY – this is the marketing master image:
             <Button variant="outline" onClick={() => setStep('aufnahme')} className="flex-1">
               Zurück
             </Button>
-            <Button onClick={goToGen} className="flex-1 gap-2">
-              Weiter zur Generierung <ChevronRight className="w-4 h-4" />
+            <Button onClick={goToGen} disabled={ensuringVehicle} className="flex-1 gap-2">
+              {ensuringVehicle ? <><Loader2 className="w-4 h-4 animate-spin" /> Lege Fahrzeug an…</> : <>Weiter zur Generierung <ChevronRight className="w-4 h-4" /></>}
             </Button>
           </div>
         </div>
