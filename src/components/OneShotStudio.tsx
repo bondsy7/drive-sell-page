@@ -1215,7 +1215,12 @@ ABSOLUTE PRIORITY – this is the marketing master image:
               {heroError && <Badge variant="destructive">Fehler</Badge>}
             </div>
             {heroBase64 && (
-              <img src={heroBase64} alt="Hero" className="w-full max-h-64 object-contain rounded-lg" />
+              <img
+                src={heroBase64}
+                alt="Hero"
+                className="w-full max-h-64 object-contain rounded-lg cursor-zoom-in hover:opacity-90 transition-opacity"
+                onClick={() => openLightbox([{ src: heroBase64, label: 'Hero-Bild', filename: 'hero.png' }], 0)}
+              />
             )}
             {heroError && (
               <div className="flex items-start gap-2 text-xs text-destructive">
