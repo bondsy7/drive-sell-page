@@ -91,6 +91,65 @@ const stripDataPrefix = (b: string) => (b.includes(',') ? b.split(',')[1] : b);
 const newId = () => Math.random().toString(36).slice(2, 10);
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+/**
+ * Bestimmt den Fahrzeugzustand (Pkw-EnVKV) aus Erstzulassung + Kilometerstand
+ * und liefert eine menschenlesbare Begründung mit der getriggerten Regel zurück.
+ */
+function deriveVehicleCondition(args: {
+  firstRegistration?: string | null;
+  mileageKm?: string | null;
+  explicitCondition?: string | null;
+}): { condition: string; firstReg: string; km: number | null; monthsOld: number | null; rule: string } {
+  const fr = String(args.firstRegistration || '').trim();
+  const kmMatch = String(args.mileageKm || '').match(/([\d.,]+)/);
+  const km = kmMatch ? parseInt(kmMatch[1].replace(/[.,]/g, ''), 10) : null;
+
+  let monthsOld: number | null = null;
+  const dateMatch = fr.match(/(\d{1,2})[./](\d{1,2})[./](\d{4})|(\d{1,2})[./](\d{4})/);
+  if (dateMatch) {
+    const month = parseInt(dateMatch[1] || dateMatch[4] || '1', 10);
+    const year = parseInt(dateMatch[3] || dateMatch[5] || '0', 10);
+    if (year > 1990) {
+      const now = new Date();
+      monthsOld = (now.getFullYear() - year) * 12 + (now.getMonth() + 1 - month);
+    }
+  }
+
+  // Explicit override (z.B. "Vorführwagen" wurde explizit erkannt)
+  if (args.explicitCondition && ['Vorführwagen', 'Tageszulassung', 'Jahreswagen', 'Neuwagen', 'Gebrauchtwagen'].includes(args.explicitCondition)) {
+    return {
+      condition: args.explicitCondition,
+      firstReg: fr,
+      km,
+      monthsOld,
+      rule: `Explizit im Datenblatt als „${args.explicitCondition}" ausgewiesen.`,
+    };
+  }
+
+  let condition = 'Unbekannt';
+  let rule = 'Keine Erstzulassung oder Kilometerstand erkannt.';
+
+  if (!fr && (km === null || km < 50)) {
+    condition = 'Neuwagen';
+    rule = 'Keine Erstzulassung & Kilometerstand < 50 km → Neuwagen (§ 2 Pkw-EnVKV).';
+  } else if (monthsOld !== null && monthsOld <= 1 && km !== null && km < 100) {
+    condition = 'Tageszulassung';
+    rule = `EZ < 1 Monat & ${km} km < 100 km → Tageszulassung.`;
+  } else if (monthsOld !== null && monthsOld <= 18 && km !== null && km < 25000) {
+    condition = 'Jahreswagen';
+    rule = `EZ ${monthsOld} Mon. alt & ${km.toLocaleString('de-DE')} km < 25.000 km → Jahreswagen.`;
+  } else if (monthsOld !== null || (km !== null && km > 0)) {
+    condition = 'Gebrauchtwagen';
+    const reasons: string[] = [];
+    if (monthsOld !== null && monthsOld > 18) reasons.push(`EZ ${monthsOld} Mon. alt`);
+    if (km !== null && km >= 25000) reasons.push(`${km.toLocaleString('de-DE')} km ≥ 25.000 km`);
+    if (km !== null && km > 0 && reasons.length === 0) reasons.push(`${km.toLocaleString('de-DE')} km gefahren`);
+    rule = `${reasons.join(' & ')} → Gebrauchtwagen.`;
+  }
+
+  return { condition, firstReg: fr, km, monthsOld, rule };
+}
+
 /** Detect transient edge-function failures (cold-start boot, 503, 429). */
 function isTransientEdgeError(err: any, data: any): boolean {
   const msg = String(err?.message || data?.error || '').toLowerCase();
