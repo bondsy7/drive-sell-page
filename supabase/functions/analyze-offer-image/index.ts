@@ -34,7 +34,19 @@ serve(async (req) => {
     // gemini-2.5-pro liest dichte Tabellen (Verbrauch, Anzahlung, CO₂) deutlich
     // zuverlässiger als flash. Flash bleibt nur als Fallback.
     const models = ["gemini-2.5-pro", "gemini-2.5-flash"];
-    const promptText = `Analysiere dieses Bild eines Fahrzeugangebots (z.B. von mobile.de, autoscout24, leasingmarkt.de, carwow, meinauto.de etc.) und extrahiere alle relevanten Informationen.
+    const multiHint = imageParts.length > 1 ? `
+
+⚠️ MEHRERE DOKUMENTE (${imageParts.length} Bilder) — MERGE-MODUS:
+Du bekommst ${imageParts.length} Bilder/Dokumente zum SELBEN Fahrzeugangebot (z.B. Datenblatt + Preisliste + WLTP-Tabelle + CO₂-Label + Screenshot vom Inserat).
+- Behandle alle Bilder als EINEN Datensatz und kombiniere die Informationen.
+- Für jedes Feld: nimm den Wert aus dem Bild, in dem er am klarsten/präzisesten steht (Datenblatt > Screenshot, Volltext > abgekürzt, größere Tabelle > Vorschau).
+- Bei Widersprüchen zwischen Bildern: bevorzuge das offizielle Datenblatt / Preisliste / WLTP-Tabelle gegenüber Marketing-Screenshots; bei gleicher Quelle das Bild mit mehr Detail.
+- Ein Feld darf nur null sein, wenn es in KEINEM der Bilder lesbar ist. Wenn ein Bild es liefert, übernimm es.
+- Ausstattungslisten (features) aus allen Bildern zusammenführen, Duplikate entfernen.
+- legalText: alle relevanten Pflichtangaben aus allen Bildern zusammenfassen (keine Duplikate).
+` : '';
+
+    const promptText = `Analysiere ${imageParts.length > 1 ? `diese ${imageParts.length} Bilder` : 'dieses Bild'} eines Fahrzeugangebots (z.B. von mobile.de, autoscout24, leasingmarkt.de, carwow, meinauto.de etc.) und extrahiere alle relevanten Informationen.${multiHint}
 
 ⚠️ ABSOLUTE GRUNDREGEL — KEINE ERFINDUNGEN:
 - Lies ALLE Werte WÖRTLICH aus dem Bild ab (Tabellenzellen, Listen, Labels).
