@@ -23,8 +23,9 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import {
   ArrowLeft, ScanSearch, Loader2, Upload, X, ChevronRight, Zap, Image as ImageIcon,
-  Video, FileText, Hash, Layers, AlertCircle, Sparkles, Camera,
+  Video, FileText, Hash, Layers, AlertCircle, Sparkles, Camera, Database, Car,
 } from 'lucide-react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -177,6 +178,8 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
 
   const [scanData, setScanData] = useState<ScanData | null>(null);
   const [vin, setVin] = useState<string | null>(null);
+  const [vinVehicle, setVinVehicle] = useState<Record<string, any> | null>(null);
+  const [vinEquipment, setVinEquipment] = useState<string[]>([]);
 
   const filesInputRef = useRef<HTMLInputElement>(null);
   const sheetInputRef = useRef<HTMLInputElement>(null);
