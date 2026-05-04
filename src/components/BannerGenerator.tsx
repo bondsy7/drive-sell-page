@@ -131,9 +131,11 @@ interface BannerResult {
 interface BannerGeneratorProps {
   onBack: () => void;
   preloadedImage?: string;
+  /** When set, generated banners are stored under {userId}/{vehicleId}/... so they appear in the vehicle's Banner tab — even without a project. */
+  vehicleId?: string | null;
 }
 
-const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImage }) => {
+const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImage, vehicleId }) => {
   const { user } = useAuth();
   const { balance, getCost } = useCredits();
   const { makes, getLogoForMake } = useVehicleMakes();
@@ -538,13 +540,15 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
       const base64Data = result.image.includes(',') ? result.image.split(',')[1] : result.image;
       const byteArray = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
       const blob = new Blob([byteArray], { type: 'image/png' });
-      // Prefix with vehicle_id when known so VehicleView can list per-vehicle
+      // Prefix with vehicle_id when known so VehicleView can list per-vehicle.
+      // Priority: explicit vehicleId prop > selected project's vehicle_id.
       const proj = projects.find(p => p.id === selectedProjectId);
-      const vehiclePrefix = proj?.vehicle_id ? `${proj.vehicle_id}/` : '';
+      const effectiveVehicleId = vehicleId || proj?.vehicle_id || null;
+      const vehiclePrefix = effectiveVehicleId ? `${effectiveVehicleId}/` : '';
       const fileName = `${user.id}/${vehiclePrefix}${Date.now()}-${result.formatId}.png`;
       await supabase.storage.from('banners').upload(fileName, blob, { contentType: 'image/png' });
     } catch (e) { console.error('Banner save error:', e); }
-  }, [user, projects, selectedProjectId]);
+  }, [user, projects, selectedProjectId, vehicleId]);
 
   // ── Single format generation ──
   const handleGenerate = useCallback(() => {

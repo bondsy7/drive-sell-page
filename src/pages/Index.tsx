@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Sparkles } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
@@ -76,20 +76,24 @@ const Index = () => {
   const { balance, getCost } = useCredits();
   const navigate = useNavigate();
   const { tool } = useParams<{ tool?: string }>();
+  const [searchParams] = useSearchParams();
+  const deepLinkVehicleId = searchParams.get('vehicle');
+  const deepLinkImage = searchParams.get('image') || undefined;
   const [appState, setAppState] = useState<ExtendedAppState>(() => {
     if (tool && TOOL_TO_STATE[tool]) return TOOL_TO_STATE[tool];
     return 'hub';
   });
 
-  // Sync appState → URL
+  // Sync appState → URL (preserve query params like ?vehicle=...&image=...)
   useEffect(() => {
     const toolSlug = STATE_TO_TOOL[appState];
     const currentPath = window.location.pathname;
+    const search = window.location.search;
     if (appState === 'hub') {
-      if (currentPath !== '/generator') navigate('/generator', { replace: true });
+      if (currentPath !== '/generator') navigate(`/generator${search}`, { replace: true });
     } else if (toolSlug) {
       const target = `/generator/${toolSlug}`;
-      if (currentPath !== target) navigate(target, { replace: true });
+      if (currentPath !== target) navigate(`${target}${search}`, { replace: true });
     }
   }, [appState, navigate]);
 
@@ -580,7 +584,7 @@ const Index = () => {
 
           {/* ─── 360 Spin ─── */}
           {appState === 'spin360' && (
-            <Spin360Workflow onBack={() => setAppState('standalone-photo-mode' as ExtendedAppState)} />
+            <Spin360Workflow onBack={() => setAppState('standalone-photo-mode' as ExtendedAppState)} vehicleId={deepLinkVehicleId} />
           )}
 
           {/* ─── Standalone Photo Choice ─── */}
@@ -677,7 +681,8 @@ const Index = () => {
           {appState === 'video' && (
             <VideoGenerator
               onBack={() => setAppState('hub')}
-              preloadedImage={standalonePhotoResults.length > 0 ? standalonePhotoResults[0] : undefined}
+              preloadedImage={standalonePhotoResults.length > 0 ? standalonePhotoResults[0] : deepLinkImage}
+              vehicleId={deepLinkVehicleId}
             />
           )}
 
@@ -695,7 +700,8 @@ const Index = () => {
           {appState === 'banner' && (
             <BannerGenerator
               onBack={() => setAppState('hub')}
-              preloadedImage={standalonePhotoResults.length > 0 ? standalonePhotoResults[0] : undefined}
+              preloadedImage={standalonePhotoResults.length > 0 ? standalonePhotoResults[0] : deepLinkImage}
+              vehicleId={deepLinkVehicleId}
             />
           )}
 
