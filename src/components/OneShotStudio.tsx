@@ -54,6 +54,7 @@ import { compressImageForAI, fileToBase64 } from '@/lib/image-compress';
 import { useVehicleMakes } from '@/hooks/useVehicleMakes';
 
 import OneShotMarketingForm from './oneshot/OneShotMarketingForm';
+import OneShotLightbox, { type LightboxItem } from './oneshot/OneShotLightbox';
 import {
   DEFAULT_FORM, DEFAULT_SOURCES, ONESHOT_BANNER_FORMATS,
   type ClassifiedImage, type ImageCategory, type MarketingForm,
