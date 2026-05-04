@@ -10,21 +10,43 @@ serve(async (req) => {
 
   try {
     const { user } = await authenticateRequest(req);
-    const { imageBase64 } = await req.json();
-    if (!imageBase64) return errorResponse("Kein Bild übermittelt", 400);
+    const body0 = await req.json();
+    // Accept either single image (legacy) or array of multiple datasheets/screenshots.
+    const rawImages: string[] = Array.isArray(body0?.imageBase64s) && body0.imageBase64s.length
+      ? body0.imageBase64s
+      : (body0?.imageBase64 ? [body0.imageBase64] : []);
+    if (!rawImages.length) return errorResponse("Kein Bild übermittelt", 400);
+    // Cap to keep prompt + payload sane (Gemini has hard limits on parts).
+    const images = rawImages.slice(0, 6);
 
     const apiKey = await getSecret("GEMINI_API_KEY");
     if (!apiKey) return errorResponse("GEMINI_API_KEY not configured", 500);
 
-    // Strip data URL prefix
-    const base64Data = imageBase64.includes(",") ? imageBase64.split(",")[1] : imageBase64;
-    const mimeType = imageBase64.startsWith("data:image/png") ? "image/png"
-      : imageBase64.startsWith("data:image/webp") ? "image/webp" : "image/jpeg";
+    // Per-image: strip data URL prefix and detect MIME.
+    const imageParts = images.map((img: string) => {
+      const data = img.includes(",") ? img.split(",")[1] : img;
+      const mimeType = img.startsWith("data:image/png") ? "image/png"
+        : img.startsWith("data:image/webp") ? "image/webp" : "image/jpeg";
+      return { inlineData: { mimeType, data } };
+    });
+    console.log(`[analyze-offer-image] Analyzing ${imageParts.length} document(s) in one merged call`);
 
     // gemini-2.5-pro liest dichte Tabellen (Verbrauch, Anzahlung, CO₂) deutlich
     // zuverlässiger als flash. Flash bleibt nur als Fallback.
     const models = ["gemini-2.5-pro", "gemini-2.5-flash"];
-    const promptText = `Analysiere dieses Bild eines Fahrzeugangebots (z.B. von mobile.de, autoscout24, leasingmarkt.de, carwow, meinauto.de etc.) und extrahiere alle relevanten Informationen.
+    const multiHint = imageParts.length > 1 ? `
+
+⚠️ MEHRERE DOKUMENTE (${imageParts.length} Bilder) — MERGE-MODUS:
+Du bekommst ${imageParts.length} Bilder/Dokumente zum SELBEN Fahrzeugangebot (z.B. Datenblatt + Preisliste + WLTP-Tabelle + CO₂-Label + Screenshot vom Inserat).
+- Behandle alle Bilder als EINEN Datensatz und kombiniere die Informationen.
+- Für jedes Feld: nimm den Wert aus dem Bild, in dem er am klarsten/präzisesten steht (Datenblatt > Screenshot, Volltext > abgekürzt, größere Tabelle > Vorschau).
+- Bei Widersprüchen zwischen Bildern: bevorzuge das offizielle Datenblatt / Preisliste / WLTP-Tabelle gegenüber Marketing-Screenshots; bei gleicher Quelle das Bild mit mehr Detail.
+- Ein Feld darf nur null sein, wenn es in KEINEM der Bilder lesbar ist. Wenn ein Bild es liefert, übernimm es.
+- Ausstattungslisten (features) aus allen Bildern zusammenführen, Duplikate entfernen.
+- legalText: alle relevanten Pflichtangaben aus allen Bildern zusammenfassen (keine Duplikate).
+` : '';
+
+    const promptText = `Analysiere ${imageParts.length > 1 ? `diese ${imageParts.length} Bilder` : 'dieses Bild'} eines Fahrzeugangebots (z.B. von mobile.de, autoscout24, leasingmarkt.de, carwow, meinauto.de etc.) und extrahiere alle relevanten Informationen.${multiHint}
 
 ⚠️ ABSOLUTE GRUNDREGEL — KEINE ERFINDUNGEN:
 - Lies ALLE Werte WÖRTLICH aus dem Bild ab (Tabellenzellen, Listen, Labels).
@@ -112,8 +134,11 @@ Wenn ein Feld nicht erkennbar ist, setze es auf null. Extrahiere so viel wie mö
       contents: [{
         parts: [
           { text: promptText },
-          { inlineData: { mimeType, data: base64Data } }
-        ]
+          ...imageParts.map((p, i) => ([
+            { text: `--- Bild ${i + 1} von ${imageParts.length} ---` },
+            p,
+          ])).flat(),
+        ],
       }],
       generationConfig: { temperature: 0 },
     });
