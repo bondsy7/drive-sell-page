@@ -847,6 +847,7 @@ ABSOLUTE PRIORITY – this is the marketing master image:
       remasterConfig,
       modelTier,
       projectId: null,
+      vehicleId: null,
       vin,
       selectedJobs,
       availableJobs,
