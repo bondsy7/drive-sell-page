@@ -537,7 +537,7 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
       toast.warning('Maximal 6 Datenblätter — Überzählige wurden ignoriert');
     }
     setDataSheetBase64s(merged);
-    setDataSheetBase64(merged[0]);
+    
 
     setAnalyzingSheet(true);
     try {
