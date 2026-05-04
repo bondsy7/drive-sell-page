@@ -88,6 +88,7 @@ serve(async (req) => {
     const requestedTier = typeof modelTier === "string" ? modelTier : "qualitaet";
     const tier = requestedTier === "standard" ? "qualitaet" : requestedTier;
     const config = MODEL_MAP[tier] || MODEL_MAP["qualitaet"];
+    console.log(`[banner] Engine=${config.engine} Model=${config.model} Tier=${tier} (user-selected, binding)`);
 
     // Auth & credits
     const authResult = await authenticateAndDeductCredits(req, config.cost);
