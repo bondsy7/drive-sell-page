@@ -233,3 +233,117 @@ export const SCENE_PROMPT_DEFAULTS: Record<string, string> = {
   'racetrack': 'Professional racetrack straight. GROUND: Smooth dark racing asphalt with rubber marks and red-white curbs on the left. BACKGROUND: Grandstands, catch fencing, clear sky. Same track surface in every image.',
   'mansion': 'Villa driveway. GROUND: Interlocking gray-beige stone pavers in herringbone pattern – consistent pattern in every image. BACKGROUND: Mediterranean stone villa with manicured hedges, warm evening light. Same driveway and villa in every image.',
 };
+
+/**
+ * Per-scene CINEMATIC lighting profiles.
+ * Each profile RE-RENDERS reflections, shadows and key/fill light to match the
+ * specific architecture/environment – so the hero shot feels cinematic but
+ * still PHOTOREALISTIC. If a scene is missing here, the generic
+ * `scene_lighting_exterior` block is used as fallback.
+ *
+ * Each profile must define: KEY_LIGHT (direction, colour temperature, intensity),
+ * FILL_LIGHT (bounce/ambient), SHADOW (softness, length, opacity, direction),
+ * REFLECTIONS (what the paint and chrome must mirror), MOOD (cinematic intent).
+ */
+export const SCENE_LIGHTING_PROFILES: Record<string, string> = {
+  'showroom-1': `CINEMATIC LIGHTING – Modern Bright Showroom:
+KEY_LIGHT: Cool neutral white (5500–6000 K) overhead recessed LED downlights, slightly forward of the vehicle, casting soft directional light onto the hood and roof.
+FILL_LIGHT: Bright white-wall bounce wraps around the body for low-contrast, balanced exposure. NO hot spots, NO blown highlights.
+SHADOW: Soft, diffused contact shadow directly beneath the vehicle (low opacity 35–45 %), short footprint, edges feathered. Subtle ambient occlusion in wheel wells and underbody. NO multiple harsh shadows.
+REFLECTIONS: Paint and chrome MUST mirror the white walls, the LED ceiling strip, and the polished light-gray concrete – with crisp but soft horizon lines on the body. Floor shows a faint, low-contrast mirror reflection of the lower body and tires (≈15–20 % opacity).
+MOOD: Clean, modern, magazine-grade studio look – cinematic clarity, photorealistic, NO HDR, NO over-saturation, NO dramatic contrast.`,
+
+  'showroom-2': `CINEMATIC LIGHTING – Elegant Luxury Showroom:
+KEY_LIGHT: Warm tungsten/halogen tone (3000–3200 K) from concealed cove lighting and recessed spots, raking gently from above and slightly behind the vehicle.
+FILL_LIGHT: Warm beige/champagne wall bounce produces a soft golden ambient wrap on shadow side. Subtle rim light along the upper body edge from cove lights.
+SHADOW: Long, very soft, warm-tinted ground shadow trailing slightly forward (low opacity 30–40 %). Shadows feather into the marble. Ambient occlusion under sills and bumpers is gentle.
+REFLECTIONS: Paint mirrors warm beige walls and ceiling cove highlights. Cream marble floor produces an elegant, polished reflection of the lower body (≈25–35 % opacity) with the marble veining still faintly visible through it.
+MOOD: High-end automotive editorial – warm, refined, jewellery-like. Cinematic but restrained, NEVER orange-cast, NEVER over-exposed.`,
+
+  'showroom-3': `CINEMATIC LIGHTING – Glass-Facade Daylight Showroom:
+KEY_LIGHT: Strong, cool natural daylight (6500 K) from the floor-to-ceiling glass facade on the LEFT, acting as a giant softbox. Linear LED strips on the ceiling add a secondary cool fill from above.
+FILL_LIGHT: Dark charcoal back wall absorbs light – the right/shadow side of the vehicle is noticeably darker than the window-lit side, producing a clear cinematic chiaroscuro.
+SHADOW: A pronounced but SOFT directional shadow falls to the RIGHT of the vehicle (away from the windows), elongated and feathered, opacity 45–55 %. Tires anchor cleanly to the dark stone floor.
+REFLECTIONS: Window-side panels mirror the bright glass facade and a hint of skyline silhouette; shadow-side panels mirror the dark charcoal wall. Dark stone floor shows a moderate reflection (≈30 % opacity).
+MOOD: Architectural, contemporary, gallery-cinematic – strong directional light, deep but controlled shadows, photorealistic, NEVER muddy, NEVER flat.`,
+
+  'custom-showroom': `CINEMATIC LIGHTING – Custom Showroom Match:
+ANALYSE the provided custom-showroom reference image and EXTRACT its real lighting:
+- KEY_LIGHT direction, colour temperature and intensity (window light? ceiling spots? cove lighting?)
+- FILL_LIGHT colour from the dominant wall/ceiling bounce
+- Floor reflectivity and tone
+Then RE-RENDER the vehicle as if photographed under EXACTLY those lights:
+SHADOW: Cast a soft, realistic ground shadow whose direction, length and softness match the extracted key light. Opacity 35–50 %, feathered edges, subtle ambient occlusion under the body.
+REFLECTIONS: Paint and chrome MUST mirror the actual walls, ceiling, windows and floor of the custom showroom – not a generic studio. The window-/light-side body panels are clearly brighter than the shadow-side panels.
+MOOD: Cinematic but PHOTOREALISTIC – the car must look like it was physically photographed inside that exact room during the same shoot, NOT pasted in.`,
+
+  'forest': `CINEMATIC LIGHTING – Forest Golden Hour:
+KEY_LIGHT: Warm low-angle golden light (3500–4000 K) breaking through the canopy at ~30°, producing soft god-rays and a warm rim along the upper body edge.
+FILL_LIGHT: Cool greenish ambient bounce from foliage on the shadow side – subtle, never tinting the paint unrealistically.
+SHADOW: Dappled, soft, organically shaped shadows from leaves and branches across the ground and lightly across the lower body. Main contact shadow under the vehicle is soft, opacity 40–55 %.
+REFLECTIONS: Paint mirrors trees, sky patches and warm sun streaks. Subtle dust haze in the light beams.
+MOOD: Cinematic, atmospheric, slightly hazy – like a high-end car commercial, NEVER over-saturated.`,
+
+  'mountain': `CINEMATIC LIGHTING – Alpine Daylight:
+KEY_LIGHT: Crisp high-altitude sunlight (5800–6200 K) from upper-left, very directional, slightly cool.
+FILL_LIGHT: Bright sky-dome bounce on shadow side keeps panels readable; cool blue ambient.
+SHADOW: Sharp but clean ground shadow to the lower-right, opacity 50–60 %, hard-feathered edges – matching real high-altitude sunlight.
+REFLECTIONS: Paint mirrors the snow-capped peaks and the deep blue sky with a clear horizon line on the body.
+MOOD: Epic, cinematic, crystal-clear – hero-shot energy, photorealistic, NEVER washed out.`,
+
+  'city': `CINEMATIC LIGHTING – Urban Golden Hour:
+KEY_LIGHT: Warm low sun (3200–3600 K) from one side, producing a strong warm rim on the body edge facing the sun.
+FILL_LIGHT: Cool sky bounce on the opposite side; subtle warm bounce from glass facades.
+SHADOW: Long, soft, warm-tinted shadow stretched across the asphalt opposite the sun, opacity 45–55 %.
+REFLECTIONS: Paint mirrors the glowing glass skyscrapers and the warm sky. Faint window-grid reflections on the side panels.
+MOOD: Cinematic urban hero shot – warm, premium, slightly filmic, NEVER orange-overcooked.`,
+
+  'street': `CINEMATIC LIGHTING – Open Road Afternoon:
+KEY_LIGHT: Warm afternoon sun (4000 K) from the right, raking along the body.
+FILL_LIGHT: Soft sky bounce on the shaded side keeps detail visible.
+SHADOW: Clean directional shadow to the left of the vehicle on the asphalt, opacity 50 %, soft edges.
+REFLECTIONS: Paint mirrors road, sky and a faint horizon line.
+MOOD: Cinematic travel-shot – realistic, warm, balanced, NEVER flat.`,
+
+  'beach': `CINEMATIC LIGHTING – Beach Sunset:
+KEY_LIGHT: Warm low sunset (2800–3200 K) from one side, producing a strong amber rim on the upper body.
+FILL_LIGHT: Cool turquoise ambient bounce from the ocean on the opposite side.
+SHADOW: Long soft shadow on wet sand, opacity 40–50 %, slightly elongated.
+REFLECTIONS: Paint mirrors the warm sky gradient, the ocean horizon line and faint cloud highlights. Wet sand under the tires shows a subtle mirror reflection.
+MOOD: Cinematic, romantic, premium – glowing but PHOTOREALISTIC, NEVER cartoonish.`,
+
+  'desert': `CINEMATIC LIGHTING – Desert Hard Light:
+KEY_LIGHT: Strong overhead-to-side sun (5200 K), very directional.
+FILL_LIGHT: Warm sand bounce from below adds a subtle golden glow on the lower body.
+SHADOW: Crisp, well-defined shadow on the asphalt, opacity 55–65 %, slightly elongated.
+REFLECTIONS: Paint mirrors the open sky, distant dunes and the road. Clear horizon line on the body sides.
+MOOD: Cinematic, vast, hero-grade – sharp, clean, photorealistic.`,
+
+  'night-city': `CINEMATIC LIGHTING – Neon Night:
+KEY_LIGHT: Mixed neon practicals (magenta, cyan, warm amber) from storefronts and signs, plus cool sodium streetlights from above.
+FILL_LIGHT: Coloured bounce from wet asphalt and signage; the body picks up gradient neon reflections along its sides.
+SHADOW: Soft, multi-directional shadows from competing light sources, low opacity 30–40 %, blending into wet asphalt reflections.
+REFLECTIONS: Paint and wet asphalt strongly mirror the neon signs in vivid streaks. Headlights/taillights add controlled local glow on nearby surfaces – NEVER overblown.
+MOOD: Cinematic, cyberpunk-tinged but REAL – like a Blade Runner-style automotive shot, photorealistic, NEVER cartoon.`,
+
+  'parking-garage': `CINEMATIC LIGHTING – Concrete Garage:
+KEY_LIGHT: Cool LED tubes (5000 K) from above, evenly spaced, producing soft repeating highlights along the roof and hood.
+FILL_LIGHT: Concrete walls bounce a neutral gray ambient – low contrast, slightly moody.
+SHADOW: Soft contact shadow directly beneath the vehicle, opacity 40–50 %. Subtle additional shadow bands from ceiling fixtures.
+REFLECTIONS: Paint mirrors the polished concrete floor and the row of ceiling lights as repeating soft highlights along the bodyline.
+MOOD: Cinematic, industrial, moody but clean – like a premium car-launch indoor shot, photorealistic.`,
+
+  'racetrack': `CINEMATIC LIGHTING – Track Daylight:
+KEY_LIGHT: Bright neutral daylight (5500 K), slightly side-lit to emphasise the bodyline.
+FILL_LIGHT: Asphalt bounce and sky-dome ambient.
+SHADOW: Crisp side shadow on the track, opacity 50–60 %, sharp but feathered.
+REFLECTIONS: Paint mirrors the curbs, grandstands silhouette and the open sky.
+MOOD: Cinematic motorsport hero shot – sharp, energetic, photorealistic.`,
+
+  'mansion': `CINEMATIC LIGHTING – Villa Evening:
+KEY_LIGHT: Warm late-evening sun (3000–3400 K) from a low angle, raking across the stone pavers.
+FILL_LIGHT: Warm wall bounce from the villa facade on the shadow side.
+SHADOW: Long soft warm shadow stretched across the herringbone pavers, opacity 40–50 %.
+REFLECTIONS: Paint mirrors the villa facade, hedges and warm sky.
+MOOD: Cinematic luxury lifestyle – elegant, glowing, premium, photorealistic.`,
+};
