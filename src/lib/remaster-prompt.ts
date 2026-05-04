@@ -3,7 +3,7 @@
 // Prompt blocks are admin-editable via Admin > Prompt-Verwaltung
 
 import { supabase } from '@/integrations/supabase/client';
-import { REMASTER_PROMPT_BLOCKS, SCENE_PROMPT_DEFAULTS } from './remaster-prompt-defaults';
+import { REMASTER_PROMPT_BLOCKS, SCENE_PROMPT_DEFAULTS, SCENE_LIGHTING_PROFILES } from './remaster-prompt-defaults';
 
 export interface RemasterConfig {
   scene: string;
