@@ -173,7 +173,7 @@ serve(async (req) => {
     // Read cost dynamically from admin_settings. Normalize legacy/unknown tiers so
     // "Qualität" always routes to Nano Banana 2, never to the Pro image model.
     const TIER_ALIASES: Record<string, string> = { standard: 'qualitaet', pro: 'premium' };
-    const REMASTER_DEFAULTS: Record<string, number> = { schnell: 2, qualitaet: 3, premium: 5, turbo: 4, ultra: 7 };
+    const REMASTER_DEFAULTS: Record<string, number> = { schnell: 2, qualitaet: 3, premium: 5, turbo: 4, ultra: 7, neu: 8 };
     const requestedTier = typeof modelTier === 'string' ? modelTier : 'schnell';
     const tier = TIER_ALIASES[requestedTier] || requestedTier;
     let cost = REMASTER_DEFAULTS[tier] ?? 2;
@@ -186,16 +186,24 @@ serve(async (req) => {
     const authResult = await authenticateAndDeductCredits(req, "image_remaster", cost);
     if (authResult instanceof Response) return authResult;
 
-    const GEMINI_MODELS: Record<string, string> = {
-      schnell: 'gemini-2.5-flash-image',
-      qualitaet: 'gemini-3.1-flash-image-preview',
-      premium: 'gemini-3-pro-image-preview',
-      turbo: 'gemini-3.1-flash-image-preview',
-      ultra: 'gemini-3-pro-image-preview',
+    // Engine routing per user-selected tier (binding, no cross-engine fallback)
+    interface EngineConfig { engine: 'gemini' | 'openai'; model: string }
+    const ENGINE_MAP: Record<string, EngineConfig> = {
+      schnell:   { engine: 'gemini', model: 'gemini-2.5-flash-image' },
+      qualitaet: { engine: 'gemini', model: 'gemini-3.1-flash-image-preview' },
+      premium:   { engine: 'gemini', model: 'gemini-3-pro-image-preview' },
+      turbo:     { engine: 'openai', model: 'gpt-image-1' },
+      ultra:     { engine: 'openai', model: 'gpt-image-1' },
+      neu:       { engine: 'openai', model: 'gpt-image-2' },
     };
-    const geminiModel = GEMINI_MODELS[tier] || 'gemini-3.1-flash-image-preview';
-    const GEMINI_API_KEY = await getSecret("GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
+    const engineConfig = ENGINE_MAP[tier] || ENGINE_MAP['qualitaet'];
+    const geminiModel = engineConfig.model; // legacy var name kept for downstream Gemini path
+    console.log(`[remaster] Engine=${engineConfig.engine} Model=${engineConfig.model} Tier=${tier} (user-selected, binding)`);
+
+    const GEMINI_API_KEY = engineConfig.engine === 'gemini' ? await getSecret("GEMINI_API_KEY") : null;
+    const OPENAI_API_KEY = engineConfig.engine === 'openai' ? await getSecret("OPENAI_API_KEY") : null;
+    if (engineConfig.engine === 'gemini' && !GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
+    if (engineConfig.engine === 'openai' && !OPENAI_API_KEY) throw new Error("OPENAI_API_KEY not configured");
     if (!imageBase64) throw new Error("No image provided");
 
     // 2. Use dynamic prompt if provided, otherwise build fallback from admin blocks
