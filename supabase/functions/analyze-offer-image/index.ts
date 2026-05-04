@@ -10,16 +10,26 @@ serve(async (req) => {
 
   try {
     const { user } = await authenticateRequest(req);
-    const { imageBase64 } = await req.json();
-    if (!imageBase64) return errorResponse("Kein Bild übermittelt", 400);
+    const body0 = await req.json();
+    // Accept either single image (legacy) or array of multiple datasheets/screenshots.
+    const rawImages: string[] = Array.isArray(body0?.imageBase64s) && body0.imageBase64s.length
+      ? body0.imageBase64s
+      : (body0?.imageBase64 ? [body0.imageBase64] : []);
+    if (!rawImages.length) return errorResponse("Kein Bild übermittelt", 400);
+    // Cap to keep prompt + payload sane (Gemini has hard limits on parts).
+    const images = rawImages.slice(0, 6);
 
     const apiKey = await getSecret("GEMINI_API_KEY");
     if (!apiKey) return errorResponse("GEMINI_API_KEY not configured", 500);
 
-    // Strip data URL prefix
-    const base64Data = imageBase64.includes(",") ? imageBase64.split(",")[1] : imageBase64;
-    const mimeType = imageBase64.startsWith("data:image/png") ? "image/png"
-      : imageBase64.startsWith("data:image/webp") ? "image/webp" : "image/jpeg";
+    // Per-image: strip data URL prefix and detect MIME.
+    const imageParts = images.map((img: string) => {
+      const data = img.includes(",") ? img.split(",")[1] : img;
+      const mimeType = img.startsWith("data:image/png") ? "image/png"
+        : img.startsWith("data:image/webp") ? "image/webp" : "image/jpeg";
+      return { inlineData: { mimeType, data } };
+    });
+    console.log(`[analyze-offer-image] Analyzing ${imageParts.length} document(s) in one merged call`);
 
     // gemini-2.5-pro liest dichte Tabellen (Verbrauch, Anzahlung, CO₂) deutlich
     // zuverlässiger als flash. Flash bleibt nur als Fallback.
