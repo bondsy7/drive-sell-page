@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react';
-import { useParams, Link, Navigate } from 'react-router-dom';
+import { useParams, Link, Navigate, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Car, FileText, Image as ImageIcon, Layout, LayoutGrid, Video, RotateCw, MessageSquare, FolderOpen } from 'lucide-react';
+import { ArrowLeft, Car, FileText, Image as ImageIcon, Layout, LayoutGrid, Video, RotateCw, MessageSquare, FolderOpen, Trash2 } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useVehicle } from '@/hooks/useVehicles';
+import { useVehicle, useDeleteVehicle } from '@/hooks/useVehicles';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import ProjectsTab from '@/components/dashboard/ProjectsTab';
@@ -22,9 +22,19 @@ type TabKey = 'originals' | 'gallery' | 'landings' | 'projects' | 'banners' | 'v
 
 export default function VehicleView() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { data: vehicle, isLoading } = useVehicle(id);
+  const deleteVehicle = useDeleteVehicle();
   const [tab, setTab] = useState<TabKey>('originals');
+
+  const handleDelete = async () => {
+    if (!vehicle) return;
+    const label = vehicle.title || vehicle.vin;
+    if (!confirm(`"${label}" und ALLE zugehörigen Bilder, Landing Pages, Banner, Videos und Anfragen unwiderruflich löschen?`)) return;
+    await deleteVehicle.mutateAsync(vehicle.id);
+    navigate('/dashboard');
+  };
 
   // Per-vehicle data queries (only fire when vehicle exists)
   const { data: projects = [] } = useQuery({
@@ -185,6 +195,16 @@ export default function VehicleView() {
               <p className="text-xs text-muted-foreground font-mono truncate">{vehicle.vin}</p>
             </div>
           </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleDelete}
+            disabled={deleteVehicle.isPending}
+            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+            aria-label="Fahrzeug löschen"
+          >
+            <Trash2 className="w-5 h-5" />
+          </Button>
         </div>
 
         {/* Tag chips */}
