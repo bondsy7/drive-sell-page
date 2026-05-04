@@ -21,6 +21,7 @@ interface ImageCaptureGridProps {
   vehicleData?: VehicleData;
   modelTier?: string;
   projectId?: string | null;
+  vehicleId?: string | null;
   onComplete: (mainImage: string, galleryImages: string[], vin?: string) => void;
   onVehicleDataChange?: (data: VehicleData) => void;
   onBack: () => void;
@@ -156,7 +157,7 @@ const EMPTY_CONSUMPTION: VehicleData['consumption'] = {
   topSpeed: '', acceleration: '', curbWeight: '', grossWeight: '', warranty: '', paintColor: '',
 };
 
-const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription, vehicleData, modelTier, projectId, onComplete, onVehicleDataChange, onBack, onPipelineComplete }) => {
+const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription, vehicleData, modelTier, projectId, vehicleId, onComplete, onVehicleDataChange, onBack, onPipelineComplete }) => {
   const [showPipeline, setShowPipeline] = useState(false);
   const [captures, setCaptures] = useState<Record<string, CapturedImage>>({});
   const [isProcessing, setIsProcessing] = useState(false);
@@ -619,6 +620,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         remasterConfig={remasterConfig}
         modelTier={modelTier}
         projectId={projectId}
+        vehicleId={vehicleId}
         vin={detectedVin}
         onComplete={() => {
           if (onPipelineComplete) {

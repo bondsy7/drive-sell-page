@@ -23,6 +23,7 @@ export async function saveImagesToGallery(
   galleryFolder: string,
   perspectives?: string[],
   projectId?: string | null,
+  vehicleId?: string | null,
 ): Promise<string[]> {
   const urls: string[] = [];
   for (let i = 0; i < images.length; i++) {
@@ -36,6 +37,7 @@ export async function saveImagesToGallery(
   if (urls.length > 0) {
     const imageRows = urls.map((url, i) => ({
       project_id: projectId || null,
+      vehicle_id: vehicleId || null,
       user_id: userId,
       image_url: url,
       image_base64: '',

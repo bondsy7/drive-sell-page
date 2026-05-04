@@ -34,6 +34,7 @@ export interface PipelineConfig {
   remasterConfig: RemasterConfig;
   modelTier: string;
   projectId: string | null;
+  vehicleId: string | null;
   vin: string | null;
   selectedJobs: PipelineJob[];
   availableJobs: PipelineJob[];
@@ -501,7 +502,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
           if (urls.length > 0) {
             const imageRows = urls.map((url, i) => ({
-              project_id: cfg.projectId || null, user_id: cfg.userId, image_url: url, image_base64: '',
+              project_id: cfg.projectId || null, vehicle_id: cfg.vehicleId || null,
+              user_id: cfg.userId, image_url: url, image_base64: '',
               perspective: `Pipeline: ${allResults[i]?.label || `Bild ${i + 1}`}`, sort_order: startOrder + i,
               gallery_folder: folderName,
             }));
@@ -588,7 +590,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           const url = await uploadImageToStorage(jobResults[i], config.userId, `${storagePath}/${jobKey}_retry_${i}.png`);
           if (url) {
             await supabase.from('project_images').insert({
-              project_id: config.projectId || null, user_id: config.userId, image_url: url,
+              project_id: config.projectId || null, vehicle_id: config.vehicleId || null,
+              user_id: config.userId, image_url: url,
               image_base64: '', perspective: `Pipeline: ${job.labelDe} (Retry)`, sort_order: 999 + i,
               gallery_folder: folderName,
             } as any);
@@ -626,7 +629,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           const url = await uploadImageToStorage(result.base64, config.userId, `${storagePath}/${resultImg.jobKey}_regen_${resultImg.promptIndex}.png`);
           if (url) {
             await supabase.from('project_images').insert({
-              project_id: config.projectId || null, user_id: config.userId, image_url: url,
+              project_id: config.projectId || null, vehicle_id: config.vehicleId || null,
+              user_id: config.userId, image_url: url,
               image_base64: '', perspective: `Pipeline: ${resultImg.label} (Regen)`, sort_order: 999,
               gallery_folder: folderName,
             } as any);

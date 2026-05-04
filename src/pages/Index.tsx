@@ -26,6 +26,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useCredits } from '@/hooks/useCredits';
 import { uploadImagesToStorage, saveImagesToGallery, getGalleryFolderName } from '@/lib/storage-utils';
+import { ensureVehicle } from '@/lib/vehicle-utils';
 import type { AppState, VehicleData } from '@/types/vehicle';
 import type { TemplateId } from '@/types/template';
 import type { ModelTier } from '@/components/ModelSelector';
@@ -99,6 +100,7 @@ const Index = () => {
   const [imageProgress, setImageProgress] = useState({ current: 0, total: 0 });
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>('autohaus');
   const [savedProjectId, setSavedProjectId] = useState<string | null>(null);
+  const [savedVehicleId, setSavedVehicleId] = useState<string | null>(null);
   const [selectedModelTier, setSelectedModelTier] = useState<ModelTier>('qualitaet');
   const [creditDialog, setCreditDialog] = useState<{ open: boolean; cost: number; label: string; onConfirm: () => void }>({
     open: false, cost: 0, label: '', onConfirm: () => {},
@@ -112,12 +114,13 @@ const Index = () => {
 
   const currentStep = appState === 'hub' || appState === 'idle' ? 1 : appState === 'preview' ? 3 : 2;
 
-  const saveProject = useCallback(async (vData: VehicleData, mainImg: string | null, allImages: string[], templateId: TemplateId, vin?: string | null) => {
+  const saveProject = useCallback(async (vData: VehicleData, mainImg: string | null, allImages: string[], templateId: TemplateId, vin?: string | null, vehicleId?: string | null) => {
     if (!user) return null;
     const title = `${vData.vehicle.brand} ${vData.vehicle.model} ${vData.vehicle.variant || ''}`.trim();
     const { data: project, error } = await supabase.from('projects').insert({
       user_id: user.id, title, vehicle_data: vData as any, template_id: templateId,
-    }).select('id').single();
+      vehicle_id: vehicleId || null,
+    } as any).select('id').single();
     if (error || !project) { console.error('Save project error:', error); return null; }
     if (allImages.length > 0) {
       const folderName = getGalleryFolderName(vin || (vData.vehicle as any)?.vin);
@@ -126,7 +129,8 @@ const Index = () => {
         await supabase.from('projects').update({ main_image_url: urls[0] }).eq('id', project.id);
       }
       const imageRows = urls.map((url, i) => ({
-        project_id: project.id, user_id: user.id, image_url: url, image_base64: '',
+        project_id: project.id, vehicle_id: vehicleId || null, user_id: user.id,
+        image_url: url, image_base64: '',
         perspective: PERSPECTIVES[i]?.label || `Bild ${i + 1}`, sort_order: i,
         gallery_folder: folderName,
       }));
@@ -181,7 +185,7 @@ const Index = () => {
 
   const processFiles = useCallback(async (files: File[]) => {
     setFileName(files.map(f => f.name).join(', '));
-    setGalleryImages([]); setImageBase64(null); setSavedProjectId(null);
+    setGalleryImages([]); setImageBase64(null); setSavedProjectId(null); setSavedVehicleId(null);
     try {
       setAppState('uploading');
       const pdfBase64Array: string[] = [];
@@ -217,8 +221,13 @@ const Index = () => {
       const enriched = await loadProfileIntoDealer(vehicleInfo as VehicleData);
       setVehicleData(enriched);
 
+      // Ensure vehicle row (VIN-keyed) so all downstream assets carry vehicle_id
+      const vin = (enriched.vehicle as any)?.vin || null;
+      const vehicleId = user ? await ensureVehicle(user.id, vin, enriched) : null;
+      setSavedVehicleId(vehicleId);
+
       // Pre-create project so pipeline can use it
-      const projectId = await saveProject(enriched, null, [], selectedTemplate);
+      const projectId = await saveProject(enriched, null, [], selectedTemplate, vin, vehicleId);
       if (projectId) setSavedProjectId(projectId);
 
       // If we have standalone photos already, skip image source choice and go straight to preview
@@ -231,7 +240,8 @@ const Index = () => {
           if (urls.length > 0) {
             await supabase.from('projects').update({ main_image_url: urls[0] }).eq('id', projectId);
             const imageRows = urls.map((url, i) => ({
-              project_id: projectId, user_id: user.id, image_url: url, image_base64: '',
+              project_id: projectId, vehicle_id: vehicleId || null, user_id: user.id,
+              image_url: url, image_base64: '',
               perspective: `Bild ${i + 1}`, sort_order: i,
             }));
             await supabase.from('project_images').insert(imageRows);
@@ -310,70 +320,94 @@ const Index = () => {
       if (vin) setVehicleData(updatedData);
       const allImgs = [mainImage, ...gallery];
       const folderName = getGalleryFolderName(vin || (updatedData.vehicle as any)?.vin);
+
+      // Re-ensure vehicle in case VIN was just captured
+      let vehicleId = savedVehicleId;
+      if (user && vin && !vehicleId) {
+        vehicleId = await ensureVehicle(user.id, vin, updatedData);
+        setSavedVehicleId(vehicleId);
+      }
+
       if (savedProjectId) {
         await supabase.from('projects').update({
           vehicle_data: updatedData as any,
+          vehicle_id: vehicleId || null,
           updated_at: new Date().toISOString(),
-        }).eq('id', savedProjectId);
+        } as any).eq('id', savedProjectId);
         if (user) {
           const urls = await uploadImagesToStorage(allImgs, user.id, savedProjectId);
           if (urls.length > 0) {
             await supabase.from('projects').update({ main_image_url: urls[0] }).eq('id', savedProjectId);
             const imageRows = urls.map((url, i) => ({
-              project_id: savedProjectId, user_id: user.id, image_url: url, image_base64: '',
+              project_id: savedProjectId, vehicle_id: vehicleId || null, user_id: user.id,
+              image_url: url, image_base64: '',
               perspective: `Bild ${i + 1}`, sort_order: i, gallery_folder: folderName,
             }));
             await supabase.from('project_images').insert(imageRows as any);
           }
         }
       } else {
-        const projectId = await saveProject(updatedData, mainImage, allImgs, selectedTemplate, vin);
+        const projectId = await saveProject(updatedData, mainImage, allImgs, selectedTemplate, vin, vehicleId);
         if (projectId) setSavedProjectId(projectId);
       }
     }
     setAppState('preview');
-  }, [vehicleData, saveProject, selectedTemplate, savedProjectId, user]);
+  }, [vehicleData, saveProject, selectedTemplate, savedProjectId, savedVehicleId, user]);
 
   const handleRemasterComplete = useCallback(async (mainImage: string, gallery: string[]) => {
     setImageBase64(mainImage);
     setGalleryImages(gallery);
     if (vehicleData) {
       const allImgs = [mainImage, ...gallery];
-      const folderName = getGalleryFolderName((vehicleData.vehicle as any)?.vin);
+      const vin = (vehicleData.vehicle as any)?.vin || null;
+      const folderName = getGalleryFolderName(vin);
+
+      let vehicleId = savedVehicleId;
+      if (user && vin && !vehicleId) {
+        vehicleId = await ensureVehicle(user.id, vin, vehicleData);
+        setSavedVehicleId(vehicleId);
+      }
+
       if (savedProjectId) {
         await supabase.from('projects').update({
           vehicle_data: vehicleData as any,
+          vehicle_id: vehicleId || null,
           updated_at: new Date().toISOString(),
-        }).eq('id', savedProjectId);
+        } as any).eq('id', savedProjectId);
         if (user) {
           const urls = await uploadImagesToStorage(allImgs, user.id, savedProjectId);
           if (urls.length > 0) {
             await supabase.from('projects').update({ main_image_url: urls[0] }).eq('id', savedProjectId);
             const imageRows = urls.map((url, i) => ({
-              project_id: savedProjectId, user_id: user.id, image_url: url, image_base64: '',
+              project_id: savedProjectId, vehicle_id: vehicleId || null, user_id: user.id,
+              image_url: url, image_base64: '',
               perspective: `Bild ${i + 1}`, sort_order: i, gallery_folder: folderName,
             }));
             await supabase.from('project_images').insert(imageRows as any);
           }
         }
       } else {
-        const projectId = await saveProject(vehicleData, mainImage, allImgs, selectedTemplate);
+        const projectId = await saveProject(vehicleData, mainImage, allImgs, selectedTemplate, vin, vehicleId);
         if (projectId) setSavedProjectId(projectId);
       }
     }
     setAppState('preview');
-  }, [vehicleData, saveProject, selectedTemplate, savedProjectId, user]);
+  }, [vehicleData, saveProject, selectedTemplate, savedProjectId, savedVehicleId, user]);
 
   // ─── Save standalone images to gallery (NO project creation!) ───
   const saveStandaloneImages = useCallback(async (allImages: string[], vin?: string) => {
     if (!user || allImages.length === 0) return;
     try {
       const folderName = getGalleryFolderName(vin);
+      // VIN-based: ensure vehicle so images are linked even without a project
+      const vehicleId = vin ? await ensureVehicle(user.id, vin, null) : null;
       await saveImagesToGallery(
         allImages,
         user.id,
         folderName,
         allImages.map((_, i) => PERSPECTIVES[i]?.label || `Bild ${i + 1}`),
+        null,
+        vehicleId,
       );
     } catch (e) {
       console.error('Error saving standalone images:', e);
@@ -733,7 +767,7 @@ const Index = () => {
 
           {appState === 'capturing-images' && (
             <div className="mt-8">
-              <ImageCaptureGrid vehicleDescription={vehicleDescription} vehicleData={vehicleData || undefined} modelTier={selectedModelTier} projectId={savedProjectId} onComplete={handleCaptureComplete} onVehicleDataChange={setVehicleData} onBack={() => setAppState('choosing-image-source')} onPipelineComplete={() => navigate('/dashboard?tab=gallery')} />
+              <ImageCaptureGrid vehicleDescription={vehicleDescription} vehicleData={vehicleData || undefined} modelTier={selectedModelTier} projectId={savedProjectId} vehicleId={savedVehicleId} onComplete={handleCaptureComplete} onVehicleDataChange={setVehicleData} onBack={() => setAppState('choosing-image-source')} onPipelineComplete={() => navigate('/dashboard?tab=gallery')} />
             </div>
           )}
 
