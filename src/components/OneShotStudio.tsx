@@ -1010,13 +1010,64 @@ ABSOLUTE PRIORITY – this is the marketing master image:
     setStep('setup');
   }, [canGoToSetup]);
 
-  const goToGen = useCallback(() => {
+  const goToGen = useCallback(async () => {
     if (!form.vehicleTitle.trim() && !(form.brand.trim() && form.model.trim())) {
       toast.error('Bitte mindestens Marke + Modell oder Fahrzeugtitel angeben');
       return;
     }
-    setStep('generierung');
-  }, [form.vehicleTitle, form.brand, form.model]);
+    if (!user) {
+      toast.error('Bitte melde dich an');
+      return;
+    }
+
+    // 1) Ensure a vehicle row (VIN-keyed). Synthesise a placeholder VIN if
+    //    we don't have a real 17-char VIN — every asset must belong to a vehicle.
+    setEnsuringVehicle(true);
+    try {
+      const realVin = (vin || '').trim().toUpperCase();
+      const effectiveVin = realVin && realVin.length >= 5
+        ? realVin
+        : `OS-${Date.now().toString(36).toUpperCase()}`;
+
+      const vehicleData = {
+        vehicle: {
+          brand: form.brand,
+          model: form.model,
+          variant: form.variant,
+          color: '',
+          year: null as any,
+        },
+      };
+      const newVehicleId = await ensureVehicle(user.id, effectiveVin, vehicleData);
+      if (!newVehicleId) {
+        toast.error('Fahrzeug konnte nicht angelegt werden');
+        return;
+      }
+      setSavedVehicleId(newVehicleId);
+
+      // 2) Upload all original photos to originals/{user}/{vehicleId}/...
+      try {
+        const prefix = `${user.id}/${newVehicleId}`;
+        await Promise.all(vehicleImages.map(async (img, idx) => {
+          const base64Data = img.base64.includes(',') ? img.base64.split(',')[1] : img.base64;
+          const bytes = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
+          const blob = new Blob([bytes], { type: 'image/jpeg' });
+          const safe = (img.fileName || `original-${idx}.jpg`).replace(/[^a-zA-Z0-9._-]/g, '_');
+          const path = `${prefix}/${Date.now()}-${idx}-${safe}`;
+          await supabase.storage.from('originals').upload(path, blob, {
+            contentType: 'image/jpeg',
+            upsert: false,
+          });
+        }));
+      } catch (e) {
+        console.warn('[OneShot] originals upload (non-fatal):', e);
+      }
+
+      setStep('generierung');
+    } finally {
+      setEnsuringVehicle(false);
+    }
+  }, [form.vehicleTitle, form.brand, form.model, form.variant, user, vin, vehicleImages]);
 
   /* ─────────────────────────────────────────────────────────────
    * Render
