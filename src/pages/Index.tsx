@@ -84,15 +84,16 @@ const Index = () => {
     return 'hub';
   });
 
-  // Sync appState → URL
+  // Sync appState → URL (preserve query params like ?vehicle=...&image=...)
   useEffect(() => {
     const toolSlug = STATE_TO_TOOL[appState];
     const currentPath = window.location.pathname;
+    const search = window.location.search;
     if (appState === 'hub') {
-      if (currentPath !== '/generator') navigate('/generator', { replace: true });
+      if (currentPath !== '/generator') navigate(`/generator${search}`, { replace: true });
     } else if (toolSlug) {
       const target = `/generator/${toolSlug}`;
-      if (currentPath !== target) navigate(target, { replace: true });
+      if (currentPath !== target) navigate(`${target}${search}`, { replace: true });
     }
   }, [appState, navigate]);
 
