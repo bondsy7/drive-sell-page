@@ -869,7 +869,13 @@ const Index = () => {
 
           {appState === 'choosing-image-source' && (
             <div className="mt-8">
-              <ImageSourceChoice onChooseGenerate={handleChooseGenerate} onChooseUpload={handleChooseUpload} onChooseCapture={handleChooseCapture} />
+              <ImageSourceChoice
+                onChooseGenerate={handleChooseGenerate}
+                onChooseUpload={handleChooseUpload}
+                onChooseCapture={handleChooseCapture}
+                existingGalleryCount={existingVehicleImages.length}
+                onChooseExisting={handleChooseExisting}
+              />
             </div>
           )}
 
