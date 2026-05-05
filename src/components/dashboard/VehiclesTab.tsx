@@ -129,7 +129,7 @@ export default function VehiclesTab() {
         <Button onClick={reclaimOrphans} disabled={reclaiming} variant="outline" size="sm">
           {reclaiming
             ? <><Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> Verknüpfe…</>
-            : <><Link2 className="w-4 h-4 mr-1.5" /> Verwaiste Bilder per VIN zuordnen</>}
+            : <><Link2 className="w-4 h-4 mr-1.5" /> Verwaiste Inhalte Fahrzeugen zuordnen</>}
         </Button>
       </div>
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
