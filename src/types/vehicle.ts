@@ -92,6 +92,10 @@ export interface VehicleData {
     excessMileageCost?: string;
     underMileageCost?: string;
     mileageTolerance?: string;
+    /** VAT note shown after every price, e.g. "inkl. MwSt." or "zzgl. MwSt." */
+    vatNote?: string;
+    /** Label for the monthly rate ("Monatliche Rate", "Leasingrate", ...) */
+    monthlyRateLabel?: string;
   };
   dealer: DealerData;
   consumption: ConsumptionData;
