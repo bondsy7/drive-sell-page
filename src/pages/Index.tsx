@@ -116,6 +116,9 @@ const Index = () => {
   const [standalonePhotoResults, setStandalonePhotoResults] = useState<string[]>([]);
   // For manual landing page HTML
   const [manualLandingHTML, setManualLandingHTML] = useState<string | null>(null);
+  // Existing gallery for the deep-linked vehicle (re-use without spending credits)
+  const [existingVehicleImages, setExistingVehicleImages] = useState<{ url: string; perspective?: string | null; folder?: string | null }[]>([]);
+  const [showExistingSelector, setShowExistingSelector] = useState(false);
 
   const currentStep = appState === 'hub' || appState === 'idle' ? 1 : appState === 'preview' ? 3 : 2;
 
