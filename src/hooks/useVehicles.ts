@@ -56,6 +56,18 @@ export function useVehicles() {
         supabase.from('leads').select('id, vehicle_id, project_id').eq('dealer_user_id', user.id),
       ]);
 
+      // Banner counts via storage list per vehicle (parallel)
+      const bannerEntries = await Promise.all(
+        ids.map(async (vid) => {
+          const { data } = await supabase.storage
+            .from('banners')
+            .list(`${user.id}/${vid}`, { limit: 200 });
+          const count = (data || []).filter(f => f.name && !f.name.startsWith('.')).length;
+          return [vid, count] as const;
+        })
+      );
+      const cB = new Map<string, number>(bannerEntries);
+
       const tally = (rows: Array<{ vehicle_id: string | null }> | null) => {
         const map = new Map<string, number>();
         for (const r of rows || []) {
@@ -84,6 +96,7 @@ export function useVehicles() {
           projects: cP.get(v.id) || 0,
           images: cI.get(v.id) || 0,
           spin360: cS.get(v.id) || 0,
+          banners: cB.get(v.id) || 0,
           leads: cL.get(v.id) || 0,
         },
       }));
