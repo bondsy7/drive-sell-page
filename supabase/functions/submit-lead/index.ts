@@ -91,6 +91,15 @@ Deno.serve(async (req) => {
           },
           body: JSON.stringify({ leadId: lead.id, dealerUserId }),
         }).catch(err => console.error("Auto-process trigger error:", err));
+      } else {
+        await supabase.from("sales_notifications").insert({
+          user_id: dealerUserId,
+          notification_type: "new_lead",
+          title: "Neuer Lead eingegangen",
+          body: `${String(name).slice(0, 200)} hat eine Anfrage${vehicleTitle ? ` zu ${String(vehicleTitle).slice(0, 120)}` : ''} gesendet.`,
+          related_lead_id: lead.id,
+          requires_approval: false,
+        });
       }
     }
 
