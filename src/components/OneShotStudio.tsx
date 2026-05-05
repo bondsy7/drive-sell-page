@@ -57,6 +57,7 @@ import { useVehicleMakes } from '@/hooks/useVehicleMakes';
 import { ensureVehicle } from '@/lib/vehicle-utils';
 
 import OneShotMarketingForm from './oneshot/OneShotMarketingForm';
+import { persistScanData, persistVinLookup } from '@/lib/scan-to-vehicle-data';
 import ProcessTimer, { formatDuration } from '@/components/ProcessTimer';
 import OneShotLightbox, { type LightboxItem } from './oneshot/OneShotLightbox';
 import {
