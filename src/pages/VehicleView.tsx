@@ -363,11 +363,6 @@ export default function VehicleView() {
             const cover = vehicle.cover_image_url ? `&image=${encodeURIComponent(vehicle.cover_image_url)}` : '';
             return (
               <>
-                <Button asChild size="sm">
-                  <Link to={`/generator/pdf-landing?vehicle=${vehicle.id}${cover}`}>
-                    <FileText className="w-4 h-4 mr-1.5" /> PDF Landing Page
-                  </Link>
-                </Button>
                 <Button asChild size="sm" variant="outline">
                   <Link to={`/generator/banner?vehicle=${vehicle.id}${cover}`}>
                     <LayoutGrid className="w-4 h-4 mr-1.5" /> Banner erstellen
@@ -381,6 +376,11 @@ export default function VehicleView() {
                 <Button asChild size="sm" variant="outline">
                   <Link to={`/generator/manual-landing?vehicle=${vehicle.id}`}>
                     <Sparkles className="w-4 h-4 mr-1.5" /> Landing Page
+                  </Link>
+                </Button>
+                <Button asChild size="sm" variant="outline">
+                  <Link to={`/generator/pdf-landing?vehicle=${vehicle.id}${cover}`}>
+                    <FileText className="w-4 h-4 mr-1.5" /> PDF Landing Page
                   </Link>
                 </Button>
               </>
