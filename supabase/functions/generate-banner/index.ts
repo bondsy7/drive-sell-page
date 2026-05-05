@@ -234,6 +234,9 @@ async function generateGemini(prompt: string, imageBase64: string | null, logoBa
     (generationConfig as any).imageConfig = { aspectRatio: aspectLabel };
   }
 
+  // gemini-3-pro is significantly slower than 2.5/flash — give it more headroom
+  const timeoutMs = /^gemini-3-pro/.test(model) ? 180_000 : /^gemini-3/.test(model) ? 120_000 : 90_000;
+
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const response = await fetchWithTimeout(url, {
@@ -243,7 +246,7 @@ async function generateGemini(prompt: string, imageBase64: string | null, logoBa
           contents: [{ parts }],
           generationConfig,
         }),
-      }, 45_000);
+      }, timeoutMs);
 
       if (!response.ok) {
         const errText = await response.text();
@@ -251,7 +254,7 @@ async function generateGemini(prompt: string, imageBase64: string | null, logoBa
         if ([400, 401, 403].includes(response.status) && /API_KEY_INVALID|API Key not found|invalid api key/i.test(errText)) {
           throw new Error("GEMINI_API_KEY ungültig oder nicht für Gemini freigeschaltet");
         }
-        if (response.status === 429 && attempt < retries) {
+        if ((response.status === 429 || response.status === 503 || response.status === 500) && attempt < retries) {
           await new Promise(r => setTimeout(r, 3000 * (attempt + 1)));
           continue;
         }
@@ -278,7 +281,7 @@ async function generateGemini(prompt: string, imageBase64: string | null, logoBa
     } catch (e: any) {
       const isAbort = e?.name === "AbortError";
       console.error(`Gemini banner attempt ${attempt + 1} failed${isAbort ? " (timeout)" : ""}:`, e?.message);
-      if (attempt >= retries) throw isAbort ? new Error("Gemini timeout (45s)") : e;
+      if (attempt >= retries) throw isAbort ? new Error(`Gemini timeout (${Math.round(timeoutMs/1000)}s)`) : e;
       await new Promise(r => setTimeout(r, 1500));
     }
   }
