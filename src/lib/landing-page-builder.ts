@@ -36,6 +36,7 @@ export interface LandingPageDealer {
 export interface LandingPageContactForm {
   dealerUserId: string;
   projectId?: string;
+  vehicleId?: string | null;
   supabaseUrl: string;
   vehicleTitle: string;
   pageType?: string;
@@ -226,6 +227,7 @@ export function buildLandingPageHTML(
     ? buildContactFormHTML({
         dealerUserId: contactForm.dealerUserId,
         projectId: contactForm.projectId,
+        vehicleId: contactForm.vehicleId,
         supabaseUrl: contactForm.supabaseUrl,
         vehicleTitle: contactForm.vehicleTitle,
         currentCategory: contactForm.pageType || '',
