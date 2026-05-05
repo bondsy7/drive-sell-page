@@ -179,6 +179,31 @@ async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: numbe
   }
 }
 
+async function toInlineData(input: string | null | undefined, fallbackMime = "image/jpeg"): Promise<{ mimeType: string; data: string } | null> {
+  if (!input) return null;
+  if (/^https?:\/\//i.test(input)) {
+    try {
+      const r = await fetch(input);
+      if (!r.ok) { console.error("toInlineData fetch failed", r.status, input); return null; }
+      const ct = r.headers.get("content-type") || fallbackMime;
+      const buf = new Uint8Array(await r.arrayBuffer());
+      let bin = "";
+      for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
+      return { mimeType: ct.split(";")[0], data: btoa(bin) };
+    } catch (e) {
+      console.error("toInlineData fetch error", e);
+      return null;
+    }
+  }
+  const mime = input.startsWith("data:image/png") ? "image/png"
+    : input.startsWith("data:image/webp") ? "image/webp"
+    : input.startsWith("data:image/jpeg") || input.startsWith("data:image/jpg") ? "image/jpeg"
+    : input.startsWith("data:image/svg") ? "image/png"
+    : fallbackMime;
+  const data = input.includes(",") ? input.split(",")[1] : input;
+  return { mimeType: mime, data };
+}
+
 async function generateGemini(prompt: string, imageBase64: string | null, logoBase64: string | null, model: string, retries: number, width?: number, height?: number): Promise<string | null> {
   const apiKey = await getSecret("GEMINI_API_KEY");
   if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
