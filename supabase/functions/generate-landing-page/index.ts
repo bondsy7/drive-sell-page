@@ -384,27 +384,42 @@ ${!uploadedImages?.length ? `\nWICHTIG: KEINE eigenen Bilder hochgeladen. Du MUS
 
     console.log("Generating content for:", brand, model, pageType);
 
-    // ─── Step 1: Generate content JSON ───
-    const geminiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
-    const contentResponse = await fetch(geminiUrl, {
-      method: "POST",
-      headers: { "x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: systemPrompt }] },
-        contents: [{ parts: [{ text: userPrompt }] }],
-        generationConfig: {
-          maxOutputTokens: 16384,
-          responseMimeType: "application/json",
-          temperature: 0.6,
-        },
-      }),
+    // ─── Step 1: Generate content JSON (with retry + model fallback) ───
+    const contentBody = JSON.stringify({
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+      contents: [{ parts: [{ text: userPrompt }] }],
+      generationConfig: {
+        maxOutputTokens: 16384,
+        responseMimeType: "application/json",
+        temperature: 0.6,
+      },
     });
+    const contentModels = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash"];
+    let contentResponse: Response | null = null;
+    let lastErrText = "";
+    let lastStatus = 0;
+    outer: for (const m of contentModels) {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`, {
+          method: "POST",
+          headers: { "x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json" },
+          body: contentBody,
+        });
+        if (r.ok) { contentResponse = r; break outer; }
+        lastStatus = r.status;
+        lastErrText = await r.text();
+        console.error(`Gemini content ${m} attempt ${attempt + 1}: ${r.status} ${lastErrText.substring(0, 200)}`);
+        if (r.status !== 503 && r.status !== 429 && r.status !== 500) break; // non-retryable -> try next model
+        await new Promise((res) => setTimeout(res, 1500 * (attempt + 1)));
+      }
+    }
 
-    if (!contentResponse.ok) {
-      const errText = await contentResponse.text();
-      console.error("Gemini content error:", contentResponse.status, errText);
-      if (contentResponse.status === 429) {
+    if (!contentResponse) {
+      if (lastStatus === 429) {
         return new Response(JSON.stringify({ error: "Rate limit erreicht. Bitte in einer Minute erneut versuchen." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      if (lastStatus === 503) {
+        return new Response(JSON.stringify({ error: "KI-Modell ist gerade überlastet. Bitte in 1-2 Minuten erneut versuchen." }), { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       return new Response(JSON.stringify({ error: "KI-Fehler bei Content-Generierung" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
