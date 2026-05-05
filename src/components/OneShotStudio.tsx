@@ -1410,6 +1410,7 @@ This is the MARKETING MASTER (Hero) shot — push lighting one notch beyond the 
                 {dataSheetBase64s.length > 1
                   ? `${dataSheetBase64s.length} Dokumente werden zusammengeführt …`
                   : 'Analysiere Datenblatt …'}
+                <ProcessTimer running={analyzingSheet} />
               </div>
             )}
 
