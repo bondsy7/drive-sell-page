@@ -994,19 +994,29 @@ This is the MARKETING MASTER (Hero) shot — push lighting one notch beyond the 
 
   /** Power-button: hero → (pipeline + banners + video) parallel. */
   const startEverything = useCallback(async () => {
-    if (heroRunning || heroBase64) return;
+    if (!heroBase64 || !heroApproved) return;
     setBannerOutputs([]);
     setVideoState('idle');
     setVideoUrl(null);
 
-    const hero = await generateHero();
-    if (!hero) return;
-
     // Fire all three in parallel — they all use the hero image.
-    void startPipelineRest(hero);
-    void generateBanners(hero);
-    void generateVideo(hero);
-  }, [heroRunning, heroBase64, generateHero, startPipelineRest, generateBanners, generateVideo]);
+    void startPipelineRest(heroBase64);
+    void generateBanners(heroBase64);
+    void generateVideo(heroBase64);
+  }, [heroBase64, heroApproved, startPipelineRest, generateBanners, generateVideo]);
+
+  const handleGenerateHero = useCallback(async () => {
+    if (heroRunning) return;
+    setHeroApproved(false);
+    await generateHero();
+  }, [heroRunning, generateHero]);
+
+  const handleRefineHero = useCallback(async () => {
+    if (heroRunning || !heroRefinePrompt.trim()) return;
+    setHeroApproved(false);
+    await generateHero(heroRefinePrompt);
+    setHeroRefinePrompt('');
+  }, [heroRunning, heroRefinePrompt, generateHero]);
 
   /* ─────────────────────────────────────────────────────────────
    * Step 1 → 2 transition
