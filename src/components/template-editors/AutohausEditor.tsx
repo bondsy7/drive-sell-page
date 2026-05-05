@@ -344,7 +344,11 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
               {/* Rate highlight card */}
               {!isBuyCategory && data.finance.monthlyRate && (
                 <div className="bg-foreground text-background rounded-2xl p-6">
-                  <div className="text-xs font-medium opacity-60 mb-1">Monatliche Rate</div>
+                  <EditableField
+                    value={data.finance.monthlyRateLabel || 'Monatliche Rate'}
+                    onChange={(v) => updateFinance('monthlyRateLabel', v)}
+                    className="text-xs font-medium opacity-60 mb-1 block"
+                  />
                   <div className="flex items-baseline gap-2">
                     <EditableField
                       value={data.finance.monthlyRate}
@@ -353,7 +357,12 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
                       suffix="€"
                     />
                   </div>
-                  <div className="text-xs opacity-60 mt-1">inkl. MwSt.</div>
+                  <EditableField
+                    value={data.finance.vatNote ?? 'inkl. MwSt.'}
+                    onChange={(v) => updateFinance('vatNote', v)}
+                    className="text-xs opacity-60 mt-1 block"
+                    placeholder="z. B. inkl. MwSt. / zzgl. MwSt."
+                  />
                 </div>
               )}
 
