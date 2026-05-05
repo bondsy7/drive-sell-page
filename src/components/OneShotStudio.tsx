@@ -756,7 +756,7 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
   }, [vehicleImages]);
 
   /** Generate the hero (Master) image as a single remaster pass. */
-  const generateHero = useCallback(async (): Promise<string | null> => {
+  const generateHero = useCallback(async (refineInstruction?: string): Promise<string | null> => {
     if (!heroSourceImage) return null;
     setHeroRunning(true);
     setHeroError(null);
