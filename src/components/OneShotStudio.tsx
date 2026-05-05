@@ -359,6 +359,8 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
   const [heroBase64, setHeroBase64] = useState<string | null>(null);
   const [heroError, setHeroError] = useState<string | null>(null);
   const [heroRunning, setHeroRunning] = useState(false);
+  const [heroApproved, setHeroApproved] = useState(false);
+  const [heroRefinePrompt, setHeroRefinePrompt] = useState('');
 
   const [bannerOutputs, setBannerOutputs] = useState<BannerOutput[]>([]);
   const [videoState, setVideoState] = useState<'idle' | 'starting' | 'polling' | 'done' | 'error'>('idle');
