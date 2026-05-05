@@ -10,6 +10,7 @@ import { useCredits } from '@/hooks/useCredits';
 import { toast } from 'sonner';
 import VehicleBrandModelPicker from '@/components/VehicleBrandModelPicker';
 import { Progress } from '@/components/ui/progress';
+import ProcessTimer from '@/components/ProcessTimer';
 
 const PAGE_TYPES = [
   { value: 'leasing', label: 'Leasing-Angebot', desc: 'Monatliche Rate, Flexibilität', icon: '📋' },
