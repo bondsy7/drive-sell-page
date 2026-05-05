@@ -176,6 +176,7 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
           additionalInfo: highlights,
           dealer,
           uploadedImages: uploadedBase64,
+          vehicleId: vehicleIdParam || null,
         },
       });
 
