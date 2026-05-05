@@ -100,15 +100,20 @@ serve(async (req) => {
     }
 
     if (imagePrompts && Array.isArray(imagePrompts)) {
-      const results: { imageBase64: string | null; error?: string }[] = [];
-      for (const prompt of imagePrompts) {
-        try {
-          const result = await generateImage(prompt, config);
-          results.push(result);
-        } catch (e) {
-          console.error("Image gen error for prompt:", e);
-          results.push({ imageBase64: null, error: e instanceof Error ? e.message : "Unknown error" });
-        }
+      // Parallel generation in batches to stay within 150s edge timeout
+      const BATCH_SIZE = 4;
+      const results: { imageBase64: string | null; error?: string }[] = new Array(imagePrompts.length);
+      for (let i = 0; i < imagePrompts.length; i += BATCH_SIZE) {
+        const batch = imagePrompts.slice(i, i + BATCH_SIZE);
+        const settled = await Promise.all(batch.map(async (prompt: string) => {
+          try {
+            return await generateImage(prompt, config);
+          } catch (e) {
+            console.error("Image gen error for prompt:", e);
+            return { imageBase64: null, error: e instanceof Error ? e.message : "Unknown error" };
+          }
+        }));
+        settled.forEach((r, idx) => { results[i + idx] = r; });
       }
       return new Response(JSON.stringify({ images: results }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
