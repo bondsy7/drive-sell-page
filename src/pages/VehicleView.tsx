@@ -79,6 +79,8 @@ export default function VehicleView() {
     },
   });
 
+  const vehicleProjectIds = useMemo(() => projects.map((p) => p.id), [projects]);
+
   const { data: images = [] } = useQuery({
     queryKey: ['vehicle-images', id],
     enabled: !!id && !!vehicle,
@@ -108,13 +110,15 @@ export default function VehicleView() {
   });
 
   const { data: leads = [] } = useQuery({
-    queryKey: ['vehicle-leads', id],
+    queryKey: ['vehicle-leads', id, vehicleProjectIds.join(',')],
     enabled: !!id && !!vehicle,
     queryFn: async (): Promise<Lead[]> => {
-      const { data } = await supabase.from('leads')
+      const query = supabase.from('leads')
         .select('*')
-        .eq('vehicle_id', id!)
         .order('created_at', { ascending: false });
+      const { data } = vehicleProjectIds.length > 0
+        ? await query.or(`vehicle_id.eq.${id!},project_id.in.(${vehicleProjectIds.join(',')})`)
+        : await query.eq('vehicle_id', id!);
       return (data as Lead[]) || [];
     },
   });
