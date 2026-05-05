@@ -554,7 +554,7 @@ The showroom wall must remain CLEAN and EMPTY. No manufacturer logos, no dealer 
       'gemini-2.5-flash-image': ['gemini-3.1-flash-image-preview'],
     };
     const modelsToTry = Array.from(new Set([geminiModel, ...(FALLBACK_ORDER[geminiModel] || ['gemini-3.1-flash-image-preview'])])).slice(0, 2);
-    const maxRetries = 1;
+    const maxRetries = 3;
 
     for (const currentModel of modelsToTry) {
       if (resultImage) break;
@@ -622,7 +622,9 @@ The showroom wall must remain CLEAN and EMPTY. No manufacturer logos, no dealer 
       }
     }
 
-    if (!resultImage) throw new Error(lastError || "Kein Bild generiert. Bitte versuche es erneut.");
+    if (!resultImage) throw new Error(lastError?.includes('503') || lastError?.includes('UNAVAILABLE')
+      ? 'Das KI-Modell ist gerade überlastet. Bitte versuche es in einigen Sekunden erneut.'
+      : (lastError || "Kein Bild generiert. Bitte versuche es erneut."));
 
     return new Response(JSON.stringify({ imageBase64: resultImage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
