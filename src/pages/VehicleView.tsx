@@ -426,6 +426,7 @@ export default function VehicleView() {
       />
 
       <GalleryLightbox
+        vehicleId={id}
         images={
           (lightboxFolder
             ? images.filter(img => (img.gallery_folder || 'Ohne Ordner') === lightboxFolder)
