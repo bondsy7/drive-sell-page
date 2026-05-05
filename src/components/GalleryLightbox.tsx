@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { X, ChevronLeft, ChevronRight, Download, FolderPlus, RotateCcw, Loader2, Trash2 } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Download, RotateCcw, Loader2, Trash2, ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSwipeNavigation } from '@/hooks/use-swipe-navigation';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 import { useDeleteGalleryImage } from '@/hooks/useDashboardData';
@@ -20,12 +21,6 @@ interface LightboxImage {
   project_id?: string;
 }
 
-interface Project {
-  id: string;
-  title: string;
-  vehicle_data: any;
-}
-
 interface GalleryLightboxProps {
   images: LightboxImage[];
   initialIndex: number;
@@ -34,13 +29,13 @@ interface GalleryLightboxProps {
   onAssigned?: () => void;
   onRegenerated?: () => void;
   onDeleted?: () => void;
+  vehicleId?: string;
 }
 
-const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex, open, onClose, onAssigned, onRegenerated, onDeleted }) => {
+const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex, open, onClose, onRegenerated, onDeleted, vehicleId }) => {
+  const { user } = useAuth();
   const [index, setIndex] = useState(initialIndex);
-  const [assignOpen, setAssignOpen] = useState(false);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [assigning, setAssigning] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -48,7 +43,6 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
 
   useEffect(() => { setIndex(initialIndex); }, [initialIndex]);
 
-  // Wrap-around navigation
   const goPrev = () => setIndex(i => (i <= 0 ? images.length - 1 : i - 1));
   const goNext = () => setIndex(i => (i >= images.length - 1 ? 0 : i + 1));
   const swipeHandlers = useSwipeNavigation({
@@ -68,34 +62,31 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
     return () => window.removeEventListener('keydown', handleKey);
   }, [open, images.length, onClose]);
 
+  // Load originals for this vehicle
+  const prefix = user && vehicleId ? `${user.id}/${vehicleId}` : '';
+  const { data: originals = [], isLoading: loadingOriginals } = useQuery({
+    queryKey: ['originals-picker', user?.id, vehicleId],
+    enabled: !!user && !!vehicleId && pickerOpen,
+    queryFn: async () => {
+      const { data } = await supabase.storage
+        .from('originals')
+        .list(prefix, { limit: 500, sortBy: { column: 'created_at', order: 'desc' } });
+      return await Promise.all(
+        (data || [])
+          .filter(f => f.name && !f.name.startsWith('.'))
+          .map(async f => {
+            const fullPath = `${prefix}/${f.name}`;
+            const { data: signed } = await supabase.storage
+              .from('originals')
+              .createSignedUrl(fullPath, 60 * 60);
+            return { name: f.name, url: signed?.signedUrl || '' };
+          }),
+      );
+    },
+  });
+
   const current = images[index];
   if (!open || !current) return null;
-
-  const loadProjects = async () => {
-    const { data } = await supabase
-      .from('projects')
-      .select('id, title, vehicle_data')
-      .order('updated_at', { ascending: false });
-    setProjects((data as Project[]) || []);
-    setAssignOpen(true);
-  };
-
-  const assignToProject = async (projectId: string) => {
-    setAssigning(true);
-    try {
-      const { error } = await supabase
-        .from('project_images')
-        .update({ project_id: projectId } as any)
-        .eq('id', current.id);
-      if (error) throw error;
-      toast.success('Bild wurde dem Projekt zugeordnet');
-      setAssignOpen(false);
-      onAssigned?.();
-    } catch {
-      toast.error('Fehler beim Zuordnen');
-    }
-    setAssigning(false);
-  };
 
   const download = () => {
     const a = document.createElement('a');
@@ -109,12 +100,8 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
       onSuccess: () => {
         toast.success('Bild gelöscht');
         setConfirmDelete(false);
-        // If last image in folder, close lightbox
-        if (images.length <= 1) {
-          onClose();
-        } else if (index >= images.length - 1) {
-          setIndex(0);
-        }
+        if (images.length <= 1) onClose();
+        else if (index >= images.length - 1) setIndex(0);
         onDeleted?.();
       },
       onError: () => {
@@ -124,10 +111,11 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
     });
   };
 
-  const regenerateImage = async () => {
+  const regenerateFrom = async (sourceUrl: string) => {
+    setPickerOpen(false);
     setRegenerating(true);
     try {
-      const response = await fetch(current.src);
+      const response = await fetch(sourceUrl);
       const blob = await response.blob();
       const base64 = await new Promise<string>((resolve) => {
         const reader = new FileReader();
@@ -149,9 +137,8 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
           .update({ image_url: data.imageBase64, image_base64: '' } as any)
           .eq('id', current.id);
 
-        if (updateError) {
-          toast.error('Bild generiert, aber Speichern fehlgeschlagen');
-        } else {
+        if (updateError) toast.error('Bild generiert, aber Speichern fehlgeschlagen');
+        else {
           toast.success('Bild erfolgreich neu generiert');
           onRegenerated?.();
         }
@@ -174,7 +161,7 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
           <Button
             variant="secondary"
             size="sm"
-            onClick={regenerateImage}
+            onClick={() => setPickerOpen(true)}
             disabled={regenerating}
             className="gap-1.5"
           >
@@ -183,9 +170,6 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
             ) : (
               <><RotateCcw className="w-4 h-4" /> Neu generieren</>
             )}
-          </Button>
-          <Button variant="secondary" size="sm" onClick={loadProjects} className="gap-1.5">
-            <FolderPlus className="w-4 h-4" /> Projekt zuordnen
           </Button>
           <Button
             variant="secondary"
@@ -200,7 +184,6 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
           </button>
         </div>
 
-        {/* Navigation – always show, wrap around */}
         {images.length > 1 && (
           <>
             <button
@@ -218,7 +201,6 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
           </>
         )}
 
-        {/* Image */}
         <div className="relative">
           <img
             src={current.src}
@@ -240,7 +222,6 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
           <p className="text-sm text-background/70 mt-3">{current.perspective}</p>
         )}
 
-        {/* Thumbnail strip */}
         {images.length > 1 && (
           <div className="flex gap-2 mt-4 overflow-x-auto max-w-[90vw] pb-2">
             {images.map((img, i) => (
@@ -258,34 +239,44 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
         )}
       </div>
 
-      {/* Assign to project dialog */}
-      <Dialog open={assignOpen} onOpenChange={setAssignOpen}>
-        <DialogContent onClick={e => e.stopPropagation()}>
+      {/* Original picker dialog */}
+      <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
+        <DialogContent className="max-w-3xl" onClick={e => e.stopPropagation()}>
           <DialogHeader>
-            <DialogTitle>Projekt zuordnen</DialogTitle>
+            <DialogTitle>Originalbild als Grundlage wählen</DialogTitle>
+            <DialogDescription>
+              Wähle ein Originalfoto, das als Vorlage für die neue Generierung dient.
+            </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            {projects.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Keine Projekte vorhanden. Erstelle zuerst ein Projekt.</p>
-            ) : (
-              <Select onValueChange={assignToProject} disabled={assigning}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Projekt auswählen..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {projects.map(p => {
-                    const vd = p.vehicle_data as any;
-                    const label = `${vd?.vehicle?.brand || ''} ${vd?.vehicle?.model || ''} – ${p.title}`.trim();
-                    return <SelectItem key={p.id} value={p.id}>{label}</SelectItem>;
-                  })}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
+          {!vehicleId ? (
+            <div className="text-center py-10 text-muted-foreground text-sm">
+              Kein Fahrzeug-Kontext verfügbar.
+            </div>
+          ) : loadingOriginals ? (
+            <div className="flex justify-center py-10">
+              <Loader2 className="w-6 h-6 animate-spin text-accent" />
+            </div>
+          ) : originals.length === 0 ? (
+            <div className="text-center py-10 text-muted-foreground">
+              <ImageIcon className="w-10 h-10 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">Noch keine Originalbilder vorhanden. Lade zuerst Originale unter dem Tab „Originale" hoch.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-[60vh] overflow-y-auto">
+              {originals.map(o => (
+                <button
+                  key={o.name}
+                  onClick={() => regenerateFrom(o.url)}
+                  className="aspect-square rounded-md overflow-hidden border-2 border-transparent hover:border-accent transition-all"
+                >
+                  <img src={o.url} alt={o.name} className="w-full h-full object-cover" loading="lazy" />
+                </button>
+              ))}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
-      {/* Confirm delete dialog */}
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <AlertDialogContent onClick={e => e.stopPropagation()}>
           <AlertDialogHeader>
