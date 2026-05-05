@@ -74,6 +74,7 @@ VERBRAUCH - Suche nach ALLEN dieser Werte:
 JSON-Schema:
 {
   "category": "Leasing|Finanzierung|Barkauf|Neuwagen|Gebrauchtwagen|Tageszulassung",
+  "customerType": "private|business (Erkenne aus Hinweisen wie 'Privatkundenangebot', 'Privatkunden', 'B2C', 'inkl. MwSt.', 'Bruttopreise' → 'private'; 'Gewerbekundenangebot', 'Gewerbekunden', 'gewerblich', 'B2B', 'zzgl. MwSt.', 'Nettopreise', 'für Unternehmer', 'Gewerbeleasing' → 'business'. Default 'private' wenn nicht erkennbar.)",
   "vehicle": {
     "brand": "string (Marke, z.B. 'BMW', 'Mercedes-Benz', 'Volkswagen')",
     "model": "string (volles Modell, z.B. 'X3 xDrive30e')",
