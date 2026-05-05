@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Wand2, Upload, Camera, Zap, Sparkles, Crown, Rocket, Diamond, BadgePlus } from 'lucide-react';
+import { Wand2, Upload, Camera, Zap, Sparkles, Crown, Rocket, Diamond, BadgePlus, FolderCheck } from 'lucide-react';
 import { useCredits } from '@/hooks/useCredits';
 import type { ModelTier } from '@/components/ModelSelector';
 
@@ -7,6 +7,8 @@ interface ImageSourceChoiceProps {
   onChooseGenerate: (modelTier: ModelTier) => void;
   onChooseUpload: (modelTier: ModelTier) => void;
   onChooseCapture: (modelTier: ModelTier) => void;
+  existingGalleryCount?: number;
+  onChooseExisting?: () => void;
 }
 
 const TIERS: { id: ModelTier; label: string; sublabel: string; icon: React.ReactNode; group: string }[] = [
@@ -18,7 +20,7 @@ const TIERS: { id: ModelTier; label: string; sublabel: string; icon: React.React
   { id: 'neu', label: 'Neu', sublabel: 'GPT Image 2', icon: <BadgePlus className="w-3 h-3" />, group: 'B' },
 ];
 
-const ImageSourceChoice: React.FC<ImageSourceChoiceProps> = ({ onChooseGenerate, onChooseUpload, onChooseCapture }) => {
+const ImageSourceChoice: React.FC<ImageSourceChoiceProps> = ({ onChooseGenerate, onChooseUpload, onChooseCapture, existingGalleryCount = 0, onChooseExisting }) => {
   const { getCost, balance } = useCredits();
   const [modelTier, setModelTier] = useState<ModelTier>('qualitaet');
 
@@ -70,6 +72,29 @@ const ImageSourceChoice: React.FC<ImageSourceChoiceProps> = ({ onChooseGenerate,
           })}
         </div>
       </div>
+      {existingGalleryCount > 0 && onChooseExisting && (
+        <div className="mb-4">
+          <button
+            onClick={onChooseExisting}
+            className="w-full group bg-accent/5 hover:bg-accent/10 rounded-2xl border-2 border-accent/40 hover:border-accent p-5 text-left transition-all hover:shadow-card flex items-center gap-4"
+          >
+            <div className="w-12 h-12 shrink-0 rounded-xl bg-accent text-accent-foreground flex items-center justify-center">
+              <FolderCheck className="w-6 h-6" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-display font-semibold text-foreground text-sm mb-0.5">
+                Vorhandene Bilder verwenden ({existingGalleryCount})
+              </h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Empfohlen: Nutze bereits erstellte Bilder aus der Galerie für dieses Fahrzeug. Keine neuen Credits nötig.
+              </p>
+            </div>
+            <div className="hidden sm:flex items-center gap-1 px-3 py-1.5 rounded-full bg-accent text-accent-foreground text-[11px] font-semibold">
+              0 Credits
+            </div>
+          </button>
+        </div>
+      )}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Option 1: AI Generate */}
         <button

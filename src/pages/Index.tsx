@@ -10,6 +10,7 @@ import ProcessingStatus from '@/components/ProcessingStatus';
 import LandingPagePreview from '@/components/LandingPagePreview';
 import TemplateSidebar from '@/components/TemplateSidebar';
 import ImageSourceChoice from '@/components/ImageSourceChoice';
+import ExistingGallerySelector from '@/components/ExistingGallerySelector';
 import ImageUploadRemaster from '@/components/ImageUploadRemaster';
 import PresetUploadFlow from '@/components/preset/PresetUploadFlow';
 import ImageCaptureGrid from '@/components/ImageCaptureGrid';
@@ -97,6 +98,50 @@ const Index = () => {
     }
   }, [appState, navigate]);
 
+  // Preload deep-linked vehicle: existing data (incl. VIN-lookup results) + gallery images
+  useEffect(() => {
+    if (!deepLinkVehicleId || !user) return;
+    let cancelled = false;
+    (async () => {
+      const [{ data: v }, { data: imgs }] = await Promise.all([
+        supabase.from('vehicles').select('id, vehicle_data, vin').eq('id', deepLinkVehicleId).maybeSingle(),
+        supabase.from('project_images')
+          .select('image_url, perspective, gallery_folder, sort_order, created_at')
+          .eq('vehicle_id', deepLinkVehicleId)
+          .not('image_url', 'is', null)
+          .order('created_at', { ascending: false }),
+      ]);
+      if (cancelled) return;
+      if (v?.vehicle_data) {
+        const vd = v.vehicle_data as any;
+        // Ensure required sub-objects exist
+        const safeVd: VehicleData = {
+          ...vd,
+          vehicle: vd.vehicle || { brand: '', model: '', variant: '', year: 0, color: '', fuelType: '', transmission: '', power: '', features: [] },
+          finance: vd.finance || { monthlyRate: '', downPayment: '', duration: '', totalPrice: '', annualMileage: '', specialPayment: '', residualValue: '', interestRate: '' },
+          consumption: vd.consumption || { origin: '', mileage: '', displacement: '', power: '', driveType: '', fuelType: '', consumptionCombined: '', co2Emissions: '', co2Class: '', consumptionCity: '', consumptionSuburban: '', consumptionRural: '', consumptionHighway: '', energyCostPerYear: '', fuelPrice: '', co2CostMedium: '', co2CostLow: '', co2CostHigh: '', vehicleTax: '', isPluginHybrid: false, co2EmissionsDischarged: '', co2ClassDischarged: '', consumptionCombinedDischarged: '', electricRange: '', consumptionElectric: '', hsnTsn: '', electricMotorPower: '', electricMotorTorque: '', gearboxType: '', topSpeed: '', acceleration: '', curbWeight: '', grossWeight: '', warranty: '', paintColor: '' },
+          dealer: vd.dealer || { name: '', address: '', postalCode: '', city: '', phone: '', email: '', website: '', taxId: '', logoUrl: '', facebookUrl: '', instagramUrl: '', xUrl: '', tiktokUrl: '', youtubeUrl: '', whatsappNumber: '', leasingBank: '', leasingLegalText: '', financingBank: '', financingLegalText: '', defaultLegalText: '' },
+        };
+        if (v.vin && !(safeVd.vehicle as any).vin) (safeVd.vehicle as any).vin = v.vin;
+        const enriched = await loadProfileIntoDealer(safeVd);
+        if (!cancelled) {
+          setVehicleData(enriched);
+          setSavedVehicleId(deepLinkVehicleId);
+        }
+      }
+      if (imgs && imgs.length > 0) {
+        // Deduplicate by URL
+        const seen = new Set<string>();
+        const list = imgs
+          .filter((i: any) => i.image_url && !seen.has(i.image_url) && (seen.add(i.image_url) || true))
+          .map((i: any) => ({ url: i.image_url as string, perspective: i.perspective, folder: i.gallery_folder }));
+        if (!cancelled) setExistingVehicleImages(list);
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deepLinkVehicleId, user]);
+
   const [fileName, setFileName] = useState('');
   const [vehicleData, setVehicleData] = useState<VehicleData | null>(null);
   const [imageBase64, setImageBase64] = useState<string | null>(null);
@@ -115,6 +160,9 @@ const Index = () => {
   const [standalonePhotoResults, setStandalonePhotoResults] = useState<string[]>([]);
   // For manual landing page HTML
   const [manualLandingHTML, setManualLandingHTML] = useState<string | null>(null);
+  // Existing gallery for the deep-linked vehicle (re-use without spending credits)
+  const [existingVehicleImages, setExistingVehicleImages] = useState<{ url: string; perspective?: string | null; folder?: string | null }[]>([]);
+  const [showExistingSelector, setShowExistingSelector] = useState(false);
 
   const currentStep = appState === 'hub' || appState === 'idle' ? 1 : appState === 'preview' ? 3 : 2;
 
@@ -325,6 +373,57 @@ const Index = () => {
     setSelectedModelTier(modelTier);
     setAppState('capturing-images' as any);
   }, []);
+
+  const handleChooseExisting = useCallback(() => {
+    if (existingVehicleImages.length === 0) {
+      toast.info('Keine Galerie-Bilder vorhanden.');
+      return;
+    }
+    setShowExistingSelector(true);
+  }, [existingVehicleImages.length]);
+
+  const handleConfirmExisting = useCallback(async (selectedUrls: string[]) => {
+    setShowExistingSelector(false);
+    if (!vehicleData || selectedUrls.length === 0) return;
+    const mainImage = selectedUrls[0];
+    const gallery = selectedUrls.slice(1);
+    setImageBase64(mainImage);
+    setGalleryImages(gallery);
+
+    const vin = (vehicleData.vehicle as any)?.vin || null;
+    const folderName = getGalleryFolderName(vin);
+    let vehicleId = savedVehicleId || deepLinkVehicleId;
+
+    // Link images to the project (re-use existing URLs, no re-upload)
+    if (savedProjectId && user) {
+      await supabase.from('projects').update({
+        vehicle_data: vehicleData as any,
+        vehicle_id: vehicleId || null,
+        main_image_url: mainImage,
+        updated_at: new Date().toISOString(),
+      } as any).eq('id', savedProjectId);
+
+      const imageRows = selectedUrls.map((url, i) => ({
+        project_id: savedProjectId,
+        vehicle_id: vehicleId || null,
+        user_id: user.id,
+        image_url: url,
+        image_base64: '',
+        perspective: `Bild ${i + 1}`,
+        sort_order: i,
+        gallery_folder: folderName,
+      }));
+      await supabase.from('project_images').insert(imageRows as any);
+    } else if (user) {
+      // No project yet (e.g. flow started without PDF) — create one
+      const projectId = await saveProject(vehicleData, mainImage, selectedUrls, selectedTemplate, vin, vehicleId);
+      if (projectId) setSavedProjectId(projectId);
+    }
+
+    setAppState('preview');
+    toast.success(`${selectedUrls.length} Galerie-Bilder übernommen.`);
+  }, [vehicleData, savedProjectId, savedVehicleId, deepLinkVehicleId, user, selectedTemplate, saveProject]);
+
 
   const handleCaptureComplete = useCallback(async (mainImage: string, gallery: string[], vin?: string) => {
     setImageBase64(mainImage);
@@ -741,6 +840,36 @@ const Index = () => {
                 ))}
               </div>
 
+              {/* Skip PDF if vehicle data is already known (came from dashboard with vehicle context) */}
+              {deepLinkVehicleId && vehicleData && (
+                <div className="p-4 rounded-xl border-2 border-accent/40 bg-accent/5">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 shrink-0 rounded-full bg-accent text-accent-foreground flex items-center justify-center font-bold text-sm">
+                      ✓
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground">
+                        Fahrzeugdaten bereits vorhanden
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                        {vehicleData.vehicle?.brand} {vehicleData.vehicle?.model} {vehicleData.vehicle?.variant || ''}
+                        {(vehicleData.vehicle as any)?.vin ? ` · VIN ${(vehicleData.vehicle as any).vin}` : ''}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Du kannst die PDF-Analyse überspringen und direkt mit den vorhandenen Daten {existingVehicleImages.length > 0 ? `und ${existingVehicleImages.length} Bildern ` : ''}fortfahren.
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => setAppState('choosing-image-source')}
+                      className="shrink-0"
+                    >
+                      Weiter ohne PDF
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               <PDFUpload onFilesSelected={handleFilesSelected} isProcessing={false} />
               <div className="flex items-center justify-center gap-1 text-accent">
                 <Sparkles className="w-4 h-4" />
@@ -777,7 +906,13 @@ const Index = () => {
 
           {appState === 'choosing-image-source' && (
             <div className="mt-8">
-              <ImageSourceChoice onChooseGenerate={handleChooseGenerate} onChooseUpload={handleChooseUpload} onChooseCapture={handleChooseCapture} />
+              <ImageSourceChoice
+                onChooseGenerate={handleChooseGenerate}
+                onChooseUpload={handleChooseUpload}
+                onChooseCapture={handleChooseCapture}
+                existingGalleryCount={existingVehicleImages.length}
+                onChooseExisting={handleChooseExisting}
+              />
             </div>
           )}
 
@@ -794,6 +929,13 @@ const Index = () => {
           )}
         </main>
       )}
+
+      <ExistingGallerySelector
+        open={showExistingSelector}
+        images={existingVehicleImages}
+        onCancel={() => setShowExistingSelector(false)}
+        onConfirm={handleConfirmExisting}
+      />
 
       <CreditConfirmDialog
         open={creditDialog.open}
