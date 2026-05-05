@@ -374,11 +374,6 @@ export default function VehicleView() {
                   </Link>
                 </Button>
                 <Button asChild size="sm" variant="outline">
-                  <Link to={`/generator/spin360?vehicle=${vehicle.id}`}>
-                    <RotateCw className="w-4 h-4 mr-1.5" /> 360° erstellen
-                  </Link>
-                </Button>
-                <Button asChild size="sm" variant="outline">
                   <Link to={`/generator/manual-landing?vehicle=${vehicle.id}`}>
                     <Sparkles className="w-4 h-4 mr-1.5" /> Landing Page
                   </Link>
