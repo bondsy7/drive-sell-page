@@ -179,6 +179,31 @@ async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: numbe
   }
 }
 
+async function toInlineData(input: string | null | undefined, fallbackMime = "image/jpeg"): Promise<{ mimeType: string; data: string } | null> {
+  if (!input) return null;
+  if (/^https?:\/\//i.test(input)) {
+    try {
+      const r = await fetch(input);
+      if (!r.ok) { console.error("toInlineData fetch failed", r.status, input); return null; }
+      const ct = r.headers.get("content-type") || fallbackMime;
+      const buf = new Uint8Array(await r.arrayBuffer());
+      let bin = "";
+      for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
+      return { mimeType: ct.split(";")[0], data: btoa(bin) };
+    } catch (e) {
+      console.error("toInlineData fetch error", e);
+      return null;
+    }
+  }
+  const mime = input.startsWith("data:image/png") ? "image/png"
+    : input.startsWith("data:image/webp") ? "image/webp"
+    : input.startsWith("data:image/jpeg") || input.startsWith("data:image/jpg") ? "image/jpeg"
+    : input.startsWith("data:image/svg") ? "image/png"
+    : fallbackMime;
+  const data = input.includes(",") ? input.split(",")[1] : input;
+  return { mimeType: mime, data };
+}
+
 async function generateGemini(prompt: string, imageBase64: string | null, logoBase64: string | null, model: string, retries: number, width?: number, height?: number): Promise<string | null> {
   const apiKey = await getSecret("GEMINI_API_KEY");
   if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
@@ -186,18 +211,12 @@ async function generateGemini(prompt: string, imageBase64: string | null, logoBa
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
   const parts: any[] = [{ text: prompt }];
-  if (imageBase64) {
-    const base64Data = imageBase64.includes(",") ? imageBase64.split(",")[1] : imageBase64;
-    const mimeType = imageBase64.startsWith("data:image/png") ? "image/png"
-      : imageBase64.startsWith("data:image/webp") ? "image/webp" : "image/jpeg";
-    parts.push({ inlineData: { mimeType, data: base64Data } });
-  }
-  if (logoBase64) {
-    const logoData = logoBase64.includes(",") ? logoBase64.split(",")[1] : logoBase64;
-    const logoMime = logoBase64.startsWith("data:image/png") ? "image/png"
-      : logoBase64.startsWith("data:image/svg") ? "image/png" : "image/png";
+  const vehicleInline = await toInlineData(imageBase64, "image/jpeg");
+  if (vehicleInline) parts.push({ inlineData: vehicleInline });
+  const logoInline = await toInlineData(logoBase64, "image/png");
+  if (logoInline) {
     parts.push({ text: "The following image is the LOGO to be placed in the banner:" });
-    parts.push({ inlineData: { mimeType: logoMime, data: logoData } });
+    parts.push({ inlineData: logoInline });
   }
 
   // Inject explicit format instruction so the model composes for the target ratio
@@ -281,25 +300,24 @@ async function generateOpenAI(prompt: string, imageBase64: string | null, logoBa
       let response: Response;
 
       if (useEdits) {
-        // Convert base64 to Blob for multipart upload
-        const raw = imageBase64!.includes(",") ? imageBase64!.split(",")[1] : imageBase64!;
-        const binaryStr = atob(raw);
+        const vehicleInline = await toInlineData(imageBase64, "image/png");
+        if (!vehicleInline) throw new Error("Failed to load vehicle image");
+        const binaryStr = atob(vehicleInline.data);
         const bytes = new Uint8Array(binaryStr.length);
         for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
-        const blob = new Blob([bytes], { type: "image/png" });
+        const blob = new Blob([bytes], { type: vehicleInline.mimeType });
 
         const form = new FormData();
         form.append("model", model);
         form.append("image", blob, "vehicle.png");
-        
-        // Add logo as additional image if provided
+
         let logoPromptAddition = "";
-        if (logoBase64) {
-          const logoRaw = logoBase64.includes(",") ? logoBase64.split(",")[1] : logoBase64;
-          const logoBinaryStr = atob(logoRaw);
+        const logoInline = await toInlineData(logoBase64, "image/png");
+        if (logoInline) {
+          const logoBinaryStr = atob(logoInline.data);
           const logoBytes = new Uint8Array(logoBinaryStr.length);
           for (let j = 0; j < logoBinaryStr.length; j++) logoBytes[j] = logoBinaryStr.charCodeAt(j);
-          const logoBlob = new Blob([logoBytes], { type: "image/png" });
+          const logoBlob = new Blob([logoBytes], { type: logoInline.mimeType });
           form.append("image", logoBlob, "logo.png");
           logoPromptAddition = "\n\nA LOGO image is also provided. Place it prominently in the banner (corner or near headline). Keep the logo 100% identical.";
         }
