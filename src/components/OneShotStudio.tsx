@@ -800,7 +800,10 @@ This is the MARKETING MASTER (Hero) shot — push lighting one notch beyond the 
 8. NO LEFTOVER LIGHTING: Zero traces of the source photo's original sun, sky, trees, buildings, or dealership lights may remain on paint, glass, chrome or rims.
 </HERO_LIGHTING_BOOST>`;
 
-      const fullPrompt = `${baseContext}\n\n${perspective}\n\n${HERO_INTEGRATION_LOCK}\n\n${HERO_LIGHTING_BOOST}`;
+      const refineBlock = refineInstruction?.trim()
+        ? `\n\n<USER_REFINEMENT>\nThe previous hero render must be improved. Apply this user instruction with highest priority while keeping all locks above:\n${refineInstruction.trim()}\n</USER_REFINEMENT>`
+        : '';
+      const fullPrompt = `${baseContext}\n\n${perspective}\n\n${HERO_INTEGRATION_LOCK}\n\n${HERO_LIGHTING_BOOST}${refineBlock}`;
 
       const referenceImages = [
         heroSourceImage,
