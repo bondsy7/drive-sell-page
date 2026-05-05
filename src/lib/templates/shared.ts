@@ -48,9 +48,7 @@ export function getMonthlyRateLabel(data: VehicleData): string {
 
 /** Customer-type badge ("Privatkundenangebot" / "Gewerbekundenangebot"). */
 export function customerTypeBadgeHTML(data: VehicleData): string {
-  const ct = data.customerType;
-  if (!ct) return '';
-  const isBusiness = ct === 'business';
+  const isBusiness = data.customerType === 'business';
   const label = isBusiness ? 'Gewerbekundenangebot' : 'Privatkundenangebot';
   const bg = isBusiness ? '#ede9fe' : '#fce7f3';
   const fg = isBusiness ? '#6d28d9' : '#be185d';
