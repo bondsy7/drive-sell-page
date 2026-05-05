@@ -52,7 +52,7 @@ export function useVehicles() {
         supabase.from('projects').select('id, vehicle_id').in('vehicle_id', ids),
         supabase.from('project_images').select('id, vehicle_id').in('vehicle_id', ids),
         supabase.from('spin360_jobs').select('id, vehicle_id').in('vehicle_id', ids),
-        supabase.from('leads').select('id, vehicle_id').in('vehicle_id', ids),
+        supabase.from('leads').select('id, vehicle_id, project_id').eq('dealer_user_id', user.id),
       ]);
 
       const tally = (rows: Array<{ vehicle_id: string | null }> | null) => {
@@ -67,7 +67,15 @@ export function useVehicles() {
       const cP = tally(pr.data as Array<{ vehicle_id: string | null }>);
       const cI = tally(pi.data as Array<{ vehicle_id: string | null }>);
       const cS = tally(sp.data as Array<{ vehicle_id: string | null }>);
-      const cL = tally(ld.data as Array<{ vehicle_id: string | null }>);
+      const projectToVehicle = new Map<string, string>();
+      for (const row of (pr.data as Array<{ id: string; vehicle_id: string | null }>) || []) {
+        if (row.vehicle_id) projectToVehicle.set(row.id, row.vehicle_id);
+      }
+      const cL = new Map<string, number>();
+      for (const row of (ld.data as Array<{ vehicle_id: string | null; project_id: string | null }>) || []) {
+        const vehicleId = row.vehicle_id || (row.project_id ? projectToVehicle.get(row.project_id) : null);
+        if (vehicleId) cL.set(vehicleId, (cL.get(vehicleId) || 0) + 1);
+      }
 
       return vehicles.map(v => ({
         ...v,
