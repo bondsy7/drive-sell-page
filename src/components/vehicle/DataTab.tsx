@@ -402,12 +402,17 @@ export default function DataTab({ vehicle }: Props) {
       .order('updated_at', { ascending: false });
     if (!data?.length) return 0;
     let total = 0;
+    const aggregated: Partial<VehicleDataRecord> = {};
     for (const row of data) {
       const vd = (row.vehicle_data || {}) as Record<string, unknown>;
       const partial = mapSourceToRecord(vd);
       total += mergeIntoRec(partial);
+      for (const [k, v] of Object.entries(partial)) {
+        if (v && !(aggregated as any)[k]) (aggregated as any)[k] = v;
+      }
     }
-    if (!silent && total > 0) toast.success(`${total} Feld${total !== 1 ? 'er' : ''} aus PDF / Landing Pages übernommen.`);
+    if (total > 0) await persistMerge(aggregated);
+    if (!silent && total > 0) toast.success(`${total} Feld${total !== 1 ? 'er' : ''} aus PDF / Landing Pages übernommen & gespeichert.`);
     return total;
   };
 
