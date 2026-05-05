@@ -24,6 +24,7 @@ import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import {
   ArrowLeft, ScanSearch, Loader2, Upload, X, ChevronRight, Zap, Image as ImageIcon,
   Video, FileText, Hash, Layers, AlertCircle, Sparkles, Camera, Database, Car,
+  RefreshCw, Check, Wand2,
 } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
@@ -359,6 +360,8 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
   const [heroBase64, setHeroBase64] = useState<string | null>(null);
   const [heroError, setHeroError] = useState<string | null>(null);
   const [heroRunning, setHeroRunning] = useState(false);
+  const [heroApproved, setHeroApproved] = useState(false);
+  const [heroRefinePrompt, setHeroRefinePrompt] = useState('');
 
   const [bannerOutputs, setBannerOutputs] = useState<BannerOutput[]>([]);
   const [videoState, setVideoState] = useState<'idle' | 'starting' | 'polling' | 'done' | 'error'>('idle');
@@ -754,7 +757,7 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
   }, [vehicleImages]);
 
   /** Generate the hero (Master) image as a single remaster pass. */
-  const generateHero = useCallback(async (): Promise<string | null> => {
+  const generateHero = useCallback(async (refineInstruction?: string): Promise<string | null> => {
     if (!heroSourceImage) return null;
     setHeroRunning(true);
     setHeroError(null);
@@ -798,7 +801,10 @@ This is the MARKETING MASTER (Hero) shot — push lighting one notch beyond the 
 8. NO LEFTOVER LIGHTING: Zero traces of the source photo's original sun, sky, trees, buildings, or dealership lights may remain on paint, glass, chrome or rims.
 </HERO_LIGHTING_BOOST>`;
 
-      const fullPrompt = `${baseContext}\n\n${perspective}\n\n${HERO_INTEGRATION_LOCK}\n\n${HERO_LIGHTING_BOOST}`;
+      const refineBlock = refineInstruction?.trim()
+        ? `\n\n<USER_REFINEMENT>\nThe previous hero render must be improved. Apply this user instruction with highest priority while keeping all locks above:\n${refineInstruction.trim()}\n</USER_REFINEMENT>`
+        : '';
+      const fullPrompt = `${baseContext}\n\n${perspective}\n\n${HERO_INTEGRATION_LOCK}\n\n${HERO_LIGHTING_BOOST}${refineBlock}`;
 
       const referenceImages = [
         heroSourceImage,
@@ -989,19 +995,29 @@ This is the MARKETING MASTER (Hero) shot — push lighting one notch beyond the 
 
   /** Power-button: hero → (pipeline + banners + video) parallel. */
   const startEverything = useCallback(async () => {
-    if (heroRunning || heroBase64) return;
+    if (!heroBase64 || !heroApproved) return;
     setBannerOutputs([]);
     setVideoState('idle');
     setVideoUrl(null);
 
-    const hero = await generateHero();
-    if (!hero) return;
-
     // Fire all three in parallel — they all use the hero image.
-    void startPipelineRest(hero);
-    void generateBanners(hero);
-    void generateVideo(hero);
-  }, [heroRunning, heroBase64, generateHero, startPipelineRest, generateBanners, generateVideo]);
+    void startPipelineRest(heroBase64);
+    void generateBanners(heroBase64);
+    void generateVideo(heroBase64);
+  }, [heroBase64, heroApproved, startPipelineRest, generateBanners, generateVideo]);
+
+  const handleGenerateHero = useCallback(async () => {
+    if (heroRunning) return;
+    setHeroApproved(false);
+    await generateHero();
+  }, [heroRunning, generateHero]);
+
+  const handleRefineHero = useCallback(async () => {
+    if (heroRunning || !heroRefinePrompt.trim()) return;
+    setHeroApproved(false);
+    await generateHero(heroRefinePrompt);
+    setHeroRefinePrompt('');
+  }, [heroRunning, heroRefinePrompt, generateHero]);
 
   /* ─────────────────────────────────────────────────────────────
    * Step 1 → 2 transition
@@ -1633,28 +1649,82 @@ This is the MARKETING MASTER (Hero) shot — push lighting one notch beyond the 
             </Button>
           )}
 
-          {!heroBase64 && !heroRunning && (
-            <Button onClick={startEverything} size="lg" className="w-full gap-2">
-              <Zap className="w-5 h-5" /> Alles generieren
-            </Button>
-          )}
-
-          {/* Hero status */}
+          {/* Hero status — must be generated and approved before starting the rest */}
           <div className="rounded-xl border border-border bg-card p-4 space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-sm">1. Hero-Bild</h3>
               {heroRunning && <Loader2 className="w-4 h-4 animate-spin text-accent" />}
-              {heroBase64 && <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20">fertig</Badge>}
+              {heroBase64 && !heroApproved && <Badge variant="secondary">zur Freigabe</Badge>}
+              {heroBase64 && heroApproved && <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20">freigegeben</Badge>}
               {heroError && <Badge variant="destructive">Fehler</Badge>}
             </div>
-            {heroBase64 && (
-              <img
-                src={heroBase64}
-                alt="Hero"
-                className="w-full max-h-64 object-contain rounded-lg cursor-zoom-in hover:opacity-90 transition-opacity"
-                onClick={() => openLightbox([{ src: heroBase64, label: 'Hero-Bild', filename: 'hero.png' }], 0)}
-              />
+
+            {!heroBase64 && !heroRunning && (
+              <Button onClick={handleGenerateHero} size="lg" className="w-full gap-2">
+                <Sparkles className="w-5 h-5" /> Hero-Bild generieren
+              </Button>
             )}
+
+            {heroRunning && (
+              <div className="flex items-center justify-center py-8 text-sm text-muted-foreground gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" /> Hero wird gerendert…
+              </div>
+            )}
+
+            {heroBase64 && (
+              <>
+                <img
+                  src={heroBase64}
+                  alt="Hero"
+                  className="w-full max-h-80 object-contain rounded-lg cursor-zoom-in hover:opacity-90 transition-opacity bg-muted/30"
+                  onClick={() => openLightbox([{ src: heroBase64, label: 'Hero-Bild', filename: 'hero.png' }], 0)}
+                />
+
+                {!heroApproved && !pipelineKicked && (
+                  <div className="space-y-3 pt-1">
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium text-muted-foreground">
+                        Verbesserungen (optional) — z.B. „mehr Licht von links, kühlere Farbtemperatur, sauberere Felgen"
+                      </label>
+                      <Textarea
+                        value={heroRefinePrompt}
+                        onChange={(e) => setHeroRefinePrompt(e.target.value)}
+                        placeholder="Was soll am Hero-Bild verbessert werden?"
+                        rows={2}
+                        className="text-sm"
+                      />
+                      <Button
+                        onClick={handleRefineHero}
+                        disabled={!heroRefinePrompt.trim() || heroRunning}
+                        variant="outline"
+                        size="sm"
+                        className="w-full gap-2"
+                      >
+                        <Wand2 className="w-4 h-4" /> Mit diesen Hinweisen neu rendern
+                      </Button>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        onClick={handleGenerateHero}
+                        disabled={heroRunning}
+                        variant="outline"
+                        className="gap-2"
+                      >
+                        <RefreshCw className="w-4 h-4" /> Neu generieren
+                      </Button>
+                      <Button
+                        onClick={() => setHeroApproved(true)}
+                        className="gap-2"
+                      >
+                        <Check className="w-4 h-4" /> Hero freigeben
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
             {heroError && (
               <div className="flex items-start gap-2 text-xs text-destructive">
                 <AlertCircle className="w-3.5 h-3.5 mt-0.5" />
@@ -1662,6 +1732,13 @@ This is the MARKETING MASTER (Hero) shot — push lighting one notch beyond the 
               </div>
             )}
           </div>
+
+          {/* Alles generieren — only after hero approval */}
+          {heroApproved && !pipelineKicked && (
+            <Button onClick={startEverything} size="lg" className="w-full gap-2">
+              <Zap className="w-5 h-5" /> Alles generieren (Pipeline + Banner{wantVideo ? ' + Video' : ''})
+            </Button>
+          )}
 
           {/* Pipeline status (uses global PipelineContext) — shows results live */}
           {pipelineKicked && pipelineCtx && (
