@@ -300,25 +300,24 @@ async function generateOpenAI(prompt: string, imageBase64: string | null, logoBa
       let response: Response;
 
       if (useEdits) {
-        // Convert base64 to Blob for multipart upload
-        const raw = imageBase64!.includes(",") ? imageBase64!.split(",")[1] : imageBase64!;
-        const binaryStr = atob(raw);
+        const vehicleInline = await toInlineData(imageBase64, "image/png");
+        if (!vehicleInline) throw new Error("Failed to load vehicle image");
+        const binaryStr = atob(vehicleInline.data);
         const bytes = new Uint8Array(binaryStr.length);
         for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
-        const blob = new Blob([bytes], { type: "image/png" });
+        const blob = new Blob([bytes], { type: vehicleInline.mimeType });
 
         const form = new FormData();
         form.append("model", model);
         form.append("image", blob, "vehicle.png");
-        
-        // Add logo as additional image if provided
+
         let logoPromptAddition = "";
-        if (logoBase64) {
-          const logoRaw = logoBase64.includes(",") ? logoBase64.split(",")[1] : logoBase64;
-          const logoBinaryStr = atob(logoRaw);
+        const logoInline = await toInlineData(logoBase64, "image/png");
+        if (logoInline) {
+          const logoBinaryStr = atob(logoInline.data);
           const logoBytes = new Uint8Array(logoBinaryStr.length);
           for (let j = 0; j < logoBinaryStr.length; j++) logoBytes[j] = logoBinaryStr.charCodeAt(j);
-          const logoBlob = new Blob([logoBytes], { type: "image/png" });
+          const logoBlob = new Blob([logoBytes], { type: logoInline.mimeType });
           form.append("image", logoBlob, "logo.png");
           logoPromptAddition = "\n\nA LOGO image is also provided. Place it prominently in the banner (corner or near headline). Keep the logo 100% identical.";
         }
