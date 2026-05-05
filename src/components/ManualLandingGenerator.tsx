@@ -54,7 +54,8 @@ interface ManualLandingGeneratorProps {
 const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack, onComplete }) => {
   const { user } = useAuth();
   const { balance } = useCredits();
-  
+  const [searchParams] = useSearchParams();
+  const vehicleIdParam = searchParams.get('vehicle');
   // Auto-loaded dealer profile
   const [dealerProfile, setDealerProfile] = useState<any>(null);
   const [profileLoaded, setProfileLoaded] = useState(false);
