@@ -10,6 +10,7 @@ import ProcessingStatus from '@/components/ProcessingStatus';
 import LandingPagePreview from '@/components/LandingPagePreview';
 import TemplateSidebar from '@/components/TemplateSidebar';
 import ImageSourceChoice from '@/components/ImageSourceChoice';
+import ExistingGallerySelector from '@/components/ExistingGallerySelector';
 import ImageUploadRemaster from '@/components/ImageUploadRemaster';
 import PresetUploadFlow from '@/components/preset/PresetUploadFlow';
 import ImageCaptureGrid from '@/components/ImageCaptureGrid';
