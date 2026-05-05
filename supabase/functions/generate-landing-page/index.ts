@@ -176,36 +176,44 @@ async function generateImage(apiKey: string, prompt: string, aspectHint: string)
   const professionalPhotoLock = `Professional automotive commercial photograph. The vehicle must be naturally integrated into the NEW scene with visible light-source logic: ceiling LEDs/window bands/sun/streetlights create soft believable highlights on hood, roof, windshield, side glass, chrome, rims and body panels. Render subtle natural floor/ground contact shadows, ambient occlusion at the tires, and faint lower-body floor reflections where the surface is polished or wet. All reflections must belong ONLY to the described scene; no foreign reflections, no old showroom/street, no other cars, no people, no photographer, no watermarks, no text/logos unless explicitly requested. Photorealistic, premium dealership/editorial quality, not CGI, not pasted.`;
   
   for (const model of models) {
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
-      const resp = await fetch(url, {
-        method: "POST",
-        headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: `Generate a single high-quality professional automotive marketing photograph. ${aspectHint}. ${prompt}. ${professionalPhotoLock}` }] }],
-          generationConfig: { responseModalities: ["TEXT", "IMAGE"], temperature: 1.0 },
-        }),
-      });
-      
-      if (!resp.ok) {
-        const errText = await resp.text();
-        console.error(`Image gen ${model} failed:`, resp.status, errText.substring(0, 200));
-        continue;
-      }
-      
-      const data = await resp.json();
-      const parts = data.candidates?.[0]?.content?.parts;
-      if (parts) {
-        for (const part of parts) {
-          if (part.inlineData?.data) {
-            const mime = part.inlineData.mimeType || "image/png";
-            return `data:${mime};base64,${part.inlineData.data}`;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+        const resp = await fetch(url, {
+          method: "POST",
+          headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: `Generate a single high-quality professional automotive marketing photograph. ${aspectHint}. ${prompt}. ${professionalPhotoLock}` }] }],
+            generationConfig: { responseModalities: ["TEXT", "IMAGE"], temperature: 1.0 },
+          }),
+        });
+
+        if (!resp.ok) {
+          const errText = await resp.text();
+          console.error(`Image gen ${model} attempt ${attempt + 1} failed:`, resp.status, errText.substring(0, 200));
+          if (resp.status === 503 || resp.status === 429 || resp.status === 500) {
+            await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+            continue;
+          }
+          break; // non-retryable -> try next model
+        }
+
+        const data = await resp.json();
+        const parts = data.candidates?.[0]?.content?.parts;
+        if (parts) {
+          for (const part of parts) {
+            if (part.inlineData?.data) {
+              const mime = part.inlineData.mimeType || "image/png";
+              return `data:${mime};base64,${part.inlineData.data}`;
+            }
           }
         }
+        console.error(`No image data in response for ${model}`);
+        break;
+      } catch (e) {
+        console.error(`Image gen error ${model} attempt ${attempt + 1}:`, e);
+        await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
       }
-      console.error(`No image data in response for ${model}`);
-    } catch (e) {
-      console.error(`Image gen error ${model}:`, e);
     }
   }
   return null;
