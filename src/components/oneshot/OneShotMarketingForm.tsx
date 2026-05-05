@@ -43,7 +43,7 @@ const SCENES = [
 const STYLES = [
   { id: 'premium', label: 'Seriös / Premium' },
   { id: 'cinematic', label: 'Cinematic' },
-  { id: 'bold', label: 'Verrückt / Auffällig' },
+  { id: 'bold', label: 'Popstyle' },
   { id: 'minimal', label: 'Minimalistisch' },
   { id: 'retro', label: 'Retro / Vintage' },
   { id: 'sport', label: 'Sportlich' },

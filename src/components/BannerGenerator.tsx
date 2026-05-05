@@ -54,7 +54,7 @@ const SCENES = [
 const STYLES = [
   { id: 'premium', label: 'Seriös / Premium', prompt: 'elegant, premium luxury, clean professional design, sophisticated typography' },
   { id: 'cinematic', label: 'Cinematic', prompt: 'cinematic movie poster style, dramatic lighting, lens flare, widescreen feel' },
-  { id: 'bold', label: 'Verrückt / Auffällig', prompt: 'bold, eye-catching, vibrant neon colors, explosive energy, attention-grabbing' },
+  { id: 'bold', label: 'Popstyle', prompt: 'bold, eye-catching, vibrant neon colors, explosive energy, attention-grabbing, pop-art inspired' },
   { id: 'minimal', label: 'Minimalistisch', prompt: 'clean minimalist design, lots of whitespace, subtle elegant typography' },
   { id: 'retro', label: 'Retro / Vintage', prompt: 'retro 80s style, vintage color grading, nostalgic warm tones' },
   { id: 'sport', label: 'Sportlich', prompt: 'dynamic sporty look, motion blur hints, aggressive angles, high performance feel' },
@@ -160,8 +160,8 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
   const [format, setFormat] = useState<string>('story');
   const [occasion, setOccasion] = useState<string>('buy');
   const [scene, setScene] = useState<string>('showroom');
-  const [style, setStyle] = useState<string>('premium');
-  const [priceDisplay, setPriceDisplay] = useState<string>('sign');
+  const [style, setStyle] = useState<string>('bold');
+  const [priceDisplay, setPriceDisplay] = useState<string>('neon');
   const [vehicleTitle, setVehicleTitle] = useState('');
   const [priceText, setPriceText] = useState('');
   const [headline, setHeadline] = useState('');
