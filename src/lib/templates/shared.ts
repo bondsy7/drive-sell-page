@@ -327,6 +327,7 @@ export function buildDealerFooterHTML(dealer: VehicleData['dealer']): string {
 export interface ContactFormOptions {
   dealerUserId: string;
   projectId?: string;
+  vehicleId?: string | null;
   supabaseUrl: string;
   vehicleTitle: string;
   /** Current category so we show alternative options */
@@ -334,7 +335,7 @@ export interface ContactFormOptions {
 }
 
 export function buildContactFormHTML(options: ContactFormOptions): string {
-  const { dealerUserId, projectId, supabaseUrl, vehicleTitle, currentCategory } = options;
+  const { dealerUserId, projectId, vehicleId, supabaseUrl, vehicleTitle, currentCategory } = options;
 
   const cat = (currentCategory || '').toLowerCase();
   const isPurchase = ['barkauf', 'neuwagen', 'gebrauchtwagen', 'tageszulassung'].includes(cat);
@@ -421,6 +422,7 @@ export function buildContactFormHTML(options: ContactFormOptions): string {
           body: JSON.stringify({
             dealerUserId: '${dealerUserId}',
             projectId: ${projectId ? `'${projectId}'` : 'null'},
+            vehicleId: ${vehicleId ? `'${vehicleId}'` : 'null'},
             name: fd.get('name'),
             email: fd.get('email'),
             phone: fd.get('phone') || null,
