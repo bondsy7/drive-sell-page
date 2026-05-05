@@ -17,7 +17,7 @@ const ProjectView = () => {
   const [project, setProject] = useState<any>(null);
   const [images, setImages] = useState<string[]>([]);
   const [vehicleData, setVehicleData] = useState<VehicleData | null>(null);
-  const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>('autohaus');
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>('modern');
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
