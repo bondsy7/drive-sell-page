@@ -558,7 +558,7 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
               {!isBuyCategory && <span className="text-sm text-muted-foreground">/ Monat <sup>1</sup></span>}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Fahrzeugpreis: <EditableField value={data.finance.totalPrice} onChange={(v) => updateFinance('totalPrice', v)} className="text-xs text-muted-foreground inline" suffix="€ inkl. MwSt." />
+              Fahrzeugpreis: <EditableField value={data.finance.totalPrice} onChange={(v) => updateFinance('totalPrice', v)} className="text-xs text-muted-foreground inline" suffix={`€ ${data.finance.vatNote ?? 'inkl. MwSt.'}`} />
             </p>
           </div>
 
