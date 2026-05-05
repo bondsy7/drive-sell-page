@@ -23,6 +23,7 @@ export interface VehicleWithCounts extends Vehicle {
     projects: number;
     images: number;
     spin360: number;
+    banners: number;
     leads: number;
   };
 }
