@@ -893,6 +893,13 @@ const Index = () => {
         </main>
       )}
 
+      <ExistingGallerySelector
+        open={showExistingSelector}
+        images={existingVehicleImages}
+        onCancel={() => setShowExistingSelector(false)}
+        onConfirm={handleConfirmExisting}
+      />
+
       <CreditConfirmDialog
         open={creditDialog.open}
         cost={creditDialog.cost}
