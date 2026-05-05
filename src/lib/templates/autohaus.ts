@@ -306,10 +306,12 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
     <!-- LEFT COLUMN -->
     <div class="left-col">
       <div class="gallery-card">
+        <div class="gallery-main-wrap">
         ${imageBase64
           ? `<img id="mainImg" class="gallery-main-img" src="${imageBase64}" alt="${data.vehicle.brand} ${data.vehicle.model}"/>`
-          : `<div style="color:#bbb;text-align:center;padding:80px;background:#f9fafb">Kein Bild verfügbar</div>`
+          : `<div style="color:#bbb;text-align:center;padding:80px">Kein Bild verfügbar</div>`
         }
+        </div>
         ${allImages.length > 1 ? `
           <div class="gallery-thumbs">
             ${allImages.map((img, i) => `<img src="${img}" alt="Bild ${i + 1}" class="thumb${i === 0 ? ' active' : ''}" onclick="setMain(this)" />`).join('')}
