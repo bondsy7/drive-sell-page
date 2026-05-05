@@ -334,6 +334,36 @@ export default function DataTab({ vehicle }: Props) {
     return count;
   };
 
+  /** Persist a partial directly to the vehicle row (only for new fields). */
+  const persistMerge = async (partial: Partial<VehicleDataRecord>) => {
+    const existing = (vehicle.vehicle_data || {}) as Record<string, unknown>;
+    const filtered: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(partial)) {
+      const cur = (existing as any)[k];
+      const incoming = (v || '').toString().trim();
+      if (incoming && (cur == null || String(cur).trim() === '')) {
+        filtered[k] = v;
+      }
+    }
+    if (Object.keys(filtered).length === 0) return;
+    const merged = { ...existing, ...filtered };
+    try {
+      await update.mutateAsync({
+        id: vehicle.id,
+        patch: {
+          vehicle_data: merged,
+          brand: (merged as any).brand || vehicle.brand || null,
+          model: (merged as any).model || vehicle.model || null,
+          year: (merged as any).year ? Number((merged as any).year) || vehicle.year || null : vehicle.year || null,
+          color: (merged as any).color || vehicle.color || null,
+        },
+      });
+      setDirty(false);
+    } catch (e) {
+      console.warn('[DataTab] auto-persist failed', e);
+    }
+  };
+
   /** VIN lookup — fills empty fields only. */
   const fillFromOutvin = async (silent = false): Promise<number> => {
     const vin = (rec.vin || vehicle.vin || '').trim().toUpperCase();
