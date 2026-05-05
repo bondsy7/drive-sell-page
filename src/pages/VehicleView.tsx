@@ -291,7 +291,7 @@ export default function VehicleView() {
       case 'landings':
         return <LandingsTab projects={landingProjects} onExport={openExportDialog} onDelete={onDeleteProject} />;
       case 'projects':
-        return <ProjectsTab projects={regularProjects} onExport={openExportDialog} onDelete={onDeleteProject} />;
+        return <ProjectsTab projects={regularProjects} onExport={openExportDialog} onDelete={onDeleteProject} vehicleId={vehicle.id} />;
       case 'banners':
         return <BannersTab banners={banners} onDownload={(b) => downloadFile(b.url, b.name)} onDelete={(fp) => onDeleteBanner(fp)} />;
       case 'videos':
@@ -363,6 +363,11 @@ export default function VehicleView() {
             const cover = vehicle.cover_image_url ? `&image=${encodeURIComponent(vehicle.cover_image_url)}` : '';
             return (
               <>
+                <Button asChild size="sm">
+                  <Link to={`/generator/pdf-landing?vehicle=${vehicle.id}${cover}`}>
+                    <FileText className="w-4 h-4 mr-1.5" /> PDF Landing Page
+                  </Link>
+                </Button>
                 <Button asChild size="sm" variant="outline">
                   <Link to={`/generator/banner?vehicle=${vehicle.id}${cover}`}>
                     <LayoutGrid className="w-4 h-4 mr-1.5" /> Banner erstellen
