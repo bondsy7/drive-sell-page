@@ -349,9 +349,10 @@ export default function DataTab({ vehicle }: Props) {
       }
       const partial = mapSourceToRecord({ ...(data.vehicle || {}), vin });
       const filled = mergeIntoRec(partial);
+      if (filled > 0) await persistMerge(partial);
       if (!silent) {
         if (filled === 0) toast.info('Keine neuen Daten — alle Felder sind bereits gefüllt.');
-        else toast.success(`${filled} Feld${filled !== 1 ? 'er' : ''} aus VIN-Lookup befüllt.`);
+        else toast.success(`${filled} Feld${filled !== 1 ? 'er' : ''} aus VIN-Lookup befüllt & gespeichert.`);
       }
       return filled;
     } catch (e) {
