@@ -20,7 +20,7 @@ const TIERS: { id: ModelTier; label: string; sublabel: string; icon: React.React
   { id: 'neu', label: 'Neu', sublabel: 'GPT Image 2', icon: <BadgePlus className="w-3 h-3" />, group: 'B' },
 ];
 
-const ImageSourceChoice: React.FC<ImageSourceChoiceProps> = ({ onChooseGenerate, onChooseUpload, onChooseCapture }) => {
+const ImageSourceChoice: React.FC<ImageSourceChoiceProps> = ({ onChooseGenerate, onChooseUpload, onChooseCapture, existingGalleryCount = 0, onChooseExisting }) => {
   const { getCost, balance } = useCredits();
   const [modelTier, setModelTier] = useState<ModelTier>('qualitaet');
 
