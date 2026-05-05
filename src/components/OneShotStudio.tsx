@@ -1957,13 +1957,18 @@ This is the MARKETING MASTER (Hero) shot — push lighting one notch beyond the 
             <div className="rounded-xl border border-border bg-card p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-sm">4. Video</h3>
-                {(videoState === 'starting' || videoState === 'polling') && (
-                  <Loader2 className="w-4 h-4 animate-spin text-accent" />
-                )}
-                {videoState === 'done' && (
-                  <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20">fertig</Badge>
-                )}
-                {videoState === 'error' && <Badge variant="destructive">Fehler</Badge>}
+                <div className="flex items-center gap-2">
+                  {(videoState === 'starting' || videoState === 'polling') && (
+                    <>
+                      <ProcessTimer running label="Render" />
+                      <Loader2 className="w-4 h-4 animate-spin text-accent" />
+                    </>
+                  )}
+                  {videoState === 'done' && (
+                    <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20">fertig</Badge>
+                  )}
+                  {videoState === 'error' && <Badge variant="destructive">Fehler</Badge>}
+                </div>
               </div>
               {videoState === 'polling' && (
                 <p className="text-[11px] text-muted-foreground">Video wird generiert (2–5 Min). Du kannst die Seite verlassen — Pipeline läuft weiter.</p>
