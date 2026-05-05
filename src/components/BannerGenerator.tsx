@@ -1053,6 +1053,12 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
         </div>
 
         {/* All-formats progress */}
+        {(generating || generatingAll) && (
+          <div className="flex items-center justify-center">
+            <ProcessTimer running={generating || generatingAll} label="Gesamt" />
+          </div>
+        )}
+
         {generatingAll && Object.keys(formatProgress).length > 0 && (
           <div className="space-y-1.5 p-3 rounded-lg border border-border/50 bg-muted/30">
             <p className="text-xs font-semibold text-foreground mb-2">Fortschritt</p>
