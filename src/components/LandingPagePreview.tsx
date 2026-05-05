@@ -33,6 +33,7 @@ interface LandingPagePreviewProps {
   onDataChange: (data: VehicleData) => void;
   selectedTemplate: TemplateId;
   projectId?: string | null;
+  vehicleId?: string | null;
 }
 
 const SpecItem: React.FC<{
@@ -57,7 +58,7 @@ const ConsumptionRow: React.FC<{ label: string; value: string; onChange: (v: str
   </div>
 );
 
-const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, imageBase64, galleryImages = [], onReset, onDataChange, selectedTemplate, projectId }) => {
+const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, imageBase64, galleryImages = [], onReset, onDataChange, selectedTemplate, projectId, vehicleId }) => {
   const emptyDealer = { name: '', address: '', postalCode: '', city: '', phone: '', email: '', website: '', taxId: '', logoUrl: '', facebookUrl: '', instagramUrl: '', xUrl: '', tiktokUrl: '', youtubeUrl: '', whatsappNumber: '', leasingBank: '', leasingLegalText: '', financingBank: '', financingLegalText: '', defaultLegalText: '' };
   const emptyConsumption = { origin: '', mileage: '', displacement: '', power: '', driveType: '', fuelType: '', consumptionCombined: '', co2Emissions: '', co2Class: '', consumptionCity: '', consumptionSuburban: '', consumptionRural: '', consumptionHighway: '', energyCostPerYear: '', fuelPrice: '', co2CostMedium: '', co2CostLow: '', co2CostHigh: '', vehicleTax: '', isPluginHybrid: false, co2EmissionsDischarged: '', co2ClassDischarged: '', consumptionCombinedDischarged: '', electricRange: '', consumptionElectric: '', hsnTsn: '', electricMotorPower: '', electricMotorTorque: '', gearboxType: '', topSpeed: '', acceleration: '', curbWeight: '', grossWeight: '', warranty: '', paintColor: '' };
   const data: VehicleData = {
@@ -82,6 +83,7 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
     contactForm: {
       dealerUserId: user.id,
       projectId: projectId || undefined,
+      vehicleId: vehicleId || undefined,
       supabaseUrl,
       vehicleTitle,
       currentCategory: data.category,
@@ -90,7 +92,7 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
 
   const liveHTML = useMemo(
     () => generateHTML(selectedTemplate, data, imageBase64, galleryImages, htmlOptions),
-    [selectedTemplate, data, imageBase64, galleryImages, user?.id, projectId]
+    [selectedTemplate, data, imageBase64, galleryImages, user?.id, projectId, vehicleId]
   );
 
   // Ensure finance exists with defaults

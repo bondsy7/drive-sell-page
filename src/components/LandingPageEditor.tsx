@@ -27,6 +27,7 @@ import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 
 interface LandingPageEditorProps {
   projectId: string;
+  vehicleId?: string | null;
   initialContent: LandingPageContent;
   initialImages: Record<string, string>;
   dealer: LandingPageDealer;
@@ -37,7 +38,7 @@ interface LandingPageEditorProps {
 }
 
 const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
-  projectId, initialContent, initialImages, dealer: initialDealer,
+  projectId, vehicleId, initialContent, initialImages, dealer: initialDealer,
   brand, model, brandLogoUrl, onBack,
 }) => {
   const { user } = useAuth();
@@ -59,6 +60,7 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
   const contactForm: LandingPageContactForm | undefined = contactFormEnabled && user ? {
     dealerUserId: user.id,
     projectId,
+    vehicleId,
     supabaseUrl: import.meta.env.VITE_SUPABASE_URL || '',
     vehicleTitle,
   } : undefined;

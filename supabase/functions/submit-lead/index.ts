@@ -13,7 +13,7 @@ Deno.serve(async (req) => {
 
   try {
     const {
-      dealerUserId, projectId, name, email, phone, message, vehicleTitle,
+      dealerUserId, projectId, vehicleId, name, email, phone, message, vehicleTitle,
       interestedTestDrive, interestedTradeIn, interestedLeasing, interestedFinancing, interestedPurchase
     } = await req.json();
 
@@ -37,9 +37,20 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    let resolvedVehicleId = vehicleId || null;
+    if (!resolvedVehicleId && projectId) {
+      const { data: project } = await supabase
+        .from("projects")
+        .select("vehicle_id")
+        .eq("id", projectId)
+        .maybeSingle();
+      resolvedVehicleId = project?.vehicle_id || null;
+    }
+
     const { data: lead, error } = await supabase.from("leads").insert({
       dealer_user_id: dealerUserId,
       project_id: projectId || null,
+      vehicle_id: resolvedVehicleId,
       name: String(name).slice(0, 200),
       email: String(email).slice(0, 255),
       phone: phone ? String(phone).slice(0, 50) : null,
@@ -80,6 +91,15 @@ Deno.serve(async (req) => {
           },
           body: JSON.stringify({ leadId: lead.id, dealerUserId }),
         }).catch(err => console.error("Auto-process trigger error:", err));
+      } else {
+        await supabase.from("sales_notifications").insert({
+          user_id: dealerUserId,
+          notification_type: "new_lead",
+          title: "Neuer Lead eingegangen",
+          body: `${String(name).slice(0, 200)} hat eine Anfrage${vehicleTitle ? ` zu ${String(vehicleTitle).slice(0, 120)}` : ''} gesendet.`,
+          related_lead_id: lead.id,
+          requires_approval: false,
+        });
       }
     }
 
