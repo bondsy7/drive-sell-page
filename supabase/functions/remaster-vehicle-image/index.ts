@@ -554,7 +554,9 @@ The showroom wall must remain CLEAN and EMPTY. No manufacturer logos, no dealer 
       'gemini-2.5-flash-image': ['gemini-3.1-flash-image-preview'],
     };
     const modelsToTry = Array.from(new Set([geminiModel, ...(FALLBACK_ORDER[geminiModel] || ['gemini-3.1-flash-image-preview'])])).slice(0, 2);
-    const maxRetries = 3;
+    const maxRetries = 2;
+    const startedAt = Date.now();
+    const HARD_BUDGET_MS = 130_000; // stay under 150s edge limit
 
     for (const currentModel of modelsToTry) {
       if (resultImage) break;
