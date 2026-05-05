@@ -533,6 +533,12 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
         vehicleTitle: !form.vehicleTitle ? 'vin' : s.vehicleTitle,
       }));
       toast.success('VIN-Daten geladen', { description: `${v.make || ''} ${v.model || ''}`.trim() });
+
+      // Persist to vehicle Daten-Tab so it shows up everywhere
+      if (user?.id) {
+        const vid = await persistVinLookup(user.id, detectedVin, v as Record<string, any>);
+        if (vid) setSavedVehicleId(vid);
+      }
     } catch (e: any) {
       console.error('VIN flow error', e);
     } finally {
