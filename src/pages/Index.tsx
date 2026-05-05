@@ -642,6 +642,7 @@ const Index = () => {
                 galleryImages={galleryImages} onReset={handleReset}
                 onDataChange={setVehicleData} selectedTemplate={selectedTemplate}
                 projectId={savedProjectId}
+                vehicleId={savedVehicleId || deepLinkVehicleId}
               />
             </div>
           </main>
