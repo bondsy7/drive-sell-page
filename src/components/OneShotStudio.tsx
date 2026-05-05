@@ -1801,9 +1801,15 @@ This is the MARKETING MASTER (Hero) shot — push lighting one notch beyond the 
                       </span>
                     );
                   })()}
+                  {pipelineCtx.isRunning && <ProcessTimer running elapsedMs={pipelineCtx.elapsedMs} />}
                   {pipelineCtx.isRunning && <Loader2 className="w-4 h-4 animate-spin text-accent" />}
                   {pipelineCtx.isFinished && (
-                    <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20">fertig</Badge>
+                    <>
+                      <span className="text-[11px] font-mono text-muted-foreground">
+                        {formatDuration(pipelineCtx.endTime && pipelineCtx.startTime ? pipelineCtx.endTime - pipelineCtx.startTime : pipelineCtx.elapsedMs)}
+                      </span>
+                      <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20">fertig</Badge>
+                    </>
                   )}
                 </div>
               </div>
