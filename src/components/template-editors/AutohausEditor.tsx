@@ -361,7 +361,6 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
                     value={data.finance.vatNote ?? 'inkl. MwSt.'}
                     onChange={(v) => updateFinance('vatNote', v)}
                     className="text-xs opacity-60 mt-1 block"
-                    placeholder="z. B. inkl. MwSt. / zzgl. MwSt."
                   />
                 </div>
               )}
