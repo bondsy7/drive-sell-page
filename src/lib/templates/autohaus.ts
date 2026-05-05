@@ -1,6 +1,6 @@
 import { VehicleData } from "@/types/vehicle";
 import { parsePrice, formatPrice } from "@/lib/finance-utils";
-import { getCO2LabelHTML, getConsumptionData, buildLegalTextHTML, buildDealerAddressHTML, buildDealerFooterHTML, buildSocialLinksHTML, buildWhatsAppButtonHTML, buildWebsiteLinkHTML, getFinanceSectionTitle, calculateLeasingFactor } from "./shared";
+import { getCO2LabelHTML, getConsumptionData, buildLegalTextHTML, buildDealerAddressHTML, buildDealerFooterHTML, buildSocialLinksHTML, buildWhatsAppButtonHTML, buildWebsiteLinkHTML, getFinanceSectionTitle, calculateLeasingFactor, getVatNote, vatNoteHTML, vatNoteInline, getMonthlyRateLabel } from "./shared";
 
 export function generateAutohausHTML(data: VehicleData, imageBase64: string | null, galleryImages: string[] = []): string {
   const consumption = getConsumptionData(data);
@@ -134,8 +134,9 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
       <div class="card">
         <h2>${getFinanceSectionTitle(data)}konditionen</h2>
         <div class="leasing-highlight">
+          <div style="font-size:.8rem;opacity:.7;margin-bottom:.3rem">${getMonthlyRateLabel(data)}</div>
           <div class="rate-value">${data.finance.monthlyRate} <span style="font-size:1rem;font-weight:400;opacity:.85">/ Monat<sup style="font-size:.6rem;vertical-align:super">1</sup></span></div>
-          <div style="font-size:.78rem;opacity:.7;margin-top:.3rem">inkl. MwSt.</div>
+          ${getVatNote(data) ? `<div style="font-size:.78rem;opacity:.7;margin-top:.3rem">${getVatNote(data)}</div>` : ''}
         </div>
         <div class="grid-2">${conditionCells}</div>
         ${freigrenzeHTML}
@@ -326,10 +327,12 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
       <div class="card price-card">
         <h1>${data.vehicle.brand} ${data.vehicle.model}${data.vehicle.variant ? ' ' + data.vehicle.variant : ''}</h1>
         ${!isBuy && data.finance.monthlyRate
-          ? `<div class="rate">${data.finance.monthlyRate} <span style="font-size:.95rem;font-weight:400;color:#6b7280">/ Monat<sup style="font-size:.6rem;vertical-align:super">1</sup></span></div>
-             ${data.finance.totalPrice ? `<p class="list-price">Fahrzeugpreis: ${data.finance.totalPrice} inkl. MwSt.</p>` : ''}`
+          ? `<div style="font-size:.8rem;color:#6b7280;margin-bottom:.2rem">${getMonthlyRateLabel(data)}</div>
+             <div class="rate">${data.finance.monthlyRate} <span style="font-size:.95rem;font-weight:400;color:#6b7280">/ Monat<sup style="font-size:.6rem;vertical-align:super">1</sup></span></div>
+             ${getVatNote(data) ? `<div style="font-size:.75rem;color:#9ca3af;margin-top:.15rem">${getVatNote(data)}</div>` : ''}
+             ${data.finance.totalPrice ? `<p class="list-price">Fahrzeugpreis: ${data.finance.totalPrice}${vatNoteInline(data)}</p>` : ''}`
           : `<div class="rate">${data.finance.totalPrice || '–'}</div>
-             <p class="list-price">${isBuy ? 'Fahrzeugpreis inkl. MwSt.' : ''}</p>`
+             <p class="list-price">${isBuy ? `Fahrzeugpreis${vatNoteInline(data)}` : ''}</p>`
         }
         <hr class="divider"/>
         <div class="specs-grid">
