@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import VehicleBrandModelPicker from '@/components/VehicleBrandModelPicker';
 import { Progress } from '@/components/ui/progress';
 import ProcessTimer from '@/components/ProcessTimer';
+import { useSearchParams } from 'react-router-dom';
 
 const PAGE_TYPES = [
   { value: 'leasing', label: 'Leasing-Angebot', desc: 'Monatliche Rate, Flexibilität', icon: '📋' },
@@ -53,7 +54,8 @@ interface ManualLandingGeneratorProps {
 const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack, onComplete }) => {
   const { user } = useAuth();
   const { balance } = useCredits();
-  
+  const [searchParams] = useSearchParams();
+  const vehicleIdParam = searchParams.get('vehicle');
   // Auto-loaded dealer profile
   const [dealerProfile, setDealerProfile] = useState<any>(null);
   const [profileLoaded, setProfileLoaded] = useState(false);
@@ -201,6 +203,7 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
 
         const { data: project, error: saveError } = await supabase.from('projects').insert({
           user_id: user.id,
+          vehicle_id: vehicleIdParam || null,
           title: `${brand} ${model}${variant ? ` ${variant}` : ''} – Landing Page`,
           vehicle_data: {
             type: 'landing-page',
