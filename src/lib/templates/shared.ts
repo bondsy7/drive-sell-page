@@ -46,6 +46,17 @@ export function getMonthlyRateLabel(data: VehicleData): string {
   return data.finance?.monthlyRateLabel || 'Monatliche Rate';
 }
 
+/** Customer-type badge ("Privatkundenangebot" / "Gewerbekundenangebot"). */
+export function customerTypeBadgeHTML(data: VehicleData): string {
+  const ct = data.customerType;
+  if (!ct) return '';
+  const isBusiness = ct === 'business';
+  const label = isBusiness ? 'Gewerbekundenangebot' : 'Privatkundenangebot';
+  const bg = isBusiness ? '#ede9fe' : '#fce7f3';
+  const fg = isBusiness ? '#6d28d9' : '#be185d';
+  return `<span class="customer-type-badge" style="display:inline-block;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:.3rem .65rem;border-radius:999px;background:${bg};color:${fg};margin-bottom:.5rem">${label}</span>`;
+}
+
 /**
  * Converts a public image path to a base64 data URL for embedding in exported HTML.
  */

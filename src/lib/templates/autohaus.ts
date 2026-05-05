@@ -1,6 +1,6 @@
 import { VehicleData } from "@/types/vehicle";
 import { parsePrice, formatPrice } from "@/lib/finance-utils";
-import { getCO2LabelHTML, getConsumptionData, buildLegalTextHTML, buildDealerAddressHTML, buildDealerFooterHTML, buildSocialLinksHTML, buildWhatsAppButtonHTML, buildWebsiteLinkHTML, getFinanceSectionTitle, calculateLeasingFactor, getVatNote, vatNoteHTML, vatNoteInline, getMonthlyRateLabel } from "./shared";
+import { getCO2LabelHTML, getConsumptionData, buildLegalTextHTML, buildDealerAddressHTML, buildDealerFooterHTML, buildSocialLinksHTML, buildWhatsAppButtonHTML, buildWebsiteLinkHTML, getFinanceSectionTitle, calculateLeasingFactor, getVatNote, vatNoteHTML, vatNoteInline, getMonthlyRateLabel, customerTypeBadgeHTML } from "./shared";
 
 export function generateAutohausHTML(data: VehicleData, imageBase64: string | null, galleryImages: string[] = []): string {
   const consumption = getConsumptionData(data);
@@ -325,6 +325,7 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
     <!-- RIGHT COLUMN (sticky sidebar) -->
     <div class="right-col">
       <div class="card price-card">
+        ${customerTypeBadgeHTML(data)}
         <h1>${data.vehicle.brand} ${data.vehicle.model}${data.vehicle.variant ? ' ' + data.vehicle.variant : ''}</h1>
         ${!isBuy && data.finance.monthlyRate
           ? `<div style="font-size:.8rem;color:#6b7280;margin-bottom:.2rem">${getMonthlyRateLabel(data)}</div>

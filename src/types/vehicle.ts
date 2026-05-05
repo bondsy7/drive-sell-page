@@ -65,6 +65,8 @@ export interface DealerData {
 
 export interface VehicleData {
   category: string;
+  /** Audience: 'private' (Privatkundenangebot) or 'business' (Gewerbekundenangebot). */
+  customerType?: 'private' | 'business';
   vehicle: {
     brand: string;
     model: string;

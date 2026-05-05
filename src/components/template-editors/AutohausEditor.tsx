@@ -529,6 +529,19 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
         <div className="bg-card rounded-2xl border border-border overflow-hidden">
           {/* Vehicle header */}
           <div className="p-5 border-b border-border/60">
+            {/* Customer type badge (Privat- vs. Gewerbekundenangebot) */}
+            <button
+              type="button"
+              onClick={() => onDataChange({ ...data, customerType: data.customerType === 'business' ? 'private' : 'business' })}
+              className={`inline-block text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full mb-2 transition-colors ${
+                data.customerType === 'business'
+                  ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                  : 'bg-pink-100 text-pink-700 hover:bg-pink-200'
+              }`}
+              title="Klick zum Wechseln zwischen Privat- und Gewerbekundenangebot"
+            >
+              {data.customerType === 'business' ? 'Gewerbekundenangebot' : 'Privatkundenangebot'}
+            </button>
             <h2 className="font-display text-lg font-bold text-foreground leading-tight">
               {data.vehicle.brand} {data.vehicle.model} {data.vehicle.variant || ''}
             </h2>
