@@ -364,6 +364,11 @@ export default function VehicleView() {
             return (
               <>
                 <Button asChild size="sm" variant="outline">
+                  <Link to={`/generator/fotos?vehicle=${vehicle.id}${cover}`}>
+                    <ImageIcon className="w-4 h-4 mr-1.5" /> Bilder erstellen
+                  </Link>
+                </Button>
+                <Button asChild size="sm" variant="outline">
                   <Link to={`/generator/banner?vehicle=${vehicle.id}${cover}`}>
                     <LayoutGrid className="w-4 h-4 mr-1.5" /> Banner erstellen
                   </Link>
