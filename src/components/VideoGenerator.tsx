@@ -30,6 +30,7 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onBack, preloadedImage,
   const [videoState, setVideoState] = useState<VideoState>('idle');
   const [videoBase64, setVideoBase64] = useState<string | null>(null);
   const [customPrompt, setCustomPrompt] = useState('');
+  const [aspectRatio, setAspectRatio] = useState<'16:9' | '9:16'>('16:9');
   const [pollProgress, setPollProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -68,6 +69,7 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onBack, preloadedImage,
           action: 'start',
           imageBase64,
           prompt: customPrompt || undefined,
+          aspectRatio,
         },
       });
 
@@ -135,7 +137,7 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onBack, preloadedImage,
       setErrorMessage(err.message || 'Fehler bei der Video-Generierung');
       toast.error(err.message || 'Fehler bei der Video-Generierung');
     }
-  }, [imageBase64, customPrompt]);
+  }, [imageBase64, customPrompt, aspectRatio, vehicleId]);
 
   const handleDownload = useCallback(() => {
     if (!videoBase64) return;
@@ -194,6 +196,32 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onBack, preloadedImage,
           </button>
         )}
         <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+      </div>
+
+      {/* Aspect Ratio */}
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-foreground">Format</label>
+        <div className="grid grid-cols-2 gap-2">
+          {([
+            { v: '16:9', label: 'Querformat 16:9', hint: 'Web, YouTube, Showroom' },
+            { v: '9:16', label: 'Hochformat 9:16', hint: 'Reels, TikTok, Stories' },
+          ] as const).map(opt => (
+            <button
+              key={opt.v}
+              type="button"
+              onClick={() => setAspectRatio(opt.v)}
+              disabled={isProcessing}
+              className={`rounded-lg border p-3 text-left transition-colors ${
+                aspectRatio === opt.v
+                  ? 'border-accent bg-accent/10'
+                  : 'border-border bg-background hover:border-accent/50'
+              }`}
+            >
+              <div className="text-sm font-medium text-foreground">{opt.label}</div>
+              <div className="text-xs text-muted-foreground">{opt.hint}</div>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Custom Prompt */}

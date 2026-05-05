@@ -158,7 +158,8 @@ async function handleVideoStart(req: Request, GEMINI_API_KEY: string, body: any)
   if (authResult instanceof Response) return authResult;
   const { userId } = authResult;
 
-  const { imageBase64, images, prompt: userPrompt, action } = body;
+  const { imageBase64, images, prompt: userPrompt, action, aspectRatio: rawAspect } = body;
+  const aspectRatio = rawAspect === "9:16" ? "9:16" : "16:9";
   const isSpin360 = action === "spin360_start";
   const creditAmount = 10;
   const creditAction = "image_generate";
@@ -187,7 +188,7 @@ async function handleVideoStart(req: Request, GEMINI_API_KEY: string, body: any)
         prompt: spin360PromptGuardrail,
         image: { bytesBase64Encoded: parsed.data, mimeType: parsed.mimeType },
       }],
-      parameters: { sampleCount: 1 },
+      parameters: { sampleCount: 1, aspectRatio },
     };
   }
 
@@ -222,16 +223,16 @@ async function handleVideoStart(req: Request, GEMINI_API_KEY: string, body: any)
 
     requestBody = {
       instances: [{ prompt: enhancedPrompt, image: { bytesBase64Encoded: finalImageData, mimeType: finalImageMime } }],
-      parameters: { sampleCount: 1 },
+      parameters: { sampleCount: 1, aspectRatio },
     };
   } else if (imageBase64) {
     const parsed = await parseImageBase64(imageBase64);
     requestBody = {
       instances: [{ prompt: finalPrompt, image: { bytesBase64Encoded: parsed.data, mimeType: parsed.mimeType } }],
-      parameters: { sampleCount: 1 },
+      parameters: { sampleCount: 1, aspectRatio },
     };
   } else {
-    requestBody = { instances: [{ prompt: finalPrompt }], parameters: { sampleCount: 1 } };
+    requestBody = { instances: [{ prompt: finalPrompt }], parameters: { sampleCount: 1, aspectRatio } };
   }
 
   const genUrl = `${BASE_URL}/models/veo-3.1-generate-preview:predictLongRunning?key=${GEMINI_API_KEY}`;
