@@ -57,6 +57,7 @@ import { useVehicleMakes } from '@/hooks/useVehicleMakes';
 import { ensureVehicle } from '@/lib/vehicle-utils';
 
 import OneShotMarketingForm from './oneshot/OneShotMarketingForm';
+import { persistScanData, persistVinLookup } from '@/lib/scan-to-vehicle-data';
 import ProcessTimer, { formatDuration } from '@/components/ProcessTimer';
 import OneShotLightbox, { type LightboxItem } from './oneshot/OneShotLightbox';
 import {
@@ -532,6 +533,12 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
         vehicleTitle: !form.vehicleTitle ? 'vin' : s.vehicleTitle,
       }));
       toast.success('VIN-Daten geladen', { description: `${v.make || ''} ${v.model || ''}`.trim() });
+
+      // Persist to vehicle Daten-Tab so it shows up everywhere
+      if (user?.id) {
+        const vid = await persistVinLookup(user.id, detectedVin, v as Record<string, any>);
+        if (vid) setSavedVehicleId(vid);
+      }
     } catch (e: any) {
       console.error('VIN flow error', e);
     } finally {
@@ -580,6 +587,12 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
       const ext = (data?.extracted || {}) as ScanData;
       setScanData(ext);
       mergeScanIntoForm(ext, 'datasheet');
+      // Persist into vehicle row immediately (VIN-keyed) so Daten-Tab shows it
+      if (user?.id) {
+        const targetVin = (ext.vin || vin || '').toString();
+        const vid = await persistScanData(user.id, targetVin, ext as Record<string, any>);
+        if (vid) setSavedVehicleId(vid);
+      }
       toast.success(
         merged.length > 1
           ? `${merged.length} Datenblätter zusammengeführt!`
@@ -613,6 +626,11 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
         const ext = data.extracted as ScanData;
         setScanData(ext);
         mergeScanIntoForm(ext, 'datasheet');
+        if (user?.id) {
+          const targetVin = (ext.vin || vin || '').toString();
+          const vid = await persistScanData(user.id, targetVin, ext as Record<string, any>);
+          if (vid) setSavedVehicleId(vid);
+        }
       }
     } finally {
       setAnalyzingSheet(false);

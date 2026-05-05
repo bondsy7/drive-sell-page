@@ -334,6 +334,36 @@ export default function DataTab({ vehicle }: Props) {
     return count;
   };
 
+  /** Persist a partial directly to the vehicle row (only for new fields). */
+  const persistMerge = async (partial: Partial<VehicleDataRecord>) => {
+    const existing = (vehicle.vehicle_data || {}) as Record<string, unknown>;
+    const filtered: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(partial)) {
+      const cur = (existing as any)[k];
+      const incoming = (v || '').toString().trim();
+      if (incoming && (cur == null || String(cur).trim() === '')) {
+        filtered[k] = v;
+      }
+    }
+    if (Object.keys(filtered).length === 0) return;
+    const merged = { ...existing, ...filtered };
+    try {
+      await update.mutateAsync({
+        id: vehicle.id,
+        patch: {
+          vehicle_data: merged,
+          brand: (merged as any).brand || vehicle.brand || null,
+          model: (merged as any).model || vehicle.model || null,
+          year: (merged as any).year ? Number((merged as any).year) || vehicle.year || null : vehicle.year || null,
+          color: (merged as any).color || vehicle.color || null,
+        },
+      });
+      setDirty(false);
+    } catch (e) {
+      console.warn('[DataTab] auto-persist failed', e);
+    }
+  };
+
   /** VIN lookup — fills empty fields only. */
   const fillFromOutvin = async (silent = false): Promise<number> => {
     const vin = (rec.vin || vehicle.vin || '').trim().toUpperCase();
@@ -349,9 +379,10 @@ export default function DataTab({ vehicle }: Props) {
       }
       const partial = mapSourceToRecord({ ...(data.vehicle || {}), vin });
       const filled = mergeIntoRec(partial);
+      if (filled > 0) await persistMerge(partial);
       if (!silent) {
         if (filled === 0) toast.info('Keine neuen Daten — alle Felder sind bereits gefüllt.');
-        else toast.success(`${filled} Feld${filled !== 1 ? 'er' : ''} aus VIN-Lookup befüllt.`);
+        else toast.success(`${filled} Feld${filled !== 1 ? 'er' : ''} aus VIN-Lookup befüllt & gespeichert.`);
       }
       return filled;
     } catch (e) {
@@ -371,12 +402,17 @@ export default function DataTab({ vehicle }: Props) {
       .order('updated_at', { ascending: false });
     if (!data?.length) return 0;
     let total = 0;
+    const aggregated: Partial<VehicleDataRecord> = {};
     for (const row of data) {
       const vd = (row.vehicle_data || {}) as Record<string, unknown>;
       const partial = mapSourceToRecord(vd);
       total += mergeIntoRec(partial);
+      for (const [k, v] of Object.entries(partial)) {
+        if (v && !(aggregated as any)[k]) (aggregated as any)[k] = v;
+      }
     }
-    if (!silent && total > 0) toast.success(`${total} Feld${total !== 1 ? 'er' : ''} aus PDF / Landing Pages übernommen.`);
+    if (total > 0) await persistMerge(aggregated);
+    if (!silent && total > 0) toast.success(`${total} Feld${total !== 1 ? 'er' : ''} aus PDF / Landing Pages übernommen & gespeichert.`);
     return total;
   };
 
