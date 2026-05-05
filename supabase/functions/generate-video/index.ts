@@ -81,13 +81,24 @@ function encodeBase64(buffer: ArrayBuffer): string {
   return btoa(binary);
 }
 
-/** Extract raw base64 data and mime type from a data URI or raw base64 string */
-function parseImageBase64(input: string): { data: string; mimeType: string } {
+/** Extract raw base64 data and mime type from a data URI, raw base64 string, or URL */
+async function parseImageBase64(input: string): Promise<{ data: string; mimeType: string }> {
   if (input.startsWith("data:")) {
     const match = input.match(/^data:(image\/\w+);base64,(.+)$/s);
     if (match) return { data: match[2], mimeType: match[1] };
   }
-  // Assume raw base64
+  if (input.startsWith("http://") || input.startsWith("https://")) {
+    const resp = await fetch(input);
+    if (!resp.ok) throw new Error(`Failed to fetch image URL: ${resp.status}`);
+    const mimeType = resp.headers.get("content-type")?.split(";")[0] || "image/jpeg";
+    const buf = new Uint8Array(await resp.arrayBuffer());
+    let binary = "";
+    const chunk = 0x8000;
+    for (let i = 0; i < buf.length; i += chunk) {
+      binary += String.fromCharCode(...buf.subarray(i, i + chunk));
+    }
+    return { data: btoa(binary), mimeType };
+  }
   return { data: input.replace(/^data:image\/\w+;base64,/, ""), mimeType: "image/jpeg" };
 }
 
@@ -170,7 +181,7 @@ async function handleVideoStart(req: Request, GEMINI_API_KEY: string, body: any)
   let requestBody: any;
 
   if (isSpin360 && imageBase64) {
-    const parsed = parseImageBase64(imageBase64);
+    const parsed = await parseImageBase64(imageBase64);
     requestBody = {
       instances: [{
         prompt: spin360PromptGuardrail,
@@ -184,14 +195,14 @@ async function handleVideoStart(req: Request, GEMINI_API_KEY: string, body: any)
   else if (isSpin360 && Array.isArray(images) && images.length > 0) {
     const frontImg = images.find((img: any) => img.label === 'front_34') || images[0];
     const rearImg = images.find((img: any) => img.label === 'rear_34');
-    const parsedFront = parseImageBase64(frontImg.base64);
+    const parsedFront = await parseImageBase64(frontImg.base64);
 
     let finalImageData = parsedFront.data;
     let finalImageMime = parsedFront.mimeType;
 
     // If we have both front and rear, create a composite so Veo sees both perspectives
     if (rearImg) {
-      const parsedRear = parseImageBase64(rearImg.base64);
+      const parsedRear = await parseImageBase64(rearImg.base64);
       console.log("Creating composite image from front + rear views...");
       const composite = await createCompositeImage(
         parsedFront.data, parsedFront.mimeType,
@@ -214,7 +225,7 @@ async function handleVideoStart(req: Request, GEMINI_API_KEY: string, body: any)
       parameters: { sampleCount: 1 },
     };
   } else if (imageBase64) {
-    const parsed = parseImageBase64(imageBase64);
+    const parsed = await parseImageBase64(imageBase64);
     requestBody = {
       instances: [{ prompt: finalPrompt, image: { bytesBase64Encoded: parsed.data, mimeType: parsed.mimeType } }],
       parameters: { sampleCount: 1 },
