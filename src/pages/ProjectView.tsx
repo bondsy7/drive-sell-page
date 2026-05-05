@@ -76,6 +76,7 @@ const ProjectView = () => {
         <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
           <LandingPageEditor
             projectId={id!}
+            vehicleId={project.vehicle_id}
             initialContent={vd.pageContent}
             initialImages={vd.imageMap || {}}
             dealer={vd.dealer || {}}
