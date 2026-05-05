@@ -340,7 +340,10 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
         <div className="space-y-2">
           <div className="flex justify-between text-xs text-muted-foreground">
             <span>Remastering läuft…</span>
-            <span>Bild {progress.current} von {progress.total}</span>
+            <div className="flex items-center gap-2">
+              <ProcessTimer running={isProcessing} label="Gesamt" />
+              <span>Bild {progress.current} von {progress.total}</span>
+            </div>
           </div>
           <Progress value={(progress.current / progress.total) * 100} className="h-1.5" />
         </div>
