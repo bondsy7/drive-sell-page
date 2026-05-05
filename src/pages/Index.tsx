@@ -367,6 +367,57 @@ const Index = () => {
     setAppState('capturing-images' as any);
   }, []);
 
+  const handleChooseExisting = useCallback(() => {
+    if (existingVehicleImages.length === 0) {
+      toast.info('Keine Galerie-Bilder vorhanden.');
+      return;
+    }
+    setShowExistingSelector(true);
+  }, [existingVehicleImages.length]);
+
+  const handleConfirmExisting = useCallback(async (selectedUrls: string[]) => {
+    setShowExistingSelector(false);
+    if (!vehicleData || selectedUrls.length === 0) return;
+    const mainImage = selectedUrls[0];
+    const gallery = selectedUrls.slice(1);
+    setImageBase64(mainImage);
+    setGalleryImages(gallery);
+
+    const vin = (vehicleData.vehicle as any)?.vin || null;
+    const folderName = getGalleryFolderName(vin);
+    let vehicleId = savedVehicleId || deepLinkVehicleId;
+
+    // Link images to the project (re-use existing URLs, no re-upload)
+    if (savedProjectId && user) {
+      await supabase.from('projects').update({
+        vehicle_data: vehicleData as any,
+        vehicle_id: vehicleId || null,
+        main_image_url: mainImage,
+        updated_at: new Date().toISOString(),
+      } as any).eq('id', savedProjectId);
+
+      const imageRows = selectedUrls.map((url, i) => ({
+        project_id: savedProjectId,
+        vehicle_id: vehicleId || null,
+        user_id: user.id,
+        image_url: url,
+        image_base64: '',
+        perspective: `Bild ${i + 1}`,
+        sort_order: i,
+        gallery_folder: folderName,
+      }));
+      await supabase.from('project_images').insert(imageRows as any);
+    } else if (user) {
+      // No project yet (e.g. flow started without PDF) — create one
+      const projectId = await saveProject(vehicleData, mainImage, selectedUrls, selectedTemplate, vin, vehicleId);
+      if (projectId) setSavedProjectId(projectId);
+    }
+
+    setAppState('preview');
+    toast.success(`${selectedUrls.length} Galerie-Bilder übernommen.`);
+  }, [vehicleData, savedProjectId, savedVehicleId, deepLinkVehicleId, user, selectedTemplate, saveProject]);
+
+
   const handleCaptureComplete = useCallback(async (mainImage: string, gallery: string[], vin?: string) => {
     setImageBase64(mainImage);
     setGalleryImages(gallery);
