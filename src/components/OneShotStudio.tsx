@@ -381,6 +381,19 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
   const [savedVehicleId, setSavedVehicleId] = useState<string | null>(null);
   const [ensuringVehicle, setEnsuringVehicle] = useState(false);
 
+  /* ─── Auto-stop overall timer when everything is done ─── */
+  useEffect(() => {
+    if (!overallStartedAt || overallEndedAt) return;
+    if (heroRunning) return;
+    if (!pipelineKicked) return;
+    const pipelineDone = !pipelineCtx || pipelineCtx.isFinished || pipelineCtx.status === 'idle';
+    const bannersDone = bannerOutputs.length === 0 || bannerOutputs.every(b => b.status === 'done' || b.status === 'error');
+    const videoDone = !wantVideo || videoState === 'done' || videoState === 'error' || videoState === 'idle';
+    if (pipelineDone && bannersDone && videoDone) {
+      setOverallEndedAt(Date.now());
+    }
+  }, [overallStartedAt, overallEndedAt, heroRunning, pipelineKicked, pipelineCtx, pipelineCtx?.isFinished, pipelineCtx?.status, bannerOutputs, wantVideo, videoState]);
+
   /* ─── Lightbox ─── */
   const [lightboxItems, setLightboxItems] = useState<LightboxItem[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
