@@ -7,15 +7,17 @@ interface Props {
   projects: Project[];
   onExport: (project: Project) => void;
   onDelete: (id: string) => void;
+  vehicleId?: string;
 }
 
-export default function ProjectsTab({ projects, onExport, onDelete }: Props) {
+export default function ProjectsTab({ projects, onExport, onDelete, vehicleId }: Props) {
   if (projects.length === 0) {
+    const createHref = vehicleId ? `/generator/pdf-landing?vehicle=${vehicleId}` : '/generator/pdf-landing';
     return (
       <div className="text-center py-20 space-y-3">
         <FileText className="w-12 h-12 text-muted-foreground mx-auto" />
         <p className="text-muted-foreground">Noch keine Projekte erstellt.</p>
-        <Link to="/"><Button>Erstes Projekt erstellen</Button></Link>
+        <Link to={createHref}><Button>Erstes Projekt erstellen</Button></Link>
       </div>
     );
   }
