@@ -181,7 +181,7 @@ async function handleVideoStart(req: Request, GEMINI_API_KEY: string, body: any)
   let requestBody: any;
 
   if (isSpin360 && imageBase64) {
-    const parsed = parseImageBase64(imageBase64);
+    const parsed = await parseImageBase64(imageBase64);
     requestBody = {
       instances: [{
         prompt: spin360PromptGuardrail,
@@ -195,14 +195,14 @@ async function handleVideoStart(req: Request, GEMINI_API_KEY: string, body: any)
   else if (isSpin360 && Array.isArray(images) && images.length > 0) {
     const frontImg = images.find((img: any) => img.label === 'front_34') || images[0];
     const rearImg = images.find((img: any) => img.label === 'rear_34');
-    const parsedFront = parseImageBase64(frontImg.base64);
+    const parsedFront = await parseImageBase64(frontImg.base64);
 
     let finalImageData = parsedFront.data;
     let finalImageMime = parsedFront.mimeType;
 
     // If we have both front and rear, create a composite so Veo sees both perspectives
     if (rearImg) {
-      const parsedRear = parseImageBase64(rearImg.base64);
+      const parsedRear = await parseImageBase64(rearImg.base64);
       console.log("Creating composite image from front + rear views...");
       const composite = await createCompositeImage(
         parsedFront.data, parsedFront.mimeType,
@@ -225,7 +225,7 @@ async function handleVideoStart(req: Request, GEMINI_API_KEY: string, body: any)
       parameters: { sampleCount: 1 },
     };
   } else if (imageBase64) {
-    const parsed = parseImageBase64(imageBase64);
+    const parsed = await parseImageBase64(imageBase64);
     requestBody = {
       instances: [{ prompt: finalPrompt, image: { bytesBase64Encoded: parsed.data, mimeType: parsed.mimeType } }],
       parameters: { sampleCount: 1 },
