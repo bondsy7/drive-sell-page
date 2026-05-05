@@ -282,7 +282,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { brand, model, pageType, additionalInfo, dealer, variant, color, price, targetAudience, tone, imageStyle, uploadedImages } = body;
+    const { brand, model, pageType, additionalInfo, dealer, variant, color, price, targetAudience, tone, imageStyle, uploadedImages, vehicleId } = body;
 
     if (!brand || !model || !pageType) {
       return new Response(JSON.stringify({ error: "brand, model und pageType sind erforderlich" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -509,7 +509,7 @@ ${!uploadedImages?.length ? `\nWICHTIG: KEINE eigenen Bilder hochgeladen. Du MUS
 
     // ─── Step 4: Build HTML ───
     const html = buildHTML(pageContent, imageResults, dealer, brand, model, brandLogoUrl, {
-      dealerUserId: authResult.userId, supabaseUrl, vehicleTitle: `${brand} ${model}${variant ? ` ${variant}` : ""}`, pageType,
+      dealerUserId: authResult.userId, supabaseUrl, vehicleTitle: `${brand} ${model}${variant ? ` ${variant}` : ""}`, pageType, vehicleId: vehicleId || null,
     });
 
     return new Response(
