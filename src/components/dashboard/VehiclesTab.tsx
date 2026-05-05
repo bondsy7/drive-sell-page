@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Car, FileText, Image as ImageIcon, RotateCw, MessageSquare, Link2, Loader2, Trash2 } from 'lucide-react';
+import { Car, FileText, Image as ImageIcon, LayoutGrid, MessageSquare, Link2, Loader2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useDeleteVehicle } from '@/hooks/useVehicles';
 import {
