@@ -194,7 +194,7 @@ export default function VehiclesTab() {
                   <div className="grid grid-cols-4 gap-1.5 text-xs">
                     <CountBadge icon={FileText} value={v.counts.projects} label="LPs" />
                     <CountBadge icon={ImageIcon} value={v.counts.images} label="Bilder" />
-                    <CountBadge icon={RotateCw} value={v.counts.spin360} label="360°" />
+                    <CountBadge icon={LayoutGrid} value={v.counts.banners} label="Banner" />
                     <CountBadge icon={MessageSquare} value={v.counts.leads} label="Leads" />
                   </div>
                 </div>
