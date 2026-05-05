@@ -1895,9 +1895,14 @@ This is the MARKETING MASTER (Hero) shot — push lighting one notch beyond the 
           )}
 
           {/* Banner status */}
-          {bannerOutputs.length > 0 && (
+          {bannerOutputs.length > 0 && (() => {
+            const bannersRunning = bannerOutputs.some(b => b.status === 'pending' || b.status === 'running');
+            return (
             <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-              <h3 className="font-semibold text-sm">3. Banner</h3>
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-sm">3. Banner</h3>
+                <ProcessTimer running={bannersRunning} />
+              </div>
               <div className="grid grid-cols-2 gap-2">
                 {bannerOutputs.map((b, bIdx) => {
                   const doneBanners = bannerOutputs.filter((x) => x.status === 'done' && x.imageBase64);
