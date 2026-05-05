@@ -83,6 +83,7 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
     contactForm: {
       dealerUserId: user.id,
       projectId: projectId || undefined,
+      vehicleId: vehicleId || undefined,
       supabaseUrl,
       vehicleTitle,
       currentCategory: data.category,
@@ -91,7 +92,7 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
 
   const liveHTML = useMemo(
     () => generateHTML(selectedTemplate, data, imageBase64, galleryImages, htmlOptions),
-    [selectedTemplate, data, imageBase64, galleryImages, user?.id, projectId]
+    [selectedTemplate, data, imageBase64, galleryImages, user?.id, projectId, vehicleId]
   );
 
   // Ensure finance exists with defaults
