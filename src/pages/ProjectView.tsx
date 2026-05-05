@@ -120,6 +120,7 @@ const ProjectView = () => {
               onDataChange={handleDataChange}
               selectedTemplate={selectedTemplate}
               projectId={id}
+              vehicleId={project.vehicle_id}
             />
           </div>
         </main>
