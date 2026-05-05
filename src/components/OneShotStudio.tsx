@@ -1668,6 +1668,18 @@ This is the MARKETING MASTER (Hero) shot — push lighting one notch beyond the 
             </div>
           </div>
 
+          {/* Overall process timer */}
+          {overallStartedAt && (
+            <div className="flex items-center justify-between rounded-lg border border-border bg-muted/30 px-3 py-2">
+              <span className="text-xs font-medium text-muted-foreground">Gesamter Prozess</span>
+              <ProcessTimer
+                running={!overallEndedAt}
+                elapsedMs={(overallEndedAt ?? Date.now()) - overallStartedAt}
+                label={overallEndedAt ? 'Fertig in' : 'Läuft'}
+              />
+            </div>
+          )}
+
           {savedVehicleId && (
             <Button
               variant="outline"
