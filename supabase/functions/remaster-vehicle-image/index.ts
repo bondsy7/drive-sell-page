@@ -564,7 +564,15 @@ The showroom wall must remain CLEAN and EMPTY. No manufacturer logos, no dealer 
 
       for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
-          console.log(`Remaster model=${currentModel} attempt ${attempt + 1}/${maxRetries}, parts: ${parts.length}`);
+          const elapsed = Date.now() - startedAt;
+          const remaining = HARD_BUDGET_MS - elapsed;
+          if (remaining < 15_000) {
+            console.warn(`Time budget exhausted (${elapsed}ms), aborting further attempts`);
+            lastError = lastError || 'Zeitbudget erschöpft';
+            break;
+          }
+          const perCallTimeout = Math.min(50_000, remaining - 2_000);
+          console.log(`Remaster model=${currentModel} attempt ${attempt + 1}/${maxRetries}, parts: ${parts.length}, timeout=${perCallTimeout}ms`);
           const response = await fetchWithTimeout(geminiUrl, {
             method: "POST",
             headers: {
@@ -575,7 +583,7 @@ The showroom wall must remain CLEAN and EMPTY. No manufacturer logos, no dealer 
               contents: [{ parts }],
               generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
             }),
-          }, 55_000);
+          }, perCallTimeout);
 
           if (!response.ok) {
             const errText = await response.text();
