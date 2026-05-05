@@ -354,34 +354,52 @@ Gib das Ergebnis als JSON zurück.`;
       contentParts.push({ inlineData: { mimeType: "application/pdf", data: pdfBase64Array[i] } });
     }
 
-    // 3. Call Gemini API
-    const geminiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
-    console.log(`[analyze-pdf] Calling Gemini API with ${pdfCount} PDF(s)...`);
-    const response = await fetch(geminiUrl, {
-      method: "POST",
-      headers: {
-        "x-goog-api-key": GEMINI_API_KEY,
-        "Content-Type": "application/json",
+    // 3. Call Gemini API with retries + model fallback on overload (503/429/5xx)
+    const geminiBody = JSON.stringify({
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+      contents: [{ parts: contentParts }],
+      generationConfig: {
+        responseMimeType: "application/json",
+        temperature: 0.1,
       },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: systemPrompt }] },
-        contents: [{ parts: contentParts }],
-        generationConfig: {
-          responseMimeType: "application/json",
-          temperature: 0.1,
-        },
-      }),
     });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error("Gemini API error:", response.status, errText);
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit erreicht. Bitte versuche es später erneut." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    const models = ["gemini-2.5-flash", "gemini-2.5-flash-lite"];
+    console.log(`[analyze-pdf] Calling Gemini API with ${pdfCount} PDF(s)...`);
+    let response: Response | null = null;
+    let lastStatus = 0;
+    let lastErrText = "";
+    outer: for (const model of models) {
+      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const r = await fetch(geminiUrl, {
+          method: "POST",
+          headers: { "x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json" },
+          body: geminiBody,
         });
+        if (r.ok) { response = r; break outer; }
+        lastStatus = r.status;
+        lastErrText = await r.text();
+        console.error(`[analyze-pdf] ${model} attempt ${attempt + 1}: ${r.status}`, lastErrText.substring(0, 200));
+        if (r.status === 503 || r.status === 429 || r.status >= 500) {
+          await new Promise((res) => setTimeout(res, 1500 * (attempt + 1)));
+          continue;
+        }
+        break;
       }
-      throw new Error(`Gemini error: ${response.status} - ${errText}`);
+    }
+
+    if (!response) {
+      const isOverload = lastStatus === 503 || lastStatus === 429 || lastStatus >= 500;
+      return new Response(JSON.stringify({
+        error: isOverload
+          ? "Die KI ist gerade stark ausgelastet. Bitte versuche es in einer Minute erneut."
+          : `Gemini error: ${lastStatus}`,
+        fallback: isOverload,
+        status: lastStatus,
+      }), {
+        status: isOverload ? 503 : 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const data = await response.json();
