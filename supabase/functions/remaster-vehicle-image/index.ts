@@ -622,7 +622,9 @@ The showroom wall must remain CLEAN and EMPTY. No manufacturer logos, no dealer 
       }
     }
 
-    if (!resultImage) throw new Error(lastError || "Kein Bild generiert. Bitte versuche es erneut.");
+    if (!resultImage) throw new Error(lastError?.includes('503') || lastError?.includes('UNAVAILABLE')
+      ? 'Das KI-Modell ist gerade überlastet. Bitte versuche es in einigen Sekunden erneut.'
+      : (lastError || "Kein Bild generiert. Bitte versuche es erneut."));
 
     return new Response(JSON.stringify({ imageBase64: resultImage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
