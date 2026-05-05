@@ -608,7 +608,7 @@ function buildContactFormInline(opts: { dealerUserId: string; supabaseUrl: strin
 function buildHTML(
   content: any, images: Record<string, string>, dealer: any,
   brand: string, model: string, brandLogoUrl: string,
-  contactFormOpts?: { dealerUserId: string; supabaseUrl: string; vehicleTitle: string; pageType: string }
+  contactFormOpts?: { dealerUserId: string; supabaseUrl: string; vehicleTitle: string; pageType: string; vehicleId?: string | null }
 ): string {
   const meta = content.meta || {};
   const hero = content.hero || {};
