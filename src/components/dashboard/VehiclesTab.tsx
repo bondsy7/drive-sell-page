@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Car, FileText, Image as ImageIcon, RotateCw, MessageSquare, Link2, Loader2, Trash2 } from 'lucide-react';
+import { Car, FileText, Image as ImageIcon, LayoutGrid, MessageSquare, Link2, Loader2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useDeleteVehicle } from '@/hooks/useVehicles';
 import {
@@ -194,7 +194,7 @@ export default function VehiclesTab() {
                   <div className="grid grid-cols-4 gap-1.5 text-xs">
                     <CountBadge icon={FileText} value={v.counts.projects} label="LPs" />
                     <CountBadge icon={ImageIcon} value={v.counts.images} label="Bilder" />
-                    <CountBadge icon={RotateCw} value={v.counts.spin360} label="360°" />
+                    <CountBadge icon={LayoutGrid} value={v.counts.banners} label="Banner" />
                     <CountBadge icon={MessageSquare} value={v.counts.leads} label="Leads" />
                   </div>
                 </div>
