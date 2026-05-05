@@ -114,9 +114,16 @@ const Index = () => {
       if (cancelled) return;
       if (v?.vehicle_data) {
         const vd = v.vehicle_data as any;
-        // Inject VIN if missing in nested vehicle object
-        if (v.vin && vd?.vehicle && !vd.vehicle.vin) vd.vehicle.vin = v.vin;
-        const enriched = await loadProfileIntoDealer(vd as VehicleData);
+        // Ensure required sub-objects exist
+        const safeVd: VehicleData = {
+          ...vd,
+          vehicle: vd.vehicle || { brand: '', model: '', variant: '', year: 0, color: '', fuelType: '', transmission: '', power: '', features: [] },
+          finance: vd.finance || { monthlyRate: '', downPayment: '', duration: '', totalPrice: '', annualMileage: '', specialPayment: '', residualValue: '', interestRate: '' },
+          consumption: vd.consumption || { origin: '', mileage: '', displacement: '', power: '', driveType: '', fuelType: '', consumptionCombined: '', co2Emissions: '', co2Class: '', consumptionCity: '', consumptionSuburban: '', consumptionRural: '', consumptionHighway: '', energyCostPerYear: '', fuelPrice: '', co2CostMedium: '', co2CostLow: '', co2CostHigh: '', vehicleTax: '', isPluginHybrid: false, co2EmissionsDischarged: '', co2ClassDischarged: '', consumptionCombinedDischarged: '', electricRange: '', consumptionElectric: '', hsnTsn: '', electricMotorPower: '', electricMotorTorque: '', gearboxType: '', topSpeed: '', acceleration: '', curbWeight: '', grossWeight: '', warranty: '', paintColor: '' },
+          dealer: vd.dealer || { name: '', address: '', postalCode: '', city: '', phone: '', email: '', website: '', taxId: '', logoUrl: '', facebookUrl: '', instagramUrl: '', xUrl: '', tiktokUrl: '', youtubeUrl: '', whatsappNumber: '', leasingBank: '', leasingLegalText: '', financingBank: '', financingLegalText: '', defaultLegalText: '' },
+        };
+        if (v.vin && !(safeVd.vehicle as any).vin) (safeVd.vehicle as any).vin = v.vin;
+        const enriched = await loadProfileIntoDealer(safeVd);
         if (!cancelled) {
           setVehicleData(enriched);
           setSavedVehicleId(deepLinkVehicleId);
