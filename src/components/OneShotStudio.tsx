@@ -24,6 +24,7 @@ import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import {
   ArrowLeft, ScanSearch, Loader2, Upload, X, ChevronRight, Zap, Image as ImageIcon,
   Video, FileText, Hash, Layers, AlertCircle, Sparkles, Camera, Database, Car,
+  RefreshCw, Check, Wand2,
 } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
