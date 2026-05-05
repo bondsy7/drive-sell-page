@@ -21,6 +21,31 @@ export function getFinanceSectionTitle(data: VehicleData): string {
   return 'Finanzierung';
 }
 
+/** VAT note for prices, defaults to "inkl. MwSt." if not set. Empty string disables. */
+export function getVatNote(data: VehicleData): string {
+  const v = data.finance?.vatNote;
+  if (v === undefined || v === null) return 'inkl. MwSt.';
+  return v;
+}
+
+/** Render a small VAT note span for HTML export. Returns empty string if disabled. */
+export function vatNoteHTML(data: VehicleData, style = 'font-size:.72rem;color:#9ca3af;margin-top:.2rem;display:block'): string {
+  const note = getVatNote(data);
+  if (!note) return '';
+  return `<span class="vat-note" style="${style}">${note}</span>`;
+}
+
+/** Inline VAT suffix (e.g. " inkl. MwSt."). */
+export function vatNoteInline(data: VehicleData): string {
+  const note = getVatNote(data);
+  return note ? ` ${note}` : '';
+}
+
+/** Custom label for monthly rate, defaults to "Monatliche Rate". */
+export function getMonthlyRateLabel(data: VehicleData): string {
+  return data.finance?.monthlyRateLabel || 'Monatliche Rate';
+}
+
 /**
  * Converts a public image path to a base64 data URL for embedding in exported HTML.
  */
