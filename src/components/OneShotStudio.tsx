@@ -771,6 +771,10 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
     if (!heroSourceImage) return null;
     setHeroRunning(true);
     setHeroError(null);
+    if (!overallStartedAt) {
+      setOverallStartedAt(Date.now());
+      setOverallEndedAt(null);
+    }
     try {
       // Use the MASTER_IMAGE perspective prompt
       const masterJob = availableJobs.find((j) => j.key === 'MASTER_IMAGE');
