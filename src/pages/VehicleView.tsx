@@ -291,7 +291,7 @@ export default function VehicleView() {
       case 'landings':
         return <LandingsTab projects={landingProjects} onExport={openExportDialog} onDelete={onDeleteProject} />;
       case 'projects':
-        return <ProjectsTab projects={regularProjects} onExport={openExportDialog} onDelete={onDeleteProject} />;
+        return <ProjectsTab projects={regularProjects} onExport={openExportDialog} onDelete={onDeleteProject} vehicleId={vehicle.id} />;
       case 'banners':
         return <BannersTab banners={banners} onDownload={(b) => downloadFile(b.url, b.name)} onDelete={(fp) => onDeleteBanner(fp)} />;
       case 'videos':
