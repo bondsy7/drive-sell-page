@@ -81,13 +81,24 @@ function encodeBase64(buffer: ArrayBuffer): string {
   return btoa(binary);
 }
 
-/** Extract raw base64 data and mime type from a data URI or raw base64 string */
-function parseImageBase64(input: string): { data: string; mimeType: string } {
+/** Extract raw base64 data and mime type from a data URI, raw base64 string, or URL */
+async function parseImageBase64(input: string): Promise<{ data: string; mimeType: string }> {
   if (input.startsWith("data:")) {
     const match = input.match(/^data:(image\/\w+);base64,(.+)$/s);
     if (match) return { data: match[2], mimeType: match[1] };
   }
-  // Assume raw base64
+  if (input.startsWith("http://") || input.startsWith("https://")) {
+    const resp = await fetch(input);
+    if (!resp.ok) throw new Error(`Failed to fetch image URL: ${resp.status}`);
+    const mimeType = resp.headers.get("content-type")?.split(";")[0] || "image/jpeg";
+    const buf = new Uint8Array(await resp.arrayBuffer());
+    let binary = "";
+    const chunk = 0x8000;
+    for (let i = 0; i < buf.length; i += chunk) {
+      binary += String.fromCharCode(...buf.subarray(i, i + chunk));
+    }
+    return { data: btoa(binary), mimeType };
+  }
   return { data: input.replace(/^data:image\/\w+;base64,/, ""), mimeType: "image/jpeg" };
 }
 
