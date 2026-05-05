@@ -270,7 +270,7 @@ export default function VehicleView() {
     { key: 'landings', label: 'Landing Pages', icon: Layout, count: landingProjects.length },
     { key: 'banners', label: 'Banner', icon: LayoutGrid, count: banners.length },
     { key: 'videos', label: 'Videos', icon: Video, count: videos.length },
-    { key: 'spin360', label: '360°', icon: RotateCw, count: spinJobs.length },
+    
     { key: 'leads', label: 'Anfragen', icon: MessageSquare, count: leads.length },
   ];
 
