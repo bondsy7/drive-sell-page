@@ -147,7 +147,7 @@ const Index = () => {
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
   const [imageProgress, setImageProgress] = useState({ current: 0, total: 0 });
-  const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>('autohaus');
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>('modern');
   const [savedProjectId, setSavedProjectId] = useState<string | null>(null);
   const [savedVehicleId, setSavedVehicleId] = useState<string | null>(null);
   const [selectedModelTier, setSelectedModelTier] = useState<ModelTier>('qualitaet');
