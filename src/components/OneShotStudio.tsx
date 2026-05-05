@@ -1949,7 +1949,8 @@ This is the MARKETING MASTER (Hero) shot — push lighting one notch beyond the 
                 })}
               </div>
             </div>
-          )}
+            );
+          })()}
 
           {/* Video status */}
           {wantVideo && (
