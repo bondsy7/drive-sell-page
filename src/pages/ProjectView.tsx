@@ -17,7 +17,7 @@ const ProjectView = () => {
   const [project, setProject] = useState<any>(null);
   const [images, setImages] = useState<string[]>([]);
   const [vehicleData, setVehicleData] = useState<VehicleData | null>(null);
-  const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>('autohaus');
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>('modern');
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -38,7 +38,7 @@ const ProjectView = () => {
           consumption: vd.consumption || { origin: '', mileage: '', displacement: '', power: '', driveType: '', fuelType: '', consumptionCombined: '', co2Emissions: '', co2Class: '', consumptionCity: '', consumptionSuburban: '', consumptionRural: '', consumptionHighway: '', energyCostPerYear: '', fuelPrice: '', co2CostMedium: '', co2CostLow: '', co2CostHigh: '', vehicleTax: '', isPluginHybrid: false, co2EmissionsDischarged: '', co2ClassDischarged: '', consumptionCombinedDischarged: '', electricRange: '', consumptionElectric: '', hsnTsn: '', electricMotorPower: '', electricMotorTorque: '', gearboxType: '', topSpeed: '', acceleration: '', curbWeight: '', grossWeight: '', warranty: '', paintColor: '' },
           dealer: vd.dealer || { name: '', address: '', postalCode: '', city: '', phone: '', email: '', website: '', taxId: '', logoUrl: '', facebookUrl: '', instagramUrl: '', xUrl: '', tiktokUrl: '', youtubeUrl: '', whatsappNumber: '', leasingBank: '', leasingLegalText: '', financingBank: '', financingLegalText: '', defaultLegalText: '' },
         });
-        setSelectedTemplate((p.template_id || 'autohaus') as TemplateId);
+        setSelectedTemplate((p.template_id || 'modern') as TemplateId);
       }
       if (imgs) setImages(imgs.map((i: any) => i.image_url || i.image_base64));
       setLoading(false);

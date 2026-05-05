@@ -245,7 +245,8 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
 
     /* Gallery */
     .gallery-card{background:white;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden}
-    .gallery-main-img{width:100%;display:block;max-height:600px;object-fit:cover;background:#f9fafb}
+    .gallery-main-wrap{width:100%;aspect-ratio:4/3;background:#f9fafb;display:flex;align-items:center;justify-content:center;overflow:hidden}
+    .gallery-main-img{width:100%;height:100%;display:block;object-fit:cover}
     .gallery-thumbs{display:flex;gap:.5rem;padding:.75rem;overflow-x:auto}
     .thumb{width:80px;height:60px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid transparent;flex-shrink:0}
     .thumb.active{border-color:#1a2e5a}
@@ -305,10 +306,12 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
     <!-- LEFT COLUMN -->
     <div class="left-col">
       <div class="gallery-card">
+        <div class="gallery-main-wrap">
         ${imageBase64
           ? `<img id="mainImg" class="gallery-main-img" src="${imageBase64}" alt="${data.vehicle.brand} ${data.vehicle.model}"/>`
-          : `<div style="color:#bbb;text-align:center;padding:80px;background:#f9fafb">Kein Bild verfügbar</div>`
+          : `<div style="color:#bbb;text-align:center;padding:80px">Kein Bild verfügbar</div>`
         }
+        </div>
         ${allImages.length > 1 ? `
           <div class="gallery-thumbs">
             ${allImages.map((img, i) => `<img src="${img}" alt="Bild ${i + 1}" class="thumb${i === 0 ? ' active' : ''}" onclick="setMain(this)" />`).join('')}
