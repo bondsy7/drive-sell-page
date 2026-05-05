@@ -158,47 +158,85 @@ export default function VehiclesTab() {
         const cover = v.cover_image_url;
 
         return (
-          <Link key={v.id} to={`/vehicle/${v.id}`} className="block group">
-            <Card className="overflow-hidden transition-all hover:shadow-lg hover:-translate-y-0.5">
-              <div className="aspect-video bg-muted relative">
-                {cover ? (
-                  <img
-                    src={cover}
-                    alt={title}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Car className="w-10 h-10 text-muted-foreground/50" />
+          <div key={v.id} className="relative group">
+            <Link to={`/vehicle/${v.id}`} className="block">
+              <Card className="overflow-hidden transition-all hover:shadow-lg hover:-translate-y-0.5">
+                <div className="aspect-video bg-muted relative">
+                  {cover ? (
+                    <img
+                      src={cover}
+                      alt={title}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Car className="w-10 h-10 text-muted-foreground/50" />
+                    </div>
+                  )}
+                  {v.color && (
+                    <Badge variant="secondary" className="absolute top-2 right-2">
+                      {v.color}
+                    </Badge>
+                  )}
+                </div>
+
+                <div className="p-4 space-y-3">
+                  <div>
+                    <h3 className="font-semibold text-foreground line-clamp-1 group-hover:text-accent transition-colors pr-8">
+                      {title}
+                    </h3>
+                    <p className="text-xs text-muted-foreground font-mono mt-0.5">
+                      {v.vin}
+                    </p>
                   </div>
-                )}
-                {v.color && (
-                  <Badge variant="secondary" className="absolute top-2 right-2">
-                    {v.color}
-                  </Badge>
-                )}
-              </div>
 
-              <div className="p-4 space-y-3">
-                <div>
-                  <h3 className="font-semibold text-foreground line-clamp-1 group-hover:text-accent transition-colors">
-                    {title}
-                  </h3>
-                  <p className="text-xs text-muted-foreground font-mono mt-0.5">
-                    {v.vin}
-                  </p>
+                  <div className="grid grid-cols-4 gap-1.5 text-xs">
+                    <CountBadge icon={FileText} value={v.counts.projects} label="LPs" />
+                    <CountBadge icon={ImageIcon} value={v.counts.images} label="Bilder" />
+                    <CountBadge icon={RotateCw} value={v.counts.spin360} label="360°" />
+                    <CountBadge icon={MessageSquare} value={v.counts.leads} label="Leads" />
+                  </div>
                 </div>
+              </Card>
+            </Link>
 
-                <div className="grid grid-cols-4 gap-1.5 text-xs">
-                  <CountBadge icon={FileText} value={v.counts.projects} label="LPs" />
-                  <CountBadge icon={ImageIcon} value={v.counts.images} label="Bilder" />
-                  <CountBadge icon={RotateCw} value={v.counts.spin360} label="360°" />
-                  <CountBadge icon={MessageSquare} value={v.counts.leads} label="Leads" />
-                </div>
-              </div>
-            </Card>
-          </Link>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-2 left-2 h-8 w-8 bg-background/90 hover:bg-destructive hover:text-destructive-foreground backdrop-blur-sm shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                  disabled={deletingId === v.id}
+                  aria-label="Fahrzeug löschen"
+                >
+                  {deletingId === v.id
+                    ? <Loader2 className="w-4 h-4 animate-spin" />
+                    : <Trash2 className="w-4 h-4" />}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Fahrzeug komplett löschen?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    „{title}" sowie ALLE zugehörigen Inhalte (Originale, Galerie-Bilder,
+                    Landing Pages, Banner, Videos, 360°-Spins und Anfragen) werden
+                    unwiderruflich gelöscht. Dies kann nicht rückgängig gemacht werden.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => handleDelete(v.id)}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Endgültig löschen
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         );
       })}
     </div>
