@@ -1216,11 +1216,13 @@ This is the MARKETING MASTER (Hero) shot — push lighting one notch beyond the 
                 {classifying && (
                   <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
                     <Loader2 className="w-3 h-3 animate-spin" /> Bilder werden klassifiziert…
+                    <ProcessTimer running={classifying} className="ml-1" />
                   </p>
                 )}
                 {vinLookingUp && (
                   <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
                     <Loader2 className="w-3 h-3 animate-spin" /> VIN-Stammdaten werden geladen…
+                    <ProcessTimer running={vinLookingUp} className="ml-1" />
                   </p>
                 )}
                 {vin && !vinLookingUp && (
