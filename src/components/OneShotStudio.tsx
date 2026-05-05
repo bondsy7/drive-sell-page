@@ -369,6 +369,15 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [videoError, setVideoError] = useState<string | null>(null);
   const [pipelineKicked, setPipelineKicked] = useState(false);
+  const [overallStartedAt, setOverallStartedAt] = useState<number | null>(null);
+  const [overallEndedAt, setOverallEndedAt] = useState<number | null>(null);
+  const [, forceTickOverall] = useState(0);
+  useEffect(() => {
+    if (overallStartedAt && !overallEndedAt) {
+      const id = setInterval(() => forceTickOverall((n) => n + 1), 500);
+      return () => clearInterval(id);
+    }
+  }, [overallStartedAt, overallEndedAt]);
   const [savedVehicleId, setSavedVehicleId] = useState<string | null>(null);
   const [ensuringVehicle, setEnsuringVehicle] = useState(false);
 
