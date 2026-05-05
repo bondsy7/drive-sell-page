@@ -1695,10 +1695,13 @@ This is the MARKETING MASTER (Hero) shot — push lighting one notch beyond the 
           <div className="rounded-xl border border-border bg-card p-4 space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-sm">1. Hero-Bild</h3>
-              {heroRunning && <Loader2 className="w-4 h-4 animate-spin text-accent" />}
-              {heroBase64 && !heroApproved && <Badge variant="secondary">zur Freigabe</Badge>}
-              {heroBase64 && heroApproved && <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20">freigegeben</Badge>}
-              {heroError && <Badge variant="destructive">Fehler</Badge>}
+              <div className="flex items-center gap-2">
+                {heroRunning && <ProcessTimer running={heroRunning} label="Render" />}
+                {heroRunning && <Loader2 className="w-4 h-4 animate-spin text-accent" />}
+                {heroBase64 && !heroApproved && <Badge variant="secondary">zur Freigabe</Badge>}
+                {heroBase64 && heroApproved && <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20">freigegeben</Badge>}
+                {heroError && <Badge variant="destructive">Fehler</Badge>}
+              </div>
             </div>
 
             {!heroBase64 && !heroRunning && (
