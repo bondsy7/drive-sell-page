@@ -833,6 +833,36 @@ const Index = () => {
                 ))}
               </div>
 
+              {/* Skip PDF if vehicle data is already known (came from dashboard with vehicle context) */}
+              {deepLinkVehicleId && vehicleData && (
+                <div className="p-4 rounded-xl border-2 border-accent/40 bg-accent/5">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 shrink-0 rounded-full bg-accent text-accent-foreground flex items-center justify-center font-bold text-sm">
+                      ✓
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground">
+                        Fahrzeugdaten bereits vorhanden
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                        {vehicleData.vehicle?.brand} {vehicleData.vehicle?.model} {vehicleData.vehicle?.variant || ''}
+                        {(vehicleData.vehicle as any)?.vin ? ` · VIN ${(vehicleData.vehicle as any).vin}` : ''}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Du kannst die PDF-Analyse überspringen und direkt mit den vorhandenen Daten {existingVehicleImages.length > 0 ? `und ${existingVehicleImages.length} Bildern ` : ''}fortfahren.
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => setAppState('choosing-image-source')}
+                      className="shrink-0"
+                    >
+                      Weiter ohne PDF
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               <PDFUpload onFilesSelected={handleFilesSelected} isProcessing={false} />
               <div className="flex items-center justify-center gap-1 text-accent">
                 <Sparkles className="w-4 h-4" />
