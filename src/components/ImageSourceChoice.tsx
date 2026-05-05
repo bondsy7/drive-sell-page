@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Wand2, Upload, Camera, Zap, Sparkles, Crown, Rocket, Diamond, BadgePlus } from 'lucide-react';
+import { Wand2, Upload, Camera, Zap, Sparkles, Crown, Rocket, Diamond, BadgePlus, FolderCheck } from 'lucide-react';
 import { useCredits } from '@/hooks/useCredits';
 import type { ModelTier } from '@/components/ModelSelector';
 
@@ -7,6 +7,8 @@ interface ImageSourceChoiceProps {
   onChooseGenerate: (modelTier: ModelTier) => void;
   onChooseUpload: (modelTier: ModelTier) => void;
   onChooseCapture: (modelTier: ModelTier) => void;
+  existingGalleryCount?: number;
+  onChooseExisting?: () => void;
 }
 
 const TIERS: { id: ModelTier; label: string; sublabel: string; icon: React.ReactNode; group: string }[] = [
