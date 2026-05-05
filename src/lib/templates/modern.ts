@@ -1,5 +1,5 @@
 import { VehicleData } from "@/types/vehicle";
-import { getCO2LabelHTML, getGalleryHTML, getConsumptionData, buildConsumptionRows, buildDetailedConsumption, buildCostRows, buildFinanceItems, buildFeatures, buildSocialLinksHTML, buildWhatsAppButtonHTML, buildLegalTextHTML, buildDealerAddressHTML, buildDealerFooterHTML, buildWebsiteLinkHTML, getFinanceSectionTitle, buildVinHTML } from "./shared";
+import { getCO2LabelHTML, getGalleryHTML, getConsumptionData, buildConsumptionRows, buildDetailedConsumption, buildCostRows, buildFinanceItems, buildFeatures, buildSocialLinksHTML, buildWhatsAppButtonHTML, buildLegalTextHTML, buildDealerAddressHTML, buildDealerFooterHTML, buildWebsiteLinkHTML, getFinanceSectionTitle, buildVinHTML, vatNoteHTML, getMonthlyRateLabel } from "./shared";
 
 export function generateModernHTML(data: VehicleData, imageBase64: string | null, galleryImages: string[] = []): string {
   const consumption = getConsumptionData(data);
@@ -80,7 +80,7 @@ export function generateModernHTML(data: VehicleData, imageBase64: string | null
         <div class="category">${data.category || 'Angebot'}</div>
         <h1>${data.vehicle.brand} ${data.vehicle.model}</h1>
         <p class="variant">${data.vehicle.variant || ''}</p>
-        <div class="price-row"><div class="price">${data.finance.totalPrice || '–'}</div></div>
+        <div class="price-row"><div class="price">${data.finance.totalPrice || '–'}</div></div>${vatNoteHTML(data)}
         <div class="specs">
           <div class="spec"><div class="spec-label">Fahrzeugtyp</div><div class="spec-value">${data.category || '–'}</div></div>
           <div class="spec"><div class="spec-label">Getriebe</div><div class="spec-value">${data.vehicle.transmission || '–'}</div></div>
@@ -109,7 +109,7 @@ export function generateModernHTML(data: VehicleData, imageBase64: string | null
           ${buildSocialLinksHTML(data.dealer)}
           ${buildWhatsAppButtonHTML(data.dealer, `${data.vehicle.brand} ${data.vehicle.model}`)}
         </div>
-        <div class="rate-box"><div class="rate-label">Monatliche Rate</div><div class="rate-amount">${data.finance.monthlyRate || '–'}</div><div class="rate-period">pro Monat</div></div>
+        <div class="rate-box"><div class="rate-label">${getMonthlyRateLabel(data)}</div><div class="rate-amount">${data.finance.monthlyRate || '–'}</div><div class="rate-period">pro Monat</div>${vatNoteHTML(data, 'font-size:.7rem;color:#9ca3af;margin-top:.3rem;display:block;text-align:center')}</div>
       </div>
     </div>
     ${buildLegalTextHTML(data)}
