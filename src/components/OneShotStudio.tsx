@@ -626,6 +626,11 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
         const ext = data.extracted as ScanData;
         setScanData(ext);
         mergeScanIntoForm(ext, 'datasheet');
+        if (user?.id) {
+          const targetVin = (ext.vin || vin || '').toString();
+          const vid = await persistScanData(user.id, targetVin, ext as Record<string, any>);
+          if (vid) setSavedVehicleId(vid);
+        }
       }
     } finally {
       setAnalyzingSheet(false);
