@@ -4,6 +4,7 @@ import { ArrowLeft, Upload, Video, Loader2, Download, RotateCcw, Play } from 'lu
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Progress } from '@/components/ui/progress';
+import ProcessTimer from '@/components/ProcessTimer';
 
 interface VideoGeneratorProps {
   onBack: () => void;
