@@ -21,6 +21,17 @@ export default function VehiclesTab() {
   const qc = useQueryClient();
   const { data: vehicles = [], isLoading } = useVehicles();
   const [reclaiming, setReclaiming] = useState(false);
+  const deleteVehicle = useDeleteVehicle();
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const handleDelete = async (id: string) => {
+    setDeletingId(id);
+    try {
+      await deleteVehicle.mutateAsync(id);
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const reclaimOrphans = async () => {
     if (!user) return;
