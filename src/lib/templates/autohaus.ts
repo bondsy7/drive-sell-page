@@ -245,7 +245,8 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
 
     /* Gallery */
     .gallery-card{background:white;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden}
-    .gallery-main-img{width:100%;display:block;max-height:600px;object-fit:cover;background:#f9fafb}
+    .gallery-main-wrap{width:100%;aspect-ratio:4/3;background:#f9fafb;display:flex;align-items:center;justify-content:center;overflow:hidden}
+    .gallery-main-img{width:100%;height:100%;display:block;object-fit:cover}
     .gallery-thumbs{display:flex;gap:.5rem;padding:.75rem;overflow-x:auto}
     .thumb{width:80px;height:60px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid transparent;flex-shrink:0}
     .thumb.active{border-color:#1a2e5a}
