@@ -98,6 +98,43 @@ const Index = () => {
     }
   }, [appState, navigate]);
 
+  // Preload deep-linked vehicle: existing data (incl. VIN-lookup results) + gallery images
+  useEffect(() => {
+    if (!deepLinkVehicleId || !user) return;
+    let cancelled = false;
+    (async () => {
+      const [{ data: v }, { data: imgs }] = await Promise.all([
+        supabase.from('vehicles').select('id, vehicle_data, vin').eq('id', deepLinkVehicleId).maybeSingle(),
+        supabase.from('project_images')
+          .select('image_url, perspective, gallery_folder, sort_order, created_at')
+          .eq('vehicle_id', deepLinkVehicleId)
+          .not('image_url', 'is', null)
+          .order('created_at', { ascending: false }),
+      ]);
+      if (cancelled) return;
+      if (v?.vehicle_data) {
+        const vd = v.vehicle_data as any;
+        // Inject VIN if missing in nested vehicle object
+        if (v.vin && vd?.vehicle && !vd.vehicle.vin) vd.vehicle.vin = v.vin;
+        const enriched = await loadProfileIntoDealer(vd as VehicleData);
+        if (!cancelled) {
+          setVehicleData(enriched);
+          setSavedVehicleId(deepLinkVehicleId);
+        }
+      }
+      if (imgs && imgs.length > 0) {
+        // Deduplicate by URL
+        const seen = new Set<string>();
+        const list = imgs
+          .filter((i: any) => i.image_url && !seen.has(i.image_url) && (seen.add(i.image_url) || true))
+          .map((i: any) => ({ url: i.image_url as string, perspective: i.perspective, folder: i.gallery_folder }));
+        if (!cancelled) setExistingVehicleImages(list);
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deepLinkVehicleId, user]);
+
   const [fileName, setFileName] = useState('');
   const [vehicleData, setVehicleData] = useState<VehicleData | null>(null);
   const [imageBase64, setImageBase64] = useState<string | null>(null);
