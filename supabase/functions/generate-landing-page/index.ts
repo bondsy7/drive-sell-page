@@ -523,8 +523,8 @@ ${!uploadedImages?.length ? `\nWICHTIG: KEINE eigenen Bilder hochgeladen. Du MUS
 });
 
 // ─── Contact Form Builder ───
-function buildContactFormInline(opts: { dealerUserId: string; supabaseUrl: string; vehicleTitle: string; pageType: string; }): string {
-  const { dealerUserId, supabaseUrl, vehicleTitle, pageType } = opts;
+function buildContactFormInline(opts: { dealerUserId: string; supabaseUrl: string; vehicleTitle: string; pageType: string; vehicleId?: string | null; }): string {
+  const { dealerUserId, supabaseUrl, vehicleTitle, pageType, vehicleId } = opts;
   const cat = (pageType || '').toLowerCase();
   const showLeasing = cat !== 'leasing';
   const showFinancing = cat !== 'finanzierung';
@@ -585,6 +585,7 @@ function buildContactFormInline(opts: { dealerUserId: string; supabaseUrl: strin
         method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
           dealerUserId:'${dealerUserId}',projectId:null,
+          vehicleId:${vehicleId ? `'${vehicleId}'` : 'null'},
           name:fd.get('name'),email:fd.get('email'),
           phone:fd.get('phone')||null,message:fd.get('message')||null,
           vehicleTitle:'${vehicleTitle.replace(/'/g, "\\'")}',
