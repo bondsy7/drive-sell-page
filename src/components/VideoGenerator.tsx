@@ -225,7 +225,10 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onBack, preloadedImage,
             </div>
           </div>
           <Progress value={pollProgress} className="h-2" />
-          <p className="text-xs text-muted-foreground text-right">{Math.round(pollProgress)}%</p>
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <ProcessTimer running label="Dauer" />
+            <span>{Math.round(pollProgress)}%</span>
+          </div>
         </div>
       )}
 
