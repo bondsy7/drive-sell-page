@@ -10,6 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import CreditConfirmDialog from '@/components/CreditConfirmDialog';
 import ModelSelector, { type ModelTier } from '@/components/ModelSelector';
+import ProcessTimer from '@/components/ProcessTimer';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useCredits } from '@/hooks/useCredits';
