@@ -10,6 +10,7 @@ import { useCredits } from '@/hooks/useCredits';
 import { toast } from 'sonner';
 import VehicleBrandModelPicker from '@/components/VehicleBrandModelPicker';
 import { Progress } from '@/components/ui/progress';
+import ProcessTimer from '@/components/ProcessTimer';
 
 const PAGE_TYPES = [
   { value: 'leasing', label: 'Leasing-Angebot', desc: 'Monatliche Rate, Flexibilität', icon: '📋' },
@@ -426,7 +427,10 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span>{progress}</span>
-              <span>{progressPercent}%</span>
+              <div className="flex items-center gap-2">
+                <ProcessTimer running={loading} label="Dauer" />
+                <span>{progressPercent}%</span>
+              </div>
             </div>
             <Progress value={progressPercent} className="h-2" />
           </div>

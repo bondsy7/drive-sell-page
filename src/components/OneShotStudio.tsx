@@ -57,6 +57,7 @@ import { useVehicleMakes } from '@/hooks/useVehicleMakes';
 import { ensureVehicle } from '@/lib/vehicle-utils';
 
 import OneShotMarketingForm from './oneshot/OneShotMarketingForm';
+import ProcessTimer, { formatDuration } from '@/components/ProcessTimer';
 import OneShotLightbox, { type LightboxItem } from './oneshot/OneShotLightbox';
 import {
   DEFAULT_FORM, DEFAULT_SOURCES, ONESHOT_BANNER_FORMATS,
@@ -368,8 +369,30 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [videoError, setVideoError] = useState<string | null>(null);
   const [pipelineKicked, setPipelineKicked] = useState(false);
+  const [overallStartedAt, setOverallStartedAt] = useState<number | null>(null);
+  const [overallEndedAt, setOverallEndedAt] = useState<number | null>(null);
+  const [, forceTickOverall] = useState(0);
+  useEffect(() => {
+    if (overallStartedAt && !overallEndedAt) {
+      const id = setInterval(() => forceTickOverall((n) => n + 1), 500);
+      return () => clearInterval(id);
+    }
+  }, [overallStartedAt, overallEndedAt]);
   const [savedVehicleId, setSavedVehicleId] = useState<string | null>(null);
   const [ensuringVehicle, setEnsuringVehicle] = useState(false);
+
+  /* ─── Auto-stop overall timer when everything is done ─── */
+  useEffect(() => {
+    if (!overallStartedAt || overallEndedAt) return;
+    if (heroRunning) return;
+    if (!pipelineKicked) return;
+    const pipelineDone = !pipelineCtx || pipelineCtx.isFinished || pipelineCtx.status === 'idle';
+    const bannersDone = bannerOutputs.length === 0 || bannerOutputs.every(b => b.status === 'done' || b.status === 'error');
+    const videoDone = !wantVideo || videoState === 'done' || videoState === 'error' || videoState === 'idle';
+    if (pipelineDone && bannersDone && videoDone) {
+      setOverallEndedAt(Date.now());
+    }
+  }, [overallStartedAt, overallEndedAt, heroRunning, pipelineKicked, pipelineCtx, pipelineCtx?.isFinished, pipelineCtx?.status, bannerOutputs, wantVideo, videoState]);
 
   /* ─── Lightbox ─── */
   const [lightboxItems, setLightboxItems] = useState<LightboxItem[]>([]);
@@ -761,6 +784,10 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
     if (!heroSourceImage) return null;
     setHeroRunning(true);
     setHeroError(null);
+    if (!overallStartedAt) {
+      setOverallStartedAt(Date.now());
+      setOverallEndedAt(null);
+    }
     try {
       // Use the MASTER_IMAGE perspective prompt
       const masterJob = availableJobs.find((j) => j.key === 'MASTER_IMAGE');
@@ -1215,11 +1242,13 @@ This is the MARKETING MASTER (Hero) shot — push lighting one notch beyond the 
                 {classifying && (
                   <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
                     <Loader2 className="w-3 h-3 animate-spin" /> Bilder werden klassifiziert…
+                    <ProcessTimer running={classifying} className="ml-1" />
                   </p>
                 )}
                 {vinLookingUp && (
                   <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
                     <Loader2 className="w-3 h-3 animate-spin" /> VIN-Stammdaten werden geladen…
+                    <ProcessTimer running={vinLookingUp} className="ml-1" />
                   </p>
                 )}
                 {vin && !vinLookingUp && (
@@ -1409,6 +1438,7 @@ This is the MARKETING MASTER (Hero) shot — push lighting one notch beyond the 
                 {dataSheetBase64s.length > 1
                   ? `${dataSheetBase64s.length} Dokumente werden zusammengeführt …`
                   : 'Analysiere Datenblatt …'}
+                <ProcessTimer running={analyzingSheet} />
               </div>
             )}
 
@@ -1638,6 +1668,18 @@ This is the MARKETING MASTER (Hero) shot — push lighting one notch beyond the 
             </div>
           </div>
 
+          {/* Overall process timer */}
+          {overallStartedAt && (
+            <div className="flex items-center justify-between rounded-lg border border-border bg-muted/30 px-3 py-2">
+              <span className="text-xs font-medium text-muted-foreground">Gesamter Prozess</span>
+              <ProcessTimer
+                running={!overallEndedAt}
+                elapsedMs={(overallEndedAt ?? Date.now()) - overallStartedAt}
+                label={overallEndedAt ? 'Fertig in' : 'Läuft'}
+              />
+            </div>
+          )}
+
           {savedVehicleId && (
             <Button
               variant="outline"
@@ -1653,10 +1695,13 @@ This is the MARKETING MASTER (Hero) shot — push lighting one notch beyond the 
           <div className="rounded-xl border border-border bg-card p-4 space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-sm">1. Hero-Bild</h3>
-              {heroRunning && <Loader2 className="w-4 h-4 animate-spin text-accent" />}
-              {heroBase64 && !heroApproved && <Badge variant="secondary">zur Freigabe</Badge>}
-              {heroBase64 && heroApproved && <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20">freigegeben</Badge>}
-              {heroError && <Badge variant="destructive">Fehler</Badge>}
+              <div className="flex items-center gap-2">
+                {heroRunning && <ProcessTimer running={heroRunning} label="Render" />}
+                {heroRunning && <Loader2 className="w-4 h-4 animate-spin text-accent" />}
+                {heroBase64 && !heroApproved && <Badge variant="secondary">zur Freigabe</Badge>}
+                {heroBase64 && heroApproved && <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20">freigegeben</Badge>}
+                {heroError && <Badge variant="destructive">Fehler</Badge>}
+              </div>
             </div>
 
             {!heroBase64 && !heroRunning && (
@@ -1756,9 +1801,15 @@ This is the MARKETING MASTER (Hero) shot — push lighting one notch beyond the 
                       </span>
                     );
                   })()}
+                  {pipelineCtx.isRunning && <ProcessTimer running elapsedMs={pipelineCtx.elapsedMs} />}
                   {pipelineCtx.isRunning && <Loader2 className="w-4 h-4 animate-spin text-accent" />}
                   {pipelineCtx.isFinished && (
-                    <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20">fertig</Badge>
+                    <>
+                      <span className="text-[11px] font-mono text-muted-foreground">
+                        {formatDuration(pipelineCtx.endTime && pipelineCtx.startTime ? pipelineCtx.endTime - pipelineCtx.startTime : pipelineCtx.elapsedMs)}
+                      </span>
+                      <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20">fertig</Badge>
+                    </>
                   )}
                 </div>
               </div>
@@ -1844,9 +1895,14 @@ This is the MARKETING MASTER (Hero) shot — push lighting one notch beyond the 
           )}
 
           {/* Banner status */}
-          {bannerOutputs.length > 0 && (
+          {bannerOutputs.length > 0 && (() => {
+            const bannersRunning = bannerOutputs.some(b => b.status === 'pending' || b.status === 'running');
+            return (
             <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-              <h3 className="font-semibold text-sm">3. Banner</h3>
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-sm">3. Banner</h3>
+                <ProcessTimer running={bannersRunning} />
+              </div>
               <div className="grid grid-cols-2 gap-2">
                 {bannerOutputs.map((b, bIdx) => {
                   const doneBanners = bannerOutputs.filter((x) => x.status === 'done' && x.imageBase64);
@@ -1893,20 +1949,26 @@ This is the MARKETING MASTER (Hero) shot — push lighting one notch beyond the 
                 })}
               </div>
             </div>
-          )}
+            );
+          })()}
 
           {/* Video status */}
           {wantVideo && (
             <div className="rounded-xl border border-border bg-card p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-sm">4. Video</h3>
-                {(videoState === 'starting' || videoState === 'polling') && (
-                  <Loader2 className="w-4 h-4 animate-spin text-accent" />
-                )}
-                {videoState === 'done' && (
-                  <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20">fertig</Badge>
-                )}
-                {videoState === 'error' && <Badge variant="destructive">Fehler</Badge>}
+                <div className="flex items-center gap-2">
+                  {(videoState === 'starting' || videoState === 'polling') && (
+                    <>
+                      <ProcessTimer running label="Render" />
+                      <Loader2 className="w-4 h-4 animate-spin text-accent" />
+                    </>
+                  )}
+                  {videoState === 'done' && (
+                    <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20">fertig</Badge>
+                  )}
+                  {videoState === 'error' && <Badge variant="destructive">Fehler</Badge>}
+                </div>
               </div>
               {videoState === 'polling' && (
                 <p className="text-[11px] text-muted-foreground">Video wird generiert (2–5 Min). Du kannst die Seite verlassen — Pipeline läuft weiter.</p>

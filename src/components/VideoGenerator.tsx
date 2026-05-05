@@ -4,6 +4,7 @@ import { ArrowLeft, Upload, Video, Loader2, Download, RotateCcw, Play } from 'lu
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Progress } from '@/components/ui/progress';
+import ProcessTimer from '@/components/ProcessTimer';
 
 interface VideoGeneratorProps {
   onBack: () => void;
@@ -224,7 +225,10 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onBack, preloadedImage,
             </div>
           </div>
           <Progress value={pollProgress} className="h-2" />
-          <p className="text-xs text-muted-foreground text-right">{Math.round(pollProgress)}%</p>
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <ProcessTimer running label="Dauer" />
+            <span>{Math.round(pollProgress)}%</span>
+          </div>
         </div>
       )}
 

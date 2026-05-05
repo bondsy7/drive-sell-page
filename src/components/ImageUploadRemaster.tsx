@@ -9,6 +9,7 @@ import RemasterOptions from '@/components/RemasterOptions';
 import { type RemasterConfig, buildMasterPrompt, fetchPromptOverrides } from '@/lib/remaster-prompt';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 import { compressImageForAI, fileToBase64 } from '@/lib/image-compress';
+import ProcessTimer from '@/components/ProcessTimer';
 
 interface ImageUploadRemasterProps {
   vehicleDescription: string;
@@ -340,7 +341,10 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
         <div className="space-y-2">
           <div className="flex justify-between text-xs text-muted-foreground">
             <span>Remastering läuft…</span>
-            <span>Bild {progress.current} von {progress.total}</span>
+            <div className="flex items-center gap-2">
+              <ProcessTimer running={isProcessing} label="Gesamt" />
+              <span>Bild {progress.current} von {progress.total}</span>
+            </div>
           </div>
           <Progress value={(progress.current / progress.total) * 100} className="h-1.5" />
         </div>
