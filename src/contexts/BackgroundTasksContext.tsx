@@ -23,6 +23,12 @@ interface BgTasksContextValue {
   updateTask: (id: string, patch: Partial<BgTask>) => void;
   removeTask: (id: string) => void;
   clearFinished: () => void;
+  /** Start a video polling job that survives page navigation. */
+  startVideoPolling: (params: {
+    operationName: string;
+    vehicleId?: string | null;
+    onDone?: (result: { videoUrl?: string; videoBase64?: string; videoUri?: string; error?: string }) => void;
+  }) => string;
 }
 
 const BackgroundTasksContext = createContext<BgTasksContextValue | null>(null);
