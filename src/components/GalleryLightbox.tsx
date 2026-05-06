@@ -117,22 +117,62 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
     });
   };
 
-  const regenerateFrom = async (sourceUrl: string) => {
+  // Find matching pipeline job prompt based on perspective label
+  // current.perspective looks like "Pipeline: Felge" or "Pipeline: Rücklicht (Regen)"
+  const pipelineJob = (() => {
+    const persp = current?.perspective || '';
+    const match = persp.match(/Pipeline:\s*([^()]+?)(?:\s*\(.*\))?$/i);
+    const label = match?.[1]?.trim();
+    if (!label) return null;
+    return PIPELINE_JOBS.find(j => j.labelDe.toLowerCase() === label.toLowerCase()) || null;
+  })();
+
+  const fetchAsBase64 = async (url: string): Promise<string> => {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    return await new Promise<string>((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.readAsDataURL(blob);
+    });
+  };
+
+  const runRegenerate = async (referenceUrl: string | null) => {
     setPickerOpen(false);
     setRegenerating(true);
     try {
-      const response = await fetch(sourceUrl);
-      const blob = await response.blob();
-      const base64 = await new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.readAsDataURL(blob);
-      });
+      // Main image = the CURRENT generated image (we improve it)
+      const mainBase64 = await fetchAsBase64(current.src);
+
+      // Reference image = additional input (only as detail/quality reference)
+      const additionalImages: string[] = [];
+      if (referenceUrl) {
+        const refBase64 = await fetchAsBase64(referenceUrl);
+        additionalImages.push(refBase64);
+      }
+
+      // Build dynamic prompt: pipeline-specific prompt + user's extra instruction
+      let dynamicPrompt: string | undefined;
+      const trimmed = extraPrompt.trim();
+      if (pipelineJob) {
+        let p = pipelineJob.prompt;
+        if (trimmed) {
+          p += `\n\n<USER_REFINEMENT>\nThe previous generation had issues. Apply these targeted corrections WITHOUT changing perspective, framing, or composition:\n${trimmed}\n</USER_REFINEMENT>`;
+        }
+        if (referenceUrl) {
+          p += `\n\n<REFERENCE_USAGE>\nThe additional reference photo is provided ONLY to correct specific details (e.g. interior parts, textures, badges, controls) that were wrong in the previous generation. Do NOT copy its perspective, camera angle, framing, or composition – keep the perspective defined above.\n</REFERENCE_USAGE>`;
+        }
+        dynamicPrompt = p;
+      } else if (trimmed) {
+        dynamicPrompt = `Improve the provided image. Apply these corrections WITHOUT changing perspective, framing, or composition:\n${trimmed}`;
+      }
 
       const { data, error } = await invokeRemasterVehicleImage({
-        imageBase64: base64,
+        imageBase64: mainBase64,
         vehicleDescription: current.perspective || '',
         modelTier: 'standard',
+        dynamicPrompt,
+        additionalImages: additionalImages.length ? additionalImages : undefined,
       });
 
       if (error || !data?.imageBase64) {
@@ -146,6 +186,8 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
         if (updateError) toast.error('Bild generiert, aber Speichern fehlgeschlagen');
         else {
           toast.success('Bild erfolgreich neu generiert');
+          setExtraPrompt('');
+          setSelectedRef(null);
           onRegenerated?.();
         }
       }
