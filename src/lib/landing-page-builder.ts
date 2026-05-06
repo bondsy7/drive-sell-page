@@ -58,7 +58,7 @@ function getColors(bgStyle: string) {
     white: 'background:#ffffff',
     light: 'background:#f8fafc',
     dark: 'background:#0f172a;color:#f1f5f9',
-    accent: 'background:${SECONDARY};color:#ffffff',
+    accent: 'background:${__SECONDARY};color:#ffffff',
   };
   const bg = bgMap[bgStyle] || bgMap.white;
   const isDark = bgStyle === 'dark' || bgStyle === 'accent';
@@ -86,11 +86,11 @@ function renderFaq(s: LandingPageSection, colors: ReturnType<typeof getColors>):
 }
 
 function renderCta(s: LandingPageSection, phone: string, whatsapp: string): string {
-  return `<section style="background:linear-gradient(135deg,${SECONDARY},#0f172a);color:#ffffff;padding:80px 24px;text-align:center">
+  return `<section style="background:linear-gradient(135deg,${__SECONDARY},#0f172a);color:#ffffff;padding:80px 24px;text-align:center">
     <div style="max-width:640px;margin:0 auto">
       <h2 style="font-family:'Space Grotesk',sans-serif;font-size:32px;font-weight:700;margin-bottom:16px">${s.headline}</h2>
       <div style="font-size:16px;line-height:1.7;opacity:0.9;margin-bottom:32px">${s.content}</div>
-      ${phone ? `<a href="tel:${phone}" style="display:inline-block;background:${PRIMARY};color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:16px">📞 Jetzt anrufen</a>` : ''}
+      ${phone ? `<a href="tel:${phone}" style="display:inline-block;background:${__PRIMARY};color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:16px">📞 Jetzt anrufen</a>` : ''}
       ${whatsapp ? `<a href="https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}" target="_blank" style="display:inline-block;background:#25d366;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:16px;margin-left:12px">💬 WhatsApp</a>` : ''}
     </div>
   </section>`;
@@ -261,7 +261,7 @@ export function buildLandingPageHTML(
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Inter',sans-serif;color:#1e293b;background:#ffffff}
     img{max-width:100%}
-    a{color:${PRIMARY}}
+    a{color:${__PRIMARY}}
     h1,h2,h3{font-family:'Space Grotesk',sans-serif}
     h3{font-size:18px;font-weight:600;margin:20px 0 8px}
     ul,ol{padding-left:20px}
@@ -286,15 +286,15 @@ export function buildLandingPageHTML(
       ${logoHeader}
       <span style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px;color:#0f172a">${dealerName}</span>
     </div>
-    ${phone ? `<a href="tel:${phone}" style="background:${PRIMARY};color:#fff;padding:8px 20px;border-radius:6px;text-decoration:none;font-size:13px;font-weight:600">Jetzt anfragen</a>` : ''}
+    ${phone ? `<a href="tel:${phone}" style="background:${__PRIMARY};color:#fff;padding:8px 20px;border-radius:6px;text-decoration:none;font-size:13px;font-weight:600">Jetzt anfragen</a>` : ''}
   </header>
 
-  <section style="position:relative;min-height:480px;display:flex;align-items:center;overflow:hidden;${heroImage ? `background:url('${heroImage}') center/cover no-repeat` : 'background:linear-gradient(135deg,#0f172a,${SECONDARY})'}">
+  <section style="position:relative;min-height:480px;display:flex;align-items:center;overflow:hidden;${heroImage ? `background:url('${heroImage}') center/cover no-repeat` : 'background:linear-gradient(135deg,#0f172a,${__SECONDARY})'}">
     <div style="position:absolute;inset:0;background:linear-gradient(to right,rgba(15,23,42,0.85) 0%,rgba(15,23,42,0.4) 100%)"></div>
     <div class="hero-content" style="position:relative;z-index:1;max-width:640px;padding:80px 48px;color:#ffffff">
       <h1 style="font-family:'Space Grotesk',sans-serif;font-size:42px;font-weight:800;line-height:1.15;margin-bottom:16px">${hero.headline || `${brand} ${model}`}</h1>
       <p style="font-size:18px;line-height:1.6;opacity:0.9;margin-bottom:32px">${hero.subheadline || ''}</p>
-      ${hero.ctaText ? `<a href="#kontakt" style="display:inline-block;background:${PRIMARY};color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:16px">${hero.ctaText}</a>` : ''}
+      ${hero.ctaText ? `<a href="#kontakt" style="display:inline-block;background:${__PRIMARY};color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:16px">${hero.ctaText}</a>` : ''}
     </div>
   </section>
 
@@ -306,9 +306,9 @@ export function buildLandingPageHTML(
       <h2 style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;margin-bottom:8px">${dealerName}</h2>
       ${address ? `<p style="color:#64748b;font-size:14px;margin-bottom:4px">${address}</p>` : ''}
       <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:16px;margin-top:16px;font-size:14px">
-        ${phone ? `<a href="tel:${phone}" style="color:${PRIMARY};text-decoration:none">📞 ${phone}</a>` : ''}
-        ${email ? `<a href="mailto:${email}" style="color:${PRIMARY};text-decoration:none">✉️ ${email}</a>` : ''}
-        ${website ? `<a href="${website.startsWith('http') ? website : 'https://' + website}" target="_blank" style="color:${PRIMARY};text-decoration:none">🌐 Website</a>` : ''}
+        ${phone ? `<a href="tel:${phone}" style="color:${__PRIMARY};text-decoration:none">📞 ${phone}</a>` : ''}
+        ${email ? `<a href="mailto:${email}" style="color:${__PRIMARY};text-decoration:none">✉️ ${email}</a>` : ''}
+        ${website ? `<a href="${website.startsWith('http') ? website : 'https://' + website}" target="_blank" style="color:${__PRIMARY};text-decoration:none">🌐 Website</a>` : ''}
         ${whatsapp ? `<a href="https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}" target="_blank" style="color:#25d366;text-decoration:none">💬 WhatsApp</a>` : ''}
       </div>
       ${socials ? `<div style="margin-top:16px;font-size:13px">${socials}</div>` : ''}
