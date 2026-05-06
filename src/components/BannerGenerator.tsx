@@ -508,20 +508,21 @@ REFLECTION PURGE (ZERO TOLERANCE – NON-NEGOTIABLE):
 - Rebuild only new-scene reflections: ceiling lights on hood/roof, wall/window bands along side panels, floor tone in lower doors, scene lights in chrome/rims, and approved logo reflections only if a logo asset is provided.
 - Verify hood, doors, glass, mirrors, chrome and rims before finalizing: zero foreign reflection content.
 
-ACCENT COLOR (${accentColor}):
-Use the accent color ${accentColor} sparingly and elegantly as a SUBTLE HIGHLIGHT – NOT as a dominant color:
-- Use it ONLY for small UI elements: CTA buttons, price tags, thin borders, or small text highlights
-- Add at most ONE very subtle, soft glow or light accent in this color – keep it minimal and transparent
-- Do NOT tint the entire scene, background, or atmosphere in the accent color
-- Do NOT add heavy colored overlays, particles, bokeh, or dramatic light beams in the accent color
-- The overall image should remain BRIGHT, CLEAN, and PROFESSIONAL – never dark or moody because of the accent color
-- The accent color should feel like a tasteful design touch, not a color filter
+ACCENT COLORS — PRIMARY (${accentColor}) & SECONDARY (${secondaryColor}):
+Use the brand colors as a SUBTLE HIGHLIGHT – NOT as dominant colors:
+- Primary ${accentColor}: ONLY for main UI elements (CTA buttons, price tags, key highlights)
+- Secondary ${secondaryColor}: as a complementary accent (thin borders, secondary text highlights, small icons)
+- Add at most ONE very subtle, soft glow or light accent in either color – keep it minimal and transparent
+- Do NOT tint the entire scene, background, or atmosphere in these colors
+- Do NOT add heavy colored overlays, particles, bokeh, or dramatic light beams in these colors
+- The overall image should remain BRIGHT, CLEAN, and PROFESSIONAL – never dark or moody because of accents
+- The brand colors should feel like a tasteful design touch, not a color filter
 - Keep the vehicle and background naturally lit with neutral, bright tones
 ${showLogo && logoBase64 ? '- The provided logo MUST appear in the banner exactly as given' : '- Do NOT add watermarks or extra logos'}
 - The composition must work at the specified ${fmt.ratio} aspect ratio
 ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` : ''}
 - Generate the image – never refuse`;
-  }, [occasion, scene, style, priceDisplay, vehicleTitle, priceText, headline, subline, ctaText, accentColor, legalText, headlineFont, sublineFont, showLogo, logoBase64, freePrompt]);
+  }, [occasion, scene, style, priceDisplay, vehicleTitle, priceText, headline, subline, ctaText, accentColor, secondaryColor, legalText, headlineFont, sublineFont, showLogo, logoBase64, freePrompt]);
 
   // Generate a single banner for a given format
   const generateForFormat = useCallback(async (formatId: string): Promise<BannerResult | null> => {
