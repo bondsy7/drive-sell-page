@@ -139,7 +139,8 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
 
   const removeImage = (idx: number) => {
     setUploadedImages(prev => {
-      URL.revokeObjectURL(prev[idx].preview);
+      const item = prev[idx];
+      if (item?.file && item.preview.startsWith('blob:')) URL.revokeObjectURL(item.preview);
       return prev.filter((_, i) => i !== idx);
     });
   };
@@ -151,6 +152,17 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
+
+  const urlToBase64 = async (url: string): Promise<string> => {
+    const r = await fetch(url);
+    const blob = await r.blob();
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
 
   const handleGenerate = async () => {
     if (!canGenerate || !user) return;
@@ -186,13 +198,16 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
         secondaryColor: (profile as any).secondary_color || '',
       } : {};
 
-      // Upload user images
+      // Upload user images (own files + selected vehicle assets)
       setProgress('Bilder werden vorbereitet...');
       setProgressPercent(15);
       const uploadedBase64: string[] = [];
       for (const img of uploadedImages) {
-        const b64 = await fileToBase64(img.file);
-        uploadedBase64.push(b64);
+        if (img.file) {
+          uploadedBase64.push(await fileToBase64(img.file));
+        } else if (img.url) {
+          try { uploadedBase64.push(await urlToBase64(img.url)); } catch (e) { console.warn('asset fetch failed', e); }
+        }
       }
 
       setProgress('KI generiert Texte...');
