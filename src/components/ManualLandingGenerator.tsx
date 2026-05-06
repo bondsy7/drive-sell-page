@@ -538,6 +538,26 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
           ))}
         </div>
       </div>
+
+      <VehicleAssetPicker
+        open={assetPickerOpen}
+        vehicleId={vehicleIdParam}
+        allowedKinds={['gallery', 'original', 'spin360', 'banner']}
+        title="Bilder aus Fahrzeug übernehmen"
+        description="Wähle bestehende Aufnahmen, die als Section-Bilder verwendet werden sollen."
+        onCancel={() => setAssetPickerOpen(false)}
+        onConfirm={(assets) => {
+          setAssetPickerOpen(false);
+          if (!assets.length) return;
+          const slotsLeft = 5 - uploadedImages.length;
+          const taken = assets.slice(0, slotsLeft);
+          if (assets.length > slotsLeft) toast.warning(`Nur ${slotsLeft} Bilder übernommen (max. 5).`);
+          setUploadedImages(prev => [
+            ...prev,
+            ...taken.map(a => ({ preview: a.url, url: a.url })),
+          ]);
+        }}
+      />
     </div>
   );
 };
