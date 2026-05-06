@@ -40,6 +40,9 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
   const [pickerOpen, setPickerOpen] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [pickerTab, setPickerTab] = useState<'originals' | 'gallery'>('originals');
+  const [extraPrompt, setExtraPrompt] = useState('');
+  const [selectedRef, setSelectedRef] = useState<string | null>(null);
 
   const deleteImage = useDeleteGalleryImage();
 
