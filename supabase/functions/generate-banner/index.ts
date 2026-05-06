@@ -258,10 +258,11 @@ The logo image follows now:` });
   const modelBudgetMs = /^gemini-3-pro/.test(model) ? 55_000 : /^gemini-3/.test(model) ? 50_000 : 45_000;
 
   for (let attempt = 0; attempt <= retries; attempt++) {
+    let timeoutMs = modelBudgetMs;
     try {
       const remainingMs = EDGE_DEADLINE_MS - (Date.now() - requestStartedAt);
       if (remainingMs < 12_000) throw new Error("Banner generation deadline reached before model fallback");
-      const timeoutMs = Math.max(8_000, Math.min(modelBudgetMs, remainingMs - 5_000));
+      timeoutMs = Math.max(8_000, Math.min(modelBudgetMs, remainingMs - 5_000));
       const response = await fetchWithTimeout(url, {
         method: "POST",
         headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
