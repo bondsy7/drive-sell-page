@@ -23,6 +23,7 @@ import { compressImageForAI, fileToBase64 } from '@/lib/image-compress';
 import VehicleAssetPicker from '@/components/VehicleAssetPicker';
 import VehicleBrandPicker from '@/components/VehicleBrandPicker';
 import { resolveCanonicalBrand } from '@/lib/brand-aliases';
+import { ensureVehicleAuto } from '@/lib/vehicle-utils';
 import { useVehicleAssets } from '@/hooks/useVehicleAssets';
 import { FolderOpen } from 'lucide-react';
 
@@ -620,6 +621,9 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
     return null;
   }, [buildPromptForFormat, vehicleImage, showLogo, logoBase64, modelTier]);
 
+  // Track auto-created vehicle id so subsequent banners in the same session reuse it.
+  const [autoVehicleId, setAutoVehicleId] = useState<string | null>(null);
+
   // Save banner to storage
   const saveBanner = useCallback(async (result: BannerResult) => {
     if (!user) return;
@@ -628,14 +632,27 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
       const byteArray = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
       const blob = new Blob([byteArray], { type: 'image/png' });
       // Prefix with vehicle_id when known so VehicleView can list per-vehicle.
-      // Priority: explicit vehicleId prop > selected project's vehicle_id.
+      // Priority: explicit vehicleId prop > selected project's vehicle_id > auto-created placeholder vehicle.
       const proj = projects.find(p => p.id === selectedProjectId);
-      const effectiveVehicleId = vehicleId || proj?.vehicle_id || null;
+      let effectiveVehicleId = vehicleId || proj?.vehicle_id || autoVehicleId || null;
+      if (!effectiveVehicleId) {
+        // Auto-create a placeholder vehicle so the banner is attached to a fahrzeug.
+        const brand = selectedLogoBrand || extractedData?.vehicleTitle?.split(' ')[0] || null;
+        const title = vehicleTitle || extractedData?.vehicleTitle || null;
+        const created = await ensureVehicleAuto(user.id, null, {
+          vehicle: { brand, model: title, variant: title },
+        } as any, vehicleImage || null);
+        if (created) {
+          effectiveVehicleId = created;
+          setAutoVehicleId(created);
+          toast.success('Neues Fahrzeug angelegt', { description: title || 'Banner wurde einem neuen Fahrzeug zugeordnet.' });
+        }
+      }
       const vehiclePrefix = effectiveVehicleId ? `${effectiveVehicleId}/` : '';
       const fileName = `${user.id}/${vehiclePrefix}${Date.now()}-${result.formatId}.png`;
       await supabase.storage.from('banners').upload(fileName, blob, { contentType: 'image/png' });
     } catch (e) { console.error('Banner save error:', e); }
-  }, [user, projects, selectedProjectId, vehicleId]);
+  }, [user, projects, selectedProjectId, vehicleId, autoVehicleId, vehicleImage, vehicleTitle, extractedData, selectedLogoBrand]);
 
   // ── Single format generation ──
   const handleGenerate = useCallback(() => {
