@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Upload, Video, Loader2, Download, RotateCcw, Play, FolderOpen } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
