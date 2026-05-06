@@ -284,6 +284,8 @@ const Profile = () => {
       financing_bank: profile.financing_bank || null,
       financing_legal_text: profile.financing_legal_text || null,
       default_legal_text: profile.default_legal_text || null,
+      primary_color: profile.primary_color || null,
+      secondary_color: profile.secondary_color || null,
       updated_at: new Date().toISOString(),
     }).eq('id', user.id);
     await saveBanks();
