@@ -820,6 +820,8 @@ export type Database = {
           logo_url: string | null
           phone: string | null
           postal_code: string | null
+          primary_color: string | null
+          secondary_color: string | null
           tax_id: string | null
           tiktok_url: string | null
           updated_at: string
@@ -848,6 +850,8 @@ export type Database = {
           logo_url?: string | null
           phone?: string | null
           postal_code?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
           tax_id?: string | null
           tiktok_url?: string | null
           updated_at?: string
@@ -876,6 +880,8 @@ export type Database = {
           logo_url?: string | null
           phone?: string | null
           postal_code?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
           tax_id?: string | null
           tiktok_url?: string | null
           updated_at?: string

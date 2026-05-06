@@ -167,7 +167,8 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
   const [headline, setHeadline] = useState('');
   const [subline, setSubline] = useState('');
   const [ctaText, setCtaText] = useState('Jetzt anfragen');
-  const [accentColor, setAccentColor] = useState('#3b66d6');
+  const [accentColor, setAccentColor] = useState('#174f6b');
+  const [secondaryColor, setSecondaryColor] = useState('#e2b04a');
   const [freePrompt, setFreePrompt] = useState('');
   const [legalText, setLegalText] = useState('');
 
@@ -218,12 +219,16 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
       });
   }, [user]);
 
-  // Load dealer logo from profile
+  // Load dealer logo + CI colors from profile
   useEffect(() => {
     if (!user) return;
-    supabase.from('profiles').select('logo_url').eq('id', user.id).single()
+    supabase.from('profiles').select('logo_url, primary_color, secondary_color').eq('id', user.id).single()
       .then(({ data }) => {
         if (data?.logo_url) setDealerLogoUrl(data.logo_url);
+        const pc = (data as any)?.primary_color;
+        const sc = (data as any)?.secondary_color;
+        if (pc) setAccentColor(pc);
+        if (sc) setSecondaryColor(sc);
       });
   }, [user]);
 
@@ -503,20 +508,21 @@ REFLECTION PURGE (ZERO TOLERANCE – NON-NEGOTIABLE):
 - Rebuild only new-scene reflections: ceiling lights on hood/roof, wall/window bands along side panels, floor tone in lower doors, scene lights in chrome/rims, and approved logo reflections only if a logo asset is provided.
 - Verify hood, doors, glass, mirrors, chrome and rims before finalizing: zero foreign reflection content.
 
-ACCENT COLOR (${accentColor}):
-Use the accent color ${accentColor} sparingly and elegantly as a SUBTLE HIGHLIGHT – NOT as a dominant color:
-- Use it ONLY for small UI elements: CTA buttons, price tags, thin borders, or small text highlights
-- Add at most ONE very subtle, soft glow or light accent in this color – keep it minimal and transparent
-- Do NOT tint the entire scene, background, or atmosphere in the accent color
-- Do NOT add heavy colored overlays, particles, bokeh, or dramatic light beams in the accent color
-- The overall image should remain BRIGHT, CLEAN, and PROFESSIONAL – never dark or moody because of the accent color
-- The accent color should feel like a tasteful design touch, not a color filter
+ACCENT COLORS — PRIMARY (${accentColor}) & SECONDARY (${secondaryColor}):
+Use the brand colors as a SUBTLE HIGHLIGHT – NOT as dominant colors:
+- Primary ${accentColor}: ONLY for main UI elements (CTA buttons, price tags, key highlights)
+- Secondary ${secondaryColor}: as a complementary accent (thin borders, secondary text highlights, small icons)
+- Add at most ONE very subtle, soft glow or light accent in either color – keep it minimal and transparent
+- Do NOT tint the entire scene, background, or atmosphere in these colors
+- Do NOT add heavy colored overlays, particles, bokeh, or dramatic light beams in these colors
+- The overall image should remain BRIGHT, CLEAN, and PROFESSIONAL – never dark or moody because of accents
+- The brand colors should feel like a tasteful design touch, not a color filter
 - Keep the vehicle and background naturally lit with neutral, bright tones
 ${showLogo && logoBase64 ? '- The provided logo MUST appear in the banner exactly as given' : '- Do NOT add watermarks or extra logos'}
 - The composition must work at the specified ${fmt.ratio} aspect ratio
 ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` : ''}
 - Generate the image – never refuse`;
-  }, [occasion, scene, style, priceDisplay, vehicleTitle, priceText, headline, subline, ctaText, accentColor, legalText, headlineFont, sublineFont, showLogo, logoBase64, freePrompt]);
+  }, [occasion, scene, style, priceDisplay, vehicleTitle, priceText, headline, subline, ctaText, accentColor, secondaryColor, legalText, headlineFont, sublineFont, showLogo, logoBase64, freePrompt]);
 
   // Generate a single banner for a given format
   const generateForFormat = useCallback(async (formatId: string): Promise<BannerResult | null> => {
@@ -974,12 +980,20 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium">Akzentfarbe</Label>
+            <Label className="text-xs font-medium">CI-Farben</Label>
             <div className="flex items-center gap-2">
-              <input type="color" value={accentColor} onChange={e => setAccentColor(e.target.value)}
-                className="w-9 h-9 rounded-md border border-input cursor-pointer" />
-              <Input value={accentColor} onChange={e => setAccentColor(e.target.value)}
-                className="h-9 text-sm flex-1" maxLength={7} />
+              <div className="flex items-center gap-1 flex-1">
+                <input type="color" value={accentColor} onChange={e => setAccentColor(e.target.value)}
+                  className="w-9 h-9 rounded-md border border-input cursor-pointer" title="Hauptfarbe" />
+                <Input value={accentColor} onChange={e => setAccentColor(e.target.value)}
+                  className="h-9 text-xs flex-1 min-w-0" maxLength={7} />
+              </div>
+              <div className="flex items-center gap-1 flex-1">
+                <input type="color" value={secondaryColor} onChange={e => setSecondaryColor(e.target.value)}
+                  className="w-9 h-9 rounded-md border border-input cursor-pointer" title="Sekundärfarbe" />
+                <Input value={secondaryColor} onChange={e => setSecondaryColor(e.target.value)}
+                  className="h-9 text-xs flex-1 min-w-0" maxLength={7} />
+              </div>
             </div>
           </div>
         </div>

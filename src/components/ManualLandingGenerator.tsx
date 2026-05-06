@@ -155,6 +155,8 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
         youtubeUrl: profile.youtube_url || '',
         tiktokUrl: profile.tiktok_url || '',
         defaultLegalText: profile.default_legal_text || '',
+        primaryColor: (profile as any).primary_color || '',
+        secondaryColor: (profile as any).secondary_color || '',
       } : {};
 
       // Upload user images
