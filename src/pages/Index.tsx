@@ -513,7 +513,7 @@ const Index = () => {
     try {
       const folderName = getGalleryFolderName(vin);
       // VIN-based: ensure vehicle so images are linked even without a project
-      const vehicleId = vin ? await ensureVehicle(user.id, vin, null) : null;
+      const vehicleId = await ensureVehicleAuto(user.id, vin, null);
       await saveImagesToGallery(
         allImages,
         user.id,
