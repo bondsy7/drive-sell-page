@@ -1,10 +1,13 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Upload, Video, Loader2, Download, RotateCcw, Play } from 'lucide-react';
+import { ArrowLeft, Upload, Video, Loader2, Download, RotateCcw, Play, FolderOpen } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Progress } from '@/components/ui/progress';
 import ProcessTimer from '@/components/ProcessTimer';
+import { Badge } from '@/components/ui/badge';
+import VehicleAssetPicker from '@/components/VehicleAssetPicker';
+import { useVehicleAssets } from '@/hooks/useVehicleAssets';
 
 interface VideoGeneratorProps {
   onBack: () => void;
