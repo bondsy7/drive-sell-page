@@ -26,6 +26,7 @@ import { resolveCanonicalBrand } from '@/lib/brand-aliases';
 import { ensureVehicleAuto } from '@/lib/vehicle-utils';
 import { useVehicleAssets } from '@/hooks/useVehicleAssets';
 import { FolderOpen } from 'lucide-react';
+import { useBackgroundTasks } from '@/contexts/BackgroundTasksContext';
 
 // ─── Config ───
 
@@ -171,6 +172,7 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
   const { user } = useAuth();
   const { balance, getCost } = useCredits();
   const { makes, getLogoForMake } = useVehicleMakes();
+  const bgTasks = useBackgroundTasks();
 
   // Project picker
   const [projects, setProjects] = useState<ProjectOption[]>([]);
@@ -624,9 +626,9 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
   // Track auto-created vehicle id so subsequent banners in the same session reuse it.
   const [autoVehicleId, setAutoVehicleId] = useState<string | null>(null);
 
-  // Save banner to storage
-  const saveBanner = useCallback(async (result: BannerResult) => {
-    if (!user) return;
+  // Save banner to storage. Returns the effective vehicle id (or null) so callers can build deep links.
+  const saveBanner = useCallback(async (result: BannerResult): Promise<string | null> => {
+    if (!user) return null;
     try {
       const base64Data = result.image.includes(',') ? result.image.split(',')[1] : result.image;
       const byteArray = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
@@ -651,7 +653,8 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
       const vehiclePrefix = effectiveVehicleId ? `${effectiveVehicleId}/` : '';
       const fileName = `${user.id}/${vehiclePrefix}${Date.now()}-${result.formatId}.png`;
       await supabase.storage.from('banners').upload(fileName, blob, { contentType: 'image/png' });
-    } catch (e) { console.error('Banner save error:', e); }
+      return effectiveVehicleId;
+    } catch (e) { console.error('Banner save error:', e); return null; }
   }, [user, projects, selectedProjectId, vehicleId, autoVehicleId, vehicleImage, vehicleTitle, extractedData, selectedLogoBrand]);
 
   // ── Single format generation ──
@@ -666,7 +669,18 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
     setCreditDialog({ open: false, cost: 0, mode: 'single' });
     setGenerating(true);
 
+    const taskId = `banner-${Date.now()}`;
+    bgTasks.addTask({
+      id: taskId,
+      type: 'banner',
+      label: variantCount > 1 ? `Banner (${variantCount}×)` : 'Banner',
+      total: variantCount,
+    });
+
     const newResults: BannerResult[] = [];
+    let lastVehicleId: string | null = null;
+    let completed = 0;
+    let errored = false;
     for (let i = 0; i < variantCount; i++) {
       try {
         const result = await generateForFormat(format);
@@ -674,17 +688,36 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
           const labeled = { ...result, formatLabel: `${result.formatLabel}${variantCount > 1 ? ` #${i + 1}` : ''}` };
           newResults.push(labeled);
           setResults(prev => [...prev, labeled]);
-          await saveBanner(labeled);
+          const vid = await saveBanner(labeled);
+          if (vid) lastVehicleId = vid;
+          completed += 1;
+          bgTasks.updateTask(taskId, { completed });
+        } else {
+          errored = true;
         }
       } catch (e: any) {
-        if (e?.message === 'insufficient_credits') { toast.error('Nicht genügend Credits.'); break; }
+        if (e?.message === 'insufficient_credits') {
+          toast.error('Nicht genügend Credits.');
+          bgTasks.updateTask(taskId, { status: 'error', errorMessage: 'Nicht genügend Credits', finishedAt: Date.now() });
+          setGenerating(false);
+          return;
+        }
+        errored = true;
       }
     }
 
     if (newResults.length > 0) toast.success(`${newResults.length} Banner erstellt!`);
     else toast.error('Keine Banner generiert.');
+
+    bgTasks.updateTask(taskId, {
+      status: newResults.length > 0 ? 'done' : 'error',
+      completed: newResults.length,
+      finishedAt: Date.now(),
+      errorMessage: newResults.length === 0 ? 'Keine Banner generiert' : undefined,
+      resultRoute: lastVehicleId ? `/vehicle/${lastVehicleId}` : '/dashboard?tab=banners',
+    });
     setGenerating(false);
-  }, [format, variantCount, generateForFormat, saveBanner]);
+  }, [format, variantCount, generateForFormat, saveBanner, bgTasks]);
 
   // ── All formats generation (parallel) ──
   const handleGenerateAll = useCallback(() => {
@@ -704,10 +737,20 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
     BANNER_FORMATS.forEach(f => { progress[f.id] = 'pending'; });
     setFormatProgress({ ...progress });
 
+    const taskId = `banner-all-${Date.now()}`;
+    bgTasks.addTask({
+      id: taskId,
+      type: 'banner',
+      label: `Alle Banner (${BANNER_FORMATS.length})`,
+      total: BANNER_FORMATS.length,
+    });
+
     // Run in parallel with concurrency limit of 4
     const queue = [...BANNER_FORMATS];
     const CONCURRENCY = 4;
     let aborted = false;
+    let completed = 0;
+    let lastVehicleId: string | null = null;
 
     const runNext = async (): Promise<void> => {
       while (queue.length > 0 && !aborted) {
@@ -718,7 +761,10 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
           if (result) {
             setResults(prev => [...prev, result]);
             setFormatProgress(prev => ({ ...prev, [fmt.id]: 'done' }));
-            await saveBanner(result);
+            const vid = await saveBanner(result);
+            if (vid) lastVehicleId = vid;
+            completed += 1;
+            bgTasks.updateTask(taskId, { completed });
           } else {
             setFormatProgress(prev => ({ ...prev, [fmt.id]: 'error' }));
           }
@@ -732,10 +778,16 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
     const workers = Array.from({ length: Math.min(CONCURRENCY, queue.length) }, () => runNext());
     await Promise.all(workers);
 
-    const doneCount = Object.values(formatProgress).filter(s => s === 'done').length;
     if (!aborted) toast.success(`${BANNER_FORMATS.length} Formate verarbeitet!`);
+    bgTasks.updateTask(taskId, {
+      status: aborted ? 'error' : (completed > 0 ? 'done' : 'error'),
+      completed,
+      finishedAt: Date.now(),
+      errorMessage: aborted ? 'Abgebrochen (Credits)' : undefined,
+      resultRoute: lastVehicleId ? `/vehicle/${lastVehicleId}` : '/dashboard?tab=banners',
+    });
     setGeneratingAll(false);
-  }, [generateForFormat, saveBanner]);
+  }, [generateForFormat, saveBanner, bgTasks]);
 
   // Download banner
   const downloadBanner = useCallback((result: BannerResult) => {
