@@ -230,7 +230,7 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
   const [dataSheetData, setDataSheetData] = useState<any>(null);
 
   // Generation
-  const [modelTier, setModelTier] = useState<ModelTier>('premium');
+  const [modelTier, setModelTier] = useState<ModelTier>('qualitaet');
   const [variantCount, setVariantCount] = useState(1);
   const [generating, setGenerating] = useState(false);
   const [generatingAll, setGeneratingAll] = useState(false);
