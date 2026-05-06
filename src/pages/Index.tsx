@@ -512,8 +512,9 @@ const Index = () => {
     if (!user || allImages.length === 0) return;
     try {
       const folderName = getGalleryFolderName(vin);
-      // VIN-based: ensure vehicle so images are linked even without a project
-      const vehicleId = await ensureVehicleAuto(user.id, vin, null);
+      // Prefer the currently selected/deep-linked vehicle; only create a placeholder when none exists.
+      const vehicleId = savedVehicleId || deepLinkVehicleId || await ensureVehicleAuto(user.id, vin, vehicleData);
+      if (vehicleId && !savedVehicleId) setSavedVehicleId(vehicleId);
       await saveImagesToGallery(
         allImages,
         user.id,
@@ -525,7 +526,7 @@ const Index = () => {
     } catch (e) {
       console.error('Error saving standalone images:', e);
     }
-  }, [user]);
+  }, [user, savedVehicleId, deepLinkVehicleId, vehicleData]);
 
   // ─── Standalone Photo Flow ───
   const handleStandaloneCaptureComplete = useCallback((mainImage: string, gallery: string[], vin?: string) => {
@@ -746,6 +747,7 @@ const Index = () => {
                 vehicleDescription=""
                 vehicleData={vehicleData || undefined}
                 modelTier={selectedModelTier}
+                vehicleId={savedVehicleId || deepLinkVehicleId}
                 onComplete={handleStandaloneCaptureComplete}
                 onVehicleDataChange={setVehicleData}
                 onBack={() => setAppState('standalone-photo-choice')}
@@ -919,7 +921,7 @@ const Index = () => {
 
           {appState === 'capturing-images' && (
             <div className="mt-8">
-              <ImageCaptureGrid vehicleDescription={vehicleDescription} vehicleData={vehicleData || undefined} modelTier={selectedModelTier} projectId={savedProjectId} vehicleId={savedVehicleId} onComplete={handleCaptureComplete} onVehicleDataChange={setVehicleData} onBack={() => setAppState('choosing-image-source')} onPipelineComplete={() => navigate('/dashboard?tab=gallery')} />
+              <ImageCaptureGrid vehicleDescription={vehicleDescription} vehicleData={vehicleData || undefined} modelTier={selectedModelTier} projectId={savedProjectId} vehicleId={savedVehicleId || deepLinkVehicleId} onComplete={handleCaptureComplete} onVehicleDataChange={setVehicleData} onBack={() => setAppState('choosing-image-source')} onPipelineComplete={() => navigate('/dashboard?tab=gallery')} />
             </div>
           )}
 
