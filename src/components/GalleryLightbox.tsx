@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, ChevronLeft, ChevronRight, Download, RotateCcw, Loader2, Trash2, ImageIcon } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Download, RotateCcw, Loader2, Trash2, ImageIcon, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useSwipeNavigation } from '@/hooks/use-swipe-navigation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import {
@@ -13,6 +15,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 import { useDeleteGalleryImage } from '@/hooks/useDashboardData';
+import { PIPELINE_JOBS } from '@/lib/pipeline-jobs';
 
 interface LightboxImage {
   id: string;
@@ -38,6 +41,9 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
   const [pickerOpen, setPickerOpen] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [pickerTab, setPickerTab] = useState<'originals' | 'gallery'>('originals');
+  const [extraPrompt, setExtraPrompt] = useState('');
+  const [selectedRef, setSelectedRef] = useState<string | null>(null);
 
   const deleteImage = useDeleteGalleryImage();
 
@@ -111,22 +117,62 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
     });
   };
 
-  const regenerateFrom = async (sourceUrl: string) => {
+  // Find matching pipeline job prompt based on perspective label
+  // current.perspective looks like "Pipeline: Felge" or "Pipeline: Rücklicht (Regen)"
+  const pipelineJob = (() => {
+    const persp = current?.perspective || '';
+    const match = persp.match(/Pipeline:\s*([^()]+?)(?:\s*\(.*\))?$/i);
+    const label = match?.[1]?.trim();
+    if (!label) return null;
+    return PIPELINE_JOBS.find(j => j.labelDe.toLowerCase() === label.toLowerCase()) || null;
+  })();
+
+  const fetchAsBase64 = async (url: string): Promise<string> => {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    return await new Promise<string>((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.readAsDataURL(blob);
+    });
+  };
+
+  const runRegenerate = async (referenceUrl: string | null) => {
     setPickerOpen(false);
     setRegenerating(true);
     try {
-      const response = await fetch(sourceUrl);
-      const blob = await response.blob();
-      const base64 = await new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.readAsDataURL(blob);
-      });
+      // Main image = the CURRENT generated image (we improve it)
+      const mainBase64 = await fetchAsBase64(current.src);
+
+      // Reference image = additional input (only as detail/quality reference)
+      const additionalImages: string[] = [];
+      if (referenceUrl) {
+        const refBase64 = await fetchAsBase64(referenceUrl);
+        additionalImages.push(refBase64);
+      }
+
+      // Build dynamic prompt: pipeline-specific prompt + user's extra instruction
+      let dynamicPrompt: string | undefined;
+      const trimmed = extraPrompt.trim();
+      if (pipelineJob) {
+        let p = pipelineJob.prompt;
+        if (trimmed) {
+          p += `\n\n<USER_REFINEMENT>\nThe previous generation had issues. Apply these targeted corrections WITHOUT changing perspective, framing, or composition:\n${trimmed}\n</USER_REFINEMENT>`;
+        }
+        if (referenceUrl) {
+          p += `\n\n<REFERENCE_USAGE>\nThe additional reference photo is provided ONLY to correct specific details (e.g. interior parts, textures, badges, controls) that were wrong in the previous generation. Do NOT copy its perspective, camera angle, framing, or composition – keep the perspective defined above.\n</REFERENCE_USAGE>`;
+        }
+        dynamicPrompt = p;
+      } else if (trimmed) {
+        dynamicPrompt = `Improve the provided image. Apply these corrections WITHOUT changing perspective, framing, or composition:\n${trimmed}`;
+      }
 
       const { data, error } = await invokeRemasterVehicleImage({
-        imageBase64: base64,
+        imageBase64: mainBase64,
         vehicleDescription: current.perspective || '',
         modelTier: 'standard',
+        dynamicPrompt,
+        additionalImages: additionalImages.length ? additionalImages : undefined,
       });
 
       if (error || !data?.imageBase64) {
@@ -140,6 +186,8 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
         if (updateError) toast.error('Bild generiert, aber Speichern fehlgeschlagen');
         else {
           toast.success('Bild erfolgreich neu generiert');
+          setExtraPrompt('');
+          setSelectedRef(null);
           onRegenerated?.();
         }
       }
@@ -239,41 +287,90 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
         )}
       </div>
 
-      {/* Original picker dialog */}
+      {/* Picker dialog: pipeline prompt + reference + extra prompt */}
       <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
-        <DialogContent className="max-w-3xl" onClick={e => e.stopPropagation()}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
           <DialogHeader>
-            <DialogTitle>Originalbild als Grundlage wählen</DialogTitle>
+            <DialogTitle>Bild verbessern</DialogTitle>
             <DialogDescription>
-              Wähle ein Originalfoto, das als Vorlage für die neue Generierung dient.
+              {pipelineJob ? (
+                <>Pipeline-Prompt: <span className="font-medium">{pipelineJob.labelDe}</span> wird automatisch verwendet. Optional: Referenzbild und Hinweise auswählen.</>
+              ) : (
+                <>Wähle optional ein Referenzbild und beschreibe, was verbessert werden soll.</>
+              )}
             </DialogDescription>
           </DialogHeader>
-          {!vehicleId ? (
-            <div className="text-center py-10 text-muted-foreground text-sm">
-              Kein Fahrzeug-Kontext verfügbar.
-            </div>
-          ) : loadingOriginals ? (
-            <div className="flex justify-center py-10">
-              <Loader2 className="w-6 h-6 animate-spin text-accent" />
-            </div>
-          ) : originals.length === 0 ? (
-            <div className="text-center py-10 text-muted-foreground">
-              <ImageIcon className="w-10 h-10 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">Noch keine Originalbilder vorhanden. Lade zuerst Originale unter dem Tab „Originale" hoch.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-[60vh] overflow-y-auto">
-              {originals.map(o => (
-                <button
-                  key={o.name}
-                  onClick={() => regenerateFrom(o.url)}
-                  className="aspect-square rounded-md overflow-hidden border-2 border-transparent hover:border-accent transition-all"
-                >
-                  <img src={o.url} alt={o.name} className="w-full h-full object-cover" loading="lazy" />
-                </button>
-              ))}
-            </div>
-          )}
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Verbesserungs-Hinweise (optional)</label>
+            <Textarea
+              value={extraPrompt}
+              onChange={e => setExtraPrompt(e.target.value)}
+              placeholder={pipelineJob ? `z.B. „Lenkrad-Logo korrekt darstellen, Knöpfe schärfer"` : `z.B. „mehr Kontrast, Spiegelungen entfernen"`}
+              rows={3}
+            />
+            <p className="text-xs text-muted-foreground">
+              Perspektive und Bildausschnitt bleiben gleich – nur Details werden verbessert.
+            </p>
+          </div>
+
+          <Tabs value={pickerTab} onValueChange={(v) => { setPickerTab(v as any); setSelectedRef(null); }}>
+            <TabsList className="grid grid-cols-2 w-full">
+              <TabsTrigger value="originals">Originale</TabsTrigger>
+              <TabsTrigger value="gallery">Galerie</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="originals" className="mt-3">
+              {!vehicleId ? (
+                <div className="text-center py-8 text-muted-foreground text-sm">Kein Fahrzeug-Kontext verfügbar.</div>
+              ) : loadingOriginals ? (
+                <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-accent" /></div>
+              ) : originals.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <ImageIcon className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">Keine Originalbilder vorhanden.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-[40vh] overflow-y-auto">
+                  {originals.map(o => (
+                    <button
+                      key={o.name}
+                      onClick={() => setSelectedRef(o.url)}
+                      className={`aspect-square rounded-md overflow-hidden border-2 transition-all ${selectedRef === o.url ? 'border-accent ring-2 ring-accent/40' : 'border-transparent hover:border-accent/60'}`}
+                    >
+                      <img src={o.url} alt={o.name} className="w-full h-full object-cover" loading="lazy" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="gallery" className="mt-3">
+              {images.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground text-sm">Keine Galeriebilder vorhanden.</div>
+              ) : (
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-[40vh] overflow-y-auto">
+                  {images.filter(i => i.id !== current.id).map(img => (
+                    <button
+                      key={img.id}
+                      onClick={() => setSelectedRef(img.src)}
+                      className={`aspect-square rounded-md overflow-hidden border-2 transition-all ${selectedRef === img.src ? 'border-accent ring-2 ring-accent/40' : 'border-transparent hover:border-accent/60'}`}
+                    >
+                      <img src={img.src} alt={img.perspective || ''} className="w-full h-full object-cover" loading="lazy" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+
+          <div className="flex justify-end gap-2 pt-2 border-t">
+            <Button variant="ghost" onClick={() => setPickerOpen(false)}>Abbrechen</Button>
+            <Button onClick={() => runRegenerate(selectedRef)} className="gap-1.5">
+              <Wand2 className="w-4 h-4" />
+              {selectedRef ? 'Mit Referenz verbessern' : 'Ohne Referenz verbessern'}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
