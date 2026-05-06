@@ -360,6 +360,11 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
         const brandLower = ext.brand.toLowerCase();
         const brandFont = HEADLINE_FONTS.find(f => f.brand?.toLowerCase() === brandLower);
         if (brandFont) setHeadlineFont(brandFont.id);
+        // Auto-select manufacturer logo
+        if (makes.length) {
+          const canonical = resolveCanonicalBrand(ext.brand, makes.map(m => m.key));
+          if (canonical) setSelectedLogoBrand(prev => prev || canonical);
+        }
       }
       toast.success('Angebotsdaten erkannt!', { description: ext.vehicleTitle || 'Daten aus Bild extrahiert' });
     } catch { toast.error('Analyse fehlgeschlagen'); }
