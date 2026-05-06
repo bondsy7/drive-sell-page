@@ -905,12 +905,11 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
               {logoSource === 'manufacturer' && (
                 <div className="space-y-1.5">
                   <Label className="text-xs font-medium">Hersteller wählen</Label>
-                  <Select value={selectedLogoBrand} onValueChange={setSelectedLogoBrand}>
-                    <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Marke auswählen" /></SelectTrigger>
-                    <SelectContent>
-                      {makes.map(m => (<SelectItem key={m.key} value={m.key}>{m.key}</SelectItem>))}
-                    </SelectContent>
-                  </Select>
+                  <VehicleBrandPicker
+                    brand={selectedLogoBrand}
+                    onBrandChange={setSelectedLogoBrand}
+                    placeholder="Marke wählen..."
+                  />
                   {selectedLogoBrand && logoBase64 && (
                     <div className="flex items-center gap-2 bg-accent/10 rounded-lg px-3 py-2">
                       <img src={logoBase64} alt={selectedLogoBrand} className="w-8 h-8 object-contain" />
