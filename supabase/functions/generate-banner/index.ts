@@ -27,7 +27,7 @@ const MODEL_MAP: Record<string, ModelConfig> = {
   pro:       { engine: "gemini", model: "gemini-3-pro-image-preview", cost: 8 },
 };
 
-const EDGE_DEADLINE_MS = 135_000;
+const EDGE_DEADLINE_MS = 115_000;
 
 const PROFESSIONAL_BANNER_IMAGE_LOCK = `
 
@@ -255,7 +255,7 @@ The logo image follows now:` });
   }
 
   // Stay well below Lovable Cloud's 150s idle limit so fallbacks can run instead of causing a hard 504.
-  const modelBudgetMs = /^gemini-3-pro/.test(model) ? 55_000 : /^gemini-3/.test(model) ? 50_000 : 45_000;
+  const modelBudgetMs = /^gemini-3-pro/.test(model) ? 38_000 : /^gemini-3/.test(model) ? 34_000 : 28_000;
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     let timeoutMs = modelBudgetMs;
