@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { ArrowLeft, Sparkles, Loader2, FileText, Target, Palette, Users, MessageSquare, ImageIcon, Upload, X, Euro, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Sparkles, Loader2, FileText, Target, Palette, Users, MessageSquare, ImageIcon, Upload, X, Euro, CheckCircle2, FolderOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -12,6 +12,8 @@ import VehicleBrandModelPicker from '@/components/VehicleBrandModelPicker';
 import { Progress } from '@/components/ui/progress';
 import ProcessTimer from '@/components/ProcessTimer';
 import { useSearchParams } from 'react-router-dom';
+import VehicleAssetPicker from '@/components/VehicleAssetPicker';
+import { useVehicleAssets } from '@/hooks/useVehicleAssets';
 
 const PAGE_TYPES = [
   { value: 'leasing', label: 'Leasing-Angebot', desc: 'Monatliche Rate, Flexibilität', icon: '📋' },
@@ -74,12 +76,17 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
   const [imageStyle, setImageStyle] = useState('studio');
   const [highlights, setHighlights] = useState('');
   
-  // Image uploads (max 5)
-  const [uploadedImages, setUploadedImages] = useState<{ file: File; preview: string }[]>([]);
-  
+  // Image uploads (max 5) – preview can be a blob URL (file) or remote URL (vehicle asset)
+  const [uploadedImages, setUploadedImages] = useState<{ file?: File; preview: string; url?: string }[]>([]);
+
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState('');
   const [progressPercent, setProgressPercent] = useState(0);
+
+  // Vehicle asset picker
+  const [assetPickerOpen, setAssetPickerOpen] = useState(false);
+  const { data: vehicleAssets } = useVehicleAssets(vehicleIdParam);
+  const [vehicleDataPrefilled, setVehicleDataPrefilled] = useState(false);
 
   // Auto-load dealer profile on mount
   useEffect(() => {
@@ -92,6 +99,26 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
       }
     })();
   }, [user]);
+
+  // Auto-prefill vehicle fields from DB when ?vehicle= is provided
+  useEffect(() => {
+    if (!user || !vehicleIdParam || vehicleDataPrefilled) return;
+    (async () => {
+      const { data: v } = await supabase
+        .from('vehicles')
+        .select('brand, model, color, vehicle_data')
+        .eq('id', vehicleIdParam)
+        .maybeSingle();
+      if (!v) return;
+      const inner: any = ((v as any).vehicle_data || {}).vehicle || {};
+      if (!brand && (v.brand || inner.brand)) setBrand(v.brand || inner.brand);
+      if (!model && (v.model || inner.model)) setModel(v.model || inner.model);
+      if (!variant && inner.variant) setVariant(inner.variant);
+      if (!color && (v.color || inner.color)) setColor(v.color || inner.color);
+      setVehicleDataPrefilled(true);
+      toast.success('Fahrzeugdaten übernommen', { duration: 1800 });
+    })();
+  }, [user, vehicleIdParam, vehicleDataPrefilled, brand, model, variant, color]);
 
   const canGenerate = brand.trim() && model.trim() && pageType;
   const cost = 3;
@@ -112,7 +139,8 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
 
   const removeImage = (idx: number) => {
     setUploadedImages(prev => {
-      URL.revokeObjectURL(prev[idx].preview);
+      const item = prev[idx];
+      if (item?.file && item.preview.startsWith('blob:')) URL.revokeObjectURL(item.preview);
       return prev.filter((_, i) => i !== idx);
     });
   };
@@ -124,6 +152,17 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
+
+  const urlToBase64 = async (url: string): Promise<string> => {
+    const r = await fetch(url);
+    const blob = await r.blob();
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
 
   const handleGenerate = async () => {
     if (!canGenerate || !user) return;
@@ -159,13 +198,16 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
         secondaryColor: (profile as any).secondary_color || '',
       } : {};
 
-      // Upload user images
+      // Upload user images (own files + selected vehicle assets)
       setProgress('Bilder werden vorbereitet...');
       setProgressPercent(15);
       const uploadedBase64: string[] = [];
       for (const img of uploadedImages) {
-        const b64 = await fileToBase64(img.file);
-        uploadedBase64.push(b64);
+        if (img.file) {
+          uploadedBase64.push(await fileToBase64(img.file));
+        } else if (img.url) {
+          try { uploadedBase64.push(await urlToBase64(img.url)); } catch (e) { console.warn('asset fetch failed', e); }
+        }
       }
 
       setProgress('KI generiert Texte...');
@@ -405,6 +447,28 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
             <Upload className="w-3.5 h-3.5" /> Eigene Bilder
             <span className="text-muted-foreground/60">(optional, max. 5 – z.B. Innenraum, Motor, Details)</span>
           </label>
+
+          {vehicleIdParam && vehicleAssets && vehicleAssets.total > 0 && (
+            <button
+              type="button"
+              onClick={() => setAssetPickerOpen(true)}
+              disabled={loading || uploadedImages.length >= 5}
+              className="w-full flex items-center justify-between gap-2 rounded-lg border border-accent/30 bg-accent/5 px-3 py-2 text-xs text-foreground hover:bg-accent/10 transition-colors disabled:opacity-50"
+            >
+              <span className="flex items-center gap-2">
+                <FolderOpen className="w-4 h-4 text-accent" />
+                <strong>Vorhandene Bilder verwenden</strong>
+                <span className="text-muted-foreground">
+                  ({vehicleAssets.total} verfügbar
+                  {vehicleAssets.original.length ? ` · ${vehicleAssets.original.length} Original` : ''}
+                  {vehicleAssets.gallery.length ? ` · ${vehicleAssets.gallery.length} Galerie` : ''}
+                  {vehicleAssets.spin360.length ? ` · ${vehicleAssets.spin360.length} 360°` : ''}
+                  {vehicleAssets.banner.length ? ` · ${vehicleAssets.banner.length} Banner` : ''})
+                </span>
+              </span>
+              <span className="text-[10px] text-accent font-semibold">0 Credits</span>
+            </button>
+          )}
           <div className="flex flex-wrap gap-2">
             {uploadedImages.map((img, idx) => (
               <div key={idx} className="relative w-20 h-20 rounded-lg overflow-hidden border border-border group">
@@ -474,6 +538,26 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
           ))}
         </div>
       </div>
+
+      <VehicleAssetPicker
+        open={assetPickerOpen}
+        vehicleId={vehicleIdParam}
+        allowedKinds={['gallery', 'original', 'spin360', 'banner']}
+        title="Bilder aus Fahrzeug übernehmen"
+        description="Wähle bestehende Aufnahmen, die als Section-Bilder verwendet werden sollen."
+        onCancel={() => setAssetPickerOpen(false)}
+        onConfirm={(assets) => {
+          setAssetPickerOpen(false);
+          if (!assets.length) return;
+          const slotsLeft = 5 - uploadedImages.length;
+          const taken = assets.slice(0, slotsLeft);
+          if (assets.length > slotsLeft) toast.warning(`Nur ${slotsLeft} Bilder übernommen (max. 5).`);
+          setUploadedImages(prev => [
+            ...prev,
+            ...taken.map(a => ({ preview: a.url, url: a.url })),
+          ]);
+        }}
+      />
     </div>
   );
 };

@@ -27,7 +27,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useCredits } from '@/hooks/useCredits';
 import { uploadImagesToStorage, saveImagesToGallery, getGalleryFolderName } from '@/lib/storage-utils';
-import { ensureVehicle } from '@/lib/vehicle-utils';
+import { ensureVehicle, ensureVehicleAuto } from '@/lib/vehicle-utils';
 import type { AppState, VehicleData } from '@/types/vehicle';
 import type { TemplateId } from '@/types/template';
 import type { ModelTier } from '@/components/ModelSelector';
@@ -513,7 +513,7 @@ const Index = () => {
     try {
       const folderName = getGalleryFolderName(vin);
       // VIN-based: ensure vehicle so images are linked even without a project
-      const vehicleId = vin ? await ensureVehicle(user.id, vin, null) : null;
+      const vehicleId = await ensureVehicleAuto(user.id, vin, null);
       await saveImagesToGallery(
         allImages,
         user.id,
