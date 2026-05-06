@@ -1,10 +1,13 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Upload, Video, Loader2, Download, RotateCcw, Play } from 'lucide-react';
+import { ArrowLeft, Upload, Video, Loader2, Download, RotateCcw, Play, FolderOpen } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Progress } from '@/components/ui/progress';
 import ProcessTimer from '@/components/ProcessTimer';
+import { Badge } from '@/components/ui/badge';
+import VehicleAssetPicker from '@/components/VehicleAssetPicker';
+import { useVehicleAssets } from '@/hooks/useVehicleAssets';
 
 interface VideoGeneratorProps {
   onBack: () => void;
@@ -35,6 +38,26 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onBack, preloadedImage,
   const [errorMessage, setErrorMessage] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const [assetPickerOpen, setAssetPickerOpen] = useState(false);
+  const { data: vehicleAssets } = useVehicleAssets(vehicleId);
+
+  /** Convert remote URL → base64 data URL (same format as upload). */
+  const urlToBase64 = useCallback(async (url: string): Promise<string | null> => {
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      return await new Promise<string>((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(r.result as string);
+        r.onerror = reject;
+        r.readAsDataURL(blob);
+      });
+    } catch (e) {
+      console.error('urlToBase64 failed:', e);
+      return null;
+    }
+  }, []);
 
   const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -186,14 +209,34 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onBack, preloadedImage,
             )}
           </div>
         ) : (
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="w-full border-2 border-dashed border-border rounded-xl p-8 hover:border-accent/50 transition-colors flex flex-col items-center gap-2 text-muted-foreground"
-          >
-            <Upload className="w-8 h-8" />
-            <span className="text-sm font-medium">Bild hochladen</span>
-            <span className="text-xs">JPG, PNG, WebP – max. 10 MB</span>
-          </button>
+          <div className="space-y-2">
+            {vehicleId && vehicleAssets && vehicleAssets.total > 0 && (
+              <button
+                type="button"
+                onClick={() => setAssetPickerOpen(true)}
+                className="w-full flex items-center gap-3 p-3 rounded-lg border-2 border-accent/40 bg-accent/5 hover:bg-accent/10 transition-colors text-left"
+              >
+                <div className="w-10 h-10 rounded-md bg-accent/15 flex items-center justify-center flex-shrink-0">
+                  <FolderOpen className="w-5 h-5 text-accent" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium">Vorhandene Bilder verwenden ({vehicleAssets.total - vehicleAssets.video.length})</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    Banner {vehicleAssets.banner.length} · Galerie {vehicleAssets.gallery.length} · 360° {vehicleAssets.spin360.length} · Original {vehicleAssets.original.length}
+                  </p>
+                </div>
+                <Badge variant="secondary" className="text-[10px]">0 Credits</Badge>
+              </button>
+            )}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full border-2 border-dashed border-border rounded-xl p-8 hover:border-accent/50 transition-colors flex flex-col items-center gap-2 text-muted-foreground"
+            >
+              <Upload className="w-8 h-8" />
+              <span className="text-sm font-medium">Bild hochladen</span>
+              <span className="text-xs">JPG, PNG, WebP – max. 10 MB</span>
+            </button>
+          </div>
         )}
         <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
       </div>
@@ -303,6 +346,29 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onBack, preloadedImage,
           </p>
         </div>
       )}
+
+      <VehicleAssetPicker
+        open={assetPickerOpen}
+        vehicleId={vehicleId}
+        multi={false}
+        allowedKinds={['banner', 'gallery', 'spin360', 'original']}
+        title="Bild als Startframe wählen"
+        description="Wähle ein vorhandenes Bild aus diesem Fahrzeug — z. B. einen bereits generierten Banner oder Galeriebild — als Startframe für das Video."
+        onCancel={() => setAssetPickerOpen(false)}
+        onConfirm={async (assets) => {
+          setAssetPickerOpen(false);
+          const url = assets[0]?.url;
+          if (!url) return;
+          // If it's already a data URL, use as-is; otherwise fetch and convert.
+          if (url.startsWith('data:')) {
+            setImageBase64(url);
+          } else {
+            const b64 = await urlToBase64(url);
+            if (b64) setImageBase64(b64);
+            else toast.error('Bild konnte nicht geladen werden.');
+          }
+        }}
+      />
     </div>
   );
 };

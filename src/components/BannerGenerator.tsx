@@ -19,6 +19,9 @@ import { useSwipeNavigation } from '@/hooks/use-swipe-navigation';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { formatMandatoryDisclosure, isDatOnlyValue } from '@/lib/mandatory-disclosure';
+import VehicleAssetPicker from '@/components/VehicleAssetPicker';
+import { useVehicleAssets } from '@/hooks/useVehicleAssets';
+import { FolderOpen } from 'lucide-react';
 
 // ─── Config ───
 
@@ -148,6 +151,8 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
 
   // Vehicle image
   const [vehicleImage, setVehicleImage] = useState<string | null>(preloadedImage || null);
+  const [assetPickerOpen, setAssetPickerOpen] = useState(false);
+  const { data: vehicleAssets } = useVehicleAssets(vehicleId);
 
   // Logo selection
   const [showLogo, setShowLogo] = useState(false);
@@ -728,6 +733,24 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
             </div>
           ) : (
             <div className="space-y-2">
+              {vehicleId && vehicleAssets && vehicleAssets.total > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setAssetPickerOpen(true)}
+                  className="w-full flex items-center gap-3 p-3 rounded-lg border-2 border-accent/40 bg-accent/5 hover:bg-accent/10 transition-colors text-left"
+                >
+                  <div className="w-10 h-10 rounded-md bg-accent/15 flex items-center justify-center flex-shrink-0">
+                    <FolderOpen className="w-5 h-5 text-accent" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">Vorhandene Bilder verwenden ({vehicleAssets.total})</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      Original {vehicleAssets.original.length} · Galerie {vehicleAssets.gallery.length} · 360° {vehicleAssets.spin360.length} · Banner {vehicleAssets.banner.length}
+                    </p>
+                  </div>
+                  <Badge variant="secondary" className="text-[10px]">0 Credits</Badge>
+                </button>
+              )}
               <label className="flex flex-col items-center justify-center h-28 rounded-lg border-2 border-dashed border-border hover:border-accent/50 cursor-pointer transition-colors">
                 <Image className="w-6 h-6 text-muted-foreground mb-1" />
                 <span className="text-xs text-muted-foreground">Bild hochladen oder Angebots-Screenshot</span>
@@ -1188,6 +1211,20 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
         actionLabel={creditDialog.mode === 'all' ? `Alle ${BANNER_FORMATS.length} Formate generieren` : `${variantCount} Banner generieren`}
         onConfirm={creditDialog.mode === 'all' ? doGenerateAll : doGenerateSingle}
         onCancel={() => setCreditDialog({ open: false, cost: 0, mode: 'single' })}
+      />
+
+      <VehicleAssetPicker
+        open={assetPickerOpen}
+        vehicleId={vehicleId}
+        multi={false}
+        allowedKinds={['original', 'gallery', 'spin360', 'banner']}
+        title="Bild als Grundlage wählen"
+        description="Wähle ein vorhandenes Bild aus diesem Fahrzeug. Das gewählte Bild wird als Banner-Grundlage übernommen — keine neuen Credits nötig."
+        onCancel={() => setAssetPickerOpen(false)}
+        onConfirm={(assets) => {
+          if (assets[0]?.url) setVehicleImage(assets[0].url);
+          setAssetPickerOpen(false);
+        }}
       />
     </div>
   );
