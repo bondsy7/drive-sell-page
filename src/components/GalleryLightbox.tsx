@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, ChevronLeft, ChevronRight, Download, RotateCcw, Loader2, Trash2, ImageIcon } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Download, RotateCcw, Loader2, Trash2, ImageIcon, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useSwipeNavigation } from '@/hooks/use-swipe-navigation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import {
