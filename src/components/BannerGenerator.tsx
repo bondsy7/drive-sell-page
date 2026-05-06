@@ -369,7 +369,7 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
       toast.success('Angebotsdaten erkannt!', { description: ext.vehicleTitle || 'Daten aus Bild extrahiert' });
     } catch { toast.error('Analyse fehlgeschlagen'); }
     finally { setAnalyzing(false); }
-  }, [vehicleTitle, priceText, headline, subline, legalText]);
+  }, [vehicleTitle, priceText, headline, subline, legalText, makes]);
 
   const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
