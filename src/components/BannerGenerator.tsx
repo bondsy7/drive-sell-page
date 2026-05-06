@@ -980,12 +980,20 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium">Akzentfarbe</Label>
+            <Label className="text-xs font-medium">CI-Farben</Label>
             <div className="flex items-center gap-2">
-              <input type="color" value={accentColor} onChange={e => setAccentColor(e.target.value)}
-                className="w-9 h-9 rounded-md border border-input cursor-pointer" />
-              <Input value={accentColor} onChange={e => setAccentColor(e.target.value)}
-                className="h-9 text-sm flex-1" maxLength={7} />
+              <div className="flex items-center gap-1 flex-1">
+                <input type="color" value={accentColor} onChange={e => setAccentColor(e.target.value)}
+                  className="w-9 h-9 rounded-md border border-input cursor-pointer" title="Hauptfarbe" />
+                <Input value={accentColor} onChange={e => setAccentColor(e.target.value)}
+                  className="h-9 text-xs flex-1 min-w-0" maxLength={7} />
+              </div>
+              <div className="flex items-center gap-1 flex-1">
+                <input type="color" value={secondaryColor} onChange={e => setSecondaryColor(e.target.value)}
+                  className="w-9 h-9 rounded-md border border-input cursor-pointer" title="Sekundärfarbe" />
+                <Input value={secondaryColor} onChange={e => setSecondaryColor(e.target.value)}
+                  className="h-9 text-xs flex-1 min-w-0" maxLength={7} />
+              </div>
             </div>
           </div>
         </div>
