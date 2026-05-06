@@ -209,14 +209,34 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onBack, preloadedImage,
             )}
           </div>
         ) : (
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="w-full border-2 border-dashed border-border rounded-xl p-8 hover:border-accent/50 transition-colors flex flex-col items-center gap-2 text-muted-foreground"
-          >
-            <Upload className="w-8 h-8" />
-            <span className="text-sm font-medium">Bild hochladen</span>
-            <span className="text-xs">JPG, PNG, WebP – max. 10 MB</span>
-          </button>
+          <div className="space-y-2">
+            {vehicleId && vehicleAssets && vehicleAssets.total > 0 && (
+              <button
+                type="button"
+                onClick={() => setAssetPickerOpen(true)}
+                className="w-full flex items-center gap-3 p-3 rounded-lg border-2 border-accent/40 bg-accent/5 hover:bg-accent/10 transition-colors text-left"
+              >
+                <div className="w-10 h-10 rounded-md bg-accent/15 flex items-center justify-center flex-shrink-0">
+                  <FolderOpen className="w-5 h-5 text-accent" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium">Vorhandene Bilder verwenden ({vehicleAssets.total - vehicleAssets.video.length})</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    Banner {vehicleAssets.banner.length} · Galerie {vehicleAssets.gallery.length} · 360° {vehicleAssets.spin360.length} · Original {vehicleAssets.original.length}
+                  </p>
+                </div>
+                <Badge variant="secondary" className="text-[10px]">0 Credits</Badge>
+              </button>
+            )}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full border-2 border-dashed border-border rounded-xl p-8 hover:border-accent/50 transition-colors flex flex-col items-center gap-2 text-muted-foreground"
+            >
+              <Upload className="w-8 h-8" />
+              <span className="text-sm font-medium">Bild hochladen</span>
+              <span className="text-xs">JPG, PNG, WebP – max. 10 MB</span>
+            </button>
+          </div>
         )}
         <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
       </div>
