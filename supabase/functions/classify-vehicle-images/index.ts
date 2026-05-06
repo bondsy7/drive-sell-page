@@ -142,7 +142,8 @@ serve(async (req) => {
       generationConfig: { temperature: 0.1, responseMimeType: "application/json" },
     });
 
-    const models = ["gemini-2.5-flash", "gemini-2.5-flash-lite"];
+    // flash-lite ist 2-3x schneller bei einfacher Klassifikation; flash als Fallback
+    const models = ["gemini-2.5-flash-lite", "gemini-2.5-flash"];
     let response: Response | null = null;
     let lastErr = "";
     outer: for (const model of models) {
