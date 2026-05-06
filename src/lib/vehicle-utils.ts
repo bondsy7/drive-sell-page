@@ -81,6 +81,7 @@ export async function ensureVehicle(
     console.error('[ensureVehicle] upsert failed:', error);
     return null;
   }
+  return (data?.id as string) || null;
 }
 
 /**
