@@ -185,6 +185,8 @@ export function buildLandingPageHTML(
   const website = dealer?.website || '';
   const whatsapp = dealer?.whatsappNumber || '';
   const address = [dealer?.address, dealer?.postalCode, dealer?.city].filter(Boolean).join(', ');
+  const PRIMARY = (dealer?.primaryColor && /^#[0-9a-fA-F]{6}$/.test(dealer.primaryColor)) ? dealer.primaryColor : '#3b82f6';
+  const SECONDARY = (dealer?.secondaryColor && /^#[0-9a-fA-F]{6}$/.test(dealer.secondaryColor)) ? dealer.secondaryColor : '#1e3a5f';
 
   const socials = [
     dealer?.facebookUrl && `<a href="${dealer.facebookUrl}" target="_blank" style="color:#94a3b8;text-decoration:none">Facebook</a>`,
