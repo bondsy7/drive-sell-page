@@ -43,6 +43,7 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onBack, preloadedImage,
   const [assetPickerOpen, setAssetPickerOpen] = useState(false);
   const [autoPromptShown, setAutoPromptShown] = useState(false);
   const { data: vehicleAssets } = useVehicleAssets(vehicleId);
+  const bgTasks = useBackgroundTasks();
 
   // Auto-open picker when vehicle has existing assets and no image preloaded
   useEffect(() => {
