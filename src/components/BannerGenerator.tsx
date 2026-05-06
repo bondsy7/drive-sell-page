@@ -219,12 +219,16 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
       });
   }, [user]);
 
-  // Load dealer logo from profile
+  // Load dealer logo + CI colors from profile
   useEffect(() => {
     if (!user) return;
-    supabase.from('profiles').select('logo_url').eq('id', user.id).single()
+    supabase.from('profiles').select('logo_url, primary_color, secondary_color').eq('id', user.id).single()
       .then(({ data }) => {
         if (data?.logo_url) setDealerLogoUrl(data.logo_url);
+        const pc = (data as any)?.primary_color;
+        const sc = (data as any)?.secondary_color;
+        if (pc) setAccentColor(pc);
+        if (sc) setSecondaryColor(sc);
       });
   }, [user]);
 
