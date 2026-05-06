@@ -145,6 +145,8 @@ const Profile = () => {
           financing_bank: data.financing_bank || '',
           financing_legal_text: data.financing_legal_text || '',
           default_legal_text: data.default_legal_text || '',
+          primary_color: (data as any).primary_color || '#174f6b',
+          secondary_color: (data as any).secondary_color || '#e2b04a',
         });
       }
     });
