@@ -19,6 +19,7 @@ import { useSwipeNavigation } from '@/hooks/use-swipe-navigation';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { formatMandatoryDisclosure, isDatOnlyValue } from '@/lib/mandatory-disclosure';
+import { compressImageForAI, fileToBase64 } from '@/lib/image-compress';
 import VehicleAssetPicker from '@/components/VehicleAssetPicker';
 import { useVehicleAssets } from '@/hooks/useVehicleAssets';
 import { FolderOpen } from 'lucide-react';
@@ -316,10 +317,16 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
   const analyzeOfferImage = useCallback(async (imageBase64: string) => {
     setAnalyzing(true);
     try {
+      const payloadImage = imageBase64.startsWith('data:image/')
+        ? await compressImageForAI(imageBase64, 768, 0.72).catch(() => imageBase64)
+        : imageBase64;
       const { data, error } = await supabase.functions.invoke('analyze-offer-image', {
-        body: { imageBase64 },
+        body: { imageBase64: payloadImage, analysisMode: 'banner_quick' },
       });
-      if (error || data?.error) { toast.error('Bild konnte nicht analysiert werden'); return; }
+      if (error || data?.fallback || data?.error) {
+        toast.error(data?.error || 'Bild konnte nicht analysiert werden');
+        return;
+      }
       const ext = data?.extracted;
       if (!ext) return;
       setExtractedData(ext);
@@ -351,26 +358,32 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
     finally { setAnalyzing(false); }
   }, [vehicleTitle, priceText, headline, subline, legalText]);
 
-  const handleImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
+    try {
+      const result = await fileToBase64(file);
       setVehicleImage(result);
       if (autoAnalyze) analyzeOfferImage(result);
-    };
-    reader.readAsDataURL(file);
+    } catch {
+      toast.error('Bild konnte nicht geladen werden');
+    }
   }, [analyzeOfferImage, autoAnalyze]);
 
   // ─── Datenblatt / Preisliste analysieren (zusätzliche Daten) ───
   const analyzeDataSheet = useCallback(async (imageBase64: string) => {
     setAnalyzingDataSheet(true);
     try {
+      const payloadImage = imageBase64.startsWith('data:image/')
+        ? await compressImageForAI(imageBase64, 1400, 0.82).catch(() => imageBase64)
+        : imageBase64;
       const { data, error } = await supabase.functions.invoke('analyze-offer-image', {
-        body: { imageBase64 },
+        body: { imageBase64: payloadImage, analysisMode: 'full' },
       });
-      if (error || data?.error) { toast.error('Datenblatt konnte nicht analysiert werden'); return; }
+      if (error || data?.fallback || data?.error) {
+        toast.error(data?.error || 'Datenblatt konnte nicht analysiert werden');
+        return;
+      }
       const ext = data?.extracted;
       if (!ext) return;
       setDataSheetData(ext);
@@ -448,16 +461,16 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
     finally { setAnalyzingDataSheet(false); }
   }, []);
 
-  const handleDataSheetUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleDataSheetUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
+    try {
+      const result = await fileToBase64(file);
       setDataSheetImage(result);
       analyzeDataSheet(result);
-    };
-    reader.readAsDataURL(file);
+    } catch {
+      toast.error('Datenblatt konnte nicht geladen werden');
+    }
   }, [analyzeDataSheet]);
 
   // Build prompt for a specific format
