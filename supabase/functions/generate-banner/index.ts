@@ -27,6 +27,8 @@ const MODEL_MAP: Record<string, ModelConfig> = {
   pro:       { engine: "gemini", model: "gemini-3-pro-image-preview", cost: 8 },
 };
 
+const EDGE_DEADLINE_MS = 115_000;
+
 const PROFESSIONAL_BANNER_IMAGE_LOCK = `
 
 PROFESSIONAL VEHICLE INTEGRATION LOCK (MANDATORY):
@@ -117,6 +119,8 @@ async function authenticateAndDeductCredits(req: Request, cost: number): Promise
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  const requestStartedAt = Date.now();
+
   try {
     const { prompt, imageBase64, logoBase64, modelTier, width, height } = await req.json();
     if (!prompt) throw new Error("No prompt provided");
@@ -144,7 +148,7 @@ serve(async (req) => {
       let lastGeminiError = "";
       for (const geminiModel of geminiModels) {
         try {
-          resultImage = await generateGemini(lockedPrompt, imageBase64, logoBase64, geminiModel, maxRetries, width, height);
+          resultImage = await generateGemini(lockedPrompt, imageBase64, logoBase64, geminiModel, maxRetries, width, height, requestStartedAt);
           if (resultImage) break;
         } catch (err) {
           lastGeminiError = err instanceof Error ? err.message : "Gemini error";
@@ -211,7 +215,7 @@ async function toInlineData(input: string | null | undefined, fallbackMime = "im
   return { mimeType: mime, data };
 }
 
-async function generateGemini(prompt: string, imageBase64: string | null, logoBase64: string | null, model: string, retries: number, width?: number, height?: number): Promise<string | null> {
+async function generateGemini(prompt: string, imageBase64: string | null, logoBase64: string | null, model: string, retries: number, width?: number, height?: number, requestStartedAt = Date.now()): Promise<string | null> {
   const apiKey = await getSecret("GEMINI_API_KEY");
   if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
 
@@ -250,11 +254,15 @@ The logo image follows now:` });
     (generationConfig as any).imageConfig = { aspectRatio: aspectLabel };
   }
 
-  // gemini-3-pro is significantly slower than 2.5/flash — give it more headroom
-  const timeoutMs = /^gemini-3-pro/.test(model) ? 180_000 : /^gemini-3/.test(model) ? 120_000 : 90_000;
+  // Stay well below Lovable Cloud's 150s idle limit so fallbacks can run instead of causing a hard 504.
+  const modelBudgetMs = /^gemini-3-pro/.test(model) ? 38_000 : /^gemini-3/.test(model) ? 34_000 : 28_000;
 
   for (let attempt = 0; attempt <= retries; attempt++) {
+    let timeoutMs = modelBudgetMs;
     try {
+      const remainingMs = EDGE_DEADLINE_MS - (Date.now() - requestStartedAt);
+      if (remainingMs < 12_000) throw new Error("Banner generation deadline reached before model fallback");
+      timeoutMs = Math.max(8_000, Math.min(modelBudgetMs, remainingMs - 5_000));
       const response = await fetchWithTimeout(url, {
         method: "POST",
         headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
