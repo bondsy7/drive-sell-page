@@ -346,6 +346,29 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onBack, preloadedImage,
           </p>
         </div>
       )}
+
+      <VehicleAssetPicker
+        open={assetPickerOpen}
+        vehicleId={vehicleId}
+        multi={false}
+        allowedKinds={['banner', 'gallery', 'spin360', 'original']}
+        title="Bild als Startframe wählen"
+        description="Wähle ein vorhandenes Bild aus diesem Fahrzeug — z. B. einen bereits generierten Banner oder Galeriebild — als Startframe für das Video."
+        onCancel={() => setAssetPickerOpen(false)}
+        onConfirm={async (assets) => {
+          setAssetPickerOpen(false);
+          const url = assets[0]?.url;
+          if (!url) return;
+          // If it's already a data URL, use as-is; otherwise fetch and convert.
+          if (url.startsWith('data:')) {
+            setImageBase64(url);
+          } else {
+            const b64 = await urlToBase64(url);
+            if (b64) setImageBase64(b64);
+            else toast.error('Bild konnte nicht geladen werden.');
+          }
+        }}
+      />
     </div>
   );
 };
