@@ -447,6 +447,28 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
             <Upload className="w-3.5 h-3.5" /> Eigene Bilder
             <span className="text-muted-foreground/60">(optional, max. 5 – z.B. Innenraum, Motor, Details)</span>
           </label>
+
+          {vehicleIdParam && vehicleAssets && vehicleAssets.total > 0 && (
+            <button
+              type="button"
+              onClick={() => setAssetPickerOpen(true)}
+              disabled={loading || uploadedImages.length >= 5}
+              className="w-full flex items-center justify-between gap-2 rounded-lg border border-accent/30 bg-accent/5 px-3 py-2 text-xs text-foreground hover:bg-accent/10 transition-colors disabled:opacity-50"
+            >
+              <span className="flex items-center gap-2">
+                <FolderOpen className="w-4 h-4 text-accent" />
+                <strong>Vorhandene Bilder verwenden</strong>
+                <span className="text-muted-foreground">
+                  ({vehicleAssets.total} verfügbar
+                  {vehicleAssets.original.length ? ` · ${vehicleAssets.original.length} Original` : ''}
+                  {vehicleAssets.gallery.length ? ` · ${vehicleAssets.gallery.length} Galerie` : ''}
+                  {vehicleAssets.spin360.length ? ` · ${vehicleAssets.spin360.length} 360°` : ''}
+                  {vehicleAssets.banner.length ? ` · ${vehicleAssets.banner.length} Banner` : ''})
+                </span>
+              </span>
+              <span className="text-[10px] text-accent font-semibold">0 Credits</span>
+            </button>
+          )}
           <div className="flex flex-wrap gap-2">
             {uploadedImages.map((img, idx) => (
               <div key={idx} className="relative w-20 h-20 rounded-lg overflow-hidden border border-border group">
