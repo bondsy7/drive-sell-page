@@ -319,7 +319,7 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
       .then(({ data: imgs }) => {
         if (imgs) setProjectImages(imgs.map((i: any) => i.image_url).filter(Boolean));
       });
-  }, [selectedProjectId, projects]);
+  }, [selectedProjectId, projects, makes]);
 
   // ─── Auto-extract info from uploaded offer image ───
   const analyzeOfferImage = useCallback(async (imageBase64: string) => {
