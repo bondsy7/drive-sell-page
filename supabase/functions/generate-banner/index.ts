@@ -27,6 +27,8 @@ const MODEL_MAP: Record<string, ModelConfig> = {
   pro:       { engine: "gemini", model: "gemini-3-pro-image-preview", cost: 8 },
 };
 
+const EDGE_DEADLINE_MS = 135_000;
+
 const PROFESSIONAL_BANNER_IMAGE_LOCK = `
 
 PROFESSIONAL VEHICLE INTEGRATION LOCK (MANDATORY):
@@ -117,6 +119,8 @@ async function authenticateAndDeductCredits(req: Request, cost: number): Promise
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  const requestStartedAt = Date.now();
+
   try {
     const { prompt, imageBase64, logoBase64, modelTier, width, height } = await req.json();
     if (!prompt) throw new Error("No prompt provided");
@@ -144,7 +148,7 @@ serve(async (req) => {
       let lastGeminiError = "";
       for (const geminiModel of geminiModels) {
         try {
-          resultImage = await generateGemini(lockedPrompt, imageBase64, logoBase64, geminiModel, maxRetries, width, height);
+          resultImage = await generateGemini(lockedPrompt, imageBase64, logoBase64, geminiModel, maxRetries, width, height, requestStartedAt);
           if (resultImage) break;
         } catch (err) {
           lastGeminiError = err instanceof Error ? err.message : "Gemini error";
