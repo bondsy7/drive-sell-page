@@ -215,7 +215,7 @@ async function toInlineData(input: string | null | undefined, fallbackMime = "im
   return { mimeType: mime, data };
 }
 
-async function generateGemini(prompt: string, imageBase64: string | null, logoBase64: string | null, model: string, retries: number, width?: number, height?: number): Promise<string | null> {
+async function generateGemini(prompt: string, imageBase64: string | null, logoBase64: string | null, model: string, retries: number, width?: number, height?: number, requestStartedAt = Date.now()): Promise<string | null> {
   const apiKey = await getSecret("GEMINI_API_KEY");
   if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
 
@@ -254,11 +254,14 @@ The logo image follows now:` });
     (generationConfig as any).imageConfig = { aspectRatio: aspectLabel };
   }
 
-  // gemini-3-pro is significantly slower than 2.5/flash — give it more headroom
-  const timeoutMs = /^gemini-3-pro/.test(model) ? 180_000 : /^gemini-3/.test(model) ? 120_000 : 90_000;
+  // Stay well below Lovable Cloud's 150s idle limit so fallbacks can run instead of causing a hard 504.
+  const modelBudgetMs = /^gemini-3-pro/.test(model) ? 55_000 : /^gemini-3/.test(model) ? 50_000 : 45_000;
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
+      const remainingMs = EDGE_DEADLINE_MS - (Date.now() - requestStartedAt);
+      if (remainingMs < 12_000) throw new Error("Banner generation deadline reached before model fallback");
+      const timeoutMs = Math.max(8_000, Math.min(modelBudgetMs, remainingMs - 5_000));
       const response = await fetchWithTimeout(url, {
         method: "POST",
         headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
