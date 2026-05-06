@@ -19,6 +19,9 @@ import { useSwipeNavigation } from '@/hooks/use-swipe-navigation';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { formatMandatoryDisclosure, isDatOnlyValue } from '@/lib/mandatory-disclosure';
+import VehicleAssetPicker from '@/components/VehicleAssetPicker';
+import { useVehicleAssets } from '@/hooks/useVehicleAssets';
+import { FolderOpen } from 'lucide-react';
 
 // ─── Config ───
 
