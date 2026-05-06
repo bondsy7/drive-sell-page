@@ -50,7 +50,25 @@ Du bekommst ${imageParts.length} Bilder/Dokumente zum SELBEN Fahrzeugangebot (z.
 - legalText: alle relevanten Pflichtangaben aus allen Bildern zusammenfassen (keine Duplikate).
 ` : '';
 
-    const promptText = `Analysiere ${imageParts.length > 1 ? `diese ${imageParts.length} Bilder` : 'dieses Bild'} eines Fahrzeugangebots (z.B. von mobile.de, autoscout24, leasingmarkt.de, carwow, meinauto.de etc.) und extrahiere alle relevanten Informationen.${multiHint}
+    const quickPromptText = `Analysiere dieses Bild schnell für einen Werbebanner. Extrahiere NUR klar sichtbare Basisdaten, nicht raten.
+
+Antworte NUR mit einem JSON-Objekt ohne Markdown:
+{
+  "vehicleTitle": "Marke Modell Variante, falls sichtbar",
+  "brand": "Marke, falls sichtbar",
+  "price": "Kaufpreis/Angebotspreis, falls sichtbar",
+  "priceType": "buy oder lease oder finance oder abo, falls klar erkennbar",
+  "monthlyRate": "Monatsrate, falls sichtbar",
+  "headline": "kurze Banner-Headline aus sichtbaren Daten",
+  "subline": "kurze Subline aus sichtbaren Daten",
+  "dealer": "Händlername, falls sichtbar",
+  "location": "Standort, falls sichtbar",
+  "confidence": "high oder medium oder low"
+}
+
+Wenn ein Feld nicht klar lesbar ist, setze es auf null. Fokus: schnell, knapp, JSON-valid.`;
+
+    const fullPromptText = `Analysiere ${imageParts.length > 1 ? `diese ${imageParts.length} Bilder` : 'dieses Bild'} eines Fahrzeugangebots (z.B. von mobile.de, autoscout24, leasingmarkt.de, carwow, meinauto.de etc.) und extrahiere alle relevanten Informationen.${multiHint}
 
 ⚠️ ABSOLUTE GRUNDREGEL — KEINE ERFINDUNGEN:
 - Lies ALLE Werte WÖRTLICH aus dem Bild ab (Tabellenzellen, Listen, Labels).
@@ -133,6 +151,8 @@ Antworte NUR mit einem JSON-Objekt im folgenden Format (keine Markdown-Formatier
 }
 
 Wenn ein Feld nicht erkennbar ist, setze es auf null. Extrahiere so viel wie möglich, auch von Datenblättern, Preislisten, WLTP-Tabellen, CO2-Labels.`;
+
+    const promptText = isBannerQuick ? quickPromptText : fullPromptText;
 
     const body = JSON.stringify({
       contents: [{
