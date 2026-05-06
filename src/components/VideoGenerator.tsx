@@ -123,48 +123,36 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onBack, preloadedImage,
       const operationName = data.operationName;
       if (!operationName) throw new Error('Keine Operation-ID erhalten');
 
-      // Start polling
+      // Polling läuft im BackgroundTasksProvider weiter, auch wenn die Seite verlassen wird.
       setVideoState('polling');
-      let attempts = 0;
-      const maxAttempts = 60; // 5 min max
+      toast.success('Video wird im Hintergrund erstellt – du kannst die Seite verlassen.');
 
-      pollIntervalRef.current = setInterval(async () => {
-        attempts++;
-        setPollProgress(Math.min((attempts / maxAttempts) * 100, 95));
-
-        try {
-          const { data: pollData, error: pollError } = await supabase.functions.invoke('generate-video', {
-            body: { action: 'poll', operationName, vehicleId: vehicleId || undefined },
-          });
-
-          if (pollError) {
-            console.error('Poll error:', pollError);
+      bgTasks.startVideoPolling({
+        operationName,
+        vehicleId: vehicleId || undefined,
+        onDone: (result) => {
+          if (result.error) {
+            setVideoState('error');
+            setErrorMessage(result.error);
             return;
           }
-
-          if (pollData?.done) {
-            if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-
-            const videoSrc = pollData.videoUrl || pollData.videoBase64 || pollData.videoUri;
-            if (videoSrc) {
-              setVideoBase64(videoSrc);
-              setVideoState('done');
-              setPollProgress(100);
-              toast.success('Video erfolgreich erstellt!');
-            } else {
-              setVideoState('error');
-              setErrorMessage(pollData.error || 'Unbekannter Fehler');
-              toast.error('Video-Generierung fehlgeschlagen');
-            }
+          const videoSrc = result.videoUrl || result.videoBase64 || result.videoUri;
+          if (videoSrc) {
+            setVideoBase64(videoSrc);
+            setVideoState('done');
+            setPollProgress(100);
           }
+        },
+      });
 
-          if (attempts >= maxAttempts) {
-            if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-            setVideoState('error');
-            setErrorMessage('Zeitüberschreitung – bitte erneut versuchen');
-          }
-        } catch (e) {
-          console.error('Poll exception:', e);
+      // Lokaler Fortschritts-Spinner als visueller Hinweis (nur wenn Komponente noch sichtbar ist)
+      let attempts = 0;
+      const maxAttempts = 90;
+      pollIntervalRef.current = setInterval(() => {
+        attempts++;
+        setPollProgress(Math.min((attempts / maxAttempts) * 100, 95));
+        if (attempts >= maxAttempts && pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current);
         }
       }, 5000);
     } catch (err: any) {
@@ -173,7 +161,7 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onBack, preloadedImage,
       setErrorMessage(err.message || 'Fehler bei der Video-Generierung');
       toast.error(err.message || 'Fehler bei der Video-Generierung');
     }
-  }, [imageBase64, customPrompt, aspectRatio, vehicleId]);
+  }, [imageBase64, customPrompt, aspectRatio, vehicleId, bgTasks]);
 
   const handleDownload = useCallback(() => {
     if (!videoBase64) return;
