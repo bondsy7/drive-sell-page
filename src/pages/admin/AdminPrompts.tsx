@@ -316,6 +316,29 @@ CRITICAL RULES:
   banner_style_minimal: 'clean minimalist design, lots of whitespace, subtle elegant typography',
   banner_style_retro: 'retro 80s style, vintage color grading, nostalgic warm tones',
   banner_style_sport: 'dynamic sporty look, motion blur hints, aggressive angles, high performance feel',
+  banner_style_volkswagen: `Create a digital advertising banner in the visual identity of Volkswagen / Volkswagen Nutzfahrzeuge, based on a clean, official, premium, minimal and brand-safe OEM advertising style.
+
+The banner must look like an official Volkswagen brand ad, not like a loud dealership flyer. The design language must be calm, structured, modern, spacious and highly controlled. Use a strict grid, excellent alignment, generous whitespace, clear hierarchy and restrained branding. Every element must feel intentional, balanced and clean.
+
+CORE BRAND STYLE: calm and premium, minimal and reduced, no clutter, no exaggerated sales look, no discount chaos, no cheap retail flyer feeling, no decorative overload. The banner must feel trustworthy, modern and corporate. The overall impression should be restrained, confident and polished.
+
+COLOR SYSTEM: primary dark blue close to #001E50, optional supportive deep blue tones in the same family, warm off white / light beige background close to #F3EFE7 or #F5F2EB, white for text on dark or photographic areas, neutral gray only for legal copy or subtle secondary text. Do NOT use loud red, bright yellow, neon tones, flashy gradients or random accent colors. If accent colors are present, use them minimally and never let them dominate.
+
+TYPOGRAPHY: clean, rounded but precise modern sans serif, highly legible, premium and calm. No decorative, condensed sales, handwritten or aggressive italic display fonts. Headline: large, bold, clear, short, visually dominant — dark blue on light background or white on dark/image background. Subline: smaller, lighter weight, supportive, never dominant, close to headline. Price/rate: integrated as structured info, prominent but premium, never a loud discount burst. CTA: small elegant rounded pill button, dark blue with white text preferred, visible but never oversized. Legal copy: very small, discreet, horizontal, readable, lower edge, must not compete with headline.
+
+LOGO USAGE: Volkswagen / Volkswagen Nutzfahrzeuge logo as a calm brand anchor with whitespace around it, never oversized, never distorted, preferably bottom right or in a quiet brand block, integrated not pasted on. Optional thin separator lines near the logo aligned in clean VW style.
+
+LAYOUT: clear visual hierarchy, one dominant key visual, one structured copy area, brand anchor placement, disciplined spacing, balanced proportions, no overcrowding. Vehicle must remain clearly visible — avoid placing text over wheels, headlights, grille, windshield or silhouette. For wide/landscape: split layout ~55-65% image, ~35-45% text/brand area. For square: strong full image with protected text zone OR stacked image-top/text-bottom. For portrait/story: upper 50-60% image, lower 40-50% text and brand. For small/tight banners: simplify aggressively — headline, price, logo, CTA only.
+
+IMAGE STYLE: authentic, realistic, high-quality, brand appropriate. Clean, natural, premium, believable, professionally lit, visually calm. Not overprocessed, surreal, cartoonish or overly dramatic. Vehicle is hero with realistic proportions, no perspective distortion, no fake reflections.
+
+VW STYLE DETAILS: subtle thin horizontal/vertical separator lines, precise spacing, quiet logo anchoring, calm blocks of off-white space, clean transitions between image and copy area. No random floating elements, no decorative icons, no heavy shadows, no bevels, no glossy UI effects, no flashy overlays.
+
+PRICE/RATE: integrated as a clean offer line aligned to headline system, visually strong but not loud. NO starbursts, loud sale bubbles, chaotic corner labels or bargain supermarket styling.
+
+NEGATIVES (DO NOT): loud dealership flyer styling, aggressive discount look, messy compositions, large red sale elements, neon colors, unbalanced layouts, generic stock ad aesthetics, overly playful design, chaotic icons, fake 3D shadows, tilted bargain stickers, cluttered footers, oversized logo, badly cropped vehicle, unreadable legal line.
+
+The final banner must feel unmistakably Volkswagen: minimal, precise, spacious, balanced, premium and calm.`,
 
   // ── Banner – Preisdarstellung ──
   banner_price_sign: 'on a classic dealership price tag/sign attached to the image',
