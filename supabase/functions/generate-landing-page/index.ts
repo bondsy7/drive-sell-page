@@ -623,8 +623,8 @@ function buildHTML(
   const website = dealer?.website || "";
   const whatsapp = dealer?.whatsappNumber || "";
   const address = [dealer?.address, dealer?.postalCode, dealer?.city].filter(Boolean).join(", ");
-  const PRIMARY = (dealer?.primaryColor && /^#[0-9a-fA-F]{6}$/.test(dealer.primaryColor)) ? dealer.primaryColor : "#3b82f6";
-  const SECONDARY = (dealer?.secondaryColor && /^#[0-9a-fA-F]{6}$/.test(dealer.secondaryColor)) ? dealer.secondaryColor : "#1e3a5f";
+  const PRIMARY = (dealer?.primaryColor && /^#[0-9a-fA-F]{6}$/.test(dealer.primaryColor)) ? dealer.primaryColor : "${PRIMARY}";
+  const SECONDARY = (dealer?.secondaryColor && /^#[0-9a-fA-F]{6}$/.test(dealer.secondaryColor)) ? dealer.secondaryColor : "${SECONDARY}";
   const hexToRgb = (h: string) => { const m = h.replace('#',''); return `${parseInt(m.slice(0,2),16)},${parseInt(m.slice(2,4),16)},${parseInt(m.slice(4,6),16)}`; };
   const PRIMARY_RGB = hexToRgb(PRIMARY);
 
@@ -648,13 +648,13 @@ function buildHTML(
     const img = images[s.id] || "";
     const bgMap: Record<string, string> = {
       white: "background:#ffffff", light: "background:#f8fafc",
-      dark: "background:#0f172a;color:#f1f5f9", accent: "background:#1e3a5f;color:#ffffff",
+      dark: "background:#0f172a;color:#f1f5f9", accent: "background:${SECONDARY};color:#ffffff",
     };
     const bg = bgMap[s.bgStyle] || bgMap.white;
     const isDark = s.bgStyle === "dark" || s.bgStyle === "accent";
     const hc = isDark ? "#ffffff" : "#0f172a";
     const sc = isDark ? "#cbd5e1" : "#475569";
-    const accentLine = isDark ? "#3b82f6" : "#1e3a5f";
+    const accentLine = isDark ? "${PRIMARY}" : "${SECONDARY}";
 
     // Accent line decoration for headlines
     const headlineHTML = `<div style="text-align:center;margin-bottom:40px"><h2 style="font-family:'Space Grotesk',sans-serif;font-size:32px;font-weight:700;color:${hc};margin-bottom:12px">${s.headline}</h2><div style="width:60px;height:3px;background:${accentLine};margin:0 auto;border-radius:2px"></div></div>`;
@@ -666,13 +666,13 @@ function buildHTML(
       return `<section style="${bg};padding:80px 24px">${wrapMax(760, headlineHTML + `<div style="font-size:15px;line-height:1.9;color:${sc}">${s.content}</div>`)}</section>`;
     }
     if (s.type === "cta") {
-      return `<section style="background:linear-gradient(135deg,#1e3a5f 0%,#0f172a 50%,#1e293b 100%);color:#ffffff;padding:100px 24px;text-align:center;position:relative;overflow:hidden">
-  <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(59,130,246,0.15) 0%,transparent 60%)"></div>
+      return `<section style="background:linear-gradient(135deg,${SECONDARY} 0%,#0f172a 50%,#1e293b 100%);color:#ffffff;padding:100px 24px;text-align:center;position:relative;overflow:hidden">
+  <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(${PRIMARY_RGB},0.15) 0%,transparent 60%)"></div>
   <div style="position:relative;z-index:1;max-width:640px;margin:0 auto">
     <h2 style="font-family:'Space Grotesk',sans-serif;font-size:36px;font-weight:700;margin-bottom:16px">${s.headline}</h2>
     <div style="font-size:17px;line-height:1.7;opacity:0.9;margin-bottom:40px">${s.content}</div>
     <div style="display:flex;flex-wrap:wrap;gap:16px;justify-content:center">
-      ${phone ? `<a href="tel:${phone}" style="display:inline-flex;align-items:center;gap:8px;background:#3b82f6;color:#fff;padding:16px 36px;border-radius:12px;text-decoration:none;font-weight:700;font-size:16px;box-shadow:0 4px 20px rgba(59,130,246,0.4);transition:transform .2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">📞 Jetzt anrufen</a>` : ""}
+      ${phone ? `<a href="tel:${phone}" style="display:inline-flex;align-items:center;gap:8px;background:${PRIMARY};color:#fff;padding:16px 36px;border-radius:12px;text-decoration:none;font-weight:700;font-size:16px;box-shadow:0 4px 20px rgba(${PRIMARY_RGB},0.4);transition:transform .2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">📞 Jetzt anrufen</a>` : ""}
       ${whatsapp ? `<a href="https://wa.me/${whatsapp.replace(/[^0-9]/g, "")}" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:#25d366;color:#fff;padding:16px 36px;border-radius:12px;text-decoration:none;font-weight:700;font-size:16px;box-shadow:0 4px 20px rgba(37,211,102,0.3);transition:transform .2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">💬 WhatsApp</a>` : ""}
     </div>
   </div>
@@ -742,7 +742,7 @@ function buildHTML(
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Inter',sans-serif;color:#1e293b;background:#ffffff;-webkit-font-smoothing:antialiased}
     img{max-width:100%;height:auto}
-    a{color:#3b82f6;transition:color .2s}
+    a{color:${PRIMARY};transition:color .2s}
     a:hover{color:#2563eb}
     h1,h2,h3{font-family:'Space Grotesk',sans-serif}
     h3{font-size:19px;font-weight:600;margin:24px 0 10px;color:inherit}
@@ -770,18 +770,18 @@ function buildHTML(
       ${logoHeader}
       <span style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px;color:#0f172a">${dealerName}</span>
     </div>
-    ${phone ? `<a href="tel:${phone}" style="background:#1e3a5f;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600;transition:background .2s" onmouseover="this.style.background='#3b82f6'" onmouseout="this.style.background='#1e3a5f'">Jetzt anfragen</a>` : ""}
+    ${phone ? `<a href="tel:${phone}" style="background:${SECONDARY};color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600;transition:background .2s" onmouseover="this.style.background='${PRIMARY}'" onmouseout="this.style.background='${SECONDARY}'">Jetzt anfragen</a>` : ""}
   </header>
 
   <!-- Hero – 3:1 Panoramic -->
-  <section class="hero-wrap" style="position:relative;min-height:560px;display:flex;align-items:center;overflow:hidden;${heroImage ? `background:url('${heroImage}') center/cover no-repeat` : "background:linear-gradient(135deg,#0f172a,#1e3a5f)"}">
+  <section class="hero-wrap" style="position:relative;min-height:560px;display:flex;align-items:center;overflow:hidden;${heroImage ? `background:url('${heroImage}') center/cover no-repeat` : "background:linear-gradient(135deg,#0f172a,${SECONDARY})"}">
     <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(15,23,42,0.9) 0%,rgba(15,23,42,0.5) 40%,rgba(15,23,42,0.2) 100%)"></div>
     <div style="position:absolute;bottom:0;left:0;right:0;height:120px;background:linear-gradient(to top,rgba(15,23,42,0.6),transparent)"></div>
     <div class="hero-content" style="position:relative;z-index:1;max-width:700px;padding:100px 48px 80px;color:#ffffff">
-      <div style="width:60px;height:4px;background:#3b82f6;margin-bottom:24px;border-radius:2px"></div>
+      <div style="width:60px;height:4px;background:${PRIMARY};margin-bottom:24px;border-radius:2px"></div>
       <h1 style="font-family:'Space Grotesk',sans-serif;font-size:48px;font-weight:800;line-height:1.1;margin-bottom:20px;text-shadow:0 2px 40px rgba(0,0,0,0.3)">${hero.headline || `${brand} ${model}`}</h1>
       <p style="font-size:19px;line-height:1.6;opacity:0.9;margin-bottom:36px;max-width:540px">${hero.subheadline || ""}</p>
-      ${hero.ctaText ? `<a href="#kontakt" style="display:inline-flex;align-items:center;gap:8px;background:#3b82f6;color:#fff;padding:16px 36px;border-radius:12px;text-decoration:none;font-weight:700;font-size:16px;box-shadow:0 4px 20px rgba(59,130,246,0.4);transition:transform .2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">${hero.ctaText}</a>` : ""}
+      ${hero.ctaText ? `<a href="#kontakt" style="display:inline-flex;align-items:center;gap:8px;background:${PRIMARY};color:#fff;padding:16px 36px;border-radius:12px;text-decoration:none;font-weight:700;font-size:16px;box-shadow:0 4px 20px rgba(${PRIMARY_RGB},0.4);transition:transform .2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">${hero.ctaText}</a>` : ""}
     </div>
   </section>
 
@@ -794,9 +794,9 @@ function buildHTML(
       <h2 style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;margin-bottom:8px">${dealerName}</h2>
       ${address ? `<p style="color:#64748b;font-size:14px;margin-bottom:8px">${address}</p>` : ""}
       <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:20px;margin-top:20px;font-size:14px">
-        ${phone ? `<a href="tel:${phone}" style="color:#3b82f6;text-decoration:none;display:flex;align-items:center;gap:6px">📞 ${phone}</a>` : ""}
-        ${email ? `<a href="mailto:${email}" style="color:#3b82f6;text-decoration:none;display:flex;align-items:center;gap:6px">✉️ ${email}</a>` : ""}
-        ${website ? `<a href="${website.startsWith("http") ? website : "https://" + website}" target="_blank" style="color:#3b82f6;text-decoration:none;display:flex;align-items:center;gap:6px">🌐 Website</a>` : ""}
+        ${phone ? `<a href="tel:${phone}" style="color:${PRIMARY};text-decoration:none;display:flex;align-items:center;gap:6px">📞 ${phone}</a>` : ""}
+        ${email ? `<a href="mailto:${email}" style="color:${PRIMARY};text-decoration:none;display:flex;align-items:center;gap:6px">✉️ ${email}</a>` : ""}
+        ${website ? `<a href="${website.startsWith("http") ? website : "https://" + website}" target="_blank" style="color:${PRIMARY};text-decoration:none;display:flex;align-items:center;gap:6px">🌐 Website</a>` : ""}
         ${whatsapp ? `<a href="https://wa.me/${whatsapp.replace(/[^0-9]/g, "")}" target="_blank" style="color:#25d366;text-decoration:none;display:flex;align-items:center;gap:6px">💬 WhatsApp</a>` : ""}
       </div>
       ${socials ? `<div style="margin-top:20px;font-size:13px">${socials}</div>` : ""}
