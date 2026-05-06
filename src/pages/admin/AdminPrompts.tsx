@@ -553,8 +553,8 @@ const PROMPT_META: Record<string, PromptMeta> = {
     }];
   })),
   // Styles
-  ...Object.fromEntries(['premium', 'cinematic', 'bold', 'minimal', 'retro', 'sport'].map(id => {
-    const labels: Record<string, string> = { premium: 'Seriös / Premium', cinematic: 'Cinematic', bold: 'Verrückt / Auffällig', minimal: 'Minimalistisch', retro: 'Retro / Vintage', sport: 'Sportlich' };
+  ...Object.fromEntries(['premium', 'cinematic', 'bold', 'minimal', 'retro', 'sport', 'volkswagen'].map(id => {
+    const labels: Record<string, string> = { premium: 'Seriös / Premium', cinematic: 'Cinematic', bold: 'Verrückt / Auffällig', minimal: 'Minimalistisch', retro: 'Retro / Vintage', sport: 'Sportlich', volkswagen: 'Volkswagen (CI)' };
     return [`banner_style_${id}`, {
       label: labels[id], description: `Stil-Prompt für "${labels[id]}"`,
       model: '-', edgeFunction: 'generate-banner',
