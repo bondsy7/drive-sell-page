@@ -11,6 +11,8 @@ serve(async (req) => {
   try {
     const { user } = await authenticateRequest(req);
     const body0 = await req.json();
+    const analysisMode = String(body0?.analysisMode || "full");
+    const isBannerQuick = analysisMode === "banner_quick";
     // Accept either single image (legacy) or array of multiple datasheets/screenshots.
     const rawImages: string[] = Array.isArray(body0?.imageBase64s) && body0.imageBase64s.length
       ? body0.imageBase64s
@@ -29,11 +31,13 @@ serve(async (req) => {
         : img.startsWith("data:image/webp") ? "image/webp" : "image/jpeg";
       return { inlineData: { mimeType, data } };
     });
-    console.log(`[analyze-offer-image] Analyzing ${imageParts.length} document(s) in one merged call`);
+    console.log(`[analyze-offer-image] Analyzing ${imageParts.length} document(s) in ${analysisMode} mode`);
 
     // gemini-2.5-pro liest dichte Tabellen (Verbrauch, Anzahlung, CO₂) deutlich
-    // zuverlässiger als flash. Flash bleibt nur als Fallback.
-    const models = ["gemini-2.5-pro", "gemini-2.5-flash"];
+    // zuverlässiger als flash. Für Banner reicht schnelle Grobextraktion.
+    const models = isBannerQuick
+      ? ["gemini-2.5-flash-lite", "gemini-2.5-flash"]
+      : ["gemini-2.5-pro", "gemini-2.5-flash"];
     const multiHint = imageParts.length > 1 ? `
 
 ⚠️ MEHRERE DOKUMENTE (${imageParts.length} Bilder) — MERGE-MODUS:
@@ -46,7 +50,25 @@ Du bekommst ${imageParts.length} Bilder/Dokumente zum SELBEN Fahrzeugangebot (z.
 - legalText: alle relevanten Pflichtangaben aus allen Bildern zusammenfassen (keine Duplikate).
 ` : '';
 
-    const promptText = `Analysiere ${imageParts.length > 1 ? `diese ${imageParts.length} Bilder` : 'dieses Bild'} eines Fahrzeugangebots (z.B. von mobile.de, autoscout24, leasingmarkt.de, carwow, meinauto.de etc.) und extrahiere alle relevanten Informationen.${multiHint}
+    const quickPromptText = `Analysiere dieses Bild schnell für einen Werbebanner. Extrahiere NUR klar sichtbare Basisdaten, nicht raten.
+
+Antworte NUR mit einem JSON-Objekt ohne Markdown:
+{
+  "vehicleTitle": "Marke Modell Variante, falls sichtbar",
+  "brand": "Marke, falls sichtbar",
+  "price": "Kaufpreis/Angebotspreis, falls sichtbar",
+  "priceType": "buy oder lease oder finance oder abo, falls klar erkennbar",
+  "monthlyRate": "Monatsrate, falls sichtbar",
+  "headline": "kurze Banner-Headline aus sichtbaren Daten",
+  "subline": "kurze Subline aus sichtbaren Daten",
+  "dealer": "Händlername, falls sichtbar",
+  "location": "Standort, falls sichtbar",
+  "confidence": "high oder medium oder low"
+}
+
+Wenn ein Feld nicht klar lesbar ist, setze es auf null. Fokus: schnell, knapp, JSON-valid.`;
+
+    const fullPromptText = `Analysiere ${imageParts.length > 1 ? `diese ${imageParts.length} Bilder` : 'dieses Bild'} eines Fahrzeugangebots (z.B. von mobile.de, autoscout24, leasingmarkt.de, carwow, meinauto.de etc.) und extrahiere alle relevanten Informationen.${multiHint}
 
 ⚠️ ABSOLUTE GRUNDREGEL — KEINE ERFINDUNGEN:
 - Lies ALLE Werte WÖRTLICH aus dem Bild ab (Tabellenzellen, Listen, Labels).
@@ -130,6 +152,8 @@ Antworte NUR mit einem JSON-Objekt im folgenden Format (keine Markdown-Formatier
 
 Wenn ein Feld nicht erkennbar ist, setze es auf null. Extrahiere so viel wie möglich, auch von Datenblättern, Preislisten, WLTP-Tabellen, CO2-Labels.`;
 
+    const promptText = isBannerQuick ? quickPromptText : fullPromptText;
+
     const body = JSON.stringify({
       contents: [{
         parts: [
@@ -145,10 +169,10 @@ Wenn ein Feld nicht erkennbar ist, setze es auf null. Extrahiere so viel wie mö
 
     let response: Response | null = null;
     let lastErr = "";
-    // Per-attempt timeout to avoid hitting the 150s function idle limit.
-    // Budget: max 2 models × 2 attempts × 35s = 140s worst case.
-    const ATTEMPT_TIMEOUT_MS = 35_000;
-    const MAX_ATTEMPTS = 2;
+    // Per-attempt timeout to avoid long UI stalls. Do not retry the same overloaded
+    // model inside one request; fall through to the faster fallback instead.
+    const ATTEMPT_TIMEOUT_MS = isBannerQuick ? 12_000 : 28_000;
+    const MAX_ATTEMPTS = 1;
     outer: for (const model of models) {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
       for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
@@ -166,7 +190,9 @@ Wenn ein Feld nicht erkennbar ist, setze es auf null. Extrahiere so viel wie mö
           lastErr = await r.text();
           console.error(`Gemini ${model} attempt ${attempt + 1}: ${r.status}`, lastErr);
           if (r.status === 503 || r.status === 429 || r.status >= 500) {
-            await new Promise(res => setTimeout(res, 1000 * (attempt + 1)));
+            if (attempt + 1 < MAX_ATTEMPTS) {
+              await new Promise(res => setTimeout(res, 500 * (attempt + 1)));
+            }
             continue;
           }
           break; // hard error – try next model
@@ -182,7 +208,10 @@ Wenn ein Feld nicht erkennbar ist, setze es auf null. Extrahiere so viel wie mö
     }
 
     if (!response) {
-      return errorResponse(`Analyse-Service vorübergehend überlastet (${lastErr.slice(0, 120)}). Bitte in einigen Sekunden erneut versuchen.`, 503);
+      return jsonResponse({
+        fallback: true,
+        error: `Analyse-Service ist gerade überlastet (${lastErr.slice(0, 120)}). Du kannst die Felder manuell ausfüllen oder später erneut analysieren.`,
+      });
     }
 
     const data = await response.json();
