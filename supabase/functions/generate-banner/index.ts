@@ -222,7 +222,16 @@ async function generateGemini(prompt: string, imageBase64: string | null, logoBa
   if (vehicleInline) parts.push({ inlineData: vehicleInline });
   const logoInline = await toInlineData(logoBase64, "image/png");
   if (logoInline) {
-    parts.push({ text: "The following image is the LOGO to be placed in the banner:" });
+    parts.push({ text: `LOGO LOCK (MANDATORY — READ CAREFULLY):
+The next image is the OFFICIAL CURRENT manufacturer logo that MUST appear in the banner.
+- Use EXACTLY this provided logo file as a 1:1 visual reference. Do NOT redraw, restyle, recolor, simplify or "improve" it.
+- Reproduce it pixel-faithfully: same shape, same proportions, same colors, same modern flat design as supplied.
+- DO NOT use any logo from your training data or memory. Manufacturer logos in your memory are OUTDATED.
+- FORBIDDEN: old/historical/legacy/vintage/chrome/3D/gradient/embossed versions of this brand logo. No retro variants. No older wordmarks. No discontinued emblems.
+- Examples of what is FORBIDDEN: old chrome VW logo, old 3D BMW roundel with depth, old Mercedes star with gradients, old Audi rings with chrome, any pre-2019 manufacturer logo style.
+- If the provided logo is flat 2D, the rendered logo MUST stay flat 2D. If it is monochrome, keep it monochrome.
+- Place it cleanly and prominently (corner or near headline), correctly sized, fully legible, no distortion, no rotation, no drop shadow, no extra effects.
+The logo image follows now:` });
     parts.push({ inlineData: logoInline });
   }
 
