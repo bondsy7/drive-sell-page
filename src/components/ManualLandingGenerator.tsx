@@ -76,12 +76,17 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
   const [imageStyle, setImageStyle] = useState('studio');
   const [highlights, setHighlights] = useState('');
   
-  // Image uploads (max 5)
-  const [uploadedImages, setUploadedImages] = useState<{ file: File; preview: string }[]>([]);
-  
+  // Image uploads (max 5) – preview can be a blob URL (file) or remote URL (vehicle asset)
+  const [uploadedImages, setUploadedImages] = useState<{ file?: File; preview: string; url?: string }[]>([]);
+
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState('');
   const [progressPercent, setProgressPercent] = useState(0);
+
+  // Vehicle asset picker
+  const [assetPickerOpen, setAssetPickerOpen] = useState(false);
+  const { data: vehicleAssets } = useVehicleAssets(vehicleIdParam);
+  const [vehicleDataPrefilled, setVehicleDataPrefilled] = useState(false);
 
   // Auto-load dealer profile on mount
   useEffect(() => {
@@ -94,6 +99,26 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
       }
     })();
   }, [user]);
+
+  // Auto-prefill vehicle fields from DB when ?vehicle= is provided
+  useEffect(() => {
+    if (!user || !vehicleIdParam || vehicleDataPrefilled) return;
+    (async () => {
+      const { data: v } = await supabase
+        .from('vehicles')
+        .select('brand, model, color, vehicle_data')
+        .eq('id', vehicleIdParam)
+        .maybeSingle();
+      if (!v) return;
+      const inner: any = ((v as any).vehicle_data || {}).vehicle || {};
+      if (!brand && (v.brand || inner.brand)) setBrand(v.brand || inner.brand);
+      if (!model && (v.model || inner.model)) setModel(v.model || inner.model);
+      if (!variant && inner.variant) setVariant(inner.variant);
+      if (!color && (v.color || inner.color)) setColor(v.color || inner.color);
+      setVehicleDataPrefilled(true);
+      toast.success('Fahrzeugdaten übernommen', { duration: 1800 });
+    })();
+  }, [user, vehicleIdParam, vehicleDataPrefilled, brand, model, variant, color]);
 
   const canGenerate = brand.trim() && model.trim() && pageType;
   const cost = 3;
