@@ -187,7 +187,6 @@ export function buildLandingPageHTML(
   const address = [dealer?.address, dealer?.postalCode, dealer?.city].filter(Boolean).join(', ');
   const PRIMARY = (dealer?.primaryColor && /^#[0-9a-fA-F]{6}$/.test(dealer.primaryColor)) ? dealer.primaryColor : '#3b82f6';
   const SECONDARY = (dealer?.secondaryColor && /^#[0-9a-fA-F]{6}$/.test(dealer.secondaryColor)) ? dealer.secondaryColor : '#1e3a5f';
-  // Make available to inner render funcs
   __PRIMARY = PRIMARY; __SECONDARY = SECONDARY;
 
   const socials = [
