@@ -287,41 +287,90 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
         )}
       </div>
 
-      {/* Original picker dialog */}
+      {/* Picker dialog: pipeline prompt + reference + extra prompt */}
       <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
-        <DialogContent className="max-w-3xl" onClick={e => e.stopPropagation()}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
           <DialogHeader>
-            <DialogTitle>Originalbild als Grundlage wählen</DialogTitle>
+            <DialogTitle>Bild verbessern</DialogTitle>
             <DialogDescription>
-              Wähle ein Originalfoto, das als Vorlage für die neue Generierung dient.
+              {pipelineJob ? (
+                <>Pipeline-Prompt: <span className="font-medium">{pipelineJob.labelDe}</span> wird automatisch verwendet. Optional: Referenzbild und Hinweise auswählen.</>
+              ) : (
+                <>Wähle optional ein Referenzbild und beschreibe, was verbessert werden soll.</>
+              )}
             </DialogDescription>
           </DialogHeader>
-          {!vehicleId ? (
-            <div className="text-center py-10 text-muted-foreground text-sm">
-              Kein Fahrzeug-Kontext verfügbar.
-            </div>
-          ) : loadingOriginals ? (
-            <div className="flex justify-center py-10">
-              <Loader2 className="w-6 h-6 animate-spin text-accent" />
-            </div>
-          ) : originals.length === 0 ? (
-            <div className="text-center py-10 text-muted-foreground">
-              <ImageIcon className="w-10 h-10 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">Noch keine Originalbilder vorhanden. Lade zuerst Originale unter dem Tab „Originale" hoch.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-[60vh] overflow-y-auto">
-              {originals.map(o => (
-                <button
-                  key={o.name}
-                  onClick={() => regenerateFrom(o.url)}
-                  className="aspect-square rounded-md overflow-hidden border-2 border-transparent hover:border-accent transition-all"
-                >
-                  <img src={o.url} alt={o.name} className="w-full h-full object-cover" loading="lazy" />
-                </button>
-              ))}
-            </div>
-          )}
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Verbesserungs-Hinweise (optional)</label>
+            <Textarea
+              value={extraPrompt}
+              onChange={e => setExtraPrompt(e.target.value)}
+              placeholder={pipelineJob ? `z.B. „Lenkrad-Logo korrekt darstellen, Knöpfe schärfer"` : `z.B. „mehr Kontrast, Spiegelungen entfernen"`}
+              rows={3}
+            />
+            <p className="text-xs text-muted-foreground">
+              Perspektive und Bildausschnitt bleiben gleich – nur Details werden verbessert.
+            </p>
+          </div>
+
+          <Tabs value={pickerTab} onValueChange={(v) => { setPickerTab(v as any); setSelectedRef(null); }}>
+            <TabsList className="grid grid-cols-2 w-full">
+              <TabsTrigger value="originals">Originale</TabsTrigger>
+              <TabsTrigger value="gallery">Galerie</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="originals" className="mt-3">
+              {!vehicleId ? (
+                <div className="text-center py-8 text-muted-foreground text-sm">Kein Fahrzeug-Kontext verfügbar.</div>
+              ) : loadingOriginals ? (
+                <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-accent" /></div>
+              ) : originals.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <ImageIcon className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">Keine Originalbilder vorhanden.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-[40vh] overflow-y-auto">
+                  {originals.map(o => (
+                    <button
+                      key={o.name}
+                      onClick={() => setSelectedRef(o.url)}
+                      className={`aspect-square rounded-md overflow-hidden border-2 transition-all ${selectedRef === o.url ? 'border-accent ring-2 ring-accent/40' : 'border-transparent hover:border-accent/60'}`}
+                    >
+                      <img src={o.url} alt={o.name} className="w-full h-full object-cover" loading="lazy" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="gallery" className="mt-3">
+              {images.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground text-sm">Keine Galeriebilder vorhanden.</div>
+              ) : (
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-[40vh] overflow-y-auto">
+                  {images.filter(i => i.id !== current.id).map(img => (
+                    <button
+                      key={img.id}
+                      onClick={() => setSelectedRef(img.src)}
+                      className={`aspect-square rounded-md overflow-hidden border-2 transition-all ${selectedRef === img.src ? 'border-accent ring-2 ring-accent/40' : 'border-transparent hover:border-accent/60'}`}
+                    >
+                      <img src={img.src} alt={img.perspective || ''} className="w-full h-full object-cover" loading="lazy" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+
+          <div className="flex justify-end gap-2 pt-2 border-t">
+            <Button variant="ghost" onClick={() => setPickerOpen(false)}>Abbrechen</Button>
+            <Button onClick={() => runRegenerate(selectedRef)} className="gap-1.5">
+              <Wand2 className="w-4 h-4" />
+              {selectedRef ? 'Mit Referenz verbessern' : 'Ohne Referenz verbessern'}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
