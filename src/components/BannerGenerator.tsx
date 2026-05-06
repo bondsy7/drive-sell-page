@@ -1212,6 +1212,20 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
         onConfirm={creditDialog.mode === 'all' ? doGenerateAll : doGenerateSingle}
         onCancel={() => setCreditDialog({ open: false, cost: 0, mode: 'single' })}
       />
+
+      <VehicleAssetPicker
+        open={assetPickerOpen}
+        vehicleId={vehicleId}
+        multi={false}
+        allowedKinds={['original', 'gallery', 'spin360', 'banner']}
+        title="Bild als Grundlage wählen"
+        description="Wähle ein vorhandenes Bild aus diesem Fahrzeug. Das gewählte Bild wird als Banner-Grundlage übernommen — keine neuen Credits nötig."
+        onCancel={() => setAssetPickerOpen(false)}
+        onConfirm={(assets) => {
+          if (assets[0]?.url) setVehicleImage(assets[0].url);
+          setAssetPickerOpen(false);
+        }}
+      />
     </div>
   );
 };
