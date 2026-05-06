@@ -15,6 +15,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 import { useDeleteGalleryImage } from '@/hooks/useDashboardData';
+import { PIPELINE_JOBS } from '@/lib/pipeline-jobs';
 
 interface LightboxImage {
   id: string;
