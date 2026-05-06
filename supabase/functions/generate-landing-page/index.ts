@@ -623,6 +623,10 @@ function buildHTML(
   const website = dealer?.website || "";
   const whatsapp = dealer?.whatsappNumber || "";
   const address = [dealer?.address, dealer?.postalCode, dealer?.city].filter(Boolean).join(", ");
+  const PRIMARY = (dealer?.primaryColor && /^#[0-9a-fA-F]{6}$/.test(dealer.primaryColor)) ? dealer.primaryColor : "#3b82f6";
+  const SECONDARY = (dealer?.secondaryColor && /^#[0-9a-fA-F]{6}$/.test(dealer.secondaryColor)) ? dealer.secondaryColor : "#1e3a5f";
+  const hexToRgb = (h: string) => { const m = h.replace('#',''); return `${parseInt(m.slice(0,2),16)},${parseInt(m.slice(2,4),16)},${parseInt(m.slice(4,6),16)}`; };
+  const PRIMARY_RGB = hexToRgb(PRIMARY);
 
   const socials = [
     dealer?.facebookUrl && `<a href="${dealer.facebookUrl}" target="_blank" style="color:#94a3b8;text-decoration:none;transition:color .2s" onmouseover="this.style.color='#e2e8f0'" onmouseout="this.style.color='#94a3b8'">Facebook</a>`,
