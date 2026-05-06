@@ -99,7 +99,9 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <PipelineProvider>
+          <BackgroundTasksProvider>
           <BackgroundPipelineIndicator />
+          <BackgroundTasksIndicator />
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/" element={<Landing />} />
