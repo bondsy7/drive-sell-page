@@ -31,6 +31,8 @@ export interface LandingPageDealer {
   youtubeUrl?: string;
   tiktokUrl?: string;
   defaultLegalText?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
 }
 
 export interface LandingPageContactForm {
