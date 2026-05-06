@@ -787,7 +787,7 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
       resultRoute: lastVehicleId ? `/vehicle/${lastVehicleId}` : '/dashboard?tab=banners',
     });
     setGeneratingAll(false);
-  }, [generateForFormat, saveBanner]);
+  }, [generateForFormat, saveBanner, bgTasks]);
 
   // Download banner
   const downloadBanner = useCallback((result: BannerResult) => {
