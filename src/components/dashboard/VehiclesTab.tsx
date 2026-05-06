@@ -207,7 +207,8 @@ export default function VehiclesTab() {
                   variant="ghost"
                   size="icon"
                   className="absolute top-2 left-2 z-10 h-8 w-8 bg-background/90 hover:bg-destructive hover:text-destructive-foreground backdrop-blur-sm shadow-sm transition-colors"
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
                   disabled={deletingId === v.id}
                   aria-label="Fahrzeug löschen"
                 >
