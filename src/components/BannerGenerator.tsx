@@ -1232,9 +1232,28 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
         title="Bild als Grundlage wählen"
         description="Wähle ein vorhandenes Bild aus diesem Fahrzeug. Das gewählte Bild wird als Banner-Grundlage übernommen — keine neuen Credits nötig."
         onCancel={() => setAssetPickerOpen(false)}
-        onConfirm={(assets) => {
-          if (assets[0]?.url) setVehicleImage(assets[0].url);
+        onConfirm={async (assets) => {
           setAssetPickerOpen(false);
+          const url = assets[0]?.url;
+          if (!url) return;
+          if (url.startsWith('data:')) {
+            setVehicleImage(url);
+            return;
+          }
+          try {
+            const res = await fetch(url);
+            const blob = await res.blob();
+            const dataUrl: string = await new Promise((resolve, reject) => {
+              const r = new FileReader();
+              r.onload = () => resolve(r.result as string);
+              r.onerror = reject;
+              r.readAsDataURL(blob);
+            });
+            setVehicleImage(dataUrl);
+          } catch (e) {
+            console.error('Asset → base64 fehlgeschlagen:', e);
+            toast.error('Bild konnte nicht geladen werden.');
+          }
         }}
       />
     </div>
