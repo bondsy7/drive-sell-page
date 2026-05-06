@@ -172,6 +172,7 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
   const { user } = useAuth();
   const { balance, getCost } = useCredits();
   const { makes, getLogoForMake } = useVehicleMakes();
+  const bgTasks = useBackgroundTasks();
 
   // Project picker
   const [projects, setProjects] = useState<ProjectOption[]>([]);
