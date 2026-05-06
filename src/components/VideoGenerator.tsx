@@ -292,7 +292,7 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onBack, preloadedImage,
                 {videoState === 'generating' ? 'Video wird gestartet…' : 'Video wird generiert…'}
               </p>
               <p className="text-xs text-muted-foreground">
-                Dies kann 2–5 Minuten dauern. Bitte Seite nicht schließen.
+                Dies kann 2–5 Minuten dauern. Du kannst die Seite verlassen – der Status wird unten rechts angezeigt.
               </p>
             </div>
           </div>
