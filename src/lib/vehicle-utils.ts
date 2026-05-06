@@ -81,5 +81,29 @@ export async function ensureVehicle(
     console.error('[ensureVehicle] upsert failed:', error);
     return null;
   }
-  return (data as { id: string }).id;
+}
+
+/**
+ * Like `ensureVehicle`, but generates a stable `NOVIN-…` placeholder VIN
+ * when none is known yet. This guarantees that uploads/originals/banners are
+ * always attached to a vehicle row, even before VIN lookup. The placeholder
+ * can later be replaced once the real VIN is detected.
+ */
+export async function ensureVehicleAuto(
+  userId: string,
+  vin: string | null | undefined,
+  vehicleData?: VehicleData | Record<string, unknown> | null,
+  coverImageUrl?: string | null,
+): Promise<string | null> {
+  const cleanVin = (vin || '').trim().toUpperCase();
+  if (cleanVin && cleanVin.length >= 5) {
+    return ensureVehicle(userId, cleanVin, vehicleData, coverImageUrl);
+  }
+  const v: any = (vehicleData as any)?.vehicle || {};
+  const placeholder = generatePlaceholderVin({
+    brand: v.brand,
+    model: v.model,
+    title: v.variant,
+  });
+  return ensureVehicle(userId, placeholder, vehicleData, coverImageUrl);
 }
