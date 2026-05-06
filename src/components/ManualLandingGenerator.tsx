@@ -473,7 +473,7 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
                   ({vehicleAssets.total} verfügbar
                   {vehicleAssets.original.length ? ` · ${vehicleAssets.original.length} Original` : ''}
                   {vehicleAssets.gallery.length ? ` · ${vehicleAssets.gallery.length} Galerie` : ''}
-                  {vehicleAssets.spin360.length ? ` · ${vehicleAssets.spin360.length} 360°` : ''}
+                  {''}
                   {vehicleAssets.banner.length ? ` · ${vehicleAssets.banner.length} Banner` : ''})
                 </span>
               </span>
@@ -553,7 +553,7 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
       <VehicleAssetPicker
         open={assetPickerOpen}
         vehicleId={vehicleIdParam}
-        allowedKinds={['gallery', 'original', 'spin360', 'banner']}
+        allowedKinds={['gallery', 'original', 'banner']}
         title="Bilder aus Fahrzeug übernehmen"
         description="Wähle bestehende Aufnahmen, die als Section-Bilder verwendet werden sollen."
         onCancel={() => setAssetPickerOpen(false)}

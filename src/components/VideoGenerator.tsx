@@ -233,7 +233,7 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onBack, preloadedImage,
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium">Vorhandene Bilder verwenden ({vehicleAssets.total - vehicleAssets.video.length})</p>
                   <p className="text-[10px] text-muted-foreground">
-                    Banner {vehicleAssets.banner.length} · Galerie {vehicleAssets.gallery.length} · 360° {vehicleAssets.spin360.length} · Original {vehicleAssets.original.length}
+                    Banner {vehicleAssets.banner.length} · Galerie {vehicleAssets.gallery.length} · Original {vehicleAssets.original.length}
                   </p>
                 </div>
                 <Badge variant="secondary" className="text-[10px]">0 Credits</Badge>
@@ -362,7 +362,7 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onBack, preloadedImage,
         open={assetPickerOpen}
         vehicleId={vehicleId}
         multi={false}
-        allowedKinds={['banner', 'gallery', 'spin360', 'original']}
+        allowedKinds={['banner', 'gallery', 'original']}
         title="Bild als Startframe wählen"
         description="Wähle ein vorhandenes Bild aus diesem Fahrzeug — z. B. einen bereits generierten Banner oder Galeriebild — als Startframe für das Video."
         onCancel={() => setAssetPickerOpen(false)}

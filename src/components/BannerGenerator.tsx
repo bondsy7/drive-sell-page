@@ -756,7 +756,7 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium">Vorhandene Bilder verwenden ({vehicleAssets.total})</p>
                     <p className="text-[10px] text-muted-foreground">
-                      Original {vehicleAssets.original.length} · Galerie {vehicleAssets.gallery.length} · 360° {vehicleAssets.spin360.length} · Banner {vehicleAssets.banner.length}
+                      Original {vehicleAssets.original.length} · Galerie {vehicleAssets.gallery.length} · Banner {vehicleAssets.banner.length}
                     </p>
                   </div>
                   <Badge variant="secondary" className="text-[10px]">0 Credits</Badge>
@@ -1228,7 +1228,7 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
         open={assetPickerOpen}
         vehicleId={vehicleId}
         multi={false}
-        allowedKinds={['original', 'gallery', 'spin360', 'banner']}
+        allowedKinds={['original', 'gallery', 'banner']}
         title="Bild als Grundlage wählen"
         description="Wähle ein vorhandenes Bild aus diesem Fahrzeug. Das gewählte Bild wird als Banner-Grundlage übernommen — keine neuen Credits nötig."
         onCancel={() => setAssetPickerOpen(false)}
