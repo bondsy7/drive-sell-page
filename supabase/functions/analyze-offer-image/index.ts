@@ -169,10 +169,10 @@ Wenn ein Feld nicht erkennbar ist, setze es auf null. Extrahiere so viel wie mö
 
     let response: Response | null = null;
     let lastErr = "";
-    // Per-attempt timeout to avoid hitting the 150s function idle limit.
-    // Budget: max 2 models × 2 attempts × 35s = 140s worst case.
-    const ATTEMPT_TIMEOUT_MS = 35_000;
-    const MAX_ATTEMPTS = 2;
+    // Per-attempt timeout to avoid long UI stalls. Do not retry the same overloaded
+    // model inside one request; fall through to the faster fallback instead.
+    const ATTEMPT_TIMEOUT_MS = isBannerQuick ? 12_000 : 28_000;
+    const MAX_ATTEMPTS = 1;
     outer: for (const model of models) {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
       for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
@@ -190,7 +190,9 @@ Wenn ein Feld nicht erkennbar ist, setze es auf null. Extrahiere so viel wie mö
           lastErr = await r.text();
           console.error(`Gemini ${model} attempt ${attempt + 1}: ${r.status}`, lastErr);
           if (r.status === 503 || r.status === 429 || r.status >= 500) {
-            await new Promise(res => setTimeout(res, 1000 * (attempt + 1)));
+            if (attempt + 1 < MAX_ATTEMPTS) {
+              await new Promise(res => setTimeout(res, 500 * (attempt + 1)));
+            }
             continue;
           }
           break; // hard error – try next model
@@ -206,7 +208,10 @@ Wenn ein Feld nicht erkennbar ist, setze es auf null. Extrahiere so viel wie mö
     }
 
     if (!response) {
-      return errorResponse(`Analyse-Service vorübergehend überlastet (${lastErr.slice(0, 120)}). Bitte in einigen Sekunden erneut versuchen.`, 503);
+      return jsonResponse({
+        fallback: true,
+        error: `Analyse-Service ist gerade überlastet (${lastErr.slice(0, 120)}). Du kannst die Felder manuell ausfüllen oder später erneut analysieren.`,
+      });
     }
 
     const data = await response.json();
