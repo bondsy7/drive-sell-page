@@ -86,11 +86,13 @@ function renderFaq(s: LandingPageSection, colors: ReturnType<typeof getColors>):
 }
 
 function renderCta(s: LandingPageSection, phone: string, whatsapp: string): string {
-  return `<section style="background:linear-gradient(135deg,${__SECONDARY},#0f172a);color:#ffffff;padding:80px 24px;text-align:center">
+  const sec = __SECONDARY;
+  const pri = __PRIMARY;
+  return `<section style="background:linear-gradient(135deg,${sec},#0f172a);color:#ffffff;padding:80px 24px;text-align:center">
     <div style="max-width:640px;margin:0 auto">
       <h2 style="font-family:'Space Grotesk',sans-serif;font-size:32px;font-weight:700;margin-bottom:16px">${s.headline}</h2>
       <div style="font-size:16px;line-height:1.7;opacity:0.9;margin-bottom:32px">${s.content}</div>
-      ${phone ? `<a href="tel:${phone}" style="display:inline-block;background:${__PRIMARY};color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:16px">📞 Jetzt anrufen</a>` : ''}
+      ${phone ? `<a href="tel:${phone}" style="display:inline-block;background:${pri};color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:16px">📞 Jetzt anrufen</a>` : ''}
       ${whatsapp ? `<a href="https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}" target="_blank" style="display:inline-block;background:#25d366;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:16px;margin-left:12px">💬 WhatsApp</a>` : ''}
     </div>
   </section>`;
