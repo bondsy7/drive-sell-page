@@ -299,6 +299,12 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
     const brandFont = HEADLINE_FONTS.find(f => f.brand?.toLowerCase() === brand);
     if (brandFont) setHeadlineFont(brandFont.id);
 
+    // Auto-select manufacturer logo from vehicle brand
+    if (v.brand && makes.length) {
+      const canonical = resolveCanonicalBrand(v.brand, makes.map(m => m.key));
+      if (canonical) setSelectedLogoBrand(prev => prev || canonical);
+    }
+
     const legalParts: string[] = [];
     if (f.monthlyRate) legalParts.push(`Rate: ${f.monthlyRate}€/mtl.`);
     if (f.duration) legalParts.push(`Laufzeit: ${f.duration} Mon.`);
