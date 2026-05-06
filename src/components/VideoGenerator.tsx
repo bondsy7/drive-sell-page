@@ -40,7 +40,18 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onBack, preloadedImage,
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [assetPickerOpen, setAssetPickerOpen] = useState(false);
+  const [autoPromptShown, setAutoPromptShown] = useState(false);
   const { data: vehicleAssets } = useVehicleAssets(vehicleId);
+
+  // Auto-open picker when vehicle has existing assets and no image preloaded
+  useEffect(() => {
+    if (autoPromptShown) return;
+    if (!vehicleId || preloadedImage || imageBase64) return;
+    if (vehicleAssets && vehicleAssets.total > 0) {
+      setAssetPickerOpen(true);
+      setAutoPromptShown(true);
+    }
+  }, [vehicleId, preloadedImage, imageBase64, vehicleAssets, autoPromptShown]);
 
   /** Convert remote URL → base64 data URL (same format as upload). */
   const urlToBase64 = useCallback(async (url: string): Promise<string | null> => {
