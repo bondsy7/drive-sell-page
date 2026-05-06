@@ -163,9 +163,16 @@ serve(async (req) => {
     });
   } catch (e) {
     console.error("generate-banner error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    const msg = e instanceof Error ? e.message : "Unknown error";
+    const is503 = /\b503\b|UNAVAILABLE|overloaded|high demand/i.test(msg);
+    return new Response(
+      JSON.stringify({
+        error: is503
+          ? "Der Bild-Generator ist gerade überlastet. Bitte in 1–2 Minuten erneut versuchen."
+          : msg,
+      }),
+      { status: is503 ? 503 : 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   }
 });
 
