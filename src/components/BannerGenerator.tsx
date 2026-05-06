@@ -23,6 +23,7 @@ import { compressImageForAI, fileToBase64 } from '@/lib/image-compress';
 import VehicleAssetPicker from '@/components/VehicleAssetPicker';
 import VehicleBrandPicker from '@/components/VehicleBrandPicker';
 import { resolveCanonicalBrand } from '@/lib/brand-aliases';
+import { ensureVehicleAuto } from '@/lib/vehicle-utils';
 import { useVehicleAssets } from '@/hooks/useVehicleAssets';
 import { FolderOpen } from 'lucide-react';
 
