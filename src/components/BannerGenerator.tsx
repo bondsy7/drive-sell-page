@@ -26,6 +26,7 @@ import { resolveCanonicalBrand } from '@/lib/brand-aliases';
 import { ensureVehicleAuto } from '@/lib/vehicle-utils';
 import { useVehicleAssets } from '@/hooks/useVehicleAssets';
 import { FolderOpen } from 'lucide-react';
+import { useBackgroundTasks } from '@/contexts/BackgroundTasksContext';
 
 // ─── Config ───
 
