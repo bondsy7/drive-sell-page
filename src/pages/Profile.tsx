@@ -37,6 +37,8 @@ interface ProfileData {
   financing_bank: string;
   financing_legal_text: string;
   default_legal_text: string;
+  primary_color: string;
+  secondary_color: string;
 }
 
 const emptyProfile: ProfileData = {
@@ -44,6 +46,7 @@ const emptyProfile: ProfileData = {
   address: '', postal_code: '', city: '', tax_id: '', logo_url: '', custom_showroom_url: '',
   facebook_url: '', instagram_url: '', x_url: '', tiktok_url: '', youtube_url: '', whatsapp_number: '',
   leasing_bank: '', leasing_legal_text: '', financing_bank: '', financing_legal_text: '', default_legal_text: '',
+  primary_color: '#174f6b', secondary_color: '#e2b04a',
 };
 
 const Section: React.FC<{ icon: React.ReactNode; title: string; children: React.ReactNode }> = ({ icon, title, children }) => (
