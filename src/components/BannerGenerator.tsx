@@ -21,6 +21,8 @@ import { Badge } from '@/components/ui/badge';
 import { formatMandatoryDisclosure, isDatOnlyValue } from '@/lib/mandatory-disclosure';
 import { compressImageForAI, fileToBase64 } from '@/lib/image-compress';
 import VehicleAssetPicker from '@/components/VehicleAssetPicker';
+import VehicleBrandPicker from '@/components/VehicleBrandPicker';
+import { resolveCanonicalBrand } from '@/lib/brand-aliases';
 import { useVehicleAssets } from '@/hooks/useVehicleAssets';
 import { FolderOpen } from 'lucide-react';
 
@@ -297,6 +299,12 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
     const brandFont = HEADLINE_FONTS.find(f => f.brand?.toLowerCase() === brand);
     if (brandFont) setHeadlineFont(brandFont.id);
 
+    // Auto-select manufacturer logo from vehicle brand
+    if (v.brand && makes.length) {
+      const canonical = resolveCanonicalBrand(v.brand, makes.map(m => m.key));
+      if (canonical) setSelectedLogoBrand(prev => prev || canonical);
+    }
+
     const legalParts: string[] = [];
     if (f.monthlyRate) legalParts.push(`Rate: ${f.monthlyRate}€/mtl.`);
     if (f.duration) legalParts.push(`Laufzeit: ${f.duration} Mon.`);
@@ -311,7 +319,7 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
       .then(({ data: imgs }) => {
         if (imgs) setProjectImages(imgs.map((i: any) => i.image_url).filter(Boolean));
       });
-  }, [selectedProjectId, projects]);
+  }, [selectedProjectId, projects, makes]);
 
   // ─── Auto-extract info from uploaded offer image ───
   const analyzeOfferImage = useCallback(async (imageBase64: string) => {
@@ -352,11 +360,16 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
         const brandLower = ext.brand.toLowerCase();
         const brandFont = HEADLINE_FONTS.find(f => f.brand?.toLowerCase() === brandLower);
         if (brandFont) setHeadlineFont(brandFont.id);
+        // Auto-select manufacturer logo
+        if (makes.length) {
+          const canonical = resolveCanonicalBrand(ext.brand, makes.map(m => m.key));
+          if (canonical) setSelectedLogoBrand(prev => prev || canonical);
+        }
       }
       toast.success('Angebotsdaten erkannt!', { description: ext.vehicleTitle || 'Daten aus Bild extrahiert' });
     } catch { toast.error('Analyse fehlgeschlagen'); }
     finally { setAnalyzing(false); }
-  }, [vehicleTitle, priceText, headline, subline, legalText]);
+  }, [vehicleTitle, priceText, headline, subline, legalText, makes]);
 
   const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -892,12 +905,11 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
               {logoSource === 'manufacturer' && (
                 <div className="space-y-1.5">
                   <Label className="text-xs font-medium">Hersteller wählen</Label>
-                  <Select value={selectedLogoBrand} onValueChange={setSelectedLogoBrand}>
-                    <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Marke auswählen" /></SelectTrigger>
-                    <SelectContent>
-                      {makes.map(m => (<SelectItem key={m.key} value={m.key}>{m.key}</SelectItem>))}
-                    </SelectContent>
-                  </Select>
+                  <VehicleBrandPicker
+                    brand={selectedLogoBrand}
+                    onBrandChange={setSelectedLogoBrand}
+                    placeholder="Marke wählen..."
+                  />
                   {selectedLogoBrand && logoBase64 && (
                     <div className="flex items-center gap-2 bg-accent/10 rounded-lg px-3 py-2">
                       <img src={logoBase64} alt={selectedLogoBrand} className="w-8 h-8 object-contain" />
