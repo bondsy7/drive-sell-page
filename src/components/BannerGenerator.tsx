@@ -167,7 +167,8 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
   const [headline, setHeadline] = useState('');
   const [subline, setSubline] = useState('');
   const [ctaText, setCtaText] = useState('Jetzt anfragen');
-  const [accentColor, setAccentColor] = useState('#3b66d6');
+  const [accentColor, setAccentColor] = useState('#174f6b');
+  const [secondaryColor, setSecondaryColor] = useState('#e2b04a');
   const [freePrompt, setFreePrompt] = useState('');
   const [legalText, setLegalText] = useState('');
 
