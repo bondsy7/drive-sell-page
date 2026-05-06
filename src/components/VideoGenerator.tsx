@@ -8,6 +8,7 @@ import ProcessTimer from '@/components/ProcessTimer';
 import { Badge } from '@/components/ui/badge';
 import VehicleAssetPicker from '@/components/VehicleAssetPicker';
 import { useVehicleAssets } from '@/hooks/useVehicleAssets';
+import { useBackgroundTasks } from '@/contexts/BackgroundTasksContext';
 
 interface VideoGeneratorProps {
   onBack: () => void;
