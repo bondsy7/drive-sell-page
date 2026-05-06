@@ -151,6 +151,8 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
 
   // Vehicle image
   const [vehicleImage, setVehicleImage] = useState<string | null>(preloadedImage || null);
+  const [assetPickerOpen, setAssetPickerOpen] = useState(false);
+  const { data: vehicleAssets } = useVehicleAssets(vehicleId);
 
   // Logo selection
   const [showLogo, setShowLogo] = useState(false);
