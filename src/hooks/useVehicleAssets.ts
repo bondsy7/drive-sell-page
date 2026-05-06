@@ -56,7 +56,7 @@ export function useVehicleAssets(vehicleId: string | null | undefined) {
         .from('originals')
         .list(prefix, { limit: 200, sortBy: { column: 'created_at', order: 'asc' } })
         .then(async ({ data }) => {
-          const files = (data || []).filter(f => f.name && !f.name.startsWith('.') && /\.(jpe?g|png|webp)$/i.test(f.name));
+          const files = (data || []).filter(f => f.name && !f.name.startsWith('.') && /\.(jpe?g|png|webp|avif|gif|bmp|heic|heif)$/i.test(f.name));
           if (files.length === 0) return [] as VehicleAsset[];
           // Originals bucket is PRIVATE → use signed URLs (1h) so the picker can preview them.
           const paths = files.map(f => `${prefix}/${f.name}`);
