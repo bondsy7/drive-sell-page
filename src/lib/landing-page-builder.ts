@@ -44,6 +44,9 @@ export interface LandingPageContactForm {
   pageType?: string;
 }
 
+let __PRIMARY = '#3b82f6';
+let __SECONDARY = '#1e3a5f';
+
 // ─── Section Renderers ───
 
 function renderSectionBase(bg: string, inner: string): string {
