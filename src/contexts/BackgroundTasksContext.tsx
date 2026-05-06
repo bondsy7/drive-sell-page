@@ -85,8 +85,87 @@ export const BackgroundTasksProvider: React.FC<{ children: React.ReactNode }> = 
     return () => window.removeEventListener('beforeunload', handler);
   }, [tasks]);
 
+  // Active video poll intervals (kept in provider scope so they survive page navigation)
+  const videoPollsRef = useRef<Record<string, ReturnType<typeof setInterval>>>({});
+
+  const startVideoPolling: BgTasksContextValue['startVideoPolling'] = useCallback(({ operationName, vehicleId, onDone }) => {
+    const taskId = `video-${Date.now()}`;
+    setTasks((prev) => [
+      ...prev,
+      {
+        id: taskId,
+        type: 'video',
+        label: 'Video wird erstellt',
+        total: 1,
+        completed: 0,
+        status: 'running',
+        startedAt: Date.now(),
+      },
+    ]);
+
+    let attempts = 0;
+    const maxAttempts = 90; // ~7.5 min
+    // Lazy import to avoid circular deps
+    import('@/integrations/supabase/client').then(({ supabase }) => {
+      const interval = setInterval(async () => {
+        attempts += 1;
+        try {
+          const { data, error } = await supabase.functions.invoke('generate-video', {
+            body: { action: 'poll', operationName, vehicleId: vehicleId || undefined },
+          });
+          if (error) return;
+          if (data?.done) {
+            clearInterval(interval);
+            delete videoPollsRef.current[taskId];
+            const videoSrc = data.videoUrl || data.videoBase64 || data.videoUri;
+            if (videoSrc) {
+              setTasks((prev) => prev.map((t) => t.id === taskId ? {
+                ...t,
+                status: 'done',
+                completed: 1,
+                finishedAt: Date.now(),
+                resultRoute: vehicleId ? `/vehicle/${vehicleId}` : '/dashboard?tab=videos',
+              } : t));
+              onDone?.({ videoUrl: data.videoUrl, videoBase64: data.videoBase64, videoUri: data.videoUri });
+            } else {
+              setTasks((prev) => prev.map((t) => t.id === taskId ? {
+                ...t,
+                status: 'error',
+                finishedAt: Date.now(),
+                errorMessage: data.error || 'Video-Generierung fehlgeschlagen',
+              } : t));
+              onDone?.({ error: data.error || 'Fehler' });
+            }
+            return;
+          }
+          if (attempts >= maxAttempts) {
+            clearInterval(interval);
+            delete videoPollsRef.current[taskId];
+            setTasks((prev) => prev.map((t) => t.id === taskId ? {
+              ...t,
+              status: 'error',
+              finishedAt: Date.now(),
+              errorMessage: 'Zeitüberschreitung',
+            } : t));
+            onDone?.({ error: 'Zeitüberschreitung' });
+          }
+        } catch (e) {
+          // ignore transient errors
+        }
+      }, 5000);
+      videoPollsRef.current[taskId] = interval;
+    });
+
+    return taskId;
+  }, []);
+
+  // Cleanup intervals on unmount
+  useEffect(() => () => {
+    Object.values(videoPollsRef.current).forEach((id) => clearInterval(id));
+  }, []);
+
   return (
-    <BackgroundTasksContext.Provider value={{ tasks, addTask, updateTask, removeTask, clearFinished }}>
+    <BackgroundTasksContext.Provider value={{ tasks, addTask, updateTask, removeTask, clearFinished, startVideoPolling }}>
       {children}
     </BackgroundTasksContext.Provider>
   );
