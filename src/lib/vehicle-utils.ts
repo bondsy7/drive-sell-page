@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { VehicleData } from '@/types/vehicle';
+import { generatePlaceholderVin } from '@/lib/vehicle-data-utils';
 
 /**
  * Upsert a vehicle row by (user_id, vin) and return its id.
