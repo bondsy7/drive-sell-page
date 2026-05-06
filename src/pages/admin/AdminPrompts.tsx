@@ -324,6 +324,7 @@ CRITICAL RULES:
   banner_price_stamp: 'as a bold stamp/badge overlay',
   banner_price_led: 'on an LED display screen integrated into the scene',
   banner_price_ribbon: 'on a diagonal ribbon/sash across the corner',
+  banner_price_stoerer: 'as a solid rectangular price callout (Störer) with sharp 90-degree corners (NO rounded corners), filled with the accent color, white bold sans-serif price text centered inside, slightly tilted, placed prominently in a top corner of the banner like a classic German dealership price sticker',
 
   // ── Banner – Headline Fonts ──
   banner_font_bmw: 'BMW corporate typography style – bold, clean, geometric sans-serif similar to Helvetica Neue Black/BMW Type, uppercase, tightly kerned',
@@ -538,8 +539,8 @@ const PROMPT_META: Record<string, PromptMeta> = {
     }];
   })),
   // Price displays
-  ...Object.fromEntries(['sign', 'board', 'neon', 'stamp', 'led', 'ribbon'].map(id => {
-    const labels: Record<string, string> = { sign: 'Preisschild', board: 'Tafel / Banner', neon: 'Neon-Schrift', stamp: 'Stempel', led: 'LED-Anzeige', ribbon: 'Banner-Schleife' };
+  ...Object.fromEntries(['sign', 'board', 'neon', 'stamp', 'led', 'ribbon', 'stoerer'].map(id => {
+    const labels: Record<string, string> = { sign: 'Preisschild', board: 'Tafel / Banner', neon: 'Neon-Schrift', stamp: 'Stempel', led: 'LED-Anzeige', ribbon: 'Banner-Schleife', stoerer: 'Störer' };
     return [`banner_price_${id}`, {
       label: labels[id], description: `Preisdarstellungs-Prompt "${labels[id]}"`,
       model: '-', edgeFunction: 'generate-banner',

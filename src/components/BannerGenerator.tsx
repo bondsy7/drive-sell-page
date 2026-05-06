@@ -70,6 +70,7 @@ const PRICE_DISPLAYS = [
   { id: 'stamp', label: 'Stempel', prompt: 'as a bold stamp/badge overlay' },
   { id: 'led', label: 'LED-Anzeige', prompt: 'on an LED display screen integrated into the scene' },
   { id: 'ribbon', label: 'Banner-Schleife', prompt: 'on a diagonal ribbon/sash across the corner' },
+  { id: 'stoerer', label: 'Störer', prompt: 'as a solid rectangular price callout (Störer) with sharp 90-degree corners (NO rounded corners), filled with the accent color, white bold sans-serif price text centered inside, slightly tilted, placed prominently in a top corner of the banner like a classic German dealership price sticker' },
 ];
 
 const CTA_OPTIONS = [
