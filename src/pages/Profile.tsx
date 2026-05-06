@@ -398,6 +398,27 @@ const Profile = () => {
               </div>
             </Section>
 
+            <Section icon={<Image className="w-4 h-4" />} title="CI-Farben">
+              <p className="text-xs text-muted-foreground -mt-2 mb-2">
+                Diese Farben werden automatisch im Banner-Generator, in Landingpages und überall, wo Akzentfarben gebraucht werden, als Standard verwendet.
+              </p>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label>Hauptfarbe (Primary)</Label>
+                  <div className="flex items-center gap-2">
+                    <input type="color" value={profile.primary_color || '#174f6b'} onChange={e => update('primary_color', e.target.value)} className="w-10 h-10 rounded-md border border-input cursor-pointer" />
+                    <Input value={profile.primary_color} onChange={e => update('primary_color', e.target.value)} placeholder="#174f6b" maxLength={7} className="flex-1" />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Sekundärfarbe (Secondary)</Label>
+                  <div className="flex items-center gap-2">
+                    <input type="color" value={profile.secondary_color || '#e2b04a'} onChange={e => update('secondary_color', e.target.value)} className="w-10 h-10 rounded-md border border-input cursor-pointer" />
+                    <Input value={profile.secondary_color} onChange={e => update('secondary_color', e.target.value)} placeholder="#e2b04a" maxLength={7} className="flex-1" />
+                  </div>
+                </div>
+              </div>
+            </Section>
             <Section icon={<MapPin className="w-4 h-4" />} title="Adresse & Standort">
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5 sm:col-span-2">
