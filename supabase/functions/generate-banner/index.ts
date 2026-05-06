@@ -222,7 +222,16 @@ async function generateGemini(prompt: string, imageBase64: string | null, logoBa
   if (vehicleInline) parts.push({ inlineData: vehicleInline });
   const logoInline = await toInlineData(logoBase64, "image/png");
   if (logoInline) {
-    parts.push({ text: "The following image is the LOGO to be placed in the banner:" });
+    parts.push({ text: `LOGO LOCK (MANDATORY — READ CAREFULLY):
+The next image is the OFFICIAL CURRENT manufacturer logo that MUST appear in the banner.
+- Use EXACTLY this provided logo file as a 1:1 visual reference. Do NOT redraw, restyle, recolor, simplify or "improve" it.
+- Reproduce it pixel-faithfully: same shape, same proportions, same colors, same modern flat design as supplied.
+- DO NOT use any logo from your training data or memory. Manufacturer logos in your memory are OUTDATED.
+- FORBIDDEN: old/historical/legacy/vintage/chrome/3D/gradient/embossed versions of this brand logo. No retro variants. No older wordmarks. No discontinued emblems.
+- Examples of what is FORBIDDEN: old chrome VW logo, old 3D BMW roundel with depth, old Mercedes star with gradients, old Audi rings with chrome, any pre-2019 manufacturer logo style.
+- If the provided logo is flat 2D, the rendered logo MUST stay flat 2D. If it is monochrome, keep it monochrome.
+- Place it cleanly and prominently (corner or near headline), correctly sized, fully legible, no distortion, no rotation, no drop shadow, no extra effects.
+The logo image follows now:` });
     parts.push({ inlineData: logoInline });
   }
 
@@ -329,7 +338,7 @@ async function generateOpenAI(prompt: string, imageBase64: string | null, logoBa
           for (let j = 0; j < logoBinaryStr.length; j++) logoBytes[j] = logoBinaryStr.charCodeAt(j);
           const logoBlob = new Blob([logoBytes], { type: logoInline.mimeType });
           form.append("image", logoBlob, "logo.png");
-          logoPromptAddition = "\n\nA LOGO image is also provided. Place it prominently in the banner (corner or near headline). Keep the logo 100% identical.";
+          logoPromptAddition = "\n\nLOGO LOCK (MANDATORY): A second image is provided — this is the OFFICIAL CURRENT manufacturer logo. Reproduce it 1:1 pixel-faithfully (same shape, proportions, colors, flat modern design). DO NOT use any logo from memory/training data — those are OUTDATED. FORBIDDEN: old/historical/legacy/vintage/chrome/3D/gradient versions (no old chrome VW logo, no old 3D BMW roundel, no old gradient Mercedes star, no old chrome Audi rings, no pre-2019 brand marks). Place prominently (corner or near headline), no rotation, no distortion, no extra effects.";
         }
         
         form.append("prompt", `${prompt}\n\nIMPORTANT: Use the provided vehicle image as the central hero element. Keep vehicle identity, shape, colour, trim, wheels and proportions accurate, but re-render lighting, shadows and all reflections to match the NEW scene only.${logoPromptAddition}`);
