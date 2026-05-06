@@ -55,21 +55,24 @@ export function useVehicleAssets(vehicleId: string | null | undefined) {
       const originalsP = supabase.storage
         .from('originals')
         .list(prefix, { limit: 200, sortBy: { column: 'created_at', order: 'asc' } })
-        .then(({ data }) => {
+        .then(async ({ data }) => {
           const files = (data || []).filter(f => f.name && !f.name.startsWith('.') && /\.(jpe?g|png|webp)$/i.test(f.name));
-          return files.map<VehicleAsset>(f => {
-            const path = `${prefix}/${f.name}`;
-            const { data: pub } = supabase.storage.from('originals').getPublicUrl(path);
+          if (files.length === 0) return [] as VehicleAsset[];
+          // Originals bucket is PRIVATE → use signed URLs (1h) so the picker can preview them.
+          const paths = files.map(f => `${prefix}/${f.name}`);
+          const { data: signed } = await supabase.storage.from('originals').createSignedUrls(paths, 60 * 60);
+          return files.map<VehicleAsset>((f, i) => {
+            const path = paths[i];
             return {
               id: `orig:${path}`,
               kind: 'original',
-              url: pub.publicUrl,
+              url: signed?.[i]?.signedUrl || '',
               label: f.name,
               createdAt: f.created_at,
               storagePath: path,
               bucket: 'originals',
             };
-          });
+          }).filter(a => a.url);
         });
 
       // ── Gallery / Remastered (DB: project_images.vehicle_id) ──
