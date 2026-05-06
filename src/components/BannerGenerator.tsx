@@ -626,9 +626,9 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
   // Track auto-created vehicle id so subsequent banners in the same session reuse it.
   const [autoVehicleId, setAutoVehicleId] = useState<string | null>(null);
 
-  // Save banner to storage
-  const saveBanner = useCallback(async (result: BannerResult) => {
-    if (!user) return;
+  // Save banner to storage. Returns the effective vehicle id (or null) so callers can build deep links.
+  const saveBanner = useCallback(async (result: BannerResult): Promise<string | null> => {
+    if (!user) return null;
     try {
       const base64Data = result.image.includes(',') ? result.image.split(',')[1] : result.image;
       const byteArray = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
@@ -653,7 +653,8 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
       const vehiclePrefix = effectiveVehicleId ? `${effectiveVehicleId}/` : '';
       const fileName = `${user.id}/${vehiclePrefix}${Date.now()}-${result.formatId}.png`;
       await supabase.storage.from('banners').upload(fileName, blob, { contentType: 'image/png' });
-    } catch (e) { console.error('Banner save error:', e); }
+      return effectiveVehicleId;
+    } catch (e) { console.error('Banner save error:', e); return null; }
   }, [user, projects, selectedProjectId, vehicleId, autoVehicleId, vehicleImage, vehicleTitle, extractedData, selectedLogoBrand]);
 
   // ── Single format generation ──
