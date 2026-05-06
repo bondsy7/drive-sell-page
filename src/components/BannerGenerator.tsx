@@ -152,7 +152,18 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
   // Vehicle image
   const [vehicleImage, setVehicleImage] = useState<string | null>(preloadedImage || null);
   const [assetPickerOpen, setAssetPickerOpen] = useState(false);
+  const [autoPromptShown, setAutoPromptShown] = useState(false);
   const { data: vehicleAssets } = useVehicleAssets(vehicleId);
+
+  // Auto-open asset picker if vehicle has existing assets and no image preloaded
+  useEffect(() => {
+    if (autoPromptShown) return;
+    if (!vehicleId || preloadedImage || vehicleImage) return;
+    if (vehicleAssets && vehicleAssets.total > 0) {
+      setAssetPickerOpen(true);
+      setAutoPromptShown(true);
+    }
+  }, [vehicleId, preloadedImage, vehicleImage, vehicleAssets, autoPromptShown]);
 
   // Logo selection
   const [showLogo, setShowLogo] = useState(false);

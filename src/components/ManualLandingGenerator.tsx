@@ -85,8 +85,19 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
 
   // Vehicle asset picker
   const [assetPickerOpen, setAssetPickerOpen] = useState(false);
+  const [autoPromptShown, setAutoPromptShown] = useState(false);
   const { data: vehicleAssets } = useVehicleAssets(vehicleIdParam);
   const [vehicleDataPrefilled, setVehicleDataPrefilled] = useState(false);
+
+  // Auto-open picker when vehicle has existing assets and no images uploaded yet
+  useEffect(() => {
+    if (autoPromptShown) return;
+    if (!vehicleIdParam || uploadedImages.length > 0) return;
+    if (vehicleAssets && vehicleAssets.total > 0) {
+      setAssetPickerOpen(true);
+      setAutoPromptShown(true);
+    }
+  }, [vehicleIdParam, uploadedImages.length, vehicleAssets, autoPromptShown]);
 
   // Auto-load dealer profile on mount
   useEffect(() => {
