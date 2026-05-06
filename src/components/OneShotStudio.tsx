@@ -421,7 +421,8 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
     const newOnes: ClassifiedImage[] = await Promise.all(
       arr.map(async (file) => {
         const raw = await fileToBase64(file);
-        const compressed = await compressImageForAI(raw, 1600, 0.85).catch(() => raw);
+        // Klassifikator braucht keine Hi-Res — 768px reicht für Kategorisierung locker
+        const compressed = await compressImageForAI(raw, 768, 0.7).catch(() => raw);
         return {
           id: newId(),
           base64: compressed,
