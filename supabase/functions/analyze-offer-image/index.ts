@@ -11,6 +11,8 @@ serve(async (req) => {
   try {
     const { user } = await authenticateRequest(req);
     const body0 = await req.json();
+    const analysisMode = String(body0?.analysisMode || "full");
+    const isBannerQuick = analysisMode === "banner_quick";
     // Accept either single image (legacy) or array of multiple datasheets/screenshots.
     const rawImages: string[] = Array.isArray(body0?.imageBase64s) && body0.imageBase64s.length
       ? body0.imageBase64s
@@ -29,11 +31,13 @@ serve(async (req) => {
         : img.startsWith("data:image/webp") ? "image/webp" : "image/jpeg";
       return { inlineData: { mimeType, data } };
     });
-    console.log(`[analyze-offer-image] Analyzing ${imageParts.length} document(s) in one merged call`);
+    console.log(`[analyze-offer-image] Analyzing ${imageParts.length} document(s) in ${analysisMode} mode`);
 
     // gemini-2.5-pro liest dichte Tabellen (Verbrauch, Anzahlung, CO₂) deutlich
-    // zuverlässiger als flash. Flash bleibt nur als Fallback.
-    const models = ["gemini-2.5-pro", "gemini-2.5-flash"];
+    // zuverlässiger als flash. Für Banner reicht schnelle Grobextraktion.
+    const models = isBannerQuick
+      ? ["gemini-2.5-flash-lite", "gemini-2.5-flash"]
+      : ["gemini-2.5-pro", "gemini-2.5-flash"];
     const multiHint = imageParts.length > 1 ? `
 
 ⚠️ MEHRERE DOKUMENTE (${imageParts.length} Bilder) — MERGE-MODUS:
