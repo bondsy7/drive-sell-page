@@ -29,12 +29,12 @@ import { FolderOpen } from 'lucide-react';
 import { useBackgroundTasks } from '@/contexts/BackgroundTasksContext';
 
 /**
- * Finalize the AI output to the exact ad size without introducing white bars.
- * For normal slight ratio misses we keep the full generated image over a blurred
- * edge-to-edge extension. For extreme ad ratios (160×600 / billboard) we cover-crop
- * because contain-fitting would create huge empty bands.
+ * Finalize the AI output to the exact ad size without adding padding, blur bars,
+ * side caps or letterboxing. We deliberately scale the complete generated frame
+ * to the requested canvas, because preserving all content is more important than
+ * proportional contain-fitting for fixed ad inventory.
  */
-function fitImageToSize(dataUrl: string, targetW: number, targetH: number, bg: string = '#ffffff'): Promise<string> {
+function fitImageToSize(dataUrl: string, targetW: number, targetH: number): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new window.Image();
     img.onload = () => {
@@ -44,55 +44,9 @@ function fitImageToSize(dataUrl: string, targetW: number, targetH: number, bg: s
         canvas.height = targetH;
         const ctx = canvas.getContext('2d');
         if (!ctx) return reject(new Error('canvas unsupported'));
-        const srcRatio = img.width / img.height;
-        const dstRatio = targetW / targetH;
-        const ratioDeviation = Math.abs(srcRatio - dstRatio) / dstRatio;
-        // If ratio is close enough, resize directly. This avoids tiny edge bands on
-        // formats like 1200×628 while staying visually natural.
-        if (ratioDeviation < 0.12) {
-          ctx.drawImage(img, 0, 0, targetW, targetH);
-        } else {
-          const coverScale = Math.max(targetW / img.width, targetH / img.height);
-          const coverW = img.width * coverScale;
-          const coverH = img.height * coverScale;
-          const coverX = (targetW - coverW) / 2;
-          const coverY = (targetH - coverH) / 2;
-          const isExtremePortrait = targetH / targetW >= 2.8;
-          const isExtremeLandscape = targetW / targetH >= 2.8;
-
-          if (isExtremePortrait) {
-            ctx.drawImage(img, coverX, coverY, coverW, coverH);
-            resolve(canvas.toDataURL('image/png'));
-            return;
-          }
-
-          ctx.save();
-          ctx.filter = 'blur(26px) brightness(0.92) saturate(1.05)';
-          ctx.drawImage(img, coverX, coverY, coverW, coverH);
-          ctx.restore();
-          ctx.fillStyle = 'rgba(255,255,255,0.06)';
-          ctx.fillRect(0, 0, targetW, targetH);
-
-          let dw = targetW, dh = targetH, dx = 0, dy = 0;
-          if (srcRatio > dstRatio) {
-            // wider → fit width, pad top/bottom
-            dh = targetW / srcRatio;
-            dy = (targetH - dh) / 2;
-          } else {
-            // taller → fit height, pad sides
-            dw = targetH * srcRatio;
-            dx = (targetW - dw) / 2;
-          }
-          if (isExtremeLandscape) {
-            // 970×250 cannot be produced natively by Gemini. Keep the whole generated
-            // banner visible and extend only the background, never crop the vehicle/text.
-            dh = targetH;
-            dw = targetH * srcRatio;
-            dx = (targetW - dw) / 2;
-            dy = 0;
-          }
-          ctx.drawImage(img, 0, 0, img.width, img.height, dx, dy, dw, dh);
-        }
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, targetW, targetH);
         resolve(canvas.toDataURL('image/png'));
       } catch (e) { reject(e); }
     };
