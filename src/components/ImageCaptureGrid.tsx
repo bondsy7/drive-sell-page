@@ -374,7 +374,9 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
 
     if (slot.isVin) {
       try {
-        const { data, error } = await supabase.functions.invoke('ocr-vin', { body: { imageBase64: base64 } });
+        const refsVin = await uploadToGeminiFiles([{ imageBase64: base64 }]);
+        const vinBody: any = refsVin?.[0] ? { imageFileUri: refsVin[0] } : { imageBase64: base64 };
+        const { data, error } = await supabase.functions.invoke('ocr-vin', { body: vinBody });
         if (data?.error === 'insufficient_credits') {
           toast.error('Nicht genügend Credits für VIN-Erkennung.');
         } else if (!error && data?.vin) {
