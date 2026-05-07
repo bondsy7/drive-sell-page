@@ -19,6 +19,7 @@ import CreditConfirmDialog from '@/components/CreditConfirmDialog';
 import VideoGenerator from '@/components/VideoGenerator';
 import BannerGenerator from '@/components/BannerGenerator';
 import OneShotStudio from '@/components/OneShotStudio';
+import DamageRepairFlow from '@/components/DamageRepairFlow';
 import VehicleSelectBeforeGenerate from '@/components/VehicleSelectBeforeGenerate';
 import { PhotoModeSelector, Spin360Workflow } from '@/components/spin360';
 import type { PhotoMode } from '@/components/spin360';
