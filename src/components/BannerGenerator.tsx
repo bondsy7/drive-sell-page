@@ -614,7 +614,9 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
         return null;
       }
       if (data?.imageBase64) {
-        return { formatId: fmt.id, formatLabel: fmt.label, ratio: fmt.ratio, image: data.imageBase64, w: fmt.w, h: fmt.h };
+        // Force target dimensions: cover-crop to exact w×h so 9:16 etc. is guaranteed
+        const fitted = await fitImageToSize(data.imageBase64, fmt.w, fmt.h).catch(() => data.imageBase64);
+        return { formatId: fmt.id, formatLabel: fmt.label, ratio: fmt.ratio, image: fitted, w: fmt.w, h: fmt.h };
       }
     } catch (e: any) {
       if (e?.message === 'insufficient_credits') throw e;
