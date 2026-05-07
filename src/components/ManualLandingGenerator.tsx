@@ -225,6 +225,14 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
       setProgress('KI generiert Texte...');
       setProgressPercent(25);
 
+      // Ensure a vehicle row exists so the landing page is always attached to a Fahrzeug.
+      let effectiveVehicleId = vehicleIdParam || null;
+      if (!effectiveVehicleId) {
+        effectiveVehicleId = await ensureVehicleAuto(user.id, null, {
+          vehicle: { brand, model, variant, color },
+        } as any);
+      }
+
       const { data, error } = await supabase.functions.invoke('generate-landing-page', {
         body: {
           brand, model, pageType,
@@ -232,7 +240,7 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
           additionalInfo: highlights,
           dealer,
           uploadedImages: uploadedBase64,
-          vehicleId: vehicleIdParam || null,
+          vehicleId: effectiveVehicleId,
         },
       });
 
