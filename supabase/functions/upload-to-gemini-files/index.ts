@@ -44,7 +44,7 @@ function base64ToBytes(b64: string): Uint8Array {
 }
 
 async function uploadOne(apiKey: string, img: InImage): Promise<OutFile> {
-  const mimeType = detectMime(img.imageBase64);
+  const mimeType = img.mimeType || detectMime(img.imageBase64);
   const bytes = base64ToBytes(img.imageBase64);
 
   // 1. Start resumable upload
