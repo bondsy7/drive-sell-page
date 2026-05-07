@@ -140,11 +140,10 @@ serve(async (req) => {
     const lockedPrompt = `${prompt}${PROFESSIONAL_BANNER_IMAGE_LOCK}`;
 
     if (config.engine === "gemini") {
-      const geminiModels = Array.from(new Set([
-        config.model,
-        ...(config.model === "gemini-3.1-flash-image-preview" ? ["gemini-2.5-flash-image"] : []),
-        ...(config.model === "gemini-3-pro-image-preview" ? ["gemini-3.1-flash-image-preview", "gemini-2.5-flash-image"] : []),
-      ]));
+      // STRICT: only use the requested model. Fallback to 2.5-flash-image is
+      // disabled because that model ignores aspectRatio and returns squares,
+      // which breaks user-selected formats (9:16, 16:9, 4:15, etc.).
+      const geminiModels = [config.model];
       let lastGeminiError = "";
       for (const geminiModel of geminiModels) {
         try {
