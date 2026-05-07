@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { compressImageForAI, fileToBase64 } from '@/lib/image-compress';
 import { supabase } from '@/integrations/supabase/client';
+import { uploadToGeminiFiles } from '@/lib/gemini-file-upload';
 import ProcessTimer from '@/components/ProcessTimer';
 
 interface Props {
