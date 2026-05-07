@@ -122,7 +122,7 @@ serve(async (req) => {
   const requestStartedAt = Date.now();
 
   try {
-    const { prompt, imageBase64, logoBase64, logoBrand, modelTier, width, height } = await req.json();
+    const { prompt, imageBase64, logoBase64, logoBrand, vehicleHint, modelTier, width, height } = await req.json();
     if (!prompt) throw new Error("No prompt provided");
 
     const requestedTier = typeof modelTier === "string" ? modelTier : "qualitaet";
@@ -137,22 +137,12 @@ serve(async (req) => {
     let resultImage: string | null = null;
     const maxRetries = 0;
 
-    // STEP 1: Describe the vehicle via Vision (text-only) so we don't have to
-    // pass any reference image into the banner generator. Gemini's own docs
-    // state that output size follows input images by default, so the final
-    // render must be text-only when exact banner format matters.
-    let vehicleDescription = "";
-    if (imageBase64) {
-      try {
-        vehicleDescription = await describeVehicle(imageBase64);
-        console.log(`[banner] Vehicle description (${vehicleDescription.length} chars):`, vehicleDescription.slice(0, 200));
-      } catch (descErr) {
-        console.warn("[banner] Vehicle description failed, continuing without:", descErr);
-      }
-    }
-
-    const vehicleBlock = vehicleDescription
-      ? `\n\nVEHICLE TO RENDER (exact identity — reproduce faithfully from this description, do NOT invent a different car):\n${vehicleDescription}\n\nRender this exact vehicle freshly composed inside the NEW banner scene. Adapt the vehicle (angle, scale, lighting, shadows, reflections) to the banner format and environment — never adapt the banner format to the vehicle. The banner aspect ratio is fixed and must dominate composition.`
+    // No Gemini Vision pre-step here: it made banner generation slow/flaky.
+    // The banner render receives only text metadata, never reference images,
+    // so the requested aspect ratio remains the primary constraint.
+    const cleanVehicleHint = typeof vehicleHint === "string" ? vehicleHint.trim().slice(0, 700) : "";
+    const vehicleBlock = cleanVehicleHint
+      ? `\n\nVEHICLE TO RENDER (text reference only):\n${cleanVehicleHint}\n\nRender this vehicle freshly composed inside the NEW banner scene. Adapt vehicle angle, scale, lighting, shadows and reflections to the fixed banner format — never adapt the banner format to a source photo.`
       : "";
 
     const logoTextBlock = logoBrand
@@ -242,30 +232,6 @@ async function toInlineData(input: string | null | undefined, fallbackMime = "im
     : fallbackMime;
   const data = input.includes(",") ? input.split(",")[1] : input;
   return { mimeType: mime, data };
-}
-
-async function describeVehicle(imageBase64: string): Promise<string> {
-  const apiKey = await getSecret("GEMINI_API_KEY");
-  if (!apiKey) return "";
-  const inline = await toInlineData(imageBase64, "image/jpeg");
-  if (!inline) return "";
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`;
-  const res = await fetchWithTimeout(url, {
-    method: "POST",
-    headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [{
-        parts: [
-          { text: `Describe ONLY the vehicle in this photo for a photorealistic re-render. Be precise and concise (max 180 words). Cover: make/model if visible, exact body type, exact body colour (incl. finish: metallic/matte/pearl), wheel design + colour + size, headlight & taillight shape and signature, grille design, badges, ride height, visible trim/spoilers, side profile, and any distinctive details. NO scene, NO background, NO lighting, NO mood. Just the car as identity reference.` },
-          { inlineData: inline },
-        ],
-      }],
-      generationConfig: { temperature: 0.2, maxOutputTokens: 400 },
-    }),
-  }, 25_000);
-  if (!res.ok) { console.warn("[banner] describeVehicle failed:", res.status); return ""; }
-  const data = await res.json();
-  return (data.candidates?.[0]?.content?.parts?.map((p: any) => p.text).filter(Boolean).join(" ") || "").trim();
 }
 
 async function generateGemini(prompt: string, imageBase64: string | null, logoBase64: string | null, model: string, retries: number, width?: number, height?: number, requestStartedAt = Date.now()): Promise<string | null> {
