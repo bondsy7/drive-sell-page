@@ -56,6 +56,8 @@ const TOOL_TO_STATE: Record<string, ExtendedAppState> = {
   'spin360': 'spin360',
   'beta': 'studio',
   'studio': 'studio',
+  'damage-repair': 'damage-repair',
+  'reparatur': 'damage-repair',
 };
 
 const STATE_TO_TOOL: Partial<Record<ExtendedAppState, string>> = {
