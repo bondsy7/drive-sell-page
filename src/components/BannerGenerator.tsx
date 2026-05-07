@@ -117,10 +117,11 @@ function snapToGeminiRatio(target: number): number {
  * (the root cause of "lots of cream space" 9:16 banners).
  */
 function padToAspectRatio(dataUrl: string, rawTargetRatio: number, _bg: string = '#f4f4f4'): Promise<string> {
-  // Keep extreme display-ad ratios raw (e.g. 160×600 = 4:15). Snapping them to
-  // 9:16 makes Gemini return a short centered poster, which later caused white
-  // top/bottom bands. Normal social ratios still snap to Gemini's native set.
-  const targetRatio = rawTargetRatio < 0.4 || rawTargetRatio > 2.6 ? rawTargetRatio : snapToGeminiRatio(rawTargetRatio);
+  // Skyscraper (extreme vertical < 0.4) keeps raw ratio — Gemini handles it textually.
+  // Extreme horizontal billboards (e.g. 970×250 = 3.88) snap to the widest supported
+  // ratio (21:9 ≈ 2.33) so Gemini's native aspect control kicks in; the final
+  // cover-crop in fitImageToSize trims it down to the exact ad size.
+  const targetRatio = rawTargetRatio < 0.4 ? rawTargetRatio : snapToGeminiRatio(rawTargetRatio);
   return new Promise((resolve, reject) => {
     const img = new window.Image();
     img.onload = () => {

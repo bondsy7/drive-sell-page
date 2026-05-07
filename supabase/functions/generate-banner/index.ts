@@ -94,10 +94,12 @@ const GEMINI_SUPPORTED_RATIOS: Array<{ label: string; value: number }> = [
 function getGeminiAspectRatio(w: number, h: number): string {
   if (!w || !h) return "1:1";
   const target = w / h;
-  // Gemini's native imageConfig only supports fixed ratios; extreme display-ad
-  // ratios like 160×600 must be described textually instead of snapped to 9:16,
-  // otherwise the model composes a short centered poster with empty caps.
-  if (target < 0.4 || target > 2.6) return `${w}:${h}`;
+  // Skyscraper (extreme vertical, e.g. 160×600 = 0.27) MUST stay raw — snapping
+  // to 9:16 produces a short centered poster with empty caps.
+  // Extreme horizontal billboards (e.g. 970×250 = 3.88) DO snap to the widest
+  // supported ratio (21:9). Sending raw "970:250" makes Gemini ignore native
+  // aspect control entirely and produce white top/bottom bands.
+  if (target < 0.4) return `${w}:${h}`;
   let best = GEMINI_SUPPORTED_RATIOS[0];
   let bestDiff = Math.abs(Math.log(target / best.value));
   for (const r of GEMINI_SUPPORTED_RATIOS) {
