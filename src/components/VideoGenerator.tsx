@@ -149,10 +149,14 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onBack, preloadedImage,
       // aspectRatio parameter, producing the wrong format.
       const shapedImage = await cropImageToAspect(imageBase64, aspectRatio);
 
+      // Upload via Gemini File API to keep payload small (edge function resolves it back to bytes for Veo).
+      const { uploadToGeminiFiles } = await import('@/lib/gemini-file-upload');
+      const refs = await uploadToGeminiFiles([{ imageBase64: shapedImage }]);
+
       const { data, error } = await supabase.functions.invoke('generate-video', {
         body: {
           action: 'start',
-          imageBase64: shapedImage,
+          ...(refs?.[0] ? { imageFileUri: refs[0] } : { imageBase64: shapedImage }),
           prompt: customPrompt || undefined,
           aspectRatio,
         },
