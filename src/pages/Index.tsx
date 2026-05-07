@@ -60,6 +60,8 @@ const TOOL_TO_STATE: Record<string, ExtendedAppState> = {
   'studio': 'studio',
   'damage-repair': 'damage-repair',
   'reparatur': 'damage-repair',
+  'damage-analysis': 'damage-analysis',
+  'analyse': 'damage-analysis',
 };
 
 const STATE_TO_TOOL: Partial<Record<ExtendedAppState, string>> = {
