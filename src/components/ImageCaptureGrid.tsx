@@ -336,8 +336,10 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         setBrandDetectionStatus('detecting');
         brandDetectionAttempted.current = true;
         try {
+          const refs = await uploadToGeminiFiles([{ imageBase64: base64 }]);
+          const body: any = refs?.[0] ? { imageFileUri: refs[0] } : { imageBase64: base64 };
           const { data: aiResult, error: aiError } = await supabase.functions.invoke('detect-vehicle-brand', {
-            body: { imageBase64: base64 },
+            body,
           });
 
           if (!aiError && aiResult?.brand && aiResult.confidence !== 'low') {
