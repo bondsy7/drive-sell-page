@@ -73,63 +73,6 @@ function fitImageToSize(dataUrl: string, targetW: number, targetH: number, bg: s
   });
 }
 
-/**
- * Pre-pad an input image to the target aspect ratio before sending it to the
- * AI model. Gemini tends to mirror the input image's aspect ratio, so feeding
- * it a canvas with the desired ratio dramatically increases the chance the
- * generated banner matches (e.g. 9:16, 16:9, etc.).
- */
-// Gemini image models only honour a fixed set of output aspect ratios. Snap
-// the requested target to the closest supported value so the pre-padded input
-// matches exactly what the model will produce.
-const GEMINI_SUPPORTED_RATIOS = [1/1, 2/3, 3/2, 3/4, 4/3, 4/5, 5/4, 9/16, 16/9, 21/9];
-function snapToGeminiRatio(target: number): number {
-  let best = GEMINI_SUPPORTED_RATIOS[0];
-  let bestDiff = Math.abs(Math.log(target / best));
-  for (const r of GEMINI_SUPPORTED_RATIOS) {
-    const d = Math.abs(Math.log(target / r));
-    if (d < bestDiff) { bestDiff = d; best = r; }
-  }
-  return best;
-}
-
-function padToAspectRatio(dataUrl: string, rawTargetRatio: number, bg: string = '#f4f4f4'): Promise<string> {
-  const targetRatio = snapToGeminiRatio(rawTargetRatio);
-  return new Promise((resolve, reject) => {
-    const img = new window.Image();
-    img.onload = () => {
-      try {
-        const srcRatio = img.width / img.height;
-        // Already matches → return original
-        if (Math.abs(srcRatio - targetRatio) / targetRatio < 0.02) return resolve(dataUrl);
-        let canvasW: number, canvasH: number, dx = 0, dy = 0;
-        if (srcRatio > targetRatio) {
-          // src is wider → keep width, expand height
-          canvasW = img.width;
-          canvasH = Math.round(img.width / targetRatio);
-          dy = Math.round((canvasH - img.height) / 2);
-        } else {
-          // src is taller → keep height, expand width
-          canvasH = img.height;
-          canvasW = Math.round(img.height * targetRatio);
-          dx = Math.round((canvasW - img.width) / 2);
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = canvasW;
-        canvas.height = canvasH;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return reject(new Error('canvas unsupported'));
-        ctx.fillStyle = bg;
-        ctx.fillRect(0, 0, canvasW, canvasH);
-        ctx.drawImage(img, dx, dy);
-        resolve(canvas.toDataURL('image/jpeg', 0.92));
-      } catch (e) { reject(e); }
-    };
-    img.onerror = () => reject(new Error('image load failed'));
-    img.src = dataUrl;
-  });
-}
-
 // ─── Config ───
 
 const BANNER_FORMATS = [
