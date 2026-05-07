@@ -77,6 +77,7 @@ const STATE_TO_TOOL: Partial<Record<ExtendedAppState, string>> = {
   'spin360': 'spin360',
   'studio': 'beta',
   'damage-repair': 'damage-repair',
+  'damage-analysis': 'damage-analysis',
 };
 
 const Index = () => {
