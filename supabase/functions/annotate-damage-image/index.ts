@@ -61,11 +61,14 @@ REGELN:
 
   const models = ["gemini-3.1-flash-image-preview", "gemini-2.5-flash-image"];
   for (const model of models) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 55_000);
     try {
       const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
         method: "POST",
         headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
         body,
+        signal: ctrl.signal,
       });
       if (!r.ok) {
         console.warn(`[annotate] ${model} ${r.status}`);
@@ -81,7 +84,9 @@ REGELN:
         }
       }
     } catch (e) {
-      console.warn("[annotate] error", e);
+      console.warn(`[annotate] ${model} timeout/error`, e instanceof Error ? e.message : e);
+    } finally {
+      clearTimeout(timer);
     }
   }
   return null;
