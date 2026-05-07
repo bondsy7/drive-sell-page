@@ -356,7 +356,7 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
   const [wantVideo, setWantVideo] = useState(false);
   const [videoPrompt, setVideoPrompt] = useState('');
   // Model tier
-  const [modelTier, setModelTier] = useState<ModelTier>('qualitaet');
+  const [modelTier, setModelTier] = useState<ModelTier>('premium');
 
   /* ─── Step 3: Generation runtime ─── */
   const [heroBase64, setHeroBase64] = useState<string | null>(null);
