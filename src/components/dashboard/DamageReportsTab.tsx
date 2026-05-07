@@ -58,6 +58,7 @@ export default function DamageReportsTab() {
   };
 
   useEffect(() => { load(); }, []);
+  useEffect(() => { setViewerIndex(0); }, [active?.id]);
 
   const handleDelete = async (id: string) => {
     const { error } = await supabase.from('damage_reports').delete().eq('id', id);
