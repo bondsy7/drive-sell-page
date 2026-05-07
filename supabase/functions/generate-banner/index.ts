@@ -400,7 +400,9 @@ The logo image follows now:` });
   };
 
   // Fail fast on overloaded preview models, then move to the stable Gemini fallback.
-  const modelBudgetMs = model === GEMINI_FAST_FALLBACK ? 55_000 : /^gemini-3/.test(model) ? 38_000 : 45_000;
+  // Give Gemini-3 preview models more headroom — they regularly need 35–55s for 9:16 with reference image.
+  // Falling back too early forces use of gemini-2.5-flash-image which ignores aspect ratio.
+  const modelBudgetMs = model === GEMINI_FAST_FALLBACK ? 55_000 : /^gemini-3/.test(model) ? 60_000 : 45_000;
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     let timeoutMs = modelBudgetMs;
