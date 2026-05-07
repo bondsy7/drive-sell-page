@@ -280,8 +280,9 @@ async function handleVideoStart(req: Request, GEMINI_API_KEY: string, body: any)
     };
   } else if (imageBase64) {
     const parsed = await parseImageBase64(imageBase64);
+    const identityGuardrail = `${finalPrompt}\n\nCRITICAL IDENTITY LOCK: The video MUST feature the EXACT vehicle shown in the provided reference image. Preserve the exact make, model, body type, body color, paint finish, wheels, trim, badges, license plate area, and ALL visible damage / dents / scratches / condition. Do NOT swap the car for a different vehicle. Do NOT change the color. Do NOT change the body style (e.g. do not turn a sedan/wagon/taxi into a sports car). Do NOT repair damage. Do NOT restyle. Treat the reference image as ground truth for the car's identity and appearance. Only the environment (showroom, lighting, turntable) and camera motion may be added — the car itself must remain visually identical to the reference.`;
     requestBody = {
-      instances: [{ prompt: finalPrompt, image: { bytesBase64Encoded: parsed.data, mimeType: parsed.mimeType } }],
+      instances: [{ prompt: identityGuardrail, image: { bytesBase64Encoded: parsed.data, mimeType: parsed.mimeType } }],
       parameters: { sampleCount: 1, aspectRatio },
     };
   } else {
