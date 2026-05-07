@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { X, Loader2, Sparkles, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import BeforeAfterSlider from './BeforeAfterSlider';
+import BeforeAfterSlider from '@/components/BeforeAfterSlider';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
