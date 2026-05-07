@@ -157,6 +157,13 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onBack, preloadedImage,
       const { uploadToGeminiFiles } = await import('@/lib/gemini-file-upload');
       const refs = await uploadToGeminiFiles([{ imageBase64: shapedImage }]);
 
+      // Ensure a vehicle row exists so the rendered video is always attached to a Fahrzeug.
+      let effectiveVehicleId = vehicleId || autoVehicleId || null;
+      if (!effectiveVehicleId && user) {
+        effectiveVehicleId = await ensureVehicleAuto(user.id, null, null);
+        if (effectiveVehicleId) setAutoVehicleId(effectiveVehicleId);
+      }
+
       const { data, error } = await supabase.functions.invoke('generate-video', {
         body: {
           action: 'start',
