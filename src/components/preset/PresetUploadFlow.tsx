@@ -11,6 +11,7 @@ import RemasterOptions from '@/components/RemasterOptions';
 import { type RemasterConfig, buildMasterPrompt, fetchPromptOverrides } from '@/lib/remaster-prompt';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 import { compressImageForAI, fileToBase64 } from '@/lib/image-compress';
+import { uploadToGeminiFiles, type GeminiFileRef } from '@/lib/gemini-file-upload';
 import ImagePreviewLightbox from '@/components/ImagePreviewLightbox';
 import type { PresetData } from './PresetSelectionModal';
 import type { ModelTier } from '@/components/ModelSelector';
@@ -26,6 +27,7 @@ interface PresetUploadFlowProps {
 interface UploadedImage {
   id: string;
   originalBase64: string;
+  fileRef?: GeminiFileRef | null;
   remasteredBase64: string | null;
   status: 'pending' | 'processing' | 'done' | 'error';
   error?: string;
