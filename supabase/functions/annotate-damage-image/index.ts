@@ -106,8 +106,8 @@ serve(async (req) => {
     const userId = await authUser(req);
     if (userId instanceof Response) return userId;
 
-    const { image, schaeden } = await req.json();
-    if (!image) {
+    const { image, imageFileUri, schaeden } = await req.json();
+    if (!image && !imageFileUri?.uri) {
       return new Response(JSON.stringify({ error: "Kein Bild übergeben" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -129,7 +129,7 @@ serve(async (req) => {
     const GEMINI_API_KEY = await getSecret("GEMINI_API_KEY");
     if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY missing");
 
-    const annotated = await annotateImage(GEMINI_API_KEY, image, schaeden || []);
+    const annotated = await annotateImage(GEMINI_API_KEY, image || null, imageFileUri || null, schaeden || []);
     return new Response(JSON.stringify({ annotated }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
