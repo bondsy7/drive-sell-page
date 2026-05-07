@@ -73,6 +73,32 @@ const DamageAnalysisFlow: React.FC<Props> = ({ onBack }) => {
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const [isDetecting, setIsDetecting] = useState(false);
+
+  const autoDetect = useCallback(async (firstImageBase64: string) => {
+    setIsDetecting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) return;
+      const { data } = await supabase.functions.invoke('detect-vehicle-brand', {
+        body: { imageBase64: firstImageBase64 },
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (data?.brand || data?.model) {
+        setVehicleInfo(prev => ({
+          ...prev,
+          marke: prev.marke || data.brand || '',
+          modell: prev.modell || data.model || '',
+        }));
+        if (data.brand) toast.success(`Erkannt: ${data.brand}${data.model ? ' ' + data.model : ''}`);
+      }
+    } catch (e) {
+      console.warn('Brand detection failed', e);
+    } finally {
+      setIsDetecting(false);
+    }
+  }, []);
+
   const handleFiles = useCallback(async (files: FileList | File[]) => {
     const remaining = MAX_IMAGES - images.length;
     if (remaining <= 0) { toast.error(`Max ${MAX_IMAGES} Bilder.`); return; }
@@ -84,8 +110,12 @@ const DamageAnalysisFlow: React.FC<Props> = ({ onBack }) => {
       const compressed = await compressImageForAI(raw).catch(() => raw);
       list.push({ id: crypto.randomUUID(), base64: compressed });
     }
+    const wasEmpty = images.length === 0;
     setImages(prev => [...prev, ...list]);
-  }, [images.length]);
+    if (wasEmpty && list.length > 0) {
+      autoDetect(list[0].base64);
+    }
+  }, [images.length, autoDetect]);
 
   const removeImage = (id: string) => setImages(prev => prev.filter(i => i.id !== id));
 
