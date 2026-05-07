@@ -819,6 +819,19 @@ const Index = () => {
             <OneShotStudio onBack={() => setAppState('hub')} />
           )}
 
+          {/* ─── Schadensreparatur ─── */}
+          {appState === 'damage-repair' && (
+            <DamageRepairFlow
+              onBack={() => setAppState('hub')}
+              onComplete={async (imgs) => {
+                setStandalonePhotoResults(imgs);
+                await saveStandaloneImages(imgs);
+                toast.success(`${imgs.length} reparierte Bilder in Galerie gespeichert!`);
+                navigate('/dashboard?tab=gallery');
+              }}
+            />
+          )}
+
           {appState === 'idle' && (
             <div className="space-y-8">
               <div className="flex items-center gap-3 mb-4">
