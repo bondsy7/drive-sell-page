@@ -317,7 +317,8 @@ async function toInlineData(input: string | null | undefined, fallbackMime = "im
   return { mimeType: mime, data };
 }
 
-async function generateGemini(prompt: string, imageBase64: string | null, logoBase64: string | null, model: string, retries: number, width?: number, height?: number, requestStartedAt = Date.now(), log?: Logger): Promise<string | null> {
+interface FileRef { fileUri: string; mimeType: string }
+async function generateGemini(prompt: string, imageBase64: string | null, logoBase64: string | null, model: string, retries: number, width?: number, height?: number, requestStartedAt = Date.now(), log?: Logger, vehicleFileRef?: FileRef | null, logoFileRef?: FileRef | null): Promise<string | null> {
   const apiKey = await getSecret("GEMINI_API_KEY");
   if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
   log?.info("gemini.prep", "preparing request", { model });
