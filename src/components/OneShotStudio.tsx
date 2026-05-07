@@ -2043,6 +2043,7 @@ function buildBannerPrompt(form: MarketingForm, fmt: typeof ONESHOT_BANNER_FORMA
     minimal: 'clean minimalist design, lots of whitespace, subtle elegant typography',
     retro: 'retro 80s style, vintage color grading, nostalgic warm tones',
     sport: 'dynamic sporty look, motion blur hints, aggressive angles, high performance feel',
+    volkswagen: 'official Volkswagen / Volkswagen Nutzfahrzeuge OEM brand visual identity – calm, structured, modern, spacious and highly controlled. Strict grid, excellent alignment, generous whitespace, clear hierarchy and restrained branding. Premium, minimal, brand-safe. Use VW corporate typography (friendly bold sans-serif similar to VW Head/Gotham). Logo as calm brand anchor with whitespace around it, never oversized, preferably bottom right. Avoid loud dealership flyer look – every element intentional, balanced and clean.',
   };
   const priceDisplayMap: Record<string, string> = {
     sign: 'on a classic dealership price tag/sign attached to the image',
@@ -2051,6 +2052,7 @@ function buildBannerPrompt(form: MarketingForm, fmt: typeof ONESHOT_BANNER_FORMA
     stamp: 'as a bold stamp/badge overlay',
     led: 'on an LED display screen integrated into the scene',
     ribbon: 'on a diagonal ribbon/sash across the corner',
+    stoerer: 'as a solid rectangular price callout (Störer) with sharp 90-degree corners (NO rounded corners), filled with the accent color, white bold sans-serif price text centered inside, perfectly straight and horizontally aligned, NOT tilted, NOT rotated, NOT angled, placed prominently in a top corner like a classic German dealership price sticker',
   };
 
   return `Create a professional automotive advertising banner.
