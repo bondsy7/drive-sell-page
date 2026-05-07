@@ -193,7 +193,9 @@ const PresetUploadFlow: React.FC<PresetUploadFlowProps> = ({ onComplete, onBack 
 
     try {
       const { data, error } = await invokeRemasterVehicleImage({
-        imageBase64: img.originalBase64, vehicleDescription: '', modelTier: modelTier,
+        imageBase64: img.originalBase64,
+        mainImageFileUri: img.fileRef || null,
+        vehicleDescription: '', modelTier: modelTier,
         dynamicPrompt,
         customShowroomBase64: remasterConfig.customShowroomBase64 || null,
         customPlateImageBase64: remasterConfig.customPlateImageBase64 || null,
