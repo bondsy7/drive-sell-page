@@ -205,7 +205,7 @@ const SCENES = [
 const STYLES = [
   { id: 'premium', label: 'Seriös / Premium', prompt: 'elegant, premium luxury, clean professional design, sophisticated typography' },
   { id: 'cinematic', label: 'Cinematic', prompt: 'cinematic movie poster style, dramatic lighting, lens flare, widescreen feel' },
-  { id: 'bold', label: 'Popstyle', prompt: 'bold, eye-catching, vibrant neon colors, explosive energy, attention-grabbing, pop-art inspired' },
+  { id: 'bold', label: 'Popstyle', prompt: 'bold, eye-catching, vibrant neon colors, explosive energy, attention-grabbing' },
   { id: 'minimal', label: 'Minimalistisch', prompt: 'clean minimalist design, lots of whitespace, subtle elegant typography' },
   { id: 'retro', label: 'Retro / Vintage', prompt: 'retro 80s style, vintage color grading, nostalgic warm tones' },
   { id: 'sport', label: 'Sportlich', prompt: 'dynamic sporty look, motion blur hints, aggressive angles, high performance feel' },
