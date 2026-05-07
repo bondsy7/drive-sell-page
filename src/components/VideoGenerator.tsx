@@ -144,10 +144,15 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onBack, preloadedImage,
     setPollProgress(0);
 
     try {
+      // Pre-crop the source image to the requested aspect — Veo uses the
+      // input image's aspect for image-to-video and otherwise ignores the
+      // aspectRatio parameter, producing the wrong format.
+      const shapedImage = await cropImageToAspect(imageBase64, aspectRatio);
+
       const { data, error } = await supabase.functions.invoke('generate-video', {
         body: {
           action: 'start',
-          imageBase64,
+          imageBase64: shapedImage,
           prompt: customPrompt || undefined,
           aspectRatio,
         },
