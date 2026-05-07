@@ -220,9 +220,40 @@ async function generateGemini(prompt: string, imageBase64: string | null, logoBa
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
-  const parts: any[] = [{ text: prompt }];
+  const aspectLabel = width && height ? getGeminiAspectRatio(width, height) : "1:1";
+  const isLandscape = width && height ? width > height : false;
+  const isPortrait  = width && height ? height > width : false;
+  const orientationWord = isLandscape ? "LANDSCAPE (wider than tall)"
+                        : isPortrait  ? "PORTRAIT (taller than wide)"
+                        : "SQUARE";
+
+  const parts: any[] = [];
+
+  // 1) FORMAT-Direktive ZUERST (Gemini gewichtet frühe Instruktionen stark)
+  if (width && height) {
+    parts.push({
+      text:
+`OUTPUT CANVAS (HARD CONSTRAINT — HIGHEST PRIORITY):
+- Aspect ratio: EXACTLY ${aspectLabel} (${width}×${height}px, ${orientationWord}).
+- DO NOT default to 1:1 / square. DO NOT mirror the aspect ratio of the reference vehicle photo.
+- Compose the entire scene (background, vehicle placement, headline, logo, negative space) NATIVELY for a ${aspectLabel} ${orientationWord} canvas.
+- If the reference vehicle image has a different aspect ratio, IGNORE its framing — only its identity matters.`
+    });
+  }
+
+  // 2) Hauptprompt
+  parts.push({ text: prompt });
+
+  // 3) Referenz-Fahrzeug klar als Identitäts-Referenz markieren
   const vehicleInline = await toInlineData(imageBase64, "image/jpeg");
-  if (vehicleInline) parts.push({ inlineData: vehicleInline });
+  if (vehicleInline) {
+    parts.push({ text:
+`VEHICLE REFERENCE IMAGE (identity only):
+The next image shows the vehicle. Use it ONLY for identity (model, color, trim, wheels, proportions).
+DO NOT copy its background, lighting, reflections, framing or aspect ratio.` });
+    parts.push({ inlineData: vehicleInline });
+  }
+
   const logoInline = await toInlineData(logoBase64, "image/png");
   if (logoInline) {
     parts.push({ text: `LOGO LOCK (MANDATORY — READ CAREFULLY):
