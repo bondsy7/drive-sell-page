@@ -70,6 +70,16 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
   const [creditDialogOpen, setCreditDialogOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [autoVehicleId, setAutoVehicleId] = useState<string | null>(null);
+
+  const ensureSpinVehicleId = useCallback(async (): Promise<string | null> => {
+    if (vehicleId) return vehicleId;
+    if (autoVehicleId) return autoVehicleId;
+    if (!user) return null;
+    const created = await ensureVehicleAuto(user.id, null, null);
+    if (created) setAutoVehicleId(created);
+    return created;
+  }, [vehicleId, autoVehicleId, user]);
 
   // Calculate total cost based on mode
   const imageCost = (getCost('spin360_analysis', 'standard') || 1) +
