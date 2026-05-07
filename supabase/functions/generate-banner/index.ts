@@ -199,6 +199,8 @@ serve(async (req) => {
       tier, engine: config.engine, model: config.model, cost: config.cost,
       width, height, aspect: usedAspect,
       hasImage: !!imageBase64, hasLogo: !!logoBase64,
+      vehicleFileUri: vehicleFileRef?.fileUri || null,
+      logoFileUri: logoFileRef?.fileUri || null,
       promptChars: prompt.length,
     });
 
