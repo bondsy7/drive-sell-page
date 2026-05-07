@@ -73,6 +73,63 @@ function fitImageToSize(dataUrl: string, targetW: number, targetH: number, bg: s
   });
 }
 
+/**
+ * Pre-pad an input image to the target aspect ratio before sending it to the
+ * AI model. Gemini tends to mirror the input image's aspect ratio, so feeding
+ * it a canvas with the desired ratio dramatically increases the chance the
+ * generated banner matches (e.g. 9:16, 16:9, etc.).
+ */
+// Gemini image models only honour a fixed set of output aspect ratios. Snap
+// the requested target to the closest supported value so the pre-padded input
+// matches exactly what the model will produce.
+const GEMINI_SUPPORTED_RATIOS = [1/1, 2/3, 3/2, 3/4, 4/3, 4/5, 5/4, 9/16, 16/9, 21/9];
+function snapToGeminiRatio(target: number): number {
+  let best = GEMINI_SUPPORTED_RATIOS[0];
+  let bestDiff = Math.abs(Math.log(target / best));
+  for (const r of GEMINI_SUPPORTED_RATIOS) {
+    const d = Math.abs(Math.log(target / r));
+    if (d < bestDiff) { bestDiff = d; best = r; }
+  }
+  return best;
+}
+
+function padToAspectRatio(dataUrl: string, rawTargetRatio: number, bg: string = '#f4f4f4'): Promise<string> {
+  const targetRatio = snapToGeminiRatio(rawTargetRatio);
+  return new Promise((resolve, reject) => {
+    const img = new window.Image();
+    img.onload = () => {
+      try {
+        const srcRatio = img.width / img.height;
+        // Already matches → return original
+        if (Math.abs(srcRatio - targetRatio) / targetRatio < 0.02) return resolve(dataUrl);
+        let canvasW: number, canvasH: number, dx = 0, dy = 0;
+        if (srcRatio > targetRatio) {
+          // src is wider → keep width, expand height
+          canvasW = img.width;
+          canvasH = Math.round(img.width / targetRatio);
+          dy = Math.round((canvasH - img.height) / 2);
+        } else {
+          // src is taller → keep height, expand width
+          canvasH = img.height;
+          canvasW = Math.round(img.height * targetRatio);
+          dx = Math.round((canvasW - img.width) / 2);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = canvasW;
+        canvas.height = canvasH;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return reject(new Error('canvas unsupported'));
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, canvasW, canvasH);
+        ctx.drawImage(img, dx, dy);
+        resolve(canvas.toDataURL('image/jpeg', 0.92));
+      } catch (e) { reject(e); }
+    };
+    img.onerror = () => reject(new Error('image load failed'));
+    img.src = dataUrl;
+  });
+}
+
 // ─── Config ───
 
 const BANNER_FORMATS = [
@@ -644,19 +701,19 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
     const prompt = buildPromptForFormat(formatId);
 
     try {
+      // Pre-pad the input vehicle image to the target aspect ratio so the AI
+      // model composes a banner in the correct format (Gemini tends to mirror
+      // the input ratio). No content is lost — only neutral padding is added.
+      const targetRatio = fmt.w / fmt.h;
+      const preparedImage = vehicleImage
+        ? await padToAspectRatio(vehicleImage, targetRatio).catch(() => vehicleImage)
+        : vehicleImage;
+
       const { data, error } = await supabase.functions.invoke('generate-banner', {
         body: {
           prompt,
-          imageBase64: vehicleImage,
-          vehicleHint: [
-            vehicleTitle || extractedData?.vehicleTitle ? `Fahrzeug: ${vehicleTitle || extractedData?.vehicleTitle}` : null,
-            extractedData?.brand ? `Marke: ${extractedData.brand}` : null,
-            extractedData?.model ? `Modell: ${extractedData.model}` : null,
-            extractedData?.color ? `Farbe: ${extractedData.color}` : null,
-            extractedData?.bodyType ? `Karosserie: ${extractedData.bodyType}` : null,
-          ].filter(Boolean).join('\n'),
+          imageBase64: preparedImage,
           logoBase64: showLogo && logoBase64 ? logoBase64 : undefined,
-          logoBrand: showLogo && logoBase64 ? selectedLogoBrand : undefined,
           modelTier,
           width: fmt.w,
           height: fmt.h,
@@ -677,7 +734,7 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
       console.error(`Banner ${formatId} failed:`, e);
     }
     return null;
-  }, [buildPromptForFormat, vehicleImage, vehicleTitle, extractedData, showLogo, logoBase64, selectedLogoBrand, modelTier]);
+  }, [buildPromptForFormat, vehicleImage, showLogo, logoBase64, modelTier]);
 
   // Track auto-created vehicle id so subsequent banners in the same session reuse it.
   const [autoVehicleId, setAutoVehicleId] = useState<string | null>(null);

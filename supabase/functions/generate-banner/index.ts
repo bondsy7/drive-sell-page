@@ -122,18 +122,13 @@ serve(async (req) => {
   const requestStartedAt = Date.now();
 
   try {
-    const body = await req.json();
-    const { prompt, imageBase64, logoBase64, logoBrand, vehicleHint, modelTier, width, height } = body;
+    const { prompt, imageBase64, logoBase64, modelTier, width, height } = await req.json();
     if (!prompt) throw new Error("No prompt provided");
 
     const requestedTier = typeof modelTier === "string" ? modelTier : "qualitaet";
     const tier = requestedTier === "standard" ? "qualitaet" : requestedTier;
     const config = MODEL_MAP[tier] || MODEL_MAP["qualitaet"];
-    console.log(`[banner][REQ] tier=${tier} engine=${config.engine} model=${config.model} cost=${config.cost}`);
-    console.log(`[banner][REQ] dims=${width}x${height} aspect=${width && height ? getGeminiAspectRatio(width, height) : "n/a"}`);
-    console.log(`[banner][REQ] hasImage=${!!imageBase64} hasLogo=${!!logoBase64} logoBrand=${logoBrand || "none"}`);
-    console.log(`[banner][REQ] vehicleHint(${(vehicleHint || "").length} chars)=${(vehicleHint || "").slice(0, 300)}`);
-    console.log(`[banner][REQ] prompt(${(prompt || "").length} chars) head=${prompt.slice(0, 250)}`);
+    console.log(`[banner] Engine=${config.engine} Model=${config.model} Tier=${tier} (user-selected, binding)`);
 
     // Auth & credits
     const authResult = await authenticateAndDeductCredits(req, config.cost);
@@ -142,55 +137,30 @@ serve(async (req) => {
     let resultImage: string | null = null;
     const maxRetries = 0;
 
-    // No Gemini Vision pre-step here: it made banner generation slow/flaky.
-    // The banner render receives only text metadata, never reference images,
-    // so the requested aspect ratio remains the primary constraint.
-    const cleanVehicleHint = typeof vehicleHint === "string" ? vehicleHint.trim().slice(0, 700) : "";
-    const vehicleBlock = cleanVehicleHint
-      ? `\n\nVEHICLE TO RENDER (text reference only):\n${cleanVehicleHint}\n\nRender this vehicle freshly composed inside the NEW banner scene. Adapt vehicle angle, scale, lighting, shadows and reflections to the fixed banner format — never adapt the banner format to a source photo.`
-      : "";
-
-    const logoTextBlock = logoBrand
-      ? `\n\nLOGO TO RENDER: Include the current official ${logoBrand} manufacturer logo as a clean, modern flat brand mark. Use the latest current version only, never historical/chrome/3D variants. Place it clearly without changing the fixed banner aspect ratio.`
-      : "";
-
-    const lockedPrompt = `${prompt}${vehicleBlock}${logoTextBlock}${PROFESSIONAL_BANNER_IMAGE_LOCK}`;
-    console.log(`[banner][PROMPT] total=${lockedPrompt.length} chars; vehicleBlock=${vehicleBlock.length}; logoBlock=${logoTextBlock.length}`);
-    console.log(`[banner][PROMPT] tail=${lockedPrompt.slice(-400)}`);
+    const lockedPrompt = `${prompt}${PROFESSIONAL_BANNER_IMAGE_LOCK}`;
 
     if (config.engine === "gemini") {
-      const fallbackChain: Record<string, string[]> = {
-        "gemini-3-pro-image-preview": ["gemini-3-pro-image-preview", "gemini-3.1-flash-image-preview", "gemini-2.5-flash-image"],
-        "gemini-3.1-flash-image-preview": ["gemini-3.1-flash-image-preview", "gemini-2.5-flash-image"],
-      };
-      const geminiModels = fallbackChain[config.model] || [config.model];
-      console.log(`[banner][GEMINI] fallback chain = ${geminiModels.join(" -> ")}`);
+      // STRICT: only use the requested model. Fallback to 2.5-flash-image is
+      // disabled because that model ignores aspectRatio and returns squares,
+      // which breaks user-selected formats (9:16, 16:9, 4:15, etc.).
+      const geminiModels = [config.model];
       let lastGeminiError = "";
       for (const geminiModel of geminiModels) {
-        const modelStart = Date.now();
-        console.log(`[banner][GEMINI] >>> START model=${geminiModel} elapsedSinceReq=${Date.now() - requestStartedAt}ms hasRefImage=${!!imageBase64}`);
         try {
-          // Pass the vehicle photo as visual reference. Strict aspect-ratio prompt
-          // + imageConfig.aspectRatio keep the banner format locked.
-          resultImage = await generateGemini(lockedPrompt, imageBase64 || null, logoBase64 || null, geminiModel, maxRetries, width, height, requestStartedAt);
-          console.log(`[banner][GEMINI] <<< END model=${geminiModel} ok=${!!resultImage} took=${Date.now() - modelStart}ms`);
+          resultImage = await generateGemini(lockedPrompt, imageBase64, logoBase64, geminiModel, maxRetries, width, height, requestStartedAt);
           if (resultImage) break;
         } catch (err) {
           lastGeminiError = err instanceof Error ? err.message : "Gemini error";
-          console.warn(`[banner][GEMINI] FAIL model=${geminiModel} took=${Date.now() - modelStart}ms err=${lastGeminiError}`);
+          console.warn(`Banner model ${geminiModel} failed, trying fallback if available:`, lastGeminiError);
         }
       }
       if (!resultImage && lastGeminiError) throw new Error(lastGeminiError);
     } else {
-      console.log(`[banner][OPENAI] >>> START model=${config.model}`);
-      const oaStart = Date.now();
       resultImage = await generateOpenAI(lockedPrompt, imageBase64, logoBase64, config.model, width, height, tier === "ultra" || tier === "neu", maxRetries);
-      console.log(`[banner][OPENAI] <<< END ok=${!!resultImage} took=${Date.now() - oaStart}ms`);
     }
 
     if (!resultImage) throw new Error("Kein Banner generiert. Bitte versuche es erneut.");
 
-    console.log(`[banner][DONE] totalTook=${Date.now() - requestStartedAt}ms`);
     return new Response(JSON.stringify({ imageBase64: resultImage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
@@ -276,17 +246,15 @@ The logo image follows now:` });
     });
   }
 
-  // Gemini docs: aspect ratio is controlled via generationConfig.imageConfig.aspectRatio.
-  // The 3.x models also support imageSize; keep it at 1K for edge-function speed.
-  const generationConfig: Record<string, unknown> = { responseModalities: ["IMAGE"] };
-  if (width && height) {
-    const imageConfig: Record<string, string> = { aspectRatio: aspectLabel };
-    if (/^gemini-3/.test(model)) imageConfig.imageSize = "1K";
-    (generationConfig as any).imageConfig = imageConfig;
+  // gemini-3* image models support imageConfig.aspectRatio; older 2.5 ignores it
+  const supportsAspectField = /^gemini-3/.test(model);
+  const generationConfig: Record<string, unknown> = { responseModalities: ["TEXT", "IMAGE"] };
+  if (supportsAspectField && width && height) {
+    (generationConfig as any).imageConfig = { aspectRatio: aspectLabel };
   }
 
   // Stay well below Lovable Cloud's 150s idle limit so fallbacks can run instead of causing a hard 504.
-  const modelBudgetMs = /^gemini-3-pro/.test(model) ? 32_000 : /^gemini-3/.test(model) ? 34_000 : 28_000;
+  const modelBudgetMs = /^gemini-3-pro/.test(model) ? 38_000 : /^gemini-3/.test(model) ? 34_000 : 28_000;
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     let timeoutMs = modelBudgetMs;
@@ -294,8 +262,6 @@ The logo image follows now:` });
       const remainingMs = EDGE_DEADLINE_MS - (Date.now() - requestStartedAt);
       if (remainingMs < 12_000) throw new Error("Banner generation deadline reached before model fallback");
       timeoutMs = Math.max(8_000, Math.min(modelBudgetMs, remainingMs - 5_000));
-      console.log(`[banner][GEMINI] POST ${model} timeoutMs=${timeoutMs} aspect=${aspectLabel} promptLen=${prompt.length}`);
-      const callStart = Date.now();
       const response = await fetchWithTimeout(url, {
         method: "POST",
         headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
@@ -304,11 +270,10 @@ The logo image follows now:` });
           generationConfig,
         }),
       }, timeoutMs);
-      console.log(`[banner][GEMINI] HTTP ${response.status} model=${model} took=${Date.now() - callStart}ms`);
 
       if (!response.ok) {
         const errText = await response.text();
-        console.error(`[banner][GEMINI] error ${model} status=${response.status} body=${errText.slice(0, 800)}`);
+        console.error(`Gemini banner attempt ${attempt + 1}:`, response.status, errText);
         if ([400, 401, 403].includes(response.status) && /API_KEY_INVALID|API Key not found|invalid api key/i.test(errText)) {
           throw new Error("GEMINI_API_KEY ungültig oder nicht für Gemini freigeschaltet");
         }
