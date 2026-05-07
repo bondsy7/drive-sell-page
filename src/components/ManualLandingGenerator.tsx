@@ -14,6 +14,7 @@ import ProcessTimer from '@/components/ProcessTimer';
 import { useSearchParams } from 'react-router-dom';
 import VehicleAssetPicker from '@/components/VehicleAssetPicker';
 import { useVehicleAssets } from '@/hooks/useVehicleAssets';
+import { ensureVehicleAuto } from '@/lib/vehicle-utils';
 
 const PAGE_TYPES = [
   { value: 'leasing', label: 'Leasing-Angebot', desc: 'Monatliche Rate, Flexibilität', icon: '📋' },
