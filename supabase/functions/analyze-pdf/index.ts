@@ -286,16 +286,18 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    // 1. Parse request – support single or multiple PDFs
+    // 1. Parse request – support single or multiple PDFs (base64 or Gemini File API URIs)
     const reqBody = await req.json();
+    const pdfFileUris: { uri: string; mimeType?: string }[] = Array.isArray(reqBody.pdfFileUris)
+      ? reqBody.pdfFileUris
+      : [];
     const pdfBase64Array: string[] = reqBody.pdfBase64Array
       ? reqBody.pdfBase64Array
       : reqBody.pdfBase64
         ? [reqBody.pdfBase64]
         : [];
-    if (pdfBase64Array.length === 0) throw new Error("No PDF data provided");
-
-    const pdfCount = pdfBase64Array.length;
+    const pdfCount = pdfFileUris.length > 0 ? pdfFileUris.length : pdfBase64Array.length;
+    if (pdfCount === 0) throw new Error("No PDF data provided");
 
     // Authenticate & deduct credits (1 per PDF)
     const authResult = await authenticateAndDeductCredits(req, "pdf_analysis", pdfCount);
@@ -346,13 +348,22 @@ Extrahiere:
 Wenn CO₂-Klasse nicht angegeben aber g/km-Wert vorhanden: Klasse ableiten!
 Gib das Ergebnis als JSON zurück.`;
 
-    // Build content parts: text + all PDFs
+    // Build content parts: text + all PDFs (file_data refs preferred over inline base64)
     const contentParts: any[] = [{ text: userText }];
-    for (let i = 0; i < pdfBase64Array.length; i++) {
-      if (pdfCount > 1) {
-        contentParts.push({ text: `--- PDF-Dokument ${i + 1} von ${pdfCount} ---` });
+    if (pdfFileUris.length > 0) {
+      for (let i = 0; i < pdfFileUris.length; i++) {
+        if (pdfCount > 1) {
+          contentParts.push({ text: `--- PDF-Dokument ${i + 1} von ${pdfCount} ---` });
+        }
+        contentParts.push({ file_data: { mime_type: pdfFileUris[i].mimeType || "application/pdf", file_uri: pdfFileUris[i].uri } });
       }
-      contentParts.push({ inlineData: { mimeType: "application/pdf", data: pdfBase64Array[i] } });
+    } else {
+      for (let i = 0; i < pdfBase64Array.length; i++) {
+        if (pdfCount > 1) {
+          contentParts.push({ text: `--- PDF-Dokument ${i + 1} von ${pdfCount} ---` });
+        }
+        contentParts.push({ inlineData: { mimeType: "application/pdf", data: pdfBase64Array[i] } });
+      }
     }
 
     // 3. Call Gemini API with retries + model fallback on overload (503/429/5xx)
