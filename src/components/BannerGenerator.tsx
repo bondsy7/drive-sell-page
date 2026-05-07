@@ -833,7 +833,7 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
       toast.error(`Banner ${fmt.label} fehlgeschlagen`, { description: e?.message || 'Unbekannter Fehler' });
     }
     return null;
-  }, [buildPromptForFormat, vehicleImage, showLogo, logoBase64, modelTier, ensureFileRefs]);
+  }, [buildPromptForFormat, vehicleImage, showLogo, logoBase64, modelTier, ensureFileRefsForAspect]);
 
   // Track auto-created vehicle id so subsequent banners in the same session reuse it.
   const [autoVehicleId, setAutoVehicleId] = useState<string | null>(null);
