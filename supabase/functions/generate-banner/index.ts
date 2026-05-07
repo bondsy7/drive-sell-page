@@ -352,10 +352,12 @@ The logo image follows now:` });
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     let timeoutMs = modelBudgetMs;
+    const callStart = Date.now();
     try {
       const remainingMs = EDGE_DEADLINE_MS - (Date.now() - requestStartedAt);
       if (remainingMs < 12_000) throw new Error("Banner generation deadline reached before model fallback");
       timeoutMs = Math.max(8_000, Math.min(modelBudgetMs, remainingMs - 5_000));
+      log?.info("gemini.fetch", "calling Gemini", { model, attempt: attempt + 1, timeoutMs, aspect: aspectLabel, parts: parts.length });
       const response = await fetchWithTimeout(url, {
         method: "POST",
         headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
@@ -367,7 +369,7 @@ The logo image follows now:` });
 
       if (!response.ok) {
         const errText = await response.text();
-        console.error(`Gemini banner attempt ${attempt + 1}:`, response.status, errText);
+        log?.error("gemini.http", "non-OK response", { model, attempt: attempt + 1, status: response.status, durationMs: Date.now() - callStart, body: errText.slice(0, 500) });
         if ([400, 401, 403].includes(response.status) && /API_KEY_INVALID|API Key not found|invalid api key/i.test(errText)) {
           throw new Error("GEMINI_API_KEY ungültig oder nicht für Gemini freigeschaltet");
         }
@@ -376,29 +378,32 @@ The logo image follows now:` });
           continue;
         }
         if (attempt < retries) { await new Promise(r => setTimeout(r, 1500)); continue; }
-        throw new Error(`Gemini error: ${response.status}`);
+        throw new Error(`Gemini ${response.status}: ${errText.slice(0, 200)}`);
       }
 
       const data = await response.json();
       const respParts = data.candidates?.[0]?.content?.parts;
+      const finishReason = data.candidates?.[0]?.finishReason;
+      log?.info("gemini.parse", "response received", { model, durationMs: Date.now() - callStart, finishReason, hasParts: !!respParts, partsCount: respParts?.length || 0 });
       if (!respParts) {
         if (attempt < retries) { await new Promise(r => setTimeout(r, 1500)); continue; }
-        throw new Error("No banner generated (Gemini)");
+        throw new Error(`Kein Bild von Gemini (finishReason=${finishReason || "unknown"})`);
       }
 
       for (const part of respParts) {
         if (part.inlineData?.data) {
           const mime = part.inlineData.mimeType || "image/png";
+          log?.info("gemini.success", "image extracted", { model, mime, bytes: part.inlineData.data.length });
           return `data:${mime};base64,${part.inlineData.data}`;
         }
       }
 
       if (attempt < retries) { await new Promise(r => setTimeout(r, 1500)); continue; }
-      throw new Error("No image data in Gemini response");
+      throw new Error("Gemini-Antwort enthält kein Bild");
     } catch (e: any) {
       const isAbort = e?.name === "AbortError";
-      console.error(`Gemini banner attempt ${attempt + 1} failed${isAbort ? " (timeout)" : ""}:`, e?.message);
-      if (attempt >= retries) throw isAbort ? new Error(`Gemini timeout (${Math.round(timeoutMs/1000)}s)`) : e;
+      log?.error("gemini.exception", isAbort ? "timeout" : "exception", { model, attempt: attempt + 1, durationMs: Date.now() - callStart, error: e?.message, isAbort });
+      if (attempt >= retries) throw isAbort ? new Error(`Gemini timeout (${Math.round(timeoutMs/1000)}s) bei Modell ${model}`) : e;
       await new Promise(r => setTimeout(r, 1500));
     }
   }
