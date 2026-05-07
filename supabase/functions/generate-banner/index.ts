@@ -168,9 +168,11 @@ serve(async (req) => {
       let lastGeminiError = "";
       for (const geminiModel of geminiModels) {
         const modelStart = Date.now();
-        console.log(`[banner][GEMINI] >>> START model=${geminiModel} elapsedSinceReq=${Date.now() - requestStartedAt}ms`);
+        console.log(`[banner][GEMINI] >>> START model=${geminiModel} elapsedSinceReq=${Date.now() - requestStartedAt}ms hasRefImage=${!!imageBase64}`);
         try {
-          resultImage = await generateGemini(lockedPrompt, null, null, geminiModel, maxRetries, width, height, requestStartedAt);
+          // Pass the vehicle photo as visual reference. Strict aspect-ratio prompt
+          // + imageConfig.aspectRatio keep the banner format locked.
+          resultImage = await generateGemini(lockedPrompt, imageBase64 || null, logoBase64 || null, geminiModel, maxRetries, width, height, requestStartedAt);
           console.log(`[banner][GEMINI] <<< END model=${geminiModel} ok=${!!resultImage} took=${Date.now() - modelStart}ms`);
           if (resultImage) break;
         } catch (err) {
