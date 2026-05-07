@@ -1,0 +1,1 @@
+UPDATE public.project_images SET vehicle_id = '2770343b-56b7-426d-b208-90482a27c60f' WHERE project_id = '14a8b7a8-e0cd-4a51-be8a-6e63f0ad3626' AND vehicle_id IS NULL;
