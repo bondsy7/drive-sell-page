@@ -279,6 +279,11 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       inlineSupportingImages = supportingReferences;
     }
 
+    const fileUriCache = cachedFileUrisRef.current;
+    const plateFileUri = isInteriorJob ? null : fileUriCache.plate;
+    const mfgLogoFileUri = cfg.remasterConfig.showManufacturerLogo ? fileUriCache.manufacturerLogo : null;
+    const dealerLogoFileUri2 = cfg.remasterConfig.showDealerLogo ? fileUriCache.dealerLogo : null;
+
     const { data, error } = await invokeRemasterVehicleImage({
       imageBase64: primaryReference,
       additionalImages: inlineSupportingImages && inlineSupportingImages.length > 0 ? inlineSupportingImages : undefined,
@@ -289,11 +294,14 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       dynamicPrompt: fullPrompt,
       customShowroomBase64: hasFileUris ? null : showroomBase64ForRequest,
       customShowroomFileUri: fileCache.showroom || null,
-      customPlateImageBase64: isInteriorJob ? null : (cfg.remasterConfig.customPlateImageBase64 || null),
-      dealerLogoUrl: dealerLogoBase64 ? null : (cfg.remasterConfig.showDealerLogo ? cfg.remasterConfig.dealerLogoUrl : null),
-      dealerLogoBase64: dealerLogoBase64,
-      manufacturerLogoUrl: manufacturerLogoBase64 ? null : (cfg.remasterConfig.showManufacturerLogo ? cfg.resolvedManufacturerLogoUrl : null),
-      manufacturerLogoBase64: manufacturerLogoBase64,
+      customPlateImageBase64: plateFileUri ? null : (isInteriorJob ? null : (cfg.remasterConfig.customPlateImageBase64 || null)),
+      customPlateImageFileUri: plateFileUri,
+      dealerLogoUrl: (dealerLogoFileUri2 || dealerLogoBase64) ? null : (cfg.remasterConfig.showDealerLogo ? cfg.remasterConfig.dealerLogoUrl : null),
+      dealerLogoBase64: dealerLogoFileUri2 ? null : dealerLogoBase64,
+      dealerLogoFileUri: dealerLogoFileUri2,
+      manufacturerLogoUrl: (mfgLogoFileUri || manufacturerLogoBase64) ? null : (cfg.remasterConfig.showManufacturerLogo ? cfg.resolvedManufacturerLogoUrl : null),
+      manufacturerLogoBase64: mfgLogoFileUri ? null : manufacturerLogoBase64,
+      manufacturerLogoFileUri: mfgLogoFileUri,
     });
 
     if (error || !data?.imageBase64) {
