@@ -220,21 +220,7 @@ const SCENES = [
 const STYLES = [
   { id: 'premium', label: 'Seriös / Premium', prompt: 'elegant, premium luxury, clean professional design, sophisticated typography' },
   { id: 'cinematic', label: 'Cinematic', prompt: 'cinematic movie poster style, dramatic lighting, lens flare, widescreen feel' },
-  { id: 'bold', label: 'Popstyle', prompt: `LOUD POPSTYLE / POP-ART AD (MANDATORY — OVERRIDES ANY "premium / clean / subtle / minimal" instructions elsewhere in this prompt).
-
-This banner MUST look like a high-energy pop-art / street-poster / loud retail ad — NOT a calm OEM premium ad, NOT a luxury showroom ad, NOT a Volkswagen-style minimal ad.
-
-CORE FEEL: bold, eye-catching, vibrant, explosive, attention-grabbing, playful, kinetic, almost comic-book / pop-art energy. Think loud dealership poster, music-festival flyer, neon street ad.
-
-COLOR: SATURATED, VIBRANT, HIGH-CONTRAST. Use punchy neon / pop colors (electric pink, neon yellow, cyan, hot magenta, vivid orange, lime green) as DOMINANT design elements — large color blocks, bold gradients, glow effects. The accent colors here are NOT subtle — they should DOMINATE the composition. Background can be a bold colored block, halftone dot pattern, or graphic burst — NOT a calm photographic backdrop only.
-
-GRAPHICS: chunky geometric shapes, bold diagonal stripes, starbursts/burst-badges, halftone dots, comic-book speech-bubble shapes, oversized arrows, sticker-like badges, glow outlines around the vehicle, exaggerated motion lines. Heavy graphic overlay on top of the photo is REQUIRED.
-
-TYPOGRAPHY ENERGY: oversized, ultra-bold, slightly tilted headlines feel right. Heavy outlines/strokes around text. Loud color-on-color contrast.
-
-EXPLICITLY OVERRIDE EARLIER RULES: ignore "subtle accent", "minimal", "calm", "premium clean", "do not tint scene", "BRIGHT CLEAN PROFESSIONAL" — for THIS style, vivid color saturation and graphic overlays ARE the point.
-
-Still keep the vehicle photorealistic and recognizable, and keep all required text legible — but everything around it should scream "loud, fun, high-energy ad".` },
+  { id: 'bold', label: 'Popstyle', prompt: 'bold, eye-catching, vibrant neon colors, explosive energy, attention-grabbing' },
   { id: 'minimal', label: 'Minimalistisch', prompt: 'clean minimalist design, lots of whitespace, subtle elegant typography' },
   { id: 'retro', label: 'Retro / Vintage', prompt: 'retro 80s style, vintage color grading, nostalgic warm tones' },
   { id: 'sport', label: 'Sportlich', prompt: 'dynamic sporty look, motion blur hints, aggressive angles, high performance feel' },
