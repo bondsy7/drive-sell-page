@@ -158,7 +158,10 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const cachedFileUrisRef = useRef<{
     references: { uri: string; mimeType: string }[];
     showroom: { uri: string; mimeType: string } | null;
-  }>({ references: [], showroom: null });
+    plate: { uri: string; mimeType: string } | null;
+    manufacturerLogo: { uri: string; mimeType: string } | null;
+    dealerLogo: { uri: string; mimeType: string } | null;
+  }>({ references: [], showroom: null, plate: null, manufacturerLogo: null, dealerLogo: null });
 
   // Helper to fetch a URL and convert to data URL (base64)
   const fetchUrlToBase64 = useCallback(async (url: string): Promise<string | null> => {
