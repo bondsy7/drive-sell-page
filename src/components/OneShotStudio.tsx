@@ -59,6 +59,7 @@ import { ensureVehicle } from '@/lib/vehicle-utils';
 import OneShotMarketingForm from './oneshot/OneShotMarketingForm';
 import { persistScanData, persistVinLookup } from '@/lib/scan-to-vehicle-data';
 import ProcessTimer, { formatDuration } from '@/components/ProcessTimer';
+import { uploadToGeminiFiles } from '@/lib/gemini-file-upload';
 import OneShotLightbox, { type LightboxItem } from './oneshot/OneShotLightbox';
 import {
   DEFAULT_FORM, DEFAULT_SOURCES, ONESHOT_BANNER_FORMATS,
