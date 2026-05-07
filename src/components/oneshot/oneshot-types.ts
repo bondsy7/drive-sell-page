@@ -139,7 +139,7 @@ export const DEFAULT_FORM: MarketingForm = {
   occasion: 'buy',
   scene: 'showroom',
   style: 'bold',
-  priceDisplay: 'neon',
+  priceDisplay: 'stoerer',
   headline: '',
   subline: '',
   ctaText: 'Jetzt anfragen',
