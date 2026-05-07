@@ -202,7 +202,7 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
       if (remasterConfig.customPlateImageBase64) assets.push({ id: 'plate', b64: remasterConfig.customPlateImageBase64 });
       if (remasterConfig.showManufacturerLogo && remasterConfig.manufacturerLogoBase64) assets.push({ id: 'mfgLogo', b64: remasterConfig.manufacturerLogoBase64 });
       if (remasterConfig.showDealerLogo && remasterConfig.dealerLogoBase64) assets.push({ id: 'dealerLogo', b64: remasterConfig.dealerLogoBase64 });
-      const uploaded = await uploadToGeminiFiles(assets);
+      const uploaded = await uploadToGeminiFiles(assets.map(a => ({ id: a.id, imageBase64: a.b64 })));
       const refMap: Record<string, GeminiFileRef | null> = {};
       if (uploaded) assets.forEach((a, i) => { refMap[a.id] = uploaded[i] || null; });
 
