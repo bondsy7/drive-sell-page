@@ -304,9 +304,11 @@ const Index = () => {
       const enriched = await loadProfileIntoDealer(vehicleInfo as VehicleData);
       setVehicleData(enriched);
 
-      // Ensure vehicle row (VIN-keyed) so all downstream assets carry vehicle_id
+      // Ensure vehicle row so all downstream assets carry vehicle_id.
+      // Use Auto-variant: creates a NOVIN-placeholder when PDF has no VIN,
+      // so the project still appears in the Fahrzeuge-Dashboard.
       const vin = (enriched.vehicle as any)?.vin || null;
-      const vehicleId = user ? await ensureVehicle(user.id, vin, enriched) : null;
+      const vehicleId = user ? await ensureVehicleAuto(user.id, vin, enriched) : null;
       setSavedVehicleId(vehicleId);
 
       // Pre-create project so pipeline can use it
@@ -457,8 +459,8 @@ const Index = () => {
 
       // Re-ensure vehicle in case VIN was just captured
       let vehicleId = savedVehicleId;
-      if (user && vin && !vehicleId) {
-        vehicleId = await ensureVehicle(user.id, vin, updatedData);
+      if (user && !vehicleId) {
+        vehicleId = await ensureVehicleAuto(user.id, vin, updatedData);
         setSavedVehicleId(vehicleId);
       }
 
@@ -497,8 +499,8 @@ const Index = () => {
       const folderName = getGalleryFolderName(vin);
 
       let vehicleId = savedVehicleId;
-      if (user && vin && !vehicleId) {
-        vehicleId = await ensureVehicle(user.id, vin, vehicleData);
+      if (user && !vehicleId) {
+        vehicleId = await ensureVehicleAuto(user.id, vin, vehicleData);
         setSavedVehicleId(vehicleId);
       }
 

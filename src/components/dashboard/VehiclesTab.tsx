@@ -93,6 +93,20 @@ export default function VehiclesTab() {
           // Only auto-link if exactly one vehicle matches (avoid ambiguity)
           if (candidates && candidates.length === 1) vid = candidates[0];
         }
+        // Last resort: create a new vehicle (NOVIN-placeholder if needed)
+        // so PDF-Landing-Pages without VIN appear in the Fahrzeuge-Dashboard.
+        if (!vid) {
+          const { ensureVehicleAuto } = await import('@/lib/vehicle-utils');
+          const created = await ensureVehicleAuto(user.id, vin || null, vd);
+          if (created) {
+            vid = created;
+            // Update lookup maps so siblings of the same brand/model get linked too
+            const key = `${norm(veh.brand)}|${norm(veh.model)}`;
+            const arr = bmMap.get(key) || [];
+            arr.push(created);
+            bmMap.set(key, arr);
+          }
+        }
         if (!vid) continue;
         const { error } = await supabase
           .from('projects')
