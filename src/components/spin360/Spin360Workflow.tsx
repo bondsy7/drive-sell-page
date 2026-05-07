@@ -118,9 +118,10 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
         setPhase('upload'); setIsProcessing(false); return;
       }
 
+      const effectiveVehicleId = await ensureSpinVehicleId();
       const { data: job, error: jobErr } = await supabase
         .from('spin360_jobs' as any)
-        .insert({ user_id: user.id, vehicle_id: vehicleId || null, status: 'uploaded', target_frame_count: 36 } as any)
+        .insert({ user_id: user.id, vehicle_id: effectiveVehicleId, status: 'uploaded', target_frame_count: 36 } as any)
         .select('id').single();
 
       if (jobErr || !job) {
