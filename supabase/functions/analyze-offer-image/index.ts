@@ -172,7 +172,7 @@ Wenn ein Feld nicht erkennbar ist, setze es auf null. Extrahiere so viel wie mö
     let lastErr = "";
     // Per-attempt timeout to avoid long UI stalls. Do not retry the same overloaded
     // model inside one request; fall through to the faster fallback instead.
-    const ATTEMPT_TIMEOUT_MS = isBannerQuick ? 12_000 : 28_000;
+    const ATTEMPT_TIMEOUT_MS = isBannerQuick ? 12_000 : 18_000;
     const MAX_ATTEMPTS = 1;
     outer: for (const model of models) {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
