@@ -134,8 +134,34 @@ const DamageAnalysisFlow: React.FC<Props> = ({ onBack }) => {
       setAnalysis(data.analysis);
       toast.success('Schadensanalyse abgeschlossen. Markiere Schäden in Bildern …');
 
+      // Save the report IMMEDIATELY (before annotations) so it's persisted even if annotations fail
+      const userId = session.user?.id;
+      let reportId: string | null = null;
+      if (userId) {
+        const title = [vehicleInfo.marke, vehicleInfo.modell, vehicleInfo.baujahr].filter(Boolean).join(' ').trim() || 'Schadensbericht';
+        const { data: inserted, error: saveErr } = await supabase.from('damage_reports').insert({
+          user_id: userId,
+          title,
+          vehicle_info: vehicleInfo,
+          anlass: anlass || null,
+          analysis: data.analysis,
+          images: images.map(i => ({ base64: i.base64, annotatedBase64: null })),
+          schaden_count: data.analysis?.schaeden?.length || 0,
+          schweregrad: data.analysis?.fazit?.schweregrad || null,
+          kosten_realistisch_brutto: data.analysis?.kostenGesamt?.realistischBrutto || null,
+        }).select('id').single();
+        if (saveErr) {
+          console.error('Save report failed:', saveErr);
+          toast.error('Bericht konnte nicht gespeichert werden: ' + saveErr.message);
+        } else {
+          reportId = inserted?.id || null;
+          toast.success('Bericht gespeichert (Dashboard → Schadensberichte).');
+        }
+      }
+
       // Fetch annotations per image in parallel (separate function avoids 150s timeout)
       const schaedenAll = data.analysis.schaeden || [];
+      const annotatedMap: Record<string, string> = {};
       await Promise.all(images.map(async (img, idx) => {
         const damagesForImage = schaedenAll.filter((s: any) => s.bildIndex === idx);
         if (damagesForImage.length === 0) return;
@@ -149,6 +175,7 @@ const DamageAnalysisFlow: React.FC<Props> = ({ onBack }) => {
             return;
           }
           if (ann?.annotated) {
+            annotatedMap[img.id] = ann.annotated;
             setImages(prev => prev.map(p => p.id === img.id ? { ...p, annotatedBase64: ann.annotated } : p));
           }
         } catch (e) {
@@ -157,31 +184,11 @@ const DamageAnalysisFlow: React.FC<Props> = ({ onBack }) => {
       }));
       toast.success('Markierungen erstellt.');
 
-      // Persist report so user can revisit it later
-      try {
-        const userId = session.user?.id;
-        if (userId) {
-          const title = [vehicleInfo.marke, vehicleInfo.modell, vehicleInfo.baujahr].filter(Boolean).join(' ').trim() || 'Schadensbericht';
-          // Reload images with annotations from latest state
-          await new Promise(r => setTimeout(r, 100));
-          const currentImages = await new Promise<UploadedImage[]>((resolve) => {
-            setImages(prev => { resolve(prev); return prev; });
-          });
-          await supabase.from('damage_reports').insert({
-            user_id: userId,
-            title,
-            vehicle_info: vehicleInfo,
-            anlass: anlass || null,
-            analysis: data.analysis,
-            images: currentImages.map(i => ({ base64: i.base64, annotatedBase64: i.annotatedBase64 || null })),
-            schaden_count: data.analysis?.schaeden?.length || 0,
-            schweregrad: data.analysis?.fazit?.schweregrad || null,
-            kosten_realistisch_brutto: data.analysis?.kostenGesamt?.realistischBrutto || null,
-          });
-          toast.success('Bericht gespeichert (siehe Dashboard → Schadensberichte).');
-        }
-      } catch (saveErr) {
-        console.warn('Save failed', saveErr);
+      // Update report with annotated images
+      if (reportId && Object.keys(annotatedMap).length > 0) {
+        await supabase.from('damage_reports').update({
+          images: images.map(i => ({ base64: i.base64, annotatedBase64: annotatedMap[i.id] || null })),
+        }).eq('id', reportId);
       }
     } catch (e: any) {
       toast.error(e?.message || 'Fehler bei der Analyse');
