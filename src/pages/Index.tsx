@@ -604,6 +604,9 @@ const Index = () => {
       case 'sales-assistant':
         navigate('/sales-assistant');
         break;
+      case 'damage-repair':
+        setAppState('damage-repair' as ExtendedAppState);
+        break;
       default:
         toast.info('Diese Funktion ist bald verfügbar!');
     }
