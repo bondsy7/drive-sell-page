@@ -153,10 +153,9 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onBack, preloadedImage,
       // aspectRatio parameter, producing the wrong format.
       const shapedImage = await cropImageToAspect(imageBase64, aspectRatio);
 
-      // Upload via Gemini File API to keep payload small (edge function resolves it back to bytes for Veo).
-      const { uploadToGeminiFiles } = await import('@/lib/gemini-file-upload');
-      const refs = await uploadToGeminiFiles([{ imageBase64: shapedImage }]);
-
+      // Veo's predictLongRunning needs raw bytes, and the Files API media
+      // download is unreliable for these refs — send base64 directly so the
+      // model actually receives the user's reference image (identity lock).
       // Ensure a vehicle row exists so the rendered video is always attached to a Fahrzeug.
       let effectiveVehicleId = vehicleId || autoVehicleId || null;
       if (!effectiveVehicleId && user) {
@@ -167,7 +166,7 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onBack, preloadedImage,
       const { data, error } = await supabase.functions.invoke('generate-video', {
         body: {
           action: 'start',
-          ...(refs?.[0] ? { imageFileUri: refs[0] } : { imageBase64: shapedImage }),
+          imageBase64: shapedImage,
           prompt: customPrompt || undefined,
           aspectRatio,
         },
