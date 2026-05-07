@@ -123,16 +123,25 @@ Nummeriere Schäden fortlaufend über alle Bilder hinweg (1, 2, 3 ...).
 Im berichtMarkdown immer den rechtlichen Hinweis aufnehmen:
 "Diese Analyse basiert ausschließlich auf den bereitgestellten Bildern und dient als erste technische Orientierung. Sie ersetzt kein Gutachten, keine Hebebühnenprüfung, keine Demontageprüfung und keine verbindliche Schadenkalkulation durch einen qualifizierten KFZ-Sachverständigen oder Fachbetrieb."`;
 
-async function callGeminiAnalysis(apiKey: string, vehicleInfo: string, anlass: string, images: string[]) {
-  const userText = `Fahrzeugdaten:\n${vehicleInfo}\n\nAnlass der Analyse: ${anlass || 'Allgemeine Zustandsbewertung'}\n\nAnzahl Bilder: ${images.length}\n\nFühre die vollständige Schadensanalyse durch und antworte als JSON.`;
+async function callGeminiAnalysis(apiKey: string, vehicleInfo: string, anlass: string, images: string[], imagesFileUris?: { uri: string; mimeType: string }[]) {
+  const total = (imagesFileUris && imagesFileUris.length > 0) ? imagesFileUris.length : images.length;
+  const userText = `Fahrzeugdaten:\n${vehicleInfo}\n\nAnlass der Analyse: ${anlass || 'Allgemeine Zustandsbewertung'}\n\nAnzahl Bilder: ${total}\n\nFühre die vollständige Schadensanalyse durch und antworte als JSON.`;
   const parts: any[] = [{ text: userText }];
-  for (let i = 0; i < images.length; i++) {
-    parts.push({ text: `--- Bild ${i + 1} (Index ${i}) ---` });
-    const raw = images[i].includes(",") ? images[i].split(",")[1] : images[i];
-    let mime = "image/jpeg";
-    if (images[i].startsWith("data:image/png")) mime = "image/png";
-    else if (images[i].startsWith("data:image/webp")) mime = "image/webp";
-    parts.push({ inlineData: { mimeType: mime, data: raw } });
+
+  if (imagesFileUris && imagesFileUris.length > 0) {
+    for (let i = 0; i < imagesFileUris.length; i++) {
+      parts.push({ text: `--- Bild ${i + 1} (Index ${i}) ---` });
+      parts.push({ file_data: { mime_type: imagesFileUris[i].mimeType || "image/jpeg", file_uri: imagesFileUris[i].uri } });
+    }
+  } else {
+    for (let i = 0; i < images.length; i++) {
+      parts.push({ text: `--- Bild ${i + 1} (Index ${i}) ---` });
+      const raw = images[i].includes(",") ? images[i].split(",")[1] : images[i];
+      let mime = "image/jpeg";
+      if (images[i].startsWith("data:image/png")) mime = "image/png";
+      else if (images[i].startsWith("data:image/webp")) mime = "image/webp";
+      parts.push({ inlineData: { mimeType: mime, data: raw } });
+    }
   }
 
   const body = JSON.stringify({
