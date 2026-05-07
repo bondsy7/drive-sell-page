@@ -41,6 +41,7 @@ export default function DamageReportsTab() {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [active, setActive] = useState<Report | null>(null);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const load = async () => {
     setLoading(true);
