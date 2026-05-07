@@ -292,6 +292,8 @@ The logo image follows now:` });
       const remainingMs = EDGE_DEADLINE_MS - (Date.now() - requestStartedAt);
       if (remainingMs < 12_000) throw new Error("Banner generation deadline reached before model fallback");
       timeoutMs = Math.max(8_000, Math.min(modelBudgetMs, remainingMs - 5_000));
+      console.log(`[banner][GEMINI] POST ${model} timeoutMs=${timeoutMs} aspect=${aspectLabel} promptLen=${prompt.length}`);
+      const callStart = Date.now();
       const response = await fetchWithTimeout(url, {
         method: "POST",
         headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
@@ -300,10 +302,11 @@ The logo image follows now:` });
           generationConfig,
         }),
       }, timeoutMs);
+      console.log(`[banner][GEMINI] HTTP ${response.status} model=${model} took=${Date.now() - callStart}ms`);
 
       if (!response.ok) {
         const errText = await response.text();
-        console.error(`Gemini banner attempt ${attempt + 1}:`, response.status, errText);
+        console.error(`[banner][GEMINI] error ${model} status=${response.status} body=${errText.slice(0, 800)}`);
         if ([400, 401, 403].includes(response.status) && /API_KEY_INVALID|API Key not found|invalid api key/i.test(errText)) {
           throw new Error("GEMINI_API_KEY ungültig oder nicht für Gemini freigeschaltet");
         }
