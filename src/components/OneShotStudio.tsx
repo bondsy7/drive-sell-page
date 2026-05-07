@@ -508,9 +508,9 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
   const runVinFlow = useCallback(async (img: ClassifiedImage) => {
     setVinLookingUp(true);
     try {
-      const { data: ocr, error: ocrErr } = await supabase.functions.invoke('ocr-vin', {
-        body: { imageBase64: img.base64 },
-      });
+      const refs = await uploadToGeminiFiles([{ imageBase64: img.base64 }]);
+      const body: any = refs?.[0] ? { imageFileUri: refs[0] } : { imageBase64: img.base64 };
+      const { data: ocr, error: ocrErr } = await supabase.functions.invoke('ocr-vin', { body });
       if (ocrErr || !ocr?.vin) {
         if (ocr?.vin === null) toast.message('VIN auf Bild nicht lesbar');
         return;
