@@ -611,6 +611,9 @@ const Index = () => {
       case 'damage-repair':
         setAppState('damage-repair' as ExtendedAppState);
         break;
+      case 'damage-analysis':
+        setAppState('damage-analysis' as ExtendedAppState);
+        break;
       default:
         toast.info('Diese Funktion ist bald verfügbar!');
     }
