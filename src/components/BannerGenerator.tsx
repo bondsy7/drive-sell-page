@@ -79,7 +79,22 @@ function fitImageToSize(dataUrl: string, targetW: number, targetH: number, bg: s
  * it a canvas with the desired ratio dramatically increases the chance the
  * generated banner matches (e.g. 9:16, 16:9, etc.).
  */
-function padToAspectRatio(dataUrl: string, targetRatio: number, bg: string = '#f4f4f4'): Promise<string> {
+// Gemini image models only honour a fixed set of output aspect ratios. Snap
+// the requested target to the closest supported value so the pre-padded input
+// matches exactly what the model will produce.
+const GEMINI_SUPPORTED_RATIOS = [1/1, 2/3, 3/2, 3/4, 4/3, 4/5, 5/4, 9/16, 16/9, 21/9];
+function snapToGeminiRatio(target: number): number {
+  let best = GEMINI_SUPPORTED_RATIOS[0];
+  let bestDiff = Math.abs(Math.log(target / best));
+  for (const r of GEMINI_SUPPORTED_RATIOS) {
+    const d = Math.abs(Math.log(target / r));
+    if (d < bestDiff) { bestDiff = d; best = r; }
+  }
+  return best;
+}
+
+function padToAspectRatio(dataUrl: string, rawTargetRatio: number, bg: string = '#f4f4f4'): Promise<string> {
+  const targetRatio = snapToGeminiRatio(rawTargetRatio);
   return new Promise((resolve, reject) => {
     const img = new window.Image();
     img.onload = () => {
