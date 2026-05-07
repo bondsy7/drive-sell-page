@@ -27,6 +27,11 @@ interface OutFile {
 function detectMime(b64: string): string {
   if (b64.startsWith("data:image/png")) return "image/png";
   if (b64.startsWith("data:image/webp")) return "image/webp";
+  if (b64.startsWith("data:application/pdf")) return "application/pdf";
+  if (b64.startsWith("data:image/")) {
+    const m = b64.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,/);
+    if (m) return m[1];
+  }
   return "image/jpeg";
 }
 
