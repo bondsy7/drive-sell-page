@@ -140,10 +140,15 @@ serve(async (req) => {
     const lockedPrompt = `${prompt}${PROFESSIONAL_BANNER_IMAGE_LOCK}`;
 
     if (config.engine === "gemini") {
-      // STRICT: only use the requested model. Fallback to 2.5-flash-image is
-      // disabled because that model ignores aspectRatio and returns squares,
-      // which breaks user-selected formats (9:16, 16:9, 4:15, etc.).
-      const geminiModels = [config.model];
+      // Primary = user-selected model. If it times out / 503s, fall back to
+      // the next aspectRatio-capable model so the user still gets a banner
+      // in the right format. 2.5-flash-image is intentionally excluded
+      // because it ignores aspectRatio and returns squares.
+      const fallbackChain: Record<string, string[]> = {
+        "gemini-3-pro-image-preview": ["gemini-3-pro-image-preview", "gemini-3.1-flash-image-preview"],
+        "gemini-3.1-flash-image-preview": ["gemini-3.1-flash-image-preview", "gemini-3-pro-image-preview"],
+      };
+      const geminiModels = fallbackChain[config.model] || [config.model];
       let lastGeminiError = "";
       for (const geminiModel of geminiModels) {
         try {
@@ -254,7 +259,7 @@ The logo image follows now:` });
   }
 
   // Stay well below Lovable Cloud's 150s idle limit so fallbacks can run instead of causing a hard 504.
-  const modelBudgetMs = /^gemini-3-pro/.test(model) ? 38_000 : /^gemini-3/.test(model) ? 34_000 : 28_000;
+  const modelBudgetMs = /^gemini-3-pro/.test(model) ? 60_000 : /^gemini-3/.test(model) ? 50_000 : 35_000;
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     let timeoutMs = modelBudgetMs;
