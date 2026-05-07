@@ -219,14 +219,50 @@ Wenn ein Feld nicht erkennbar ist, setze es auf null. Extrahiere so viel wie mö
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!text) return errorResponse("Keine Analyse möglich", 500);
 
-    // Parse JSON from response (handle potential markdown wrapping)
+    // Kurze, einstufige JSON-Reparatur (statt mehrfacher Repair-Runden):
+    // Code-Fences entfernen, erstes {...} extrahieren, trailing commas killen.
+    const repairJson = (raw: string): any => {
+      const stripped = raw.replace(/```json|```/gi, '').trim();
+      const m = stripped.match(/\{[\s\S]*\}/);
+      const candidate = (m ? m[0] : stripped).replace(/,\s*([}\]])/g, '$1');
+      return JSON.parse(candidate);
+    };
     let parsed: any;
     try {
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(text);
+      parsed = repairJson(text);
     } catch {
-      console.error("Failed to parse Gemini response:", text);
+      console.error("Failed to parse Gemini response:", text.slice(0, 400));
       return errorResponse("Analyse-Format ungültig", 500);
+    }
+
+    // Pro-Fallback NUR bei komplexen Specs (low confidence oder mehrere Dokumente
+    // mit fehlenden Kernfeldern). Single-shot, kein Loop.
+    const looksComplex = !isBannerQuick && (
+      String(parsed.confidence || '').toLowerCase() === 'low' ||
+      (imageParts.length > 1 && (!parsed.price || !parsed.vehicleTitle))
+    );
+    if (looksComplex) {
+      try {
+        const proCtrl = new AbortController();
+        const proT = setTimeout(() => proCtrl.abort(), 22_000);
+        const proUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent`;
+        const proResp = await fetch(proUrl, {
+          method: 'POST',
+          headers: { 'x-goog-api-key': apiKey, 'Content-Type': 'application/json' },
+          body,
+          signal: proCtrl.signal,
+        });
+        clearTimeout(proT);
+        if (proResp.ok) {
+          const proData = await proResp.json();
+          const proText = proData.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (proText) {
+            try { parsed = repairJson(proText); console.log('[analyze-offer-image] Pro-Fallback verwendet'); } catch {}
+          }
+        }
+      } catch (e) {
+        console.warn('[analyze-offer-image] Pro-Fallback fehlgeschlagen:', e instanceof Error ? e.message : String(e));
+      }
     }
 
     // ── Sanitize: enforce A-G only (Pkw-EnVKV / WLTP) ──
