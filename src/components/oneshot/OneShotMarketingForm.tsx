@@ -47,6 +47,7 @@ const STYLES = [
   { id: 'minimal', label: 'Minimalistisch' },
   { id: 'retro', label: 'Retro / Vintage' },
   { id: 'sport', label: 'Sportlich' },
+  { id: 'volkswagen', label: 'Volkswagen' },
 ];
 
 const PRICE_DISPLAYS = [
@@ -56,6 +57,7 @@ const PRICE_DISPLAYS = [
   { id: 'stamp', label: 'Stempel' },
   { id: 'led', label: 'LED-Anzeige' },
   { id: 'ribbon', label: 'Banner-Schleife' },
+  { id: 'stoerer', label: 'Störer' },
 ];
 
 const CTAS = ['Jetzt anfragen', 'Termin vereinbaren', 'Angebot sichern', 'Probefahrt buchen', 'Jetzt entdecken', 'Mehr erfahren'];
