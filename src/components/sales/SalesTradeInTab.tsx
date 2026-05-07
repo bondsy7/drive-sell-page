@@ -13,6 +13,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { Plus, Car, TrendingDown, Trash2, Sparkles, Loader2, Search, Tag, ChevronDown, ChevronUp, Camera } from 'lucide-react';
+import { uploadToGeminiFiles } from '@/lib/gemini-file-upload';
 
 interface Valuation {
   id: string;
@@ -101,7 +102,9 @@ export default function SalesTradeInTab() {
     setOcrLoading(true);
     try {
       const base64 = await fileToBase64(file);
-      const { data, error } = await supabase.functions.invoke('ocr-vin', { body: { imageBase64: base64 } });
+      const refs = await uploadToGeminiFiles([{ imageBase64: base64 }]);
+      const body: any = refs?.[0] ? { imageFileUri: refs[0] } : { imageBase64: base64 };
+      const { data, error } = await supabase.functions.invoke('ocr-vin', { body });
       if (data?.error === 'insufficient_credits') {
         toast.error('Nicht genügend Credits für VIN-Erkennung.');
         return;

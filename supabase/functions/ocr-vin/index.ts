@@ -77,26 +77,27 @@ serve(async (req) => {
     const authResult = await authenticateAndDeductCredits(req, "vin_ocr", 1);
     if (authResult instanceof Response) return authResult;
 
-    const { imageBase64 } = await req.json();
+    const { imageBase64, imageFileUri } = await req.json();
     const GEMINI_API_KEY = await getSecret("GEMINI_API_KEY");
     if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
-    if (!imageBase64) throw new Error("No image provided");
+    if (!imageBase64 && !imageFileUri?.uri) throw new Error("No image provided");
 
     // 2. Load custom prompt
     const prompt = await getCustomPrompt("vin_ocr", DEFAULT_PROMPT);
 
-    // 3. Call Gemini API directly
-    const base64Data = imageBase64.includes(",") ? imageBase64.split(",")[1] : imageBase64;
-    const mimeType = imageBase64.startsWith("data:image/png") ? "image/png"
-      : imageBase64.startsWith("data:image/webp") ? "image/webp" : "image/jpeg";
+    // 3. Build image part – prefer File API URI
+    let imagePart: any;
+    if (imageFileUri?.uri) {
+      imagePart = { file_data: { mime_type: imageFileUri.mimeType || "image/jpeg", file_uri: imageFileUri.uri } };
+    } else {
+      const base64Data = imageBase64.includes(",") ? imageBase64.split(",")[1] : imageBase64;
+      const mimeType = imageBase64.startsWith("data:image/png") ? "image/png"
+        : imageBase64.startsWith("data:image/webp") ? "image/webp" : "image/jpeg";
+      imagePart = { inlineData: { mimeType, data: base64Data } };
+    }
 
     const geminiBody = JSON.stringify({
-      contents: [{
-        parts: [
-          { text: prompt },
-          { inlineData: { mimeType, data: base64Data } },
-        ],
-      }],
+      contents: [{ parts: [{ text: prompt }, imagePart] }],
     });
 
     const models = ["gemini-2.5-flash", "gemini-2.5-flash-lite"];

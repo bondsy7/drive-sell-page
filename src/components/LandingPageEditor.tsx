@@ -24,6 +24,7 @@ import {
 import { downloadHTML } from '@/lib/templates/download';
 import { uploadImageToStorage } from '@/lib/storage-utils';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
+import { uploadToGeminiFiles } from '@/lib/gemini-file-upload';
 
 interface LandingPageEditorProps {
   projectId: string;
@@ -146,7 +147,13 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
     setImageLoading(sectionId);
     try {
       const base64 = await fileToBase64(file);
-      const { data, error } = await invokeRemasterVehicleImage({ imageBase64: base64, vehicleDescription: `${brand} ${model}`, modelTier: 'schnell' });
+      const refs = await uploadToGeminiFiles([{ imageBase64: base64 }]);
+      const { data, error } = await invokeRemasterVehicleImage({
+        imageBase64: base64,
+        mainImageFileUri: refs?.[0] || null,
+        vehicleDescription: `${brand} ${model}`,
+        modelTier: 'schnell',
+      });
       if (error || !data?.imageBase64) { toast.error('Remastering fehlgeschlagen'); return; }
       const url = await uploadImageToStorage(data.imageBase64, user.id, `landing/${projectId}/${sectionId}-${Date.now()}.png`);
       if (url) {

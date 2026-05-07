@@ -13,6 +13,7 @@ import PipelineRunner from '@/components/PipelineRunner';
 import { lookupBrandFromVin } from '@/lib/vin-wmi-lookup';
 import { resolveCanonicalBrand, normalizeBrand } from '@/lib/brand-aliases';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
+import { uploadToGeminiFiles } from '@/lib/gemini-file-upload';
 import { ensureLogoCachedAsPng } from '@/lib/image-base64-cache';
 import type { VehicleData } from '@/types/vehicle';
 
@@ -335,8 +336,10 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         setBrandDetectionStatus('detecting');
         brandDetectionAttempted.current = true;
         try {
+          const refs = await uploadToGeminiFiles([{ imageBase64: base64 }]);
+          const body: any = refs?.[0] ? { imageFileUri: refs[0] } : { imageBase64: base64 };
           const { data: aiResult, error: aiError } = await supabase.functions.invoke('detect-vehicle-brand', {
-            body: { imageBase64: base64 },
+            body,
           });
 
           if (!aiError && aiResult?.brand && aiResult.confidence !== 'low') {
@@ -371,7 +374,9 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
 
     if (slot.isVin) {
       try {
-        const { data, error } = await supabase.functions.invoke('ocr-vin', { body: { imageBase64: base64 } });
+        const refsVin = await uploadToGeminiFiles([{ imageBase64: base64 }]);
+        const vinBody: any = refsVin?.[0] ? { imageFileUri: refsVin[0] } : { imageBase64: base64 };
+        const { data, error } = await supabase.functions.invoke('ocr-vin', { body: vinBody });
         if (data?.error === 'insufficient_credits') {
           toast.error('Nicht genügend Credits für VIN-Erkennung.');
         } else if (!error && data?.vin) {
