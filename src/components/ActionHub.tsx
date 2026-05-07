@@ -10,6 +10,7 @@ export type HubAction =
   | 'manual-landing'  // Landing Page ohne PDF
   | 'banner'          // Banner Generator
   | 'video'           // Video Erstellung
+  | 'damage-repair'    // Schadensreparatur – KI repariert Schäden auf Fahrzeugbildern
   | 'sales-assistant'; // KI Verkaufsassistent
 
 interface ActionTile {
