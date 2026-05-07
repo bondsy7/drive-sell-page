@@ -70,7 +70,7 @@ REGELN:
     generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
   });
 
-  const models = ["gemini-3.1-flash-image-preview", "gemini-2.5-flash-image"];
+  const models = ["gemini-2.5-flash-image-preview", "gemini-3-pro-image-preview", "gemini-3.1-flash-image-preview"];
   for (const model of models) {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 90_000);
@@ -82,7 +82,8 @@ REGELN:
         signal: ctrl.signal,
       });
       if (!r.ok) {
-        console.warn(`[repair] ${model} ${r.status}`);
+        const detail = await r.text().catch(() => "");
+        console.warn(`[repair] ${model} ${r.status}: ${detail.slice(0, 300)}`);
         continue;
       }
       const data = await r.json();
@@ -117,13 +118,13 @@ serve(async (req) => {
     }
 
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const { data: result } = await admin.rpc("deduct_credits", {
-      _user_id: userId, _amount: 2, _action_type: "image_remaster",
-      _description: "Schadensreparatur-Visualisierung",
-    });
-    const r = result as any;
-    if (!r?.success) {
-      return new Response(JSON.stringify({ error: "insufficient_credits", balance: r?.balance || 0 }), {
+    const { data: balanceRow } = await admin
+      .from("credit_balances")
+      .select("balance")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if ((balanceRow?.balance ?? 0) < 2) {
+      return new Response(JSON.stringify({ error: "insufficient_credits", balance: balanceRow?.balance || 0 }), {
         status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -137,6 +138,18 @@ serve(async (req) => {
         status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const { data: result } = await admin.rpc("deduct_credits", {
+      _user_id: userId, _amount: 2, _action_type: "image_remaster",
+      _description: "Schadensreparatur-Visualisierung",
+    });
+    const r = result as any;
+    if (!r?.success) {
+      return new Response(JSON.stringify({ error: "insufficient_credits", balance: r?.balance || 0 }), {
+        status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     return new Response(JSON.stringify({ repaired }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
