@@ -170,7 +170,9 @@ serve(async (req) => {
       let lastGeminiError = "";
       for (const geminiModel of geminiModels) {
         try {
-          resultImage = await generateGemini(lockedPrompt, imageBase64, logoBase64, geminiModel, maxRetries, width, height, requestStartedAt);
+          // NOTE: imageBase64 intentionally NOT passed — vehicle is described in prompt instead
+          // so the image model is not biased to copy the input photo's aspect ratio.
+          resultImage = await generateGemini(lockedPrompt, null, logoBase64, geminiModel, maxRetries, width, height, requestStartedAt);
           if (resultImage) break;
         } catch (err) {
           lastGeminiError = err instanceof Error ? err.message : "Gemini error";
@@ -179,6 +181,7 @@ serve(async (req) => {
       }
       if (!resultImage && lastGeminiError) throw new Error(lastGeminiError);
     } else {
+      // OpenAI gpt-image-* uses fixed `size` param so input image doesn't break the ratio.
       resultImage = await generateOpenAI(lockedPrompt, imageBase64, logoBase64, config.model, width, height, tier === "ultra" || tier === "neu", maxRetries);
     }
 
