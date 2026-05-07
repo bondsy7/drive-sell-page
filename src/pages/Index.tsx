@@ -499,8 +499,8 @@ const Index = () => {
       const folderName = getGalleryFolderName(vin);
 
       let vehicleId = savedVehicleId;
-      if (user && vin && !vehicleId) {
-        vehicleId = await ensureVehicle(user.id, vin, vehicleData);
+      if (user && !vehicleId) {
+        vehicleId = await ensureVehicleAuto(user.id, vin, vehicleData);
         setSavedVehicleId(vehicleId);
       }
 
