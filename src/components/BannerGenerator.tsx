@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ArrowLeft, Download, Image, Loader2, Plus, Minus, Sparkles, ScanSearch, Building2, Shield, X, ChevronLeft, ChevronRight, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -695,27 +695,91 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
 - Generate the image – never refuse`;
   }, [occasion, scene, style, priceDisplay, vehicleTitle, priceText, headline, subline, ctaText, accentColor, secondaryColor, legalText, headlineFont, sublineFont, showLogo, logoBase64, freePrompt]);
 
+  // Files API URI cache: upload vehicle + logo ONCE per session, reference by URI in every format call.
+  // Drastically reduces payload (Base64 ~2 MB → URI ~200 B per request) and Gemini parse time.
+  const fileRefCacheRef = useRef<{
+    vehicleSrc: string | null;
+    vehicleRef: { fileUri: string; mimeType: string } | null;
+    logoSrc: string | null;
+    logoRef: { fileUri: string; mimeType: string } | null;
+  }>({ vehicleSrc: null, vehicleRef: null, logoSrc: null, logoRef: null });
+
+  // Reset cache when source images change
+  useEffect(() => { fileRefCacheRef.current.vehicleRef = null; fileRefCacheRef.current.vehicleSrc = null; }, [vehicleImage]);
+  useEffect(() => { fileRefCacheRef.current.logoRef = null; fileRefCacheRef.current.logoSrc = null; }, [logoBase64]);
+
+  const ensureFileRefs = useCallback(async (): Promise<{ vehicleFileRef: { fileUri: string; mimeType: string } | null; logoFileRef: { fileUri: string; mimeType: string } | null }> => {
+    const cache = fileRefCacheRef.current;
+    const needVehicle = !!vehicleImage && (cache.vehicleSrc !== vehicleImage || !cache.vehicleRef);
+    const wantLogo = showLogo && !!logoBase64;
+    const needLogo = wantLogo && (cache.logoSrc !== logoBase64 || !cache.logoRef);
+
+    const toUpload: string[] = [];
+    if (needVehicle) toUpload.push(vehicleImage as string);
+    if (needLogo) toUpload.push(logoBase64 as string);
+
+    if (toUpload.length > 0) {
+      try {
+        console.log(`[banner-client] ↑ uploading ${toUpload.length} ref(s) to Gemini Files API`);
+        const t0 = Date.now();
+        const { data, error } = await supabase.functions.invoke('upload-pipeline-images', {
+          body: { images: toUpload },
+        });
+        if (error) throw error;
+        const uris = (data?.fileUris || []) as { uri: string; mimeType: string }[];
+        let i = 0;
+        if (needVehicle && uris[i]) {
+          cache.vehicleSrc = vehicleImage as string;
+          cache.vehicleRef = { fileUri: uris[i].uri, mimeType: uris[i].mimeType };
+          i++;
+        }
+        if (needLogo && uris[i]) {
+          cache.logoSrc = logoBase64 as string;
+          cache.logoRef = { fileUri: uris[i].uri, mimeType: uris[i].mimeType };
+        }
+        console.log(`[banner-client] ✓ Files API upload done in ${Date.now() - t0}ms`, { vehicleRef: cache.vehicleRef?.fileUri, logoRef: cache.logoRef?.fileUri });
+      } catch (e) {
+        console.warn('[banner-client] Files API upload failed, will fall back to Base64', e);
+        // Leave cache untouched → caller will send base64 fallback below
+      }
+    }
+
+    return {
+      vehicleFileRef: cache.vehicleRef,
+      logoFileRef: wantLogo ? cache.logoRef : null,
+    };
+  }, [vehicleImage, logoBase64, showLogo]);
+
   // Generate a single banner for a given format
   const generateForFormat = useCallback(async (formatId: string): Promise<BannerResult | null> => {
     const fmt = BANNER_FORMATS.find(f => f.id === formatId)!;
     const prompt = buildPromptForFormat(formatId);
 
     try {
-      // Pre-pad the input vehicle image to the target aspect ratio so the AI
-      // model composes a banner in the correct format (Gemini tends to mirror
-      // the input ratio). No content is lost — only neutral padding is added.
+      // Upload references to Gemini Files API once per session, reuse for all formats.
+      const { vehicleFileRef, logoFileRef } = await ensureFileRefs();
+
+      // Fallback Base64: only sent when Files API upload failed for this asset.
+      // Pre-pad only when falling back, so Gemini receives a target-ratio hint via the reference image.
       const targetRatio = fmt.w / fmt.h;
-      const preparedImage = vehicleImage
+      const vehicleFallbackB64 = !vehicleFileRef && vehicleImage
         ? await padToAspectRatio(vehicleImage, targetRatio).catch(() => vehicleImage)
-        : vehicleImage;
+        : undefined;
+      const logoFallbackB64 = !logoFileRef && showLogo && logoBase64 ? logoBase64 : undefined;
 
       const t0 = Date.now();
-      console.log(`[banner-client] → invoke generate-banner`, { formatId, ratio: fmt.ratio, w: fmt.w, h: fmt.h, modelTier, hasImage: !!preparedImage, hasLogo: !!(showLogo && logoBase64) });
+      console.log(`[banner-client] → invoke generate-banner`, {
+        formatId, ratio: fmt.ratio, w: fmt.w, h: fmt.h, modelTier,
+        vehicleVia: vehicleFileRef ? 'fileUri' : (vehicleFallbackB64 ? 'base64' : 'none'),
+        logoVia: logoFileRef ? 'fileUri' : (logoFallbackB64 ? 'base64' : 'none'),
+      });
       const { data, error } = await supabase.functions.invoke('generate-banner', {
         body: {
           prompt,
-          imageBase64: preparedImage,
-          logoBase64: showLogo && logoBase64 ? logoBase64 : undefined,
+          imageBase64: vehicleFallbackB64,
+          logoBase64: logoFallbackB64,
+          vehicleFileRef,
+          logoFileRef,
           modelTier,
           width: fmt.w,
           height: fmt.h,
@@ -737,8 +801,6 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
       }
       if (data?.imageBase64) {
         console.log(`[banner-client] ✓ ${formatId} ok in ${dur}ms`, data?.debug);
-        // CONTAIN-fit: only adds neutral bars if the model returned an off ratio.
-        // No content is ever cropped away.
         const fitted = await fitImageToSize(data.imageBase64, fmt.w, fmt.h).catch(() => data.imageBase64);
         return { formatId: fmt.id, formatLabel: fmt.label, ratio: fmt.ratio, image: fitted, w: fmt.w, h: fmt.h };
       }
@@ -748,7 +810,7 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
       toast.error(`Banner ${fmt.label} fehlgeschlagen`, { description: e?.message || 'Unbekannter Fehler' });
     }
     return null;
-  }, [buildPromptForFormat, vehicleImage, showLogo, logoBase64, modelTier]);
+  }, [buildPromptForFormat, vehicleImage, showLogo, logoBase64, modelTier, ensureFileRefs]);
 
   // Track auto-created vehicle id so subsequent banners in the same session reuse it.
   const [autoVehicleId, setAutoVehicleId] = useState<string | null>(null);

@@ -186,7 +186,7 @@ serve(async (req) => {
 
   try {
     currentStage = "parse_body";
-    const { prompt, imageBase64, logoBase64, modelTier, width, height } = await req.json();
+    const { prompt, imageBase64, logoBase64, modelTier, width, height, vehicleFileRef, logoFileRef } = await req.json();
     if (!prompt) throw new Error("No prompt provided");
 
     const requestedTier = typeof modelTier === "string" ? modelTier : "qualitaet";
@@ -199,6 +199,8 @@ serve(async (req) => {
       tier, engine: config.engine, model: config.model, cost: config.cost,
       width, height, aspect: usedAspect,
       hasImage: !!imageBase64, hasLogo: !!logoBase64,
+      vehicleFileUri: vehicleFileRef?.fileUri || null,
+      logoFileUri: logoFileRef?.fileUri || null,
       promptChars: prompt.length,
     });
 
@@ -225,7 +227,7 @@ serve(async (req) => {
       for (const geminiModel of geminiModels) {
         try {
           usedModel = geminiModel;
-          resultImage = await generateGemini(lockedPrompt, imageBase64, logoBase64, geminiModel, maxRetries, width, height, requestStartedAt, log);
+          resultImage = await generateGemini(lockedPrompt, imageBase64, logoBase64, geminiModel, maxRetries, width, height, requestStartedAt, log, vehicleFileRef, logoFileRef);
           if (resultImage) break;
         } catch (err) {
           lastGeminiError = err instanceof Error ? err.message : "Gemini error";
@@ -317,7 +319,8 @@ async function toInlineData(input: string | null | undefined, fallbackMime = "im
   return { mimeType: mime, data };
 }
 
-async function generateGemini(prompt: string, imageBase64: string | null, logoBase64: string | null, model: string, retries: number, width?: number, height?: number, requestStartedAt = Date.now(), log?: Logger): Promise<string | null> {
+interface FileRef { fileUri: string; mimeType: string }
+async function generateGemini(prompt: string, imageBase64: string | null, logoBase64: string | null, model: string, retries: number, width?: number, height?: number, requestStartedAt = Date.now(), log?: Logger, vehicleFileRef?: FileRef | null, logoFileRef?: FileRef | null): Promise<string | null> {
   const apiKey = await getSecret("GEMINI_API_KEY");
   if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
   log?.info("gemini.prep", "preparing request", { model });
@@ -349,17 +352,24 @@ async function generateGemini(prompt: string, imageBase64: string | null, logoBa
   parts.push({ text: prompt });
 
   // 3) Referenz-Fahrzeug klar als Identitäts-Referenz markieren
-  const vehicleInline = await toInlineData(imageBase64, "image/jpeg");
-  if (vehicleInline) {
+  // Vehicle reference: prefer Files API URI (small payload, no Base64), fallback to inlineData
+  const hasVehicleRef = !!vehicleFileRef?.fileUri || !!imageBase64;
+  if (hasVehicleRef) {
     parts.push({ text:
 `VEHICLE REFERENCE IMAGE (identity only):
 The next image shows the vehicle. Use it ONLY for identity (model, color, trim, wheels, proportions).
 DO NOT copy its background, lighting, reflections, framing or aspect ratio.` });
-    parts.push({ inlineData: vehicleInline });
+    if (vehicleFileRef?.fileUri) {
+      parts.push({ fileData: { fileUri: vehicleFileRef.fileUri, mimeType: vehicleFileRef.mimeType || "image/jpeg" } });
+      log?.info("gemini.ref", "vehicle via Files API", { uri: vehicleFileRef.fileUri });
+    } else {
+      const vehicleInline = await toInlineData(imageBase64, "image/jpeg");
+      if (vehicleInline) parts.push({ inlineData: vehicleInline });
+    }
   }
 
-  const logoInline = await toInlineData(logoBase64, "image/png");
-  if (logoInline) {
+  const hasLogoRef = !!logoFileRef?.fileUri || !!logoBase64;
+  if (hasLogoRef) {
     parts.push({ text: `LOGO LOCK (MANDATORY — READ CAREFULLY):
 The next image is the OFFICIAL CURRENT manufacturer logo that MUST appear in the banner.
 - Use EXACTLY this provided logo file as a 1:1 visual reference. Do NOT redraw, restyle, recolor, simplify or "improve" it.
@@ -370,7 +380,13 @@ The next image is the OFFICIAL CURRENT manufacturer logo that MUST appear in the
 - If the provided logo is flat 2D, the rendered logo MUST stay flat 2D. If it is monochrome, keep it monochrome.
 - Place it cleanly and prominently (corner or near headline), correctly sized, fully legible, no distortion, no rotation, no drop shadow, no extra effects.
 The logo image follows now:` });
-    parts.push({ inlineData: logoInline });
+    if (logoFileRef?.fileUri) {
+      parts.push({ fileData: { fileUri: logoFileRef.fileUri, mimeType: logoFileRef.mimeType || "image/png" } });
+      log?.info("gemini.ref", "logo via Files API", { uri: logoFileRef.fileUri });
+    } else {
+      const logoInline = await toInlineData(logoBase64, "image/png");
+      if (logoInline) parts.push({ inlineData: logoInline });
+    }
   }
 
   // Format-Direktive ist bereits als ERSTER Part platziert (siehe oben).
