@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import VehicleAssetPicker from '@/components/VehicleAssetPicker';
 import { useVehicleAssets } from '@/hooks/useVehicleAssets';
 import { useBackgroundTasks } from '@/contexts/BackgroundTasksContext';
+import { useAuth } from '@/hooks/useAuth';
+import { ensureVehicleAuto } from '@/lib/vehicle-utils';
 
 interface VideoGeneratorProps {
   onBack: () => void;
