@@ -30,6 +30,14 @@ const DamageImageLightbox: React.FC<Props> = ({
   const [tab, setTab] = useState('annotated');
 
   React.useEffect(() => { setIndex(initialIndex); }, [initialIndex]);
+  React.useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [open, onClose]);
 
   if (!open || !images[index]) return null;
   const current = images[index];
@@ -82,8 +90,8 @@ const DamageImageLightbox: React.FC<Props> = ({
         {/* Top bar */}
         <div className="absolute top-3 right-3 sm:top-4 sm:right-4 flex items-center gap-2 z-10">
           <span className="text-xs text-background/70">{index + 1} / {images.length}</span>
-          <button onClick={onClose} className="text-background hover:text-background/80 transition-colors">
-            <X className="w-6 h-6" />
+          <button onClick={onClose} className="inline-flex items-center gap-1.5 rounded-md bg-background px-3 py-2 text-sm font-semibold text-foreground shadow-lg transition-colors hover:bg-background/90">
+            <X className="w-4 h-4" /> Zurück zum Bericht
           </button>
         </div>
 
