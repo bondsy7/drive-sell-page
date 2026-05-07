@@ -240,20 +240,22 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { images, vehicleInfo, anlass } = await req.json();
-    if (!Array.isArray(images) || images.length === 0) {
+    const { images, imagesFileUris, vehicleInfo, anlass } = await req.json();
+    const usingFileUris = Array.isArray(imagesFileUris) && imagesFileUris.length > 0;
+    const total = usingFileUris ? imagesFileUris.length : (Array.isArray(images) ? images.length : 0);
+    if (total === 0) {
       return new Response(JSON.stringify({ error: "Keine Bilder übergeben" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    if (images.length > 10) {
+    if (total > 10) {
       return new Response(JSON.stringify({ error: "Maximal 10 Bilder" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     // Cost: 1 credit per image (analysis only — annotation runs in separate function)
-    const cost = images.length * 1;
+    const cost = total * 1;
     const auth = await authAndDeduct(req, cost);
     if (auth instanceof Response) return auth;
 
@@ -269,11 +271,10 @@ serve(async (req) => {
       vehicleInfo?.antrieb && `Antrieb: ${vehicleInfo.antrieb}`,
     ].filter(Boolean).join("\n") || "Keine Fahrzeugdaten angegeben";
 
-    console.log(`[analyze-damage] ${images.length} Bilder, anlass=${anlass}`);
-    const analysis = await callGeminiAnalysis(GEMINI_API_KEY, infoLines, anlass || "", images);
+    console.log(`[analyze-damage] ${total} Bilder (fileUris=${usingFileUris}), anlass=${anlass}`);
+    const analysis = await callGeminiAnalysis(GEMINI_API_KEY, infoLines, anlass || "", images || [], imagesFileUris);
     console.log(`[analyze-damage] ${analysis.schaeden?.length || 0} Schäden erkannt`);
 
-    // Annotation runs in separate edge function per image (annotate-damage-image)
     return new Response(JSON.stringify({ analysis, cost }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
