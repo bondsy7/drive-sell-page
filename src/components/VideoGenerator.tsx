@@ -88,6 +88,8 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onBack, preloadedImage,
 
   const [assetPickerOpen, setAssetPickerOpen] = useState(false);
   const [autoPromptShown, setAutoPromptShown] = useState(false);
+  const [autoVehicleId, setAutoVehicleId] = useState<string | null>(null);
+  const { user } = useAuth();
   const { data: vehicleAssets } = useVehicleAssets(vehicleId);
   const bgTasks = useBackgroundTasks();
 
