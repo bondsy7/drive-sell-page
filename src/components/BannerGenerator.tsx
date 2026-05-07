@@ -335,7 +335,7 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
   const [dataSheetData, setDataSheetData] = useState<any>(null);
 
   // Generation
-  const [modelTier, setModelTier] = useState<ModelTier>('premium');
+  const [modelTier, setModelTier] = useState<ModelTier>('qualitaet');
   const [variantCount, setVariantCount] = useState(1);
   const [generating, setGenerating] = useState(false);
   const [generatingAll, setGeneratingAll] = useState(false);
@@ -721,13 +721,17 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
           height: fmt.h,
         },
       });
+      const errorBody = error && (error as any)?.context instanceof Response
+        ? await (error as any).context.clone().json().catch(() => null)
+        : null;
+      const payload = data || errorBody;
       const dur = Date.now() - t0;
-      if (error || data?.error) {
-        if (data?.error === 'insufficient_credits') throw new Error('insufficient_credits');
-        const dbg = data?.debug;
+      if (error || payload?.error) {
+        if (payload?.error === 'insufficient_credits') throw new Error('insufficient_credits');
+        const dbg = payload?.debug;
         const stageInfo = dbg ? ` [Stage: ${dbg.stage} · Model: ${dbg.model} · ${Math.round(dbg.totalMs/1000)}s]` : '';
-        const errMsg = (data?.error || error?.message || 'Unbekannter Fehler') + stageInfo;
-        console.error(`[banner-client] ✗ ${formatId} failed after ${dur}ms`, { error: data?.error || error?.message, debug: dbg });
+        const errMsg = (payload?.error || error?.message || 'Unbekannter Fehler') + stageInfo;
+        console.error(`[banner-client] ✗ ${formatId} failed after ${dur}ms`, { error: payload?.error || error?.message, debug: dbg, status: (error as any)?.context?.status });
         toast.error(`Banner ${fmt.label} fehlgeschlagen`, { description: errMsg });
         return null;
       }
@@ -868,9 +872,9 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
       total: BANNER_FORMATS.length,
     });
 
-    // Run in parallel with concurrency limit of 4
+    // Run sequentially: Gemini image preview models throttle/timeout heavily under parallel load.
     const queue = [...BANNER_FORMATS];
-    const CONCURRENCY = 4;
+    const CONCURRENCY = 1;
     let aborted = false;
     let completed = 0;
     let lastVehicleId: string | null = null;
