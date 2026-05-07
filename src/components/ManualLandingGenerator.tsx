@@ -14,6 +14,7 @@ import ProcessTimer from '@/components/ProcessTimer';
 import { useSearchParams } from 'react-router-dom';
 import VehicleAssetPicker from '@/components/VehicleAssetPicker';
 import { useVehicleAssets } from '@/hooks/useVehicleAssets';
+import { ensureVehicleAuto } from '@/lib/vehicle-utils';
 
 const PAGE_TYPES = [
   { value: 'leasing', label: 'Leasing-Angebot', desc: 'Monatliche Rate, Flexibilität', icon: '📋' },
@@ -224,6 +225,14 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
       setProgress('KI generiert Texte...');
       setProgressPercent(25);
 
+      // Ensure a vehicle row exists so the landing page is always attached to a Fahrzeug.
+      let effectiveVehicleId = vehicleIdParam || null;
+      if (!effectiveVehicleId) {
+        effectiveVehicleId = await ensureVehicleAuto(user.id, null, {
+          vehicle: { brand, model, variant, color },
+        } as any);
+      }
+
       const { data, error } = await supabase.functions.invoke('generate-landing-page', {
         body: {
           brand, model, pageType,
@@ -231,7 +240,7 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
           additionalInfo: highlights,
           dealer,
           uploadedImages: uploadedBase64,
-          vehicleId: vehicleIdParam || null,
+          vehicleId: effectiveVehicleId,
         },
       });
 
@@ -259,7 +268,7 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
 
         const { data: project, error: saveError } = await supabase.from('projects').insert({
           user_id: user.id,
-          vehicle_id: vehicleIdParam || null,
+          vehicle_id: effectiveVehicleId,
           title: `${brand} ${model}${variant ? ` ${variant}` : ''} – Landing Page`,
           vehicle_data: {
             type: 'landing-page',
@@ -269,7 +278,7 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
             imageMap: data.imageMap || {},
             dealer,
             brandLogoUrl: data.brandLogoUrl || '',
-            vehicleId: vehicleIdParam || null,
+            vehicleId: effectiveVehicleId,
           } as any,
           template_id: 'landing-page',
           html_content: data.html,

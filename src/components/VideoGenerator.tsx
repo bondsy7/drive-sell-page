@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import VehicleAssetPicker from '@/components/VehicleAssetPicker';
 import { useVehicleAssets } from '@/hooks/useVehicleAssets';
 import { useBackgroundTasks } from '@/contexts/BackgroundTasksContext';
+import { useAuth } from '@/hooks/useAuth';
+import { ensureVehicleAuto } from '@/lib/vehicle-utils';
 
 interface VideoGeneratorProps {
   onBack: () => void;
@@ -86,6 +88,8 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onBack, preloadedImage,
 
   const [assetPickerOpen, setAssetPickerOpen] = useState(false);
   const [autoPromptShown, setAutoPromptShown] = useState(false);
+  const [autoVehicleId, setAutoVehicleId] = useState<string | null>(null);
+  const { user } = useAuth();
   const { data: vehicleAssets } = useVehicleAssets(vehicleId);
   const bgTasks = useBackgroundTasks();
 
@@ -153,6 +157,13 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onBack, preloadedImage,
       const { uploadToGeminiFiles } = await import('@/lib/gemini-file-upload');
       const refs = await uploadToGeminiFiles([{ imageBase64: shapedImage }]);
 
+      // Ensure a vehicle row exists so the rendered video is always attached to a Fahrzeug.
+      let effectiveVehicleId = vehicleId || autoVehicleId || null;
+      if (!effectiveVehicleId && user) {
+        effectiveVehicleId = await ensureVehicleAuto(user.id, null, null);
+        if (effectiveVehicleId) setAutoVehicleId(effectiveVehicleId);
+      }
+
       const { data, error } = await supabase.functions.invoke('generate-video', {
         body: {
           action: 'start',
@@ -182,7 +193,7 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onBack, preloadedImage,
 
       bgTasks.startVideoPolling({
         operationName,
-        vehicleId: vehicleId || undefined,
+        vehicleId: effectiveVehicleId || undefined,
         onDone: (result) => {
           if (result.error) {
             setVideoState('error');
@@ -214,7 +225,7 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onBack, preloadedImage,
       setErrorMessage(err.message || 'Fehler bei der Video-Generierung');
       toast.error(err.message || 'Fehler bei der Video-Generierung');
     }
-  }, [imageBase64, customPrompt, aspectRatio, vehicleId, bgTasks]);
+  }, [imageBase64, customPrompt, aspectRatio, vehicleId, autoVehicleId, user, bgTasks]);
 
   const handleDownload = useCallback(() => {
     if (!videoBase64) return;

@@ -11,6 +11,7 @@ import Spin360Progress, { type SpinStep } from './Spin360Progress';
 import Spin360Viewer from './Spin360Viewer';
 import Video2FramesProcessor from './Video2FramesProcessor';
 import { uploadImageToStorage } from '@/lib/storage-utils';
+import { ensureVehicleAuto } from '@/lib/vehicle-utils';
 
 interface Spin360WorkflowProps {
   onBack: () => void;
@@ -69,6 +70,16 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
   const [creditDialogOpen, setCreditDialogOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [autoVehicleId, setAutoVehicleId] = useState<string | null>(null);
+
+  const ensureSpinVehicleId = useCallback(async (): Promise<string | null> => {
+    if (vehicleId) return vehicleId;
+    if (autoVehicleId) return autoVehicleId;
+    if (!user) return null;
+    const created = await ensureVehicleAuto(user.id, null, null);
+    if (created) setAutoVehicleId(created);
+    return created;
+  }, [vehicleId, autoVehicleId, user]);
 
   // Calculate total cost based on mode
   const imageCost = (getCost('spin360_analysis', 'standard') || 1) +
@@ -107,9 +118,10 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
         setPhase('upload'); setIsProcessing(false); return;
       }
 
+      const effectiveVehicleId = await ensureSpinVehicleId();
       const { data: job, error: jobErr } = await supabase
         .from('spin360_jobs' as any)
-        .insert({ user_id: user.id, vehicle_id: vehicleId || null, status: 'uploaded', target_frame_count: 36 } as any)
+        .insert({ user_id: user.id, vehicle_id: effectiveVehicleId, status: 'uploaded', target_frame_count: 36 } as any)
         .select('id').single();
 
       if (jobErr || !job) {
@@ -140,7 +152,7 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
       console.error('Start processing error:', err);
       setJobStatus('failed'); setJobError('Unerwarteter Fehler'); setIsProcessing(false);
     }
-  }, [user, uploadedSlots]);
+  }, [user, uploadedSlots, ensureSpinVehicleId]);
 
   /* ─── Video2Frames Flow (refactored: 3 images) ─── */
   const pollVideoOperation = useCallback(async (operationName: string, currentJobId: string) => {
@@ -206,9 +218,10 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
       }
 
       // Create spin job with video mode
+      const effectiveVehicleId = await ensureSpinVehicleId();
       const { data: job, error: jobErr } = await supabase
         .from('spin360_jobs' as any)
-        .insert({ user_id: user.id, vehicle_id: vehicleId || null, status: 'generating_video', target_frame_count: 60 } as any)
+        .insert({ user_id: user.id, vehicle_id: effectiveVehicleId, status: 'generating_video', target_frame_count: 60 } as any)
         .select('id').single();
 
       if (jobErr || !job) {
@@ -301,7 +314,7 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
       console.error('Video2Frames error:', err);
       setJobStatus('failed'); setJobError('Unerwarteter Fehler'); setIsProcessing(false);
     }
-  }, [user, uploadedSlots, pollVideoOperation]);
+  }, [user, uploadedSlots, pollVideoOperation, ensureSpinVehicleId]);
 
   const startProcessing = useCallback(() => {
     if (spinMode === 'video2frames') startVideo2Frames();
