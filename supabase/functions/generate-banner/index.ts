@@ -269,17 +269,14 @@ The logo image follows now:` });
     parts.push({ inlineData: logoInline });
   }
 
-  // Inject explicit format instruction so the model composes for the target ratio
-  const aspectLabel = width && height ? getGeminiAspectRatio(width, height) : "1:1";
-  if (width && height) {
-    parts.unshift({
-      text: `OUTPUT FORMAT (STRICT): Generate the banner with an aspect ratio of EXACTLY ${aspectLabel} (target ${width}×${height}px). Compose, crop and frame the entire scene to fill this ${aspectLabel} canvas — do NOT default to a square. Layout, vehicle placement and text must be designed specifically for this ${aspectLabel} format.`,
-    });
-  }
+  // Format-Direktive ist bereits als ERSTER Part platziert (siehe oben).
 
   // gemini-3* image models support imageConfig.aspectRatio; older 2.5 ignores it
   const supportsAspectField = /^gemini-3/.test(model);
-  const generationConfig: Record<string, unknown> = { responseModalities: ["TEXT", "IMAGE"] };
+  const generationConfig: Record<string, unknown> = {
+    responseModalities: ["TEXT", "IMAGE"],
+    temperature: 0.7,
+  };
   if (supportsAspectField && width && height) {
     (generationConfig as any).imageConfig = { aspectRatio: aspectLabel };
   }
