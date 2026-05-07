@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { compressImageForAI, fileToBase64 } from '@/lib/image-compress';
 import { supabase } from '@/integrations/supabase/client';
+import { uploadToGeminiFiles } from '@/lib/gemini-file-upload';
 import ProcessTimer from '@/components/ProcessTimer';
 
 interface Props {
@@ -80,8 +81,13 @@ const DamageAnalysisFlow: React.FC<Props> = ({ onBack }) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) return;
+      // Upload via File API (cuts payload massively)
+      const refs = await uploadToGeminiFiles([{ imageBase64: firstImageBase64 }]);
+      const body: any = refs?.[0]
+        ? { imageFileUri: refs[0] }
+        : { imageBase64: firstImageBase64 };
       const { data } = await supabase.functions.invoke('detect-vehicle-brand', {
-        body: { imageBase64: firstImageBase64 },
+        body,
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (data?.brand || data?.model) {
@@ -126,8 +132,20 @@ const DamageAnalysisFlow: React.FC<Props> = ({ onBack }) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error('Nicht eingeloggt');
+
+      // Upload all images to Gemini File API once → reuse across analyze + annotate
+      const refs = await uploadToGeminiFiles(images.map(i => ({ id: i.id, imageBase64: i.base64 })));
+      const refByImageId: Record<string, { uri: string; mimeType: string } | undefined> = {};
+      if (refs) {
+        images.forEach((img, idx) => { refByImageId[img.id] = refs[idx]; });
+      }
+
+      const analyzeBody: any = refs
+        ? { imagesFileUris: images.map(i => refByImageId[i.id]), vehicleInfo, anlass }
+        : { images: images.map(i => i.base64), vehicleInfo, anlass };
+
       const { data, error } = await supabase.functions.invoke('analyze-damage', {
-        body: { images: images.map(i => i.base64), vehicleInfo, anlass },
+        body: analyzeBody,
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (error || !data?.analysis) throw new Error(data?.error || error?.message || 'Analyse fehlgeschlagen');
@@ -166,8 +184,12 @@ const DamageAnalysisFlow: React.FC<Props> = ({ onBack }) => {
         const damagesForImage = schaedenAll.filter((s: any) => s.bildIndex === idx);
         if (damagesForImage.length === 0) return;
         try {
+          const ref = refByImageId[img.id];
+          const annBody: any = ref
+            ? { imageFileUri: ref, schaeden: damagesForImage }
+            : { image: img.base64, schaeden: damagesForImage };
           const { data: ann, error: annErr } = await supabase.functions.invoke('annotate-damage-image', {
-            body: { image: img.base64, schaeden: damagesForImage },
+            body: annBody,
             headers: { Authorization: `Bearer ${session.access_token}` },
           });
           if (annErr) {

@@ -90,9 +90,9 @@ serve(async (req) => {
       });
     }
 
-    const { imageBase64 } = await req.json();
-    if (!imageBase64) {
-      return new Response(JSON.stringify({ error: "imageBase64 required" }), {
+    const { imageBase64, imageFileUri } = await req.json();
+    if (!imageBase64 && !imageFileUri?.uri) {
+      return new Response(JSON.stringify({ error: "imageBase64 or imageFileUri required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -106,9 +106,15 @@ serve(async (req) => {
       });
     }
 
-    const base64Data = imageBase64.replace(/^data:image\/[a-zA-Z+]+;base64,/, "");
-    const mimeMatch = imageBase64.match(/^data:(image\/[a-zA-Z+]+);base64,/);
-    const mimeType = mimeMatch ? mimeMatch[1] : "image/jpeg";
+    let imagePart: any;
+    if (imageFileUri?.uri) {
+      imagePart = { file_data: { mime_type: imageFileUri.mimeType || "image/jpeg", file_uri: imageFileUri.uri } };
+    } else {
+      const base64Data = imageBase64.replace(/^data:image\/[a-zA-Z+]+;base64,/, "");
+      const mimeMatch = imageBase64.match(/^data:(image\/[a-zA-Z+]+);base64,/);
+      const mimeType = mimeMatch ? mimeMatch[1] : "image/jpeg";
+      imagePart = { inlineData: { mimeType, data: base64Data } };
+    }
 
     const detectPrompt = await getCustomPrompt("detect_vehicle_brand", DEFAULT_DETECT_PROMPT);
     // Retry with fallback models on 503/429
@@ -129,7 +135,7 @@ serve(async (req) => {
               contents: [
                 {
                   parts: [
-                    { inlineData: { mimeType, data: base64Data } },
+                    imagePart,
                     { text: detectPrompt },
                   ],
                 },

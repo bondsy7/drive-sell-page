@@ -123,16 +123,25 @@ Nummeriere Schäden fortlaufend über alle Bilder hinweg (1, 2, 3 ...).
 Im berichtMarkdown immer den rechtlichen Hinweis aufnehmen:
 "Diese Analyse basiert ausschließlich auf den bereitgestellten Bildern und dient als erste technische Orientierung. Sie ersetzt kein Gutachten, keine Hebebühnenprüfung, keine Demontageprüfung und keine verbindliche Schadenkalkulation durch einen qualifizierten KFZ-Sachverständigen oder Fachbetrieb."`;
 
-async function callGeminiAnalysis(apiKey: string, vehicleInfo: string, anlass: string, images: string[]) {
-  const userText = `Fahrzeugdaten:\n${vehicleInfo}\n\nAnlass der Analyse: ${anlass || 'Allgemeine Zustandsbewertung'}\n\nAnzahl Bilder: ${images.length}\n\nFühre die vollständige Schadensanalyse durch und antworte als JSON.`;
+async function callGeminiAnalysis(apiKey: string, vehicleInfo: string, anlass: string, images: string[], imagesFileUris?: { uri: string; mimeType: string }[]) {
+  const total = (imagesFileUris && imagesFileUris.length > 0) ? imagesFileUris.length : images.length;
+  const userText = `Fahrzeugdaten:\n${vehicleInfo}\n\nAnlass der Analyse: ${anlass || 'Allgemeine Zustandsbewertung'}\n\nAnzahl Bilder: ${total}\n\nFühre die vollständige Schadensanalyse durch und antworte als JSON.`;
   const parts: any[] = [{ text: userText }];
-  for (let i = 0; i < images.length; i++) {
-    parts.push({ text: `--- Bild ${i + 1} (Index ${i}) ---` });
-    const raw = images[i].includes(",") ? images[i].split(",")[1] : images[i];
-    let mime = "image/jpeg";
-    if (images[i].startsWith("data:image/png")) mime = "image/png";
-    else if (images[i].startsWith("data:image/webp")) mime = "image/webp";
-    parts.push({ inlineData: { mimeType: mime, data: raw } });
+
+  if (imagesFileUris && imagesFileUris.length > 0) {
+    for (let i = 0; i < imagesFileUris.length; i++) {
+      parts.push({ text: `--- Bild ${i + 1} (Index ${i}) ---` });
+      parts.push({ file_data: { mime_type: imagesFileUris[i].mimeType || "image/jpeg", file_uri: imagesFileUris[i].uri } });
+    }
+  } else {
+    for (let i = 0; i < images.length; i++) {
+      parts.push({ text: `--- Bild ${i + 1} (Index ${i}) ---` });
+      const raw = images[i].includes(",") ? images[i].split(",")[1] : images[i];
+      let mime = "image/jpeg";
+      if (images[i].startsWith("data:image/png")) mime = "image/png";
+      else if (images[i].startsWith("data:image/webp")) mime = "image/webp";
+      parts.push({ inlineData: { mimeType: mime, data: raw } });
+    }
   }
 
   const body = JSON.stringify({
@@ -231,20 +240,22 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { images, vehicleInfo, anlass } = await req.json();
-    if (!Array.isArray(images) || images.length === 0) {
+    const { images, imagesFileUris, vehicleInfo, anlass } = await req.json();
+    const usingFileUris = Array.isArray(imagesFileUris) && imagesFileUris.length > 0;
+    const total = usingFileUris ? imagesFileUris.length : (Array.isArray(images) ? images.length : 0);
+    if (total === 0) {
       return new Response(JSON.stringify({ error: "Keine Bilder übergeben" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    if (images.length > 10) {
+    if (total > 10) {
       return new Response(JSON.stringify({ error: "Maximal 10 Bilder" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     // Cost: 1 credit per image (analysis only — annotation runs in separate function)
-    const cost = images.length * 1;
+    const cost = total * 1;
     const auth = await authAndDeduct(req, cost);
     if (auth instanceof Response) return auth;
 
@@ -260,11 +271,10 @@ serve(async (req) => {
       vehicleInfo?.antrieb && `Antrieb: ${vehicleInfo.antrieb}`,
     ].filter(Boolean).join("\n") || "Keine Fahrzeugdaten angegeben";
 
-    console.log(`[analyze-damage] ${images.length} Bilder, anlass=${anlass}`);
-    const analysis = await callGeminiAnalysis(GEMINI_API_KEY, infoLines, anlass || "", images);
+    console.log(`[analyze-damage] ${total} Bilder (fileUris=${usingFileUris}), anlass=${anlass}`);
+    const analysis = await callGeminiAnalysis(GEMINI_API_KEY, infoLines, anlass || "", images || [], imagesFileUris);
     console.log(`[analyze-damage] ${analysis.schaeden?.length || 0} Schäden erkannt`);
 
-    // Annotation runs in separate edge function per image (annotate-damage-image)
     return new Response(JSON.stringify({ analysis, cost }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

@@ -263,9 +263,22 @@ const Index = () => {
         pdfBase64Array.push(await extractPDFAsBase64(file));
       }
       setAppState('analyzing');
-      const body = pdfBase64Array.length === 1
-        ? { pdfBase64: pdfBase64Array[0] }
-        : { pdfBase64Array };
+
+      // Try Gemini File API upload to keep payload tiny; fall back to inline base64
+      const { uploadToGeminiFiles } = await import('@/lib/gemini-file-upload');
+      const refs = await uploadToGeminiFiles(
+        pdfBase64Array.map((b64, i) => ({
+          imageBase64: `data:application/pdf;base64,${b64}`,
+          mimeType: 'application/pdf',
+          displayName: files[i]?.name || `pdf_${i}`,
+        })),
+      );
+
+      const body = refs
+        ? { pdfFileUris: refs }
+        : pdfBase64Array.length === 1
+          ? { pdfBase64: pdfBase64Array[0] }
+          : { pdfBase64Array };
       const { data: analysisData, error: analysisError } = await supabase.functions.invoke('analyze-pdf', { body });
       console.log('[processFile] analysisError:', analysisError);
       console.log('[processFile] analysisData keys:', analysisData ? Object.keys(analysisData) : 'null');

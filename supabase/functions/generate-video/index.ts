@@ -81,7 +81,7 @@ function encodeBase64(buffer: ArrayBuffer): string {
   return btoa(binary);
 }
 
-/** Extract raw base64 data and mime type from a data URI, raw base64 string, or URL */
+/** Extract raw base64 data and mime type from a data URI, raw base64 string, URL, or Gemini file URI */
 async function parseImageBase64(input: string): Promise<{ data: string; mimeType: string }> {
   if (input.startsWith("data:")) {
     const match = input.match(/^data:(image\/\w+);base64,(.+)$/s);
@@ -100,6 +100,32 @@ async function parseImageBase64(input: string): Promise<{ data: string; mimeType
     return { data: btoa(binary), mimeType };
   }
   return { data: input.replace(/^data:image\/\w+;base64,/, ""), mimeType: "image/jpeg" };
+}
+
+/**
+ * Resolve a Gemini File API URI to raw base64 bytes.
+ * Veo's predictLongRunning requires inline bytesBase64Encoded, so when the
+ * client uploaded via the File API we must download the bytes here.
+ */
+async function fileUriToBase64(uri: string, apiKey: string, fallbackMime = "image/jpeg"): Promise<{ data: string; mimeType: string }> {
+  // Files API URIs look like: https://generativelanguage.googleapis.com/v1beta/files/abc123
+  const url = uri.includes("?") ? `${uri}&key=${apiKey}` : `${uri}?alt=media&key=${apiKey}`;
+  let resp = await fetch(url);
+  if (!resp.ok) {
+    // try header auth
+    resp = await fetch(uri.split("?")[0] + (uri.includes("alt=media") ? "" : "?alt=media"), {
+      headers: { "x-goog-api-key": apiKey },
+    });
+  }
+  if (!resp.ok) throw new Error(`fileUri fetch failed ${resp.status}`);
+  const mimeType = resp.headers.get("content-type")?.split(";")[0] || fallbackMime;
+  const buf = new Uint8Array(await resp.arrayBuffer());
+  let binary = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < buf.length; i += chunk) {
+    binary += String.fromCharCode(...buf.subarray(i, i + chunk));
+  }
+  return { data: btoa(binary), mimeType };
 }
 
 /**
@@ -158,7 +184,34 @@ async function handleVideoStart(req: Request, GEMINI_API_KEY: string, body: any)
   if (authResult instanceof Response) return authResult;
   const { userId } = authResult;
 
-  const { imageBase64, images, prompt: userPrompt, action, aspectRatio: rawAspect } = body;
+  const { imageBase64: rawImageBase64, images: rawImages, imageFileUri, imagesFileUris, prompt: userPrompt, action, aspectRatio: rawAspect } = body;
+
+  // Resolve Gemini File API refs to inline bytes (Veo requires bytesBase64Encoded)
+  let imageBase64: string | null = rawImageBase64 || null;
+  if (!imageBase64 && imageFileUri?.uri) {
+    try {
+      const fetched = await fileUriToBase64(imageFileUri.uri, GEMINI_API_KEY, imageFileUri.mimeType || "image/jpeg");
+      imageBase64 = `data:${fetched.mimeType};base64,${fetched.data}`;
+      console.log("[generate-video] resolved imageFileUri →", Math.round(fetched.data.length / 1024), "KB base64");
+    } catch (e) {
+      console.warn("[generate-video] failed to resolve imageFileUri", e);
+    }
+  }
+
+  let images: any[] | undefined = Array.isArray(rawImages) ? rawImages : undefined;
+  if (!images && Array.isArray(imagesFileUris) && imagesFileUris.length > 0) {
+    images = [];
+    for (const it of imagesFileUris) {
+      if (!it?.uri) continue;
+      try {
+        const fetched = await fileUriToBase64(it.uri, GEMINI_API_KEY, it.mimeType || "image/jpeg");
+        images.push({ label: it.label, base64: `data:${fetched.mimeType};base64,${fetched.data}` });
+      } catch (e) {
+        console.warn("[generate-video] failed to resolve images URI", e);
+      }
+    }
+  }
+
   const aspectRatio = rawAspect === "9:16" ? "9:16" : "16:9";
   const isSpin360 = action === "spin360_start";
   const creditAmount = 10;
