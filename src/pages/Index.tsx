@@ -459,8 +459,8 @@ const Index = () => {
 
       // Re-ensure vehicle in case VIN was just captured
       let vehicleId = savedVehicleId;
-      if (user && vin && !vehicleId) {
-        vehicleId = await ensureVehicle(user.id, vin, updatedData);
+      if (user && !vehicleId) {
+        vehicleId = await ensureVehicleAuto(user.id, vin, updatedData);
         setSavedVehicleId(vehicleId);
       }
 
