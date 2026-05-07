@@ -686,10 +686,18 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
     const prompt = buildPromptForFormat(formatId);
 
     try {
+      // Pre-pad the input vehicle image to the target aspect ratio so the AI
+      // model composes a banner in the correct format (Gemini tends to mirror
+      // the input ratio). No content is lost — only neutral padding is added.
+      const targetRatio = fmt.w / fmt.h;
+      const preparedImage = vehicleImage
+        ? await padToAspectRatio(vehicleImage, targetRatio).catch(() => vehicleImage)
+        : vehicleImage;
+
       const { data, error } = await supabase.functions.invoke('generate-banner', {
         body: {
           prompt,
-          imageBase64: vehicleImage,
+          imageBase64: preparedImage,
           logoBase64: showLogo && logoBase64 ? logoBase64 : undefined,
           modelTier,
           width: fmt.w,
@@ -701,7 +709,8 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
         return null;
       }
       if (data?.imageBase64) {
-        // Force target dimensions: cover-crop to exact w×h so 9:16 etc. is guaranteed
+        // CONTAIN-fit: only adds neutral bars if the model returned an off ratio.
+        // No content is ever cropped away.
         const fitted = await fitImageToSize(data.imageBase64, fmt.w, fmt.h).catch(() => data.imageBase64);
         return { formatId: fmt.id, formatLabel: fmt.label, ratio: fmt.ratio, image: fitted, w: fmt.w, h: fmt.h };
       }
