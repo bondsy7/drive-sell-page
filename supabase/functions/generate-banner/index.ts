@@ -413,7 +413,8 @@ The logo image follows now:` });
   // D) Activate native aspectRatio control on gemini-3* preview models via imageConfig.
   // gemini-3* DO honour imageConfig.aspectRatio. The fast fallback gemini-2.5-flash-image
   // still ignores it, so the pre-padded blurred reference image (B) remains as a visual anchor.
-  const supportsAspectField = /^gemini-3/.test(model);
+  const canUseNativeAspectField = GEMINI_SUPPORTED_RATIOS.some(r => r.label === aspectLabel);
+  const supportsAspectField = /^gemini-3/.test(model) && canUseNativeAspectField;
   const generationConfig: Record<string, unknown> = {
     responseModalities: ["TEXT", "IMAGE"],
     temperature: 0.55,
@@ -434,7 +435,7 @@ The logo image follows now:` });
       const remainingMs = EDGE_DEADLINE_MS - (Date.now() - requestStartedAt);
       if (remainingMs < 12_000) throw new Error("Banner generation deadline reached before model fallback");
       timeoutMs = Math.max(8_000, Math.min(modelBudgetMs, remainingMs - 5_000));
-      log?.info("gemini.fetch", "calling Gemini", { model, attempt: attempt + 1, timeoutMs, aspect: aspectLabel, hasAspectField: false, supportsAspectField, parts: parts.length });
+      log?.info("gemini.fetch", "calling Gemini", { model, attempt: attempt + 1, timeoutMs, aspect: aspectLabel, hasAspectField: supportsAspectField, supportsAspectField, parts: parts.length });
       const response = await fetchWithTimeout(url, {
         method: "POST",
         headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
