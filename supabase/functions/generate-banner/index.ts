@@ -155,37 +155,40 @@ serve(async (req) => {
       : "";
 
     const lockedPrompt = `${prompt}${vehicleBlock}${logoTextBlock}${PROFESSIONAL_BANNER_IMAGE_LOCK}`;
+    console.log(`[banner][PROMPT] total=${lockedPrompt.length} chars; vehicleBlock=${vehicleBlock.length}; logoBlock=${logoTextBlock.length}`);
+    console.log(`[banner][PROMPT] tail=${lockedPrompt.slice(-400)}`);
 
     if (config.engine === "gemini") {
-      // Primary = user-selected model. If it times out / 503s, fall back within
-      // Gemini only, ending with the fast 2.5 image model. All calls are
-      // text-only and carry imageConfig.aspectRatio, so reference images cannot
-      // pull the canvas back to their own ratio.
       const fallbackChain: Record<string, string[]> = {
         "gemini-3-pro-image-preview": ["gemini-3-pro-image-preview", "gemini-3.1-flash-image-preview", "gemini-2.5-flash-image"],
         "gemini-3.1-flash-image-preview": ["gemini-3.1-flash-image-preview", "gemini-2.5-flash-image"],
       };
       const geminiModels = fallbackChain[config.model] || [config.model];
+      console.log(`[banner][GEMINI] fallback chain = ${geminiModels.join(" -> ")}`);
       let lastGeminiError = "";
       for (const geminiModel of geminiModels) {
+        const modelStart = Date.now();
+        console.log(`[banner][GEMINI] >>> START model=${geminiModel} elapsedSinceReq=${Date.now() - requestStartedAt}ms`);
         try {
-          // NOTE: imageBase64/logoBase64 intentionally NOT passed — all visual
-          // references are converted to text so inputs cannot affect output ratio.
           resultImage = await generateGemini(lockedPrompt, null, null, geminiModel, maxRetries, width, height, requestStartedAt);
+          console.log(`[banner][GEMINI] <<< END model=${geminiModel} ok=${!!resultImage} took=${Date.now() - modelStart}ms`);
           if (resultImage) break;
         } catch (err) {
           lastGeminiError = err instanceof Error ? err.message : "Gemini error";
-          console.warn(`Banner model ${geminiModel} failed, trying fallback if available:`, lastGeminiError);
+          console.warn(`[banner][GEMINI] FAIL model=${geminiModel} took=${Date.now() - modelStart}ms err=${lastGeminiError}`);
         }
       }
       if (!resultImage && lastGeminiError) throw new Error(lastGeminiError);
     } else {
-      // OpenAI gpt-image-* uses fixed `size` param so input image doesn't break the ratio.
+      console.log(`[banner][OPENAI] >>> START model=${config.model}`);
+      const oaStart = Date.now();
       resultImage = await generateOpenAI(lockedPrompt, imageBase64, logoBase64, config.model, width, height, tier === "ultra" || tier === "neu", maxRetries);
+      console.log(`[banner][OPENAI] <<< END ok=${!!resultImage} took=${Date.now() - oaStart}ms`);
     }
 
     if (!resultImage) throw new Error("Kein Banner generiert. Bitte versuche es erneut.");
 
+    console.log(`[banner][DONE] totalTook=${Date.now() - requestStartedAt}ms`);
     return new Response(JSON.stringify({ imageBase64: resultImage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
