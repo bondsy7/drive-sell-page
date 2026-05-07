@@ -33,11 +33,12 @@ serve(async (req) => {
     });
     console.log(`[analyze-offer-image] Analyzing ${imageParts.length} document(s) in ${analysisMode} mode`);
 
-    // gemini-2.5-pro liest dichte Tabellen (Verbrauch, Anzahlung, CO₂) deutlich
-    // zuverlässiger als flash. Für Banner reicht schnelle Grobextraktion.
+    // Flash zuerst (deutlich schneller, ~5–10s statt 30–60s). Pro nur als
+    // Fallback bei dichten/komplexen Tabellen (PHEV, mehrere Dokumente) –
+    // siehe Re-Run unten.
     const models = isBannerQuick
       ? ["gemini-2.5-flash-lite", "gemini-2.5-flash"]
-      : ["gemini-2.5-pro", "gemini-2.5-flash"];
+      : ["gemini-2.5-flash", "gemini-2.5-flash-lite"];
     const multiHint = imageParts.length > 1 ? `
 
 ⚠️ MEHRERE DOKUMENTE (${imageParts.length} Bilder) — MERGE-MODUS:
