@@ -81,8 +81,13 @@ const DamageAnalysisFlow: React.FC<Props> = ({ onBack }) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) return;
+      // Upload via File API (cuts payload massively)
+      const refs = await uploadToGeminiFiles([{ imageBase64: firstImageBase64 }]);
+      const body: any = refs?.[0]
+        ? { imageFileUri: refs[0] }
+        : { imageBase64: firstImageBase64 };
       const { data } = await supabase.functions.invoke('detect-vehicle-brand', {
-        body: { imageBase64: firstImageBase64 },
+        body,
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (data?.brand || data?.model) {
