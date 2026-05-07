@@ -193,7 +193,7 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onBack, preloadedImage,
 
       bgTasks.startVideoPolling({
         operationName,
-        vehicleId: vehicleId || undefined,
+        vehicleId: effectiveVehicleId || undefined,
         onDone: (result) => {
           if (result.error) {
             setVideoState('error');
