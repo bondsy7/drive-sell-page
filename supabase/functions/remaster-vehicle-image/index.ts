@@ -347,15 +347,23 @@ The interior itself should only receive improved lighting – do NOT change the 
       parts.push({ file_data: { mime_type: customShowroomFileUri.mimeType, file_uri: customShowroomFileUri.uri } });
     }
 
-    if (customPlateImageBase64) {
+    if (customPlateImageBase64 || customPlateImageFileUri?.uri) {
       parts.push({ text: "CRITICAL – CUSTOM LICENSE PLATE IMAGE: The following image is the EXACT license plate you MUST use. Replace the vehicle's existing plate with this plate PIXEL-FOR-PIXEL. Reproduce every character, color, seal, EU badge, and spacing exactly. Do NOT invent or modify any element. This is an IMMUTABLE ASSET:" });
-      parts.push(toInlineData(customPlateImageBase64));
+      if (customPlateImageFileUri?.uri) {
+        parts.push({ file_data: { mime_type: customPlateImageFileUri.mimeType, file_uri: customPlateImageFileUri.uri } });
+        console.log(`[remaster] Plate via file_uri`);
+      } else {
+        parts.push(toInlineData(customPlateImageBase64));
+      }
     }
 
     // Manufacturer logo
-    if (manufacturerLogoBase64 || manufacturerLogoUrl) {
-      let logoData = null;
-      if (manufacturerLogoBase64) {
+    if (manufacturerLogoFileUri?.uri || manufacturerLogoBase64 || manufacturerLogoUrl) {
+      let logoData: any = null;
+      if (manufacturerLogoFileUri?.uri) {
+        logoData = { file_data: { mime_type: manufacturerLogoFileUri.mimeType, file_uri: manufacturerLogoFileUri.uri } };
+        console.log(`Manufacturer logo: via file_uri`);
+      } else if (manufacturerLogoBase64) {
         const cleaned = cleanBase64(manufacturerLogoBase64);
         const mime = manufacturerLogoBase64.startsWith("data:image/png") ? "image/png"
           : manufacturerLogoBase64.startsWith("data:image/webp") ? "image/webp" : "image/png";
@@ -386,10 +394,15 @@ REPRODUCTION RULES (ZERO DEVIATION ALLOWED):
     }
 
     // Dealer logo
-    if (dealerLogoBase64 || dealerLogoUrl) {
-      const logoData = dealerLogoBase64
-        ? toInlineData(dealerLogoBase64)
-        : await resolveImage(dealerLogoUrl);
+    if (dealerLogoFileUri?.uri || dealerLogoBase64 || dealerLogoUrl) {
+      let logoData: any = null;
+      if (dealerLogoFileUri?.uri) {
+        logoData = { file_data: { mime_type: dealerLogoFileUri.mimeType, file_uri: dealerLogoFileUri.uri } };
+      } else if (dealerLogoBase64) {
+        logoData = toInlineData(dealerLogoBase64);
+      } else {
+        logoData = await resolveImage(dealerLogoUrl);
+      }
       if (logoData) {
         parts.push({ text: `<LOGO_REFERENCE>
 DEALER LOGO – PIXEL-PERFECT REPRODUCTION:
@@ -399,12 +412,12 @@ The following image is the EXACT dealer logo. Reproduce PIXEL-FOR-PIXEL with all
 - IMMUTABLE ASSET: No redesign, no recoloring, no simplification.
 </LOGO_REFERENCE>` });
         parts.push(logoData);
-        console.log("Dealer logo injected", dealerLogoBase64 ? "(cached b64)" : "(fetched)");
+        console.log("Dealer logo injected", dealerLogoFileUri?.uri ? "(file_uri)" : dealerLogoBase64 ? "(cached b64)" : "(fetched)");
       }
     }
 
     // No logos → explicit instruction
-    const hasAnyLogo = !!(manufacturerLogoBase64 || manufacturerLogoUrl || dealerLogoBase64 || dealerLogoUrl);
+    const hasAnyLogo = !!(manufacturerLogoFileUri?.uri || manufacturerLogoBase64 || manufacturerLogoUrl || dealerLogoFileUri?.uri || dealerLogoBase64 || dealerLogoUrl);
     if (!hasAnyLogo) {
       parts.push({ text: `<NO_LOGO_INSTRUCTION>
 Do NOT add ANY logo, brand mark, emblem, or wall decoration to the background.
