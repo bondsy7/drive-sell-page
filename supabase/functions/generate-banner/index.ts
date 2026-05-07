@@ -186,7 +186,7 @@ serve(async (req) => {
 
   try {
     currentStage = "parse_body";
-    const { prompt, imageBase64, logoBase64, modelTier, width, height } = await req.json();
+    const { prompt, imageBase64, logoBase64, modelTier, width, height, vehicleFileRef, logoFileRef } = await req.json();
     if (!prompt) throw new Error("No prompt provided");
 
     const requestedTier = typeof modelTier === "string" ? modelTier : "qualitaet";
