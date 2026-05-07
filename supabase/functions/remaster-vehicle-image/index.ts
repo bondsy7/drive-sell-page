@@ -205,7 +205,7 @@ serve(async (req) => {
     const OPENAI_API_KEY = engineConfig.engine === 'openai' ? await getSecret("OPENAI_API_KEY") : null;
     if (engineConfig.engine === 'gemini' && !GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
     if (engineConfig.engine === 'openai' && !OPENAI_API_KEY) throw new Error("OPENAI_API_KEY not configured");
-    if (!imageBase64) throw new Error("No image provided");
+    if (!imageBase64 && !mainImageFileUri?.uri) throw new Error("No image provided");
 
     // 2. Use dynamic prompt if provided, otherwise build fallback from admin blocks
     const basePrompt = dynamicPrompt || await buildFallbackPrompt(vehicleDescription);
