@@ -257,29 +257,14 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
       if (rearSlot?.base64) images.push({ base64: rearSlot.base64, label: 'rear_34' });
       if (showroomSlot?.base64) images.push({ base64: showroomSlot.base64, label: 'showroom' });
 
-      // Upload composite + per-image refs to Gemini File API to shrink request payload
-      let imageFileUri: { uri: string; mimeType: string } | null = null;
-      let imagesFileUris: { uri: string; mimeType: string; label: string }[] | null = null;
-      try {
-        const { uploadToGeminiFiles } = await import('@/lib/gemini-file-upload');
-        const refs = await uploadToGeminiFiles([
-          { id: 'composite', imageBase64: compositeImageBase64 },
-          ...images.map((it, i) => ({ id: `img_${i}`, imageBase64: it.base64 })),
-        ]);
-        if (refs && refs.length === images.length + 1) {
-          imageFileUri = refs[0];
-          imagesFileUris = images.map((it, i) => ({ ...refs[i + 1], label: it.label }));
-        }
-      } catch (e) {
-        console.warn('[spin360] file-api upload failed, falling back to base64', e);
-      }
-
-      // Start video generation with all 3 images
+      // Veo's predictLongRunning requires inline bytes; the Files API media
+      // download is unreliable, so we send base64 directly to keep the
+      // identity lock intact.
       const { data: startResult, error: startError } = await supabase.functions.invoke('generate-video', {
         body: {
           action: 'spin360_start',
-          ...(imageFileUri ? { imageFileUri } : { imageBase64: compositeImageBase64 }),
-          ...(imagesFileUris ? { imagesFileUris } : { images }),
+          imageBase64: compositeImageBase64,
+          images,
           prompt: SPIN360_VIDEO_PROMPT,
           jobId: newJobId,
         },
