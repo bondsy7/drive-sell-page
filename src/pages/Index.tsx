@@ -304,9 +304,11 @@ const Index = () => {
       const enriched = await loadProfileIntoDealer(vehicleInfo as VehicleData);
       setVehicleData(enriched);
 
-      // Ensure vehicle row (VIN-keyed) so all downstream assets carry vehicle_id
+      // Ensure vehicle row so all downstream assets carry vehicle_id.
+      // Use Auto-variant: creates a NOVIN-placeholder when PDF has no VIN,
+      // so the project still appears in the Fahrzeuge-Dashboard.
       const vin = (enriched.vehicle as any)?.vin || null;
-      const vehicleId = user ? await ensureVehicle(user.id, vin, enriched) : null;
+      const vehicleId = user ? await ensureVehicleAuto(user.id, vin, enriched) : null;
       setSavedVehicleId(vehicleId);
 
       // Pre-create project so pipeline can use it
