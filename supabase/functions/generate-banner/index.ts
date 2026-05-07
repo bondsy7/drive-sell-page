@@ -338,13 +338,23 @@ async function generateGemini(prompt: string, imageBase64: string | null, logoBa
 
   // 1) FORMAT-Direktive ZUERST (Gemini gewichtet frühe Instruktionen stark)
   if (width && height) {
+    const fillRule = isPortrait
+      ? `- The vehicle MUST fill ~70% of the canvas HEIGHT and be horizontally centered. NO empty cream/white zones above or below the vehicle. Background scene must extend edge-to-edge to all 4 borders.`
+      : isLandscape
+      ? `- The vehicle MUST fill ~75% of the canvas WIDTH. Background scene extends edge-to-edge. NO flat empty bands on left/right sides.`
+      : `- The vehicle MUST fill ~70% of the canvas. Background scene extends edge-to-edge. NO empty borders.`;
     parts.push({
       text:
 `OUTPUT CANVAS (HARD CONSTRAINT — HIGHEST PRIORITY):
 - Aspect ratio: EXACTLY ${aspectLabel} (${width}×${height}px, ${orientationWord}).
 - DO NOT default to 1:1 / square. DO NOT mirror the aspect ratio of the reference vehicle photo.
 - Compose the entire scene (background, vehicle placement, headline, logo, negative space) NATIVELY for a ${aspectLabel} ${orientationWord} canvas.
-- If the reference vehicle image has a different aspect ratio, IGNORE its framing — only its identity matters.`
+- If the reference vehicle image has a different aspect ratio, IGNORE its framing — only its identity matters.
+
+COMPOSITION FILL RULE (NO EMPTY ZONES):
+${fillRule}
+- The padded blurred areas of the reference image are NOT part of the output — they exist only to hint at the target ratio. DO NOT reproduce flat blurred or flat colored bands in the final banner.
+- Every pixel of the output must contribute to the composition: scene, vehicle, typography, lighting or accent. ZERO dead space.`
     });
   }
 
@@ -352,13 +362,13 @@ async function generateGemini(prompt: string, imageBase64: string | null, logoBa
   parts.push({ text: prompt });
 
   // 3) Referenz-Fahrzeug klar als Identitäts-Referenz markieren
-  // Vehicle reference: prefer Files API URI (small payload, no Base64), fallback to inlineData
   const hasVehicleRef = !!vehicleFileRef?.fileUri || !!imageBase64;
   if (hasVehicleRef) {
     parts.push({ text:
 `VEHICLE REFERENCE IMAGE (identity only):
 The next image shows the vehicle. Use it ONLY for identity (model, color, trim, wheels, proportions).
-DO NOT copy its background, lighting, reflections, framing or aspect ratio.` });
+DO NOT copy its background, lighting, reflections, framing or aspect ratio.
+The image may have blurred padding bands around the vehicle — IGNORE those bands, they are only an aspect-ratio hint and are NOT part of the vehicle or final composition.` });
     if (vehicleFileRef?.fileUri) {
       parts.push({ fileData: { fileUri: vehicleFileRef.fileUri, mimeType: vehicleFileRef.mimeType || "image/jpeg" } });
       log?.info("gemini.ref", "vehicle via Files API", { uri: vehicleFileRef.fileUri });
@@ -389,15 +399,17 @@ The logo image follows now:` });
     }
   }
 
-  // Format-Direktive ist bereits als ERSTER Part platziert (siehe oben).
-
-  // Gemini image API is inconsistent with aspect fields across preview models.
-  // Keep ratio control in the first prompt part + pre-padded reference image; post-fit in client preserves final dimensions without crop.
+  // D) Activate native aspectRatio control on gemini-3* preview models via imageConfig.
+  // gemini-3* DO honour imageConfig.aspectRatio. The fast fallback gemini-2.5-flash-image
+  // still ignores it, so the pre-padded blurred reference image (B) remains as a visual anchor.
   const supportsAspectField = /^gemini-3/.test(model);
   const generationConfig: Record<string, unknown> = {
     responseModalities: ["TEXT", "IMAGE"],
     temperature: 0.55,
   };
+  if (supportsAspectField && width && height) {
+    (generationConfig as any).imageConfig = { aspectRatio: aspectLabel };
+  }
 
   // Fail fast on overloaded preview models, then move to the stable Gemini fallback.
   // Give Gemini-3 preview models more headroom — they regularly need 35–55s for 9:16 with reference image.
