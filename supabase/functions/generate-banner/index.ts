@@ -149,60 +149,95 @@ async function authenticateAndDeductCredits(req: Request, cost: number): Promise
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  const reqId = crypto.randomUUID().slice(0, 8);
+  const log = makeLogger(reqId);
   const requestStartedAt = Date.now();
+  let currentStage = "init";
+  let usedModel = "unknown";
+  let usedTier = "unknown";
+  let usedAspect = "unknown";
 
   try {
+    currentStage = "parse_body";
     const { prompt, imageBase64, logoBase64, modelTier, width, height } = await req.json();
     if (!prompt) throw new Error("No prompt provided");
 
     const requestedTier = typeof modelTier === "string" ? modelTier : "qualitaet";
     const tier = requestedTier === "standard" ? "qualitaet" : requestedTier;
     const config = MODEL_MAP[tier] || MODEL_MAP["qualitaet"];
-    console.log(`[banner] Engine=${config.engine} Model=${config.model} Tier=${tier} (user-selected, binding)`);
+    usedModel = config.model;
+    usedTier = tier;
+    usedAspect = width && height ? getGeminiAspectRatio(width, height) : "1:1";
+    log.info("config", "tier+model resolved", {
+      tier, engine: config.engine, model: config.model, cost: config.cost,
+      width, height, aspect: usedAspect,
+      hasImage: !!imageBase64, hasLogo: !!logoBase64,
+      promptChars: prompt.length,
+    });
 
-    // Auth & credits
+    currentStage = "auth_credits";
     const authResult = await authenticateAndDeductCredits(req, config.cost);
-    if (authResult instanceof Response) return authResult;
+    if (authResult instanceof Response) {
+      log.warn("auth_credits", "auth/credits failed", { status: authResult.status });
+      return authResult;
+    }
+    log.info("auth_credits", "ok", { userId: authResult.userId });
 
     let resultImage: string | null = null;
     const maxRetries = 0;
-
     const lockedPrompt = `${prompt}${PROFESSIONAL_BANNER_IMAGE_LOCK}`;
 
     if (config.engine === "gemini") {
-      // STRICT: only use the requested model. Fallback to 2.5-flash-image is
-      // disabled because that model ignores aspectRatio and returns squares,
-      // which breaks user-selected formats (9:16, 16:9, 4:15, etc.).
+      currentStage = "gemini_call";
       const geminiModels = [config.model];
       let lastGeminiError = "";
       for (const geminiModel of geminiModels) {
         try {
-          resultImage = await generateGemini(lockedPrompt, imageBase64, logoBase64, geminiModel, maxRetries, width, height, requestStartedAt);
+          resultImage = await generateGemini(lockedPrompt, imageBase64, logoBase64, geminiModel, maxRetries, width, height, requestStartedAt, log);
           if (resultImage) break;
         } catch (err) {
           lastGeminiError = err instanceof Error ? err.message : "Gemini error";
-          console.warn(`Banner model ${geminiModel} failed, trying fallback if available:`, lastGeminiError);
+          log.warn("gemini_call", "model failed", { model: geminiModel, error: lastGeminiError });
         }
       }
       if (!resultImage && lastGeminiError) throw new Error(lastGeminiError);
     } else {
+      currentStage = "openai_call";
       resultImage = await generateOpenAI(lockedPrompt, imageBase64, logoBase64, config.model, width, height, tier === "ultra" || tier === "neu", maxRetries);
     }
 
     if (!resultImage) throw new Error("Kein Banner generiert. Bitte versuche es erneut.");
 
-    return new Response(JSON.stringify({ imageBase64: resultImage }), {
+    currentStage = "done";
+    log.info("done", "banner generated", { totalMs: log.elapsed() });
+    return new Response(JSON.stringify({ imageBase64: resultImage, debug: { reqId, model: usedModel, tier: usedTier, aspect: usedAspect, totalMs: log.elapsed() } }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    console.error("generate-banner error:", e);
     const msg = e instanceof Error ? e.message : "Unknown error";
     const is503 = /\b503\b|UNAVAILABLE|overloaded|high demand/i.test(msg);
+    const isTimeout = /timeout|aborted/i.test(msg);
+    log.error(currentStage, "request failed", {
+      error: msg, is503, isTimeout, totalMs: Date.now() - requestStartedAt,
+      model: usedModel, tier: usedTier,
+    });
+    const userMsg = is503
+      ? "Der Bild-Generator ist gerade überlastet. Bitte in 1–2 Minuten erneut versuchen."
+      : isTimeout
+      ? `Zeitüberschreitung beim Modell ${usedModel} (${Math.round((Date.now()-requestStartedAt)/1000)}s). Bitte erneut versuchen oder ein anderes Modell wählen.`
+      : msg;
     return new Response(
       JSON.stringify({
-        error: is503
-          ? "Der Bild-Generator ist gerade überlastet. Bitte in 1–2 Minuten erneut versuchen."
-          : msg,
+        error: userMsg,
+        debug: {
+          reqId,
+          stage: currentStage,
+          model: usedModel,
+          tier: usedTier,
+          aspect: usedAspect,
+          totalMs: Date.now() - requestStartedAt,
+          rawError: msg,
+        },
       }),
       { status: is503 ? 503 : 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
