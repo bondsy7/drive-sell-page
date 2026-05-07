@@ -1,7 +1,37 @@
-// generate-banner v3 – uses /v1/images/edits for image input
+// generate-banner v4 – structured logging + stage tracking
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecret } from "../_shared/get-secret.ts";
+
+// ---- Structured logger ----------------------------------------------------
+// Every log line carries a request id + stage so failures are easy to trace
+// in Supabase function logs. The same payload is also returned to the client
+// in error responses (debug field) so the UI can show "where it broke".
+type LogLevel = "info" | "warn" | "error";
+function makeLogger(reqId: string) {
+  const t0 = Date.now();
+  const log = (level: LogLevel, stage: string, msg: string, extra: Record<string, unknown> = {}) => {
+    const line = {
+      reqId,
+      stage,
+      level,
+      ms: Date.now() - t0,
+      msg,
+      ...extra,
+    };
+    const text = `[banner] ${JSON.stringify(line)}`;
+    if (level === "error") console.error(text);
+    else if (level === "warn") console.warn(text);
+    else console.log(text);
+  };
+  return {
+    info:  (stage: string, msg: string, extra?: Record<string, unknown>) => log("info",  stage, msg, extra),
+    warn:  (stage: string, msg: string, extra?: Record<string, unknown>) => log("warn",  stage, msg, extra),
+    error: (stage: string, msg: string, extra?: Record<string, unknown>) => log("error", stage, msg, extra),
+    elapsed: () => Date.now() - t0,
+  };
+}
+type Logger = ReturnType<typeof makeLogger>;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -119,60 +149,95 @@ async function authenticateAndDeductCredits(req: Request, cost: number): Promise
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  const reqId = crypto.randomUUID().slice(0, 8);
+  const log = makeLogger(reqId);
   const requestStartedAt = Date.now();
+  let currentStage = "init";
+  let usedModel = "unknown";
+  let usedTier = "unknown";
+  let usedAspect = "unknown";
 
   try {
+    currentStage = "parse_body";
     const { prompt, imageBase64, logoBase64, modelTier, width, height } = await req.json();
     if (!prompt) throw new Error("No prompt provided");
 
     const requestedTier = typeof modelTier === "string" ? modelTier : "qualitaet";
     const tier = requestedTier === "standard" ? "qualitaet" : requestedTier;
     const config = MODEL_MAP[tier] || MODEL_MAP["qualitaet"];
-    console.log(`[banner] Engine=${config.engine} Model=${config.model} Tier=${tier} (user-selected, binding)`);
+    usedModel = config.model;
+    usedTier = tier;
+    usedAspect = width && height ? getGeminiAspectRatio(width, height) : "1:1";
+    log.info("config", "tier+model resolved", {
+      tier, engine: config.engine, model: config.model, cost: config.cost,
+      width, height, aspect: usedAspect,
+      hasImage: !!imageBase64, hasLogo: !!logoBase64,
+      promptChars: prompt.length,
+    });
 
-    // Auth & credits
+    currentStage = "auth_credits";
     const authResult = await authenticateAndDeductCredits(req, config.cost);
-    if (authResult instanceof Response) return authResult;
+    if (authResult instanceof Response) {
+      log.warn("auth_credits", "auth/credits failed", { status: authResult.status });
+      return authResult;
+    }
+    log.info("auth_credits", "ok", { userId: authResult.userId });
 
     let resultImage: string | null = null;
     const maxRetries = 0;
-
     const lockedPrompt = `${prompt}${PROFESSIONAL_BANNER_IMAGE_LOCK}`;
 
     if (config.engine === "gemini") {
-      // STRICT: only use the requested model. Fallback to 2.5-flash-image is
-      // disabled because that model ignores aspectRatio and returns squares,
-      // which breaks user-selected formats (9:16, 16:9, 4:15, etc.).
+      currentStage = "gemini_call";
       const geminiModels = [config.model];
       let lastGeminiError = "";
       for (const geminiModel of geminiModels) {
         try {
-          resultImage = await generateGemini(lockedPrompt, imageBase64, logoBase64, geminiModel, maxRetries, width, height, requestStartedAt);
+          resultImage = await generateGemini(lockedPrompt, imageBase64, logoBase64, geminiModel, maxRetries, width, height, requestStartedAt, log);
           if (resultImage) break;
         } catch (err) {
           lastGeminiError = err instanceof Error ? err.message : "Gemini error";
-          console.warn(`Banner model ${geminiModel} failed, trying fallback if available:`, lastGeminiError);
+          log.warn("gemini_call", "model failed", { model: geminiModel, error: lastGeminiError });
         }
       }
       if (!resultImage && lastGeminiError) throw new Error(lastGeminiError);
     } else {
+      currentStage = "openai_call";
       resultImage = await generateOpenAI(lockedPrompt, imageBase64, logoBase64, config.model, width, height, tier === "ultra" || tier === "neu", maxRetries);
     }
 
     if (!resultImage) throw new Error("Kein Banner generiert. Bitte versuche es erneut.");
 
-    return new Response(JSON.stringify({ imageBase64: resultImage }), {
+    currentStage = "done";
+    log.info("done", "banner generated", { totalMs: log.elapsed() });
+    return new Response(JSON.stringify({ imageBase64: resultImage, debug: { reqId, model: usedModel, tier: usedTier, aspect: usedAspect, totalMs: log.elapsed() } }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    console.error("generate-banner error:", e);
     const msg = e instanceof Error ? e.message : "Unknown error";
     const is503 = /\b503\b|UNAVAILABLE|overloaded|high demand/i.test(msg);
+    const isTimeout = /timeout|aborted/i.test(msg);
+    log.error(currentStage, "request failed", {
+      error: msg, is503, isTimeout, totalMs: Date.now() - requestStartedAt,
+      model: usedModel, tier: usedTier,
+    });
+    const userMsg = is503
+      ? "Der Bild-Generator ist gerade überlastet. Bitte in 1–2 Minuten erneut versuchen."
+      : isTimeout
+      ? `Zeitüberschreitung beim Modell ${usedModel} (${Math.round((Date.now()-requestStartedAt)/1000)}s). Bitte erneut versuchen oder ein anderes Modell wählen.`
+      : msg;
     return new Response(
       JSON.stringify({
-        error: is503
-          ? "Der Bild-Generator ist gerade überlastet. Bitte in 1–2 Minuten erneut versuchen."
-          : msg,
+        error: userMsg,
+        debug: {
+          reqId,
+          stage: currentStage,
+          model: usedModel,
+          tier: usedTier,
+          aspect: usedAspect,
+          totalMs: Date.now() - requestStartedAt,
+          rawError: msg,
+        },
       }),
       { status: is503 ? 503 : 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
@@ -214,9 +279,10 @@ async function toInlineData(input: string | null | undefined, fallbackMime = "im
   return { mimeType: mime, data };
 }
 
-async function generateGemini(prompt: string, imageBase64: string | null, logoBase64: string | null, model: string, retries: number, width?: number, height?: number, requestStartedAt = Date.now()): Promise<string | null> {
+async function generateGemini(prompt: string, imageBase64: string | null, logoBase64: string | null, model: string, retries: number, width?: number, height?: number, requestStartedAt = Date.now(), log?: Logger): Promise<string | null> {
   const apiKey = await getSecret("GEMINI_API_KEY");
   if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
+  log?.info("gemini.prep", "preparing request", { model });
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
@@ -286,10 +352,12 @@ The logo image follows now:` });
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     let timeoutMs = modelBudgetMs;
+    const callStart = Date.now();
     try {
       const remainingMs = EDGE_DEADLINE_MS - (Date.now() - requestStartedAt);
       if (remainingMs < 12_000) throw new Error("Banner generation deadline reached before model fallback");
       timeoutMs = Math.max(8_000, Math.min(modelBudgetMs, remainingMs - 5_000));
+      log?.info("gemini.fetch", "calling Gemini", { model, attempt: attempt + 1, timeoutMs, aspect: aspectLabel, parts: parts.length });
       const response = await fetchWithTimeout(url, {
         method: "POST",
         headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
@@ -301,7 +369,7 @@ The logo image follows now:` });
 
       if (!response.ok) {
         const errText = await response.text();
-        console.error(`Gemini banner attempt ${attempt + 1}:`, response.status, errText);
+        log?.error("gemini.http", "non-OK response", { model, attempt: attempt + 1, status: response.status, durationMs: Date.now() - callStart, body: errText.slice(0, 500) });
         if ([400, 401, 403].includes(response.status) && /API_KEY_INVALID|API Key not found|invalid api key/i.test(errText)) {
           throw new Error("GEMINI_API_KEY ungültig oder nicht für Gemini freigeschaltet");
         }
@@ -310,29 +378,32 @@ The logo image follows now:` });
           continue;
         }
         if (attempt < retries) { await new Promise(r => setTimeout(r, 1500)); continue; }
-        throw new Error(`Gemini error: ${response.status}`);
+        throw new Error(`Gemini ${response.status}: ${errText.slice(0, 200)}`);
       }
 
       const data = await response.json();
       const respParts = data.candidates?.[0]?.content?.parts;
+      const finishReason = data.candidates?.[0]?.finishReason;
+      log?.info("gemini.parse", "response received", { model, durationMs: Date.now() - callStart, finishReason, hasParts: !!respParts, partsCount: respParts?.length || 0 });
       if (!respParts) {
         if (attempt < retries) { await new Promise(r => setTimeout(r, 1500)); continue; }
-        throw new Error("No banner generated (Gemini)");
+        throw new Error(`Kein Bild von Gemini (finishReason=${finishReason || "unknown"})`);
       }
 
       for (const part of respParts) {
         if (part.inlineData?.data) {
           const mime = part.inlineData.mimeType || "image/png";
+          log?.info("gemini.success", "image extracted", { model, mime, bytes: part.inlineData.data.length });
           return `data:${mime};base64,${part.inlineData.data}`;
         }
       }
 
       if (attempt < retries) { await new Promise(r => setTimeout(r, 1500)); continue; }
-      throw new Error("No image data in Gemini response");
+      throw new Error("Gemini-Antwort enthält kein Bild");
     } catch (e: any) {
       const isAbort = e?.name === "AbortError";
-      console.error(`Gemini banner attempt ${attempt + 1} failed${isAbort ? " (timeout)" : ""}:`, e?.message);
-      if (attempt >= retries) throw isAbort ? new Error(`Gemini timeout (${Math.round(timeoutMs/1000)}s)`) : e;
+      log?.error("gemini.exception", isAbort ? "timeout" : "exception", { model, attempt: attempt + 1, durationMs: Date.now() - callStart, error: e?.message, isAbort });
+      if (attempt >= retries) throw isAbort ? new Error(`Gemini timeout (${Math.round(timeoutMs/1000)}s) bei Modell ${model}`) : e;
       await new Promise(r => setTimeout(r, 1500));
     }
   }

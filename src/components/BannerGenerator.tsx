@@ -709,6 +709,8 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
         ? await padToAspectRatio(vehicleImage, targetRatio).catch(() => vehicleImage)
         : vehicleImage;
 
+      const t0 = Date.now();
+      console.log(`[banner-client] → invoke generate-banner`, { formatId, ratio: fmt.ratio, w: fmt.w, h: fmt.h, modelTier, hasImage: !!preparedImage, hasLogo: !!(showLogo && logoBase64) });
       const { data, error } = await supabase.functions.invoke('generate-banner', {
         body: {
           prompt,
@@ -719,11 +721,18 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
           height: fmt.h,
         },
       });
+      const dur = Date.now() - t0;
       if (error || data?.error) {
         if (data?.error === 'insufficient_credits') throw new Error('insufficient_credits');
+        const dbg = data?.debug;
+        const stageInfo = dbg ? ` [Stage: ${dbg.stage} · Model: ${dbg.model} · ${Math.round(dbg.totalMs/1000)}s]` : '';
+        const errMsg = (data?.error || error?.message || 'Unbekannter Fehler') + stageInfo;
+        console.error(`[banner-client] ✗ ${formatId} failed after ${dur}ms`, { error: data?.error || error?.message, debug: dbg });
+        toast.error(`Banner ${fmt.label} fehlgeschlagen`, { description: errMsg });
         return null;
       }
       if (data?.imageBase64) {
+        console.log(`[banner-client] ✓ ${formatId} ok in ${dur}ms`, data?.debug);
         // CONTAIN-fit: only adds neutral bars if the model returned an off ratio.
         // No content is ever cropped away.
         const fitted = await fitImageToSize(data.imageBase64, fmt.w, fmt.h).catch(() => data.imageBase64);
@@ -731,7 +740,8 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
       }
     } catch (e: any) {
       if (e?.message === 'insufficient_credits') throw e;
-      console.error(`Banner ${formatId} failed:`, e);
+      console.error(`[banner-client] ✗ ${formatId} exception:`, e);
+      toast.error(`Banner ${fmt.label} fehlgeschlagen`, { description: e?.message || 'Unbekannter Fehler' });
     }
     return null;
   }, [buildPromptForFormat, vehicleImage, showLogo, logoBase64, modelTier]);
