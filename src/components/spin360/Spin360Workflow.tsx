@@ -218,9 +218,10 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
       }
 
       // Create spin job with video mode
+      const effectiveVehicleId = await ensureSpinVehicleId();
       const { data: job, error: jobErr } = await supabase
         .from('spin360_jobs' as any)
-        .insert({ user_id: user.id, vehicle_id: vehicleId || null, status: 'generating_video', target_frame_count: 60 } as any)
+        .insert({ user_id: user.id, vehicle_id: effectiveVehicleId, status: 'generating_video', target_frame_count: 60 } as any)
         .select('id').single();
 
       if (jobErr || !job) {
