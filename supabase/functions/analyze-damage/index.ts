@@ -243,8 +243,8 @@ serve(async (req) => {
       });
     }
 
-    // Cost: 2 credits per image (analysis + annotation)
-    const cost = images.length * 2;
+    // Cost: 1 credit per image (analysis only — annotation runs in separate function)
+    const cost = images.length * 1;
     const auth = await authAndDeduct(req, cost);
     if (auth instanceof Response) return auth;
 
@@ -264,19 +264,8 @@ serve(async (req) => {
     const analysis = await callGeminiAnalysis(GEMINI_API_KEY, infoLines, anlass || "", images);
     console.log(`[analyze-damage] ${analysis.schaeden?.length || 0} Schäden erkannt`);
 
-    // Annotate each image with its assigned damages (parallel, max 3)
-    const annotatedImages: (string | null)[] = new Array(images.length).fill(null);
-    const queue: number[] = images.map((_: string, i: number) => i);
-    const workers = Array.from({ length: Math.min(3, queue.length) }, async () => {
-      while (queue.length > 0) {
-        const idx = queue.shift()!;
-        const damagesForImage = (analysis.schaeden || []).filter((s: any) => s.bildIndex === idx);
-        annotatedImages[idx] = await annotateImage(GEMINI_API_KEY, images[idx], damagesForImage);
-      }
-    });
-    await Promise.all(workers);
-
-    return new Response(JSON.stringify({ analysis, annotatedImages, cost }), {
+    // Annotation runs in separate edge function per image (annotate-damage-image)
+    return new Response(JSON.stringify({ analysis, cost }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
