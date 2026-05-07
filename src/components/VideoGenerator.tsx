@@ -29,6 +29,50 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
+/**
+ * Crop/pad an image data URL to a target aspect ratio.
+ * Veo image-to-video derives the output aspect from the input image — so we
+ * must pre-shape the image to match the user-selected format (16:9 or 9:16).
+ * Strategy: cover-crop (fill the target frame, crop overflow) — keeps the car
+ * dominant and avoids letterboxing.
+ */
+async function cropImageToAspect(dataUrl: string, aspect: '16:9' | '9:16'): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const targetRatio = aspect === '16:9' ? 16 / 9 : 9 / 16;
+      // Pick canvas size: keep largest dimension up to 1280
+      const maxDim = 1280;
+      let cw: number, ch: number;
+      if (targetRatio >= 1) { cw = maxDim; ch = Math.round(maxDim / targetRatio); }
+      else { ch = maxDim; cw = Math.round(maxDim * targetRatio); }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = cw; canvas.height = ch;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { resolve(dataUrl); return; }
+
+      // Cover-fit: scale image to fill canvas, crop overflow
+      const srcRatio = img.width / img.height;
+      let sx = 0, sy = 0, sw = img.width, sh = img.height;
+      if (srcRatio > targetRatio) {
+        // source wider than target → crop sides
+        sw = img.height * targetRatio;
+        sx = (img.width - sw) / 2;
+      } else if (srcRatio < targetRatio) {
+        // source taller than target → crop top/bottom
+        sh = img.width / targetRatio;
+        sy = (img.height - sh) / 2;
+      }
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, cw, ch);
+      resolve(canvas.toDataURL('image/jpeg', 0.92));
+    };
+    img.onerror = reject;
+    img.src = dataUrl;
+  });
+}
+
 const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onBack, preloadedImage, vehicleId }) => {
   const [imageBase64, setImageBase64] = useState<string | null>(preloadedImage || null);
   const [videoState, setVideoState] = useState<VideoState>('idle');
@@ -100,10 +144,15 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onBack, preloadedImage,
     setPollProgress(0);
 
     try {
+      // Pre-crop the source image to the requested aspect — Veo uses the
+      // input image's aspect for image-to-video and otherwise ignores the
+      // aspectRatio parameter, producing the wrong format.
+      const shapedImage = await cropImageToAspect(imageBase64, aspectRatio);
+
       const { data, error } = await supabase.functions.invoke('generate-video', {
         body: {
           action: 'start',
-          imageBase64,
+          imageBase64: shapedImage,
           prompt: customPrompt || undefined,
           aspectRatio,
         },
