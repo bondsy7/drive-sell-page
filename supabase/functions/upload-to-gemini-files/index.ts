@@ -13,6 +13,8 @@ interface InImage {
   imageBase64: string;
   /** Optional display name */
   displayName?: string;
+  /** Optional explicit mime type override (e.g. application/pdf) */
+  mimeType?: string;
 }
 
 interface OutFile {
