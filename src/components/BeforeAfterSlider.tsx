@@ -25,7 +25,7 @@ const BeforeAfterSlider: React.FC<Props> = ({
 
   const handleDown = (e: React.PointerEvent) => {
     dragging.current = true;
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    ref.current?.setPointerCapture(e.pointerId);
     updateFromClientX(e.clientX);
   };
   const handleMove = (e: React.PointerEvent) => {
@@ -35,48 +35,50 @@ const BeforeAfterSlider: React.FC<Props> = ({
   const handleUp = () => { dragging.current = false; };
 
   return (
-    <div
-      ref={ref}
-      onPointerDown={handleDown}
-      onPointerMove={handleMove}
-      onPointerUp={handleUp}
-      onPointerCancel={handleUp}
-      className={cn('relative w-full overflow-hidden rounded-xl bg-muted select-none touch-none cursor-ew-resize', className)}
-    >
-      <img src={afterSrc} alt={afterLabel} className="block w-full h-auto pointer-events-none" draggable={false} />
+    <div className={cn('relative w-full overflow-hidden rounded-xl bg-muted', className)}>
       <div
-        className="absolute inset-0 overflow-hidden pointer-events-none"
-        style={{ width: `${pos}%` }}
+        ref={ref}
+        onPointerDown={handleDown}
+        onPointerMove={handleMove}
+        onPointerUp={handleUp}
+        onPointerLeave={handleUp}
+        onPointerCancel={handleUp}
+        className="relative aspect-[4/3] max-h-[inherit] w-full select-none touch-none cursor-ew-resize"
       >
-        <img
-          src={beforeSrc}
-          alt={beforeLabel}
-          className="block h-full w-auto max-w-none object-cover"
-          style={{ width: ref.current?.offsetWidth || '100%', maxWidth: 'none' }}
-          draggable={false}
-        />
-      </div>
-
-      <div
-        className="absolute top-0 bottom-0 w-0.5 bg-background shadow-[0_0_0_1px_rgba(0,0,0,0.3)] pointer-events-none"
-        style={{ left: `${pos}%`, transform: 'translateX(-50%)' }}
-      >
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-background shadow-lg flex items-center justify-center border border-border">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-foreground">
-            <polyline points="15 18 9 12 15 6" />
-            <polyline points="9 18 3 12 9 6" style={{ display: 'none' }} />
-          </svg>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-foreground -ml-1">
-            <polyline points="9 6 15 12 9 18" />
-          </svg>
+        <img src={afterSrc} alt={afterLabel} className="absolute inset-0 h-full w-full object-contain pointer-events-none" draggable={false} />
+        <div
+          className="absolute inset-y-0 left-0 overflow-hidden pointer-events-none"
+          style={{ width: `${pos}%` }}
+        >
+          <img
+            src={beforeSrc}
+            alt={beforeLabel}
+            className="absolute inset-0 h-full w-full max-w-none object-contain"
+            style={{ width: ref.current?.clientWidth || '100%' }}
+            draggable={false}
+          />
         </div>
-      </div>
 
-      <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-background/85 backdrop-blur text-[11px] font-semibold text-foreground pointer-events-none">
-        {beforeLabel}
-      </div>
-      <div className="absolute top-2 right-2 px-2 py-0.5 rounded bg-background/85 backdrop-blur text-[11px] font-semibold text-foreground pointer-events-none">
-        {afterLabel}
+        <div
+          className="absolute top-0 bottom-0 w-0.5 bg-background shadow-[0_0_0_1px_rgba(0,0,0,0.3)] pointer-events-none"
+          style={{ left: `${pos}%`, transform: 'translateX(-50%)' }}
+        >
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-background shadow-lg flex items-center justify-center border border-border">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-foreground">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-foreground -ml-1">
+              <polyline points="9 6 15 12 9 18" />
+            </svg>
+          </div>
+        </div>
+
+        <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-background/85 backdrop-blur text-[11px] font-semibold text-foreground pointer-events-none">
+          {beforeLabel}
+        </div>
+        <div className="absolute top-2 right-2 px-2 py-0.5 rounded bg-background/85 backdrop-blur text-[11px] font-semibold text-foreground pointer-events-none">
+          {afterLabel}
+        </div>
       </div>
     </div>
   );
