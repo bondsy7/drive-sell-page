@@ -448,8 +448,16 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
     if (newOnes.length === 0) return;
     setClassifying(true);
     try {
+      // Pre-upload to Gemini File API to drastically shrink request payload.
+      const refs = await uploadToGeminiFiles(
+        newOnes.map((i) => ({ id: i.id, imageBase64: i.base64 })),
+      );
+      const payloadImages = newOnes.map((i, idx) => {
+        const ref = refs?.[idx];
+        return ref ? { id: i.id, fileUri: ref } : { id: i.id, imageBase64: i.base64 };
+      });
       const { data, error } = await supabase.functions.invoke('classify-vehicle-images', {
-        body: { images: newOnes.map((i) => ({ id: i.id, imageBase64: i.base64 })) },
+        body: { images: payloadImages },
       });
       if (error || data?.error) {
         toast.error('Klassifikation fehlgeschlagen', { description: data?.error || error?.message });
