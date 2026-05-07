@@ -57,7 +57,8 @@ const MODEL_MAP: Record<string, ModelConfig> = {
   pro:       { engine: "gemini", model: "gemini-3-pro-image-preview", cost: 8 },
 };
 
-const EDGE_DEADLINE_MS = 145_000;
+const EDGE_DEADLINE_MS = 120_000;
+const GEMINI_FAST_FALLBACK = "gemini-2.5-flash-image";
 
 const PROFESSIONAL_BANNER_IMAGE_LOCK = `
 
@@ -109,7 +110,7 @@ function createServiceClient() {
   );
 }
 
-async function authenticateAndDeductCredits(req: Request, cost: number): Promise<{ userId: string } | Response> {
+async function authenticateAndCheckCredits(req: Request, cost: number): Promise<{ userId: string } | Response> {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) {
     return new Response(JSON.stringify({ error: "Nicht authentifiziert" }), {
@@ -128,22 +129,47 @@ async function authenticateAndDeductCredits(req: Request, cost: number): Promise
     });
   }
   const serviceSb = createServiceClient();
-  const { data: result, error: deductError } = await serviceSb.rpc("deduct_credits", {
-    _user_id: userId, _amount: cost, _action_type: "image_generate",
-    _description: `Banner-Generierung (${cost} Cr.)`,
-  });
-  if (deductError) {
-    return new Response(JSON.stringify({ error: "Credit-Fehler: " + deductError.message }), {
+  const { data: balanceRow, error: balanceError } = await serviceSb
+    .from("credit_balances")
+    .select("balance")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (balanceError) {
+    return new Response(JSON.stringify({ error: "Credit-Fehler: " + balanceError.message }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-  const r = result as any;
-  if (!r?.success) {
-    return new Response(JSON.stringify({ error: "insufficient_credits", balance: r?.balance || 0, cost: r?.cost || cost }), {
+  const balance = balanceRow?.balance ?? 10;
+  if (balance < cost) {
+    return new Response(JSON.stringify({ error: "insufficient_credits", balance, cost }), {
       status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
   return { userId };
+}
+
+async function deductCreditsAfterSuccess(userId: string, cost: number, model: string) {
+  const serviceSb = createServiceClient();
+  const { data: result, error } = await serviceSb.rpc("deduct_credits", {
+    _user_id: userId,
+    _amount: cost,
+    _action_type: "image_generate",
+    _model: model,
+    _description: `Banner-Generierung (${cost} Cr.)`,
+  });
+  if (error) throw new Error(`Credit deduction failed: ${error.message}`);
+  const r = result as any;
+  if (!r?.success) throw new Error(r?.error === "insufficient_credits" ? "insufficient_credits" : r?.error || "Credit deduction failed");
+  return r;
+}
+
+function getGeminiModelChain(model: string): string[] {
+  const chains: Record<string, string[]> = {
+    "gemini-3-pro-image-preview": ["gemini-3-pro-image-preview", GEMINI_FAST_FALLBACK],
+    "gemini-3.1-flash-image-preview": ["gemini-3.1-flash-image-preview", GEMINI_FAST_FALLBACK],
+    [GEMINI_FAST_FALLBACK]: [GEMINI_FAST_FALLBACK, "gemini-3.1-flash-image-preview"],
+  };
+  return Array.from(new Set(chains[model] || [model, GEMINI_FAST_FALLBACK])).slice(0, 2);
 }
 
 serve(async (req) => {
@@ -156,6 +182,7 @@ serve(async (req) => {
   let usedModel = "unknown";
   let usedTier = "unknown";
   let usedAspect = "unknown";
+  let authedUserId = "";
 
   try {
     currentStage = "parse_body";
@@ -176,12 +203,13 @@ serve(async (req) => {
     });
 
     currentStage = "auth_credits";
-    const authResult = await authenticateAndDeductCredits(req, config.cost);
+    const authResult = await authenticateAndCheckCredits(req, config.cost);
     if (authResult instanceof Response) {
       log.warn("auth_credits", "auth/credits failed", { status: authResult.status });
       return authResult;
     }
-    log.info("auth_credits", "ok", { userId: authResult.userId });
+    authedUserId = authResult.userId;
+    log.info("auth_credits", "ok - credits checked, charge after success", { userId: authedUserId });
 
     let resultImage: string | null = null;
     const maxRetries = 0;
@@ -189,13 +217,10 @@ serve(async (req) => {
 
     if (config.engine === "gemini") {
       currentStage = "gemini_call";
-      // Format-preserving fallback chain: stay on gemini-3* models so aspectRatio is honored.
-      const geminiModels: string[] = [config.model];
-      if (config.model === "gemini-3.1-flash-image-preview") {
-        geminiModels.push("gemini-3-pro-image-preview");
-      } else if (config.model === "gemini-3-pro-image-preview") {
-        geminiModels.push("gemini-3.1-flash-image-preview");
-      }
+      // Reliability-first same-engine fallback: first try the selected tier, then a fast Gemini fallback.
+      // This avoids minutes of waiting when both Gemini 3 preview models are overloaded.
+      const geminiModels = getGeminiModelChain(config.model);
+      log.info("gemini_call", "model chain", { selectedModel: config.model, chain: geminiModels });
       let lastGeminiError = "";
       for (const geminiModel of geminiModels) {
         try {
@@ -204,7 +229,8 @@ serve(async (req) => {
           if (resultImage) break;
         } catch (err) {
           lastGeminiError = err instanceof Error ? err.message : "Gemini error";
-          log.warn("gemini_call", "model failed, trying next", { model: geminiModel, error: lastGeminiError });
+          const hasNext = geminiModels.indexOf(geminiModel) < geminiModels.length - 1;
+          log.warn("gemini_call", hasNext ? "model failed, trying next" : "model failed, no fallback left", { model: geminiModel, error: lastGeminiError });
         }
       }
       if (!resultImage && lastGeminiError) throw new Error(lastGeminiError);
@@ -214,6 +240,10 @@ serve(async (req) => {
     }
 
     if (!resultImage) throw new Error("Kein Banner generiert. Bitte versuche es erneut.");
+
+    currentStage = "credit_capture";
+    const charge = await deductCreditsAfterSuccess(authedUserId, config.cost, usedModel);
+    log.info("credit_capture", "charged after successful generation", { cost: config.cost, balance: charge?.balance, model: usedModel });
 
     currentStage = "done";
     log.info("done", "banner generated", { totalMs: log.elapsed() });
@@ -233,6 +263,7 @@ serve(async (req) => {
       : isTimeout
       ? `Zeitüberschreitung beim Modell ${usedModel} (${Math.round((Date.now()-requestStartedAt)/1000)}s). Bitte erneut versuchen oder ein anderes Modell wählen.`
       : msg;
+    const status = is503 ? 503 : isTimeout ? 504 : 500;
     return new Response(
       JSON.stringify({
         error: userMsg,
@@ -246,7 +277,7 @@ serve(async (req) => {
           rawError: msg,
         },
       }),
-      { status: is503 ? 503 : 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
@@ -344,19 +375,16 @@ The logo image follows now:` });
 
   // Format-Direktive ist bereits als ERSTER Part platziert (siehe oben).
 
-  // gemini-3* image models support imageConfig.aspectRatio; older 2.5 ignores it
+  // Gemini image API is inconsistent with aspect fields across preview models.
+  // Keep ratio control in the first prompt part + pre-padded reference image; post-fit in client preserves final dimensions without crop.
   const supportsAspectField = /^gemini-3/.test(model);
   const generationConfig: Record<string, unknown> = {
     responseModalities: ["TEXT", "IMAGE"],
-    temperature: 0.7,
+    temperature: 0.55,
   };
-  if (supportsAspectField && width && height) {
-    (generationConfig as any).imageConfig = { aspectRatio: aspectLabel };
-  }
 
-  // Stay well below Lovable Cloud's 150s idle limit. gemini-3.1-flash-image regularly needs 35-55s
-  // for portrait/landscape with reference image — give it enough headroom.
-  const modelBudgetMs = /^gemini-3-pro/.test(model) ? 75_000 : /^gemini-3/.test(model) ? 70_000 : 45_000;
+  // Fail fast on overloaded preview models, then move to the stable Gemini fallback.
+  const modelBudgetMs = model === GEMINI_FAST_FALLBACK ? 55_000 : /^gemini-3/.test(model) ? 38_000 : 45_000;
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     let timeoutMs = modelBudgetMs;
@@ -365,7 +393,7 @@ The logo image follows now:` });
       const remainingMs = EDGE_DEADLINE_MS - (Date.now() - requestStartedAt);
       if (remainingMs < 12_000) throw new Error("Banner generation deadline reached before model fallback");
       timeoutMs = Math.max(8_000, Math.min(modelBudgetMs, remainingMs - 5_000));
-      log?.info("gemini.fetch", "calling Gemini", { model, attempt: attempt + 1, timeoutMs, aspect: aspectLabel, parts: parts.length });
+      log?.info("gemini.fetch", "calling Gemini", { model, attempt: attempt + 1, timeoutMs, aspect: aspectLabel, hasAspectField: false, supportsAspectField, parts: parts.length });
       const response = await fetchWithTimeout(url, {
         method: "POST",
         headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
