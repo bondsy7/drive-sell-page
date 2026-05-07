@@ -137,7 +137,25 @@ serve(async (req) => {
     let resultImage: string | null = null;
     const maxRetries = 0;
 
-    const lockedPrompt = `${prompt}${PROFESSIONAL_BANNER_IMAGE_LOCK}`;
+    // STEP 1: Describe the vehicle via Vision (text-only) so we don't have to
+    // pass the vehicle image into the image generator. Passing a non-square
+    // input image biases Gemini image models to copy that input ratio and
+    // ignore aspectRatio. Logo stays as image (small, 1:1, doesn't bias).
+    let vehicleDescription = "";
+    if (imageBase64) {
+      try {
+        vehicleDescription = await describeVehicle(imageBase64);
+        console.log(`[banner] Vehicle description (${vehicleDescription.length} chars):`, vehicleDescription.slice(0, 200));
+      } catch (descErr) {
+        console.warn("[banner] Vehicle description failed, continuing without:", descErr);
+      }
+    }
+
+    const vehicleBlock = vehicleDescription
+      ? `\n\nVEHICLE TO RENDER (exact identity — reproduce faithfully from this description, do NOT invent a different car):\n${vehicleDescription}\n\nRender this exact vehicle freshly composed inside the NEW banner scene. Adapt the vehicle (angle, scale, lighting, shadows, reflections) to the banner format and environment — never adapt the banner format to the vehicle. The banner aspect ratio is fixed and must dominate composition.`
+      : "";
+
+    const lockedPrompt = `${prompt}${vehicleBlock}${PROFESSIONAL_BANNER_IMAGE_LOCK}`;
 
     if (config.engine === "gemini") {
       // Primary = user-selected model. If it times out / 503s, fall back to
@@ -152,7 +170,9 @@ serve(async (req) => {
       let lastGeminiError = "";
       for (const geminiModel of geminiModels) {
         try {
-          resultImage = await generateGemini(lockedPrompt, imageBase64, logoBase64, geminiModel, maxRetries, width, height, requestStartedAt);
+          // NOTE: imageBase64 intentionally NOT passed — vehicle is described in prompt instead
+          // so the image model is not biased to copy the input photo's aspect ratio.
+          resultImage = await generateGemini(lockedPrompt, null, logoBase64, geminiModel, maxRetries, width, height, requestStartedAt);
           if (resultImage) break;
         } catch (err) {
           lastGeminiError = err instanceof Error ? err.message : "Gemini error";
@@ -161,6 +181,7 @@ serve(async (req) => {
       }
       if (!resultImage && lastGeminiError) throw new Error(lastGeminiError);
     } else {
+      // OpenAI gpt-image-* uses fixed `size` param so input image doesn't break the ratio.
       resultImage = await generateOpenAI(lockedPrompt, imageBase64, logoBase64, config.model, width, height, tier === "ultra" || tier === "neu", maxRetries);
     }
 
@@ -217,6 +238,30 @@ async function toInlineData(input: string | null | undefined, fallbackMime = "im
     : fallbackMime;
   const data = input.includes(",") ? input.split(",")[1] : input;
   return { mimeType: mime, data };
+}
+
+async function describeVehicle(imageBase64: string): Promise<string> {
+  const apiKey = await getSecret("GEMINI_API_KEY");
+  if (!apiKey) return "";
+  const inline = await toInlineData(imageBase64, "image/jpeg");
+  if (!inline) return "";
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`;
+  const res = await fetchWithTimeout(url, {
+    method: "POST",
+    headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{
+        parts: [
+          { text: `Describe ONLY the vehicle in this photo for a photorealistic re-render. Be precise and concise (max 180 words). Cover: make/model if visible, exact body type, exact body colour (incl. finish: metallic/matte/pearl), wheel design + colour + size, headlight & taillight shape and signature, grille design, badges, ride height, visible trim/spoilers, side profile, and any distinctive details. NO scene, NO background, NO lighting, NO mood. Just the car as identity reference.` },
+          { inlineData: inline },
+        ],
+      }],
+      generationConfig: { temperature: 0.2, maxOutputTokens: 400 },
+    }),
+  }, 25_000);
+  if (!res.ok) { console.warn("[banner] describeVehicle failed:", res.status); return ""; }
+  const data = await res.json();
+  return (data.candidates?.[0]?.content?.parts?.map((p: any) => p.text).filter(Boolean).join(" ") || "").trim();
 }
 
 async function generateGemini(prompt: string, imageBase64: string | null, logoBase64: string | null, model: string, retries: number, width?: number, height?: number, requestStartedAt = Date.now()): Promise<string | null> {
