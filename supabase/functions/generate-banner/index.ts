@@ -279,9 +279,10 @@ async function toInlineData(input: string | null | undefined, fallbackMime = "im
   return { mimeType: mime, data };
 }
 
-async function generateGemini(prompt: string, imageBase64: string | null, logoBase64: string | null, model: string, retries: number, width?: number, height?: number, requestStartedAt = Date.now()): Promise<string | null> {
+async function generateGemini(prompt: string, imageBase64: string | null, logoBase64: string | null, model: string, retries: number, width?: number, height?: number, requestStartedAt = Date.now(), log?: Logger): Promise<string | null> {
   const apiKey = await getSecret("GEMINI_API_KEY");
   if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
+  log?.info("gemini.prep", "preparing request", { model });
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
