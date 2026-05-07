@@ -11,6 +11,7 @@ import Spin360Progress, { type SpinStep } from './Spin360Progress';
 import Spin360Viewer from './Spin360Viewer';
 import Video2FramesProcessor from './Video2FramesProcessor';
 import { uploadImageToStorage } from '@/lib/storage-utils';
+import { ensureVehicleAuto } from '@/lib/vehicle-utils';
 
 interface Spin360WorkflowProps {
   onBack: () => void;
