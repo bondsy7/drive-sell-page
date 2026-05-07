@@ -314,7 +314,7 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
       console.error('Video2Frames error:', err);
       setJobStatus('failed'); setJobError('Unerwarteter Fehler'); setIsProcessing(false);
     }
-  }, [user, uploadedSlots, pollVideoOperation]);
+  }, [user, uploadedSlots, pollVideoOperation, ensureSpinVehicleId]);
 
   const startProcessing = useCallback(() => {
     if (spinMode === 'video2frames') startVideo2Frames();
