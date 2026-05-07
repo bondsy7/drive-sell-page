@@ -319,6 +319,51 @@ export type Database = {
         }
         Relationships: []
       }
+      damage_reports: {
+        Row: {
+          analysis: Json
+          anlass: string | null
+          created_at: string
+          id: string
+          images: Json
+          kosten_realistisch_brutto: number | null
+          schaden_count: number
+          schweregrad: string | null
+          title: string
+          updated_at: string
+          user_id: string
+          vehicle_info: Json
+        }
+        Insert: {
+          analysis: Json
+          anlass?: string | null
+          created_at?: string
+          id?: string
+          images?: Json
+          kosten_realistisch_brutto?: number | null
+          schaden_count?: number
+          schweregrad?: string | null
+          title?: string
+          updated_at?: string
+          user_id: string
+          vehicle_info?: Json
+        }
+        Update: {
+          analysis?: Json
+          anlass?: string | null
+          created_at?: string
+          id?: string
+          images?: Json
+          kosten_realistisch_brutto?: number | null
+          schaden_count?: number
+          schweregrad?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+          vehicle_info?: Json
+        }
+        Relationships: []
+      }
       dealer_availability: {
         Row: {
           created_at: string
