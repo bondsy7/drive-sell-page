@@ -73,6 +73,32 @@ const DamageAnalysisFlow: React.FC<Props> = ({ onBack }) => {
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const [isDetecting, setIsDetecting] = useState(false);
+
+  const autoDetect = useCallback(async (firstImageBase64: string) => {
+    setIsDetecting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) return;
+      const { data } = await supabase.functions.invoke('detect-vehicle-brand', {
+        body: { imageBase64: firstImageBase64 },
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (data?.brand || data?.model) {
+        setVehicleInfo(prev => ({
+          ...prev,
+          marke: prev.marke || data.brand || '',
+          modell: prev.modell || data.model || '',
+        }));
+        if (data.brand) toast.success(`Erkannt: ${data.brand}${data.model ? ' ' + data.model : ''}`);
+      }
+    } catch (e) {
+      console.warn('Brand detection failed', e);
+    } finally {
+      setIsDetecting(false);
+    }
+  }, []);
+
   const handleFiles = useCallback(async (files: FileList | File[]) => {
     const remaining = MAX_IMAGES - images.length;
     if (remaining <= 0) { toast.error(`Max ${MAX_IMAGES} Bilder.`); return; }
@@ -84,8 +110,12 @@ const DamageAnalysisFlow: React.FC<Props> = ({ onBack }) => {
       const compressed = await compressImageForAI(raw).catch(() => raw);
       list.push({ id: crypto.randomUUID(), base64: compressed });
     }
+    const wasEmpty = images.length === 0;
     setImages(prev => [...prev, ...list]);
-  }, [images.length]);
+    if (wasEmpty && list.length > 0) {
+      autoDetect(list[0].base64);
+    }
+  }, [images.length, autoDetect]);
 
   const removeImage = (id: string) => setImages(prev => prev.filter(i => i.id !== id));
 
@@ -164,7 +194,14 @@ const DamageAnalysisFlow: React.FC<Props> = ({ onBack }) => {
         <>
           {/* Vehicle info */}
           <div className="rounded-xl border border-border bg-card p-4 space-y-4">
-            <p className="text-sm font-semibold text-foreground">Fahrzeugdaten (optional, verbessert die Analyse)</p>
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <p className="text-sm font-semibold text-foreground">Fahrzeugdaten (optional, verbessert die Analyse)</p>
+              {isDetecting && (
+                <span className="flex items-center gap-1.5 text-xs text-accent">
+                  <Loader2 className="w-3 h-3 animate-spin" /> KI erkennt Marke & Modell…
+                </span>
+              )}
+            </div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               <div><Label className="text-xs">Marke</Label><Input value={vehicleInfo.marke} onChange={e => setVehicleInfo({ ...vehicleInfo, marke: e.target.value })} /></div>
               <div><Label className="text-xs">Modell</Label><Input value={vehicleInfo.modell} onChange={e => setVehicleInfo({ ...vehicleInfo, modell: e.target.value })} /></div>
