@@ -156,6 +156,33 @@ const DamageAnalysisFlow: React.FC<Props> = ({ onBack }) => {
         }
       }));
       toast.success('Markierungen erstellt.');
+
+      // Persist report so user can revisit it later
+      try {
+        const userId = session.user?.id;
+        if (userId) {
+          const title = [vehicleInfo.marke, vehicleInfo.modell, vehicleInfo.baujahr].filter(Boolean).join(' ').trim() || 'Schadensbericht';
+          // Reload images with annotations from latest state
+          await new Promise(r => setTimeout(r, 100));
+          const currentImages = await new Promise<UploadedImage[]>((resolve) => {
+            setImages(prev => { resolve(prev); return prev; });
+          });
+          await supabase.from('damage_reports').insert({
+            user_id: userId,
+            title,
+            vehicle_info: vehicleInfo,
+            anlass: anlass || null,
+            analysis: data.analysis,
+            images: currentImages.map(i => ({ base64: i.base64, annotatedBase64: i.annotatedBase64 || null })),
+            schaden_count: data.analysis?.schaeden?.length || 0,
+            schweregrad: data.analysis?.fazit?.schweregrad || null,
+            kosten_realistisch_brutto: data.analysis?.kostenGesamt?.realistischBrutto || null,
+          });
+          toast.success('Bericht gespeichert (siehe Dashboard → Schadensberichte).');
+        }
+      } catch (saveErr) {
+        console.warn('Save failed', saveErr);
+      }
     } catch (e: any) {
       toast.error(e?.message || 'Fehler bei der Analyse');
     } finally {
