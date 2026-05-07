@@ -227,7 +227,7 @@ serve(async (req) => {
       for (const geminiModel of geminiModels) {
         try {
           usedModel = geminiModel;
-          resultImage = await generateGemini(lockedPrompt, imageBase64, logoBase64, geminiModel, maxRetries, width, height, requestStartedAt, log);
+          resultImage = await generateGemini(lockedPrompt, imageBase64, logoBase64, geminiModel, maxRetries, width, height, requestStartedAt, log, vehicleFileRef, logoFileRef);
           if (resultImage) break;
         } catch (err) {
           lastGeminiError = err instanceof Error ? err.message : "Gemini error";
