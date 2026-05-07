@@ -350,17 +350,24 @@ async function generateGemini(prompt: string, imageBase64: string | null, logoBa
   parts.push({ text: prompt });
 
   // 3) Referenz-Fahrzeug klar als Identitäts-Referenz markieren
-  const vehicleInline = await toInlineData(imageBase64, "image/jpeg");
-  if (vehicleInline) {
+  // Vehicle reference: prefer Files API URI (small payload, no Base64), fallback to inlineData
+  const hasVehicleRef = !!vehicleFileRef?.fileUri || !!imageBase64;
+  if (hasVehicleRef) {
     parts.push({ text:
 `VEHICLE REFERENCE IMAGE (identity only):
 The next image shows the vehicle. Use it ONLY for identity (model, color, trim, wheels, proportions).
 DO NOT copy its background, lighting, reflections, framing or aspect ratio.` });
-    parts.push({ inlineData: vehicleInline });
+    if (vehicleFileRef?.fileUri) {
+      parts.push({ fileData: { fileUri: vehicleFileRef.fileUri, mimeType: vehicleFileRef.mimeType || "image/jpeg" } });
+      log?.info("gemini.ref", "vehicle via Files API", { uri: vehicleFileRef.fileUri });
+    } else {
+      const vehicleInline = await toInlineData(imageBase64, "image/jpeg");
+      if (vehicleInline) parts.push({ inlineData: vehicleInline });
+    }
   }
 
-  const logoInline = await toInlineData(logoBase64, "image/png");
-  if (logoInline) {
+  const hasLogoRef = !!logoFileRef?.fileUri || !!logoBase64;
+  if (hasLogoRef) {
     parts.push({ text: `LOGO LOCK (MANDATORY — READ CAREFULLY):
 The next image is the OFFICIAL CURRENT manufacturer logo that MUST appear in the banner.
 - Use EXACTLY this provided logo file as a 1:1 visual reference. Do NOT redraw, restyle, recolor, simplify or "improve" it.
@@ -371,7 +378,13 @@ The next image is the OFFICIAL CURRENT manufacturer logo that MUST appear in the
 - If the provided logo is flat 2D, the rendered logo MUST stay flat 2D. If it is monochrome, keep it monochrome.
 - Place it cleanly and prominently (corner or near headline), correctly sized, fully legible, no distortion, no rotation, no drop shadow, no extra effects.
 The logo image follows now:` });
-    parts.push({ inlineData: logoInline });
+    if (logoFileRef?.fileUri) {
+      parts.push({ fileData: { fileUri: logoFileRef.fileUri, mimeType: logoFileRef.mimeType || "image/png" } });
+      log?.info("gemini.ref", "logo via Files API", { uri: logoFileRef.fileUri });
+    } else {
+      const logoInline = await toInlineData(logoBase64, "image/png");
+      if (logoInline) parts.push({ inlineData: logoInline });
+    }
   }
 
   // Format-Direktive ist bereits als ERSTER Part platziert (siehe oben).
