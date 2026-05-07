@@ -1,5 +1,5 @@
 import React from 'react';
-import { Camera, FileText, Layout, Image, Video, Sparkles, Lock, Zap, Wrench } from 'lucide-react';
+import { Camera, FileText, Layout, Image, Video, Sparkles, Lock, Zap, Wrench, Search } from 'lucide-react';
 import { useCredits } from '@/hooks/useCredits';
 import { useModuleAccess } from '@/hooks/useModuleAccess';
 
@@ -11,6 +11,7 @@ export type HubAction =
   | 'banner'          // Banner Generator
   | 'video'           // Video Erstellung
   | 'damage-repair'    // Schadensreparatur – KI repariert Schäden auf Fahrzeugbildern
+  | 'damage-analysis'  // Schadensanalyse – KI bewertet Schäden + erstellt Bericht
   | 'sales-assistant'; // KI Verkaufsassistent
 
 interface ActionTile {
@@ -65,6 +66,12 @@ const TILES: ActionTile[] = [
     icon: <Wrench className="w-7 h-7" />,
     title: 'Schadensreparatur',
     description: 'Bilder hochladen – KI repariert Dellen, Kratzer, Steinschläge & Co. Optional direkt in den Showroom stellen.',
+  },
+  {
+    id: 'damage-analysis',
+    icon: <Search className="w-7 h-7" />,
+    title: 'Schadensanalyse',
+    description: 'Bilder analysieren – KI markiert Schäden, schätzt Kosten und erstellt einen professionellen Sachverständigenbericht.',
   },
   {
     id: 'sales-assistant',

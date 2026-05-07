@@ -20,6 +20,7 @@ import VideoGenerator from '@/components/VideoGenerator';
 import BannerGenerator from '@/components/BannerGenerator';
 import OneShotStudio from '@/components/OneShotStudio';
 import DamageRepairFlow from '@/components/DamageRepairFlow';
+import DamageAnalysisFlow from '@/components/DamageAnalysisFlow';
 import VehicleSelectBeforeGenerate from '@/components/VehicleSelectBeforeGenerate';
 import { PhotoModeSelector, Spin360Workflow } from '@/components/spin360';
 import type { PhotoMode } from '@/components/spin360';
@@ -35,7 +36,7 @@ import type { ModelTier } from '@/components/ModelSelector';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-type ExtendedAppState = AppState | 'capturing-images' | 'hub' | 'standalone-photo-choice' | 'standalone-photo-mode' | 'standalone-capture' | 'standalone-upload' | 'standalone-generate-select' | 'standalone-generating' | 'spin360' | 'video' | 'banner' | 'manual-landing' | 'manual-landing-preview' | 'preset-upload' | 'studio' | 'damage-repair';
+type ExtendedAppState = AppState | 'capturing-images' | 'hub' | 'standalone-photo-choice' | 'standalone-photo-mode' | 'standalone-capture' | 'standalone-upload' | 'standalone-generate-select' | 'standalone-generating' | 'spin360' | 'video' | 'banner' | 'manual-landing' | 'manual-landing-preview' | 'preset-upload' | 'studio' | 'damage-repair' | 'damage-analysis';
 
 const PERSPECTIVES = [
   { key: 'front', label: 'Frontansicht', prompt: 'Front view, straight on, symmetrical composition' },
@@ -59,6 +60,8 @@ const TOOL_TO_STATE: Record<string, ExtendedAppState> = {
   'studio': 'studio',
   'damage-repair': 'damage-repair',
   'reparatur': 'damage-repair',
+  'damage-analysis': 'damage-analysis',
+  'analyse': 'damage-analysis',
 };
 
 const STATE_TO_TOOL: Partial<Record<ExtendedAppState, string>> = {
@@ -74,6 +77,7 @@ const STATE_TO_TOOL: Partial<Record<ExtendedAppState, string>> = {
   'spin360': 'spin360',
   'studio': 'beta',
   'damage-repair': 'damage-repair',
+  'damage-analysis': 'damage-analysis',
 };
 
 const Index = () => {
@@ -607,6 +611,9 @@ const Index = () => {
       case 'damage-repair':
         setAppState('damage-repair' as ExtendedAppState);
         break;
+      case 'damage-analysis':
+        setAppState('damage-analysis' as ExtendedAppState);
+        break;
       default:
         toast.info('Diese Funktion ist bald verfügbar!');
     }
@@ -831,6 +838,12 @@ const Index = () => {
               }}
             />
           )}
+
+          {/* ─── Schadensanalyse ─── */}
+          {appState === 'damage-analysis' && (
+            <DamageAnalysisFlow onBack={() => setAppState('hub')} />
+          )}
+
 
           {appState === 'idle' && (
             <div className="space-y-8">
