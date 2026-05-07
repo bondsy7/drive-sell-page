@@ -705,9 +705,21 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
       ? `LANDSCAPE AD LAYOUT (MANDATORY): Compose natively for ${fmt.w}×${fmt.h}. Keep the vehicle fully visible with breathing room, and keep headline/logo/price within safe margins. Do NOT crop text or brand marks. The result must feel like the requested landscape ad ratio, not a zoomed-in crop.`
       : '';
 
+    // Style families decide whether the "clean/bright/subtle accents" baseline applies.
+    // Loud/expressive styles (popstyle, retro, sport, cinematic) must NOT be muted by it.
+    const cleanStyleIds = new Set(['premium', 'minimal', 'volkswagen']);
+    const isCleanStyle = cleanStyleIds.has(style);
+
     return `Create a professional automotive advertising banner.
 
 FORMAT: ${fmt.w}x${fmt.h} pixels (${fmt.ratio} aspect ratio). The output image MUST be exactly this size.
+
+FULL-BLEED COMPOSITION (MANDATORY — APPLIES TO EVERY STYLE AND FORMAT):
+- The artwork MUST fill the ENTIRE canvas edge-to-edge, top to bottom AND left to right. Zero empty/white/blurred bands, zero letterboxing, zero side bars, zero rounded inner card.
+- The vehicle/scene/graphics must extend all the way to every edge of the banner.
+- The vehicle must be sized GENEROUSLY for the format (not a tiny centered motif). It should be the clear hero and visually fill the available image area while leaving safe space for required text/logo.
+- Do NOT crop through the vehicle, headline, subline, price, logo or CTA. ALL required elements must be fully visible inside the canvas.
+- Treat the outermost ~4% as a safe margin: keep important content inside, but the BACKGROUND must still reach the edge.
 
 ${formatDirective}
 
@@ -715,7 +727,7 @@ VEHICLE: "${vehicleTitle}" – use the uploaded vehicle image as the central her
 
 SCENE: ${scn.prompt}. Place the vehicle naturally in this environment.
 
-STYLE: ${sty.prompt}. The overall design must follow this aesthetic consistently.
+STYLE (HIGHEST PRIORITY — overrides any conflicting tone/color/mood guidance below): ${sty.prompt}
 
 OCCASION: This is a ${occ.prompt} advertisement.
 
@@ -743,38 +755,34 @@ A logo image is provided as a separate reference image. You MUST place this logo
 - If the background behind the logo is busy, add a subtle semi-transparent backing to ensure readability
 - The logo MUST NOT be omitted, hidden, or obscured under any circumstances` : ''}
 
-CRITICAL RULES:
-- The banner must be photorealistic with the vehicle fully re-lit and naturally integrated into the new scene — never pasted in as a cut-out
+CRITICAL RULES (style-neutral, always apply):
+- Photorealistic vehicle, fully re-lit and naturally integrated into the new scene — never pasted in as a cut-out
 - ALL text must be rendered EXACTLY as specified – no paraphrasing, no spelling changes
 - Text must be perfectly legible against the background
-- Keep every essential element (vehicle, headline, price, logo, CTA) fully inside the canvas safe area. Never place important content on the outermost 5% edge where final resizing can trim it.
+- Composition fills the canvas at the specified ${fmt.ratio} aspect ratio with no empty bands
 
 PROFESSIONAL LIGHTING & INTEGRATION (MANDATORY):
-- Render this like a professional automotive advertising photograph in the NEW scene.
-- Clearly show where the light comes from: ceiling LEDs, window bands, streetlights, sun direction, studio softboxes or showroom cove lights must create believable highlights on hood, roof, windshield, side glass, chrome, rims and body lines.
-- The vehicle must cast a soft realistic contact shadow and ambient occlusion; tires must visibly touch the floor/ground.
-- On polished/wet floors, add a subtle natural reflection of the lower body and tires. Keep it realistic, not mirror-perfect CGI.
-- The paint must receive new soft specular highlights from the selected scene; do not keep the highlight/reflection pattern from the uploaded photo if it belongs to another location.
+- Render the vehicle with believable light direction matching the chosen scene (ceiling LEDs, sun, streetlights, studio softboxes, etc.) creating realistic highlights on hood, roof, glass, chrome, rims and body lines.
+- The vehicle must cast a soft realistic contact shadow; tires must visibly touch the ground.
+- The paint must receive new specular highlights from the selected scene; do not keep the highlight/reflection pattern from the uploaded photo.
 
 REFLECTION PURGE (ZERO TOLERANCE – NON-NEGOTIABLE):
 - The provided vehicle reference photo was taken in a DIFFERENT environment. EVERY reflection on EVERY reflective surface (paint, windows, side mirrors, chrome, headlights, taillights, wheel rims, glossy black trim, sunroof) MUST be COMPLETELY ERASED and RE-RENDERED to match ONLY the new banner scene.
-- ABSOLUTELY FORBIDDEN in any reflection or through any window: trees, sky, clouds, other cars, buildings, dealerships, people, photographers, asphalt patterns, parking lines, old dealer logos, banners, watermarks, price tags, or ANY trace of the original photo's environment — not even faintly.
+- ABSOLUTELY FORBIDDEN in any reflection or window: trees, sky, clouds, other cars, buildings, dealerships, people, photographers, asphalt patterns, parking lines, old dealer logos, banners, watermarks, price tags, or any trace of the original photo's environment.
 - Through the windows the viewer must see ONLY the new scene — never the old environment, never a generic outdoor view, never a black void.
-- Rebuild only new-scene reflections: ceiling lights on hood/roof, wall/window bands along side panels, floor tone in lower doors, scene lights in chrome/rims, and approved logo reflections only if a logo asset is provided.
-- Verify hood, doors, glass, mirrors, chrome and rims before finalizing: zero foreign reflection content.
 
+${isCleanStyle ? `CLEAN-STYLE TONE BASELINE (applies because the chosen style is "${style}"):
 ACCENT COLORS — PRIMARY (${accentColor}) & SECONDARY (${secondaryColor}):
-Use the brand colors as a SUBTLE HIGHLIGHT – NOT as dominant colors:
-- Primary ${accentColor}: ONLY for main UI elements (CTA buttons, price tags, key highlights)
-- Secondary ${secondaryColor}: as a complementary accent (thin borders, secondary text highlights, small icons)
-- Add at most ONE very subtle, soft glow or light accent in either color – keep it minimal and transparent
-- Do NOT tint the entire scene, background, or atmosphere in these colors
-- Do NOT add heavy colored overlays, particles, bokeh, or dramatic light beams in these colors
-- The overall image should remain BRIGHT, CLEAN, and PROFESSIONAL – never dark or moody because of accents
-- The brand colors should feel like a tasteful design touch, not a color filter
-- Keep the vehicle and background naturally lit with neutral, bright tones
+- Use brand colors as a SUBTLE HIGHLIGHT, not as dominant colors.
+- Primary ${accentColor}: ONLY for main UI elements (CTA buttons, price tags, key highlights). Secondary ${secondaryColor}: thin borders, small icons.
+- At most ONE very subtle soft glow; do NOT tint the entire scene/background/atmosphere.
+- Do NOT add heavy colored overlays, particles, bokeh or dramatic light beams.
+- Overall image stays BRIGHT, CLEAN and PROFESSIONAL — never dark or moody because of accents.
+- Keep vehicle and background naturally lit with neutral, bright tones.` : `EXPRESSIVE-STYLE TONE BASELINE (applies because the chosen style is "${style}"):
+- Follow the STYLE block above as the dominant visual language. The accent colors (${accentColor}, ${secondaryColor}) MAY be used boldly and may dominate the composition if the style calls for it.
+- Heavy graphic overlays, saturated color blocks, glows, halftones, bursts, motion lines, dramatic lighting, neon, vintage grading, etc. ARE ALLOWED when consistent with the chosen style.
+- Do NOT force the image to be calm, neutral, premium-clean or muted unless the style explicitly asks for it.`}
 ${showLogo && logoBase64 ? '- The provided logo MUST appear in the banner exactly as given' : '- Do NOT add watermarks or extra logos'}
-- The composition must work at the specified ${fmt.ratio} aspect ratio
 ${isWideSkyscraper ? '- For 160×600 specifically: ZERO blank white/cream rectangles. No empty top cap and no empty bottom cap. No duplicated lower street/road image. One continuous vertical scene only.' : ''}
 ${isBillboard ? '- For 970×250 specifically: ZERO hard crop look. All car edges, headline, logo and price must remain inside the banner. Use wide composition and compact typography, not a zoomed-in hero crop.' : ''}
 ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` : ''}
