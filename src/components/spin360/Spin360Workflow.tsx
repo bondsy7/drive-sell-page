@@ -152,7 +152,7 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
       console.error('Start processing error:', err);
       setJobStatus('failed'); setJobError('Unerwarteter Fehler'); setIsProcessing(false);
     }
-  }, [user, uploadedSlots]);
+  }, [user, uploadedSlots, ensureSpinVehicleId]);
 
   /* ─── Video2Frames Flow (refactored: 3 images) ─── */
   const pollVideoOperation = useCallback(async (operationName: string, currentJobId: string) => {
