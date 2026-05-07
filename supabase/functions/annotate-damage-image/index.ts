@@ -27,7 +27,7 @@ async function authUser(req: Request): Promise<string | Response> {
   return data.claims.sub as string;
 }
 
-async function annotateImage(apiKey: string, imageBase64: string, schaeden: any[]): Promise<string | null> {
+async function annotateImage(apiKey: string, imageBase64: string | null, imageFileUri: { uri: string; mimeType?: string } | null, schaeden: any[]): Promise<string | null> {
   if (!schaeden || schaeden.length === 0) return null;
   const list = schaeden.map((s: any) =>
     `${s.nr}. ${s.position} (${s.bauteil}) – ${s.art}, Maßnahme: ${s.massnahme}, Markierung: ${s.markierung?.typ || 'box'}, Priorität: ${s.markierung?.prioritaet || 'mittel'}`
@@ -49,13 +49,21 @@ REGELN:
 - Markierungen dürfen wichtige Fahrzeugdetails NICHT verdecken.
 - Fahrzeug, Farbe, Perspektive, Hintergrund EXAKT beibehalten – nur Annotationen hinzufügen.`;
 
-  const raw = imageBase64.includes(",") ? imageBase64.split(",")[1] : imageBase64;
-  let mime = "image/jpeg";
-  if (imageBase64.startsWith("data:image/png")) mime = "image/png";
-  else if (imageBase64.startsWith("data:image/webp")) mime = "image/webp";
+  let imagePart: any;
+  if (imageFileUri?.uri) {
+    imagePart = { file_data: { mime_type: imageFileUri.mimeType || "image/jpeg", file_uri: imageFileUri.uri } };
+  } else if (imageBase64) {
+    const raw = imageBase64.includes(",") ? imageBase64.split(",")[1] : imageBase64;
+    let mime = "image/jpeg";
+    if (imageBase64.startsWith("data:image/png")) mime = "image/png";
+    else if (imageBase64.startsWith("data:image/webp")) mime = "image/webp";
+    imagePart = { inlineData: { mimeType: mime, data: raw } };
+  } else {
+    return null;
+  }
 
   const body = JSON.stringify({
-    contents: [{ parts: [{ text: prompt }, { inlineData: { mimeType: mime, data: raw } }] }],
+    contents: [{ parts: [{ text: prompt }, imagePart] }],
     generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
   });
 
