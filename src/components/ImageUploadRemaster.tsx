@@ -9,6 +9,7 @@ import RemasterOptions from '@/components/RemasterOptions';
 import { type RemasterConfig, buildMasterPrompt, fetchPromptOverrides } from '@/lib/remaster-prompt';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 import { compressImageForAI, fileToBase64 } from '@/lib/image-compress';
+import { uploadToGeminiFiles, type GeminiFileRef } from '@/lib/gemini-file-upload';
 import ProcessTimer from '@/components/ProcessTimer';
 
 interface ImageUploadRemasterProps {
