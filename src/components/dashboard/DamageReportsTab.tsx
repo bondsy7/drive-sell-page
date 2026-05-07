@@ -163,22 +163,89 @@ export default function DamageReportsTab() {
               {active.analysis?.fazit?.gesamteindruck && (
                 <p className="text-sm text-foreground leading-relaxed">{active.analysis.fazit.gesamteindruck}</p>
               )}
-              {active.images?.length > 0 && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {active.images.map((img: any, i: number) => (
-                    <button
-                      key={i}
-                      onClick={() => setLightboxIndex(i)}
-                      className="aspect-[4/3] rounded-lg overflow-hidden bg-muted border border-border hover:border-accent transition-colors group relative"
-                    >
-                      <img src={img.annotatedBase64 || img.base64} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                      <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/20 transition-colors flex items-center justify-center">
-                        <span className="opacity-0 group-hover:opacity-100 text-background text-xs font-semibold px-2 py-1 rounded bg-foreground/60">Vergrößern</span>
+              {active.images?.length > 0 && (() => {
+                const cur: any = active.images[viewerIndex] || active.images[0];
+                const orig = cur?.base64;
+                const annotated = cur?.annotatedBase64 || cur?.base64;
+                const repaired = cur?.repairedBase64;
+                return (
+                  <div className="space-y-3">
+                    <Tabs defaultValue="annotated" className="w-full">
+                      <TabsList className="grid grid-cols-3 w-full">
+                        <TabsTrigger value="annotated">Markiert</TabsTrigger>
+                        <TabsTrigger value="original">Original</TabsTrigger>
+                        <TabsTrigger value="repair">Vorher / Nachher</TabsTrigger>
+                      </TabsList>
+
+                      <TabsContent value="annotated" className="mt-3">
+                        <div className="relative rounded-xl overflow-hidden bg-muted max-h-[55vh] flex items-center justify-center">
+                          <img src={annotated} alt="Markiert" className="max-h-[55vh] w-auto object-contain" />
+                          <button
+                            onClick={() => setLightboxIndex(viewerIndex)}
+                            className="absolute top-2 right-2 bg-foreground/60 hover:bg-foreground/80 text-background rounded-full p-1.5"
+                            aria-label="Vergrößern"
+                          >
+                            <Maximize2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </TabsContent>
+
+                      <TabsContent value="original" className="mt-3">
+                        <div className="relative rounded-xl overflow-hidden bg-muted max-h-[55vh] flex items-center justify-center">
+                          {orig ? (
+                            <img src={orig} alt="Original" className="max-h-[55vh] w-auto object-contain" />
+                          ) : (
+                            <div className="py-12 text-sm text-muted-foreground">Kein Original gespeichert</div>
+                          )}
+                        </div>
+                      </TabsContent>
+
+                      <TabsContent value="repair" className="mt-3">
+                        {repaired && orig ? (
+                          <BeforeAfterSlider
+                            beforeSrc={orig}
+                            afterSrc={repaired}
+                            beforeLabel="Schaden"
+                            afterLabel="Repariert"
+                            className="max-h-[55vh]"
+                          />
+                        ) : (
+                          <div className="rounded-xl bg-card border border-border p-6 text-center space-y-3">
+                            <div className="mx-auto w-10 h-10 rounded-full bg-accent/15 flex items-center justify-center">
+                              <Sparkles className="w-5 h-5 text-accent" />
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-foreground">Reparatur-Vorschau noch nicht erstellt</h4>
+                              <p className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">
+                                Öffne das Bild im Detail-Viewer und generiere die Vorher-/Nachher-Visualisierung.
+                              </p>
+                            </div>
+                            <Button size="sm" onClick={() => setLightboxIndex(viewerIndex)} className="gradient-accent text-accent-foreground font-semibold">
+                              <Sparkles className="w-4 h-4 mr-1.5" /> Reparatur generieren
+                            </Button>
+                          </div>
+                        )}
+                      </TabsContent>
+                    </Tabs>
+
+                    {active.images.length > 1 && (
+                      <div className="flex gap-2 overflow-x-auto pb-1">
+                        {active.images.map((img: any, i: number) => (
+                          <button
+                            key={i}
+                            onClick={() => setViewerIndex(i)}
+                            className={`shrink-0 w-20 h-16 rounded-lg overflow-hidden border-2 transition-all ${
+                              i === viewerIndex ? 'border-accent' : 'border-transparent opacity-60 hover:opacity-100'
+                            }`}
+                          >
+                            <img src={img.annotatedBase64 || img.base64} alt="" className="w-full h-full object-cover" />
+                          </button>
+                        ))}
                       </div>
-                    </button>
-                  ))}
-                </div>
-              )}
+                    )}
+                  </div>
+                );
+              })()}
               {active.analysis?.berichtMarkdown && (
                 <div className="rounded-xl border border-border bg-muted/30 p-4">
                   <pre className="text-xs whitespace-pre-wrap font-sans text-foreground leading-relaxed">{active.analysis.berichtMarkdown}</pre>
