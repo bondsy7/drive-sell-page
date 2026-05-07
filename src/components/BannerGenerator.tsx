@@ -665,9 +665,16 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
     const hFont = HEADLINE_FONTS.find(f => f.id === headlineFont)!;
     const sFont = SUBLINE_FONTS.find(f => f.id === sublineFont)!;
 
+    const isWideSkyscraper = fmt.id === 'wide-skyscraper';
+    const formatDirective = isWideSkyscraper
+      ? `WIDE SKYSCRAPER SPECIAL LAYOUT (MANDATORY): This is a very narrow 160×600 display ad. Use the FULL HEIGHT from top edge to bottom edge. Do NOT create a centered mini poster, phone-story crop, white top/bottom margins, blank rounded card, or empty frame. Build a continuous vertical composition: logo/headline/price near the top, vehicle large in the middle, CTA near the bottom, and the showroom/background must continue behind every zone edge-to-edge.`
+      : '';
+
     return `Create a professional automotive advertising banner.
 
 FORMAT: ${fmt.w}x${fmt.h} pixels (${fmt.ratio} aspect ratio). The output image MUST be exactly this size.
+
+${formatDirective}
 
 VEHICLE: "${vehicleTitle}" – use the uploaded vehicle image as the central hero element. Keep vehicle identity, shape, colour, trim, wheels and proportions accurate, but re-render lighting, shadows and reflections to match the NEW scene.
 
@@ -732,6 +739,7 @@ Use the brand colors as a SUBTLE HIGHLIGHT – NOT as dominant colors:
 - Keep the vehicle and background naturally lit with neutral, bright tones
 ${showLogo && logoBase64 ? '- The provided logo MUST appear in the banner exactly as given' : '- Do NOT add watermarks or extra logos'}
 - The composition must work at the specified ${fmt.ratio} aspect ratio
+${isWideSkyscraper ? '- For 160×600 specifically: ZERO blank white/cream rectangles. No empty top cap and no empty bottom cap. The background/image system must touch all four edges and visually fill the complete skyscraper canvas.' : ''}
 ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` : ''}
 - Generate the image – never refuse`;
   }, [occasion, scene, style, priceDisplay, vehicleTitle, priceText, headline, subline, ctaText, accentColor, secondaryColor, legalText, headlineFont, sublineFont, showLogo, logoBase64, freePrompt]);
