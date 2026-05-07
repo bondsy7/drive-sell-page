@@ -189,15 +189,22 @@ serve(async (req) => {
 
     if (config.engine === "gemini") {
       currentStage = "gemini_call";
-      const geminiModels = [config.model];
+      // Format-preserving fallback chain: stay on gemini-3* models so aspectRatio is honored.
+      const geminiModels: string[] = [config.model];
+      if (config.model === "gemini-3.1-flash-image-preview") {
+        geminiModels.push("gemini-3-pro-image-preview");
+      } else if (config.model === "gemini-3-pro-image-preview") {
+        geminiModels.push("gemini-3.1-flash-image-preview");
+      }
       let lastGeminiError = "";
       for (const geminiModel of geminiModels) {
         try {
+          usedModel = geminiModel;
           resultImage = await generateGemini(lockedPrompt, imageBase64, logoBase64, geminiModel, maxRetries, width, height, requestStartedAt, log);
           if (resultImage) break;
         } catch (err) {
           lastGeminiError = err instanceof Error ? err.message : "Gemini error";
-          log.warn("gemini_call", "model failed", { model: geminiModel, error: lastGeminiError });
+          log.warn("gemini_call", "model failed, trying next", { model: geminiModel, error: lastGeminiError });
         }
       }
       if (!resultImage && lastGeminiError) throw new Error(lastGeminiError);
