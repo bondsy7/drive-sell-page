@@ -199,19 +199,6 @@ RULES: Steering wheel on correct side (left for LHD, right for RHD) as in refere
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
-    key: 'INT_CENTER_CONSOLE',
-    label: 'Center Console',
-    labelDe: 'Mittelkonsole',
-    defaultSelected: true,
-    category: 'interior',
-    prompt: `<CURRENT_PIPELINE_SHOT>
-SHOT_TYPE: Interior - Center Console Macro View
-CAMERA_ANGLE: Elevated close-up looking down at center console, gear selector, climate controls.
-FOCUS_ELEMENTS: Sharp focus on material textures (wood, carbon, piano black, leather). Knobs, buttons, stitching highly detailed. Reproduce exact button layouts and screen UI.
-RULES: Shallow depth of field to draw attention to console details. View through windows MUST match the selected showroom/scene.
-</CURRENT_PIPELINE_SHOT>`,
-  },
-  {
     key: 'INT_REAR_SEATS',
     label: 'Rear Seats',
     labelDe: 'Rücksitzbank',
@@ -341,18 +328,6 @@ LIGHTING: High-contrast studio lighting emphasizing material textures, chrome re
 SHOT_TYPE: Composite - Exterior 2×2 Grid
 LAYOUT: Top-left: front-left 3/4. Top-right: direct left side profile. Bottom-left: rear-left 3/4. Bottom-right: direct rear.
 RULES: All 4 cells show COMPLETE IDENTICAL vehicle in SAME PROVIDED SHOWROOM with consistent lighting. Vehicle SAME SIZE in each cell. Thin white dividers. ${LOGO_LINE} Full car visible in each cell.
-</CURRENT_PIPELINE_SHOT>`,
-  },
-  {
-    key: 'GRID_HIGHLIGHTS_6',
-    label: 'Highlights Grid (6 views)',
-    labelDe: 'Highlight-Grid (6 Ansichten)',
-    defaultSelected: false,
-    category: 'composite',
-    prompt: `<CURRENT_PIPELINE_SHOT>
-SHOT_TYPE: Composite - Highlights 3×2 Grid
-LAYOUT: Row 1: front-left 3/4 hero | left side profile | rear-left 3/4. Row 2: headlight macro | dashboard interior | wheel/rim close-up.
-RULES: All cells show IDENTICAL vehicle. Exterior cells use SAME PROVIDED SHOWROOM. Vehicle SAME SIZE in exterior cells. Thin white dividers. ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
