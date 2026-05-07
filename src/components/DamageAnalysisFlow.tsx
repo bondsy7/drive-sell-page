@@ -140,10 +140,14 @@ const DamageAnalysisFlow: React.FC<Props> = ({ onBack }) => {
         const damagesForImage = schaedenAll.filter((s: any) => s.bildIndex === idx);
         if (damagesForImage.length === 0) return;
         try {
-          const { data: ann } = await supabase.functions.invoke('annotate-damage-image', {
+          const { data: ann, error: annErr } = await supabase.functions.invoke('annotate-damage-image', {
             body: { image: img.base64, schaeden: damagesForImage },
             headers: { Authorization: `Bearer ${session.access_token}` },
           });
+          if (annErr) {
+            console.warn('Annotation timeout/error für Bild', idx, annErr.message);
+            return;
+          }
           if (ann?.annotated) {
             setImages(prev => prev.map(p => p.id === img.id ? { ...p, annotatedBase64: ann.annotated } : p));
           }
