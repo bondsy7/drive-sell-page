@@ -93,7 +93,13 @@ function snapToGeminiRatio(target: number): number {
   return best;
 }
 
-function padToAspectRatio(dataUrl: string, rawTargetRatio: number, bg: string = '#f4f4f4'): Promise<string> {
+/**
+ * Pad an image to the target aspect ratio using a BLURRED + MIRRORED extension
+ * of the source instead of a flat white/cream background. This prevents Gemini's
+ * fast fallback model from reproducing large flat empty zones in the output
+ * (the root cause of "lots of cream space" 9:16 banners).
+ */
+function padToAspectRatio(dataUrl: string, rawTargetRatio: number, _bg: string = '#f4f4f4'): Promise<string> {
   const targetRatio = snapToGeminiRatio(rawTargetRatio);
   return new Promise((resolve, reject) => {
     const img = new window.Image();
@@ -104,12 +110,10 @@ function padToAspectRatio(dataUrl: string, rawTargetRatio: number, bg: string = 
         if (Math.abs(srcRatio - targetRatio) / targetRatio < 0.02) return resolve(dataUrl);
         let canvasW: number, canvasH: number, dx = 0, dy = 0;
         if (srcRatio > targetRatio) {
-          // src is wider → keep width, expand height
           canvasW = img.width;
           canvasH = Math.round(img.width / targetRatio);
           dy = Math.round((canvasH - img.height) / 2);
         } else {
-          // src is taller → keep height, expand width
           canvasH = img.height;
           canvasW = Math.round(img.height * targetRatio);
           dx = Math.round((canvasW - img.width) / 2);
@@ -119,10 +123,27 @@ function padToAspectRatio(dataUrl: string, rawTargetRatio: number, bg: string = 
         canvas.height = canvasH;
         const ctx = canvas.getContext('2d');
         if (!ctx) return reject(new Error('canvas unsupported'));
-        ctx.fillStyle = bg;
+
+        // 1) Blurred stretched background (covers full canvas)
+        ctx.save();
+        ctx.filter = 'blur(40px) brightness(0.85)';
+        // cover-fit
+        const coverScale = Math.max(canvasW / img.width, canvasH / img.height);
+        const cw = img.width * coverScale;
+        const ch = img.height * coverScale;
+        ctx.drawImage(img, (canvasW - cw) / 2, (canvasH - ch) / 2, cw, ch);
+        ctx.restore();
+
+        // 2) Soft dark vignette to deemphasise padded zones
+        ctx.save();
+        ctx.fillStyle = 'rgba(20,20,20,0.18)';
         ctx.fillRect(0, 0, canvasW, canvasH);
+        ctx.restore();
+
+        // 3) Original sharp image centered on top
         ctx.drawImage(img, dx, dy);
-        resolve(canvas.toDataURL('image/jpeg', 0.92));
+
+        resolve(canvas.toDataURL('image/jpeg', 0.9));
       } catch (e) { reject(e); }
     };
     img.onerror = () => reject(new Error('image load failed'));
