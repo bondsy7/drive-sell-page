@@ -13,6 +13,7 @@ import PipelineRunner from '@/components/PipelineRunner';
 import { lookupBrandFromVin } from '@/lib/vin-wmi-lookup';
 import { resolveCanonicalBrand, normalizeBrand } from '@/lib/brand-aliases';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
+import { uploadToGeminiFiles } from '@/lib/gemini-file-upload';
 import { ensureLogoCachedAsPng } from '@/lib/image-base64-cache';
 import type { VehicleData } from '@/types/vehicle';
 
