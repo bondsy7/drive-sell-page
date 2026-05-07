@@ -582,10 +582,6 @@ const Index = () => {
     await saveStandaloneImages(allImages);
     navigate('/dashboard?tab=gallery');
   }, [selectedModelTier, saveStandaloneImages, navigate]);
-          {/* ─── Schadensanalyse ─── */}
-          {appState === 'damage-analysis' && (
-            <DamageAnalysisFlow onBack={() => setAppState('hub')} />
-          )}
 
 
   // ─── Hub Action Handler ───
