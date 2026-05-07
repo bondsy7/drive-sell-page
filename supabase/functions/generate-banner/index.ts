@@ -1,7 +1,37 @@
-// generate-banner v3 – uses /v1/images/edits for image input
+// generate-banner v4 – structured logging + stage tracking
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecret } from "../_shared/get-secret.ts";
+
+// ---- Structured logger ----------------------------------------------------
+// Every log line carries a request id + stage so failures are easy to trace
+// in Supabase function logs. The same payload is also returned to the client
+// in error responses (debug field) so the UI can show "where it broke".
+type LogLevel = "info" | "warn" | "error";
+function makeLogger(reqId: string) {
+  const t0 = Date.now();
+  const log = (level: LogLevel, stage: string, msg: string, extra: Record<string, unknown> = {}) => {
+    const line = {
+      reqId,
+      stage,
+      level,
+      ms: Date.now() - t0,
+      msg,
+      ...extra,
+    };
+    const text = `[banner] ${JSON.stringify(line)}`;
+    if (level === "error") console.error(text);
+    else if (level === "warn") console.warn(text);
+    else console.log(text);
+  };
+  return {
+    info:  (stage: string, msg: string, extra?: Record<string, unknown>) => log("info",  stage, msg, extra),
+    warn:  (stage: string, msg: string, extra?: Record<string, unknown>) => log("warn",  stage, msg, extra),
+    error: (stage: string, msg: string, extra?: Record<string, unknown>) => log("error", stage, msg, extra),
+    elapsed: () => Date.now() - t0,
+  };
+}
+type Logger = ReturnType<typeof makeLogger>;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
