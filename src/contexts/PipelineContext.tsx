@@ -383,18 +383,33 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       // ── Phase 4: Upload images to Gemini File API ONCE ──
       // This avoids sending MB of base64 with every single job request
-      cachedFileUrisRef.current = { references: [], showroom: null };
+      cachedFileUrisRef.current = { references: [], showroom: null, plate: null, manufacturerLogo: null, dealerLogo: null };
       try {
         const referenceImages = cfg.originalImages.length > 0 ? cfg.originalImages : cfg.inputImages;
         const imagesToUpload: string[] = [...referenceImages];
-        
+
         // Add showroom if present
         const showroomB64 = cfg.remasterConfig.customShowroomBase64;
         const showroomIdx = showroomB64 ? imagesToUpload.length : -1;
         if (showroomB64) imagesToUpload.push(showroomB64);
 
+        // Add plate if present
+        const plateB64 = cfg.remasterConfig.customPlateImageBase64;
+        const plateIdx = plateB64 ? imagesToUpload.length : -1;
+        if (plateB64) imagesToUpload.push(plateB64);
+
+        // Add manufacturer logo (use cached PNG when available for consistency)
+        const mfgLogoB64 = cachedManufacturerLogoBase64Ref.current || (cfg.remasterConfig.showManufacturerLogo ? cfg.remasterConfig.manufacturerLogoBase64 : null);
+        const mfgLogoIdx = mfgLogoB64 ? imagesToUpload.length : -1;
+        if (mfgLogoB64) imagesToUpload.push(mfgLogoB64);
+
+        // Add dealer logo
+        const dealerLogoB64 = cachedDealerLogoBase64Ref.current || (cfg.remasterConfig.showDealerLogo ? cfg.remasterConfig.dealerLogoBase64 : null);
+        const dealerLogoIdx = dealerLogoB64 ? imagesToUpload.length : -1;
+        if (dealerLogoB64) imagesToUpload.push(dealerLogoB64);
+
         if (imagesToUpload.length > 0) {
-          console.log(`[Pipeline] Uploading ${imagesToUpload.length} images to Gemini File API...`);
+          console.log(`[Pipeline] Uploading ${imagesToUpload.length} images to Gemini File API (refs+showroom+plate+logos)...`);
           const { data: uploadData, error: uploadError } = await supabase.functions.invoke('upload-pipeline-images', {
             body: { images: imagesToUpload },
           });
@@ -403,13 +418,13 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             const fileUris = uploadData.fileUris as { uri: string; mimeType: string }[];
             console.log(`[Pipeline] ✓ ${fileUris.length} images uploaded to File API`);
 
-            // Map file URIs back to their roles
             if (fileUris.length > 0) {
               cachedFileUrisRef.current.references = fileUris.slice(0, referenceImages.length);
             }
-            if (showroomIdx >= 0 && fileUris[showroomIdx]) {
-              cachedFileUrisRef.current.showroom = fileUris[showroomIdx];
-            }
+            if (showroomIdx >= 0 && fileUris[showroomIdx]) cachedFileUrisRef.current.showroom = fileUris[showroomIdx];
+            if (plateIdx >= 0 && fileUris[plateIdx]) cachedFileUrisRef.current.plate = fileUris[plateIdx];
+            if (mfgLogoIdx >= 0 && fileUris[mfgLogoIdx]) cachedFileUrisRef.current.manufacturerLogo = fileUris[mfgLogoIdx];
+            if (dealerLogoIdx >= 0 && fileUris[dealerLogoIdx]) cachedFileUrisRef.current.dealerLogo = fileUris[dealerLogoIdx];
           } else {
             console.warn('[Pipeline] File API upload failed, falling back to inline_data:', uploadError);
           }
