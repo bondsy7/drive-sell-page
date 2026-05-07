@@ -1,5 +1,5 @@
 import React from 'react';
-import { Camera, FileText, Layout, Image, Video, Sparkles, Lock, Zap } from 'lucide-react';
+import { Camera, FileText, Layout, Image, Video, Sparkles, Lock, Zap, Wrench } from 'lucide-react';
 import { useCredits } from '@/hooks/useCredits';
 import { useModuleAccess } from '@/hooks/useModuleAccess';
 
@@ -10,6 +10,7 @@ export type HubAction =
   | 'manual-landing'  // Landing Page ohne PDF
   | 'banner'          // Banner Generator
   | 'video'           // Video Erstellung
+  | 'damage-repair'    // Schadensreparatur – KI repariert Schäden auf Fahrzeugbildern
   | 'sales-assistant'; // KI Verkaufsassistent
 
 interface ActionTile {
@@ -58,6 +59,12 @@ const TILES: ActionTile[] = [
     icon: <Video className="w-7 h-7" />,
     title: 'Video Erstellung',
     description: 'Fahrzeugbild hochladen und ein professionelles Showroom-Video per KI erstellen.',
+  },
+  {
+    id: 'damage-repair',
+    icon: <Wrench className="w-7 h-7" />,
+    title: 'Schadensreparatur',
+    description: 'Bilder hochladen – KI repariert Dellen, Kratzer, Steinschläge & Co. Optional direkt in den Showroom stellen.',
   },
   {
     id: 'sales-assistant',

@@ -19,6 +19,7 @@ import CreditConfirmDialog from '@/components/CreditConfirmDialog';
 import VideoGenerator from '@/components/VideoGenerator';
 import BannerGenerator from '@/components/BannerGenerator';
 import OneShotStudio from '@/components/OneShotStudio';
+import DamageRepairFlow from '@/components/DamageRepairFlow';
 import VehicleSelectBeforeGenerate from '@/components/VehicleSelectBeforeGenerate';
 import { PhotoModeSelector, Spin360Workflow } from '@/components/spin360';
 import type { PhotoMode } from '@/components/spin360';
@@ -34,7 +35,7 @@ import type { ModelTier } from '@/components/ModelSelector';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-type ExtendedAppState = AppState | 'capturing-images' | 'hub' | 'standalone-photo-choice' | 'standalone-photo-mode' | 'standalone-capture' | 'standalone-upload' | 'standalone-generate-select' | 'standalone-generating' | 'spin360' | 'video' | 'banner' | 'manual-landing' | 'manual-landing-preview' | 'preset-upload' | 'studio';
+type ExtendedAppState = AppState | 'capturing-images' | 'hub' | 'standalone-photo-choice' | 'standalone-photo-mode' | 'standalone-capture' | 'standalone-upload' | 'standalone-generate-select' | 'standalone-generating' | 'spin360' | 'video' | 'banner' | 'manual-landing' | 'manual-landing-preview' | 'preset-upload' | 'studio' | 'damage-repair';
 
 const PERSPECTIVES = [
   { key: 'front', label: 'Frontansicht', prompt: 'Front view, straight on, symmetrical composition' },
@@ -56,6 +57,8 @@ const TOOL_TO_STATE: Record<string, ExtendedAppState> = {
   'spin360': 'spin360',
   'beta': 'studio',
   'studio': 'studio',
+  'damage-repair': 'damage-repair',
+  'reparatur': 'damage-repair',
 };
 
 const STATE_TO_TOOL: Partial<Record<ExtendedAppState, string>> = {
@@ -70,6 +73,7 @@ const STATE_TO_TOOL: Partial<Record<ExtendedAppState, string>> = {
   'manual-landing': 'manual-landing',
   'spin360': 'spin360',
   'studio': 'beta',
+  'damage-repair': 'damage-repair',
 };
 
 const Index = () => {
@@ -600,6 +604,9 @@ const Index = () => {
       case 'sales-assistant':
         navigate('/sales-assistant');
         break;
+      case 'damage-repair':
+        setAppState('damage-repair' as ExtendedAppState);
+        break;
       default:
         toast.info('Diese Funktion ist bald verfügbar!');
     }
@@ -810,6 +817,19 @@ const Index = () => {
           {/* ─── One-Shot Studio (Beta) ─── */}
           {appState === 'studio' && (
             <OneShotStudio onBack={() => setAppState('hub')} />
+          )}
+
+          {/* ─── Schadensreparatur ─── */}
+          {appState === 'damage-repair' && (
+            <DamageRepairFlow
+              onBack={() => setAppState('hub')}
+              onComplete={async (imgs) => {
+                setStandalonePhotoResults(imgs);
+                await saveStandaloneImages(imgs);
+                toast.success(`${imgs.length} reparierte Bilder in Galerie gespeichert!`);
+                navigate('/dashboard?tab=gallery');
+              }}
+            />
           )}
 
           {appState === 'idle' && (
