@@ -94,6 +94,10 @@ const GEMINI_SUPPORTED_RATIOS: Array<{ label: string; value: number }> = [
 function getGeminiAspectRatio(w: number, h: number): string {
   if (!w || !h) return "1:1";
   const target = w / h;
+  // Gemini's native imageConfig only supports fixed ratios; extreme display-ad
+  // ratios like 160×600 must be described textually instead of snapped to 9:16,
+  // otherwise the model composes a short centered poster with empty caps.
+  if (target < 0.4 || target > 2.6) return `${w}:${h}`;
   let best = GEMINI_SUPPORTED_RATIOS[0];
   let bestDiff = Math.abs(Math.log(target / best.value));
   for (const r of GEMINI_SUPPORTED_RATIOS) {
@@ -338,7 +342,14 @@ async function generateGemini(prompt: string, imageBase64: string | null, logoBa
 
   // 1) FORMAT-Direktive ZUERST (Gemini gewichtet frühe Instruktionen stark)
   if (width && height) {
-    const fillRule = isPortrait
+    const targetRatio = width / height;
+    const isExtremePortrait = isPortrait && targetRatio < 0.4;
+    const isExtremeLandscape = isLandscape && targetRatio > 2.6;
+    const fillRule = isExtremePortrait
+      ? `- EXTREME VERTICAL DISPLAY AD: use 100% of the ${width}×${height} canvas from top edge to bottom edge. NO centered mini-poster, NO phone-story crop, NO blank white/cream top cap, NO blank white/cream bottom cap. Vehicle large in the central 55-65% of height, logo/headline/price in compact top zone, CTA in compact bottom zone, and the scene/background must remain visible behind every zone edge-to-edge.`
+      : isExtremeLandscape
+      ? `- EXTREME HORIZONTAL DISPLAY AD: use 100% of the ${width}×${height} canvas from left edge to right edge. NO centered mini-banner, NO blank side caps. Vehicle and copy must fill the full strip with edge-to-edge background.`
+      : isPortrait
       ? `- The vehicle MUST fill ~70% of the canvas HEIGHT and be horizontally centered. NO empty cream/white zones above or below the vehicle. Background scene must extend edge-to-edge to all 4 borders.`
       : isLandscape
       ? `- The vehicle MUST fill ~75% of the canvas WIDTH. Background scene extends edge-to-edge. NO flat empty bands on left/right sides.`
