@@ -29,10 +29,10 @@ import { FolderOpen } from 'lucide-react';
 import { useBackgroundTasks } from '@/contexts/BackgroundTasksContext';
 
 /**
- * CONTAIN-fit: resize image to fit ENTIRELY into target dimensions, padding the
- * remainder with a neutral background. NEVER crops content — only adds bars if
- * the AI returned a slightly off ratio. Aspect ratio of the saved banner is
- * always exactly targetW × targetH.
+ * Finalize the AI output to the exact ad size without introducing white bars.
+ * For normal slight ratio misses we keep the full generated image over a blurred
+ * edge-to-edge extension. For extreme ad ratios (160×600 / billboard) we cover-crop
+ * because contain-fitting would create huge empty bands.
  */
 function fitImageToSize(dataUrl: string, targetW: number, targetH: number, bg: string = '#ffffff'): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -44,15 +44,32 @@ function fitImageToSize(dataUrl: string, targetW: number, targetH: number, bg: s
         canvas.height = targetH;
         const ctx = canvas.getContext('2d');
         if (!ctx) return reject(new Error('canvas unsupported'));
-        // Fill background first (only visible if ratios mismatch)
-        ctx.fillStyle = bg;
-        ctx.fillRect(0, 0, targetW, targetH);
         const srcRatio = img.width / img.height;
         const dstRatio = targetW / targetH;
         // If ratio is essentially correct (<1% deviation), just stretch-fit (no bars, no crop).
         if (Math.abs(srcRatio - dstRatio) / dstRatio < 0.01) {
           ctx.drawImage(img, 0, 0, targetW, targetH);
         } else {
+          const coverScale = Math.max(targetW / img.width, targetH / img.height);
+          const coverW = img.width * coverScale;
+          const coverH = img.height * coverScale;
+          const coverX = (targetW - coverW) / 2;
+          const coverY = (targetH - coverH) / 2;
+          const isExtremeAdRatio = targetH / targetW >= 2.8 || targetW / targetH >= 2.8;
+
+          if (isExtremeAdRatio) {
+            ctx.drawImage(img, coverX, coverY, coverW, coverH);
+            resolve(canvas.toDataURL('image/png'));
+            return;
+          }
+
+          ctx.save();
+          ctx.filter = 'blur(26px) brightness(0.92) saturate(1.05)';
+          ctx.drawImage(img, coverX, coverY, coverW, coverH);
+          ctx.restore();
+          ctx.fillStyle = 'rgba(255,255,255,0.06)';
+          ctx.fillRect(0, 0, targetW, targetH);
+
           let dw = targetW, dh = targetH, dx = 0, dy = 0;
           if (srcRatio > dstRatio) {
             // wider → fit width, pad top/bottom
@@ -100,7 +117,10 @@ function snapToGeminiRatio(target: number): number {
  * (the root cause of "lots of cream space" 9:16 banners).
  */
 function padToAspectRatio(dataUrl: string, rawTargetRatio: number, _bg: string = '#f4f4f4'): Promise<string> {
-  const targetRatio = snapToGeminiRatio(rawTargetRatio);
+  // Keep extreme display-ad ratios raw (e.g. 160×600 = 4:15). Snapping them to
+  // 9:16 makes Gemini return a short centered poster, which later caused white
+  // top/bottom bands. Normal social ratios still snap to Gemini's native set.
+  const targetRatio = rawTargetRatio < 0.4 || rawTargetRatio > 2.6 ? rawTargetRatio : snapToGeminiRatio(rawTargetRatio);
   return new Promise((resolve, reject) => {
     const img = new window.Image();
     img.onload = () => {
