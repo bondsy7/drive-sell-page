@@ -587,9 +587,11 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
 
     setAnalyzingSheet(true);
     try {
-      const { data, error } = await supabase.functions.invoke('analyze-offer-image', {
-        body: { imageBase64s: merged },
-      });
+      const refs = await uploadToGeminiFiles(merged.map((b, i) => ({ id: `s${i}`, imageBase64: b })));
+      const body: any = refs && refs.length === merged.length
+        ? { imageFileUris: refs }
+        : { imageBase64s: merged };
+      const { data, error } = await supabase.functions.invoke('analyze-offer-image', { body });
       if (error || data?.error) {
         toast.error('Datenblätter konnten nicht analysiert werden', { description: data?.error || error?.message });
         return;
@@ -629,9 +631,11 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
     // Re-analyze remaining sheets
     setAnalyzingSheet(true);
     try {
-      const { data, error } = await supabase.functions.invoke('analyze-offer-image', {
-        body: { imageBase64s: next },
-      });
+      const refs = await uploadToGeminiFiles(next.map((b, i) => ({ id: `s${i}`, imageBase64: b })));
+      const body: any = refs && refs.length === next.length
+        ? { imageFileUris: refs }
+        : { imageBase64s: next };
+      const { data, error } = await supabase.functions.invoke('analyze-offer-image', { body });
       if (!error && data?.extracted) {
         const ext = data.extracted as ScanData;
         setScanData(ext);
