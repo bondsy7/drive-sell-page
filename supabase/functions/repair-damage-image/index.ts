@@ -27,7 +27,12 @@ async function authUser(req: Request): Promise<string | Response> {
   return data.claims.sub as string;
 }
 
-async function repairImage(apiKey: string, imageBase64: string, schaeden: any[]): Promise<string | null> {
+async function repairImage(
+  apiKey: string,
+  imageBase64: string | null,
+  imageFileUri: { uri: string; mimeType?: string } | null,
+  schaeden: any[],
+): Promise<string | null> {
   const list = (schaeden || []).map((s: any) =>
     `${s.nr}. ${s.position} (${s.bauteil}) – ${s.art}: ${s.massnahme}`
   ).join("\n");
@@ -46,13 +51,22 @@ REGELN:
 - Wirkt wie ein Pressefoto eines neuwertigen Fahrzeugs.
 - Beleuchtung und Reflexionen realistisch beibehalten.`;
 
-  const raw = imageBase64.includes(",") ? imageBase64.split(",")[1] : imageBase64;
-  let mime = "image/jpeg";
-  if (imageBase64.startsWith("data:image/png")) mime = "image/png";
-  else if (imageBase64.startsWith("data:image/webp")) mime = "image/webp";
+  let imagePart: any;
+  if (imageFileUri?.uri) {
+    imagePart = { file_data: { mime_type: imageFileUri.mimeType || "image/jpeg", file_uri: imageFileUri.uri } };
+    console.log("[repair] using file_uri reference");
+  } else if (imageBase64) {
+    const raw = imageBase64.includes(",") ? imageBase64.split(",")[1] : imageBase64;
+    let mime = "image/jpeg";
+    if (imageBase64.startsWith("data:image/png")) mime = "image/png";
+    else if (imageBase64.startsWith("data:image/webp")) mime = "image/webp";
+    imagePart = { inlineData: { mimeType: mime, data: raw } };
+  } else {
+    return null;
+  }
 
   const body = JSON.stringify({
-    contents: [{ parts: [{ text: prompt }, { inlineData: { mimeType: mime, data: raw } }] }],
+    contents: [{ parts: [{ text: prompt }, imagePart] }],
     generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
   });
 
@@ -95,8 +109,8 @@ serve(async (req) => {
     const userId = await authUser(req);
     if (userId instanceof Response) return userId;
 
-    const { image, schaeden } = await req.json();
-    if (!image) {
+    const { image, imageFileUri, schaeden } = await req.json();
+    if (!image && !imageFileUri?.uri) {
       return new Response(JSON.stringify({ error: "Kein Bild übergeben" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -117,7 +131,7 @@ serve(async (req) => {
     const GEMINI_API_KEY = await getSecret("GEMINI_API_KEY");
     if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY missing");
 
-    const repaired = await repairImage(GEMINI_API_KEY, image, schaeden || []);
+    const repaired = await repairImage(GEMINI_API_KEY, image || null, imageFileUri || null, schaeden || []);
     if (!repaired) {
       return new Response(JSON.stringify({ error: "Reparatur-Bild konnte nicht generiert werden" }), {
         status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
