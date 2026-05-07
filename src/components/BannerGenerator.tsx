@@ -779,12 +779,12 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
     const prompt = buildPromptForFormat(formatId);
 
     try {
-      // Upload references to Gemini Files API once per session, reuse for all formats.
-      const { vehicleFileRef, logoFileRef } = await ensureFileRefs();
+      // Per-aspect Files API upload (cached). The vehicle reference is pre-padded to the
+      // target aspect ratio so even Gemini's fast fallback model produces the correct format.
+      const targetRatio = fmt.w / fmt.h;
+      const { vehicleFileRef, logoFileRef } = await ensureFileRefsForAspect(targetRatio);
 
       // Fallback Base64: only sent when Files API upload failed for this asset.
-      // Pre-pad only when falling back, so Gemini receives a target-ratio hint via the reference image.
-      const targetRatio = fmt.w / fmt.h;
       const vehicleFallbackB64 = !vehicleFileRef && vehicleImage
         ? await padToAspectRatio(vehicleImage, targetRatio).catch(() => vehicleImage)
         : undefined;
