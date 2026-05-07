@@ -68,6 +68,12 @@ const TILES: ActionTile[] = [
     description: 'Bilder hochladen – KI repariert Dellen, Kratzer, Steinschläge & Co. Optional direkt in den Showroom stellen.',
   },
   {
+    id: 'damage-analysis',
+    icon: <Search className="w-7 h-7" />,
+    title: 'Schadensanalyse',
+    description: 'Bilder analysieren – KI markiert Schäden, schätzt Kosten und erstellt einen professionellen Sachverständigenbericht.',
+  },
+  {
     id: 'sales-assistant',
     icon: <Sparkles className="w-7 h-7" />,
     title: 'KI Verkaufsassistent',
