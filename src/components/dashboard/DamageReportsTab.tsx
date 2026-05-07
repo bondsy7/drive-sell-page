@@ -45,6 +45,7 @@ export default function DamageReportsTab() {
   const [active, setActive] = useState<Report | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [viewerIndex, setViewerIndex] = useState(0);
+  const [repairingIndex, setRepairingIndex] = useState<number | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -75,6 +76,53 @@ export default function DamageReportsTab() {
     a.href = url; a.download = `${r.title.replace(/\s+/g, '_')}.md`;
     document.body.appendChild(a); a.click(); a.remove();
     URL.revokeObjectURL(url);
+  };
+
+  const handleRepairInReport = async (report: Report, imageIndex: number) => {
+    const current = report.images?.[imageIndex];
+    if (!current?.base64) {
+      toast.error('Kein Originalbild für die Reparatur gefunden');
+      return;
+    }
+
+    setRepairingIndex(imageIndex);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('Nicht eingeloggt');
+
+      const schaeden = (report.analysis?.schaeden || []).filter((s: any) => s.bildIndex === imageIndex);
+      const { uploadToGeminiFiles } = await import('@/lib/gemini-file-upload');
+      const refs = await uploadToGeminiFiles([{ id: 'damage-repair', imageBase64: current.base64 }]);
+      const imageFileUri = refs?.[0] || null;
+
+      const { data, error } = await supabase.functions.invoke('repair-damage-image', {
+        body: imageFileUri
+          ? { imageFileUri, schaeden }
+          : { image: current.base64, schaeden },
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+
+      if (error || !data?.repaired) {
+        throw new Error(data?.error || error?.message || 'Reparatur-Bild konnte nicht generiert werden');
+      }
+
+      const nextImages = report.images.map((img: any, i: number) => (
+        i === imageIndex ? { ...img, repairedBase64: data.repaired } : img
+      ));
+      const { error: updateError } = await supabase
+        .from('damage_reports')
+        .update({ images: nextImages as any })
+        .eq('id', report.id);
+      if (updateError) throw updateError;
+
+      setActive(prev => prev?.id === report.id ? { ...prev, images: nextImages } : prev);
+      setReports(prev => prev.map(r => r.id === report.id ? { ...r, images: nextImages } : r));
+      toast.success('Reparatur-Vorschau erstellt');
+    } catch (e: any) {
+      toast.error(e?.message || 'Fehler bei der Reparatur');
+    } finally {
+      setRepairingIndex(null);
+    }
   };
 
   if (loading) {
@@ -202,13 +250,21 @@ export default function DamageReportsTab() {
 
                       <TabsContent value="repair" className="mt-3">
                         {repaired && orig ? (
-                          <BeforeAfterSlider
-                            beforeSrc={orig}
-                            afterSrc={repaired}
-                            beforeLabel="Schaden"
-                            afterLabel="Repariert"
-                            className="max-h-[55vh]"
-                          />
+                          <div className="space-y-3">
+                            <BeforeAfterSlider
+                              beforeSrc={orig}
+                              afterSrc={repaired}
+                              beforeLabel="Vorher"
+                              afterLabel="Nachher"
+                              className="max-h-[55vh]"
+                            />
+                            <div className="flex justify-center">
+                              <Button size="sm" variant="outline" onClick={() => handleRepairInReport(active, viewerIndex)} disabled={repairingIndex === viewerIndex}>
+                                {repairingIndex === viewerIndex ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : <Sparkles className="w-4 h-4 mr-1.5" />}
+                                Neu generieren
+                              </Button>
+                            </div>
+                          </div>
                         ) : (
                           <div className="rounded-xl bg-card border border-border p-6 text-center space-y-3">
                             <div className="mx-auto w-10 h-10 rounded-full bg-accent/15 flex items-center justify-center">
@@ -217,11 +273,12 @@ export default function DamageReportsTab() {
                             <div>
                               <h4 className="font-semibold text-foreground">Reparatur-Vorschau noch nicht erstellt</h4>
                               <p className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">
-                                Öffne das Bild im Detail-Viewer und generiere die Vorher-/Nachher-Visualisierung.
+                                Die Vorher-/Nachher-Visualisierung wird direkt aus dem Originalbild erstellt.
                               </p>
                             </div>
-                            <Button size="sm" onClick={() => setLightboxIndex(viewerIndex)} className="gradient-accent text-accent-foreground font-semibold">
-                              <Sparkles className="w-4 h-4 mr-1.5" /> Reparatur generieren
+                            <Button size="sm" onClick={() => handleRepairInReport(active, viewerIndex)} disabled={repairingIndex === viewerIndex} className="gradient-accent text-accent-foreground font-semibold">
+                              {repairingIndex === viewerIndex ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : <Sparkles className="w-4 h-4 mr-1.5" />}
+                              {repairingIndex === viewerIndex ? 'Generiere Reparatur…' : 'Reparatur generieren'}
                             </Button>
                           </div>
                         )}
