@@ -243,8 +243,8 @@ serve(async (req) => {
       });
     }
 
-    // Cost: 2 credits per image (analysis + annotation)
-    const cost = images.length * 2;
+    // Cost: 1 credit per image (analysis only — annotation runs in separate function)
+    const cost = images.length * 1;
     const auth = await authAndDeduct(req, cost);
     if (auth instanceof Response) return auth;
 
