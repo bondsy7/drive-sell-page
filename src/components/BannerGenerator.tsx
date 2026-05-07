@@ -28,6 +28,42 @@ import { useVehicleAssets } from '@/hooks/useVehicleAssets';
 import { FolderOpen } from 'lucide-react';
 import { useBackgroundTasks } from '@/contexts/BackgroundTasksContext';
 
+/**
+ * Cover-crop + resize a base64 image to exact target dimensions.
+ * Guarantees the saved/displayed banner matches the requested aspect ratio
+ * even if the AI model returned a slightly different ratio.
+ */
+function fitImageToSize(dataUrl: string, targetW: number, targetH: number): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new window.Image();
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = targetW;
+        canvas.height = targetH;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return reject(new Error('canvas unsupported'));
+        const srcRatio = img.width / img.height;
+        const dstRatio = targetW / targetH;
+        let sx = 0, sy = 0, sw = img.width, sh = img.height;
+        if (srcRatio > dstRatio) {
+          // source wider → crop sides
+          sw = img.height * dstRatio;
+          sx = (img.width - sw) / 2;
+        } else if (srcRatio < dstRatio) {
+          // source taller → crop top/bottom
+          sh = img.width / dstRatio;
+          sy = (img.height - sh) / 2;
+        }
+        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, targetW, targetH);
+        resolve(canvas.toDataURL('image/png'));
+      } catch (e) { reject(e); }
+    };
+    img.onerror = () => reject(new Error('image load failed'));
+    img.src = dataUrl;
+  });
+}
+
 // ─── Config ───
 
 const BANNER_FORMATS = [
@@ -614,7 +650,9 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
         return null;
       }
       if (data?.imageBase64) {
-        return { formatId: fmt.id, formatLabel: fmt.label, ratio: fmt.ratio, image: data.imageBase64, w: fmt.w, h: fmt.h };
+        // Force target dimensions: cover-crop to exact w×h so 9:16 etc. is guaranteed
+        const fitted = await fitImageToSize(data.imageBase64, fmt.w, fmt.h).catch(() => data.imageBase64);
+        return { formatId: fmt.id, formatLabel: fmt.label, ratio: fmt.ratio, image: fitted, w: fmt.w, h: fmt.h };
       }
     } catch (e: any) {
       if (e?.message === 'insufficient_credits') throw e;
