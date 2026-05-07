@@ -29,12 +29,12 @@ import { FolderOpen } from 'lucide-react';
 import { useBackgroundTasks } from '@/contexts/BackgroundTasksContext';
 
 /**
- * Finalize the AI output to the exact ad size without introducing white bars.
- * For normal slight ratio misses we keep the full generated image over a blurred
- * edge-to-edge extension. For extreme ad ratios (160×600 / billboard) we cover-crop
- * because contain-fitting would create huge empty bands.
+ * Finalize the AI output to the exact ad size without adding padding, blur bars,
+ * side caps or letterboxing. We deliberately scale the complete generated frame
+ * to the requested canvas, because preserving all content is more important than
+ * proportional contain-fitting for fixed ad inventory.
  */
-function fitImageToSize(dataUrl: string, targetW: number, targetH: number, bg: string = '#ffffff'): Promise<string> {
+function fitImageToSize(dataUrl: string, targetW: number, targetH: number): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new window.Image();
     img.onload = () => {
@@ -44,55 +44,9 @@ function fitImageToSize(dataUrl: string, targetW: number, targetH: number, bg: s
         canvas.height = targetH;
         const ctx = canvas.getContext('2d');
         if (!ctx) return reject(new Error('canvas unsupported'));
-        const srcRatio = img.width / img.height;
-        const dstRatio = targetW / targetH;
-        const ratioDeviation = Math.abs(srcRatio - dstRatio) / dstRatio;
-        // If ratio is close enough, resize directly. This avoids tiny edge bands on
-        // formats like 1200×628 while staying visually natural.
-        if (ratioDeviation < 0.12) {
-          ctx.drawImage(img, 0, 0, targetW, targetH);
-        } else {
-          const coverScale = Math.max(targetW / img.width, targetH / img.height);
-          const coverW = img.width * coverScale;
-          const coverH = img.height * coverScale;
-          const coverX = (targetW - coverW) / 2;
-          const coverY = (targetH - coverH) / 2;
-          const isExtremePortrait = targetH / targetW >= 2.8;
-          const isExtremeLandscape = targetW / targetH >= 2.8;
-
-          if (isExtremePortrait) {
-            ctx.drawImage(img, coverX, coverY, coverW, coverH);
-            resolve(canvas.toDataURL('image/png'));
-            return;
-          }
-
-          ctx.save();
-          ctx.filter = 'blur(26px) brightness(0.92) saturate(1.05)';
-          ctx.drawImage(img, coverX, coverY, coverW, coverH);
-          ctx.restore();
-          ctx.fillStyle = 'rgba(255,255,255,0.06)';
-          ctx.fillRect(0, 0, targetW, targetH);
-
-          let dw = targetW, dh = targetH, dx = 0, dy = 0;
-          if (srcRatio > dstRatio) {
-            // wider → fit width, pad top/bottom
-            dh = targetW / srcRatio;
-            dy = (targetH - dh) / 2;
-          } else {
-            // taller → fit height, pad sides
-            dw = targetH * srcRatio;
-            dx = (targetW - dw) / 2;
-          }
-          if (isExtremeLandscape) {
-            // 970×250 cannot be produced natively by Gemini. Keep the whole generated
-            // banner visible and extend only the background, never crop the vehicle/text.
-            dh = targetH;
-            dw = targetH * srcRatio;
-            dx = (targetW - dw) / 2;
-            dy = 0;
-          }
-          ctx.drawImage(img, 0, 0, img.width, img.height, dx, dy, dw, dh);
-        }
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, targetW, targetH);
         resolve(canvas.toDataURL('image/png'));
       } catch (e) { reject(e); }
     };
@@ -128,14 +82,10 @@ function snapToGeminiRatio(target: number): number {
  * (the root cause of "lots of cream space" 9:16 banners).
  */
 function padToAspectRatio(dataUrl: string, rawTargetRatio: number, _bg: string = '#f4f4f4'): Promise<string> {
-  // Do not pre-pad extreme ad references. The model otherwise learns the padded
-  // bands and repeats/extends them into the final creative.
-  if (rawTargetRatio < 0.4 || rawTargetRatio > 2.8) return Promise.resolve(dataUrl);
-  // Skyscraper (extreme vertical < 0.4) keeps raw ratio — Gemini handles it textually.
-  // Extreme horizontal billboards (e.g. 970×250 = 3.88) snap to the widest supported
-  // ratio (21:9 ≈ 2.33) so Gemini's native aspect control kicks in; the final
-  // cover-crop in fitImageToSize trims it down to the exact ad size.
-  const targetRatio = rawTargetRatio < 0.4 ? rawTargetRatio : snapToGeminiRatio(rawTargetRatio);
+  // Always snap references to the closest Gemini-native ratio. Unsupported ad
+  // inventory like 970×250 or 160×600 is then finalized to the exact requested
+  // size by fitImageToSize without adding any padding/caps.
+  const targetRatio = snapToGeminiRatio(rawTargetRatio);
   return new Promise((resolve, reject) => {
     const img = new window.Image();
     img.onload = () => {
@@ -684,11 +634,11 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
     const isBillboard = fmt.id === 'billboard';
     const isLandscapeAd = fmt.id === 'hero' || fmt.id === 'fb-ad';
     const formatDirective = isWideSkyscraper
-      ? `WIDE SKYSCRAPER SPECIAL LAYOUT (MANDATORY): This is a very narrow 160×600 display ad, NOT a 9:16 story. Use one continuous vertical composition from top edge to bottom edge. No repeated road/background sections, no duplicated vehicle, no stacked poster panels, no white/cream caps, no blank rounded card. Put compact logo/headline/price in the top 18–24%, one single vehicle in the central 38–48%, CTA and legal line in the bottom 18–24%. Background must continue naturally behind every zone edge-to-edge.`
+      ? `WIDE SKYSCRAPER SPECIAL LAYOUT (MANDATORY): This is a very narrow 160×600 display ad, NOT a 9:16 story. Use one continuous vertical composition from top edge to bottom edge. No repeated road/background sections, no duplicated vehicle, no stacked poster panels, no white/cream caps, no blank rounded card. Put compact logo/headline/price in the top 18–24%, one single vehicle in the central 38–48%, CTA and legal line in the bottom 18–24%. Background/art direction must be designed as a full-height image and continue naturally behind every zone edge-to-edge.`
       : isBillboard
-      ? `BILLBOARD SPECIAL LAYOUT (MANDATORY): This is a 970×250 ultra-wide strip. Compose it as an ultra-wide ad from the start, not as a cropped 16:9/21:9 image. Keep all important content inside a central safe area. Vehicle should occupy the middle/right 42–52% of canvas width and remain fully visible. Copy/price/logo should sit left or right in compact blocks. Do NOT crop through the vehicle, headline, logo or price. No empty white/cream bands or side caps.`
+      ? `BILLBOARD SPECIAL LAYOUT (MANDATORY): This is a 970×250 ultra-wide strip. Compose it as an ultra-wide full image from the start, not as a cropped 16:9/21:9 image and not as a centered motif with side extensions. Every pixel from the far left edge to the far right edge must be an intentional part of the banner image. Keep all important content inside a central safe area. Vehicle should occupy the middle/right 42–52% of canvas width and remain fully visible. Copy/price/logo should sit left or right in compact blocks. Do NOT crop through the vehicle, headline, logo or price. No empty white/cream bands, no blurred side caps, no duplicated background extensions.`
       : isLandscapeAd
-      ? `LANDSCAPE AD LAYOUT (MANDATORY): Compose natively for ${fmt.w}×${fmt.h}. Keep the vehicle fully visible with breathing room, and keep headline/logo/price within safe margins. Do NOT crop text or brand marks. The result must feel like the requested landscape ad ratio, not a zoomed-in crop.`
+      ? `LANDSCAPE AD LAYOUT (MANDATORY): Compose natively for ${fmt.w}×${fmt.h} as a complete full-bleed banner image. Keep the vehicle fully visible with breathing room, and keep headline/logo/price within safe margins. Do NOT crop text or brand marks. No generated image may sit as a smaller rectangle inside the canvas; it must fill the whole format.`
       : '';
 
     // Style families decide whether the "clean/bright/subtle accents" baseline applies.
@@ -701,11 +651,12 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
 FORMAT: ${fmt.w}x${fmt.h} pixels (${fmt.ratio} aspect ratio). The output image MUST be exactly this size.
 
 FULL-BLEED COMPOSITION (MANDATORY — APPLIES TO EVERY STYLE AND FORMAT):
-- The artwork MUST fill the ENTIRE canvas edge-to-edge, top to bottom AND left to right. Zero empty/white/blurred bands, zero letterboxing, zero side bars, zero rounded inner card.
-- The vehicle/scene/graphics must extend all the way to every edge of the banner.
+- The artwork MUST fill the ENTIRE canvas edge-to-edge, top to bottom AND left to right as ONE complete banner image. Zero empty/white/cream/blurred bands, zero letterboxing, zero side bars, zero rounded inner card, zero pasted smaller image inside a larger canvas.
+- The vehicle/scene/graphics must extend all the way to every edge of the banner. If there is a text/brand zone, it must still be a designed image area (color, scene, lighting, gradient or layout surface), never blank padding.
 - The vehicle must be sized GENEROUSLY for the format (not a tiny centered motif). It should be the clear hero and visually fill the available image area while leaving safe space for required text/logo.
 - Do NOT crop through the vehicle, headline, subline, price, logo or CTA. ALL required elements must be fully visible inside the canvas.
 - Treat the outermost ~4% as a safe margin: keep important content inside, but the BACKGROUND must still reach the edge.
+- If the exact requested ratio is hard, choose a simpler layout with fewer elements — NEVER solve it by adding empty margins, blurred extensions, repeated background strips or cropping important content.
 
 ${formatDirective}
 
@@ -714,6 +665,8 @@ VEHICLE: "${vehicleTitle}" – use the uploaded vehicle image as the central her
 SCENE: ${scn.prompt}. Place the vehicle naturally in this environment.
 
 STYLE (HIGHEST PRIORITY — overrides any conflicting tone/color/mood guidance below): ${sty.prompt}
+
+${style === 'volkswagen' ? `VOLKSWAGEN FULL-IMAGE CI LOCK (MANDATORY): Volkswagen-style banners must still be FULL-BLEED images. The calm off-white/blue CI may be used as designed layout surfaces, but never as large empty padding around a small photo. Do not place an unchanged dealership photo as a rectangular cutout on a blank VW canvas. Rebuild the whole banner as one official-looking VW ad where the vehicle image area, text area, background and brand area all occupy the full requested format with no unused margins.` : ''}
 
 OCCASION: This is a ${occ.prompt} advertisement.
 
