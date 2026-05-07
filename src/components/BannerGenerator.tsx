@@ -705,6 +705,13 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
         body: {
           prompt,
           imageBase64: vehicleImage,
+          vehicleHint: [
+            vehicleTitle || extractedData?.vehicleTitle ? `Fahrzeug: ${vehicleTitle || extractedData?.vehicleTitle}` : null,
+            extractedData?.brand ? `Marke: ${extractedData.brand}` : null,
+            extractedData?.model ? `Modell: ${extractedData.model}` : null,
+            extractedData?.color ? `Farbe: ${extractedData.color}` : null,
+            extractedData?.bodyType ? `Karosserie: ${extractedData.bodyType}` : null,
+          ].filter(Boolean).join('\n'),
           logoBase64: showLogo && logoBase64 ? logoBase64 : undefined,
           logoBrand: showLogo && logoBase64 ? selectedLogoBrand : undefined,
           modelTier,
@@ -727,7 +734,7 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
       console.error(`Banner ${formatId} failed:`, e);
     }
     return null;
-  }, [buildPromptForFormat, vehicleImage, showLogo, logoBase64, selectedLogoBrand, modelTier]);
+  }, [buildPromptForFormat, vehicleImage, vehicleTitle, extractedData, showLogo, logoBase64, selectedLogoBrand, modelTier]);
 
   // Track auto-created vehicle id so subsequent banners in the same session reuse it.
   const [autoVehicleId, setAutoVehicleId] = useState<string | null>(null);
