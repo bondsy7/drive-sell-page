@@ -57,7 +57,7 @@ const MODEL_MAP: Record<string, ModelConfig> = {
   pro:       { engine: "gemini", model: "gemini-3-pro-image-preview", cost: 8 },
 };
 
-const EDGE_DEADLINE_MS = 115_000;
+const EDGE_DEADLINE_MS = 145_000;
 
 const PROFESSIONAL_BANNER_IMAGE_LOCK = `
 
