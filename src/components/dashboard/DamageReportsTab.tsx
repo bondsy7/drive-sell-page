@@ -13,6 +13,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import DamageImageLightbox from './DamageImageLightbox';
 
 interface Report {
   id: string;
@@ -40,6 +41,7 @@ export default function DamageReportsTab() {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [active, setActive] = useState<Report | null>(null);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -160,9 +162,16 @@ export default function DamageReportsTab() {
               {active.images?.length > 0 && (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {active.images.map((img: any, i: number) => (
-                    <div key={i} className="aspect-[4/3] rounded-lg overflow-hidden bg-muted border border-border">
-                      <img src={img.annotatedBase64 || img.base64} alt="" className="w-full h-full object-cover" />
-                    </div>
+                    <button
+                      key={i}
+                      onClick={() => setLightboxIndex(i)}
+                      className="aspect-[4/3] rounded-lg overflow-hidden bg-muted border border-border hover:border-accent transition-colors group relative"
+                    >
+                      <img src={img.annotatedBase64 || img.base64} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                      <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/20 transition-colors flex items-center justify-center">
+                        <span className="opacity-0 group-hover:opacity-100 text-background text-xs font-semibold px-2 py-1 rounded bg-foreground/60">Vergrößern</span>
+                      </div>
+                    </button>
                   ))}
                 </div>
               )}
@@ -180,6 +189,21 @@ export default function DamageReportsTab() {
           )}
         </DialogContent>
       </Dialog>
+
+      {active && lightboxIndex !== null && (
+        <DamageImageLightbox
+          open={lightboxIndex !== null}
+          images={(active.images as any[]) || []}
+          schaeden={active.analysis?.schaeden || []}
+          initialIndex={lightboxIndex}
+          reportId={active.id}
+          onClose={() => setLightboxIndex(null)}
+          onUpdate={(next) => {
+            setActive(prev => prev ? { ...prev, images: next } : prev);
+            setReports(prev => prev.map(r => r.id === active.id ? { ...r, images: next } : r));
+          }}
+        />
+      )}
     </>
   );
 }
