@@ -137,7 +137,25 @@ serve(async (req) => {
     let resultImage: string | null = null;
     const maxRetries = 0;
 
-    const lockedPrompt = `${prompt}${PROFESSIONAL_BANNER_IMAGE_LOCK}`;
+    // STEP 1: Describe the vehicle via Vision (text-only) so we don't have to
+    // pass the vehicle image into the image generator. Passing a non-square
+    // input image biases Gemini image models to copy that input ratio and
+    // ignore aspectRatio. Logo stays as image (small, 1:1, doesn't bias).
+    let vehicleDescription = "";
+    if (imageBase64) {
+      try {
+        vehicleDescription = await describeVehicle(imageBase64);
+        console.log(`[banner] Vehicle description (${vehicleDescription.length} chars):`, vehicleDescription.slice(0, 200));
+      } catch (descErr) {
+        console.warn("[banner] Vehicle description failed, continuing without:", descErr);
+      }
+    }
+
+    const vehicleBlock = vehicleDescription
+      ? `\n\nVEHICLE TO RENDER (exact identity — reproduce faithfully from this description, do NOT invent a different car):\n${vehicleDescription}\n\nRender this exact vehicle freshly composed inside the NEW banner scene. Adapt the vehicle (angle, scale, lighting, shadows, reflections) to the banner format and environment — never adapt the banner format to the vehicle. The banner aspect ratio is fixed and must dominate composition.`
+      : "";
+
+    const lockedPrompt = `${prompt}${vehicleBlock}${PROFESSIONAL_BANNER_IMAGE_LOCK}`;
 
     if (config.engine === "gemini") {
       // Primary = user-selected model. If it times out / 503s, fall back to
