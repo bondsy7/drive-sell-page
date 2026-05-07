@@ -225,7 +225,7 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onBack, preloadedImage,
       setErrorMessage(err.message || 'Fehler bei der Video-Generierung');
       toast.error(err.message || 'Fehler bei der Video-Generierung');
     }
-  }, [imageBase64, customPrompt, aspectRatio, vehicleId, bgTasks]);
+  }, [imageBase64, customPrompt, aspectRatio, vehicleId, autoVehicleId, user, bgTasks]);
 
   const handleDownload = useCallback(() => {
     if (!videoBase64) return;
