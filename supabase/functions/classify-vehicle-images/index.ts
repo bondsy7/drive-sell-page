@@ -11,8 +11,10 @@ import { getSecret } from "../_shared/get-secret.ts";
 interface InImage {
   /** Caller-provided id so client can match results back to its files */
   id: string;
-  /** data URL or raw base64 (compressed/resized recommended) */
-  imageBase64: string;
+  /** data URL or raw base64 (compressed/resized recommended). Optional if fileUri provided. */
+  imageBase64?: string;
+  /** Pre-uploaded Gemini File API reference (preferred over imageBase64). */
+  fileUri?: { uri: string; mimeType: string } | null;
 }
 
 type Category =
@@ -126,6 +128,11 @@ serve(async (req) => {
 
     const parts: Array<Record<string, unknown>> = [{ text: PROMPT }];
     for (const img of images) {
+      if (img.fileUri?.uri) {
+        parts.push({ file_data: { mime_type: img.fileUri.mimeType || "image/jpeg", file_uri: img.fileUri.uri } });
+        continue;
+      }
+      if (!img.imageBase64) continue;
       const data = img.imageBase64.includes(",")
         ? img.imageBase64.split(",")[1]
         : img.imageBase64;

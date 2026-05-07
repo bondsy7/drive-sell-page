@@ -17,20 +17,29 @@ serve(async (req) => {
     const rawImages: string[] = Array.isArray(body0?.imageBase64s) && body0.imageBase64s.length
       ? body0.imageBase64s
       : (body0?.imageBase64 ? [body0.imageBase64] : []);
-    if (!rawImages.length) return errorResponse("Kein Bild übermittelt", 400);
+    // Pre-uploaded Gemini File API URIs (preferred over base64 to shrink payload).
+    const rawFileUris: Array<{ uri: string; mimeType?: string }> = Array.isArray(body0?.imageFileUris)
+      ? body0.imageFileUris.filter((x: any) => x?.uri)
+      : (body0?.imageFileUri?.uri ? [body0.imageFileUri] : []);
+    if (!rawImages.length && !rawFileUris.length) return errorResponse("Kein Bild übermittelt", 400);
     // Cap to keep prompt + payload sane (Gemini has hard limits on parts).
     const images = rawImages.slice(0, 6);
+    const fileUris = rawFileUris.slice(0, 6);
 
     const apiKey = await getSecret("GEMINI_API_KEY");
     if (!apiKey) return errorResponse("GEMINI_API_KEY not configured", 500);
 
-    // Per-image: strip data URL prefix and detect MIME.
-    const imageParts = images.map((img: string) => {
+    // Per-image: file_data URI takes precedence, fall back to inline base64.
+    const imageParts: Array<Record<string, unknown>> = [];
+    for (const fu of fileUris) {
+      imageParts.push({ file_data: { mime_type: fu.mimeType || "image/jpeg", file_uri: fu.uri } });
+    }
+    for (const img of images) {
       const data = img.includes(",") ? img.split(",")[1] : img;
       const mimeType = img.startsWith("data:image/png") ? "image/png"
         : img.startsWith("data:image/webp") ? "image/webp" : "image/jpeg";
-      return { inlineData: { mimeType, data } };
-    });
+      imageParts.push({ inlineData: { mimeType, data } });
+    }
     console.log(`[analyze-offer-image] Analyzing ${imageParts.length} document(s) in ${analysisMode} mode`);
 
     // Flash zuerst (deutlich schneller, ~5–10s statt 30–60s). Pro nur als

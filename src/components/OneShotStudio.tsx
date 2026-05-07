@@ -59,6 +59,7 @@ import { ensureVehicle } from '@/lib/vehicle-utils';
 import OneShotMarketingForm from './oneshot/OneShotMarketingForm';
 import { persistScanData, persistVinLookup } from '@/lib/scan-to-vehicle-data';
 import ProcessTimer, { formatDuration } from '@/components/ProcessTimer';
+import { uploadToGeminiFiles } from '@/lib/gemini-file-upload';
 import OneShotLightbox, { type LightboxItem } from './oneshot/OneShotLightbox';
 import {
   DEFAULT_FORM, DEFAULT_SOURCES, ONESHOT_BANNER_FORMATS,
@@ -448,8 +449,16 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
     if (newOnes.length === 0) return;
     setClassifying(true);
     try {
+      // Pre-upload to Gemini File API to drastically shrink request payload.
+      const refs = await uploadToGeminiFiles(
+        newOnes.map((i) => ({ id: i.id, imageBase64: i.base64 })),
+      );
+      const payloadImages = newOnes.map((i, idx) => {
+        const ref = refs?.[idx];
+        return ref ? { id: i.id, fileUri: ref } : { id: i.id, imageBase64: i.base64 };
+      });
       const { data, error } = await supabase.functions.invoke('classify-vehicle-images', {
-        body: { images: newOnes.map((i) => ({ id: i.id, imageBase64: i.base64 })) },
+        body: { images: payloadImages },
       });
       if (error || data?.error) {
         toast.error('Klassifikation fehlgeschlagen', { description: data?.error || error?.message });
@@ -578,9 +587,11 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
 
     setAnalyzingSheet(true);
     try {
-      const { data, error } = await supabase.functions.invoke('analyze-offer-image', {
-        body: { imageBase64s: merged },
-      });
+      const refs = await uploadToGeminiFiles(merged.map((b, i) => ({ id: `s${i}`, imageBase64: b })));
+      const body: any = refs && refs.length === merged.length
+        ? { imageFileUris: refs }
+        : { imageBase64s: merged };
+      const { data, error } = await supabase.functions.invoke('analyze-offer-image', { body });
       if (error || data?.error) {
         toast.error('Datenblätter konnten nicht analysiert werden', { description: data?.error || error?.message });
         return;
@@ -620,9 +631,11 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
     // Re-analyze remaining sheets
     setAnalyzingSheet(true);
     try {
-      const { data, error } = await supabase.functions.invoke('analyze-offer-image', {
-        body: { imageBase64s: next },
-      });
+      const refs = await uploadToGeminiFiles(next.map((b, i) => ({ id: `s${i}`, imageBase64: b })));
+      const body: any = refs && refs.length === next.length
+        ? { imageFileUris: refs }
+        : { imageBase64s: next };
+      const { data, error } = await supabase.functions.invoke('analyze-offer-image', { body });
       if (!error && data?.extracted) {
         const ext = data.extracted as ScanData;
         setScanData(ext);

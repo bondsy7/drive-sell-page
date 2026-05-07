@@ -11,6 +11,7 @@ import RemasterOptions from '@/components/RemasterOptions';
 import { type RemasterConfig, buildMasterPrompt, fetchPromptOverrides } from '@/lib/remaster-prompt';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 import { compressImageForAI, fileToBase64 } from '@/lib/image-compress';
+import { uploadToGeminiFiles, type GeminiFileRef } from '@/lib/gemini-file-upload';
 import ImagePreviewLightbox from '@/components/ImagePreviewLightbox';
 import type { PresetData } from './PresetSelectionModal';
 import type { ModelTier } from '@/components/ModelSelector';
@@ -26,6 +27,7 @@ interface PresetUploadFlowProps {
 interface UploadedImage {
   id: string;
   originalBase64: string;
+  fileRef?: GeminiFileRef | null;
   remasteredBase64: string | null;
   status: 'pending' | 'processing' | 'done' | 'error';
   error?: string;
@@ -119,10 +121,29 @@ const PresetUploadFlow: React.FC<PresetUploadFlowProps> = ({ onComplete, onBack 
     setProgress({ current: 0, total });
     setImages(prev => prev.map(x => pending.some(p => p.id === x.id) ? { ...x, status: 'processing' } : x));
 
+    // Pre-upload pending images to Gemini File API to shrink payload.
+    const needUpload = pending.filter(p => !p.fileRef);
+    if (needUpload.length > 0) {
+      const refs = await uploadToGeminiFiles(
+        needUpload.map(p => ({ id: p.id, imageBase64: p.originalBase64 })),
+      );
+      if (refs && refs.length === needUpload.length) {
+        setImages(prev => prev.map(x => {
+          const idx = needUpload.findIndex(p => p.id === x.id);
+          return idx >= 0 ? { ...x, fileRef: refs[idx] } : x;
+        }));
+        for (let i = 0; i < needUpload.length; i++) {
+          const p = pending.find(pp => pp.id === needUpload[i].id);
+          if (p) p.fileRef = refs[i];
+        }
+      }
+    }
+
     const processImage = async (img: UploadedImage) => {
       try {
         const { data, error } = await invokeRemasterVehicleImage({
           imageBase64: img.originalBase64,
+          mainImageFileUri: img.fileRef || null,
           vehicleDescription: '',
           modelTier: modelTier,
           dynamicPrompt,
@@ -172,7 +193,9 @@ const PresetUploadFlow: React.FC<PresetUploadFlowProps> = ({ onComplete, onBack 
 
     try {
       const { data, error } = await invokeRemasterVehicleImage({
-        imageBase64: img.originalBase64, vehicleDescription: '', modelTier: modelTier,
+        imageBase64: img.originalBase64,
+        mainImageFileUri: img.fileRef || null,
+        vehicleDescription: '', modelTier: modelTier,
         dynamicPrompt,
         customShowroomBase64: remasterConfig.customShowroomBase64 || null,
         customPlateImageBase64: remasterConfig.customPlateImageBase64 || null,

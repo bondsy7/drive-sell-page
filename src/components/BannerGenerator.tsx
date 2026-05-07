@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { formatMandatoryDisclosure, isDatOnlyValue } from '@/lib/mandatory-disclosure';
 import { compressImageForAI, fileToBase64 } from '@/lib/image-compress';
+import { uploadToGeminiFiles } from '@/lib/gemini-file-upload';
 import VehicleAssetPicker from '@/components/VehicleAssetPicker';
 import VehicleBrandPicker from '@/components/VehicleBrandPicker';
 import { resolveCanonicalBrand } from '@/lib/brand-aliases';
@@ -462,9 +463,11 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
       const payloadImage = imageBase64.startsWith('data:image/')
         ? await compressImageForAI(imageBase64, 768, 0.72).catch(() => imageBase64)
         : imageBase64;
-      const { data, error } = await supabase.functions.invoke('analyze-offer-image', {
-        body: { imageBase64: payloadImage, analysisMode: 'banner_quick' },
-      });
+      const refs = await uploadToGeminiFiles([{ id: 'offer', imageBase64: payloadImage }]);
+      const body: any = refs?.[0]
+        ? { imageFileUri: refs[0], analysisMode: 'banner_quick' }
+        : { imageBase64: payloadImage, analysisMode: 'banner_quick' };
+      const { data, error } = await supabase.functions.invoke('analyze-offer-image', { body });
       if (error || data?.fallback || data?.error) {
         toast.error(data?.error || 'Bild konnte nicht analysiert werden');
         return;
@@ -524,9 +527,11 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
       const payloadImage = imageBase64.startsWith('data:image/')
         ? await compressImageForAI(imageBase64, 1400, 0.82).catch(() => imageBase64)
         : imageBase64;
-      const { data, error } = await supabase.functions.invoke('analyze-offer-image', {
-        body: { imageBase64: payloadImage, analysisMode: 'full' },
-      });
+      const refs = await uploadToGeminiFiles([{ id: 'sheet', imageBase64: payloadImage }]);
+      const body: any = refs?.[0]
+        ? { imageFileUri: refs[0], analysisMode: 'full' }
+        : { imageBase64: payloadImage, analysisMode: 'full' };
+      const { data, error } = await supabase.functions.invoke('analyze-offer-image', { body });
       if (error || data?.fallback || data?.error) {
         toast.error(data?.error || 'Datenblatt konnte nicht analysiert werden');
         return;
