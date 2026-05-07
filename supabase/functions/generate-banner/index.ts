@@ -345,9 +345,9 @@ async function generateGemini(prompt: string, imageBase64: string | null, logoBa
     const isExtremePortrait = isPortrait && targetRatio < 0.4;
     const isExtremeLandscape = isLandscape && targetRatio > 2.6;
     const fillRule = isExtremePortrait
-      ? `- EXTREME VERTICAL DISPLAY AD: use 100% of the ${width}×${height} canvas from top edge to bottom edge. NO centered mini-poster, NO phone-story crop, NO blank white/cream top cap, NO blank white/cream bottom cap. Vehicle large in the central 55-65% of height, logo/headline/price in compact top zone, CTA in compact bottom zone, and the scene/background must remain visible behind every zone edge-to-edge.`
+      ? `- EXTREME VERTICAL DISPLAY AD: this is a ${width}×${height} skyscraper, NOT a 9:16 story. Use one continuous vertical composition from top edge to bottom edge. NO centered mini-poster, NO repeated road/background section, NO duplicated vehicle, NO phone-story crop, NO blank white/cream top cap, NO blank white/cream bottom cap. One single vehicle large in the central 38-48% of height, logo/headline/price in compact top zone, CTA/legal in compact bottom zone, and the scene/background must continue naturally behind every zone edge-to-edge.`
       : isExtremeLandscape
-      ? `- EXTREME HORIZONTAL DISPLAY AD: use 100% of the ${width}×${height} canvas from left edge to right edge. NO centered mini-banner, NO blank side caps. Vehicle and copy must fill the full strip with edge-to-edge background.`
+      ? `- EXTREME HORIZONTAL DISPLAY AD: this is a ${width}×${height} ultra-wide strip. Compose natively as a wide banner, not as a cropped 16:9 image. Keep all important content inside the central safe area. Vehicle should remain fully visible in the middle/right 42-52% of canvas width, with compact copy/price/logo blocks on the opposite side or balanced around it. NO crop through vehicle/text/logo/price, NO centered mini-banner, NO blank side caps, NO white/cream bands.`
       : isPortrait
       ? `- The vehicle MUST fill ~70% of the canvas HEIGHT and be horizontally centered. NO empty cream/white zones above or below the vehicle. Background scene must extend edge-to-edge to all 4 borders.`
       : isLandscape
@@ -360,6 +360,7 @@ async function generateGemini(prompt: string, imageBase64: string | null, logoBa
 - DO NOT default to 1:1 / square. DO NOT mirror the aspect ratio of the reference vehicle photo.
 - Compose the entire scene (background, vehicle placement, headline, logo, negative space) NATIVELY for a ${aspectLabel} ${orientationWord} canvas.
 - If the reference vehicle image has a different aspect ratio, IGNORE its framing — only its identity matters.
+- Keep all essential elements fully inside a 5% inner safe area. Never place vehicle edges, headline, price, logo or CTA directly on the outer crop boundary.
 
 COMPOSITION FILL RULE (NO EMPTY ZONES):
 ${fillRule}
