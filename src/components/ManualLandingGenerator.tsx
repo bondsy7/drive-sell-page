@@ -268,7 +268,7 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
 
         const { data: project, error: saveError } = await supabase.from('projects').insert({
           user_id: user.id,
-          vehicle_id: vehicleIdParam || null,
+          vehicle_id: effectiveVehicleId,
           title: `${brand} ${model}${variant ? ` ${variant}` : ''} – Landing Page`,
           vehicle_data: {
             type: 'landing-page',
@@ -278,7 +278,7 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
             imageMap: data.imageMap || {},
             dealer,
             brandLogoUrl: data.brandLogoUrl || '',
-            vehicleId: vehicleIdParam || null,
+            vehicleId: effectiveVehicleId,
           } as any,
           template_id: 'landing-page',
           html_content: data.html,
