@@ -121,10 +121,29 @@ const PresetUploadFlow: React.FC<PresetUploadFlowProps> = ({ onComplete, onBack 
     setProgress({ current: 0, total });
     setImages(prev => prev.map(x => pending.some(p => p.id === x.id) ? { ...x, status: 'processing' } : x));
 
+    // Pre-upload pending images to Gemini File API to shrink payload.
+    const needUpload = pending.filter(p => !p.fileRef);
+    if (needUpload.length > 0) {
+      const refs = await uploadToGeminiFiles(
+        needUpload.map(p => ({ id: p.id, imageBase64: p.originalBase64 })),
+      );
+      if (refs && refs.length === needUpload.length) {
+        setImages(prev => prev.map(x => {
+          const idx = needUpload.findIndex(p => p.id === x.id);
+          return idx >= 0 ? { ...x, fileRef: refs[idx] } : x;
+        }));
+        for (let i = 0; i < needUpload.length; i++) {
+          const p = pending.find(pp => pp.id === needUpload[i].id);
+          if (p) p.fileRef = refs[i];
+        }
+      }
+    }
+
     const processImage = async (img: UploadedImage) => {
       try {
         const { data, error } = await invokeRemasterVehicleImage({
           imageBase64: img.originalBase64,
+          mainImageFileUri: img.fileRef || null,
           vehicleDescription: '',
           modelTier: modelTier,
           dynamicPrompt,
