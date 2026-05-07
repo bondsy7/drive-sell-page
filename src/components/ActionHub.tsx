@@ -61,6 +61,12 @@ const TILES: ActionTile[] = [
     description: 'Fahrzeugbild hochladen und ein professionelles Showroom-Video per KI erstellen.',
   },
   {
+    id: 'damage-repair',
+    icon: <Wrench className="w-7 h-7" />,
+    title: 'Schadensreparatur',
+    description: 'Bilder hochladen – KI repariert Dellen, Kratzer, Steinschläge & Co. Optional direkt in den Showroom stellen.',
+  },
+  {
     id: 'sales-assistant',
     icon: <Sparkles className="w-7 h-7" />,
     title: 'KI Verkaufsassistent',
