@@ -189,6 +189,21 @@ export default function DamageReportsTab() {
           )}
         </DialogContent>
       </Dialog>
+
+      {active && lightboxIndex !== null && (
+        <DamageImageLightbox
+          open={lightboxIndex !== null}
+          images={(active.images as any[]) || []}
+          schaeden={active.analysis?.schaeden || []}
+          initialIndex={lightboxIndex}
+          reportId={active.id}
+          onClose={() => setLightboxIndex(null)}
+          onUpdate={(next) => {
+            setActive(prev => prev ? { ...prev, images: next } : prev);
+            setReports(prev => prev.map(r => r.id === active.id ? { ...r, images: next } : r));
+          }}
+        />
+      )}
     </>
   );
 }
