@@ -6,6 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 import { compressImageForAI, fileToBase64 } from '@/lib/image-compress';
+import { uploadToGeminiFiles, type GeminiFileRef } from '@/lib/gemini-file-upload';
 import ImagePreviewLightbox from '@/components/ImagePreviewLightbox';
 import ProcessTimer from '@/components/ProcessTimer';
 
@@ -17,6 +18,7 @@ interface DamageRepairFlowProps {
 interface UploadedImage {
   id: string;
   originalBase64: string;
+  fileRef?: GeminiFileRef | null;
   repairedBase64: string | null;
   status: 'pending' | 'processing' | 'done' | 'error';
   error?: string;
@@ -116,6 +118,7 @@ const DamageRepairFlow: React.FC<DamageRepairFlowProps> = ({ onBack, onComplete 
     try {
       const { data, error } = await invokeRemasterVehicleImage({
         imageBase64: img.originalBase64,
+        mainImageFileUri: img.fileRef || null,
         vehicleDescription: 'Damaged vehicle to be repaired',
         modelTier: 'qualitaet',
         dynamicPrompt: buildPrompt(),
@@ -137,6 +140,25 @@ const DamageRepairFlow: React.FC<DamageRepairFlowProps> = ({ onBack, onComplete 
     setIsProcessing(true);
     setProgress({ current: 0, total: pending.length });
     setImages(prev => prev.map(x => pending.some(p => p.id === x.id) ? { ...x, status: 'processing' } : x));
+
+    // Upload images that don't yet have a fileRef to Gemini File API (parallel batch)
+    const needUpload = pending.filter(p => !p.fileRef);
+    if (needUpload.length > 0) {
+      const refs = await uploadToGeminiFiles(
+        needUpload.map(p => ({ id: p.id, imageBase64: p.originalBase64 })),
+      );
+      if (refs && refs.length === needUpload.length) {
+        setImages(prev => prev.map(x => {
+          const idx = needUpload.findIndex(p => p.id === x.id);
+          return idx >= 0 ? { ...x, fileRef: refs[idx] } : x;
+        }));
+        // attach to local pending list too
+        for (let i = 0; i < needUpload.length; i++) {
+          const p = pending.find(pp => pp.id === needUpload[i].id);
+          if (p) p.fileRef = refs[i];
+        }
+      }
+    }
 
     let done = 0;
     const CONCURRENCY = 3;

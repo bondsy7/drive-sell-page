@@ -49,8 +49,16 @@ const DamageImageLightbox: React.FC<Props> = ({
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error('Nicht eingeloggt');
       const damagesForImage = (schaeden || []).filter((s: any) => s.bildIndex === index);
+
+      // Try uploading via Gemini File API to reduce payload
+      const { uploadToGeminiFiles } = await import('@/lib/gemini-file-upload');
+      const refs = await uploadToGeminiFiles([{ id: 'main', imageBase64: current.base64 }]);
+      const imageFileUri = refs && refs[0] ? refs[0] : null;
+
       const { data, error } = await supabase.functions.invoke('repair-damage-image', {
-        body: { image: current.base64, schaeden: damagesForImage },
+        body: imageFileUri
+          ? { imageFileUri, schaeden: damagesForImage }
+          : { image: current.base64, schaeden: damagesForImage },
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (error || !data?.repaired) throw new Error(data?.error || error?.message || 'Reparatur fehlgeschlagen');
