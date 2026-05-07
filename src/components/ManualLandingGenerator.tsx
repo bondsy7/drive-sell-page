@@ -290,6 +290,48 @@ const ManualLandingGenerator: React.FC<ManualLandingGeneratorProps> = ({ onBack,
           return;
         }
 
+        // ── Originale (hochgeladene Roh-Fotos) in den `originals`-Bucket des Fahrzeugs ──
+        try {
+          if (effectiveVehicleId) {
+            const localFiles = uploadedImages.filter(i => i.file).map(i => i.file as File);
+            for (const f of localFiles) {
+              const safe = f.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+              const path = `${user.id}/${effectiveVehicleId}/${Date.now()}-${safe}`;
+              await supabase.storage.from('originals').upload(path, f, {
+                upsert: false, contentType: f.type || 'image/jpeg',
+              });
+            }
+          }
+        } catch (e) { console.warn('Originals upload failed:', e); }
+
+        // ── Generierte Landing-Page-Bilder in die Galerie speichern ──
+        try {
+          // VIN ermitteln für gallery_folder
+          let folder = `Landing ${new Date().toLocaleDateString('de-DE')}`;
+          if (effectiveVehicleId) {
+            const { data: v } = await supabase
+              .from('vehicles').select('vin').eq('id', effectiveVehicleId).maybeSingle();
+            if (v?.vin && !v.vin.startsWith('NOVIN-')) folder = v.vin;
+          }
+          const map = (data.imageMap || {}) as Record<string, string>;
+          const generatedEntries = Object.entries(map).filter(([, url]) =>
+            typeof url === 'string' && url.startsWith('http') && !uploadedImages.some(u => u.url === url)
+          );
+          if (generatedEntries.length > 0) {
+            const rows = generatedEntries.map(([key, url], i) => ({
+              project_id: project.id,
+              vehicle_id: effectiveVehicleId,
+              user_id: user.id,
+              image_url: url,
+              image_base64: '',
+              perspective: `Landing: ${key}`,
+              sort_order: i,
+              gallery_folder: folder,
+            }));
+            await supabase.from('project_images').insert(rows as any);
+          }
+        } catch (e) { console.warn('Gallery save failed:', e); }
+
         setProgressPercent(100);
         toast.success(`Landing Page erstellt! ${data.imageCount || 0} Bilder generiert.`);
         onComplete(project.id);
