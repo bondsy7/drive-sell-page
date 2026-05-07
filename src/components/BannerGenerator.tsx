@@ -701,19 +701,12 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
     const prompt = buildPromptForFormat(formatId);
 
     try {
-      // Pre-pad the input vehicle image to the target aspect ratio so the AI
-      // model composes a banner in the correct format (Gemini tends to mirror
-      // the input ratio). No content is lost — only neutral padding is added.
-      const targetRatio = fmt.w / fmt.h;
-      const preparedImage = vehicleImage
-        ? await padToAspectRatio(vehicleImage, targetRatio).catch(() => vehicleImage)
-        : vehicleImage;
-
       const { data, error } = await supabase.functions.invoke('generate-banner', {
         body: {
           prompt,
-          imageBase64: preparedImage,
+          imageBase64: vehicleImage,
           logoBase64: showLogo && logoBase64 ? logoBase64 : undefined,
+          logoBrand: showLogo && logoBase64 ? selectedLogoBrand : undefined,
           modelTier,
           width: fmt.w,
           height: fmt.h,
@@ -734,7 +727,7 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
       console.error(`Banner ${formatId} failed:`, e);
     }
     return null;
-  }, [buildPromptForFormat, vehicleImage, showLogo, logoBase64, modelTier]);
+  }, [buildPromptForFormat, vehicleImage, showLogo, logoBase64, selectedLogoBrand, modelTier]);
 
   // Track auto-created vehicle id so subsequent banners in the same session reuse it.
   const [autoVehicleId, setAutoVehicleId] = useState<string | null>(null);
