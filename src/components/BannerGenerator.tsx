@@ -29,11 +29,12 @@ import { FolderOpen } from 'lucide-react';
 import { useBackgroundTasks } from '@/contexts/BackgroundTasksContext';
 
 /**
- * Cover-crop + resize a base64 image to exact target dimensions.
- * Guarantees the saved/displayed banner matches the requested aspect ratio
- * even if the AI model returned a slightly different ratio.
+ * CONTAIN-fit: resize image to fit ENTIRELY into target dimensions, padding the
+ * remainder with a neutral background. NEVER crops content — only adds bars if
+ * the AI returned a slightly off ratio. Aspect ratio of the saved banner is
+ * always exactly targetW × targetH.
  */
-function fitImageToSize(dataUrl: string, targetW: number, targetH: number): Promise<string> {
+function fitImageToSize(dataUrl: string, targetW: number, targetH: number, bg: string = '#ffffff'): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new window.Image();
     img.onload = () => {
@@ -43,20 +44,70 @@ function fitImageToSize(dataUrl: string, targetW: number, targetH: number): Prom
         canvas.height = targetH;
         const ctx = canvas.getContext('2d');
         if (!ctx) return reject(new Error('canvas unsupported'));
+        // Fill background first (only visible if ratios mismatch)
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, targetW, targetH);
         const srcRatio = img.width / img.height;
         const dstRatio = targetW / targetH;
-        let sx = 0, sy = 0, sw = img.width, sh = img.height;
-        if (srcRatio > dstRatio) {
-          // source wider → crop sides
-          sw = img.height * dstRatio;
-          sx = (img.width - sw) / 2;
-        } else if (srcRatio < dstRatio) {
-          // source taller → crop top/bottom
-          sh = img.width / dstRatio;
-          sy = (img.height - sh) / 2;
+        // If ratio is essentially correct (<1% deviation), just stretch-fit (no bars, no crop).
+        if (Math.abs(srcRatio - dstRatio) / dstRatio < 0.01) {
+          ctx.drawImage(img, 0, 0, targetW, targetH);
+        } else {
+          let dw = targetW, dh = targetH, dx = 0, dy = 0;
+          if (srcRatio > dstRatio) {
+            // wider → fit width, pad top/bottom
+            dh = targetW / srcRatio;
+            dy = (targetH - dh) / 2;
+          } else {
+            // taller → fit height, pad sides
+            dw = targetH * srcRatio;
+            dx = (targetW - dw) / 2;
+          }
+          ctx.drawImage(img, 0, 0, img.width, img.height, dx, dy, dw, dh);
         }
-        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, targetW, targetH);
         resolve(canvas.toDataURL('image/png'));
+      } catch (e) { reject(e); }
+    };
+    img.onerror = () => reject(new Error('image load failed'));
+    img.src = dataUrl;
+  });
+}
+
+/**
+ * Pre-pad an input image to the target aspect ratio before sending it to the
+ * AI model. Gemini tends to mirror the input image's aspect ratio, so feeding
+ * it a canvas with the desired ratio dramatically increases the chance the
+ * generated banner matches (e.g. 9:16, 16:9, etc.).
+ */
+function padToAspectRatio(dataUrl: string, targetRatio: number, bg: string = '#f4f4f4'): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new window.Image();
+    img.onload = () => {
+      try {
+        const srcRatio = img.width / img.height;
+        // Already matches → return original
+        if (Math.abs(srcRatio - targetRatio) / targetRatio < 0.02) return resolve(dataUrl);
+        let canvasW: number, canvasH: number, dx = 0, dy = 0;
+        if (srcRatio > targetRatio) {
+          // src is wider → keep width, expand height
+          canvasW = img.width;
+          canvasH = Math.round(img.width / targetRatio);
+          dy = Math.round((canvasH - img.height) / 2);
+        } else {
+          // src is taller → keep height, expand width
+          canvasH = img.height;
+          canvasW = Math.round(img.height * targetRatio);
+          dx = Math.round((canvasW - img.width) / 2);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = canvasW;
+        canvas.height = canvasH;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return reject(new Error('canvas unsupported'));
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, canvasW, canvasH);
+        ctx.drawImage(img, dx, dy);
+        resolve(canvas.toDataURL('image/jpeg', 0.92));
       } catch (e) { reject(e); }
     };
     img.onerror = () => reject(new Error('image load failed'));
@@ -635,10 +686,18 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
     const prompt = buildPromptForFormat(formatId);
 
     try {
+      // Pre-pad the input vehicle image to the target aspect ratio so the AI
+      // model composes a banner in the correct format (Gemini tends to mirror
+      // the input ratio). No content is lost — only neutral padding is added.
+      const targetRatio = fmt.w / fmt.h;
+      const preparedImage = vehicleImage
+        ? await padToAspectRatio(vehicleImage, targetRatio).catch(() => vehicleImage)
+        : vehicleImage;
+
       const { data, error } = await supabase.functions.invoke('generate-banner', {
         body: {
           prompt,
-          imageBase64: vehicleImage,
+          imageBase64: preparedImage,
           logoBase64: showLogo && logoBase64 ? logoBase64 : undefined,
           modelTier,
           width: fmt.w,
@@ -650,7 +709,8 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
         return null;
       }
       if (data?.imageBase64) {
-        // Force target dimensions: cover-crop to exact w×h so 9:16 etc. is guaranteed
+        // CONTAIN-fit: only adds neutral bars if the model returned an off ratio.
+        // No content is ever cropped away.
         const fitted = await fitImageToSize(data.imageBase64, fmt.w, fmt.h).catch(() => data.imageBase64);
         return { formatId: fmt.id, formatLabel: fmt.label, ratio: fmt.ratio, image: fitted, w: fmt.w, h: fmt.h };
       }
