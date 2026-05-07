@@ -122,13 +122,18 @@ serve(async (req) => {
   const requestStartedAt = Date.now();
 
   try {
-    const { prompt, imageBase64, logoBase64, logoBrand, vehicleHint, modelTier, width, height } = await req.json();
+    const body = await req.json();
+    const { prompt, imageBase64, logoBase64, logoBrand, vehicleHint, modelTier, width, height } = body;
     if (!prompt) throw new Error("No prompt provided");
 
     const requestedTier = typeof modelTier === "string" ? modelTier : "qualitaet";
     const tier = requestedTier === "standard" ? "qualitaet" : requestedTier;
     const config = MODEL_MAP[tier] || MODEL_MAP["qualitaet"];
-    console.log(`[banner] Engine=${config.engine} Model=${config.model} Tier=${tier} (user-selected, binding)`);
+    console.log(`[banner][REQ] tier=${tier} engine=${config.engine} model=${config.model} cost=${config.cost}`);
+    console.log(`[banner][REQ] dims=${width}x${height} aspect=${width && height ? getGeminiAspectRatio(width, height) : "n/a"}`);
+    console.log(`[banner][REQ] hasImage=${!!imageBase64} hasLogo=${!!logoBase64} logoBrand=${logoBrand || "none"}`);
+    console.log(`[banner][REQ] vehicleHint(${(vehicleHint || "").length} chars)=${(vehicleHint || "").slice(0, 300)}`);
+    console.log(`[banner][REQ] prompt(${(prompt || "").length} chars) head=${prompt.slice(0, 250)}`);
 
     // Auth & credits
     const authResult = await authenticateAndDeductCredits(req, config.cost);
