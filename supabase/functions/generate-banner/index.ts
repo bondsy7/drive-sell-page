@@ -122,7 +122,7 @@ serve(async (req) => {
   const requestStartedAt = Date.now();
 
   try {
-    const { prompt, imageBase64, logoBase64, modelTier, width, height } = await req.json();
+    const { prompt, imageBase64, logoBase64, logoBrand, modelTier, width, height } = await req.json();
     if (!prompt) throw new Error("No prompt provided");
 
     const requestedTier = typeof modelTier === "string" ? modelTier : "qualitaet";
@@ -138,9 +138,9 @@ serve(async (req) => {
     const maxRetries = 0;
 
     // STEP 1: Describe the vehicle via Vision (text-only) so we don't have to
-    // pass the vehicle image into the image generator. Passing a non-square
-    // input image biases Gemini image models to copy that input ratio and
-    // ignore aspectRatio. Logo stays as image (small, 1:1, doesn't bias).
+    // pass any reference image into the banner generator. Gemini's own docs
+    // state that output size follows input images by default, so the final
+    // render must be text-only when exact banner format matters.
     let vehicleDescription = "";
     if (imageBase64) {
       try {
@@ -155,24 +155,28 @@ serve(async (req) => {
       ? `\n\nVEHICLE TO RENDER (exact identity — reproduce faithfully from this description, do NOT invent a different car):\n${vehicleDescription}\n\nRender this exact vehicle freshly composed inside the NEW banner scene. Adapt the vehicle (angle, scale, lighting, shadows, reflections) to the banner format and environment — never adapt the banner format to the vehicle. The banner aspect ratio is fixed and must dominate composition.`
       : "";
 
-    const lockedPrompt = `${prompt}${vehicleBlock}${PROFESSIONAL_BANNER_IMAGE_LOCK}`;
+    const logoTextBlock = logoBrand
+      ? `\n\nLOGO TO RENDER: Include the current official ${logoBrand} manufacturer logo as a clean, modern flat brand mark. Use the latest current version only, never historical/chrome/3D variants. Place it clearly without changing the fixed banner aspect ratio.`
+      : "";
+
+    const lockedPrompt = `${prompt}${vehicleBlock}${logoTextBlock}${PROFESSIONAL_BANNER_IMAGE_LOCK}`;
 
     if (config.engine === "gemini") {
-      // Primary = user-selected model. If it times out / 503s, fall back to
-      // the next aspectRatio-capable model so the user still gets a banner
-      // in the right format. 2.5-flash-image is intentionally excluded
-      // because it ignores aspectRatio and returns squares.
+      // Primary = user-selected model. If it times out / 503s, fall back within
+      // Gemini only, ending with the fast 2.5 image model. All calls are
+      // text-only and carry imageConfig.aspectRatio, so reference images cannot
+      // pull the canvas back to their own ratio.
       const fallbackChain: Record<string, string[]> = {
-        "gemini-3-pro-image-preview": ["gemini-3-pro-image-preview", "gemini-3.1-flash-image-preview"],
-        "gemini-3.1-flash-image-preview": ["gemini-3.1-flash-image-preview", "gemini-3-pro-image-preview"],
+        "gemini-3-pro-image-preview": ["gemini-3-pro-image-preview", "gemini-3.1-flash-image-preview", "gemini-2.5-flash-image"],
+        "gemini-3.1-flash-image-preview": ["gemini-3.1-flash-image-preview", "gemini-2.5-flash-image"],
       };
       const geminiModels = fallbackChain[config.model] || [config.model];
       let lastGeminiError = "";
       for (const geminiModel of geminiModels) {
         try {
-          // NOTE: imageBase64 intentionally NOT passed — vehicle is described in prompt instead
-          // so the image model is not biased to copy the input photo's aspect ratio.
-          resultImage = await generateGemini(lockedPrompt, null, logoBase64, geminiModel, maxRetries, width, height, requestStartedAt);
+          // NOTE: imageBase64/logoBase64 intentionally NOT passed — all visual
+          // references are converted to text so inputs cannot affect output ratio.
+          resultImage = await generateGemini(lockedPrompt, null, null, geminiModel, maxRetries, width, height, requestStartedAt);
           if (resultImage) break;
         } catch (err) {
           lastGeminiError = err instanceof Error ? err.message : "Gemini error";
@@ -296,15 +300,17 @@ The logo image follows now:` });
     });
   }
 
-  // gemini-3* image models support imageConfig.aspectRatio; older 2.5 ignores it
-  const supportsAspectField = /^gemini-3/.test(model);
-  const generationConfig: Record<string, unknown> = { responseModalities: ["TEXT", "IMAGE"] };
-  if (supportsAspectField && width && height) {
-    (generationConfig as any).imageConfig = { aspectRatio: aspectLabel };
+  // Gemini docs: aspect ratio is controlled via generationConfig.imageConfig.aspectRatio.
+  // The 3.x models also support imageSize; keep it at 1K for edge-function speed.
+  const generationConfig: Record<string, unknown> = { responseModalities: ["IMAGE"] };
+  if (width && height) {
+    const imageConfig: Record<string, string> = { aspectRatio: aspectLabel };
+    if (/^gemini-3/.test(model)) imageConfig.imageSize = "1K";
+    (generationConfig as any).imageConfig = imageConfig;
   }
 
   // Stay well below Lovable Cloud's 150s idle limit so fallbacks can run instead of causing a hard 504.
-  const modelBudgetMs = /^gemini-3-pro/.test(model) ? 60_000 : /^gemini-3/.test(model) ? 50_000 : 35_000;
+  const modelBudgetMs = /^gemini-3-pro/.test(model) ? 32_000 : /^gemini-3/.test(model) ? 34_000 : 28_000;
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     let timeoutMs = modelBudgetMs;
