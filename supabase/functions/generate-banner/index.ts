@@ -375,19 +375,16 @@ The logo image follows now:` });
 
   // Format-Direktive ist bereits als ERSTER Part platziert (siehe oben).
 
-  // gemini-3* image models support imageConfig.aspectRatio; older 2.5 ignores it
+  // Gemini image API is inconsistent with aspect fields across preview models.
+  // Keep ratio control in the first prompt part + pre-padded reference image; post-fit in client preserves final dimensions without crop.
   const supportsAspectField = /^gemini-3/.test(model);
   const generationConfig: Record<string, unknown> = {
     responseModalities: ["TEXT", "IMAGE"],
-    temperature: 0.7,
+    temperature: 0.55,
   };
-  if (supportsAspectField && width && height) {
-    (generationConfig as any).imageConfig = { aspectRatio: aspectLabel };
-  }
 
-  // Stay well below Lovable Cloud's 150s idle limit. gemini-3.1-flash-image regularly needs 35-55s
-  // for portrait/landscape with reference image — give it enough headroom.
-  const modelBudgetMs = /^gemini-3-pro/.test(model) ? 75_000 : /^gemini-3/.test(model) ? 70_000 : 45_000;
+  // Fail fast on overloaded preview models, then move to the stable Gemini fallback.
+  const modelBudgetMs = model === GEMINI_FAST_FALLBACK ? 55_000 : /^gemini-3/.test(model) ? 38_000 : 45_000;
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     let timeoutMs = modelBudgetMs;
@@ -396,7 +393,7 @@ The logo image follows now:` });
       const remainingMs = EDGE_DEADLINE_MS - (Date.now() - requestStartedAt);
       if (remainingMs < 12_000) throw new Error("Banner generation deadline reached before model fallback");
       timeoutMs = Math.max(8_000, Math.min(modelBudgetMs, remainingMs - 5_000));
-      log?.info("gemini.fetch", "calling Gemini", { model, attempt: attempt + 1, timeoutMs, aspect: aspectLabel, parts: parts.length });
+      log?.info("gemini.fetch", "calling Gemini", { model, attempt: attempt + 1, timeoutMs, aspect: aspectLabel, hasAspectField: false, supportsAspectField, parts: parts.length });
       const response = await fetchWithTimeout(url, {
         method: "POST",
         headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
