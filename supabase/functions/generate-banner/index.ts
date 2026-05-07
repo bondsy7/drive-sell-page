@@ -347,8 +347,9 @@ The logo image follows now:` });
     (generationConfig as any).imageConfig = { aspectRatio: aspectLabel };
   }
 
-  // Stay well below Lovable Cloud's 150s idle limit so fallbacks can run instead of causing a hard 504.
-  const modelBudgetMs = /^gemini-3-pro/.test(model) ? 38_000 : /^gemini-3/.test(model) ? 34_000 : 28_000;
+  // Stay well below Lovable Cloud's 150s idle limit. gemini-3.1-flash-image regularly needs 35-55s
+  // for portrait/landscape with reference image — give it enough headroom.
+  const modelBudgetMs = /^gemini-3-pro/.test(model) ? 75_000 : /^gemini-3/.test(model) ? 70_000 : 45_000;
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     let timeoutMs = modelBudgetMs;
