@@ -24,6 +24,7 @@ import {
 import { downloadHTML } from '@/lib/templates/download';
 import { uploadImageToStorage } from '@/lib/storage-utils';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
+import { uploadToGeminiFiles } from '@/lib/gemini-file-upload';
 
 interface LandingPageEditorProps {
   projectId: string;
