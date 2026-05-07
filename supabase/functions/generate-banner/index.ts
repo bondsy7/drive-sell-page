@@ -259,7 +259,7 @@ The logo image follows now:` });
   }
 
   // Stay well below Lovable Cloud's 150s idle limit so fallbacks can run instead of causing a hard 504.
-  const modelBudgetMs = /^gemini-3-pro/.test(model) ? 38_000 : /^gemini-3/.test(model) ? 34_000 : 28_000;
+  const modelBudgetMs = /^gemini-3-pro/.test(model) ? 60_000 : /^gemini-3/.test(model) ? 50_000 : 35_000;
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     let timeoutMs = modelBudgetMs;
