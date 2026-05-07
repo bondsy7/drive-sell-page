@@ -11,6 +11,7 @@ export type HubAction =
   | 'banner'          // Banner Generator
   | 'video'           // Video Erstellung
   | 'damage-repair'    // Schadensreparatur – KI repariert Schäden auf Fahrzeugbildern
+  | 'damage-analysis'  // Schadensanalyse – KI bewertet Schäden + erstellt Bericht
   | 'sales-assistant'; // KI Verkaufsassistent
 
 interface ActionTile {
