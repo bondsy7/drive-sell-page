@@ -638,11 +638,11 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
     const isBillboard = fmt.id === 'billboard';
     const isLandscapeAd = fmt.id === 'hero' || fmt.id === 'fb-ad';
     const formatDirective = isWideSkyscraper
-      ? `WIDE SKYSCRAPER SPECIAL LAYOUT (MANDATORY): This is a very narrow 160×600 display ad, NOT a 9:16 story. Use one continuous vertical composition from top edge to bottom edge. No repeated road/background sections, no duplicated vehicle, no stacked poster panels, no white/cream caps, no blank rounded card. Put compact logo/headline/price in the top 18–24%, one single vehicle in the central 38–48%, CTA and legal line in the bottom 18–24%. Background must continue naturally behind every zone edge-to-edge.`
+      ? `WIDE SKYSCRAPER SPECIAL LAYOUT (MANDATORY): This is a very narrow 160×600 display ad, NOT a 9:16 story. Use one continuous vertical composition from top edge to bottom edge. No repeated road/background sections, no duplicated vehicle, no stacked poster panels, no white/cream caps, no blank rounded card. Put compact logo/headline/price in the top 18–24%, one single vehicle in the central 38–48%, CTA and legal line in the bottom 18–24%. Background/art direction must be designed as a full-height image and continue naturally behind every zone edge-to-edge.`
       : isBillboard
-      ? `BILLBOARD SPECIAL LAYOUT (MANDATORY): This is a 970×250 ultra-wide strip. Compose it as an ultra-wide ad from the start, not as a cropped 16:9/21:9 image. Keep all important content inside a central safe area. Vehicle should occupy the middle/right 42–52% of canvas width and remain fully visible. Copy/price/logo should sit left or right in compact blocks. Do NOT crop through the vehicle, headline, logo or price. No empty white/cream bands or side caps.`
+      ? `BILLBOARD SPECIAL LAYOUT (MANDATORY): This is a 970×250 ultra-wide strip. Compose it as an ultra-wide full image from the start, not as a cropped 16:9/21:9 image and not as a centered motif with side extensions. Every pixel from the far left edge to the far right edge must be an intentional part of the banner image. Keep all important content inside a central safe area. Vehicle should occupy the middle/right 42–52% of canvas width and remain fully visible. Copy/price/logo should sit left or right in compact blocks. Do NOT crop through the vehicle, headline, logo or price. No empty white/cream bands, no blurred side caps, no duplicated background extensions.`
       : isLandscapeAd
-      ? `LANDSCAPE AD LAYOUT (MANDATORY): Compose natively for ${fmt.w}×${fmt.h}. Keep the vehicle fully visible with breathing room, and keep headline/logo/price within safe margins. Do NOT crop text or brand marks. The result must feel like the requested landscape ad ratio, not a zoomed-in crop.`
+      ? `LANDSCAPE AD LAYOUT (MANDATORY): Compose natively for ${fmt.w}×${fmt.h} as a complete full-bleed banner image. Keep the vehicle fully visible with breathing room, and keep headline/logo/price within safe margins. Do NOT crop text or brand marks. No generated image may sit as a smaller rectangle inside the canvas; it must fill the whole format.`
       : '';
 
     // Style families decide whether the "clean/bright/subtle accents" baseline applies.
@@ -655,11 +655,12 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
 FORMAT: ${fmt.w}x${fmt.h} pixels (${fmt.ratio} aspect ratio). The output image MUST be exactly this size.
 
 FULL-BLEED COMPOSITION (MANDATORY — APPLIES TO EVERY STYLE AND FORMAT):
-- The artwork MUST fill the ENTIRE canvas edge-to-edge, top to bottom AND left to right. Zero empty/white/blurred bands, zero letterboxing, zero side bars, zero rounded inner card.
-- The vehicle/scene/graphics must extend all the way to every edge of the banner.
+- The artwork MUST fill the ENTIRE canvas edge-to-edge, top to bottom AND left to right as ONE complete banner image. Zero empty/white/cream/blurred bands, zero letterboxing, zero side bars, zero rounded inner card, zero pasted smaller image inside a larger canvas.
+- The vehicle/scene/graphics must extend all the way to every edge of the banner. If there is a text/brand zone, it must still be a designed image area (color, scene, lighting, gradient or layout surface), never blank padding.
 - The vehicle must be sized GENEROUSLY for the format (not a tiny centered motif). It should be the clear hero and visually fill the available image area while leaving safe space for required text/logo.
 - Do NOT crop through the vehicle, headline, subline, price, logo or CTA. ALL required elements must be fully visible inside the canvas.
 - Treat the outermost ~4% as a safe margin: keep important content inside, but the BACKGROUND must still reach the edge.
+- If the exact requested ratio is hard, choose a simpler layout with fewer elements — NEVER solve it by adding empty margins, blurred extensions, repeated background strips or cropping important content.
 
 ${formatDirective}
 
@@ -668,6 +669,8 @@ VEHICLE: "${vehicleTitle}" – use the uploaded vehicle image as the central her
 SCENE: ${scn.prompt}. Place the vehicle naturally in this environment.
 
 STYLE (HIGHEST PRIORITY — overrides any conflicting tone/color/mood guidance below): ${sty.prompt}
+
+${style === 'volkswagen' ? `VOLKSWAGEN FULL-IMAGE CI LOCK (MANDATORY): Volkswagen-style banners must still be FULL-BLEED images. The calm off-white/blue CI may be used as designed layout surfaces, but never as large empty padding around a small photo. Do not place an unchanged dealership photo as a rectangular cutout on a blank VW canvas. Rebuild the whole banner as one official-looking VW ad where the vehicle image area, text area, background and brand area all occupy the full requested format with no unused margins.` : ''}
 
 OCCASION: This is a ${occ.prompt} advertisement.
 
