@@ -102,10 +102,26 @@ const DamageAnalysisFlow: React.FC<Props> = ({ onBack }) => {
       });
       if (error || !data?.analysis) throw new Error(data?.error || error?.message || 'Analyse fehlgeschlagen');
       setAnalysis(data.analysis);
-      // Merge annotated images
-      const annotated: (string | null)[] = data.annotatedImages || [];
-      setImages(prev => prev.map((img, i) => ({ ...img, annotatedBase64: annotated[i] || null })));
-      toast.success('Schadensanalyse abgeschlossen.');
+      toast.success('Schadensanalyse abgeschlossen. Markiere Schäden in Bildern …');
+
+      // Fetch annotations per image in parallel (separate function avoids 150s timeout)
+      const schaedenAll = data.analysis.schaeden || [];
+      await Promise.all(images.map(async (img, idx) => {
+        const damagesForImage = schaedenAll.filter((s: any) => s.bildIndex === idx);
+        if (damagesForImage.length === 0) return;
+        try {
+          const { data: ann } = await supabase.functions.invoke('annotate-damage-image', {
+            body: { image: img.base64, schaeden: damagesForImage },
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          });
+          if (ann?.annotated) {
+            setImages(prev => prev.map(p => p.id === img.id ? { ...p, annotatedBase64: ann.annotated } : p));
+          }
+        } catch (e) {
+          console.warn('Annotation fehlgeschlagen für Bild', idx, e);
+        }
+      }));
+      toast.success('Markierungen erstellt.');
     } catch (e: any) {
       toast.error(e?.message || 'Fehler bei der Analyse');
     } finally {
