@@ -194,7 +194,14 @@ const DamageAnalysisFlow: React.FC<Props> = ({ onBack }) => {
         <>
           {/* Vehicle info */}
           <div className="rounded-xl border border-border bg-card p-4 space-y-4">
-            <p className="text-sm font-semibold text-foreground">Fahrzeugdaten (optional, verbessert die Analyse)</p>
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <p className="text-sm font-semibold text-foreground">Fahrzeugdaten (optional, verbessert die Analyse)</p>
+              {isDetecting && (
+                <span className="flex items-center gap-1.5 text-xs text-accent">
+                  <Loader2 className="w-3 h-3 animate-spin" /> KI erkennt Marke & Modell…
+                </span>
+              )}
+            </div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               <div><Label className="text-xs">Marke</Label><Input value={vehicleInfo.marke} onChange={e => setVehicleInfo({ ...vehicleInfo, marke: e.target.value })} /></div>
               <div><Label className="text-xs">Modell</Label><Input value={vehicleInfo.modell} onChange={e => setVehicleInfo({ ...vehicleInfo, modell: e.target.value })} /></div>
