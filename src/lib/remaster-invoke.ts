@@ -13,10 +13,13 @@ export interface RemasterInvokePayload {
   customShowroomBase64?: string | null;
   customShowroomFileUri?: { uri: string; mimeType: string } | null;
   customPlateImageBase64?: string | null;
+  customPlateImageFileUri?: { uri: string; mimeType: string } | null;
   dealerLogoUrl?: string | null;
   dealerLogoBase64?: string | null;
+  dealerLogoFileUri?: { uri: string; mimeType: string } | null;
   manufacturerLogoUrl?: string | null;
   manufacturerLogoBase64?: string | null;
+  manufacturerLogoFileUri?: { uri: string; mimeType: string } | null;
 }
 
 export async function invokeRemasterVehicleImage(body: RemasterInvokePayload) {

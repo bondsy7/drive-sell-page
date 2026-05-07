@@ -9,6 +9,7 @@ import RemasterOptions from '@/components/RemasterOptions';
 import { type RemasterConfig, buildMasterPrompt, fetchPromptOverrides } from '@/lib/remaster-prompt';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 import { compressImageForAI, fileToBase64 } from '@/lib/image-compress';
+import { uploadToGeminiFiles, type GeminiFileRef } from '@/lib/gemini-file-upload';
 import ProcessTimer from '@/components/ProcessTimer';
 
 interface ImageUploadRemasterProps {
@@ -118,20 +119,46 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
     const promptOverrides = await fetchPromptOverrides();
     const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription, undefined, promptOverrides);
 
+    // Phase 4: Upload shared assets (showroom, plate, logos) ONCE via File API
+    const sharedAssets: { key: string; b64: string }[] = [];
+    if (remasterConfig.customShowroomBase64) sharedAssets.push({ key: 'showroom', b64: remasterConfig.customShowroomBase64 });
+    if (remasterConfig.customPlateImageBase64) sharedAssets.push({ key: 'plate', b64: remasterConfig.customPlateImageBase64 });
+    if (remasterConfig.showManufacturerLogo && remasterConfig.manufacturerLogoBase64) sharedAssets.push({ key: 'mfgLogo', b64: remasterConfig.manufacturerLogoBase64 });
+    if (remasterConfig.showDealerLogo && remasterConfig.dealerLogoBase64) sharedAssets.push({ key: 'dealerLogo', b64: remasterConfig.dealerLogoBase64 });
+
+    let sharedRefs: Record<string, GeminiFileRef | null> = { showroom: null, plate: null, mfgLogo: null, dealerLogo: null };
+    if (sharedAssets.length > 0) {
+      const uploaded = await uploadToGeminiFiles(sharedAssets.map(a => ({ id: a.key, imageBase64: a.b64 })));
+      if (uploaded) {
+        sharedAssets.forEach((a, i) => { sharedRefs[a.key] = uploaded[i] || null; });
+      }
+    }
+
+    const buildBody = (mainBase64: string, mainFileUri: GeminiFileRef | null) => ({
+      imageBase64: mainBase64,
+      mainImageFileUri: mainFileUri,
+      vehicleDescription,
+      modelTier: modelTier || 'standard',
+      dynamicPrompt,
+      customShowroomBase64: sharedRefs.showroom ? null : (remasterConfig.customShowroomBase64 || null),
+      customShowroomFileUri: sharedRefs.showroom,
+      customPlateImageBase64: sharedRefs.plate ? null : (remasterConfig.customPlateImageBase64 || null),
+      customPlateImageFileUri: sharedRefs.plate,
+      dealerLogoUrl: (sharedRefs.dealerLogo || remasterConfig.dealerLogoBase64) ? null : (remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null),
+      dealerLogoBase64: sharedRefs.dealerLogo ? null : (remasterConfig.showDealerLogo ? remasterConfig.dealerLogoBase64 : null),
+      dealerLogoFileUri: sharedRefs.dealerLogo,
+      manufacturerLogoUrl: (sharedRefs.mfgLogo || remasterConfig.manufacturerLogoBase64) ? null : (remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoUrl : null),
+      manufacturerLogoBase64: sharedRefs.mfgLogo ? null : (remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoBase64 : null),
+      manufacturerLogoFileUri: sharedRefs.mfgLogo,
+    });
+
     const processImage = async (img: UploadedImage) => {
       try {
-        const { data, error } = await invokeRemasterVehicleImage({
-          imageBase64: img.originalBase64,
-          vehicleDescription,
-          modelTier: modelTier || 'standard',
-          dynamicPrompt,
-          customShowroomBase64: remasterConfig.customShowroomBase64 || null,
-          customPlateImageBase64: remasterConfig.customPlateImageBase64 || null,
-          dealerLogoUrl: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null,
-          dealerLogoBase64: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoBase64 : null,
-          manufacturerLogoUrl: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoUrl : null,
-          manufacturerLogoBase64: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoBase64 : null,
-        });
+        // Upload main image via File API
+        const mainUploaded = await uploadToGeminiFiles([{ id: img.id, imageBase64: img.originalBase64 }]);
+        const mainRef = mainUploaded?.[0] || null;
+
+        const { data, error } = await invokeRemasterVehicleImage(buildBody(img.originalBase64, mainRef));
 
         if (error || !data?.imageBase64) {
           const errMsg = data?.error || error?.message || 'Fehler beim Remastering';
@@ -168,17 +195,33 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
     try {
       const overrides = await fetchPromptOverrides();
       const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription, undefined, overrides);
+
+      // Upload main + shared assets via File API
+      const assets: { id: string; b64: string }[] = [{ id: 'main', b64: img.originalBase64 }];
+      if (remasterConfig.customShowroomBase64) assets.push({ id: 'showroom', b64: remasterConfig.customShowroomBase64 });
+      if (remasterConfig.customPlateImageBase64) assets.push({ id: 'plate', b64: remasterConfig.customPlateImageBase64 });
+      if (remasterConfig.showManufacturerLogo && remasterConfig.manufacturerLogoBase64) assets.push({ id: 'mfgLogo', b64: remasterConfig.manufacturerLogoBase64 });
+      if (remasterConfig.showDealerLogo && remasterConfig.dealerLogoBase64) assets.push({ id: 'dealerLogo', b64: remasterConfig.dealerLogoBase64 });
+      const uploaded = await uploadToGeminiFiles(assets.map(a => ({ id: a.id, imageBase64: a.b64 })));
+      const refMap: Record<string, GeminiFileRef | null> = {};
+      if (uploaded) assets.forEach((a, i) => { refMap[a.id] = uploaded[i] || null; });
+
       const { data, error } = await invokeRemasterVehicleImage({
         imageBase64: img.originalBase64,
+        mainImageFileUri: refMap.main || null,
         vehicleDescription,
         modelTier: modelTier || 'standard',
         dynamicPrompt,
-        customShowroomBase64: remasterConfig.customShowroomBase64 || null,
-        customPlateImageBase64: remasterConfig.customPlateImageBase64 || null,
-        dealerLogoUrl: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null,
-        dealerLogoBase64: remasterConfig.showDealerLogo ? remasterConfig.dealerLogoBase64 : null,
-        manufacturerLogoUrl: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoUrl : null,
-        manufacturerLogoBase64: remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoBase64 : null,
+        customShowroomBase64: refMap.showroom ? null : (remasterConfig.customShowroomBase64 || null),
+        customShowroomFileUri: refMap.showroom || null,
+        customPlateImageBase64: refMap.plate ? null : (remasterConfig.customPlateImageBase64 || null),
+        customPlateImageFileUri: refMap.plate || null,
+        dealerLogoUrl: (refMap.dealerLogo || remasterConfig.dealerLogoBase64) ? null : (remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null),
+        dealerLogoBase64: refMap.dealerLogo ? null : (remasterConfig.showDealerLogo ? remasterConfig.dealerLogoBase64 : null),
+        dealerLogoFileUri: refMap.dealerLogo || null,
+        manufacturerLogoUrl: (refMap.mfgLogo || remasterConfig.manufacturerLogoBase64) ? null : (remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoUrl : null),
+        manufacturerLogoBase64: refMap.mfgLogo ? null : (remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoBase64 : null),
+        manufacturerLogoFileUri: refMap.mfgLogo || null,
       });
       if (error || !data?.imageBase64) {
         const errMsg = data?.error || error?.message || 'Fehler beim Remastering';
