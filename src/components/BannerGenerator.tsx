@@ -42,7 +42,7 @@ function ensureGeneratedAspectRatio(dataUrl: string, targetW: number, targetH: n
         const dstRatio = targetW / targetH;
         const ratioDelta = Math.abs(srcRatio - dstRatio) / dstRatio;
 
-        if (ratioDelta > 0.025) {
+        if (ratioDelta > 0.006) {
           return reject(new Error(`Die KI hat ${img.width}×${img.height} statt ${targetW}×${targetH} (${ratioLabel}) geliefert. Banner wurde nicht beschnitten oder verzerrt – bitte erneut generieren.`));
         }
 
