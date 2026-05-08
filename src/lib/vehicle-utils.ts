@@ -136,7 +136,10 @@ export async function mergeVehicleById(
   const incomingVehicle = vehicleData && typeof vehicleData === 'object' && 'vehicle' in vehicleData
     ? (vehicleData as { vehicle?: Partial<VehicleData['vehicle']> }).vehicle || {}
     : {};
-  const title = [existing.brand || v.brand, existing.model || v.model, v.variant].filter(Boolean).join(' ').trim() || existing.title || null;
+  const title = [existing.brand || incomingVehicle.brand, existing.model || incomingVehicle.model, incomingVehicle.variant]
+    .filter(Boolean)
+    .join(' ')
+    .trim() || existing.title || null;
   const { error } = await supabase
     .from('vehicles')
     .update({
