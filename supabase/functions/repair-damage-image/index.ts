@@ -70,7 +70,7 @@ REGELN:
     generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
   });
 
-  const models = ["gemini-3.1-flash-image-preview", "gemini-2.5-flash-image", "gemini-3-pro-image-preview"];
+  const models = ["gemini-3.1-flash-image-preview", "gemini-3-pro-image-preview", "gemini-2.5-flash-image"];
   for (const model of models) {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 90_000);
