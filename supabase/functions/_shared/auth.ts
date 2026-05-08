@@ -23,12 +23,16 @@ export async function authenticateRequest(req: Request): Promise<AuthContext> {
     global: { headers: { Authorization: authHeader } },
   });
 
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user) throw new Error("Not authenticated");
+  // Reliable auth via getClaims (JWT verification, no network round-trip flakiness)
+  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+  const { data: claimsData, error } = await supabase.auth.getClaims(token);
+  const claims = claimsData?.claims as any;
+  const userId = claims?.sub as string | undefined;
+  if (error || !userId) throw new Error("Not authenticated");
 
   const adminSupabase = createClient(supabaseUrl, serviceKey);
 
-  return { user: { id: user.id, email: user.email }, supabase, adminSupabase };
+  return { user: { id: userId, email: claims?.email }, supabase, adminSupabase };
 }
 
 /** Create a service-role admin client */
