@@ -29,7 +29,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useCredits } from '@/hooks/useCredits';
 import { uploadImagesToStorage, saveImagesToGallery, getGalleryFolderName } from '@/lib/storage-utils';
-import { ensureVehicle, ensureVehicleAuto } from '@/lib/vehicle-utils';
+import { ensureVehicle, ensureVehicleAuto, mergeVehicleById } from '@/lib/vehicle-utils';
 import type { AppState, VehicleData } from '@/types/vehicle';
 import type { TemplateId } from '@/types/template';
 import type { ModelTier } from '@/components/ModelSelector';
@@ -255,7 +255,9 @@ const Index = () => {
 
   const processFiles = useCallback(async (files: File[]) => {
     setFileName(files.map(f => f.name).join(', '));
-    setGalleryImages([]); setImageBase64(null); setSavedProjectId(null); setSavedVehicleId(null);
+    const preselectedVehicleId = savedVehicleId || deepLinkVehicleId || null;
+    setGalleryImages([]); setImageBase64(null); setSavedProjectId(null);
+    if (!preselectedVehicleId) setSavedVehicleId(null);
     try {
       setAppState('uploading');
       const pdfBase64Array: string[] = [];
@@ -312,11 +314,9 @@ const Index = () => {
       const vin = (enriched.vehicle as any)?.vin || null;
       let vehicleId: string | null = null;
       if (user) {
-        const preselected = savedVehicleId || deepLinkVehicleId;
-        if (preselected) {
+        if (preselectedVehicleId) {
           // Merge PDF-extracted data into the already-selected vehicle row.
-          await ensureVehicle(user.id, (enriched.vehicle as any)?.vin || (await supabase.from('vehicles').select('vin').eq('id', preselected).maybeSingle()).data?.vin || '', enriched);
-          vehicleId = preselected;
+          vehicleId = await mergeVehicleById(user.id, preselectedVehicleId, enriched);
         } else {
           vehicleId = await ensureVehicleAuto(user.id, vin, enriched);
         }
@@ -354,7 +354,7 @@ const Index = () => {
       toast.error('Ein Fehler ist aufgetreten.');
       setAppState('idle');
     }
-  }, [loadProfileIntoDealer, standalonePhotoResults, saveProject, selectedTemplate, user]);
+  }, [loadProfileIntoDealer, standalonePhotoResults, saveProject, selectedTemplate, user, savedVehicleId, deepLinkVehicleId]);
 
   // ─── Image Generation (within PDF flow) ───
   const handleChooseGenerate = useCallback(async (modelTier: ModelTier = 'schnell') => {
@@ -394,10 +394,12 @@ const Index = () => {
     }
     if (generatedImages.length === 0) toast.warning('Bilder konnten nicht generiert werden.');
     else toast.success(`${generatedImages.length} von ${total} Bilder generiert.`);
-    const projectId = await saveProject(vehicleData, generatedImages[0] || null, generatedImages, selectedTemplate);
+    const vin = (vehicleData.vehicle as any)?.vin || null;
+    const vehicleId = savedVehicleId || deepLinkVehicleId || null;
+    const projectId = await saveProject(vehicleData, generatedImages[0] || null, generatedImages, selectedTemplate, vin, vehicleId);
     if (projectId) setSavedProjectId(projectId);
     setAppState('preview');
-  }, [vehicleData, saveProject, selectedTemplate]);
+  }, [vehicleData, saveProject, selectedTemplate, savedVehicleId, deepLinkVehicleId]);
 
   const handleChooseUpload = useCallback((modelTier: ModelTier = 'schnell') => {
     setSelectedModelTier(modelTier);
