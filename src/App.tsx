@@ -18,6 +18,7 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Profile = lazy(() => import("./pages/Profile"));
 const ProjectView = lazy(() => import("./pages/ProjectView"));
 const VehicleView = lazy(() => import("./pages/VehicleView"));
+const DamageReportView = lazy(() => import("./pages/DamageReportView"));
 const LeasingCalculator = lazy(() => import("./pages/LeasingCalculator"));
 const FinancingCalculator = lazy(() => import("./pages/FinancingCalculator"));
 const KfzSteuerRechner = lazy(() => import("./pages/KfzSteuerRechner"));
