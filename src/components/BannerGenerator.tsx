@@ -47,7 +47,26 @@ function fitImageToSize(dataUrl: string, targetW: number, targetH: number): Prom
         if (!ctx) return reject(new Error('canvas unsupported'));
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, targetW, targetH);
+
+        const srcRatio = img.width / img.height;
+        const dstRatio = targetW / targetH;
+        const ratioDelta = Math.abs(srcRatio - dstRatio) / dstRatio;
+
+        if (ratioDelta < 0.02) {
+          // Aspect ratio matches → simple resize, no distortion.
+          ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, targetW, targetH);
+        } else {
+          // Aspect mismatch (model ignored ratio hint). COVER-fit: scale uniformly
+          // to fill the canvas and center-crop. This preserves the motif's
+          // geometry — never stretch/squash. A small crop is far less ugly than
+          // a squashed car.
+          const scale = Math.max(targetW / img.width, targetH / img.height);
+          const drawW = img.width * scale;
+          const drawH = img.height * scale;
+          const dx = (targetW - drawW) / 2;
+          const dy = (targetH - drawH) / 2;
+          ctx.drawImage(img, 0, 0, img.width, img.height, dx, dy, drawW, drawH);
+        }
         resolve(canvas.toDataURL('image/png'));
       } catch (e) { reject(e); }
     };
