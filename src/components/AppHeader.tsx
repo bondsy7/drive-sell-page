@@ -25,7 +25,7 @@ export default function AppHeader({ leftActions, variant = 'card' }: AppHeaderPr
     supabase.rpc('has_role' as any, { _user_id: user.id, _role: 'admin' }).then(({ data }) => setIsAdmin(!!data));
   }, [user]);
 
-  const logoLink = '/';
+  const logoLink = 'https://vw-demo.auto3.de/';
 
   const isCard = variant === 'card';
   const headerBg = isCard
