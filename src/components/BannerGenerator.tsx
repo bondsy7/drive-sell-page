@@ -767,7 +767,7 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
       cache.vehicleSrc = vehicleImage;
     }
 
-    const needVehicle = !!vehicleImage && !cache.vehicleByAspect[aspectKey];
+      const needVehicle = !!vehicleImage && !cache.vehicleByAspect[aspectKey];
     const wantLogo = showLogo && !!logoBase64;
     const needLogo = wantLogo && (cache.logoSrc !== logoBase64 || !cache.logoRef);
 
