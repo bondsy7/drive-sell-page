@@ -349,7 +349,7 @@ async function generateGemini(prompt: string, imageBase64: string | null, logoBa
     const fillRule = isExtremePortrait
       ? `- EXTREME VERTICAL DISPLAY AD: this is a ${width}×${height} skyscraper. ONE continuous full-bleed image from top edge to bottom edge. The vehicle motif (car + scene/background) MUST fill 100% of the canvas — every pixel is part of the actual rendered scene. The vehicle itself occupies the central 55-70% of the height, large and dominant. NO blurred padding, NO dark gradient caps, NO solid color top/bottom strips, NO repeated/duplicated motif, NO mini-poster centered in dead space. Headline/logo/price/CTA sit DIRECTLY ON TOP of the rendered scene as overlays — never inside empty cream/white/black bands.`
       : isExtremeLandscape
-      ? `- EXTREME HORIZONTAL DISPLAY AD: this is a ${width}×${height} ultra-wide strip. ONE continuous full-bleed image edge-to-edge. The vehicle motif fills 100% of the canvas — vehicle large and dominant (occupying 60-75% of width), scene continues naturally to all 4 borders. NO blurred side extensions, NO solid color caps, NO mirrored/repeated background strips, NO mini-banner inside empty space. Text/logo/price are overlays on the actual scene.`
+      ? `- EXTREME HORIZONTAL DISPLAY AD: this is a ${width}×${height} ultra-wide strip. Compose a native ultra-wide advertisement, not a crop from another format. ONE continuous full-bleed image edge-to-edge. The complete vehicle and all text/logo/price elements MUST be visible inside the canvas safe area. The vehicle motif fills 100% of the canvas as a designed wide scene — scene continues naturally to all 4 borders. NO zoomed-in crop, NO cut-off car, NO blurred side extensions, NO solid color caps, NO mirrored/repeated background strips, NO mini-banner inside empty space. Text/logo/price are overlays on the actual scene.`
       : isPortrait
       ? `- FULL-BLEED MOTIF: the vehicle scene MUST fill 100% of the canvas, edge-to-edge on all 4 sides. The vehicle itself is large and dominant (60-80% of canvas height), with the studio/road/scene continuing naturally to every border. ABSOLUTELY FORBIDDEN: blurred padding zones, blurred extensions, solid color top/bottom caps, cream/white/black empty bands, gradient fade-outs, duplicated/mirrored background strips. Text and logo are overlays directly on the rendered scene.`
       : isLandscape
@@ -360,13 +360,14 @@ async function generateGemini(prompt: string, imageBase64: string | null, logoBa
 `OUTPUT CANVAS (HARD CONSTRAINT — HIGHEST PRIORITY):
 - Aspect ratio: EXACTLY ${aspectLabel} (${width}×${height}px, ${orientationWord}).
 - DO NOT default to 1:1 / square. DO NOT mirror the aspect ratio of the reference vehicle photo.
-- Compose the entire scene (background, vehicle placement, headline, logo, negative space) NATIVELY for a ${aspectLabel} ${orientationWord} canvas.
+- Compose the entire scene (background, vehicle placement, headline, logo, negative space) NATIVELY for a ${aspectLabel} ${orientationWord} canvas. This must look designed for this exact ad format, not post-cropped from another output.
 - If the reference vehicle image has a different aspect ratio, IGNORE its framing — only its identity matters.
 - Keep all essential elements fully inside a 5% inner safe area. Never place vehicle edges, headline, price, logo or CTA directly on the outer crop boundary.
+- The final output will be rejected if it requires cropping, stretching, padding or reframing after generation. Generate the correct composition directly.
 
 COMPOSITION FILL RULE (NO EMPTY ZONES):
 ${fillRule}
-- The padded blurred areas of the reference image are NOT part of the output — they exist only to hint at the target ratio. DO NOT reproduce flat blurred or flat colored bands in the final banner.
+- The reference image is never a canvas template. Do NOT reproduce, crop or stretch its framing; rebuild a fresh composition for ${aspectLabel}.
 - Every pixel of the output must contribute to the composition: scene, vehicle, typography, lighting, CI layout surface or accent. ZERO dead space.
 - The final output must be a single full-canvas image. Do not place a normal photo/banner as an inset, cutout, centered card, framed rectangle or cropped excerpt inside a larger blank canvas.
 - If the format is difficult, simplify typography and layout, but never add margins/side caps/top caps and never crop essential content.`
