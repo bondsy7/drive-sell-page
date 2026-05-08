@@ -208,111 +208,219 @@ export default function DamageReportsTab() {
                 <Badge variant="outline">Realistisch: {fmt(active.kosten_realistisch_brutto)}</Badge>
                 {active.anlass && <Badge variant="outline">{active.anlass}</Badge>}
               </div>
-              {active.analysis?.fazit?.gesamteindruck && (
-                <p className="text-sm text-foreground leading-relaxed">{active.analysis.fazit.gesamteindruck}</p>
-              )}
-              {active.images?.length > 0 && (() => {
-                const cur: any = active.images[viewerIndex] || active.images[0];
-                const orig = cur?.base64;
-                const annotated = cur?.annotatedBase64 || cur?.base64;
-                const repaired = cur?.repairedBase64;
-                return (
-                  <div className="space-y-3">
-                    <Tabs defaultValue="annotated" className="w-full">
-                      <TabsList className="grid grid-cols-3 w-full">
-                        <TabsTrigger value="annotated">Markiert</TabsTrigger>
-                        <TabsTrigger value="original">Original</TabsTrigger>
-                        <TabsTrigger value="repair">Vorher / Nachher</TabsTrigger>
-                      </TabsList>
 
-                      <TabsContent value="annotated" className="mt-3">
-                        <div className="relative rounded-xl overflow-hidden bg-muted max-h-[55vh] flex items-center justify-center">
-                          <img src={annotated} alt="Markiert" className="max-h-[55vh] w-auto object-contain" />
-                          <button
-                            onClick={() => setLightboxIndex(viewerIndex)}
-                            className="absolute top-2 right-2 bg-foreground/60 hover:bg-foreground/80 text-background rounded-full p-1.5"
-                            aria-label="Vergrößern"
-                          >
-                            <Maximize2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </TabsContent>
+              <Tabs defaultValue="uebersicht" className="space-y-4">
+                <TabsList className="grid grid-cols-4 w-full">
+                  <TabsTrigger value="uebersicht">Fazit</TabsTrigger>
+                  <TabsTrigger value="schaeden">Schäden ({active.analysis?.schaeden?.length || 0})</TabsTrigger>
+                  <TabsTrigger value="bilder">Markierte Bilder</TabsTrigger>
+                  <TabsTrigger value="bericht">Bericht</TabsTrigger>
+                </TabsList>
 
-                      <TabsContent value="original" className="mt-3">
-                        <div className="relative rounded-xl overflow-hidden bg-muted max-h-[55vh] flex items-center justify-center">
-                          {orig ? (
-                            <img src={orig} alt="Original" className="max-h-[55vh] w-auto object-contain" />
-                          ) : (
-                            <div className="py-12 text-sm text-muted-foreground">Kein Original gespeichert</div>
-                          )}
-                        </div>
-                      </TabsContent>
-
-                      <TabsContent value="repair" className="mt-3">
-                        {repaired && orig ? (
-                          <div className="space-y-3">
-                            <BeforeAfterSlider
-                              beforeSrc={orig}
-                              afterSrc={repaired}
-                              beforeLabel="Vorher"
-                              afterLabel="Nachher"
-                              className="max-h-[55vh]"
-                            />
-                            <div className="flex justify-center">
-                              <Button size="sm" variant="outline" onClick={() => handleRepairInReport(active, viewerIndex)} disabled={repairingIndex === viewerIndex}>
-                                {repairingIndex === viewerIndex ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : <Sparkles className="w-4 h-4 mr-1.5" />}
-                                Neu generieren
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="rounded-xl bg-card border border-border p-6 text-center space-y-3">
-                            <div className="mx-auto w-10 h-10 rounded-full bg-accent/15 flex items-center justify-center">
-                              <Sparkles className="w-5 h-5 text-accent" />
-                            </div>
-                            <div>
-                              <h4 className="font-semibold text-foreground">Reparatur-Vorschau noch nicht erstellt</h4>
-                              <p className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">
-                                Die Vorher-/Nachher-Visualisierung wird direkt aus dem Originalbild erstellt.
-                              </p>
-                            </div>
-                            <Button size="sm" onClick={() => handleRepairInReport(active, viewerIndex)} disabled={repairingIndex === viewerIndex} className="gradient-accent text-accent-foreground font-semibold">
-                              {repairingIndex === viewerIndex ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : <Sparkles className="w-4 h-4 mr-1.5" />}
-                              {repairingIndex === viewerIndex ? 'Generiere Reparatur…' : 'Reparatur generieren'}
-                            </Button>
-                          </div>
-                        )}
-                      </TabsContent>
-                    </Tabs>
-
-                    {active.images.length > 1 && (
-                      <div className="flex gap-2 overflow-x-auto pb-1">
-                        {active.images.map((img: any, i: number) => (
-                          <button
-                            key={i}
-                            onClick={() => setViewerIndex(i)}
-                            className={`shrink-0 w-20 h-16 rounded-lg overflow-hidden border-2 transition-all ${
-                              i === viewerIndex ? 'border-accent' : 'border-transparent opacity-60 hover:opacity-100'
-                            }`}
-                          >
-                            <img src={img.annotatedBase64 || img.base64} alt="" className="w-full h-full object-cover" />
-                          </button>
+                {/* FAZIT */}
+                <TabsContent value="uebersicht" className="space-y-4">
+                  <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`px-2 py-1 rounded text-xs font-semibold ${sevColor(active.analysis?.fazit?.schweregrad)}`}>
+                        Schwere: {active.analysis?.fazit?.schweregrad || '–'}
+                      </span>
+                      {active.analysis?.fazit?.kategorie && (
+                        <span className="px-2 py-1 rounded bg-muted text-xs">{active.analysis.fazit.kategorie}</span>
+                      )}
+                    </div>
+                    {active.analysis?.fazit?.gesamteindruck && (
+                      <p className="text-sm text-foreground leading-relaxed">{active.analysis.fazit.gesamteindruck}</p>
+                    )}
+                    {active.analysis?.fazit?.betroffeneBereiche?.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {active.analysis.fazit.betroffeneBereiche.map((b: string, i: number) => (
+                          <span key={i} className="px-2 py-0.5 text-xs rounded-full bg-accent/10 text-accent">{b}</span>
                         ))}
                       </div>
                     )}
                   </div>
-                );
-              })()}
-              {active.analysis?.berichtMarkdown && (
-                <div className="rounded-xl border border-border bg-muted/30 p-4">
-                  <pre className="text-xs whitespace-pre-wrap font-sans text-foreground leading-relaxed">{active.analysis.berichtMarkdown}</pre>
-                </div>
-              )}
-              <div className="flex justify-end">
-                <Button onClick={() => downloadMd(active)} variant="outline" size="sm">
-                  <Download className="w-4 h-4 mr-2" /> Bericht (.md) herunterladen
-                </Button>
-              </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className="rounded-xl border border-border bg-card p-4">
+                      <p className="text-xs text-muted-foreground">Konservativ</p>
+                      <p className="text-xl font-bold text-foreground">{fmt(active.analysis?.kostenGesamt?.konservativBrutto)}</p>
+                      <p className="text-[10px] text-muted-foreground">brutto · {fmt(active.analysis?.kostenGesamt?.konservativNetto)} netto</p>
+                    </div>
+                    <div className="rounded-xl border border-accent bg-accent/5 p-4">
+                      <p className="text-xs text-accent font-semibold">Realistisch</p>
+                      <p className="text-xl font-bold text-foreground">{fmt(active.analysis?.kostenGesamt?.realistischBrutto)}</p>
+                      <p className="text-[10px] text-muted-foreground">brutto · {fmt(active.analysis?.kostenGesamt?.realistischNetto)} netto</p>
+                    </div>
+                    <div className="rounded-xl border border-border bg-card p-4">
+                      <p className="text-xs text-muted-foreground">Max (verdeckt)</p>
+                      <p className="text-xl font-bold text-foreground">{fmt(active.analysis?.kostenGesamt?.maxBrutto)}</p>
+                      <p className="text-[10px] text-muted-foreground">brutto · {fmt(active.analysis?.kostenGesamt?.maxNetto)} netto</p>
+                    </div>
+                  </div>
+                  {active.analysis?.kostenGesamt?.annahmen && (
+                    <p className="text-xs text-muted-foreground italic">Annahmen: {active.analysis.kostenGesamt.annahmen}</p>
+                  )}
+
+                  {active.analysis?.verdeckteSchaeden?.length > 0 && (
+                    <div className="rounded-xl border border-border bg-card p-4">
+                      <p className="text-sm font-semibold mb-2">Mögliche verdeckte Schäden</p>
+                      <ul className="space-y-1.5 text-xs">
+                        {active.analysis.verdeckteSchaeden.map((v: any, i: number) => (
+                          <li key={i} className="flex items-start gap-2">
+                            <AlertCircle className="w-3.5 h-3.5 mt-0.5 text-amber-600" />
+                            <span><strong>{v.bauteil}</strong> – {v.wahrscheinlichkeit}: {v.hinweis}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* SCHÄDEN-TABELLE */}
+                <TabsContent value="schaeden">
+                  <div className="overflow-x-auto rounded-xl border border-border">
+                    <table className="w-full text-xs">
+                      <thead className="bg-muted">
+                        <tr>
+                          <th className="p-2 text-left">Nr.</th>
+                          <th className="p-2 text-left">Position / Bauteil</th>
+                          <th className="p-2 text-left">Art</th>
+                          <th className="p-2 text-left">Schwere</th>
+                          <th className="p-2 text-left">Maßnahme</th>
+                          <th className="p-2 text-left">Std.</th>
+                          <th className="p-2 text-left">Kosten brutto</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {active.analysis?.schaeden?.map((s: any) => (
+                          <tr key={s.nr} className="border-t border-border">
+                            <td className="p-2 font-bold">{s.nr}</td>
+                            <td className="p-2"><strong>{s.position}</strong><br /><span className="text-muted-foreground">{s.bauteil}</span></td>
+                            <td className="p-2">{s.art}<br /><span className="text-muted-foreground">{s.merkmale}</span></td>
+                            <td className="p-2"><span className={`px-1.5 py-0.5 rounded text-[10px] ${sevColor(s.schweregrad)}`}>{s.schweregrad}</span></td>
+                            <td className="p-2">{s.massnahme}<br /><span className="text-muted-foreground">{s.reparaturart}</span></td>
+                            <td className="p-2">{s.stunden}h</td>
+                            <td className="p-2">{fmt(s.kostenBrutto?.min)} – {fmt(s.kostenBrutto?.max)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </TabsContent>
+
+                {/* MARKIERTE BILDER + REPARATUR */}
+                <TabsContent value="bilder">
+                  {active.images?.length > 0 ? (() => {
+                    const cur: any = active.images[viewerIndex] || active.images[0];
+                    const orig = cur?.base64;
+                    const annotated = cur?.annotatedBase64 || cur?.base64;
+                    const repaired = cur?.repairedBase64;
+                    return (
+                      <div className="space-y-3">
+                        <Tabs defaultValue="annotated" className="w-full">
+                          <TabsList className="grid grid-cols-3 w-full">
+                            <TabsTrigger value="annotated">Markiert</TabsTrigger>
+                            <TabsTrigger value="original">Original</TabsTrigger>
+                            <TabsTrigger value="repair">Vorher / Nachher</TabsTrigger>
+                          </TabsList>
+
+                          <TabsContent value="annotated" className="mt-3">
+                            <div className="relative rounded-xl overflow-hidden bg-muted max-h-[55vh] flex items-center justify-center">
+                              <img src={annotated} alt="Markiert" className="max-h-[55vh] w-auto object-contain" />
+                              <button
+                                onClick={() => setLightboxIndex(viewerIndex)}
+                                className="absolute top-2 right-2 bg-foreground/60 hover:bg-foreground/80 text-background rounded-full p-1.5"
+                                aria-label="Vergrößern"
+                              >
+                                <Maximize2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </TabsContent>
+
+                          <TabsContent value="original" className="mt-3">
+                            <div className="relative rounded-xl overflow-hidden bg-muted max-h-[55vh] flex items-center justify-center">
+                              {orig ? (
+                                <img src={orig} alt="Original" className="max-h-[55vh] w-auto object-contain" />
+                              ) : (
+                                <div className="py-12 text-sm text-muted-foreground">Kein Original gespeichert</div>
+                              )}
+                            </div>
+                          </TabsContent>
+
+                          <TabsContent value="repair" className="mt-3">
+                            {repaired && orig ? (
+                              <div className="space-y-3">
+                                <BeforeAfterSlider
+                                  beforeSrc={orig}
+                                  afterSrc={repaired}
+                                  beforeLabel="Vorher"
+                                  afterLabel="Nachher"
+                                  className="max-h-[55vh]"
+                                />
+                                <div className="flex justify-center">
+                                  <Button size="sm" variant="outline" onClick={() => handleRepairInReport(active, viewerIndex)} disabled={repairingIndex === viewerIndex}>
+                                    {repairingIndex === viewerIndex ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : <Sparkles className="w-4 h-4 mr-1.5" />}
+                                    Neu generieren
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="rounded-xl bg-card border border-border p-6 text-center space-y-3">
+                                <div className="mx-auto w-10 h-10 rounded-full bg-accent/15 flex items-center justify-center">
+                                  <Sparkles className="w-5 h-5 text-accent" />
+                                </div>
+                                <div>
+                                  <h4 className="font-semibold text-foreground">Reparatur-Vorschau noch nicht erstellt</h4>
+                                  <p className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">
+                                    Die Vorher-/Nachher-Visualisierung wird direkt aus dem Originalbild erstellt.
+                                  </p>
+                                </div>
+                                <Button size="sm" onClick={() => handleRepairInReport(active, viewerIndex)} disabled={repairingIndex === viewerIndex} className="gradient-accent text-accent-foreground font-semibold">
+                                  {repairingIndex === viewerIndex ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : <Sparkles className="w-4 h-4 mr-1.5" />}
+                                  {repairingIndex === viewerIndex ? 'Generiere Reparatur…' : 'Reparatur generieren'}
+                                </Button>
+                              </div>
+                            )}
+                          </TabsContent>
+                        </Tabs>
+
+                        {active.images.length > 1 && (
+                          <div className="flex gap-2 overflow-x-auto pb-1">
+                            {active.images.map((img: any, i: number) => (
+                              <button
+                                key={i}
+                                onClick={() => setViewerIndex(i)}
+                                className={`shrink-0 w-20 h-16 rounded-lg overflow-hidden border-2 transition-all ${
+                                  i === viewerIndex ? 'border-accent' : 'border-transparent opacity-60 hover:opacity-100'
+                                }`}
+                              >
+                                <img src={img.annotatedBase64 || img.base64} alt="" className="w-full h-full object-cover" />
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })() : (
+                    <div className="py-12 text-center text-sm text-muted-foreground">Keine Bilder gespeichert</div>
+                  )}
+                </TabsContent>
+
+                {/* BERICHT (markdown) */}
+                <TabsContent value="bericht">
+                  <div className="rounded-xl border border-border bg-card">
+                    <div className="p-3 flex justify-between items-center border-b border-border">
+                      <span className="text-sm font-semibold flex items-center gap-2"><FileText className="w-4 h-4" /> Schadensbericht</span>
+                      <Button size="sm" variant="outline" onClick={() => downloadMd(active)} className="gap-1">
+                        <Download className="w-3.5 h-3.5" /> Download .md
+                      </Button>
+                    </div>
+                    <pre className="p-4 text-xs whitespace-pre-wrap font-sans text-foreground leading-relaxed max-h-[60vh] overflow-y-auto">
+                      {active.analysis?.berichtMarkdown || 'Kein Bericht gespeichert.'}
+                    </pre>
+                  </div>
+                </TabsContent>
+              </Tabs>
             </div>
           )}
         </DialogContent>
