@@ -305,10 +305,22 @@ const Index = () => {
       setVehicleData(enriched);
 
       // Ensure vehicle row so all downstream assets carry vehicle_id.
-      // Use Auto-variant: creates a NOVIN-placeholder when PDF has no VIN,
-      // so the project still appears in the Fahrzeuge-Dashboard.
+      // Priority:
+      //  1) deep-linked / already-selected vehicle  → merge PDF data into it
+      //  2) PDF carried a real VIN                  → upsert by VIN
+      //  3) fallback: NOVIN-placeholder (so it still shows in Fahrzeuge)
       const vin = (enriched.vehicle as any)?.vin || null;
-      const vehicleId = user ? await ensureVehicleAuto(user.id, vin, enriched) : null;
+      let vehicleId: string | null = null;
+      if (user) {
+        const preselected = savedVehicleId || deepLinkVehicleId;
+        if (preselected) {
+          // Merge PDF-extracted data into the already-selected vehicle row.
+          await ensureVehicle(user.id, (enriched.vehicle as any)?.vin || (await supabase.from('vehicles').select('vin').eq('id', preselected).maybeSingle()).data?.vin || '', enriched);
+          vehicleId = preselected;
+        } else {
+          vehicleId = await ensureVehicleAuto(user.id, vin, enriched);
+        }
+      }
       setSavedVehicleId(vehicleId);
 
       // Pre-create project so pipeline can use it
