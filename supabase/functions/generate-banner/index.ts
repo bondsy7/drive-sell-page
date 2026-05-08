@@ -94,8 +94,6 @@ const GEMINI_SUPPORTED_RATIOS: Array<{ label: string; value: number }> = [
 function getGeminiAspectRatio(w: number, h: number): string {
   if (!w || !h) return "1:1";
   const target = w / h;
-  // Skyscraper / ultra-wide display ads are not supported as native Gemini
-  // aspect ratios. Keep them raw in the text prompt and do not pass imageConfig.
   if (target < 0.4 || target > 2.8) return `${w}:${h}`;
   let best = GEMINI_SUPPORTED_RATIOS[0];
   let bestDiff = Math.abs(Math.log(target / best.value));
@@ -103,6 +101,10 @@ function getGeminiAspectRatio(w: number, h: number): string {
     const diff = Math.abs(Math.log(target / r.value));
     if (diff < bestDiff) { bestDiff = diff; best = r; }
   }
+  // Only snap when the requested format is genuinely the same ratio. Ad formats
+  // like 1200×628 or 300×600 must be composed natively, not generated as 16:9
+  // or 9:16 and cropped afterward.
+  if (bestDiff > 0.025) return `${w}:${h}`;
   return best.label;
 }
 
@@ -167,12 +169,14 @@ async function deductCreditsAfterSuccess(userId: string, cost: number, model: st
 }
 
 function getGeminiModelChain(model: string): string[] {
+  // Do not fall back to gemini-2.5-flash-image here: it can ignore the native
+  // aspect-ratio field, which caused post-cropped / distorted banners.
   const chains: Record<string, string[]> = {
-    "gemini-3-pro-image-preview": ["gemini-3-pro-image-preview", GEMINI_FAST_FALLBACK],
-    "gemini-3.1-flash-image-preview": ["gemini-3.1-flash-image-preview", GEMINI_FAST_FALLBACK],
-    [GEMINI_FAST_FALLBACK]: [GEMINI_FAST_FALLBACK, "gemini-3.1-flash-image-preview"],
+    "gemini-3-pro-image-preview": ["gemini-3-pro-image-preview", "gemini-3.1-flash-image-preview"],
+    "gemini-3.1-flash-image-preview": ["gemini-3.1-flash-image-preview", "gemini-3-pro-image-preview"],
+    [GEMINI_FAST_FALLBACK]: ["gemini-3.1-flash-image-preview"],
   };
-  return Array.from(new Set(chains[model] || [model, GEMINI_FAST_FALLBACK])).slice(0, 2);
+  return Array.from(new Set(chains[model] || [model])).slice(0, 2);
 }
 
 serve(async (req) => {
@@ -222,8 +226,8 @@ serve(async (req) => {
 
     if (config.engine === "gemini") {
       currentStage = "gemini_call";
-      // Reliability-first same-engine fallback: first try the selected tier, then a fast Gemini fallback.
-      // This avoids minutes of waiting when both Gemini 3 preview models are overloaded.
+      // Same-engine fallback only between Gemini-3 image models so the requested
+      // aspect ratio stays a native generation constraint, not a client crop.
       const geminiModels = getGeminiModelChain(config.model);
       log.info("gemini_call", "model chain", { selectedModel: config.model, chain: geminiModels });
       let lastGeminiError = "";
@@ -347,7 +351,7 @@ async function generateGemini(prompt: string, imageBase64: string | null, logoBa
     const fillRule = isExtremePortrait
       ? `- EXTREME VERTICAL DISPLAY AD: this is a ${width}×${height} skyscraper. ONE continuous full-bleed image from top edge to bottom edge. The vehicle motif (car + scene/background) MUST fill 100% of the canvas — every pixel is part of the actual rendered scene. The vehicle itself occupies the central 55-70% of the height, large and dominant. NO blurred padding, NO dark gradient caps, NO solid color top/bottom strips, NO repeated/duplicated motif, NO mini-poster centered in dead space. Headline/logo/price/CTA sit DIRECTLY ON TOP of the rendered scene as overlays — never inside empty cream/white/black bands.`
       : isExtremeLandscape
-      ? `- EXTREME HORIZONTAL DISPLAY AD: this is a ${width}×${height} ultra-wide strip. ONE continuous full-bleed image edge-to-edge. The vehicle motif fills 100% of the canvas — vehicle large and dominant (occupying 60-75% of width), scene continues naturally to all 4 borders. NO blurred side extensions, NO solid color caps, NO mirrored/repeated background strips, NO mini-banner inside empty space. Text/logo/price are overlays on the actual scene.`
+      ? `- EXTREME HORIZONTAL DISPLAY AD: this is a ${width}×${height} ultra-wide strip. Compose a native ultra-wide advertisement, not a crop from another format. ONE continuous full-bleed image edge-to-edge. The complete vehicle and all text/logo/price elements MUST be visible inside the canvas safe area. The vehicle motif fills 100% of the canvas as a designed wide scene — scene continues naturally to all 4 borders. NO zoomed-in crop, NO cut-off car, NO blurred side extensions, NO solid color caps, NO mirrored/repeated background strips, NO mini-banner inside empty space. Text/logo/price are overlays on the actual scene.`
       : isPortrait
       ? `- FULL-BLEED MOTIF: the vehicle scene MUST fill 100% of the canvas, edge-to-edge on all 4 sides. The vehicle itself is large and dominant (60-80% of canvas height), with the studio/road/scene continuing naturally to every border. ABSOLUTELY FORBIDDEN: blurred padding zones, blurred extensions, solid color top/bottom caps, cream/white/black empty bands, gradient fade-outs, duplicated/mirrored background strips. Text and logo are overlays directly on the rendered scene.`
       : isLandscape
@@ -358,13 +362,14 @@ async function generateGemini(prompt: string, imageBase64: string | null, logoBa
 `OUTPUT CANVAS (HARD CONSTRAINT — HIGHEST PRIORITY):
 - Aspect ratio: EXACTLY ${aspectLabel} (${width}×${height}px, ${orientationWord}).
 - DO NOT default to 1:1 / square. DO NOT mirror the aspect ratio of the reference vehicle photo.
-- Compose the entire scene (background, vehicle placement, headline, logo, negative space) NATIVELY for a ${aspectLabel} ${orientationWord} canvas.
+- Compose the entire scene (background, vehicle placement, headline, logo, negative space) NATIVELY for a ${aspectLabel} ${orientationWord} canvas. This must look designed for this exact ad format, not post-cropped from another output.
 - If the reference vehicle image has a different aspect ratio, IGNORE its framing — only its identity matters.
 - Keep all essential elements fully inside a 5% inner safe area. Never place vehicle edges, headline, price, logo or CTA directly on the outer crop boundary.
+- The final output will be rejected if it requires cropping, stretching, padding or reframing after generation. Generate the correct composition directly.
 
 COMPOSITION FILL RULE (NO EMPTY ZONES):
 ${fillRule}
-- The padded blurred areas of the reference image are NOT part of the output — they exist only to hint at the target ratio. DO NOT reproduce flat blurred or flat colored bands in the final banner.
+- The reference image is never a canvas template. Do NOT reproduce, crop or stretch its framing; rebuild a fresh composition for ${aspectLabel}.
 - Every pixel of the output must contribute to the composition: scene, vehicle, typography, lighting, CI layout surface or accent. ZERO dead space.
 - The final output must be a single full-canvas image. Do not place a normal photo/banner as an inset, cutout, centered card, framed rectangle or cropped excerpt inside a larger blank canvas.
 - If the format is difficult, simplify typography and layout, but never add margins/side caps/top caps and never crop essential content.`
@@ -381,7 +386,7 @@ ${fillRule}
 `VEHICLE REFERENCE IMAGE (identity only):
 The next image shows the vehicle. Use it ONLY for identity (model, color, trim, wheels, proportions).
 DO NOT copy its background, lighting, reflections, framing or aspect ratio.
-The image may have blurred padding bands around the vehicle — IGNORE those bands, they are only an aspect-ratio hint and are NOT part of the vehicle or final composition.` });
+Do NOT crop, squeeze, stretch, warp or distort the vehicle to make it fit. Recompose the scene around the correct banner format while preserving natural vehicle proportions.` });
     if (vehicleFileRef?.fileUri) {
       parts.push({ fileData: { fileUri: vehicleFileRef.fileUri, mimeType: vehicleFileRef.mimeType || "image/jpeg" } });
       log?.info("gemini.ref", "vehicle via Files API", { uri: vehicleFileRef.fileUri });
@@ -412,9 +417,9 @@ The logo image follows now:` });
     }
   }
 
-  // D) Activate native aspectRatio control on gemini-3* preview models via imageConfig.
-  // gemini-3* DO honour imageConfig.aspectRatio. The fast fallback gemini-2.5-flash-image
-  // still ignores it, so the pre-padded blurred reference image (B) remains as a visual anchor.
+  // D) Activate native aspectRatio control only when the chosen format exactly
+  // matches a Gemini-supported ratio. Otherwise prompt for the raw ad ratio and
+  // never solve it via post-generation crop/stretch.
   const canUseNativeAspectField = GEMINI_SUPPORTED_RATIOS.some(r => r.label === aspectLabel);
   const supportsAspectField = /^gemini-3/.test(model) && canUseNativeAspectField;
   const generationConfig: Record<string, unknown> = {
@@ -425,9 +430,7 @@ The logo image follows now:` });
     (generationConfig as any).imageConfig = { aspectRatio: aspectLabel };
   }
 
-  // Fail fast on overloaded preview models, then move to the stable Gemini fallback.
   // Give Gemini-3 preview models more headroom — they regularly need 35–55s for 9:16 with reference image.
-  // Falling back too early forces use of gemini-2.5-flash-image which ignores aspect ratio.
   const modelBudgetMs = model === GEMINI_FAST_FALLBACK ? 55_000 : /^gemini-3/.test(model) ? 60_000 : 45_000;
 
   for (let attempt = 0; attempt <= retries; attempt++) {

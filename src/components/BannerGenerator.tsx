@@ -30,16 +30,22 @@ import { FolderOpen } from 'lucide-react';
 import { useBackgroundTasks } from '@/contexts/BackgroundTasksContext';
 
 /**
- * Finalize the AI output to the exact ad size without adding padding, blur bars,
- * side caps or letterboxing. We deliberately scale the complete generated frame
- * to the requested canvas, because preserving all content is more important than
- * proportional contain-fitting for fixed ad inventory.
+ * Only accepts AI output that was created in the requested format. If the model
+ * returns the wrong aspect ratio, we fail instead of cropping or stretching it.
  */
-function fitImageToSize(dataUrl: string, targetW: number, targetH: number): Promise<string> {
+function ensureGeneratedAspectRatio(dataUrl: string, targetW: number, targetH: number, ratioLabel: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new window.Image();
     img.onload = () => {
       try {
+        const srcRatio = img.width / img.height;
+        const dstRatio = targetW / targetH;
+        const ratioDelta = Math.abs(srcRatio - dstRatio) / dstRatio;
+
+        if (ratioDelta > 0.006) {
+          return reject(new Error(`Die KI hat ${img.width}×${img.height} statt ${targetW}×${targetH} (${ratioLabel}) geliefert. Banner wurde nicht beschnitten oder verzerrt – bitte erneut generieren.`));
+        }
+
         const canvas = document.createElement('canvas');
         canvas.width = targetW;
         canvas.height = targetH;
@@ -47,108 +53,8 @@ function fitImageToSize(dataUrl: string, targetW: number, targetH: number): Prom
         if (!ctx) return reject(new Error('canvas unsupported'));
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
-
-        const srcRatio = img.width / img.height;
-        const dstRatio = targetW / targetH;
-        const ratioDelta = Math.abs(srcRatio - dstRatio) / dstRatio;
-
-        if (ratioDelta < 0.02) {
-          // Aspect ratio matches → simple resize, no distortion.
-          ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, targetW, targetH);
-        } else {
-          // Aspect mismatch (model ignored ratio hint). COVER-fit: scale uniformly
-          // to fill the canvas and center-crop. This preserves the motif's
-          // geometry — never stretch/squash. A small crop is far less ugly than
-          // a squashed car.
-          const scale = Math.max(targetW / img.width, targetH / img.height);
-          const drawW = img.width * scale;
-          const drawH = img.height * scale;
-          const dx = (targetW - drawW) / 2;
-          const dy = (targetH - drawH) / 2;
-          ctx.drawImage(img, 0, 0, img.width, img.height, dx, dy, drawW, drawH);
-        }
+        ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, targetW, targetH);
         resolve(canvas.toDataURL('image/png'));
-      } catch (e) { reject(e); }
-    };
-    img.onerror = () => reject(new Error('image load failed'));
-    img.src = dataUrl;
-  });
-}
-
-/**
- * Pre-pad an input image to the target aspect ratio before sending it to the
- * AI model. Gemini tends to mirror the input image's aspect ratio, so feeding
- * it a canvas with the desired ratio dramatically increases the chance the
- * generated banner matches (e.g. 9:16, 16:9, etc.).
- */
-// Gemini image models only honour a fixed set of output aspect ratios. Snap
-// the requested target to the closest supported value so the pre-padded input
-// matches exactly what the model will produce.
-const GEMINI_SUPPORTED_RATIOS = [1/1, 2/3, 3/2, 3/4, 4/3, 4/5, 5/4, 9/16, 16/9, 21/9];
-function snapToGeminiRatio(target: number): number {
-  let best = GEMINI_SUPPORTED_RATIOS[0];
-  let bestDiff = Math.abs(Math.log(target / best));
-  for (const r of GEMINI_SUPPORTED_RATIOS) {
-    const d = Math.abs(Math.log(target / r));
-    if (d < bestDiff) { bestDiff = d; best = r; }
-  }
-  return best;
-}
-
-/**
- * Pad an image to the target aspect ratio using a BLURRED + MIRRORED extension
- * of the source instead of a flat white/cream background. This prevents Gemini's
- * fast fallback model from reproducing large flat empty zones in the output
- * (the root cause of "lots of cream space" 9:16 banners).
- */
-function padToAspectRatio(dataUrl: string, rawTargetRatio: number, _bg: string = '#f4f4f4'): Promise<string> {
-  // Always snap references to the closest Gemini-native ratio. Unsupported ad
-  // inventory like 970×250 or 160×600 is then finalized to the exact requested
-  // size by fitImageToSize without adding any padding/caps.
-  const targetRatio = snapToGeminiRatio(rawTargetRatio);
-  return new Promise((resolve, reject) => {
-    const img = new window.Image();
-    img.onload = () => {
-      try {
-        const srcRatio = img.width / img.height;
-        // Already matches → return original
-        if (Math.abs(srcRatio - targetRatio) / targetRatio < 0.02) return resolve(dataUrl);
-        let canvasW: number, canvasH: number, dx = 0, dy = 0;
-        if (srcRatio > targetRatio) {
-          canvasW = img.width;
-          canvasH = Math.round(img.width / targetRatio);
-          dy = Math.round((canvasH - img.height) / 2);
-        } else {
-          canvasH = img.height;
-          canvasW = Math.round(img.height * targetRatio);
-          dx = Math.round((canvasW - img.width) / 2);
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = canvasW;
-        canvas.height = canvasH;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return reject(new Error('canvas unsupported'));
-
-        // 1) Blurred stretched background (covers full canvas)
-        ctx.save();
-        ctx.filter = 'blur(40px) brightness(0.85)';
-        // cover-fit
-        const coverScale = Math.max(canvasW / img.width, canvasH / img.height);
-        const cw = img.width * coverScale;
-        const ch = img.height * coverScale;
-        ctx.drawImage(img, (canvasW - cw) / 2, (canvasH - ch) / 2, cw, ch);
-        ctx.restore();
-
-        // 2) Soft dark vignette to deemphasise padded zones
-        ctx.save();
-        ctx.fillStyle = 'rgba(20,20,20,0.18)';
-        ctx.fillRect(0, 0, canvasW, canvasH);
-        ctx.restore();
-
-        // 3) Original sharp image centered on top
-        ctx.drawImage(img, dx, dy);
-
-        resolve(canvas.toDataURL('image/jpeg', 0.9));
       } catch (e) { reject(e); }
     };
     img.onerror = () => reject(new Error('image load failed'));
@@ -161,7 +67,7 @@ function padToAspectRatio(dataUrl: string, rawTargetRatio: number, _bg: string =
 const BANNER_FORMATS = [
   { id: 'story', label: 'Instagram Story', w: 1080, h: 1920, ratio: '9:16' },
   { id: 'post', label: 'Instagram Post', w: 1080, h: 1080, ratio: '1:1' },
-  { id: 'fb-ad', label: 'Facebook Ad', w: 1200, h: 628, ratio: '16:9' },
+  { id: 'fb-ad', label: 'Facebook Ad', w: 1200, h: 628, ratio: '1.91:1' },
   { id: 'hero', label: 'Website Banner', w: 1920, h: 1080, ratio: '16:9' },
   { id: 'half-page', label: 'Google Half Page', w: 300, h: 600, ratio: '1:2' },
   { id: 'billboard', label: 'Google Ads Billboard', w: 970, h: 250, ratio: '97:25' },
@@ -753,9 +659,8 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
   }, [occasion, scene, style, priceDisplay, vehicleTitle, priceText, headline, subline, ctaText, accentColor, secondaryColor, legalText, headlineFont, sublineFont, showLogo, logoBase64, freePrompt]);
 
   // Files API URI cache.
-  // - Vehicle: cached PER ASPECT RATIO (we pre-pad to the target ratio so Gemini's
-  //   fast fallback model — which ignores aspect-ratio prompt hints — still
-  //   produces the correct format by mirroring the reference image's dimensions).
+  // - Vehicle: cached per requested ratio, but the uploaded reference stays RAW.
+  //   The final banner format must be produced by the image model itself.
   // - Logo: cached once per session (no aspect dependency).
   // Drastically reduces payload (Base64 ~2 MB → URI ~200 B per request).
   type FileRef = { fileUri: string; mimeType: string };
@@ -792,11 +697,8 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
 
     const toUpload: string[] = [];
     if (needVehicle) {
-      // Send the raw vehicle image as identity reference. We previously pre-padded
-      // with a blurred background to hint at the target aspect ratio, but Gemini
-      // reproduced those blurred bands in the final banner instead of generating
-      // a true full-bleed scene. Aspect ratio is now controlled via prompt +
-      // generationConfig.imageConfig.aspectRatio.
+      // Send the raw vehicle image as identity reference only. The selected ad
+      // format must be generated natively by the model, not hinted via padding.
       toUpload.push(vehicleImage as string);
     }
     if (needLogo) toUpload.push(logoBase64 as string);
@@ -840,14 +742,14 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
     const prompt = buildPromptForFormat(formatId);
 
     try {
-      // Per-aspect Files API upload (cached). The vehicle reference is pre-padded to the
-      // target aspect ratio so even Gemini's fast fallback model produces the correct format.
+      // Per-aspect Files API upload (cached). The vehicle reference stays raw:
+      // no pre-padding, no blur bands, no hidden crop hints.
       const targetRatio = fmt.w / fmt.h;
       const { vehicleFileRef, logoFileRef } = await ensureFileRefsForAspect(targetRatio);
 
       // Fallback Base64: only sent when Files API upload failed for this asset.
       const vehicleFallbackB64 = !vehicleFileRef && vehicleImage
-        ? await padToAspectRatio(vehicleImage, targetRatio).catch(() => vehicleImage)
+        ? vehicleImage
         : undefined;
       const logoFallbackB64 = !logoFileRef && showLogo && logoBase64 ? logoBase64 : undefined;
 
@@ -885,7 +787,7 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
       }
       if (data?.imageBase64) {
         console.log(`[banner-client] ✓ ${formatId} ok in ${dur}ms`, data?.debug);
-        const fitted = await fitImageToSize(data.imageBase64, fmt.w, fmt.h).catch(() => data.imageBase64);
+        const fitted = await ensureGeneratedAspectRatio(data.imageBase64, fmt.w, fmt.h, fmt.ratio);
         return { formatId: fmt.id, formatLabel: fmt.label, ratio: fmt.ratio, image: fitted, w: fmt.w, h: fmt.h };
       }
     } catch (e: any) {
