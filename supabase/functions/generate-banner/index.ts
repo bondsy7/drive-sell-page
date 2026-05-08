@@ -94,8 +94,6 @@ const GEMINI_SUPPORTED_RATIOS: Array<{ label: string; value: number }> = [
 function getGeminiAspectRatio(w: number, h: number): string {
   if (!w || !h) return "1:1";
   const target = w / h;
-  // Skyscraper / ultra-wide display ads are not supported as native Gemini
-  // aspect ratios. Keep them raw in the text prompt and do not pass imageConfig.
   if (target < 0.4 || target > 2.8) return `${w}:${h}`;
   let best = GEMINI_SUPPORTED_RATIOS[0];
   let bestDiff = Math.abs(Math.log(target / best.value));
@@ -103,6 +101,10 @@ function getGeminiAspectRatio(w: number, h: number): string {
     const diff = Math.abs(Math.log(target / r.value));
     if (diff < bestDiff) { bestDiff = diff; best = r; }
   }
+  // Only snap when the requested format is genuinely the same ratio. Ad formats
+  // like 1200×628 or 300×600 must be composed natively, not generated as 16:9
+  // or 9:16 and cropped afterward.
+  if (bestDiff > 0.025) return `${w}:${h}`;
   return best.label;
 }
 
@@ -415,9 +417,9 @@ The logo image follows now:` });
     }
   }
 
-  // D) Activate native aspectRatio control on gemini-3* preview models via imageConfig.
-  // gemini-3* DO honour imageConfig.aspectRatio. The fast fallback gemini-2.5-flash-image
-  // still ignores it, so the pre-padded blurred reference image (B) remains as a visual anchor.
+  // D) Activate native aspectRatio control only when the chosen format exactly
+  // matches a Gemini-supported ratio. Otherwise prompt for the raw ad ratio and
+  // never solve it via post-generation crop/stretch.
   const canUseNativeAspectField = GEMINI_SUPPORTED_RATIOS.some(r => r.label === aspectLabel);
   const supportsAspectField = /^gemini-3/.test(model) && canUseNativeAspectField;
   const generationConfig: Record<string, unknown> = {
@@ -428,9 +430,7 @@ The logo image follows now:` });
     (generationConfig as any).imageConfig = { aspectRatio: aspectLabel };
   }
 
-  // Fail fast on overloaded preview models, then move to the stable Gemini fallback.
   // Give Gemini-3 preview models more headroom — they regularly need 35–55s for 9:16 with reference image.
-  // Falling back too early forces use of gemini-2.5-flash-image which ignores aspect ratio.
   const modelBudgetMs = model === GEMINI_FAST_FALLBACK ? 55_000 : /^gemini-3/.test(model) ? 60_000 : 45_000;
 
   for (let attempt = 0; attempt <= retries; attempt++) {
