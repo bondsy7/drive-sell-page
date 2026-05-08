@@ -85,6 +85,79 @@ export async function ensureVehicle(
 }
 
 /**
+ * Merge incoming vehicle data into a known vehicle row by id.
+ * Used for deep-linked flows where the user's selected dashboard vehicle is
+ * authoritative, even if the PDF does not contain a VIN.
+ */
+export async function mergeVehicleById(
+  userId: string,
+  vehicleId: string,
+  vehicleData?: VehicleData | Record<string, unknown> | null,
+  coverImageUrl?: string | null,
+): Promise<string | null> {
+  const { data: existing, error: readError } = await supabase
+    .from('vehicles')
+    .select('id, vin, vehicle_data, brand, model, year, color, title, cover_image_url')
+    .eq('user_id', userId)
+    .eq('id', vehicleId)
+    .maybeSingle();
+
+  if (readError || !existing) {
+    console.error('[mergeVehicleById] vehicle not found:', readError);
+    return null;
+  }
+
+  const incomingData = (vehicleData as Record<string, unknown>) || {};
+  const existingData = (existing.vehicle_data || {}) as Record<string, unknown>;
+  const mergedData: Record<string, unknown> = { ...existingData };
+
+  for (const [k, val] of Object.entries(incomingData)) {
+    if (val == null) continue;
+    if (typeof val === 'object' && !Array.isArray(val)) {
+      const prev = (existingData[k] as Record<string, unknown>) || {};
+      const next: Record<string, unknown> = { ...prev };
+      for (const [kk, vv] of Object.entries(val as Record<string, unknown>)) {
+        const cur = prev[kk];
+        const curStr = cur == null ? '' : String(cur).trim();
+        const incStr = vv == null ? '' : String(vv).trim();
+        if (Array.isArray(vv) ? vv.length > 0 : incStr !== '') {
+          if (Array.isArray(vv) || typeof vv === 'object' || curStr === '') next[kk] = vv;
+        }
+      }
+      mergedData[k] = next;
+    } else {
+      const cur = existingData[k];
+      const curStr = cur == null ? '' : String(cur).trim();
+      const incStr = String(val).trim();
+      if (incStr && (curStr === '' || k === 'category')) mergedData[k] = val;
+    }
+  }
+
+  const v: any = (vehicleData as any)?.vehicle || {};
+  const title = [existing.brand || v.brand, existing.model || v.model, v.variant].filter(Boolean).join(' ').trim() || existing.title || null;
+  const { error } = await supabase
+    .from('vehicles')
+    .update({
+      vehicle_data: mergedData,
+      brand: existing.brand || v.brand || null,
+      model: existing.model || v.model || null,
+      year: existing.year || (typeof v.year === 'number' ? v.year : (parseInt(v.year, 10) || null)),
+      color: existing.color || v.color || null,
+      title,
+      cover_image_url: coverImageUrl || existing.cover_image_url || null,
+    } as any)
+    .eq('user_id', userId)
+    .eq('id', vehicleId);
+
+  if (error) {
+    console.error('[mergeVehicleById] update failed:', error);
+    return null;
+  }
+
+  return vehicleId;
+}
+
+/**
  * Like `ensureVehicle`, but generates a stable `NOVIN-…` placeholder VIN
  * when none is known yet. This guarantees that uploads/originals/banners are
  * always attached to a vehicle row, even before VIN lookup. The placeholder
