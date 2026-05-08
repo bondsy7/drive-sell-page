@@ -94,32 +94,36 @@ function padToAspectRatio(dataUrl: string, rawTargetRatio: number, _bg: string =
         const srcRatio = img.width / img.height;
         // Already matches → return original
         if (Math.abs(srcRatio - targetRatio) / targetRatio < 0.02) return resolve(dataUrl);
-        let canvasW: number, canvasH: number, dx = 0, dy = 0;
-        if (srcRatio > targetRatio) {
-          canvasW = img.width;
-          canvasH = Math.round(img.width / targetRatio);
-          dy = Math.round((canvasH - img.height) / 2);
-        } else {
-          canvasH = img.height;
-          canvasW = Math.round(img.height * targetRatio);
-          dx = Math.round((canvasW - img.width) / 2);
-        }
+
+        // COVER FIT (no padding bars): the canvas is exactly the target ratio,
+        // and the source image is scaled to fully cover it (cropping overflow
+        // on the long axis). This way the reference Gemini sees is already
+        // edge-to-edge at the requested ratio — no grey/cream/blurred bands
+        // get reproduced as part of the final banner. The model is then free
+        // to recompose around the cropped subject and fill the entire frame.
+        const canvasW = srcRatio > targetRatio
+          ? Math.round(img.height * targetRatio)
+          : img.width;
+        const canvasH = srcRatio > targetRatio
+          ? img.height
+          : Math.round(img.width / targetRatio);
+        const scale = Math.max(canvasW / img.width, canvasH / img.height);
+        const drawW = Math.round(img.width * scale);
+        const drawH = Math.round(img.height * scale);
+        const dx = Math.round((canvasW - drawW) / 2);
+        const dy = Math.round((canvasH - drawH) / 2);
+
         const canvas = document.createElement('canvas');
         canvas.width = canvasW;
         canvas.height = canvasH;
         const ctx = canvas.getContext('2d');
         if (!ctx) return reject(new Error('canvas unsupported'));
 
-        // 1) Flat neutral mid-grey padding. A flat solid color reads to the
-        //    model as "padding to ignore" — unlike a blurred mirrored extension
-        //    of the source image which the model often interprets as part of
-        //    the composition and reproduces as cream/blurred bands inside the
-        //    final banner (esp. on extreme portrait formats like 160×600).
+        // Fallback fill in case of rounding gaps — neutral grey, fully covered
+        // by the image draw below.
         ctx.fillStyle = '#7d7d7d';
         ctx.fillRect(0, 0, canvasW, canvasH);
-
-        // 2) Original sharp image centered on top — the only "real" content.
-        ctx.drawImage(img, dx, dy);
+        ctx.drawImage(img, dx, dy, drawW, drawH);
 
         resolve(canvas.toDataURL('image/jpeg', 0.9));
       } catch (e) { reject(e); }
