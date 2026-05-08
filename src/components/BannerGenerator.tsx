@@ -697,11 +697,8 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
 
     const toUpload: string[] = [];
     if (needVehicle) {
-      // Send the raw vehicle image as identity reference. We previously pre-padded
-      // with a blurred background to hint at the target aspect ratio, but Gemini
-      // reproduced those blurred bands in the final banner instead of generating
-      // a true full-bleed scene. Aspect ratio is now controlled via prompt +
-      // generationConfig.imageConfig.aspectRatio.
+      // Send the raw vehicle image as identity reference only. The selected ad
+      // format must be generated natively by the model, not hinted via padding.
       toUpload.push(vehicleImage as string);
     }
     if (needLogo) toUpload.push(logoBase64 as string);
