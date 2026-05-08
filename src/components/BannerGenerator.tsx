@@ -110,23 +110,15 @@ function padToAspectRatio(dataUrl: string, rawTargetRatio: number, _bg: string =
         const ctx = canvas.getContext('2d');
         if (!ctx) return reject(new Error('canvas unsupported'));
 
-        // 1) Blurred stretched background (covers full canvas)
-        ctx.save();
-        ctx.filter = 'blur(40px) brightness(0.85)';
-        // cover-fit
-        const coverScale = Math.max(canvasW / img.width, canvasH / img.height);
-        const cw = img.width * coverScale;
-        const ch = img.height * coverScale;
-        ctx.drawImage(img, (canvasW - cw) / 2, (canvasH - ch) / 2, cw, ch);
-        ctx.restore();
-
-        // 2) Soft dark vignette to deemphasise padded zones
-        ctx.save();
-        ctx.fillStyle = 'rgba(20,20,20,0.18)';
+        // 1) Flat neutral mid-grey padding. A flat solid color reads to the
+        //    model as "padding to ignore" — unlike a blurred mirrored extension
+        //    of the source image which the model often interprets as part of
+        //    the composition and reproduces as cream/blurred bands inside the
+        //    final banner (esp. on extreme portrait formats like 160×600).
+        ctx.fillStyle = '#7d7d7d';
         ctx.fillRect(0, 0, canvasW, canvasH);
-        ctx.restore();
 
-        // 3) Original sharp image centered on top
+        // 2) Original sharp image centered on top — the only "real" content.
         ctx.drawImage(img, dx, dy);
 
         resolve(canvas.toDataURL('image/jpeg', 0.9));
