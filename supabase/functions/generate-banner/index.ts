@@ -384,7 +384,7 @@ ${fillRule}
 `VEHICLE REFERENCE IMAGE (identity only):
 The next image shows the vehicle. Use it ONLY for identity (model, color, trim, wheels, proportions).
 DO NOT copy its background, lighting, reflections, framing or aspect ratio.
-The image may have blurred padding bands around the vehicle — IGNORE those bands, they are only an aspect-ratio hint and are NOT part of the vehicle or final composition.` });
+Do NOT crop, squeeze, stretch, warp or distort the vehicle to make it fit. Recompose the scene around the correct banner format while preserving natural vehicle proportions.` });
     if (vehicleFileRef?.fileUri) {
       parts.push({ fileData: { fileUri: vehicleFileRef.fileUri, mimeType: vehicleFileRef.mimeType || "image/jpeg" } });
       log?.info("gemini.ref", "vehicle via Files API", { uri: vehicleFileRef.fileUri });
