@@ -133,19 +133,21 @@ export async function mergeVehicleById(
     }
   }
 
-  const v: any = (vehicleData as any)?.vehicle || {};
+  const incomingVehicle = vehicleData && typeof vehicleData === 'object' && 'vehicle' in vehicleData
+    ? (vehicleData as { vehicle?: Partial<VehicleData['vehicle']> }).vehicle || {}
+    : {};
   const title = [existing.brand || v.brand, existing.model || v.model, v.variant].filter(Boolean).join(' ').trim() || existing.title || null;
   const { error } = await supabase
     .from('vehicles')
     .update({
       vehicle_data: mergedData,
-      brand: existing.brand || v.brand || null,
-      model: existing.model || v.model || null,
-      year: existing.year || (typeof v.year === 'number' ? v.year : (parseInt(v.year, 10) || null)),
-      color: existing.color || v.color || null,
+      brand: existing.brand || incomingVehicle.brand || null,
+      model: existing.model || incomingVehicle.model || null,
+      year: existing.year || (typeof incomingVehicle.year === 'number' ? incomingVehicle.year : (parseInt(String(incomingVehicle.year || ''), 10) || null)),
+      color: existing.color || incomingVehicle.color || null,
       title,
       cover_image_url: coverImageUrl || existing.cover_image_url || null,
-    } as any)
+    } as never)
     .eq('user_id', userId)
     .eq('id', vehicleId);
 
