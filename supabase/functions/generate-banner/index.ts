@@ -167,12 +167,14 @@ async function deductCreditsAfterSuccess(userId: string, cost: number, model: st
 }
 
 function getGeminiModelChain(model: string): string[] {
+  // Do not fall back to gemini-2.5-flash-image here: it can ignore the native
+  // aspect-ratio field, which caused post-cropped / distorted banners.
   const chains: Record<string, string[]> = {
-    "gemini-3-pro-image-preview": ["gemini-3-pro-image-preview", GEMINI_FAST_FALLBACK],
-    "gemini-3.1-flash-image-preview": ["gemini-3.1-flash-image-preview", GEMINI_FAST_FALLBACK],
-    [GEMINI_FAST_FALLBACK]: [GEMINI_FAST_FALLBACK, "gemini-3.1-flash-image-preview"],
+    "gemini-3-pro-image-preview": ["gemini-3-pro-image-preview", "gemini-3.1-flash-image-preview"],
+    "gemini-3.1-flash-image-preview": ["gemini-3.1-flash-image-preview", "gemini-3-pro-image-preview"],
+    [GEMINI_FAST_FALLBACK]: ["gemini-3.1-flash-image-preview"],
   };
-  return Array.from(new Set(chains[model] || [model, GEMINI_FAST_FALLBACK])).slice(0, 2);
+  return Array.from(new Set(chains[model] || [model])).slice(0, 2);
 }
 
 serve(async (req) => {
@@ -222,8 +224,8 @@ serve(async (req) => {
 
     if (config.engine === "gemini") {
       currentStage = "gemini_call";
-      // Reliability-first same-engine fallback: first try the selected tier, then a fast Gemini fallback.
-      // This avoids minutes of waiting when both Gemini 3 preview models are overloaded.
+      // Same-engine fallback only between Gemini-3 image models so the requested
+      // aspect ratio stays a native generation constraint, not a client crop.
       const geminiModels = getGeminiModelChain(config.model);
       log.info("gemini_call", "model chain", { selectedModel: config.model, chain: geminiModels });
       let lastGeminiError = "";
