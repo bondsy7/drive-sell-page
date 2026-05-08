@@ -114,6 +114,7 @@ const App = () => (
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/project/:id" element={<ProtectedRoute><ErrorBoundary moduleName="Projekt"><ProjectView /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/vehicle/:id" element={<ProtectedRoute><ErrorBoundary moduleName="Fahrzeug"><VehicleView /></ErrorBoundary></ProtectedRoute>} />
+              <Route path="/damage-report/:id" element={<ProtectedRoute><ErrorBoundary moduleName="Schadensbericht"><DamageReportView /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/leasing-rechner" element={<ProtectedRoute><LeasingCalculator /></ProtectedRoute>} />
               <Route path="/finanzierungsrechner" element={<ProtectedRoute><FinancingCalculator /></ProtectedRoute>} />
               <Route path="/kfz-steuer-rechner" element={<ProtectedRoute><KfzSteuerRechner /></ProtectedRoute>} />
