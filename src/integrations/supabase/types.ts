@@ -892,6 +892,7 @@ export type Database = {
         Row: {
           address: string | null
           api_key: string | null
+          ci_settings: Json | null
           city: string | null
           company_name: string | null
           contact_name: string | null
@@ -922,6 +923,7 @@ export type Database = {
         Insert: {
           address?: string | null
           api_key?: string | null
+          ci_settings?: Json | null
           city?: string | null
           company_name?: string | null
           contact_name?: string | null
@@ -952,6 +954,7 @@ export type Database = {
         Update: {
           address?: string | null
           api_key?: string | null
+          ci_settings?: Json | null
           city?: string | null
           company_name?: string | null
           contact_name?: string | null

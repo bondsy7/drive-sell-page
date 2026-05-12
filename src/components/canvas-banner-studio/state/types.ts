@@ -92,6 +92,8 @@ export type CiState = {
   /** Händler-Logo zusätzlich zum Hersteller-Logo nutzen */
   useDealerLogo: boolean;
   dealerLogoUrl?: string;
+  /** Selbst hochgeladenes Logo (Storage URL) */
+  customLogoUrl?: string;
 };
 
 export type StudioState = {

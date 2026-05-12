@@ -39,6 +39,7 @@ import { reframeImageForFormat } from "./ai/reframeClient";
 import CiPanel from "./ci/CiPanel";
 import { buildCiContext, type DealerProfile } from "./ci/profileSources";
 import { detectBrandKey } from "./ci/brandPresets";
+import { useCiPersistence } from "./ci/useCiPersistence";
 
 type Step = 1 | 2 | 3 | 4 | 5;
 const STEPS: { id: Step; title: string; subtitle: string }[] = [
@@ -92,6 +93,13 @@ const CanvasBannerStudioShell: React.FC = () => {
     })();
     return () => { cancelled = true; };
   }, [user]);
+
+  // CI-Persistenz pro Händler (lädt + speichert profiles.ci_settings).
+  useCiPersistence({
+    userId: user?.id,
+    ci: state.ci,
+    onLoaded: (stored) => actions.setCi(stored),
+  });
 
   const activeVehicle = useMemo(
     () => (state.vehicleId ? vehicles.find((v) => v.id === state.vehicleId) ?? null : null),
@@ -333,6 +341,8 @@ const CanvasBannerStudioShell: React.FC = () => {
               activeVehicle?.brand ? getLogoForMake(activeVehicle.brand) ?? undefined : undefined
             }
             dealerLogoUrl={profile?.logo_url ?? undefined}
+            customLogoUrl={state.ci.customLogoUrl}
+            userId={user?.id}
             onApplyBrandPreset={actions.applyBrandPreset}
             onPatchCi={actions.setCi}
             onSetLogo={(url) => actions.setLogo(url)}

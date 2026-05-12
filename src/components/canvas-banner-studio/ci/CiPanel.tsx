@@ -1,8 +1,10 @@
-import React from "react";
-import { Palette, Type, ImageIcon, Info } from "lucide-react";
+import React, { useRef, useState } from "react";
+import { Palette, Type, ImageIcon, Info, Upload, Loader2 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 import { BRAND_PRESETS, getBrandPreset } from "./brandPresets";
+import { uploadCustomCiLogo } from "./uploadCiLogo";
 import type { CiState, LogoMode } from "../state/types";
 import type { CiContext } from "./profileSources";
 
@@ -17,6 +19,10 @@ interface CiPanelProps {
   manufacturerLogoUrl?: string;
   /** Händler-Logo aus Profil */
   dealerLogoUrl?: string;
+  /** Eigenes (selbst hochgeladenes) CI-Logo */
+  customLogoUrl?: string;
+  /** User-ID für Storage-Upload */
+  userId?: string;
   onApplyBrandPreset: (brandKey: string) => void;
   onPatchCi: (patch: Partial<CiState>) => void;
   onSetLogo: (url?: string) => void;
@@ -31,11 +37,36 @@ const LOGO_MODES: { value: LogoMode; label: string }[] = [
 
 const CiPanel: React.FC<CiPanelProps> = ({
   ci, ciContext, hasProfile, detectedBrandKey, currentLogoUrl,
-  manufacturerLogoUrl, dealerLogoUrl, onApplyBrandPreset, onPatchCi, onSetLogo,
+  manufacturerLogoUrl, dealerLogoUrl, customLogoUrl, userId,
+  onApplyBrandPreset, onPatchCi, onSetLogo,
 }) => {
   const preset = getBrandPreset(ci.brandKey);
   const usingDealer = !!currentLogoUrl && !!dealerLogoUrl && currentLogoUrl === dealerLogoUrl;
   const usingManufacturer = !!currentLogoUrl && !!manufacturerLogoUrl && currentLogoUrl === manufacturerLogoUrl;
+  const usingCustom = !!currentLogoUrl && !!customLogoUrl && currentLogoUrl === customLogoUrl;
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleUpload = async (file: File | undefined | null) => {
+    if (!file) return;
+    if (!userId) { toast.error("Bitte zuerst einloggen."); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error("Logo zu groß (max. 5 MB)."); return; }
+    setUploading(true);
+    try {
+      const url = await uploadCustomCiLogo(file, userId);
+      onPatchCi({ customLogoUrl: url } as any);
+      onSetLogo(url);
+      toast.success("Eigenes Logo übernommen");
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message ?? "Upload fehlgeschlagen");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
 
 
   return (
@@ -136,7 +167,7 @@ const CiPanel: React.FC<CiPanelProps> = ({
         <Label className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1">
           <ImageIcon className="w-3 h-3" /> Logo-Quelle
         </Label>
-        <div className="grid grid-cols-3 gap-1">
+        <div className="grid grid-cols-2 gap-1">
           <button
             type="button"
             onClick={() => manufacturerLogoUrl && onSetLogo(manufacturerLogoUrl)}
@@ -163,6 +194,18 @@ const CiPanel: React.FC<CiPanelProps> = ({
           </button>
           <button
             type="button"
+            onClick={() => customLogoUrl && onSetLogo(customLogoUrl)}
+            disabled={!customLogoUrl}
+            className={`px-2 py-1.5 rounded-md border text-xs disabled:opacity-40 ${
+              usingCustom
+                ? "border-accent bg-accent/10 text-foreground font-semibold"
+                : "border-border text-muted-foreground hover:border-accent/40"
+            }`}
+          >
+            Eigenes
+          </button>
+          <button
+            type="button"
             onClick={() => onSetLogo(undefined)}
             className={`px-2 py-1.5 rounded-md border text-xs ${
               !currentLogoUrl
@@ -173,9 +216,38 @@ const CiPanel: React.FC<CiPanelProps> = ({
             Kein Logo
           </button>
         </div>
+
+        {/* Custom logo upload */}
+        <div className="flex items-center gap-2 pt-1">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/svg+xml"
+            className="hidden"
+            onChange={(e) => handleUpload(e.target.files?.[0])}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading || !userId}
+            className="flex-1 inline-flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md border border-dashed border-border text-xs text-muted-foreground hover:border-accent/40 hover:text-foreground disabled:opacity-50"
+          >
+            {uploading
+              ? <><Loader2 className="w-3 h-3 animate-spin" /> Hochladen…</>
+              : <><Upload className="w-3 h-3" /> Eigenes Logo hochladen (SVG/PNG, max 5 MB)</>}
+          </button>
+          {customLogoUrl && (
+            <img
+              src={customLogoUrl}
+              alt="Eigenes Logo"
+              className="h-8 w-8 object-contain rounded border border-border bg-background"
+            />
+          )}
+        </div>
+
         {!dealerLogoUrl && (
           <p className="text-[11px] text-muted-foreground">
-            Händler-Logo fehlt — bitte im Profil ein Logo hinterlegen.
+            Händler-Logo fehlt — du kannst stattdessen ein eigenes Logo hochladen oder im Profil hinterlegen.
           </p>
         )}
       </div>
