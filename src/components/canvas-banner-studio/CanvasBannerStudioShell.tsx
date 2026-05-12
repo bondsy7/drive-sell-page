@@ -12,7 +12,7 @@ import { getFormatById } from "./data/formats";
 import BannerCanvas from "./canvas/BannerCanvas";
 import MultiFormatPreview from "./canvas/MultiFormatPreview";
 import FormatPicker from "./controls/FormatPicker";
-import ImageUpload from "./controls/ImageUpload";
+
 import OverlayControls from "./controls/OverlayControls";
 import TextFieldsPanel from "./controls/TextFieldsPanel";
 import LayoutTemplatePicker from "./controls/LayoutTemplatePicker";
