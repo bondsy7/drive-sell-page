@@ -142,7 +142,7 @@ const CanvasBannerStudioShell: React.FC = () => {
     }
   };
 
-  const handleExport = (type: ExportFormat) => {
+  const handleExport = async (type: ExportFormat) => {
     const stage = stageRef.current;
     if (!stage) {
       toast.error("Vorschau noch nicht bereit.");
@@ -150,8 +150,12 @@ const CanvasBannerStudioShell: React.FC = () => {
     }
     try {
       const url = exportStage(stage, activeFormat, type);
-      downloadDataUrl(url, buildFilename(activeFormat, type));
+      const filename = buildFilename(activeFormat, type);
+      downloadDataUrl(url, filename);
       toast.success(`Exportiert in ${activeFormat.width}×${activeFormat.height}`);
+      const mime = type === "png" ? "image/png" : type === "jpg" ? "image/jpeg" : "image/webp";
+      const blob = await dataUrlToBlob(url);
+      void persistExportedBlob(blob, filename, mime);
     } catch (e) {
       console.error(e);
       toast.error("Export fehlgeschlagen.");
@@ -164,6 +168,19 @@ const CanvasBannerStudioShell: React.FC = () => {
     try {
       await exportAllAsZip(state, state.textFields, type);
       toast.success(`${state.selectedFormatIds.length} Banner als ZIP exportiert`);
+      // Also persist each format individually to storage.
+      const mime = type === "png" ? "image/png" : type === "jpg" ? "image/jpeg" : "image/webp";
+      for (const fid of state.selectedFormatIds) {
+        const f = getFormatById(fid);
+        const comp = state.compositions[fid];
+        if (!comp) continue;
+        try {
+          const blob = await renderCompositionToBlob(f, comp, state.textFields, type);
+          await persistExportedBlob(blob, buildFilename(f, type), mime);
+        } catch (err) {
+          console.warn("persist failed for", fid, err);
+        }
+      }
     } catch (e) {
       console.error(e);
       toast.error("ZIP-Export fehlgeschlagen.");
