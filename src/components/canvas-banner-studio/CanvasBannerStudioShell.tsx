@@ -330,31 +330,6 @@ const CanvasBannerStudioShell: React.FC = () => {
                   }}
                 />
 
-                <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold">Größe (Format-Skala)</h3>
-                    <span className="text-xs tabular-nums text-muted-foreground">
-                      {Math.round((activeComposition.scale ?? 1) * 100)}%
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Skaliert Schriften & Logo gemeinsam für dieses Format. Texte schrumpfen automatisch, wenn der Platz knapp wird.
-                  </p>
-                  <input
-                    type="range"
-                    min={50}
-                    max={160}
-                    step={5}
-                    value={Math.round((activeComposition.scale ?? 1) * 100)}
-                    onChange={(e) => actions.setFormatScale(Number(e.target.value) / 100)}
-                    className="w-full accent-primary"
-                  />
-                  <div className="flex justify-end">
-                    <Button size="sm" variant="ghost" onClick={() => actions.setFormatScale(1)}>
-                      Auf 100% zurücksetzen
-                    </Button>
-                  </div>
-                </div>
 
                 {activeComposition.backgroundImageUrl && (
                   <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
