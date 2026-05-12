@@ -19,6 +19,7 @@ import FormatPicker from "./controls/FormatPicker";
 
 import OverlayControls from "./controls/OverlayControls";
 import TextFieldsPanel from "./controls/TextFieldsPanel";
+import CustomLayersPanel from "./controls/CustomLayersPanel";
 import LayoutTemplatePicker from "./controls/LayoutTemplatePicker";
 import LayerOrderControls from "./controls/LayerOrderControls";
 import LogoPanel from "./controls/LogoPanel";
@@ -560,6 +561,15 @@ const CanvasBannerStudioShell: React.FC = () => {
                   composition={activeComposition}
                   onChangeText={actions.setText}
                   onPatchLayer={actions.patchLayer}
+                />
+                <CustomLayersPanel
+                  composition={activeComposition}
+                  format={activeFormat}
+                  selectedLayerId={state.selectedLayerId}
+                  onAddLayer={actions.addLayer}
+                  onPatchLayer={actions.patchLayer}
+                  onRemoveLayer={actions.removeLayer}
+                  onSelectLayer={actions.selectLayer}
                 />
               </section>
             )}

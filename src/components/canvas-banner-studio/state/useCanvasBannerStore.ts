@@ -23,6 +23,8 @@ type Action =
   | { type: "set-template"; formatId: string; templateId: string }
   | { type: "set-logo"; formatId: string; url?: string }
   | { type: "patch-layer"; formatId: string; layerId: string; patch: Partial<BannerLayer> }
+  | { type: "add-layer"; formatId: string; layer: BannerLayer }
+  | { type: "remove-layer"; formatId: string; layerId: string }
   | { type: "select-layer"; layerId?: string }
   | { type: "toggle-safe-area" }
   | { type: "reorder-layer"; formatId: string; layerId: string; direction: "forward" | "backward" }
@@ -153,6 +155,24 @@ function presentReducer(state: StudioState, action: Action): StudioState {
       return {
         ...state,
         compositions: { ...state.compositions, [action.formatId]: { ...c, layers } },
+      };
+    }
+    case "add-layer": {
+      const c = ensureComposition(state, action.formatId);
+      return {
+        ...state,
+        compositions: { ...state.compositions, [action.formatId]: { ...c, layers: [...c.layers, action.layer] } },
+      };
+    }
+    case "remove-layer": {
+      const c = ensureComposition(state, action.formatId);
+      return {
+        ...state,
+        compositions: {
+          ...state.compositions,
+          [action.formatId]: { ...c, layers: c.layers.filter((l) => l.id !== action.layerId) },
+        },
+        selectedLayerId: state.selectedLayerId === action.layerId ? undefined : state.selectedLayerId,
       };
     }
     case "select-layer":
@@ -339,6 +359,10 @@ export function useCanvasBannerStore() {
         dispatch({ type: "set-logo", formatId, url }),
       patchLayer: (layerId: string, patch: Partial<BannerLayer>, formatId = state.activeFormatId) =>
         dispatch({ type: "patch-layer", formatId, layerId, patch }),
+      addLayer: (layer: BannerLayer, formatId = state.activeFormatId) =>
+        dispatch({ type: "add-layer", formatId, layer }),
+      removeLayer: (layerId: string, formatId = state.activeFormatId) =>
+        dispatch({ type: "remove-layer", formatId, layerId }),
       selectLayer: (layerId?: string) => dispatch({ type: "select-layer", layerId }),
       toggleSafeArea: () => dispatch({ type: "toggle-safe-area" }),
       reorderLayer: (layerId: string, direction: "forward" | "backward", formatId = state.activeFormatId) =>
