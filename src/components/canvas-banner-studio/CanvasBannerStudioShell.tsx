@@ -40,6 +40,8 @@ import CiPanel from "./ci/CiPanel";
 import { buildCiContext, type DealerProfile } from "./ci/profileSources";
 import { detectBrandKey } from "./ci/brandPresets";
 import { useCiPersistence } from "./ci/useCiPersistence";
+import FloatingToolbar from "./controls/FloatingToolbar";
+import { isLayerOverridden, isCompositionOverridden } from "./state/overrideDetection";
 
 type Step = 1 | 2 | 3 | 4 | 5;
 const STEPS: { id: Step; title: string; subtitle: string }[] = [
