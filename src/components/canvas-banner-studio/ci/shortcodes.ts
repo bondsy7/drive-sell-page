@@ -8,6 +8,7 @@ export const SHORTCODES: { code: string; label: string }[] = [
   { code: "{{telefon}}", label: "Telefon" },
   { code: "{{whatsapp}}", label: "WhatsApp" },
   { code: "{{website}}", label: "Website" },
+  { code: "{{email}}", label: "E-Mail" },
   { code: "{{adresse}}", label: "Straße / Adresse" },
   { code: "{{stadt}}", label: "Stadt" },
   { code: "{{plz}}", label: "PLZ" },
@@ -17,6 +18,11 @@ export const SHORTCODES: { code: string; label: string }[] = [
   { code: "{{rate}}", label: "Monatsrate" },
   { code: "{{laufzeit}}", label: "Laufzeit" },
   { code: "{{anzahlung}}", label: "Anzahlung" },
+  { code: "{{ez}}", label: "Erstzulassung" },
+  { code: "{{km}}", label: "Kilometerstand" },
+  { code: "{{leistung}}", label: "Leistung (PS/kW)" },
+  { code: "{{kraftstoff}}", label: "Kraftstoff" },
+  { code: "{{getriebe}}", label: "Getriebe" },
 ];
 
 export function resolveShortcodes(text: string, ctx?: CiContext | null): string {
