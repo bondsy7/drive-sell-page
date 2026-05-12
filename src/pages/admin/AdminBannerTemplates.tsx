@@ -803,7 +803,14 @@ export default function AdminBannerTemplates() {
           {draft && (
             <>
               <div className="border border-border rounded-lg p-3 bg-card">
-                <div className="font-semibold text-sm mb-2">Ebenen</div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="font-semibold text-sm">Ebenen</div>
+                </div>
+                <div className="flex gap-1 mb-2">
+                  <Button size="sm" variant="outline" className="flex-1 h-7 text-xs" onClick={() => addLayer("text")}>+ Text</Button>
+                  <Button size="sm" variant="outline" className="flex-1 h-7 text-xs" onClick={() => addLayer("shape")}>+ Form</Button>
+                  <Button size="sm" variant="outline" className="flex-1 h-7 text-xs" onClick={() => addLayer("image")}>+ Bild</Button>
+                </div>
                 <div className="space-y-1 max-h-64 overflow-auto">
                   {draft.layers.map((l) => (
                     <button
