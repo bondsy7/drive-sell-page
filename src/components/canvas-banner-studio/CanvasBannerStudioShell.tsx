@@ -74,6 +74,37 @@ const CanvasBannerStudioShell: React.FC = () => {
   // Vehicle-driven prefill (runs once when a vehicle is picked).
   const { data: vehicles = [] } = useVehicles();
   const { getLogoForMake } = useVehicleMakes();
+
+  // Profile fetch (drives shortcodes & default CI).
+  const [profile, setProfile] = useState<DealerProfile | null>(null);
+  useEffect(() => {
+    if (!user) { setProfile(null); return; }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select(
+          "company_name, contact_name, email, phone, whatsapp_number, website, address, postal_code, city, logo_url, primary_color, secondary_color, default_legal_text",
+        )
+        .eq("id", user.id)
+        .maybeSingle();
+      if (!cancelled) setProfile(data ?? null);
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
+
+  const activeVehicle = useMemo(
+    () => (state.vehicleId ? vehicles.find((v) => v.id === state.vehicleId) ?? null : null),
+    [state.vehicleId, vehicles],
+  );
+
+  const ciContext = useMemo(
+    () => buildCiContext(profile, activeVehicle),
+    [profile, activeVehicle],
+  );
+
+  const detectedBrandKey = useMemo(() => detectBrandKey(ciContext.marke), [ciContext.marke]);
+
   const lastPrefilledRef = useRef<string | null | undefined>(undefined);
   useEffect(() => {
     if (state.vehicleId === lastPrefilledRef.current) return;
@@ -86,8 +117,11 @@ const CanvasBannerStudioShell: React.FC = () => {
       if (val) actions.setText(k, val);
     });
     if (manufacturerLogoUrl) actions.setLogo(manufacturerLogoUrl);
+    // Auto-apply matching brand CI preset if detected and user is still on "custom".
+    const bk = detectBrandKey(v.brand);
+    if (bk && state.ci?.brandKey === "custom") actions.applyBrandPreset(bk);
     toast.success("Texte aus Fahrzeug übernommen");
-  }, [state.vehicleId, vehicles, getLogoForMake, actions]);
+  }, [state.vehicleId, vehicles, getLogoForMake, actions, state.ci?.brandKey]);
 
   const persistExportedBlob = async (blob: Blob, filename: string, contentType: string) => {
     if (!user) return;
