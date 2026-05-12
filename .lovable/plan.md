@@ -1,152 +1,101 @@
-# Plan: JSON-Template-System für Canvas Banner Studio
-
 ## Ziel
-Bestehende Code-Builder-Templates (`layoutTemplates.ts`) durch ein **deklaratives JSON-Format** ersetzen, das pro Format×Template jede Ebene exakt beschreibt. Plus: Admin-UI zum Editieren und CI-Presets dürfen Layer-Positionen überschreiben.
+Den Banner-Erstellprozess von „5 nebeneinander liegenden Schritten mit redundanten Eingaben" zu einem **geführten, AI-first Wizard** umbauen. Maximale Automatisierung, minimale Eingaben, keine doppelten Abfragen.
 
-## Phase 1 — Schema & Loader
+## Status quo – Probleme
+1. **Schritt 0 (Fahrzeug verknüpfen)** und **Schritt 2 (Bild-Upload + PDF-Analyse)** überschneiden sich: beide liefern Headline, Preis, Pflichtangaben, Logo.
+2. **CI-Block** wird immer komplett aufgeklappt, obwohl 95 % der User „Profil-CI" wollen.
+3. **Schritt 3 (Texte)** zeigt Felder, die schon aus Fahrzeug/PDF befüllt sind – User weiß nicht „wurde das automatisch gezogen oder muss ich tippen?".
+4. **Schritt 4 (Layout)** kommt nach Texten – Reihenfolge unlogisch (Layout sollte vor Feinschliff stehen).
+5. **Logo, Format, Bildquelle** werden mehrfach abgefragt (Step 0, CI, Step 2).
+6. Kein klarer „Fertig"-Zustand → User scrollt zwischen Blöcken hin und her.
 
-**Neue Datei** `src/components/canvas-banner-studio/data/templateSchema.ts`
-TypeScript-Typen für die JSON-Struktur:
+## Neue Struktur – 3 statt 5 Schritte
+
+```text
+┌────────────────────────────────────────────────────────────┐
+│ SCHRITT 1 · QUELLE                                          │
+│ Eine Karte, drei Wege:                                      │
+│  ① Fahrzeug aus Galerie  → zieht ALLES (Bild, Daten, Logo)  │
+│  ② VIN eingeben          → VIN-Lookup + Daten holen         │
+│  ③ PDF/Bild hochladen    → analyze-pdf + extract-banner     │
+│ → Format-Vorauswahl als Chips (Multi-Select, default IG SQ) │
+└────────────────────────────────────────────────────────────┘
+                        ↓ Auto-Fill
+┌────────────────────────────────────────────────────────────┐
+│ SCHRITT 2 · VORSCHAU & FEINSCHLIFF (alles auf einer Seite)  │
+│  Links: Live-Canvas (groß)                                  │
+│  Rechts: kontextuelle Inspector-Panels:                     │
+│   • Layout-Variante (4 Presets als Thumbnails)              │
+│   • Texte (alle vorbefüllt, Badge „auto" bei AI-Werten)     │
+│   • CI (collapsed default, „Profil-CI verwendet" Badge)     │
+│   • Hintergrund (KI-Reframe / Upload / Galerie)             │
+│  Klick auf Element im Canvas → öffnet passendes Panel       │
+└────────────────────────────────────────────────────────────┘
+                        ↓
+┌────────────────────────────────────────────────────────────┐
+│ SCHRITT 3 · EXPORT                                          │
+│  Compliance-Check + Download (PNG/JPG/WebP/ZIP)             │
+└────────────────────────────────────────────────────────────┘
+```
+
+## Auto-Fill Pipeline (zentral, einmal)
+
+Bei Quelle-Auswahl läuft **eine** Orchestrator-Funktion `prefillBannerFromSource()`:
+
+| Quelle | Zieht automatisch |
+|---|---|
+| Fahrzeug | Hauptbild (Cover), Marke/Modell → Headline, Preis/Rate, Verbrauch → Pflichtangaben, Marken-Logo via `getLogoForMake`, Händler-Logo + Farben aus `dealer_profile` |
+| VIN | `lookup-vin` + danach gleiche Pipeline wie Fahrzeug |
+| PDF | `analyze-pdf` (existiert), Felder gemappt durch `extractBannerDataFromPdf` (existiert), Bild aus PDF extrahieren falls vorhanden |
+
+Alle automatisch gefüllten Felder bekommen ein **„✨ auto"-Badge** mit Tooltip „aus Fahrzeugdaten – klicken zum Überschreiben". Ein einziger Button „Alles zurücksetzen auf Auto-Werte".
+
+## UX/UI-Verbesserungen
+
+- **Progress-Header** sticky oben: 3 Steps + ETA („~30 Sek").
+- **Smart Defaults**: 
+  - CI = Profil-CI (kein Auswahl-Klick nötig)
+  - Logo-Quelle = Hersteller wenn Marke erkannt, sonst Händler
+  - Format = letztes verwendetes Format des Users (localStorage)
+  - Layout = AI-Vorschlag basierend auf Bild (`suggest-banner-layout` existiert)
+- **Inline-Edit am Canvas**: Doppelklick auf Text → editieren ohne Panel.
+- **Empty-State weg**: Solange kein Bild da ist, zeigt Canvas einen blurred Placeholder mit „Quelle wählen →" CTA, nicht die graue „Noch kein Hintergrundbild" Box.
+- **Mobile**: Inspector wird zu Bottom-Sheet.
+
+## Redundanz-Eliminierung (konkret)
+
+| Heute doppelt/dreifach | Neu |
+|---|---|
+| Logo: Step 0 (Fahrzeug → Marken-Logo) + CI (Logo-Quelle) + Step 2 (Logo upload) | **EIN** Inspector „Logo" mit drei Tabs |
+| Format: Step 1 + CI „Wirkt auf alle Formate" Toggle | Format-Chips oben in Schritt 1, scope-toggle nur wenn >1 Format gewählt |
+| Texte: Auto aus PDF + manuelles Feld in Step 3 | Ein Feld, Badge zeigt Herkunft |
+| Pflichtangaben: aus Fahrzeug + aus PDF + manuell | Auto, mit „Quelle: Fahrzeugdaten" Hinweis |
+
+## Technische Umsetzung
+
+**Neu/Refactor:**
+- `prefillBannerFromSource.ts` – ein Orchestrator (nutzt vorhandene `buildPrefillFromVehicle`, `extractBannerDataFromPdf`, `useVinLookup`, `buildCiContext`)
+- `SourceStep.tsx` – neue Schritt-1-Komponente (3 Quellen-Karten + Format-Chips)
+- `InspectorPanel.tsx` – Tab-Container für Layout/Texte/CI/Hintergrund
+- `AutoBadge.tsx` – kleines „✨ auto" Pill mit Tooltip
+- `useFieldOrigin.ts` – Hook der trackt, ob Feld auto/manuell ist (im Store als Map)
+
+**Bestehend bleibt** (kein Touch nötig):
+- Edge Functions (`analyze-pdf`, `lookup-vin`, `extract-banner-data`, `suggest-banner-layout`, `reframe-banner-image`)
+- `BannerCanvas.tsx`, `useCanvasBannerStore.ts` (nur kleine Erweiterung um Field-Origin)
+- Export-Pipeline + Compliance-Check
+- `CustomLayersPanel.tsx` (wandert in Inspector → Tab „Texte")
+
+**State-Erweiterung:**
 ```ts
-type LayerSpec = {
-  id: string;                  // "headline" | "logo" | ...
-  type: "image" | "overlay" | "text" | "legal" | "logo";
-  field?: BannerTextFieldKey;
-  x: number; y: number;        // absolute px im Format-Koordinatensystem
-  width?: number; height?: number;
-  anchor?: "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center";
-  fontSize?: number; fontWeight?: number;
-  align?: "left" | "center" | "right";
-  color?: string;              // semantic token oder hex
-  visible?: boolean;
-  draggable?: boolean;
-  autoShrink?: boolean; minFontSize?: number; maxLines?: number;
-  // overlay-only
-  direction?: OverlayDirection; strength?: number;
-  // image-only
-  fit?: "cover" | "contain";
-};
-
-type TemplateSpec = {
-  templateId: string;          // "classic-offer"
-  formatId: string;            // "social-4x5"
-  name: string;
-  format: { width: number; height: number };
-  safeArea: { top: number; right: number; bottom: number; left: number };
-  defaults?: { fontDisplay?: string; fontBody?: string };
-  layers: LayerSpec[];
-};
+type FieldOrigin = "auto" | "manual";
+state.textFieldOrigins: Record<keyof BannerTextFields, FieldOrigin>
 ```
+Sobald User tippt → flippt auf "manual", Badge verschwindet.
 
-**Neue Datei** `src/components/canvas-banner-studio/data/templateRegistry.ts`
-- `loadTemplate(formatId, templateId): TemplateSpec` — sucht erst in DB (`banner_templates`), fällt auf Bundle-JSON zurück.
-- `listTemplatesForFormat(formatId): TemplateMeta[]`
-- In-Memory-Cache + `invalidate()` für Admin-UI.
+## Was ich vor Start klären würde
+1. Sollen die alten 5 Schritte als „Pro-Modus" erhalten bleiben (Toggle), oder hart ersetzen?
+2. VIN-Lookup als eigene Quelle anbieten oder nur innerhalb „Fahrzeug" als optionales Feld?
+3. AI-Layout-Vorschlag automatisch beim ersten Bild ausführen (kostet Credits) oder nur auf Klick?
 
-**Neue Datei** `src/components/canvas-banner-studio/data/templateToLayers.ts`
-- `specToBannerLayers(spec, ci?): BannerLayer[]` — wandelt JSON in das bestehende `BannerLayer[]`-Format. Wendet CI-Override zuletzt an.
-
-`buildDefaultComposition` in `defaultComposition.ts` wird umgestellt: lädt Spec, ruft `specToBannerLayers`.
-
-## Phase 2 — Migration der bestehenden Templates
-
-Einmal-Skript `scripts/generate-template-json.ts` (Node, lokal):
-- Importiert die alten 5 Builder aus `layoutTemplates.ts`.
-- Iteriert über alle Formate aus `formats.ts`.
-- Ruft `build(w, h)` auf, serialisiert das Resultat als JSON.
-- Schreibt nach `src/components/canvas-banner-studio/data/templates/{templateId}.{formatId}.json`.
-
-Anschließend manuelle Feinjustierung kritischer Format×Template-Kombinationen (z.B. 970×90 Leaderboard), bei denen die Faktor-Formel heute schief aussieht.
-
-`layoutTemplates.ts` wird auf Re-Export aus dem Registry reduziert (Bestandscode bleibt funktionsfähig); nach Verifikation gelöscht.
-
-## Phase 3 — Datenbank für editierbare Templates
-
-**Neue Tabelle** `banner_templates`:
-```
-id uuid PK
-template_id text          -- "classic-offer"
-format_id   text          -- "social-4x5"
-name        text
-spec        jsonb         -- volle TemplateSpec
-is_global   boolean default true     -- Lovable-Standard
-user_id     uuid nullable -- null = global, sonst eigener Override
-brand_key   text nullable -- z.B. "bmw" für CI-spezifisches Template
-created_at, updated_at
-UNIQUE(template_id, format_id, COALESCE(user_id, '00000000...'), COALESCE(brand_key, ''))
-```
-
-RLS:
-- Admins: ALL.
-- Authenticated SELECT: `is_global = true OR user_id = auth.uid()`.
-- Authenticated INSERT/UPDATE/DELETE: nur eigene Zeilen (`user_id = auth.uid()`).
-
-Loader-Priorität (höchste zuerst):
-1. User-Override (`user_id = me`, mit/ohne brand_key)
-2. Brand-spezifisch global (`is_global, brand_key = ci.brandKey`)
-3. Globaler Default (`is_global, brand_key IS NULL`)
-4. Bundle-JSON aus `data/templates/`
-
-## Phase 4 — Admin-UI
-
-**Neue Route** `/admin/banner-templates` (`src/pages/admin/AdminBannerTemplates.tsx`):
-- Tabelle: Template × Format × Variante (global/brand/user).
-- Filter: Brand, Template, Format.
-- Aktionen: **Neu**, **Editieren**, **Duplizieren als Brand-Variante**, **Reset auf Bundle-Default**, **Löschen**.
-
-**Editor** (`src/pages/admin/AdminBannerTemplateEditor.tsx`):
-- Linke Spalte: **JSON-Editor** (Monaco) mit Schema-Validierung.
-- Rechte Spalte: **Live-Preview** über `BannerCanvas` mit Dummy-Texten.
-- Toolbar: Speichern, „Auf alle Formate anwenden" (kopiert Layer-Verhältnisse), Vorschau pro Format-Liste.
-- Visuelles Editieren ist später möglich (gleicher Canvas wie im Studio); im ersten Wurf nur JSON + Live-Preview.
-
-In `src/pages/admin/AdminLayout.tsx` Navigationspunkt ergänzen.
-
-## Phase 5 — CI-Position-Overrides
-
-`CiState.layerOverrides?: Partial<LayerSpec>[]` (per Brand-Preset).
-
-`brandPresets.ts` bekommt optional `layerOverrides`-Feld:
-```ts
-{ brand: "BMW", layerOverrides: [
-  { id: "logo", anchor: "top-right", x: …, y: …, visible: true }
-]}
-```
-
-`templateToLayers.ts` mergt Reihenfolge: Bundle → DB-Brand → DB-User → CI-Override.
-
-## Technische Details
-
-- **Anchor-Resolution**: `anchor` ist optionaler Hint; wenn gesetzt, wird `x/y` relativ zur Safe-Area-Ecke interpretiert. Sonst absolut.
-- **Backwards-Compat**: Bestehende Banner-Projects (`banner_projects.state` jsonb) speichern weiterhin `BannerLayer[]` direkt — nur die **Default-Generierung** läuft jetzt über JSON. Lade-Pfad bleibt unverändert.
-- **Persistierte Compositions** werden NICHT migriert — User behält seine Edits.
-- **Admin-Zugriff** via existierender `has_role(_, 'admin')`-Pattern.
-
-## Files (neu)
-- `data/templateSchema.ts`
-- `data/templateRegistry.ts`
-- `data/templateToLayers.ts`
-- `data/templates/*.json` (~50 Dateien per Skript)
-- `scripts/generate-template-json.ts`
-- `pages/admin/AdminBannerTemplates.tsx`
-- `pages/admin/AdminBannerTemplateEditor.tsx`
-- DB-Migration: `banner_templates` + RLS
-
-## Files (edit)
-- `data/defaultComposition.ts` — JSON-Loader statt Builder-Funktion
-- `data/layoutTemplates.ts` — Re-Export aus Registry, später entfernt
-- `ci/brandPresets.ts` — `layerOverrides`-Feld
-- `state/types.ts` — `CiState.layerOverrides`
-- `pages/admin/AdminLayout.tsx` — Nav-Link
-- `App.tsx` — Route
-
-## Reihenfolge der Umsetzung
-1. Schema + Loader + Generator-Skript + Bundle-JSON (Phase 1+2). Studio läuft danach unverändert, nur Quelle der Wahrheit ist JSON.
-2. DB-Migration `banner_templates` (Phase 3).
-3. CI-Layer-Overrides (Phase 5) — klein, daher früh.
-4. Admin-UI (Phase 4) — größter Brocken.
-
-## Bewusst weggelassen (für später)
-- WYSIWYG-Drag-Editor im Admin (erstmal JSON + Preview).
-- Versionierung/History pro Template.
-- Bulk-Import/Export von Templates als ZIP.
+Sag mir die Antworten zu 1–3, dann baue ich Schritt für Schritt um – beginnend mit dem Source-Step + Auto-Fill-Orchestrator (höchster UX-Hebel, kleinster Risk).
