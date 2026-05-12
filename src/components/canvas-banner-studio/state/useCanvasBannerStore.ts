@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useReducer } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import type {
   BannerComposition,
   BannerLayer,
@@ -27,6 +27,7 @@ type Action =
   | { type: "toggle-safe-area" }
   | { type: "reorder-layer"; formatId: string; layerId: string; direction: "forward" | "backward" }
   | { type: "reset-format-layout"; formatId: string }
+  | { type: "reset-layer"; formatId: string; layerId: string }
   | { type: "set-format-scale"; formatId: string; scale: number }
   | { type: "set-master-image"; formatId: string; url?: string }
   | { type: "push-reframe-history"; formatId: string; url: string }
@@ -37,7 +38,9 @@ type Action =
   | { type: "set-project-title"; title: string }
   | { type: "set-ci"; patch: Partial<CiState> }
   | { type: "apply-brand-preset"; brandKey: string }
-  | { type: "hydrate"; state: StudioState };
+  | { type: "hydrate"; state: StudioState }
+  | { type: "undo" }
+  | { type: "redo" };
 
 const initialFormatId = BANNER_FORMATS[0].id;
 
@@ -55,7 +58,7 @@ function buildDefaultCi(): CiState {
   };
 }
 
-const initialState: StudioState = {
+const initialPresent: StudioState = {
   selectedFormatIds: [initialFormatId],
   activeFormatId: initialFormatId,
   textFields: { ...DEFAULT_TEXT_FIELDS },
@@ -70,7 +73,7 @@ function ensureComposition(state: StudioState, formatId: string): BannerComposit
   return state.compositions[formatId] ?? buildDefaultComposition(formatId);
 }
 
-function reducer(state: StudioState, action: Action): StudioState {
+function presentReducer(state: StudioState, action: Action): StudioState {
   switch (action.type) {
     case "set-active-format": {
       const comps = { ...state.compositions };
@@ -124,7 +127,6 @@ function reducer(state: StudioState, action: Action): StudioState {
       const c = ensureComposition(state, action.formatId);
       const f = getFormatById(action.formatId);
       const newLayers = getLayoutTemplate(action.templateId).build(f.width, f.height);
-      // Preserve visibility/text-field mapping from existing layers when ids match.
       const merged = newLayers.map((nl) => {
         const prev = c.layers.find((p) => p.id === nl.id);
         return prev ? { ...nl, visible: prev.visible } : nl;
@@ -176,6 +178,18 @@ function reducer(state: StudioState, action: Action): StudioState {
       const layers = getLayoutTemplate(c.selectedTemplateId).build(f.width, f.height);
       return {
         ...state,
+        compositions: { ...state.compositions, [action.formatId]: { ...c, layers, scale: 1 } },
+      };
+    }
+    case "reset-layer": {
+      const c = ensureComposition(state, action.formatId);
+      const f = getFormatById(action.formatId);
+      const tmplLayers = getLayoutTemplate(c.selectedTemplateId).build(f.width, f.height);
+      const def = tmplLayers.find((l) => l.id === action.layerId);
+      if (!def) return state;
+      const layers = c.layers.map((l) => (l.id === action.layerId ? { ...def, visible: l.visible } : l));
+      return {
+        ...state,
         compositions: { ...state.compositions, [action.formatId]: { ...c, layers } },
       };
     }
@@ -196,7 +210,7 @@ function reducer(state: StudioState, action: Action): StudioState {
     }
     case "push-reframe-history": {
       const c = ensureComposition(state, action.formatId);
-      const next = [...(c.reframeHistory ?? []), action.url].slice(-8); // keep last 8
+      const next = [...(c.reframeHistory ?? []), action.url].slice(-8);
       return {
         ...state,
         compositions: { ...state.compositions, [action.formatId]: { ...c, reframeHistory: next } },
@@ -254,8 +268,52 @@ function reducer(state: StudioState, action: Action): StudioState {
   }
 }
 
+// Actions excluded from undo/redo history (transient or remote-driven).
+const NON_UNDOABLE = new Set<Action["type"]>([
+  "select-layer",
+  "toggle-safe-area",
+  "set-active-format",
+  "set-banner-project-id",
+  "set-vehicle",
+  "hydrate",
+  "undo",
+  "redo",
+]);
+
+type MetaState = {
+  present: StudioState;
+  past: StudioState[];
+  future: StudioState[];
+};
+
+const initialMeta: MetaState = { present: initialPresent, past: [], future: [] };
+const HISTORY_LIMIT = 60;
+
+function metaReducer(meta: MetaState, action: Action): MetaState {
+  if (action.type === "undo") {
+    if (meta.past.length === 0) return meta;
+    const past = [...meta.past];
+    const prev = past.pop()!;
+    return { present: prev, past, future: [meta.present, ...meta.future].slice(0, HISTORY_LIMIT) };
+  }
+  if (action.type === "redo") {
+    if (meta.future.length === 0) return meta;
+    const [next, ...rest] = meta.future;
+    return { present: next, past: [...meta.past, meta.present].slice(-HISTORY_LIMIT), future: rest };
+  }
+  const next = presentReducer(meta.present, action);
+  if (next === meta.present) return meta;
+  if (NON_UNDOABLE.has(action.type)) return { ...meta, present: next };
+  return {
+    present: next,
+    past: [...meta.past, meta.present].slice(-HISTORY_LIMIT),
+    future: [],
+  };
+}
+
 export function useCanvasBannerStore() {
-  const [state, dispatch] = useReducer(reducer, initialState);
+  const [meta, dispatch] = useReducer(metaReducer, initialMeta);
+  const state = meta.present;
 
   const activeComposition = useMemo(
     () => state.compositions[state.activeFormatId] ?? buildDefaultComposition(state.activeFormatId),
@@ -287,6 +345,8 @@ export function useCanvasBannerStore() {
         dispatch({ type: "reorder-layer", formatId, layerId, direction }),
       resetLayout: (formatId = state.activeFormatId) =>
         dispatch({ type: "reset-format-layout", formatId }),
+      resetLayer: (layerId: string, formatId = state.activeFormatId) =>
+        dispatch({ type: "reset-layer", formatId, layerId }),
       setFormatScale: (scale: number, formatId = state.activeFormatId) =>
         dispatch({ type: "set-format-scale", formatId, scale }),
       setMasterImage: (url: string | undefined, formatId = state.activeFormatId) =>
@@ -306,12 +366,12 @@ export function useCanvasBannerStore() {
       setCi: (patch: Partial<CiState>) => dispatch({ type: "set-ci", patch }),
       applyBrandPreset: (brandKey: string) => dispatch({ type: "apply-brand-preset", brandKey }),
       hydrate: (s: StudioState) => dispatch({ type: "hydrate", state: s }),
+      undo: () => dispatch({ type: "undo" }),
+      redo: () => dispatch({ type: "redo" }),
     }),
     [state.activeFormatId],
   );
 
-  // Utility: read the resolved color value for a token. CI-aware: known tokens
-  // (primary/secondary/text/bg/background/foreground/accent) prefer the active CI palette.
   const ciColors = state.ci?.colors;
   const resolveColor = useCallback((token?: string): string => {
     if (!token) return "#ffffff";
@@ -328,7 +388,10 @@ export function useCanvasBannerStore() {
     return v ? `hsl(${v})` : "#ffffff";
   }, [ciColors]);
 
-  return { state, actions, activeComposition, activeFormat, resolveColor };
+  const canUndo = meta.past.length > 0;
+  const canRedo = meta.future.length > 0;
+
+  return { state, actions, activeComposition, activeFormat, resolveColor, canUndo, canRedo };
 }
 
 export type CanvasBannerStore = ReturnType<typeof useCanvasBannerStore>;

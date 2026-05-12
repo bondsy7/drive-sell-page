@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import type Konva from "konva";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Download, Eye, EyeOff, Package, Sparkles, Wand2 } from "lucide-react";
+import { ArrowLeft, Download, Eye, EyeOff, Package, Sparkles, Wand2, Undo2, Redo2, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
@@ -40,6 +40,8 @@ import CiPanel from "./ci/CiPanel";
 import { buildCiContext, type DealerProfile } from "./ci/profileSources";
 import { detectBrandKey } from "./ci/brandPresets";
 import { useCiPersistence } from "./ci/useCiPersistence";
+import FloatingToolbar from "./controls/FloatingToolbar";
+import { isLayerOverridden, isCompositionOverridden } from "./state/overrideDetection";
 
 type Step = 1 | 2 | 3 | 4 | 5;
 const STEPS: { id: Step; title: string; subtitle: string }[] = [
@@ -55,7 +57,7 @@ const SMALL_FORMATS = new Set(["g-medrect", "g-leader", "g-skyscraper"]);
 const CanvasBannerStudioShell: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { state, actions, activeComposition, activeFormat, resolveColor } = useCanvasBannerStore();
+  const { state, actions, activeComposition, activeFormat, resolveColor, canUndo, canRedo } = useCanvasBannerStore();
   const [step, setStep] = useState<Step>(1);
   const [previewMobileOpen, setPreviewMobileOpen] = useState(true);
   const stageRef = useRef<Konva.Stage | null>(null);
@@ -65,6 +67,56 @@ const CanvasBannerStudioShell: React.FC = () => {
   const [reframeBusy, setReframeBusy] = useState(false);
   const [variantsOpen, setVariantsOpen] = useState(false);
   const [cropOpen, setCropOpen] = useState(false);
+  const [selectedScreen, setSelectedScreen] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+
+  const selectedLayer = useMemo(
+    () => activeComposition.layers.find((l) => l.id === state.selectedLayerId),
+    [activeComposition.layers, state.selectedLayerId],
+  );
+  const selectedOverridden = useMemo(
+    () => (selectedLayer ? isLayerOverridden(selectedLayer, activeComposition, activeFormat) : false),
+    [selectedLayer, activeComposition, activeFormat],
+  );
+  const formatOverridden = useMemo(
+    () => isCompositionOverridden(activeComposition, activeFormat),
+    [activeComposition, activeFormat],
+  );
+
+  // Globale Tastatur-Shortcuts: Undo/Redo, Pfeile (move), Delete (hide), Esc (deselect).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      const tag = t?.tagName;
+      const editable = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (t?.isContentEditable ?? false);
+      const meta = e.metaKey || e.ctrlKey;
+
+      if (meta && (e.key === "z" || e.key === "Z")) {
+        e.preventDefault();
+        if (e.shiftKey) actions.redo(); else actions.undo();
+        return;
+      }
+      if (meta && e.key === "y") { e.preventDefault(); actions.redo(); return; }
+
+      if (editable) return;
+      const id = state.selectedLayerId;
+      if (!id) return;
+      const l = activeComposition.layers.find((x) => x.id === id);
+      if (!l) return;
+      const step = e.shiftKey ? 10 : 1;
+      if (e.key === "ArrowLeft") { e.preventDefault(); actions.patchLayer(id, { x: l.x - step }); }
+      else if (e.key === "ArrowRight") { e.preventDefault(); actions.patchLayer(id, { x: l.x + step }); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); actions.patchLayer(id, { y: l.y - step }); }
+      else if (e.key === "ArrowDown") { e.preventDefault(); actions.patchLayer(id, { y: l.y + step }); }
+      else if (e.key === "Escape") { e.preventDefault(); actions.selectLayer(undefined); }
+      else if (e.key === "Delete" || e.key === "Backspace") {
+        e.preventDefault();
+        actions.patchLayer(id, { visible: false });
+        actions.selectLayer(undefined);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [actions, state.selectedLayerId, activeComposition.layers]);
 
   // Persistence: autosave drafts to banner_projects.
   useBannerProject({
@@ -681,13 +733,42 @@ const CanvasBannerStudioShell: React.FC = () => {
               )}
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>{activeFormat.name}</span>
-                <span className="tabular-nums">
-                  {activeFormat.width} × {activeFormat.height} px
-                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    title="Rückgängig (Cmd/Ctrl+Z)"
+                    disabled={!canUndo}
+                    onClick={actions.undo}
+                    className="p-1 rounded hover:bg-muted disabled:opacity-30"
+                  >
+                    <Undo2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    title="Wiederherstellen (Shift+Cmd/Ctrl+Z)"
+                    disabled={!canRedo}
+                    onClick={actions.redo}
+                    className="p-1 rounded hover:bg-muted disabled:opacity-30"
+                  >
+                    <Redo2 className="w-3.5 h-3.5" />
+                  </button>
+                  {formatOverridden && (
+                    <button
+                      type="button"
+                      title="Layout dieses Formats auf Template-Default zurücksetzen"
+                      onClick={() => { actions.resetLayout(); toast.success("Layout zurückgesetzt"); }}
+                      className="p-1 rounded hover:bg-muted text-amber-600 inline-flex items-center gap-1"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span className="text-[10px] uppercase tracking-wider">Override</span>
+                    </button>
+                  )}
+                  <span className="tabular-nums text-xs ml-2">
+                    {activeFormat.width} × {activeFormat.height} px
+                  </span>
+                </div>
               </div>
-              <div
-                className="w-full aspect-square lg:aspect-auto lg:h-[calc(100vh-220px)] min-h-[320px] rounded-xl border border-border overflow-hidden bg-card"
-              >
+              <div className="relative w-full aspect-square lg:aspect-auto lg:h-[calc(100vh-220px)] min-h-[320px] rounded-xl border border-border overflow-hidden bg-card">
                 <BannerCanvas
                   format={activeFormat}
                   composition={activeComposition}
@@ -701,7 +782,21 @@ const CanvasBannerStudioShell: React.FC = () => {
                   onLayerDrag={(id, x, y) => actions.patchLayer(id, { x, y })}
                   onLayerResize={(id, patch) => actions.patchLayer(id, patch)}
                   stageRef={stageRef}
+                  onSelectedLayerScreenChange={setSelectedScreen}
                 />
+                {selectedLayer && selectedScreen && (
+                  <FloatingToolbar
+                    layer={selectedLayer}
+                    composition={activeComposition}
+                    format={activeFormat}
+                    screen={selectedScreen}
+                    resolveColor={resolveColor}
+                    getStageCanvas={() => stageRef.current?.toCanvas({ pixelRatio: 1 }) ?? null}
+                    onPatch={(patch) => actions.patchLayer(selectedLayer.id, patch)}
+                    onResetLayer={() => { actions.resetLayer(selectedLayer.id); toast.success("Layer zurückgesetzt"); }}
+                    isOverridden={selectedOverridden}
+                  />
+                )}
               </div>
             </div>
           </div>
