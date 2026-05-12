@@ -303,6 +303,8 @@ export function useCanvasBannerStore() {
         dispatch({ type: "set-banner-project-id", id }),
       setProjectTitle: (title: string) =>
         dispatch({ type: "set-project-title", title }),
+      setCi: (patch: Partial<CiState>) => dispatch({ type: "set-ci", patch }),
+      applyBrandPreset: (brandKey: string) => dispatch({ type: "apply-brand-preset", brandKey }),
       hydrate: (s: StudioState) => dispatch({ type: "hydrate", state: s }),
     }),
     [state.activeFormatId],
