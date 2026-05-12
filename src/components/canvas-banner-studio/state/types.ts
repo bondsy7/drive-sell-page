@@ -94,6 +94,9 @@ export type CiState = {
   dealerLogoUrl?: string;
   /** Selbst hochgeladenes Logo (Storage URL) */
   customLogoUrl?: string;
+  /** CI darf einzelne Layer-Properties (Position, Visibility, Farbe) überschreiben.
+   *  Wird beim Bauen einer Default-Composition über das Template gemergt. */
+  layerOverrides?: Array<{ id: string } & Record<string, unknown>>;
 };
 
 export type StudioState = {

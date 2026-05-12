@@ -1,6 +1,6 @@
 import type { BannerComposition, BannerTextFields } from "../state/types";
-import { getFormatById } from "./formats";
-import { getLayoutTemplate } from "./layoutTemplates";
+import { loadTemplateSync } from "./templateRegistry";
+import { specToBannerLayers } from "./templateToLayers";
 
 export const DEFAULT_TEXT_FIELDS: BannerTextFields = {
   headline: "DER NEUE VW GOLF",
@@ -15,15 +15,15 @@ export const DEFAULT_TEXT_FIELDS: BannerTextFields = {
 export const buildDefaultComposition = (
   formatId: string,
   templateId = "classic-offer",
+  ciLayerOverrides?: Array<{ id: string } & Record<string, unknown>> | null,
 ): BannerComposition => {
-  const f = getFormatById(formatId);
-  const tpl = getLayoutTemplate(templateId);
+  const { spec } = loadTemplateSync(formatId, templateId);
   return {
     formatId,
     backgroundFit: "cover",
     overlayDirection: "bottom",
     overlayStrength: 50,
     selectedTemplateId: templateId,
-    layers: tpl.build(f.width, f.height),
+    layers: specToBannerLayers(spec, ciLayerOverrides as never),
   };
 };

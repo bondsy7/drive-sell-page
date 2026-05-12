@@ -1,82 +1,152 @@
+# Plan: JSON-Template-System für Canvas Banner Studio
+
 ## Ziel
-Ein CI-Layer im Canvas Banner Studio, der **(a) automatisch** Daten aus dem Händler-Profil zieht, **(b) markenspezifische CI-Templates** (BMW, Mercedes, VW, Audi, Porsche, Ford, Opel, Skoda, Hyundai, Kia, Tesla …) anbietet, **(c) das Hersteller-Logo als SVG skalier- und einfärbbar** macht, und **(d) Shortcodes** wie `{{firma}}` in allen Textfeldern auflöst.
+Bestehende Code-Builder-Templates (`layoutTemplates.ts`) durch ein **deklaratives JSON-Format** ersetzen, das pro Format×Template jede Ebene exakt beschreibt. Plus: Admin-UI zum Editieren und CI-Presets dürfen Layer-Positionen überschreiben.
 
-## Was wird gebaut
+## Phase 1 — Schema & Loader
 
-### 1) Datenquellen-Verdrahtung (Profil → Studio)
-Aus `profiles` werden bereits Logo & Farben geholt; ich erweitere das um:
-- `company_name` → Shortcode `{{firma}}`
-- `phone`, `whatsapp_number`, `website`, `address`, `city`, `postal_code` → optionale Shortcodes
-- `primary_color`, `secondary_color` → CI-Farben (Default-Palette)
-- `logo_url` → Händler-Logo (zusätzlich zum Hersteller-Logo)
-- `default_legal_text` → Pflichtangaben-Default
+**Neue Datei** `src/components/canvas-banner-studio/data/templateSchema.ts`
+TypeScript-Typen für die JSON-Struktur:
+```ts
+type LayerSpec = {
+  id: string;                  // "headline" | "logo" | ...
+  type: "image" | "overlay" | "text" | "legal" | "logo";
+  field?: BannerTextFieldKey;
+  x: number; y: number;        // absolute px im Format-Koordinatensystem
+  width?: number; height?: number;
+  anchor?: "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center";
+  fontSize?: number; fontWeight?: number;
+  align?: "left" | "center" | "right";
+  color?: string;              // semantic token oder hex
+  visible?: boolean;
+  draggable?: boolean;
+  autoShrink?: boolean; minFontSize?: number; maxLines?: number;
+  // overlay-only
+  direction?: OverlayDirection; strength?: number;
+  // image-only
+  fit?: "cover" | "contain";
+};
 
-Neue Datei: `src/components/canvas-banner-studio/ci/profileSources.ts`
-(mappt Profil + ausgewähltes Fahrzeug → CI-Kontext-Objekt)
-
-### 2) Brand-CI-Presets (Markenvorlagen)
-Neue Datei: `src/components/canvas-banner-studio/ci/brandPresets.ts` mit Einträgen wie:
+type TemplateSpec = {
+  templateId: string;          // "classic-offer"
+  formatId: string;            // "social-4x5"
+  name: string;
+  format: { width: number; height: number };
+  safeArea: { top: number; right: number; bottom: number; left: number };
+  defaults?: { fontDisplay?: string; fontBody?: string };
+  layers: LayerSpec[];
+};
 ```
-{
-  brand: "BMW",
-  fonts: { display: "BMW Group", body: "Helvetica Neue" }, // mit Web-Font-Fallback
-  colors: { primary: "#1c69d4", secondary: "#0653b6", text: "#262626", bg: "#ffffff" },
-  logoTreatment: "monochrome-ok",
-  ctaStyle: "rounded-pill",
-}
+
+**Neue Datei** `src/components/canvas-banner-studio/data/templateRegistry.ts`
+- `loadTemplate(formatId, templateId): TemplateSpec` — sucht erst in DB (`banner_templates`), fällt auf Bundle-JSON zurück.
+- `listTemplatesForFormat(formatId): TemplateMeta[]`
+- In-Memory-Cache + `invalidate()` für Admin-UI.
+
+**Neue Datei** `src/components/canvas-banner-studio/data/templateToLayers.ts`
+- `specToBannerLayers(spec, ci?): BannerLayer[]` — wandelt JSON in das bestehende `BannerLayer[]`-Format. Wendet CI-Override zuletzt an.
+
+`buildDefaultComposition` in `defaultComposition.ts` wird umgestellt: lädt Spec, ruft `specToBannerLayers`.
+
+## Phase 2 — Migration der bestehenden Templates
+
+Einmal-Skript `scripts/generate-template-json.ts` (Node, lokal):
+- Importiert die alten 5 Builder aus `layoutTemplates.ts`.
+- Iteriert über alle Formate aus `formats.ts`.
+- Ruft `build(w, h)` auf, serialisiert das Resultat als JSON.
+- Schreibt nach `src/components/canvas-banner-studio/data/templates/{templateId}.{formatId}.json`.
+
+Anschließend manuelle Feinjustierung kritischer Format×Template-Kombinationen (z.B. 970×90 Leaderboard), bei denen die Faktor-Formel heute schief aussieht.
+
+`layoutTemplates.ts` wird auf Re-Export aus dem Registry reduziert (Bestandscode bleibt funktionsfähig); nach Verifikation gelöscht.
+
+## Phase 3 — Datenbank für editierbare Templates
+
+**Neue Tabelle** `banner_templates`:
 ```
-Marken initial: BMW, Mercedes-Benz, Audi, Volkswagen, Porsche, Ford, Opel, Skoda, Hyundai, Kia, Tesla, Toyota, Renault, Peugeot, Fiat, Volvo, MINI, Smart, Seat, Cupra. + Custom.
+id uuid PK
+template_id text          -- "classic-offer"
+format_id   text          -- "social-4x5"
+name        text
+spec        jsonb         -- volle TemplateSpec
+is_global   boolean default true     -- Lovable-Standard
+user_id     uuid nullable -- null = global, sonst eigener Override
+brand_key   text nullable -- z.B. "bmw" für CI-spezifisches Template
+created_at, updated_at
+UNIQUE(template_id, format_id, COALESCE(user_id, '00000000...'), COALESCE(brand_key, ''))
+```
 
-Schriften werden über Google-Font-Äquivalente geladen (z. B. BMW Group → "Inter" / "Helvetica" Fallback), keine lizenzpflichtigen Brand-Fonts ausgeliefert. CSS-Loading via `<link>`-Injection on demand (`ensureFontLoaded`).
+RLS:
+- Admins: ALL.
+- Authenticated SELECT: `is_global = true OR user_id = auth.uid()`.
+- Authenticated INSERT/UPDATE/DELETE: nur eigene Zeilen (`user_id = auth.uid()`).
 
-### 3) Logo-Recoloring (SVG)
-Neue Datei: `src/components/canvas-banner-studio/ci/svgRecolor.ts`
-- Wenn das Hersteller-Logo eine SVG-URL ist: SVG fetchen, `fill`/`stroke`-Attribute durch Ziel-Farbe ersetzen, als Data-URL zurückgeben.
-- Modi: **Original**, **Monochrom Hell** (white), **Monochrom Dunkel** (black), **Custom Color** (color picker).
-- Skalierung übernimmt die bestehende Logo-Layer-Resize-Logic.
+Loader-Priorität (höchste zuerst):
+1. User-Override (`user_id = me`, mit/ohne brand_key)
+2. Brand-spezifisch global (`is_global, brand_key = ci.brandKey`)
+3. Globaler Default (`is_global, brand_key IS NULL`)
+4. Bundle-JSON aus `data/templates/`
 
-Falls das Logo PNG ist: Recolor-Optionen ausgrauen + Hinweis "Nur SVG kann eingefärbt werden". Skalierung bleibt verfügbar.
+## Phase 4 — Admin-UI
 
-### 4) Shortcodes
-Neue Datei: `src/components/canvas-banner-studio/ci/shortcodes.ts`
-- Verfügbare Codes: `{{firma}}`, `{{telefon}}`, `{{whatsapp}}`, `{{website}}`, `{{adresse}}`, `{{stadt}}`, `{{plz}}`, `{{marke}}`, `{{modell}}`, `{{preis}}`, `{{rate}}`, `{{laufzeit}}`, `{{anzahlung}}`.
-- `resolveShortcodes(text, ciContext)` ersetzt vor dem Render in `BannerCanvas` und `renderComposition`.
-- Auto-Shrink-Engine bekommt also den **resolvierten** Text — keine Änderung an Layout-Logik.
+**Neue Route** `/admin/banner-templates` (`src/pages/admin/AdminBannerTemplates.tsx`):
+- Tabelle: Template × Format × Variante (global/brand/user).
+- Filter: Brand, Template, Format.
+- Aktionen: **Neu**, **Editieren**, **Duplizieren als Brand-Variante**, **Reset auf Bundle-Default**, **Löschen**.
 
-### 5) UI: neuer Step "CI" (vor Schritt 2 Bild)
-Neue Datei: `src/components/canvas-banner-studio/ci/CiPanel.tsx`
-- **Marke** wählen (Dropdown mit Brand-Presets, Default = vom Fahrzeug erkannt)
-- **Schrift-Set** Display + Body (vorbelegt aus Brand-Preset, manuell überschreibbar)
-- **CI-Farben** 4 Swatches (Primary/Secondary/Text/BG) mit Color-Picker; "Aus Profil übernehmen"-Button
-- **Hersteller-Logo** Mode (Original / Weiß / Schwarz / Custom) + Größen-Slider
-- **Händler-Logo** Toggle (Position oben/unten/aus)
-- **Shortcode-Cheatsheet** zum Copy/Paste
+**Editor** (`src/pages/admin/AdminBannerTemplateEditor.tsx`):
+- Linke Spalte: **JSON-Editor** (Monaco) mit Schema-Validierung.
+- Rechte Spalte: **Live-Preview** über `BannerCanvas` mit Dummy-Texten.
+- Toolbar: Speichern, „Auf alle Formate anwenden" (kopiert Layer-Verhältnisse), Vorschau pro Format-Liste.
+- Visuelles Editieren ist später möglich (gleicher Canvas wie im Studio); im ersten Wurf nur JSON + Live-Preview.
 
-### 6) Persistenz
-`StudioState` erweitern um `ci: { brandKey, fontsDisplay, fontsBody, colors{...}, logoMode, logoColor, useDealerLogo, dealerLogoPosition }`.
-Wird mit `banner_projects.state` (jsonb) automatisch persistiert (vorhandene Autosave-Logik). Keine DB-Migration nötig.
+In `src/pages/admin/AdminLayout.tsx` Navigationspunkt ergänzen.
 
-### 7) Verdrahtung mit bestehender Logik
-- Brand-Auswahl → `actions.setLogo(getLogoForMake(brand))` automatisch (Memory-Regel "Logos always latest").
-- CI-Farben → text-Layer `color` per Default mit `ci.colors.text` initialisieren; bestehender `resolveColor` priorisiert weiterhin Layer-Eigenwerte (kein Bruch).
-- Schrift → Layer-`fontFamily` per Default aus CI gesetzt, override bleibt möglich.
-- Shortcodes → resolved nur beim Rendern, originale Strings bleiben editierbar.
+## Phase 5 — CI-Position-Overrides
 
-## Offen gelassen (bewusst)
-- Brand-Compliance-Check (z. B. Mindestabstand zum Logo) — später.
-- Eigene Custom-CI-Vorlagen speichern pro User — separater Schritt.
-- Upload-eigene-Schrift (TTF/WOFF) — separater Schritt.
+`CiState.layerOverrides?: Partial<LayerSpec>[]` (per Brand-Preset).
+
+`brandPresets.ts` bekommt optional `layerOverrides`-Feld:
+```ts
+{ brand: "BMW", layerOverrides: [
+  { id: "logo", anchor: "top-right", x: …, y: …, visible: true }
+]}
+```
+
+`templateToLayers.ts` mergt Reihenfolge: Bundle → DB-Brand → DB-User → CI-Override.
+
+## Technische Details
+
+- **Anchor-Resolution**: `anchor` ist optionaler Hint; wenn gesetzt, wird `x/y` relativ zur Safe-Area-Ecke interpretiert. Sonst absolut.
+- **Backwards-Compat**: Bestehende Banner-Projects (`banner_projects.state` jsonb) speichern weiterhin `BannerLayer[]` direkt — nur die **Default-Generierung** läuft jetzt über JSON. Lade-Pfad bleibt unverändert.
+- **Persistierte Compositions** werden NICHT migriert — User behält seine Edits.
+- **Admin-Zugriff** via existierender `has_role(_, 'admin')`-Pattern.
 
 ## Files (neu)
-- `src/components/canvas-banner-studio/ci/brandPresets.ts`
-- `src/components/canvas-banner-studio/ci/profileSources.ts`
-- `src/components/canvas-banner-studio/ci/shortcodes.ts`
-- `src/components/canvas-banner-studio/ci/svgRecolor.ts`
-- `src/components/canvas-banner-studio/ci/fontLoader.ts`
-- `src/components/canvas-banner-studio/ci/CiPanel.tsx`
+- `data/templateSchema.ts`
+- `data/templateRegistry.ts`
+- `data/templateToLayers.ts`
+- `data/templates/*.json` (~50 Dateien per Skript)
+- `scripts/generate-template-json.ts`
+- `pages/admin/AdminBannerTemplates.tsx`
+- `pages/admin/AdminBannerTemplateEditor.tsx`
+- DB-Migration: `banner_templates` + RLS
 
 ## Files (edit)
-- `state/types.ts` + `useCanvasBannerStore.ts` → `ci`-Slice + Actions
-- `CanvasBannerStudioShell.tsx` → neuer Step "CI", Resolve-Hook für Shortcodes
-- `canvas/BannerCanvas.tsx` + `export/renderComposition.ts` → Shortcode-Resolver einhängen
-- `controls/TextFieldsPanel.tsx` → Shortcode-Cheatsheet als Hilfetext
+- `data/defaultComposition.ts` — JSON-Loader statt Builder-Funktion
+- `data/layoutTemplates.ts` — Re-Export aus Registry, später entfernt
+- `ci/brandPresets.ts` — `layerOverrides`-Feld
+- `state/types.ts` — `CiState.layerOverrides`
+- `pages/admin/AdminLayout.tsx` — Nav-Link
+- `App.tsx` — Route
+
+## Reihenfolge der Umsetzung
+1. Schema + Loader + Generator-Skript + Bundle-JSON (Phase 1+2). Studio läuft danach unverändert, nur Quelle der Wahrheit ist JSON.
+2. DB-Migration `banner_templates` (Phase 3).
+3. CI-Layer-Overrides (Phase 5) — klein, daher früh.
+4. Admin-UI (Phase 4) — größter Brocken.
+
+## Bewusst weggelassen (für später)
+- WYSIWYG-Drag-Editor im Admin (erstmal JSON + Preview).
+- Versionierung/History pro Template.
+- Bulk-Import/Export von Templates als ZIP.
