@@ -246,21 +246,26 @@ const CanvasBannerStudioShell: React.FC = () => {
 
             {step === 2 && (
               <section className="space-y-4">
-                <h2 className="font-semibold text-foreground">Hintergrundbild</h2>
-                <ImageUpload
-                  imageUrl={activeComposition.backgroundImageUrl}
-                  onUpload={(url) => actions.setBackground(url)}
-                  onClear={() => actions.setBackground(undefined)}
+                <Step2Master
+                  backgroundImageUrl={activeComposition.backgroundImageUrl}
+                  onApplyMaster={(url) => actions.setBackground(url)}
+                  onClearMaster={() => actions.setBackground(undefined)}
+                  onApplyFields={(fields) => {
+                    (Object.entries(fields) as [BannerTextFieldKey, string][]).forEach(([k, v]) => {
+                      if (v) actions.setText(k, v);
+                    });
+                  }}
                 />
+
                 {activeComposition.backgroundImageUrl && (
                   <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
                     <div className="flex items-center gap-2">
                       <Wand2 className="w-3.5 h-3.5 text-accent" />
-                      <h3 className="text-sm font-semibold">Ideogram Reframe</h3>
+                      <h3 className="text-sm font-semibold">4) Auf Zielformate reframen</h3>
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/10 text-accent">AI</span>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Erweitert das Bild generativ auf das Zielformat statt es zu beschneiden.
+                      Erst Masterbild freigeben, dann generativ auf das aktive Format oder alle gewählten Formate erweitern.
                     </p>
                     <div className="grid grid-cols-2 gap-2">
                       <Tooltip>
@@ -290,6 +295,7 @@ const CanvasBannerStudioShell: React.FC = () => {
                     )}
                   </div>
                 )}
+
                 <OverlayControls
                   fit={activeComposition.backgroundFit}
                   direction={activeComposition.overlayDirection}
