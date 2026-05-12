@@ -1,0 +1,28 @@
+// Shortcode-Resolver: ersetzt {{firma}}, {{telefon}}, ... beim Render.
+// Originale Strings im State bleiben erhalten und editierbar.
+
+import type { CiContext } from "./profileSources";
+
+export const SHORTCODES: { code: string; label: string }[] = [
+  { code: "{{firma}}", label: "Firmenname" },
+  { code: "{{telefon}}", label: "Telefon" },
+  { code: "{{whatsapp}}", label: "WhatsApp" },
+  { code: "{{website}}", label: "Website" },
+  { code: "{{adresse}}", label: "Straße / Adresse" },
+  { code: "{{stadt}}", label: "Stadt" },
+  { code: "{{plz}}", label: "PLZ" },
+  { code: "{{marke}}", label: "Fahrzeugmarke" },
+  { code: "{{modell}}", label: "Fahrzeugmodell" },
+  { code: "{{preis}}", label: "Preis" },
+  { code: "{{rate}}", label: "Monatsrate" },
+  { code: "{{laufzeit}}", label: "Laufzeit" },
+  { code: "{{anzahlung}}", label: "Anzahlung" },
+];
+
+export function resolveShortcodes(text: string, ctx?: CiContext | null): string {
+  if (!text || !ctx) return text ?? "";
+  return text.replace(/\{\{\s*([a-zA-Z]+)\s*\}\}/g, (full, key) => {
+    const v = (ctx as any)[String(key).toLowerCase()];
+    return v != null && String(v) !== "" ? String(v) : full;
+  });
+}
