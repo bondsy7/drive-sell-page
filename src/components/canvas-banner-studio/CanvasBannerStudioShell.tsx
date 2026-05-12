@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import type Konva from "konva";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Download, Eye, EyeOff, Package, Sparkles, Wand2 } from "lucide-react";
@@ -7,6 +7,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { toast } from "sonner";
 
 import AppHeader from "@/components/AppHeader";
+import { useAuth } from "@/hooks/useAuth";
+import { useVehicles } from "@/hooks/useVehicles";
+import { useVehicleMakes } from "@/hooks/useVehicleMakes";
 import { useCanvasBannerStore } from "./state/useCanvasBannerStore";
 import { getFormatById } from "./data/formats";
 import BannerCanvas from "./canvas/BannerCanvas";
@@ -20,6 +23,10 @@ import LayerOrderControls from "./controls/LayerOrderControls";
 import LogoPanel from "./controls/LogoPanel";
 import LegalCheck from "./controls/LegalCheck";
 import Step2Master from "./step2/Step2Master";
+import VehicleBannerPicker from "./persistence/VehicleBannerPicker";
+import { useBannerProject, uploadBannerToStorage, dataUrlToBlob } from "./persistence/useBannerProject";
+import { buildPrefillFromVehicle } from "./persistence/prefillFromVehicle";
+import { renderCompositionToBlob } from "./export/renderComposition";
 import type { BannerTextFieldKey } from "./state/types";
 import { buildFilename, downloadDataUrl, exportStage, type ExportFormat } from "./export/exportCanvas";
 import { exportAllAsZip } from "./export/zipExport";
