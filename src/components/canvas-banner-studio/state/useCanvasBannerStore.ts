@@ -155,6 +155,14 @@ function reducer(state: StudioState, action: Action): StudioState {
         compositions: { ...state.compositions, [action.formatId]: { ...c, layers } },
       };
     }
+    case "set-vehicle":
+      return { ...state, vehicleId: action.vehicleId };
+    case "set-banner-project-id":
+      return { ...state, bannerProjectId: action.id };
+    case "set-project-title":
+      return { ...state, projectTitle: action.title };
+    case "hydrate":
+      return { ...state, ...action.state };
     default:
       return state;
   }
