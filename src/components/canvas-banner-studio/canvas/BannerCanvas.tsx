@@ -22,6 +22,8 @@ interface BannerCanvasProps {
   onLayerDrag?: (id: string, x: number, y: number) => void;
   onLayerResize?: (id: string, patch: { width?: number; height?: number; fontSize?: number }) => void;
   stageRef?: React.MutableRefObject<Konva.Stage | null>;
+  /** Wird bei Selection-Änderung mit der Bildschirmposition (px relativ zum Container) aufgerufen. */
+  onSelectedLayerScreenChange?: (info: { x: number; y: number; w: number; h: number } | null) => void;
 }
 
 function useImage(src?: string) {
