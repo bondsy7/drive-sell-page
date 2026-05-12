@@ -18,7 +18,7 @@ export type BannerTextFieldKey =
 
 export type BannerTextFields = Record<BannerTextFieldKey, string>;
 
-export type LayerType = "text" | "image" | "overlay" | "logo" | "legal";
+export type LayerType = "text" | "image" | "overlay" | "logo" | "legal" | "shape";
 
 export type OverlayDirection =
   | "none"
