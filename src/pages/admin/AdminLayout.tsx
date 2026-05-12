@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Outlet, Link } from 'react-router-dom';
-import { LayoutDashboard, Users, Receipt, MessageSquare, Settings, CreditCard, ArrowLeft, FileText, Mail, Menu, X, Car, Hash, ShieldCheck, BookOpen, Activity, Send, TrendingUp, HardDrive, Filter, CalendarDays, ChevronDown, Timer } from 'lucide-react';
+import { LayoutDashboard, Users, Receipt, MessageSquare, Settings, CreditCard, ArrowLeft, FileText, Mail, Menu, X, Car, Hash, ShieldCheck, BookOpen, Activity, Send, TrendingUp, HardDrive, Filter, CalendarDays, ChevronDown, Timer, LayoutTemplate } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import logoLight from '@/assets/logo-light.png';
@@ -43,6 +43,7 @@ const NAV_GROUPS: NavGroupDef[] = [
       { to: '/admin/wmi-codes', icon: Hash, label: 'WMI-Codes & Aliase' },
       { to: '/admin/sales-assistant', icon: MessageSquare, label: 'Sales-Assistent' },
       { to: '/admin/prompts', icon: BookOpen, label: 'Prompts' },
+      { to: '/admin/banner-templates', icon: LayoutTemplate, label: 'Banner-Templates' },
     ],
   },
   {
