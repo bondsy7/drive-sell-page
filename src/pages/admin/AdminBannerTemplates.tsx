@@ -196,12 +196,25 @@ function VisualEditor({
         />
         {spec.layers.map((l) => {
           if (l.visible === false) return null;
-          if (l.type === "image" || l.type === "overlay") return null;
+          if (l.type === "overlay") return null;
           const w = (l.width ?? 200) * scale;
           const h = (l.height ?? (l.fontSize ?? 24) * 1.4) * scale;
           const isSel = l.id === selectedId;
           const isLogo = l.type === "logo";
-          const txt = l.field ? DUMMY_TEXT[l.field] ?? l.id : l.id;
+          const isShape = l.type === "shape";
+          const isImage = l.type === "image";
+          const txt = isShape || isImage
+            ? ""
+            : l.field
+              ? DUMMY_TEXT[l.field] ?? l.id
+              : (l.content ?? l.id);
+          const bg = isShape
+            ? l.backgroundColor || "#3b82f6"
+            : isLogo
+              ? "rgba(255,255,255,0.85)"
+              : isImage
+                ? "rgba(0,0,0,0.15)"
+                : "transparent";
           return (
             <div
               key={l.id}
@@ -216,32 +229,44 @@ function VisualEditor({
                   ? "2px solid hsl(var(--primary))"
                   : "1px dashed rgba(255,255,255,0.4)",
                 outlineOffset: 0,
-                backgroundColor: isLogo ? "rgba(255,255,255,0.85)" : "transparent",
+                backgroundColor: bg,
+                opacity: isShape || isImage ? (l.opacity ?? 1) : 1,
+                borderRadius: l.borderRadius ?? 0,
+                backgroundImage: isImage && l.imageUrl ? `url("${l.imageUrl}")` : undefined,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
               }}
               onPointerDown={(e) => startDrag(e, l)}
             >
-              <div
-                className="w-full h-full flex items-center"
-                style={{
-                  fontSize: (l.fontSize ?? 16) * scale,
-                  fontWeight: l.fontWeight ?? 400,
-                  textAlign: l.align ?? "left",
-                  justifyContent:
-                    l.align === "center"
-                      ? "center"
-                      : l.align === "right"
-                        ? "flex-end"
-                        : "flex-start",
-                  color: isLogo ? "#333" : "white",
-                  textShadow: isLogo ? "none" : "0 1px 2px rgba(0,0,0,0.6)",
-                  lineHeight: 1.15,
-                  padding: isLogo ? "0 4px" : 0,
-                  overflow: "hidden",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {isLogo ? "LOGO" : txt}
-              </div>
+              {!isShape && !isImage && (
+                <div
+                  className="w-full h-full flex items-center"
+                  style={{
+                    fontSize: (l.fontSize ?? 16) * scale,
+                    fontWeight: l.fontWeight ?? 400,
+                    textAlign: l.align ?? "left",
+                    justifyContent:
+                      l.align === "center"
+                        ? "center"
+                        : l.align === "right"
+                          ? "flex-end"
+                          : "flex-start",
+                    color: isLogo ? "#333" : "white",
+                    textShadow: isLogo ? "none" : "0 1px 2px rgba(0,0,0,0.6)",
+                    lineHeight: 1.15,
+                    padding: isLogo ? "0 4px" : 0,
+                    overflow: "hidden",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {isLogo ? "LOGO" : txt}
+                </div>
+              )}
+              {isImage && !l.imageUrl && (
+                <div className="w-full h-full flex items-center justify-center text-[10px] text-white/70">
+                  Bild-URL setzen
+                </div>
+              )}
               {isSel && (
                 <>
                   {(["nw", "ne", "sw", "se", "n", "s", "e", "w"] as const).map((h) => {
