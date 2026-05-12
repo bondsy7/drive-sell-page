@@ -3,6 +3,7 @@ import type {
   BannerComposition,
   BannerLayer,
   BannerTextFieldKey,
+  CiState,
   ImageFitMode,
   OverlayDirection,
   StudioState,
@@ -10,6 +11,7 @@ import type {
 import { BANNER_FORMATS, getFormatById } from "../data/formats";
 import { buildDefaultComposition, DEFAULT_TEXT_FIELDS } from "../data/defaultComposition";
 import { getLayoutTemplate } from "../data/layoutTemplates";
+import { getBrandPreset } from "../ci/brandPresets";
 
 type Action =
   | { type: "set-active-format"; formatId: string }
