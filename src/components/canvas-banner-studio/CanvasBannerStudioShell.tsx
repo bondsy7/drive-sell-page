@@ -380,10 +380,41 @@ const CanvasBannerStudioShell: React.FC = () => {
                         </TooltipTrigger>
                         <TooltipContent>Reframet das Bild für alle ausgewählten Formate nacheinander.</TooltipContent>
                       </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button size="sm" variant="outline" onClick={() => setVariantsOpen(true)} disabled={reframeBusy}>
+                            3 Varianten
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Erzeugt 3 Reframe-Varianten parallel — du wählst die beste.</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button size="sm" variant="ghost" onClick={() => setCropOpen(true)}>
+                            Manueller Crop
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Plan B: Bildausschnitt selbst wählen, ohne KI.</TooltipContent>
+                      </Tooltip>
                     </div>
                     {reframeBusy && (
                       <p className="text-[11px] text-muted-foreground">Reframe läuft… kann bis zu 30 s pro Format dauern.</p>
                     )}
+
+                    <ReframeHistoryStrip
+                      history={activeComposition.reframeHistory ?? []}
+                      current={activeComposition.backgroundImageUrl}
+                      onRollback={() => {
+                        actions.rollbackReframe();
+                        toast.success("Vorherige Version wiederhergestellt");
+                      }}
+                      onPick={(url) => {
+                        const prev = activeComposition.backgroundImageUrl;
+                        if (prev && prev !== url) actions.pushReframeHistory(prev);
+                        actions.setBackground(url);
+                      }}
+                      onClear={() => actions.clearReframeHistory()}
+                    />
                   </div>
                 )}
 
