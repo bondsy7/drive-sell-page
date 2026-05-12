@@ -109,6 +109,45 @@ export type Database = {
           },
         ]
       }
+      banner_templates: {
+        Row: {
+          brand_key: string | null
+          created_at: string
+          format_id: string
+          id: string
+          is_global: boolean
+          name: string
+          spec: Json
+          template_id: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          brand_key?: string | null
+          created_at?: string
+          format_id: string
+          id?: string
+          is_global?: boolean
+          name: string
+          spec?: Json
+          template_id: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          brand_key?: string | null
+          created_at?: string
+          format_id?: string
+          id?: string
+          is_global?: boolean
+          name?: string
+          spec?: Json
+          template_id?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       calendar_sync_configs: {
         Row: {
           access_token_encrypted: string | null
