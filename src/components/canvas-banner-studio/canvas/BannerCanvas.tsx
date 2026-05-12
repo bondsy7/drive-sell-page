@@ -83,6 +83,49 @@ function overlayRects(
   }
 }
 
+type CustomImageProps = {
+  layer: import("../state/types").BannerLayer;
+  formatScale: number;
+  nodeRef: (n: Konva.Node | null) => void;
+  onSelect: () => void;
+  onDragMove: (e: Konva.KonvaEventObject<DragEvent>) => void;
+  onDragEnd: (e: Konva.KonvaEventObject<DragEvent>) => void;
+  onResize: (patch: { width?: number; height?: number }) => void;
+};
+
+const CustomImage: React.FC<CustomImageProps> = ({ layer, formatScale, nodeRef, onSelect, onDragMove, onDragEnd, onResize }) => {
+  const img = useImage(layer.imageUrl);
+  if (!img) return null;
+  const baseW = layer.width ?? 200;
+  const baseH = layer.height ?? (img.naturalHeight / Math.max(1, img.naturalWidth)) * baseW;
+  const w = baseW * formatScale;
+  const h = baseH * formatScale;
+  return (
+    <KImage
+      ref={nodeRef as never}
+      image={img}
+      x={layer.x}
+      y={layer.y}
+      width={w}
+      height={h}
+      opacity={layer.opacity ?? 1}
+      cornerRadius={layer.borderRadius ?? 0}
+      draggable={layer.draggable}
+      onClick={onSelect}
+      onTap={onSelect}
+      onDragMove={onDragMove}
+      onDragEnd={onDragEnd}
+      onTransformEnd={(e) => {
+        const node = e.target as Konva.Image;
+        const sx = node.scaleX();
+        const sy = node.scaleY();
+        node.scaleX(1); node.scaleY(1);
+        onResize({ width: Math.round(baseW * sx), height: Math.round(baseH * sy) });
+      }}
+    />
+  );
+};
+
 const BannerCanvas: React.FC<BannerCanvasProps> = ({
   format, composition, textFields, showSafeArea, selectedLayerId,
   resolveColor, ci, ciContext, onSelectLayer, onLayerDrag, onLayerResize, stageRef, onSelectedLayerScreenChange,
