@@ -257,6 +257,15 @@ const CanvasBannerStudioShell: React.FC = () => {
           </div>
         </div>
 
+        {/* Schritt 0 — Fahrzeug-Verknüpfung */}
+        <VehicleBannerPicker
+          vehicleId={state.vehicleId}
+          projectTitle={state.projectTitle}
+          bannerProjectId={state.bannerProjectId}
+          onChangeVehicle={(v) => actions.setVehicle(v)}
+          onChangeTitle={(t) => actions.setProjectTitle(t)}
+        />
+
         {/* Step nav */}
         <div className="flex overflow-x-auto gap-2 pb-1 -mx-1 px-1">
           {STEPS.map((s) => {
