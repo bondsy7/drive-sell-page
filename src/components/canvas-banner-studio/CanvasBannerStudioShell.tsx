@@ -57,7 +57,7 @@ const SMALL_FORMATS = new Set(["g-medrect", "g-leader", "g-skyscraper"]);
 const CanvasBannerStudioShell: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { state, actions, activeComposition, activeFormat, resolveColor } = useCanvasBannerStore();
+  const { state, actions, activeComposition, activeFormat, resolveColor, canUndo, canRedo } = useCanvasBannerStore();
   const [step, setStep] = useState<Step>(1);
   const [previewMobileOpen, setPreviewMobileOpen] = useState(true);
   const stageRef = useRef<Konva.Stage | null>(null);
@@ -67,6 +67,56 @@ const CanvasBannerStudioShell: React.FC = () => {
   const [reframeBusy, setReframeBusy] = useState(false);
   const [variantsOpen, setVariantsOpen] = useState(false);
   const [cropOpen, setCropOpen] = useState(false);
+  const [selectedScreen, setSelectedScreen] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+
+  const selectedLayer = useMemo(
+    () => activeComposition.layers.find((l) => l.id === state.selectedLayerId),
+    [activeComposition.layers, state.selectedLayerId],
+  );
+  const selectedOverridden = useMemo(
+    () => (selectedLayer ? isLayerOverridden(selectedLayer, activeComposition, activeFormat) : false),
+    [selectedLayer, activeComposition, activeFormat],
+  );
+  const formatOverridden = useMemo(
+    () => isCompositionOverridden(activeComposition, activeFormat),
+    [activeComposition, activeFormat],
+  );
+
+  // Globale Tastatur-Shortcuts: Undo/Redo, Pfeile (move), Delete (hide), Esc (deselect).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      const tag = t?.tagName;
+      const editable = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (t?.isContentEditable ?? false);
+      const meta = e.metaKey || e.ctrlKey;
+
+      if (meta && (e.key === "z" || e.key === "Z")) {
+        e.preventDefault();
+        if (e.shiftKey) actions.redo(); else actions.undo();
+        return;
+      }
+      if (meta && e.key === "y") { e.preventDefault(); actions.redo(); return; }
+
+      if (editable) return;
+      const id = state.selectedLayerId;
+      if (!id) return;
+      const l = activeComposition.layers.find((x) => x.id === id);
+      if (!l) return;
+      const step = e.shiftKey ? 10 : 1;
+      if (e.key === "ArrowLeft") { e.preventDefault(); actions.patchLayer(id, { x: l.x - step }); }
+      else if (e.key === "ArrowRight") { e.preventDefault(); actions.patchLayer(id, { x: l.x + step }); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); actions.patchLayer(id, { y: l.y - step }); }
+      else if (e.key === "ArrowDown") { e.preventDefault(); actions.patchLayer(id, { y: l.y + step }); }
+      else if (e.key === "Escape") { e.preventDefault(); actions.selectLayer(undefined); }
+      else if (e.key === "Delete" || e.key === "Backspace") {
+        e.preventDefault();
+        actions.patchLayer(id, { visible: false });
+        actions.selectLayer(undefined);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [actions, state.selectedLayerId, activeComposition.layers]);
 
   // Persistence: autosave drafts to banner_projects.
   useBannerProject({
