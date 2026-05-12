@@ -46,6 +46,12 @@ export type BannerLayer = {
   align?: TextAlign;
   visible: boolean;
   draggable: boolean;
+  /** Auto-shrink fontSize until text fits within `width` and `maxLines`. Default true (false for legal). */
+  autoShrink?: boolean;
+  /** Max wrap lines tolerated before fontSize is reduced. */
+  maxLines?: number;
+  /** Lower bound for shrink-to-fit. */
+  minFontSize?: number;
 };
 
 export type BannerComposition = {
@@ -57,6 +63,8 @@ export type BannerComposition = {
   selectedTemplateId: string;
   logoUrl?: string;
   layers: BannerLayer[];
+  /** Global per-format scaling multiplier for fontSize and logo width (default 1). */
+  scale?: number;
 };
 
 export type StudioState = {

@@ -9,6 +9,7 @@ import type {
   BannerTextFields,
   OverlayDirection,
 } from "../state/types";
+import { effectiveFontSize, FONT_FAMILY } from "../canvas/textFit";
 
 type ExportFormat = "png" | "jpg" | "webp";
 
@@ -85,11 +86,11 @@ function drawTextLayer(
   layer: BannerLayer,
   text: string,
   color: string,
+  fontSize: number,
 ) {
-  const fontSize = layer.fontSize ?? 24;
   const weight = (layer.fontWeight ?? 400) >= 600 ? "700" : "400";
   ctx.save();
-  ctx.font = `${weight} ${fontSize}px Inter, Manrope, system-ui, sans-serif`;
+  ctx.font = `${weight} ${fontSize}px ${FONT_FAMILY}`;
   ctx.fillStyle = color;
   ctx.textBaseline = "top";
   if (layer.type !== "legal") {
@@ -142,19 +143,23 @@ export async function renderCompositionToDataURL(
 
   const logo = await loadImage(composition.logoUrl);
 
+  const formatScale = composition.scale ?? 1;
+
   for (const layer of composition.layers) {
     if (!layer.visible) continue;
     if (layer.type === "image" || layer.type === "overlay") continue;
     if (layer.type === "logo") {
       if (!logo) continue;
-      const w = layer.width ?? format.width * 0.18;
+      const baseW = layer.width ?? format.width * 0.18;
+      const w = baseW * formatScale;
       const ratio = logo.naturalHeight / logo.naturalWidth || 0.4;
       ctx.drawImage(logo, layer.x, layer.y, w, w * ratio);
       continue;
     }
     const text = layer.field ? textFields[layer.field] : "";
     if (!text) continue;
-    drawTextLayer(ctx, layer, text, resolveColor(layer.color));
+    const fontSize = effectiveFontSize(layer, text, formatScale);
+    drawTextLayer(ctx, layer, text, resolveColor(layer.color), fontSize);
   }
 
   const mime = type === "png" ? "image/png" : type === "jpg" ? "image/jpeg" : "image/webp";

@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Stage, Layer, Rect, Image as KImage, Text as KText, Group } from "react-konva";
+import { Stage, Layer, Rect, Image as KImage, Text as KText, Group, Transformer, Line } from "react-konva";
 import type Konva from "konva";
 import type { BannerComposition, BannerLayer, OverlayDirection } from "../state/types";
 import type { BannerFormat, BannerTextFields } from "../state/types";
+import { effectiveFontSize, FONT_FAMILY } from "./textFit";
 
 interface BannerCanvasProps {
   format: BannerFormat;
@@ -13,6 +14,7 @@ interface BannerCanvasProps {
   resolveColor: (token?: string) => string;
   onSelectLayer?: (id?: string) => void;
   onLayerDrag?: (id: string, x: number, y: number) => void;
+  onLayerResize?: (id: string, patch: { width?: number; height?: number; fontSize?: number }) => void;
   stageRef?: React.MutableRefObject<Konva.Stage | null>;
 }
 
@@ -75,11 +77,16 @@ function overlayRects(
 
 const BannerCanvas: React.FC<BannerCanvasProps> = ({
   format, composition, textFields, showSafeArea, selectedLayerId,
-  resolveColor, onSelectLayer, onLayerDrag, stageRef,
+  resolveColor, onSelectLayer, onLayerDrag, onLayerResize, stageRef,
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const internalStageRef = useRef<Konva.Stage | null>(null);
+  const transformerRef = useRef<Konva.Transformer | null>(null);
+  const nodeRefs = useRef<Record<string, Konva.Node | null>>({});
   const [scale, setScale] = useState(1);
+  const [snapGuides, setSnapGuides] = useState<{ vCenter: boolean; hCenter: boolean }>({ vCenter: false, hCenter: false });
+
+  const formatScale = composition.scale ?? 1;
 
   useEffect(() => {
     const el = containerRef.current;
@@ -112,6 +119,52 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
   const refSetter = (s: Konva.Stage | null) => {
     internalStageRef.current = s;
     if (stageRef) stageRef.current = s;
+  };
+
+  // Attach Transformer to the currently selected layer node.
+  useEffect(() => {
+    const tr = transformerRef.current;
+    if (!tr) return;
+    if (!selectedLayerId) {
+      tr.nodes([]);
+      tr.getLayer()?.batchDraw();
+      return;
+    }
+    const node = nodeRefs.current[selectedLayerId];
+    if (node) {
+      const layer = composition.layers.find((l) => l.id === selectedLayerId);
+      if (layer?.type === "logo") {
+        tr.enabledAnchors(["top-left", "top-right", "bottom-left", "bottom-right"]);
+        tr.keepRatio(true);
+        tr.rotateEnabled(false);
+      } else {
+        tr.enabledAnchors(["middle-left", "middle-right"]);
+        tr.keepRatio(false);
+        tr.rotateEnabled(false);
+      }
+      tr.nodes([node]);
+      tr.getLayer()?.batchDraw();
+    } else {
+      tr.nodes([]);
+    }
+  }, [selectedLayerId, composition.layers]);
+
+  // Snap helpers
+  const SNAP_TOL = 8; // px in stage coords
+  const handleDragMove = (l: BannerLayer, e: Konva.KonvaEventObject<DragEvent>) => {
+    const node = e.target;
+    let x = node.x();
+    let y = node.y();
+    const w = (l.width ?? 0);
+    const cx = format.width / 2 - w / 2;
+    const showV = Math.abs(x - cx) < SNAP_TOL;
+    if (showV) { x = cx; node.x(x); }
+    // horizontal center for whole banner irrelevant; we only snap layer center to safe area edges
+    const showH = false;
+    setSnapGuides((g) => (g.vCenter === showV && g.hCenter === showH ? g : { vCenter: showV, hCenter: showH }));
+  };
+  const handleDragEndCommon = () => {
+    setSnapGuides({ vCenter: false, hCenter: false });
   };
 
   return (
@@ -147,27 +200,39 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
                 const isSelected = l.id === selectedLayerId;
                 if (l.type === "logo") {
                   if (!logo) return null;
-                  const w = l.width ?? format.width * 0.18;
+                  const baseW = l.width ?? format.width * 0.18;
+                  const w = baseW * formatScale;
                   const ratio = logo.naturalHeight / logo.naturalWidth || 0.4;
                   const h = w * ratio;
                   return (
-                    <Group
+                    <KImage
                       key={l.id}
+                      ref={(n) => { nodeRefs.current[l.id] = n; }}
+                      image={logo}
                       x={l.x}
                       y={l.y}
+                      width={w}
+                      height={h}
                       draggable={l.draggable}
                       onClick={() => onSelectLayer?.(l.id)}
                       onTap={() => onSelectLayer?.(l.id)}
-                      onDragEnd={(e) => onLayerDrag?.(l.id, e.target.x(), e.target.y())}
-                    >
-                      <KImage image={logo} width={w} height={h} />
-                      {isSelected && <Rect width={w} height={h} stroke="#22d3ee" strokeWidth={2 / scale} dash={[6 / scale, 4 / scale]} />}
-                    </Group>
+                      onDragMove={(e) => handleDragMove(l, e)}
+                      onDragEnd={(e) => { handleDragEndCommon(); onLayerDrag?.(l.id, e.target.x(), e.target.y()); }}
+                      onTransformEnd={(e) => {
+                        const node = e.target as Konva.Image;
+                        const sx = node.scaleX();
+                        const newWBase = Math.max(20, (baseW * sx));
+                        node.scaleX(1); node.scaleY(1);
+                        onLayerResize?.(l.id, { width: Math.round(newWBase) });
+                      }}
+                    />
                   );
                 }
                 const text = l.field ? textFields[l.field] : "";
                 if (!text) return null;
                 const color = resolveColor(l.color);
+                const effFont = effectiveFontSize(l, text, formatScale);
+                const isShrunk = effFont < (l.fontSize ?? 24) * formatScale - 0.5;
                 return (
                   <Group
                     key={l.id}
@@ -176,34 +241,69 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
                     draggable={l.draggable}
                     onClick={() => onSelectLayer?.(l.id)}
                     onTap={() => onSelectLayer?.(l.id)}
-                    onDragEnd={(e) => onLayerDrag?.(l.id, e.target.x(), e.target.y())}
+                    onDragMove={(e) => handleDragMove(l, e)}
+                    onDragEnd={(e) => { handleDragEndCommon(); onLayerDrag?.(l.id, e.target.x(), e.target.y()); }}
                   >
                     <KText
+                      ref={(n) => { nodeRefs.current[l.id] = n; }}
                       text={text}
                       width={l.width}
-                      fontSize={l.fontSize}
+                      fontSize={effFont}
                       fontStyle={l.fontWeight && l.fontWeight >= 600 ? "bold" : "normal"}
-                      fontFamily="Inter, Manrope, system-ui, sans-serif"
+                      fontFamily={FONT_FAMILY}
                       fill={color}
                       align={l.align ?? "left"}
                       lineHeight={1.2}
                       shadowColor="rgba(0,0,0,0.45)"
                       shadowBlur={l.type === "legal" ? 0 : 8}
                       shadowOpacity={l.type === "legal" ? 0 : 1}
+                      onTransformEnd={(e) => {
+                        const node = e.target as Konva.Text;
+                        const sx = node.scaleX();
+                        const newWidth = Math.max(40, (l.width ?? 100) * sx);
+                        node.scaleX(1); node.scaleY(1);
+                        node.width(newWidth);
+                        onLayerResize?.(l.id, { width: Math.round(newWidth) });
+                      }}
                     />
-                    {isSelected && (
-                      <Rect
-                        width={l.width}
-                        height={(l.fontSize ?? 16) * 1.4}
-                        stroke="#22d3ee"
-                        strokeWidth={2 / scale}
-                        dash={[6 / scale, 4 / scale]}
+                    {isSelected && isShrunk && (
+                      <KText
+                        text={`auto: ${effFont}px`}
+                        x={0}
+                        y={-14}
+                        fontSize={11}
+                        fontFamily={FONT_FAMILY}
+                        fill="#22d3ee"
                       />
                     )}
                   </Group>
                 );
               })}
+
+            <Transformer
+              ref={transformerRef}
+              borderStroke="#22d3ee"
+              anchorStroke="#22d3ee"
+              anchorFill="#0b1220"
+              anchorSize={10}
+              ignoreStroke
+              boundBoxFunc={(oldBox, newBox) => {
+                if (newBox.width < 30 || newBox.height < 16) return oldBox;
+                return newBox;
+              }}
+            />
           </Layer>
+
+          {(snapGuides.vCenter) && (
+            <Layer listening={false}>
+              <Line
+                points={[format.width / 2, 0, format.width / 2, format.height]}
+                stroke="#22d3ee"
+                strokeWidth={1 / scale}
+                dash={[6 / scale, 4 / scale]}
+              />
+            </Layer>
+          )}
 
           {showSafeArea && (
             <Layer listening={false}>

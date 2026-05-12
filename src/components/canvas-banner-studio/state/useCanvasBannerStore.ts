@@ -25,6 +25,7 @@ type Action =
   | { type: "toggle-safe-area" }
   | { type: "reorder-layer"; formatId: string; layerId: string; direction: "forward" | "backward" }
   | { type: "reset-format-layout"; formatId: string }
+  | { type: "set-format-scale"; formatId: string; scale: number }
   | { type: "set-vehicle"; vehicleId: string | null | undefined }
   | { type: "set-banner-project-id"; id: string | undefined }
   | { type: "set-project-title"; title: string }
@@ -155,6 +156,14 @@ function reducer(state: StudioState, action: Action): StudioState {
         compositions: { ...state.compositions, [action.formatId]: { ...c, layers } },
       };
     }
+    case "set-format-scale": {
+      const c = ensureComposition(state, action.formatId);
+      const scale = Math.max(0.5, Math.min(1.6, action.scale));
+      return {
+        ...state,
+        compositions: { ...state.compositions, [action.formatId]: { ...c, scale } },
+      };
+    }
     case "set-vehicle":
       return { ...state, vehicleId: action.vehicleId };
     case "set-banner-project-id":
@@ -201,6 +210,8 @@ export function useCanvasBannerStore() {
         dispatch({ type: "reorder-layer", formatId, layerId, direction }),
       resetLayout: (formatId = state.activeFormatId) =>
         dispatch({ type: "reset-format-layout", formatId }),
+      setFormatScale: (scale: number, formatId = state.activeFormatId) =>
+        dispatch({ type: "set-format-scale", formatId, scale }),
       setVehicle: (vehicleId: string | null | undefined) =>
         dispatch({ type: "set-vehicle", vehicleId }),
       setBannerProjectId: (id: string | undefined) =>
