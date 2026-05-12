@@ -9,6 +9,7 @@ export type HubAction =
   | 'pdf-landing'     // PDF → Landing Page
   | 'manual-landing'  // Landing Page ohne PDF
   | 'banner'          // Banner Generator
+  | 'canvas-banner-studio' // Deterministischer Canvas-Banner-Editor
   | 'video'           // Video Erstellung
   | 'damage-repair'    // Schadensreparatur – KI repariert Schäden auf Fahrzeugbildern
   | 'damage-analysis'  // Schadensanalyse – KI bewertet Schäden + erstellt Bericht
@@ -54,6 +55,13 @@ const TILES: ActionTile[] = [
     icon: <Image className="w-7 h-7" />,
     title: 'Banner Generator',
     description: 'Werbebanner für Social Media & Anzeigen aus Fahrzeugdaten erstellen.',
+  },
+  {
+    id: 'canvas-banner-studio',
+    icon: <Layout className="w-7 h-7" />,
+    title: 'Canvas Banner Studio',
+    description: 'Exakte Multi-Format-Banner mit editierbaren Text-, Logo- und Pflichtangaben-Ebenen. KI nur fürs Bild.',
+    badge: 'NEU',
   },
   {
     id: 'video',
