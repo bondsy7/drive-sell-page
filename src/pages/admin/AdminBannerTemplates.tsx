@@ -132,7 +132,7 @@ export default function AdminBannerTemplates() {
     if (error) {
       toast({ title: "Fehler beim Laden", description: error.message });
     } else {
-      setRows((data ?? []) as Row[]);
+      setRows((data ?? []) as unknown as Row[]);
     }
     setLoading(false);
   };
