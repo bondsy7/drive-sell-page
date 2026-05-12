@@ -179,7 +179,6 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
 
   // Snap: Banner-Mitte (vertikal/horizontal) + Safe-Area-Kanten.
   const SNAP_TOL = 8;
-  const safePad = Math.round(Math.min(format.width, format.height) * 0.05);
   const handleDragMove = (l: BannerLayer, e: Konva.KonvaEventObject<DragEvent>) => {
     const node = e.target;
     let x = node.x();
