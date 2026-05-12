@@ -46,6 +46,7 @@ const SMALL_FORMATS = new Set(["g-medrect", "g-leader", "g-skyscraper"]);
 
 const CanvasBannerStudioShell: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { state, actions, activeComposition, activeFormat, resolveColor } = useCanvasBannerStore();
   const [step, setStep] = useState<Step>(1);
   const [previewMobileOpen, setPreviewMobileOpen] = useState(true);
@@ -54,6 +55,45 @@ const CanvasBannerStudioShell: React.FC = () => {
   const [zipBusy, setZipBusy] = useState(false);
   const [aiBusy, setAiBusy] = useState(false);
   const [reframeBusy, setReframeBusy] = useState(false);
+
+  // Persistence: autosave drafts to banner_projects.
+  useBannerProject({
+    state,
+    onProjectIdAssigned: (id) => actions.setBannerProjectId(id),
+  });
+
+  // Vehicle-driven prefill (runs once when a vehicle is picked).
+  const { data: vehicles = [] } = useVehicles();
+  const { getLogoForMake } = useVehicleMakes();
+  const lastPrefilledRef = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (state.vehicleId === lastPrefilledRef.current) return;
+    lastPrefilledRef.current = state.vehicleId;
+    if (!state.vehicleId) return;
+    const v = vehicles.find((x) => x.id === state.vehicleId);
+    if (!v) return;
+    const { textFields, manufacturerLogoUrl } = buildPrefillFromVehicle(v, { getLogoForMake });
+    (Object.entries(textFields) as [BannerTextFieldKey, string][]).forEach(([k, val]) => {
+      if (val) actions.setText(k, val);
+    });
+    if (manufacturerLogoUrl) actions.setLogo(manufacturerLogoUrl);
+    toast.success("Texte aus Fahrzeug übernommen");
+  }, [state.vehicleId, vehicles, getLogoForMake, actions]);
+
+  const persistExportedBlob = async (blob: Blob, filename: string, contentType: string) => {
+    if (!user) return;
+    const publicUrl = await uploadBannerToStorage({
+      userId: user.id,
+      vehicleId: state.vehicleId ?? null,
+      blob,
+      filename,
+      contentType,
+    });
+    if (publicUrl) {
+      toast.success(state.vehicleId ? "Im Fahrzeug-Ordner gespeichert" : "Im Banner-Ordner gespeichert");
+    }
+  };
+
 
   const handleReframeActive = async () => {
     const src = activeComposition.backgroundImageUrl;
