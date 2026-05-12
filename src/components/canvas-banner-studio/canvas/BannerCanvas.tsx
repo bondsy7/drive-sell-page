@@ -220,6 +220,16 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
           )}
         </Stage>
       </div>
+      {!bg && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <div className="text-center px-6 py-4 rounded-lg bg-background/70 backdrop-blur-sm border border-dashed border-border max-w-[80%]">
+            <div className="text-sm font-semibold text-foreground">Noch kein Hintergrundbild</div>
+            <div className="text-xs text-muted-foreground mt-1">
+              Wechsle zu Schritt 2 „Bild" und lade ein Foto hoch oder lasse es per KI reframen.
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

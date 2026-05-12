@@ -129,7 +129,8 @@ const makeBaseLayers = (w: number, h: number): BannerLayer[] => [
   },
 ];
 
-const padding = (w: number, h: number) => Math.max(8, Math.round(Math.min(w, h) * 0.04));
+// Match the safe-area padding (5% of min dimension) used by LegalCheck & BannerCanvas
+const padding = (w: number, h: number) => Math.max(10, Math.round(Math.min(w, h) * 0.05));
 
 const place = (
   layers: BannerLayer[],

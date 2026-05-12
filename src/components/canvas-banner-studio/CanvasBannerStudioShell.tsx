@@ -3,6 +3,7 @@ import type Konva from "konva";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Download, Eye, EyeOff, Package, Sparkles, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 
 import AppHeader from "@/components/AppHeader";
@@ -165,6 +166,7 @@ const CanvasBannerStudioShell: React.FC = () => {
   const isSmall = SMALL_FORMATS.has(activeFormat.id);
 
   return (
+    <TooltipProvider delayDuration={200}>
     <div className="min-h-screen bg-background">
       <AppHeader />
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
@@ -259,17 +261,27 @@ const CanvasBannerStudioShell: React.FC = () => {
                       Erweitert das Bild generativ auf das Zielformat statt es zu beschneiden.
                     </p>
                     <div className="grid grid-cols-2 gap-2">
-                      <Button size="sm" variant="outline" onClick={handleReframeActive} disabled={reframeBusy}>
-                        Aktives Format
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={handleReframeAll}
-                        disabled={reframeBusy || state.selectedFormatIds.length < 2}
-                      >
-                        Alle ({state.selectedFormatIds.length})
-                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button size="sm" variant="outline" onClick={handleReframeActive} disabled={reframeBusy}>
+                            Aktives Format
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Erweitert das Bild generativ auf das aktuell gewählte Zielformat.</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={handleReframeAll}
+                            disabled={reframeBusy || state.selectedFormatIds.length < 2}
+                          >
+                            Alle ({state.selectedFormatIds.length})
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Reframet das Bild für alle ausgewählten Formate nacheinander.</TooltipContent>
+                      </Tooltip>
                     </div>
                     {reframeBusy && (
                       <p className="text-[11px] text-muted-foreground">Reframe läuft… kann bis zu 30 s pro Format dauern.</p>
@@ -320,16 +332,26 @@ const CanvasBannerStudioShell: React.FC = () => {
                   >
                     Sicherheitsbereich {state.showSafeArea ? "ausblenden" : "anzeigen"}
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleAiSuggest}
-                    disabled={aiBusy || !activeComposition.backgroundImageUrl}
-                    title={!activeComposition.backgroundImageUrl ? "Bitte zuerst Hintergrundbild hochladen" : "KI-Layout-Vorschlag basierend auf dem Hintergrundbild"}
-                  >
-                    <Wand2 className="w-3.5 h-3.5 mr-1" />
-                    {aiBusy ? "Analysiere…" : "KI-Layout-Vorschlag"}
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleAiSuggest}
+                          disabled={aiBusy || !activeComposition.backgroundImageUrl}
+                        >
+                          <Wand2 className="w-3.5 h-3.5 mr-1" />
+                          {aiBusy ? "Analysiere…" : "KI-Layout-Vorschlag"}
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {!activeComposition.backgroundImageUrl
+                        ? "Bitte zuerst Hintergrundbild hochladen."
+                        : "Analysiert das Bild und schlägt eine passende Anordnung von Headline, Preis, CTA und Logo vor."}
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
                 <LayerOrderControls
                   selectedLayerId={state.selectedLayerId}
@@ -431,6 +453,7 @@ const CanvasBannerStudioShell: React.FC = () => {
         </div>
       </div>
     </div>
+    </TooltipProvider>
   );
 };
 
