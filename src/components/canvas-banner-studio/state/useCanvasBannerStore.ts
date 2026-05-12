@@ -402,7 +402,7 @@ export function useCanvasBannerStore() {
       undo: () => dispatch({ type: "undo" }),
       redo: () => dispatch({ type: "redo" }),
     }),
-    [state.activeFormatId],
+    [state.activeFormatId, state.selectedFormatIds],
   );
 
   const ciColors = state.ci?.colors;
