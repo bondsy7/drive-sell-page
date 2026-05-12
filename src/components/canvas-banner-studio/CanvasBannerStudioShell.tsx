@@ -399,7 +399,10 @@ const CanvasBannerStudioShell: React.FC = () => {
             userId={user?.id}
             onApplyBrandPreset={actions.applyBrandPreset}
             onPatchCi={actions.setCi}
-            onSetLogo={(url) => actions.setLogo(url)}
+            onSetLogo={(url, scope) => actions.setLogo(url, scope ?? (applyLogoToAll ? "all" : "current"))}
+            selectedFormatsCount={state.selectedFormatIds.length}
+            applyLogoToAll={applyLogoToAll}
+            onToggleApplyLogoToAll={setApplyLogoToAll}
           />
         )}
         {/* Step nav */}
