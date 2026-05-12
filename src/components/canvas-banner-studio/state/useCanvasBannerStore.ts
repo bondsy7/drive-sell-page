@@ -359,6 +359,10 @@ export function useCanvasBannerStore() {
         dispatch({ type: "set-logo", formatId, url }),
       patchLayer: (layerId: string, patch: Partial<BannerLayer>, formatId = state.activeFormatId) =>
         dispatch({ type: "patch-layer", formatId, layerId, patch }),
+      addLayer: (layer: BannerLayer, formatId = state.activeFormatId) =>
+        dispatch({ type: "add-layer", formatId, layer }),
+      removeLayer: (layerId: string, formatId = state.activeFormatId) =>
+        dispatch({ type: "remove-layer", formatId, layerId }),
       selectLayer: (layerId?: string) => dispatch({ type: "select-layer", layerId }),
       toggleSafeArea: () => dispatch({ type: "toggle-safe-area" }),
       reorderLayer: (layerId: string, direction: "forward" | "backward", formatId = state.activeFormatId) =>
