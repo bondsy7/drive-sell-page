@@ -39,6 +39,9 @@ const CanvasBannerStudioShell: React.FC = () => {
   const [previewMobileOpen, setPreviewMobileOpen] = useState(true);
   const stageRef = useRef<Konva.Stage | null>(null);
 
+  const [zipBusy, setZipBusy] = useState(false);
+  const [aiBusy, setAiBusy] = useState(false);
+
   const handleExport = (type: ExportFormat) => {
     const stage = stageRef.current;
     if (!stage) {
@@ -52,6 +55,60 @@ const CanvasBannerStudioShell: React.FC = () => {
     } catch (e) {
       console.error(e);
       toast.error("Export fehlgeschlagen.");
+    }
+  };
+
+  const handleZipExport = async (type: ExportFormat) => {
+    if (state.selectedFormatIds.length === 0) return;
+    setZipBusy(true);
+    try {
+      await exportAllAsZip(state, state.textFields, type);
+      toast.success(`${state.selectedFormatIds.length} Banner als ZIP exportiert`);
+    } catch (e) {
+      console.error(e);
+      toast.error("ZIP-Export fehlgeschlagen.");
+    } finally {
+      setZipBusy(false);
+    }
+  };
+
+  const handleAiSuggest = async () => {
+    const url = activeComposition.backgroundImageUrl;
+    if (!url || !url.startsWith("data:")) {
+      toast.error("Lade zuerst ein Hintergrundbild hoch.");
+      return;
+    }
+    setAiBusy(true);
+    try {
+      const s = await suggestLayoutFromImage(url);
+      // Apply overlay
+      actions.setOverlay(s.recommendedOverlay, activeComposition.overlayStrength || 50);
+      // Map positions for headline/price/cta/logo using estimated sizes
+      const f = activeFormat;
+      const layerById = (id: string) => activeComposition.layers.find((l) => l.id === id);
+      const map: Record<string, { id: string; w: number; h: number }> = {
+        headline: { id: "headline", w: Math.round(f.width * 0.7), h: Math.round((layerById("headline")?.fontSize ?? 40) * 1.4) },
+        price: { id: "price", w: Math.round(f.width * 0.55), h: Math.round((layerById("price")?.fontSize ?? 40) * 1.4) },
+        cta: { id: "cta", w: Math.round(f.width * 0.45), h: Math.round((layerById("cta")?.fontSize ?? 28) * 1.4) },
+        logo: { id: "logo", w: Math.round(f.width * 0.18), h: Math.round(f.width * 0.18 * 0.4) },
+      };
+      const positions: Record<string, typeof s.headlinePosition> = {
+        headline: s.headlinePosition,
+        price: s.pricePosition,
+        cta: s.ctaPosition,
+        logo: s.logoPosition,
+      };
+      for (const k of Object.keys(map)) {
+        const m = map[k];
+        const coords = positionToCoords(positions[k], f.width, f.height, m.w, m.h);
+        actions.patchLayer(m.id, coords);
+      }
+      toast.success("KI-Layout angewendet" + (s.reason ? ` · ${s.reason}` : ""));
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message ?? "KI-Vorschlag fehlgeschlagen");
+    } finally {
+      setAiBusy(false);
     }
   };
 
