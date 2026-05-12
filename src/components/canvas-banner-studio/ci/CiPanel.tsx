@@ -27,7 +27,11 @@ interface CiPanelProps {
   userId?: string;
   onApplyBrandPreset: (brandKey: string) => void;
   onPatchCi: (patch: Partial<CiState>) => void;
-  onSetLogo: (url?: string) => void;
+  onSetLogo: (url?: string, scope?: "all" | "current") => void;
+  /** Anzahl ausgewählter Formate (für UI-Hinweis). */
+  selectedFormatsCount?: number;
+  applyLogoToAll: boolean;
+  onToggleApplyLogoToAll: (v: boolean) => void;
 }
 
 const LOGO_MODES: { value: LogoMode; label: string }[] = [
