@@ -65,6 +65,10 @@ export type BannerComposition = {
   layers: BannerLayer[];
   /** Global per-format scaling multiplier for fontSize and logo width (default 1). */
   scale?: number;
+  /** Stack of previous background image URLs for this format (oldest → newest). Used for rollback. */
+  reframeHistory?: string[];
+  /** Original master/source image used as the baseline for re-reframing this format. */
+  masterImageUrl?: string;
 };
 
 export type StudioState = {
