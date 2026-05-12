@@ -168,6 +168,41 @@ function reducer(state: StudioState, action: Action): StudioState {
         compositions: { ...state.compositions, [action.formatId]: { ...c, scale } },
       };
     }
+    case "set-master-image": {
+      const c = ensureComposition(state, action.formatId);
+      return {
+        ...state,
+        compositions: { ...state.compositions, [action.formatId]: { ...c, masterImageUrl: action.url } },
+      };
+    }
+    case "push-reframe-history": {
+      const c = ensureComposition(state, action.formatId);
+      const next = [...(c.reframeHistory ?? []), action.url].slice(-8); // keep last 8
+      return {
+        ...state,
+        compositions: { ...state.compositions, [action.formatId]: { ...c, reframeHistory: next } },
+      };
+    }
+    case "rollback-reframe": {
+      const c = ensureComposition(state, action.formatId);
+      const hist = [...(c.reframeHistory ?? [])];
+      if (hist.length === 0) return state;
+      const prev = hist.pop()!;
+      return {
+        ...state,
+        compositions: {
+          ...state.compositions,
+          [action.formatId]: { ...c, backgroundImageUrl: prev, reframeHistory: hist },
+        },
+      };
+    }
+    case "clear-reframe-history": {
+      const c = ensureComposition(state, action.formatId);
+      return {
+        ...state,
+        compositions: { ...state.compositions, [action.formatId]: { ...c, reframeHistory: [] } },
+      };
+    }
     case "set-vehicle":
       return { ...state, vehicleId: action.vehicleId };
     case "set-banner-project-id":
