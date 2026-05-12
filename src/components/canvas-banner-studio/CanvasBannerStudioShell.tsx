@@ -17,6 +17,7 @@ import TextFieldsPanel from "./controls/TextFieldsPanel";
 import LayoutTemplatePicker from "./controls/LayoutTemplatePicker";
 import LayerOrderControls from "./controls/LayerOrderControls";
 import LogoPanel from "./controls/LogoPanel";
+import LegalCheck from "./controls/LegalCheck";
 import { buildFilename, downloadDataUrl, exportStage, type ExportFormat } from "./export/exportCanvas";
 import { exportAllAsZip } from "./export/zipExport";
 import { positionToCoords, suggestLayoutFromImage } from "./ai/layoutSuggestClient";
