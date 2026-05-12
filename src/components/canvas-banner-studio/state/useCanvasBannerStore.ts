@@ -345,6 +345,8 @@ export function useCanvasBannerStore() {
         dispatch({ type: "reorder-layer", formatId, layerId, direction }),
       resetLayout: (formatId = state.activeFormatId) =>
         dispatch({ type: "reset-format-layout", formatId }),
+      resetLayer: (layerId: string, formatId = state.activeFormatId) =>
+        dispatch({ type: "reset-layer", formatId, layerId }),
       setFormatScale: (scale: number, formatId = state.activeFormatId) =>
         dispatch({ type: "set-format-scale", formatId, scale }),
       setMasterImage: (url: string | undefined, formatId = state.activeFormatId) =>
