@@ -228,8 +228,27 @@ function reducer(state: StudioState, action: Action): StudioState {
       return { ...state, bannerProjectId: action.id };
     case "set-project-title":
       return { ...state, projectTitle: action.title };
+    case "set-ci": {
+      const cur = state.ci ?? buildDefaultCi();
+      return { ...state, ci: { ...cur, ...action.patch, colors: { ...cur.colors, ...(action.patch.colors ?? {}) } } };
+    }
+    case "apply-brand-preset": {
+      const p = getBrandPreset(action.brandKey);
+      const cur = state.ci ?? buildDefaultCi();
+      return {
+        ...state,
+        ci: {
+          ...cur,
+          brandKey: p.key,
+          fontDisplay: p.fonts.display,
+          fontBody: p.fonts.body,
+          googleFonts: p.googleFonts,
+          colors: { ...p.colors },
+        },
+      };
+    }
     case "hydrate":
-      return { ...state, ...action.state };
+      return { ...state, ...action.state, ci: action.state.ci ?? state.ci ?? buildDefaultCi() };
     default:
       return state;
   }
