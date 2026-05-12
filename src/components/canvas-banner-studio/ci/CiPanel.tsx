@@ -167,7 +167,7 @@ const CiPanel: React.FC<CiPanelProps> = ({
         <Label className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1">
           <ImageIcon className="w-3 h-3" /> Logo-Quelle
         </Label>
-        <div className="grid grid-cols-3 gap-1">
+        <div className="grid grid-cols-2 gap-1">
           <button
             type="button"
             onClick={() => manufacturerLogoUrl && onSetLogo(manufacturerLogoUrl)}
@@ -194,6 +194,18 @@ const CiPanel: React.FC<CiPanelProps> = ({
           </button>
           <button
             type="button"
+            onClick={() => customLogoUrl && onSetLogo(customLogoUrl)}
+            disabled={!customLogoUrl}
+            className={`px-2 py-1.5 rounded-md border text-xs disabled:opacity-40 ${
+              usingCustom
+                ? "border-accent bg-accent/10 text-foreground font-semibold"
+                : "border-border text-muted-foreground hover:border-accent/40"
+            }`}
+          >
+            Eigenes
+          </button>
+          <button
+            type="button"
             onClick={() => onSetLogo(undefined)}
             className={`px-2 py-1.5 rounded-md border text-xs ${
               !currentLogoUrl
@@ -204,9 +216,38 @@ const CiPanel: React.FC<CiPanelProps> = ({
             Kein Logo
           </button>
         </div>
+
+        {/* Custom logo upload */}
+        <div className="flex items-center gap-2 pt-1">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/svg+xml"
+            className="hidden"
+            onChange={(e) => handleUpload(e.target.files?.[0])}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading || !userId}
+            className="flex-1 inline-flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md border border-dashed border-border text-xs text-muted-foreground hover:border-accent/40 hover:text-foreground disabled:opacity-50"
+          >
+            {uploading
+              ? <><Loader2 className="w-3 h-3 animate-spin" /> Hochladen…</>
+              : <><Upload className="w-3 h-3" /> Eigenes Logo hochladen (SVG/PNG, max 5 MB)</>}
+          </button>
+          {customLogoUrl && (
+            <img
+              src={customLogoUrl}
+              alt="Eigenes Logo"
+              className="h-8 w-8 object-contain rounded border border-border bg-background"
+            />
+          )}
+        </div>
+
         {!dealerLogoUrl && (
           <p className="text-[11px] text-muted-foreground">
-            Händler-Logo fehlt — bitte im Profil ein Logo hinterlegen.
+            Händler-Logo fehlt — du kannst stattdessen ein eigenes Logo hochladen oder im Profil hinterlegen.
           </p>
         )}
       </div>
