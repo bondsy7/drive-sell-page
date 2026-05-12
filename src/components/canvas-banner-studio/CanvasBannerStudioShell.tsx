@@ -261,17 +261,27 @@ const CanvasBannerStudioShell: React.FC = () => {
                       Erweitert das Bild generativ auf das Zielformat statt es zu beschneiden.
                     </p>
                     <div className="grid grid-cols-2 gap-2">
-                      <Button size="sm" variant="outline" onClick={handleReframeActive} disabled={reframeBusy}>
-                        Aktives Format
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={handleReframeAll}
-                        disabled={reframeBusy || state.selectedFormatIds.length < 2}
-                      >
-                        Alle ({state.selectedFormatIds.length})
-                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button size="sm" variant="outline" onClick={handleReframeActive} disabled={reframeBusy}>
+                            Aktives Format
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Erweitert das Bild generativ auf das aktuell gewählte Zielformat.</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={handleReframeAll}
+                            disabled={reframeBusy || state.selectedFormatIds.length < 2}
+                          >
+                            Alle ({state.selectedFormatIds.length})
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Reframet das Bild für alle ausgewählten Formate nacheinander.</TooltipContent>
+                      </Tooltip>
                     </div>
                     {reframeBusy && (
                       <p className="text-[11px] text-muted-foreground">Reframe läuft… kann bis zu 30 s pro Format dauern.</p>
