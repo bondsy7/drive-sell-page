@@ -7,9 +7,13 @@ import type {
   BannerFormat,
   BannerLayer,
   BannerTextFields,
+  CiState,
   OverlayDirection,
 } from "../state/types";
-import { effectiveFontSize, FONT_FAMILY } from "../canvas/textFit";
+import { effectiveFontSize, FONT_FAMILY as DEFAULT_FONT_FAMILY } from "../canvas/textFit";
+import { resolveShortcodes } from "../ci/shortcodes";
+import type { CiContext } from "../ci/profileSources";
+import { recolorSvg } from "../ci/svgRecolor";
 
 type ExportFormat = "png" | "jpg" | "webp";
 
