@@ -1,7 +1,7 @@
 import React, { useRef, useState } from "react";
 import type Konva from "konva";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Download, Eye, EyeOff, Sparkles } from "lucide-react";
+import { ArrowLeft, Download, Eye, EyeOff, Package, Sparkles, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -9,6 +9,7 @@ import AppHeader from "@/components/AppHeader";
 import { useCanvasBannerStore } from "./state/useCanvasBannerStore";
 import { getFormatById } from "./data/formats";
 import BannerCanvas from "./canvas/BannerCanvas";
+import MultiFormatPreview from "./canvas/MultiFormatPreview";
 import FormatPicker from "./controls/FormatPicker";
 import ImageUpload from "./controls/ImageUpload";
 import OverlayControls from "./controls/OverlayControls";
@@ -17,6 +18,8 @@ import LayoutTemplatePicker from "./controls/LayoutTemplatePicker";
 import LayerOrderControls from "./controls/LayerOrderControls";
 import LogoPanel from "./controls/LogoPanel";
 import { buildFilename, downloadDataUrl, exportStage, type ExportFormat } from "./export/exportCanvas";
+import { exportAllAsZip } from "./export/zipExport";
+import { positionToCoords, suggestLayoutFromImage } from "./ai/layoutSuggestClient";
 
 type Step = 1 | 2 | 3 | 4 | 5;
 const STEPS: { id: Step; title: string; subtitle: string }[] = [
