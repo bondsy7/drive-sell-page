@@ -86,11 +86,11 @@ function drawTextLayer(
   layer: BannerLayer,
   text: string,
   color: string,
+  fontSize: number,
 ) {
-  const fontSize = layer.fontSize ?? 24;
   const weight = (layer.fontWeight ?? 400) >= 600 ? "700" : "400";
   ctx.save();
-  ctx.font = `${weight} ${fontSize}px Inter, Manrope, system-ui, sans-serif`;
+  ctx.font = `${weight} ${fontSize}px ${FONT_FAMILY}`;
   ctx.fillStyle = color;
   ctx.textBaseline = "top";
   if (layer.type !== "legal") {
