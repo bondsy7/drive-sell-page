@@ -100,6 +100,15 @@ const CanvasBannerStudioShell: React.FC = () => {
   };
 
 
+  /** Apply a new reframe result for a specific format and push the previous bg into history. */
+  const applyReframeResult = (fid: string, newUrl: string, sourceUrl?: string) => {
+    const comp = state.compositions[fid];
+    const prev = comp?.backgroundImageUrl;
+    if (prev && prev !== newUrl) actions.pushReframeHistory(prev, fid);
+    if (sourceUrl && !comp?.masterImageUrl) actions.setMasterImage(sourceUrl, fid);
+    actions.setBackground(newUrl, fid);
+  };
+
   const handleReframeActive = async () => {
     const src = activeComposition.backgroundImageUrl;
     if (!src || !src.startsWith("data:")) {
@@ -108,8 +117,10 @@ const CanvasBannerStudioShell: React.FC = () => {
     }
     setReframeBusy(true);
     try {
-      const out = await reframeImageForFormat(src, activeFormat.width, activeFormat.height);
-      actions.setBackground(out.imageDataUrl);
+      // Always reframe from the master if available, so repeated tries don't compound artifacts.
+      const source = activeComposition.masterImageUrl ?? src;
+      const out = await reframeImageForFormat(source, activeFormat.width, activeFormat.height);
+      applyReframeResult(activeFormat.id, out.imageDataUrl, source);
       toast.success(`Bild auf ${activeFormat.name} angepasst (${out.resolution})`);
     } catch (e: any) {
       console.error(e);
@@ -129,11 +140,12 @@ const CanvasBannerStudioShell: React.FC = () => {
     let done = 0;
     let failed = 0;
     try {
+      const source = activeComposition.masterImageUrl ?? src;
       for (const fid of state.selectedFormatIds) {
         const f = getFormatById(fid);
         try {
-          const out = await reframeImageForFormat(src, f.width, f.height);
-          actions.setBackground(out.imageDataUrl, fid);
+          const out = await reframeImageForFormat(source, f.width, f.height);
+          applyReframeResult(fid, out.imageDataUrl, source);
           done++;
           toast.message(`${done}/${state.selectedFormatIds.length} angepasst: ${f.name}`);
         } catch (e) {
