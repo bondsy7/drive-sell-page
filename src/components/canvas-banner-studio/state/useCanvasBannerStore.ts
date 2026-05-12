@@ -27,6 +27,7 @@ type Action =
   | { type: "toggle-safe-area" }
   | { type: "reorder-layer"; formatId: string; layerId: string; direction: "forward" | "backward" }
   | { type: "reset-format-layout"; formatId: string }
+  | { type: "reset-layer"; formatId: string; layerId: string }
   | { type: "set-format-scale"; formatId: string; scale: number }
   | { type: "set-master-image"; formatId: string; url?: string }
   | { type: "push-reframe-history"; formatId: string; url: string }
