@@ -600,6 +600,49 @@ export default function AdminBannerTemplates() {
     });
   };
 
+  const addLayer = (kind: "text" | "shape" | "image") => {
+    setDraft((d) => {
+      if (!d) return d;
+      const id = `${kind}-${Math.random().toString(36).slice(2, 7)}`;
+      const cx = Math.round(d.format.width / 2);
+      const cy = Math.round(d.format.height / 2);
+      let layer: LayerSpec;
+      if (kind === "text") {
+        layer = {
+          id, type: "text", anchor: "absolute",
+          x: cx - 200, y: cy - 20,
+          width: 400, fontSize: 36, fontWeight: 700, align: "left",
+          color: "#ffffff", content: "Neuer Text",
+          visible: true, draggable: true,
+        };
+      } else if (kind === "shape") {
+        layer = {
+          id, type: "shape", anchor: "absolute",
+          x: cx - 150, y: cy - 50,
+          width: 300, height: 100,
+          backgroundColor: "#000000", opacity: 0.5, borderRadius: 0,
+          visible: true, draggable: true,
+        };
+      } else {
+        layer = {
+          id, type: "image", anchor: "absolute",
+          x: cx - 100, y: cy - 75,
+          width: 200, height: 150,
+          opacity: 1, borderRadius: 0,
+          visible: true, draggable: true,
+        };
+      }
+      return { ...d, layers: [...d.layers, layer] };
+    });
+    setTimeout(() => {
+      // select the just-added layer
+      setDraft((d) => {
+        if (d && d.layers.length) setSelectedId(d.layers[d.layers.length - 1].id);
+        return d;
+      });
+    }, 0);
+  };
+
   const updateSafeArea = (key: keyof TemplateSpec["safeArea"], val: number) => {
     setDraft((d) => (d ? { ...d, safeArea: { ...d.safeArea, [key]: val } } : d));
   };
