@@ -551,6 +551,7 @@ const CanvasBannerStudioShell: React.FC = () => {
                   resolveColor={resolveColor}
                   onSelectLayer={actions.selectLayer}
                   onLayerDrag={(id, x, y) => actions.patchLayer(id, { x, y })}
+                  onLayerResize={(id, patch) => actions.patchLayer(id, patch)}
                   stageRef={stageRef}
                 />
               </div>
