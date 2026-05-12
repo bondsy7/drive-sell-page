@@ -52,6 +52,11 @@ const specToLayer = (spec: LayerSpec, parent: TemplateSpec): BannerLayer => {
     autoShrink: spec.autoShrink,
     maxLines: spec.maxLines,
     minFontSize: spec.minFontSize,
+    opacity: spec.opacity,
+    backgroundColor: spec.backgroundColor,
+    borderRadius: spec.borderRadius,
+    content: spec.content,
+    imageUrl: spec.imageUrl,
   };
 };
 
