@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import type Konva from "konva";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Download, Eye, EyeOff, Package, Sparkles, Wand2 } from "lucide-react";
@@ -10,6 +10,7 @@ import AppHeader from "@/components/AppHeader";
 import { useAuth } from "@/hooks/useAuth";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useVehicleMakes } from "@/hooks/useVehicleMakes";
+import { supabase } from "@/integrations/supabase/client";
 import { useCanvasBannerStore } from "./state/useCanvasBannerStore";
 import { getFormatById } from "./data/formats";
 import BannerCanvas from "./canvas/BannerCanvas";
@@ -35,6 +36,9 @@ import { buildFilename, downloadDataUrl, exportStage, type ExportFormat } from "
 import { exportAllAsZip } from "./export/zipExport";
 import { positionToCoords, suggestLayoutFromImage } from "./ai/layoutSuggestClient";
 import { reframeImageForFormat } from "./ai/reframeClient";
+import CiPanel from "./ci/CiPanel";
+import { buildCiContext, type DealerProfile } from "./ci/profileSources";
+import { detectBrandKey } from "./ci/brandPresets";
 
 type Step = 1 | 2 | 3 | 4 | 5;
 const STEPS: { id: Step; title: string; subtitle: string }[] = [
@@ -70,6 +74,37 @@ const CanvasBannerStudioShell: React.FC = () => {
   // Vehicle-driven prefill (runs once when a vehicle is picked).
   const { data: vehicles = [] } = useVehicles();
   const { getLogoForMake } = useVehicleMakes();
+
+  // Profile fetch (drives shortcodes & default CI).
+  const [profile, setProfile] = useState<DealerProfile | null>(null);
+  useEffect(() => {
+    if (!user) { setProfile(null); return; }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select(
+          "company_name, contact_name, email, phone, whatsapp_number, website, address, postal_code, city, logo_url, primary_color, secondary_color, default_legal_text",
+        )
+        .eq("id", user.id)
+        .maybeSingle();
+      if (!cancelled) setProfile(data ?? null);
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
+
+  const activeVehicle = useMemo(
+    () => (state.vehicleId ? vehicles.find((v) => v.id === state.vehicleId) ?? null : null),
+    [state.vehicleId, vehicles],
+  );
+
+  const ciContext = useMemo(
+    () => buildCiContext(profile, activeVehicle),
+    [profile, activeVehicle],
+  );
+
+  const detectedBrandKey = useMemo(() => detectBrandKey(ciContext.marke), [ciContext.marke]);
+
   const lastPrefilledRef = useRef<string | null | undefined>(undefined);
   useEffect(() => {
     if (state.vehicleId === lastPrefilledRef.current) return;
@@ -82,8 +117,11 @@ const CanvasBannerStudioShell: React.FC = () => {
       if (val) actions.setText(k, val);
     });
     if (manufacturerLogoUrl) actions.setLogo(manufacturerLogoUrl);
+    // Auto-apply matching brand CI preset if detected and user is still on "custom".
+    const bk = detectBrandKey(v.brand);
+    if (bk && state.ci?.brandKey === "custom") actions.applyBrandPreset(bk);
     toast.success("Texte aus Fahrzeug übernommen");
-  }, [state.vehicleId, vehicles, getLogoForMake, actions]);
+  }, [state.vehicleId, vehicles, getLogoForMake, actions, state.ci?.brandKey]);
 
   const persistExportedBlob = async (blob: Blob, filename: string, contentType: string) => {
     if (!user) return;
@@ -183,7 +221,7 @@ const CanvasBannerStudioShell: React.FC = () => {
     if (state.selectedFormatIds.length === 0) return;
     setZipBusy(true);
     try {
-      await exportAllAsZip(state, state.textFields, type);
+      await exportAllAsZip(state, state.textFields, type, state.ci, ciContext);
       toast.success(`${state.selectedFormatIds.length} Banner als ZIP exportiert`);
       // Also persist each format individually to storage.
       const mime = type === "png" ? "image/png" : type === "jpg" ? "image/jpeg" : "image/webp";
@@ -192,7 +230,7 @@ const CanvasBannerStudioShell: React.FC = () => {
         const comp = state.compositions[fid];
         if (!comp) continue;
         try {
-          const blob = await renderCompositionToBlob(f, comp, state.textFields, type);
+          const blob = await renderCompositionToBlob(f, comp, state.textFields, type, state.ci, ciContext);
           await persistExportedBlob(blob, buildFilename(f, type), mime);
         } catch (err) {
           console.warn("persist failed for", fid, err);
@@ -283,6 +321,17 @@ const CanvasBannerStudioShell: React.FC = () => {
           onChangeTitle={(t) => actions.setProjectTitle(t)}
         />
 
+        {/* Schritt 0b — Corporate Identity */}
+        {state.ci && (
+          <CiPanel
+            ci={state.ci}
+            ciContext={ciContext}
+            hasProfile={!!profile}
+            detectedBrandKey={detectedBrandKey}
+            onApplyBrandPreset={actions.applyBrandPreset}
+            onPatchCi={actions.setCi}
+          />
+        )}
         {/* Step nav */}
         <div className="flex overflow-x-auto gap-2 pb-1 -mx-1 px-1">
           {STEPS.map((s) => {
@@ -630,6 +679,8 @@ const CanvasBannerStudioShell: React.FC = () => {
                   showSafeArea={state.showSafeArea}
                   selectedLayerId={state.selectedLayerId}
                   resolveColor={resolveColor}
+                  ci={state.ci}
+                  ciContext={ciContext}
                   onSelectLayer={actions.selectLayer}
                   onLayerDrag={(id, x, y) => actions.patchLayer(id, { x, y })}
                   onLayerResize={(id, patch) => actions.patchLayer(id, patch)}

@@ -1,15 +1,22 @@
 import JSZip from "jszip";
-import type { BannerTextFields, StudioState } from "../state/types";
+import type { BannerTextFields, CiState, StudioState } from "../state/types";
+import type { CiContext } from "../ci/profileSources";
 import { getFormatById, slugifyFormat } from "../data/formats";
 import { renderCompositionToBlob } from "./renderComposition";
 
-export async function exportAllAsZip(state: StudioState, textFields: BannerTextFields, type: "png" | "jpg" | "webp" = "png") {
+export async function exportAllAsZip(
+  state: StudioState,
+  textFields: BannerTextFields,
+  type: "png" | "jpg" | "webp" = "png",
+  ci?: CiState,
+  ciContext?: CiContext | null,
+) {
   const zip = new JSZip();
   for (const id of state.selectedFormatIds) {
     const format = getFormatById(id);
     const comp = state.compositions[id];
     if (!comp) continue;
-    const blob = await renderCompositionToBlob(format, comp, textFields, type);
+    const blob = await renderCompositionToBlob(format, comp, textFields, type, ci, ciContext);
     zip.file(`canvas-banner-studio-${slugifyFormat(format)}-${format.width}x${format.height}.${type}`, blob);
   }
   const blob = await zip.generateAsync({ type: "blob" });

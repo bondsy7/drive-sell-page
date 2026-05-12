@@ -186,8 +186,10 @@ export async function renderCompositionToBlob(
   composition: BannerComposition,
   textFields: BannerTextFields,
   type: ExportFormat = "png",
+  ci?: CiState,
+  ciContext?: CiContext | null,
 ): Promise<Blob> {
-  const dataUrl = await renderCompositionToDataURL(format, composition, textFields, type);
+  const dataUrl = await renderCompositionToDataURL(format, composition, textFields, type, ci, ciContext);
   const res = await fetch(dataUrl);
   return await res.blob();
 }
