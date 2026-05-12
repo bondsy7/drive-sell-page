@@ -631,6 +631,9 @@ const Index = () => {
       case 'banner':
         setAppState('banner');
         break;
+      case 'canvas-banner-studio':
+        navigate('/generator/canvas-banner-studio');
+        break;
       case 'manual-landing':
         setAppState('manual-landing');
         break;
