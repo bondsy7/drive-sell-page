@@ -247,6 +247,34 @@ const CanvasBannerStudioShell: React.FC = () => {
                   onUpload={(url) => actions.setBackground(url)}
                   onClear={() => actions.setBackground(undefined)}
                 />
+                {activeComposition.backgroundImageUrl && (
+                  <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Wand2 className="w-3.5 h-3.5 text-accent" />
+                      <h3 className="text-sm font-semibold">Ideogram Reframe</h3>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/10 text-accent">AI</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Erweitert das Bild generativ auf das Zielformat statt es zu beschneiden.
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button size="sm" variant="outline" onClick={handleReframeActive} disabled={reframeBusy}>
+                        Aktives Format
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleReframeAll}
+                        disabled={reframeBusy || state.selectedFormatIds.length < 2}
+                      >
+                        Alle ({state.selectedFormatIds.length})
+                      </Button>
+                    </div>
+                    {reframeBusy && (
+                      <p className="text-[11px] text-muted-foreground">Reframe läuft… kann bis zu 30 s pro Format dauern.</p>
+                    )}
+                  </div>
+                )}
                 <OverlayControls
                   fit={activeComposition.backgroundFit}
                   direction={activeComposition.overlayDirection}
