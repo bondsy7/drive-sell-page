@@ -1,9 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Stage, Layer, Rect, Image as KImage, Text as KText, Group, Transformer, Line } from "react-konva";
 import type Konva from "konva";
-import type { BannerComposition, BannerLayer, OverlayDirection } from "../state/types";
+import type { BannerComposition, BannerLayer, CiState, OverlayDirection } from "../state/types";
 import type { BannerFormat, BannerTextFields } from "../state/types";
-import { effectiveFontSize, FONT_FAMILY } from "./textFit";
+import { effectiveFontSize, FONT_FAMILY as DEFAULT_FONT_FAMILY } from "./textFit";
+import { resolveShortcodes } from "../ci/shortcodes";
+import type { CiContext } from "../ci/profileSources";
+import { recolorSvg } from "../ci/svgRecolor";
+import { ensureBrandFonts } from "../ci/fontLoader";
 
 interface BannerCanvasProps {
   format: BannerFormat;
@@ -12,6 +16,8 @@ interface BannerCanvasProps {
   showSafeArea: boolean;
   selectedLayerId?: string;
   resolveColor: (token?: string) => string;
+  ci?: CiState;
+  ciContext?: CiContext | null;
   onSelectLayer?: (id?: string) => void;
   onLayerDrag?: (id: string, x: number, y: number) => void;
   onLayerResize?: (id: string, patch: { width?: number; height?: number; fontSize?: number }) => void;
