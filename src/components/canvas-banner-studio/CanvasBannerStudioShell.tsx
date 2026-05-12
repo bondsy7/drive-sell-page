@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import type Konva from "konva";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Download, Eye, EyeOff, Package, Sparkles, Wand2 } from "lucide-react";
@@ -7,6 +7,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { toast } from "sonner";
 
 import AppHeader from "@/components/AppHeader";
+import { useAuth } from "@/hooks/useAuth";
+import { useVehicles } from "@/hooks/useVehicles";
+import { useVehicleMakes } from "@/hooks/useVehicleMakes";
 import { useCanvasBannerStore } from "./state/useCanvasBannerStore";
 import { getFormatById } from "./data/formats";
 import BannerCanvas from "./canvas/BannerCanvas";
@@ -20,6 +23,10 @@ import LayerOrderControls from "./controls/LayerOrderControls";
 import LogoPanel from "./controls/LogoPanel";
 import LegalCheck from "./controls/LegalCheck";
 import Step2Master from "./step2/Step2Master";
+import VehicleBannerPicker from "./persistence/VehicleBannerPicker";
+import { useBannerProject, uploadBannerToStorage, dataUrlToBlob } from "./persistence/useBannerProject";
+import { buildPrefillFromVehicle } from "./persistence/prefillFromVehicle";
+import { renderCompositionToBlob } from "./export/renderComposition";
 import type { BannerTextFieldKey } from "./state/types";
 import { buildFilename, downloadDataUrl, exportStage, type ExportFormat } from "./export/exportCanvas";
 import { exportAllAsZip } from "./export/zipExport";
@@ -39,6 +46,7 @@ const SMALL_FORMATS = new Set(["g-medrect", "g-leader", "g-skyscraper"]);
 
 const CanvasBannerStudioShell: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { state, actions, activeComposition, activeFormat, resolveColor } = useCanvasBannerStore();
   const [step, setStep] = useState<Step>(1);
   const [previewMobileOpen, setPreviewMobileOpen] = useState(true);
@@ -47,6 +55,45 @@ const CanvasBannerStudioShell: React.FC = () => {
   const [zipBusy, setZipBusy] = useState(false);
   const [aiBusy, setAiBusy] = useState(false);
   const [reframeBusy, setReframeBusy] = useState(false);
+
+  // Persistence: autosave drafts to banner_projects.
+  useBannerProject({
+    state,
+    onProjectIdAssigned: (id) => actions.setBannerProjectId(id),
+  });
+
+  // Vehicle-driven prefill (runs once when a vehicle is picked).
+  const { data: vehicles = [] } = useVehicles();
+  const { getLogoForMake } = useVehicleMakes();
+  const lastPrefilledRef = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (state.vehicleId === lastPrefilledRef.current) return;
+    lastPrefilledRef.current = state.vehicleId;
+    if (!state.vehicleId) return;
+    const v = vehicles.find((x) => x.id === state.vehicleId);
+    if (!v) return;
+    const { textFields, manufacturerLogoUrl } = buildPrefillFromVehicle(v, { getLogoForMake });
+    (Object.entries(textFields) as [BannerTextFieldKey, string][]).forEach(([k, val]) => {
+      if (val) actions.setText(k, val);
+    });
+    if (manufacturerLogoUrl) actions.setLogo(manufacturerLogoUrl);
+    toast.success("Texte aus Fahrzeug übernommen");
+  }, [state.vehicleId, vehicles, getLogoForMake, actions]);
+
+  const persistExportedBlob = async (blob: Blob, filename: string, contentType: string) => {
+    if (!user) return;
+    const publicUrl = await uploadBannerToStorage({
+      userId: user.id,
+      vehicleId: state.vehicleId ?? null,
+      blob,
+      filename,
+      contentType,
+    });
+    if (publicUrl) {
+      toast.success(state.vehicleId ? "Im Fahrzeug-Ordner gespeichert" : "Im Banner-Ordner gespeichert");
+    }
+  };
+
 
   const handleReframeActive = async () => {
     const src = activeComposition.backgroundImageUrl;
@@ -95,7 +142,7 @@ const CanvasBannerStudioShell: React.FC = () => {
     }
   };
 
-  const handleExport = (type: ExportFormat) => {
+  const handleExport = async (type: ExportFormat) => {
     const stage = stageRef.current;
     if (!stage) {
       toast.error("Vorschau noch nicht bereit.");
@@ -103,8 +150,12 @@ const CanvasBannerStudioShell: React.FC = () => {
     }
     try {
       const url = exportStage(stage, activeFormat, type);
-      downloadDataUrl(url, buildFilename(activeFormat, type));
+      const filename = buildFilename(activeFormat, type);
+      downloadDataUrl(url, filename);
       toast.success(`Exportiert in ${activeFormat.width}×${activeFormat.height}`);
+      const mime = type === "png" ? "image/png" : type === "jpg" ? "image/jpeg" : "image/webp";
+      const blob = await dataUrlToBlob(url);
+      void persistExportedBlob(blob, filename, mime);
     } catch (e) {
       console.error(e);
       toast.error("Export fehlgeschlagen.");
@@ -117,6 +168,19 @@ const CanvasBannerStudioShell: React.FC = () => {
     try {
       await exportAllAsZip(state, state.textFields, type);
       toast.success(`${state.selectedFormatIds.length} Banner als ZIP exportiert`);
+      // Also persist each format individually to storage.
+      const mime = type === "png" ? "image/png" : type === "jpg" ? "image/jpeg" : "image/webp";
+      for (const fid of state.selectedFormatIds) {
+        const f = getFormatById(fid);
+        const comp = state.compositions[fid];
+        if (!comp) continue;
+        try {
+          const blob = await renderCompositionToBlob(f, comp, state.textFields, type);
+          await persistExportedBlob(blob, buildFilename(f, type), mime);
+        } catch (err) {
+          console.warn("persist failed for", fid, err);
+        }
+      }
     } catch (e) {
       console.error(e);
       toast.error("ZIP-Export fehlgeschlagen.");
@@ -192,6 +256,15 @@ const CanvasBannerStudioShell: React.FC = () => {
             </p>
           </div>
         </div>
+
+        {/* Schritt 0 — Fahrzeug-Verknüpfung */}
+        <VehicleBannerPicker
+          vehicleId={state.vehicleId}
+          projectTitle={state.projectTitle}
+          bannerProjectId={state.bannerProjectId}
+          onChangeVehicle={(v) => actions.setVehicle(v)}
+          onChangeTitle={(t) => actions.setProjectTitle(t)}
+        />
 
         {/* Step nav */}
         <div className="flex overflow-x-auto gap-2 pb-1 -mx-1 px-1">

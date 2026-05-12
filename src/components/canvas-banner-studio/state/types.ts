@@ -66,4 +66,10 @@ export type StudioState = {
   compositions: Record<string, BannerComposition>;
   showSafeArea: boolean;
   selectedLayerId?: string;
+  /** Linked vehicle for persistence + asset attribution. Null = "no vehicle". */
+  vehicleId?: string | null;
+  /** Persisted banner_projects row id (set after first autosave). */
+  bannerProjectId?: string;
+  /** Free-text title shown in dashboard. */
+  projectTitle?: string;
 };

@@ -65,6 +65,50 @@ export type Database = {
         }
         Relationships: []
       }
+      banner_projects: {
+        Row: {
+          created_at: string
+          id: string
+          master_image_url: string | null
+          source_image_url: string | null
+          state: Json
+          title: string
+          updated_at: string
+          user_id: string
+          vehicle_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          master_image_url?: string | null
+          source_image_url?: string | null
+          state?: Json
+          title?: string
+          updated_at?: string
+          user_id: string
+          vehicle_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          master_image_url?: string | null
+          source_image_url?: string | null
+          state?: Json
+          title?: string
+          updated_at?: string
+          user_id?: string
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "banner_projects_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       calendar_sync_configs: {
         Row: {
           access_token_encrypted: string | null
