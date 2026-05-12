@@ -39,6 +39,7 @@ import { reframeImageForFormat } from "./ai/reframeClient";
 import CiPanel from "./ci/CiPanel";
 import { buildCiContext, type DealerProfile } from "./ci/profileSources";
 import { detectBrandKey } from "./ci/brandPresets";
+import { useCiPersistence } from "./ci/useCiPersistence";
 
 type Step = 1 | 2 | 3 | 4 | 5;
 const STEPS: { id: Step; title: string; subtitle: string }[] = [
@@ -333,6 +334,8 @@ const CanvasBannerStudioShell: React.FC = () => {
               activeVehicle?.brand ? getLogoForMake(activeVehicle.brand) ?? undefined : undefined
             }
             dealerLogoUrl={profile?.logo_url ?? undefined}
+            customLogoUrl={state.ci.customLogoUrl}
+            userId={user?.id}
             onApplyBrandPreset={actions.applyBrandPreset}
             onPatchCi={actions.setCi}
             onSetLogo={(url) => actions.setLogo(url)}
