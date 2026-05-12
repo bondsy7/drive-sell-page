@@ -11,8 +11,15 @@ interface CiPanelProps {
   ciContext?: CiContext | null;
   hasProfile: boolean;
   detectedBrandKey?: string;
+  /** Aktuelles Logo im Banner (Hersteller- oder Händler-Logo) */
+  currentLogoUrl?: string;
+  /** Hersteller-Logo aus Fahrzeug-Marke (für Quick-Switch) */
+  manufacturerLogoUrl?: string;
+  /** Händler-Logo aus Profil */
+  dealerLogoUrl?: string;
   onApplyBrandPreset: (brandKey: string) => void;
   onPatchCi: (patch: Partial<CiState>) => void;
+  onSetLogo: (url?: string) => void;
 }
 
 const LOGO_MODES: { value: LogoMode; label: string }[] = [
@@ -23,9 +30,13 @@ const LOGO_MODES: { value: LogoMode; label: string }[] = [
 ];
 
 const CiPanel: React.FC<CiPanelProps> = ({
-  ci, ciContext, hasProfile, detectedBrandKey, onApplyBrandPreset, onPatchCi,
+  ci, ciContext, hasProfile, detectedBrandKey, currentLogoUrl,
+  manufacturerLogoUrl, dealerLogoUrl, onApplyBrandPreset, onPatchCi, onSetLogo,
 }) => {
   const preset = getBrandPreset(ci.brandKey);
+  const usingDealer = !!currentLogoUrl && !!dealerLogoUrl && currentLogoUrl === dealerLogoUrl;
+  const usingManufacturer = !!currentLogoUrl && !!manufacturerLogoUrl && currentLogoUrl === manufacturerLogoUrl;
+
 
   return (
     <section className="rounded-xl border border-border bg-card p-4 space-y-4">
