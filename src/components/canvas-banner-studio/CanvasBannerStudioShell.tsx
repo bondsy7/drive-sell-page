@@ -94,6 +94,13 @@ const CanvasBannerStudioShell: React.FC = () => {
     return () => { cancelled = true; };
   }, [user]);
 
+  // CI-Persistenz pro Händler (lädt + speichert profiles.ci_settings).
+  useCiPersistence({
+    userId: user?.id,
+    ci: state.ci,
+    onLoaded: (stored) => actions.setCi(stored),
+  });
+
   const activeVehicle = useMemo(
     () => (state.vehicleId ? vehicles.find((v) => v.id === state.vehicleId) ?? null : null),
     [state.vehicleId, vehicles],
