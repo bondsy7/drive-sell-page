@@ -332,16 +332,26 @@ const CanvasBannerStudioShell: React.FC = () => {
                   >
                     Sicherheitsbereich {state.showSafeArea ? "ausblenden" : "anzeigen"}
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleAiSuggest}
-                    disabled={aiBusy || !activeComposition.backgroundImageUrl}
-                    title={!activeComposition.backgroundImageUrl ? "Bitte zuerst Hintergrundbild hochladen" : "KI-Layout-Vorschlag basierend auf dem Hintergrundbild"}
-                  >
-                    <Wand2 className="w-3.5 h-3.5 mr-1" />
-                    {aiBusy ? "Analysiere…" : "KI-Layout-Vorschlag"}
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleAiSuggest}
+                          disabled={aiBusy || !activeComposition.backgroundImageUrl}
+                        >
+                          <Wand2 className="w-3.5 h-3.5 mr-1" />
+                          {aiBusy ? "Analysiere…" : "KI-Layout-Vorschlag"}
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {!activeComposition.backgroundImageUrl
+                        ? "Bitte zuerst Hintergrundbild hochladen."
+                        : "Analysiert das Bild und schlägt eine passende Anordnung von Headline, Preis, CTA und Logo vor."}
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
                 <LayerOrderControls
                   selectedLayerId={state.selectedLayerId}
