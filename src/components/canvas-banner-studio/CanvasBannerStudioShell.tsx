@@ -1,7 +1,7 @@
 import React, { useRef, useState } from "react";
 import type Konva from "konva";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Download, Eye, EyeOff, Sparkles } from "lucide-react";
+import { ArrowLeft, Download, Eye, EyeOff, Package, Sparkles, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -9,6 +9,7 @@ import AppHeader from "@/components/AppHeader";
 import { useCanvasBannerStore } from "./state/useCanvasBannerStore";
 import { getFormatById } from "./data/formats";
 import BannerCanvas from "./canvas/BannerCanvas";
+import MultiFormatPreview from "./canvas/MultiFormatPreview";
 import FormatPicker from "./controls/FormatPicker";
 import ImageUpload from "./controls/ImageUpload";
 import OverlayControls from "./controls/OverlayControls";
@@ -17,6 +18,8 @@ import LayoutTemplatePicker from "./controls/LayoutTemplatePicker";
 import LayerOrderControls from "./controls/LayerOrderControls";
 import LogoPanel from "./controls/LogoPanel";
 import { buildFilename, downloadDataUrl, exportStage, type ExportFormat } from "./export/exportCanvas";
+import { exportAllAsZip } from "./export/zipExport";
+import { positionToCoords, suggestLayoutFromImage } from "./ai/layoutSuggestClient";
 
 type Step = 1 | 2 | 3 | 4 | 5;
 const STEPS: { id: Step; title: string; subtitle: string }[] = [
@@ -36,6 +39,9 @@ const CanvasBannerStudioShell: React.FC = () => {
   const [previewMobileOpen, setPreviewMobileOpen] = useState(true);
   const stageRef = useRef<Konva.Stage | null>(null);
 
+  const [zipBusy, setZipBusy] = useState(false);
+  const [aiBusy, setAiBusy] = useState(false);
+
   const handleExport = (type: ExportFormat) => {
     const stage = stageRef.current;
     if (!stage) {
@@ -49,6 +55,60 @@ const CanvasBannerStudioShell: React.FC = () => {
     } catch (e) {
       console.error(e);
       toast.error("Export fehlgeschlagen.");
+    }
+  };
+
+  const handleZipExport = async (type: ExportFormat) => {
+    if (state.selectedFormatIds.length === 0) return;
+    setZipBusy(true);
+    try {
+      await exportAllAsZip(state, state.textFields, type);
+      toast.success(`${state.selectedFormatIds.length} Banner als ZIP exportiert`);
+    } catch (e) {
+      console.error(e);
+      toast.error("ZIP-Export fehlgeschlagen.");
+    } finally {
+      setZipBusy(false);
+    }
+  };
+
+  const handleAiSuggest = async () => {
+    const url = activeComposition.backgroundImageUrl;
+    if (!url || !url.startsWith("data:")) {
+      toast.error("Lade zuerst ein Hintergrundbild hoch.");
+      return;
+    }
+    setAiBusy(true);
+    try {
+      const s = await suggestLayoutFromImage(url);
+      // Apply overlay
+      actions.setOverlay(s.recommendedOverlay, activeComposition.overlayStrength || 50);
+      // Map positions for headline/price/cta/logo using estimated sizes
+      const f = activeFormat;
+      const layerById = (id: string) => activeComposition.layers.find((l) => l.id === id);
+      const map: Record<string, { id: string; w: number; h: number }> = {
+        headline: { id: "headline", w: Math.round(f.width * 0.7), h: Math.round((layerById("headline")?.fontSize ?? 40) * 1.4) },
+        price: { id: "price", w: Math.round(f.width * 0.55), h: Math.round((layerById("price")?.fontSize ?? 40) * 1.4) },
+        cta: { id: "cta", w: Math.round(f.width * 0.45), h: Math.round((layerById("cta")?.fontSize ?? 28) * 1.4) },
+        logo: { id: "logo", w: Math.round(f.width * 0.18), h: Math.round(f.width * 0.18 * 0.4) },
+      };
+      const positions: Record<string, typeof s.headlinePosition> = {
+        headline: s.headlinePosition,
+        price: s.pricePosition,
+        cta: s.ctaPosition,
+        logo: s.logoPosition,
+      };
+      for (const k of Object.keys(map)) {
+        const m = map[k];
+        const coords = positionToCoords(positions[k], f.width, f.height, m.w, m.h);
+        actions.patchLayer(m.id, coords);
+      }
+      toast.success("KI-Layout angewendet" + (s.reason ? ` · ${s.reason}` : ""));
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message ?? "KI-Vorschlag fehlgeschlagen");
+    } finally {
+      setAiBusy(false);
     }
   };
 
@@ -174,13 +234,23 @@ const CanvasBannerStudioShell: React.FC = () => {
                   selectedId={activeComposition.selectedTemplateId}
                   onSelect={(id) => actions.setTemplate(id)}
                 />
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Button
                     size="sm"
                     variant={state.showSafeArea ? "default" : "outline"}
                     onClick={actions.toggleSafeArea}
                   >
                     Sicherheitsbereich {state.showSafeArea ? "ausblenden" : "anzeigen"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleAiSuggest}
+                    disabled={aiBusy || !activeComposition.backgroundImageUrl}
+                    title={!activeComposition.backgroundImageUrl ? "Bitte zuerst Hintergrundbild hochladen" : "KI-Layout-Vorschlag basierend auf dem Hintergrundbild"}
+                  >
+                    <Wand2 className="w-3.5 h-3.5 mr-1" />
+                    {aiBusy ? "Analysiere…" : "KI-Layout-Vorschlag"}
                   </Button>
                 </div>
                 <LayerOrderControls
@@ -221,29 +291,29 @@ const CanvasBannerStudioShell: React.FC = () => {
                 </div>
 
                 {state.selectedFormatIds.length > 1 && (
-                  <div className="pt-3 border-t border-border space-y-2">
-                    <h3 className="text-sm font-semibold">Weitere ausgewählte Formate</h3>
-                    <p className="text-xs text-muted-foreground">
-                      Wähle ein anderes Format aus der Vorschau-Leiste, um es einzeln zu exportieren.
-                      (Multi-Export folgt in der nächsten Ausbaustufe.)
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {state.selectedFormatIds.map((id) => {
-                        const f = getFormatById(id);
-                        const active = id === state.activeFormatId;
-                        return (
-                          <button
-                            key={id}
-                            onClick={() => actions.setActiveFormat(id)}
-                            className={`px-2.5 py-1 text-xs rounded border ${
-                              active ? "border-accent bg-accent/10" : "border-border bg-card"
-                            }`}
-                          >
-                            {f.name} ({f.width}×{f.height})
-                          </button>
-                        );
-                      })}
+                  <div className="pt-3 border-t border-border space-y-3">
+                    <div>
+                      <h3 className="text-sm font-semibold mb-1">Alle Formate exportieren</h3>
+                      <p className="text-xs text-muted-foreground mb-2">
+                        Erzeugt für jedes ausgewählte Format einen Banner in exakter Zielgröße und packt sie als ZIP.
+                      </p>
+                      <div className="grid grid-cols-3 gap-2">
+                        <Button onClick={() => handleZipExport("png")} disabled={zipBusy}>
+                          <Package className="w-4 h-4 mr-1" /> ZIP · PNG
+                        </Button>
+                        <Button variant="outline" onClick={() => handleZipExport("jpg")} disabled={zipBusy}>
+                          <Package className="w-4 h-4 mr-1" /> ZIP · JPG
+                        </Button>
+                        <Button variant="outline" onClick={() => handleZipExport("webp")} disabled={zipBusy}>
+                          <Package className="w-4 h-4 mr-1" /> ZIP · WebP
+                        </Button>
+                      </div>
                     </div>
+                    <MultiFormatPreview
+                      state={state}
+                      textFields={state.textFields}
+                      onActivate={actions.setActiveFormat}
+                    />
                   </div>
                 )}
               </section>
