@@ -3,6 +3,7 @@ import type Konva from "konva";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Download, Eye, EyeOff, Package, Sparkles, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 
 import AppHeader from "@/components/AppHeader";
