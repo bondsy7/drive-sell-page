@@ -321,6 +321,17 @@ const CanvasBannerStudioShell: React.FC = () => {
           onChangeTitle={(t) => actions.setProjectTitle(t)}
         />
 
+        {/* Schritt 0b — Corporate Identity */}
+        {state.ci && (
+          <CiPanel
+            ci={state.ci}
+            ciContext={ciContext}
+            hasProfile={!!profile}
+            detectedBrandKey={detectedBrandKey}
+            onApplyBrandPreset={actions.applyBrandPreset}
+            onPatchCi={actions.setCi}
+          />
+        )}
         {/* Step nav */}
         <div className="flex overflow-x-auto gap-2 pb-1 -mx-1 px-1">
           {STEPS.map((s) => {
