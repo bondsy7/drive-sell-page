@@ -20,6 +20,7 @@ import LogoPanel from "./controls/LogoPanel";
 import { buildFilename, downloadDataUrl, exportStage, type ExportFormat } from "./export/exportCanvas";
 import { exportAllAsZip } from "./export/zipExport";
 import { positionToCoords, suggestLayoutFromImage } from "./ai/layoutSuggestClient";
+import { reframeImageForFormat } from "./ai/reframeClient";
 
 type Step = 1 | 2 | 3 | 4 | 5;
 const STEPS: { id: Step; title: string; subtitle: string }[] = [
@@ -41,6 +42,54 @@ const CanvasBannerStudioShell: React.FC = () => {
 
   const [zipBusy, setZipBusy] = useState(false);
   const [aiBusy, setAiBusy] = useState(false);
+  const [reframeBusy, setReframeBusy] = useState(false);
+
+  const handleReframeActive = async () => {
+    const src = activeComposition.backgroundImageUrl;
+    if (!src || !src.startsWith("data:")) {
+      toast.error("Lade zuerst ein Hintergrundbild hoch.");
+      return;
+    }
+    setReframeBusy(true);
+    try {
+      const out = await reframeImageForFormat(src, activeFormat.width, activeFormat.height);
+      actions.setBackground(out.imageDataUrl);
+      toast.success(`Bild auf ${activeFormat.name} angepasst (${out.resolution})`);
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message ?? "Reframe fehlgeschlagen");
+    } finally {
+      setReframeBusy(false);
+    }
+  };
+
+  const handleReframeAll = async () => {
+    const src = activeComposition.backgroundImageUrl;
+    if (!src || !src.startsWith("data:")) {
+      toast.error("Lade zuerst ein Hintergrundbild hoch.");
+      return;
+    }
+    setReframeBusy(true);
+    let done = 0;
+    let failed = 0;
+    try {
+      for (const fid of state.selectedFormatIds) {
+        const f = getFormatById(fid);
+        try {
+          const out = await reframeImageForFormat(src, f.width, f.height);
+          actions.setBackground(out.imageDataUrl, fid);
+          done++;
+          toast.message(`${done}/${state.selectedFormatIds.length} angepasst: ${f.name}`);
+        } catch (e) {
+          console.error("reframe failed for", fid, e);
+          failed++;
+        }
+      }
+      toast.success(`Reframe abgeschlossen · ${done} ok · ${failed} fehlgeschlagen`);
+    } finally {
+      setReframeBusy(false);
+    }
+  };
 
   const handleExport = (type: ExportFormat) => {
     const stage = stageRef.current;
