@@ -45,7 +45,10 @@ const CiPanel: React.FC<CiPanelProps> = ({
   ci, ciContext, hasProfile, detectedBrandKey, currentLogoUrl,
   manufacturerLogoUrl, dealerLogoUrl, customLogoUrl, userId,
   onApplyBrandPreset, onPatchCi, onSetLogo,
+  selectedFormatsCount = 1, applyLogoToAll, onToggleApplyLogoToAll,
 }) => {
+  const scope: "all" | "current" = applyLogoToAll ? "all" : "current";
+  const setLogo = (url?: string) => onSetLogo(url, scope);
   const preset = getBrandPreset(ci.brandKey);
   const usingDealer = !!currentLogoUrl && !!dealerLogoUrl && currentLogoUrl === dealerLogoUrl;
   const usingManufacturer = !!currentLogoUrl && !!manufacturerLogoUrl && currentLogoUrl === manufacturerLogoUrl;
