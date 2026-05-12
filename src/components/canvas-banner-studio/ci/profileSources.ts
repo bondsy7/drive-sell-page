@@ -23,6 +23,7 @@ export type CiContext = {
   telefon: string;
   whatsapp: string;
   website: string;
+  email: string;
   adresse: string;
   stadt: string;
   plz: string;
@@ -32,6 +33,11 @@ export type CiContext = {
   rate: string;
   laufzeit: string;
   anzahlung: string;
+  ez: string;          // Erstzulassung
+  km: string;          // Kilometerstand
+  leistung: string;    // PS / kW
+  kraftstoff: string;
+  getriebe: string;
 };
 
 function s(v: any): string {
@@ -59,6 +65,7 @@ export function buildCiContext(profile?: DealerProfile | null, vehicle?: Vehicle
     telefon: s(profile?.phone),
     whatsapp: s(profile?.whatsapp_number),
     website: s(profile?.website),
+    email: s(profile?.email),
     adresse: s(profile?.address),
     stadt: s(profile?.city),
     plz: s(profile?.postal_code),
@@ -68,5 +75,10 @@ export function buildCiContext(profile?: DealerProfile | null, vehicle?: Vehicle
     rate: pick(d, "financing.monthly_rate", "leasing.monthly_rate"),
     laufzeit: pick(d, "financing.duration", "leasing.duration"),
     anzahlung: pick(d, "financing.down_payment", "leasing.down_payment"),
+    ez: pick(d, "vehicle.first_registration", "vehicle.ez", "first_registration", "ez"),
+    km: pick(d, "vehicle.mileage", "consumption.mileage", "mileage", "km"),
+    leistung: pick(d, "vehicle.power", "consumption.power", "power", "leistung"),
+    kraftstoff: pick(d, "vehicle.fuel_type", "consumption.fuelType", "fuelType", "kraftstoff"),
+    getriebe: pick(d, "vehicle.gearbox", "consumption.gearboxType", "gearboxType", "getriebe"),
   };
 }
