@@ -157,6 +157,24 @@ function presentReducer(state: StudioState, action: Action): StudioState {
         compositions: { ...state.compositions, [action.formatId]: { ...c, layers } },
       };
     }
+    case "add-layer": {
+      const c = ensureComposition(state, action.formatId);
+      return {
+        ...state,
+        compositions: { ...state.compositions, [action.formatId]: { ...c, layers: [...c.layers, action.layer] } },
+      };
+    }
+    case "remove-layer": {
+      const c = ensureComposition(state, action.formatId);
+      return {
+        ...state,
+        compositions: {
+          ...state.compositions,
+          [action.formatId]: { ...c, layers: c.layers.filter((l) => l.id !== action.layerId) },
+        },
+        selectedLayerId: state.selectedLayerId === action.layerId ? undefined : state.selectedLayerId,
+      };
+    }
     case "select-layer":
       return { ...state, selectedLayerId: action.layerId };
     case "toggle-safe-area":
