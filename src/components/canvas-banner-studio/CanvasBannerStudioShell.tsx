@@ -679,6 +679,8 @@ const CanvasBannerStudioShell: React.FC = () => {
                   showSafeArea={state.showSafeArea}
                   selectedLayerId={state.selectedLayerId}
                   resolveColor={resolveColor}
+                  ci={state.ci}
+                  ciContext={ciContext}
                   onSelectLayer={actions.selectLayer}
                   onLayerDrag={(id, x, y) => actions.patchLayer(id, { x, y })}
                   onLayerResize={(id, patch) => actions.patchLayer(id, patch)}
