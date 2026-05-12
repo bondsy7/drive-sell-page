@@ -733,13 +733,42 @@ const CanvasBannerStudioShell: React.FC = () => {
               )}
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>{activeFormat.name}</span>
-                <span className="tabular-nums">
-                  {activeFormat.width} × {activeFormat.height} px
-                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    title="Rückgängig (Cmd/Ctrl+Z)"
+                    disabled={!canUndo}
+                    onClick={actions.undo}
+                    className="p-1 rounded hover:bg-muted disabled:opacity-30"
+                  >
+                    <Undo2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    title="Wiederherstellen (Shift+Cmd/Ctrl+Z)"
+                    disabled={!canRedo}
+                    onClick={actions.redo}
+                    className="p-1 rounded hover:bg-muted disabled:opacity-30"
+                  >
+                    <Redo2 className="w-3.5 h-3.5" />
+                  </button>
+                  {formatOverridden && (
+                    <button
+                      type="button"
+                      title="Layout dieses Formats auf Template-Default zurücksetzen"
+                      onClick={() => { actions.resetLayout(); toast.success("Layout zurückgesetzt"); }}
+                      className="p-1 rounded hover:bg-muted text-amber-600 inline-flex items-center gap-1"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span className="text-[10px] uppercase tracking-wider">Override</span>
+                    </button>
+                  )}
+                  <span className="tabular-nums text-xs ml-2">
+                    {activeFormat.width} × {activeFormat.height} px
+                  </span>
+                </div>
               </div>
-              <div
-                className="w-full aspect-square lg:aspect-auto lg:h-[calc(100vh-220px)] min-h-[320px] rounded-xl border border-border overflow-hidden bg-card"
-              >
+              <div className="relative w-full aspect-square lg:aspect-auto lg:h-[calc(100vh-220px)] min-h-[320px] rounded-xl border border-border overflow-hidden bg-card">
                 <BannerCanvas
                   format={activeFormat}
                   composition={activeComposition}
@@ -753,7 +782,21 @@ const CanvasBannerStudioShell: React.FC = () => {
                   onLayerDrag={(id, x, y) => actions.patchLayer(id, { x, y })}
                   onLayerResize={(id, patch) => actions.patchLayer(id, patch)}
                   stageRef={stageRef}
+                  onSelectedLayerScreenChange={setSelectedScreen}
                 />
+                {selectedLayer && selectedScreen && (
+                  <FloatingToolbar
+                    layer={selectedLayer}
+                    composition={activeComposition}
+                    format={activeFormat}
+                    screen={selectedScreen}
+                    resolveColor={resolveColor}
+                    getStageCanvas={() => stageRef.current?.toCanvas({ pixelRatio: 1 }) ?? null}
+                    onPatch={(patch) => actions.patchLayer(selectedLayer.id, patch)}
+                    onResetLayer={() => { actions.resetLayer(selectedLayer.id); toast.success("Layer zurückgesetzt"); }}
+                    isOverridden={selectedOverridden}
+                  />
+                )}
               </div>
             </div>
           </div>
