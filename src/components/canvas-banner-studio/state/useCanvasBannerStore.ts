@@ -310,14 +310,23 @@ export function useCanvasBannerStore() {
     [state.activeFormatId],
   );
 
-  // Utility: read the resolved color value for a token.
+  // Utility: read the resolved color value for a token. CI-aware: known tokens
+  // (primary/secondary/text/bg/background/foreground/accent) prefer the active CI palette.
+  const ciColors = state.ci?.colors;
   const resolveColor = useCallback((token?: string): string => {
     if (!token) return "#ffffff";
     if (token.startsWith("#") || token.startsWith("rgb") || token.startsWith("hsl")) return token;
+    if (ciColors) {
+      const t = token.toLowerCase();
+      if (t === "primary" || t === "accent") return ciColors.primary;
+      if (t === "secondary") return ciColors.secondary;
+      if (t === "text" || t === "foreground") return ciColors.text;
+      if (t === "bg" || t === "background") return ciColors.bg;
+    }
     if (typeof window === "undefined") return "#ffffff";
     const v = getComputedStyle(document.documentElement).getPropertyValue(`--${token}`).trim();
     return v ? `hsl(${v})` : "#ffffff";
-  }, []);
+  }, [ciColors]);
 
   return { state, actions, activeComposition, activeFormat, resolveColor };
 }

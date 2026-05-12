@@ -115,9 +115,16 @@ function drawTextLayer(
   ctx.restore();
 }
 
-function resolveColor(token?: string): string {
+function resolveColor(token: string | undefined, ci?: CiState): string {
   if (!token) return "#ffffff";
   if (token.startsWith("#") || token.startsWith("rgb") || token.startsWith("hsl")) return token;
+  if (ci?.colors) {
+    const t = token.toLowerCase();
+    if (t === "primary" || t === "accent") return ci.colors.primary;
+    if (t === "secondary") return ci.colors.secondary;
+    if (t === "text" || t === "foreground") return ci.colors.text;
+    if (t === "bg" || t === "background") return ci.colors.bg;
+  }
   if (typeof window === "undefined") return "#ffffff";
   const v = getComputedStyle(document.documentElement).getPropertyValue(`--${token}`).trim();
   return v ? `hsl(${v})` : "#ffffff";
@@ -174,7 +181,7 @@ export async function renderCompositionToDataURL(
     if (!text) continue;
     const fontSize = effectiveFontSize(layer, text, formatScale);
     const family = (layer.id === "headline" || layer.id === "subline") ? FONT_DISPLAY : FONT_BODY;
-    drawTextLayer(ctx, layer, text, resolveColor(layer.color), fontSize, family);
+    drawTextLayer(ctx, layer, text, resolveColor(layer.color, ci), fontSize, family);
   }
 
   const mime = type === "png" ? "image/png" : type === "jpg" ? "image/jpeg" : "image/webp";
