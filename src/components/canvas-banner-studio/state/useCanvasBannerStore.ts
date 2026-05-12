@@ -181,7 +181,18 @@ function presentReducer(state: StudioState, action: Action): StudioState {
         compositions: { ...state.compositions, [action.formatId]: { ...c, layers, scale: 1 } },
       };
     }
-    case "set-format-scale": {
+    case "reset-layer": {
+      const c = ensureComposition(state, action.formatId);
+      const f = getFormatById(action.formatId);
+      const tmplLayers = getLayoutTemplate(c.selectedTemplateId).build(f.width, f.height);
+      const def = tmplLayers.find((l) => l.id === action.layerId);
+      if (!def) return state;
+      const layers = c.layers.map((l) => (l.id === action.layerId ? { ...def, visible: l.visible } : l));
+      return {
+        ...state,
+        compositions: { ...state.compositions, [action.formatId]: { ...c, layers } },
+      };
+    }
       const c = ensureComposition(state, action.formatId);
       const scale = Math.max(0.5, Math.min(1.6, action.scale));
       return {
