@@ -177,23 +177,48 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
     }
   }, [selectedLayerId, composition.layers]);
 
-  // Snap helpers
-  const SNAP_TOL = 8; // px in stage coords
+  // Snap: Banner-Mitte (vertikal/horizontal) + Safe-Area-Kanten.
+  const SNAP_TOL = 8;
+  const safePad = Math.round(Math.min(format.width, format.height) * 0.05);
   const handleDragMove = (l: BannerLayer, e: Konva.KonvaEventObject<DragEvent>) => {
     const node = e.target;
     let x = node.x();
     let y = node.y();
     const w = (l.width ?? 0);
+    const h = (l.fontSize ?? (l.height ?? 0));
     const cx = format.width / 2 - w / 2;
+    const cy = format.height / 2 - h / 2;
     const showV = Math.abs(x - cx) < SNAP_TOL;
     if (showV) { x = cx; node.x(x); }
-    // horizontal center for whole banner irrelevant; we only snap layer center to safe area edges
-    const showH = false;
+    const showH = Math.abs(y - cy) < SNAP_TOL;
+    if (showH) { y = cy; node.y(y); }
+    // Safe-Area-Kanten (links/rechts/oben/unten).
+    if (Math.abs(x - safePad) < SNAP_TOL) { x = safePad; node.x(x); }
+    if (Math.abs((x + w) - (format.width - safePad)) < SNAP_TOL) {
+      x = format.width - safePad - w; node.x(x);
+    }
+    if (Math.abs(y - safePad) < SNAP_TOL) { y = safePad; node.y(y); }
     setSnapGuides((g) => (g.vCenter === showV && g.hCenter === showH ? g : { vCenter: showV, hCenter: showH }));
   };
   const handleDragEndCommon = () => {
     setSnapGuides({ vCenter: false, hCenter: false });
   };
+
+  // Bildschirmposition des selektierten Layers (für Floating-Toolbar) berichten.
+  useEffect(() => {
+    if (!onSelectedLayerScreenChange) return;
+    if (!selectedLayerId) { onSelectedLayerScreenChange(null); return; }
+    const l = composition.layers.find((x) => x.id === selectedLayerId);
+    if (!l) { onSelectedLayerScreenChange(null); return; }
+    const w = (l.width ?? format.width * 0.5) * scale;
+    const h = ((l.fontSize ?? 24) * 1.4 * (composition.scale ?? 1)) * scale;
+    onSelectedLayerScreenChange({
+      x: l.x * scale,
+      y: l.y * scale,
+      w,
+      h,
+    });
+  }, [selectedLayerId, composition.layers, composition.scale, format.width, scale, onSelectedLayerScreenChange]);
 
   return (
     <div
