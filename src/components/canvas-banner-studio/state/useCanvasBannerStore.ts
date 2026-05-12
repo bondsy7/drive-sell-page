@@ -156,7 +156,14 @@ function reducer(state: StudioState, action: Action): StudioState {
         compositions: { ...state.compositions, [action.formatId]: { ...c, layers } },
       };
     }
-    case "set-vehicle":
+    case "set-format-scale": {
+      const c = ensureComposition(state, action.formatId);
+      const scale = Math.max(0.5, Math.min(1.6, action.scale));
+      return {
+        ...state,
+        compositions: { ...state.compositions, [action.formatId]: { ...c, scale } },
+      };
+    }
       return { ...state, vehicleId: action.vehicleId };
     case "set-banner-project-id":
       return { ...state, bannerProjectId: action.id };
