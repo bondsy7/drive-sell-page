@@ -193,6 +193,7 @@ function presentReducer(state: StudioState, action: Action): StudioState {
         compositions: { ...state.compositions, [action.formatId]: { ...c, layers } },
       };
     }
+    case "set-format-scale": {
       const c = ensureComposition(state, action.formatId);
       const scale = Math.max(0.5, Math.min(1.6, action.scale));
       return {
