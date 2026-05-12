@@ -23,6 +23,9 @@ import LayerOrderControls from "./controls/LayerOrderControls";
 import LogoPanel from "./controls/LogoPanel";
 import LegalCheck from "./controls/LegalCheck";
 import Step2Master from "./step2/Step2Master";
+import ReframeHistoryStrip from "./step2/ReframeHistoryStrip";
+import ReframeVariantsDialog from "./step2/ReframeVariantsDialog";
+import ManualCropDialog from "./step2/ManualCropDialog";
 import VehicleBannerPicker from "./persistence/VehicleBannerPicker";
 import { useBannerProject, uploadBannerToStorage, dataUrlToBlob } from "./persistence/useBannerProject";
 import { buildPrefillFromVehicle } from "./persistence/prefillFromVehicle";
@@ -55,6 +58,8 @@ const CanvasBannerStudioShell: React.FC = () => {
   const [zipBusy, setZipBusy] = useState(false);
   const [aiBusy, setAiBusy] = useState(false);
   const [reframeBusy, setReframeBusy] = useState(false);
+  const [variantsOpen, setVariantsOpen] = useState(false);
+  const [cropOpen, setCropOpen] = useState(false);
 
   // Persistence: autosave drafts to banner_projects.
   useBannerProject({
@@ -95,6 +100,15 @@ const CanvasBannerStudioShell: React.FC = () => {
   };
 
 
+  /** Apply a new reframe result for a specific format and push the previous bg into history. */
+  const applyReframeResult = (fid: string, newUrl: string, sourceUrl?: string) => {
+    const comp = state.compositions[fid];
+    const prev = comp?.backgroundImageUrl;
+    if (prev && prev !== newUrl) actions.pushReframeHistory(prev, fid);
+    if (sourceUrl && !comp?.masterImageUrl) actions.setMasterImage(sourceUrl, fid);
+    actions.setBackground(newUrl, fid);
+  };
+
   const handleReframeActive = async () => {
     const src = activeComposition.backgroundImageUrl;
     if (!src || !src.startsWith("data:")) {
@@ -103,8 +117,10 @@ const CanvasBannerStudioShell: React.FC = () => {
     }
     setReframeBusy(true);
     try {
-      const out = await reframeImageForFormat(src, activeFormat.width, activeFormat.height);
-      actions.setBackground(out.imageDataUrl);
+      // Always reframe from the master if available, so repeated tries don't compound artifacts.
+      const source = activeComposition.masterImageUrl ?? src;
+      const out = await reframeImageForFormat(source, activeFormat.width, activeFormat.height);
+      applyReframeResult(activeFormat.id, out.imageDataUrl, source);
       toast.success(`Bild auf ${activeFormat.name} angepasst (${out.resolution})`);
     } catch (e: any) {
       console.error(e);
@@ -124,11 +140,12 @@ const CanvasBannerStudioShell: React.FC = () => {
     let done = 0;
     let failed = 0;
     try {
+      const source = activeComposition.masterImageUrl ?? src;
       for (const fid of state.selectedFormatIds) {
         const f = getFormatById(fid);
         try {
-          const out = await reframeImageForFormat(src, f.width, f.height);
-          actions.setBackground(out.imageDataUrl, fid);
+          const out = await reframeImageForFormat(source, f.width, f.height);
+          applyReframeResult(fid, out.imageDataUrl, source);
           done++;
           toast.message(`${done}/${state.selectedFormatIds.length} angepasst: ${f.name}`);
         } catch (e) {
@@ -363,10 +380,41 @@ const CanvasBannerStudioShell: React.FC = () => {
                         </TooltipTrigger>
                         <TooltipContent>Reframet das Bild für alle ausgewählten Formate nacheinander.</TooltipContent>
                       </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button size="sm" variant="outline" onClick={() => setVariantsOpen(true)} disabled={reframeBusy}>
+                            3 Varianten
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Erzeugt 3 Reframe-Varianten parallel — du wählst die beste.</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button size="sm" variant="ghost" onClick={() => setCropOpen(true)}>
+                            Manueller Crop
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Plan B: Bildausschnitt selbst wählen, ohne KI.</TooltipContent>
+                      </Tooltip>
                     </div>
                     {reframeBusy && (
                       <p className="text-[11px] text-muted-foreground">Reframe läuft… kann bis zu 30 s pro Format dauern.</p>
                     )}
+
+                    <ReframeHistoryStrip
+                      history={activeComposition.reframeHistory ?? []}
+                      current={activeComposition.backgroundImageUrl}
+                      onRollback={() => {
+                        actions.rollbackReframe();
+                        toast.success("Vorherige Version wiederhergestellt");
+                      }}
+                      onPick={(url) => {
+                        const prev = activeComposition.backgroundImageUrl;
+                        if (prev && prev !== url) actions.pushReframeHistory(prev);
+                        actions.setBackground(url);
+                      }}
+                      onClear={() => actions.clearReframeHistory()}
+                    />
                   </div>
                 )}
 
@@ -593,6 +641,26 @@ const CanvasBannerStudioShell: React.FC = () => {
         </div>
       </div>
     </div>
+
+    <ReframeVariantsDialog
+      open={variantsOpen}
+      onOpenChange={setVariantsOpen}
+      sourceImageUrl={activeComposition.masterImageUrl ?? activeComposition.backgroundImageUrl}
+      targetWidth={activeFormat.width}
+      targetHeight={activeFormat.height}
+      onPick={(url) => applyReframeResult(activeFormat.id, url, activeComposition.masterImageUrl ?? activeComposition.backgroundImageUrl)}
+    />
+    <ManualCropDialog
+      open={cropOpen}
+      onOpenChange={setCropOpen}
+      sourceImageUrl={activeComposition.masterImageUrl ?? activeComposition.backgroundImageUrl}
+      targetWidth={activeFormat.width}
+      targetHeight={activeFormat.height}
+      onPick={(url) => {
+        applyReframeResult(activeFormat.id, url, activeComposition.masterImageUrl ?? activeComposition.backgroundImageUrl);
+        toast.success("Manueller Crop übernommen");
+      }}
+    />
     </TooltipProvider>
   );
 };

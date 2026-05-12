@@ -26,6 +26,10 @@ type Action =
   | { type: "reorder-layer"; formatId: string; layerId: string; direction: "forward" | "backward" }
   | { type: "reset-format-layout"; formatId: string }
   | { type: "set-format-scale"; formatId: string; scale: number }
+  | { type: "set-master-image"; formatId: string; url?: string }
+  | { type: "push-reframe-history"; formatId: string; url: string }
+  | { type: "rollback-reframe"; formatId: string }
+  | { type: "clear-reframe-history"; formatId: string }
   | { type: "set-vehicle"; vehicleId: string | null | undefined }
   | { type: "set-banner-project-id"; id: string | undefined }
   | { type: "set-project-title"; title: string }
@@ -164,6 +168,41 @@ function reducer(state: StudioState, action: Action): StudioState {
         compositions: { ...state.compositions, [action.formatId]: { ...c, scale } },
       };
     }
+    case "set-master-image": {
+      const c = ensureComposition(state, action.formatId);
+      return {
+        ...state,
+        compositions: { ...state.compositions, [action.formatId]: { ...c, masterImageUrl: action.url } },
+      };
+    }
+    case "push-reframe-history": {
+      const c = ensureComposition(state, action.formatId);
+      const next = [...(c.reframeHistory ?? []), action.url].slice(-8); // keep last 8
+      return {
+        ...state,
+        compositions: { ...state.compositions, [action.formatId]: { ...c, reframeHistory: next } },
+      };
+    }
+    case "rollback-reframe": {
+      const c = ensureComposition(state, action.formatId);
+      const hist = [...(c.reframeHistory ?? [])];
+      if (hist.length === 0) return state;
+      const prev = hist.pop()!;
+      return {
+        ...state,
+        compositions: {
+          ...state.compositions,
+          [action.formatId]: { ...c, backgroundImageUrl: prev, reframeHistory: hist },
+        },
+      };
+    }
+    case "clear-reframe-history": {
+      const c = ensureComposition(state, action.formatId);
+      return {
+        ...state,
+        compositions: { ...state.compositions, [action.formatId]: { ...c, reframeHistory: [] } },
+      };
+    }
     case "set-vehicle":
       return { ...state, vehicleId: action.vehicleId };
     case "set-banner-project-id":
@@ -212,6 +251,14 @@ export function useCanvasBannerStore() {
         dispatch({ type: "reset-format-layout", formatId }),
       setFormatScale: (scale: number, formatId = state.activeFormatId) =>
         dispatch({ type: "set-format-scale", formatId, scale }),
+      setMasterImage: (url: string | undefined, formatId = state.activeFormatId) =>
+        dispatch({ type: "set-master-image", formatId, url }),
+      pushReframeHistory: (url: string, formatId = state.activeFormatId) =>
+        dispatch({ type: "push-reframe-history", formatId, url }),
+      rollbackReframe: (formatId = state.activeFormatId) =>
+        dispatch({ type: "rollback-reframe", formatId }),
+      clearReframeHistory: (formatId = state.activeFormatId) =>
+        dispatch({ type: "clear-reframe-history", formatId }),
       setVehicle: (vehicleId: string | null | undefined) =>
         dispatch({ type: "set-vehicle", vehicleId }),
       setBannerProjectId: (id: string | undefined) =>
