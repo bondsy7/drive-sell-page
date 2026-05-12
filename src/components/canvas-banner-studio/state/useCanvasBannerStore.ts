@@ -23,6 +23,8 @@ type Action =
   | { type: "set-template"; formatId: string; templateId: string }
   | { type: "set-logo"; formatId: string; url?: string }
   | { type: "patch-layer"; formatId: string; layerId: string; patch: Partial<BannerLayer> }
+  | { type: "add-layer"; formatId: string; layer: BannerLayer }
+  | { type: "remove-layer"; formatId: string; layerId: string }
   | { type: "select-layer"; layerId?: string }
   | { type: "toggle-safe-area" }
   | { type: "reorder-layer"; formatId: string; layerId: string; direction: "forward" | "backward" }
