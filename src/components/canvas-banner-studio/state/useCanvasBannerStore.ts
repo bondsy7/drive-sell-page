@@ -24,7 +24,11 @@ type Action =
   | { type: "select-layer"; layerId?: string }
   | { type: "toggle-safe-area" }
   | { type: "reorder-layer"; formatId: string; layerId: string; direction: "forward" | "backward" }
-  | { type: "reset-format-layout"; formatId: string };
+  | { type: "reset-format-layout"; formatId: string }
+  | { type: "set-vehicle"; vehicleId: string | null | undefined }
+  | { type: "set-banner-project-id"; id: string | undefined }
+  | { type: "set-project-title"; title: string }
+  | { type: "hydrate"; state: StudioState };
 
 const initialFormatId = BANNER_FORMATS[0].id;
 
