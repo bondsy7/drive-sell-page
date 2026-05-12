@@ -65,7 +65,7 @@ const CiPanel: React.FC<CiPanelProps> = ({
     try {
       const url = await uploadCustomCiLogo(file, userId);
       onPatchCi({ customLogoUrl: url } as any);
-      onSetLogo(url);
+      setLogo(url);
       toast.success("Eigenes Logo übernommen");
     } catch (e: any) {
       console.error(e);
