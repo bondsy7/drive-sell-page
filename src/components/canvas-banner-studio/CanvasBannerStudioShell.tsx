@@ -64,6 +64,7 @@ const CanvasBannerStudioShell: React.FC = () => {
   const stageRef = useRef<Konva.Stage | null>(null);
 
   const [zipBusy, setZipBusy] = useState(false);
+  const [applyLogoToAll, setApplyLogoToAll] = useState(true);
   const [aiBusy, setAiBusy] = useState(false);
   const [reframeBusy, setReframeBusy] = useState(false);
   const [variantsOpen, setVariantsOpen] = useState(false);
