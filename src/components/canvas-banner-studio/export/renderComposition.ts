@@ -128,6 +128,8 @@ export async function renderCompositionToDataURL(
   composition: BannerComposition,
   textFields: BannerTextFields,
   type: ExportFormat = "png",
+  ci?: CiState,
+  ciContext?: CiContext | null,
 ): Promise<string> {
   const canvas = document.createElement("canvas");
   canvas.width = format.width;
@@ -146,9 +148,15 @@ export async function renderCompositionToDataURL(
 
   drawOverlay(ctx, composition.overlayDirection, composition.overlayStrength, format.width, format.height);
 
-  const logo = await loadImage(composition.logoUrl);
+  let logoUrl = composition.logoUrl;
+  if (logoUrl && ci && ci.logoMode !== "original") {
+    logoUrl = await recolorSvg(logoUrl, ci.logoMode, ci.logoCustomColor);
+  }
+  const logo = await loadImage(logoUrl);
 
   const formatScale = composition.scale ?? 1;
+  const FONT_DISPLAY = ci?.fontDisplay ? `"${ci.fontDisplay}", ${DEFAULT_FONT_FAMILY}` : DEFAULT_FONT_FAMILY;
+  const FONT_BODY = ci?.fontBody ? `"${ci.fontBody}", ${DEFAULT_FONT_FAMILY}` : DEFAULT_FONT_FAMILY;
 
   for (const layer of composition.layers) {
     if (!layer.visible) continue;
@@ -161,10 +169,12 @@ export async function renderCompositionToDataURL(
       ctx.drawImage(logo, layer.x, layer.y, w, w * ratio);
       continue;
     }
-    const text = layer.field ? textFields[layer.field] : "";
+    const raw = layer.field ? textFields[layer.field] : "";
+    const text = resolveShortcodes(raw, ciContext);
     if (!text) continue;
     const fontSize = effectiveFontSize(layer, text, formatScale);
-    drawTextLayer(ctx, layer, text, resolveColor(layer.color), fontSize);
+    const family = (layer.id === "headline" || layer.id === "subline") ? FONT_DISPLAY : FONT_BODY;
+    drawTextLayer(ctx, layer, text, resolveColor(layer.color), fontSize, family);
   }
 
   const mime = type === "png" ? "image/png" : type === "jpg" ? "image/jpeg" : "image/webp";
