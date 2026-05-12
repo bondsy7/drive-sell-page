@@ -58,6 +58,8 @@ const CanvasBannerStudioShell: React.FC = () => {
   const [zipBusy, setZipBusy] = useState(false);
   const [aiBusy, setAiBusy] = useState(false);
   const [reframeBusy, setReframeBusy] = useState(false);
+  const [variantsOpen, setVariantsOpen] = useState(false);
+  const [cropOpen, setCropOpen] = useState(false);
 
   // Persistence: autosave drafts to banner_projects.
   useBannerProject({
