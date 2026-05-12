@@ -359,6 +359,10 @@ const CanvasBannerStudioShell: React.FC = () => {
                     Bitte rechtliche Anforderungen für die Platzierung prüfen.
                   </div>
                 )}
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold">Compliance-Check</h3>
+                  <LegalCheck format={activeFormat} composition={activeComposition} textFields={state.textFields} />
+                </div>
                 <div className="grid grid-cols-3 gap-2">
                   <Button onClick={() => handleExport("png")}><Download className="w-4 h-4 mr-1" /> PNG</Button>
                   <Button variant="outline" onClick={() => handleExport("jpg")}><Download className="w-4 h-4 mr-1" /> JPG</Button>
