@@ -9,6 +9,7 @@ import type {
   BannerTextFields,
   OverlayDirection,
 } from "../state/types";
+import { effectiveFontSize, FONT_FAMILY } from "../canvas/textFit";
 
 type ExportFormat = "png" | "jpg" | "webp";
 
