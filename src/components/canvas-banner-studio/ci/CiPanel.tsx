@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { BRAND_PRESETS, getBrandPreset } from "./brandPresets";
 import { uploadCustomCiLogo } from "./uploadCiLogo";
+import { DISPLAY_FONTS, BODY_FONTS, findFontPreset, type FontPreset } from "./fontCatalog";
+import { ensureFontLoaded } from "./fontLoader";
 import type { CiState, LogoMode } from "../state/types";
 import type { CiContext } from "./profileSources";
 
@@ -111,29 +113,37 @@ const CiPanel: React.FC<CiPanelProps> = ({
       </div>
 
       {/* Fonts */}
-      <div className="grid grid-cols-2 gap-2">
-        <div className="space-y-1">
-          <Label className="text-[11px] flex items-center gap-1 text-muted-foreground">
-            <Type className="w-3 h-3" /> Display-Font
-          </Label>
-          <Input
+      <div className="space-y-2">
+        <Label className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+          <Type className="w-3 h-3" /> Schriften
+        </Label>
+        <div className="grid grid-cols-2 gap-2">
+          <FontSelect
+            label="Display (Headlines)"
+            list={DISPLAY_FONTS}
             value={ci.fontDisplay}
-            onChange={(e) => onPatchCi({ fontDisplay: e.target.value })}
-            className="text-sm"
-            placeholder="Space Grotesk"
+            onChange={(family, spec) => {
+              if (spec) ensureFontLoaded(spec);
+              const next = new Set(ci.googleFonts ?? []);
+              if (spec) next.add(spec);
+              onPatchCi({ fontDisplay: family, googleFonts: Array.from(next) });
+            }}
           />
-        </div>
-        <div className="space-y-1">
-          <Label className="text-[11px] flex items-center gap-1 text-muted-foreground">
-            <Type className="w-3 h-3" /> Body-Font
-          </Label>
-          <Input
+          <FontSelect
+            label="Body (Fließtext)"
+            list={BODY_FONTS}
             value={ci.fontBody}
-            onChange={(e) => onPatchCi({ fontBody: e.target.value })}
-            className="text-sm"
-            placeholder="Inter"
+            onChange={(family, spec) => {
+              if (spec) ensureFontLoaded(spec);
+              const next = new Set(ci.googleFonts ?? []);
+              if (spec) next.add(spec);
+              onPatchCi({ fontBody: family, googleFonts: Array.from(next) });
+            }}
           />
         </div>
+        <p className="text-[11px] text-muted-foreground">
+          Schriften werden live in Vorschau und Export angewendet.
+        </p>
       </div>
 
       {/* Colors */}
