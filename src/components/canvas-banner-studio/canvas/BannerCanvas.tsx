@@ -254,11 +254,13 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
                     />
                   );
                 }
-                const text = l.field ? textFields[l.field] : "";
+                const rawText = l.field ? textFields[l.field] : "";
+                const text = resolveShortcodes(rawText, ciContext);
                 if (!text) return null;
                 const color = resolveColor(l.color);
                 const effFont = effectiveFontSize(l, text, formatScale);
                 const isShrunk = effFont < (l.fontSize ?? 24) * formatScale - 0.5;
+                const layerFont = (l.id === "headline" || l.id === "subline") ? FONT_DISPLAY : FONT_BODY;
                 return (
                   <Group
                     key={l.id}
@@ -276,7 +278,7 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
                       width={l.width}
                       fontSize={effFont}
                       fontStyle={l.fontWeight && l.fontWeight >= 600 ? "bold" : "normal"}
-                      fontFamily={FONT_FAMILY}
+                      fontFamily={layerFont}
                       fill={color}
                       align={l.align ?? "left"}
                       lineHeight={1.2}
