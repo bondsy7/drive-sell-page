@@ -234,13 +234,23 @@ const CanvasBannerStudioShell: React.FC = () => {
                   selectedId={activeComposition.selectedTemplateId}
                   onSelect={(id) => actions.setTemplate(id)}
                 />
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Button
                     size="sm"
                     variant={state.showSafeArea ? "default" : "outline"}
                     onClick={actions.toggleSafeArea}
                   >
                     Sicherheitsbereich {state.showSafeArea ? "ausblenden" : "anzeigen"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleAiSuggest}
+                    disabled={aiBusy || !activeComposition.backgroundImageUrl}
+                    title={!activeComposition.backgroundImageUrl ? "Bitte zuerst Hintergrundbild hochladen" : "KI-Layout-Vorschlag basierend auf dem Hintergrundbild"}
+                  >
+                    <Wand2 className="w-3.5 h-3.5 mr-1" />
+                    {aiBusy ? "Analysiere…" : "KI-Layout-Vorschlag"}
                   </Button>
                 </div>
                 <LayerOrderControls
@@ -281,29 +291,29 @@ const CanvasBannerStudioShell: React.FC = () => {
                 </div>
 
                 {state.selectedFormatIds.length > 1 && (
-                  <div className="pt-3 border-t border-border space-y-2">
-                    <h3 className="text-sm font-semibold">Weitere ausgewählte Formate</h3>
-                    <p className="text-xs text-muted-foreground">
-                      Wähle ein anderes Format aus der Vorschau-Leiste, um es einzeln zu exportieren.
-                      (Multi-Export folgt in der nächsten Ausbaustufe.)
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {state.selectedFormatIds.map((id) => {
-                        const f = getFormatById(id);
-                        const active = id === state.activeFormatId;
-                        return (
-                          <button
-                            key={id}
-                            onClick={() => actions.setActiveFormat(id)}
-                            className={`px-2.5 py-1 text-xs rounded border ${
-                              active ? "border-accent bg-accent/10" : "border-border bg-card"
-                            }`}
-                          >
-                            {f.name} ({f.width}×{f.height})
-                          </button>
-                        );
-                      })}
+                  <div className="pt-3 border-t border-border space-y-3">
+                    <div>
+                      <h3 className="text-sm font-semibold mb-1">Alle Formate exportieren</h3>
+                      <p className="text-xs text-muted-foreground mb-2">
+                        Erzeugt für jedes ausgewählte Format einen Banner in exakter Zielgröße und packt sie als ZIP.
+                      </p>
+                      <div className="grid grid-cols-3 gap-2">
+                        <Button onClick={() => handleZipExport("png")} disabled={zipBusy}>
+                          <Package className="w-4 h-4 mr-1" /> ZIP · PNG
+                        </Button>
+                        <Button variant="outline" onClick={() => handleZipExport("jpg")} disabled={zipBusy}>
+                          <Package className="w-4 h-4 mr-1" /> ZIP · JPG
+                        </Button>
+                        <Button variant="outline" onClick={() => handleZipExport("webp")} disabled={zipBusy}>
+                          <Package className="w-4 h-4 mr-1" /> ZIP · WebP
+                        </Button>
+                      </div>
                     </div>
+                    <MultiFormatPreview
+                      state={state}
+                      textFields={state.textFields}
+                      onActivate={actions.setActiveFormat}
+                    />
                   </div>
                 )}
               </section>
