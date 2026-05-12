@@ -63,6 +63,8 @@ export type BannerComposition = {
   selectedTemplateId: string;
   logoUrl?: string;
   layers: BannerLayer[];
+  /** Global per-format scaling multiplier for fontSize and logo width (default 1). */
+  scale?: number;
 };
 
 export type StudioState = {
