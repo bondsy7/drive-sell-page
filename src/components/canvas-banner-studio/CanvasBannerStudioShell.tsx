@@ -328,8 +328,14 @@ const CanvasBannerStudioShell: React.FC = () => {
             ciContext={ciContext}
             hasProfile={!!profile}
             detectedBrandKey={detectedBrandKey}
+            currentLogoUrl={activeComposition.logoUrl}
+            manufacturerLogoUrl={
+              activeVehicle?.brand ? getLogoForMake(activeVehicle.brand) ?? undefined : undefined
+            }
+            dealerLogoUrl={profile?.logo_url ?? undefined}
             onApplyBrandPreset={actions.applyBrandPreset}
             onPatchCi={actions.setCi}
+            onSetLogo={(url) => actions.setLogo(url)}
           />
         )}
         {/* Step nav */}
