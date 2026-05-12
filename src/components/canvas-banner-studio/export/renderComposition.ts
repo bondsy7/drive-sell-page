@@ -91,10 +91,11 @@ function drawTextLayer(
   text: string,
   color: string,
   fontSize: number,
+  fontFamily: string,
 ) {
   const weight = (layer.fontWeight ?? 400) >= 600 ? "700" : "400";
   ctx.save();
-  ctx.font = `${weight} ${fontSize}px ${FONT_FAMILY}`;
+  ctx.font = `${weight} ${fontSize}px ${fontFamily}`;
   ctx.fillStyle = color;
   ctx.textBaseline = "top";
   if (layer.type !== "legal") {
