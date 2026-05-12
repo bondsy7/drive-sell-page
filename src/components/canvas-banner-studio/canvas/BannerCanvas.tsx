@@ -326,7 +326,7 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
                     />
                   );
                 }
-                const rawText = l.field ? textFields[l.field] : "";
+                const rawText = l.field ? textFields[l.field] : (l.content ?? "");
                 const text = resolveShortcodes(rawText, ciContext);
                 if (!text) return null;
                 const color = resolveColor(l.color);
