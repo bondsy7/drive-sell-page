@@ -26,6 +26,10 @@ type Action =
   | { type: "reorder-layer"; formatId: string; layerId: string; direction: "forward" | "backward" }
   | { type: "reset-format-layout"; formatId: string }
   | { type: "set-format-scale"; formatId: string; scale: number }
+  | { type: "set-master-image"; formatId: string; url?: string }
+  | { type: "push-reframe-history"; formatId: string; url: string }
+  | { type: "rollback-reframe"; formatId: string }
+  | { type: "clear-reframe-history"; formatId: string }
   | { type: "set-vehicle"; vehicleId: string | null | undefined }
   | { type: "set-banner-project-id"; id: string | undefined }
   | { type: "set-project-title"; title: string }
