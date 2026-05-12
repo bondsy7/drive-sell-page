@@ -15,6 +15,7 @@ export const DEFAULT_TEXT_FIELDS: BannerTextFields = {
 export const buildDefaultComposition = (
   formatId: string,
   templateId = "classic-offer",
+  ciLayerOverrides?: Array<{ id: string } & Record<string, unknown>> | null,
 ): BannerComposition => {
   const { spec } = loadTemplateSync(formatId, templateId);
   return {
@@ -23,6 +24,6 @@ export const buildDefaultComposition = (
     overlayDirection: "bottom",
     overlayStrength: 50,
     selectedTemplateId: templateId,
-    layers: specToBannerLayers(spec),
+    layers: specToBannerLayers(spec, ciLayerOverrides as never),
   };
 };
