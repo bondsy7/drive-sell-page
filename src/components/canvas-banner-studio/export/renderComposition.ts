@@ -7,9 +7,13 @@ import type {
   BannerFormat,
   BannerLayer,
   BannerTextFields,
+  CiState,
   OverlayDirection,
 } from "../state/types";
-import { effectiveFontSize, FONT_FAMILY } from "../canvas/textFit";
+import { effectiveFontSize, FONT_FAMILY as DEFAULT_FONT_FAMILY } from "../canvas/textFit";
+import { resolveShortcodes } from "../ci/shortcodes";
+import type { CiContext } from "../ci/profileSources";
+import { recolorSvg } from "../ci/svgRecolor";
 
 type ExportFormat = "png" | "jpg" | "webp";
 
@@ -87,10 +91,11 @@ function drawTextLayer(
   text: string,
   color: string,
   fontSize: number,
+  fontFamily: string,
 ) {
   const weight = (layer.fontWeight ?? 400) >= 600 ? "700" : "400";
   ctx.save();
-  ctx.font = `${weight} ${fontSize}px ${FONT_FAMILY}`;
+  ctx.font = `${weight} ${fontSize}px ${fontFamily}`;
   ctx.fillStyle = color;
   ctx.textBaseline = "top";
   if (layer.type !== "legal") {
@@ -123,6 +128,8 @@ export async function renderCompositionToDataURL(
   composition: BannerComposition,
   textFields: BannerTextFields,
   type: ExportFormat = "png",
+  ci?: CiState,
+  ciContext?: CiContext | null,
 ): Promise<string> {
   const canvas = document.createElement("canvas");
   canvas.width = format.width;
@@ -141,9 +148,15 @@ export async function renderCompositionToDataURL(
 
   drawOverlay(ctx, composition.overlayDirection, composition.overlayStrength, format.width, format.height);
 
-  const logo = await loadImage(composition.logoUrl);
+  let logoUrl = composition.logoUrl;
+  if (logoUrl && ci && ci.logoMode !== "original") {
+    logoUrl = await recolorSvg(logoUrl, ci.logoMode, ci.logoCustomColor);
+  }
+  const logo = await loadImage(logoUrl);
 
   const formatScale = composition.scale ?? 1;
+  const FONT_DISPLAY = ci?.fontDisplay ? `"${ci.fontDisplay}", ${DEFAULT_FONT_FAMILY}` : DEFAULT_FONT_FAMILY;
+  const FONT_BODY = ci?.fontBody ? `"${ci.fontBody}", ${DEFAULT_FONT_FAMILY}` : DEFAULT_FONT_FAMILY;
 
   for (const layer of composition.layers) {
     if (!layer.visible) continue;
@@ -156,10 +169,12 @@ export async function renderCompositionToDataURL(
       ctx.drawImage(logo, layer.x, layer.y, w, w * ratio);
       continue;
     }
-    const text = layer.field ? textFields[layer.field] : "";
+    const raw = layer.field ? textFields[layer.field] : "";
+    const text = resolveShortcodes(raw, ciContext);
     if (!text) continue;
     const fontSize = effectiveFontSize(layer, text, formatScale);
-    drawTextLayer(ctx, layer, text, resolveColor(layer.color), fontSize);
+    const family = (layer.id === "headline" || layer.id === "subline") ? FONT_DISPLAY : FONT_BODY;
+    drawTextLayer(ctx, layer, text, resolveColor(layer.color), fontSize, family);
   }
 
   const mime = type === "png" ? "image/png" : type === "jpg" ? "image/jpeg" : "image/webp";

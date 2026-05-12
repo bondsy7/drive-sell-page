@@ -71,6 +71,29 @@ export type BannerComposition = {
   masterImageUrl?: string;
 };
 
+export type LogoMode = "original" | "monochrome-light" | "monochrome-dark" | "custom";
+
+export type CiState = {
+  /** Brand-Preset key (z.B. "bmw", "custom") */
+  brandKey: string;
+  fontDisplay: string;
+  fontBody: string;
+  /** Geladene Google-Font Specs (z.B. "Inter:wght@400;700") */
+  googleFonts?: string[];
+  colors: {
+    primary: string;
+    secondary: string;
+    text: string;
+    bg: string;
+  };
+  /** Logo-Recoloring */
+  logoMode: LogoMode;
+  logoCustomColor: string;
+  /** Händler-Logo zusätzlich zum Hersteller-Logo nutzen */
+  useDealerLogo: boolean;
+  dealerLogoUrl?: string;
+};
+
 export type StudioState = {
   selectedFormatIds: string[];
   activeFormatId: string;
@@ -84,4 +107,6 @@ export type StudioState = {
   bannerProjectId?: string;
   /** Free-text title shown in dashboard. */
   projectTitle?: string;
+  /** Corporate Identity Layer */
+  ci?: CiState;
 };

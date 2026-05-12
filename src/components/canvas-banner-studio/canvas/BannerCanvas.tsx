@@ -1,9 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Stage, Layer, Rect, Image as KImage, Text as KText, Group, Transformer, Line } from "react-konva";
 import type Konva from "konva";
-import type { BannerComposition, BannerLayer, OverlayDirection } from "../state/types";
+import type { BannerComposition, BannerLayer, CiState, OverlayDirection } from "../state/types";
 import type { BannerFormat, BannerTextFields } from "../state/types";
-import { effectiveFontSize, FONT_FAMILY } from "./textFit";
+import { effectiveFontSize, FONT_FAMILY as DEFAULT_FONT_FAMILY } from "./textFit";
+import { resolveShortcodes } from "../ci/shortcodes";
+import type { CiContext } from "../ci/profileSources";
+import { recolorSvg } from "../ci/svgRecolor";
+import { ensureBrandFonts } from "../ci/fontLoader";
 
 interface BannerCanvasProps {
   format: BannerFormat;
@@ -12,6 +16,8 @@ interface BannerCanvasProps {
   showSafeArea: boolean;
   selectedLayerId?: string;
   resolveColor: (token?: string) => string;
+  ci?: CiState;
+  ciContext?: CiContext | null;
   onSelectLayer?: (id?: string) => void;
   onLayerDrag?: (id: string, x: number, y: number) => void;
   onLayerResize?: (id: string, patch: { width?: number; height?: number; fontSize?: number }) => void;
@@ -77,7 +83,7 @@ function overlayRects(
 
 const BannerCanvas: React.FC<BannerCanvasProps> = ({
   format, composition, textFields, showSafeArea, selectedLayerId,
-  resolveColor, onSelectLayer, onLayerDrag, onLayerResize, stageRef,
+  resolveColor, ci, ciContext, onSelectLayer, onLayerDrag, onLayerResize, stageRef,
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const internalStageRef = useRef<Konva.Stage | null>(null);
@@ -85,8 +91,28 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
   const nodeRefs = useRef<Record<string, Konva.Node | null>>({});
   const [scale, setScale] = useState(1);
   const [snapGuides, setSnapGuides] = useState<{ vCenter: boolean; hCenter: boolean }>({ vCenter: false, hCenter: false });
+  const [logoSrc, setLogoSrc] = useState<string | undefined>(composition.logoUrl);
 
   const formatScale = composition.scale ?? 1;
+  const FONT_DISPLAY = ci?.fontDisplay ? `"${ci.fontDisplay}", ${DEFAULT_FONT_FAMILY}` : DEFAULT_FONT_FAMILY;
+  const FONT_BODY = ci?.fontBody ? `"${ci.fontBody}", ${DEFAULT_FONT_FAMILY}` : DEFAULT_FONT_FAMILY;
+  const FONT_FAMILY = FONT_BODY;
+
+  useEffect(() => { ensureBrandFonts(ci?.googleFonts); }, [ci?.googleFonts]);
+
+  // Recolor SVG logo when CI logo mode changes.
+  useEffect(() => {
+    let cancelled = false;
+    const url = composition.logoUrl;
+    if (!url || !ci || ci.logoMode === "original") {
+      setLogoSrc(url);
+      return;
+    }
+    recolorSvg(url, ci.logoMode, ci.logoCustomColor).then((out) => {
+      if (!cancelled) setLogoSrc(out);
+    });
+    return () => { cancelled = true; };
+  }, [composition.logoUrl, ci?.logoMode, ci?.logoCustomColor, ci]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -102,7 +128,7 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
   }, [format.width, format.height]);
 
   const bg = useImage(composition.backgroundImageUrl);
-  const logo = useImage(composition.logoUrl);
+  const logo = useImage(logoSrc);
 
   const bgFit = useMemo(() => {
     if (!bg) return null;
@@ -228,11 +254,13 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
                     />
                   );
                 }
-                const text = l.field ? textFields[l.field] : "";
+                const rawText = l.field ? textFields[l.field] : "";
+                const text = resolveShortcodes(rawText, ciContext);
                 if (!text) return null;
                 const color = resolveColor(l.color);
                 const effFont = effectiveFontSize(l, text, formatScale);
                 const isShrunk = effFont < (l.fontSize ?? 24) * formatScale - 0.5;
+                const layerFont = (l.id === "headline" || l.id === "subline") ? FONT_DISPLAY : FONT_BODY;
                 return (
                   <Group
                     key={l.id}
@@ -250,7 +278,7 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
                       width={l.width}
                       fontSize={effFont}
                       fontStyle={l.fontWeight && l.fontWeight >= 600 ? "bold" : "normal"}
-                      fontFamily={FONT_FAMILY}
+                      fontFamily={layerFont}
                       fill={color}
                       align={l.align ?? "left"}
                       lineHeight={1.2}

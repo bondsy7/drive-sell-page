@@ -3,6 +3,7 @@ import type {
   BannerComposition,
   BannerLayer,
   BannerTextFieldKey,
+  CiState,
   ImageFitMode,
   OverlayDirection,
   StudioState,
@@ -10,6 +11,7 @@ import type {
 import { BANNER_FORMATS, getFormatById } from "../data/formats";
 import { buildDefaultComposition, DEFAULT_TEXT_FIELDS } from "../data/defaultComposition";
 import { getLayoutTemplate } from "../data/layoutTemplates";
+import { getBrandPreset } from "../ci/brandPresets";
 
 type Action =
   | { type: "set-active-format"; formatId: string }
@@ -33,9 +35,25 @@ type Action =
   | { type: "set-vehicle"; vehicleId: string | null | undefined }
   | { type: "set-banner-project-id"; id: string | undefined }
   | { type: "set-project-title"; title: string }
+  | { type: "set-ci"; patch: Partial<CiState> }
+  | { type: "apply-brand-preset"; brandKey: string }
   | { type: "hydrate"; state: StudioState };
 
 const initialFormatId = BANNER_FORMATS[0].id;
+
+function buildDefaultCi(): CiState {
+  const p = getBrandPreset("custom");
+  return {
+    brandKey: p.key,
+    fontDisplay: p.fonts.display,
+    fontBody: p.fonts.body,
+    googleFonts: p.googleFonts,
+    colors: { ...p.colors },
+    logoMode: "original",
+    logoCustomColor: "#ffffff",
+    useDealerLogo: false,
+  };
+}
 
 const initialState: StudioState = {
   selectedFormatIds: [initialFormatId],
@@ -45,6 +63,7 @@ const initialState: StudioState = {
     [initialFormatId]: buildDefaultComposition(initialFormatId),
   },
   showSafeArea: false,
+  ci: buildDefaultCi(),
 };
 
 function ensureComposition(state: StudioState, formatId: string): BannerComposition {
@@ -209,8 +228,27 @@ function reducer(state: StudioState, action: Action): StudioState {
       return { ...state, bannerProjectId: action.id };
     case "set-project-title":
       return { ...state, projectTitle: action.title };
+    case "set-ci": {
+      const cur = state.ci ?? buildDefaultCi();
+      return { ...state, ci: { ...cur, ...action.patch, colors: { ...cur.colors, ...(action.patch.colors ?? {}) } } };
+    }
+    case "apply-brand-preset": {
+      const p = getBrandPreset(action.brandKey);
+      const cur = state.ci ?? buildDefaultCi();
+      return {
+        ...state,
+        ci: {
+          ...cur,
+          brandKey: p.key,
+          fontDisplay: p.fonts.display,
+          fontBody: p.fonts.body,
+          googleFonts: p.googleFonts,
+          colors: { ...p.colors },
+        },
+      };
+    }
     case "hydrate":
-      return { ...state, ...action.state };
+      return { ...state, ...action.state, ci: action.state.ci ?? state.ci ?? buildDefaultCi() };
     default:
       return state;
   }
@@ -265,6 +303,8 @@ export function useCanvasBannerStore() {
         dispatch({ type: "set-banner-project-id", id }),
       setProjectTitle: (title: string) =>
         dispatch({ type: "set-project-title", title }),
+      setCi: (patch: Partial<CiState>) => dispatch({ type: "set-ci", patch }),
+      applyBrandPreset: (brandKey: string) => dispatch({ type: "apply-brand-preset", brandKey }),
       hydrate: (s: StudioState) => dispatch({ type: "hydrate", state: s }),
     }),
     [state.activeFormatId],
