@@ -10,6 +10,7 @@ import AppHeader from "@/components/AppHeader";
 import { useAuth } from "@/hooks/useAuth";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useVehicleMakes } from "@/hooks/useVehicleMakes";
+import { supabase } from "@/integrations/supabase/client";
 import { useCanvasBannerStore } from "./state/useCanvasBannerStore";
 import { getFormatById } from "./data/formats";
 import BannerCanvas from "./canvas/BannerCanvas";
@@ -35,6 +36,9 @@ import { buildFilename, downloadDataUrl, exportStage, type ExportFormat } from "
 import { exportAllAsZip } from "./export/zipExport";
 import { positionToCoords, suggestLayoutFromImage } from "./ai/layoutSuggestClient";
 import { reframeImageForFormat } from "./ai/reframeClient";
+import CiPanel from "./ci/CiPanel";
+import { buildCiContext, type DealerProfile } from "./ci/profileSources";
+import { detectBrandKey } from "./ci/brandPresets";
 
 type Step = 1 | 2 | 3 | 4 | 5;
 const STEPS: { id: Step; title: string; subtitle: string }[] = [
