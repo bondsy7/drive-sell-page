@@ -433,6 +433,7 @@ const CanvasBannerStudioShell: React.FC = () => {
         </div>
       </div>
     </div>
+    </TooltipProvider>
   );
 };
 
