@@ -35,9 +35,25 @@ type Action =
   | { type: "set-vehicle"; vehicleId: string | null | undefined }
   | { type: "set-banner-project-id"; id: string | undefined }
   | { type: "set-project-title"; title: string }
+  | { type: "set-ci"; patch: Partial<CiState> }
+  | { type: "apply-brand-preset"; brandKey: string }
   | { type: "hydrate"; state: StudioState };
 
 const initialFormatId = BANNER_FORMATS[0].id;
+
+function buildDefaultCi(): CiState {
+  const p = getBrandPreset("custom");
+  return {
+    brandKey: p.key,
+    fontDisplay: p.fonts.display,
+    fontBody: p.fonts.body,
+    googleFonts: p.googleFonts,
+    colors: { ...p.colors },
+    logoMode: "original",
+    logoCustomColor: "#ffffff",
+    useDealerLogo: false,
+  };
+}
 
 const initialState: StudioState = {
   selectedFormatIds: [initialFormatId],
@@ -47,6 +63,7 @@ const initialState: StudioState = {
     [initialFormatId]: buildDefaultComposition(initialFormatId),
   },
   showSafeArea: false,
+  ci: buildDefaultCi(),
 };
 
 function ensureComposition(state: StudioState, formatId: string): BannerComposition {
