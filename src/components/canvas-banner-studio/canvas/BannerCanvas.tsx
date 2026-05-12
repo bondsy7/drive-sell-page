@@ -83,7 +83,7 @@ function overlayRects(
 
 const BannerCanvas: React.FC<BannerCanvasProps> = ({
   format, composition, textFields, showSafeArea, selectedLayerId,
-  resolveColor, onSelectLayer, onLayerDrag, onLayerResize, stageRef,
+  resolveColor, ci, ciContext, onSelectLayer, onLayerDrag, onLayerResize, stageRef,
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const internalStageRef = useRef<Konva.Stage | null>(null);
@@ -91,8 +91,28 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
   const nodeRefs = useRef<Record<string, Konva.Node | null>>({});
   const [scale, setScale] = useState(1);
   const [snapGuides, setSnapGuides] = useState<{ vCenter: boolean; hCenter: boolean }>({ vCenter: false, hCenter: false });
+  const [logoSrc, setLogoSrc] = useState<string | undefined>(composition.logoUrl);
 
   const formatScale = composition.scale ?? 1;
+  const FONT_DISPLAY = ci?.fontDisplay ? `"${ci.fontDisplay}", ${DEFAULT_FONT_FAMILY}` : DEFAULT_FONT_FAMILY;
+  const FONT_BODY = ci?.fontBody ? `"${ci.fontBody}", ${DEFAULT_FONT_FAMILY}` : DEFAULT_FONT_FAMILY;
+  const FONT_FAMILY = FONT_BODY;
+
+  useEffect(() => { ensureBrandFonts(ci?.googleFonts); }, [ci?.googleFonts]);
+
+  // Recolor SVG logo when CI logo mode changes.
+  useEffect(() => {
+    let cancelled = false;
+    const url = composition.logoUrl;
+    if (!url || !ci || ci.logoMode === "original") {
+      setLogoSrc(url);
+      return;
+    }
+    recolorSvg(url, ci.logoMode, ci.logoCustomColor).then((out) => {
+      if (!cancelled) setLogoSrc(out);
+    });
+    return () => { cancelled = true; };
+  }, [composition.logoUrl, ci?.logoMode, ci?.logoCustomColor, ci]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -108,7 +128,7 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
   }, [format.width, format.height]);
 
   const bg = useImage(composition.backgroundImageUrl);
-  const logo = useImage(composition.logoUrl);
+  const logo = useImage(logoSrc);
 
   const bgFit = useMemo(() => {
     if (!bg) return null;
