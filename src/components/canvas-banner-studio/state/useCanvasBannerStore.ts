@@ -210,6 +210,8 @@ export function useCanvasBannerStore() {
         dispatch({ type: "reorder-layer", formatId, layerId, direction }),
       resetLayout: (formatId = state.activeFormatId) =>
         dispatch({ type: "reset-format-layout", formatId }),
+      setFormatScale: (scale: number, formatId = state.activeFormatId) =>
+        dispatch({ type: "set-format-scale", formatId, scale }),
       setVehicle: (vehicleId: string | null | undefined) =>
         dispatch({ type: "set-vehicle", vehicleId }),
       setBannerProjectId: (id: string | undefined) =>
