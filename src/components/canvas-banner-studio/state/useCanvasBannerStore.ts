@@ -251,6 +251,14 @@ export function useCanvasBannerStore() {
         dispatch({ type: "reset-format-layout", formatId }),
       setFormatScale: (scale: number, formatId = state.activeFormatId) =>
         dispatch({ type: "set-format-scale", formatId, scale }),
+      setMasterImage: (url: string | undefined, formatId = state.activeFormatId) =>
+        dispatch({ type: "set-master-image", formatId, url }),
+      pushReframeHistory: (url: string, formatId = state.activeFormatId) =>
+        dispatch({ type: "push-reframe-history", formatId, url }),
+      rollbackReframe: (formatId = state.activeFormatId) =>
+        dispatch({ type: "rollback-reframe", formatId }),
+      clearReframeHistory: (formatId = state.activeFormatId) =>
+        dispatch({ type: "clear-reframe-history", formatId }),
       setVehicle: (vehicleId: string | null | undefined) =>
         dispatch({ type: "set-vehicle", vehicleId }),
       setBannerProjectId: (id: string | undefined) =>
