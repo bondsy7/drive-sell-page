@@ -11,8 +11,15 @@ interface CiPanelProps {
   ciContext?: CiContext | null;
   hasProfile: boolean;
   detectedBrandKey?: string;
+  /** Aktuelles Logo im Banner (Hersteller- oder Händler-Logo) */
+  currentLogoUrl?: string;
+  /** Hersteller-Logo aus Fahrzeug-Marke (für Quick-Switch) */
+  manufacturerLogoUrl?: string;
+  /** Händler-Logo aus Profil */
+  dealerLogoUrl?: string;
   onApplyBrandPreset: (brandKey: string) => void;
   onPatchCi: (patch: Partial<CiState>) => void;
+  onSetLogo: (url?: string) => void;
 }
 
 const LOGO_MODES: { value: LogoMode; label: string }[] = [
@@ -23,9 +30,13 @@ const LOGO_MODES: { value: LogoMode; label: string }[] = [
 ];
 
 const CiPanel: React.FC<CiPanelProps> = ({
-  ci, ciContext, hasProfile, detectedBrandKey, onApplyBrandPreset, onPatchCi,
+  ci, ciContext, hasProfile, detectedBrandKey, currentLogoUrl,
+  manufacturerLogoUrl, dealerLogoUrl, onApplyBrandPreset, onPatchCi, onSetLogo,
 }) => {
   const preset = getBrandPreset(ci.brandKey);
+  const usingDealer = !!currentLogoUrl && !!dealerLogoUrl && currentLogoUrl === dealerLogoUrl;
+  const usingManufacturer = !!currentLogoUrl && !!manufacturerLogoUrl && currentLogoUrl === manufacturerLogoUrl;
+
 
   return (
     <section className="rounded-xl border border-border bg-card p-4 space-y-4">
@@ -120,10 +131,59 @@ const CiPanel: React.FC<CiPanelProps> = ({
         </p>
       </div>
 
+      {/* Logo source */}
+      <div className="space-y-2 pt-2 border-t border-border">
+        <Label className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+          <ImageIcon className="w-3 h-3" /> Logo-Quelle
+        </Label>
+        <div className="grid grid-cols-3 gap-1">
+          <button
+            type="button"
+            onClick={() => manufacturerLogoUrl && onSetLogo(manufacturerLogoUrl)}
+            disabled={!manufacturerLogoUrl}
+            className={`px-2 py-1.5 rounded-md border text-xs disabled:opacity-40 ${
+              usingManufacturer
+                ? "border-accent bg-accent/10 text-foreground font-semibold"
+                : "border-border text-muted-foreground hover:border-accent/40"
+            }`}
+          >
+            Hersteller
+          </button>
+          <button
+            type="button"
+            onClick={() => dealerLogoUrl && onSetLogo(dealerLogoUrl)}
+            disabled={!dealerLogoUrl}
+            className={`px-2 py-1.5 rounded-md border text-xs disabled:opacity-40 ${
+              usingDealer
+                ? "border-accent bg-accent/10 text-foreground font-semibold"
+                : "border-border text-muted-foreground hover:border-accent/40"
+            }`}
+          >
+            Händler
+          </button>
+          <button
+            type="button"
+            onClick={() => onSetLogo(undefined)}
+            className={`px-2 py-1.5 rounded-md border text-xs ${
+              !currentLogoUrl
+                ? "border-accent bg-accent/10 text-foreground font-semibold"
+                : "border-border text-muted-foreground hover:border-accent/40"
+            }`}
+          >
+            Kein Logo
+          </button>
+        </div>
+        {!dealerLogoUrl && (
+          <p className="text-[11px] text-muted-foreground">
+            Händler-Logo fehlt — bitte im Profil ein Logo hinterlegen.
+          </p>
+        )}
+      </div>
+
       {/* Logo behavior */}
       <div className="space-y-2 pt-2 border-t border-border">
         <Label className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-          <ImageIcon className="w-3 h-3" /> Marken-Logo (SVG)
+          <ImageIcon className="w-3 h-3" /> Logo-Einfärbung (SVG)
         </Label>
         <div className="grid grid-cols-4 gap-1">
           {LOGO_MODES.map((m) => (
@@ -153,7 +213,7 @@ const CiPanel: React.FC<CiPanelProps> = ({
           </div>
         )}
         <p className="text-[11px] text-muted-foreground">
-          Funktioniert nur bei SVG-Logos. PNGs werden unverändert dargestellt.
+          Recoloring funktioniert nur bei SVG-Logos. PNGs werden unverändert dargestellt.
         </p>
       </div>
 
