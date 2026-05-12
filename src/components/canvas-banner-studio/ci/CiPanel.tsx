@@ -1,8 +1,10 @@
-import React from "react";
-import { Palette, Type, ImageIcon, Info } from "lucide-react";
+import React, { useRef, useState } from "react";
+import { Palette, Type, ImageIcon, Info, Upload, Loader2 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 import { BRAND_PRESETS, getBrandPreset } from "./brandPresets";
+import { uploadCustomCiLogo } from "./uploadCiLogo";
 import type { CiState, LogoMode } from "../state/types";
 import type { CiContext } from "./profileSources";
 
@@ -17,6 +19,10 @@ interface CiPanelProps {
   manufacturerLogoUrl?: string;
   /** Händler-Logo aus Profil */
   dealerLogoUrl?: string;
+  /** Eigenes (selbst hochgeladenes) CI-Logo */
+  customLogoUrl?: string;
+  /** User-ID für Storage-Upload */
+  userId?: string;
   onApplyBrandPreset: (brandKey: string) => void;
   onPatchCi: (patch: Partial<CiState>) => void;
   onSetLogo: (url?: string) => void;
@@ -31,11 +37,36 @@ const LOGO_MODES: { value: LogoMode; label: string }[] = [
 
 const CiPanel: React.FC<CiPanelProps> = ({
   ci, ciContext, hasProfile, detectedBrandKey, currentLogoUrl,
-  manufacturerLogoUrl, dealerLogoUrl, onApplyBrandPreset, onPatchCi, onSetLogo,
+  manufacturerLogoUrl, dealerLogoUrl, customLogoUrl, userId,
+  onApplyBrandPreset, onPatchCi, onSetLogo,
 }) => {
   const preset = getBrandPreset(ci.brandKey);
   const usingDealer = !!currentLogoUrl && !!dealerLogoUrl && currentLogoUrl === dealerLogoUrl;
   const usingManufacturer = !!currentLogoUrl && !!manufacturerLogoUrl && currentLogoUrl === manufacturerLogoUrl;
+  const usingCustom = !!currentLogoUrl && !!customLogoUrl && currentLogoUrl === customLogoUrl;
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleUpload = async (file: File | undefined | null) => {
+    if (!file) return;
+    if (!userId) { toast.error("Bitte zuerst einloggen."); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error("Logo zu groß (max. 5 MB)."); return; }
+    setUploading(true);
+    try {
+      const url = await uploadCustomCiLogo(file, userId);
+      onPatchCi({ customLogoUrl: url } as any);
+      onSetLogo(url);
+      toast.success("Eigenes Logo übernommen");
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message ?? "Upload fehlgeschlagen");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
 
 
   return (
