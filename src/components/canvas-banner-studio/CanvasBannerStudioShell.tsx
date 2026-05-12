@@ -221,7 +221,7 @@ const CanvasBannerStudioShell: React.FC = () => {
     if (state.selectedFormatIds.length === 0) return;
     setZipBusy(true);
     try {
-      await exportAllAsZip(state, state.textFields, type);
+      await exportAllAsZip(state, state.textFields, type, state.ci, ciContext);
       toast.success(`${state.selectedFormatIds.length} Banner als ZIP exportiert`);
       // Also persist each format individually to storage.
       const mime = type === "png" ? "image/png" : type === "jpg" ? "image/jpeg" : "image/webp";
@@ -230,7 +230,7 @@ const CanvasBannerStudioShell: React.FC = () => {
         const comp = state.compositions[fid];
         if (!comp) continue;
         try {
-          const blob = await renderCompositionToBlob(f, comp, state.textFields, type);
+          const blob = await renderCompositionToBlob(f, comp, state.textFields, type, state.ci, ciContext);
           await persistExportedBlob(blob, buildFilename(f, type), mime);
         } catch (err) {
           console.warn("persist failed for", fid, err);
