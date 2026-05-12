@@ -28,7 +28,7 @@ export function useBannerProject({ state, onProjectIdAssigned }: Args) {
       vehicle_id: state.vehicleId ?? null,
       title: state.projectTitle || "Banner-Entwurf",
       master_image_url: state.compositions[state.activeFormatId]?.backgroundImageUrl ?? null,
-      state: state as unknown as Record<string, unknown>,
+      state: JSON.parse(JSON.stringify(state)) as any,
     };
     if (projectIdRef.current) {
       const { error } = await supabase
