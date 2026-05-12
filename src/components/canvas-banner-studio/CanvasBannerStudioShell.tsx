@@ -641,6 +641,26 @@ const CanvasBannerStudioShell: React.FC = () => {
         </div>
       </div>
     </div>
+
+    <ReframeVariantsDialog
+      open={variantsOpen}
+      onOpenChange={setVariantsOpen}
+      sourceImageUrl={activeComposition.masterImageUrl ?? activeComposition.backgroundImageUrl}
+      targetWidth={activeFormat.width}
+      targetHeight={activeFormat.height}
+      onPick={(url) => applyReframeResult(activeFormat.id, url, activeComposition.masterImageUrl ?? activeComposition.backgroundImageUrl)}
+    />
+    <ManualCropDialog
+      open={cropOpen}
+      onOpenChange={setCropOpen}
+      sourceImageUrl={activeComposition.masterImageUrl ?? activeComposition.backgroundImageUrl}
+      targetWidth={activeFormat.width}
+      targetHeight={activeFormat.height}
+      onPick={(url) => {
+        applyReframeResult(activeFormat.id, url, activeComposition.masterImageUrl ?? activeComposition.backgroundImageUrl);
+        toast.success("Manueller Crop übernommen");
+      }}
+    />
     </TooltipProvider>
   );
 };
