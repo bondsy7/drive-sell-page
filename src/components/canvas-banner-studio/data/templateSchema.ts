@@ -21,7 +21,7 @@ export type LayerAnchor =
  */
 export type LayerSpec = {
   id: string;
-  type: "image" | "overlay" | "text" | "legal" | "logo";
+  type: "image" | "overlay" | "text" | "legal" | "logo" | "shape";
   field?: BannerTextFieldKey;
   x: number;
   y: number;
@@ -42,6 +42,16 @@ export type LayerSpec = {
   strength?: number;
   // image-only
   fit?: ImageFitMode;
+  /** 0..1 alpha for shape/image/text. */
+  opacity?: number;
+  /** Fill color for shape layers (hex/hsl/token). */
+  backgroundColor?: string;
+  /** Rounded corners for shape layers. */
+  borderRadius?: number;
+  /** Literal text content for free-text layers without `field`. */
+  content?: string;
+  /** Source URL for custom image layers. */
+  imageUrl?: string;
 };
 
 /** Template-Spec für genau ein Format. */

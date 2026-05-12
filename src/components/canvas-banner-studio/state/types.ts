@@ -18,7 +18,7 @@ export type BannerTextFieldKey =
 
 export type BannerTextFields = Record<BannerTextFieldKey, string>;
 
-export type LayerType = "text" | "image" | "overlay" | "logo" | "legal";
+export type LayerType = "text" | "image" | "overlay" | "logo" | "legal" | "shape";
 
 export type OverlayDirection =
   | "none"
@@ -46,12 +46,19 @@ export type BannerLayer = {
   align?: TextAlign;
   visible: boolean;
   draggable: boolean;
-  /** Auto-shrink fontSize until text fits within `width` and `maxLines`. Default true (false for legal). */
   autoShrink?: boolean;
-  /** Max wrap lines tolerated before fontSize is reduced. */
   maxLines?: number;
-  /** Lower bound for shrink-to-fit. */
   minFontSize?: number;
+  /** 0..1 — used for shape/image/text alpha. */
+  opacity?: number;
+  /** Fill color for shapes (hex/hsl/token). */
+  backgroundColor?: string;
+  /** Rounded corners for shapes. */
+  borderRadius?: number;
+  /** Literal text content for free-text layers without `field`. */
+  content?: string;
+  /** Source URL for custom image layers. */
+  imageUrl?: string;
 };
 
 export type BannerComposition = {

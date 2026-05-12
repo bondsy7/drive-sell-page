@@ -83,6 +83,49 @@ function overlayRects(
   }
 }
 
+type CustomImageProps = {
+  layer: import("../state/types").BannerLayer;
+  formatScale: number;
+  nodeRef: (n: Konva.Node | null) => void;
+  onSelect: () => void;
+  onDragMove: (e: Konva.KonvaEventObject<DragEvent>) => void;
+  onDragEnd: (e: Konva.KonvaEventObject<DragEvent>) => void;
+  onResize: (patch: { width?: number; height?: number }) => void;
+};
+
+const CustomImage: React.FC<CustomImageProps> = ({ layer, formatScale, nodeRef, onSelect, onDragMove, onDragEnd, onResize }) => {
+  const img = useImage(layer.imageUrl);
+  if (!img) return null;
+  const baseW = layer.width ?? 200;
+  const baseH = layer.height ?? (img.naturalHeight / Math.max(1, img.naturalWidth)) * baseW;
+  const w = baseW * formatScale;
+  const h = baseH * formatScale;
+  return (
+    <KImage
+      ref={nodeRef as never}
+      image={img}
+      x={layer.x}
+      y={layer.y}
+      width={w}
+      height={h}
+      opacity={layer.opacity ?? 1}
+      cornerRadius={layer.borderRadius ?? 0}
+      draggable={layer.draggable}
+      onClick={onSelect}
+      onTap={onSelect}
+      onDragMove={onDragMove}
+      onDragEnd={onDragEnd}
+      onTransformEnd={(e) => {
+        const node = e.target as Konva.Image;
+        const sx = node.scaleX();
+        const sy = node.scaleY();
+        node.scaleX(1); node.scaleY(1);
+        onResize({ width: Math.round(baseW * sx), height: Math.round(baseH * sy) });
+      }}
+    />
+  );
+};
+
 const BannerCanvas: React.FC<BannerCanvasProps> = ({
   format, composition, textFields, showSafeArea, selectedLayerId,
   resolveColor, ci, ciContext, onSelectLayer, onLayerDrag, onLayerResize, stageRef, onSelectedLayerScreenChange,
@@ -247,9 +290,55 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
 
           <Layer>
             {composition.layers
-              .filter((l) => l.visible && l.type !== "image" && l.type !== "overlay")
+              .filter((l) => l.visible && l.type !== "overlay")
               .map((l) => {
                 const isSelected = l.id === selectedLayerId;
+                if (l.type === "shape") {
+                  const w = (l.width ?? 200) * formatScale;
+                  const h = (l.height ?? 100) * formatScale;
+                  return (
+                    <Rect
+                      key={l.id}
+                      ref={(n) => { nodeRefs.current[l.id] = n; }}
+                      x={l.x}
+                      y={l.y}
+                      width={w}
+                      height={h}
+                      fill={l.backgroundColor || resolveColor(l.color) || "#000000"}
+                      opacity={l.opacity ?? 1}
+                      cornerRadius={l.borderRadius ?? 0}
+                      draggable={l.draggable}
+                      onClick={() => onSelectLayer?.(l.id)}
+                      onTap={() => onSelectLayer?.(l.id)}
+                      onDragMove={(e) => handleDragMove(l, e)}
+                      onDragEnd={(e) => { handleDragEndCommon(); onLayerDrag?.(l.id, e.target.x(), e.target.y()); }}
+                      onTransformEnd={(e) => {
+                        const node = e.target as Konva.Rect;
+                        const sx = node.scaleX();
+                        const sy = node.scaleY();
+                        const newW = Math.max(10, (l.width ?? 200) * sx);
+                        const newH = Math.max(10, (l.height ?? 100) * sy);
+                        node.scaleX(1); node.scaleY(1);
+                        onLayerResize?.(l.id, { width: Math.round(newW), height: Math.round(newH) });
+                      }}
+                    />
+                  );
+                }
+                if (l.type === "image") {
+                  if (!l.imageUrl) return null;
+                  return (
+                    <CustomImage
+                      key={l.id}
+                      layer={l}
+                      formatScale={formatScale}
+                      nodeRef={(n) => { nodeRefs.current[l.id] = n; }}
+                      onSelect={() => onSelectLayer?.(l.id)}
+                      onDragMove={(e) => handleDragMove(l, e)}
+                      onDragEnd={(e) => { handleDragEndCommon(); onLayerDrag?.(l.id, e.target.x(), e.target.y()); }}
+                      onResize={(p) => onLayerResize?.(l.id, p)}
+                    />
+                  );
+                }
                 if (l.type === "logo") {
                   if (!logo) return null;
                   const baseW = l.width ?? format.width * 0.18;
@@ -280,7 +369,7 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
                     />
                   );
                 }
-                const rawText = l.field ? textFields[l.field] : "";
+                const rawText = l.field ? textFields[l.field] : (l.content ?? "");
                 const text = resolveShortcodes(rawText, ciContext);
                 if (!text) return null;
                 const color = resolveColor(l.color);

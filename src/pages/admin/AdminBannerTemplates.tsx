@@ -196,12 +196,25 @@ function VisualEditor({
         />
         {spec.layers.map((l) => {
           if (l.visible === false) return null;
-          if (l.type === "image" || l.type === "overlay") return null;
+          if (l.type === "overlay") return null;
           const w = (l.width ?? 200) * scale;
           const h = (l.height ?? (l.fontSize ?? 24) * 1.4) * scale;
           const isSel = l.id === selectedId;
           const isLogo = l.type === "logo";
-          const txt = l.field ? DUMMY_TEXT[l.field] ?? l.id : l.id;
+          const isShape = l.type === "shape";
+          const isImage = l.type === "image";
+          const txt = isShape || isImage
+            ? ""
+            : l.field
+              ? DUMMY_TEXT[l.field] ?? l.id
+              : (l.content ?? l.id);
+          const bg = isShape
+            ? l.backgroundColor || "#3b82f6"
+            : isLogo
+              ? "rgba(255,255,255,0.85)"
+              : isImage
+                ? "rgba(0,0,0,0.15)"
+                : "transparent";
           return (
             <div
               key={l.id}
@@ -216,32 +229,44 @@ function VisualEditor({
                   ? "2px solid hsl(var(--primary))"
                   : "1px dashed rgba(255,255,255,0.4)",
                 outlineOffset: 0,
-                backgroundColor: isLogo ? "rgba(255,255,255,0.85)" : "transparent",
+                backgroundColor: bg,
+                opacity: isShape || isImage ? (l.opacity ?? 1) : 1,
+                borderRadius: l.borderRadius ?? 0,
+                backgroundImage: isImage && l.imageUrl ? `url("${l.imageUrl}")` : undefined,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
               }}
               onPointerDown={(e) => startDrag(e, l)}
             >
-              <div
-                className="w-full h-full flex items-center"
-                style={{
-                  fontSize: (l.fontSize ?? 16) * scale,
-                  fontWeight: l.fontWeight ?? 400,
-                  textAlign: l.align ?? "left",
-                  justifyContent:
-                    l.align === "center"
-                      ? "center"
-                      : l.align === "right"
-                        ? "flex-end"
-                        : "flex-start",
-                  color: isLogo ? "#333" : "white",
-                  textShadow: isLogo ? "none" : "0 1px 2px rgba(0,0,0,0.6)",
-                  lineHeight: 1.15,
-                  padding: isLogo ? "0 4px" : 0,
-                  overflow: "hidden",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {isLogo ? "LOGO" : txt}
-              </div>
+              {!isShape && !isImage && (
+                <div
+                  className="w-full h-full flex items-center"
+                  style={{
+                    fontSize: (l.fontSize ?? 16) * scale,
+                    fontWeight: l.fontWeight ?? 400,
+                    textAlign: l.align ?? "left",
+                    justifyContent:
+                      l.align === "center"
+                        ? "center"
+                        : l.align === "right"
+                          ? "flex-end"
+                          : "flex-start",
+                    color: isLogo ? "#333" : "white",
+                    textShadow: isLogo ? "none" : "0 1px 2px rgba(0,0,0,0.6)",
+                    lineHeight: 1.15,
+                    padding: isLogo ? "0 4px" : 0,
+                    overflow: "hidden",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {isLogo ? "LOGO" : txt}
+                </div>
+              )}
+              {isImage && !l.imageUrl && (
+                <div className="w-full h-full flex items-center justify-center text-[10px] text-white/70">
+                  Bild-URL setzen
+                </div>
+              )}
               {isSel && (
                 <>
                   {(["nw", "ne", "sw", "se", "n", "s", "e", "w"] as const).map((h) => {
@@ -361,6 +386,17 @@ function PropertyPanel({
 
       {(layer.type === "text" || layer.type === "legal") && (
         <>
+          {!layer.field && (
+            <div>
+              <Label className="text-xs">Text-Inhalt</Label>
+              <Textarea
+                rows={2}
+                className="text-xs"
+                value={layer.content ?? ""}
+                onChange={(e) => onChange({ content: e.target.value })}
+              />
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-2">
             <div>
               <Label className="text-xs">Schriftgröße</Label>
@@ -398,6 +434,80 @@ function PropertyPanel({
           <div>
             <Label className="text-xs">Farbe</Label>
             <Input className="h-8" value={layer.color ?? ""} placeholder="#ffffff oder hsl(...)" onChange={(e) => onChange({ color: e.target.value || undefined })} />
+          </div>
+        </>
+      )}
+
+      {layer.type === "shape" && (
+        <>
+          <div>
+            <Label className="text-xs">Füllfarbe</Label>
+            <div className="flex gap-2">
+              <Input
+                type="color"
+                className="h-8 w-14 p-1"
+                value={layer.backgroundColor || "#000000"}
+                onChange={(e) => onChange({ backgroundColor: e.target.value })}
+              />
+              <Input
+                className="h-8 flex-1"
+                value={layer.backgroundColor ?? ""}
+                placeholder="#000000"
+                onChange={(e) => onChange({ backgroundColor: e.target.value || undefined })}
+              />
+            </div>
+          </div>
+          <div>
+            <Label className="text-xs">Deckkraft ({Math.round((layer.opacity ?? 1) * 100)}%)</Label>
+            <Input
+              type="range"
+              min={0}
+              max={100}
+              value={Math.round((layer.opacity ?? 1) * 100)}
+              onChange={(e) => onChange({ opacity: Number(e.target.value) / 100 })}
+            />
+          </div>
+          <div>
+            <Label className="text-xs">Eckenradius</Label>
+            <Input
+              className="h-8"
+              type="number"
+              value={layer.borderRadius ?? 0}
+              onChange={(e) => onChange({ borderRadius: num(e.target.value) ?? 0 })}
+            />
+          </div>
+        </>
+      )}
+
+      {layer.type === "image" && (
+        <>
+          <div>
+            <Label className="text-xs">Bild-URL</Label>
+            <Input
+              className="h-8"
+              value={layer.imageUrl ?? ""}
+              placeholder="https://..."
+              onChange={(e) => onChange({ imageUrl: e.target.value || undefined })}
+            />
+          </div>
+          <div>
+            <Label className="text-xs">Deckkraft ({Math.round((layer.opacity ?? 1) * 100)}%)</Label>
+            <Input
+              type="range"
+              min={0}
+              max={100}
+              value={Math.round((layer.opacity ?? 1) * 100)}
+              onChange={(e) => onChange({ opacity: Number(e.target.value) / 100 })}
+            />
+          </div>
+          <div>
+            <Label className="text-xs">Eckenradius</Label>
+            <Input
+              className="h-8"
+              type="number"
+              value={layer.borderRadius ?? 0}
+              onChange={(e) => onChange({ borderRadius: num(e.target.value) ?? 0 })}
+            />
           </div>
         </>
       )}
@@ -488,6 +598,49 @@ export default function AdminBannerTemplates() {
       const newId = `${l.id}-copy-${Date.now().toString(36)}`;
       return { ...d, layers: [...d.layers, { ...l, id: newId, x: l.x + 20, y: l.y + 20 }] };
     });
+  };
+
+  const addLayer = (kind: "text" | "shape" | "image") => {
+    setDraft((d) => {
+      if (!d) return d;
+      const id = `${kind}-${Math.random().toString(36).slice(2, 7)}`;
+      const cx = Math.round(d.format.width / 2);
+      const cy = Math.round(d.format.height / 2);
+      let layer: LayerSpec;
+      if (kind === "text") {
+        layer = {
+          id, type: "text", anchor: "absolute",
+          x: cx - 200, y: cy - 20,
+          width: 400, fontSize: 36, fontWeight: 700, align: "left",
+          color: "#ffffff", content: "Neuer Text",
+          visible: true, draggable: true,
+        };
+      } else if (kind === "shape") {
+        layer = {
+          id, type: "shape", anchor: "absolute",
+          x: cx - 150, y: cy - 50,
+          width: 300, height: 100,
+          backgroundColor: "#000000", opacity: 0.5, borderRadius: 0,
+          visible: true, draggable: true,
+        };
+      } else {
+        layer = {
+          id, type: "image", anchor: "absolute",
+          x: cx - 100, y: cy - 75,
+          width: 200, height: 150,
+          opacity: 1, borderRadius: 0,
+          visible: true, draggable: true,
+        };
+      }
+      return { ...d, layers: [...d.layers, layer] };
+    });
+    setTimeout(() => {
+      // select the just-added layer
+      setDraft((d) => {
+        if (d && d.layers.length) setSelectedId(d.layers[d.layers.length - 1].id);
+        return d;
+      });
+    }, 0);
   };
 
   const updateSafeArea = (key: keyof TemplateSpec["safeArea"], val: number) => {
@@ -650,7 +803,14 @@ export default function AdminBannerTemplates() {
           {draft && (
             <>
               <div className="border border-border rounded-lg p-3 bg-card">
-                <div className="font-semibold text-sm mb-2">Ebenen</div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="font-semibold text-sm">Ebenen</div>
+                </div>
+                <div className="flex gap-1 mb-2">
+                  <Button size="sm" variant="outline" className="flex-1 h-7 text-xs" onClick={() => addLayer("text")}>+ Text</Button>
+                  <Button size="sm" variant="outline" className="flex-1 h-7 text-xs" onClick={() => addLayer("shape")}>+ Form</Button>
+                  <Button size="sm" variant="outline" className="flex-1 h-7 text-xs" onClick={() => addLayer("image")}>+ Bild</Button>
+                </div>
                 <div className="space-y-1 max-h-64 overflow-auto">
                   {draft.layers.map((l) => (
                     <button
