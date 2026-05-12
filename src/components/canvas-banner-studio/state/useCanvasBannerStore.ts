@@ -355,8 +355,17 @@ export function useCanvasBannerStore() {
         dispatch({ type: "set-overlay", formatId, direction, strength }),
       setTemplate: (templateId: string, formatId = state.activeFormatId) =>
         dispatch({ type: "set-template", formatId, templateId }),
-      setLogo: (url?: string, formatId = state.activeFormatId) =>
-        dispatch({ type: "set-logo", formatId, url }),
+      setLogo: (
+        url?: string,
+        scope?: string | string[] | "all" | "current",
+      ) => {
+        let ids: string[];
+        if (scope === "all") ids = state.selectedFormatIds;
+        else if (Array.isArray(scope)) ids = scope;
+        else if (typeof scope === "string" && scope !== "current") ids = [scope];
+        else ids = [state.activeFormatId];
+        ids.forEach((formatId) => dispatch({ type: "set-logo", formatId, url }));
+      },
       patchLayer: (layerId: string, patch: Partial<BannerLayer>, formatId = state.activeFormatId) =>
         dispatch({ type: "patch-layer", formatId, layerId, patch }),
       addLayer: (layer: BannerLayer, formatId = state.activeFormatId) =>
@@ -393,7 +402,7 @@ export function useCanvasBannerStore() {
       undo: () => dispatch({ type: "undo" }),
       redo: () => dispatch({ type: "redo" }),
     }),
-    [state.activeFormatId],
+    [state.activeFormatId, state.selectedFormatIds],
   );
 
   const ciColors = state.ci?.colors;

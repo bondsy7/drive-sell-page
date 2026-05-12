@@ -64,6 +64,7 @@ const CanvasBannerStudioShell: React.FC = () => {
   const stageRef = useRef<Konva.Stage | null>(null);
 
   const [zipBusy, setZipBusy] = useState(false);
+  const [applyLogoToAll, setApplyLogoToAll] = useState(true);
   const [aiBusy, setAiBusy] = useState(false);
   const [reframeBusy, setReframeBusy] = useState(false);
   const [variantsOpen, setVariantsOpen] = useState(false);
@@ -398,7 +399,10 @@ const CanvasBannerStudioShell: React.FC = () => {
             userId={user?.id}
             onApplyBrandPreset={actions.applyBrandPreset}
             onPatchCi={actions.setCi}
-            onSetLogo={(url) => actions.setLogo(url)}
+            onSetLogo={(url, scope) => actions.setLogo(url, scope ?? (applyLogoToAll ? "all" : "current"))}
+            selectedFormatsCount={state.selectedFormatIds.length}
+            applyLogoToAll={applyLogoToAll}
+            onToggleApplyLogoToAll={setApplyLogoToAll}
           />
         )}
         {/* Step nav */}
@@ -545,7 +549,28 @@ const CanvasBannerStudioShell: React.FC = () => {
                 />
                 <div className="pt-2 border-t border-border">
                   <h3 className="text-sm font-semibold mb-2">Logo (optional)</h3>
-                  <LogoPanel logoUrl={activeComposition.logoUrl} onChange={(url) => actions.setLogo(url)} />
+                  <div className="mb-2 flex items-center justify-between gap-2 rounded-md border border-border bg-muted/30 px-2 py-1.5 text-[11px]">
+                    <span className="text-muted-foreground">
+                      {applyLogoToAll
+                        ? `Wirkt auf alle Formate (${state.selectedFormatIds.length})`
+                        : "Wirkt nur auf aktives Format"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setApplyLogoToAll((v) => !v)}
+                      className={`px-2 py-0.5 rounded-md border font-semibold ${
+                        applyLogoToAll
+                          ? "border-accent bg-accent/10 text-foreground"
+                          : "border-border text-muted-foreground hover:border-accent/40"
+                      }`}
+                    >
+                      {applyLogoToAll ? "Alle Formate" : "Nur aktives"}
+                    </button>
+                  </div>
+                  <LogoPanel
+                    logoUrl={activeComposition.logoUrl}
+                    onChange={(url) => actions.setLogo(url, applyLogoToAll ? "all" : "current")}
+                  />
                 </div>
               </section>
             )}

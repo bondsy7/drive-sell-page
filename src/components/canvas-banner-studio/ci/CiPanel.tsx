@@ -27,7 +27,11 @@ interface CiPanelProps {
   userId?: string;
   onApplyBrandPreset: (brandKey: string) => void;
   onPatchCi: (patch: Partial<CiState>) => void;
-  onSetLogo: (url?: string) => void;
+  onSetLogo: (url?: string, scope?: "all" | "current") => void;
+  /** Anzahl ausgewählter Formate (für UI-Hinweis). */
+  selectedFormatsCount?: number;
+  applyLogoToAll: boolean;
+  onToggleApplyLogoToAll: (v: boolean) => void;
 }
 
 const LOGO_MODES: { value: LogoMode; label: string }[] = [
@@ -41,7 +45,10 @@ const CiPanel: React.FC<CiPanelProps> = ({
   ci, ciContext, hasProfile, detectedBrandKey, currentLogoUrl,
   manufacturerLogoUrl, dealerLogoUrl, customLogoUrl, userId,
   onApplyBrandPreset, onPatchCi, onSetLogo,
+  selectedFormatsCount = 1, applyLogoToAll, onToggleApplyLogoToAll,
 }) => {
+  const scope: "all" | "current" = applyLogoToAll ? "all" : "current";
+  const setLogo = (url?: string) => onSetLogo(url, scope);
   const preset = getBrandPreset(ci.brandKey);
   const usingDealer = !!currentLogoUrl && !!dealerLogoUrl && currentLogoUrl === dealerLogoUrl;
   const usingManufacturer = !!currentLogoUrl && !!manufacturerLogoUrl && currentLogoUrl === manufacturerLogoUrl;
@@ -58,7 +65,7 @@ const CiPanel: React.FC<CiPanelProps> = ({
     try {
       const url = await uploadCustomCiLogo(file, userId);
       onPatchCi({ customLogoUrl: url } as any);
-      onSetLogo(url);
+      setLogo(url);
       toast.success("Eigenes Logo übernommen");
     } catch (e: any) {
       console.error(e);
@@ -177,10 +184,37 @@ const CiPanel: React.FC<CiPanelProps> = ({
         <Label className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1">
           <ImageIcon className="w-3 h-3" /> Logo-Quelle
         </Label>
+
+        {/* Scope toggle: alle Formate vs. nur aktives */}
+        <div className="flex items-center justify-between gap-2 rounded-md border border-border bg-muted/30 px-2 py-1.5">
+          <div className="text-[11px] leading-tight">
+            <div className="font-semibold text-foreground">
+              {applyLogoToAll
+                ? `Wirkt auf alle Formate (${selectedFormatsCount})`
+                : "Wirkt nur auf aktives Format"}
+            </div>
+            <div className="text-muted-foreground">
+              Logo-Wechsel und „Kein Logo" werden entsprechend angewendet.
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => onToggleApplyLogoToAll(!applyLogoToAll)}
+            className={`shrink-0 px-2 py-1 rounded-md border text-[11px] font-semibold ${
+              applyLogoToAll
+                ? "border-accent bg-accent/10 text-foreground"
+                : "border-border text-muted-foreground hover:border-accent/40"
+            }`}
+            title="Geltungsbereich umschalten"
+          >
+            {applyLogoToAll ? "Alle Formate" : "Nur aktives"}
+          </button>
+        </div>
+
         <div className="grid grid-cols-2 gap-1">
           <button
             type="button"
-            onClick={() => manufacturerLogoUrl && onSetLogo(manufacturerLogoUrl)}
+            onClick={() => manufacturerLogoUrl && setLogo(manufacturerLogoUrl)}
             disabled={!manufacturerLogoUrl}
             className={`px-2 py-1.5 rounded-md border text-xs disabled:opacity-40 ${
               usingManufacturer
@@ -192,7 +226,7 @@ const CiPanel: React.FC<CiPanelProps> = ({
           </button>
           <button
             type="button"
-            onClick={() => dealerLogoUrl && onSetLogo(dealerLogoUrl)}
+            onClick={() => dealerLogoUrl && setLogo(dealerLogoUrl)}
             disabled={!dealerLogoUrl}
             className={`px-2 py-1.5 rounded-md border text-xs disabled:opacity-40 ${
               usingDealer
@@ -204,7 +238,7 @@ const CiPanel: React.FC<CiPanelProps> = ({
           </button>
           <button
             type="button"
-            onClick={() => customLogoUrl && onSetLogo(customLogoUrl)}
+            onClick={() => customLogoUrl && setLogo(customLogoUrl)}
             disabled={!customLogoUrl}
             className={`px-2 py-1.5 rounded-md border text-xs disabled:opacity-40 ${
               usingCustom
@@ -216,7 +250,7 @@ const CiPanel: React.FC<CiPanelProps> = ({
           </button>
           <button
             type="button"
-            onClick={() => onSetLogo(undefined)}
+            onClick={() => setLogo(undefined)}
             className={`px-2 py-1.5 rounded-md border text-xs ${
               !currentLogoUrl
                 ? "border-accent bg-accent/10 text-foreground font-semibold"
