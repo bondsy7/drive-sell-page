@@ -322,4 +322,44 @@ const CiPanel: React.FC<CiPanelProps> = ({
   );
 };
 
+interface FontSelectProps {
+  label: string;
+  list: FontPreset[];
+  value: string;
+  onChange: (family: string, googleSpec?: string) => void;
+}
+
+const FontSelect: React.FC<FontSelectProps> = ({ label, list, value, onChange }) => {
+  const isCustom = !findFontPreset(value, list);
+  return (
+    <div className="space-y-1">
+      <Label className="text-[11px] text-muted-foreground">{label}</Label>
+      <select
+        value={isCustom ? "__custom__" : value}
+        onChange={(e) => {
+          const v = e.target.value;
+          if (v === "__custom__") return;
+          const preset = list.find((p) => p.family === v);
+          onChange(v, preset?.googleSpec);
+        }}
+        className="w-full px-2 py-1.5 rounded-md border border-border bg-background text-sm"
+        style={{ fontFamily: `"${value}", sans-serif` }}
+      >
+        {list.map((p) => (
+          <option key={p.family} value={p.family} style={{ fontFamily: `"${p.family}", sans-serif` }}>
+            {p.family}{p.note ? ` — ${p.note}` : ""}
+          </option>
+        ))}
+        {isCustom && <option value="__custom__">{value} (eigene)</option>}
+      </select>
+      <Input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="text-[11px] h-7"
+        placeholder="oder eigene Schrift…"
+      />
+    </div>
+  );
+};
+
 export default CiPanel;
