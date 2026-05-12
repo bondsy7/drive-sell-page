@@ -85,7 +85,7 @@ function overlayRects(
 
 const BannerCanvas: React.FC<BannerCanvasProps> = ({
   format, composition, textFields, showSafeArea, selectedLayerId,
-  resolveColor, ci, ciContext, onSelectLayer, onLayerDrag, onLayerResize, stageRef,
+  resolveColor, ci, ciContext, onSelectLayer, onLayerDrag, onLayerResize, stageRef, onSelectedLayerScreenChange,
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const internalStageRef = useRef<Konva.Stage | null>(null);
