@@ -386,6 +386,17 @@ function PropertyPanel({
 
       {(layer.type === "text" || layer.type === "legal") && (
         <>
+          {!layer.field && (
+            <div>
+              <Label className="text-xs">Text-Inhalt</Label>
+              <Textarea
+                rows={2}
+                className="text-xs"
+                value={layer.content ?? ""}
+                onChange={(e) => onChange({ content: e.target.value })}
+              />
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-2">
             <div>
               <Label className="text-xs">Schriftgröße</Label>
@@ -423,6 +434,80 @@ function PropertyPanel({
           <div>
             <Label className="text-xs">Farbe</Label>
             <Input className="h-8" value={layer.color ?? ""} placeholder="#ffffff oder hsl(...)" onChange={(e) => onChange({ color: e.target.value || undefined })} />
+          </div>
+        </>
+      )}
+
+      {layer.type === "shape" && (
+        <>
+          <div>
+            <Label className="text-xs">Füllfarbe</Label>
+            <div className="flex gap-2">
+              <Input
+                type="color"
+                className="h-8 w-14 p-1"
+                value={layer.backgroundColor || "#000000"}
+                onChange={(e) => onChange({ backgroundColor: e.target.value })}
+              />
+              <Input
+                className="h-8 flex-1"
+                value={layer.backgroundColor ?? ""}
+                placeholder="#000000"
+                onChange={(e) => onChange({ backgroundColor: e.target.value || undefined })}
+              />
+            </div>
+          </div>
+          <div>
+            <Label className="text-xs">Deckkraft ({Math.round((layer.opacity ?? 1) * 100)}%)</Label>
+            <Input
+              type="range"
+              min={0}
+              max={100}
+              value={Math.round((layer.opacity ?? 1) * 100)}
+              onChange={(e) => onChange({ opacity: Number(e.target.value) / 100 })}
+            />
+          </div>
+          <div>
+            <Label className="text-xs">Eckenradius</Label>
+            <Input
+              className="h-8"
+              type="number"
+              value={layer.borderRadius ?? 0}
+              onChange={(e) => onChange({ borderRadius: num(e.target.value) ?? 0 })}
+            />
+          </div>
+        </>
+      )}
+
+      {layer.type === "image" && (
+        <>
+          <div>
+            <Label className="text-xs">Bild-URL</Label>
+            <Input
+              className="h-8"
+              value={layer.imageUrl ?? ""}
+              placeholder="https://..."
+              onChange={(e) => onChange({ imageUrl: e.target.value || undefined })}
+            />
+          </div>
+          <div>
+            <Label className="text-xs">Deckkraft ({Math.round((layer.opacity ?? 1) * 100)}%)</Label>
+            <Input
+              type="range"
+              min={0}
+              max={100}
+              value={Math.round((layer.opacity ?? 1) * 100)}
+              onChange={(e) => onChange({ opacity: Number(e.target.value) / 100 })}
+            />
+          </div>
+          <div>
+            <Label className="text-xs">Eckenradius</Label>
+            <Input
+              className="h-8"
+              type="number"
+              value={layer.borderRadius ?? 0}
+              onChange={(e) => onChange({ borderRadius: num(e.target.value) ?? 0 })}
+            />
           </div>
         </>
       )}
