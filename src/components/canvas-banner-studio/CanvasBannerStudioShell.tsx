@@ -427,6 +427,31 @@ const CanvasBannerStudioShell: React.FC = () => {
           {/* Preview */}
           <div className={`order-1 lg:order-2 ${previewMobileOpen ? "" : "hidden lg:block"}`}>
             <div className="sticky top-4 space-y-2">
+              {state.selectedFormatIds.length > 0 && (
+                <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
+                  {state.selectedFormatIds.map((fid) => {
+                    const f = getFormatById(fid);
+                    const active = fid === state.activeFormatId;
+                    return (
+                      <button
+                        key={fid}
+                        onClick={() => actions.setActiveFormat(fid)}
+                        title={`${f.name} · ${f.width}×${f.height}`}
+                        className={`flex-shrink-0 px-2.5 py-1 rounded-md border text-[11px] leading-tight whitespace-nowrap transition ${
+                          active
+                            ? "border-accent bg-accent/10 text-foreground font-semibold"
+                            : "border-border bg-card text-muted-foreground hover:border-accent/40 hover:text-foreground"
+                        }`}
+                      >
+                        <span>{f.name}</span>
+                        <span className="ml-1.5 tabular-nums opacity-70">
+                          {f.width}×{f.height}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>{activeFormat.name}</span>
                 <span className="tabular-nums">
