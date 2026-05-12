@@ -247,9 +247,55 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
 
           <Layer>
             {composition.layers
-              .filter((l) => l.visible && l.type !== "image" && l.type !== "overlay")
+              .filter((l) => l.visible && l.type !== "overlay")
               .map((l) => {
                 const isSelected = l.id === selectedLayerId;
+                if (l.type === "shape") {
+                  const w = (l.width ?? 200) * formatScale;
+                  const h = (l.height ?? 100) * formatScale;
+                  return (
+                    <Rect
+                      key={l.id}
+                      ref={(n) => { nodeRefs.current[l.id] = n; }}
+                      x={l.x}
+                      y={l.y}
+                      width={w}
+                      height={h}
+                      fill={l.backgroundColor || resolveColor(l.color) || "#000000"}
+                      opacity={l.opacity ?? 1}
+                      cornerRadius={l.borderRadius ?? 0}
+                      draggable={l.draggable}
+                      onClick={() => onSelectLayer?.(l.id)}
+                      onTap={() => onSelectLayer?.(l.id)}
+                      onDragMove={(e) => handleDragMove(l, e)}
+                      onDragEnd={(e) => { handleDragEndCommon(); onLayerDrag?.(l.id, e.target.x(), e.target.y()); }}
+                      onTransformEnd={(e) => {
+                        const node = e.target as Konva.Rect;
+                        const sx = node.scaleX();
+                        const sy = node.scaleY();
+                        const newW = Math.max(10, (l.width ?? 200) * sx);
+                        const newH = Math.max(10, (l.height ?? 100) * sy);
+                        node.scaleX(1); node.scaleY(1);
+                        onLayerResize?.(l.id, { width: Math.round(newW), height: Math.round(newH) });
+                      }}
+                    />
+                  );
+                }
+                if (l.type === "image") {
+                  if (!l.imageUrl) return null;
+                  return (
+                    <CustomImage
+                      key={l.id}
+                      layer={l}
+                      formatScale={formatScale}
+                      nodeRef={(n) => { nodeRefs.current[l.id] = n; }}
+                      onSelect={() => onSelectLayer?.(l.id)}
+                      onDragMove={(e) => handleDragMove(l, e)}
+                      onDragEnd={(e) => { handleDragEndCommon(); onLayerDrag?.(l.id, e.target.x(), e.target.y()); }}
+                      onResize={(p) => onLayerResize?.(l.id, p)}
+                    />
+                  );
+                }
                 if (l.type === "logo") {
                   if (!logo) return null;
                   const baseW = l.width ?? format.width * 0.18;
