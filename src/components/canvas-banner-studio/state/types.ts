@@ -46,6 +46,12 @@ export type BannerLayer = {
   align?: TextAlign;
   visible: boolean;
   draggable: boolean;
+  /** Auto-shrink fontSize until text fits within `width` and `maxLines`. Default true (false for legal). */
+  autoShrink?: boolean;
+  /** Max wrap lines tolerated before fontSize is reduced. */
+  maxLines?: number;
+  /** Lower bound for shrink-to-fit. */
+  minFontSize?: number;
 };
 
 export type BannerComposition = {
