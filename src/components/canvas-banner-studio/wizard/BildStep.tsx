@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Wand2, Loader2, RotateCcw, Crop, Image as ImageIcon, Sparkles, ArrowRight } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Wand2, Loader2, Crop, Image as ImageIcon, Sparkles, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 
 import Step2Master from "../step2/Step2Master";
@@ -8,6 +9,13 @@ import ReframeHistoryStrip from "../step2/ReframeHistoryStrip";
 import ReframeVariantsDialog from "../step2/ReframeVariantsDialog";
 import ManualCropDialog from "../step2/ManualCropDialog";
 import { reframeImageForFormat } from "../ai/reframeClient";
+import {
+  startReframeJob,
+  subscribeJob,
+  type ReframeJobProgress,
+  type ReframeResult,
+} from "../ai/reframeJobManager";
+import { useBackgroundTasksSafe } from "@/contexts/BackgroundTasksContext";
 
 import type { CanvasBannerStore } from "../state/useCanvasBannerStore";
 import { getFormatById } from "../data/formats";
@@ -20,9 +28,15 @@ interface Props {
 
 const BildStep: React.FC<Props> = ({ store, onContinue }) => {
   const { state, actions, activeComposition, activeFormat } = store;
-  const [reframeBusy, setReframeBusy] = useState(false);
+  const [activeBusy, setActiveBusy] = useState(false);
   const [variantsOpen, setVariantsOpen] = useState(false);
   const [cropOpen, setCropOpen] = useState(false);
+
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [progress, setProgress] = useState<ReframeJobProgress | null>(null);
+  const [elapsed, setElapsed] = useState(0);
+  const startedAtRef = useRef<number>(0);
+  const bgTasks = useBackgroundTasksSafe();
 
   const applyReframeResult = (fid: string, newUrl: string, sourceUrl?: string) => {
     const comp = state.compositions[fid];
@@ -32,39 +46,78 @@ const BildStep: React.FC<Props> = ({ store, onContinue }) => {
     actions.setBackground(newUrl, fid);
   };
 
-  const handleReframeAll = async () => {
+  // Subscribe to active job (also picks up when component remounts)
+  useEffect(() => {
+    if (!jobId) return;
+    const unsub = subscribeJob(jobId, {
+      onResult: (r: ReframeResult) => {
+        applyReframeResult(r.formatId, r.imageDataUrl, r.sourceUrl);
+      },
+      onProgress: (p) => {
+        setProgress(p);
+        if (bgTasks) {
+          bgTasks.updateTask(jobId, {
+            completed: p.done + p.failed,
+            total: p.total,
+            status: p.finished ? (p.failed === p.total ? "error" : "done") : "running",
+            finishedAt: p.finished ? Date.now() : undefined,
+            errorMessage: p.failed === p.total ? "Reframe fehlgeschlagen" : undefined,
+          });
+        }
+        if (p.finished) {
+          if (p.failed === 0) toast.success(`Reframe fertig · ${p.done} Banner`);
+          else if (p.done === 0) toast.error(`Reframe fehlgeschlagen (${p.failed})`);
+          else toast.message(`Reframe fertig · ${p.done} ok · ${p.failed} fehlgeschlagen`);
+        }
+      },
+    });
+    return unsub;
+  }, [jobId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Tick elapsed seconds while running
+  useEffect(() => {
+    if (!progress || progress.finished) return;
+    const t = setInterval(() => setElapsed(Math.floor((Date.now() - startedAtRef.current) / 1000)), 500);
+    return () => clearInterval(t);
+  }, [progress?.finished, progress]);
+
+  const handleReframeAll = () => {
     const src = activeComposition.backgroundImageUrl;
     if (!src || !src.startsWith("data:")) {
       toast.error("Bitte erst ein Bild übernehmen.");
       return;
     }
-    setReframeBusy(true);
-    let done = 0;
-    let failed = 0;
-    try {
-      const source = activeComposition.masterImageUrl ?? src;
-      for (const fid of state.selectedFormatIds) {
-        const f = getFormatById(fid);
-        try {
-          const out = await reframeImageForFormat(source, f.width, f.height);
-          applyReframeResult(fid, out.imageDataUrl, source);
-          done++;
-          toast.message(`${done}/${state.selectedFormatIds.length}: ${f.name}`);
-        } catch (e) {
-          console.error("reframe failed", fid, e);
-          failed++;
-        }
-      }
-      toast.success(`Reframe fertig · ${done} ok · ${failed} fehlgeschlagen`);
-    } finally {
-      setReframeBusy(false);
+    if (state.selectedFormatIds.length === 0) {
+      toast.error("Keine Formate ausgewählt.");
+      return;
     }
+    const source = activeComposition.masterImageUrl ?? src;
+    const targets = state.selectedFormatIds.map((fid) => {
+      const f = getFormatById(fid);
+      return { formatId: fid, width: f.width, height: f.height, label: f.name };
+    });
+    startedAtRef.current = Date.now();
+    setElapsed(0);
+    const id = startReframeJob({ source, formats: targets });
+    setJobId(id);
+    if (bgTasks) {
+      bgTasks.addTask({
+        id,
+        type: "banner",
+        label: `Banner-Reframe · ${targets.length} Formate`,
+        total: targets.length,
+        completed: 0,
+        status: "running",
+        resultRoute: "/generator/canvas-banner-studio",
+      });
+    }
+    toast.message(`Reframe gestartet · ${targets.length} Formate (läuft im Hintergrund)`);
   };
 
   const handleReframeActive = async () => {
     const src = activeComposition.backgroundImageUrl;
     if (!src || !src.startsWith("data:")) { toast.error("Bitte erst ein Bild übernehmen."); return; }
-    setReframeBusy(true);
+    setActiveBusy(true);
     try {
       const source = activeComposition.masterImageUrl ?? src;
       const out = await reframeImageForFormat(source, activeFormat.width, activeFormat.height);
@@ -73,11 +126,19 @@ const BildStep: React.FC<Props> = ({ store, onContinue }) => {
     } catch (e: any) {
       toast.error(e?.message ?? "Reframe fehlgeschlagen");
     } finally {
-      setReframeBusy(false);
+      setActiveBusy(false);
     }
   };
 
   const hasImage = !!activeComposition.backgroundImageUrl;
+  const total = progress?.total ?? 0;
+  const handled = (progress?.done ?? 0) + (progress?.failed ?? 0);
+  const pct = total > 0 ? Math.round((handled / total) * 100) : 0;
+  const isRunning = !!progress && !progress.finished;
+  const avgPerFormat = progress && progress.done > 0 ? elapsed / progress.done : 0;
+  const remaining = isRunning && avgPerFormat > 0
+    ? Math.max(1, Math.ceil(avgPerFormat * (total - handled) / Math.max(1, 3))) // /3 = concurrency
+    : 0;
 
   return (
     <section className="space-y-5">
@@ -91,7 +152,7 @@ const BildStep: React.FC<Props> = ({ store, onContinue }) => {
         </h2>
         <p className="text-sm text-muted-foreground mt-1">
           Lade ein Bild hoch, hol es aus der Galerie oder lass die KI ein Marketing-Master generieren.
-          Dann reframen wir es passgenau für jedes Banner-Format.
+          Dann reframen wir es passgenau für jedes Banner-Format – parallel und im Hintergrund.
         </p>
       </div>
 
@@ -115,7 +176,7 @@ const BildStep: React.FC<Props> = ({ store, onContinue }) => {
           <div className="flex items-center gap-2">
             <Wand2 className="w-4 h-4 text-accent" />
             <h3 className="font-semibold text-sm text-foreground">Auf Banner-Formate anpassen</h3>
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/10 text-accent">AI</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/10 text-accent">Ideogram v3 · TURBO</span>
           </div>
           {!hasImage ? (
             <div className="rounded-lg border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
@@ -124,27 +185,51 @@ const BildStep: React.FC<Props> = ({ store, onContinue }) => {
           ) : (
             <>
               <p className="text-xs text-muted-foreground">
-                Erweitert das Bild generativ auf die exakten Banner-Maße (kein Crop, voller Inhalt bleibt erhalten).
+                Erweitert das Bild generativ auf die exakten Banner-Maße. Läuft parallel im Hintergrund –
+                du kannst weiterklicken oder die Seite wechseln.
               </p>
               <div className="grid grid-cols-2 gap-2">
-                <Button size="sm" variant="outline" onClick={handleReframeActive} disabled={reframeBusy}>
-                  {reframeBusy ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 mr-1" />}
+                <Button size="sm" variant="outline" onClick={handleReframeActive} disabled={activeBusy || isRunning}>
+                  {activeBusy ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 mr-1" />}
                   Aktives Format
                 </Button>
-                <Button size="sm" onClick={handleReframeAll} disabled={reframeBusy || state.selectedFormatIds.length === 0}>
-                  {reframeBusy ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Wand2 className="w-3.5 h-3.5 mr-1" />}
+                <Button size="sm" onClick={handleReframeAll} disabled={isRunning || state.selectedFormatIds.length === 0}>
+                  {isRunning ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Wand2 className="w-3.5 h-3.5 mr-1" />}
                   Alle ({state.selectedFormatIds.length})
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => setVariantsOpen(true)} disabled={reframeBusy}>
+                <Button size="sm" variant="outline" onClick={() => setVariantsOpen(true)} disabled={isRunning}>
                   3 Varianten
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => setCropOpen(true)} disabled={reframeBusy}>
+                <Button size="sm" variant="ghost" onClick={() => setCropOpen(true)} disabled={isRunning}>
                   <Crop className="w-3.5 h-3.5 mr-1" /> Manuell
                 </Button>
               </div>
-              {reframeBusy && (
-                <p className="text-[11px] text-muted-foreground">Reframe läuft – bis zu 30 s pro Format.</p>
+
+              {progress && (
+                <div className="rounded-lg border border-border bg-background/50 p-3 space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-medium text-foreground">
+                      {progress.finished ? "Fertig" : "Reframe läuft …"}
+                    </span>
+                    <span className="text-muted-foreground tabular-nums">
+                      {handled}/{total} · {pct}%
+                    </span>
+                  </div>
+                  <Progress value={pct} className="h-1.5" />
+                  <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                    <span>
+                      {progress.current ? `Zuletzt: ${progress.current}` : "Verarbeite Formate parallel"}
+                      {progress.failed > 0 && (
+                        <span className="ml-2 text-destructive">{progress.failed} Fehler</span>
+                      )}
+                    </span>
+                    <span className="tabular-nums">
+                      {isRunning ? `${elapsed}s${remaining > 0 ? ` · ~${remaining}s übrig` : ""}` : `${elapsed}s gesamt`}
+                    </span>
+                  </div>
+                </div>
               )}
+
               <ReframeHistoryStrip
                 history={activeComposition.reframeHistory ?? []}
                 current={activeComposition.backgroundImageUrl}
