@@ -373,6 +373,11 @@ const CanvasBannerStudioShell: React.FC<ProShellProps> = ({ onSwitchToWizard }) 
               Canvas gerendert – immer in der exakten Zielgröße.
             </p>
           </div>
+          {onSwitchToWizard && (
+            <Button variant="ghost" size="sm" onClick={onSwitchToWizard}>
+              Zurück zum Wizard
+            </Button>
+          )}
         </div>
 
         {/* Schritt 0 — Fahrzeug-Verknüpfung */}
