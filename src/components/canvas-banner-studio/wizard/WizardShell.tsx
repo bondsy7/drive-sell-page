@@ -273,12 +273,15 @@ const WizardShell: React.FC<Props> = ({ onSwitchToPro }) => {
 
           {/* Step body */}
           {step === 1 && (
-            <SourceStep
+            <ChatIntakeStep
               selectedFormatIds={state.selectedFormatIds}
               activeFormatId={state.activeFormatId}
               onToggleFormat={actions.toggleFormat}
               onSetActiveFormat={actions.setActiveFormat}
               onPrefilled={applyPrefill}
+              onContinue={() => setStep(activeComposition.backgroundImageUrl ? 3 : 2)}
+              textFields={state.textFields}
+              hasBackground={!!activeComposition.backgroundImageUrl}
               vehicleId={state.vehicleId}
             />
           )}
