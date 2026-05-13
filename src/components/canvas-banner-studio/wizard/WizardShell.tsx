@@ -25,7 +25,7 @@ import { buildCiContext, type DealerProfile } from "../ci/profileSources";
 import { detectBrandKey } from "../ci/brandPresets";
 import { useCiPersistence } from "../ci/useCiPersistence";
 
-import SourceStep from "./SourceStep";
+import ChatIntakeStep from "./ChatIntakeStep";
 import BildStep from "./BildStep";
 import InspectorPanel from "./InspectorPanel";
 import type { PrefillPayload } from "./prefillBannerFromSource";
@@ -36,7 +36,7 @@ interface Props {
 }
 
 const WIZARD_STEPS = [
-  { id: 1 as const, title: "Quelle", subtitle: "Daten holen" },
+  { id: 1 as const, title: "Chat", subtitle: "Daten besprechen" },
   { id: 2 as const, title: "Bild", subtitle: "Hintergrund" },
   { id: 3 as const, title: "Vorschau", subtitle: "Feinschliff" },
   { id: 4 as const, title: "Export", subtitle: "Download" },
@@ -273,12 +273,15 @@ const WizardShell: React.FC<Props> = ({ onSwitchToPro }) => {
 
           {/* Step body */}
           {step === 1 && (
-            <SourceStep
+            <ChatIntakeStep
               selectedFormatIds={state.selectedFormatIds}
               activeFormatId={state.activeFormatId}
               onToggleFormat={actions.toggleFormat}
               onSetActiveFormat={actions.setActiveFormat}
               onPrefilled={applyPrefill}
+              onContinue={() => setStep(activeComposition.backgroundImageUrl ? 3 : 2)}
+              textFields={state.textFields}
+              hasBackground={!!activeComposition.backgroundImageUrl}
               vehicleId={state.vehicleId}
             />
           )}
