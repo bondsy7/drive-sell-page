@@ -25,7 +25,7 @@ import { buildCiContext, type DealerProfile } from "../ci/profileSources";
 import { detectBrandKey } from "../ci/brandPresets";
 import { useCiPersistence } from "../ci/useCiPersistence";
 
-import SourceStep from "./SourceStep";
+import ChatIntakeStep from "./ChatIntakeStep";
 import BildStep from "./BildStep";
 import InspectorPanel from "./InspectorPanel";
 import type { PrefillPayload } from "./prefillBannerFromSource";
