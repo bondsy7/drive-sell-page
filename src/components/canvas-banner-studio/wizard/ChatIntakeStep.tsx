@@ -470,7 +470,7 @@ const ChatIntakeStep: React.FC<Props> = ({
           disabled={!ready}
           onClick={onContinue}
         >
-          Weiter zum Studio →
+          Weiter zum Studio
         </Button>
         {!ready && (
           <p className="text-[11px] text-muted-foreground text-center">
