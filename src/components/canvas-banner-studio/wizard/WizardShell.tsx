@@ -26,6 +26,7 @@ import { detectBrandKey } from "../ci/brandPresets";
 import { useCiPersistence } from "../ci/useCiPersistence";
 
 import SourceStep from "./SourceStep";
+import BildStep from "./BildStep";
 import InspectorPanel from "./InspectorPanel";
 import type { PrefillPayload } from "./prefillBannerFromSource";
 import type { BannerTextFieldKey } from "../state/types";
@@ -36,8 +37,9 @@ interface Props {
 
 const WIZARD_STEPS = [
   { id: 1 as const, title: "Quelle", subtitle: "Daten holen" },
-  { id: 2 as const, title: "Vorschau", subtitle: "Feinschliff" },
-  { id: 3 as const, title: "Export", subtitle: "Download" },
+  { id: 2 as const, title: "Bild", subtitle: "Hintergrund" },
+  { id: 3 as const, title: "Vorschau", subtitle: "Feinschliff" },
+  { id: 4 as const, title: "Export", subtitle: "Download" },
 ];
 
 const WizardShell: React.FC<Props> = ({ onSwitchToPro }) => {
