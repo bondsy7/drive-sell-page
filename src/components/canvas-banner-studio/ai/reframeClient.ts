@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-const REFRAME_TIMEOUT_MS = 135_000;
+const REFRAME_TIMEOUT_MS = 90_000;
 
 function getReframeErrorMessage(error: unknown): string {
   const anyError = error as any;
