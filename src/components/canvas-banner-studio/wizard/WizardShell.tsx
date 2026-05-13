@@ -284,6 +284,10 @@ const WizardShell: React.FC<Props> = ({ onSwitchToPro }) => {
           )}
 
           {step === 2 && (
+            <BildStep store={store} onContinue={() => setStep(3)} />
+          )}
+
+          {step === 3 && (
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-6">
               <div className="space-y-2 order-2 lg:order-1">
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -345,8 +349,11 @@ const WizardShell: React.FC<Props> = ({ onSwitchToPro }) => {
                   applyLogoToAll={applyLogoToAll}
                   onToggleApplyLogoToAll={setApplyLogoToAll}
                 />
-                <div className="flex justify-end mt-4">
-                  <Button onClick={() => setStep(3)}>
+                <div className="flex justify-between mt-4">
+                  <Button variant="ghost" onClick={() => setStep(2)}>
+                    <ArrowLeft className="w-4 h-4 mr-1" /> Bild
+                  </Button>
+                  <Button onClick={() => setStep(4)}>
                     Weiter zu Export <ArrowRight className="w-4 h-4 ml-1" />
                   </Button>
                 </div>
@@ -354,7 +361,7 @@ const WizardShell: React.FC<Props> = ({ onSwitchToPro }) => {
             </div>
           )}
 
-          {step === 3 && (
+          {step === 4 && (
             <section className="space-y-5 max-w-2xl">
               <div>
                 <h2 className="font-display text-xl font-bold text-foreground">Compliance & Export</h2>
@@ -379,12 +386,13 @@ const WizardShell: React.FC<Props> = ({ onSwitchToPro }) => {
                 </div>
               )}
               <div>
-                <Button variant="ghost" onClick={() => setStep(2)}>
+                <Button variant="ghost" onClick={() => setStep(3)}>
                   <ArrowLeft className="w-4 h-4 mr-1" /> Zurück
                 </Button>
               </div>
             </section>
           )}
+
         </div>
       </div>
     </TooltipProvider>
