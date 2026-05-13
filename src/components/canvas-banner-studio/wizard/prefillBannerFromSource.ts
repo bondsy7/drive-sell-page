@@ -40,7 +40,7 @@ export function prefillFromVehicle(
     source: "vehicle",
     textFields,
     manufacturerLogoUrl,
-    backgroundDataUrl: vehicle.image_url ?? undefined,
+    backgroundDataUrl: vehicle.cover_image_url ?? undefined,
     vehicleId: vehicle.id,
   };
 }
