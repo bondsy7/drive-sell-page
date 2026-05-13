@@ -1,39 +1,42 @@
-// Reframes a background image to match (or closely match) a target banner format
-// using the Ideogram V_2 reframe API. Returns the reframed image as a base64 data URL.
-//
-// ISOLATION NOTE:
-// - This edge function is dedicated to the Canvas Banner Studio.
-// - It does not touch any existing banner or remastering logic.
+// Reframes a background image to match a target banner format using
+// Ideogram v3 reframe (TURBO rendering speed for low latency).
+// Returns the reframed image as a base64 data URL.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, handleCors, jsonResponse, errorResponse } from "../_shared/cors.ts";
 import { getSecret } from "../_shared/get-secret.ts";
 
-// Officially supported Ideogram V_2 reframe resolutions (from API error response).
-const SUPPORTED: Array<[number, number]> = [
-  [1024, 1024],
-  [1408, 704],
-  [704, 1408],
-  [1312, 736],
-  [736, 1312],
-  [1280, 800],
-  [800, 1280],
-  [1120, 896],
-  [896, 1120],
+// Officially supported Ideogram v3 reframe resolutions.
+const V3_RESOLUTIONS: Array<[number, number]> = [
+  [512,1536],[576,1408],[576,1472],[576,1536],
+  [640,1344],[640,1408],[640,1472],[640,1536],
+  [704,1152],[704,1216],[704,1280],[704,1344],[704,1408],[704,1472],
+  [736,1312],[768,1088],[768,1216],[768,1280],[768,1344],[800,1280],
+  [832,960],[832,1024],[832,1088],[832,1152],[832,1216],[832,1248],
+  [864,1152],[896,960],[896,1024],[896,1088],[896,1120],[896,1152],
+  [960,832],[960,896],[960,1024],[960,1088],
+  [1024,832],[1024,896],[1024,960],[1024,1024],
+  [1088,768],[1088,832],[1088,896],[1088,960],
+  [1120,896],[1152,704],[1152,832],[1152,864],[1152,896],
+  [1216,704],[1216,768],[1216,832],
+  [1248,832],[1280,704],[1280,768],[1280,800],
+  [1312,736],[1344,640],[1344,704],[1344,768],
+  [1408,576],[1408,640],[1408,704],
+  [1472,576],[1472,640],[1472,704],
+  [1536,512],[1536,576],[1536,640],
 ];
 
 function pickClosestResolution(targetW: number, targetH: number): { w: number; h: number; key: string } {
   const targetRatio = targetW / targetH;
-  let best = SUPPORTED[0];
+  let best = V3_RESOLUTIONS[0];
   let bestScore = Infinity;
-  for (const [w, h] of SUPPORTED) {
+  for (const [w, h] of V3_RESOLUTIONS) {
     const r = w / h;
     const ratioDiff = Math.abs(Math.log(r / targetRatio));
-    const score = ratioDiff;
-    if (score < bestScore) { bestScore = score; best = [w, h]; }
+    if (ratioDiff < bestScore) { bestScore = ratioDiff; best = [w, h]; }
   }
   const [w, h] = best;
-  return { w, h, key: `RESOLUTION_${w}_${h}` };
+  return { w, h, key: `${w}x${h}` };
 }
 
 Deno.serve(async (req) => {
@@ -58,13 +61,13 @@ Deno.serve(async (req) => {
     const imageDataUrl: string | undefined = body?.imageDataUrl;
     const targetWidth: number = Number(body?.targetWidth);
     const targetHeight: number = Number(body?.targetHeight);
+    const renderingSpeed: string = String(body?.renderingSpeed ?? "TURBO").toUpperCase();
     if (!imageDataUrl) return errorResponse("imageDataUrl required", 400);
     if (!targetWidth || !targetHeight) return errorResponse("targetWidth/targetHeight required", 400);
 
     const apiKey = await getSecret("IDEOGRAM_API_KEY");
     if (!apiKey) return errorResponse("IDEOGRAM_API_KEY missing", 500);
 
-    // Decode incoming data URL
     const m = imageDataUrl.match(/^data:([^;]+);base64,(.+)$/);
     if (!m) return errorResponse("invalid imageDataUrl", 400);
     const inMime = m[1];
@@ -76,32 +79,32 @@ Deno.serve(async (req) => {
     const buildForm = () => {
       const form = new FormData();
       form.append(
-        "image_file",
+        "image",
         new Blob([inBytes], { type: inMime }),
         "input." + (inMime.split("/")[1] || "jpg"),
       );
       form.append("resolution", picked.key);
-      form.append("model", "V_2");
+      form.append("rendering_speed", renderingSpeed);
       return form;
     };
 
-    // Retry with a strict total budget so Lovable Cloud can return a clean 503
+    // v3+TURBO is fast (~5-15s). Strict total budget so we can return a clean 503
     // before the platform's 150s idle timeout turns this into a hard 504.
     let r: Response | null = null;
     let lastErr = "";
     let lastStatus = 0;
     const startedAt = Date.now();
     const MAX_ATTEMPTS = 2;
-    const TOTAL_BUDGET_MS = 125_000;
-    const SAFETY_MARGIN_MS = 8_000;
-    const MAX_ATTEMPT_MS = 58_000;
+    const TOTAL_BUDGET_MS = 120_000;
+    const SAFETY_MARGIN_MS = 6_000;
+    const MAX_ATTEMPT_MS = 50_000;
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       const remaining = TOTAL_BUDGET_MS - (Date.now() - startedAt) - SAFETY_MARGIN_MS;
       if (remaining <= 5_000) break;
       const ctrl = new AbortController();
       const to = setTimeout(() => ctrl.abort(), Math.min(MAX_ATTEMPT_MS, remaining));
       try {
-        const resp = await fetch("https://api.ideogram.ai/reframe", {
+        const resp = await fetch("https://api.ideogram.ai/v1/ideogram-v3/reframe", {
           method: "POST",
           headers: { "Api-Key": apiKey },
           body: buildForm(),
@@ -111,17 +114,17 @@ Deno.serve(async (req) => {
         if (resp.ok) { r = resp; break; }
         lastStatus = resp.status;
         lastErr = (await resp.text()).slice(0, 200);
-        console.warn(`ideogram attempt ${attempt} failed ${resp.status}`);
+        console.warn(`ideogram v3 attempt ${attempt} failed ${resp.status}: ${lastErr}`);
         if (![502, 503, 504, 524, 408, 429].includes(resp.status)) {
           return errorResponse(`ideogram error ${resp.status}: ${lastErr}`, 502);
         }
       } catch (e) {
         clearTimeout(to);
         lastErr = e instanceof Error ? e.message : String(e);
-        console.warn(`ideogram attempt ${attempt} threw`, lastErr);
+        console.warn(`ideogram v3 attempt ${attempt} threw`, lastErr);
       }
       if (attempt < MAX_ATTEMPTS) {
-        await new Promise((res) => setTimeout(res, 1500 * attempt));
+        await new Promise((res) => setTimeout(res, 1200 * attempt));
       }
     }
     if (!r) {
@@ -137,7 +140,6 @@ Deno.serve(async (req) => {
     const url: string | undefined = json?.data?.[0]?.url;
     if (!url) return errorResponse("ideogram returned no url", 502);
 
-    // Download and return as base64 data URL so client can use it directly without CORS.
     const imgRes = await fetch(url);
     if (!imgRes.ok) return errorResponse("failed to fetch ideogram result", 502);
     const outBuf = new Uint8Array(await imgRes.arrayBuffer());
@@ -153,6 +155,7 @@ Deno.serve(async (req) => {
       resolution: picked.key,
       targetWidth,
       targetHeight,
+      durationMs: Date.now() - startedAt,
     });
   } catch (e) {
     console.error("reframe-banner-image error", e);
