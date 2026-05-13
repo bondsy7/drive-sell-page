@@ -416,7 +416,7 @@ const ChatIntakeStep: React.FC<Props> = ({
                 void handleSend();
               }
             }}
-            placeholder="VIN, „Preis 19.990€", „Galerie", oder einfach plaudern…"
+            placeholder="VIN, 'Preis 19.990€', 'Galerie', oder einfach plaudern..."
             disabled={busy}
             className="flex-1"
           />
