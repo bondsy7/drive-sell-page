@@ -73,29 +73,38 @@ Deno.serve(async (req) => {
 
     const picked = pickClosestResolution(targetWidth, targetHeight);
 
-    // Build multipart form for Ideogram
-    const form = new FormData();
-    form.append(
-      "image_file",
-      new Blob([inBytes], { type: inMime }),
-      "input." + (inMime.split("/")[1] || "jpg"),
-    );
-    form.append("resolution", picked.key);
-    form.append("model", "V_2");
+    const buildForm = () => {
+      const form = new FormData();
+      form.append(
+        "image_file",
+        new Blob([inBytes], { type: inMime }),
+        "input." + (inMime.split("/")[1] || "jpg"),
+      );
+      form.append("resolution", picked.key);
+      form.append("model", "V_2");
+      return form;
+    };
 
-    // Retry with timeout for transient Ideogram outages (524/502/503/504)
+    // Retry with a strict total budget so Lovable Cloud can return a clean 503
+    // before the platform's 150s idle timeout turns this into a hard 504.
     let r: Response | null = null;
     let lastErr = "";
     let lastStatus = 0;
-    const MAX_ATTEMPTS = 3;
+    const startedAt = Date.now();
+    const MAX_ATTEMPTS = 2;
+    const TOTAL_BUDGET_MS = 125_000;
+    const SAFETY_MARGIN_MS = 8_000;
+    const MAX_ATTEMPT_MS = 58_000;
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      const remaining = TOTAL_BUDGET_MS - (Date.now() - startedAt) - SAFETY_MARGIN_MS;
+      if (remaining <= 5_000) break;
       const ctrl = new AbortController();
-      const to = setTimeout(() => ctrl.abort(), 110_000);
+      const to = setTimeout(() => ctrl.abort(), Math.min(MAX_ATTEMPT_MS, remaining));
       try {
         const resp = await fetch("https://api.ideogram.ai/reframe", {
           method: "POST",
           headers: { "Api-Key": apiKey },
-          body: form,
+          body: buildForm(),
           signal: ctrl.signal,
         });
         clearTimeout(to);
