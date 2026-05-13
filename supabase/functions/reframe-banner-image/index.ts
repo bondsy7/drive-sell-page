@@ -83,15 +83,46 @@ Deno.serve(async (req) => {
     form.append("resolution", picked.key);
     form.append("model", "V_2");
 
-    const r = await fetch("https://api.ideogram.ai/reframe", {
-      method: "POST",
-      headers: { "Api-Key": apiKey },
-      body: form,
-    });
-    if (!r.ok) {
-      const t = await r.text();
-      console.error("ideogram reframe error", r.status, t);
-      return errorResponse(`ideogram error ${r.status}: ${t.slice(0, 300)}`, 502);
+    // Retry with timeout for transient Ideogram outages (524/502/503/504)
+    let r: Response | null = null;
+    let lastErr = "";
+    let lastStatus = 0;
+    const MAX_ATTEMPTS = 3;
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      const ctrl = new AbortController();
+      const to = setTimeout(() => ctrl.abort(), 110_000);
+      try {
+        const resp = await fetch("https://api.ideogram.ai/reframe", {
+          method: "POST",
+          headers: { "Api-Key": apiKey },
+          body: form,
+          signal: ctrl.signal,
+        });
+        clearTimeout(to);
+        if (resp.ok) { r = resp; break; }
+        lastStatus = resp.status;
+        lastErr = (await resp.text()).slice(0, 200);
+        console.warn(`ideogram attempt ${attempt} failed ${resp.status}`);
+        if (![502, 503, 504, 524, 408, 429].includes(resp.status)) {
+          return errorResponse(`ideogram error ${resp.status}: ${lastErr}`, 502);
+        }
+      } catch (e) {
+        clearTimeout(to);
+        lastErr = e instanceof Error ? e.message : String(e);
+        console.warn(`ideogram attempt ${attempt} threw`, lastErr);
+      }
+      if (attempt < MAX_ATTEMPTS) {
+        await new Promise((res) => setTimeout(res, 1500 * attempt));
+      }
+    }
+    if (!r) {
+      return new Response(
+        JSON.stringify({
+          error: `Ideogram-Dienst aktuell nicht erreichbar (${lastStatus || "timeout"}). Bitte gleich nochmal versuchen oder „Manuell" nutzen.`,
+          retryable: true,
+        }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
     const json = await r.json();
     const url: string | undefined = json?.data?.[0]?.url;
