@@ -49,7 +49,7 @@ const WizardShell: React.FC<Props> = ({ onSwitchToPro }) => {
   const { state, actions, activeComposition, activeFormat, resolveColor, canUndo, canRedo } = store;
   const stageRef = useRef<Konva.Stage | null>(null);
 
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [applyLogoToAll, setApplyLogoToAll] = useState(true);
   const [zipBusy, setZipBusy] = useState(false);
   const [aiBusy, setAiBusy] = useState(false);
@@ -226,7 +226,7 @@ const WizardShell: React.FC<Props> = ({ onSwitchToPro }) => {
                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/10 text-accent">AI</span>
               </div>
               <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground">
-                In 3 Schritten zum fertigen Banner
+                In 4 Schritten zum fertigen Banner
               </h1>
             </div>
             <Button variant="ghost" size="sm" onClick={onSwitchToPro}>
@@ -239,7 +239,10 @@ const WizardShell: React.FC<Props> = ({ onSwitchToPro }) => {
             {WIZARD_STEPS.map((s, i) => {
               const active = step === s.id;
               const done = step > s.id;
-              const reachable = s.id === 1 || canGoStep2;
+              const reachable =
+                s.id === 1 ||
+                (s.id === 2 && canGoStep2) ||
+                (s.id >= 3 && !!activeComposition.backgroundImageUrl);
               return (
                 <button
                   key={s.id}
