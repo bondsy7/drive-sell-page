@@ -36,7 +36,7 @@ interface Props {
 }
 
 const WIZARD_STEPS = [
-  { id: 1 as const, title: "Quelle", subtitle: "Daten holen" },
+  { id: 1 as const, title: "Chat", subtitle: "Daten besprechen" },
   { id: 2 as const, title: "Bild", subtitle: "Hintergrund" },
   { id: 3 as const, title: "Vorschau", subtitle: "Feinschliff" },
   { id: 4 as const, title: "Export", subtitle: "Download" },
