@@ -64,8 +64,6 @@ Deno.serve(async (req) => {
 
     const fullPrompt = [SYSTEM_GUARDRAIL, "", promptText, extraInstruction ? `\nAdditional notes: ${extraInstruction}` : ""].join("\n");
 
-    const model = "gemini-2.5-flash-image";
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
     const payload = {
       contents: [
         {
@@ -76,20 +74,34 @@ Deno.serve(async (req) => {
           ],
         },
       ],
-      generationConfig: {
-        responseModalities: ["IMAGE"],
-      },
+      generationConfig: { responseModalities: ["IMAGE"] },
     };
 
-    const r = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!r.ok) {
-      const t = await r.text();
-      console.error("gemini master-image error", r.status, t.slice(0, 400));
-      return errorResponse(`gemini ${r.status}: ${t.slice(0, 300)}`, 502);
+    const model = "gemini-2.5-flash-image";
+    let r: Response | null = null;
+    let lastStatus = 0;
+    let lastBody = "";
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (resp.ok) { r = resp; break; }
+      lastStatus = resp.status;
+      lastBody = await resp.text();
+      console.warn(`gemini master-image attempt ${attempt + 1} -> ${resp.status}`);
+      if (resp.status !== 429 && resp.status < 500) break;
+      await new Promise((res) => setTimeout(res, 800 * (attempt + 1)));
+    }
+    if (!r) {
+      console.error("gemini master-image exhausted", lastStatus, lastBody.slice(0, 400));
+      return jsonResponse({
+        fallback: true,
+        error: lastStatus >= 500 || lastStatus === 429 ? "GEMINI_UNAVAILABLE" : `gemini_${lastStatus}`,
+        imageDataUrl: null,
+      });
     }
     const json = await r.json();
     const parts = json?.candidates?.[0]?.content?.parts || [];
