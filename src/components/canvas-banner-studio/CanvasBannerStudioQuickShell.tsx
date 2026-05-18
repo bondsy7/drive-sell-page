@@ -363,7 +363,8 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro, onSwitchToWizard }) => {
           <Card className="p-4 mb-4">
             <div className="flex items-center justify-between text-sm mb-2">
               <span className="text-foreground">
-                {progress.stage === "pdf" && "PDF analysieren"}
+                {progress.stage === "analyze" && "Datenblatt analysieren"}
+                {progress.stage === "master" && "Masterbild erstellen"}
                 {progress.stage === "reframe" && "Bilder anpassen"}
                 {progress.stage === "render" && "Banner rendern"}
                 {progress.stage === "done" && "Fertig"}
