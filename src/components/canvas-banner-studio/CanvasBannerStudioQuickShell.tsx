@@ -133,7 +133,7 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro, onSwitchToWizard }) => {
     try {
       const out = await generateBannersFromInputs(
         {
-          pdfFile,
+          datenblattFile: pdfFile,
           vehicleImageDataUrl: imageDataUrl,
           formats,
           ciContext,
