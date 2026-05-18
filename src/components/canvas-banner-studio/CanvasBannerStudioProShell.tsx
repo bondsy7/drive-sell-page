@@ -65,6 +65,26 @@ const CanvasBannerStudioShell: React.FC<ProShellProps> = ({ onSwitchToWizard }) 
   const [previewMobileOpen, setPreviewMobileOpen] = useState(true);
   const stageRef = useRef<Konva.Stage | null>(null);
 
+  // Quick-Modus Übergabe: einmalig auf Mount hydrieren.
+  const hydratedRef = useRef(false);
+  useEffect(() => {
+    if (hydratedRef.current) return;
+    const payload = readAndClearQuickHandoff();
+    if (!payload) return;
+    hydratedRef.current = true;
+    actions.hydrate({
+      selectedFormatIds: payload.selectedFormatIds,
+      activeFormatId: payload.activeFormatId,
+      textFields: payload.textFields,
+      compositions: payload.compositions,
+      showSafeArea: false,
+      ci: payload.ci as any,
+    });
+    // Direkt in Step 3 (Texte) springen, dort sieht der User sofort, was anzupassen ist.
+    setStep(3);
+    toast.info("Banner aus Quick-Modus geladen — Texte und Layout anpassen, dann exportieren.");
+  }, [actions]);
+
   const [zipBusy, setZipBusy] = useState(false);
   const [applyLogoToAll, setApplyLogoToAll] = useState(true);
   const [aiBusy, setAiBusy] = useState(false);
