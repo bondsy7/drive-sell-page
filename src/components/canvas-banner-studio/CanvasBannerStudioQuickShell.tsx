@@ -155,6 +155,7 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro, onSwitchToWizard }) => {
       );
       setResults(out.results);
       setErrors(out.errors);
+      lastTextFieldsRef.current = out.textFields;
       bgTasks.updateTask(taskId, {
         completed: formats.length,
         status: out.errors.length > 0 && out.results.length === 0 ? "error" : "done",
