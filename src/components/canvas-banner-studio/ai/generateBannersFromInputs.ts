@@ -1,12 +1,11 @@
 /**
- * Quick-Mode Orchestrator: nimmt PDF + Fahrzeugbild, läuft komplett im Hintergrund
- * und liefert für jedes gewählte Format eine fertig gerenderte Banner-Composition.
+ * Quick-Mode Orchestrator – läuft komplett im Hintergrund.
  *
- * Pipeline:
- *   1. PDF → extract banner data
- *   2. Image → Reframe pro Zielformat (parallel via reframeJobManager)
- *   3. Pro Format: Composition aufbauen (Default-Template) + Reframe-Bild als Hintergrund
- *   4. Composition rendern → DataURL Thumbnail
+ * Pipeline (parallel wo möglich):
+ *   1a. Datenblatt (PDF oder Bild) → Texte extrahieren
+ *   1b. Fahrzeugbild → Masterbild in aufregendem CI-Showroom (Gemini)
+ *   2.  Masterbild → pro Zielformat per Ideogram reframen (parallel)
+ *   3.  Composition pro Format aufbauen + rendern → DataURL Thumbnail
  */
 
 import type { BannerComposition, BannerFormat, BannerTextFields, CiState } from "../state/types";
@@ -15,6 +14,7 @@ import { renderCompositionToDataURL } from "../export/renderComposition";
 import {
   extractBannerDataFromImage,
   extractBannerDataFromPdf,
+  generateMasterBannerImage,
   type ExtractedBannerFields,
 } from "./masterImageClient";
 import { extractPDFAsBase64 } from "@/lib/pdf-utils";
@@ -29,11 +29,13 @@ export interface QuickGenerateInput {
   ci?: CiState;
   ciContext?: CiContext | null;
   manufacturerLogoUrl?: string;
+  /** CI Akzent-Hex Farben aus dem User-Profil (für aufregenden Master-Showroom). */
+  primaryColorHex?: string | null;
+  secondaryColorHex?: string | null;
 }
 
-
 export interface QuickGenerateProgress {
-  stage: "pdf" | "reframe" | "render" | "done" | "error";
+  stage: "analyze" | "master" | "reframe" | "render" | "done" | "error";
   done: number;
   total: number;
   current?: string;
@@ -50,6 +52,7 @@ export interface QuickBannerResult {
 
 export interface QuickGenerateOutput {
   textFields: BannerTextFields;
+  masterImageDataUrl: string | null;
   results: QuickBannerResult[];
   errors: { formatId: string; error: string }[];
 }
@@ -63,57 +66,118 @@ function mergeFields(base: BannerTextFields, extracted: ExtractedBannerFields): 
   return out;
 }
 
+function sanitizeHex(v?: string | null, fallback = "#174f6b"): string {
+  if (!v) return fallback;
+  const s = String(v).trim();
+  if (/^#?[0-9a-fA-F]{6}$/.test(s)) return s.startsWith("#") ? s : `#${s}`;
+  return fallback;
+}
+
+/**
+ * Aufregender, CI-eingefärbter Master-Showroom-Prompt.
+ * Inspiriert vom Referenz-Banner (heller Showroom mit Neon-/Light-Streaks in CI-Farben).
+ */
+function buildMasterPrompt(primary: string, secondary: string): string {
+  return [
+    "Re-stage the EXACT same vehicle inside a modern, bright premium car dealership showroom.",
+    "Background: a real showroom with polished glossy concrete floor, white ceiling with linear LED light strips, glass walls, two or three other modern cars softly visible in the background (out of focus, no logos).",
+    `Atmosphere: dynamic energetic ad scene with bold diagonal NEON LIGHT STREAKS and beams of colored light radiating from behind the car towards the corners, in the brand colors ${primary} (primary, dominant) and ${secondary} (secondary accent). Light streaks must look like long-exposure light trails / motion light effects – sharp, vivid, with subtle glow and bloom – NOT flat shapes.`,
+    "The vehicle itself stays perfectly sharp, photoreal, centered, slight 3/4 front hero angle, clean reflections on the bodywork picking up hints of the brand-colored light.",
+    "Floor reflects the colored light streaks softly. Background light wraps around the car with a subtle rim light in the secondary brand color.",
+    "Cinematic automotive advertising photography, 35mm, shallow depth of field, ultra crisp on the car, premium magazine quality.",
+    "Strictly NO text, NO logos, NO watermarks, NO badges, NO visible license plate text (blank plate allowed).",
+  ].join(" ");
+}
+
 export async function generateBannersFromInputs(
   input: QuickGenerateInput,
   onProgress?: (p: QuickGenerateProgress) => void,
 ): Promise<QuickGenerateOutput> {
-  const { datenblattFile, vehicleImageDataUrl, formats, ci, ciContext, manufacturerLogoUrl } = input;
-  const totalSteps = 1 /* analyse */ + formats.length /* reframe */ + formats.length /* render */;
+  const {
+    datenblattFile,
+    vehicleImageDataUrl,
+    formats,
+    ci,
+    ciContext,
+    manufacturerLogoUrl,
+    primaryColorHex,
+    secondaryColorHex,
+  } = input;
+
+  // Schritte: 1 analyse + 1 master + N reframe + N render
+  const totalSteps = 2 + formats.length * 2;
   let stepCounter = 0;
   const tick = (stage: QuickGenerateProgress["stage"], current?: string) => {
     stepCounter++;
     onProgress?.({ stage, done: stepCounter, total: totalSteps, current });
   };
 
-  // 1) Datenblatt analysieren (PDF oder Bild)
+  const primary = sanitizeHex(primaryColorHex, "#174f6b");
+  const secondary = sanitizeHex(secondaryColorHex, "#e94f6b");
+
+  onProgress?.({
+    stage: "analyze",
+    done: 0,
+    total: totalSteps,
+    current: "Datenblatt & Masterbild werden parallel erstellt…",
+  });
+
+  // 1) Datenblatt-Analyse + Masterbild PARALLEL
   const isPdf =
     datenblattFile.type === "application/pdf" ||
     datenblattFile.name.toLowerCase().endsWith(".pdf");
-  onProgress?.({
-    stage: "pdf",
-    done: 0,
-    total: totalSteps,
-    current: isPdf ? "PDF wird analysiert" : "Datenblatt-Bild wird analysiert",
-  });
-  let textFields: BannerTextFields = { ...DEFAULT_TEXT_FIELDS };
-  try {
-    let extracted: ExtractedBannerFields;
-    if (isPdf) {
-      const base64 = await extractPDFAsBase64(datenblattFile);
-      extracted = await extractBannerDataFromPdf(base64);
-    } else {
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        const r = new FileReader();
-        r.onerror = () => reject(r.error ?? new Error("FileReader Fehler"));
-        r.onload = () => resolve(String(r.result));
-        r.readAsDataURL(datenblattFile);
-      });
-      extracted = await extractBannerDataFromImage(dataUrl);
-    }
-    textFields = mergeFields(textFields, extracted);
-  } catch (e: any) {
-    console.warn("Datenblatt-Analyse fehlgeschlagen, weiter mit Defaults", e);
-  }
-  tick("pdf", "Datenblatt analysiert");
 
-  // 2) Reframe pro Format (parallel über JobManager)
+  const analyzePromise: Promise<BannerTextFields> = (async () => {
+    try {
+      let extracted: ExtractedBannerFields;
+      if (isPdf) {
+        const base64 = await extractPDFAsBase64(datenblattFile);
+        extracted = await extractBannerDataFromPdf(base64);
+      } else {
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const r = new FileReader();
+          r.onerror = () => reject(r.error ?? new Error("FileReader Fehler"));
+          r.onload = () => resolve(String(r.result));
+          r.readAsDataURL(datenblattFile);
+        });
+        extracted = await extractBannerDataFromImage(dataUrl);
+      }
+      return mergeFields({ ...DEFAULT_TEXT_FIELDS }, extracted);
+    } catch (e) {
+      console.warn("Datenblatt-Analyse fehlgeschlagen, Defaults werden verwendet", e);
+      return { ...DEFAULT_TEXT_FIELDS };
+    }
+  })();
+
+  const masterPromise: Promise<string | null> = (async () => {
+    try {
+      const promptText = buildMasterPrompt(primary, secondary);
+      const out = await generateMasterBannerImage({
+        sourceImageUrl: vehicleImageDataUrl,
+        promptText,
+        extraInstruction: ciContext?.marke
+          ? `Vehicle make: ${ciContext.marke}${ciContext.modell ? ` ${ciContext.modell}` : ""}. Keep make/model/color identical to the source photo.`
+          : "Keep make, model and color identical to the source photo.",
+      });
+      return out.imageDataUrl;
+    } catch (e) {
+      console.warn("Masterbild fehlgeschlagen, Original wird verwendet", e);
+      return null;
+    }
+  })();
+
+  const [textFields, masterImageDataUrl] = await Promise.all([analyzePromise, masterPromise]);
+  tick("analyze", "Datenblatt ausgewertet");
+  tick("master", masterImageDataUrl ? "Masterbild erstellt" : "Masterbild übersprungen");
+
+  // 2) Reframe pro Format – Quelle: Masterbild (Fallback Original)
+  const reframeSource = masterImageDataUrl ?? vehicleImageDataUrl;
   const reframeByFormat = new Map<string, { url: string; w: number; h: number }>();
   const errors: { formatId: string; error: string }[] = [];
 
-
   await new Promise<void>((resolve) => {
     const jobId = startReframeJob({
-      source: vehicleImageDataUrl,
+      source: reframeSource,
       formats: formats.map((f) => ({ formatId: f.id, width: f.width, height: f.height, label: f.name })),
     });
     let received = 0;
@@ -125,9 +189,8 @@ export async function generateBannersFromInputs(
       },
       onProgress: (p) => {
         if (p.finished) {
-          // Bump tick counter for any formats that failed reframe (we fall back to original image during render).
           const missing = formats.length - received;
-          for (let i = 0; i < missing; i++) tick("reframe", "Original-Bild wird verwendet");
+          for (let i = 0; i < missing; i++) tick("reframe", "Masterbild wird verwendet");
           unsub();
           disposeJob(jobId);
           resolve();
@@ -141,13 +204,13 @@ export async function generateBannersFromInputs(
   for (const format of formats) {
     try {
       const rf = reframeByFormat.get(format.id);
-      const backgroundDataUrl = rf?.url ?? vehicleImageDataUrl;
+      const backgroundDataUrl = rf?.url ?? reframeSource;
       const ciOverrides = ci?.layerOverrides;
       let composition = buildDefaultComposition(format.id, "classic-offer", ciOverrides ?? null);
       composition = {
         ...composition,
         backgroundImageUrl: backgroundDataUrl,
-        masterImageUrl: vehicleImageDataUrl,
+        masterImageUrl: reframeSource,
         logoUrl: manufacturerLogoUrl ?? composition.logoUrl,
       };
       const thumbnailDataUrl = await renderCompositionToDataURL(
@@ -167,5 +230,5 @@ export async function generateBannersFromInputs(
   }
 
   onProgress?.({ stage: "done", done: totalSteps, total: totalSteps });
-  return { textFields, results, errors };
+  return { textFields, masterImageDataUrl, results, errors };
 }

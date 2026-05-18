@@ -108,7 +108,7 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro, onSwitchToWizard }) => {
     setBusy(true);
     setResults([]);
     setErrors([]);
-    setProgress({ stage: "pdf", done: 0, total: 1, current: "Starte…" });
+    setProgress({ stage: "analyze", done: 0, total: 1, current: "Starte…" });
 
     const formats: BannerFormat[] = selectedFormatIds
       .map((id) => BANNER_FORMATS.find((f) => f.id === id))
@@ -138,6 +138,8 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro, onSwitchToWizard }) => {
           formats,
           ciContext,
           manufacturerLogoUrl,
+          primaryColorHex: dealerProfile?.primary_color ?? null,
+          secondaryColorHex: dealerProfile?.secondary_color ?? null,
         },
         (p) => {
           setProgress(p);
@@ -363,7 +365,8 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro, onSwitchToWizard }) => {
           <Card className="p-4 mb-4">
             <div className="flex items-center justify-between text-sm mb-2">
               <span className="text-foreground">
-                {progress.stage === "pdf" && "PDF analysieren"}
+                {progress.stage === "analyze" && "Datenblatt analysieren"}
+                {progress.stage === "master" && "Masterbild erstellen"}
                 {progress.stage === "reframe" && "Bilder anpassen"}
                 {progress.stage === "render" && "Banner rendern"}
                 {progress.stage === "done" && "Fertig"}
