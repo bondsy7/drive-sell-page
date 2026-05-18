@@ -50,6 +50,7 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro, onSwitchToWizard }) => {
 
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const imgInputRef = useRef<HTMLInputElement>(null);
+  const lastTextFieldsRef = useRef<import("./state/types").BannerTextFields | null>(null);
 
   // Lade Dealer-Profil für CI-Kontext
   useEffect(() => {
