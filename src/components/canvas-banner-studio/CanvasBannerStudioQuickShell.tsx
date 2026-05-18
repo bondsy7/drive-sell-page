@@ -22,6 +22,8 @@ import {
   type QuickGenerateProgress,
 } from "./ai/generateBannersFromInputs";
 import { buildCiContext, type DealerProfile } from "./ci/profileSources";
+import { writeQuickHandoff } from "./state/quickHandoff";
+import { Pencil } from "lucide-react";
 
 interface Props {
   onSwitchToPro: () => void;
