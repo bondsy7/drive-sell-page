@@ -12,19 +12,25 @@
 import type { BannerComposition, BannerFormat, BannerTextFields, CiState } from "../state/types";
 import { buildDefaultComposition, DEFAULT_TEXT_FIELDS } from "../data/defaultComposition";
 import { renderCompositionToDataURL } from "../export/renderComposition";
-import { extractBannerDataFromPdf, type ExtractedBannerFields } from "./masterImageClient";
+import {
+  extractBannerDataFromImage,
+  extractBannerDataFromPdf,
+  type ExtractedBannerFields,
+} from "./masterImageClient";
 import { extractPDFAsBase64 } from "@/lib/pdf-utils";
 import { startReframeJob, subscribeJob, disposeJob } from "./reframeJobManager";
 import type { CiContext } from "../ci/profileSources";
 
 export interface QuickGenerateInput {
-  pdfFile: File;
+  /** PDF-Exposé ODER Datenblatt-Bild (z.B. Screenshot, Foto). */
+  datenblattFile: File;
   vehicleImageDataUrl: string;
   formats: BannerFormat[];
   ci?: CiState;
   ciContext?: CiContext | null;
   manufacturerLogoUrl?: string;
 }
+
 
 export interface QuickGenerateProgress {
   stage: "pdf" | "reframe" | "render" | "done" | "error";
