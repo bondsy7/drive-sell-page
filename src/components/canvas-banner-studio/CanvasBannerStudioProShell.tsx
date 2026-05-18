@@ -12,6 +12,7 @@ import { useVehicles } from "@/hooks/useVehicles";
 import { useVehicleMakes } from "@/hooks/useVehicleMakes";
 import { supabase } from "@/integrations/supabase/client";
 import { useCanvasBannerStore } from "./state/useCanvasBannerStore";
+import { readAndClearQuickHandoff } from "./state/quickHandoff";
 import { getFormatById } from "./data/formats";
 import BannerCanvas from "./canvas/BannerCanvas";
 import MultiFormatPreview from "./canvas/MultiFormatPreview";
