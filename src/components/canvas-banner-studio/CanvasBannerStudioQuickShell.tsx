@@ -108,7 +108,7 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro, onSwitchToWizard }) => {
     setBusy(true);
     setResults([]);
     setErrors([]);
-    setProgress({ stage: "pdf", done: 0, total: 1, current: "Starte…" });
+    setProgress({ stage: "analyze", done: 0, total: 1, current: "Starte…" });
 
     const formats: BannerFormat[] = selectedFormatIds
       .map((id) => BANNER_FORMATS.find((f) => f.id === id))
