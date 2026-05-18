@@ -66,8 +66,10 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro, onSwitchToWizard }) => {
 
   const handlePdfPick = (f: File | null) => {
     if (!f) return;
-    if (!f.name.toLowerCase().endsWith(".pdf") && f.type !== "application/pdf") {
-      toast.error("Bitte ein PDF-Dokument auswählen.");
+    const isPdf = f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf");
+    const isImage = f.type.startsWith("image/");
+    if (!isPdf && !isImage) {
+      toast.error("Bitte PDF-Exposé oder ein Datenblatt-Bild (JPG/PNG) auswählen.");
       return;
     }
     setPdfFile(f);
