@@ -1,26 +1,33 @@
 import React, { useState, useEffect } from "react";
 import WizardShell from "./wizard/WizardShell";
 import ProShell from "./CanvasBannerStudioProShell";
+import QuickShell from "./CanvasBannerStudioQuickShell";
 
 const MODE_KEY = "cbs:mode";
+type Mode = "quick" | "wizard" | "pro";
 
 /**
- * Top-level entry that switches between the new 3-step Wizard (default)
- * and the original 5-step Pro mode. Choice is persisted in localStorage.
+ * Top-level entry that switches between Quick (default), Wizard and Pro modes.
+ * Choice is persisted in localStorage.
  */
 const CanvasBannerStudioShell: React.FC = () => {
-  const [mode, setMode] = useState<"wizard" | "pro">(() => {
-    if (typeof window === "undefined") return "wizard";
-    return (localStorage.getItem(MODE_KEY) as "wizard" | "pro") ?? "wizard";
+  const [mode, setMode] = useState<Mode>(() => {
+    if (typeof window === "undefined") return "quick";
+    const stored = localStorage.getItem(MODE_KEY) as Mode | null;
+    return stored === "wizard" || stored === "pro" || stored === "quick" ? stored : "quick";
   });
 
   useEffect(() => {
     if (typeof window !== "undefined") localStorage.setItem(MODE_KEY, mode);
   }, [mode]);
 
-  return mode === "wizard"
-    ? <WizardShell onSwitchToPro={() => setMode("pro")} />
-    : <ProShell onSwitchToWizard={() => setMode("wizard")} />;
+  if (mode === "quick") {
+    return <QuickShell onSwitchToPro={() => setMode("pro")} onSwitchToWizard={() => setMode("wizard")} />;
+  }
+  if (mode === "wizard") {
+    return <WizardShell onSwitchToPro={() => setMode("pro")} />;
+  }
+  return <ProShell onSwitchToWizard={() => setMode("quick")} />;
 };
 
 export default CanvasBannerStudioShell;
