@@ -206,6 +206,35 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro, onSwitchToWizard }) => {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
+  const openInEditor = useCallback(() => {
+    if (results.length === 0) return;
+    const compositions: Record<string, typeof results[number]["composition"]> = {};
+    const selectedFormatIds: string[] = [];
+    results.forEach((r) => {
+      compositions[r.formatId] = r.composition;
+      selectedFormatIds.push(r.formatId);
+    });
+    // Letzten Stand der Texte aus dem ersten Result rekonstruieren wir aus den
+    // generierten Compositions — die textFields holen wir aus dem Orchestrator
+    // (sind als Layer.field-Bindings sichtbar; wir speichern sie zusätzlich).
+    writeQuickHandoff({
+      selectedFormatIds,
+      activeFormatId: selectedFormatIds[0],
+      textFields: lastTextFieldsRef.current ?? ({
+        headline: "",
+        subline: "",
+        price: "",
+        cta: "",
+        smallInfo: "",
+        legalText: "",
+      } as any),
+      compositions,
+    });
+    toast.success("Banner werden im Editor geöffnet — Texte & Positionen anpassen, dann exportieren.");
+    onSwitchToPro();
+  }, [results, onSwitchToPro]);
+
+
   const progressPct = progress && progress.total > 0
     ? Math.round((progress.done / progress.total) * 100)
     : 0;
