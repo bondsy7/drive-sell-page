@@ -99,11 +99,9 @@ export async function generateBannersFromInputs(
       },
       onProgress: (p) => {
         if (p.finished) {
-          // include failures in tick count
-          while (received + (errors.length) < p.done + p.failed) {
-            errors.push({ formatId: "?", error: "Reframe fehlgeschlagen" });
-            tick("reframe", "Reframe-Fehler");
-          }
+          // Bump tick counter for any formats that failed reframe (we fall back to original image during render).
+          const missing = formats.length - received;
+          for (let i = 0; i < missing; i++) tick("reframe", "Original-Bild wird verwendet");
           unsub();
           disposeJob(jobId);
           resolve();
