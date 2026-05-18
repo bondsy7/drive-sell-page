@@ -419,13 +419,18 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro, onSwitchToWizard }) => {
         {results.length > 0 && (
           <Card className="p-4">
             <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-              <div className="font-semibold text-foreground">Ergebnisse ({results.length})</div>
-              <div className="flex gap-2">
-                <Button size="sm" onClick={downloadZip}>
-                  <Download className="w-4 h-4 mr-1" /> Alle als ZIP
+              <div>
+                <div className="font-semibold text-foreground">Vorschau ({results.length})</div>
+                <div className="text-xs text-muted-foreground">
+                  Texte, Position oder Layout noch nicht perfekt? Im Editor anpassen und dann fertigstellen.
+                </div>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                <Button size="sm" variant="outline" onClick={downloadZip}>
+                  <Download className="w-4 h-4 mr-1" /> Direkt als ZIP
                 </Button>
-                <Button size="sm" variant="outline" onClick={onSwitchToPro}>
-                  <Settings2 className="w-4 h-4 mr-1" /> Im Pro-Modus bearbeiten
+                <Button size="sm" onClick={openInEditor}>
+                  <Pencil className="w-4 h-4 mr-1" /> Im Editor bearbeiten & abschließen
                 </Button>
               </div>
             </div>
