@@ -12,6 +12,7 @@ import { useVehicles } from "@/hooks/useVehicles";
 import { useVehicleMakes } from "@/hooks/useVehicleMakes";
 import { supabase } from "@/integrations/supabase/client";
 import { useCanvasBannerStore } from "./state/useCanvasBannerStore";
+import { readAndClearQuickHandoff } from "./state/quickHandoff";
 import { getFormatById } from "./data/formats";
 import BannerCanvas from "./canvas/BannerCanvas";
 import MultiFormatPreview from "./canvas/MultiFormatPreview";
@@ -63,6 +64,26 @@ const CanvasBannerStudioShell: React.FC<ProShellProps> = ({ onSwitchToWizard }) 
   const [step, setStep] = useState<Step>(1);
   const [previewMobileOpen, setPreviewMobileOpen] = useState(true);
   const stageRef = useRef<Konva.Stage | null>(null);
+
+  // Quick-Modus Übergabe: einmalig auf Mount hydrieren.
+  const hydratedRef = useRef(false);
+  useEffect(() => {
+    if (hydratedRef.current) return;
+    const payload = readAndClearQuickHandoff();
+    if (!payload) return;
+    hydratedRef.current = true;
+    actions.hydrate({
+      selectedFormatIds: payload.selectedFormatIds,
+      activeFormatId: payload.activeFormatId,
+      textFields: payload.textFields,
+      compositions: payload.compositions,
+      showSafeArea: false,
+      ci: payload.ci as any,
+    });
+    // Direkt in Step 3 (Texte) springen, dort sieht der User sofort, was anzupassen ist.
+    setStep(3);
+    toast.info("Banner aus Quick-Modus geladen — Texte und Layout anpassen, dann exportieren.");
+  }, [actions]);
 
   const [zipBusy, setZipBusy] = useState(false);
   const [applyLogoToAll, setApplyLogoToAll] = useState(true);

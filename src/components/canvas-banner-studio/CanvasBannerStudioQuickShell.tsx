@@ -22,6 +22,8 @@ import {
   type QuickGenerateProgress,
 } from "./ai/generateBannersFromInputs";
 import { buildCiContext, type DealerProfile } from "./ci/profileSources";
+import { writeQuickHandoff } from "./state/quickHandoff";
+import { Pencil } from "lucide-react";
 
 interface Props {
   onSwitchToPro: () => void;
@@ -48,6 +50,7 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro, onSwitchToWizard }) => {
 
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const imgInputRef = useRef<HTMLInputElement>(null);
+  const lastTextFieldsRef = useRef<import("./state/types").BannerTextFields | null>(null);
 
   // Lade Dealer-Profil für CI-Kontext
   useEffect(() => {
@@ -152,6 +155,7 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro, onSwitchToWizard }) => {
       );
       setResults(out.results);
       setErrors(out.errors);
+      lastTextFieldsRef.current = out.textFields;
       bgTasks.updateTask(taskId, {
         completed: formats.length,
         status: out.errors.length > 0 && out.results.length === 0 ? "error" : "done",
@@ -203,6 +207,35 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro, onSwitchToWizard }) => {
     document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
+
+  const openInEditor = useCallback(() => {
+    if (results.length === 0) return;
+    const compositions: Record<string, typeof results[number]["composition"]> = {};
+    const selectedFormatIds: string[] = [];
+    results.forEach((r) => {
+      compositions[r.formatId] = r.composition;
+      selectedFormatIds.push(r.formatId);
+    });
+    // Letzten Stand der Texte aus dem ersten Result rekonstruieren wir aus den
+    // generierten Compositions — die textFields holen wir aus dem Orchestrator
+    // (sind als Layer.field-Bindings sichtbar; wir speichern sie zusätzlich).
+    writeQuickHandoff({
+      selectedFormatIds,
+      activeFormatId: selectedFormatIds[0],
+      textFields: lastTextFieldsRef.current ?? ({
+        headline: "",
+        subline: "",
+        price: "",
+        cta: "",
+        smallInfo: "",
+        legalText: "",
+      } as any),
+      compositions,
+    });
+    toast.success("Banner werden im Editor geöffnet — Texte & Positionen anpassen, dann exportieren.");
+    onSwitchToPro();
+  }, [results, onSwitchToPro]);
+
 
   const progressPct = progress && progress.total > 0
     ? Math.round((progress.done / progress.total) * 100)
@@ -386,13 +419,18 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro, onSwitchToWizard }) => {
         {results.length > 0 && (
           <Card className="p-4">
             <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-              <div className="font-semibold text-foreground">Ergebnisse ({results.length})</div>
-              <div className="flex gap-2">
-                <Button size="sm" onClick={downloadZip}>
-                  <Download className="w-4 h-4 mr-1" /> Alle als ZIP
+              <div>
+                <div className="font-semibold text-foreground">Vorschau ({results.length})</div>
+                <div className="text-xs text-muted-foreground">
+                  Texte, Position oder Layout noch nicht perfekt? Im Editor anpassen und dann fertigstellen.
+                </div>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                <Button size="sm" variant="outline" onClick={downloadZip}>
+                  <Download className="w-4 h-4 mr-1" /> Direkt als ZIP
                 </Button>
-                <Button size="sm" variant="outline" onClick={onSwitchToPro}>
-                  <Settings2 className="w-4 h-4 mr-1" /> Im Pro-Modus bearbeiten
+                <Button size="sm" onClick={openInEditor}>
+                  <Pencil className="w-4 h-4 mr-1" /> Im Editor bearbeiten & abschließen
                 </Button>
               </div>
             </div>
