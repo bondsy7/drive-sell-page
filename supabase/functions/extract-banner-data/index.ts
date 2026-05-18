@@ -55,8 +55,6 @@ Deno.serve(async (req) => {
     const apiKey = await getSecret("GEMINI_API_KEY");
     if (!apiKey) return errorResponse("GEMINI_API_KEY missing", 500);
 
-    const model = "gemini-2.5-flash";
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
     const payload = {
       contents: [
         {
@@ -70,15 +68,37 @@ Deno.serve(async (req) => {
       generationConfig: { responseMimeType: "application/json" },
     };
 
-    const r = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!r.ok) {
-      const t = await r.text();
-      console.error("gemini extract-banner-data error", r.status, t.slice(0, 400));
-      return errorResponse(`gemini ${r.status}: ${t.slice(0, 300)}`, 502);
+    const models = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.5-pro"];
+    let r: Response | null = null;
+    let lastStatus = 0;
+    let lastBody = "";
+    outer: for (const model of models) {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        const resp = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (resp.ok) { r = resp; break outer; }
+        lastStatus = resp.status;
+        lastBody = await resp.text();
+        console.warn(`gemini ${model} attempt ${attempt + 1} -> ${resp.status}`);
+        // Retry on 429/5xx, otherwise break and try next model
+        if (resp.status !== 429 && resp.status < 500) break;
+        await new Promise((res) => setTimeout(res, 600 * (attempt + 1)));
+      }
+    }
+    if (!r) {
+      console.error("gemini extract-banner-data exhausted", lastStatus, lastBody.slice(0, 400));
+      // Return 200 with fallback flag so the orchestrator can use defaults instead of crashing.
+      return jsonResponse({
+        fallback: true,
+        error: lastStatus >= 500 || lastStatus === 429 ? "GEMINI_UNAVAILABLE" : `gemini_${lastStatus}`,
+        fields: {
+          headline: "", subline: "", price: "", cta: "", smallInfo: "", legalText: "",
+        },
+      });
     }
     const json = await r.json();
     const text: string =
