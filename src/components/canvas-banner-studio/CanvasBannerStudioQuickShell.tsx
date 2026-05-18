@@ -66,8 +66,10 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro, onSwitchToWizard }) => {
 
   const handlePdfPick = (f: File | null) => {
     if (!f) return;
-    if (!f.name.toLowerCase().endsWith(".pdf") && f.type !== "application/pdf") {
-      toast.error("Bitte ein PDF-Dokument auswählen.");
+    const isPdf = f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf");
+    const isImage = f.type.startsWith("image/");
+    if (!isPdf && !isImage) {
+      toast.error("Bitte PDF-Exposé oder ein Datenblatt-Bild (JPG/PNG) auswählen.");
       return;
     }
     setPdfFile(f);
@@ -131,7 +133,7 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro, onSwitchToWizard }) => {
     try {
       const out = await generateBannersFromInputs(
         {
-          pdfFile,
+          datenblattFile: pdfFile,
           vehicleImageDataUrl: imageDataUrl,
           formats,
           ciContext,
@@ -241,14 +243,14 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro, onSwitchToWizard }) => {
             <input
               ref={pdfInputRef}
               type="file"
-              accept="application/pdf,.pdf"
+              accept="application/pdf,.pdf,image/*"
               className="hidden"
               onChange={(e) => handlePdfPick(e.target.files?.[0] ?? null)}
             />
             <div className="flex items-start gap-3">
               <FileText className="w-8 h-8 text-accent shrink-0" />
               <div className="flex-1 min-w-0">
-                <div className="font-semibold text-foreground">PDF / Exposé <span className="text-red-500">*</span></div>
+                <div className="font-semibold text-foreground">Datenblatt / Exposé <span className="text-red-500">*</span></div>
                 {pdfFile ? (
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-sm text-foreground truncate">{pdfFile.name}</span>
@@ -261,10 +263,11 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro, onSwitchToWizard }) => {
                     </Button>
                   </div>
                 ) : (
-                  <div className="text-xs text-muted-foreground mt-1">Klicken zum Hochladen — wird automatisch analysiert</div>
+                  <div className="text-xs text-muted-foreground mt-1">PDF oder Bild (Foto/Screenshot) — wird automatisch analysiert</div>
                 )}
               </div>
             </div>
+
           </Card>
 
           {/* Bild */}

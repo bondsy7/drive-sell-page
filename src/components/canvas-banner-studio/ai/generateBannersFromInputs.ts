@@ -12,19 +12,25 @@
 import type { BannerComposition, BannerFormat, BannerTextFields, CiState } from "../state/types";
 import { buildDefaultComposition, DEFAULT_TEXT_FIELDS } from "../data/defaultComposition";
 import { renderCompositionToDataURL } from "../export/renderComposition";
-import { extractBannerDataFromPdf, type ExtractedBannerFields } from "./masterImageClient";
+import {
+  extractBannerDataFromImage,
+  extractBannerDataFromPdf,
+  type ExtractedBannerFields,
+} from "./masterImageClient";
 import { extractPDFAsBase64 } from "@/lib/pdf-utils";
 import { startReframeJob, subscribeJob, disposeJob } from "./reframeJobManager";
 import type { CiContext } from "../ci/profileSources";
 
 export interface QuickGenerateInput {
-  pdfFile: File;
+  /** PDF-Exposé ODER Datenblatt-Bild (z.B. Screenshot, Foto). */
+  datenblattFile: File;
   vehicleImageDataUrl: string;
   formats: BannerFormat[];
   ci?: CiState;
   ciContext?: CiContext | null;
   manufacturerLogoUrl?: string;
 }
+
 
 export interface QuickGenerateProgress {
   stage: "pdf" | "reframe" | "render" | "done" | "error";
@@ -61,29 +67,49 @@ export async function generateBannersFromInputs(
   input: QuickGenerateInput,
   onProgress?: (p: QuickGenerateProgress) => void,
 ): Promise<QuickGenerateOutput> {
-  const { pdfFile, vehicleImageDataUrl, formats, ci, ciContext, manufacturerLogoUrl } = input;
-  const totalSteps = 1 /* pdf */ + formats.length /* reframe */ + formats.length /* render */;
+  const { datenblattFile, vehicleImageDataUrl, formats, ci, ciContext, manufacturerLogoUrl } = input;
+  const totalSteps = 1 /* analyse */ + formats.length /* reframe */ + formats.length /* render */;
   let stepCounter = 0;
   const tick = (stage: QuickGenerateProgress["stage"], current?: string) => {
     stepCounter++;
     onProgress?.({ stage, done: stepCounter, total: totalSteps, current });
   };
 
-  // 1) PDF analyse
-  onProgress?.({ stage: "pdf", done: 0, total: totalSteps, current: "PDF wird analysiert" });
+  // 1) Datenblatt analysieren (PDF oder Bild)
+  const isPdf =
+    datenblattFile.type === "application/pdf" ||
+    datenblattFile.name.toLowerCase().endsWith(".pdf");
+  onProgress?.({
+    stage: "pdf",
+    done: 0,
+    total: totalSteps,
+    current: isPdf ? "PDF wird analysiert" : "Datenblatt-Bild wird analysiert",
+  });
   let textFields: BannerTextFields = { ...DEFAULT_TEXT_FIELDS };
   try {
-    const base64 = await extractPDFAsBase64(pdfFile);
-    const extracted = await extractBannerDataFromPdf(base64);
+    let extracted: ExtractedBannerFields;
+    if (isPdf) {
+      const base64 = await extractPDFAsBase64(datenblattFile);
+      extracted = await extractBannerDataFromPdf(base64);
+    } else {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const r = new FileReader();
+        r.onerror = () => reject(r.error ?? new Error("FileReader Fehler"));
+        r.onload = () => resolve(String(r.result));
+        r.readAsDataURL(datenblattFile);
+      });
+      extracted = await extractBannerDataFromImage(dataUrl);
+    }
     textFields = mergeFields(textFields, extracted);
   } catch (e: any) {
-    console.warn("PDF Analyse fehlgeschlagen, weiter mit Defaults", e);
+    console.warn("Datenblatt-Analyse fehlgeschlagen, weiter mit Defaults", e);
   }
-  tick("pdf", "PDF analysiert");
+  tick("pdf", "Datenblatt analysiert");
 
   // 2) Reframe pro Format (parallel über JobManager)
   const reframeByFormat = new Map<string, { url: string; w: number; h: number }>();
   const errors: { formatId: string; error: string }[] = [];
+
 
   await new Promise<void>((resolve) => {
     const jobId = startReframeJob({
