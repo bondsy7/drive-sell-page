@@ -138,6 +138,8 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro, onSwitchToWizard }) => {
           formats,
           ciContext,
           manufacturerLogoUrl,
+          primaryColorHex: dealerProfile?.primary_color ?? null,
+          secondaryColorHex: dealerProfile?.secondary_color ?? null,
         },
         (p) => {
           setProgress(p);
