@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Eye, EyeOff, Trash2, Type, Square, ImageIcon, Plus } from "lucide-react";
+import { Eye, EyeOff, Trash2, Type, Square, ImageIcon, Plus, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { BannerComposition, BannerFormat, BannerLayer, TextAlign } from "../state/types";
