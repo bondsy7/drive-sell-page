@@ -148,17 +148,19 @@ const QuickInspector: React.FC<Props> = ({
     setLogoPickerOpen(false);
   };
 
-  // ---------- SVG-Recoloring für Bild-/Logo-Layer ----------
-  const applySvgTint = async (layer: BannerLayer, color: string) => {
+  // ---------- Recoloring für Bild-/Logo-Layer (SVG bevorzugt, PNG/WEBP als Fallback) ----------
+  const applyTint = async (layer: BannerLayer, color: string) => {
     const url = layer.imageUrl;
     if (!url) return;
-    const looksSvg = isSvgUrlSync(url) || (await detectIsSvg(url));
-    if (!looksSvg) {
-      toast.error("Nur SVG-Logos können eingefärbt werden.");
-      return;
-    }
     try {
-      const tinted = await recolorSvg(url, "custom", color);
+      const looksSvg = isSvgUrlSync(url) || (await detectIsSvg(url));
+      const tinted = looksSvg
+        ? await recolorSvg(url, "custom", color)
+        : await recolorRaster(url, color);
+      if (tinted === url) {
+        toast.error("Logo konnte nicht eingefärbt werden.");
+        return;
+      }
       onPatchLayer(layer.id, { imageUrl: tinted });
     } catch {
       toast.error("Einfärben fehlgeschlagen");
