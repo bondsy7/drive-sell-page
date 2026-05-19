@@ -197,6 +197,20 @@ function presentReducer(state: StudioState, action: Action): StudioState {
         },
       };
     }
+    case "apply-template-spec": {
+      // Übernimmt eine vollständige TemplateSpec (z. B. aus der DB) als neue Layer-Liste.
+      // Im Gegensatz zu "set-template" werden die Layer 1:1 aus der Spec gerendert,
+      // damit gespeicherte CI-/Marken-Varianten exakt so erscheinen wie im Admin gesetzt.
+      const c = ensureComposition(state, action.formatId);
+      const newLayers = specToBannerLayers(action.spec);
+      return {
+        ...state,
+        compositions: {
+          ...state.compositions,
+          [action.formatId]: { ...c, selectedTemplateId: action.templateId, layers: newLayers },
+        },
+      };
+    }
     case "set-logo": {
       // Back-compat: setzt nur den Hersteller-Slot.
       const c = ensureComposition(state, action.formatId);
