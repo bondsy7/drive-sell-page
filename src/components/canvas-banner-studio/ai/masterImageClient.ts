@@ -13,6 +13,7 @@ export async function generateMasterBannerImage(args: {
 }
 
 export type ExtractedBannerFields = {
+  brand: string;
   headline: string;
   subline: string;
   price: string;
@@ -26,7 +27,16 @@ export async function extractBannerDataFromImage(fileDataUrl: string): Promise<E
     body: { fileDataUrl },
   });
   if (error) throw error;
-  return (data as { fields: ExtractedBannerFields }).fields;
+  const fields = (data as { fields: Partial<ExtractedBannerFields> }).fields ?? {};
+  return {
+    brand: String(fields.brand ?? "").trim(),
+    headline: String(fields.headline ?? ""),
+    subline: String(fields.subline ?? ""),
+    price: String(fields.price ?? ""),
+    cta: String(fields.cta ?? ""),
+    smallInfo: String(fields.smallInfo ?? ""),
+    legalText: String(fields.legalText ?? ""),
+  };
 }
 
 export async function extractBannerDataFromPdf(pdfBase64: string): Promise<ExtractedBannerFields> {
@@ -38,6 +48,7 @@ export async function extractBannerDataFromPdf(pdfBase64: string): Promise<Extra
   const v = (data as any)?.vehicle ?? {};
   const f = (data as any)?.financing ?? {};
   const c = (data as any)?.consumption ?? {};
+  const brand = String(v.brand ?? "").trim();
   const brandModel = [v.brand, v.model].filter(Boolean).join(" ").trim();
 
   let price = "";
@@ -54,6 +65,7 @@ export async function extractBannerDataFromPdf(pdfBase64: string): Promise<Extra
   }
 
   return {
+    brand,
     headline: brandModel.slice(0, 60),
     subline: (v?.equipment?.[0] || (data as any)?.category || "").toString().slice(0, 80),
     price: price.slice(0, 40),
