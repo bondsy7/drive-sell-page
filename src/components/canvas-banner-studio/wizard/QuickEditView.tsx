@@ -271,22 +271,28 @@ const QuickEditView: React.FC<Props> = ({
           )}
         </div>
 
-        {/* Inspector — nur Texte & Layer-Reihenfolge */}
+        {/* Inspector — Texte, Ebenen (mit Form/Bild/Logo-Editor) */}
         <div className="space-y-3">
-          <LayerOrderControls
-            selectedLayerId={state.selectedLayerId}
-            composition={activeComposition}
-            format={activeFormat}
-            onReorder={(id, dir) => actions.reorderLayer(id, dir)}
-            onCenter={centerLayer}
-            onReset={() => { actions.resetLayout(); toast.success("Layout zurückgesetzt"); }}
-          />
           <TextFieldsPanel
             textFields={state.textFields}
             composition={activeComposition}
             onChangeText={actions.setText}
             onPatchLayer={actions.patchLayer}
             onReorderLayer={actions.reorderLayer}
+            ciContext={ciContext}
+            ciColors={state.ci?.colors}
+          />
+          <CustomLayersPanel
+            composition={activeComposition}
+            format={activeFormat}
+            selectedLayerId={state.selectedLayerId}
+            onAddLayer={actions.addLayer}
+            onPatchLayer={actions.patchLayer}
+            onRemoveLayer={actions.removeLayer}
+            onSelectLayer={actions.selectLayer}
+            onReorderLayer={actions.reorderLayer}
+            onMoveLayerToIndex={actions.moveLayerToIndex}
+            ciColors={state.ci?.colors}
           />
         </div>
       </div>
