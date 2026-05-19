@@ -550,6 +550,41 @@ function PropertyPanel({
       {layer.type === "logo" && (
         <>
           <div>
+            <Label className="text-xs">Logo-Farbe (SVG einfärben)</Label>
+            <div className="flex gap-2">
+              <Input
+                type="color"
+                className="h-8 w-14 p-1"
+                value={layer.color && /^#/.test(layer.color) ? layer.color : "#000000"}
+                onChange={(e) => onChange({ color: e.target.value })}
+              />
+              <Input
+                className="h-8 flex-1"
+                value={layer.color ?? ""}
+                placeholder="z. B. #ffffff – leer = Originalfarben"
+                onChange={(e) => onChange({ color: e.target.value || undefined })}
+              />
+              <Button size="sm" variant="ghost" onClick={() => onChange({ color: undefined })} title="Originalfarben wiederherstellen">
+                <RotateCcw className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-1 mt-1.5">
+              {["#ffffff", "#000000", "#1a1a1a", "#3366cc", "#1a365d", "#c9a84c", "#e84393", "#16a34a"].map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => onChange({ color: c })}
+                  className="w-5 h-5 rounded border border-border"
+                  style={{ backgroundColor: c }}
+                  title={c}
+                />
+              ))}
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-1">
+              Funktioniert mit SVG-Logos – fill/stroke werden ersetzt. Leer lassen für Originalfarben.
+            </p>
+          </div>
+          <div>
             <Label className="text-xs">Hintergrund-Farbe (optional, hinter Logo)</Label>
             <div className="flex gap-2">
               <Input
@@ -589,7 +624,7 @@ function PropertyPanel({
             />
           </div>
           <p className="text-[10px] text-muted-foreground">
-            Tipp: Das eigentliche Markenlogo wird automatisch je nach gewählter Marke geladen. Hier kannst du nur die Box drumherum stylen.
+            Tipp: Das Markenlogo wird automatisch je nach gewählter Marke geladen. Über „Logo-Farbe" kannst du SVG-Logos einfärben.
           </p>
         </>
       )}
