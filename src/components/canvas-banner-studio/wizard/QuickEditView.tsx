@@ -22,7 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { useCanvasBannerStore } from "../state/useCanvasBannerStore";
 import BannerCanvas from "../canvas/BannerCanvas";
 import TextFieldsPanel from "../controls/TextFieldsPanel";
-import CustomLayersPanel from "../controls/CustomLayersPanel";
+import QuickInspector from "./QuickInspector";
 import FloatingToolbar from "../controls/FloatingToolbar";
 import { getFormatById, slugifyFormat } from "../data/formats";
 import { renderCompositionToBlob, renderCompositionToDataURL } from "../export/renderComposition";
@@ -276,17 +276,18 @@ const QuickEditView: React.FC<Props> = ({
             ciContext={ciContext}
             ciColors={state.ci?.colors}
           />
-          <CustomLayersPanel
+          <QuickInspector
             composition={activeComposition}
             format={activeFormat}
             selectedLayerId={state.selectedLayerId}
+            ci={state.ci}
+            dealerProfile={dealerProfile}
             onAddLayer={actions.addLayer}
             onPatchLayer={actions.patchLayer}
             onRemoveLayer={actions.removeLayer}
             onSelectLayer={actions.selectLayer}
             onReorderLayer={actions.reorderLayer}
-            onMoveLayerToIndex={actions.moveLayerToIndex}
-            ciColors={state.ci?.colors}
+            onResetLayout={actions.resetLayout}
           />
         </div>
       </div>
