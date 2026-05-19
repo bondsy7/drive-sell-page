@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import type { BannerComposition, BannerLayer, BannerTextFieldKey, BannerTextFields, TextAlign } from "../state/types";
-import { AlignCenter, AlignLeft, AlignRight, Bold, Eye, EyeOff } from "lucide-react";
+import { AlignCenter, AlignLeft, AlignRight, Bold, Eye, EyeOff, ArrowUp, ArrowDown } from "lucide-react";
 import { SHORTCODES } from "../ci/shortcodes";
 
 const FIELDS: { key: BannerTextFieldKey; label: string; placeholder: string; layerId: string; multiline?: boolean }[] = [
