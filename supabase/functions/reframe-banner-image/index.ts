@@ -140,8 +140,28 @@ Deno.serve(async (req) => {
     const url: string | undefined = json?.data?.[0]?.url;
     if (!url) return errorResponse("ideogram returned no url", 502);
 
-    const imgRes = await fetch(url);
-    if (!imgRes.ok) return errorResponse("failed to fetch ideogram result", 502);
+    let imgRes: Response | null = null;
+    let imgErr: unknown = null;
+    for (let attempt = 1; attempt <= 4; attempt++) {
+      try {
+        imgRes = await fetch(url);
+        if (imgRes.ok) break;
+        imgErr = `status ${imgRes.status}`;
+      } catch (e) {
+        imgErr = e;
+        console.warn(`ideogram result fetch attempt ${attempt} failed`, e);
+      }
+      await new Promise((r) => setTimeout(r, 400 * attempt));
+    }
+    if (!imgRes || !imgRes.ok) {
+      return new Response(
+        JSON.stringify({
+          error: `Ideogram-Ergebnis nicht abrufbar (${imgErr instanceof Error ? imgErr.message : String(imgErr)}). Bitte gleich nochmal versuchen.`,
+          retryable: true,
+        }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
     const outBuf = new Uint8Array(await imgRes.arrayBuffer());
     let bin = "";
     for (let i = 0; i < outBuf.length; i++) bin += String.fromCharCode(outBuf[i]);
