@@ -22,7 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { useCanvasBannerStore } from "../state/useCanvasBannerStore";
 import BannerCanvas from "../canvas/BannerCanvas";
 import TextFieldsPanel from "../controls/TextFieldsPanel";
-import LayerOrderControls from "../controls/LayerOrderControls";
+import CustomLayersPanel from "../controls/CustomLayersPanel";
 import FloatingToolbar from "../controls/FloatingToolbar";
 import { getFormatById, slugifyFormat } from "../data/formats";
 import { renderCompositionToBlob, renderCompositionToDataURL } from "../export/renderComposition";
