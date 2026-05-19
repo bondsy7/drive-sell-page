@@ -26,6 +26,7 @@ type Action =
   | { type: "set-bg-fit"; formatId: string; fit: ImageFitMode }
   | { type: "set-overlay"; formatId: string; direction: OverlayDirection; strength: number }
   | { type: "set-template"; formatId: string; templateId: string }
+  | { type: "apply-template-spec"; formatId: string; templateId: string; spec: TemplateSpec }
   | { type: "set-logo"; formatId: string; url?: string }
   | { type: "set-logo-slot"; formatId: string; slot: LogoSlot; url?: string }
   | { type: "clear-all-logos"; formatId: string }
