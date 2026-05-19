@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Eye, EyeOff, Trash2, Type, Square, ImageIcon, ArrowUp, ArrowDown, GripVertical } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import type { BannerComposition, BannerFormat, BannerLayer, TextAlign } from "../state/types";
+import type { BannerComposition, BannerFormat, BannerLayer, CiState, TextAlign } from "../state/types";
 
 const STANDARD_IDS = new Set(["headline", "subline", "price", "cta", "smallInfo", "legal", "logo", "background", "overlay"]);
 
