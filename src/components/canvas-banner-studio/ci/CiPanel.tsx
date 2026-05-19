@@ -261,52 +261,54 @@ const CiPanel: React.FC<CiPanelProps> = ({
         <div className="grid grid-cols-2 gap-1">
           <button
             type="button"
-            onClick={() => manufacturerLogoUrl && setLogo(manufacturerLogoUrl)}
-            disabled={!manufacturerLogoUrl}
-            className={`px-2 py-1.5 rounded-md border text-xs disabled:opacity-40 ${
-              usingManufacturer
-                ? "border-accent bg-accent/10 text-foreground font-semibold"
-                : "border-border text-muted-foreground hover:border-accent/40"
-            }`}
-          >
-            Hersteller
-          </button>
-          <button
-            type="button"
-            onClick={() => dealerLogoUrl && setLogo(dealerLogoUrl)}
-            disabled={!dealerLogoUrl}
-            className={`px-2 py-1.5 rounded-md border text-xs disabled:opacity-40 ${
-              usingDealer
-                ? "border-accent bg-accent/10 text-foreground font-semibold"
-                : "border-border text-muted-foreground hover:border-accent/40"
-            }`}
-          >
-            Händler
-          </button>
-          <button
-            type="button"
-            onClick={() => customLogoUrl && setLogo(customLogoUrl)}
-            disabled={!customLogoUrl}
-            className={`px-2 py-1.5 rounded-md border text-xs disabled:opacity-40 ${
-              usingCustom
-                ? "border-accent bg-accent/10 text-foreground font-semibold"
-                : "border-border text-muted-foreground hover:border-accent/40"
-            }`}
-          >
-            Eigenes
-          </button>
-          <button
-            type="button"
-            onClick={() => setLogo(undefined)}
+            onClick={toggleManufacturer}
             className={`px-2 py-1.5 rounded-md border text-xs ${
-              !currentLogoUrl
+              manufacturerOn
                 ? "border-accent bg-accent/10 text-foreground font-semibold"
                 : "border-border text-muted-foreground hover:border-accent/40"
             }`}
+            title={manufacturerLogoUrl ? "Hersteller-Logo ein-/ausschalten" : "Marke wählen, um Hersteller-Logo zu nutzen"}
+          >
+            Hersteller{manufacturerOn ? " ✓" : ""}
+          </button>
+          <button
+            type="button"
+            onClick={toggleDealer}
+            className={`px-2 py-1.5 rounded-md border text-xs ${
+              dealerOn
+                ? "border-accent bg-accent/10 text-foreground font-semibold"
+                : "border-border text-muted-foreground hover:border-accent/40"
+            }`}
+            title={dealerLogoUrl ? "Händler-Logo ein-/ausschalten" : "Händler-Logo im Profil hinterlegen"}
+          >
+            Händler{dealerOn ? " ✓" : ""}
+          </button>
+          <button
+            type="button"
+            onClick={toggleCustom}
+            className={`px-2 py-1.5 rounded-md border text-xs ${
+              customOn
+                ? "border-accent bg-accent/10 text-foreground font-semibold"
+                : "border-border text-muted-foreground hover:border-accent/40"
+            }`}
+            title={customLogoUrl ? "Eigenes Logo ein-/ausschalten" : "Eigenes Logo hochladen"}
+          >
+            Eigenes{customOn ? " ✓" : ""}
+          </button>
+          <button
+            type="button"
+            onClick={onClearAllLogos}
+            className={`px-2 py-1.5 rounded-md border text-xs ${
+              !anyOn
+                ? "border-accent bg-accent/10 text-foreground font-semibold"
+                : "border-border text-muted-foreground hover:border-accent/40"
+            }`}
+            title="Alle Logos ausschalten"
           >
             Kein Logo
           </button>
         </div>
+
 
         {/* Custom logo upload */}
         <div className="flex items-center gap-2 pt-1">
