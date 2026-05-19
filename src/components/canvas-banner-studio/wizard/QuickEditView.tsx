@@ -49,6 +49,7 @@ const QuickEditView: React.FC<Props> = ({
   ci,
   dealerProfile,
   onBack,
+  onApply,
 }) => {
   const { state, actions, activeComposition, activeFormat, resolveColor, canUndo, canRedo } = useCanvasBannerStore();
   const stageRef = useRef<Konva.Stage | null>(null);
