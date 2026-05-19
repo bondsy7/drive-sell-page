@@ -61,6 +61,8 @@ export type BannerLayer = {
   imageUrl?: string;
 };
 
+export type LogoSlot = "manufacturer" | "dealer" | "custom";
+
 export type BannerComposition = {
   formatId: string;
   backgroundImageUrl?: string;
@@ -68,7 +70,12 @@ export type BannerComposition = {
   overlayDirection: OverlayDirection;
   overlayStrength: number; // 0..100
   selectedTemplateId: string;
+  /** Hersteller-Logo URL (Slot "manufacturer"). Layer-ID: "logo". */
   logoUrl?: string;
+  /** Händler-Logo URL (Slot "dealer"). Layer-ID: "logo-dealer". */
+  dealerLogoUrl?: string;
+  /** Eigenes Logo URL (Slot "custom"). Layer-ID: "logo-custom". */
+  customLogoUrl?: string;
   layers: BannerLayer[];
   /** Global per-format scaling multiplier for fontSize and logo width (default 1). */
   scale?: number;
