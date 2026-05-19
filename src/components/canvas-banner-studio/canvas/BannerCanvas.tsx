@@ -334,7 +334,7 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
                   return (
                     <Rect
                       key={l.id}
-                      ref={(n) => { nodeRefs.current[l.id] = n; }}
+                      ref={(n) => { nodeRefs.current[l.id] = n; drawOrderRefs.current[l.id] = n; }}
                       x={l.x}
                       y={l.y}
                       width={w}
@@ -366,7 +366,7 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
                       key={l.id}
                       layer={l}
                       formatScale={formatScale}
-                      nodeRef={(n) => { nodeRefs.current[l.id] = n; }}
+                      nodeRef={(n) => { nodeRefs.current[l.id] = n; drawOrderRefs.current[l.id] = n; }}
                       onSelect={() => onSelectLayer?.(l.id)}
                       onDragMove={(e) => handleDragMove(l, e)}
                       onDragEnd={(e) => { handleDragEndCommon(); onLayerDrag?.(l.id, e.target.x(), e.target.y()); }}
@@ -387,7 +387,7 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
                   return (
                     <KImage
                       key={l.id}
-                      ref={(n) => { nodeRefs.current[l.id] = n; }}
+                      ref={(n) => { nodeRefs.current[l.id] = n; drawOrderRefs.current[l.id] = n; }}
                       image={img}
                       x={l.x}
                       y={l.y}
@@ -418,6 +418,7 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
                 return (
                   <Group
                     key={l.id}
+                    ref={(n) => { drawOrderRefs.current[l.id] = n; }}
                     x={l.x}
                     y={l.y}
                     draggable={l.draggable}
