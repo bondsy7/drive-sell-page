@@ -720,6 +720,9 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
                 </div>
               </div>
               <div className="flex gap-2 flex-wrap">
+                <Button size="sm" variant="outline" onClick={() => setEditMode(true)}>
+                  <Pencil className="w-4 h-4 mr-1" /> Bearbeiten
+                </Button>
                 <Button size="sm" onClick={downloadZip}>
                   <Download className="w-4 h-4 mr-1" /> Alle als ZIP
                 </Button>
