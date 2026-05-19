@@ -234,12 +234,14 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro, onSwitchToWizard }) => {
     const compositions: Record<string, typeof results[number]["composition"]> = {};
     const selectedFormatIds: string[] = [];
     results.forEach((r) => {
-      compositions[r.formatId] = r.composition;
+      compositions[r.formatId] = {
+        ...r.composition,
+        // Hersteller-Logo (falls aufgelöst) in jede Composition schreiben,
+        // damit es im Editor sofort erscheint.
+        logoUrl: resolvedLogoUrl ?? r.composition.logoUrl,
+      };
       selectedFormatIds.push(r.formatId);
     });
-    // Letzten Stand der Texte aus dem ersten Result rekonstruieren wir aus den
-    // generierten Compositions — die textFields holen wir aus dem Orchestrator
-    // (sind als Layer.field-Bindings sichtbar; wir speichern sie zusätzlich).
     writeQuickHandoff({
       selectedFormatIds,
       activeFormatId: selectedFormatIds[0],
@@ -255,7 +257,19 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro, onSwitchToWizard }) => {
     });
     toast.success("Banner werden im Editor geöffnet — Texte & Positionen anpassen, dann exportieren.");
     onSwitchToPro();
-  }, [results, onSwitchToPro]);
+  }, [results, onSwitchToPro, resolvedLogoUrl]);
+
+  const handleManualBrandChange = (brand: string) => {
+    setManualBrand(brand);
+    if (!brand) {
+      setResolvedLogoUrl(null);
+      return;
+    }
+    const key = brand.toLowerCase().replace(/\s+/g, "-");
+    const url = getLogoForMake(key) || getLogoForMake(brand.toLowerCase()) || null;
+    setResolvedLogoUrl(url);
+    if (!url) toast.warning(`Für "${brand}" wurde kein Logo gefunden.`);
+  };
 
 
   const progressPct = progress && progress.total > 0
