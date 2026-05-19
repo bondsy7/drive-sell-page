@@ -386,6 +386,37 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
     ? Math.round((progress.done / progress.total) * 100)
     : 0;
 
+  if (editMode && results.length > 0) {
+    const compositions: Record<string, typeof results[number]["composition"]> = {};
+    const formatIds: string[] = [];
+    results.forEach((r) => {
+      compositions[r.formatId] = {
+        ...r.composition,
+        logoUrl: resolvedLogoUrl ?? r.composition.logoUrl,
+      };
+      formatIds.push(r.formatId);
+    });
+    return (
+      <QuickEditView
+        initialFormatIds={formatIds}
+        initialActiveFormatId={formatIds[0]}
+        initialTextFields={lastTextFieldsRef.current ?? analyzedFields ?? DEFAULT_TEXT_FIELDS}
+        initialCompositions={compositions}
+        ci={{
+          brandKey: brandPresetKey,
+          colors: {
+            primary: ciColors.primary,
+            secondary: ciColors.secondary,
+            text: ciColors.text,
+            bg: ciColors.bg,
+          },
+        }}
+        dealerProfile={dealerProfile}
+        onBack={() => setEditMode(false)}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
