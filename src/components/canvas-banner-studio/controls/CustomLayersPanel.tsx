@@ -389,6 +389,22 @@ const CustomLayersPanel: React.FC<Props> = ({
                         <span className="tabular-nums w-9 text-right">{Math.round((l.opacity ?? 1) * 100)}%</span>
                       </label>
                     </div>
+                    {ciSwatches.length > 0 && (
+                      <div className="flex gap-1 flex-wrap">
+                        {ciSwatches.map((c) => (
+                          <button
+                            key={`ci-fill-${c.value}`}
+                            type="button"
+                            onClick={() => onPatchLayer(l.id, { backgroundColor: c.value })}
+                            title={c.label}
+                            className={`w-5 h-5 rounded-full border-2 ${
+                              (l.backgroundColor ?? "").toLowerCase() === c.value.toLowerCase() ? "border-foreground" : "border-border"
+                            }`}
+                            style={{ background: c.value }}
+                          />
+                        ))}
+                      </div>
+                    )}
                     <div className="grid grid-cols-3 gap-2 text-xs">
                       <label className="flex flex-col gap-0.5">
                         <span className="text-muted-foreground">Breite</span>
