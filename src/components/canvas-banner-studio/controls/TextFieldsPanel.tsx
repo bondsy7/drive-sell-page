@@ -72,19 +72,19 @@ const TextFieldsPanel: React.FC<Props> = ({ textFields, composition, onChangeTex
                   <>
                     <button
                       type="button"
-                      onClick={() => onReorderLayer(layer.id, "forward")}
+                      onClick={() => onReorderLayer(layer.id, "backward")}
                       className="p-1 text-muted-foreground hover:text-foreground"
-                      title="Eine Ebene nach vorne"
-                      aria-label="Eine Ebene nach vorne"
+                      title="Eine Ebene nach hinten"
+                      aria-label="Eine Ebene nach hinten"
                     >
                       <ArrowUp className="w-4 h-4" />
                     </button>
                     <button
                       type="button"
-                      onClick={() => onReorderLayer(layer.id, "backward")}
+                      onClick={() => onReorderLayer(layer.id, "forward")}
                       className="p-1 text-muted-foreground hover:text-foreground"
-                      title="Eine Ebene nach hinten"
-                      aria-label="Eine Ebene nach hinten"
+                      title="Eine Ebene nach vorne"
+                      aria-label="Eine Ebene nach vorne"
                     >
                       <ArrowDown className="w-4 h-4" />
                     </button>
