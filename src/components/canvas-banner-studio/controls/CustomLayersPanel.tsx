@@ -25,6 +25,7 @@ interface Props {
   onPatchLayer: (id: string, patch: Partial<BannerLayer>) => void;
   onRemoveLayer: (id: string) => void;
   onSelectLayer: (id?: string) => void;
+  onReorderLayer?: (id: string, direction: "forward" | "backward") => void;
 }
 
 const newId = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
@@ -37,6 +38,7 @@ const CustomLayersPanel: React.FC<Props> = ({
   onPatchLayer,
   onRemoveLayer,
   onSelectLayer,
+  onReorderLayer,
 }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const customLayers = composition.layers.filter((l) => !STANDARD_IDS.has(l.id));
