@@ -63,13 +63,13 @@ const CustomLayersPanel: React.FC<Props> = ({
   // list entry is the background and the bottom entry is the foreground.
   const orderedForDisplay = composition.layers;
 
-  const handleDrop = (targetId: string) => {
-    if (!dragId || !onMoveLayerToIndex || dragId === targetId) {
+  const handleDrop = (sourceId: string | null, targetId: string) => {
+    if (!sourceId || !onMoveLayerToIndex || sourceId === targetId) {
       setDragId(null); setDragOverId(null); return;
     }
     const targetDisplayIdx = orderedForDisplay.findIndex((l) => l.id === targetId);
     if (targetDisplayIdx < 0) { setDragId(null); setDragOverId(null); return; }
-    onMoveLayerToIndex(dragId, targetDisplayIdx);
+    onMoveLayerToIndex(sourceId, targetDisplayIdx);
     setDragId(null); setDragOverId(null);
   };
 
@@ -201,11 +201,12 @@ const CustomLayersPanel: React.FC<Props> = ({
                 draggable={!!onMoveLayerToIndex}
                 onDragStart={(e) => {
                   setDragId(l.id);
+                  e.dataTransfer.setData("text/plain", l.id);
                   e.dataTransfer.effectAllowed = "move";
                 }}
                 onDragOver={(e) => { e.preventDefault(); setDragOverId(l.id); }}
                 onDragLeave={() => setDragOverId((cur) => (cur === l.id ? null : cur))}
-                onDrop={(e) => { e.preventDefault(); handleDrop(l.id); }}
+                onDrop={(e) => { e.preventDefault(); handleDrop(e.dataTransfer.getData("text/plain") || dragId, l.id); }}
                 onDragEnd={() => { setDragId(null); setDragOverId(null); }}
                 className={`rounded-md border p-2.5 space-y-2 bg-card transition-opacity ${
                   selected ? "border-accent" : "border-border"
