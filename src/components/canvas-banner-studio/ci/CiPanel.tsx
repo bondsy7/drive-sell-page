@@ -1,5 +1,5 @@
-import React, { useRef, useState } from "react";
-import { Palette, Type, ImageIcon, Info, Upload, Loader2 } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { Palette, Type, ImageIcon, Info, Upload, Loader2, AlertTriangle } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -7,6 +7,7 @@ import { BRAND_PRESETS, getBrandPreset } from "./brandPresets";
 import { uploadCustomCiLogo } from "./uploadCiLogo";
 import { DISPLAY_FONTS, BODY_FONTS, findFontPreset, type FontPreset } from "./fontCatalog";
 import { ensureFontLoaded } from "./fontLoader";
+import { detectIsSvg, isSvgUrlSync } from "./svgRecolor";
 import type { CiState, LogoMode } from "../state/types";
 import type { CiContext } from "./profileSources";
 
