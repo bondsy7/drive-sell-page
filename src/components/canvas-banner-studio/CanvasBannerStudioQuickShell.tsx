@@ -160,6 +160,20 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro, onSwitchToWizard }) => {
       setResults(out.results);
       setErrors(out.errors);
       lastTextFieldsRef.current = out.textFields;
+
+      // Marke aus der Analyse bevorzugen; sonst die aus ciContext (Profil-Fallback)
+      const brandFromAnalysis = (out.detectedBrand ?? "").trim();
+      const effectiveBrand = brandFromAnalysis || ciContext.marke || "";
+      setDetectedBrand(effectiveBrand);
+      setManualBrand(effectiveBrand);
+      const logoFromBrand = effectiveBrand
+        ? getLogoForMake(effectiveBrand.toLowerCase().replace(/\s+/g, "-")) ||
+          getLogoForMake(effectiveBrand.toLowerCase()) ||
+          manufacturerLogoUrl ||
+          null
+        : manufacturerLogoUrl ?? null;
+      setResolvedLogoUrl(logoFromBrand);
+
       bgTasks.updateTask(taskId, {
         completed: formats.length,
         status: out.errors.length > 0 && out.results.length === 0 ? "error" : "done",
@@ -168,6 +182,9 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro, onSwitchToWizard }) => {
       });
       if (out.results.length > 0) {
         toast.success(`${out.results.length} Banner erstellt${out.errors.length ? ` (${out.errors.length} Fehler)` : ""}.`);
+        if (!logoFromBrand) {
+          toast.info("Marke konnte nicht erkannt werden — bitte unten manuell wählen, damit das Hersteller-Logo angezeigt wird.");
+        }
       } else {
         toast.error("Es konnten keine Banner erstellt werden.");
       }
