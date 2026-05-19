@@ -298,10 +298,10 @@ function presentReducer(state: StudioState, action: Action): StudioState {
       const c = ensureComposition(state, action.formatId);
       const idx = c.layers.findIndex((l) => l.id === action.layerId);
       if (idx < 0) return state;
-      const clamped = Math.max(0, Math.min(c.layers.length - 1, action.toIndex));
-      if (clamped === idx) return state;
       const newLayers = [...c.layers];
       const [moved] = newLayers.splice(idx, 1);
+      const clamped = Math.max(0, Math.min(newLayers.length, action.toIndex));
+      if (clamped === idx) return state;
       newLayers.splice(clamped, 0, moved);
       return {
         ...state,
