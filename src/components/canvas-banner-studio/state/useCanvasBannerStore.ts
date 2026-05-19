@@ -12,6 +12,9 @@ import { BANNER_FORMATS, getFormatById } from "../data/formats";
 import { buildDefaultComposition, DEFAULT_TEXT_FIELDS } from "../data/defaultComposition";
 import { getLayoutTemplate } from "../data/layoutTemplates";
 import { getBrandPreset } from "../ci/brandPresets";
+import { loadTemplate } from "../data/templateRegistry";
+import { specToBannerLayers } from "../data/templateToLayers";
+import type { TemplateSpec } from "../data/templateSchema";
 
 type LogoSlot = "manufacturer" | "dealer" | "custom";
 
