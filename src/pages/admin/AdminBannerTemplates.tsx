@@ -618,6 +618,35 @@ export default function AdminBannerTemplates() {
     });
   };
 
+  // Reorder by absolute index (drag & drop). Higher index = rendered on top.
+  const moveLayerToIndex = (id: string, toIndex: number) => {
+    setDraft((d) => {
+      if (!d) return d;
+      const from = d.layers.findIndex((l) => l.id === id);
+      if (from < 0) return d;
+      const next = d.layers.slice();
+      const [item] = next.splice(from, 1);
+      const clamped = Math.max(0, Math.min(next.length, toIndex));
+      next.splice(clamped, 0, item);
+      return { ...d, layers: next };
+    });
+  };
+
+  // Step up/down (UI inverse: "up" in list = on top = end of array).
+  const stepLayer = (id: string, dir: "up" | "down") => {
+    setDraft((d) => {
+      if (!d) return d;
+      const i = d.layers.findIndex((l) => l.id === id);
+      if (i < 0) return d;
+      const j = dir === "up" ? i + 1 : i - 1;
+      if (j < 0 || j >= d.layers.length) return d;
+      const next = d.layers.slice();
+      [next[i], next[j]] = [next[j], next[i]];
+      return { ...d, layers: next };
+    });
+  };
+
+
   const addLayer = (kind: "text" | "shape" | "image") => {
     setDraft((d) => {
       if (!d) return d;
