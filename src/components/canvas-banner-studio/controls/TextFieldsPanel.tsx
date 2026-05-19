@@ -30,7 +30,7 @@ interface Props {
   onReorderLayer?: (layerId: string, direction: "forward" | "backward") => void;
 }
 
-const TextFieldsPanel: React.FC<Props> = ({ textFields, composition, onChangeText, onPatchLayer }) => {
+const TextFieldsPanel: React.FC<Props> = ({ textFields, composition, onChangeText, onPatchLayer, onReorderLayer }) => {
   const layerById = (id: string) => composition.layers.find((l) => l.id === id);
 
   const insertCode = (key: BannerTextFieldKey, code: string) => {
