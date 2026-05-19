@@ -214,10 +214,11 @@ function VisualEditor({
           const bg = isShape
             ? l.backgroundColor || "#3b82f6"
             : isLogo
-              ? "rgba(255,255,255,0.85)"
+              ? (brandLogoUrl ? "transparent" : "rgba(255,255,255,0.85)")
               : isImage
                 ? "rgba(0,0,0,0.15)"
                 : "transparent";
+
           return (
             <div
               key={l.id}
