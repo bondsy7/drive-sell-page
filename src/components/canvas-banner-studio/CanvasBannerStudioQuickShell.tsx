@@ -24,6 +24,7 @@ import {
 import { buildCiContext, type DealerProfile } from "./ci/profileSources";
 import { writeQuickHandoff } from "./state/quickHandoff";
 import { Pencil } from "lucide-react";
+import VehicleBrandPicker from "@/components/VehicleBrandPicker";
 
 interface Props {
   onSwitchToPro: () => void;
