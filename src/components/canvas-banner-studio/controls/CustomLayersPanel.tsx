@@ -178,18 +178,37 @@ const CustomLayersPanel: React.FC<Props> = ({
 
       {customLayers.length > 0 && (
         <div className="space-y-2">
-          {customLayers.map((l) => {
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+            Oben = Vordergrund · Ziehen zum Sortieren
+          </p>
+          {orderedForDisplay.map((l) => {
             const selected = l.id === selectedLayerId;
+            const isDragging = dragId === l.id;
+            const isDragOver = dragOverId === l.id && dragId && dragId !== l.id;
             return (
               <div
                 key={l.id}
-                className={`rounded-md border p-2.5 space-y-2 bg-card ${
+                draggable={!!onMoveLayerToIndex}
+                onDragStart={(e) => {
+                  setDragId(l.id);
+                  e.dataTransfer.effectAllowed = "move";
+                }}
+                onDragOver={(e) => { e.preventDefault(); setDragOverId(l.id); }}
+                onDragLeave={() => setDragOverId((cur) => (cur === l.id ? null : cur))}
+                onDrop={(e) => { e.preventDefault(); handleDrop(l.id); }}
+                onDragEnd={() => { setDragId(null); setDragOverId(null); }}
+                className={`rounded-md border p-2.5 space-y-2 bg-card transition-opacity ${
                   selected ? "border-accent" : "border-border"
+                } ${isDragging ? "opacity-50" : ""} ${
+                  isDragOver ? "ring-2 ring-accent" : ""
                 }`}
                 onClick={() => onSelectLayer(l.id)}
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5 text-xs font-medium text-foreground">
+                    {onMoveLayerToIndex && (
+                      <GripVertical className="w-3.5 h-3.5 text-muted-foreground cursor-grab active:cursor-grabbing" />
+                    )}
                     {l.type === "text" && <Type className="w-3 h-3" />}
                     {l.type === "shape" && <Square className="w-3 h-3" />}
                     {l.type === "image" && <ImageIcon className="w-3 h-3" />}
