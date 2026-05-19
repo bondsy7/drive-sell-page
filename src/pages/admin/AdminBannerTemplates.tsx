@@ -218,7 +218,7 @@ function VisualEditor({
           const bg = isShape
             ? l.backgroundColor || "#3b82f6"
             : isLogo
-              ? (brandLogoUrl ? "transparent" : "rgba(255,255,255,0.85)")
+              ? (l.backgroundColor || (brandLogoUrl ? "transparent" : "rgba(255,255,255,0.85)"))
               : isImage
                 ? "rgba(0,0,0,0.15)"
                 : "transparent";
@@ -238,7 +238,7 @@ function VisualEditor({
                   : "1px dashed rgba(255,255,255,0.4)",
                 outlineOffset: 0,
                 backgroundColor: bg,
-                opacity: isShape || isImage ? (l.opacity ?? 1) : 1,
+                opacity: isShape || isImage || isLogo ? (l.opacity ?? 1) : 1,
                 borderRadius: l.borderRadius ?? 0,
                 backgroundImage: isImage && l.imageUrl
                   ? `url("${l.imageUrl}")`
