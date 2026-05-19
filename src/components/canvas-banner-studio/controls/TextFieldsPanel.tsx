@@ -176,7 +176,7 @@ const TextFieldsPanel: React.FC<Props> = ({ textFields, composition, onChangeTex
                   );
                 })}
               </div>
-              <div className="flex gap-1">
+              <div className="flex gap-1 flex-wrap">
                 {COLOR_TOKENS.map((c) => (
                   <button
                     key={c.token}
@@ -187,6 +187,20 @@ const TextFieldsPanel: React.FC<Props> = ({ textFields, composition, onChangeTex
                       layer.color === c.token ? "border-foreground" : "border-border"
                     }`}
                     style={{ background: `hsl(var(--${c.token}))` }}
+                  />
+                ))}
+                {ciSwatches.map((c) => (
+                  <button
+                    key={`ci-${c.value}`}
+                    type="button"
+                    onClick={() => onPatchLayer(layer.id, { color: c.value })}
+                    title={c.label}
+                    className={`w-6 h-6 rounded-full border-2 ${
+                      (layer.color ?? "").toLowerCase() === c.value.toLowerCase()
+                        ? "border-foreground"
+                        : "border-border"
+                    }`}
+                    style={{ background: c.value }}
                   />
                 ))}
               </div>
