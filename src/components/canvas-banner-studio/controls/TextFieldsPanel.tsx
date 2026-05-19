@@ -67,14 +67,38 @@ const TextFieldsPanel: React.FC<Props> = ({ textFields, composition, onChangeTex
           <div key={f.key} className="rounded-lg border border-border bg-card p-3 space-y-3">
             <div className="flex items-center justify-between gap-2">
               <Label className="text-sm font-semibold">{f.label}</Label>
-              <button
-                type="button"
-                onClick={() => onPatchLayer(layer.id, { visible: !layer.visible })}
-                className="text-muted-foreground hover:text-foreground"
-                aria-label={layer.visible ? "Ausblenden" : "Einblenden"}
-              >
-                {layer.visible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-              </button>
+              <div className="flex items-center gap-0.5">
+                {onReorderLayer && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => onReorderLayer(layer.id, "forward")}
+                      className="p-1 text-muted-foreground hover:text-foreground"
+                      title="Eine Ebene nach vorne"
+                      aria-label="Eine Ebene nach vorne"
+                    >
+                      <ArrowUp className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onReorderLayer(layer.id, "backward")}
+                      className="p-1 text-muted-foreground hover:text-foreground"
+                      title="Eine Ebene nach hinten"
+                      aria-label="Eine Ebene nach hinten"
+                    >
+                      <ArrowDown className="w-4 h-4" />
+                    </button>
+                  </>
+                )}
+                <button
+                  type="button"
+                  onClick={() => onPatchLayer(layer.id, { visible: !layer.visible })}
+                  className="text-muted-foreground hover:text-foreground p-1"
+                  aria-label={layer.visible ? "Ausblenden" : "Einblenden"}
+                >
+                  {layer.visible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
             {f.multiline ? (
               <Textarea
