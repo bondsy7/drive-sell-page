@@ -281,14 +281,17 @@ const CustomLayersPanel: React.FC<Props> = ({
             <span>{selectedCustomLayer.id}</span>
           </div>
 
-                {selectedCustomLayer.type === "text" && (
+          {(() => {
+            const l = selectedCustomLayer;
+            return (
+              <>
+                {l.type === "text" && (
                   <>
                     <Textarea
                       rows={2}
-                      value={selectedCustomLayer.content ?? ""}
+                      value={l.content ?? ""}
                       placeholder="Text"
-                      onChange={(e) => onPatchLayer(selectedCustomLayer.id, { content: e.target.value })}
-                      onClick={(e) => e.stopPropagation()}
+                      onChange={(e) => onPatchLayer(l.id, { content: e.target.value })}
                     />
                     <div className="flex flex-wrap items-center gap-2 text-xs">
                       <label className="flex items-center gap-1 text-muted-foreground">
@@ -299,7 +302,6 @@ const CustomLayersPanel: React.FC<Props> = ({
                           max={Math.max(80, (l.fontSize ?? 24) * 2)}
                           value={l.fontSize ?? 24}
                           onChange={(e) => onPatchLayer(l.id, { fontSize: Number(e.target.value) })}
-                          onClick={(e) => e.stopPropagation()}
                           className="accent-[hsl(var(--accent))]"
                         />
                         <span className="tabular-nums w-7 text-right">{l.fontSize}</span>
@@ -307,7 +309,6 @@ const CustomLayersPanel: React.FC<Props> = ({
                       <select
                         value={l.align ?? "left"}
                         onChange={(e) => onPatchLayer(l.id, { align: e.target.value as TextAlign })}
-                        onClick={(e) => e.stopPropagation()}
                         className="text-xs rounded border border-border bg-background px-1.5 py-1"
                       >
                         <option value="left">links</option>
@@ -316,10 +317,7 @@ const CustomLayersPanel: React.FC<Props> = ({
                       </select>
                       <button
                         type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onPatchLayer(l.id, { fontWeight: (l.fontWeight ?? 400) >= 600 ? 400 : 800 });
-                        }}
+                        onClick={() => onPatchLayer(l.id, { fontWeight: (l.fontWeight ?? 400) >= 600 ? 400 : 800 })}
                         className={`px-2 py-1 rounded border text-[11px] ${
                           (l.fontWeight ?? 400) >= 600 ? "border-accent bg-accent/10" : "border-border"
                         }`}
@@ -331,7 +329,7 @@ const CustomLayersPanel: React.FC<Props> = ({
                           <button
                             key={c.token}
                             type="button"
-                            onClick={(e) => { e.stopPropagation(); onPatchLayer(l.id, { color: c.token }); }}
+                            onClick={() => onPatchLayer(l.id, { color: c.token })}
                             title={c.label}
                             className={`w-5 h-5 rounded-full border-2 ${
                               l.color === c.token ? "border-foreground" : "border-border"
@@ -352,7 +350,6 @@ const CustomLayersPanel: React.FC<Props> = ({
                         type="color"
                         value={l.backgroundColor?.startsWith("#") ? l.backgroundColor : "#000000"}
                         onChange={(e) => onPatchLayer(l.id, { backgroundColor: e.target.value })}
-                        onClick={(e) => e.stopPropagation()}
                         className="w-8 h-8 rounded border border-border bg-transparent cursor-pointer"
                       />
                       <label className="flex items-center gap-1 text-muted-foreground flex-1">
@@ -363,7 +360,6 @@ const CustomLayersPanel: React.FC<Props> = ({
                           max={100}
                           value={Math.round((l.opacity ?? 1) * 100)}
                           onChange={(e) => onPatchLayer(l.id, { opacity: Number(e.target.value) / 100 })}
-                          onClick={(e) => e.stopPropagation()}
                           className="accent-[hsl(var(--accent))] flex-1"
                         />
                         <span className="tabular-nums w-9 text-right">{Math.round((l.opacity ?? 1) * 100)}%</span>
@@ -372,33 +368,15 @@ const CustomLayersPanel: React.FC<Props> = ({
                     <div className="grid grid-cols-3 gap-2 text-xs">
                       <label className="flex flex-col gap-0.5">
                         <span className="text-muted-foreground">Breite</span>
-                        <Input
-                          type="number"
-                          value={l.width ?? 0}
-                          onChange={(e) => onPatchLayer(l.id, { width: Number(e.target.value) })}
-                          onClick={(e) => e.stopPropagation()}
-                          className="h-7"
-                        />
+                        <Input type="number" value={l.width ?? 0} onChange={(e) => onPatchLayer(l.id, { width: Number(e.target.value) })} className="h-7" />
                       </label>
                       <label className="flex flex-col gap-0.5">
                         <span className="text-muted-foreground">Höhe</span>
-                        <Input
-                          type="number"
-                          value={l.height ?? 0}
-                          onChange={(e) => onPatchLayer(l.id, { height: Number(e.target.value) })}
-                          onClick={(e) => e.stopPropagation()}
-                          className="h-7"
-                        />
+                        <Input type="number" value={l.height ?? 0} onChange={(e) => onPatchLayer(l.id, { height: Number(e.target.value) })} className="h-7" />
                       </label>
                       <label className="flex flex-col gap-0.5">
                         <span className="text-muted-foreground">Radius</span>
-                        <Input
-                          type="number"
-                          value={l.borderRadius ?? 0}
-                          onChange={(e) => onPatchLayer(l.id, { borderRadius: Number(e.target.value) })}
-                          onClick={(e) => e.stopPropagation()}
-                          className="h-7"
-                        />
+                        <Input type="number" value={l.borderRadius ?? 0} onChange={(e) => onPatchLayer(l.id, { borderRadius: Number(e.target.value) })} className="h-7" />
                       </label>
                     </div>
                   </div>
@@ -406,33 +384,15 @@ const CustomLayersPanel: React.FC<Props> = ({
 
                 {l.type === "image" && (
                   <div className="space-y-2">
-                    {l.imageUrl && (
-                      <img
-                        src={l.imageUrl}
-                        alt=""
-                        className="max-h-20 rounded border border-border object-contain bg-muted"
-                      />
-                    )}
+                    {l.imageUrl && <img src={l.imageUrl} alt="" className="max-h-20 rounded border border-border object-contain bg-muted" />}
                     <div className="grid grid-cols-3 gap-2 text-xs">
                       <label className="flex flex-col gap-0.5">
                         <span className="text-muted-foreground">Breite</span>
-                        <Input
-                          type="number"
-                          value={l.width ?? 0}
-                          onChange={(e) => onPatchLayer(l.id, { width: Number(e.target.value) })}
-                          onClick={(e) => e.stopPropagation()}
-                          className="h-7"
-                        />
+                        <Input type="number" value={l.width ?? 0} onChange={(e) => onPatchLayer(l.id, { width: Number(e.target.value) })} className="h-7" />
                       </label>
                       <label className="flex flex-col gap-0.5">
                         <span className="text-muted-foreground">Höhe</span>
-                        <Input
-                          type="number"
-                          value={l.height ?? 0}
-                          onChange={(e) => onPatchLayer(l.id, { height: Number(e.target.value) })}
-                          onClick={(e) => e.stopPropagation()}
-                          className="h-7"
-                        />
+                        <Input type="number" value={l.height ?? 0} onChange={(e) => onPatchLayer(l.id, { height: Number(e.target.value) })} className="h-7" />
                       </label>
                       <label className="flex flex-col gap-0.5 col-span-1">
                         <span className="text-muted-foreground">Deckkraft</span>
@@ -442,16 +402,15 @@ const CustomLayersPanel: React.FC<Props> = ({
                           max={100}
                           value={Math.round((l.opacity ?? 1) * 100)}
                           onChange={(e) => onPatchLayer(l.id, { opacity: Number(e.target.value) / 100 })}
-                          onClick={(e) => e.stopPropagation()}
                           className="accent-[hsl(var(--accent))] mt-2"
                         />
                       </label>
                     </div>
                   </div>
                 )}
-              </div>
+              </>
             );
-          })}
+          })()}
         </div>
       )}
 
