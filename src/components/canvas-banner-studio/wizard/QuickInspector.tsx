@@ -221,22 +221,23 @@ const QuickInspector: React.FC<Props> = ({
                     />
                   </div>
                   <div className="mt-2 grid grid-cols-4 gap-2 max-h-60 overflow-y-auto">
-                    {filteredMakes.map((m: any) => {
-                      const url = m.logoUrl || m.logo_url || m.url || null;
-                      if (!url) return null;
-                      return (
-                        <button
-                          key={m.key}
-                          type="button"
-                          onClick={() => placeImageLayer(url, true)}
-                          className="flex flex-col items-center gap-1 rounded border border-border p-2 hover:border-accent"
-                          title={m.key}
-                        >
-                          <img src={url} alt={m.key} className="h-8 w-auto object-contain" />
-                          <span className="text-[10px] text-muted-foreground truncate w-full text-center">{m.key}</span>
-                        </button>
-                      );
-                    })}
+                    {filteredMakes.map((m) => (
+                      <button
+                        key={m.key}
+                        type="button"
+                        onClick={() => placeImageLayer(m.url!, true)}
+                        className="flex flex-col items-center gap-1 rounded border border-border p-2 hover:border-accent"
+                        title={m.key}
+                      >
+                        <img src={m.url!} alt={m.key} className="h-8 w-auto object-contain" />
+                        <span className="text-[10px] text-muted-foreground truncate w-full text-center">{m.key}</span>
+                      </button>
+                    ))}
+                    {filteredMakes.length === 0 && (
+                      <p className="col-span-4 text-[11px] text-muted-foreground py-3 text-center">
+                        Keine Marke gefunden.
+                      </p>
+                    )}
                   </div>
                 </div>
 
