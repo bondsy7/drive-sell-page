@@ -16,19 +16,24 @@ interface CiPanelProps {
   ciContext?: CiContext | null;
   hasProfile: boolean;
   detectedBrandKey?: string;
-  /** Aktuelles Logo im Banner (Hersteller- oder Händler-Logo) */
-  currentLogoUrl?: string;
-  /** Hersteller-Logo aus Fahrzeug-Marke (für Quick-Switch) */
+  /** Aktuell aktive Logo-URLs pro Slot (für Recolor-Hinweis & Toggle-State). */
+  activeManufacturerLogoUrl?: string;
+  activeDealerLogoUrl?: string;
+  activeCustomLogoUrl?: string;
+  /** Hersteller-Logo aus Fahrzeug-Marke (Quelle). */
   manufacturerLogoUrl?: string;
-  /** Händler-Logo aus Profil */
+  /** Händler-Logo aus Profil (Quelle). */
   dealerLogoUrl?: string;
-  /** Eigenes (selbst hochgeladenes) CI-Logo */
+  /** Eigenes (selbst hochgeladenes) CI-Logo (Quelle). */
   customLogoUrl?: string;
   /** User-ID für Storage-Upload */
   userId?: string;
   onApplyBrandPreset: (brandKey: string) => void;
   onPatchCi: (patch: Partial<CiState>) => void;
-  onSetLogo: (url?: string, scope?: "all" | "current") => void;
+  /** Toggle eines einzelnen Logo-Slots an/aus. */
+  onToggleLogoSlot: (slot: "manufacturer" | "dealer" | "custom", url?: string) => void;
+  /** Alle Slots ausschalten. */
+  onClearAllLogos: () => void;
   /** Anzahl ausgewählter Formate (für UI-Hinweis). */
   selectedFormatsCount?: number;
   applyLogoToAll: boolean;
