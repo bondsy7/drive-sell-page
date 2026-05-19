@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Download, FileText, ImageIcon, Loader2, Settings2, Sparkles, X } from "lucide-react";
+import { ArrowLeft, Download, FileText, ImageIcon, Loader2, Palette, Pencil, Settings2, Sparkles, X } from "lucide-react";
 import { toast } from "sonner";
 import JSZip from "jszip";
 
@@ -15,7 +15,7 @@ import { useVehicleMakes } from "@/hooks/useVehicleMakes";
 import { useBackgroundTasks } from "@/contexts/BackgroundTasksContext";
 
 import { BANNER_FORMATS, slugifyFormat } from "./data/formats";
-import type { BannerFormat } from "./state/types";
+import type { BannerFormat, BannerTextFields } from "./state/types";
 import {
   generateBannersFromInputs,
   type QuickBannerResult,
@@ -23,14 +23,51 @@ import {
 } from "./ai/generateBannersFromInputs";
 import { buildCiContext, type DealerProfile } from "./ci/profileSources";
 import { writeQuickHandoff } from "./state/quickHandoff";
-import { Pencil } from "lucide-react";
 import VehicleBrandPicker from "@/components/VehicleBrandPicker";
+import { extractBannerDataFromImage, extractBannerDataFromPdf } from "./ai/masterImageClient";
+import { extractPDFAsBase64 } from "@/lib/pdf-utils";
+import { DEFAULT_TEXT_FIELDS } from "./data/defaultComposition";
+import { BRAND_PRESETS, detectBrandKey, getBrandPreset } from "./ci/brandPresets";
 
 interface Props {
   onSwitchToPro: () => void;
 }
 
 const DEFAULT_FORMAT_IDS = ["ig-square", "ig-story", "fb-feed"];
+
+// Drei Master-Prompt-Stile für Quick-Mode.
+type ScenePresetId = "showroom-neon" | "cinematic-showroom" | "studio-white";
+
+const SCENE_PRESETS: { id: ScenePresetId; label: string; description: string; build: (p: string, s: string) => string }[] = [
+  {
+    id: "showroom-neon",
+    label: "Showroom · Neon-Streaks",
+    description: "Heller Showroom mit Lichtstreifen in deinen CI-Farben.",
+    build: (primary, secondary) => [
+      "Re-stage the EXACT same vehicle inside a modern, bright premium car dealership showroom.",
+      "Background: a real showroom with polished glossy concrete floor, white ceiling with linear LED light strips, glass walls, two or three other modern cars softly visible in the background (out of focus, no logos).",
+      `Atmosphere: dynamic energetic ad scene with bold diagonal NEON LIGHT STREAKS and beams of colored light radiating from behind the car towards the corners, in the brand colors ${primary} (primary, dominant) and ${secondary} (secondary accent). Light streaks must look like long-exposure light trails / motion light effects – sharp, vivid, with subtle glow and bloom – NOT flat shapes.`,
+      "The vehicle itself stays perfectly sharp, photoreal, centered, slight 3/4 front hero angle, clean reflections on the bodywork picking up hints of the brand-colored light.",
+      "Floor reflects the colored light streaks softly. Background light wraps around the car with a subtle rim light in the secondary brand color.",
+      "Cinematic automotive advertising photography, 35mm, shallow depth of field, ultra crisp on the car, premium magazine quality.",
+      "Strictly NO text, NO logos, NO watermarks, NO badges, NO visible license plate text (blank plate allowed).",
+    ].join(" "),
+  },
+  {
+    id: "cinematic-showroom",
+    label: "Cinematic Studio",
+    description: "Dunkler Studio-Hintergrund, dramatische Spotlights.",
+    build: (primary, secondary) =>
+      `Place the exact same vehicle in a cinematic premium showroom: deep matte-black surroundings, focused warm spotlights highlighting body lines, glossy black floor with subtle reflection, soft volumetric haze. Add subtle accent rim light in ${primary} on one side and ${secondary} on the other. Editorial automotive photography, 35mm, shallow depth of field. NO text, NO logos, NO watermarks.`,
+  },
+  {
+    id: "studio-white",
+    label: "Studio · Reinweiß",
+    description: "Sauberer weißer Hintergrund, Katalog-Look.",
+    build: (primary, secondary) =>
+      `Place the exact same vehicle in a clean white photo studio. Seamless white cyclorama, soft diffused key light, gentle contact shadow under the tires. Premium automotive catalog look, ultra crisp, no extra props. Optional very subtle accent color gradient on the floor in ${primary}/${secondary} for a hint of brand identity. NO text, NO logos, NO watermarks.`,
+  },
+];
 
 const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
   const navigate = useNavigate();
@@ -47,13 +84,23 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
   const [results, setResults] = useState<QuickBannerResult[]>([]);
   const [errors, setErrors] = useState<{ formatId: string; error: string }[]>([]);
   const [dealerProfile, setDealerProfile] = useState<DealerProfile | null>(null);
-  const [detectedBrand, setDetectedBrand] = useState<string>("");
+
+  // Analyse-States (laufen direkt nach PDF/Bild-Upload)
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analyzedFields, setAnalyzedFields] = useState<BannerTextFields | null>(null);
+  const [analyzedBrand, setAnalyzedBrand] = useState<string>("");
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
+
+  // CI / Logo / Prompt
   const [manualBrand, setManualBrand] = useState<string>("");
   const [resolvedLogoUrl, setResolvedLogoUrl] = useState<string | null>(null);
+  const [brandPresetKey, setBrandPresetKey] = useState<string>("custom");
+  const [scenePresetId, setScenePresetId] = useState<ScenePresetId>("showroom-neon");
 
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const imgInputRef = useRef<HTMLInputElement>(null);
-  const lastTextFieldsRef = useRef<import("./state/types").BannerTextFields | null>(null);
+  const lastTextFieldsRef = useRef<BannerTextFields | null>(null);
+  const analyzeSeqRef = useRef(0);
 
   // Lade Dealer-Profil für CI-Kontext
   useEffect(() => {
@@ -69,6 +116,74 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
     })();
     return () => { cancelled = true; };
   }, [user?.id]);
+
+  // Auto-Analyse, sobald ein Datenblatt hochgeladen wurde.
+  useEffect(() => {
+    if (!pdfFile) {
+      setAnalyzedFields(null);
+      setAnalyzedBrand("");
+      setAnalysisError(null);
+      return;
+    }
+    const seq = ++analyzeSeqRef.current;
+    setAnalyzing(true);
+    setAnalysisError(null);
+    (async () => {
+      try {
+        const isPdf = pdfFile.type === "application/pdf" || pdfFile.name.toLowerCase().endsWith(".pdf");
+        let extracted;
+        if (isPdf) {
+          const base64 = await extractPDFAsBase64(pdfFile);
+          extracted = await extractBannerDataFromPdf(base64);
+        } else {
+          const dataUrl = await new Promise<string>((resolve, reject) => {
+            const r = new FileReader();
+            r.onerror = () => reject(r.error ?? new Error("FileReader Fehler"));
+            r.onload = () => resolve(String(r.result));
+            r.readAsDataURL(pdfFile);
+          });
+          extracted = await extractBannerDataFromImage(dataUrl);
+        }
+        if (seq !== analyzeSeqRef.current) return; // veraltet
+        const fields: BannerTextFields = { ...DEFAULT_TEXT_FIELDS };
+        (["headline", "subline", "price", "cta", "smallInfo", "legalText"] as const).forEach((k) => {
+          const v = (extracted as any)[k];
+          if (v && String(v).trim()) (fields as any)[k] = String(v).trim();
+        });
+        const brand = String(extracted.brand ?? "").trim();
+        setAnalyzedFields(fields);
+        setAnalyzedBrand(brand);
+        lastTextFieldsRef.current = fields;
+        if (brand) applyBrand(brand);
+        toast.success("Datenblatt analysiert.");
+      } catch (e: any) {
+        if (seq !== analyzeSeqRef.current) return;
+        console.error("Analyse fehlgeschlagen", e);
+        setAnalysisError(e?.message ?? "Analyse fehlgeschlagen");
+        // Fallback: leere Defaults, damit man trotzdem generieren kann
+        setAnalyzedFields({ ...DEFAULT_TEXT_FIELDS });
+        toast.error("Datenblatt konnte nicht analysiert werden – du kannst trotzdem generieren.");
+      } finally {
+        if (seq === analyzeSeqRef.current) setAnalyzing(false);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pdfFile]);
+
+  const applyBrand = useCallback((brand: string) => {
+    setManualBrand(brand);
+    if (!brand) {
+      setResolvedLogoUrl(null);
+      setBrandPresetKey("custom");
+      return;
+    }
+    const key = brand.toLowerCase().replace(/\s+/g, "-");
+    const url = getLogoForMake(key) || getLogoForMake(brand.toLowerCase()) || null;
+    setResolvedLogoUrl(url);
+    const presetKey = detectBrandKey(brand);
+    if (presetKey) setBrandPresetKey(presetKey);
+    if (!url) toast.warning(`Für "${brand}" wurde kein Logo gefunden.`);
+  }, [getLogoForMake]);
 
   const handlePdfPick = (f: File | null) => {
     if (!f) return;
@@ -99,11 +214,30 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
     );
   };
 
-  const canGenerate = !!pdfFile && !!imageFile && !!imageDataUrl && selectedFormatIds.length > 0 && !busy;
+  // CI-Farben aus dem aktuell gewählten Preset (oder Dealer-Profil bei custom).
+  const activePreset = getBrandPreset(brandPresetKey);
+  const ciColors = (() => {
+    if (brandPresetKey !== "custom") return activePreset.colors;
+    return {
+      primary: dealerProfile?.primary_color || activePreset.colors.primary,
+      secondary: dealerProfile?.secondary_color || activePreset.colors.secondary,
+      text: activePreset.colors.text,
+      bg: activePreset.colors.bg,
+    };
+  })();
+
+  const canGenerate =
+    !!pdfFile &&
+    !!imageFile &&
+    !!imageDataUrl &&
+    selectedFormatIds.length > 0 &&
+    !analyzing &&
+    !!analyzedFields &&
+    !busy;
 
   const handleGenerate = useCallback(async () => {
-    if (!pdfFile || !imageDataUrl) {
-      toast.error("Bitte PDF und Fahrzeugbild hochladen.");
+    if (!pdfFile || !imageDataUrl || !analyzedFields) {
+      toast.error("Bitte warten bis die Analyse abgeschlossen ist.");
       return;
     }
     if (selectedFormatIds.length === 0) {
@@ -114,7 +248,7 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
     setBusy(true);
     setResults([]);
     setErrors([]);
-    setProgress({ stage: "analyze", done: 0, total: 1, current: "Starte…" });
+    setProgress({ stage: "master", done: 0, total: 1, current: "Starte…" });
 
     const formats: BannerFormat[] = selectedFormatIds
       .map((id) => BANNER_FORMATS.find((f) => f.id === id))
@@ -130,11 +264,15 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
     });
 
     const ciContext = buildCiContext(dealerProfile, null);
-    let manufacturerLogoUrl: string | undefined;
-    if (ciContext.marke) {
-      const key = ciContext.marke.toLowerCase().replace(/\s+/g, "-");
-      manufacturerLogoUrl = getLogoForMake(key) || getLogoForMake(ciContext.marke.toLowerCase()) || undefined;
+    const effectiveBrand = manualBrand || analyzedBrand || ciContext.marke || "";
+    let manufacturerLogoUrl: string | undefined = resolvedLogoUrl ?? undefined;
+    if (!manufacturerLogoUrl && effectiveBrand) {
+      const key = effectiveBrand.toLowerCase().replace(/\s+/g, "-");
+      manufacturerLogoUrl = getLogoForMake(key) || getLogoForMake(effectiveBrand.toLowerCase()) || undefined;
     }
+
+    const scene = SCENE_PRESETS.find((s) => s.id === scenePresetId) ?? SCENE_PRESETS[0];
+    const masterPromptOverride = scene.build(ciColors.primary, ciColors.secondary);
 
     try {
       const out = await generateBannersFromInputs(
@@ -142,14 +280,16 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
           datenblattFile: pdfFile,
           vehicleImageDataUrl: imageDataUrl,
           formats,
-          ciContext,
+          ciContext: { ...ciContext, marke: effectiveBrand || ciContext.marke },
           manufacturerLogoUrl,
-          primaryColorHex: dealerProfile?.primary_color ?? null,
-          secondaryColorHex: dealerProfile?.secondary_color ?? null,
+          primaryColorHex: ciColors.primary,
+          secondaryColorHex: ciColors.secondary,
+          preExtractedTextFields: analyzedFields,
+          preDetectedBrand: effectiveBrand,
+          masterPromptOverride,
         },
         (p) => {
           setProgress(p);
-          // Background-Indicator: completed grob anhand stage zählen
           const renderDone = p.stage === "render" || p.stage === "done"
             ? Math.max(0, p.done - 1 - formats.length)
             : 0;
@@ -160,19 +300,6 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
       setErrors(out.errors);
       lastTextFieldsRef.current = out.textFields;
 
-      // Marke aus der Analyse bevorzugen; sonst die aus ciContext (Profil-Fallback)
-      const brandFromAnalysis = (out.detectedBrand ?? "").trim();
-      const effectiveBrand = brandFromAnalysis || ciContext.marke || "";
-      setDetectedBrand(effectiveBrand);
-      setManualBrand(effectiveBrand);
-      const logoFromBrand = effectiveBrand
-        ? getLogoForMake(effectiveBrand.toLowerCase().replace(/\s+/g, "-")) ||
-          getLogoForMake(effectiveBrand.toLowerCase()) ||
-          manufacturerLogoUrl ||
-          null
-        : manufacturerLogoUrl ?? null;
-      setResolvedLogoUrl(logoFromBrand);
-
       bgTasks.updateTask(taskId, {
         completed: formats.length,
         status: out.errors.length > 0 && out.results.length === 0 ? "error" : "done",
@@ -181,9 +308,6 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
       });
       if (out.results.length > 0) {
         toast.success(`${out.results.length} Banner erstellt${out.errors.length ? ` (${out.errors.length} Fehler)` : ""}.`);
-        if (!logoFromBrand) {
-          toast.info("Marke konnte nicht erkannt werden — bitte unten manuell wählen, damit das Hersteller-Logo angezeigt wird.");
-        }
       } else {
         toast.error("Es konnten keine Banner erstellt werden.");
       }
@@ -198,7 +322,7 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
     } finally {
       setBusy(false);
     }
-  }, [pdfFile, imageDataUrl, selectedFormatIds, dealerProfile, getLogoForMake, bgTasks]);
+  }, [pdfFile, imageDataUrl, selectedFormatIds, dealerProfile, getLogoForMake, bgTasks, analyzedFields, analyzedBrand, manualBrand, resolvedLogoUrl, ciColors, scenePresetId]);
 
   const downloadSingle = (r: QuickBannerResult) => {
     const a = document.createElement("a");
@@ -231,19 +355,17 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
   const openInEditor = useCallback(() => {
     if (results.length === 0) return;
     const compositions: Record<string, typeof results[number]["composition"]> = {};
-    const selectedFormatIds: string[] = [];
+    const formatIds: string[] = [];
     results.forEach((r) => {
       compositions[r.formatId] = {
         ...r.composition,
-        // Hersteller-Logo (falls aufgelöst) in jede Composition schreiben,
-        // damit es im Editor sofort erscheint.
         logoUrl: resolvedLogoUrl ?? r.composition.logoUrl,
       };
-      selectedFormatIds.push(r.formatId);
+      formatIds.push(r.formatId);
     });
     writeQuickHandoff({
-      selectedFormatIds,
-      activeFormatId: selectedFormatIds[0],
+      selectedFormatIds: formatIds,
+      activeFormatId: formatIds[0],
       textFields: lastTextFieldsRef.current ?? ({
         headline: "",
         subline: "",
@@ -257,19 +379,6 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
     toast.success("Banner werden im Editor geöffnet — Texte & Positionen anpassen, dann exportieren.");
     onSwitchToPro();
   }, [results, onSwitchToPro, resolvedLogoUrl]);
-
-  const handleManualBrandChange = (brand: string) => {
-    setManualBrand(brand);
-    if (!brand) {
-      setResolvedLogoUrl(null);
-      return;
-    }
-    const key = brand.toLowerCase().replace(/\s+/g, "-");
-    const url = getLogoForMake(key) || getLogoForMake(brand.toLowerCase()) || null;
-    setResolvedLogoUrl(url);
-    if (!url) toast.warning(`Für "${brand}" wurde kein Logo gefunden.`);
-  };
-
 
   const progressPct = progress && progress.total > 0
     ? Math.round((progress.done / progress.total) * 100)
@@ -295,8 +404,8 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
         </div>
 
         <p className="text-sm text-muted-foreground mb-4">
-          Lade ein PDF (Exposé/Datenblatt) und ein Fahrzeugbild hoch — wir extrahieren automatisch
-          Texte, passen das Bild an alle Formate an und liefern fertige Banner.
+          Lade ein PDF (Exposé/Datenblatt) und ein Fahrzeugbild hoch — wir analysieren das Datenblatt
+          automatisch und liefern fertige Banner in allen Formaten.
         </p>
 
         {/* Quellen */}
@@ -320,6 +429,11 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
                 {pdfFile ? (
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-sm text-foreground truncate">{pdfFile.name}</span>
+                    {analyzing ? (
+                      <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
+                    ) : analyzedFields ? (
+                      <Badge variant="secondary" className="text-[10px] py-0">analysiert</Badge>
+                    ) : null}
                     <Button
                       variant="ghost"
                       size="sm"
@@ -329,11 +443,13 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
                     </Button>
                   </div>
                 ) : (
-                  <div className="text-xs text-muted-foreground mt-1">PDF oder Bild (Foto/Screenshot) — wird automatisch analysiert</div>
+                  <div className="text-xs text-muted-foreground mt-1">PDF oder Bild — wird sofort nach Upload automatisch analysiert</div>
+                )}
+                {analysisError && (
+                  <div className="text-[11px] text-destructive mt-1">{analysisError}</div>
                 )}
               </div>
             </div>
-
           </Card>
 
           {/* Bild */}
@@ -408,8 +524,111 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
           </div>
         </Card>
 
+        {/* Marke & CI & Szene */}
+        <Card className="p-4 mb-4 space-y-4">
+          <div className="flex items-center gap-2">
+            <Palette className="w-4 h-4 text-accent" />
+            <div className="font-semibold text-foreground">Marke, CI & Szene</div>
+          </div>
+
+          {/* Hersteller-Logo + Brand-Picker */}
+          <div className="rounded-lg border border-border bg-muted/30 p-3">
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-2 min-w-0">
+                {resolvedLogoUrl ? (
+                  <img src={resolvedLogoUrl} alt={manualBrand || analyzedBrand} className="w-10 h-10 object-contain" />
+                ) : (
+                  <div className="w-10 h-10 rounded bg-background border border-dashed border-border flex items-center justify-center text-[10px] text-muted-foreground">Logo</div>
+                )}
+                <div className="min-w-0">
+                  <div className="text-xs font-semibold text-foreground">
+                    Hersteller-Logo {resolvedLogoUrl ? "" : "fehlt"}
+                  </div>
+                  <div className="text-[11px] text-muted-foreground truncate">
+                    {analyzing
+                      ? "Marke wird ermittelt…"
+                      : resolvedLogoUrl
+                        ? `Erkannte Marke: ${manualBrand || analyzedBrand || "—"}`
+                        : "Bitte Marke wählen, damit das Logo erscheint."}
+                  </div>
+                </div>
+              </div>
+              <div className="flex-1 min-w-[220px]">
+                <VehicleBrandPicker
+                  brand={manualBrand}
+                  onBrandChange={applyBrand}
+                  placeholder="Marke wählen…"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* CI-Preset + Farben */}
+          <div className="grid gap-3 md:grid-cols-[260px_1fr]">
+            <div>
+              <label className="text-[11px] uppercase tracking-wider text-muted-foreground">Marken-Vorlage</label>
+              <select
+                value={brandPresetKey}
+                onChange={(e) => setBrandPresetKey(e.target.value)}
+                className="mt-1 w-full text-sm rounded-md border border-border bg-background px-3 py-2"
+              >
+                {BRAND_PRESETS.map((b) => (
+                  <option key={b.key} value={b.key}>{b.label}</option>
+                ))}
+              </select>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                {brandPresetKey === "custom"
+                  ? "Custom = CI-Farben aus deinem Händler-Profil."
+                  : "Hersteller-CI – Farben & Akzente."}
+              </p>
+            </div>
+            <div>
+              <label className="text-[11px] uppercase tracking-wider text-muted-foreground">CI-Farben</label>
+              <div className="mt-1 grid grid-cols-4 gap-2">
+                {(["primary", "secondary", "text", "bg"] as const).map((k) => (
+                  <div key={k} className="flex items-center gap-2 rounded border border-border bg-background px-2 py-1.5">
+                    <span
+                      className="w-5 h-5 rounded border border-border shrink-0"
+                      style={{ backgroundColor: (ciColors as any)[k] }}
+                    />
+                    <div className="min-w-0">
+                      <div className="text-[9px] uppercase text-muted-foreground leading-none">{k}</div>
+                      <div className="text-[10px] font-mono text-foreground truncate">{(ciColors as any)[k]}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Szenen-Auswahl */}
+          <div>
+            <label className="text-[11px] uppercase tracking-wider text-muted-foreground">Szene / Stil</label>
+            <div className="mt-1 grid gap-2 sm:grid-cols-3">
+              {SCENE_PRESETS.map((s) => {
+                const active = scenePresetId === s.id;
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => setScenePresetId(s.id)}
+                    className={`text-left rounded-lg border p-3 transition-colors ${
+                      active
+                        ? "border-accent bg-accent/10"
+                        : "border-border bg-background hover:border-accent/50"
+                    }`}
+                  >
+                    <div className="text-sm font-semibold text-foreground">{s.label}</div>
+                    <div className="text-[11px] text-muted-foreground leading-tight mt-0.5">{s.description}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </Card>
+
         {/* Generieren */}
-        <div className="flex justify-center mb-6">
+        <div className="flex flex-col items-center gap-2 mb-6">
           <Button
             size="lg"
             disabled={!canGenerate}
@@ -418,10 +637,21 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
           >
             {busy ? (
               <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Wird erstellt…</>
+            ) : analyzing ? (
+              <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Datenblatt wird analysiert…</>
             ) : (
               <><Sparkles className="w-4 h-4 mr-2" /> Banner generieren</>
             )}
           </Button>
+          {!canGenerate && !busy && (
+            <p className="text-[11px] text-muted-foreground">
+              {!pdfFile || !imageFile
+                ? "Datenblatt und Fahrzeugbild hochladen."
+                : analyzing
+                  ? "Analyse läuft – gleich startbereit."
+                  : "Mindestens ein Format wählen."}
+            </p>
+          )}
         </div>
 
         {/* Progress */}
@@ -463,36 +693,6 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
                 <Button size="sm" onClick={openInEditor}>
                   <Pencil className="w-4 h-4 mr-1" /> Im Editor bearbeiten & abschließen
                 </Button>
-              </div>
-            </div>
-
-            {/* Hersteller-Marke / Logo */}
-            <div className="mb-3 rounded-lg border border-border bg-muted/30 p-3">
-              <div className="flex items-center gap-3 flex-wrap">
-                <div className="flex items-center gap-2 min-w-0">
-                  {resolvedLogoUrl ? (
-                    <img src={resolvedLogoUrl} alt={manualBrand || detectedBrand} className="w-8 h-8 object-contain" />
-                  ) : (
-                    <div className="w-8 h-8 rounded bg-background border border-dashed border-border" />
-                  )}
-                  <div className="min-w-0">
-                    <div className="text-xs font-semibold text-foreground">
-                      Hersteller-Logo {resolvedLogoUrl ? "" : "fehlt"}
-                    </div>
-                    <div className="text-[11px] text-muted-foreground truncate">
-                      {resolvedLogoUrl
-                        ? `Erkannte Marke: ${manualBrand || detectedBrand || "—"}`
-                        : "Marke konnte aus dem Datenblatt nicht zuverlässig erkannt werden. Bitte manuell wählen."}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex-1 min-w-[220px]">
-                  <VehicleBrandPicker
-                    brand={manualBrand}
-                    onBrandChange={handleManualBrandChange}
-                    placeholder="Marke wählen…"
-                  />
-                </div>
               </div>
             </div>
 
