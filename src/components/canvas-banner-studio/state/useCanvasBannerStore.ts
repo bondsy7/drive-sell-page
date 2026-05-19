@@ -158,11 +158,42 @@ function presentReducer(state: StudioState, action: Action): StudioState {
       };
     }
     case "set-logo": {
+      // Back-compat: setzt nur den Hersteller-Slot.
       const c = ensureComposition(state, action.formatId);
-      const layers = c.layers.map((l) => (l.id === "logo" ? { ...l, visible: !!action.url } : l));
+      const layers = upsertLogoLayer(c, "manufacturer", action.url, action.formatId);
       return {
         ...state,
         compositions: { ...state.compositions, [action.formatId]: { ...c, logoUrl: action.url, layers } },
+      };
+    }
+    case "set-logo-slot": {
+      const c = ensureComposition(state, action.formatId);
+      const layers = upsertLogoLayer(c, action.slot, action.url, action.formatId);
+      const field = SLOT_FIELD[action.slot];
+      return {
+        ...state,
+        compositions: {
+          ...state.compositions,
+          [action.formatId]: { ...c, [field]: action.url, layers },
+        },
+      };
+    }
+    case "clear-all-logos": {
+      const c = ensureComposition(state, action.formatId);
+      const ids = new Set(SLOT_ORDER.map((s) => SLOT_LAYER_ID[s]));
+      const layers = c.layers.map((l) => (ids.has(l.id) ? { ...l, visible: false } : l));
+      return {
+        ...state,
+        compositions: {
+          ...state.compositions,
+          [action.formatId]: {
+            ...c,
+            logoUrl: undefined,
+            dealerLogoUrl: undefined,
+            customLogoUrl: undefined,
+            layers,
+          },
+        },
       };
     }
     case "patch-layer": {
