@@ -10,6 +10,9 @@
 
 import type { BannerComposition, BannerFormat, BannerTextFields, CiState } from "../state/types";
 import { buildDefaultComposition, DEFAULT_TEXT_FIELDS } from "../data/defaultComposition";
+import { loadTemplate } from "../data/templateRegistry";
+import { specToBannerLayers } from "../data/templateToLayers";
+import { detectBrandKey } from "../ci/brandPresets";
 import { renderCompositionToDataURL } from "../export/renderComposition";
 import {
   extractBannerDataFromImage,
