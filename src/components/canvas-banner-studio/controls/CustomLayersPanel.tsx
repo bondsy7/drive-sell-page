@@ -184,13 +184,15 @@ const CustomLayersPanel: React.FC<Props> = ({
         />
       </div>
 
-      {customLayers.length > 0 && (
+      {orderedForDisplay.length > 0 && (
         <div className="space-y-2">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
-            Oben = Vordergrund · Ziehen zum Sortieren
-          </p>
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold text-foreground">Ebenen</h3>
+            <p className="text-[10px] text-muted-foreground">Oben = Hintergrund · Unten = Vordergrund</p>
+          </div>
           {orderedForDisplay.map((l) => {
             const selected = l.id === selectedLayerId;
+            const custom = isCustomLayer(l);
             const isDragging = dragId === l.id;
             const isDragOver = dragOverId === l.id && dragId && dragId !== l.id;
             return (
@@ -220,26 +222,27 @@ const CustomLayersPanel: React.FC<Props> = ({
                     {l.type === "text" && <Type className="w-3 h-3" />}
                     {l.type === "shape" && <Square className="w-3 h-3" />}
                     {l.type === "image" && <ImageIcon className="w-3 h-3" />}
-                    <span className="capitalize">{l.type}</span>
+                    <span className="truncate">{l.id}</span>
                   </div>
                   <div className="flex gap-0.5">
+                    <span className="px-1.5 py-1 text-[11px] text-muted-foreground">{TYPE_LABELS[l.type]}</span>
                     {onReorderLayer && (
                       <>
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); onReorderLayer(l.id, "forward"); }}
-                          className="p-1 text-muted-foreground hover:text-foreground"
-                          title="Eine Ebene nach vorne"
-                          aria-label="Eine Ebene nach vorne"
-                        >
-                          <ArrowUp className="w-3.5 h-3.5" />
-                        </button>
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); onReorderLayer(l.id, "backward"); }}
                           className="p-1 text-muted-foreground hover:text-foreground"
                           title="Eine Ebene nach hinten"
                           aria-label="Eine Ebene nach hinten"
+                        >
+                          <ArrowUp className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); onReorderLayer(l.id, "forward"); }}
+                          className="p-1 text-muted-foreground hover:text-foreground"
+                          title="Eine Ebene nach vorne"
+                          aria-label="Eine Ebene nach vorne"
                         >
                           <ArrowDown className="w-3.5 h-3.5" />
                         </button>
@@ -252,23 +255,39 @@ const CustomLayersPanel: React.FC<Props> = ({
                     >
                       {l.visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
                     </button>
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); onRemoveLayer(l.id); }}
-                      className="p-1 text-muted-foreground hover:text-destructive"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    {custom && (
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); onRemoveLayer(l.id); }}
+                        className="p-1 text-muted-foreground hover:text-destructive"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
-                {l.type === "text" && (
+      {selectedCustomLayer && (
+        <div className="rounded-md border border-border bg-card p-2.5 space-y-2">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+            {selectedCustomLayer.type === "text" && <Type className="w-3 h-3" />}
+            {selectedCustomLayer.type === "shape" && <Square className="w-3 h-3" />}
+            {selectedCustomLayer.type === "image" && <ImageIcon className="w-3 h-3" />}
+            <span>{selectedCustomLayer.id}</span>
+          </div>
+
+                {selectedCustomLayer.type === "text" && (
                   <>
                     <Textarea
                       rows={2}
-                      value={l.content ?? ""}
+                      value={selectedCustomLayer.content ?? ""}
                       placeholder="Text"
-                      onChange={(e) => onPatchLayer(l.id, { content: e.target.value })}
+                      onChange={(e) => onPatchLayer(selectedCustomLayer.id, { content: e.target.value })}
                       onClick={(e) => e.stopPropagation()}
                     />
                     <div className="flex flex-wrap items-center gap-2 text-xs">
