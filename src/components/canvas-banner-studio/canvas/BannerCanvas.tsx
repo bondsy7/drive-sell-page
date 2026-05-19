@@ -137,6 +137,8 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
   const [scale, setScale] = useState(1);
   const [snapGuides, setSnapGuides] = useState<{ vCenter: boolean; hCenter: boolean }>({ vCenter: false, hCenter: false });
   const [logoSrc, setLogoSrc] = useState<string | undefined>(composition.logoUrl);
+  const [dealerLogoSrc, setDealerLogoSrc] = useState<string | undefined>(composition.dealerLogoUrl);
+  const [customLogoSrc, setCustomLogoSrc] = useState<string | undefined>(composition.customLogoUrl);
 
   const formatScale = composition.scale ?? 1;
   const FONT_DISPLAY = ci?.fontDisplay ? `"${ci.fontDisplay}", ${DEFAULT_FONT_FAMILY}` : DEFAULT_FONT_FAMILY;
@@ -145,19 +147,23 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
 
   useEffect(() => { ensureBrandFonts(ci?.googleFonts); }, [ci?.googleFonts]);
 
-  // Recolor SVG logo when CI logo mode changes.
+  // Recolor SVG logos when CI logo mode changes (für alle drei Slots).
   useEffect(() => {
     let cancelled = false;
-    const url = composition.logoUrl;
-    if (!url || !ci || ci.logoMode === "original") {
-      setLogoSrc(url);
-      return;
-    }
-    recolorSvg(url, ci.logoMode, ci.logoCustomColor).then((out) => {
-      if (!cancelled) setLogoSrc(out);
-    });
+    const apply = (
+      url: string | undefined,
+      setter: (v: string | undefined) => void,
+    ) => {
+      if (!url || !ci || ci.logoMode === "original") { setter(url); return; }
+      recolorSvg(url, ci.logoMode, ci.logoCustomColor).then((out) => {
+        if (!cancelled) setter(out);
+      });
+    };
+    apply(composition.logoUrl, setLogoSrc);
+    apply(composition.dealerLogoUrl, setDealerLogoSrc);
+    apply(composition.customLogoUrl, setCustomLogoSrc);
     return () => { cancelled = true; };
-  }, [composition.logoUrl, ci?.logoMode, ci?.logoCustomColor, ci]);
+  }, [composition.logoUrl, composition.dealerLogoUrl, composition.customLogoUrl, ci?.logoMode, ci?.logoCustomColor, ci]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -174,6 +180,8 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
 
   const bg = useImage(composition.backgroundImageUrl);
   const logo = useImage(logoSrc);
+  const dealerLogo = useImage(dealerLogoSrc);
+  const customLogo = useImage(customLogoSrc);
 
   const bgFit = useMemo(() => {
     if (!bg) return null;
@@ -340,16 +348,20 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
                   );
                 }
                 if (l.type === "logo") {
-                  if (!logo) return null;
+                  const img =
+                    l.id === "logo-dealer" ? dealerLogo :
+                    l.id === "logo-custom" ? customLogo :
+                    logo;
+                  if (!img) return null;
                   const baseW = l.width ?? format.width * 0.18;
                   const w = baseW * formatScale;
-                  const ratio = logo.naturalHeight / logo.naturalWidth || 0.4;
+                  const ratio = img.naturalHeight / img.naturalWidth || 0.4;
                   const h = w * ratio;
                   return (
                     <KImage
                       key={l.id}
                       ref={(n) => { nodeRefs.current[l.id] = n; }}
-                      image={logo}
+                      image={img}
                       x={l.x}
                       y={l.y}
                       width={w}

@@ -13,6 +13,8 @@ import { buildDefaultComposition, DEFAULT_TEXT_FIELDS } from "../data/defaultCom
 import { getLayoutTemplate } from "../data/layoutTemplates";
 import { getBrandPreset } from "../ci/brandPresets";
 
+type LogoSlot = "manufacturer" | "dealer" | "custom";
+
 type Action =
   | { type: "set-active-format"; formatId: string }
   | { type: "toggle-format"; formatId: string }
@@ -22,6 +24,8 @@ type Action =
   | { type: "set-overlay"; formatId: string; direction: OverlayDirection; strength: number }
   | { type: "set-template"; formatId: string; templateId: string }
   | { type: "set-logo"; formatId: string; url?: string }
+  | { type: "set-logo-slot"; formatId: string; slot: LogoSlot; url?: string }
+  | { type: "clear-all-logos"; formatId: string }
   | { type: "patch-layer"; formatId: string; layerId: string; patch: Partial<BannerLayer> }
   | { type: "add-layer"; formatId: string; layer: BannerLayer }
   | { type: "remove-layer"; formatId: string; layerId: string }
@@ -43,6 +47,18 @@ type Action =
   | { type: "hydrate"; state: StudioState }
   | { type: "undo" }
   | { type: "redo" };
+
+const SLOT_LAYER_ID: Record<LogoSlot, string> = {
+  manufacturer: "logo",
+  dealer: "logo-dealer",
+  custom: "logo-custom",
+};
+const SLOT_FIELD: Record<LogoSlot, "logoUrl" | "dealerLogoUrl" | "customLogoUrl"> = {
+  manufacturer: "logoUrl",
+  dealer: "dealerLogoUrl",
+  custom: "customLogoUrl",
+};
+const SLOT_ORDER: LogoSlot[] = ["manufacturer", "dealer", "custom"];
 
 const initialFormatId = BANNER_FORMATS[0].id;
 
@@ -73,6 +89,42 @@ const initialPresent: StudioState = {
 
 function ensureComposition(state: StudioState, formatId: string): BannerComposition {
   return state.compositions[formatId] ?? buildDefaultComposition(formatId);
+}
+
+/** Stellt einen Logo-Layer für einen Slot sicher: erstellt ihn bei Bedarf, setzt visible nach url. */
+function upsertLogoLayer(
+  c: BannerComposition,
+  slot: LogoSlot,
+  url: string | undefined,
+  formatId: string,
+): BannerLayer[] {
+  const layerId = SLOT_LAYER_ID[slot];
+  const visible = !!url;
+  const existing = c.layers.find((l) => l.id === layerId);
+  if (existing) {
+    return c.layers.map((l) => (l.id === layerId ? { ...l, visible } : l));
+  }
+  if (!url) return c.layers;
+  // Neuen Logo-Layer erzeugen — Position relativ zum existierenden "logo" oder Default.
+  const f = getFormatById(formatId);
+  const baseW = Math.round(f.width * 0.18);
+  const baseH = Math.round(baseW * 0.4);
+  const primary = c.layers.find((l) => l.id === "logo");
+  const idx = SLOT_ORDER.indexOf(slot); // 1 = dealer, 2 = custom
+  const offset = idx * (baseH + 12);
+  const x = primary?.x ?? Math.round(f.width * 0.05);
+  const y = (primary?.y ?? Math.round(f.height * 0.05)) + offset;
+  const newLayer: BannerLayer = {
+    id: layerId,
+    type: "logo",
+    x,
+    y,
+    width: baseW,
+    height: baseH,
+    visible: true,
+    draggable: true,
+  };
+  return [...c.layers, newLayer];
 }
 
 function presentReducer(state: StudioState, action: Action): StudioState {
@@ -142,11 +194,42 @@ function presentReducer(state: StudioState, action: Action): StudioState {
       };
     }
     case "set-logo": {
+      // Back-compat: setzt nur den Hersteller-Slot.
       const c = ensureComposition(state, action.formatId);
-      const layers = c.layers.map((l) => (l.id === "logo" ? { ...l, visible: !!action.url } : l));
+      const layers = upsertLogoLayer(c, "manufacturer", action.url, action.formatId);
       return {
         ...state,
         compositions: { ...state.compositions, [action.formatId]: { ...c, logoUrl: action.url, layers } },
+      };
+    }
+    case "set-logo-slot": {
+      const c = ensureComposition(state, action.formatId);
+      const layers = upsertLogoLayer(c, action.slot, action.url, action.formatId);
+      const field = SLOT_FIELD[action.slot];
+      return {
+        ...state,
+        compositions: {
+          ...state.compositions,
+          [action.formatId]: { ...c, [field]: action.url, layers },
+        },
+      };
+    }
+    case "clear-all-logos": {
+      const c = ensureComposition(state, action.formatId);
+      const ids = new Set(SLOT_ORDER.map((s) => SLOT_LAYER_ID[s]));
+      const layers = c.layers.map((l) => (ids.has(l.id) ? { ...l, visible: false } : l));
+      return {
+        ...state,
+        compositions: {
+          ...state.compositions,
+          [action.formatId]: {
+            ...c,
+            logoUrl: undefined,
+            dealerLogoUrl: undefined,
+            customLogoUrl: undefined,
+            layers,
+          },
+        },
       };
     }
     case "patch-layer": {
@@ -365,6 +448,26 @@ export function useCanvasBannerStore() {
         else if (typeof scope === "string" && scope !== "current") ids = [scope];
         else ids = [state.activeFormatId];
         ids.forEach((formatId) => dispatch({ type: "set-logo", formatId, url }));
+      },
+      setLogoSlot: (
+        slot: LogoSlot,
+        url?: string,
+        scope?: string | string[] | "all" | "current",
+      ) => {
+        let ids: string[];
+        if (scope === "all") ids = state.selectedFormatIds;
+        else if (Array.isArray(scope)) ids = scope;
+        else if (typeof scope === "string" && scope !== "current") ids = [scope];
+        else ids = [state.activeFormatId];
+        ids.forEach((formatId) => dispatch({ type: "set-logo-slot", formatId, slot, url }));
+      },
+      clearAllLogos: (scope?: string | string[] | "all" | "current") => {
+        let ids: string[];
+        if (scope === "all") ids = state.selectedFormatIds;
+        else if (Array.isArray(scope)) ids = scope;
+        else if (typeof scope === "string" && scope !== "current") ids = [scope];
+        else ids = [state.activeFormatId];
+        ids.forEach((formatId) => dispatch({ type: "clear-all-logos", formatId }));
       },
       patchLayer: (layerId: string, patch: Partial<BannerLayer>, formatId = state.activeFormatId) =>
         dispatch({ type: "patch-layer", formatId, layerId, patch }),

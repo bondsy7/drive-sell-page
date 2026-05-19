@@ -155,11 +155,18 @@ export async function renderCompositionToDataURL(
 
   drawOverlay(ctx, composition.overlayDirection, composition.overlayStrength, format.width, format.height);
 
-  let logoUrl = composition.logoUrl;
-  if (logoUrl && ci && ci.logoMode !== "original") {
-    logoUrl = await recolorSvg(logoUrl, ci.logoMode, ci.logoCustomColor);
-  }
-  const logo = await loadImage(logoUrl);
+  const recolor = async (u?: string) =>
+    u && ci && ci.logoMode !== "original" ? await recolorSvg(u, ci.logoMode, ci.logoCustomColor) : u;
+  const [logoUrl, dealerUrl, customUrl] = await Promise.all([
+    recolor(composition.logoUrl),
+    recolor(composition.dealerLogoUrl),
+    recolor(composition.customLogoUrl),
+  ]);
+  const [logo, dealerLogo, customLogo] = await Promise.all([
+    loadImage(logoUrl),
+    loadImage(dealerUrl),
+    loadImage(customUrl),
+  ]);
 
   const formatScale = composition.scale ?? 1;
   const FONT_DISPLAY = ci?.fontDisplay ? `"${ci.fontDisplay}", ${DEFAULT_FONT_FAMILY}` : DEFAULT_FONT_FAMILY;
@@ -169,11 +176,15 @@ export async function renderCompositionToDataURL(
     if (!layer.visible) continue;
     if (layer.type === "image" || layer.type === "overlay") continue;
     if (layer.type === "logo") {
-      if (!logo) continue;
+      const img =
+        layer.id === "logo-dealer" ? dealerLogo :
+        layer.id === "logo-custom" ? customLogo :
+        logo;
+      if (!img) continue;
       const baseW = layer.width ?? format.width * 0.18;
       const w = baseW * formatScale;
-      const ratio = logo.naturalHeight / logo.naturalWidth || 0.4;
-      ctx.drawImage(logo, layer.x, layer.y, w, w * ratio);
+      const ratio = img.naturalHeight / img.naturalWidth || 0.4;
+      ctx.drawImage(img, layer.x, layer.y, w, w * ratio);
       continue;
     }
     const raw = layer.field ? textFields[layer.field] : "";

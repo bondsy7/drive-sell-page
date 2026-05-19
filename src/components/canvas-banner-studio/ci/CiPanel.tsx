@@ -16,19 +16,24 @@ interface CiPanelProps {
   ciContext?: CiContext | null;
   hasProfile: boolean;
   detectedBrandKey?: string;
-  /** Aktuelles Logo im Banner (Hersteller- oder Händler-Logo) */
-  currentLogoUrl?: string;
-  /** Hersteller-Logo aus Fahrzeug-Marke (für Quick-Switch) */
+  /** Aktuell aktive Logo-URLs pro Slot (für Recolor-Hinweis & Toggle-State). */
+  activeManufacturerLogoUrl?: string;
+  activeDealerLogoUrl?: string;
+  activeCustomLogoUrl?: string;
+  /** Hersteller-Logo aus Fahrzeug-Marke (Quelle). */
   manufacturerLogoUrl?: string;
-  /** Händler-Logo aus Profil */
+  /** Händler-Logo aus Profil (Quelle). */
   dealerLogoUrl?: string;
-  /** Eigenes (selbst hochgeladenes) CI-Logo */
+  /** Eigenes (selbst hochgeladenes) CI-Logo (Quelle). */
   customLogoUrl?: string;
   /** User-ID für Storage-Upload */
   userId?: string;
   onApplyBrandPreset: (brandKey: string) => void;
   onPatchCi: (patch: Partial<CiState>) => void;
-  onSetLogo: (url?: string, scope?: "all" | "current") => void;
+  /** Toggle eines einzelnen Logo-Slots an/aus. */
+  onToggleLogoSlot: (slot: "manufacturer" | "dealer" | "custom", url?: string) => void;
+  /** Alle Slots ausschalten. */
+  onClearAllLogos: () => void;
   /** Anzahl ausgewählter Formate (für UI-Hinweis). */
   selectedFormatsCount?: number;
   applyLogoToAll: boolean;
@@ -43,21 +48,23 @@ const LOGO_MODES: { value: LogoMode; label: string }[] = [
 ];
 
 const CiPanel: React.FC<CiPanelProps> = ({
-  ci, ciContext, hasProfile, detectedBrandKey, currentLogoUrl,
+  ci, ciContext, hasProfile, detectedBrandKey,
+  activeManufacturerLogoUrl, activeDealerLogoUrl, activeCustomLogoUrl,
   manufacturerLogoUrl, dealerLogoUrl, customLogoUrl, userId,
-  onApplyBrandPreset, onPatchCi, onSetLogo,
+  onApplyBrandPreset, onPatchCi, onToggleLogoSlot, onClearAllLogos,
   selectedFormatsCount = 1, applyLogoToAll, onToggleApplyLogoToAll,
 }) => {
-  const scope: "all" | "current" = applyLogoToAll ? "all" : "current";
-  const setLogo = (url?: string) => onSetLogo(url, scope);
   const preset = getBrandPreset(ci.brandKey);
-  const usingDealer = !!currentLogoUrl && !!dealerLogoUrl && currentLogoUrl === dealerLogoUrl;
-  const usingManufacturer = !!currentLogoUrl && !!manufacturerLogoUrl && currentLogoUrl === manufacturerLogoUrl;
-  const usingCustom = !!currentLogoUrl && !!customLogoUrl && currentLogoUrl === customLogoUrl;
+  const manufacturerOn = !!activeManufacturerLogoUrl;
+  const dealerOn = !!activeDealerLogoUrl;
+  const customOn = !!activeCustomLogoUrl;
+  const anyOn = manufacturerOn || dealerOn || customOn;
+
+  // "Aktuell sichtbares" Logo für SVG/Recolor-Hinweis: priorisiere Hersteller > Händler > Eigenes.
+  const currentLogoUrl = activeManufacturerLogoUrl ?? activeDealerLogoUrl ?? activeCustomLogoUrl;
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [uploading, setUploading] = useState(false);
-  // SVG-Erkennung des aktuell verwendeten Logos (für Recolor-Hinweis).
   const [logoIsSvg, setLogoIsSvg] = useState<boolean | null>(
     currentLogoUrl ? isSvgUrlSync(currentLogoUrl) || null : null
   );
@@ -70,6 +77,32 @@ const CiPanel: React.FC<CiPanelProps> = ({
     return () => { cancelled = true; };
   }, [currentLogoUrl]);
 
+  const toggleManufacturer = () => {
+    if (manufacturerOn) { onToggleLogoSlot("manufacturer", undefined); return; }
+    if (!manufacturerLogoUrl) {
+      toast.info("Bitte zuerst eine Fahrzeug-Marke wählen, damit das Hersteller-Logo geladen werden kann.");
+      return;
+    }
+    onToggleLogoSlot("manufacturer", manufacturerLogoUrl);
+  };
+  const toggleDealer = () => {
+    if (dealerOn) { onToggleLogoSlot("dealer", undefined); return; }
+    if (!dealerLogoUrl) {
+      toast.info("Bitte Händler-Logo im Profil hinterlegen.");
+      return;
+    }
+    onToggleLogoSlot("dealer", dealerLogoUrl);
+  };
+  const toggleCustom = () => {
+    if (customOn) { onToggleLogoSlot("custom", undefined); return; }
+    if (!customLogoUrl) {
+      // Direkt Upload öffnen, damit der User nicht erst hochladen und dann klicken muss.
+      fileInputRef.current?.click();
+      return;
+    }
+    onToggleLogoSlot("custom", customLogoUrl);
+  };
+
   const handleUpload = async (file: File | undefined | null) => {
     if (!file) return;
     if (!userId) { toast.error("Bitte zuerst einloggen."); return; }
@@ -78,7 +111,7 @@ const CiPanel: React.FC<CiPanelProps> = ({
     try {
       const url = await uploadCustomCiLogo(file, userId);
       onPatchCi({ customLogoUrl: url } as any);
-      setLogo(url);
+      onToggleLogoSlot("custom", url);
       toast.success("Eigenes Logo übernommen");
     } catch (e: any) {
       console.error(e);
@@ -88,6 +121,7 @@ const CiPanel: React.FC<CiPanelProps> = ({
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
+
 
 
 
@@ -227,52 +261,54 @@ const CiPanel: React.FC<CiPanelProps> = ({
         <div className="grid grid-cols-2 gap-1">
           <button
             type="button"
-            onClick={() => manufacturerLogoUrl && setLogo(manufacturerLogoUrl)}
-            disabled={!manufacturerLogoUrl}
-            className={`px-2 py-1.5 rounded-md border text-xs disabled:opacity-40 ${
-              usingManufacturer
-                ? "border-accent bg-accent/10 text-foreground font-semibold"
-                : "border-border text-muted-foreground hover:border-accent/40"
-            }`}
-          >
-            Hersteller
-          </button>
-          <button
-            type="button"
-            onClick={() => dealerLogoUrl && setLogo(dealerLogoUrl)}
-            disabled={!dealerLogoUrl}
-            className={`px-2 py-1.5 rounded-md border text-xs disabled:opacity-40 ${
-              usingDealer
-                ? "border-accent bg-accent/10 text-foreground font-semibold"
-                : "border-border text-muted-foreground hover:border-accent/40"
-            }`}
-          >
-            Händler
-          </button>
-          <button
-            type="button"
-            onClick={() => customLogoUrl && setLogo(customLogoUrl)}
-            disabled={!customLogoUrl}
-            className={`px-2 py-1.5 rounded-md border text-xs disabled:opacity-40 ${
-              usingCustom
-                ? "border-accent bg-accent/10 text-foreground font-semibold"
-                : "border-border text-muted-foreground hover:border-accent/40"
-            }`}
-          >
-            Eigenes
-          </button>
-          <button
-            type="button"
-            onClick={() => setLogo(undefined)}
+            onClick={toggleManufacturer}
             className={`px-2 py-1.5 rounded-md border text-xs ${
-              !currentLogoUrl
+              manufacturerOn
                 ? "border-accent bg-accent/10 text-foreground font-semibold"
                 : "border-border text-muted-foreground hover:border-accent/40"
             }`}
+            title={manufacturerLogoUrl ? "Hersteller-Logo ein-/ausschalten" : "Marke wählen, um Hersteller-Logo zu nutzen"}
+          >
+            Hersteller{manufacturerOn ? " ✓" : ""}
+          </button>
+          <button
+            type="button"
+            onClick={toggleDealer}
+            className={`px-2 py-1.5 rounded-md border text-xs ${
+              dealerOn
+                ? "border-accent bg-accent/10 text-foreground font-semibold"
+                : "border-border text-muted-foreground hover:border-accent/40"
+            }`}
+            title={dealerLogoUrl ? "Händler-Logo ein-/ausschalten" : "Händler-Logo im Profil hinterlegen"}
+          >
+            Händler{dealerOn ? " ✓" : ""}
+          </button>
+          <button
+            type="button"
+            onClick={toggleCustom}
+            className={`px-2 py-1.5 rounded-md border text-xs ${
+              customOn
+                ? "border-accent bg-accent/10 text-foreground font-semibold"
+                : "border-border text-muted-foreground hover:border-accent/40"
+            }`}
+            title={customLogoUrl ? "Eigenes Logo ein-/ausschalten" : "Eigenes Logo hochladen"}
+          >
+            Eigenes{customOn ? " ✓" : ""}
+          </button>
+          <button
+            type="button"
+            onClick={onClearAllLogos}
+            className={`px-2 py-1.5 rounded-md border text-xs ${
+              !anyOn
+                ? "border-accent bg-accent/10 text-foreground font-semibold"
+                : "border-border text-muted-foreground hover:border-accent/40"
+            }`}
+            title="Alle Logos ausschalten"
           >
             Kein Logo
           </button>
         </div>
+
 
         {/* Custom logo upload */}
         <div className="flex items-center gap-2 pt-1">

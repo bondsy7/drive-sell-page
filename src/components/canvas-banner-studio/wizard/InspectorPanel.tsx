@@ -110,14 +110,19 @@ const InspectorPanel: React.FC<Props> = ({
             ciContext={ciContext}
             hasProfile={!!profile}
             detectedBrandKey={detectedBrandKey}
-            currentLogoUrl={activeComposition.logoUrl}
+            activeManufacturerLogoUrl={activeComposition.logoUrl}
+            activeDealerLogoUrl={activeComposition.dealerLogoUrl}
+            activeCustomLogoUrl={activeComposition.customLogoUrl}
             manufacturerLogoUrl={manufacturerLogoUrl}
             dealerLogoUrl={dealerLogoUrl}
             customLogoUrl={state.ci.customLogoUrl}
             userId={userId}
             onApplyBrandPreset={actions.applyBrandPreset}
             onPatchCi={actions.setCi}
-            onSetLogo={(url, scope) => actions.setLogo(url, scope ?? (applyLogoToAll ? "all" : "current"))}
+            onToggleLogoSlot={(slot, url) =>
+              actions.setLogoSlot(slot, url, applyLogoToAll ? "all" : "current")
+            }
+            onClearAllLogos={() => actions.clearAllLogos(applyLogoToAll ? "all" : "current")}
             selectedFormatsCount={state.selectedFormatIds.length}
             applyLogoToAll={applyLogoToAll}
             onToggleApplyLogoToAll={onToggleApplyLogoToAll}
