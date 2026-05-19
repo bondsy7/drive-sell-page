@@ -397,7 +397,7 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
             <Badge variant="secondary">Quick-Modus</Badge>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={results.length > 0 ? openInEditor : onSwitchToPro}>
+            <Button variant="outline" size="sm" onClick={onSwitchToPro}>
               <Settings2 className="w-4 h-4 mr-1" /> Pro-Modus
             </Button>
           </div>
