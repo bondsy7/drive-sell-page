@@ -6,6 +6,7 @@ import { getBundledSpec } from "@/components/canvas-banner-studio/data/bundledTe
 import { invalidateTemplateCache } from "@/components/canvas-banner-studio/data/templateRegistry";
 import type { TemplateSpec, LayerSpec } from "@/components/canvas-banner-studio/data/templateSchema";
 import { BRAND_PRESETS } from "@/components/canvas-banner-studio/ci/brandPresets";
+import { recolorSvg, detectIsSvg } from "@/components/canvas-banner-studio/ci/svgRecolor";
 import { useVehicleMakes } from "@/hooks/useVehicleMakes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -112,6 +113,34 @@ function VisualEditor({
     img.onerror = () => setLogoRatio(null);
     img.src = brandLogoUrl;
   }, [brandLogoUrl]);
+
+  // Per-Layer SVG-Einfärbung für die Vorschau (Admin).
+  const [tintedLogoUrls, setTintedLogoUrls] = useState<Record<string, string>>({});
+  const logoColorKey = spec.layers
+    .filter((l) => l.type === "logo")
+    .map((l) => `${l.id}:${l.color ?? ""}`)
+    .join("|");
+  useEffect(() => {
+    if (!brandLogoUrl) { setTintedLogoUrls({}); return; }
+    let cancelled = false;
+    (async () => {
+      const isSvg = await detectIsSvg(brandLogoUrl);
+      if (!isSvg) { if (!cancelled) setTintedLogoUrls({}); return; }
+      const entries = await Promise.all(
+        spec.layers
+          .filter((l) => l.type === "logo" && l.color && /^#?[0-9a-f]{3,8}$/i.test(l.color.trim()))
+          .map(async (l) => {
+            const url = await recolorSvg(brandLogoUrl, "custom", l.color!);
+            return [l.id, url] as const;
+          }),
+      );
+      if (cancelled) return;
+      const map: Record<string, string> = {};
+      for (const [id, url] of entries) map[id] = url;
+      setTintedLogoUrls(map);
+    })();
+    return () => { cancelled = true; };
+  }, [brandLogoUrl, logoColorKey]);
 
   const { width, height } = spec.format;
   const maxH = 700;
@@ -263,8 +292,8 @@ function VisualEditor({
                 borderRadius: (l.borderRadius ?? 0) * scale,
                 backgroundImage: isImage && l.imageUrl
                   ? `url("${l.imageUrl}")`
-                  : isLogo && brandLogoUrl
-                    ? `url("${brandLogoUrl}")`
+                  : isLogo && (tintedLogoUrls[l.id] || brandLogoUrl)
+                    ? `url("${tintedLogoUrls[l.id] || brandLogoUrl}")`
                     : undefined,
                 backgroundSize: isLogo ? "contain" : "cover",
                 backgroundRepeat: "no-repeat",
@@ -550,6 +579,41 @@ function PropertyPanel({
       {layer.type === "logo" && (
         <>
           <div>
+            <Label className="text-xs">Logo-Farbe (SVG einfärben)</Label>
+            <div className="flex gap-2">
+              <Input
+                type="color"
+                className="h-8 w-14 p-1"
+                value={layer.color && /^#/.test(layer.color) ? layer.color : "#000000"}
+                onChange={(e) => onChange({ color: e.target.value })}
+              />
+              <Input
+                className="h-8 flex-1"
+                value={layer.color ?? ""}
+                placeholder="z. B. #ffffff – leer = Originalfarben"
+                onChange={(e) => onChange({ color: e.target.value || undefined })}
+              />
+              <Button size="sm" variant="ghost" onClick={() => onChange({ color: undefined })} title="Originalfarben wiederherstellen">
+                <RotateCcw className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-1 mt-1.5">
+              {["#ffffff", "#000000", "#1a1a1a", "#3366cc", "#1a365d", "#c9a84c", "#e84393", "#16a34a"].map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => onChange({ color: c })}
+                  className="w-5 h-5 rounded border border-border"
+                  style={{ backgroundColor: c }}
+                  title={c}
+                />
+              ))}
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-1">
+              Funktioniert mit SVG-Logos – fill/stroke werden ersetzt. Leer lassen für Originalfarben.
+            </p>
+          </div>
+          <div>
             <Label className="text-xs">Hintergrund-Farbe (optional, hinter Logo)</Label>
             <div className="flex gap-2">
               <Input
@@ -589,7 +653,7 @@ function PropertyPanel({
             />
           </div>
           <p className="text-[10px] text-muted-foreground">
-            Tipp: Das eigentliche Markenlogo wird automatisch je nach gewählter Marke geladen. Hier kannst du nur die Box drumherum stylen.
+            Tipp: Das Markenlogo wird automatisch je nach gewählter Marke geladen. Über „Logo-Farbe" kannst du SVG-Logos einfärben.
           </p>
         </>
       )}
