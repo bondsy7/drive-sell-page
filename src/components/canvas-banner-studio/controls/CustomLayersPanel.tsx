@@ -174,6 +174,28 @@ const CustomLayersPanel: React.FC<Props> = ({
                     <span className="capitalize">{l.type}</span>
                   </div>
                   <div className="flex gap-0.5">
+                    {onReorderLayer && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); onReorderLayer(l.id, "forward"); }}
+                          className="p-1 text-muted-foreground hover:text-foreground"
+                          title="Eine Ebene nach vorne"
+                          aria-label="Eine Ebene nach vorne"
+                        >
+                          <ArrowUp className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); onReorderLayer(l.id, "backward"); }}
+                          className="p-1 text-muted-foreground hover:text-foreground"
+                          title="Eine Ebene nach hinten"
+                          aria-label="Eine Ebene nach hinten"
+                        >
+                          <ArrowDown className="w-3.5 h-3.5" />
+                        </button>
+                      </>
+                    )}
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); onPatchLayer(l.id, { visible: !l.visible }); }}
