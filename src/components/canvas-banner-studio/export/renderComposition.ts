@@ -174,17 +174,35 @@ export async function renderCompositionToDataURL(
 
   for (const layer of composition.layers) {
     if (!layer.visible) continue;
-    if (layer.type === "image" || layer.type === "overlay") continue;
+    if (layer.type === "overlay") continue;
+    if (layer.type === "image") {
+      if (!layer.imageUrl) continue;
+      const img = await loadImage(layer.imageUrl);
+      if (!img) continue;
+      const w = (layer.width ?? 200) * formatScale;
+      const ratio = img.naturalHeight / Math.max(1, img.naturalWidth);
+      const h = (layer.height ?? (layer.width ?? 200) * ratio) * formatScale;
+      ctx.save();
+      ctx.globalAlpha = layer.opacity ?? 1;
+      ctx.drawImage(img, layer.x, layer.y, w, h);
+      ctx.restore();
+      continue;
+    }
     if (layer.type === "logo") {
-      const img =
+      const slotImg =
         layer.id === "logo-dealer" ? dealerLogo :
         layer.id === "logo-custom" ? customLogo :
         logo;
+      const overrideImg = layer.imageUrl ? await loadImage(layer.imageUrl) : null;
+      const img = overrideImg ?? slotImg;
       if (!img) continue;
       const baseW = layer.width ?? format.width * 0.18;
       const w = baseW * formatScale;
       const ratio = img.naturalHeight / img.naturalWidth || 0.4;
+      ctx.save();
+      ctx.globalAlpha = layer.opacity ?? 1;
       ctx.drawImage(img, layer.x, layer.y, w, w * ratio);
+      ctx.restore();
       continue;
     }
     const raw = layer.field ? textFields[layer.field] : "";
