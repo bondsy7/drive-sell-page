@@ -2,9 +2,10 @@ import React from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import type { BannerComposition, BannerLayer, BannerTextFieldKey, BannerTextFields, TextAlign } from "../state/types";
+import type { BannerComposition, BannerLayer, BannerTextFieldKey, BannerTextFields, CiState, TextAlign } from "../state/types";
 import { AlignCenter, AlignLeft, AlignRight, Bold, Eye, EyeOff, ArrowUp, ArrowDown } from "lucide-react";
 import { SHORTCODES } from "../ci/shortcodes";
+import type { CiContext } from "../ci/profileSources";
 
 const FIELDS: { key: BannerTextFieldKey; label: string; placeholder: string; layerId: string; multiline?: boolean }[] = [
   { key: "headline", label: "Headline", placeholder: "DER NEUE VW GOLF", layerId: "headline" },
@@ -28,9 +29,28 @@ interface Props {
   onChangeText: (key: BannerTextFieldKey, value: string) => void;
   onPatchLayer: (layerId: string, patch: Partial<BannerLayer>) => void;
   onReorderLayer?: (layerId: string, direction: "forward" | "backward") => void;
+  /** Optional: nur Shortcodes anzeigen, für die Werte existieren. */
+  ciContext?: CiContext | null;
+  /** Optional: zusätzliche CI/Template-Farben als Swatches. */
+  ciColors?: CiState["colors"];
 }
 
-const TextFieldsPanel: React.FC<Props> = ({ textFields, composition, onChangeText, onPatchLayer, onReorderLayer }) => {
+const TextFieldsPanel: React.FC<Props> = ({ textFields, composition, onChangeText, onPatchLayer, onReorderLayer, ciContext, ciColors }) => {
+  const shortcodes = ciContext
+    ? SHORTCODES.filter((s) => {
+        const key = s.code.replace(/[{}]/g, "").trim().toLowerCase();
+        const v = (ciContext as any)[key];
+        return v != null && String(v) !== "";
+      })
+    : SHORTCODES;
+  const ciSwatches: { value: string; label: string }[] = ciColors
+    ? [
+        { value: ciColors.primary, label: "CI Primary" },
+        { value: ciColors.secondary, label: "CI Secondary" },
+        { value: ciColors.text, label: "CI Text" },
+        { value: ciColors.bg, label: "CI Hintergrund" },
+      ].filter((c) => !!c.value)
+    : [];
   const layerById = (id: string) => composition.layers.find((l) => l.id === id);
 
   const insertCode = (key: BannerTextFieldKey, code: string) => {
@@ -41,25 +61,27 @@ const TextFieldsPanel: React.FC<Props> = ({ textFields, composition, onChangeTex
 
   return (
     <div className="space-y-5">
-      <div className="rounded-md border border-dashed border-border bg-muted/30 p-2.5">
-        <div className="text-[11px] font-semibold text-foreground mb-1">Shortcodes (klick = einfügen in Headline)</div>
-        <div className="flex flex-wrap gap-1">
-          {SHORTCODES.map((s) => (
-            <button
-              key={s.code}
-              type="button"
-              onClick={() => insertCode("headline", s.code)}
-              title={s.label}
-              className="text-[10px] px-1.5 py-0.5 rounded border border-border bg-background hover:border-accent/40 text-muted-foreground hover:text-foreground"
-            >
-              {s.code}
-            </button>
-          ))}
+      {shortcodes.length > 0 && (
+        <div className="rounded-md border border-dashed border-border bg-muted/30 p-2.5">
+          <div className="text-[11px] font-semibold text-foreground mb-1">Shortcodes (klick = einfügen in Headline)</div>
+          <div className="flex flex-wrap gap-1">
+            {shortcodes.map((s) => (
+              <button
+                key={s.code}
+                type="button"
+                onClick={() => insertCode("headline", s.code)}
+                title={s.label}
+                className="text-[10px] px-1.5 py-0.5 rounded border border-border bg-background hover:border-accent/40 text-muted-foreground hover:text-foreground"
+              >
+                {s.code}
+              </button>
+            ))}
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-1.5">
+            Werden beim Rendern automatisch durch Profil- & Fahrzeugdaten ersetzt.
+          </p>
         </div>
-        <p className="text-[10px] text-muted-foreground mt-1.5">
-          Werden beim Rendern automatisch durch Profil- & Fahrzeugdaten ersetzt.
-        </p>
-      </div>
+      )}
       {FIELDS.map((f) => {
         const layer = layerById(f.layerId);
         if (!layer) return null;
@@ -154,7 +176,7 @@ const TextFieldsPanel: React.FC<Props> = ({ textFields, composition, onChangeTex
                   );
                 })}
               </div>
-              <div className="flex gap-1">
+              <div className="flex gap-1 flex-wrap">
                 {COLOR_TOKENS.map((c) => (
                   <button
                     key={c.token}
@@ -165,6 +187,20 @@ const TextFieldsPanel: React.FC<Props> = ({ textFields, composition, onChangeTex
                       layer.color === c.token ? "border-foreground" : "border-border"
                     }`}
                     style={{ background: `hsl(var(--${c.token}))` }}
+                  />
+                ))}
+                {ciSwatches.map((c) => (
+                  <button
+                    key={`ci-${c.value}`}
+                    type="button"
+                    onClick={() => onPatchLayer(layer.id, { color: c.value })}
+                    title={c.label}
+                    className={`w-6 h-6 rounded-full border-2 ${
+                      (layer.color ?? "").toLowerCase() === c.value.toLowerCase()
+                        ? "border-foreground"
+                        : "border-border"
+                    }`}
+                    style={{ background: c.value }}
                   />
                 ))}
               </div>

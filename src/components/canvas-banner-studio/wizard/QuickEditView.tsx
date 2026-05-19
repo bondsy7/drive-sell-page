@@ -22,7 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { useCanvasBannerStore } from "../state/useCanvasBannerStore";
 import BannerCanvas from "../canvas/BannerCanvas";
 import TextFieldsPanel from "../controls/TextFieldsPanel";
-import LayerOrderControls from "../controls/LayerOrderControls";
+import CustomLayersPanel from "../controls/CustomLayersPanel";
 import FloatingToolbar from "../controls/FloatingToolbar";
 import { getFormatById, slugifyFormat } from "../data/formats";
 import { renderCompositionToBlob, renderCompositionToDataURL } from "../export/renderComposition";
@@ -119,12 +119,6 @@ const QuickEditView: React.FC<Props> = ({
     return () => window.removeEventListener("keydown", onKey);
   }, [actions, state.selectedLayerId, activeComposition.layers]);
 
-  const centerLayer = useCallback((id: string) => {
-    const l = activeComposition.layers.find((x) => x.id === id);
-    if (!l) return;
-    const w = l.width ?? Math.round(activeFormat.width * 0.6);
-    actions.patchLayer(id, { x: Math.round((activeFormat.width - w) / 2) });
-  }, [actions, activeComposition.layers, activeFormat.width]);
 
   const downloadSingle = useCallback(async () => {
     const dataUrl = await renderCompositionToDataURL(
@@ -271,22 +265,28 @@ const QuickEditView: React.FC<Props> = ({
           )}
         </div>
 
-        {/* Inspector — nur Texte & Layer-Reihenfolge */}
+        {/* Inspector — Texte, Ebenen (mit Form/Bild/Logo-Editor) */}
         <div className="space-y-3">
-          <LayerOrderControls
-            selectedLayerId={state.selectedLayerId}
-            composition={activeComposition}
-            format={activeFormat}
-            onReorder={(id, dir) => actions.reorderLayer(id, dir)}
-            onCenter={centerLayer}
-            onReset={() => { actions.resetLayout(); toast.success("Layout zurückgesetzt"); }}
-          />
           <TextFieldsPanel
             textFields={state.textFields}
             composition={activeComposition}
             onChangeText={actions.setText}
             onPatchLayer={actions.patchLayer}
             onReorderLayer={actions.reorderLayer}
+            ciContext={ciContext}
+            ciColors={state.ci?.colors}
+          />
+          <CustomLayersPanel
+            composition={activeComposition}
+            format={activeFormat}
+            selectedLayerId={state.selectedLayerId}
+            onAddLayer={actions.addLayer}
+            onPatchLayer={actions.patchLayer}
+            onRemoveLayer={actions.removeLayer}
+            onSelectLayer={actions.selectLayer}
+            onReorderLayer={actions.reorderLayer}
+            onMoveLayerToIndex={actions.moveLayerToIndex}
+            ciColors={state.ci?.colors}
           />
         </div>
       </div>

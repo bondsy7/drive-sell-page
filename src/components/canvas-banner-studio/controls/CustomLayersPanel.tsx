@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Eye, EyeOff, Trash2, Type, Square, ImageIcon, ArrowUp, ArrowDown, GripVertical } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import type { BannerComposition, BannerFormat, BannerLayer, TextAlign } from "../state/types";
+import type { BannerComposition, BannerFormat, BannerLayer, CiState, TextAlign } from "../state/types";
 
 const STANDARD_IDS = new Set(["headline", "subline", "price", "cta", "smallInfo", "legal", "logo", "background", "overlay"]);
 
@@ -38,6 +38,8 @@ interface Props {
   onSelectLayer: (id?: string) => void;
   onReorderLayer?: (id: string, direction: "forward" | "backward") => void;
   onMoveLayerToIndex?: (id: string, toIndex: number) => void;
+  /** Zusätzliche CI/Template-Farben als Swatches in Text/Shape-Inspector. */
+  ciColors?: CiState["colors"];
 }
 
 const newId = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
@@ -52,7 +54,16 @@ const CustomLayersPanel: React.FC<Props> = ({
   onSelectLayer,
   onReorderLayer,
   onMoveLayerToIndex,
+  ciColors,
 }) => {
+  const ciSwatches = ciColors
+    ? [
+        { value: ciColors.primary, label: "CI Primary" },
+        { value: ciColors.secondary, label: "CI Secondary" },
+        { value: ciColors.text, label: "CI Text" },
+        { value: ciColors.bg, label: "CI Hintergrund" },
+      ].filter((c) => !!c.value)
+    : [];
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
@@ -325,7 +336,7 @@ const CustomLayersPanel: React.FC<Props> = ({
                       >
                         B
                       </button>
-                      <div className="flex gap-1">
+                      <div className="flex gap-1 flex-wrap">
                         {COLOR_TOKENS.map((c) => (
                           <button
                             key={c.token}
@@ -336,6 +347,18 @@ const CustomLayersPanel: React.FC<Props> = ({
                               l.color === c.token ? "border-foreground" : "border-border"
                             }`}
                             style={{ background: `hsl(var(--${c.token}))` }}
+                          />
+                        ))}
+                        {ciSwatches.map((c) => (
+                          <button
+                            key={`ci-${c.value}`}
+                            type="button"
+                            onClick={() => onPatchLayer(l.id, { color: c.value })}
+                            title={c.label}
+                            className={`w-5 h-5 rounded-full border-2 ${
+                              (l.color ?? "").toLowerCase() === c.value.toLowerCase() ? "border-foreground" : "border-border"
+                            }`}
+                            style={{ background: c.value }}
                           />
                         ))}
                       </div>
@@ -366,6 +389,22 @@ const CustomLayersPanel: React.FC<Props> = ({
                         <span className="tabular-nums w-9 text-right">{Math.round((l.opacity ?? 1) * 100)}%</span>
                       </label>
                     </div>
+                    {ciSwatches.length > 0 && (
+                      <div className="flex gap-1 flex-wrap">
+                        {ciSwatches.map((c) => (
+                          <button
+                            key={`ci-fill-${c.value}`}
+                            type="button"
+                            onClick={() => onPatchLayer(l.id, { backgroundColor: c.value })}
+                            title={c.label}
+                            className={`w-5 h-5 rounded-full border-2 ${
+                              (l.backgroundColor ?? "").toLowerCase() === c.value.toLowerCase() ? "border-foreground" : "border-border"
+                            }`}
+                            style={{ background: c.value }}
+                          />
+                        ))}
+                      </div>
+                    )}
                     <div className="grid grid-cols-3 gap-2 text-xs">
                       <label className="flex flex-col gap-0.5">
                         <span className="text-muted-foreground">Breite</span>
