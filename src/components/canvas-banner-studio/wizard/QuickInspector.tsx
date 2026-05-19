@@ -149,9 +149,22 @@ const QuickInspector: React.FC<Props> = ({
   };
 
   // ---------- Recoloring für Bild-/Logo-Layer (SVG bevorzugt, PNG/WEBP als Fallback) ----------
+  const resolveLayerSourceUrl = (layer: BannerLayer): string | undefined => {
+    if (layer.imageUrl) return layer.imageUrl;
+    if (layer.type === "logo") {
+      if (layer.id === "logo-dealer") return composition.dealerLogoUrl;
+      if (layer.id === "logo-custom") return composition.customLogoUrl;
+      return composition.logoUrl;
+    }
+    return undefined;
+  };
+
   const applyTint = async (layer: BannerLayer, color: string) => {
-    const url = layer.imageUrl;
-    if (!url) return;
+    const url = resolveLayerSourceUrl(layer);
+    if (!url) {
+      toast.error("Kein Logo-Bild gefunden.");
+      return;
+    }
     try {
       const looksSvg = isSvgUrlSync(url) || (await detectIsSvg(url));
       const tinted = looksSvg
