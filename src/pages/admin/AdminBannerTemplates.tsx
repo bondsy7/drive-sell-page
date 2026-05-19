@@ -71,14 +71,17 @@ type DragMode =
 function VisualEditor({
   spec,
   selectedId,
+  brandLogoUrl,
   onSelect,
   onUpdate,
 }: {
   spec: TemplateSpec;
   selectedId: string | null;
+  brandLogoUrl?: string | null;
   onSelect: (id: string | null) => void;
   onUpdate: (id: string, patch: Partial<LayerSpec>) => void;
 }) {
+
   const wrapRef = useRef<HTMLDivElement>(null);
   const [containerW, setContainerW] = useState(720);
   const dragRef = useRef<DragMode>(null);
