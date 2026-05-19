@@ -114,6 +114,34 @@ function VisualEditor({
     img.src = brandLogoUrl;
   }, [brandLogoUrl]);
 
+  // Per-Layer SVG-Einfärbung für die Vorschau (Admin).
+  const [tintedLogoUrls, setTintedLogoUrls] = useState<Record<string, string>>({});
+  const logoColorKey = spec.layers
+    .filter((l) => l.type === "logo")
+    .map((l) => `${l.id}:${l.color ?? ""}`)
+    .join("|");
+  useEffect(() => {
+    if (!brandLogoUrl) { setTintedLogoUrls({}); return; }
+    let cancelled = false;
+    (async () => {
+      const isSvg = await detectIsSvg(brandLogoUrl);
+      if (!isSvg) { if (!cancelled) setTintedLogoUrls({}); return; }
+      const entries = await Promise.all(
+        spec.layers
+          .filter((l) => l.type === "logo" && l.color && /^#?[0-9a-f]{3,8}$/i.test(l.color.trim()))
+          .map(async (l) => {
+            const url = await recolorSvg(brandLogoUrl, "custom", l.color!);
+            return [l.id, url] as const;
+          }),
+      );
+      if (cancelled) return;
+      const map: Record<string, string> = {};
+      for (const [id, url] of entries) map[id] = url;
+      setTintedLogoUrls(map);
+    })();
+    return () => { cancelled = true; };
+  }, [brandLogoUrl, logoColorKey]);
+
   const { width, height } = spec.format;
   const maxH = 700;
   const scale = Math.min(containerW / width, maxH / height, 1);
