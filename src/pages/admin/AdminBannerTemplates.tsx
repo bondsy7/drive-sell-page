@@ -218,6 +218,7 @@ function VisualEditor({
         {spec.layers.map((l) => {
           if (l.visible === false) return null;
           if (l.type === "overlay") return null;
+          const isLogo = l.type === "logo";
           const w = (l.width ?? 200) * scale;
           // For logos with a loaded brand image, derive height from natural
           // aspect ratio so admin matches the frontend (which ignores l.height
