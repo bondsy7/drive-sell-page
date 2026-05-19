@@ -213,8 +213,18 @@ export async function renderCompositionToDataURL(
         layer.id === "logo-dealer" ? dealerLogo :
         layer.id === "logo-custom" ? customLogo :
         logo;
-      const overrideImg = layer.imageUrl ? await loadImage(layer.imageUrl) : null;
-      const img = overrideImg ?? slotImg;
+      const slotUrl =
+        layer.id === "logo-dealer" ? dealerUrl :
+        layer.id === "logo-custom" ? customUrl :
+        logoUrl;
+      let img: HTMLImageElement | null = null;
+      if (layer.imageUrl) {
+        img = await loadImage(layer.imageUrl);
+      } else if (layer.color && /^#?[0-9a-f]{3,8}$/i.test(layer.color.trim()) && slotUrl) {
+        const tinted = await recolorSvg(slotUrl, "custom", layer.color);
+        img = await loadImage(tinted);
+      }
+      if (!img) img = slotImg;
       if (!img) continue;
       const baseW = layer.width ?? format.width * 0.18;
       const w = baseW * formatScale;
