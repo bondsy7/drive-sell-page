@@ -854,6 +854,7 @@ export default function AdminBannerTemplates() {
               <div className="border border-border rounded-lg p-3 bg-card">
                 <div className="flex items-center justify-between mb-2">
                   <div className="font-semibold text-sm">Ebenen</div>
+                  <div className="text-[10px] text-muted-foreground">Oben = Hintergrund · Unten = Vordergrund</div>
                 </div>
                 <div className="flex gap-1 mb-2">
                   <Button size="sm" variant="outline" className="flex-1 h-7 text-xs" onClick={() => addLayer("text")}>+ Text</Button>
@@ -861,14 +862,29 @@ export default function AdminBannerTemplates() {
                   <Button size="sm" variant="outline" className="flex-1 h-7 text-xs" onClick={() => addLayer("image")}>+ Bild</Button>
                 </div>
                 <div className="space-y-1 max-h-64 overflow-auto">
-                  {draft.layers.map((l) => (
-                    <button
+                  {draft.layers.map((l, idx) => (
+                    <div
                       key={l.id}
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData("text/plain", l.id);
+                        e.dataTransfer.effectAllowed = "move";
+                      }}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = "move";
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const id = e.dataTransfer.getData("text/plain");
+                        if (id && id !== l.id) moveLayerToIndex(id, idx);
+                      }}
                       onClick={() => setSelectedId(l.id)}
-                      className={`w-full text-left px-2 py-1 rounded text-xs flex items-center gap-2 ${
+                      className={`group w-full text-left px-2 py-1 rounded text-xs flex items-center gap-1.5 cursor-pointer ${
                         selectedId === l.id ? "bg-primary/15 text-primary" : "hover:bg-muted"
                       }`}
                     >
+                      <GripVertical className="w-3 h-3 text-muted-foreground cursor-grab active:cursor-grabbing" />
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -881,10 +897,25 @@ export default function AdminBannerTemplates() {
                       </button>
                       <span className="flex-1 truncate">{l.id}</span>
                       <span className="text-muted-foreground">{l.type}</span>
-                    </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); stepLayer(l.id, "down"); }}
+                        className="opacity-0 group-hover:opacity-60 hover:!opacity-100 p-0.5"
+                        title="Eine Ebene nach hinten"
+                      >
+                        <ArrowUp className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); stepLayer(l.id, "up"); }}
+                        className="opacity-0 group-hover:opacity-60 hover:!opacity-100 p-0.5"
+                        title="Eine Ebene nach vorne"
+                      >
+                        <ArrowDown className="w-3 h-3" />
+                      </button>
+                    </div>
                   ))}
                 </div>
               </div>
+
 
               <div className="border border-border rounded-lg p-3 bg-card">
                 <div className="font-semibold text-sm mb-2">
