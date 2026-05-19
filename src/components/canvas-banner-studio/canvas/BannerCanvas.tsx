@@ -137,6 +137,8 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
   const [scale, setScale] = useState(1);
   const [snapGuides, setSnapGuides] = useState<{ vCenter: boolean; hCenter: boolean }>({ vCenter: false, hCenter: false });
   const [logoSrc, setLogoSrc] = useState<string | undefined>(composition.logoUrl);
+  const [dealerLogoSrc, setDealerLogoSrc] = useState<string | undefined>(composition.dealerLogoUrl);
+  const [customLogoSrc, setCustomLogoSrc] = useState<string | undefined>(composition.customLogoUrl);
 
   const formatScale = composition.scale ?? 1;
   const FONT_DISPLAY = ci?.fontDisplay ? `"${ci.fontDisplay}", ${DEFAULT_FONT_FAMILY}` : DEFAULT_FONT_FAMILY;
@@ -145,19 +147,23 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
 
   useEffect(() => { ensureBrandFonts(ci?.googleFonts); }, [ci?.googleFonts]);
 
-  // Recolor SVG logo when CI logo mode changes.
+  // Recolor SVG logos when CI logo mode changes (für alle drei Slots).
   useEffect(() => {
     let cancelled = false;
-    const url = composition.logoUrl;
-    if (!url || !ci || ci.logoMode === "original") {
-      setLogoSrc(url);
-      return;
-    }
-    recolorSvg(url, ci.logoMode, ci.logoCustomColor).then((out) => {
-      if (!cancelled) setLogoSrc(out);
-    });
+    const apply = (
+      url: string | undefined,
+      setter: (v: string | undefined) => void,
+    ) => {
+      if (!url || !ci || ci.logoMode === "original") { setter(url); return; }
+      recolorSvg(url, ci.logoMode, ci.logoCustomColor).then((out) => {
+        if (!cancelled) setter(out);
+      });
+    };
+    apply(composition.logoUrl, setLogoSrc);
+    apply(composition.dealerLogoUrl, setDealerLogoSrc);
+    apply(composition.customLogoUrl, setCustomLogoSrc);
     return () => { cancelled = true; };
-  }, [composition.logoUrl, ci?.logoMode, ci?.logoCustomColor, ci]);
+  }, [composition.logoUrl, composition.dealerLogoUrl, composition.customLogoUrl, ci?.logoMode, ci?.logoCustomColor, ci]);
 
   useEffect(() => {
     const el = containerRef.current;
