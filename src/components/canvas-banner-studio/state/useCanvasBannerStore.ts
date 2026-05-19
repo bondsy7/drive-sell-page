@@ -13,6 +13,8 @@ import { buildDefaultComposition, DEFAULT_TEXT_FIELDS } from "../data/defaultCom
 import { getLayoutTemplate } from "../data/layoutTemplates";
 import { getBrandPreset } from "../ci/brandPresets";
 
+type LogoSlot = "manufacturer" | "dealer" | "custom";
+
 type Action =
   | { type: "set-active-format"; formatId: string }
   | { type: "toggle-format"; formatId: string }
@@ -22,6 +24,8 @@ type Action =
   | { type: "set-overlay"; formatId: string; direction: OverlayDirection; strength: number }
   | { type: "set-template"; formatId: string; templateId: string }
   | { type: "set-logo"; formatId: string; url?: string }
+  | { type: "set-logo-slot"; formatId: string; slot: LogoSlot; url?: string }
+  | { type: "clear-all-logos"; formatId: string }
   | { type: "patch-layer"; formatId: string; layerId: string; patch: Partial<BannerLayer> }
   | { type: "add-layer"; formatId: string; layer: BannerLayer }
   | { type: "remove-layer"; formatId: string; layerId: string }
@@ -43,6 +47,18 @@ type Action =
   | { type: "hydrate"; state: StudioState }
   | { type: "undo" }
   | { type: "redo" };
+
+const SLOT_LAYER_ID: Record<LogoSlot, string> = {
+  manufacturer: "logo",
+  dealer: "logo-dealer",
+  custom: "logo-custom",
+};
+const SLOT_FIELD: Record<LogoSlot, "logoUrl" | "dealerLogoUrl" | "customLogoUrl"> = {
+  manufacturer: "logoUrl",
+  dealer: "dealerLogoUrl",
+  custom: "customLogoUrl",
+};
+const SLOT_ORDER: LogoSlot[] = ["manufacturer", "dealer", "custom"];
 
 const initialFormatId = BANNER_FORMATS[0].id;
 
