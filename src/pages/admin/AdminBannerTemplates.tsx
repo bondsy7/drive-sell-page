@@ -525,6 +525,54 @@ function PropertyPanel({
           </div>
         </>
       )}
+
+      {layer.type === "logo" && (
+        <>
+          <div>
+            <Label className="text-xs">Hintergrund-Farbe (optional, hinter Logo)</Label>
+            <div className="flex gap-2">
+              <Input
+                type="color"
+                className="h-8 w-14 p-1"
+                value={layer.backgroundColor || "#ffffff"}
+                onChange={(e) => onChange({ backgroundColor: e.target.value })}
+              />
+              <Input
+                className="h-8 flex-1"
+                value={layer.backgroundColor ?? ""}
+                placeholder="leer = transparent"
+                onChange={(e) => onChange({ backgroundColor: e.target.value || undefined })}
+              />
+              <Button size="sm" variant="ghost" onClick={() => onChange({ backgroundColor: undefined })} title="Hintergrund entfernen">
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          </div>
+          <div>
+            <Label className="text-xs">Deckkraft ({Math.round((layer.opacity ?? 1) * 100)}%)</Label>
+            <Input
+              type="range"
+              min={0}
+              max={100}
+              value={Math.round((layer.opacity ?? 1) * 100)}
+              onChange={(e) => onChange({ opacity: Number(e.target.value) / 100 })}
+            />
+          </div>
+          <div>
+            <Label className="text-xs">Eckenradius (für Hintergrund)</Label>
+            <Input
+              className="h-8"
+              type="number"
+              value={layer.borderRadius ?? 0}
+              onChange={(e) => onChange({ borderRadius: num(e.target.value) ?? 0 })}
+            />
+          </div>
+          <p className="text-[10px] text-muted-foreground">
+            Tipp: Das eigentliche Markenlogo wird automatisch je nach gewählter Marke geladen. Hier kannst du nur die Box drumherum stylen.
+          </p>
+        </>
+      )}
+
     </div>
   );
 }
