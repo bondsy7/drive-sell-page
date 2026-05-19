@@ -348,7 +348,11 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
                   );
                 }
                 if (l.type === "logo") {
-                  if (!logo) return null;
+                  const img =
+                    l.id === "logo-dealer" ? dealerLogo :
+                    l.id === "logo-custom" ? customLogo :
+                    logo;
+                  if (!img) return null;
                   const baseW = l.width ?? format.width * 0.18;
                   const w = baseW * formatScale;
                   const ratio = logo.naturalHeight / logo.naturalWidth || 0.4;
