@@ -228,6 +228,32 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
     }
   }, [selectedLayerId, composition.layers]);
 
+  // Sync Konva draw order with layer array order. react-konva does not always
+  // reorder host nodes when keyed children swap positions, so we explicitly
+  // apply zIndex per node after each layout change. Without this, ↑/↓
+  // (forward/backward) buttons in the panels appeared to do nothing visually.
+  useEffect(() => {
+    const visible = composition.layers.filter((l) => l.visible && l.type !== "overlay");
+    let changed = false;
+    visible.forEach((l, i) => {
+      const n = nodeRefs.current[l.id];
+      if (n && typeof (n as any).zIndex === "function") {
+        try {
+          if ((n as any).zIndex() !== i) {
+            (n as any).zIndex(i);
+            changed = true;
+          }
+        } catch {
+          /* node may be detached during transition */
+        }
+      }
+    });
+    if (changed) {
+      const anyNode = visible.map((l) => nodeRefs.current[l.id]).find(Boolean) as any;
+      anyNode?.getLayer?.()?.batchDraw?.();
+    }
+  }, [composition.layers]);
+
   // Snap: Banner-Mitte (vertikal/horizontal) + Safe-Area-Kanten.
   const SNAP_TOL = 8;
   const handleDragMove = (l: BannerLayer, e: Konva.KonvaEventObject<DragEvent>) => {
