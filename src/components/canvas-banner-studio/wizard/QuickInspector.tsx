@@ -454,7 +454,7 @@ const QuickInspector: React.FC<Props> = ({
                   {ciSwatches.map((c) => (
                     <button
                       key={`tint-${c.value}`} type="button" title={c.label}
-                      onClick={() => applySvgTint(selected!, c.value)}
+                      onClick={() => applyTint(selected!, c.value)}
                       className="w-5 h-5 rounded-full border-2 border-border hover:border-foreground"
                       style={{ background: c.value }}
                     />
@@ -467,7 +467,7 @@ const QuickInspector: React.FC<Props> = ({
                     Custom
                     <input
                       type="color" className="sr-only"
-                      onChange={(e) => applySvgTint(selected!, e.target.value)}
+                      onChange={(e) => applyTint(selected!, e.target.value)}
                     />
                   </label>
                 </div>
