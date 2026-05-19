@@ -32,6 +32,12 @@ export interface QuickGenerateInput {
   /** CI Akzent-Hex Farben aus dem User-Profil (für aufregenden Master-Showroom). */
   primaryColorHex?: string | null;
   secondaryColorHex?: string | null;
+  /** Bereits analysierte Textfelder – überspringt die Datenblatt-Analyse. */
+  preExtractedTextFields?: BannerTextFields;
+  /** Bereits erkannte Marke – überspringt die Marken-Erkennung. */
+  preDetectedBrand?: string;
+  /** Eigener Master-Prompt – ersetzt den Default-Showroom-Prompt. */
+  masterPromptOverride?: string;
 }
 
 export interface QuickGenerateProgress {
