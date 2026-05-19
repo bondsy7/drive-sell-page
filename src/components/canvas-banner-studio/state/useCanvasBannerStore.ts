@@ -527,6 +527,8 @@ export function useCanvasBannerStore() {
       toggleSafeArea: () => dispatch({ type: "toggle-safe-area" }),
       reorderLayer: (layerId: string, direction: "forward" | "backward", formatId = state.activeFormatId) =>
         dispatch({ type: "reorder-layer", formatId, layerId, direction }),
+      moveLayerToIndex: (layerId: string, toIndex: number, formatId = state.activeFormatId) =>
+        dispatch({ type: "move-layer-to-index", formatId, layerId, toIndex }),
       resetLayout: (formatId = state.activeFormatId) =>
         dispatch({ type: "reset-format-layout", formatId }),
       resetLayer: (layerId: string, formatId = state.activeFormatId) =>
