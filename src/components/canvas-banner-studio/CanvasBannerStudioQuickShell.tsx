@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Download, FileText, ImageIcon, Loader2, Palette, Pencil, Settings2, Sparkles, X } from "lucide-react";
+import QuickEditView from "./wizard/QuickEditView";
 import { toast } from "sonner";
 import JSZip from "jszip";
 
@@ -84,6 +85,7 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
   const [results, setResults] = useState<QuickBannerResult[]>([]);
   const [errors, setErrors] = useState<{ formatId: string; error: string }[]>([]);
   const [dealerProfile, setDealerProfile] = useState<DealerProfile | null>(null);
+  const [editMode, setEditMode] = useState(false);
 
   // Analyse-States (laufen direkt nach PDF/Bild-Upload)
   const [analyzing, setAnalyzing] = useState(false);
@@ -383,6 +385,37 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
   const progressPct = progress && progress.total > 0
     ? Math.round((progress.done / progress.total) * 100)
     : 0;
+
+  if (editMode && results.length > 0) {
+    const compositions: Record<string, typeof results[number]["composition"]> = {};
+    const formatIds: string[] = [];
+    results.forEach((r) => {
+      compositions[r.formatId] = {
+        ...r.composition,
+        logoUrl: resolvedLogoUrl ?? r.composition.logoUrl,
+      };
+      formatIds.push(r.formatId);
+    });
+    return (
+      <QuickEditView
+        initialFormatIds={formatIds}
+        initialActiveFormatId={formatIds[0]}
+        initialTextFields={lastTextFieldsRef.current ?? analyzedFields ?? DEFAULT_TEXT_FIELDS}
+        initialCompositions={compositions}
+        ci={{
+          brandKey: brandPresetKey,
+          colors: {
+            primary: ciColors.primary,
+            secondary: ciColors.secondary,
+            text: ciColors.text,
+            bg: ciColors.bg,
+          },
+        }}
+        dealerProfile={dealerProfile}
+        onBack={() => setEditMode(false)}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -687,6 +720,9 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
                 </div>
               </div>
               <div className="flex gap-2 flex-wrap">
+                <Button size="sm" variant="outline" onClick={() => setEditMode(true)}>
+                  <Pencil className="w-4 h-4 mr-1" /> Bearbeiten
+                </Button>
                 <Button size="sm" onClick={downloadZip}>
                   <Download className="w-4 h-4 mr-1" /> Alle als ZIP
                 </Button>
