@@ -40,9 +40,30 @@ const CustomLayersPanel: React.FC<Props> = ({
   onRemoveLayer,
   onSelectLayer,
   onReorderLayer,
+  onMoveLayerToIndex,
 }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
   const customLayers = composition.layers.filter((l) => !STANDARD_IDS.has(l.id));
+
+  // Render foreground first (top of list = drawn last = front), matching the
+  // admin editor's convention. Composition.layers stores back→front, so we
+  // reverse for display purposes only.
+  const orderedForDisplay = [...customLayers].reverse();
+
+  const handleDrop = (targetId: string) => {
+    if (!dragId || !onMoveLayerToIndex || dragId === targetId) {
+      setDragId(null); setDragOverId(null); return;
+    }
+    // Map display index (reversed) back into the underlying layers array index.
+    const targetDisplayIdx = orderedForDisplay.findIndex((l) => l.id === targetId);
+    if (targetDisplayIdx < 0) { setDragId(null); setDragOverId(null); return; }
+    const targetLayer = orderedForDisplay[targetDisplayIdx];
+    const newIdx = composition.layers.findIndex((l) => l.id === targetLayer.id);
+    onMoveLayerToIndex(dragId, newIdx);
+    setDragId(null); setDragOverId(null);
+  };
 
   const cx = Math.round(format.width / 2);
   const cy = Math.round(format.height / 2);
