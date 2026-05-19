@@ -66,6 +66,8 @@ const CanvasBannerStudioShell: React.FC<ProShellProps> = ({ onSwitchToWizard }) 
   const stageRef = useRef<Konva.Stage | null>(null);
 
   // Quick-Modus Übergabe: einmalig auf Mount hydrieren.
+  // Wichtig: Verbrauch verzögert markieren, damit React-StrictMode den Snapshot
+  // beim zweiten Dev-Mount nicht verliert.
   const hydratedRef = useRef(false);
   useEffect(() => {
     if (hydratedRef.current) return;
@@ -80,11 +82,16 @@ const CanvasBannerStudioShell: React.FC<ProShellProps> = ({ onSwitchToWizard }) 
       showSafeArea: false,
       ci: payload.ci as any,
     });
-    markQuickHandoffConsumed(payload.handoffId);
     // Direkt in Step 3 (Texte) springen, dort sieht der User sofort, was anzupassen ist.
     setStep(3);
     toast.info("Banner aus Quick-Modus geladen — Texte und Layout anpassen, dann exportieren.");
-  }, [actions]);
+    const consumeTimer = window.setTimeout(() => {
+      markQuickHandoffConsumed(payload.handoffId);
+    }, 1000);
+    return () => window.clearTimeout(consumeTimer);
+    // Absichtlich nur beim Mount: actions.hydrate ist für diesen einmaligen Handoff ausreichend.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [zipBusy, setZipBusy] = useState(false);
   const [applyLogoToAll, setApplyLogoToAll] = useState(true);
