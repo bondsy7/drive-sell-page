@@ -27,6 +27,7 @@ interface Props {
   composition: BannerComposition;
   onChangeText: (key: BannerTextFieldKey, value: string) => void;
   onPatchLayer: (layerId: string, patch: Partial<BannerLayer>) => void;
+  onReorderLayer?: (layerId: string, direction: "forward" | "backward") => void;
 }
 
 const TextFieldsPanel: React.FC<Props> = ({ textFields, composition, onChangeText, onPatchLayer }) => {
