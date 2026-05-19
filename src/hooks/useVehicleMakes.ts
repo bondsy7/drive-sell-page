@@ -69,7 +69,10 @@ export function useVehicleMakes() {
               };
             });
 
-        const allLogos = [...mapFiles(rootRes.data, ''), ...mapFiles(svgRes.data, 'svg')];
+        // SVGs zuerst, damit getLogoForMake bei Mehrfachtreffern (z. B. renault.webp
+        // im Root UND renault.svg im /svg-Ordner) immer die vektorbasierte Variante
+        // bevorzugt – Voraussetzung für Recolor (Weiß/Schwarz/Custom).
+        const allLogos = [...mapFiles(svgRes.data, 'svg'), ...mapFiles(rootRes.data, '')];
         cachedLogos = allLogos;
         setLogos(allLogos);
       } catch (e) {
