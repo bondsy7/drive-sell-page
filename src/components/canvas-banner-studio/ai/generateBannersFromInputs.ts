@@ -143,40 +143,51 @@ export async function generateBannersFromInputs(
     datenblattFile.type === "application/pdf" ||
     datenblattFile.name.toLowerCase().endsWith(".pdf");
 
-  const analyzePromise: Promise<{ textFields: BannerTextFields; brand: string }> = (async () => {
-    try {
-      let extracted: ExtractedBannerFields;
-      if (isPdf) {
-        const base64 = await extractPDFAsBase64(datenblattFile);
-        extracted = await extractBannerDataFromPdf(base64);
-      } else {
-        const dataUrl = await new Promise<string>((resolve, reject) => {
-          const r = new FileReader();
-          r.onerror = () => reject(r.error ?? new Error("FileReader Fehler"));
-          r.onload = () => resolve(String(r.result));
-          r.readAsDataURL(datenblattFile);
-        });
-        extracted = await extractBannerDataFromImage(dataUrl);
-      }
-      return {
-        textFields: mergeFields({ ...DEFAULT_TEXT_FIELDS }, extracted),
-        brand: String(extracted.brand ?? "").trim(),
-      };
-    } catch (e) {
-      console.warn("Datenblatt-Analyse fehlgeschlagen, Defaults werden verwendet", e);
-      return { textFields: { ...DEFAULT_TEXT_FIELDS }, brand: "" };
-    }
-  })();
+  const analyzePromise: Promise<{ textFields: BannerTextFields; brand: string }> = skipAnalyze
+    ? Promise.resolve({
+        textFields: preExtractedTextFields!,
+        brand: (preDetectedBrand ?? "").trim(),
+      })
+    : (async () => {
+        try {
+          let extracted: ExtractedBannerFields;
+          if (isPdf) {
+            const base64 = await extractPDFAsBase64(datenblattFile);
+            extracted = await extractBannerDataFromPdf(base64);
+          } else {
+            const dataUrl = await new Promise<string>((resolve, reject) => {
+              const r = new FileReader();
+              r.onerror = () => reject(r.error ?? new Error("FileReader Fehler"));
+              r.onload = () => resolve(String(r.result));
+              r.readAsDataURL(datenblattFile);
+            });
+            extracted = await extractBannerDataFromImage(dataUrl);
+          }
+          return {
+            textFields: mergeFields({ ...DEFAULT_TEXT_FIELDS }, extracted),
+            brand: String(extracted.brand ?? "").trim(),
+          };
+        } catch (e) {
+          console.warn("Datenblatt-Analyse fehlgeschlagen, Defaults werden verwendet", e);
+          return { textFields: { ...DEFAULT_TEXT_FIELDS }, brand: "" };
+        }
+      })();
 
   const masterPromise: Promise<string | null> = (async () => {
     try {
-      const promptText = buildMasterPrompt(primary, secondary);
+      const promptText = masterPromptOverride && masterPromptOverride.trim()
+        ? masterPromptOverride.trim()
+        : buildMasterPrompt(primary, secondary);
+      const colorHint = `Add subtle accent highlights / rim light using the brand colors ${primary} (primary) and ${secondary} (secondary).`;
       const out = await generateMasterBannerImage({
         sourceImageUrl: vehicleImageDataUrl,
         promptText,
-        extraInstruction: ciContext?.marke
-          ? `Vehicle make: ${ciContext.marke}${ciContext.modell ? ` ${ciContext.modell}` : ""}. Keep make/model/color identical to the source photo.`
-          : "Keep make, model and color identical to the source photo.",
+        extraInstruction: [
+          ciContext?.marke
+            ? `Vehicle make: ${ciContext.marke}${ciContext.modell ? ` ${ciContext.modell}` : ""}. Keep make/model/color identical to the source photo.`
+            : "Keep make, model and color identical to the source photo.",
+          masterPromptOverride ? colorHint : "",
+        ].filter(Boolean).join(" "),
       });
       return out.imageDataUrl;
     } catch (e) {
@@ -188,7 +199,7 @@ export async function generateBannersFromInputs(
   const [analyze, masterImageDataUrl] = await Promise.all([analyzePromise, masterPromise]);
   const textFields = analyze.textFields;
   const detectedBrand = analyze.brand;
-  tick("analyze", "Datenblatt ausgewertet");
+  if (!skipAnalyze) tick("analyze", "Datenblatt ausgewertet");
   tick("master", masterImageDataUrl ? "Masterbild erstellt" : "Masterbild übersprungen");
 
   // 2) Reframe pro Format – Quelle: Masterbild (Fallback Original)
