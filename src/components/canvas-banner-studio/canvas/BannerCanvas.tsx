@@ -180,6 +180,8 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
 
   const bg = useImage(composition.backgroundImageUrl);
   const logo = useImage(logoSrc);
+  const dealerLogo = useImage(dealerLogoSrc);
+  const customLogo = useImage(customLogoSrc);
 
   const bgFit = useMemo(() => {
     if (!bg) return null;
