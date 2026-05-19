@@ -175,6 +175,26 @@ export async function renderCompositionToDataURL(
   for (const layer of composition.layers) {
     if (!layer.visible) continue;
     if (layer.type === "overlay") continue;
+    if (layer.type === "shape") {
+      const w = (layer.width ?? 200) * formatScale;
+      const h = (layer.height ?? 100) * formatScale;
+      const fill = layer.backgroundColor
+        ? resolveColor(layer.backgroundColor, ci)
+        : resolveColor(layer.color, ci);
+      ctx.save();
+      ctx.globalAlpha = layer.opacity ?? 1;
+      ctx.fillStyle = fill;
+      const r = Math.max(0, layer.borderRadius ?? 0);
+      if (r > 0 && typeof (ctx as any).roundRect === "function") {
+        ctx.beginPath();
+        (ctx as any).roundRect(layer.x, layer.y, w, h, r);
+        ctx.fill();
+      } else {
+        ctx.fillRect(layer.x, layer.y, w, h);
+      }
+      ctx.restore();
+      continue;
+    }
     if (layer.type === "image") {
       if (!layer.imageUrl) continue;
       const img = await loadImage(layer.imageUrl);

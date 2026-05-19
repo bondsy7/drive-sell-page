@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Download, FileText, ImageIcon, Loader2, Palette, Pencil, Settings2, Sparkles, X } from "lucide-react";
 import QuickEditView from "./wizard/QuickEditView";
+import { renderCompositionToDataURL } from "./export/renderComposition";
+import type { BannerComposition } from "./state/types";
 import { toast } from "sonner";
 import JSZip from "jszip";
 
@@ -408,6 +410,37 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
     ? Math.round((progress.done / progress.total) * 100)
     : 0;
 
+  const handleApplyEdits = useCallback(
+    async (compositions: Record<string, BannerComposition>, textFields: BannerTextFields) => {
+      const ciContext = buildCiContext(dealerProfile, null);
+      const ciState = {
+        brandKey: brandPresetKey,
+        colors: {
+          primary: ciColors.primary,
+          secondary: ciColors.secondary,
+          text: ciColors.text,
+          bg: ciColors.bg,
+        },
+      } as any;
+      try {
+        const updated = await Promise.all(
+          results.map(async (r) => {
+            const comp = compositions[r.formatId] ?? r.composition;
+            const thumb = await renderCompositionToDataURL(
+              r.format, comp, textFields, "png", ciState, ciContext,
+            );
+            return { ...r, composition: comp, thumbnailDataUrl: thumb };
+          }),
+        );
+        setResults(updated);
+        lastTextFieldsRef.current = textFields;
+      } catch (e) {
+        console.error("re-render after edit failed", e);
+      }
+    },
+    [results, dealerProfile, brandPresetKey, ciColors],
+  );
+
   if (editMode && results.length > 0) {
     const compositions: Record<string, typeof results[number]["composition"]> = {};
     const formatIds: string[] = [];
@@ -435,6 +468,7 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
         }}
         dealerProfile={dealerProfile}
         onBack={() => setEditMode(false)}
+        onApply={handleApplyEdits}
       />
     );
   }
