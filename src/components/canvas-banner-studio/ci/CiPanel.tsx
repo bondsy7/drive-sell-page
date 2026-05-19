@@ -57,6 +57,18 @@ const CiPanel: React.FC<CiPanelProps> = ({
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [uploading, setUploading] = useState(false);
+  // SVG-Erkennung des aktuell verwendeten Logos (für Recolor-Hinweis).
+  const [logoIsSvg, setLogoIsSvg] = useState<boolean | null>(
+    currentLogoUrl ? isSvgUrlSync(currentLogoUrl) || null : null
+  );
+  useEffect(() => {
+    let cancelled = false;
+    if (!currentLogoUrl) { setLogoIsSvg(null); return; }
+    if (isSvgUrlSync(currentLogoUrl)) { setLogoIsSvg(true); return; }
+    setLogoIsSvg(null);
+    detectIsSvg(currentLogoUrl).then((v) => { if (!cancelled) setLogoIsSvg(v); });
+    return () => { cancelled = true; };
+  }, [currentLogoUrl]);
 
   const handleUpload = async (file: File | undefined | null) => {
     if (!file) return;
