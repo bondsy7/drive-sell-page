@@ -397,6 +397,7 @@ const NON_UNDOABLE = new Set<Action["type"]>([
   "set-banner-project-id",
   "set-vehicle",
   "hydrate",
+  "apply-template-spec",
   "undo",
   "redo",
 ]);
