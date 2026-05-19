@@ -6,6 +6,7 @@ import { getBundledSpec } from "@/components/canvas-banner-studio/data/bundledTe
 import { invalidateTemplateCache } from "@/components/canvas-banner-studio/data/templateRegistry";
 import type { TemplateSpec, LayerSpec } from "@/components/canvas-banner-studio/data/templateSchema";
 import { BRAND_PRESETS } from "@/components/canvas-banner-studio/ci/brandPresets";
+import { useVehicleMakes } from "@/hooks/useVehicleMakes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -71,14 +72,17 @@ type DragMode =
 function VisualEditor({
   spec,
   selectedId,
+  brandLogoUrl,
   onSelect,
   onUpdate,
 }: {
   spec: TemplateSpec;
   selectedId: string | null;
+  brandLogoUrl?: string | null;
   onSelect: (id: string | null) => void;
   onUpdate: (id: string, patch: Partial<LayerSpec>) => void;
 }) {
+
   const wrapRef = useRef<HTMLDivElement>(null);
   const [containerW, setContainerW] = useState(720);
   const dragRef = useRef<DragMode>(null);
@@ -211,10 +215,11 @@ function VisualEditor({
           const bg = isShape
             ? l.backgroundColor || "#3b82f6"
             : isLogo
-              ? "rgba(255,255,255,0.85)"
+              ? (brandLogoUrl ? "transparent" : "rgba(255,255,255,0.85)")
               : isImage
                 ? "rgba(0,0,0,0.15)"
                 : "transparent";
+
           return (
             <div
               key={l.id}
@@ -232,13 +237,18 @@ function VisualEditor({
                 backgroundColor: bg,
                 opacity: isShape || isImage ? (l.opacity ?? 1) : 1,
                 borderRadius: l.borderRadius ?? 0,
-                backgroundImage: isImage && l.imageUrl ? `url("${l.imageUrl}")` : undefined,
-                backgroundSize: "cover",
+                backgroundImage: isImage && l.imageUrl
+                  ? `url("${l.imageUrl}")`
+                  : isLogo && brandLogoUrl
+                    ? `url("${brandLogoUrl}")`
+                    : undefined,
+                backgroundSize: isLogo ? "contain" : "cover",
+                backgroundRepeat: "no-repeat",
                 backgroundPosition: "center",
               }}
               onPointerDown={(e) => startDrag(e, l)}
             >
-              {!isShape && !isImage && (
+              {!isShape && !isImage && !(isLogo && brandLogoUrl) && (
                 <div
                   className="w-full h-full flex items-center"
                   style={{
@@ -267,6 +277,7 @@ function VisualEditor({
                   Bild-URL setzen
                 </div>
               )}
+
               {isSel && (
                 <>
                   {(["nw", "ne", "sw", "se", "n", "s", "e", "w"] as const).map((h) => {
@@ -521,6 +532,10 @@ export default function AdminBannerTemplates() {
   const [filterTpl, setFilterTpl] = useState<string>("classic-offer");
   const [filterFmt, setFilterFmt] = useState<string>(BANNER_FORMATS[0].id);
   const [filterBrand, setFilterBrand] = useState<string>("__none__");
+  const { getLogoForMake } = useVehicleMakes();
+  const brandLogoUrl = filterBrand !== "__none__" ? getLogoForMake(filterBrand) : null;
+
+
 
   const [draft, setDraft] = useState<TemplateSpec | null>(null);
   const [draftRow, setDraftRow] = useState<Row | null>(null);
@@ -793,9 +808,11 @@ export default function AdminBannerTemplates() {
             <VisualEditor
               spec={draft}
               selectedId={selectedId}
+              brandLogoUrl={brandLogoUrl}
               onSelect={setSelectedId}
               onUpdate={updateLayer}
             />
+
           )}
         </div>
 
