@@ -469,6 +469,37 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro, onSwitchToWizard }) => {
                 </Button>
               </div>
             </div>
+
+            {/* Hersteller-Marke / Logo */}
+            <div className="mb-3 rounded-lg border border-border bg-muted/30 p-3">
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-2 min-w-0">
+                  {resolvedLogoUrl ? (
+                    <img src={resolvedLogoUrl} alt={manualBrand || detectedBrand} className="w-8 h-8 object-contain" />
+                  ) : (
+                    <div className="w-8 h-8 rounded bg-background border border-dashed border-border" />
+                  )}
+                  <div className="min-w-0">
+                    <div className="text-xs font-semibold text-foreground">
+                      Hersteller-Logo {resolvedLogoUrl ? "" : "fehlt"}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground truncate">
+                      {resolvedLogoUrl
+                        ? `Erkannte Marke: ${manualBrand || detectedBrand || "—"}`
+                        : "Marke konnte aus dem Datenblatt nicht zuverlässig erkannt werden. Bitte manuell wählen."}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex-1 min-w-[220px]">
+                  <VehicleBrandPicker
+                    brand={manualBrand}
+                    onBrandChange={handleManualBrandChange}
+                    placeholder="Marke wählen…"
+                  />
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
               {results.map((r) => {
                 const aspect = r.format.width / r.format.height;
