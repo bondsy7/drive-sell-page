@@ -129,6 +129,7 @@ const CustomImage: React.FC<CustomImageProps> = ({ layer, formatScale, nodeRef, 
 type LogoImageProps = {
   layer: import("../state/types").BannerLayer;
   fallbackImg: HTMLImageElement | null;
+  fallbackSrc?: string;
   format: BannerFormat;
   formatScale: number;
   nodeRef: (n: Konva.Node | null) => void;
@@ -139,10 +140,24 @@ type LogoImageProps = {
 };
 
 const LogoImage: React.FC<LogoImageProps> = ({
-  layer, fallbackImg, format, formatScale, nodeRef, onSelect, onDragMove, onDragEnd, onResize,
+  layer, fallbackImg, fallbackSrc, format, formatScale, nodeRef, onSelect, onDragMove, onDragEnd, onResize,
 }) => {
   const overrideImg = useImage(layer.imageUrl);
-  const img = overrideImg ?? fallbackImg;
+  // Per-layer recolor: wenn keine eigene Bild-URL gesetzt ist und layer.color
+  // einen Hex/Farbwert enthält, färben wir die Slot-SVG auf diese Farbe um.
+  const [tintedSrc, setTintedSrc] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    if (layer.imageUrl) { setTintedSrc(undefined); return; }
+    const c = layer.color;
+    if (!c || !fallbackSrc) { setTintedSrc(undefined); return; }
+    const isHex = /^#?[0-9a-f]{3,8}$/i.test(c.trim());
+    if (!isHex) { setTintedSrc(undefined); return; }
+    let cancelled = false;
+    recolorSvg(fallbackSrc, "custom", c).then((u) => { if (!cancelled) setTintedSrc(u); });
+    return () => { cancelled = true; };
+  }, [layer.imageUrl, layer.color, fallbackSrc]);
+  const tintedImg = useImage(tintedSrc);
+  const img = overrideImg ?? tintedImg ?? fallbackImg;
   if (!img) return null;
   const baseW = layer.width ?? format.width * 0.18;
   const w = baseW * formatScale;
