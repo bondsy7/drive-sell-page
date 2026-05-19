@@ -240,5 +240,5 @@ export async function generateBannersFromInputs(
   }
 
   onProgress?.({ stage: "done", done: totalSteps, total: totalSteps });
-  return { textFields, masterImageDataUrl, results, errors };
+  return { textFields, detectedBrand, masterImageDataUrl, results, errors };
 }
