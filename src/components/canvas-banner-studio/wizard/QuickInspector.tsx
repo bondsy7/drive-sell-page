@@ -79,10 +79,14 @@ const QuickInspector: React.FC<Props> = ({
     ].filter((x) => !!x.value);
   }, [ci?.colors]);
 
-  const { makes, filterMakes } = useVehicleMakes();
+  const { makes, filterMakes, getLogoForMake } = useVehicleMakes();
   const filteredMakes = useMemo(
-    () => (logoQuery ? filterMakes(logoQuery) : makes).slice(0, 60),
-    [logoQuery, makes, filterMakes],
+    () =>
+      (logoQuery ? filterMakes(logoQuery) : makes)
+        .map((m) => ({ key: m.key, url: getLogoForMake(m.key) }))
+        .filter((m) => !!m.url)
+        .slice(0, 60),
+    [logoQuery, makes, filterMakes, getLogoForMake],
   );
 
   const selected = composition.layers.find((l) => l.id === selectedLayerId);
