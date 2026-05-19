@@ -397,7 +397,7 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
             <Badge variant="secondary">Quick-Modus</Badge>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={results.length > 0 ? openInEditor : onSwitchToPro}>
+            <Button variant="outline" size="sm" onClick={onSwitchToPro}>
               <Settings2 className="w-4 h-4 mr-1" /> Pro-Modus
             </Button>
           </div>
@@ -683,15 +683,12 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
               <div>
                 <div className="font-semibold text-foreground">Vorschau ({results.length})</div>
                 <div className="text-xs text-muted-foreground">
-                  Texte, Position oder Layout noch nicht perfekt? Im Editor anpassen und dann fertigstellen.
+                  Alle Banner fertig — einzeln oder als ZIP herunterladen.
                 </div>
               </div>
               <div className="flex gap-2 flex-wrap">
-                <Button size="sm" variant="outline" onClick={downloadZip}>
-                  <Download className="w-4 h-4 mr-1" /> Direkt als ZIP
-                </Button>
-                <Button size="sm" onClick={openInEditor}>
-                  <Pencil className="w-4 h-4 mr-1" /> Im Editor bearbeiten & abschließen
+                <Button size="sm" onClick={downloadZip}>
+                  <Download className="w-4 h-4 mr-1" /> Alle als ZIP
                 </Button>
               </div>
             </div>
