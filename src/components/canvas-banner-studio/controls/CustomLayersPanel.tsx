@@ -54,7 +54,16 @@ const CustomLayersPanel: React.FC<Props> = ({
   onSelectLayer,
   onReorderLayer,
   onMoveLayerToIndex,
+  ciColors,
 }) => {
+  const ciSwatches = ciColors
+    ? [
+        { value: ciColors.primary, label: "CI Primary" },
+        { value: ciColors.secondary, label: "CI Secondary" },
+        { value: ciColors.text, label: "CI Text" },
+        { value: ciColors.bg, label: "CI Hintergrund" },
+      ].filter((c) => !!c.value)
+    : [];
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
