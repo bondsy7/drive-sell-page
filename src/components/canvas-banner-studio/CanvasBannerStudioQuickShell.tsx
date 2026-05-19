@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Download, FileText, ImageIcon, Loader2, Palette, Pencil, Settings2, Sparkles, X } from "lucide-react";
+import QuickEditView from "./wizard/QuickEditView";
 import { toast } from "sonner";
 import JSZip from "jszip";
 
