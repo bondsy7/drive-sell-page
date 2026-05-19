@@ -1,5 +1,5 @@
-import React, { useRef, useState } from "react";
-import { Palette, Type, ImageIcon, Info, Upload, Loader2 } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { Palette, Type, ImageIcon, Info, Upload, Loader2, AlertTriangle } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -7,6 +7,7 @@ import { BRAND_PRESETS, getBrandPreset } from "./brandPresets";
 import { uploadCustomCiLogo } from "./uploadCiLogo";
 import { DISPLAY_FONTS, BODY_FONTS, findFontPreset, type FontPreset } from "./fontCatalog";
 import { ensureFontLoaded } from "./fontLoader";
+import { detectIsSvg, isSvgUrlSync } from "./svgRecolor";
 import type { CiState, LogoMode } from "../state/types";
 import type { CiContext } from "./profileSources";
 
@@ -56,6 +57,18 @@ const CiPanel: React.FC<CiPanelProps> = ({
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [uploading, setUploading] = useState(false);
+  // SVG-Erkennung des aktuell verwendeten Logos (für Recolor-Hinweis).
+  const [logoIsSvg, setLogoIsSvg] = useState<boolean | null>(
+    currentLogoUrl ? isSvgUrlSync(currentLogoUrl) || null : null
+  );
+  useEffect(() => {
+    let cancelled = false;
+    if (!currentLogoUrl) { setLogoIsSvg(null); return; }
+    if (isSvgUrlSync(currentLogoUrl)) { setLogoIsSvg(true); return; }
+    setLogoIsSvg(null);
+    detectIsSvg(currentLogoUrl).then((v) => { if (!cancelled) setLogoIsSvg(v); });
+    return () => { cancelled = true; };
+  }, [currentLogoUrl]);
 
   const handleUpload = async (file: File | undefined | null) => {
     if (!file) return;
@@ -328,9 +341,24 @@ const CiPanel: React.FC<CiPanelProps> = ({
             <span className="text-xs text-muted-foreground">Logo-Einfärbung (nur SVG)</span>
           </div>
         )}
-        <p className="text-[11px] text-muted-foreground">
-          Recoloring funktioniert nur bei SVG-Logos. PNGs werden unverändert dargestellt.
-        </p>
+        {currentLogoUrl && ci.logoMode !== "original" && logoIsSvg === false ? (
+          <div className="flex items-start gap-1.5 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1.5 text-[11px] text-amber-700 dark:text-amber-300">
+            <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-px" />
+            <span>
+              Das aktuell verwendete Logo ist <strong>keine SVG-Datei</strong> (vermutlich PNG/JPG/WebP)
+              und kann daher nicht eingefärbt werden. Lade ein SVG hoch oder wähle ein SVG-Markenlogo,
+              um die Recolor-Funktion zu nutzen.
+            </span>
+          </div>
+        ) : currentLogoUrl && logoIsSvg === null ? (
+          <p className="text-[11px] text-muted-foreground inline-flex items-center gap-1">
+            <Loader2 className="w-3 h-3 animate-spin" /> Logo-Format wird geprüft…
+          </p>
+        ) : (
+          <p className="text-[11px] text-muted-foreground">
+            Recoloring funktioniert nur bei SVG-Logos. PNG/JPG werden unverändert dargestellt.
+          </p>
+        )}
       </div>
 
       {/* Profile state */}
