@@ -449,6 +449,26 @@ export function useCanvasBannerStore() {
         else ids = [state.activeFormatId];
         ids.forEach((formatId) => dispatch({ type: "set-logo", formatId, url }));
       },
+      setLogoSlot: (
+        slot: LogoSlot,
+        url?: string,
+        scope?: string | string[] | "all" | "current",
+      ) => {
+        let ids: string[];
+        if (scope === "all") ids = state.selectedFormatIds;
+        else if (Array.isArray(scope)) ids = scope;
+        else if (typeof scope === "string" && scope !== "current") ids = [scope];
+        else ids = [state.activeFormatId];
+        ids.forEach((formatId) => dispatch({ type: "set-logo-slot", formatId, slot, url }));
+      },
+      clearAllLogos: (scope?: string | string[] | "all" | "current") => {
+        let ids: string[];
+        if (scope === "all") ids = state.selectedFormatIds;
+        else if (Array.isArray(scope)) ids = scope;
+        else if (typeof scope === "string" && scope !== "current") ids = [scope];
+        else ids = [state.activeFormatId];
+        ids.forEach((formatId) => dispatch({ type: "clear-all-logos", formatId }));
+      },
       patchLayer: (layerId: string, patch: Partial<BannerLayer>, formatId = state.activeFormatId) =>
         dispatch({ type: "patch-layer", formatId, layerId, patch }),
       addLayer: (layer: BannerLayer, formatId = state.activeFormatId) =>
