@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Download, FileText, ImageIcon, Loader2, Palette, Pencil, Settings2, Sparkles, X } from "lucide-react";
 import QuickEditView from "./wizard/QuickEditView";
 import { renderCompositionToDataURL } from "./export/renderComposition";
-import { buildCiContext as buildCiContext2 } from "./ci/profileSources";
 import type { BannerComposition } from "./state/types";
 import { toast } from "sonner";
 import JSZip from "jszip";
