@@ -52,15 +52,20 @@ export interface QuickBannerResult {
 
 export interface QuickGenerateOutput {
   textFields: BannerTextFields;
+  detectedBrand: string;
   masterImageDataUrl: string | null;
   results: QuickBannerResult[];
   errors: { formatId: string; error: string }[];
 }
 
+const TEXT_FIELD_KEYS: (keyof BannerTextFields)[] = [
+  "headline", "subline", "price", "cta", "smallInfo", "legalText",
+];
+
 function mergeFields(base: BannerTextFields, extracted: ExtractedBannerFields): BannerTextFields {
   const out: BannerTextFields = { ...base };
-  (Object.keys(extracted) as (keyof ExtractedBannerFields)[]).forEach((k) => {
-    const v = extracted[k];
+  TEXT_FIELD_KEYS.forEach((k) => {
+    const v = (extracted as Record<string, string>)[k];
     if (v && String(v).trim()) (out as Record<string, string>)[k] = String(v).trim();
   });
   return out;
