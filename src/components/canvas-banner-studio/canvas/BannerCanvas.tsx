@@ -134,6 +134,7 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
   const internalStageRef = useRef<Konva.Stage | null>(null);
   const transformerRef = useRef<Konva.Transformer | null>(null);
   const nodeRefs = useRef<Record<string, Konva.Node | null>>({});
+  const drawOrderRefs = useRef<Record<string, Konva.Node | null>>({});
   const [scale, setScale] = useState(1);
   const [snapGuides, setSnapGuides] = useState<{ vCenter: boolean; hCenter: boolean }>({ vCenter: false, hCenter: false });
   const [logoSrc, setLogoSrc] = useState<string | undefined>(composition.logoUrl);
@@ -236,7 +237,7 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
     const visible = composition.layers.filter((l) => l.visible && l.type !== "overlay");
     let changed = false;
     visible.forEach((l, i) => {
-      const n = nodeRefs.current[l.id];
+      const n = drawOrderRefs.current[l.id] ?? nodeRefs.current[l.id];
       if (n && typeof (n as any).zIndex === "function") {
         try {
           if ((n as any).zIndex() !== i) {
@@ -249,7 +250,7 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
       }
     });
     if (changed) {
-      const anyNode = visible.map((l) => nodeRefs.current[l.id]).find(Boolean) as any;
+      const anyNode = visible.map((l) => drawOrderRefs.current[l.id] ?? nodeRefs.current[l.id]).find(Boolean) as any;
       anyNode?.getLayer?.()?.batchDraw?.();
     }
   }, [composition.layers]);
@@ -333,7 +334,7 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
                   return (
                     <Rect
                       key={l.id}
-                      ref={(n) => { nodeRefs.current[l.id] = n; }}
+                      ref={(n) => { nodeRefs.current[l.id] = n; drawOrderRefs.current[l.id] = n; }}
                       x={l.x}
                       y={l.y}
                       width={w}
@@ -365,7 +366,7 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
                       key={l.id}
                       layer={l}
                       formatScale={formatScale}
-                      nodeRef={(n) => { nodeRefs.current[l.id] = n; }}
+                      nodeRef={(n) => { nodeRefs.current[l.id] = n; drawOrderRefs.current[l.id] = n; }}
                       onSelect={() => onSelectLayer?.(l.id)}
                       onDragMove={(e) => handleDragMove(l, e)}
                       onDragEnd={(e) => { handleDragEndCommon(); onLayerDrag?.(l.id, e.target.x(), e.target.y()); }}
@@ -386,7 +387,7 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
                   return (
                     <KImage
                       key={l.id}
-                      ref={(n) => { nodeRefs.current[l.id] = n; }}
+                      ref={(n) => { nodeRefs.current[l.id] = n; drawOrderRefs.current[l.id] = n; }}
                       image={img}
                       x={l.x}
                       y={l.y}
@@ -417,6 +418,7 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
                 return (
                   <Group
                     key={l.id}
+                    ref={(n) => { drawOrderRefs.current[l.id] = n; }}
                     x={l.x}
                     y={l.y}
                     draggable={l.draggable}
