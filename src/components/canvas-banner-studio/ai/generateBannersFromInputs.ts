@@ -52,15 +52,20 @@ export interface QuickBannerResult {
 
 export interface QuickGenerateOutput {
   textFields: BannerTextFields;
+  detectedBrand: string;
   masterImageDataUrl: string | null;
   results: QuickBannerResult[];
   errors: { formatId: string; error: string }[];
 }
 
+const TEXT_FIELD_KEYS: (keyof BannerTextFields)[] = [
+  "headline", "subline", "price", "cta", "smallInfo", "legalText",
+];
+
 function mergeFields(base: BannerTextFields, extracted: ExtractedBannerFields): BannerTextFields {
   const out: BannerTextFields = { ...base };
-  (Object.keys(extracted) as (keyof ExtractedBannerFields)[]).forEach((k) => {
-    const v = extracted[k];
+  TEXT_FIELD_KEYS.forEach((k) => {
+    const v = (extracted as Record<string, string>)[k];
     if (v && String(v).trim()) (out as Record<string, string>)[k] = String(v).trim();
   });
   return out;
@@ -127,7 +132,7 @@ export async function generateBannersFromInputs(
     datenblattFile.type === "application/pdf" ||
     datenblattFile.name.toLowerCase().endsWith(".pdf");
 
-  const analyzePromise: Promise<BannerTextFields> = (async () => {
+  const analyzePromise: Promise<{ textFields: BannerTextFields; brand: string }> = (async () => {
     try {
       let extracted: ExtractedBannerFields;
       if (isPdf) {
@@ -142,10 +147,13 @@ export async function generateBannersFromInputs(
         });
         extracted = await extractBannerDataFromImage(dataUrl);
       }
-      return mergeFields({ ...DEFAULT_TEXT_FIELDS }, extracted);
+      return {
+        textFields: mergeFields({ ...DEFAULT_TEXT_FIELDS }, extracted),
+        brand: String(extracted.brand ?? "").trim(),
+      };
     } catch (e) {
       console.warn("Datenblatt-Analyse fehlgeschlagen, Defaults werden verwendet", e);
-      return { ...DEFAULT_TEXT_FIELDS };
+      return { textFields: { ...DEFAULT_TEXT_FIELDS }, brand: "" };
     }
   })();
 
@@ -166,7 +174,9 @@ export async function generateBannersFromInputs(
     }
   })();
 
-  const [textFields, masterImageDataUrl] = await Promise.all([analyzePromise, masterPromise]);
+  const [analyze, masterImageDataUrl] = await Promise.all([analyzePromise, masterPromise]);
+  const textFields = analyze.textFields;
+  const detectedBrand = analyze.brand;
   tick("analyze", "Datenblatt ausgewertet");
   tick("master", masterImageDataUrl ? "Masterbild erstellt" : "Masterbild übersprungen");
 
@@ -230,5 +240,5 @@ export async function generateBannersFromInputs(
   }
 
   onProgress?.({ stage: "done", done: totalSteps, total: totalSteps });
-  return { textFields, masterImageDataUrl, results, errors };
+  return { textFields, detectedBrand, masterImageDataUrl, results, errors };
 }

@@ -24,6 +24,7 @@ import {
 import { buildCiContext, type DealerProfile } from "./ci/profileSources";
 import { writeQuickHandoff } from "./state/quickHandoff";
 import { Pencil } from "lucide-react";
+import VehicleBrandPicker from "@/components/VehicleBrandPicker";
 
 interface Props {
   onSwitchToPro: () => void;
@@ -47,6 +48,9 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro, onSwitchToWizard }) => {
   const [results, setResults] = useState<QuickBannerResult[]>([]);
   const [errors, setErrors] = useState<{ formatId: string; error: string }[]>([]);
   const [dealerProfile, setDealerProfile] = useState<DealerProfile | null>(null);
+  const [detectedBrand, setDetectedBrand] = useState<string>("");
+  const [manualBrand, setManualBrand] = useState<string>("");
+  const [resolvedLogoUrl, setResolvedLogoUrl] = useState<string | null>(null);
 
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const imgInputRef = useRef<HTMLInputElement>(null);
@@ -156,6 +160,20 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro, onSwitchToWizard }) => {
       setResults(out.results);
       setErrors(out.errors);
       lastTextFieldsRef.current = out.textFields;
+
+      // Marke aus der Analyse bevorzugen; sonst die aus ciContext (Profil-Fallback)
+      const brandFromAnalysis = (out.detectedBrand ?? "").trim();
+      const effectiveBrand = brandFromAnalysis || ciContext.marke || "";
+      setDetectedBrand(effectiveBrand);
+      setManualBrand(effectiveBrand);
+      const logoFromBrand = effectiveBrand
+        ? getLogoForMake(effectiveBrand.toLowerCase().replace(/\s+/g, "-")) ||
+          getLogoForMake(effectiveBrand.toLowerCase()) ||
+          manufacturerLogoUrl ||
+          null
+        : manufacturerLogoUrl ?? null;
+      setResolvedLogoUrl(logoFromBrand);
+
       bgTasks.updateTask(taskId, {
         completed: formats.length,
         status: out.errors.length > 0 && out.results.length === 0 ? "error" : "done",
@@ -164,6 +182,9 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro, onSwitchToWizard }) => {
       });
       if (out.results.length > 0) {
         toast.success(`${out.results.length} Banner erstellt${out.errors.length ? ` (${out.errors.length} Fehler)` : ""}.`);
+        if (!logoFromBrand) {
+          toast.info("Marke konnte nicht erkannt werden — bitte unten manuell wählen, damit das Hersteller-Logo angezeigt wird.");
+        }
       } else {
         toast.error("Es konnten keine Banner erstellt werden.");
       }
@@ -213,12 +234,14 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro, onSwitchToWizard }) => {
     const compositions: Record<string, typeof results[number]["composition"]> = {};
     const selectedFormatIds: string[] = [];
     results.forEach((r) => {
-      compositions[r.formatId] = r.composition;
+      compositions[r.formatId] = {
+        ...r.composition,
+        // Hersteller-Logo (falls aufgelöst) in jede Composition schreiben,
+        // damit es im Editor sofort erscheint.
+        logoUrl: resolvedLogoUrl ?? r.composition.logoUrl,
+      };
       selectedFormatIds.push(r.formatId);
     });
-    // Letzten Stand der Texte aus dem ersten Result rekonstruieren wir aus den
-    // generierten Compositions — die textFields holen wir aus dem Orchestrator
-    // (sind als Layer.field-Bindings sichtbar; wir speichern sie zusätzlich).
     writeQuickHandoff({
       selectedFormatIds,
       activeFormatId: selectedFormatIds[0],
@@ -234,7 +257,19 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro, onSwitchToWizard }) => {
     });
     toast.success("Banner werden im Editor geöffnet — Texte & Positionen anpassen, dann exportieren.");
     onSwitchToPro();
-  }, [results, onSwitchToPro]);
+  }, [results, onSwitchToPro, resolvedLogoUrl]);
+
+  const handleManualBrandChange = (brand: string) => {
+    setManualBrand(brand);
+    if (!brand) {
+      setResolvedLogoUrl(null);
+      return;
+    }
+    const key = brand.toLowerCase().replace(/\s+/g, "-");
+    const url = getLogoForMake(key) || getLogoForMake(brand.toLowerCase()) || null;
+    setResolvedLogoUrl(url);
+    if (!url) toast.warning(`Für "${brand}" wurde kein Logo gefunden.`);
+  };
 
 
   const progressPct = progress && progress.total > 0
@@ -434,6 +469,37 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro, onSwitchToWizard }) => {
                 </Button>
               </div>
             </div>
+
+            {/* Hersteller-Marke / Logo */}
+            <div className="mb-3 rounded-lg border border-border bg-muted/30 p-3">
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-2 min-w-0">
+                  {resolvedLogoUrl ? (
+                    <img src={resolvedLogoUrl} alt={manualBrand || detectedBrand} className="w-8 h-8 object-contain" />
+                  ) : (
+                    <div className="w-8 h-8 rounded bg-background border border-dashed border-border" />
+                  )}
+                  <div className="min-w-0">
+                    <div className="text-xs font-semibold text-foreground">
+                      Hersteller-Logo {resolvedLogoUrl ? "" : "fehlt"}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground truncate">
+                      {resolvedLogoUrl
+                        ? `Erkannte Marke: ${manualBrand || detectedBrand || "—"}`
+                        : "Marke konnte aus dem Datenblatt nicht zuverlässig erkannt werden. Bitte manuell wählen."}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex-1 min-w-[220px]">
+                  <VehicleBrandPicker
+                    brand={manualBrand}
+                    onBrandChange={handleManualBrandChange}
+                    placeholder="Marke wählen…"
+                  />
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
               {results.map((r) => {
                 const aspect = r.format.width / r.format.height;
