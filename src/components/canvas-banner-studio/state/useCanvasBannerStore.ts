@@ -36,6 +36,7 @@ type Action =
   | { type: "select-layer"; layerId?: string }
   | { type: "toggle-safe-area" }
   | { type: "reorder-layer"; formatId: string; layerId: string; direction: "forward" | "backward" }
+  | { type: "move-layer-to-index"; formatId: string; layerId: string; toIndex: number }
   | { type: "reset-format-layout"; formatId: string }
   | { type: "reset-layer"; formatId: string; layerId: string }
   | { type: "set-format-scale"; formatId: string; scale: number }
