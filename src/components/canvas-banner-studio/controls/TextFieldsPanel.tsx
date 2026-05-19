@@ -35,7 +35,22 @@ interface Props {
   ciColors?: CiState["colors"];
 }
 
-const TextFieldsPanel: React.FC<Props> = ({ textFields, composition, onChangeText, onPatchLayer, onReorderLayer }) => {
+const TextFieldsPanel: React.FC<Props> = ({ textFields, composition, onChangeText, onPatchLayer, onReorderLayer, ciContext, ciColors }) => {
+  const shortcodes = ciContext
+    ? SHORTCODES.filter((s) => {
+        const key = s.code.replace(/[{}]/g, "").trim().toLowerCase();
+        const v = (ciContext as any)[key];
+        return v != null && String(v) !== "";
+      })
+    : SHORTCODES;
+  const ciSwatches: { value: string; label: string }[] = ciColors
+    ? [
+        { value: ciColors.primary, label: "CI Primary" },
+        { value: ciColors.secondary, label: "CI Secondary" },
+        { value: ciColors.text, label: "CI Text" },
+        { value: ciColors.bg, label: "CI Hintergrund" },
+      ].filter((c) => !!c.value)
+    : [];
   const layerById = (id: string) => composition.layers.find((l) => l.id === id);
 
   const insertCode = (key: BannerTextFieldKey, code: string) => {
