@@ -23,7 +23,7 @@ import {
 import LayerOrderControls from "../controls/LayerOrderControls";
 import { useVehicleMakes } from "@/hooks/useVehicleMakes";
 import { supabase } from "@/integrations/supabase/client";
-import { recolorSvg, isSvgUrlSync, detectIsSvg } from "../ci/svgRecolor";
+import { recolorSvg, recolorRaster, isSvgUrlSync, detectIsSvg } from "../ci/svgRecolor";
 import type { DealerProfile } from "../ci/profileSources";
 import type {
   BannerComposition, BannerFormat, BannerLayer, CiState, TextAlign,
