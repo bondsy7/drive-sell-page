@@ -56,8 +56,8 @@ const STEPS: { id: Step; title: string; subtitle: string }[] = [
 
 const SMALL_FORMATS = new Set(["g-medrect", "g-leader", "g-skyscraper"]);
 
-interface ProShellProps { onSwitchToWizard?: () => void }
-const CanvasBannerStudioShell: React.FC<ProShellProps> = ({ onSwitchToWizard }) => {
+interface ProShellProps { onSwitchToQuick?: () => void }
+const CanvasBannerStudioShell: React.FC<ProShellProps> = ({ onSwitchToQuick }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { state, actions, activeComposition, activeFormat, resolveColor, canUndo, canRedo } = useCanvasBannerStore();
@@ -66,6 +66,8 @@ const CanvasBannerStudioShell: React.FC<ProShellProps> = ({ onSwitchToWizard }) 
   const stageRef = useRef<Konva.Stage | null>(null);
 
   // Quick-Modus Übergabe: einmalig auf Mount hydrieren.
+  // Wichtig: Verbrauch verzögert markieren, damit React-StrictMode den Snapshot
+  // beim zweiten Dev-Mount nicht verliert.
   const hydratedRef = useRef(false);
   useEffect(() => {
     if (hydratedRef.current) return;
@@ -80,11 +82,16 @@ const CanvasBannerStudioShell: React.FC<ProShellProps> = ({ onSwitchToWizard }) 
       showSafeArea: false,
       ci: payload.ci as any,
     });
-    markQuickHandoffConsumed(payload.handoffId);
     // Direkt in Step 3 (Texte) springen, dort sieht der User sofort, was anzupassen ist.
     setStep(3);
     toast.info("Banner aus Quick-Modus geladen — Texte und Layout anpassen, dann exportieren.");
-  }, [actions]);
+    const consumeTimer = window.setTimeout(() => {
+      markQuickHandoffConsumed(payload.handoffId);
+    }, 1000);
+    return () => window.clearTimeout(consumeTimer);
+    // Absichtlich nur beim Mount: actions.hydrate ist für diesen einmaligen Handoff ausreichend.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [zipBusy, setZipBusy] = useState(false);
   const [applyLogoToAll, setApplyLogoToAll] = useState(true);
@@ -395,9 +402,9 @@ const CanvasBannerStudioShell: React.FC<ProShellProps> = ({ onSwitchToWizard }) 
               Canvas gerendert – immer in der exakten Zielgröße.
             </p>
           </div>
-          {onSwitchToWizard && (
-            <Button variant="ghost" size="sm" onClick={onSwitchToWizard}>
-              Zurück zum Wizard
+          {onSwitchToQuick && (
+            <Button variant="ghost" size="sm" onClick={onSwitchToQuick}>
+              Zurück zum Quick-Modus
             </Button>
           )}
         </div>
