@@ -1,9 +1,9 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Eye, EyeOff, Trash2, Type, Square, ImageIcon, Plus, ArrowUp, ArrowDown } from "lucide-react";
+import { Eye, EyeOff, Trash2, Type, Square, ImageIcon, Plus, ArrowUp, ArrowDown, GripVertical } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { BannerComposition, BannerFormat, BannerLayer, TextAlign } from "../state/types";
@@ -26,6 +26,7 @@ interface Props {
   onRemoveLayer: (id: string) => void;
   onSelectLayer: (id?: string) => void;
   onReorderLayer?: (id: string, direction: "forward" | "backward") => void;
+  onMoveLayerToIndex?: (id: string, toIndex: number) => void;
 }
 
 const newId = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
@@ -39,9 +40,30 @@ const CustomLayersPanel: React.FC<Props> = ({
   onRemoveLayer,
   onSelectLayer,
   onReorderLayer,
+  onMoveLayerToIndex,
 }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
   const customLayers = composition.layers.filter((l) => !STANDARD_IDS.has(l.id));
+
+  // Render foreground first (top of list = drawn last = front), matching the
+  // admin editor's convention. Composition.layers stores back→front, so we
+  // reverse for display purposes only.
+  const orderedForDisplay = [...customLayers].reverse();
+
+  const handleDrop = (targetId: string) => {
+    if (!dragId || !onMoveLayerToIndex || dragId === targetId) {
+      setDragId(null); setDragOverId(null); return;
+    }
+    // Map display index (reversed) back into the underlying layers array index.
+    const targetDisplayIdx = orderedForDisplay.findIndex((l) => l.id === targetId);
+    if (targetDisplayIdx < 0) { setDragId(null); setDragOverId(null); return; }
+    const targetLayer = orderedForDisplay[targetDisplayIdx];
+    const newIdx = composition.layers.findIndex((l) => l.id === targetLayer.id);
+    onMoveLayerToIndex(dragId, newIdx);
+    setDragId(null); setDragOverId(null);
+  };
 
   const cx = Math.round(format.width / 2);
   const cy = Math.round(format.height / 2);
@@ -156,18 +178,37 @@ const CustomLayersPanel: React.FC<Props> = ({
 
       {customLayers.length > 0 && (
         <div className="space-y-2">
-          {customLayers.map((l) => {
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+            Oben = Vordergrund · Ziehen zum Sortieren
+          </p>
+          {orderedForDisplay.map((l) => {
             const selected = l.id === selectedLayerId;
+            const isDragging = dragId === l.id;
+            const isDragOver = dragOverId === l.id && dragId && dragId !== l.id;
             return (
               <div
                 key={l.id}
-                className={`rounded-md border p-2.5 space-y-2 bg-card ${
+                draggable={!!onMoveLayerToIndex}
+                onDragStart={(e) => {
+                  setDragId(l.id);
+                  e.dataTransfer.effectAllowed = "move";
+                }}
+                onDragOver={(e) => { e.preventDefault(); setDragOverId(l.id); }}
+                onDragLeave={() => setDragOverId((cur) => (cur === l.id ? null : cur))}
+                onDrop={(e) => { e.preventDefault(); handleDrop(l.id); }}
+                onDragEnd={() => { setDragId(null); setDragOverId(null); }}
+                className={`rounded-md border p-2.5 space-y-2 bg-card transition-opacity ${
                   selected ? "border-accent" : "border-border"
+                } ${isDragging ? "opacity-50" : ""} ${
+                  isDragOver ? "ring-2 ring-accent" : ""
                 }`}
                 onClick={() => onSelectLayer(l.id)}
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5 text-xs font-medium text-foreground">
+                    {onMoveLayerToIndex && (
+                      <GripVertical className="w-3.5 h-3.5 text-muted-foreground cursor-grab active:cursor-grabbing" />
+                    )}
                     {l.type === "text" && <Type className="w-3 h-3" />}
                     {l.type === "shape" && <Square className="w-3 h-3" />}
                     {l.type === "image" && <ImageIcon className="w-3 h-3" />}

@@ -36,6 +36,7 @@ type Action =
   | { type: "select-layer"; layerId?: string }
   | { type: "toggle-safe-area" }
   | { type: "reorder-layer"; formatId: string; layerId: string; direction: "forward" | "backward" }
+  | { type: "move-layer-to-index"; formatId: string; layerId: string; toIndex: number }
   | { type: "reset-format-layout"; formatId: string }
   | { type: "reset-layer"; formatId: string; layerId: string }
   | { type: "set-format-scale"; formatId: string; scale: number }
@@ -293,6 +294,20 @@ function presentReducer(state: StudioState, action: Action): StudioState {
         compositions: { ...state.compositions, [action.formatId]: { ...c, layers: newLayers } },
       };
     }
+    case "move-layer-to-index": {
+      const c = ensureComposition(state, action.formatId);
+      const idx = c.layers.findIndex((l) => l.id === action.layerId);
+      if (idx < 0) return state;
+      const clamped = Math.max(0, Math.min(c.layers.length - 1, action.toIndex));
+      if (clamped === idx) return state;
+      const newLayers = [...c.layers];
+      const [moved] = newLayers.splice(idx, 1);
+      newLayers.splice(clamped, 0, moved);
+      return {
+        ...state,
+        compositions: { ...state.compositions, [action.formatId]: { ...c, layers: newLayers } },
+      };
+    }
     case "reset-format-layout": {
       const c = ensureComposition(state, action.formatId);
       const f = getFormatById(action.formatId);
@@ -512,6 +527,8 @@ export function useCanvasBannerStore() {
       toggleSafeArea: () => dispatch({ type: "toggle-safe-area" }),
       reorderLayer: (layerId: string, direction: "forward" | "backward", formatId = state.activeFormatId) =>
         dispatch({ type: "reorder-layer", formatId, layerId, direction }),
+      moveLayerToIndex: (layerId: string, toIndex: number, formatId = state.activeFormatId) =>
+        dispatch({ type: "move-layer-to-index", formatId, layerId, toIndex }),
       resetLayout: (formatId = state.activeFormatId) =>
         dispatch({ type: "reset-format-layout", formatId }),
       resetLayer: (layerId: string, formatId = state.activeFormatId) =>
