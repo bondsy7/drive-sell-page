@@ -48,21 +48,23 @@ const LOGO_MODES: { value: LogoMode; label: string }[] = [
 ];
 
 const CiPanel: React.FC<CiPanelProps> = ({
-  ci, ciContext, hasProfile, detectedBrandKey, currentLogoUrl,
+  ci, ciContext, hasProfile, detectedBrandKey,
+  activeManufacturerLogoUrl, activeDealerLogoUrl, activeCustomLogoUrl,
   manufacturerLogoUrl, dealerLogoUrl, customLogoUrl, userId,
-  onApplyBrandPreset, onPatchCi, onSetLogo,
+  onApplyBrandPreset, onPatchCi, onToggleLogoSlot, onClearAllLogos,
   selectedFormatsCount = 1, applyLogoToAll, onToggleApplyLogoToAll,
 }) => {
-  const scope: "all" | "current" = applyLogoToAll ? "all" : "current";
-  const setLogo = (url?: string) => onSetLogo(url, scope);
   const preset = getBrandPreset(ci.brandKey);
-  const usingDealer = !!currentLogoUrl && !!dealerLogoUrl && currentLogoUrl === dealerLogoUrl;
-  const usingManufacturer = !!currentLogoUrl && !!manufacturerLogoUrl && currentLogoUrl === manufacturerLogoUrl;
-  const usingCustom = !!currentLogoUrl && !!customLogoUrl && currentLogoUrl === customLogoUrl;
+  const manufacturerOn = !!activeManufacturerLogoUrl;
+  const dealerOn = !!activeDealerLogoUrl;
+  const customOn = !!activeCustomLogoUrl;
+  const anyOn = manufacturerOn || dealerOn || customOn;
+
+  // "Aktuell sichtbares" Logo für SVG/Recolor-Hinweis: priorisiere Hersteller > Händler > Eigenes.
+  const currentLogoUrl = activeManufacturerLogoUrl ?? activeDealerLogoUrl ?? activeCustomLogoUrl;
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [uploading, setUploading] = useState(false);
-  // SVG-Erkennung des aktuell verwendeten Logos (für Recolor-Hinweis).
   const [logoIsSvg, setLogoIsSvg] = useState<boolean | null>(
     currentLogoUrl ? isSvgUrlSync(currentLogoUrl) || null : null
   );
@@ -75,6 +77,32 @@ const CiPanel: React.FC<CiPanelProps> = ({
     return () => { cancelled = true; };
   }, [currentLogoUrl]);
 
+  const toggleManufacturer = () => {
+    if (manufacturerOn) { onToggleLogoSlot("manufacturer", undefined); return; }
+    if (!manufacturerLogoUrl) {
+      toast.info("Bitte zuerst eine Fahrzeug-Marke wählen, damit das Hersteller-Logo geladen werden kann.");
+      return;
+    }
+    onToggleLogoSlot("manufacturer", manufacturerLogoUrl);
+  };
+  const toggleDealer = () => {
+    if (dealerOn) { onToggleLogoSlot("dealer", undefined); return; }
+    if (!dealerLogoUrl) {
+      toast.info("Bitte Händler-Logo im Profil hinterlegen.");
+      return;
+    }
+    onToggleLogoSlot("dealer", dealerLogoUrl);
+  };
+  const toggleCustom = () => {
+    if (customOn) { onToggleLogoSlot("custom", undefined); return; }
+    if (!customLogoUrl) {
+      // Direkt Upload öffnen, damit der User nicht erst hochladen und dann klicken muss.
+      fileInputRef.current?.click();
+      return;
+    }
+    onToggleLogoSlot("custom", customLogoUrl);
+  };
+
   const handleUpload = async (file: File | undefined | null) => {
     if (!file) return;
     if (!userId) { toast.error("Bitte zuerst einloggen."); return; }
@@ -83,7 +111,7 @@ const CiPanel: React.FC<CiPanelProps> = ({
     try {
       const url = await uploadCustomCiLogo(file, userId);
       onPatchCi({ customLogoUrl: url } as any);
-      setLogo(url);
+      onToggleLogoSlot("custom", url);
       toast.success("Eigenes Logo übernommen");
     } catch (e: any) {
       console.error(e);
@@ -93,6 +121,7 @@ const CiPanel: React.FC<CiPanelProps> = ({
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
+
 
 
 
