@@ -532,6 +532,10 @@ export default function AdminBannerTemplates() {
   const [filterTpl, setFilterTpl] = useState<string>("classic-offer");
   const [filterFmt, setFilterFmt] = useState<string>(BANNER_FORMATS[0].id);
   const [filterBrand, setFilterBrand] = useState<string>("__none__");
+  const { getLogoForMake } = useVehicleMakes();
+  const brandLogoUrl = filterBrand !== "__none__" ? getLogoForMake(filterBrand) : null;
+
+
 
   const [draft, setDraft] = useState<TemplateSpec | null>(null);
   const [draftRow, setDraftRow] = useState<Row | null>(null);
