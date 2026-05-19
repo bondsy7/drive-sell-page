@@ -472,7 +472,7 @@ const QuickInspector: React.FC<Props> = ({
                   </label>
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-1">
-                  Funktioniert für SVG-Logos (Hersteller-DB & SVG-Uploads).
+                  Funktioniert für SVG-Logos und transparente PNG/WEBP (Silhouetten-Einfärbung).
                 </p>
               </div>
             </>
