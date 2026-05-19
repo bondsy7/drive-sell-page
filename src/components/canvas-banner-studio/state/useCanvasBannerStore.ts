@@ -532,7 +532,24 @@ export function useCanvasBannerStore() {
       setProjectTitle: (title: string) =>
         dispatch({ type: "set-project-title", title }),
       setCi: (patch: Partial<CiState>) => dispatch({ type: "set-ci", patch }),
-      applyBrandPreset: (brandKey: string) => dispatch({ type: "apply-brand-preset", brandKey }),
+      applyBrandPreset: (brandKey: string) => {
+        dispatch({ type: "apply-brand-preset", brandKey });
+        // Markenwechsel: für jedes selektierte Format die DB-Variante neu laden,
+        // damit gespeicherte Marken-Templates (z. B. Volkswagen) sofort greifen.
+        const s = stateRef.current;
+        const fmtIds = s.selectedFormatIds.length ? s.selectedFormatIds : [s.activeFormatId];
+        fmtIds.forEach((fid) => {
+          const comp = s.compositions[fid];
+          const tplId = comp?.selectedTemplateId;
+          if (!tplId) return;
+          loadTemplate(fid, tplId, brandKey)
+            .then((loaded) => {
+              if (loaded.source === "bundle") return;
+              dispatch({ type: "apply-template-spec", formatId: fid, templateId: tplId, spec: loaded.spec });
+            })
+            .catch(() => { /* ignore */ });
+        });
+      },
       hydrate: (s: StudioState) => dispatch({ type: "hydrate", state: s }),
       undo: () => dispatch({ type: "undo" }),
       redo: () => dispatch({ type: "redo" }),
