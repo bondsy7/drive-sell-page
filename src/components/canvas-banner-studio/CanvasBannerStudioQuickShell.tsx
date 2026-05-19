@@ -39,6 +39,19 @@ const DEFAULT_FORMAT_IDS = ["ig-square", "ig-story", "fb-feed"];
 // Drei Master-Prompt-Stile für Quick-Mode.
 type ScenePresetId = "showroom-neon" | "cinematic-showroom" | "studio-white";
 
+// HERO-SIZE GUARDRAIL: in jedem Prompt enthalten, damit das Auto das dominierende
+// Motiv ist und nach Ideogram-Reframe (Outpainting) NICHT zu klein wirkt.
+const HERO_SIZE_RULES = [
+  "COMPOSITION (critical): the vehicle is the absolute hero of the frame.",
+  "The car MUST fill at least 80–90% of the image width and at least 70% of the image height.",
+  "Frame it tight: from just above the roof to just below the tires, with only a small margin (max ~5–10% empty space) on the sides.",
+  "Use a slight low hero angle (~3/4 front), so the car looks powerful and large.",
+  "Do NOT zoom out, do NOT add wide empty foreground/sky, do NOT shrink the car to leave room for graphics or background props.",
+  "The background is purely supporting atmosphere – it must never dominate or push the vehicle into the distance.",
+].join(" ");
+
+const NEG_RULES = "Strictly NO text, NO logos, NO watermarks, NO badges, NO visible license plate text (blank plate allowed), NO people, NO extra cars in the foreground.";
+
 const SCENE_PRESETS: { id: ScenePresetId; label: string; description: string; build: (p: string, s: string) => string }[] = [
   {
     id: "showroom-neon",
@@ -46,27 +59,36 @@ const SCENE_PRESETS: { id: ScenePresetId; label: string; description: string; bu
     description: "Heller Showroom mit Lichtstreifen in deinen CI-Farben.",
     build: (primary, secondary) => [
       "Re-stage the EXACT same vehicle inside a modern, bright premium car dealership showroom.",
-      "Background: a real showroom with polished glossy concrete floor, white ceiling with linear LED light strips, glass walls, two or three other modern cars softly visible in the background (out of focus, no logos).",
-      `Atmosphere: dynamic energetic ad scene with bold diagonal NEON LIGHT STREAKS and beams of colored light radiating from behind the car towards the corners, in the brand colors ${primary} (primary, dominant) and ${secondary} (secondary accent). Light streaks must look like long-exposure light trails / motion light effects – sharp, vivid, with subtle glow and bloom – NOT flat shapes.`,
-      "The vehicle itself stays perfectly sharp, photoreal, centered, slight 3/4 front hero angle, clean reflections on the bodywork picking up hints of the brand-colored light.",
-      "Floor reflects the colored light streaks softly. Background light wraps around the car with a subtle rim light in the secondary brand color.",
+      HERO_SIZE_RULES,
+      "Background (supporting only, kept tight behind the car): polished glossy concrete floor, white ceiling with linear LED light strips, soft glass walls. Any other cars in the background must be tiny, far away, blurred and barely visible – never beside or in front of the hero car.",
+      `Atmosphere: dynamic energetic ad scene with bold diagonal NEON LIGHT STREAKS and beams of colored light radiating from BEHIND the car outwards, in the brand colors ${primary} (primary, dominant) and ${secondary} (secondary accent). Streaks look like long-exposure light trails – sharp, vivid, with subtle glow and bloom – and must NEVER cover or shrink the vehicle.`,
+      "The vehicle stays perfectly sharp, photoreal, large in frame, with clean reflections picking up hints of the brand-colored light. Floor reflects the colored streaks softly. Subtle rim light in the secondary brand color wraps around the car.",
       "Cinematic automotive advertising photography, 35mm, shallow depth of field, ultra crisp on the car, premium magazine quality.",
-      "Strictly NO text, NO logos, NO watermarks, NO badges, NO visible license plate text (blank plate allowed).",
+      NEG_RULES,
     ].join(" "),
   },
   {
     id: "cinematic-showroom",
     label: "Cinematic Studio",
     description: "Dunkler Studio-Hintergrund, dramatische Spotlights.",
-    build: (primary, secondary) =>
-      `Place the exact same vehicle in a cinematic premium showroom: deep matte-black surroundings, focused warm spotlights highlighting body lines, glossy black floor with subtle reflection, soft volumetric haze. Add subtle accent rim light in ${primary} on one side and ${secondary} on the other. Editorial automotive photography, 35mm, shallow depth of field. NO text, NO logos, NO watermarks.`,
+    build: (primary, secondary) => [
+      "Place the EXACT same vehicle in a cinematic premium dark studio.",
+      HERO_SIZE_RULES,
+      `Deep matte-black surroundings kept close around the car, focused warm spotlights highlighting body lines, glossy black floor with crisp reflection directly under the car, soft volumetric haze. Add a clear accent rim light in ${primary} on one side of the car and ${secondary} on the other side.`,
+      "Editorial automotive photography, 35mm, shallow depth of field, hero-large vehicle in the center.",
+      NEG_RULES,
+    ].join(" "),
   },
   {
     id: "studio-white",
     label: "Studio · Reinweiß",
     description: "Sauberer weißer Hintergrund, Katalog-Look.",
-    build: (primary, secondary) =>
-      `Place the exact same vehicle in a clean white photo studio. Seamless white cyclorama, soft diffused key light, gentle contact shadow under the tires. Premium automotive catalog look, ultra crisp, no extra props. Optional very subtle accent color gradient on the floor in ${primary}/${secondary} for a hint of brand identity. NO text, NO logos, NO watermarks.`,
+    build: (primary, secondary) => [
+      "Place the EXACT same vehicle in a clean white photo studio.",
+      HERO_SIZE_RULES,
+      `Seamless white cyclorama tight behind the car, soft diffused key light, gentle contact shadow directly under the tires. Premium automotive catalog look, ultra crisp, no extra props. A very subtle accent color gradient on the floor in ${primary}/${secondary} for a hint of brand identity (must stay subtle and never push the car backwards).`,
+      NEG_RULES,
+    ].join(" "),
   },
 ];
 
