@@ -355,13 +355,13 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
                   if (!img) return null;
                   const baseW = l.width ?? format.width * 0.18;
                   const w = baseW * formatScale;
-                  const ratio = logo.naturalHeight / logo.naturalWidth || 0.4;
+                  const ratio = img.naturalHeight / img.naturalWidth || 0.4;
                   const h = w * ratio;
                   return (
                     <KImage
                       key={l.id}
                       ref={(n) => { nodeRefs.current[l.id] = n; }}
-                      image={logo}
+                      image={img}
                       x={l.x}
                       y={l.y}
                       width={w}
