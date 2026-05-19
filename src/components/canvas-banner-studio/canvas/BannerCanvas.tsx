@@ -418,7 +418,7 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
                 return (
                   <Group
                     key={l.id}
-                    ref={(n) => { drawOrderRefs.current[l.id] = n; }}
+                    ref={(n) => { nodeRefs.current[l.id] = n; drawOrderRefs.current[l.id] = n; }}
                     x={l.x}
                     y={l.y}
                     draggable={l.draggable}
@@ -428,7 +428,6 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
                     onDragEnd={(e) => { handleDragEndCommon(); onLayerDrag?.(l.id, e.target.x(), e.target.y()); }}
                   >
                     <KText
-                      ref={(n) => { nodeRefs.current[l.id] = n; }}
                       text={text}
                       width={l.width}
                       fontSize={effFont}
