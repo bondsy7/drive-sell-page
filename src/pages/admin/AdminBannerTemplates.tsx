@@ -292,8 +292,8 @@ function VisualEditor({
                 borderRadius: (l.borderRadius ?? 0) * scale,
                 backgroundImage: isImage && l.imageUrl
                   ? `url("${l.imageUrl}")`
-                  : isLogo && brandLogoUrl
-                    ? `url("${brandLogoUrl}")`
+                  : isLogo && (tintedLogoUrls[l.id] || brandLogoUrl)
+                    ? `url("${tintedLogoUrls[l.id] || brandLogoUrl}")`
                     : undefined,
                 backgroundSize: isLogo ? "contain" : "cover",
                 backgroundRepeat: "no-repeat",
