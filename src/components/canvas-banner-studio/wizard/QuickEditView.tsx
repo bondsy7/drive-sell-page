@@ -119,12 +119,6 @@ const QuickEditView: React.FC<Props> = ({
     return () => window.removeEventListener("keydown", onKey);
   }, [actions, state.selectedLayerId, activeComposition.layers]);
 
-  const centerLayer = useCallback((id: string) => {
-    const l = activeComposition.layers.find((x) => x.id === id);
-    if (!l) return;
-    const w = l.width ?? Math.round(activeFormat.width * 0.6);
-    actions.patchLayer(id, { x: Math.round((activeFormat.width - w) / 2) });
-  }, [actions, activeComposition.layers, activeFormat.width]);
 
   const downloadSingle = useCallback(async () => {
     const dataUrl = await renderCompositionToDataURL(
