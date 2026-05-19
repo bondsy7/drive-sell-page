@@ -116,3 +116,59 @@ export function recolorSvgString(svg: string, color: string): string {
   }
   return out;
 }
+
+/**
+ * Raster-Recolor: färbt ein PNG/WEBP-Logo (mit Alpha) auf eine Zielfarbe um.
+ * Behält die Alpha-Maske und ersetzt RGB durch die Zielfarbe – ideal für
+ * monochrome / silhouettenartige Logos. Ergebnis ist eine data:image/png URL.
+ */
+const rasterCache = new Map<string, string>();
+export async function recolorRaster(url: string, color: string): Promise<string> {
+  if (!url) return url;
+  const key = `${url}::raster::${color}`;
+  const hit = rasterCache.get(key);
+  if (hit) return hit;
+  const rgb = hexToRgb(color);
+  if (!rgb) return url;
+  try {
+    const img = await loadImage(url);
+    const canvas = document.createElement("canvas");
+    canvas.width = img.naturalWidth || img.width;
+    canvas.height = img.naturalHeight || img.height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return url;
+    ctx.drawImage(img, 0, 0);
+    const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const p = data.data;
+    for (let i = 0; i < p.length; i += 4) {
+      if (p[i + 3] === 0) continue;
+      p[i] = rgb.r;
+      p[i + 1] = rgb.g;
+      p[i + 2] = rgb.b;
+    }
+    ctx.putImageData(data, 0, 0);
+    const out = canvas.toDataURL("image/png");
+    rasterCache.set(key, out);
+    return out;
+  } catch {
+    return url;
+  }
+}
+
+function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+  const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return null;
+  let h = m[1];
+  if (h.length === 3) h = h.split("").map((c) => c + c).join("");
+  return { r: parseInt(h.slice(0, 2), 16), g: parseInt(h.slice(2, 4), 16), b: parseInt(h.slice(4, 6), 16) };
+}
+
+function loadImage(url: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = url;
+  });
+}

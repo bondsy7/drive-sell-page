@@ -23,7 +23,7 @@ import {
 import LayerOrderControls from "../controls/LayerOrderControls";
 import { useVehicleMakes } from "@/hooks/useVehicleMakes";
 import { supabase } from "@/integrations/supabase/client";
-import { recolorSvg, isSvgUrlSync, detectIsSvg } from "../ci/svgRecolor";
+import { recolorSvg, recolorRaster, isSvgUrlSync, detectIsSvg } from "../ci/svgRecolor";
 import type { DealerProfile } from "../ci/profileSources";
 import type {
   BannerComposition, BannerFormat, BannerLayer, CiState, TextAlign,
@@ -148,17 +148,19 @@ const QuickInspector: React.FC<Props> = ({
     setLogoPickerOpen(false);
   };
 
-  // ---------- SVG-Recoloring für Bild-/Logo-Layer ----------
-  const applySvgTint = async (layer: BannerLayer, color: string) => {
+  // ---------- Recoloring für Bild-/Logo-Layer (SVG bevorzugt, PNG/WEBP als Fallback) ----------
+  const applyTint = async (layer: BannerLayer, color: string) => {
     const url = layer.imageUrl;
     if (!url) return;
-    const looksSvg = isSvgUrlSync(url) || (await detectIsSvg(url));
-    if (!looksSvg) {
-      toast.error("Nur SVG-Logos können eingefärbt werden.");
-      return;
-    }
     try {
-      const tinted = await recolorSvg(url, "custom", color);
+      const looksSvg = isSvgUrlSync(url) || (await detectIsSvg(url));
+      const tinted = looksSvg
+        ? await recolorSvg(url, "custom", color)
+        : await recolorRaster(url, color);
+      if (tinted === url) {
+        toast.error("Logo konnte nicht eingefärbt werden.");
+        return;
+      }
       onPatchLayer(layer.id, { imageUrl: tinted });
     } catch {
       toast.error("Einfärben fehlgeschlagen");
@@ -447,12 +449,12 @@ const QuickInspector: React.FC<Props> = ({
                 <span className="tabular-nums w-9 text-right">{Math.round((selected!.opacity ?? 1) * 100)}%</span>
               </label>
               <div>
-                <Label className="text-xs">SVG einfärben</Label>
+                <Label className="text-xs">Logo einfärben</Label>
                 <div className="flex flex-wrap gap-1.5 mt-1 items-center">
                   {ciSwatches.map((c) => (
                     <button
                       key={`tint-${c.value}`} type="button" title={c.label}
-                      onClick={() => applySvgTint(selected!, c.value)}
+                      onClick={() => applyTint(selected!, c.value)}
                       className="w-5 h-5 rounded-full border-2 border-border hover:border-foreground"
                       style={{ background: c.value }}
                     />
@@ -465,12 +467,12 @@ const QuickInspector: React.FC<Props> = ({
                     Custom
                     <input
                       type="color" className="sr-only"
-                      onChange={(e) => applySvgTint(selected!, e.target.value)}
+                      onChange={(e) => applyTint(selected!, e.target.value)}
                     />
                   </label>
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-1">
-                  Funktioniert für SVG-Logos (Hersteller-DB & SVG-Uploads).
+                  Funktioniert für SVG-Logos und transparente PNG/WEBP (Silhouetten-Einfärbung).
                 </p>
               </div>
             </>
