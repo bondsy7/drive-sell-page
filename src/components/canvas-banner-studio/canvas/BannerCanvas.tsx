@@ -441,11 +441,16 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
                     l.id === "logo-dealer" ? dealerLogo :
                     l.id === "logo-custom" ? customLogo :
                     logo;
+                  const slotSrc =
+                    l.id === "logo-dealer" ? dealerLogoSrc :
+                    l.id === "logo-custom" ? customLogoSrc :
+                    logoSrc;
                   return (
                     <LogoImage
                       key={l.id}
                       layer={l}
                       fallbackImg={slotImg}
+                      fallbackSrc={slotSrc}
                       format={format}
                       formatScale={formatScale}
                       nodeRef={(n) => { nodeRefs.current[l.id] = n; drawOrderRefs.current[l.id] = n; }}
