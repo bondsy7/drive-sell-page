@@ -31,6 +31,9 @@ import {
   Code2,
   MousePointer2,
   Copy as CopyIcon,
+  GripVertical,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 
 type Row = {
