@@ -164,7 +164,10 @@ const QuickEditView: React.FC<Props> = ({
       <div className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur">
         <div className="container mx-auto px-3 py-2 max-w-6xl flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2 min-w-0">
-            <Button variant="ghost" size="sm" onClick={onBack}>
+            <Button variant="ghost" size="sm" onClick={() => {
+              onApply?.(state.compositions, state.textFields);
+              onBack();
+            }}>
               <ArrowLeft className="w-4 h-4 mr-1" /> Vorschau
             </Button>
             <h2 className="text-sm font-semibold text-foreground truncate">Bearbeiten</h2>
