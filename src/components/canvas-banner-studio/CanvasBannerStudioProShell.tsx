@@ -56,8 +56,8 @@ const STEPS: { id: Step; title: string; subtitle: string }[] = [
 
 const SMALL_FORMATS = new Set(["g-medrect", "g-leader", "g-skyscraper"]);
 
-interface ProShellProps { onSwitchToWizard?: () => void }
-const CanvasBannerStudioShell: React.FC<ProShellProps> = ({ onSwitchToWizard }) => {
+interface ProShellProps { onSwitchToQuick?: () => void }
+const CanvasBannerStudioShell: React.FC<ProShellProps> = ({ onSwitchToQuick }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { state, actions, activeComposition, activeFormat, resolveColor, canUndo, canRedo } = useCanvasBannerStore();
@@ -402,9 +402,9 @@ const CanvasBannerStudioShell: React.FC<ProShellProps> = ({ onSwitchToWizard }) 
               Canvas gerendert – immer in der exakten Zielgröße.
             </p>
           </div>
-          {onSwitchToWizard && (
-            <Button variant="ghost" size="sm" onClick={onSwitchToWizard}>
-              Zurück zum Wizard
+          {onSwitchToQuick && (
+            <Button variant="ghost" size="sm" onClick={onSwitchToQuick}>
+              Zurück zum Quick-Modus
             </Button>
           )}
         </div>
