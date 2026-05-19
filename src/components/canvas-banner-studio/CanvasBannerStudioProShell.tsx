@@ -626,6 +626,7 @@ const CanvasBannerStudioShell: React.FC<ProShellProps> = ({ onSwitchToQuick }) =
                   composition={activeComposition}
                   onChangeText={actions.setText}
                   onPatchLayer={actions.patchLayer}
+                  onReorderLayer={actions.reorderLayer}
                 />
                 <CustomLayersPanel
                   composition={activeComposition}
@@ -635,6 +636,7 @@ const CanvasBannerStudioShell: React.FC<ProShellProps> = ({ onSwitchToQuick }) =
                   onPatchLayer={actions.patchLayer}
                   onRemoveLayer={actions.removeLayer}
                   onSelectLayer={actions.selectLayer}
+                  onReorderLayer={actions.reorderLayer}
                 />
               </section>
             )}
