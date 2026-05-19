@@ -236,13 +236,18 @@ function VisualEditor({
                 backgroundColor: bg,
                 opacity: isShape || isImage ? (l.opacity ?? 1) : 1,
                 borderRadius: l.borderRadius ?? 0,
-                backgroundImage: isImage && l.imageUrl ? `url("${l.imageUrl}")` : undefined,
-                backgroundSize: "cover",
+                backgroundImage: isImage && l.imageUrl
+                  ? `url("${l.imageUrl}")`
+                  : isLogo && brandLogoUrl
+                    ? `url("${brandLogoUrl}")`
+                    : undefined,
+                backgroundSize: isLogo ? "contain" : "cover",
+                backgroundRepeat: "no-repeat",
                 backgroundPosition: "center",
               }}
               onPointerDown={(e) => startDrag(e, l)}
             >
-              {!isShape && !isImage && (
+              {!isShape && !isImage && !(isLogo && brandLogoUrl) && (
                 <div
                   className="w-full h-full flex items-center"
                   style={{
@@ -271,6 +276,7 @@ function VisualEditor({
                   Bild-URL setzen
                 </div>
               )}
+
               {isSel && (
                 <>
                   {(["nw", "ne", "sw", "se", "n", "s", "e", "w"] as const).map((h) => {
