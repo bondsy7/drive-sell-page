@@ -11,8 +11,9 @@ const SYSTEM_GUARDRAIL = `You re-stage an EXISTING vehicle photo into a new ad-w
 ABSOLUTE RULES:
 - Preserve the exact vehicle: same make, model, year, body shape, wheels, colour and trim.
 - Do NOT change the vehicle angle/perspective drastically; keep it recognisable from the source frame.
+- HERO SIZING (critical): the vehicle is the dominant subject. It MUST fill at least 80% of the image width and 70% of the image height, centered, with only a small margin around it. Never zoom out, never add wide empty foreground/sky, never shrink the car to make room for the background or graphics.
 - Remove any visible license plate text or replace with a clean blank plate.
-- No text, no logos, no watermarks anywhere in the image.
+- No text, no logos, no watermarks, no people anywhere in the image.
 - Output a single, photoreal, advertising-grade image.`;
 
 Deno.serve(async (req) => {
