@@ -458,8 +458,18 @@ export function useCanvasBannerStore() {
         dispatch({ type: "set-bg-fit", formatId, fit }),
       setOverlay: (direction: OverlayDirection, strength: number, formatId = state.activeFormatId) =>
         dispatch({ type: "set-overlay", formatId, direction, strength }),
-      setTemplate: (templateId: string, formatId = state.activeFormatId) =>
-        dispatch({ type: "set-template", formatId, templateId }),
+      setTemplate: (templateId: string, formatId = stateRef.current.activeFormatId) => {
+        // Sofortiges Bundle-Layout für direkte Reaktion …
+        dispatch({ type: "set-template", formatId, templateId });
+        // … parallel die DB-Variante (markenspezifisch wenn vorhanden) nachladen.
+        const brandKey = stateRef.current.ci?.brandKey;
+        loadTemplate(formatId, templateId, brandKey)
+          .then((loaded) => {
+            if (loaded.source === "bundle") return; // nichts Neues
+            dispatch({ type: "apply-template-spec", formatId, templateId, spec: loaded.spec });
+          })
+          .catch(() => { /* offline / RLS — bundle bleibt */ });
+      },
       setLogo: (
         url?: string,
         scope?: string | string[] | "all" | "current",
