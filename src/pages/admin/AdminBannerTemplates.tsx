@@ -219,9 +219,13 @@ function VisualEditor({
           if (l.visible === false) return null;
           if (l.type === "overlay") return null;
           const w = (l.width ?? 200) * scale;
-          const h = (l.height ?? (l.fontSize ?? 24) * 1.4) * scale;
+          // For logos with a loaded brand image, derive height from natural
+          // aspect ratio so admin matches the frontend (which ignores l.height
+          // for logo layers).
+          const h = isLogo && brandLogoUrl && logoRatio
+            ? w * logoRatio
+            : (l.height ?? (l.fontSize ?? 24) * 1.4) * scale;
           const isSel = l.id === selectedId;
-          const isLogo = l.type === "logo";
           const isShape = l.type === "shape";
           const isImage = l.type === "image";
           const txt = isShape || isImage
@@ -253,7 +257,9 @@ function VisualEditor({
                 outlineOffset: 0,
                 backgroundColor: bg,
                 opacity: isShape || isImage || isLogo ? (l.opacity ?? 1) : 1,
-                borderRadius: l.borderRadius ?? 0,
+                // Scale border-radius by display scale so the rounded preview
+                // matches the frontend (Konva scales cornerRadius via stage).
+                borderRadius: (l.borderRadius ?? 0) * scale,
                 backgroundImage: isImage && l.imageUrl
                   ? `url("${l.imageUrl}")`
                   : isLogo && brandLogoUrl
