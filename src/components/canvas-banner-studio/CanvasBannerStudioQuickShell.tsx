@@ -48,6 +48,9 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro, onSwitchToWizard }) => {
   const [results, setResults] = useState<QuickBannerResult[]>([]);
   const [errors, setErrors] = useState<{ formatId: string; error: string }[]>([]);
   const [dealerProfile, setDealerProfile] = useState<DealerProfile | null>(null);
+  const [detectedBrand, setDetectedBrand] = useState<string>("");
+  const [manualBrand, setManualBrand] = useState<string>("");
+  const [resolvedLogoUrl, setResolvedLogoUrl] = useState<string | null>(null);
 
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const imgInputRef = useRef<HTMLInputElement>(null);
