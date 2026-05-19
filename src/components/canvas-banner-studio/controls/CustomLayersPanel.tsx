@@ -336,7 +336,7 @@ const CustomLayersPanel: React.FC<Props> = ({
                       >
                         B
                       </button>
-                      <div className="flex gap-1">
+                      <div className="flex gap-1 flex-wrap">
                         {COLOR_TOKENS.map((c) => (
                           <button
                             key={c.token}
@@ -347,6 +347,18 @@ const CustomLayersPanel: React.FC<Props> = ({
                               l.color === c.token ? "border-foreground" : "border-border"
                             }`}
                             style={{ background: `hsl(var(--${c.token}))` }}
+                          />
+                        ))}
+                        {ciSwatches.map((c) => (
+                          <button
+                            key={`ci-${c.value}`}
+                            type="button"
+                            onClick={() => onPatchLayer(l.id, { color: c.value })}
+                            title={c.label}
+                            className={`w-5 h-5 rounded-full border-2 ${
+                              (l.color ?? "").toLowerCase() === c.value.toLowerCase() ? "border-foreground" : "border-border"
+                            }`}
+                            style={{ background: c.value }}
                           />
                         ))}
                       </div>
