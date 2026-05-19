@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Eye, EyeOff, Trash2, Type, Square, ImageIcon, Plus } from "lucide-react";
+import { Eye, EyeOff, Trash2, Type, Square, ImageIcon, Plus, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { BannerComposition, BannerFormat, BannerLayer, TextAlign } from "../state/types";
@@ -25,6 +25,7 @@ interface Props {
   onPatchLayer: (id: string, patch: Partial<BannerLayer>) => void;
   onRemoveLayer: (id: string) => void;
   onSelectLayer: (id?: string) => void;
+  onReorderLayer?: (id: string, direction: "forward" | "backward") => void;
 }
 
 const newId = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
@@ -37,6 +38,7 @@ const CustomLayersPanel: React.FC<Props> = ({
   onPatchLayer,
   onRemoveLayer,
   onSelectLayer,
+  onReorderLayer,
 }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const customLayers = composition.layers.filter((l) => !STANDARD_IDS.has(l.id));
@@ -172,6 +174,28 @@ const CustomLayersPanel: React.FC<Props> = ({
                     <span className="capitalize">{l.type}</span>
                   </div>
                   <div className="flex gap-0.5">
+                    {onReorderLayer && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); onReorderLayer(l.id, "forward"); }}
+                          className="p-1 text-muted-foreground hover:text-foreground"
+                          title="Eine Ebene nach vorne"
+                          aria-label="Eine Ebene nach vorne"
+                        >
+                          <ArrowUp className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); onReorderLayer(l.id, "backward"); }}
+                          className="p-1 text-muted-foreground hover:text-foreground"
+                          title="Eine Ebene nach hinten"
+                          aria-label="Eine Ebene nach hinten"
+                        >
+                          <ArrowDown className="w-3.5 h-3.5" />
+                        </button>
+                      </>
+                    )}
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); onPatchLayer(l.id, { visible: !l.visible }); }}

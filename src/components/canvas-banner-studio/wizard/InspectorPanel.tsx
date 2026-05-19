@@ -80,6 +80,7 @@ const InspectorPanel: React.FC<Props> = ({
           composition={activeComposition}
           onChangeText={actions.setText}
           onPatchLayer={actions.patchLayer}
+          onReorderLayer={actions.reorderLayer}
         />
       </TabsContent>
 

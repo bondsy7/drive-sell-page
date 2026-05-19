@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import type { BannerComposition, BannerLayer, BannerTextFieldKey, BannerTextFields, TextAlign } from "../state/types";
-import { AlignCenter, AlignLeft, AlignRight, Bold, Eye, EyeOff } from "lucide-react";
+import { AlignCenter, AlignLeft, AlignRight, Bold, Eye, EyeOff, ArrowUp, ArrowDown } from "lucide-react";
 import { SHORTCODES } from "../ci/shortcodes";
 
 const FIELDS: { key: BannerTextFieldKey; label: string; placeholder: string; layerId: string; multiline?: boolean }[] = [
@@ -27,9 +27,10 @@ interface Props {
   composition: BannerComposition;
   onChangeText: (key: BannerTextFieldKey, value: string) => void;
   onPatchLayer: (layerId: string, patch: Partial<BannerLayer>) => void;
+  onReorderLayer?: (layerId: string, direction: "forward" | "backward") => void;
 }
 
-const TextFieldsPanel: React.FC<Props> = ({ textFields, composition, onChangeText, onPatchLayer }) => {
+const TextFieldsPanel: React.FC<Props> = ({ textFields, composition, onChangeText, onPatchLayer, onReorderLayer }) => {
   const layerById = (id: string) => composition.layers.find((l) => l.id === id);
 
   const insertCode = (key: BannerTextFieldKey, code: string) => {
@@ -66,14 +67,38 @@ const TextFieldsPanel: React.FC<Props> = ({ textFields, composition, onChangeTex
           <div key={f.key} className="rounded-lg border border-border bg-card p-3 space-y-3">
             <div className="flex items-center justify-between gap-2">
               <Label className="text-sm font-semibold">{f.label}</Label>
-              <button
-                type="button"
-                onClick={() => onPatchLayer(layer.id, { visible: !layer.visible })}
-                className="text-muted-foreground hover:text-foreground"
-                aria-label={layer.visible ? "Ausblenden" : "Einblenden"}
-              >
-                {layer.visible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-              </button>
+              <div className="flex items-center gap-0.5">
+                {onReorderLayer && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => onReorderLayer(layer.id, "forward")}
+                      className="p-1 text-muted-foreground hover:text-foreground"
+                      title="Eine Ebene nach vorne"
+                      aria-label="Eine Ebene nach vorne"
+                    >
+                      <ArrowUp className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onReorderLayer(layer.id, "backward")}
+                      className="p-1 text-muted-foreground hover:text-foreground"
+                      title="Eine Ebene nach hinten"
+                      aria-label="Eine Ebene nach hinten"
+                    >
+                      <ArrowDown className="w-4 h-4" />
+                    </button>
+                  </>
+                )}
+                <button
+                  type="button"
+                  onClick={() => onPatchLayer(layer.id, { visible: !layer.visible })}
+                  className="text-muted-foreground hover:text-foreground p-1"
+                  aria-label={layer.visible ? "Ausblenden" : "Einblenden"}
+                >
+                  {layer.visible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
             {f.multiline ? (
               <Textarea
