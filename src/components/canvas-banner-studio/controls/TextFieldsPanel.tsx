@@ -2,9 +2,10 @@ import React from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import type { BannerComposition, BannerLayer, BannerTextFieldKey, BannerTextFields, TextAlign } from "../state/types";
+import type { BannerComposition, BannerLayer, BannerTextFieldKey, BannerTextFields, CiState, TextAlign } from "../state/types";
 import { AlignCenter, AlignLeft, AlignRight, Bold, Eye, EyeOff, ArrowUp, ArrowDown } from "lucide-react";
 import { SHORTCODES } from "../ci/shortcodes";
+import type { CiContext } from "../ci/profileSources";
 
 const FIELDS: { key: BannerTextFieldKey; label: string; placeholder: string; layerId: string; multiline?: boolean }[] = [
   { key: "headline", label: "Headline", placeholder: "DER NEUE VW GOLF", layerId: "headline" },
@@ -28,6 +29,10 @@ interface Props {
   onChangeText: (key: BannerTextFieldKey, value: string) => void;
   onPatchLayer: (layerId: string, patch: Partial<BannerLayer>) => void;
   onReorderLayer?: (layerId: string, direction: "forward" | "backward") => void;
+  /** Optional: nur Shortcodes anzeigen, für die Werte existieren. */
+  ciContext?: CiContext | null;
+  /** Optional: zusätzliche CI/Template-Farben als Swatches. */
+  ciColors?: CiState["colors"];
 }
 
 const TextFieldsPanel: React.FC<Props> = ({ textFields, composition, onChangeText, onPatchLayer, onReorderLayer }) => {
