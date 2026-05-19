@@ -132,7 +132,7 @@ export async function generateBannersFromInputs(
     datenblattFile.type === "application/pdf" ||
     datenblattFile.name.toLowerCase().endsWith(".pdf");
 
-  const analyzePromise: Promise<BannerTextFields> = (async () => {
+  const analyzePromise: Promise<{ textFields: BannerTextFields; brand: string }> = (async () => {
     try {
       let extracted: ExtractedBannerFields;
       if (isPdf) {
@@ -147,10 +147,13 @@ export async function generateBannersFromInputs(
         });
         extracted = await extractBannerDataFromImage(dataUrl);
       }
-      return mergeFields({ ...DEFAULT_TEXT_FIELDS }, extracted);
+      return {
+        textFields: mergeFields({ ...DEFAULT_TEXT_FIELDS }, extracted),
+        brand: String(extracted.brand ?? "").trim(),
+      };
     } catch (e) {
       console.warn("Datenblatt-Analyse fehlgeschlagen, Defaults werden verwendet", e);
-      return { ...DEFAULT_TEXT_FIELDS };
+      return { textFields: { ...DEFAULT_TEXT_FIELDS }, brand: "" };
     }
   })();
 
@@ -171,7 +174,9 @@ export async function generateBannersFromInputs(
     }
   })();
 
-  const [textFields, masterImageDataUrl] = await Promise.all([analyzePromise, masterPromise]);
+  const [analyze, masterImageDataUrl] = await Promise.all([analyzePromise, masterPromise]);
+  const textFields = analyze.textFields;
+  const detectedBrand = analyze.brand;
   tick("analyze", "Datenblatt ausgewertet");
   tick("master", masterImageDataUrl ? "Masterbild erstellt" : "Masterbild übersprungen");
 
