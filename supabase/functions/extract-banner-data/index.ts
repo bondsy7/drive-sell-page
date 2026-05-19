@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
         fallback: true,
         error: lastStatus >= 500 || lastStatus === 429 ? "GEMINI_UNAVAILABLE" : `gemini_${lastStatus}`,
         fields: {
-          headline: "", subline: "", price: "", cta: "", smallInfo: "", legalText: "",
+          brand: "", headline: "", subline: "", price: "", cta: "", smallInfo: "", legalText: "",
         },
       });
     }
@@ -116,6 +116,7 @@ Deno.serve(async (req) => {
     }
 
     const out = {
+      brand: String(parsed.brand ?? "").slice(0, 40).trim(),
       headline: String(parsed.headline ?? "").slice(0, 60),
       subline: String(parsed.subline ?? "").slice(0, 80),
       price: String(parsed.price ?? "").slice(0, 40),
