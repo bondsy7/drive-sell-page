@@ -267,15 +267,6 @@ const QuickEditView: React.FC<Props> = ({
 
         {/* Inspector — Texte, Ebenen (mit Form/Bild/Logo-Editor) */}
         <div className="space-y-3">
-          <TextFieldsPanel
-            textFields={state.textFields}
-            composition={activeComposition}
-            onChangeText={actions.setText}
-            onPatchLayer={actions.patchLayer}
-            onReorderLayer={actions.reorderLayer}
-            ciContext={ciContext}
-            ciColors={state.ci?.colors}
-          />
           <QuickInspector
             composition={activeComposition}
             format={activeFormat}
@@ -288,6 +279,15 @@ const QuickEditView: React.FC<Props> = ({
             onSelectLayer={actions.selectLayer}
             onReorderLayer={actions.reorderLayer}
             onResetLayout={actions.resetLayout}
+          />
+          <TextFieldsPanel
+            textFields={state.textFields}
+            composition={activeComposition}
+            onChangeText={actions.setText}
+            onPatchLayer={actions.patchLayer}
+            onReorderLayer={actions.reorderLayer}
+            ciContext={ciContext}
+            ciColors={state.ci?.colors}
           />
         </div>
       </div>
