@@ -38,6 +38,8 @@ interface Props {
   onSelectLayer: (id?: string) => void;
   onReorderLayer?: (id: string, direction: "forward" | "backward") => void;
   onMoveLayerToIndex?: (id: string, toIndex: number) => void;
+  /** Zusätzliche CI/Template-Farben als Swatches in Text/Shape-Inspector. */
+  ciColors?: CiState["colors"];
 }
 
 const newId = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
