@@ -88,6 +88,7 @@ function VisualEditor({
 
   const wrapRef = useRef<HTMLDivElement>(null);
   const [containerW, setContainerW] = useState(720);
+  const [logoRatio, setLogoRatio] = useState<number | null>(null);
   const dragRef = useRef<DragMode>(null);
 
   useEffect(() => {
@@ -98,6 +99,19 @@ function VisualEditor({
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
+
+  // Load brand logo to derive natural aspect ratio (matches frontend rendering
+  // where logo height is computed from image aspect, not stored layer height).
+  useEffect(() => {
+    if (!brandLogoUrl) { setLogoRatio(null); return; }
+    const img = new window.Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      if (img.naturalWidth > 0) setLogoRatio(img.naturalHeight / img.naturalWidth);
+    };
+    img.onerror = () => setLogoRatio(null);
+    img.src = brandLogoUrl;
+  }, [brandLogoUrl]);
 
   const { width, height } = spec.format;
   const maxH = 700;
