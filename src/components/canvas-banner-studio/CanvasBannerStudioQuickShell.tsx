@@ -85,6 +85,7 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
   const [results, setResults] = useState<QuickBannerResult[]>([]);
   const [errors, setErrors] = useState<{ formatId: string; error: string }[]>([]);
   const [dealerProfile, setDealerProfile] = useState<DealerProfile | null>(null);
+  const [editMode, setEditMode] = useState(false);
 
   // Analyse-States (laufen direkt nach PDF/Bild-Upload)
   const [analyzing, setAnalyzing] = useState(false);
