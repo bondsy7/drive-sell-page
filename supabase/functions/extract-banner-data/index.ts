@@ -15,6 +15,7 @@ Antworte AUSSCHLIESSLICH mit gültigem JSON, ohne Markdown.
 
 Schema:
 {
+  "brand": "Fahrzeug-Marke (z.B. 'Volkswagen', 'Renault', 'BMW') — nur die Marke, kein Modell. Falls nicht erkennbar, leer.",
   "headline": "Marke + Modell, kurz und werblich (max. 40 Zeichen)",
   "subline": "Knackiger Untertitel, z.B. 'Jetzt sichern' oder Highlight-Ausstattung (max. 60 Zeichen)",
   "price": "Z.B. 'ab 249 € mtl.' oder '29.990 € Barpreis' (max. 30 Zeichen)",
@@ -23,7 +24,7 @@ Schema:
   "legalText": "Pflichtangaben-Kurzform mit Verbrauch und CO₂ falls erkennbar (1 Zeile)"
 }
 
-Fehlende Felder als leeren String "" ausgeben. Kein zusätzlicher Text.`;
+Wichtig: Die Marke ist Pflichtfeld — gib sie immer aus, wenn sie irgendwie erkennbar ist (Logo, Schriftzug, Headline, Tabellenzeile, Modell-Code). Verwende den offiziellen Markennamen (z.B. "Volkswagen" statt "VW", "Mercedes-Benz" statt "Mercedes"). Fehlende Felder als leeren String "" ausgeben. Kein zusätzlicher Text.`;
 
 Deno.serve(async (req) => {
   const pre = handleCors(req);
