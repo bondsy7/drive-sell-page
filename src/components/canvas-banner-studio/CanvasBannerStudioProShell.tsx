@@ -69,7 +69,7 @@ const CanvasBannerStudioShell: React.FC<ProShellProps> = ({ onSwitchToWizard }) 
   const hydratedRef = useRef(false);
   useEffect(() => {
     if (hydratedRef.current) return;
-    const payload = readAndClearQuickHandoff();
+    const payload = peekQuickHandoff();
     if (!payload) return;
     hydratedRef.current = true;
     actions.hydrate({
@@ -80,6 +80,7 @@ const CanvasBannerStudioShell: React.FC<ProShellProps> = ({ onSwitchToWizard }) 
       showSafeArea: false,
       ci: payload.ci as any,
     });
+    markQuickHandoffConsumed(payload.handoffId);
     // Direkt in Step 3 (Texte) springen, dort sieht der User sofort, was anzupassen ist.
     setStep(3);
     toast.info("Banner aus Quick-Modus geladen — Texte und Layout anpassen, dann exportieren.");
