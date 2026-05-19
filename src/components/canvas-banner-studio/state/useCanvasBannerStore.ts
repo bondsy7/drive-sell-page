@@ -91,6 +91,42 @@ function ensureComposition(state: StudioState, formatId: string): BannerComposit
   return state.compositions[formatId] ?? buildDefaultComposition(formatId);
 }
 
+/** Stellt einen Logo-Layer für einen Slot sicher: erstellt ihn bei Bedarf, setzt visible nach url. */
+function upsertLogoLayer(
+  c: BannerComposition,
+  slot: LogoSlot,
+  url: string | undefined,
+  formatId: string,
+): BannerLayer[] {
+  const layerId = SLOT_LAYER_ID[slot];
+  const visible = !!url;
+  const existing = c.layers.find((l) => l.id === layerId);
+  if (existing) {
+    return c.layers.map((l) => (l.id === layerId ? { ...l, visible } : l));
+  }
+  if (!url) return c.layers;
+  // Neuen Logo-Layer erzeugen — Position relativ zum existierenden "logo" oder Default.
+  const f = getFormatById(formatId);
+  const baseW = Math.round(f.width * 0.18);
+  const baseH = Math.round(baseW * 0.4);
+  const primary = c.layers.find((l) => l.id === "logo");
+  const idx = SLOT_ORDER.indexOf(slot); // 1 = dealer, 2 = custom
+  const offset = idx * (baseH + 12);
+  const x = primary?.x ?? Math.round(f.width * 0.05);
+  const y = (primary?.y ?? Math.round(f.height * 0.05)) + offset;
+  const newLayer: BannerLayer = {
+    id: layerId,
+    type: "logo",
+    x,
+    y,
+    width: baseW,
+    height: baseH,
+    visible: true,
+    draggable: true,
+  };
+  return [...c.layers, newLayer];
+}
+
 function presentReducer(state: StudioState, action: Action): StudioState {
   switch (action.type) {
     case "set-active-format": {
