@@ -436,6 +436,10 @@ export function useCanvasBannerStore() {
   const [meta, dispatch] = useReducer(metaReducer, initialMeta);
   const state = meta.present;
 
+  // Latest-state ref for async actions (DB template loading).
+  const stateRef = useRef(state);
+  useEffect(() => { stateRef.current = state; }, [state]);
+
   const activeComposition = useMemo(
     () => state.compositions[state.activeFormatId] ?? buildDefaultComposition(state.activeFormatId),
     [state.compositions, state.activeFormatId],
