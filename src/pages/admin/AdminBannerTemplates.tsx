@@ -31,6 +31,9 @@ import {
   Code2,
   MousePointer2,
   Copy as CopyIcon,
+  GripVertical,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 
 type Row = {
@@ -215,7 +218,7 @@ function VisualEditor({
           const bg = isShape
             ? l.backgroundColor || "#3b82f6"
             : isLogo
-              ? (brandLogoUrl ? "transparent" : "rgba(255,255,255,0.85)")
+              ? (l.backgroundColor || (brandLogoUrl ? "transparent" : "rgba(255,255,255,0.85)"))
               : isImage
                 ? "rgba(0,0,0,0.15)"
                 : "transparent";
@@ -235,7 +238,7 @@ function VisualEditor({
                   : "1px dashed rgba(255,255,255,0.4)",
                 outlineOffset: 0,
                 backgroundColor: bg,
-                opacity: isShape || isImage ? (l.opacity ?? 1) : 1,
+                opacity: isShape || isImage || isLogo ? (l.opacity ?? 1) : 1,
                 borderRadius: l.borderRadius ?? 0,
                 backgroundImage: isImage && l.imageUrl
                   ? `url("${l.imageUrl}")`
@@ -522,6 +525,54 @@ function PropertyPanel({
           </div>
         </>
       )}
+
+      {layer.type === "logo" && (
+        <>
+          <div>
+            <Label className="text-xs">Hintergrund-Farbe (optional, hinter Logo)</Label>
+            <div className="flex gap-2">
+              <Input
+                type="color"
+                className="h-8 w-14 p-1"
+                value={layer.backgroundColor || "#ffffff"}
+                onChange={(e) => onChange({ backgroundColor: e.target.value })}
+              />
+              <Input
+                className="h-8 flex-1"
+                value={layer.backgroundColor ?? ""}
+                placeholder="leer = transparent"
+                onChange={(e) => onChange({ backgroundColor: e.target.value || undefined })}
+              />
+              <Button size="sm" variant="ghost" onClick={() => onChange({ backgroundColor: undefined })} title="Hintergrund entfernen">
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          </div>
+          <div>
+            <Label className="text-xs">Deckkraft ({Math.round((layer.opacity ?? 1) * 100)}%)</Label>
+            <Input
+              type="range"
+              min={0}
+              max={100}
+              value={Math.round((layer.opacity ?? 1) * 100)}
+              onChange={(e) => onChange({ opacity: Number(e.target.value) / 100 })}
+            />
+          </div>
+          <div>
+            <Label className="text-xs">Eckenradius (für Hintergrund)</Label>
+            <Input
+              className="h-8"
+              type="number"
+              value={layer.borderRadius ?? 0}
+              onChange={(e) => onChange({ borderRadius: num(e.target.value) ?? 0 })}
+            />
+          </div>
+          <p className="text-[10px] text-muted-foreground">
+            Tipp: Das eigentliche Markenlogo wird automatisch je nach gewählter Marke geladen. Hier kannst du nur die Box drumherum stylen.
+          </p>
+        </>
+      )}
+
     </div>
   );
 }
@@ -614,6 +665,35 @@ export default function AdminBannerTemplates() {
       return { ...d, layers: [...d.layers, { ...l, id: newId, x: l.x + 20, y: l.y + 20 }] };
     });
   };
+
+  // Reorder by absolute index (drag & drop). Higher index = rendered on top.
+  const moveLayerToIndex = (id: string, toIndex: number) => {
+    setDraft((d) => {
+      if (!d) return d;
+      const from = d.layers.findIndex((l) => l.id === id);
+      if (from < 0) return d;
+      const next = d.layers.slice();
+      const [item] = next.splice(from, 1);
+      const clamped = Math.max(0, Math.min(next.length, toIndex));
+      next.splice(clamped, 0, item);
+      return { ...d, layers: next };
+    });
+  };
+
+  // Step up/down (UI inverse: "up" in list = on top = end of array).
+  const stepLayer = (id: string, dir: "up" | "down") => {
+    setDraft((d) => {
+      if (!d) return d;
+      const i = d.layers.findIndex((l) => l.id === id);
+      if (i < 0) return d;
+      const j = dir === "up" ? i + 1 : i - 1;
+      if (j < 0 || j >= d.layers.length) return d;
+      const next = d.layers.slice();
+      [next[i], next[j]] = [next[j], next[i]];
+      return { ...d, layers: next };
+    });
+  };
+
 
   const addLayer = (kind: "text" | "shape" | "image") => {
     setDraft((d) => {
@@ -822,6 +902,7 @@ export default function AdminBannerTemplates() {
               <div className="border border-border rounded-lg p-3 bg-card">
                 <div className="flex items-center justify-between mb-2">
                   <div className="font-semibold text-sm">Ebenen</div>
+                  <div className="text-[10px] text-muted-foreground">Oben = Hintergrund · Unten = Vordergrund</div>
                 </div>
                 <div className="flex gap-1 mb-2">
                   <Button size="sm" variant="outline" className="flex-1 h-7 text-xs" onClick={() => addLayer("text")}>+ Text</Button>
@@ -829,14 +910,29 @@ export default function AdminBannerTemplates() {
                   <Button size="sm" variant="outline" className="flex-1 h-7 text-xs" onClick={() => addLayer("image")}>+ Bild</Button>
                 </div>
                 <div className="space-y-1 max-h-64 overflow-auto">
-                  {draft.layers.map((l) => (
-                    <button
+                  {draft.layers.map((l, idx) => (
+                    <div
                       key={l.id}
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData("text/plain", l.id);
+                        e.dataTransfer.effectAllowed = "move";
+                      }}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = "move";
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const id = e.dataTransfer.getData("text/plain");
+                        if (id && id !== l.id) moveLayerToIndex(id, idx);
+                      }}
                       onClick={() => setSelectedId(l.id)}
-                      className={`w-full text-left px-2 py-1 rounded text-xs flex items-center gap-2 ${
+                      className={`group w-full text-left px-2 py-1 rounded text-xs flex items-center gap-1.5 cursor-pointer ${
                         selectedId === l.id ? "bg-primary/15 text-primary" : "hover:bg-muted"
                       }`}
                     >
+                      <GripVertical className="w-3 h-3 text-muted-foreground cursor-grab active:cursor-grabbing" />
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -849,10 +945,25 @@ export default function AdminBannerTemplates() {
                       </button>
                       <span className="flex-1 truncate">{l.id}</span>
                       <span className="text-muted-foreground">{l.type}</span>
-                    </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); stepLayer(l.id, "down"); }}
+                        className="opacity-0 group-hover:opacity-60 hover:!opacity-100 p-0.5"
+                        title="Eine Ebene nach hinten"
+                      >
+                        <ArrowUp className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); stepLayer(l.id, "up"); }}
+                        className="opacity-0 group-hover:opacity-60 hover:!opacity-100 p-0.5"
+                        title="Eine Ebene nach vorne"
+                      >
+                        <ArrowDown className="w-3 h-3" />
+                      </button>
+                    </div>
                   ))}
                 </div>
               </div>
+
 
               <div className="border border-border rounded-lg p-3 bg-card">
                 <div className="font-semibold text-sm mb-2">
