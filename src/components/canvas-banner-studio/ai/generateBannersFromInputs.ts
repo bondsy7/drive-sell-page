@@ -10,6 +10,9 @@
 
 import type { BannerComposition, BannerFormat, BannerTextFields, CiState } from "../state/types";
 import { buildDefaultComposition, DEFAULT_TEXT_FIELDS } from "../data/defaultComposition";
+import { loadTemplate } from "../data/templateRegistry";
+import { specToBannerLayers } from "../data/templateToLayers";
+import { detectBrandKey } from "../ci/brandPresets";
 import { renderCompositionToDataURL } from "../export/renderComposition";
 import {
   extractBannerDataFromImage,
@@ -231,14 +234,35 @@ export async function generateBannersFromInputs(
     });
   });
 
-  // 3) Compositions bauen + rendern
+  // 3) Compositions bauen + rendern (brand-spezifische DB-Templates bevorzugen)
+  const brandKey =
+    (ci?.brandKey && ci.brandKey !== "custom" ? ci.brandKey : undefined) ||
+    detectBrandKey(detectedBrand) ||
+    detectBrandKey(ciContext?.marke ?? "");
+
   const results: QuickBannerResult[] = [];
   for (const format of formats) {
     try {
       const rf = reframeByFormat.get(format.id);
       const backgroundDataUrl = rf?.url ?? reframeSource;
       const ciOverrides = ci?.layerOverrides;
-      let composition = buildDefaultComposition(format.id, "classic-offer", ciOverrides ?? null);
+
+      // DB-Template laden (User → Brand → Global → Bundle-Fallback)
+      let composition: BannerComposition;
+      try {
+        const loaded = await loadTemplate(format.id, "classic-offer", brandKey ?? null);
+        composition = {
+          formatId: format.id,
+          backgroundFit: "cover",
+          overlayDirection: "bottom",
+          overlayStrength: 50,
+          selectedTemplateId: "classic-offer",
+          layers: specToBannerLayers(loaded.spec, (ciOverrides ?? null) as never),
+        };
+      } catch {
+        composition = buildDefaultComposition(format.id, "classic-offer", ciOverrides ?? null);
+      }
+
       composition = {
         ...composition,
         backgroundImageUrl: backgroundDataUrl,
