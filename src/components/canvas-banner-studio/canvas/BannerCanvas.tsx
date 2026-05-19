@@ -126,6 +126,53 @@ const CustomImage: React.FC<CustomImageProps> = ({ layer, formatScale, nodeRef, 
   );
 };
 
+type LogoImageProps = {
+  layer: import("../state/types").BannerLayer;
+  fallbackImg: HTMLImageElement | null;
+  format: BannerFormat;
+  formatScale: number;
+  nodeRef: (n: Konva.Node | null) => void;
+  onSelect: () => void;
+  onDragMove: (e: Konva.KonvaEventObject<DragEvent>) => void;
+  onDragEnd: (e: Konva.KonvaEventObject<DragEvent>) => void;
+  onResize: (patch: { width?: number; height?: number }) => void;
+};
+
+const LogoImage: React.FC<LogoImageProps> = ({
+  layer, fallbackImg, format, formatScale, nodeRef, onSelect, onDragMove, onDragEnd, onResize,
+}) => {
+  const overrideImg = useImage(layer.imageUrl);
+  const img = overrideImg ?? fallbackImg;
+  if (!img) return null;
+  const baseW = layer.width ?? format.width * 0.18;
+  const w = baseW * formatScale;
+  const ratio = img.naturalHeight / img.naturalWidth || 0.4;
+  const h = w * ratio;
+  return (
+    <KImage
+      ref={nodeRef as never}
+      image={img}
+      x={layer.x}
+      y={layer.y}
+      width={w}
+      height={h}
+      opacity={layer.opacity ?? 1}
+      draggable={layer.draggable}
+      onClick={onSelect}
+      onTap={onSelect}
+      onDragMove={onDragMove}
+      onDragEnd={onDragEnd}
+      onTransformEnd={(e) => {
+        const node = e.target as Konva.Image;
+        const sx = node.scaleX();
+        const newWBase = Math.max(20, baseW * sx);
+        node.scaleX(1); node.scaleY(1);
+        onResize({ width: Math.round(newWBase) });
+      }}
+    />
+  );
+};
+
 const BannerCanvas: React.FC<BannerCanvasProps> = ({
   format, composition, textFields, showSafeArea, selectedLayerId,
   resolveColor, ci, ciContext, onSelectLayer, onLayerDrag, onLayerResize, stageRef, onSelectedLayerScreenChange,
