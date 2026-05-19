@@ -449,7 +449,7 @@ const QuickInspector: React.FC<Props> = ({
                 <span className="tabular-nums w-9 text-right">{Math.round((selected!.opacity ?? 1) * 100)}%</span>
               </label>
               <div>
-                <Label className="text-xs">SVG einfärben</Label>
+                <Label className="text-xs">Logo einfärben</Label>
                 <div className="flex flex-wrap gap-1.5 mt-1 items-center">
                   {ciSwatches.map((c) => (
                     <button
