@@ -12,6 +12,9 @@ import { BANNER_FORMATS, getFormatById } from "../data/formats";
 import { buildDefaultComposition, DEFAULT_TEXT_FIELDS } from "../data/defaultComposition";
 import { getLayoutTemplate } from "../data/layoutTemplates";
 import { getBrandPreset } from "../ci/brandPresets";
+import { loadTemplate } from "../data/templateRegistry";
+import { specToBannerLayers } from "../data/templateToLayers";
+import type { TemplateSpec } from "../data/templateSchema";
 
 type LogoSlot = "manufacturer" | "dealer" | "custom";
 
@@ -23,6 +26,7 @@ type Action =
   | { type: "set-bg-fit"; formatId: string; fit: ImageFitMode }
   | { type: "set-overlay"; formatId: string; direction: OverlayDirection; strength: number }
   | { type: "set-template"; formatId: string; templateId: string }
+  | { type: "apply-template-spec"; formatId: string; templateId: string; spec: TemplateSpec }
   | { type: "set-logo"; formatId: string; url?: string }
   | { type: "set-logo-slot"; formatId: string; slot: LogoSlot; url?: string }
   | { type: "clear-all-logos"; formatId: string }
@@ -190,6 +194,20 @@ function presentReducer(state: StudioState, action: Action): StudioState {
         compositions: {
           ...state.compositions,
           [action.formatId]: { ...c, selectedTemplateId: action.templateId, layers: merged },
+        },
+      };
+    }
+    case "apply-template-spec": {
+      // Übernimmt eine vollständige TemplateSpec (z. B. aus der DB) als neue Layer-Liste.
+      // Im Gegensatz zu "set-template" werden die Layer 1:1 aus der Spec gerendert,
+      // damit gespeicherte CI-/Marken-Varianten exakt so erscheinen wie im Admin gesetzt.
+      const c = ensureComposition(state, action.formatId);
+      const newLayers = specToBannerLayers(action.spec);
+      return {
+        ...state,
+        compositions: {
+          ...state.compositions,
+          [action.formatId]: { ...c, selectedTemplateId: action.templateId, layers: newLayers },
         },
       };
     }
@@ -379,6 +397,7 @@ const NON_UNDOABLE = new Set<Action["type"]>([
   "set-banner-project-id",
   "set-vehicle",
   "hydrate",
+  "apply-template-spec",
   "undo",
   "redo",
 ]);
@@ -418,6 +437,10 @@ export function useCanvasBannerStore() {
   const [meta, dispatch] = useReducer(metaReducer, initialMeta);
   const state = meta.present;
 
+  // Latest-state ref for async actions (DB template loading).
+  const stateRef = useRef(state);
+  useEffect(() => { stateRef.current = state; }, [state]);
+
   const activeComposition = useMemo(
     () => state.compositions[state.activeFormatId] ?? buildDefaultComposition(state.activeFormatId),
     [state.compositions, state.activeFormatId],
@@ -436,8 +459,18 @@ export function useCanvasBannerStore() {
         dispatch({ type: "set-bg-fit", formatId, fit }),
       setOverlay: (direction: OverlayDirection, strength: number, formatId = state.activeFormatId) =>
         dispatch({ type: "set-overlay", formatId, direction, strength }),
-      setTemplate: (templateId: string, formatId = state.activeFormatId) =>
-        dispatch({ type: "set-template", formatId, templateId }),
+      setTemplate: (templateId: string, formatId = stateRef.current.activeFormatId) => {
+        // Sofortiges Bundle-Layout für direkte Reaktion …
+        dispatch({ type: "set-template", formatId, templateId });
+        // … parallel die DB-Variante (markenspezifisch wenn vorhanden) nachladen.
+        const brandKey = stateRef.current.ci?.brandKey;
+        loadTemplate(formatId, templateId, brandKey)
+          .then((loaded) => {
+            if (loaded.source === "bundle") return; // nichts Neues
+            dispatch({ type: "apply-template-spec", formatId, templateId, spec: loaded.spec });
+          })
+          .catch(() => { /* offline / RLS — bundle bleibt */ });
+      },
       setLogo: (
         url?: string,
         scope?: string | string[] | "all" | "current",
@@ -500,7 +533,24 @@ export function useCanvasBannerStore() {
       setProjectTitle: (title: string) =>
         dispatch({ type: "set-project-title", title }),
       setCi: (patch: Partial<CiState>) => dispatch({ type: "set-ci", patch }),
-      applyBrandPreset: (brandKey: string) => dispatch({ type: "apply-brand-preset", brandKey }),
+      applyBrandPreset: (brandKey: string) => {
+        dispatch({ type: "apply-brand-preset", brandKey });
+        // Markenwechsel: für jedes selektierte Format die DB-Variante neu laden,
+        // damit gespeicherte Marken-Templates (z. B. Volkswagen) sofort greifen.
+        const s = stateRef.current;
+        const fmtIds = s.selectedFormatIds.length ? s.selectedFormatIds : [s.activeFormatId];
+        fmtIds.forEach((fid) => {
+          const comp = s.compositions[fid];
+          const tplId = comp?.selectedTemplateId;
+          if (!tplId) return;
+          loadTemplate(fid, tplId, brandKey)
+            .then((loaded) => {
+              if (loaded.source === "bundle") return;
+              dispatch({ type: "apply-template-spec", formatId: fid, templateId: tplId, spec: loaded.spec });
+            })
+            .catch(() => { /* ignore */ });
+        });
+      },
       hydrate: (s: StudioState) => dispatch({ type: "hydrate", state: s }),
       undo: () => dispatch({ type: "undo" }),
       redo: () => dispatch({ type: "redo" }),
