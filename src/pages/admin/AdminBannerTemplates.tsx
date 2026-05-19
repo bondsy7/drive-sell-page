@@ -808,9 +808,11 @@ export default function AdminBannerTemplates() {
             <VisualEditor
               spec={draft}
               selectedId={selectedId}
+              brandLogoUrl={brandLogoUrl}
               onSelect={setSelectedId}
               onUpdate={updateLayer}
             />
+
           )}
         </div>
 
