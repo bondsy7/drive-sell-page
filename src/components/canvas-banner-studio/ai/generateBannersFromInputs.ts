@@ -113,10 +113,15 @@ export async function generateBannersFromInputs(
     manufacturerLogoUrl,
     primaryColorHex,
     secondaryColorHex,
+    preExtractedTextFields,
+    preDetectedBrand,
+    masterPromptOverride,
   } = input;
 
-  // Schritte: 1 analyse + 1 master + N reframe + N render
-  const totalSteps = 2 + formats.length * 2;
+  const skipAnalyze = !!preExtractedTextFields;
+
+  // Schritte: (1 analyse, falls nicht vorab) + 1 master + N reframe + N render
+  const totalSteps = (skipAnalyze ? 1 : 2) + formats.length * 2;
   let stepCounter = 0;
   const tick = (stage: QuickGenerateProgress["stage"], current?: string) => {
     stepCounter++;
@@ -127,10 +132,10 @@ export async function generateBannersFromInputs(
   const secondary = sanitizeHex(secondaryColorHex, "#e94f6b");
 
   onProgress?.({
-    stage: "analyze",
+    stage: skipAnalyze ? "master" : "analyze",
     done: 0,
     total: totalSteps,
-    current: "Datenblatt & Masterbild werden parallel erstellt…",
+    current: skipAnalyze ? "Masterbild wird erstellt…" : "Datenblatt & Masterbild werden parallel erstellt…",
   });
 
   // 1) Datenblatt-Analyse + Masterbild PARALLEL
