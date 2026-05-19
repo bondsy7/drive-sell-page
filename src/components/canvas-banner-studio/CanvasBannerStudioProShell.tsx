@@ -637,6 +637,7 @@ const CanvasBannerStudioShell: React.FC<ProShellProps> = ({ onSwitchToQuick }) =
                   onRemoveLayer={actions.removeLayer}
                   onSelectLayer={actions.selectLayer}
                   onReorderLayer={actions.reorderLayer}
+                  onMoveLayerToIndex={actions.moveLayerToIndex}
                 />
               </section>
             )}
