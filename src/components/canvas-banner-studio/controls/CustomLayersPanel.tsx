@@ -3,12 +3,23 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Eye, EyeOff, Trash2, Type, Square, ImageIcon, Plus, ArrowUp, ArrowDown, GripVertical } from "lucide-react";
+import { Eye, EyeOff, Trash2, Type, Square, ImageIcon, ArrowUp, ArrowDown, GripVertical } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { BannerComposition, BannerFormat, BannerLayer, TextAlign } from "../state/types";
 
 const STANDARD_IDS = new Set(["headline", "subline", "price", "cta", "smallInfo", "legal", "logo", "background", "overlay"]);
+
+const TYPE_LABELS: Record<BannerLayer["type"], string> = {
+  image: "image",
+  overlay: "overlay",
+  text: "text",
+  legal: "legal",
+  logo: "logo",
+  shape: "shape",
+};
+
+const isCustomLayer = (layer: BannerLayer) => !STANDARD_IDS.has(layer.id);
 
 const COLOR_TOKENS: { token: string; label: string }[] = [
   { token: "background", label: "Hell" },
@@ -45,23 +56,20 @@ const CustomLayersPanel: React.FC<Props> = ({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
-  const customLayers = composition.layers.filter((l) => !STANDARD_IDS.has(l.id));
+  const selectedLayer = composition.layers.find((l) => l.id === selectedLayerId);
+  const selectedCustomLayer = selectedLayer && isCustomLayer(selectedLayer) ? selectedLayer : undefined;
 
-  // Render foreground first (top of list = drawn last = front), matching the
-  // admin editor's convention. Composition.layers stores back→front, so we
-  // reverse for display purposes only.
-  const orderedForDisplay = [...customLayers].reverse();
+  // Same convention as the admin editor: array order is back→front, so the top
+  // list entry is the background and the bottom entry is the foreground.
+  const orderedForDisplay = composition.layers;
 
   const handleDrop = (targetId: string) => {
     if (!dragId || !onMoveLayerToIndex || dragId === targetId) {
       setDragId(null); setDragOverId(null); return;
     }
-    // Map display index (reversed) back into the underlying layers array index.
     const targetDisplayIdx = orderedForDisplay.findIndex((l) => l.id === targetId);
     if (targetDisplayIdx < 0) { setDragId(null); setDragOverId(null); return; }
-    const targetLayer = orderedForDisplay[targetDisplayIdx];
-    const newIdx = composition.layers.findIndex((l) => l.id === targetLayer.id);
-    onMoveLayerToIndex(dragId, newIdx);
+    onMoveLayerToIndex(dragId, targetDisplayIdx);
     setDragId(null); setDragOverId(null);
   };
 
