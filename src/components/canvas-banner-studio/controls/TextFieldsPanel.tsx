@@ -6,6 +6,8 @@ import type { BannerComposition, BannerLayer, BannerTextFieldKey, BannerTextFiel
 import { AlignCenter, AlignLeft, AlignRight, Bold, Eye, EyeOff, ArrowUp, ArrowDown } from "lucide-react";
 import { SHORTCODES } from "../ci/shortcodes";
 import type { CiContext } from "../ci/profileSources";
+import { DISPLAY_FONTS, BODY_FONTS, findFontPreset } from "../ci/fontCatalog";
+import { ensureFontLoaded } from "../ci/fontLoader";
 
 const FIELDS: { key: BannerTextFieldKey; label: string; placeholder: string; layerId: string; multiline?: boolean }[] = [
   { key: "headline", label: "Headline", placeholder: "DER NEUE VW GOLF", layerId: "headline" },
