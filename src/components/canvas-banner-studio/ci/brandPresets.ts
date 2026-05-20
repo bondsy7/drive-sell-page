@@ -88,8 +88,8 @@ export const BRAND_PRESETS: BrandCiPreset[] = [
     key: "opel",
     label: "Opel",
     logoKey: "opel",
-    fonts: { display: "Inter", body: "Inter" },
-    googleFonts: ["Inter:wght@400;500;700"],
+    fonts: { display: "Opel Sans Condensed", body: "Opel Sans" },
+    googleFonts: [],
     colors: { primary: "#f7ff14", secondary: "#000000", text: "#000000", bg: "#1a1a1a" },
   },
   {
