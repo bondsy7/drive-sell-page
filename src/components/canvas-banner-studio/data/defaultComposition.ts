@@ -21,8 +21,8 @@ export const buildDefaultComposition = (
   return {
     formatId,
     backgroundFit: "cover",
-    overlayDirection: "bottom",
-    overlayStrength: 50,
+    overlayDirection: "none",
+    overlayStrength: 0,
     selectedTemplateId: templateId,
     layers: specToBannerLayers(spec, ciLayerOverrides as never),
   };
