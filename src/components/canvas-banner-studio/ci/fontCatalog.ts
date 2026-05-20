@@ -10,6 +10,7 @@ export type FontPreset = {
 
 export const DISPLAY_FONTS: FontPreset[] = [
   { family: "Space Grotesk", googleSpec: "Space+Grotesk:wght@500;700", category: "display", note: "AUTO3 Default" },
+  { family: "VW Headline", googleSpec: "local:VW+Headline:wght@400;600;900", category: "display", note: "Volkswagen CI (lokal)" },
   { family: "Inter", googleSpec: "Inter:wght@600;800", category: "display" },
   { family: "Manrope", googleSpec: "Manrope:wght@600;800", category: "display" },
   { family: "Montserrat", googleSpec: "Montserrat:wght@600;800", category: "display" },
