@@ -45,6 +45,7 @@ const specToLayer = (spec: LayerSpec, parent: TemplateSpec): BannerLayer => {
     height: spec.height,
     fontSize: spec.fontSize,
     fontWeight: spec.fontWeight,
+    fontFamily: spec.fontFamily,
     color: spec.color,
     align: spec.align,
     visible: spec.visible ?? true,

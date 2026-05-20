@@ -42,6 +42,8 @@ export type BannerLayer = {
   height?: number;
   fontSize?: number;
   fontWeight?: number;
+  /** Optionale Schriftfamilie (überschreibt CI-Default für diese Ebene). */
+  fontFamily?: string;
   color?: string; // semantic token name e.g. "foreground" | "accent" | "background"
   align?: TextAlign;
   visible: boolean;

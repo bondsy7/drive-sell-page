@@ -6,6 +6,8 @@ import { getBundledSpec } from "@/components/canvas-banner-studio/data/bundledTe
 import { invalidateTemplateCache } from "@/components/canvas-banner-studio/data/templateRegistry";
 import type { TemplateSpec, LayerSpec } from "@/components/canvas-banner-studio/data/templateSchema";
 import { BRAND_PRESETS } from "@/components/canvas-banner-studio/ci/brandPresets";
+import { DISPLAY_FONTS, BODY_FONTS } from "@/components/canvas-banner-studio/ci/fontCatalog";
+import { ensureFontLoaded } from "@/components/canvas-banner-studio/ci/fontLoader";
 import { recolorSvg, detectIsSvg } from "@/components/canvas-banner-studio/ci/svgRecolor";
 import { useVehicleMakes } from "@/hooks/useVehicleMakes";
 import { Button } from "@/components/ui/button";
@@ -307,6 +309,7 @@ function VisualEditor({
                   style={{
                     fontSize: (l.fontSize ?? 16) * scale,
                     fontWeight: l.fontWeight ?? 400,
+                    fontFamily: l.fontFamily ? `"${l.fontFamily}", sans-serif` : undefined,
                     textAlign: l.align ?? "left",
                     justifyContent:
                       l.align === "center"
@@ -484,6 +487,41 @@ function PropertyPanel({
                 <SelectItem value="right">rechts</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div>
+            <Label className="text-xs">Schriftart</Label>
+            <Select
+              value={layer.fontFamily ?? "__default__"}
+              onValueChange={(v) => {
+                if (v === "__default__") {
+                  onChange({ fontFamily: undefined });
+                  return;
+                }
+                const preset = [...DISPLAY_FONTS, ...BODY_FONTS].find((p) => p.family === v);
+                if (preset) ensureFontLoaded(preset.googleSpec);
+                onChange({ fontFamily: v });
+              }}
+            >
+              <SelectTrigger className="h-8"><SelectValue placeholder="Standard (CI)" /></SelectTrigger>
+              <SelectContent className="max-h-72">
+                <SelectItem value="__default__">Standard (CI)</SelectItem>
+                <div className="px-2 py-1 text-[10px] uppercase text-muted-foreground">Display</div>
+                {DISPLAY_FONTS.map((f) => (
+                  <SelectItem key={`d-${f.family}`} value={f.family} style={{ fontFamily: `"${f.family}", sans-serif` }}>
+                    {f.family}
+                  </SelectItem>
+                ))}
+                <div className="px-2 py-1 text-[10px] uppercase text-muted-foreground">Body</div>
+                {BODY_FONTS.map((f) => (
+                  <SelectItem key={`b-${f.family}`} value={f.family} style={{ fontFamily: `"${f.family}", sans-serif` }}>
+                    {f.family}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-[10px] text-muted-foreground mt-1">
+              Überschreibt die CI-Schriftart nur für diese Ebene.
+            </p>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>

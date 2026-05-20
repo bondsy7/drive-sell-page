@@ -239,7 +239,8 @@ export async function renderCompositionToDataURL(
     const text = resolveShortcodes(raw, ciContext);
     if (!text) continue;
     const fontSize = effectiveFontSize(layer, text, formatScale);
-    const family = (layer.id === "headline" || layer.id === "subline") ? FONT_DISPLAY : FONT_BODY;
+    const baseFamily = (layer.id === "headline" || layer.id === "subline") ? FONT_DISPLAY : FONT_BODY;
+    const family = layer.fontFamily ? `"${layer.fontFamily}", ${DEFAULT_FONT_FAMILY}` : baseFamily;
     drawTextLayer(ctx, layer, text, resolveColor(layer.color, ci), fontSize, family);
   }
 

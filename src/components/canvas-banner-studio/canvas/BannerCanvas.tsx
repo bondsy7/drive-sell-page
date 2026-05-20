@@ -210,6 +210,23 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
 
   useEffect(() => { ensureBrandFonts(ci?.googleFonts); }, [ci?.googleFonts]);
 
+  // Load any per-layer custom fonts on demand.
+  useEffect(() => {
+    const families = Array.from(new Set(
+      composition.layers.map((l) => l.fontFamily).filter((f): f is string => !!f && f.trim() !== "")
+    ));
+    if (!families.length) return;
+    import("../ci/fontCatalog").then(({ DISPLAY_FONTS, BODY_FONTS }) => {
+      for (const fam of families) {
+        const f = fam.toLowerCase();
+        const preset =
+          DISPLAY_FONTS.find((p) => p.family.toLowerCase() === f) ||
+          BODY_FONTS.find((p) => p.family.toLowerCase() === f);
+        if (preset) ensureBrandFonts([preset.googleSpec]);
+      }
+    });
+  }, [composition.layers]);
+
   // Recolor SVG logos when CI logo mode changes (für alle drei Slots).
   useEffect(() => {
     let cancelled = false;
@@ -467,7 +484,9 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
                 const color = resolveColor(l.color);
                 const effFont = effectiveFontSize(l, text, formatScale);
                 const isShrunk = effFont < (l.fontSize ?? 24) * formatScale - 0.5;
-                const layerFont = (l.id === "headline" || l.id === "subline") ? FONT_DISPLAY : FONT_BODY;
+                const layerFont = l.fontFamily
+                  ? `"${l.fontFamily}", ${DEFAULT_FONT_FAMILY}`
+                  : ((l.id === "headline" || l.id === "subline") ? FONT_DISPLAY : FONT_BODY);
                 return (
                   <Group
                     key={l.id}
