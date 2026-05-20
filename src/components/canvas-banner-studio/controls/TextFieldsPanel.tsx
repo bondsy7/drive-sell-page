@@ -186,7 +186,7 @@ const TextFieldsPanel: React.FC<Props> = ({ textFields, composition, onChangeTex
                 onChange={(e) => {
                   const val = e.target.value || undefined;
                   if (val) {
-                    const preset = findFontPreset(val, DISPLAY_FONTS) ?? findFontPreset(val, BODY_FONTS);
+                    const preset = findFontPreset(val, BRAND_FONTS) ?? findFontPreset(val, DISPLAY_FONTS) ?? findFontPreset(val, BODY_FONTS);
                     if (preset) ensureFontLoaded(preset.googleSpec);
                   }
                   onPatchLayer(layer.id, { fontFamily: val });
@@ -194,6 +194,11 @@ const TextFieldsPanel: React.FC<Props> = ({ textFields, composition, onChangeTex
                 className="flex-1 text-xs px-2 py-1 rounded border border-border bg-background"
               >
                 <option value="">Standard (CI)</option>
+                <optgroup label="Hersteller CI">
+                  {BRAND_FONTS.map((p) => (
+                    <option key={`brand-${p.family}`} value={p.family}>{p.family}{p.note ? ` — ${p.note}` : ""}</option>
+                  ))}
+                </optgroup>
                 <optgroup label="Display">
                   {DISPLAY_FONTS.map((p) => (
                     <option key={`d-${p.family}`} value={p.family}>{p.family}{p.note ? ` — ${p.note}` : ""}</option>
