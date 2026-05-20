@@ -210,6 +210,23 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
 
   useEffect(() => { ensureBrandFonts(ci?.googleFonts); }, [ci?.googleFonts]);
 
+  // Load any per-layer custom fonts on demand.
+  useEffect(() => {
+    const families = Array.from(new Set(
+      composition.layers.map((l) => l.fontFamily).filter((f): f is string => !!f && f.trim() !== "")
+    ));
+    if (!families.length) return;
+    import("../ci/fontCatalog").then(({ DISPLAY_FONTS, BODY_FONTS }) => {
+      for (const fam of families) {
+        const f = fam.toLowerCase();
+        const preset =
+          DISPLAY_FONTS.find((p) => p.family.toLowerCase() === f) ||
+          BODY_FONTS.find((p) => p.family.toLowerCase() === f);
+        if (preset) ensureBrandFonts([preset.googleSpec]);
+      }
+    });
+  }, [composition.layers]);
+
   // Recolor SVG logos when CI logo mode changes (für alle drei Slots).
   useEffect(() => {
     let cancelled = false;
