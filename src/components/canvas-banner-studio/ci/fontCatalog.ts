@@ -8,9 +8,14 @@ export type FontPreset = {
   note?: string;
 };
 
+export const BRAND_FONTS: FontPreset[] = [
+  { family: "VW Headline", googleSpec: "local:VW+Headline:wght@400;600;900", category: "display", note: "Volkswagen CI" },
+  { family: "Opel Sans", googleSpec: "local:Opel+Sans:wght@400;700", category: "display", note: "Opel CI" },
+  { family: "Opel Sans Condensed", googleSpec: "local:Opel+Sans+Condensed:wght@400;700;800", category: "display", note: "Opel CI (Condensed)" },
+];
+
 export const DISPLAY_FONTS: FontPreset[] = [
   { family: "Space Grotesk", googleSpec: "Space+Grotesk:wght@500;700", category: "display", note: "AUTO3 Default" },
-  { family: "VW Headline", googleSpec: "local:VW+Headline:wght@400;600;900", category: "display", note: "Volkswagen CI (lokal)" },
   { family: "Inter", googleSpec: "Inter:wght@600;800", category: "display" },
   { family: "Manrope", googleSpec: "Manrope:wght@600;800", category: "display" },
   { family: "Montserrat", googleSpec: "Montserrat:wght@600;800", category: "display" },
