@@ -497,7 +497,7 @@ function PropertyPanel({
                   onChange({ fontFamily: undefined });
                   return;
                 }
-                const preset = [...DISPLAY_FONTS, ...BODY_FONTS].find((p) => p.family === v);
+                const preset = [...BRAND_FONTS, ...DISPLAY_FONTS, ...BODY_FONTS].find((p) => p.family === v);
                 if (preset) ensureFontLoaded(preset.googleSpec);
                 onChange({ fontFamily: v });
               }}
@@ -505,6 +505,12 @@ function PropertyPanel({
               <SelectTrigger className="h-8"><SelectValue placeholder="Standard (CI)" /></SelectTrigger>
               <SelectContent className="max-h-72">
                 <SelectItem value="__default__">Standard (CI)</SelectItem>
+                <div className="px-2 py-1 text-[10px] uppercase text-muted-foreground">Hersteller CI</div>
+                {BRAND_FONTS.map((f) => (
+                  <SelectItem key={`brand-${f.family}`} value={f.family} style={{ fontFamily: `"${f.family}", sans-serif` }}>
+                    {f.family}{f.note ? ` — ${f.note}` : ""}
+                  </SelectItem>
+                ))}
                 <div className="px-2 py-1 text-[10px] uppercase text-muted-foreground">Display</div>
                 {DISPLAY_FONTS.map((f) => (
                   <SelectItem key={`d-${f.family}`} value={f.family} style={{ fontFamily: `"${f.family}", sans-serif` }}>
