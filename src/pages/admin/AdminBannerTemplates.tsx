@@ -309,6 +309,7 @@ function VisualEditor({
                   style={{
                     fontSize: (l.fontSize ?? 16) * scale,
                     fontWeight: l.fontWeight ?? 400,
+                    fontFamily: l.fontFamily ? `"${l.fontFamily}", sans-serif` : undefined,
                     textAlign: l.align ?? "left",
                     justifyContent:
                       l.align === "center"
