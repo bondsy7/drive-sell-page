@@ -30,6 +30,8 @@ export type LayerSpec = {
   anchor?: LayerAnchor;
   fontSize?: number;
   fontWeight?: number;
+  /** Optionale Schriftfamilie (überschreibt CI-Default für diese Ebene). */
+  fontFamily?: string;
   align?: TextAlign;
   color?: string;
   visible?: boolean;
