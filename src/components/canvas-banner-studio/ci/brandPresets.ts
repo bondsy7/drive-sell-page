@@ -176,8 +176,8 @@ export const BRAND_PRESETS: BrandCiPreset[] = [
     key: "cupra",
     label: "CUPRA",
     logoKey: "cupra",
-    fonts: { display: "Oswald", body: "Inter" },
-    googleFonts: ["Oswald:wght@500;700", "Inter:wght@400;600"],
+    fonts: { display: "Cupra", body: "Cupra" },
+    googleFonts: [],
     colors: { primary: "#b08a4a", secondary: "#1a1a1a", text: "#1a1a1a", bg: "#ffffff" },
   },
 ];
