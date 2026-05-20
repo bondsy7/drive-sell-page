@@ -484,7 +484,9 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
                 const color = resolveColor(l.color);
                 const effFont = effectiveFontSize(l, text, formatScale);
                 const isShrunk = effFont < (l.fontSize ?? 24) * formatScale - 0.5;
-                const layerFont = (l.id === "headline" || l.id === "subline") ? FONT_DISPLAY : FONT_BODY;
+                const layerFont = l.fontFamily
+                  ? `"${l.fontFamily}", ${DEFAULT_FONT_FAMILY}`
+                  : ((l.id === "headline" || l.id === "subline") ? FONT_DISPLAY : FONT_BODY);
                 return (
                   <Group
                     key={l.id}
