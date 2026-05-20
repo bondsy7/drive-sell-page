@@ -40,6 +40,9 @@ interface Props {
 }
 
 const TextFieldsPanel: React.FC<Props> = ({ textFields, composition, onChangeText, onPatchLayer, onReorderLayer, ciContext, ciColors }) => {
+  React.useEffect(() => {
+    [...BRAND_FONTS, ...DISPLAY_FONTS, ...BODY_FONTS].forEach((p) => ensureFontLoaded(p.googleSpec));
+  }, []);
   const shortcodes = ciContext
     ? SHORTCODES.filter((s) => {
         const key = s.code.replace(/[{}]/g, "").trim().toLowerCase();
