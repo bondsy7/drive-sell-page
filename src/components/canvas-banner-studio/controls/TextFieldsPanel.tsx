@@ -6,6 +6,8 @@ import type { BannerComposition, BannerLayer, BannerTextFieldKey, BannerTextFiel
 import { AlignCenter, AlignLeft, AlignRight, Bold, Eye, EyeOff, ArrowUp, ArrowDown } from "lucide-react";
 import { SHORTCODES } from "../ci/shortcodes";
 import type { CiContext } from "../ci/profileSources";
+import { DISPLAY_FONTS, BODY_FONTS, findFontPreset } from "../ci/fontCatalog";
+import { ensureFontLoaded } from "../ci/fontLoader";
 
 const FIELDS: { key: BannerTextFieldKey; label: string; placeholder: string; layerId: string; multiline?: boolean }[] = [
   { key: "headline", label: "Headline", placeholder: "DER NEUE VW GOLF", layerId: "headline" },
@@ -176,6 +178,36 @@ const TextFieldsPanel: React.FC<Props> = ({ textFields, composition, onChangeTex
                   );
                 })}
               </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Label className="text-xs text-muted-foreground shrink-0">Schriftart</Label>
+              <select
+                value={layer.fontFamily ?? ""}
+                onChange={(e) => {
+                  const val = e.target.value || undefined;
+                  if (val) {
+                    const preset = findFontPreset(val, DISPLAY_FONTS) ?? findFontPreset(val, BODY_FONTS);
+                    if (preset) ensureFontLoaded(preset.googleSpec);
+                  }
+                  onPatchLayer(layer.id, { fontFamily: val });
+                }}
+                className="flex-1 text-xs px-2 py-1 rounded border border-border bg-background"
+              >
+                <option value="">Standard (CI)</option>
+                <optgroup label="Display">
+                  {DISPLAY_FONTS.map((p) => (
+                    <option key={`d-${p.family}`} value={p.family}>{p.family}{p.note ? ` — ${p.note}` : ""}</option>
+                  ))}
+                </optgroup>
+                <optgroup label="Body">
+                  {BODY_FONTS.map((p) => (
+                    <option key={`b-${p.family}`} value={p.family}>{p.family}{p.note ? ` — ${p.note}` : ""}</option>
+                  ))}
+                </optgroup>
+              </select>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Label className="text-xs text-muted-foreground w-full">Farbe</Label>
               <div className="flex gap-1 flex-wrap">
                 {COLOR_TOKENS.map((c) => (
                   <button
