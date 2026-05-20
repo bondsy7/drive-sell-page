@@ -12,6 +12,8 @@ export const BRAND_FONTS: FontPreset[] = [
   { family: "VW Headline", googleSpec: "local:VW+Headline:wght@400;600;900", category: "display", note: "Volkswagen CI" },
   { family: "Opel Sans", googleSpec: "local:Opel+Sans:wght@400;700", category: "display", note: "Opel CI" },
   { family: "Opel Sans Condensed", googleSpec: "local:Opel+Sans+Condensed:wght@400;700;800", category: "display", note: "Opel CI (Condensed)" },
+  { family: "Ford Antenna", googleSpec: "local:Ford+Antenna:wght@300;400;700;900", category: "display", note: "Ford CI" },
+  { family: "Ford Antenna Cond", googleSpec: "local:Ford+Antenna+Cond:wght@400;700", category: "display", note: "Ford CI (Condensed)" },
 ];
 
 export const DISPLAY_FONTS: FontPreset[] = [
