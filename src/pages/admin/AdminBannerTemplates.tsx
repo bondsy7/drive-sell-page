@@ -6,6 +6,8 @@ import { getBundledSpec } from "@/components/canvas-banner-studio/data/bundledTe
 import { invalidateTemplateCache } from "@/components/canvas-banner-studio/data/templateRegistry";
 import type { TemplateSpec, LayerSpec } from "@/components/canvas-banner-studio/data/templateSchema";
 import { BRAND_PRESETS } from "@/components/canvas-banner-studio/ci/brandPresets";
+import { DISPLAY_FONTS, BODY_FONTS } from "@/components/canvas-banner-studio/ci/fontCatalog";
+import { ensureFontLoaded } from "@/components/canvas-banner-studio/ci/fontLoader";
 import { recolorSvg, detectIsSvg } from "@/components/canvas-banner-studio/ci/svgRecolor";
 import { useVehicleMakes } from "@/hooks/useVehicleMakes";
 import { Button } from "@/components/ui/button";
