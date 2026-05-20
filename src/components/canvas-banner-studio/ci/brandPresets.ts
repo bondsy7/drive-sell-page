@@ -64,7 +64,7 @@ export const BRAND_PRESETS: BrandCiPreset[] = [
     key: "volkswagen",
     label: "Volkswagen",
     logoKey: "volkswagen",
-    fonts: { display: "Inter", body: "Inter" },
+    fonts: { display: "VW Headline", body: "Inter" },
     googleFonts: ["Inter:wght@400;500;700"],
     colors: { primary: "#001e50", secondary: "#00b0f0", text: "#001e50", bg: "#ffffff" },
   },
