@@ -80,8 +80,8 @@ export const BRAND_PRESETS: BrandCiPreset[] = [
     key: "ford",
     label: "Ford",
     logoKey: "ford",
-    fonts: { display: "Antonio", body: "Inter" },
-    googleFonts: ["Antonio:wght@500;700", "Inter:wght@400;600"],
+    fonts: { display: "Ford Antenna Cond", body: "Ford Antenna" },
+    googleFonts: [],
     colors: { primary: "#003478", secondary: "#0072ce", text: "#1a1a1a", bg: "#ffffff" },
   },
   {
