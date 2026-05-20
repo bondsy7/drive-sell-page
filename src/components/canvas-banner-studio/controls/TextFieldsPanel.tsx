@@ -2,12 +2,14 @@ import React from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { BannerComposition, BannerLayer, BannerTextFieldKey, BannerTextFields, CiState, TextAlign } from "../state/types";
 import { AlignCenter, AlignLeft, AlignRight, Bold, Eye, EyeOff, ArrowUp, ArrowDown } from "lucide-react";
 import { SHORTCODES } from "../ci/shortcodes";
 import type { CiContext } from "../ci/profileSources";
 import { BRAND_FONTS, DISPLAY_FONTS, BODY_FONTS, findFontPreset } from "../ci/fontCatalog";
 import { ensureFontLoaded } from "../ci/fontLoader";
+
 
 const FIELDS: { key: BannerTextFieldKey; label: string; placeholder: string; layerId: string; multiline?: boolean }[] = [
   { key: "headline", label: "Headline", placeholder: "DER NEUE VW GOLF", layerId: "headline" },
@@ -38,6 +40,9 @@ interface Props {
 }
 
 const TextFieldsPanel: React.FC<Props> = ({ textFields, composition, onChangeText, onPatchLayer, onReorderLayer, ciContext, ciColors }) => {
+  React.useEffect(() => {
+    [...BRAND_FONTS, ...DISPLAY_FONTS, ...BODY_FONTS].forEach((p) => ensureFontLoaded(p.googleSpec));
+  }, []);
   const shortcodes = ciContext
     ? SHORTCODES.filter((s) => {
         const key = s.code.replace(/[{}]/g, "").trim().toLowerCase();
@@ -179,38 +184,47 @@ const TextFieldsPanel: React.FC<Props> = ({ textFields, composition, onChangeTex
                 })}
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 min-w-0">
               <Label className="text-xs text-muted-foreground shrink-0">Schriftart</Label>
-              <select
-                value={layer.fontFamily ?? ""}
-                onChange={(e) => {
-                  const val = e.target.value || undefined;
-                  if (val) {
-                    const preset = findFontPreset(val, BRAND_FONTS) ?? findFontPreset(val, DISPLAY_FONTS) ?? findFontPreset(val, BODY_FONTS);
-                    if (preset) ensureFontLoaded(preset.googleSpec);
+              <Select
+                value={layer.fontFamily ?? "__default__"}
+                onValueChange={(v) => {
+                  if (v === "__default__") {
+                    onPatchLayer(layer.id, { fontFamily: undefined });
+                    return;
                   }
-                  onPatchLayer(layer.id, { fontFamily: val });
+                  const preset = findFontPreset(v, BRAND_FONTS) ?? findFontPreset(v, DISPLAY_FONTS) ?? findFontPreset(v, BODY_FONTS);
+                  if (preset) ensureFontLoaded(preset.googleSpec);
+                  onPatchLayer(layer.id, { fontFamily: v });
                 }}
-                className="flex-1 text-xs px-2 py-1 rounded border border-border bg-background"
               >
-                <option value="">Standard (CI)</option>
-                <optgroup label="Hersteller CI">
+                <SelectTrigger className="flex-1 min-w-0 h-8 text-xs">
+                  <SelectValue placeholder="Standard (CI)" />
+                </SelectTrigger>
+                <SelectContent className="max-h-72 max-w-[min(20rem,90vw)]">
+                  <SelectItem value="__default__">Standard (CI)</SelectItem>
+                  <div className="px-2 py-1 text-[10px] uppercase text-muted-foreground">Hersteller CI</div>
                   {BRAND_FONTS.map((p) => (
-                    <option key={`brand-${p.family}`} value={p.family}>{p.family}{p.note ? ` — ${p.note}` : ""}</option>
+                    <SelectItem key={`brand-${p.family}`} value={p.family} style={{ fontFamily: `"${p.family}", sans-serif` }}>
+                      {p.family}{p.note ? ` — ${p.note}` : ""}
+                    </SelectItem>
                   ))}
-                </optgroup>
-                <optgroup label="Display">
+                  <div className="px-2 py-1 text-[10px] uppercase text-muted-foreground">Display</div>
                   {DISPLAY_FONTS.map((p) => (
-                    <option key={`d-${p.family}`} value={p.family}>{p.family}{p.note ? ` — ${p.note}` : ""}</option>
+                    <SelectItem key={`d-${p.family}`} value={p.family} style={{ fontFamily: `"${p.family}", sans-serif` }}>
+                      {p.family}{p.note ? ` — ${p.note}` : ""}
+                    </SelectItem>
                   ))}
-                </optgroup>
-                <optgroup label="Body">
+                  <div className="px-2 py-1 text-[10px] uppercase text-muted-foreground">Body</div>
                   {BODY_FONTS.map((p) => (
-                    <option key={`b-${p.family}`} value={p.family}>{p.family}{p.note ? ` — ${p.note}` : ""}</option>
+                    <SelectItem key={`b-${p.family}`} value={p.family} style={{ fontFamily: `"${p.family}", sans-serif` }}>
+                      {p.family}{p.note ? ` — ${p.note}` : ""}
+                    </SelectItem>
                   ))}
-                </optgroup>
-              </select>
+                </SelectContent>
+              </Select>
             </div>
+
             <div className="flex flex-wrap items-center gap-2">
               <Label className="text-xs text-muted-foreground w-full">Farbe</Label>
               <div className="flex gap-1 flex-wrap">
