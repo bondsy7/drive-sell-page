@@ -2,12 +2,14 @@ import React from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { BannerComposition, BannerLayer, BannerTextFieldKey, BannerTextFields, CiState, TextAlign } from "../state/types";
 import { AlignCenter, AlignLeft, AlignRight, Bold, Eye, EyeOff, ArrowUp, ArrowDown } from "lucide-react";
 import { SHORTCODES } from "../ci/shortcodes";
 import type { CiContext } from "../ci/profileSources";
 import { BRAND_FONTS, DISPLAY_FONTS, BODY_FONTS, findFontPreset } from "../ci/fontCatalog";
 import { ensureFontLoaded } from "../ci/fontLoader";
+
 
 const FIELDS: { key: BannerTextFieldKey; label: string; placeholder: string; layerId: string; multiline?: boolean }[] = [
   { key: "headline", label: "Headline", placeholder: "DER NEUE VW GOLF", layerId: "headline" },
