@@ -22,6 +22,44 @@
   font-display: swap;
 }
 
+/* Opel Sans / Opel Sans Condensed (lokal) */
+@font-face {
+  font-family: 'Opel Sans';
+  src: url('/fonts/opel/OpelSans-Regular.ttf') format('truetype');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Opel Sans';
+  src: url('/fonts/opel/OpelSans-Italic.ttf') format('truetype');
+  font-weight: 400; font-style: italic; font-display: swap;
+}
+@font-face {
+  font-family: 'Opel Sans';
+  src: url('/fonts/opel/OpelSans-Bold.ttf') format('truetype');
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Opel Sans';
+  src: url('/fonts/opel/OpelSans-Bold-Italic.ttf') format('truetype');
+  font-weight: 700; font-style: italic; font-display: swap;
+}
+@font-face {
+  font-family: 'Opel Sans Condensed';
+  src: url('/fonts/opel/OpelSansCondensed.ttf') format('truetype');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Opel Sans Condensed';
+  src: url('/fonts/opel/OpelSansCondensed-Bd.ttf') format('truetype');
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Opel Sans Condensed';
+  src: url('/fonts/opel/OpelSansCondensed-ExBd.ttf') format('truetype');
+  font-weight: 800; font-style: normal; font-display: swap;
+}
+
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
