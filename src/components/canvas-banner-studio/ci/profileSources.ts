@@ -16,6 +16,15 @@ export type DealerProfile = {
   primary_color?: string | null;
   secondary_color?: string | null;
   default_legal_text?: string | null;
+  leasing_bank?: string | null;
+  leasing_legal_text?: string | null;
+  financing_bank?: string | null;
+  financing_legal_text?: string | null;
+  facebook_url?: string | null;
+  instagram_url?: string | null;
+  x_url?: string | null;
+  tiktok_url?: string | null;
+  youtube_url?: string | null;
 };
 
 export type CiContext = {
