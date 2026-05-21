@@ -47,6 +47,16 @@ export type CiContext = {
   leistung: string;    // PS / kW
   kraftstoff: string;
   getriebe: string;
+  rechtstext: string;
+  leasingbank: string;
+  leasing_rechtstext: string;
+  finanzierungsbank: string;
+  finanzierung_rechtstext: string;
+  facebook: string;
+  instagram: string;
+  x: string;
+  tiktok: string;
+  youtube: string;
 };
 
 function s(v: any): string {
