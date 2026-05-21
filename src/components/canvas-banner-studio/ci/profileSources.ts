@@ -99,5 +99,15 @@ export function buildCiContext(profile?: DealerProfile | null, vehicle?: Vehicle
     leistung: pick(d, "vehicle.power", "consumption.power", "power", "leistung"),
     kraftstoff: pick(d, "vehicle.fuel_type", "consumption.fuelType", "fuelType", "kraftstoff"),
     getriebe: pick(d, "vehicle.gearbox", "consumption.gearboxType", "gearboxType", "getriebe"),
+    rechtstext: s(profile?.default_legal_text),
+    leasingbank: s(profile?.leasing_bank),
+    leasing_rechtstext: s(profile?.leasing_legal_text),
+    finanzierungsbank: s(profile?.financing_bank),
+    finanzierung_rechtstext: s(profile?.financing_legal_text),
+    facebook: s(profile?.facebook_url),
+    instagram: s(profile?.instagram_url),
+    x: s(profile?.x_url),
+    tiktok: s(profile?.tiktok_url),
+    youtube: s(profile?.youtube_url),
   };
 }
