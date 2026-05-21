@@ -135,7 +135,7 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
     (async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("company_name, contact_name, email, phone, whatsapp_number, website, address, postal_code, city, logo_url, primary_color, secondary_color, default_legal_text")
+        .select("company_name, contact_name, email, phone, whatsapp_number, website, address, postal_code, city, logo_url, primary_color, secondary_color, default_legal_text, leasing_bank, leasing_legal_text, financing_bank, financing_legal_text, facebook_url, instagram_url, x_url, tiktok_url, youtube_url")
         .eq("id", user.id)
         .maybeSingle();
       if (!cancelled && data) setDealerProfile(data as DealerProfile);

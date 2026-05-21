@@ -23,6 +23,16 @@ export const SHORTCODES: { code: string; label: string }[] = [
   { code: "{{leistung}}", label: "Leistung (PS/kW)" },
   { code: "{{kraftstoff}}", label: "Kraftstoff" },
   { code: "{{getriebe}}", label: "Getriebe" },
+  { code: "{{rechtstext}}", label: "Rechtstext (Standard)" },
+  { code: "{{leasingbank}}", label: "Leasingbank" },
+  { code: "{{leasing_rechtstext}}", label: "Leasing Rechtstext" },
+  { code: "{{finanzierungsbank}}", label: "Finanzierungsbank" },
+  { code: "{{finanzierung_rechtstext}}", label: "Finanzierung Rechtstext" },
+  { code: "{{facebook}}", label: "Facebook" },
+  { code: "{{instagram}}", label: "Instagram" },
+  { code: "{{x}}", label: "X (Twitter)" },
+  { code: "{{tiktok}}", label: "TikTok" },
+  { code: "{{youtube}}", label: "YouTube" },
 ];
 
 export function resolveShortcodes(text: string, ctx?: CiContext | null): string {

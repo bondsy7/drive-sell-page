@@ -16,6 +16,15 @@ export type DealerProfile = {
   primary_color?: string | null;
   secondary_color?: string | null;
   default_legal_text?: string | null;
+  leasing_bank?: string | null;
+  leasing_legal_text?: string | null;
+  financing_bank?: string | null;
+  financing_legal_text?: string | null;
+  facebook_url?: string | null;
+  instagram_url?: string | null;
+  x_url?: string | null;
+  tiktok_url?: string | null;
+  youtube_url?: string | null;
 };
 
 export type CiContext = {
@@ -38,6 +47,16 @@ export type CiContext = {
   leistung: string;    // PS / kW
   kraftstoff: string;
   getriebe: string;
+  rechtstext: string;
+  leasingbank: string;
+  leasing_rechtstext: string;
+  finanzierungsbank: string;
+  finanzierung_rechtstext: string;
+  facebook: string;
+  instagram: string;
+  x: string;
+  tiktok: string;
+  youtube: string;
 };
 
 function s(v: any): string {
@@ -80,5 +99,15 @@ export function buildCiContext(profile?: DealerProfile | null, vehicle?: Vehicle
     leistung: pick(d, "vehicle.power", "consumption.power", "power", "leistung"),
     kraftstoff: pick(d, "vehicle.fuel_type", "consumption.fuelType", "fuelType", "kraftstoff"),
     getriebe: pick(d, "vehicle.gearbox", "consumption.gearboxType", "gearboxType", "getriebe"),
+    rechtstext: s(profile?.default_legal_text),
+    leasingbank: s(profile?.leasing_bank),
+    leasing_rechtstext: s(profile?.leasing_legal_text),
+    finanzierungsbank: s(profile?.financing_bank),
+    finanzierung_rechtstext: s(profile?.financing_legal_text),
+    facebook: s(profile?.facebook_url),
+    instagram: s(profile?.instagram_url),
+    x: s(profile?.x_url),
+    tiktok: s(profile?.tiktok_url),
+    youtube: s(profile?.youtube_url),
   };
 }
