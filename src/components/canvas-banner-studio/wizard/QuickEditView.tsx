@@ -332,6 +332,9 @@ const QuickEditView: React.FC<Props> = ({
             onSelectLayer={actions.selectLayer}
             onReorderLayer={actions.reorderLayer}
             onResetLayout={actions.resetLayout}
+            canRegenerateBackground={!!vehicleImageDataUrl}
+            backgroundRegenerating={bgRegenerating}
+            onRegenerateBackground={handleRegenerateBackground}
           />
           <TextFieldsPanel
             textFields={state.textFields}
