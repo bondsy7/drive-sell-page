@@ -72,6 +72,8 @@ const QuickInspector: React.FC<Props> = ({
   const logoUploadRef = useRef<HTMLInputElement | null>(null);
   const [logoPickerOpen, setLogoPickerOpen] = useState(false);
   const [logoQuery, setLogoQuery] = useState("");
+  const [bgPresetId, setBgPresetId] = useState<string>(MARKETING_PROMPTS[0]?.id ?? "");
+  const [bgExtra, setBgExtra] = useState<string>("");
 
   const ciSwatches = useMemo(() => {
     const c = ci?.colors;
