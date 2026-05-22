@@ -55,6 +55,9 @@ interface Props {
   onSelectLayer: (id?: string) => void;
   onReorderLayer: (id: string, direction: "forward" | "backward") => void;
   onResetLayout: () => void;
+  canRegenerateBackground?: boolean;
+  backgroundRegenerating?: boolean;
+  onRegenerateBackground?: (presetId: string, extraInstruction: string) => void | Promise<void>;
 }
 
 const newId = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
@@ -62,6 +65,7 @@ const newId = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${Math.r
 const QuickInspector: React.FC<Props> = ({
   composition, format, selectedLayerId, ci, dealerProfile,
   onAddLayer, onPatchLayer, onRemoveLayer, onSelectLayer, onReorderLayer, onResetLayout,
+  canRegenerateBackground, backgroundRegenerating, onRegenerateBackground,
 }) => {
   const imgInputRef = useRef<HTMLInputElement | null>(null);
   const logoUploadRef = useRef<HTMLInputElement | null>(null);
