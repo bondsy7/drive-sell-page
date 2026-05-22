@@ -37,6 +37,7 @@ interface Props {
   initialCompositions: Record<string, BannerComposition>;
   ci?: Partial<CiState>;
   dealerProfile: DealerProfile | null;
+  vehicleImageDataUrl?: string;
   onBack: () => void;
   onApply?: (compositions: Record<string, BannerComposition>, textFields: BannerTextFields) => void;
 }
@@ -48,6 +49,7 @@ const QuickEditView: React.FC<Props> = ({
   initialCompositions,
   ci,
   dealerProfile,
+  vehicleImageDataUrl,
   onBack,
   onApply,
 }) => {
