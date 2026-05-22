@@ -152,6 +152,9 @@ const SCENE_PRESETS: { id: ScenePresetId; label: string; description: string; bu
       NEG_RULES,
     ].join(" "),
   },
+];
+
+
 
 const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
   const navigate = useNavigate();
