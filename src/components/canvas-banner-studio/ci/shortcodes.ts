@@ -37,7 +37,8 @@ export const SHORTCODES: { code: string; label: string }[] = [
 
 export function resolveShortcodes(text: string, ctx?: CiContext | null): string {
   if (!text || !ctx) return text ?? "";
-  return text.replace(/\{\{\s*([a-zA-Z]+)\s*\}\}/g, (full, key) => {
+  // Erlaubt Buchstaben + Unterstrich (z. B. {{leasing_rechtstext}}, {{finanzierung_rechtstext}}).
+  return text.replace(/\{\{\s*([a-zA-Z_]+)\s*\}\}/g, (full, key) => {
     const v = (ctx as any)[String(key).toLowerCase()];
     return v != null && String(v) !== "" ? String(v) : full;
   });

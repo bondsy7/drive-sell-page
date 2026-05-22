@@ -77,17 +77,26 @@ const TextFieldsPanel: React.FC<Props> = ({ textFields, composition, onChangeTex
     onChangeText(key, cur + sep + code);
   };
 
+  // Aktive Ebene → zugehöriges Textfeld bestimmen (Fallback: Headline).
+  const activeField = React.useMemo<{ key: BannerTextFieldKey; label: string }>(() => {
+    const match = FIELDS.find((f) => f.layerId === selectedLayerId);
+    if (match) return { key: match.key, label: match.label };
+    return { key: "headline", label: "Headline" };
+  }, [selectedLayerId]);
+
   return (
     <div className="space-y-5">
       {shortcodes.length > 0 && (
         <div className="rounded-md border border-dashed border-border bg-muted/30 p-2.5">
-          <div className="text-[11px] font-semibold text-foreground mb-1">Shortcodes (klick = einfügen in Headline)</div>
+          <div className="text-[11px] font-semibold text-foreground mb-1">
+            Shortcodes (klick = einfügen in <span className="text-accent">{activeField.label}</span>)
+          </div>
           <div className="flex flex-wrap gap-1">
             {shortcodes.map((s) => (
               <button
                 key={s.code}
                 type="button"
-                onClick={() => insertCode("headline", s.code)}
+                onClick={() => insertCode(activeField.key, s.code)}
                 title={s.label}
                 className="text-[10px] px-1.5 py-0.5 rounded border border-border bg-background hover:border-accent/40 text-muted-foreground hover:text-foreground"
               >
@@ -96,7 +105,7 @@ const TextFieldsPanel: React.FC<Props> = ({ textFields, composition, onChangeTex
             ))}
           </div>
           <p className="text-[10px] text-muted-foreground mt-1.5">
-            Werden beim Rendern automatisch durch Profil- & Fahrzeugdaten ersetzt.
+            Werden beim Rendern automatisch durch Profil- & Fahrzeugdaten ersetzt. Markiere eine Ebene, um dort einzufügen.
           </p>
         </div>
       )}
