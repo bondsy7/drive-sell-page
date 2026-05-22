@@ -200,6 +200,9 @@ const CustomLayersPanel: React.FC<Props> = ({
         <Button size="sm" variant="outline" onClick={addShape}>
           <Square className="w-3.5 h-3.5 mr-1.5" /> Form
         </Button>
+        <Button size="sm" variant="outline" onClick={addGradient}>
+          <ArrowDownToLine className="w-3.5 h-3.5 mr-1.5" /> Verlauf
+        </Button>
         <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}>
           <ImageIcon className="w-3.5 h-3.5 mr-1.5" /> Bild
         </Button>
