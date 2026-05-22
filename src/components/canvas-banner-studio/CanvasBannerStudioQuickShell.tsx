@@ -879,6 +879,23 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
               })}
             </div>
           </div>
+
+          {/* Zusätzliche Prompt-Anweisungen */}
+          <div className="mt-4">
+            <label className="text-[11px] uppercase tracking-wider text-muted-foreground">
+              Zusätzliche Anweisungen (optional)
+            </label>
+            <Textarea
+              value={extraPromptInstruction}
+              onChange={(e) => setExtraPromptInstruction(e.target.value)}
+              placeholder="z.B. Winterstimmung mit Schnee, Black-Friday-Aktion mit roten Akzenten, Sommer-Sale am Strand …"
+              className="mt-1 min-h-[80px] text-sm"
+              maxLength={600}
+            />
+            <div className="mt-1 text-[10px] text-muted-foreground text-right">
+              {extraPromptInstruction.length}/600
+            </div>
+          </div>
         </Card>
 
         {/* Generieren */}
