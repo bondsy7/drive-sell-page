@@ -9,7 +9,8 @@
  *  - Logo-Picker-Dialog (Händler / Hersteller-DB / Upload)
  */
 import React, { useMemo, useRef, useState } from "react";
-import { Type, Square, Image as ImageIcon, BadgeCheck, Eye, EyeOff, Trash2, Upload, Search, ArrowDownToLine } from "lucide-react";
+import { Type, Square, Image as ImageIcon, BadgeCheck, Eye, EyeOff, Trash2, Upload, Search, ArrowDownToLine, Sparkles, Loader2 } from "lucide-react";
+import { MARKETING_PROMPTS } from "../data/marketingPrompts";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
