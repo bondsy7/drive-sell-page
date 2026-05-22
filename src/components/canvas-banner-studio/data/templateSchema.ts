@@ -54,6 +54,11 @@ export type LayerSpec = {
   content?: string;
   /** Source URL for custom image layers. */
   imageUrl?: string;
+  /** Gradient overlay for shape layers (100% → 0% alpha in chosen direction). */
+  gradient?: {
+    direction: "top-bottom" | "bottom-top" | "left-right" | "right-left";
+    color: string;
+  };
 };
 
 /** Template-Spec für genau ein Format. */
