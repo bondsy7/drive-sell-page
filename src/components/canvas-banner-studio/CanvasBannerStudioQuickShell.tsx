@@ -352,6 +352,39 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
     }
   }, [pdfFile, imageDataUrl, selectedFormatIds, dealerProfile, getLogoForMake, bgTasks, analyzedFields, analyzedBrand, manualBrand, resolvedLogoUrl, ciColors, scenePresetId]);
 
+  const regenerateSingle = useCallback(async (r: QuickBannerResult) => {
+    const source = r.composition.masterImageUrl || r.composition.backgroundImageUrl;
+    if (!source) {
+      toast.error("Keine Quell-Bildreferenz für Reframe gefunden.");
+      return;
+    }
+    setRegenerating((m) => ({ ...m, [r.formatId]: true }));
+    try {
+      const reframed = await reframeImageForFormat(source, r.format.width, r.format.height);
+      const ciContext = buildCiContext(dealerProfile, null);
+      const ciState = {
+        brandKey: brandPresetKey,
+        colors: { primary: ciColors.primary, secondary: ciColors.secondary, text: ciColors.text, bg: ciColors.bg },
+      } as any;
+      const newComp: BannerComposition = { ...r.composition, backgroundImageUrl: reframed.imageDataUrl };
+      const textFields = lastTextFieldsRef.current ?? (DEFAULT_TEXT_FIELDS as any);
+      const thumb = await renderCompositionToDataURL(r.format, newComp, textFields, "png", ciState, ciContext);
+      setResults((prev) => prev.map((x) => x.formatId === r.formatId
+        ? { ...x, backgroundDataUrl: reframed.imageDataUrl, composition: newComp, thumbnailDataUrl: thumb }
+        : x));
+      toast.success(`${r.format.name} neu generiert.`);
+    } catch (e: any) {
+      console.error("regenerate failed", e);
+      toast.error(e?.message ?? "Neugenerierung fehlgeschlagen");
+    } finally {
+      setRegenerating((m) => {
+        const n = { ...m };
+        delete n[r.formatId];
+        return n;
+      });
+    }
+  }, [dealerProfile, brandPresetKey, ciColors]);
+
   const downloadSingle = (r: QuickBannerResult) => {
     const a = document.createElement("a");
     a.href = r.thumbnailDataUrl;
