@@ -98,10 +98,8 @@ function drawTextLayer(
   ctx.font = `${weight} ${fontSize}px ${fontFamily}`;
   ctx.fillStyle = color;
   ctx.textBaseline = "top";
-  if (layer.type !== "legal") {
-    ctx.shadowColor = "rgba(0,0,0,0.45)";
-    ctx.shadowBlur = 8;
-  }
+  // No shadow — produced a visible gray haze across the lower half of the banner.
+
   const maxW = layer.width ?? 1000;
   const lines = wrapText(ctx, text, maxW);
   const lineH = fontSize * 1.2;
@@ -150,7 +148,11 @@ export async function renderCompositionToDataURL(
   const bg = await loadImage(composition.backgroundImageUrl);
   if (bg) {
     const r = fitRect(bg.naturalWidth, bg.naturalHeight, format.width, format.height, composition.backgroundFit);
-    ctx.drawImage(bg, r.x, r.y, r.w, r.h);
+    const bx = composition.backgroundX ?? r.x;
+    const by = composition.backgroundY ?? r.y;
+    const bw = composition.backgroundWidth ?? r.w;
+    const bh = composition.backgroundHeight ?? r.h;
+    ctx.drawImage(bg, bx, by, bw, bh);
   }
 
   drawOverlay(ctx, composition.overlayDirection, composition.overlayStrength, format.width, format.height);

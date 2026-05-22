@@ -253,6 +253,19 @@ function presentReducer(state: StudioState, action: Action): StudioState {
     }
     case "patch-layer": {
       const c = ensureComposition(state, action.formatId);
+      // Virtual background layer → map x/y/width/height onto composition fields.
+      if (action.layerId === "__background__") {
+        const p = action.patch as Partial<BannerLayer>;
+        const next: BannerComposition = { ...c };
+        if ("x" in p) next.backgroundX = p.x as number | undefined;
+        if ("y" in p) next.backgroundY = p.y as number | undefined;
+        if ("width" in p) next.backgroundWidth = p.width as number | undefined;
+        if ("height" in p) next.backgroundHeight = p.height as number | undefined;
+        return {
+          ...state,
+          compositions: { ...state.compositions, [action.formatId]: next },
+        };
+      }
       const layers = c.layers.map((l) => (l.id === action.layerId ? { ...l, ...action.patch } : l));
       return {
         ...state,

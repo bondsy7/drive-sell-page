@@ -90,6 +90,7 @@ const QuickInspector: React.FC<Props> = ({
   );
 
   const selected = composition.layers.find((l) => l.id === selectedLayerId);
+  const isBackgroundSelected = selectedLayerId === "__background__";
   const editable = selected; // alle Layer dürfen Farbe/Position/Ausrichtung haben
 
   const cx = Math.round(format.width / 2);
@@ -304,6 +305,66 @@ const QuickInspector: React.FC<Props> = ({
         }}
         onReset={onResetLayout}
       />
+
+      {/* Hintergrund-Editor (wenn Hintergrundbild angeklickt wurde) */}
+      {isBackgroundSelected && (
+        <div className="rounded-lg border border-border bg-card p-3 space-y-3">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+            <ImageIcon className="w-3 h-3" />
+            <span>Hintergrund</span>
+          </div>
+          <div className="grid grid-cols-4 gap-2 text-xs">
+            <label className="flex flex-col gap-0.5">
+              <span className="text-muted-foreground">X</span>
+              <Input type="number" value={Math.round(composition.backgroundX ?? 0)} className="h-7"
+                onChange={(e) => onPatchLayer("__background__", { x: Number(e.target.value) })} />
+            </label>
+            <label className="flex flex-col gap-0.5">
+              <span className="text-muted-foreground">Y</span>
+              <Input type="number" value={Math.round(composition.backgroundY ?? 0)} className="h-7"
+                onChange={(e) => onPatchLayer("__background__", { y: Number(e.target.value) })} />
+            </label>
+            <label className="flex flex-col gap-0.5">
+              <span className="text-muted-foreground">Breite</span>
+              <Input type="number" value={Math.round(composition.backgroundWidth ?? format.width)} className="h-7"
+                onChange={(e) => onPatchLayer("__background__", { width: Number(e.target.value) })} />
+            </label>
+            <label className="flex flex-col gap-0.5">
+              <span className="text-muted-foreground">Höhe</span>
+              <Input type="number" value={Math.round(composition.backgroundHeight ?? format.height)} className="h-7"
+                onChange={(e) => onPatchLayer("__background__", { height: Number(e.target.value) })} />
+            </label>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" onClick={() => {
+              const w = composition.backgroundWidth ?? format.width;
+              const h = composition.backgroundHeight ?? format.height;
+              onPatchLayer("__background__", {
+                x: Math.round((format.width - w) / 2),
+                y: Math.round((format.height - h) / 2),
+              });
+            }}>Zentrieren</Button>
+            <Button size="sm" variant="outline" onClick={() => {
+              const w = composition.backgroundWidth ?? format.width;
+              const h = composition.backgroundHeight ?? format.height;
+              onPatchLayer("__background__", { width: Math.round(w * 1.1), height: Math.round(h * 1.1) });
+            }}>Vergrößern +10%</Button>
+            <Button size="sm" variant="outline" onClick={() => {
+              const w = composition.backgroundWidth ?? format.width;
+              const h = composition.backgroundHeight ?? format.height;
+              onPatchLayer("__background__", { width: Math.round(w * 0.9), height: Math.round(h * 0.9) });
+            }}>Verkleinern −10%</Button>
+            <Button size="sm" variant="ghost" onClick={() => {
+              // Reset to auto-fit by clearing overrides.
+              onPatchLayer("__background__", { x: undefined as any, y: undefined as any, width: undefined as any, height: undefined as any });
+            }}>Auto-Fit</Button>
+          </div>
+          <p className="text-[10px] text-muted-foreground">
+            Tipp: Klicke das Hintergrundbild im Canvas an und ziehe an den Ecken zum Skalieren.
+          </p>
+        </div>
+      )}
+
 
       {/* Eigenschaften der ausgewählten Ebene */}
       {editable && (

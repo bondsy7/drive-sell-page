@@ -292,7 +292,11 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
     const node = nodeRefs.current[selectedLayerId];
     if (node) {
       const layer = composition.layers.find((l) => l.id === selectedLayerId);
-      if (layer?.type === "logo") {
+      if (selectedLayerId === "__background__") {
+        tr.enabledAnchors(["top-left", "top-right", "bottom-left", "bottom-right"]);
+        tr.keepRatio(true);
+        tr.rotateEnabled(false);
+      } else if (layer?.type === "logo") {
         tr.enabledAnchors(["top-left", "top-right", "bottom-left", "bottom-right"]);
         tr.keepRatio(true);
         tr.rotateEnabled(false);
@@ -394,13 +398,47 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
         >
           <Layer listening={false}>
             <Rect x={0} y={0} width={format.width} height={format.height} fill="#1a1a1a" />
-            {bg && bgFit && (
-              <KImage image={bg} x={bgFit.x} y={bgFit.y} width={bgFit.w} height={bgFit.h} />
-            )}
+          </Layer>
+
+          <Layer>
+            {bg && bgFit && (() => {
+              const bx = composition.backgroundX ?? bgFit.x;
+              const by = composition.backgroundY ?? bgFit.y;
+              const bw = composition.backgroundWidth ?? bgFit.w;
+              const bh = composition.backgroundHeight ?? bgFit.h;
+              const isBgSel = selectedLayerId === "__background__";
+              return (
+                <KImage
+                  ref={(n) => { nodeRefs.current["__background__"] = n; }}
+                  image={bg}
+                  x={bx}
+                  y={by}
+                  width={bw}
+                  height={bh}
+                  draggable
+                  onClick={() => onSelectLayer?.("__background__")}
+                  onTap={() => onSelectLayer?.("__background__")}
+                  onDragEnd={(e) => {
+                    onLayerDrag?.("__background__", e.target.x(), e.target.y());
+                  }}
+                  onTransformEnd={(e) => {
+                    const node = e.target as Konva.Image;
+                    const sx = node.scaleX();
+                    const sy = node.scaleY();
+                    const newW = Math.max(20, bw * sx);
+                    const newH = Math.max(20, bh * sy);
+                    node.scaleX(1); node.scaleY(1);
+                    onLayerResize?.("__background__", { width: Math.round(newW), height: Math.round(newH) });
+                    onLayerDrag?.("__background__", node.x(), node.y());
+                  }}
+                />
+              );
+            })()}
             {overlays.map((o, i) => (
-              <Rect key={i} x={o.x} y={o.y} width={o.w} height={o.h} fill={o.fill} />
+              <Rect key={i} listening={false} x={o.x} y={o.y} width={o.w} height={o.h} fill={o.fill} />
             ))}
           </Layer>
+
 
           <Layer>
             {composition.layers
@@ -509,9 +547,9 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
                       fill={color}
                       align={l.align ?? "left"}
                       lineHeight={1.2}
-                      shadowColor="rgba(0,0,0,0.45)"
-                      shadowBlur={l.type === "legal" ? 0 : 8}
-                      shadowOpacity={l.type === "legal" ? 0 : 1}
+                      shadowColor="rgba(0,0,0,0)"
+                      shadowBlur={0}
+                      shadowOpacity={0}
                       onTransformEnd={(e) => {
                         const node = e.target as Konva.Text;
                         const sx = node.scaleX();
