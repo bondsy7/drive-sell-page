@@ -541,7 +541,37 @@ function PropertyPanel({
           </div>
           <div>
             <Label className="text-xs">Farbe</Label>
-            <Input className="h-8" value={layer.color ?? ""} placeholder="#ffffff oder hsl(...)" onChange={(e) => onChange({ color: e.target.value || undefined })} />
+            <div className="flex gap-2">
+              <Input
+                type="color"
+                className="h-8 w-14 p-1"
+                value={layer.color && /^#/.test(layer.color) ? layer.color : "#000000"}
+                onChange={(e) => onChange({ color: e.target.value })}
+              />
+              <Input
+                className="h-8 flex-1"
+                value={layer.color ?? ""}
+                placeholder="#ffffff oder hsl(...)"
+                onChange={(e) => onChange({ color: e.target.value || undefined })}
+              />
+              <Button size="sm" variant="ghost" onClick={() => onChange({ color: undefined })} title="Farbe zurücksetzen">
+                <RotateCcw className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-1 mt-1.5">
+              {["#ffffff", "#000000", "#1a1a1a", "#3366cc", "#1a365d", "#c9a84c", "#e84393", "#16a34a"].map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => onChange({ color: c })}
+                  className={`w-5 h-5 rounded border-2 ${
+                    (layer.color ?? "").toLowerCase() === c.toLowerCase() ? "border-foreground" : "border-border"
+                  }`}
+                  style={{ backgroundColor: c }}
+                  title={c}
+                />
+              ))}
+            </div>
           </div>
         </>
       )}
