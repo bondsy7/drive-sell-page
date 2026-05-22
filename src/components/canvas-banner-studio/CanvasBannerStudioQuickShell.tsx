@@ -825,17 +825,33 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
                 const aspect = r.format.width / r.format.height;
                 return (
                   <div key={r.formatId} className="rounded-lg border border-border overflow-hidden bg-card">
-                    <div className="w-full bg-muted/40" style={{ aspectRatio: `${aspect}` }}>
+                    <div className="relative w-full bg-muted/40" style={{ aspectRatio: `${aspect}` }}>
                       <img src={r.thumbnailDataUrl} alt={r.format.name} className="w-full h-full object-contain" />
+                      {regenerating[r.formatId] && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-background/70 backdrop-blur-sm">
+                          <Loader2 className="w-5 h-5 animate-spin text-foreground" />
+                        </div>
+                      )}
                     </div>
                     <div className="p-2 flex items-center justify-between gap-2">
                       <div className="min-w-0">
                         <div className="text-xs font-semibold text-foreground truncate">{r.format.name}</div>
                         <div className="text-[10px] text-muted-foreground tabular-nums">{r.format.width}×{r.format.height}</div>
                       </div>
-                      <Button variant="ghost" size="sm" onClick={() => downloadSingle(r)}>
-                        <Download className="w-3 h-3" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          title="Neu generieren (Ideogram Reframe)"
+                          disabled={!!regenerating[r.formatId]}
+                          onClick={() => regenerateSingle(r)}
+                        >
+                          <RefreshCw className={`w-3 h-3 ${regenerating[r.formatId] ? "animate-spin" : ""}`} />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => downloadSingle(r)}>
+                          <Download className="w-3 h-3" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 );
