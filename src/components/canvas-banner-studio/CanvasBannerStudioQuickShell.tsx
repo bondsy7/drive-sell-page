@@ -619,7 +619,7 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
             <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")}>
               <ArrowLeft className="w-4 h-4 mr-1" /> Dashboard
             </Button>
-            <h1 className="text-2xl font-bold text-foreground">Banner Quick-Generator</h1>
+            <h1 className="text-2xl font-bold text-foreground">Banner-Studio</h1>
             <Badge variant="secondary">Quick-Modus</Badge>
           </div>
           <div className="flex items-center gap-2">
