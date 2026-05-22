@@ -156,7 +156,44 @@ const SCENE_PRESETS: { id: ScenePresetId; label: string; description: string; bu
       NEG_RULES,
     ].join(" "),
   },
+  {
+    id: "deal-tower",
+    label: "Deal · Car-Tower",
+    description: "Futuristischer Collection Point – exklusiver Top-Deal.",
+    build: (primary, secondary) => [
+      "Stage the EXACT same vehicle as a high-end ad photo on a sunlit morning inside a minimalist futuristic 'collection point' on the upper floor of a modern car tower in a German city.",
+      HERO_SIZE_RULES,
+      `Scene: polished light-grey concrete floor with subtle inlaid lines in ${primary}, geometric architectural panels in ${primary} on the walls, a large frameless glass front in the background revealing soft city silhouettes far away. Directly behind the car a huge freestanding architectural display wall, softly but precisely backlit in ${secondary}, showing an abstract 3D graphic shape suggesting exclusivity and a top deal – purely abstract, NO text and NO numbers.`,
+      "Lighting: brilliant, crisp morning light, the vehicle spotless and high-gloss, clean reflections on the bodywork picking up hints of the brand colors. Exclusive, expectant, premium ad mood.",
+      NEG_RULES,
+    ].join(" "),
+  },
+  {
+    id: "alpine-lifestyle",
+    label: "Lifestyle · Alpine Escape",
+    description: "Sonnige Alpen-Plattform mit Abenteuer-Vibe.",
+    build: (primary, secondary) => [
+      "Stage the EXACT same vehicle in a stunning sunny ad photo set in a modern architectural escape zone in the German Alps on a clear afternoon.",
+      HERO_SIZE_RULES,
+      `Scene: the car sits on a high-tech polished platform with integrated light strips in ${secondary}. Behind the vehicle a huge curved LED wall displays a flawless sunset over the Bavarian Alps with a modern glass observatory; the on-screen graphics integrate large geometric color blocks in ${primary} and ${secondary} directly into the landscape to reinforce brand identity. In the foreground (kept small, never blocking the car) specialised color-matched carbon-fibre adventure luggage and a premium roof/rear bike-mount system with high-end gear, suggesting capability and exciting lifestyle.`,
+      "Lighting: warm, golden, inviting, bright and desirable; clean reflections of the brand-colored LED wall on the bodywork.",
+      NEG_RULES,
+    ].join(" "),
+  },
+  {
+    id: "premiere-night",
+    label: "Premiere · Limited",
+    description: "Exklusives Invite-only Premiere-Event mit Lichtbogen.",
+    build: (primary, secondary) => [
+      "Stage the EXACT same vehicle as an exclusive invite-only premiere event inside a minimalist pop-up showcase space.",
+      HERO_SIZE_RULES,
+      `Scene: the car stands centrally on a raised polished geometric platform, framed by a striking flowing architectural arch – outer structure in ${primary}, inner edge made of flowing glowing tubes in ${secondary} that cast a precise cool light wave around the car. Geometric pylons around the vehicle carry color accents in ${primary} and ${secondary} and hold stylised empty geometric display screens (no text, no numbers). A minimalist lounge area with upholstered furniture in ${primary} and ${secondary} sits softly out of focus in the background.`,
+      "Lighting: dramatic but bright, cool white key lights with targeted color accents in the brand colors, crisp reflections on the bodywork. Future-forward, exclusive 'limited time / must-have premiere' mood.",
+      NEG_RULES,
+    ].join(" "),
+  },
 ];
+
 
 
 
