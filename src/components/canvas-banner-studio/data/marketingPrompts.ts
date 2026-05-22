@@ -79,7 +79,14 @@ export const MARKETING_PROMPTS: MarketingPromptPreset[] = [
     label: "Waldstraße – Lichtstrahlen",
     description: "Sonnenstrahlen durch Bäume, mystische Atmosphäre.",
     prompt:
-      "Place the exact same vehicle on a quiet forest road. Sun beams piercing through tall trees, soft morning mist on the ground, lush green tones. Cinematic automotive lifestyle photography.",
+    "Place the exact same vehicle on a quiet forest road. Sun beams piercing through tall trees, soft morning mist on the ground, lush green tones. Cinematic automotive lifestyle photography.",
+  },
+  {
+    id: "german-city-neon",
+    label: "German City Neon",
+    description: "Deutscher Stadtplatz bei Golden Hour mit Cyberpunk-Neon-Akzenten.",
+    prompt:
+      "An 8k resolution, professionally photographed automotive commercial image for a high-impact, engaging social media banner, featuring the exact car from the provided image in its precise front three-quarter pose, now centrally positioned on a clean, sun-drenched historic city square in Germany, a random big city in Germany, like Berlin or near details of classic European architecture like Gendarmenmarkt, Frankfurt, Hamburg harbor, Munich etc. The entire city environment is bright and joyful, bathed in clear, natural daylight from a recent Golden Hour, with details of the historic buildings invitingly clear and not dark or gloomy, conveying pure joy and making the viewer want to step in. The car boasts a flawless, immaculate glossy finish that brilliantly catches and reflects natural sunlight. Integrating a stylized, engaging cyberpunk advertising flair, elegant, glowing primary color neon light trails and secondary color laser lines intricately wrap around the vehicle, weaving through complex abstract floating geometric shapes. The entire composition has advanced raytracing reflections on the car paint texture and razor-sharp focus, making the vehicle feel incredibly premium and central under the bright daylight. All text, words, letters, typography, people, license plate details, and blurry elements are completely absent from the clean advertising canvas, ensuring a pure, click-worthy visual experience.",
   },
 ];
 
