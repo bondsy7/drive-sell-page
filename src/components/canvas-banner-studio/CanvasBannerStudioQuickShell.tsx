@@ -100,7 +100,58 @@ const SCENE_PRESETS: { id: ScenePresetId; label: string; description: string; bu
       NEG_RULES,
     ].join(" "),
   },
-];
+  {
+    id: "premium-serious",
+    label: "Seriös · Premium",
+    description: "Elegant, hochwertig, OEM-Stil mit deinen CI-Farben.",
+    build: (primary, secondary) => [
+      "Stage the EXACT same vehicle in an elegant, premium, luxury automotive ad scene with brand-safe OEM look and feel.",
+      HERO_SIZE_RULES,
+      `Background: calm and sophisticated environment – polished architectural surfaces, soft gradient walls, subtle warm off-white or deep neutral tones. Restrained, never busy. Add a quiet wash of the primary brand color ${primary} in the background (soft gradient or one architectural plane) and a subtle accent of ${secondary} as a thin light line or floor reflection.`,
+      "Lighting: soft cinematic key light from the front side, gentle rim light, controlled reflections on the bodywork. The car looks confident, expensive, trustworthy – like an official manufacturer campaign, not a discount flyer.",
+      "Editorial automotive photography, 35mm, shallow depth of field, ultra crisp on the car, magazine quality, calm and premium mood.",
+      NEG_RULES,
+    ].join(" "),
+  },
+  {
+    id: "popstyle",
+    label: "Popstyle · Neon",
+    description: "Knallig, energiegeladen, Pop-Art mit CI-Neon-Farben.",
+    build: (primary, secondary) => [
+      "Stage the EXACT same vehicle in a bold, eye-catching pop-style advertising scene with explosive energy.",
+      HERO_SIZE_RULES,
+      `Background: vibrant, dynamic, pop-art inspired – large flat color fields and bold geometric shapes (circles, halftone dots, diagonal stripes, starburst rays) built from the brand colors ${primary} (dominant) and ${secondary} (high-contrast accent). Add glowing neon edges, light bursts and lens flares in the same brand colors radiating from behind the car.`,
+      "The car stays photoreal, sharp, hero-large in frame, with crisp reflections picking up the neon brand colors. Glossy floor reflects vivid color light. High energy, high contrast, attention-grabbing but never cheap.",
+      "Modern pop advertising photography meets neon poster art, ultra crisp on the car, premium production value.",
+      NEG_RULES,
+    ].join(" "),
+  },
+  {
+    id: "minimal-clean",
+    label: "Minimalistisch · Clean",
+    description: "Viel Weißraum, reduziert, CI-Farbe nur als Akzent.",
+    build: (primary, secondary) => [
+      "Stage the EXACT same vehicle in an ultra-minimalist, clean editorial scene.",
+      HERO_SIZE_RULES,
+      `Background: clean seamless surface with lots of breathing room. One single subtle geometric element in the primary brand color ${primary} (e.g. a thin horizontal line, a soft color block on one edge, or a delicate gradient zone) and a tiny accent detail in ${secondary}. Everything else stays neutral and quiet (off-white / light beige / soft warm gray).`,
+      "Lighting: soft, even, diffused – like a high-end design magazine shoot. Crisp contact shadow under the tires. The car remains the unmistakable hero; nothing distracts from it.",
+      "Minimalist premium automotive photography, 35mm, ultra crisp, calm, refined, editorial quality.",
+      NEG_RULES,
+    ].join(" "),
+  },
+  {
+    id: "retro-vintage",
+    label: "Retro · Vintage",
+    description: "80er-Look, warme Töne, CI-Farben als Sonnenuntergang.",
+    build: (primary, secondary) => [
+      "Stage the EXACT same vehicle in a retro 80s-inspired advertising scene with vintage color grading.",
+      HERO_SIZE_RULES,
+      `Background: stylised retro sunset / synthwave landscape – a large sun disc and a few horizontal grid lines on the floor, distant low mountains, warm hazy sky. Re-color the entire palette using the brand colors: the sun and sky gradient built from ${primary} blending into ${secondary}, grid lines glowing in ${secondary}, soft warm haze in ${primary}.`,
+      "Lighting: warm low golden-hour light from behind, gentle rim light on the bodywork in the secondary brand color, soft chromatic glow. The car keeps photoreal accuracy and stays hero-large – the retro mood lives in the background and grading, not in the vehicle itself.",
+      "Nostalgic premium automotive ad photography with vintage film grain, soft halation around highlights, 35mm, ultra crisp on the car.",
+      NEG_RULES,
+    ].join(" "),
+  },
 
 const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
   const navigate = useNavigate();
