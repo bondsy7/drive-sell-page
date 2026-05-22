@@ -391,7 +391,7 @@ const CanvasBannerStudioShell: React.FC<ProShellProps> = ({ onSwitchToQuick }) =
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-accent" />
-              <span className="text-xs uppercase tracking-wider text-accent font-semibold">Canvas Banner Studio</span>
+              <span className="text-xs uppercase tracking-wider text-accent font-semibold">Banner Studio</span>
               <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/10 text-accent">NEU</span>
             </div>
             <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground">
