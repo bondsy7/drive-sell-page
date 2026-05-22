@@ -90,6 +90,7 @@ const QuickInspector: React.FC<Props> = ({
   );
 
   const selected = composition.layers.find((l) => l.id === selectedLayerId);
+  const isBackgroundSelected = selectedLayerId === "__background__";
   const editable = selected; // alle Layer dürfen Farbe/Position/Ausrichtung haben
 
   const cx = Math.round(format.width / 2);
