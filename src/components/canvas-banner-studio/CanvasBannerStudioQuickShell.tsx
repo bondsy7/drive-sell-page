@@ -50,7 +50,9 @@ type ScenePresetId =
   | "retro-vintage"
   | "deal-tower"
   | "alpine-lifestyle"
-  | "premiere-night";
+  | "premiere-night"
+  | "german-city-neon";
+
 
 
 // HERO-SIZE GUARDRAIL: in jedem Prompt enthalten, damit das Auto das dominierende
