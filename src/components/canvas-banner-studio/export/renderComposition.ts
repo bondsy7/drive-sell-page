@@ -148,7 +148,11 @@ export async function renderCompositionToDataURL(
   const bg = await loadImage(composition.backgroundImageUrl);
   if (bg) {
     const r = fitRect(bg.naturalWidth, bg.naturalHeight, format.width, format.height, composition.backgroundFit);
-    ctx.drawImage(bg, r.x, r.y, r.w, r.h);
+    const bx = composition.backgroundX ?? r.x;
+    const by = composition.backgroundY ?? r.y;
+    const bw = composition.backgroundWidth ?? r.w;
+    const bh = composition.backgroundHeight ?? r.h;
+    ctx.drawImage(bg, bx, by, bw, bh);
   }
 
   drawOverlay(ctx, composition.overlayDirection, composition.overlayStrength, format.width, format.height);
