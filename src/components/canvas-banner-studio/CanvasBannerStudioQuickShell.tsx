@@ -480,7 +480,7 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
     } finally {
       setBusy(false);
     }
-  }, [pdfFile, imageDataUrl, selectedFormatIds, dealerProfile, getLogoForMake, bgTasks, analyzedFields, analyzedBrand, manualBrand, resolvedLogoUrl, ciColors, scenePresetId]);
+  }, [pdfFile, imageDataUrl, selectedFormatIds, dealerProfile, getLogoForMake, bgTasks, analyzedFields, analyzedBrand, manualBrand, resolvedLogoUrl, ciColors, scenePresetId, extraPromptInstruction]);
 
   const regenerateSingle = useCallback(async (r: QuickBannerResult) => {
     const source = r.composition.masterImageUrl || r.composition.backgroundImageUrl;
