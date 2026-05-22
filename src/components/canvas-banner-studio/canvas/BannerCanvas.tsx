@@ -292,7 +292,11 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
     const node = nodeRefs.current[selectedLayerId];
     if (node) {
       const layer = composition.layers.find((l) => l.id === selectedLayerId);
-      if (layer?.type === "logo") {
+      if (selectedLayerId === "__background__") {
+        tr.enabledAnchors(["top-left", "top-right", "bottom-left", "bottom-right"]);
+        tr.keepRatio(true);
+        tr.rotateEnabled(false);
+      } else if (layer?.type === "logo") {
         tr.enabledAnchors(["top-left", "top-right", "bottom-left", "bottom-right"]);
         tr.keepRatio(true);
         tr.rotateEnabled(false);
