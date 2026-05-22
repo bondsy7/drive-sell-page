@@ -109,6 +109,7 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
   const [progress, setProgress] = useState<QuickGenerateProgress | null>(null);
   const [results, setResults] = useState<QuickBannerResult[]>([]);
   const [errors, setErrors] = useState<{ formatId: string; error: string }[]>([]);
+  const [regenerating, setRegenerating] = useState<Record<string, boolean>>({});
   const [dealerProfile, setDealerProfile] = useState<DealerProfile | null>(null);
   const [editMode, setEditMode] = useState(false);
 
