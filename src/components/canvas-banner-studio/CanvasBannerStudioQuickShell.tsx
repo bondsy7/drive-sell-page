@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Download, FileText, ImageIcon, Loader2, Palette, Pencil, Settings2, Sparkles, X } from "lucide-react";
+import { ArrowLeft, Download, FileText, ImageIcon, Loader2, Palette, Pencil, RefreshCw, Settings2, Sparkles, X } from "lucide-react";
+import { reframeImageForFormat } from "./ai/reframeClient";
 import QuickEditView from "./wizard/QuickEditView";
 import { renderCompositionToDataURL } from "./export/renderComposition";
 import type { BannerComposition } from "./state/types";
