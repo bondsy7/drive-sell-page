@@ -103,8 +103,18 @@ const TextFieldsPanel: React.FC<Props> = ({ textFields, composition, onChangeTex
       {FIELDS.map((f) => {
         const layer = layerById(f.layerId);
         if (!layer) return null;
+        const isActive = selectedLayerId === layer.id;
         return (
-          <div key={f.key} className="rounded-lg border border-border bg-card p-3 space-y-3">
+          <div
+            key={f.key}
+            ref={(el) => { cardRefs.current[layer.id] = el; }}
+            onMouseDown={() => onSelectLayer?.(layer.id)}
+            className={`rounded-lg border bg-card p-3 space-y-3 transition-all cursor-pointer ${
+              isActive
+                ? "border-2 border-blue-500 ring-2 ring-blue-500/30 shadow-sm"
+                : "border border-border hover:border-blue-300/60"
+            }`}
+          >
             <div className="flex items-center justify-between gap-2">
               <Label className="text-sm font-semibold">{f.label}</Label>
               <div className="flex items-center gap-0.5">
