@@ -58,6 +58,7 @@ const specToLayer = (spec: LayerSpec, parent: TemplateSpec): BannerLayer => {
     borderRadius: spec.borderRadius,
     content: spec.content,
     imageUrl: spec.imageUrl,
+    gradient: spec.gradient,
   };
 };
 
