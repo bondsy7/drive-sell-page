@@ -40,7 +40,14 @@ interface Props {
 const DEFAULT_FORMAT_IDS = ["ig-square", "ig-story", "fb-feed"];
 
 // Drei Master-Prompt-Stile für Quick-Mode.
-type ScenePresetId = "showroom-neon" | "cinematic-showroom" | "studio-white";
+type ScenePresetId =
+  | "showroom-neon"
+  | "cinematic-showroom"
+  | "studio-white"
+  | "premium-serious"
+  | "popstyle"
+  | "minimal-clean"
+  | "retro-vintage";
 
 // HERO-SIZE GUARDRAIL: in jedem Prompt enthalten, damit das Auto das dominierende
 // Motiv ist und nach Ideogram-Reframe (Outpainting) NICHT zu klein wirkt.
