@@ -85,7 +85,15 @@ export type BannerComposition = {
   reframeHistory?: string[];
   /** Original master/source image used as the baseline for re-reframing this format. */
   masterImageUrl?: string;
+  /** Optional explicit rect for the background image. Falls back to auto-fit when undefined. */
+  backgroundX?: number;
+  backgroundY?: number;
+  backgroundWidth?: number;
+  backgroundHeight?: number;
 };
+
+/** Virtual layer id used to represent the background image in selection/edit flows. */
+export const BACKGROUND_LAYER_ID = "__background__";
 
 export type LogoMode = "original" | "monochrome-light" | "monochrome-dark" | "custom";
 
