@@ -37,9 +37,20 @@ interface Props {
   ciContext?: CiContext | null;
   /** Optional: zusätzliche CI/Template-Farben als Swatches. */
   ciColors?: CiState["colors"];
+  /** Aktuell auf dem Canvas selektierte Ebene — wird visuell hervorgehoben. */
+  selectedLayerId?: string;
+  /** Wird aufgerufen, wenn der Nutzer das Feld fokussiert (Synchronisierung mit Canvas). */
+  onSelectLayer?: (id?: string) => void;
 }
 
-const TextFieldsPanel: React.FC<Props> = ({ textFields, composition, onChangeText, onPatchLayer, onReorderLayer, ciContext, ciColors }) => {
+const TextFieldsPanel: React.FC<Props> = ({ textFields, composition, onChangeText, onPatchLayer, onReorderLayer, ciContext, ciColors, selectedLayerId, onSelectLayer }) => {
+  const cardRefs = React.useRef<Record<string, HTMLDivElement | null>>({});
+  React.useEffect(() => {
+    if (!selectedLayerId) return;
+    const el = cardRefs.current[selectedLayerId];
+    if (el) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [selectedLayerId]);
+
   React.useEffect(() => {
     [...BRAND_FONTS, ...DISPLAY_FONTS, ...BODY_FONTS].forEach((p) => ensureFontLoaded(p.googleSpec));
   }, []);
