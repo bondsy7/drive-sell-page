@@ -614,6 +614,63 @@ function PropertyPanel({
               onChange={(e) => onChange({ borderRadius: num(e.target.value) ?? 0 })}
             />
           </div>
+          <div className="rounded-md border border-border p-2 space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-semibold">Farbverlauf (Lesbarkeits-Overlay)</Label>
+              <Switch
+                checked={!!layer.gradient}
+                onCheckedChange={(on) =>
+                  onChange({
+                    gradient: on
+                      ? (layer.gradient ?? { direction: "bottom-top", color: layer.backgroundColor && /^#/.test(layer.backgroundColor) ? layer.backgroundColor : "#000000" })
+                      : undefined,
+                  })
+                }
+              />
+            </div>
+            {layer.gradient && (
+              <>
+                <div className="flex gap-2">
+                  <Input
+                    type="color"
+                    className="h-8 w-14 p-1"
+                    value={layer.gradient.color?.startsWith("#") ? layer.gradient.color : "#000000"}
+                    onChange={(e) => onChange({ gradient: { ...layer.gradient!, color: e.target.value } })}
+                  />
+                  <Input
+                    className="h-8 flex-1"
+                    value={layer.gradient.color ?? ""}
+                    placeholder="#000000"
+                    onChange={(e) => onChange({ gradient: { ...layer.gradient!, color: e.target.value } })}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-1">
+                  {([
+                    { v: "bottom-top", lbl: "Unten → Oben" },
+                    { v: "top-bottom", lbl: "Oben → Unten" },
+                    { v: "left-right", lbl: "Links → Rechts" },
+                    { v: "right-left", lbl: "Rechts → Links" },
+                  ] as const).map((d) => (
+                    <button
+                      key={d.v}
+                      type="button"
+                      onClick={() => onChange({ gradient: { ...layer.gradient!, direction: d.v } })}
+                      className={`px-2 py-1 text-[11px] rounded border ${
+                        layer.gradient!.direction === d.v
+                          ? "border-accent bg-accent/10 text-foreground"
+                          : "border-border bg-card text-muted-foreground"
+                      }`}
+                    >
+                      {d.lbl}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  Verlauf 100 % → 0 % Deckkraft. Wird im Template gespeichert und ist damit Standard für alle, die dieses Template laden.
+                </p>
+              </>
+            )}
+          </div>
         </>
       )}
 
