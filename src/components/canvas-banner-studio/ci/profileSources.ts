@@ -25,6 +25,14 @@ export type DealerProfile = {
   x_url?: string | null;
   tiktok_url?: string | null;
   youtube_url?: string | null;
+  dealer_banks?: DealerProfileBank[] | null;
+};
+
+export type DealerProfileBank = {
+  bank_type?: "leasing" | "financing" | string | null;
+  bank_name?: string | null;
+  legal_text?: string | null;
+  sort_order?: number | null;
 };
 
 export type CiContext = {
@@ -79,6 +87,8 @@ function pick(d: any, ...paths: string[]): string {
 
 export function buildCiContext(profile?: DealerProfile | null, vehicle?: Vehicle | null): CiContext {
   const d = vehicle?.vehicle_data || {};
+  const financingBank = (profile?.dealer_banks ?? []).find((b) => b?.bank_type === "financing" && (s(b.bank_name) || s(b.legal_text)));
+  const leasingBank = (profile?.dealer_banks ?? []).find((b) => b?.bank_type === "leasing" && (s(b.bank_name) || s(b.legal_text)));
   return {
     firma: s(profile?.company_name) || s(profile?.contact_name),
     telefon: s(profile?.phone),
@@ -100,10 +110,10 @@ export function buildCiContext(profile?: DealerProfile | null, vehicle?: Vehicle
     kraftstoff: pick(d, "vehicle.fuel_type", "consumption.fuelType", "fuelType", "kraftstoff"),
     getriebe: pick(d, "vehicle.gearbox", "consumption.gearboxType", "gearboxType", "getriebe"),
     rechtstext: s(profile?.default_legal_text),
-    leasingbank: s(profile?.leasing_bank),
-    leasing_rechtstext: s(profile?.leasing_legal_text),
-    finanzierungsbank: s(profile?.financing_bank),
-    finanzierung_rechtstext: s(profile?.financing_legal_text),
+    leasingbank: s(leasingBank?.bank_name) || s(profile?.leasing_bank),
+    leasing_rechtstext: s(leasingBank?.legal_text) || s(profile?.leasing_legal_text),
+    finanzierungsbank: s(financingBank?.bank_name) || s(profile?.financing_bank),
+    finanzierung_rechtstext: s(financingBank?.legal_text) || s(profile?.financing_legal_text),
     facebook: s(profile?.facebook_url),
     instagram: s(profile?.instagram_url),
     x: s(profile?.x_url),
