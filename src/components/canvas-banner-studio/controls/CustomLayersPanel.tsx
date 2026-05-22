@@ -128,6 +128,27 @@ const CustomLayersPanel: React.FC<Props> = ({
     onSelectLayer(layer.id);
   };
 
+  const addGradient = () => {
+    const w = format.width;
+    const h = Math.round(format.height * 0.4);
+    const layer: BannerLayer = {
+      id: newId("gradient"),
+      type: "shape",
+      x: 0,
+      y: format.height - h,
+      width: w,
+      height: h,
+      backgroundColor: "#000000",
+      opacity: 0.8,
+      borderRadius: 0,
+      visible: true,
+      draggable: true,
+      gradient: { direction: "bottom-top", color: "#000000" },
+    };
+    onAddLayer(layer);
+    onSelectLayer(layer.id);
+  };
+
   const handleImagePick = async (file: File) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
