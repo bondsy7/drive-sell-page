@@ -426,7 +426,11 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
     }
 
     const scene = SCENE_PRESETS.find((s) => s.id === scenePresetId) ?? SCENE_PRESETS[0];
-    const masterPromptOverride = scene.build(ciColors.primary, ciColors.secondary);
+    const baseScenePrompt = scene.build(ciColors.primary, ciColors.secondary);
+    const extra = extraPromptInstruction.trim();
+    const masterPromptOverride = extra
+      ? `${baseScenePrompt}\n\nZUSÄTZLICHE ANWEISUNGEN DES NUTZERS (HÖCHSTE PRIORITÄT, MÜSSEN BEACHTET WERDEN):\n${extra}`
+      : baseScenePrompt;
 
     try {
       const out = await generateBannersFromInputs(
