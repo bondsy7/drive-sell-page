@@ -12,6 +12,7 @@ import AppHeader from "@/components/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -241,6 +242,7 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
   const [resolvedLogoUrl, setResolvedLogoUrl] = useState<string | null>(null);
   const [brandPresetKey, setBrandPresetKey] = useState<string>("custom");
   const [scenePresetId, setScenePresetId] = useState<ScenePresetId>("showroom-neon");
+  const [extraPromptInstruction, setExtraPromptInstruction] = useState<string>("");
 
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const imgInputRef = useRef<HTMLInputElement>(null);
@@ -424,7 +426,11 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
     }
 
     const scene = SCENE_PRESETS.find((s) => s.id === scenePresetId) ?? SCENE_PRESETS[0];
-    const masterPromptOverride = scene.build(ciColors.primary, ciColors.secondary);
+    const baseScenePrompt = scene.build(ciColors.primary, ciColors.secondary);
+    const extra = extraPromptInstruction.trim();
+    const masterPromptOverride = extra
+      ? `${baseScenePrompt}\n\nZUSÄTZLICHE ANWEISUNGEN DES NUTZERS (HÖCHSTE PRIORITÄT, MÜSSEN BEACHTET WERDEN):\n${extra}`
+      : baseScenePrompt;
 
     try {
       const out = await generateBannersFromInputs(
@@ -474,7 +480,7 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
     } finally {
       setBusy(false);
     }
-  }, [pdfFile, imageDataUrl, selectedFormatIds, dealerProfile, getLogoForMake, bgTasks, analyzedFields, analyzedBrand, manualBrand, resolvedLogoUrl, ciColors, scenePresetId]);
+  }, [pdfFile, imageDataUrl, selectedFormatIds, dealerProfile, getLogoForMake, bgTasks, analyzedFields, analyzedBrand, manualBrand, resolvedLogoUrl, ciColors, scenePresetId, extraPromptInstruction]);
 
   const regenerateSingle = useCallback(async (r: QuickBannerResult) => {
     const source = r.composition.masterImageUrl || r.composition.backgroundImageUrl;
@@ -871,6 +877,23 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
                   </button>
                 );
               })}
+            </div>
+          </div>
+
+          {/* Zusätzliche Prompt-Anweisungen */}
+          <div className="mt-4">
+            <label className="text-[11px] uppercase tracking-wider text-muted-foreground">
+              Zusätzliche Anweisungen (optional)
+            </label>
+            <Textarea
+              value={extraPromptInstruction}
+              onChange={(e) => setExtraPromptInstruction(e.target.value)}
+              placeholder="z.B. Winterstimmung mit Schnee, Black-Friday-Aktion mit roten Akzenten, Sommer-Sale am Strand …"
+              className="mt-1 min-h-[80px] text-sm"
+              maxLength={600}
+            />
+            <div className="mt-1 text-[10px] text-muted-foreground text-right">
+              {extraPromptInstruction.length}/600
             </div>
           </div>
         </Card>
