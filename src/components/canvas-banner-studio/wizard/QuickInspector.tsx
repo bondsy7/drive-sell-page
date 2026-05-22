@@ -9,7 +9,7 @@
  *  - Logo-Picker-Dialog (Händler / Hersteller-DB / Upload)
  */
 import React, { useMemo, useRef, useState } from "react";
-import { Type, Square, Image as ImageIcon, BadgeCheck, Eye, EyeOff, Trash2, Upload, Search } from "lucide-react";
+import { Type, Square, Image as ImageIcon, BadgeCheck, Eye, EyeOff, Trash2, Upload, Search, ArrowDownToLine } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -120,6 +120,20 @@ const QuickInspector: React.FC<Props> = ({
     onAddLayer(layer); onSelectLayer(layer.id);
   };
 
+  const addGradient = () => {
+    const w = format.width;
+    const h = Math.round(format.height * 0.45);
+    const layer: BannerLayer = {
+      id: newId("gradient"), type: "shape",
+      x: 0, y: format.height - h, width: w, height: h,
+      backgroundColor: "#000000", opacity: 0.7, borderRadius: 0,
+      visible: true, draggable: true,
+      gradient: { direction: "bottom-top", color: "#000000" },
+    };
+    onAddLayer(layer); onSelectLayer(layer.id);
+  };
+
+
   const uploadImage = async (file: File, asLogo = false) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -192,6 +206,9 @@ const QuickInspector: React.FC<Props> = ({
           </Button>
           <Button size="sm" variant="outline" onClick={addShape}>
             <Square className="w-3.5 h-3.5 mr-1.5" /> Form
+          </Button>
+          <Button size="sm" variant="outline" onClick={addGradient}>
+            <ArrowDownToLine className="w-3.5 h-3.5 mr-1.5" /> Verlauf
           </Button>
           <Button size="sm" variant="outline" onClick={() => imgInputRef.current?.click()}>
             <ImageIcon className="w-3.5 h-3.5 mr-1.5" /> Bild
@@ -503,8 +520,67 @@ const QuickInspector: React.FC<Props> = ({
                 <Input type="number" value={selected!.borderRadius ?? 0} className="h-7"
                   onChange={(e) => onPatchLayer(selected!.id, { borderRadius: Number(e.target.value) })} />
               </label>
+              {selected!.gradient && (
+                <div className="space-y-2 pt-2 border-t border-border">
+                  <Label className="text-xs flex items-center gap-1">
+                    <ArrowDownToLine className="w-3 h-3" /> Verlauf (100% → 0%)
+                  </Label>
+                  <div className="flex items-center gap-2 text-xs">
+                    <Label className="text-xs">Farbe</Label>
+                    <input
+                      type="color"
+                      value={selected!.gradient.color}
+                      onChange={(e) => onPatchLayer(selected!.id, {
+                        gradient: { ...selected!.gradient!, color: e.target.value },
+                        backgroundColor: e.target.value,
+                      })}
+                      className="w-8 h-8 rounded border border-border bg-transparent cursor-pointer"
+                    />
+                    <div className="flex flex-wrap gap-1.5">
+                      {ciSwatches.map((c) => (
+                        <button
+                          key={`grad-${c.value}`} type="button" title={c.label}
+                          onClick={() => onPatchLayer(selected!.id, {
+                            gradient: { ...selected!.gradient!, color: c.value },
+                            backgroundColor: c.value,
+                          })}
+                          className="w-5 h-5 rounded-full border-2 border-border hover:border-foreground"
+                          style={{ background: c.value }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs mb-1 block">Richtung</Label>
+                    <div className="grid grid-cols-2 gap-1">
+                      {([
+                        { v: "bottom-top", l: "↑ unten → oben" },
+                        { v: "top-bottom", l: "↓ oben → unten" },
+                        { v: "left-right", l: "→ links → rechts" },
+                        { v: "right-left", l: "← rechts → links" },
+                      ] as const).map((d) => (
+                        <button
+                          key={d.v} type="button"
+                          onClick={() => onPatchLayer(selected!.id, {
+                            gradient: { ...selected!.gradient!, direction: d.v },
+                          })}
+                          className={`text-[11px] px-2 py-1 rounded border ${
+                            selected!.gradient?.direction === d.v
+                              ? "border-accent bg-accent/10 text-foreground"
+                              : "border-border text-muted-foreground"
+                          }`}
+                        >{d.l}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    Tipp: Höhe und Position über die Felder oben anpassen, um Lesbarkeit von Text zu verbessern.
+                  </p>
+                </div>
+              )}
             </>
           )}
+
 
           {/* Bild / Logo */}
           {(selected!.type === "image" || selected!.type === "logo") && (
