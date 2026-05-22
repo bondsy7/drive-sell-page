@@ -59,7 +59,7 @@ const TILES: ActionTile[] = [
   {
     id: 'canvas-banner-studio',
     icon: <Layout className="w-7 h-7" />,
-    title: 'Canvas Banner Studio',
+    title: 'Banner Studio',
     description: 'Exakte Multi-Format-Banner mit editierbaren Text-, Logo- und Pflichtangaben-Ebenen. KI nur fürs Bild.',
     badge: 'NEU',
   },
