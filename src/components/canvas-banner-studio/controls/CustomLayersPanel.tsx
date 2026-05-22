@@ -390,7 +390,86 @@ const CustomLayersPanel: React.FC<Props> = ({
                   </>
                 )}
 
-                {l.type === "shape" && (
+                {l.type === "shape" && l.gradient && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-xs">
+                      <Label className="text-xs">Farbe</Label>
+                      <input
+                        type="color"
+                        value={l.gradient.color?.startsWith("#") ? l.gradient.color : "#000000"}
+                        onChange={(e) => onPatchLayer(l.id, { gradient: { ...l.gradient!, color: e.target.value } })}
+                        className="w-8 h-8 rounded border border-border bg-transparent cursor-pointer"
+                      />
+                      <label className="flex items-center gap-1 text-muted-foreground flex-1">
+                        Deckkraft
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          value={Math.round((l.opacity ?? 1) * 100)}
+                          onChange={(e) => onPatchLayer(l.id, { opacity: Number(e.target.value) / 100 })}
+                          className="accent-[hsl(var(--accent))] flex-1"
+                        />
+                        <span className="tabular-nums w-9 text-right">{Math.round((l.opacity ?? 1) * 100)}%</span>
+                      </label>
+                    </div>
+                    {ciSwatches.length > 0 && (
+                      <div className="flex gap-1 flex-wrap">
+                        {ciSwatches.map((c) => (
+                          <button
+                            key={`grad-${c.value}`}
+                            type="button"
+                            onClick={() => onPatchLayer(l.id, { gradient: { ...l.gradient!, color: c.value } })}
+                            title={c.label}
+                            className={`w-5 h-5 rounded-full border-2 ${
+                              (l.gradient!.color ?? "").toLowerCase() === c.value.toLowerCase() ? "border-foreground" : "border-border"
+                            }`}
+                            style={{ background: c.value }}
+                          />
+                        ))}
+                      </div>
+                    )}
+                    <div>
+                      <Label className="text-xs mb-1 block">Verlaufsrichtung</Label>
+                      <div className="grid grid-cols-2 gap-1">
+                        {([
+                          { v: "bottom-top", lbl: "Unten → Oben" },
+                          { v: "top-bottom", lbl: "Oben → Unten" },
+                          { v: "left-right", lbl: "Links → Rechts" },
+                          { v: "right-left", lbl: "Rechts → Links" },
+                        ] as const).map((d) => (
+                          <button
+                            key={d.v}
+                            type="button"
+                            onClick={() => onPatchLayer(l.id, { gradient: { ...l.gradient!, direction: d.v } })}
+                            className={`px-2 py-1 text-[11px] rounded border ${
+                              l.gradient!.direction === d.v
+                                ? "border-accent bg-accent/10 text-foreground"
+                                : "border-border bg-card text-muted-foreground"
+                            }`}
+                          >
+                            {d.lbl}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <label className="flex flex-col gap-0.5">
+                        <span className="text-muted-foreground">Breite</span>
+                        <Input type="number" value={l.width ?? 0} onChange={(e) => onPatchLayer(l.id, { width: Number(e.target.value) })} className="h-7" />
+                      </label>
+                      <label className="flex flex-col gap-0.5">
+                        <span className="text-muted-foreground">Höhe</span>
+                        <Input type="number" value={l.height ?? 0} onChange={(e) => onPatchLayer(l.id, { height: Number(e.target.value) })} className="h-7" />
+                      </label>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">
+                      Verlauf von 100 % zu 0 % Deckkraft in gewählter Richtung. Macht Text vor unruhigen Bildern besser lesbar.
+                    </p>
+                  </div>
+                )}
+
+                {l.type === "shape" && !l.gradient && (
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-xs">
                       <Label className="text-xs">Farbe</Label>
@@ -445,6 +524,7 @@ const CustomLayersPanel: React.FC<Props> = ({
                     </div>
                   </div>
                 )}
+
 
                 {l.type === "image" && (
                   <div className="space-y-2">
