@@ -50,7 +50,9 @@ type ScenePresetId =
   | "retro-vintage"
   | "deal-tower"
   | "alpine-lifestyle"
-  | "premiere-night";
+  | "premiere-night"
+  | "german-city-neon";
+
 
 
 // HERO-SIZE GUARDRAIL: in jedem Prompt enthalten, damit das Auto das dominierende
@@ -192,7 +194,20 @@ const SCENE_PRESETS: { id: ScenePresetId; label: string; description: string; bu
       NEG_RULES,
     ].join(" "),
   },
+  {
+    id: "german-city-neon",
+    label: "German City · Neon",
+    description: "Deutscher Stadtplatz mit Cyberpunk-Neon-Akzenten in CI-Farben.",
+    build: (primary, secondary) => [
+      "An 8k resolution, professionally photographed automotive commercial image for a high-impact, engaging social media banner, featuring the EXACT same vehicle from the provided image in its precise front three-quarter pose, now centrally positioned on a clean, sun-drenched historic city square in a major German city (e.g. Berlin near Gendarmenmarkt, Munich, Hamburg, Frankfurt), with subtle classic European architecture in the background.",
+      HERO_SIZE_RULES,
+      `Atmosphere: bright daylight golden-hour mood overlaid with cyberpunk neon laser lines and floating abstract geometric shapes that wrap around the vehicle in the brand colors ${primary} (dominant) and ${secondary} (accent). Razor-sharp focus on the car, advanced raytracing reflections on the paint picking up hints of the brand-colored neon.`,
+      "Premium click-worthy editorial automotive advertising photography, 35mm, ultra crisp on the car, magazine quality.",
+      NEG_RULES,
+    ].join(" "),
+  },
 ];
+
 
 
 
