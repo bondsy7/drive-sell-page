@@ -547,9 +547,9 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
                       fill={color}
                       align={l.align ?? "left"}
                       lineHeight={1.2}
-                      shadowColor="rgba(0,0,0,0.45)"
-                      shadowBlur={l.type === "legal" ? 0 : 8}
-                      shadowOpacity={l.type === "legal" ? 0 : 1}
+                      shadowColor="rgba(0,0,0,0)"
+                      shadowBlur={0}
+                      shadowOpacity={0}
                       onTransformEnd={(e) => {
                         const node = e.target as Konva.Text;
                         const sx = node.scaleX();
