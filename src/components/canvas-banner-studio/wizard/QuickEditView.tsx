@@ -293,6 +293,8 @@ const QuickEditView: React.FC<Props> = ({
             onReorderLayer={actions.reorderLayer}
             ciContext={ciContext}
             ciColors={state.ci?.colors}
+            selectedLayerId={state.selectedLayerId}
+            onSelectLayer={actions.selectLayer}
           />
         </div>
       </div>
