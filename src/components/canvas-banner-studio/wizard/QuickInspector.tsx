@@ -120,6 +120,20 @@ const QuickInspector: React.FC<Props> = ({
     onAddLayer(layer); onSelectLayer(layer.id);
   };
 
+  const addGradient = () => {
+    const w = format.width;
+    const h = Math.round(format.height * 0.45);
+    const layer: BannerLayer = {
+      id: newId("gradient"), type: "shape",
+      x: 0, y: format.height - h, width: w, height: h,
+      backgroundColor: "#000000", opacity: 0.7, borderRadius: 0,
+      visible: true, draggable: true,
+      gradient: { direction: "bottom-top", color: "#000000" },
+    };
+    onAddLayer(layer); onSelectLayer(layer.id);
+  };
+
+
   const uploadImage = async (file: File, asLogo = false) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
