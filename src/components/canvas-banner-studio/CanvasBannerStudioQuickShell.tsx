@@ -622,6 +622,7 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
         initialActiveFormatId={formatIds[0]}
         initialTextFields={lastTextFieldsRef.current ?? analyzedFields ?? DEFAULT_TEXT_FIELDS}
         initialCompositions={compositions}
+        vehicleImageDataUrl={imageDataUrl ?? undefined}
         ci={{
           brandKey: brandPresetKey,
           colors: {

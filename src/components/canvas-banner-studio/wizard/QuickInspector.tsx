@@ -9,7 +9,8 @@
  *  - Logo-Picker-Dialog (Händler / Hersteller-DB / Upload)
  */
 import React, { useMemo, useRef, useState } from "react";
-import { Type, Square, Image as ImageIcon, BadgeCheck, Eye, EyeOff, Trash2, Upload, Search, ArrowDownToLine } from "lucide-react";
+import { Type, Square, Image as ImageIcon, BadgeCheck, Eye, EyeOff, Trash2, Upload, Search, ArrowDownToLine, Sparkles, Loader2 } from "lucide-react";
+import { MARKETING_PROMPTS } from "../data/marketingPrompts";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -55,6 +56,9 @@ interface Props {
   onSelectLayer: (id?: string) => void;
   onReorderLayer: (id: string, direction: "forward" | "backward") => void;
   onResetLayout: () => void;
+  canRegenerateBackground?: boolean;
+  backgroundRegenerating?: boolean;
+  onRegenerateBackground?: (presetId: string, extraInstruction: string) => void | Promise<void>;
 }
 
 const newId = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
@@ -62,11 +66,14 @@ const newId = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${Math.r
 const QuickInspector: React.FC<Props> = ({
   composition, format, selectedLayerId, ci, dealerProfile,
   onAddLayer, onPatchLayer, onRemoveLayer, onSelectLayer, onReorderLayer, onResetLayout,
+  canRegenerateBackground, backgroundRegenerating, onRegenerateBackground,
 }) => {
   const imgInputRef = useRef<HTMLInputElement | null>(null);
   const logoUploadRef = useRef<HTMLInputElement | null>(null);
   const [logoPickerOpen, setLogoPickerOpen] = useState(false);
   const [logoQuery, setLogoQuery] = useState("");
+  const [bgPresetId, setBgPresetId] = useState<string>(MARKETING_PROMPTS[0]?.id ?? "");
+  const [bgExtra, setBgExtra] = useState<string>("");
 
   const ciSwatches = useMemo(() => {
     const c = ci?.colors;
@@ -379,8 +386,66 @@ const QuickInspector: React.FC<Props> = ({
           <p className="text-[10px] text-muted-foreground">
             Tipp: Klicke das Hintergrundbild im Canvas an und ziehe an den Ecken zum Skalieren.
           </p>
+
+          {/* Hintergrund neu generieren (nur für dieses Banner) */}
+          {canRegenerateBackground && onRegenerateBackground && (
+            <div className="mt-2 border-t border-border pt-3 space-y-2">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                <Sparkles className="w-3 h-3" />
+                <span>Hintergrund nur für dieses Banner neu generieren</span>
+              </div>
+              <p className="text-[10px] text-muted-foreground leading-tight">
+                Verwendet dein hochgeladenes Original-Fahrzeugbild. Andere Formate bleiben unverändert.
+              </p>
+              <label className="block">
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Szene</span>
+                <select
+                  value={bgPresetId}
+                  onChange={(e) => setBgPresetId(e.target.value)}
+                  className="mt-1 w-full h-8 rounded-md border border-input bg-background px-2 text-xs"
+                  disabled={backgroundRegenerating}
+                >
+                  {MARKETING_PROMPTS.map((p) => (
+                    <option key={p.id} value={p.id}>{p.label}</option>
+                  ))}
+                </select>
+                {(() => {
+                  const p = MARKETING_PROMPTS.find((x) => x.id === bgPresetId);
+                  return p ? (
+                    <span className="block mt-1 text-[10px] text-muted-foreground leading-tight">{p.description}</span>
+                  ) : null;
+                })()}
+              </label>
+              <label className="block">
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                  Zusätzliche Anweisungen (optional)
+                </span>
+                <Textarea
+                  value={bgExtra}
+                  onChange={(e) => setBgExtra(e.target.value)}
+                  placeholder="z.B. Winterstimmung mit Schnee, Black-Friday-Akzente, Sommer am Strand …"
+                  className="mt-1 min-h-[60px] text-xs"
+                  maxLength={600}
+                  disabled={backgroundRegenerating}
+                />
+              </label>
+              <Button
+                size="sm"
+                className="w-full"
+                disabled={backgroundRegenerating || !bgPresetId}
+                onClick={() => onRegenerateBackground(bgPresetId, bgExtra)}
+              >
+                {backgroundRegenerating ? (
+                  <><Loader2 className="w-3 h-3 mr-2 animate-spin" /> Hintergrund wird neu generiert…</>
+                ) : (
+                  <><Sparkles className="w-3 h-3 mr-2" /> Hintergrund neu generieren</>
+                )}
+              </Button>
+            </div>
+          )}
         </div>
       )}
+
 
 
       {/* Eigenschaften der ausgewählten Ebene */}
