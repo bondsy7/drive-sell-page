@@ -47,7 +47,11 @@ type ScenePresetId =
   | "premium-serious"
   | "popstyle"
   | "minimal-clean"
-  | "retro-vintage";
+  | "retro-vintage"
+  | "deal-tower"
+  | "alpine-lifestyle"
+  | "premiere-night";
+
 
 // HERO-SIZE GUARDRAIL: in jedem Prompt enthalten, damit das Auto das dominierende
 // Motiv ist und nach Ideogram-Reframe (Outpainting) NICHT zu klein wirkt.
