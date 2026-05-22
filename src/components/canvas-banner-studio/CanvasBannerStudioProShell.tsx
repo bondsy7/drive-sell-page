@@ -166,14 +166,21 @@ const CanvasBannerStudioShell: React.FC<ProShellProps> = ({ onSwitchToQuick }) =
     if (!user) { setProfile(null); return; }
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select(
-          "company_name, contact_name, email, phone, whatsapp_number, website, address, postal_code, city, logo_url, primary_color, secondary_color, default_legal_text",
-        )
-        .eq("id", user.id)
-        .maybeSingle();
-      if (!cancelled) setProfile(data ?? null);
+      const [{ data }, { data: banks }] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select(
+            "company_name, contact_name, email, phone, whatsapp_number, website, address, postal_code, city, logo_url, primary_color, secondary_color, default_legal_text, leasing_bank, leasing_legal_text, financing_bank, financing_legal_text, facebook_url, instagram_url, x_url, tiktok_url, youtube_url",
+          )
+          .eq("id", user.id)
+          .maybeSingle(),
+        supabase
+          .from("dealer_banks")
+          .select("bank_type, bank_name, legal_text, sort_order")
+          .eq("user_id", user.id)
+          .order("sort_order"),
+      ]);
+      if (!cancelled) setProfile(data ? { ...(data as DealerProfile), dealer_banks: banks ?? [] } : null);
     })();
     return () => { cancelled = true; };
   }, [user]);
