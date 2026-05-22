@@ -254,8 +254,8 @@ export async function generateBannersFromInputs(
         composition = {
           formatId: format.id,
           backgroundFit: "cover",
-          overlayDirection: "bottom",
-          overlayStrength: 50,
+          overlayDirection: "none",
+          overlayStrength: 0,
           selectedTemplateId: "classic-offer",
           layers: specToBannerLayers(loaded.spec, (ciOverrides ?? null) as never),
         };
