@@ -448,6 +448,32 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
                 if (l.type === "shape") {
                   const w = (l.width ?? 200) * formatScale;
                   const h = (l.height ?? 100) * formatScale;
+                  const grad = l.gradient;
+                  let gradProps: any = {};
+                  if (grad) {
+                    const c = grad.color || "#000000";
+                    const stops: any[] = [0, c, 1, c.startsWith("#") ? `${c}00` : c];
+                    // For hex, append 00 alpha for end stop; Konva accepts "#rrggbb00" via rgba — convert hex to rgba.
+                    const hexToRgba = (hex: string, a: number) => {
+                      const m = /^#?([a-f\d]{6})$/i.exec(hex);
+                      if (!m) return hex;
+                      const n = parseInt(m[1], 16);
+                      return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+                    };
+                    const startC = hexToRgba(c, 1);
+                    const endC = hexToRgba(c, 0);
+                    let sp = { x: 0, y: 0 };
+                    let ep = { x: 0, y: h };
+                    if (grad.direction === "bottom-top") { sp = { x: 0, y: h }; ep = { x: 0, y: 0 }; }
+                    else if (grad.direction === "left-right") { sp = { x: 0, y: 0 }; ep = { x: w, y: 0 }; }
+                    else if (grad.direction === "right-left") { sp = { x: w, y: 0 }; ep = { x: 0, y: 0 }; }
+                    gradProps = {
+                      fillLinearGradientStartPoint: sp,
+                      fillLinearGradientEndPoint: ep,
+                      fillLinearGradientColorStops: [0, startC, 1, endC],
+                      fill: undefined,
+                    };
+                  }
                   return (
                     <Rect
                       key={l.id}
@@ -456,7 +482,7 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
                       y={l.y}
                       width={w}
                       height={h}
-                      fill={l.backgroundColor || resolveColor(l.color) || "#000000"}
+                      {...(grad ? gradProps : { fill: l.backgroundColor || resolveColor(l.color) || "#000000" })}
                       opacity={l.opacity ?? 1}
                       cornerRadius={l.borderRadius ?? 0}
                       draggable={l.draggable}

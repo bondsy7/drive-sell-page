@@ -61,6 +61,11 @@ export type BannerLayer = {
   content?: string;
   /** Source URL for custom image layers. */
   imageUrl?: string;
+  /** Gradient overlay (for shape layers used as readability overlays). 100% → 0% alpha. */
+  gradient?: {
+    direction: "top-bottom" | "bottom-top" | "left-right" | "right-left";
+    color: string; // hex (#rrggbb)
+  };
 };
 
 export type LogoSlot = "manufacturer" | "dealer" | "custom";

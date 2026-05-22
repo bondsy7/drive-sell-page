@@ -180,13 +180,31 @@ export async function renderCompositionToDataURL(
     if (layer.type === "shape") {
       const w = (layer.width ?? 200) * formatScale;
       const h = (layer.height ?? 100) * formatScale;
-      const fill = layer.backgroundColor
-        ? resolveColor(layer.backgroundColor, ci)
-        : resolveColor(layer.color, ci);
       ctx.save();
       ctx.globalAlpha = layer.opacity ?? 1;
-      ctx.fillStyle = fill;
       const r = Math.max(0, layer.borderRadius ?? 0);
+      if (layer.gradient) {
+        const c = layer.gradient.color || "#000000";
+        const hexToRgba = (hex: string, a: number) => {
+          const m = /^#?([a-f\d]{6})$/i.exec(hex);
+          if (!m) return hex;
+          const n = parseInt(m[1], 16);
+          return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+        };
+        let x0 = layer.x, y0 = layer.y, x1 = layer.x, y1 = layer.y + h;
+        if (layer.gradient.direction === "bottom-top") { y0 = layer.y + h; y1 = layer.y; }
+        else if (layer.gradient.direction === "left-right") { x0 = layer.x; x1 = layer.x + w; y0 = layer.y; y1 = layer.y; }
+        else if (layer.gradient.direction === "right-left") { x0 = layer.x + w; x1 = layer.x; y0 = layer.y; y1 = layer.y; }
+        const g = ctx.createLinearGradient(x0, y0, x1, y1);
+        g.addColorStop(0, hexToRgba(c, 1));
+        g.addColorStop(1, hexToRgba(c, 0));
+        ctx.fillStyle = g;
+      } else {
+        const fill = layer.backgroundColor
+          ? resolveColor(layer.backgroundColor, ci)
+          : resolveColor(layer.color, ci);
+        ctx.fillStyle = fill;
+      }
       if (r > 0 && typeof (ctx as any).roundRect === "function") {
         ctx.beginPath();
         (ctx as any).roundRect(layer.x, layer.y, w, h, r);
