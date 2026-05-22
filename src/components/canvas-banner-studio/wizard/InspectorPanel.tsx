@@ -81,6 +81,8 @@ const InspectorPanel: React.FC<Props> = ({
           onChangeText={actions.setText}
           onPatchLayer={actions.patchLayer}
           onReorderLayer={actions.reorderLayer}
+          selectedLayerId={state.selectedLayerId}
+          onSelectLayer={actions.selectLayer}
         />
       </TabsContent>
 
