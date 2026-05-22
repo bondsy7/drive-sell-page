@@ -242,6 +242,7 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
   const [resolvedLogoUrl, setResolvedLogoUrl] = useState<string | null>(null);
   const [brandPresetKey, setBrandPresetKey] = useState<string>("custom");
   const [scenePresetId, setScenePresetId] = useState<ScenePresetId>("showroom-neon");
+  const [extraPromptInstruction, setExtraPromptInstruction] = useState<string>("");
 
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const imgInputRef = useRef<HTMLInputElement>(null);
