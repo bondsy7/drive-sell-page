@@ -257,10 +257,10 @@ function presentReducer(state: StudioState, action: Action): StudioState {
       if (action.layerId === "__background__") {
         const p = action.patch as Partial<BannerLayer>;
         const next: BannerComposition = { ...c };
-        if (p.x !== undefined) next.backgroundX = p.x;
-        if (p.y !== undefined) next.backgroundY = p.y;
-        if (p.width !== undefined) next.backgroundWidth = p.width;
-        if (p.height !== undefined) next.backgroundHeight = p.height;
+        if ("x" in p) next.backgroundX = p.x as number | undefined;
+        if ("y" in p) next.backgroundY = p.y as number | undefined;
+        if ("width" in p) next.backgroundWidth = p.width as number | undefined;
+        if ("height" in p) next.backgroundHeight = p.height as number | undefined;
         return {
           ...state,
           compositions: { ...state.compositions, [action.formatId]: next },
