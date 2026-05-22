@@ -299,9 +299,14 @@ function presentReducer(state: StudioState, action: Action): StudioState {
       const idx = c.layers.findIndex((l) => l.id === action.layerId);
       if (idx < 0) return state;
       const newLayers = [...c.layers];
-      const targetIdx = action.direction === "forward" ? idx + 1 : idx - 1;
-      if (targetIdx < 0 || targetIdx >= newLayers.length) return state;
-      [newLayers[idx], newLayers[targetIdx]] = [newLayers[targetIdx], newLayers[idx]];
+      const [moved] = newLayers.splice(idx, 1);
+      if (action.direction === "forward") {
+        // Vorne = oberste Ebene (zuletzt gerendert)
+        newLayers.push(moved);
+      } else {
+        // Hinten = unterste Ebene (zuerst gerendert)
+        newLayers.unshift(moved);
+      }
       return {
         ...state,
         compositions: { ...state.compositions, [action.formatId]: { ...c, layers: newLayers } },
