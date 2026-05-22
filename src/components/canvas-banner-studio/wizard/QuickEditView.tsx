@@ -61,6 +61,49 @@ const QuickEditView: React.FC<Props> = ({
   const hydratedRef = useRef(false);
   const [selectedScreen, setSelectedScreen] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
   const [zipBusy, setZipBusy] = useState(false);
+  const [bgRegenerating, setBgRegenerating] = useState(false);
+
+  const handleRegenerateBackground = useCallback(
+    async (presetId: string, extraInstruction: string) => {
+      if (!vehicleImageDataUrl) {
+        toast.error("Original-Fahrzeugbild nicht verfügbar.");
+        return;
+      }
+      const preset = getMarketingPromptById(presetId);
+      if (!preset) {
+        toast.error("Szene nicht gefunden.");
+        return;
+      }
+      const formatId = activeFormat.id;
+      setBgRegenerating(true);
+      const tId = toast.loading("Hintergrund wird neu generiert…");
+      try {
+        const { imageDataUrl: masterUrl } = await generateMasterBannerImage({
+          sourceImageUrl: vehicleImageDataUrl,
+          promptText: preset.prompt,
+          extraInstruction: extraInstruction.trim() || undefined,
+        });
+        toast.loading("Hintergrund wird auf Format zugeschnitten…", { id: tId });
+        const reframed = await reframeImageForFormat(masterUrl, activeFormat.width, activeFormat.height);
+        const currentBg = activeComposition.backgroundImageUrl;
+        if (currentBg) actions.pushReframeHistory(currentBg, formatId);
+        actions.setMasterImage(masterUrl, formatId);
+        actions.setBackground(reframed.imageDataUrl, formatId);
+        // Auto-Fit überschreibungen zurücksetzen, damit neuer Hintergrund sauber sitzt
+        actions.patchLayer("__background__", {
+          x: undefined as any, y: undefined as any,
+          width: undefined as any, height: undefined as any,
+        }, formatId);
+        toast.success("Hintergrund neu generiert.", { id: tId });
+      } catch (e: any) {
+        console.error("regenerate background failed", e);
+        toast.error(e?.message ?? "Hintergrund konnte nicht generiert werden.", { id: tId });
+      } finally {
+        setBgRegenerating(false);
+      }
+    },
+    [vehicleImageDataUrl, activeFormat, activeComposition.backgroundImageUrl, actions],
+  );
 
   // Einmalige Hydration aus den Quick-Generate Ergebnissen.
   useEffect(() => {
