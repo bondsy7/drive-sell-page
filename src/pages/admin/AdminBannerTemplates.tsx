@@ -310,11 +310,13 @@ function VisualEditor({
                 // Scale border-radius by display scale so the rounded preview
                 // matches the frontend (Konva scales cornerRadius via stage).
                 borderRadius: (l.borderRadius ?? 0) * scale,
-                backgroundImage: isImage && l.imageUrl
-                  ? `url("${l.imageUrl}")`
-                  : isLogo && (tintedLogoUrls[l.id] || brandLogoUrl)
-                    ? `url("${tintedLogoUrls[l.id] || brandLogoUrl}")`
-                    : undefined,
+                backgroundImage: gradientCss
+                  ? gradientCss
+                  : isImage && l.imageUrl
+                    ? `url("${l.imageUrl}")`
+                    : isLogo && (tintedLogoUrls[l.id] || brandLogoUrl)
+                      ? `url("${tintedLogoUrls[l.id] || brandLogoUrl}")`
+                      : undefined,
                 backgroundSize: isLogo ? "contain" : "cover",
                 backgroundRepeat: "no-repeat",
                 backgroundPosition: "center",
