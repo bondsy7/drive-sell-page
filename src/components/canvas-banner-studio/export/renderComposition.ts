@@ -261,7 +261,47 @@ export async function renderCompositionToDataURL(
     const fontSize = effectiveFontSize(layer, text, formatScale);
     const baseFamily = (layer.id === "headline" || layer.id === "subline") ? FONT_DISPLAY : FONT_BODY;
     const family = layer.fontFamily ? `"${layer.fontFamily}", ${DEFAULT_FONT_FAMILY}` : baseFamily;
-    drawTextLayer(ctx, layer, text, resolveColor(layer.color, ci), fontSize, family);
+    let textColor = resolveColor(layer.color, ci);
+
+    // CTA als Button rendern (Primary-Hintergrund + Padding).
+    const isCta = layer.id === "cta" || layer.field === "cta";
+    if (isCta) {
+      const weight = (layer.fontWeight ?? 400) >= 600 ? "700" : "400";
+      ctx.save();
+      ctx.font = `${weight} ${fontSize}px ${family}`;
+      const maxW = layer.width ?? 1000;
+      const lines = wrapText(ctx, text, maxW);
+      let measuredW = 0;
+      for (const ln of lines) measuredW = Math.max(measuredW, ctx.measureText(ln).width);
+      ctx.restore();
+      const padX = fontSize * 0.7;
+      const padY = fontSize * 0.45;
+      const boxW = measuredW + padX * 2;
+      const boxH = fontSize * 1.2 * lines.length + padY * 2;
+      let bx = layer.x - padX;
+      const area = layer.width ?? measuredW;
+      if (layer.align === "center") bx = layer.x + (area - measuredW) / 2 - padX;
+      else if (layer.align === "right") bx = layer.x + area - measuredW - padX;
+      const by = layer.y - padY;
+      const fill = ci?.colors?.primary || resolveColor("primary", ci) || "#174f6b";
+      const r = Math.min(boxH / 2, 12);
+      ctx.save();
+      ctx.fillStyle = fill;
+      if (typeof (ctx as any).roundRect === "function") {
+        ctx.beginPath();
+        (ctx as any).roundRect(bx, by, boxW, boxH, r);
+        ctx.fill();
+      } else {
+        ctx.fillRect(bx, by, boxW, boxH);
+      }
+      ctx.restore();
+      const tokenIsPrimary = (layer.color ?? "").toLowerCase() === "primary"
+        || (layer.color ?? "").toLowerCase() === "accent"
+        || textColor.toLowerCase() === fill.toLowerCase();
+      if (tokenIsPrimary) textColor = "#ffffff";
+    }
+
+    drawTextLayer(ctx, layer, text, textColor, fontSize, family);
   }
 
   const mime = type === "png" ? "image/png" : type === "jpg" ? "image/jpeg" : "image/webp";
