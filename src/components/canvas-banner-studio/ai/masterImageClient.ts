@@ -39,44 +39,113 @@ export async function extractBannerDataFromImage(fileDataUrl: string): Promise<E
   };
 }
 
+type OfferType = "leasing" | "finanzierung" | "barkauf";
+
+function detectOfferType(category: string, finance: any): OfferType {
+  const cat = String(category || "").toLowerCase();
+  if (cat.includes("leasing")) return "leasing";
+  if (cat.includes("finanz") || cat.includes("kredit")) return "finanzierung";
+  if (cat.includes("bar") || cat.includes("kauf")) return "barkauf";
+  // Fallback aus Finance-Feldern
+  if (finance?.residualValue || finance?.specialPayment || finance?.annualMileage) return "leasing";
+  if (finance?.interestRate || finance?.nominalInterestRate || finance?.totalAmount) return "finanzierung";
+  if (finance?.monthlyRate) return "finanzierung";
+  return "barkauf";
+}
+
+function vatSuffix(customerType: string): string {
+  return String(customerType || "").toLowerCase() === "business" ? " zzgl. MwSt." : "";
+}
+
+function shortMonths(s: string): string {
+  // "48 Monate" → "48 Mon."
+  return String(s || "").replace(/\bMonate?\b/i, "Mon.").trim();
+}
+
+function compactKm(s: string): string {
+  return String(s || "").replace(/\s*km\s*\/\s*jahr/i, " km").trim();
+}
+
 export async function extractBannerDataFromPdf(pdfBase64: string): Promise<ExtractedBannerFields> {
-  // Reuse the rich existing analyze-pdf function and map its output to banner fields.
+  // Reuse the rich existing analyze-pdf function and map its output to sales-oriented banner copy.
   const { data, error } = await supabase.functions.invoke("analyze-pdf", {
     body: { pdfBase64 },
   });
   if (error) throw error;
   const v = (data as any)?.vehicle ?? {};
-  const f = (data as any)?.financing ?? {};
+  const f = (data as any)?.finance ?? (data as any)?.financing ?? {};
   const c = (data as any)?.consumption ?? {};
+  const category = String((data as any)?.category ?? "");
+  const customerType = String((data as any)?.customerType ?? "private");
+
   const brand = String(v.brand ?? "").trim();
-  const brandModel = [v.brand, v.model].filter(Boolean).join(" ").trim();
+  const model = String(v.model ?? "").trim();
+  const headline = [brand, model].filter(Boolean).join(" ").trim().toUpperCase().slice(0, 28);
 
+  const offer = detectOfferType(category, f);
+  const vat = vatSuffix(customerType);
+
+  // --- Subline: Angebots-Hook mit Firmen-Shortcode ---
+  let subline = "";
+  if (offer === "leasing") subline = "Leasingangebot von {{firma}}";
+  else if (offer === "finanzierung") subline = "Top-Finanzierung von {{firma}}";
+  else subline = "Hauspreis bei {{firma}}";
+
+  // --- Price: kompakte Aussage ---
   let price = "";
-  if (f?.monthlyRate) price = `ab ${formatEUR(f.monthlyRate)} mtl.`;
-  else if (v?.price) price = `${formatEUR(v.price)}`;
-
-  let legalText = "";
-  if (c?.consumptionCombined || c?.co2Emissions) {
-    const parts: string[] = [];
-    if (c.consumptionCombined) parts.push(`Verbrauch komb. ${c.consumptionCombined} l/100km`);
-    if (c.co2Emissions) parts.push(`CO₂ ${c.co2Emissions} g/km`);
-    if (c.co2Class) parts.push(`Klasse ${c.co2Class}`);
-    legalText = parts.join(" · ");
+  if ((offer === "leasing" || offer === "finanzierung") && f?.monthlyRate) {
+    price = `ab ${formatEUR(f.monthlyRate)} mtl.${vat}`;
+  } else if (v?.price || f?.totalPrice) {
+    price = `${formatEUR(v?.price || f?.totalPrice)}${vat}`;
   }
+  price = price.slice(0, 40);
+
+  // --- smallInfo: Faktencluster ---
+  let smallInfoParts: string[] = [];
+  if (offer === "leasing" || offer === "finanzierung") {
+    if (f?.duration) smallInfoParts.push(shortMonths(f.duration));
+    if (f?.annualMileage) smallInfoParts.push(compactKm(f.annualMileage));
+    if (f?.downPayment || f?.specialPayment) {
+      smallInfoParts.push(`${formatEUR(f.downPayment || f.specialPayment)} Anzahlung`);
+    } else if (offer === "leasing") {
+      smallInfoParts.push("0 € Anzahlung");
+    }
+  } else {
+    if (v?.year || v?.firstRegistration) smallInfoParts.push(`EZ ${String(v.year || v.firstRegistration).slice(-4)}`);
+    if (v?.mileage || c?.mileage) smallInfoParts.push(`${String(v.mileage || c.mileage).replace(/\s*km.*$/i, "")} km`);
+    if (v?.power || c?.power) {
+      const p = String(v.power || c.power);
+      const ps = p.match(/(\d+)\s*PS/i)?.[1];
+      smallInfoParts.push(ps ? `${ps} PS` : p);
+    }
+  }
+  const smallInfo = smallInfoParts.filter(Boolean).join(" · ").slice(0, 70);
+
+  // --- CTA: kurz & aktiv ---
+  const cta = offer === "barkauf" ? "Jetzt Probefahrt!" : "Jetzt sichern!";
+
+  // --- Pflichtangabe (legalText) ---
+  const legalParts: string[] = [];
+  if (c?.consumptionCombined) legalParts.push(`Verbrauch komb. ${c.consumptionCombined}`);
+  if (c?.consumptionElectric) legalParts.push(`Strom ${c.consumptionElectric}`);
+  if (c?.co2Emissions) legalParts.push(`CO₂ ${c.co2Emissions}`);
+  if (c?.co2Class) legalParts.push(`Klasse ${c.co2Class}`);
+  const legalText = legalParts.join(" · ").slice(0, 240);
 
   return {
     brand,
-    headline: brandModel.slice(0, 60),
-    subline: (v?.equipment?.[0] || (data as any)?.category || "").toString().slice(0, 80),
-    price: price.slice(0, 40),
-    cta: "Jetzt Probefahrt sichern",
-    smallInfo: f?.duration ? `${f.duration} Monate` : "",
-    legalText: legalText.slice(0, 240),
+    headline,
+    subline: subline.slice(0, 60),
+    price,
+    cta,
+    smallInfo,
+    legalText,
   };
 }
 
 function formatEUR(n: any): string {
-  const x = Number(String(n).replace(/[^\d.,-]/g, "").replace(",", "."));
-  if (!isFinite(x)) return String(n);
+  if (n === undefined || n === null || n === "") return "";
+  const x = Number(String(n).replace(/[^\d.,-]/g, "").replace(/\./g, "").replace(",", "."));
+  if (!isFinite(x) || x <= 0) return String(n);
   return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(x);
 }
