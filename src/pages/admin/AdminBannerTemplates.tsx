@@ -266,12 +266,30 @@ function VisualEditor({
               ? DUMMY_TEXT[l.field] ?? l.id
               : (l.content ?? l.id);
           const bg = isShape
-            ? l.backgroundColor || "#3b82f6"
+            ? (l.gradient ? "transparent" : (l.backgroundColor || "#3b82f6"))
             : isLogo
               ? (l.backgroundColor || (brandLogoUrl ? "transparent" : "rgba(255,255,255,0.85)"))
               : isImage
                 ? "rgba(0,0,0,0.15)"
                 : "transparent";
+          const gradientCss = (() => {
+            if (!isShape || !l.gradient) return undefined;
+            const c = l.gradient.color || "#000000";
+            const hexToRgba = (hex: string, a: number) => {
+              const m = /^#?([a-f\d]{6})$/i.exec(hex);
+              if (!m) return hex;
+              const n = parseInt(m[1], 16);
+              return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+            };
+            const dirMap: Record<string, string> = {
+              "bottom-top": "to top",
+              "top-bottom": "to bottom",
+              "left-right": "to right",
+              "right-left": "to left",
+            };
+            const dir = dirMap[l.gradient.direction] || "to top";
+            return `linear-gradient(${dir}, ${hexToRgba(c, 1)} 0%, ${hexToRgba(c, 0)} 100%)`;
+          })();
 
           return (
             <div
@@ -292,11 +310,13 @@ function VisualEditor({
                 // Scale border-radius by display scale so the rounded preview
                 // matches the frontend (Konva scales cornerRadius via stage).
                 borderRadius: (l.borderRadius ?? 0) * scale,
-                backgroundImage: isImage && l.imageUrl
-                  ? `url("${l.imageUrl}")`
-                  : isLogo && (tintedLogoUrls[l.id] || brandLogoUrl)
-                    ? `url("${tintedLogoUrls[l.id] || brandLogoUrl}")`
-                    : undefined,
+                backgroundImage: gradientCss
+                  ? gradientCss
+                  : isImage && l.imageUrl
+                    ? `url("${l.imageUrl}")`
+                    : isLogo && (tintedLogoUrls[l.id] || brandLogoUrl)
+                      ? `url("${tintedLogoUrls[l.id] || brandLogoUrl}")`
+                      : undefined,
                 backgroundSize: isLogo ? "contain" : "cover",
                 backgroundRepeat: "no-repeat",
                 backgroundPosition: "center",
