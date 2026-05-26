@@ -230,6 +230,8 @@ serve(async (req) => {
     } catch {}
     const authResult = await authenticateAndDeductCredits(req, "image_remaster", cost);
     if (authResult instanceof Response) return authResult;
+    const userEmail = (authResult as any).email as string | undefined;
+    const isDekraShowroomUser = !!userEmail && DEKRA_SHOWROOM_USERS.has(userEmail.toLowerCase());
 
     // Engine routing per user-selected tier (binding, no cross-engine fallback)
     interface EngineConfig { engine: 'gemini' | 'openai'; model: string }
