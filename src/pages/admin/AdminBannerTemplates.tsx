@@ -911,7 +911,7 @@ export default function AdminBannerTemplates() {
   };
 
 
-  const addLayer = (kind: "text" | "shape" | "image") => {
+  const addLayer = (kind: "text" | "shape" | "image" | "gradient") => {
     setDraft((d) => {
       if (!d) return d;
       const id = `${kind}-${Math.random().toString(36).slice(2, 7)}`;
@@ -932,6 +932,20 @@ export default function AdminBannerTemplates() {
           x: cx - 150, y: cy - 50,
           width: 300, height: 100,
           backgroundColor: "#000000", opacity: 0.5, borderRadius: 0,
+          visible: true, draggable: true,
+        };
+      } else if (kind === "gradient") {
+        // Full-width gradient overlay anchored at the bottom – mirrors the
+        // user-side "Verlauf" quick-add so admins can bake the same overlay
+        // into the template as a global default.
+        const gw = d.format.width;
+        const gh = Math.round(d.format.height * 0.4);
+        layer = {
+          id, type: "shape", anchor: "absolute",
+          x: 0, y: d.format.height - gh,
+          width: gw, height: gh,
+          backgroundColor: "#000000", opacity: 0.8, borderRadius: 0,
+          gradient: { direction: "bottom-top", color: "#000000" },
           visible: true, draggable: true,
         };
       } else {
@@ -1120,10 +1134,11 @@ export default function AdminBannerTemplates() {
                   <div className="font-semibold text-sm">Ebenen</div>
                   <div className="text-[10px] text-muted-foreground">Oben = Hintergrund · Unten = Vordergrund</div>
                 </div>
-                <div className="flex gap-1 mb-2">
-                  <Button size="sm" variant="outline" className="flex-1 h-7 text-xs" onClick={() => addLayer("text")}>+ Text</Button>
-                  <Button size="sm" variant="outline" className="flex-1 h-7 text-xs" onClick={() => addLayer("shape")}>+ Form</Button>
-                  <Button size="sm" variant="outline" className="flex-1 h-7 text-xs" onClick={() => addLayer("image")}>+ Bild</Button>
+                <div className="flex flex-wrap gap-1 mb-2">
+                  <Button size="sm" variant="outline" className="flex-1 min-w-[60px] h-7 text-xs" onClick={() => addLayer("text")}>+ Text</Button>
+                  <Button size="sm" variant="outline" className="flex-1 min-w-[60px] h-7 text-xs" onClick={() => addLayer("shape")}>+ Form</Button>
+                  <Button size="sm" variant="outline" className="flex-1 min-w-[70px] h-7 text-xs" onClick={() => addLayer("gradient")}>+ Verlauf</Button>
+                  <Button size="sm" variant="outline" className="flex-1 min-w-[60px] h-7 text-xs" onClick={() => addLayer("image")}>+ Bild</Button>
                 </div>
                 <div className="space-y-1 max-h-64 overflow-auto">
                   {draft.layers.map((l, idx) => (
