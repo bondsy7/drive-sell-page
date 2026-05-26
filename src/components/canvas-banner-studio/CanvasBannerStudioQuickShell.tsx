@@ -1018,8 +1018,10 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
           </Button>
           {!canGenerate && !busy && (
             <p className="text-[11px] text-muted-foreground">
-              {!pdfFile || !imageFile
-                ? "Datenblatt und Fahrzeugbild hochladen."
+              {!hasDataSource
+                ? "Datenblatt hochladen oder ein Fahrzeug verknüpfen."
+                : !imageDataUrl
+                ? "Fahrzeugbild hochladen oder aus Fahrzeug wählen."
                 : analyzing
                   ? "Analyse läuft – gleich startbereit."
                   : "Mindestens ein Format wählen."}
