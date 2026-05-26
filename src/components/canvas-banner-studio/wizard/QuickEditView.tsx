@@ -116,7 +116,7 @@ const QuickEditView: React.FC<Props> = ({
     [vehicleImageDataUrl, activeFormat, activeComposition.backgroundImageUrl, actions],
   );
 
-  // Einmalige Hydration aus den Quick-Generate Ergebnissen.
+  // Einmalige Hydration aus den Quick-Generate Ergebnissen (oder gespeichertem Projekt).
   useEffect(() => {
     if (hydratedRef.current) return;
     hydratedRef.current = true;
@@ -127,9 +127,32 @@ const QuickEditView: React.FC<Props> = ({
       compositions: initialCompositions,
       showSafeArea: false,
       ci: ci as CiState | undefined,
+      vehicleId: initialVehicleId,
+      projectTitle: initialProjectTitle,
+      bannerProjectId: initialBannerProjectId,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Persistente Speicherung als Canvas-Projekt im Dashboard.
+  // - Ohne Fahrzeug: vehicleId = null  → wird als "No-VIN" Eintrag gelistet
+  // - Mit Fahrzeug:  vehicleId = uuid  → an bestehende VIN gebunden
+  const { saveNow } = useBannerProject({
+    state,
+    onProjectIdAssigned: (id) => actions.setBannerProjectId(id),
+  });
+  const [saving, setSaving] = useState(false);
+  const handleManualSave = useCallback(async () => {
+    setSaving(true);
+    try {
+      await saveNow();
+      toast.success("Canvas-Projekt gespeichert");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Speichern fehlgeschlagen");
+    } finally {
+      setSaving(false);
+    }
+  }, [saveNow]);
 
   const ciContext = useMemo(() => buildCiContext(dealerProfile, null), [dealerProfile]);
 
