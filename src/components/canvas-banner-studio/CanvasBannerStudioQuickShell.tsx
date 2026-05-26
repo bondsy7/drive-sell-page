@@ -394,9 +394,9 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
     };
   })();
 
+  const hasDataSource = !!pdfFile || vehiclePrefillUsed;
   const canGenerate =
-    !!pdfFile &&
-    !!imageFile &&
+    hasDataSource &&
     !!imageDataUrl &&
     selectedFormatIds.length > 0 &&
     !analyzing &&
@@ -404,8 +404,8 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
     !busy;
 
   const handleGenerate = useCallback(async () => {
-    if (!pdfFile || !imageDataUrl || !analyzedFields) {
-      toast.error("Bitte warten bis die Analyse abgeschlossen ist.");
+    if (!hasDataSource || !imageDataUrl || !analyzedFields) {
+      toast.error("Bitte Datenblatt hochladen oder ein Fahrzeug verknüpfen.");
       return;
     }
     if (selectedFormatIds.length === 0) {
