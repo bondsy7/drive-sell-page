@@ -15,6 +15,8 @@ import { resolveCanonicalBrand, normalizeBrand } from '@/lib/brand-aliases';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 import { uploadToGeminiFiles } from '@/lib/gemini-file-upload';
 import { ensureLogoCachedAsPng } from '@/lib/image-base64-cache';
+import { ensureVehicleAuto } from '@/lib/vehicle-utils';
+import { useAuth } from '@/hooks/useAuth';
 import type { VehicleData } from '@/types/vehicle';
 
 interface ImageCaptureGridProps {
