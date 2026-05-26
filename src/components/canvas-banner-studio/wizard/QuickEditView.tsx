@@ -297,22 +297,7 @@ const QuickEditView: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Projekt-Metadaten: Titel + Fahrzeug verknüpfen (auto-Speichern als Canvas-Projekt) */}
-        <div className="container mx-auto px-3 pb-2 max-w-6xl grid gap-2 md:grid-cols-[1fr_1fr]">
-          <Input
-            placeholder="Projekttitel (z. B. Frühlingsaktion 2026)"
-            value={state.projectTitle ?? ""}
-            onChange={(e) => actions.setProjectTitle(e.target.value)}
-            className="h-9 text-sm"
-          />
-          <div className="text-[11px] text-muted-foreground self-center">
-            {state.vehicleId === null
-              ? "Ohne Fahrzeug (No-VIN) – im Dashboard unter Canvas-Projekte verfügbar."
-              : state.vehicleId
-                ? "An Fahrzeug verknüpft – Banner werden im Fahrzeug abgelegt."
-                : "Wähle ein Fahrzeug oder \u201eOhne Fahrzeug\u201c, damit das Projekt im Dashboard erscheint."}
-          </div>
-        </div>
+        {/* Canvas-Projekt: Titel + Fahrzeug verknüpfen (Auto-Save im Dashboard) */}
         <div className="container mx-auto px-3 pb-2 max-w-6xl">
           <VehicleBannerPicker
             vehicleId={state.vehicleId}
