@@ -165,6 +165,20 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   const [showPipeline, setShowPipeline] = useState(false);
   const [ensuredVehicleId, setEnsuredVehicleId] = useState<string | null>(vehicleId || null);
   const [isEnsuringVehicle, setIsEnsuringVehicle] = useState(false);
+  const [captures, setCaptures] = useState<Record<string, CapturedImage>>({});
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [progress, setProgress] = useState({ current: 0, total: 0 });
+  const [detectedVin, setDetectedVin] = useState<string | null>(null);
+  const [remasterConfig, setRemasterConfig] = useState<RemasterConfig>(DEFAULT_CONFIG);
+  const [brandDetectionStatus, setBrandDetectionStatus] = useState<'idle' | 'detecting' | 'found' | 'not-found'>('idle');
+  const [detailImages, setDetailImages] = useState<string[]>([]);
+  const detailFileRef = useRef<HTMLInputElement | null>(null);
+  const vinLookup = useVinLookup();
+  const { makes } = useVehicleMakes();
+  const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const brandDetectionAttempted = useRef(false);
+  const latestVehicleDataRef = useRef<VehicleData | undefined>(vehicleData);
+  latestVehicleDataRef.current = vehicleData;
 
   /**
    * Ensure a vehicle row exists (using VIN if detected, otherwise a NOVIN
@@ -183,27 +197,13 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     } finally {
       setIsEnsuringVehicle(false);
     }
-  }, [ensuredVehicleId, vehicleId, user, vehicleData]);
+  }, [ensuredVehicleId, vehicleId, user, vehicleData, detectedVin]);
 
   const openPipeline = useCallback(async () => {
     await ensureVehicleForPipeline();
     setShowPipeline(true);
   }, [ensureVehicleForPipeline]);
 
-  const [captures, setCaptures] = useState<Record<string, CapturedImage>>({});
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [progress, setProgress] = useState({ current: 0, total: 0 });
-  const [detectedVin, setDetectedVin] = useState<string | null>(null);
-  const [remasterConfig, setRemasterConfig] = useState<RemasterConfig>(DEFAULT_CONFIG);
-  const [brandDetectionStatus, setBrandDetectionStatus] = useState<'idle' | 'detecting' | 'found' | 'not-found'>('idle');
-  const [detailImages, setDetailImages] = useState<string[]>([]);
-  const detailFileRef = useRef<HTMLInputElement | null>(null);
-  const vinLookup = useVinLookup();
-  const { makes } = useVehicleMakes();
-  const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
-  const brandDetectionAttempted = useRef(false);
-  const latestVehicleDataRef = useRef<VehicleData | undefined>(vehicleData);
-  latestVehicleDataRef.current = vehicleData;
 
   const makeKeys = useMemo(() => makes.map(m => m.key), [makes]);
 
