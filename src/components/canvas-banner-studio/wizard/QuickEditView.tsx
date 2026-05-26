@@ -61,6 +61,9 @@ const QuickEditView: React.FC<Props> = ({
   ci,
   dealerProfile,
   vehicleImageDataUrl,
+  initialVehicleId,
+  initialProjectTitle,
+  initialBannerProjectId,
   onBack,
   onApply,
 }) => {
