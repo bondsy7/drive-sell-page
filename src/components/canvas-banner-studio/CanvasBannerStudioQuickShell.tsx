@@ -173,7 +173,7 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
   const [manualBrand, setManualBrand] = useState<string>("");
   const [resolvedLogoUrl, setResolvedLogoUrl] = useState<string | null>(null);
   const [brandPresetKey, setBrandPresetKey] = useState<string>("custom");
-  const [scenePresetId, setScenePresetId] = useState<ScenePresetId>("showroom-neon");
+  const [scenePresetId, setScenePresetId] = useState<ScenePresetId>("showroom-neon-streaks");
   const [extraPromptInstruction, setExtraPromptInstruction] = useState<string>("");
 
   // Canvas-Projekt Persistenz (vor und nach editMode wiederverwendet)
