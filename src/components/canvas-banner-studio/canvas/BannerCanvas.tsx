@@ -95,9 +95,23 @@ type CustomImageProps = {
 
 const CustomImage: React.FC<CustomImageProps> = ({ layer, formatScale, nodeRef, onSelect, onDragMove, onDragEnd, onResize }) => {
   const img = useImage(layer.imageUrl);
+  // Logos (Layer-ID beginnt mit "logo") immer im Original-Seitenverhältnis
+  // rendern – nie stauchen oder strecken.
+  const isLogoLike = typeof layer.id === "string" && layer.id.startsWith("logo");
+  const naturalRatio = img ? img.naturalHeight / Math.max(1, img.naturalWidth) : 1;
+  // Bei Logos die gespeicherte Höhe automatisch korrigieren, falls sie vom
+  // Original-Ratio abweicht (z.B. nach Initial-Upload oder manueller Eingabe).
+  useEffect(() => {
+    if (!img || !isLogoLike || !layer.width) return;
+    const expectedH = Math.round(layer.width * naturalRatio);
+    if (Math.abs((layer.height ?? 0) - expectedH) > 1) {
+      onResize({ width: layer.width, height: expectedH });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [img, isLogoLike, layer.width, naturalRatio]);
   if (!img) return null;
   const baseW = layer.width ?? 200;
-  const baseH = layer.height ?? (img.naturalHeight / Math.max(1, img.naturalWidth)) * baseW;
+  const baseH = isLogoLike ? baseW * naturalRatio : (layer.height ?? baseW * naturalRatio);
   const w = baseW * formatScale;
   const h = baseH * formatScale;
   return (
@@ -120,7 +134,13 @@ const CustomImage: React.FC<CustomImageProps> = ({ layer, formatScale, nodeRef, 
         const sx = node.scaleX();
         const sy = node.scaleY();
         node.scaleX(1); node.scaleY(1);
-        onResize({ width: Math.round(baseW * sx), height: Math.round(baseH * sy) });
+        if (isLogoLike) {
+          const s = Math.max(sx, sy);
+          const newW = Math.max(20, Math.round(baseW * s));
+          onResize({ width: newW, height: Math.round(newW * naturalRatio) });
+        } else {
+          onResize({ width: Math.round(baseW * sx), height: Math.round(baseH * sy) });
+        }
       }}
     />
   );
@@ -296,7 +316,10 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
         tr.enabledAnchors(["top-left", "top-right", "bottom-left", "bottom-right"]);
         tr.keepRatio(true);
         tr.rotateEnabled(false);
-      } else if (layer?.type === "logo") {
+      } else if (
+        layer?.type === "logo" ||
+        (layer?.type === "image" && typeof layer.id === "string" && layer.id.startsWith("logo"))
+      ) {
         tr.enabledAnchors(["top-left", "top-right", "bottom-left", "bottom-right"]);
         tr.keepRatio(true);
         tr.rotateEnabled(false);

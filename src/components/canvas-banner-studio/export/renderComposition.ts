@@ -219,9 +219,13 @@ export async function renderCompositionToDataURL(
       if (!layer.imageUrl) continue;
       const img = await loadImage(layer.imageUrl);
       if (!img) continue;
-      const w = (layer.width ?? 200) * formatScale;
+      const baseW = layer.width ?? 200;
       const ratio = img.naturalHeight / Math.max(1, img.naturalWidth);
-      const h = (layer.height ?? (layer.width ?? 200) * ratio) * formatScale;
+      // Logos (Layer-ID beginnt mit "logo") immer im Original-Seitenverhältnis
+      // rendern – nie stauchen oder strecken.
+      const isLogoLike = typeof layer.id === "string" && layer.id.startsWith("logo");
+      const w = baseW * formatScale;
+      const h = (isLogoLike ? baseW * ratio : (layer.height ?? baseW * ratio)) * formatScale;
       ctx.save();
       ctx.globalAlpha = layer.opacity ?? 1;
       ctx.drawImage(img, layer.x, layer.y, w, h);
