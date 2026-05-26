@@ -45,11 +45,6 @@ interface Props {
 
 const TextFieldsPanel: React.FC<Props> = ({ textFields, composition, onChangeText, onPatchLayer, onReorderLayer, ciContext, ciColors, selectedLayerId, onSelectLayer }) => {
   const cardRefs = React.useRef<Record<string, HTMLDivElement | null>>({});
-  React.useEffect(() => {
-    if (!selectedLayerId) return;
-    const el = cardRefs.current[selectedLayerId];
-    if (el) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
-  }, [selectedLayerId]);
 
   React.useEffect(() => {
     [...BRAND_FONTS, ...DISPLAY_FONTS, ...BODY_FONTS].forEach((p) => ensureFontLoaded(p.googleSpec));
