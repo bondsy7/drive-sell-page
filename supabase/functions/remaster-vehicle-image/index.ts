@@ -398,8 +398,8 @@ ${DEKRA_SHOWROOM_SCENE_JSON}
       }
     }
 
-    // Custom showroom – unified strong instructions for BOTH file_uri and base64 paths
-    if (customShowroomBase64 || customShowroomFileUri?.uri) {
+    // Custom showroom is already injected before the vehicle image so the room becomes the target scene.
+    if (!hasCustomShowroom && (customShowroomBase64 || customShowroomFileUri?.uri)) {
       parts.push({ text: `<CUSTOM_SHOWROOM_INSTRUCTION>
 The following image is the CUSTOM SHOWROOM BACKGROUND. This is an IMMUTABLE ASSET.
 
