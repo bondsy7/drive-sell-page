@@ -135,7 +135,7 @@ const QuickInspector: React.FC<Props> = ({
       x: 0, y: 0, width: w, height: h,
       backgroundColor: "#000000", opacity: 0.7, borderRadius: 0,
       visible: true, draggable: true,
-      gradient: { direction: "bottom-top", color: "#000000" },
+      gradient: { direction: "top-bottom", color: "#000000" },
     };
     const stepsToBack = composition.layers.length;
     onAddLayer(layer);
