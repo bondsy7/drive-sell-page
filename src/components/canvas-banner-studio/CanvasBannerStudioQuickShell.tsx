@@ -184,6 +184,13 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
   const [canvasProjectTitle, setCanvasProjectTitle] = useState<string>("");
   const [canvasBannerProjectId, setCanvasBannerProjectId] = useState<string | undefined>(undefined);
 
+  // Asset-Picker (Fahrzeug-Bilder als Quelle nutzen statt neu hochladen)
+  const [assetPickerOpen, setAssetPickerOpen] = useState(false);
+
+  // Daten aus verknüpftem Fahrzeug (Fallback wenn kein PDF hochgeladen wird)
+  const [vehiclePrefillUsed, setVehiclePrefillUsed] = useState(false);
+
+
   // Pre-link vehicle from URL (?vehicle=...) – z. B. wenn aus Fahrzeug-Detailseite gestartet.
   const vehicleParamConsumedRef = useRef(false);
   useEffect(() => {
