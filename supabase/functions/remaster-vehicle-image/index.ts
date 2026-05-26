@@ -49,11 +49,12 @@ MATERIALS: Match exact finishes – chrome vs. gloss black vs. matte vs. satin. 
   },
   remaster_vehicle_scale_lock: {
     tag: 'VEHICLE_SCALE_LOCK',
-    text: `1. Vehicle MUST occupy 55-65% of image WIDTH in every full-body exterior shot.
-2. Vertical center at ~55% from top. Horizontal center at 50% ± 5%.
-3. ALL four wheels on SAME ground plane, floor line at 75-80% from top.
-4. Same physical size across ALL perspectives. At least 10% padding to edges.
-5. Wide-angle distortion is FORBIDDEN.`,
+    text: `1. Vehicle MUST occupy only 35-45% of image WIDTH in every full-body exterior shot.
+2. Vehicle must sit deeper inside the room, not close to camera: keep a generous visible polished-floor foreground zone between camera and nearest tire/bumper.
+3. Vertical center at ~58% from top. Horizontal center at 50% ± 5%; for 3/4 views never push the nearest bumper toward the image edge.
+4. ALL four wheels on SAME ground plane, aligned to the showroom floor perspective and vanishing point.
+5. Same physical size across ALL perspectives. At least 15% padding to edges.
+6. Wide-angle distortion and oversized close-up vehicle placement are FORBIDDEN.`,
   },
   remaster_anti_cropping: {
     tag: 'ANTI_CROPPING',
@@ -257,11 +258,12 @@ serve(async (req) => {
     const basePrompt = dynamicPrompt || await buildFallbackPrompt(vehicleDescription);
     const PROFESSIONAL_REFLECTION_LIGHTING_LOCK = `<PROFESSIONAL_REFLECTION_LIGHTING_LOCK>
 ABSOLUTE OUTPUT STANDARD: Render this as a professional automotive photograph taken in the NEW scene, not as a vehicle pasted onto a background.
-1. OLD REFLECTION PURGE: Every reflection from the source photo environment must be removed from paint, glass, mirrors, chrome, headlights, taillights, rims, piano-black trim and sunroof. No trees, sky, clouds, old showroom walls, old dealer signage, old studio strips, people, photographer, other cars, asphalt, parking lines, watermarks or text may remain — not even faintly.
+1. OLD REFLECTION PURGE: Every reflection from the source photo environment must be removed from paint, glass, mirrors, chrome, headlights, taillights, rims, piano-black trim and sunroof. No trees, sky, clouds, old showroom walls, old dealer signage, old studio strips, people, photographer, other cars, asphalt, parking lines, watermarks or text may remain — not even faintly. If a door skin, rear quarter panel, hood or windshield still contains a reflection that does not geometrically belong to the new showroom, that panel must be repainted and re-reflected from scratch.
 2. NEW LIGHT-SOURCE PROOF: Show where the new light comes from. Ceiling LEDs, window bands, cove lights, streetlights, sun direction or studio softboxes must create visible, physically plausible highlights on hood, roof, windshield, side glass, body sides, chrome and rims.
 3. NEW REFLECTIONS ONLY: Rebuild subtle natural reflections from the new room/scene only: ceiling lights in the hood/roof, wall and window bands on side panels, floor tone on lower doors, approved logos only if provided. Reflections must curve with the body geometry and remain photorealistic, not CGI.
-4. GROUNDING: Tires must visibly contact the floor/ground. Add soft contact shadows, ambient occlusion under the car, and a faint floor reflection on polished or wet surfaces. Shadow direction, length and softness must match the visible light sources.
-5. FINAL CHECK: If any original reflection or old environment content is still visible anywhere on the vehicle or through the windows, regenerate those surfaces from scratch using only the new scene.
+4. 3/4 VIEW SCALE & DEPTH: For 3/4 front-right, 3/4 front-left, 3/4 rear-right and 3/4 rear-left angles, place the car farther back in the showroom and slightly smaller. The whole vehicle should occupy only 35-45% of image width, with clear foreground floor visible before the nearest bumper/tire. Do not let the front corner feel pressed toward the camera.
+5. GROUNDING: Tires must visibly contact the floor/ground. Add soft contact shadows, ambient occlusion under the car, and a faint floor reflection on polished or wet surfaces. Shadow direction, length and softness must match the visible light sources.
+6. FINAL CHECK: If any original reflection or old environment content is still visible anywhere on the vehicle or through the windows, regenerate those surfaces from scratch using only the new scene.
 </PROFESSIONAL_REFLECTION_LIGHTING_LOCK>`;
     const prompt = `${basePrompt}\n\n${PROFESSIONAL_REFLECTION_LIGHTING_LOCK}`;
     console.log(`[remaster] Using ${dynamicPrompt ? 'DYNAMIC' : 'FALLBACK (from admin blocks)'} prompt (${prompt.length} chars), model: ${geminiModel}, tier: ${tier}`);
@@ -329,11 +331,14 @@ CAMERA MATCH & PHYSICAL PLACEMENT:
 - Wheel ellipses, tire contact patches, wheelbase line and body baseline must follow the same perspective grid as the polished concrete floor.
 - Do NOT force the original photo's camera perspective if it conflicts with the showroom. Re-pose the car naturally in the showroom, as if it was really parked there for a professional shoot.
 - The car must not float, lean, appear too large, appear too small, or look pasted in. Add correct contact shadows and ambient occlusion under every tire.
+- DEPTH PLACEMENT OVERRIDE: Move the car deeper into the showroom and reduce apparent scale. The vehicle must occupy only 35-45% of image width, with generous visible polished concrete floor in front of the nearest bumper/tire. The showroom architecture must dominate the frame.
+- 3/4 FRONT-RIGHT CORRECTION: In front-right 3/4 views, the front bumper and front wheel must sit comfortably inside the room, not close to the camera edge. Align the car's length axis to the showroom floor lines and rear-wall vanishing point; do not preserve a source-photo perspective that makes the vehicle look too large or too far forward.
 
 PAINT & SURFACE REBUILD:
 - Repaint the body as clean factory-grade lacquer in the reference vehicle's color, with uniform hue across all panels.
 - Paint, glass, chrome, headlights, taillights, rims, roof rails, piano-black trim and mirrors must reflect ONLY the showroom: window bands, ceiling LEDs, green accent lights, wall panels, reception area and polished concrete floor.
 - Reflection strength must be natural: soft and curved on paint, clearer on glass/chrome, subtle floor-tone reflection on lower doors.
+- WRONG REFLECTION KILL SWITCH: Door panels, rear quarter panels, hood, windshield and side windows must NOT show the source photo's outdoor/tree/sky/building/street patterns. Any mismatched reflection must be treated as contamination and replaced with DEKRA/showroom geometry only.
 
 LIGHTING LOCK:
 - Use the showroom's actual light sources only: windows, ceiling fixtures, LED strips and room fill.
