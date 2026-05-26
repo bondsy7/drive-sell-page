@@ -671,6 +671,17 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
           automatisch und liefern fertige Banner in allen Formaten.
         </p>
 
+        {/* Canvas-Projekt: Fahrzeug verknüpfen oder „Ohne Fahrzeug" speichern */}
+        <div className="mb-4">
+          <VehicleBannerPicker
+            vehicleId={canvasVehicleId}
+            projectTitle={canvasProjectTitle}
+            onChangeVehicle={setCanvasVehicleId}
+            onChangeTitle={setCanvasProjectTitle}
+            bannerProjectId={canvasBannerProjectId}
+          />
+        </div>
+
         {/* Quellen */}
         <div className="grid gap-4 md:grid-cols-2 mb-4">
           {/* PDF */}
