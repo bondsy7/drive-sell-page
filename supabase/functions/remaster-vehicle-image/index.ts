@@ -427,8 +427,9 @@ GROUND CONTACT & SHADOWS:
 - If the floor is glossy/polished, add a faint, realistic vehicle reflection on the floor – never a sharp mirror copy.
 
 VEHICLE PLACEMENT & SCALE (must be IDENTICAL across every perspective):
-- The vehicle is the hero subject, centered horizontally, occupying ~55-65% of image width. Same scale in EVERY shot.
-- Camera height around hip/door-handle level, slight wide-lens feel (~35-50mm equivalent), no extreme tilt.
+- The vehicle must occupy ~40-50% of image width, standing several meters inside the showroom with generous visible floor in front and around it. Do NOT make the car oversized or pressed against the camera.
+- Camera height around 1.35-1.55m for exterior shots, natural automotive showroom lens (~35-50mm equivalent), no extreme tilt, no fisheye.
+- The vehicle perspective MUST be adapted to the showroom floor and vanishing point; do not keep the original photo perspective when it clashes with the room.
 - The showroom MUST remain fully visible and clearly recognizable in EVERY shot – architecture, logos, signage, furniture all preserved 1:1.
 
 SHOWROOM PRESERVATION:
