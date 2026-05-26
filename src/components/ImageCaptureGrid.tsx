@@ -161,7 +161,35 @@ const EMPTY_CONSUMPTION: VehicleData['consumption'] = {
 };
 
 const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription, vehicleData, modelTier, projectId, vehicleId, onComplete, onVehicleDataChange, onBack, onPipelineComplete }) => {
+  const { user } = useAuth();
   const [showPipeline, setShowPipeline] = useState(false);
+  const [ensuredVehicleId, setEnsuredVehicleId] = useState<string | null>(vehicleId || null);
+  const [isEnsuringVehicle, setIsEnsuringVehicle] = useState(false);
+
+  /**
+   * Ensure a vehicle row exists (using VIN if detected, otherwise a NOVIN
+   * placeholder) before the pipeline runs, so every generated image is
+   * attached to a vehicle and shows up in the dashboard.
+   */
+  const ensureVehicleForPipeline = useCallback(async (): Promise<string | null> => {
+    if (ensuredVehicleId) return ensuredVehicleId;
+    if (vehicleId) { setEnsuredVehicleId(vehicleId); return vehicleId; }
+    if (!user) return null;
+    setIsEnsuringVehicle(true);
+    try {
+      const vid = await ensureVehicleAuto(user.id, detectedVin || (vehicleData as any)?.vehicle?.vin || null, vehicleData);
+      if (vid) setEnsuredVehicleId(vid);
+      return vid;
+    } finally {
+      setIsEnsuringVehicle(false);
+    }
+  }, [ensuredVehicleId, vehicleId, user, vehicleData]);
+
+  const openPipeline = useCallback(async () => {
+    await ensureVehicleForPipeline();
+    setShowPipeline(true);
+  }, [ensureVehicleForPipeline]);
+
   const [captures, setCaptures] = useState<Record<string, CapturedImage>>({});
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
