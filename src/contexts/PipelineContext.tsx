@@ -6,7 +6,7 @@ import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 import { buildMasterPrompt, fetchPromptOverrides, type RemasterConfig } from '@/lib/remaster-prompt';
 import { type PipelineJob, injectLogoPlaceholder } from '@/lib/pipeline-jobs';
 import { ensureLogoCachedAsPng } from '@/lib/image-base64-cache';
-import { ensureVehicleAuto } from '@/lib/vehicle-utils';
+import { ensureVehicleAuto, uploadOriginalsToVehicle } from '@/lib/vehicle-utils';
 
 /* ─── Types ─── */
 export type JobStatus = 'pending' | 'running' | 'done' | 'error';
@@ -524,6 +524,27 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               console.warn('[pipeline] ensureVehicleAuto failed:', e);
             }
           }
+
+          // Persist the user's raw input photos to the private `originals` bucket
+          // so they always show up under the vehicle's "Originale" tab. Only upload
+          // when the bucket folder is still empty to avoid duplicates on re-runs.
+          if (resolvedVehicleId) {
+            try {
+              const originals = (cfg.originalImages?.length ? cfg.originalImages : cfg.inputImages) || [];
+              if (originals.length > 0) {
+                const { data: existing } = await supabase.storage
+                  .from('originals')
+                  .list(`${cfg.userId}/${resolvedVehicleId}`, { limit: 1 });
+                const hasAny = (existing || []).some(f => f.name && !f.name.startsWith('.'));
+                if (!hasAny) {
+                  await uploadOriginalsToVehicle(cfg.userId, resolvedVehicleId, originals);
+                }
+              }
+            } catch (e) {
+              console.warn('[pipeline] originals upload skipped:', e);
+            }
+          }
+
 
           const { data: existingImages } = cfg.projectId
             ? await supabase.from('project_images').select('sort_order').eq('project_id', cfg.projectId)
