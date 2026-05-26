@@ -29,6 +29,7 @@ import {
 import { buildCiContext, type DealerProfile } from "./ci/profileSources";
 import { writeQuickHandoff } from "./state/quickHandoff";
 import VehicleBrandPicker from "@/components/VehicleBrandPicker";
+import VehicleBannerPicker from "./persistence/VehicleBannerPicker";
 import { extractBannerDataFromImage, extractBannerDataFromPdf } from "./ai/masterImageClient";
 import { extractPDFAsBase64 } from "@/lib/pdf-utils";
 import { DEFAULT_TEXT_FIELDS } from "./data/defaultComposition";
