@@ -14,11 +14,12 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type Konva from "konva";
 import JSZip from "jszip";
-import { ArrowLeft, Download, Package, Redo2, RotateCcw, Undo2 } from "lucide-react";
+import { ArrowLeft, Check, Download, Loader2, Package, Redo2, RotateCcw, Save, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { useCanvasBannerStore } from "../state/useCanvasBannerStore";
 import BannerCanvas from "../canvas/BannerCanvas";
 import TextFieldsPanel from "../controls/TextFieldsPanel";
@@ -32,6 +33,8 @@ import { isLayerOverridden, isCompositionOverridden } from "../state/overrideDet
 import { generateMasterBannerImage } from "../ai/masterImageClient";
 import { reframeImageForFormat } from "../ai/reframeClient";
 import { getMarketingPromptById } from "../data/marketingPrompts";
+import { useBannerProject } from "../persistence/useBannerProject";
+import VehicleBannerPicker from "../persistence/VehicleBannerPicker";
 
 interface Props {
   initialFormatIds: string[];
@@ -41,6 +44,11 @@ interface Props {
   ci?: Partial<CiState>;
   dealerProfile: DealerProfile | null;
   vehicleImageDataUrl?: string;
+  /** Optional pre-linked vehicle for persistence (null = "no VIN", undefined = not chosen). */
+  initialVehicleId?: string | null;
+  initialProjectTitle?: string;
+  /** Pass an existing banner_projects.id to keep autosaving into that row (resume). */
+  initialBannerProjectId?: string;
   onBack: () => void;
   onApply?: (compositions: Record<string, BannerComposition>, textFields: BannerTextFields) => void;
 }
