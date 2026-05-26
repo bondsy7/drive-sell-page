@@ -135,7 +135,7 @@ const CustomLayersPanel: React.FC<Props> = ({
       id: newId("gradient"),
       type: "shape",
       x: 0,
-      y: format.height - h,
+      y: 0,
       width: w,
       height: h,
       backgroundColor: "#000000",
@@ -145,8 +145,12 @@ const CustomLayersPanel: React.FC<Props> = ({
       draggable: true,
       gradient: { direction: "bottom-top", color: "#000000" },
     };
+    const stepsToBack = composition.layers.length;
     onAddLayer(layer);
     onSelectLayer(layer.id);
+    if (onReorderLayer) {
+      for (let i = 0; i < stepsToBack; i++) onReorderLayer(layer.id, "backward");
+    }
   };
 
   const handleImagePick = async (file: File) => {
