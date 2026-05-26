@@ -25,8 +25,8 @@ import { startReframeJob, subscribeJob, disposeJob } from "./reframeJobManager";
 import type { CiContext } from "../ci/profileSources";
 
 export interface QuickGenerateInput {
-  /** PDF-Exposé ODER Datenblatt-Bild (z.B. Screenshot, Foto). */
-  datenblattFile: File;
+  /** PDF-Exposé ODER Datenblatt-Bild (z.B. Screenshot, Foto). Optional, wenn `preExtractedTextFields` gesetzt ist (z.B. wenn Fahrzeugdaten aus dem verknüpften Fahrzeug stammen). */
+  datenblattFile?: File | null;
   vehicleImageDataUrl: string;
   formats: BannerFormat[];
   ci?: CiState;
@@ -143,8 +143,10 @@ export async function generateBannersFromInputs(
 
   // 1) Datenblatt-Analyse + Masterbild PARALLEL
   const isPdf =
-    datenblattFile.type === "application/pdf" ||
-    datenblattFile.name.toLowerCase().endsWith(".pdf");
+    !!datenblattFile && (
+      datenblattFile.type === "application/pdf" ||
+      datenblattFile.name.toLowerCase().endsWith(".pdf")
+    );
 
   const analyzePromise: Promise<{ textFields: BannerTextFields; brand: string }> = skipAnalyze
     ? Promise.resolve({
@@ -152,6 +154,9 @@ export async function generateBannersFromInputs(
         brand: (preDetectedBrand ?? "").trim(),
       })
     : (async () => {
+        if (!datenblattFile) {
+          return { textFields: { ...DEFAULT_TEXT_FIELDS }, brand: "" };
+        }
         try {
           let extracted: ExtractedBannerFields;
           if (isPdf) {

@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Download, FileText, ImageIcon, Loader2, Palette, Pencil, RefreshCw, Settings2, Sparkles, X } from "lucide-react";
+import { ArrowLeft, Download, FileText, ImageIcon, Loader2, Palette, Pencil, RefreshCw, Settings2, Sparkles, X, Car } from "lucide-react";
+import VehicleAssetPicker from "@/components/VehicleAssetPicker";
+import type { VehicleAsset } from "@/hooks/useVehicleAssets";
 import { reframeImageForFormat } from "./ai/reframeClient";
 import QuickEditView from "./wizard/QuickEditView";
 import { renderCompositionToDataURL } from "./export/renderComposition";
@@ -182,6 +184,13 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
   const [canvasProjectTitle, setCanvasProjectTitle] = useState<string>("");
   const [canvasBannerProjectId, setCanvasBannerProjectId] = useState<string | undefined>(undefined);
 
+  // Asset-Picker (Fahrzeug-Bilder als Quelle nutzen statt neu hochladen)
+  const [assetPickerOpen, setAssetPickerOpen] = useState(false);
+
+  // Daten aus verknüpftem Fahrzeug (Fallback wenn kein PDF hochgeladen wird)
+  const [vehiclePrefillUsed, setVehiclePrefillUsed] = useState(false);
+
+
   // Pre-link vehicle from URL (?vehicle=...) – z. B. wenn aus Fahrzeug-Detailseite gestartet.
   const vehicleParamConsumedRef = useRef(false);
   useEffect(() => {
@@ -223,11 +232,64 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
     return () => { cancelled = true; };
   }, [user?.id]);
 
+  // Auto-Prefill aus verknüpftem Fahrzeug (Daten + Marke), wenn kein PDF hochgeladen wurde.
+  useEffect(() => {
+    if (!user?.id || !canvasVehicleId) return;
+    if (pdfFile) return; // PDF hat Vorrang
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from("vehicles")
+          .select("brand, model, year, title, vehicle_data")
+          .eq("id", canvasVehicleId)
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (cancelled || !data) return;
+        const vd: any = data.vehicle_data || {};
+        const v = vd.vehicle || {};
+        const fin = vd.finance || {};
+        const dealer = vd.dealer || {};
+        const brand: string = data.brand || v.brand || "";
+        const model: string = data.model || v.model || "";
+        const variant: string = v.variant || "";
+        const year = data.year || v.year || "";
+        const price = fin.totalPrice || "";
+        const monthly = fin.monthlyRate || "";
+        const headline = data.title || [brand, model].filter(Boolean).join(" ").trim();
+        const subline = [variant, year].filter(Boolean).join(" · ").trim();
+        const priceStr = price ? `${price}${fin.vatNote ? ` ${fin.vatNote}` : ""}`.trim()
+          : monthly ? `ab ${monthly} €/Monat` : "";
+        const fields: BannerTextFields = { ...DEFAULT_TEXT_FIELDS };
+        if (headline) (fields as any).headline = headline;
+        if (subline) (fields as any).subline = subline;
+        if (priceStr) (fields as any).price = priceStr;
+        if (dealer.defaultLegalText) (fields as any).legalText = String(dealer.defaultLegalText);
+        setAnalyzedFields(fields);
+        setAnalyzedBrand(brand);
+        lastTextFieldsRef.current = fields;
+        if (brand) applyBrand(brand);
+        setVehiclePrefillUsed(true);
+        toast.success("Fahrzeugdaten übernommen — kein PDF nötig.");
+      } catch (e) {
+        console.warn("Fahrzeug-Prefill fehlgeschlagen", e);
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, canvasVehicleId, pdfFile]);
+
+  // Wenn der User später doch ein PDF hochlädt, das überschreibt den Vehicle-Prefill.
+  useEffect(() => { if (pdfFile) setVehiclePrefillUsed(false); }, [pdfFile]);
+
+
   // Auto-Analyse, sobald ein Datenblatt hochgeladen wurde.
   useEffect(() => {
     if (!pdfFile) {
-      setAnalyzedFields(null);
-      setAnalyzedBrand("");
+      if (!vehiclePrefillUsed) {
+        setAnalyzedFields(null);
+        setAnalyzedBrand("");
+      }
       setAnalysisError(null);
       return;
     }
@@ -332,9 +394,9 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
     };
   })();
 
+  const hasDataSource = !!pdfFile || vehiclePrefillUsed;
   const canGenerate =
-    !!pdfFile &&
-    !!imageFile &&
+    hasDataSource &&
     !!imageDataUrl &&
     selectedFormatIds.length > 0 &&
     !analyzing &&
@@ -342,8 +404,8 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
     !busy;
 
   const handleGenerate = useCallback(async () => {
-    if (!pdfFile || !imageDataUrl || !analyzedFields) {
-      toast.error("Bitte warten bis die Analyse abgeschlossen ist.");
+    if (!hasDataSource || !imageDataUrl || !analyzedFields) {
+      toast.error("Bitte Datenblatt hochladen oder ein Fahrzeug verknüpfen.");
       return;
     }
     if (selectedFormatIds.length === 0) {
@@ -387,7 +449,7 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
     try {
       const out = await generateBannersFromInputs(
         {
-          datenblattFile: pdfFile,
+          datenblattFile: pdfFile ?? null,
           vehicleImageDataUrl: imageDataUrl,
           formats,
           ciContext: { ...ciContext, marke: effectiveBrand || ciContext.marke },
@@ -445,7 +507,7 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
     } finally {
       setBusy(false);
     }
-  }, [pdfFile, imageDataUrl, selectedFormatIds, dealerProfile, getLogoForMake, bgTasks, analyzedFields, analyzedBrand, manualBrand, resolvedLogoUrl, ciColors, scenePresetId, extraPromptInstruction]);
+  }, [pdfFile, imageDataUrl, selectedFormatIds, dealerProfile, getLogoForMake, bgTasks, analyzedFields, analyzedBrand, manualBrand, resolvedLogoUrl, ciColors, scenePresetId, extraPromptInstruction, hasDataSource, vehiclePrefillUsed]);
 
   const regenerateSingle = useCallback(async (r: QuickBannerResult) => {
     const source = r.composition.masterImageUrl || r.composition.backgroundImageUrl;
@@ -644,7 +706,7 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
 
         {/* Quellen */}
         <div className="grid gap-4 md:grid-cols-2 mb-4">
-          {/* PDF */}
+          {/* PDF / Daten */}
           <Card
             className="p-4 border-dashed border-2 cursor-pointer hover:border-accent transition-colors"
             onClick={() => pdfInputRef.current?.click()}
@@ -659,7 +721,9 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
             <div className="flex items-start gap-3">
               <FileText className="w-8 h-8 text-accent shrink-0" />
               <div className="flex-1 min-w-0">
-                <div className="font-semibold text-foreground">Datenblatt / Exposé <span className="text-red-500">*</span></div>
+                <div className="font-semibold text-foreground">
+                  Datenblatt / Exposé {!canvasVehicleId && <span className="text-red-500">*</span>}
+                </div>
                 {pdfFile ? (
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-sm text-foreground truncate">{pdfFile.name}</span>
@@ -676,8 +740,21 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
                       <X className="w-3 h-3" />
                     </Button>
                   </div>
+                ) : vehiclePrefillUsed ? (
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    <Badge variant="secondary" className="text-[10px] py-0">
+                      <Car className="w-3 h-3 mr-1" /> Daten aus Fahrzeug übernommen
+                    </Badge>
+                    <span className="text-[11px] text-muted-foreground">
+                      Klick, um stattdessen ein PDF zu laden.
+                    </span>
+                  </div>
                 ) : (
-                  <div className="text-xs text-muted-foreground mt-1">PDF oder Bild — wird sofort nach Upload automatisch analysiert</div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {canvasVehicleId
+                      ? "Optional — Daten werden automatisch aus dem verknüpften Fahrzeug übernommen."
+                      : "PDF oder Bild — wird sofort nach Upload automatisch analysiert"}
+                  </div>
                 )}
                 {analysisError && (
                   <div className="text-[11px] text-destructive mt-1">{analysisError}</div>
@@ -720,10 +797,55 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
                 ) : (
                   <div className="text-xs text-muted-foreground mt-1">Klicken zum Hochladen — wird passend auf jedes Format zugeschnitten</div>
                 )}
+                {canvasVehicleId && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-2"
+                    onClick={(e) => { e.stopPropagation(); setAssetPickerOpen(true); }}
+                  >
+                    <Car className="w-3 h-3 mr-1" /> Aus Fahrzeug wählen
+                  </Button>
+                )}
               </div>
             </div>
           </Card>
         </div>
+
+        <VehicleAssetPicker
+          open={assetPickerOpen}
+          vehicleId={canvasVehicleId ?? null}
+          allowedKinds={["original", "gallery", "banner"]}
+          multi={false}
+          title="Fahrzeugbild wählen"
+          description="Wähle ein vorhandenes Bild aus diesem Fahrzeug als Grundlage für das Banner."
+          onCancel={() => setAssetPickerOpen(false)}
+          onConfirm={async (assets) => {
+            setAssetPickerOpen(false);
+            const a = assets[0];
+            if (!a?.url) return;
+            try {
+              const res = await fetch(a.url);
+              const blob = await res.blob();
+              const ext = (blob.type.split("/")[1] || "jpg").replace("jpeg", "jpg");
+              const name = (a.label || `fahrzeugbild.${ext}`).replace(/[^a-zA-Z0-9._-]/g, "_");
+              const file = new File([blob], name, { type: blob.type || "image/jpeg" });
+              const dataUrl = await new Promise<string>((resolve, reject) => {
+                const r = new FileReader();
+                r.onload = () => resolve(String(r.result));
+                r.onerror = () => reject(r.error);
+                r.readAsDataURL(file);
+              });
+              setImageFile(file);
+              setImageDataUrl(dataUrl);
+              toast.success("Bild übernommen.");
+            } catch (e: any) {
+              console.error("asset pick failed", e);
+              toast.error(e?.message ?? "Bild konnte nicht übernommen werden.");
+            }
+          }}
+        />
+
 
         {/* Format-Chips */}
         <Card className="p-4 mb-4">
@@ -896,8 +1018,10 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
           </Button>
           {!canGenerate && !busy && (
             <p className="text-[11px] text-muted-foreground">
-              {!pdfFile || !imageFile
-                ? "Datenblatt und Fahrzeugbild hochladen."
+              {!hasDataSource
+                ? "Datenblatt hochladen oder ein Fahrzeug verknüpfen."
+                : !imageDataUrl
+                ? "Fahrzeugbild hochladen oder aus Fahrzeug wählen."
                 : analyzing
                   ? "Analyse läuft – gleich startbereit."
                   : "Mindestens ein Format wählen."}
