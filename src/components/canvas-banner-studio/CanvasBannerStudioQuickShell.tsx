@@ -382,9 +382,10 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
     );
   };
 
-  // CI-Farben aus dem aktuell gewählten Preset (oder Dealer-Profil bei custom).
+  // CI-Farben aus dem aktuell gewählten Preset (oder Dealer-Profil bei custom) –
+  // pro Feld via Color-Picker überschreibbar.
   const activePreset = getBrandPreset(brandPresetKey);
-  const ciColors = (() => {
+  const baseCiColors = (() => {
     if (brandPresetKey !== "custom") return activePreset.colors;
     return {
       primary: dealerProfile?.primary_color || activePreset.colors.primary,
@@ -393,6 +394,17 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
       bg: activePreset.colors.bg,
     };
   })();
+  const [colorOverrides, setColorOverrides] = useState<Partial<Record<"primary" | "secondary" | "text" | "bg", string>>>({});
+  // Bei Preset-Wechsel Overrides zurücksetzen, damit das neue Preset sichtbar wird.
+  useEffect(() => { setColorOverrides({}); }, [brandPresetKey]);
+  const ciColors = {
+    primary: colorOverrides.primary || baseCiColors.primary,
+    secondary: colorOverrides.secondary || baseCiColors.secondary,
+    text: colorOverrides.text || baseCiColors.text,
+    bg: colorOverrides.bg || baseCiColors.bg,
+  };
+  const setCiColor = (k: "primary" | "secondary" | "text" | "bg", v: string) =>
+    setColorOverrides(prev => ({ ...prev, [k]: v }));
 
   const hasDataSource = !!pdfFile || vehiclePrefillUsed;
   const canGenerate =
@@ -939,20 +951,55 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
               </p>
             </div>
             <div>
-              <label className="text-[11px] uppercase tracking-wider text-muted-foreground">CI-Farben</label>
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] uppercase tracking-wider text-muted-foreground">CI-Farben</label>
+                {Object.keys(colorOverrides).length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setColorOverrides({})}
+                    className="text-[10px] text-accent hover:underline"
+                  >
+                    Zurücksetzen
+                  </button>
+                )}
+              </div>
               <div className="mt-1 grid grid-cols-4 gap-2">
-                {(["primary", "secondary", "text", "bg"] as const).map((k) => (
-                  <div key={k} className="flex items-center gap-2 rounded border border-border bg-background px-2 py-1.5">
-                    <span
-                      className="w-5 h-5 rounded border border-border shrink-0"
-                      style={{ backgroundColor: (ciColors as any)[k] }}
-                    />
-                    <div className="min-w-0">
-                      <div className="text-[9px] uppercase text-muted-foreground leading-none">{k}</div>
-                      <div className="text-[10px] font-mono text-foreground truncate">{(ciColors as any)[k]}</div>
-                    </div>
-                  </div>
-                ))}
+                {(["primary", "secondary", "text", "bg"] as const).map((k) => {
+                  const value = (ciColors as any)[k] as string;
+                  return (
+                    <label
+                      key={k}
+                      className="flex items-center gap-2 rounded border border-border bg-background px-2 py-1.5 cursor-pointer hover:border-accent transition-colors"
+                      title="Klicken, um Farbe zu ändern"
+                    >
+                      <span className="relative w-5 h-5 shrink-0">
+                        <span
+                          className="absolute inset-0 rounded border border-border"
+                          style={{ backgroundColor: value }}
+                        />
+                        <input
+                          type="color"
+                          value={/^#[0-9a-f]{6}$/i.test(value) ? value : "#000000"}
+                          onChange={(e) => setCiColor(k, e.target.value)}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                          aria-label={`${k} Farbe ändern`}
+                        />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[9px] uppercase text-muted-foreground leading-none">{k}</div>
+                        <input
+                          type="text"
+                          value={value}
+                          onChange={(e) => {
+                            const v = e.target.value.trim();
+                            if (/^#[0-9a-fA-F]{0,6}$/.test(v)) setCiColor(k, v);
+                          }}
+                          className="w-full text-[10px] font-mono text-foreground bg-transparent border-0 p-0 focus:outline-none focus:ring-0"
+                        />
+                      </div>
+                    </label>
+                  );
+                })}
               </div>
             </div>
           </div>
