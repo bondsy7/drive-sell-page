@@ -369,7 +369,7 @@ export default function VehicleView() {
             </Link>
           </Button>
           <Button asChild size="sm" variant="outline">
-            <Link to={`/generator/banner?vehicle=${vehicle.id}`}>
+            <Link to={`/generator/canvas-banner-studio?vehicle=${vehicle.id}`}>
               <LayoutGrid className="w-4 h-4 mr-1.5" /> Banner erstellen
             </Link>
           </Button>
