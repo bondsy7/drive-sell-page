@@ -14,11 +14,12 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type Konva from "konva";
 import JSZip from "jszip";
-import { ArrowLeft, Download, Package, Redo2, RotateCcw, Undo2 } from "lucide-react";
+import { ArrowLeft, Check, Download, Loader2, Package, Redo2, RotateCcw, Save, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+
 import { useCanvasBannerStore } from "../state/useCanvasBannerStore";
 import BannerCanvas from "../canvas/BannerCanvas";
 import TextFieldsPanel from "../controls/TextFieldsPanel";
@@ -32,6 +33,8 @@ import { isLayerOverridden, isCompositionOverridden } from "../state/overrideDet
 import { generateMasterBannerImage } from "../ai/masterImageClient";
 import { reframeImageForFormat } from "../ai/reframeClient";
 import { getMarketingPromptById } from "../data/marketingPrompts";
+import { useBannerProject } from "../persistence/useBannerProject";
+import VehicleBannerPicker from "../persistence/VehicleBannerPicker";
 
 interface Props {
   initialFormatIds: string[];
@@ -41,6 +44,11 @@ interface Props {
   ci?: Partial<CiState>;
   dealerProfile: DealerProfile | null;
   vehicleImageDataUrl?: string;
+  /** Optional pre-linked vehicle for persistence (null = "no VIN", undefined = not chosen). */
+  initialVehicleId?: string | null;
+  initialProjectTitle?: string;
+  /** Pass an existing banner_projects.id to keep autosaving into that row (resume). */
+  initialBannerProjectId?: string;
   onBack: () => void;
   onApply?: (compositions: Record<string, BannerComposition>, textFields: BannerTextFields) => void;
 }
@@ -53,6 +61,9 @@ const QuickEditView: React.FC<Props> = ({
   ci,
   dealerProfile,
   vehicleImageDataUrl,
+  initialVehicleId,
+  initialProjectTitle,
+  initialBannerProjectId,
   onBack,
   onApply,
 }) => {
@@ -105,7 +116,7 @@ const QuickEditView: React.FC<Props> = ({
     [vehicleImageDataUrl, activeFormat, activeComposition.backgroundImageUrl, actions],
   );
 
-  // Einmalige Hydration aus den Quick-Generate Ergebnissen.
+  // Einmalige Hydration aus den Quick-Generate Ergebnissen (oder gespeichertem Projekt).
   useEffect(() => {
     if (hydratedRef.current) return;
     hydratedRef.current = true;
@@ -116,9 +127,32 @@ const QuickEditView: React.FC<Props> = ({
       compositions: initialCompositions,
       showSafeArea: false,
       ci: ci as CiState | undefined,
+      vehicleId: initialVehicleId,
+      projectTitle: initialProjectTitle,
+      bannerProjectId: initialBannerProjectId,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Persistente Speicherung als Canvas-Projekt im Dashboard.
+  // - Ohne Fahrzeug: vehicleId = null  → wird als "No-VIN" Eintrag gelistet
+  // - Mit Fahrzeug:  vehicleId = uuid  → an bestehende VIN gebunden
+  const { saveNow } = useBannerProject({
+    state,
+    onProjectIdAssigned: (id) => actions.setBannerProjectId(id),
+  });
+  const [saving, setSaving] = useState(false);
+  const handleManualSave = useCallback(async () => {
+    setSaving(true);
+    try {
+      await saveNow();
+      toast.success("Canvas-Projekt gespeichert");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Speichern fehlgeschlagen");
+    } finally {
+      setSaving(false);
+    }
+  }, [saveNow]);
 
   const ciContext = useMemo(() => buildCiContext(dealerProfile, null), [dealerProfile]);
 
@@ -250,6 +284,10 @@ const QuickEditView: React.FC<Props> = ({
                 <RotateCcw className="w-4 h-4" />
               </button>
             )}
+            <Button size="sm" variant="ghost" onClick={handleManualSave} disabled={saving} title="Als Canvas-Projekt speichern">
+              {saving ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : state.bannerProjectId ? <Check className="w-3.5 h-3.5 mr-1 text-emerald-600" /> : <Save className="w-3.5 h-3.5 mr-1" />}
+              {state.bannerProjectId ? "Gespeichert" : "Speichern"}
+            </Button>
             <Button size="sm" variant="outline" onClick={downloadSingle}>
               <Download className="w-3.5 h-3.5 mr-1" /> PNG
             </Button>
@@ -257,6 +295,17 @@ const QuickEditView: React.FC<Props> = ({
               <Package className="w-3.5 h-3.5 mr-1" /> ZIP
             </Button>
           </div>
+        </div>
+
+        {/* Canvas-Projekt: Titel + Fahrzeug verknüpfen (Auto-Save im Dashboard) */}
+        <div className="container mx-auto px-3 pb-2 max-w-6xl">
+          <VehicleBannerPicker
+            vehicleId={state.vehicleId}
+            projectTitle={state.projectTitle}
+            onChangeVehicle={(v) => actions.setVehicle(v)}
+            onChangeTitle={(t) => actions.setProjectTitle(t)}
+            bannerProjectId={state.bannerProjectId}
+          />
         </div>
 
         {/* Format-Tabs */}

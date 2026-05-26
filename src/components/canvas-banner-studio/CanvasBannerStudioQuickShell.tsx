@@ -29,6 +29,7 @@ import {
 import { buildCiContext, type DealerProfile } from "./ci/profileSources";
 import { writeQuickHandoff } from "./state/quickHandoff";
 import VehicleBrandPicker from "@/components/VehicleBrandPicker";
+import VehicleBannerPicker from "./persistence/VehicleBannerPicker";
 import { extractBannerDataFromImage, extractBannerDataFromPdf } from "./ai/masterImageClient";
 import { extractPDFAsBase64 } from "@/lib/pdf-utils";
 import { DEFAULT_TEXT_FIELDS } from "./data/defaultComposition";
@@ -243,6 +244,11 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
   const [brandPresetKey, setBrandPresetKey] = useState<string>("custom");
   const [scenePresetId, setScenePresetId] = useState<ScenePresetId>("showroom-neon");
   const [extraPromptInstruction, setExtraPromptInstruction] = useState<string>("");
+
+  // Canvas-Projekt Persistenz (vor und nach editMode wiederverwendet)
+  const [canvasVehicleId, setCanvasVehicleId] = useState<string | null | undefined>(undefined);
+  const [canvasProjectTitle, setCanvasProjectTitle] = useState<string>("");
+  const [canvasBannerProjectId, setCanvasBannerProjectId] = useState<string | undefined>(undefined);
 
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const imgInputRef = useRef<HTMLInputElement>(null);
@@ -623,6 +629,9 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
         initialTextFields={lastTextFieldsRef.current ?? analyzedFields ?? DEFAULT_TEXT_FIELDS}
         initialCompositions={compositions}
         vehicleImageDataUrl={imageDataUrl ?? undefined}
+        initialVehicleId={canvasVehicleId}
+        initialProjectTitle={canvasProjectTitle}
+        initialBannerProjectId={canvasBannerProjectId}
         ci={{
           brandKey: brandPresetKey,
           colors: {
@@ -662,6 +671,17 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
           Lade ein PDF (Exposé/Datenblatt) und ein Fahrzeugbild hoch — wir analysieren das Datenblatt
           automatisch und liefern fertige Banner in allen Formaten.
         </p>
+
+        {/* Canvas-Projekt: Fahrzeug verknüpfen oder „Ohne Fahrzeug" speichern */}
+        <div className="mb-4">
+          <VehicleBannerPicker
+            vehicleId={canvasVehicleId}
+            projectTitle={canvasProjectTitle}
+            onChangeVehicle={setCanvasVehicleId}
+            onChangeTitle={setCanvasProjectTitle}
+            bannerProjectId={canvasBannerProjectId}
+          />
+        </div>
 
         {/* Quellen */}
         <div className="grid gap-4 md:grid-cols-2 mb-4">
