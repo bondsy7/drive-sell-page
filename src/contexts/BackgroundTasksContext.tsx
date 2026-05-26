@@ -15,6 +15,12 @@ export interface BgTask {
   /** Route to navigate to when user clicks the indicator after completion */
   resultRoute?: string;
   errorMessage?: string;
+  /** Detailed stage label (e.g. "Bilder anpassen") */
+  stageLabel?: string;
+  /** Current step description (e.g. "Bild 3/6 angepasst") */
+  currentLabel?: string;
+  /** Overall percent override (0-100). If undefined, derived from completed/total. */
+  percent?: number;
 }
 
 interface BgTasksContextValue {
