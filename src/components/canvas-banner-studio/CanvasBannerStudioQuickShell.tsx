@@ -232,6 +232,57 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
     return () => { cancelled = true; };
   }, [user?.id]);
 
+  // Auto-Prefill aus verknüpftem Fahrzeug (Daten + Marke), wenn kein PDF hochgeladen wurde.
+  useEffect(() => {
+    if (!user?.id || !canvasVehicleId) return;
+    if (pdfFile) return; // PDF hat Vorrang
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from("vehicles")
+          .select("brand, model, year, title, vehicle_data")
+          .eq("id", canvasVehicleId)
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (cancelled || !data) return;
+        const vd: any = data.vehicle_data || {};
+        const v = vd.vehicle || {};
+        const fin = vd.finance || {};
+        const dealer = vd.dealer || {};
+        const brand: string = data.brand || v.brand || "";
+        const model: string = data.model || v.model || "";
+        const variant: string = v.variant || "";
+        const year = data.year || v.year || "";
+        const price = fin.totalPrice || "";
+        const monthly = fin.monthlyRate || "";
+        const headline = data.title || [brand, model].filter(Boolean).join(" ").trim();
+        const subline = [variant, year].filter(Boolean).join(" · ").trim();
+        const priceStr = price ? `${price}${fin.vatNote ? ` ${fin.vatNote}` : ""}`.trim()
+          : monthly ? `ab ${monthly} €/Monat` : "";
+        const fields: BannerTextFields = { ...DEFAULT_TEXT_FIELDS };
+        if (headline) (fields as any).headline = headline;
+        if (subline) (fields as any).subline = subline;
+        if (priceStr) (fields as any).price = priceStr;
+        if (dealer.defaultLegalText) (fields as any).legalText = String(dealer.defaultLegalText);
+        setAnalyzedFields(fields);
+        setAnalyzedBrand(brand);
+        lastTextFieldsRef.current = fields;
+        if (brand) applyBrand(brand);
+        setVehiclePrefillUsed(true);
+        toast.success("Fahrzeugdaten übernommen — kein PDF nötig.");
+      } catch (e) {
+        console.warn("Fahrzeug-Prefill fehlgeschlagen", e);
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, canvasVehicleId, pdfFile]);
+
+  // Wenn der User später doch ein PDF hochlädt, das überschreibt den Vehicle-Prefill.
+  useEffect(() => { if (pdfFile) setVehiclePrefillUsed(false); }, [pdfFile]);
+
+
   // Auto-Analyse, sobald ein Datenblatt hochgeladen wurde.
   useEffect(() => {
     if (!pdfFile) {
