@@ -387,7 +387,13 @@ CROSS-IMAGE CONSISTENCY (STYLE LOCK):
 INTERIOR SHOTS:
 - For interior views, the custom showroom MUST be visible THROUGH the windshield, side windows and rear window – clearly recognizable as the SAME room. No outdoor scene, no generic background.
 - Do NOT alter dashboard, seats, trim or any interior element – only improve lighting to match the showroom ambience.
-</CUSTOM_SHOWROOM_INSTRUCTION>` });
+</CUSTOM_SHOWROOM_INSTRUCTION>${isDekraShowroomUser ? `
+
+<DEKRA_SHOWROOM_SCENE_SPEC>
+This showroom is the DEKRA modern automotive showroom. The following JSON is the AUTHORITATIVE structural and lighting description of that exact scene. Treat it as ground truth – it overrides any guess based on the source vehicle photo. Re-render the vehicle inside this scene exactly as described: architecture, materials, light sources, reflections, vehicle placement, scale and shadows MUST match this spec. Use it together with the showroom reference image.
+
+${DEKRA_SHOWROOM_SCENE_JSON}
+</DEKRA_SHOWROOM_SCENE_SPEC>` : ""}` });
       if (customShowroomFileUri?.uri) {
         parts.push({ file_data: { mime_type: customShowroomFileUri.mimeType, file_uri: customShowroomFileUri.uri } });
         console.log(`[remaster] Showroom via file_uri`);
