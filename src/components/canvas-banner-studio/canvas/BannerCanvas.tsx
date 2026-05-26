@@ -551,6 +551,55 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
                 const layerFont = l.fontFamily
                   ? `"${l.fontFamily}", ${DEFAULT_FONT_FAMILY}`
                   : ((l.id === "headline" || l.id === "subline") ? FONT_DISPLAY : FONT_BODY);
+
+                // CTA wird als Button gerendert (Hintergrund = CI Primary + Padding).
+                const isCta = l.id === "cta" || l.field === "cta";
+                let ctaBg: { x: number; y: number; w: number; h: number; r: number; fill: string } | null = null;
+                let ctaTextFill = color;
+                if (isCta) {
+                  const c2d = (typeof document !== "undefined"
+                    ? document.createElement("canvas").getContext("2d")
+                    : null);
+                  let textW = 0;
+                  let lines = 1;
+                  if (c2d) {
+                    const weight = (l.fontWeight ?? 400) >= 600 ? "700 " : "400 ";
+                    c2d.font = `${weight}${effFont}px ${layerFont}`;
+                    const maxW = l.width ?? 1000;
+                    const words = text.split(/\s+/);
+                    let line = "";
+                    let maxLine = 0;
+                    for (const wd of words) {
+                      const test = line ? line + " " + wd : wd;
+                      if (c2d.measureText(test).width > maxW && line) {
+                        maxLine = Math.max(maxLine, c2d.measureText(line).width);
+                        line = wd;
+                        lines++;
+                      } else {
+                        line = test;
+                      }
+                    }
+                    maxLine = Math.max(maxLine, c2d.measureText(line).width);
+                    textW = Math.min(maxW, maxLine);
+                  } else {
+                    textW = (l.width ?? text.length * effFont * 0.55);
+                  }
+                  const padX = effFont * 0.7;
+                  const padY = effFont * 0.45;
+                  const boxW = textW + padX * 2;
+                  const boxH = effFont * 1.2 * lines + padY * 2;
+                  let bx = -padX;
+                  const boxArea = l.width ?? textW;
+                  if (l.align === "center") bx = (boxArea - textW) / 2 - padX;
+                  else if (l.align === "right") bx = boxArea - textW - padX;
+                  const fill = ci?.colors?.primary || resolveColor("primary") || "#174f6b";
+                  ctaBg = { x: bx, y: -padY, w: boxW, h: boxH, r: Math.min(boxH / 2, 12), fill };
+                  const tokenIsPrimary = (l.color ?? "").toLowerCase() === "primary"
+                    || (l.color ?? "").toLowerCase() === "accent"
+                    || color.toLowerCase() === fill.toLowerCase();
+                  if (tokenIsPrimary) ctaTextFill = "#ffffff";
+                }
+
                 return (
                   <Group
                     key={l.id}
@@ -563,6 +612,17 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
                     onDragMove={(e) => handleDragMove(l, e)}
                     onDragEnd={(e) => { handleDragEndCommon(); onLayerDrag?.(l.id, e.target.x(), e.target.y()); }}
                   >
+                    {ctaBg && (
+                      <Rect
+                        x={ctaBg.x}
+                        y={ctaBg.y}
+                        width={ctaBg.w}
+                        height={ctaBg.h}
+                        fill={ctaBg.fill}
+                        cornerRadius={ctaBg.r}
+                        listening={false}
+                      />
+                    )}
                     <KText
                       ref={(n) => { nodeRefs.current[l.id] = n; }}
                       text={text}
@@ -570,7 +630,7 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
                       fontSize={effFont}
                       fontStyle={l.fontWeight && l.fontWeight >= 600 ? "bold" : "normal"}
                       fontFamily={layerFont}
-                      fill={color}
+                      fill={ctaTextFill}
                       align={l.align ?? "left"}
                       lineHeight={1.2}
                       shadowColor="rgba(0,0,0,0)"
