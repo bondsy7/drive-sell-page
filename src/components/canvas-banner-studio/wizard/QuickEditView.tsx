@@ -74,10 +74,17 @@ const QuickEditView: React.FC<Props> = ({
   const [zipBusy, setZipBusy] = useState(false);
   const [bgRegenerating, setBgRegenerating] = useState(false);
 
+  // Fallback-Quelle für Re-Generation, wenn kein Original-Upload mehr vorliegt
+  // (z.B. beim Resume eines gespeicherten Canvas-Projekts): Master- bzw. Hintergrundbild verwenden.
+  const regenSourceUrl = vehicleImageDataUrl
+    ?? activeComposition.masterImageUrl
+    ?? activeComposition.backgroundImageUrl
+    ?? null;
+
   const handleRegenerateBackground = useCallback(
     async (presetId: string, extraInstruction: string) => {
-      if (!vehicleImageDataUrl) {
-        toast.error("Original-Fahrzeugbild nicht verfügbar.");
+      if (!regenSourceUrl) {
+        toast.error("Kein Quellbild verfügbar.");
         return;
       }
       const preset = getMarketingPromptById(presetId);
@@ -90,7 +97,7 @@ const QuickEditView: React.FC<Props> = ({
       const tId = toast.loading("Hintergrund wird neu generiert…");
       try {
         const { imageDataUrl: masterUrl } = await generateMasterBannerImage({
-          sourceImageUrl: vehicleImageDataUrl,
+          sourceImageUrl: regenSourceUrl,
           promptText: preset.prompt,
           extraInstruction: extraInstruction.trim() || undefined,
         });
@@ -113,7 +120,7 @@ const QuickEditView: React.FC<Props> = ({
         setBgRegenerating(false);
       }
     },
-    [vehicleImageDataUrl, activeFormat, activeComposition.backgroundImageUrl, actions],
+    [regenSourceUrl, activeFormat, activeComposition.backgroundImageUrl, actions],
   );
 
   // Einmalige Hydration aus den Quick-Generate Ergebnissen (oder gespeichertem Projekt).
