@@ -12,74 +12,39 @@ export type MarketingPromptPreset = {
 
 export const MARKETING_PROMPTS: MarketingPromptPreset[] = [
   {
-    id: "cinematic-showroom",
-    label: "Cinematic Showroom",
-    description: "Dunkler Studio-Hintergrund, dramatische Spotlights, Spiegelungen am Boden.",
+    id: "showroom-neon-streaks",
+    label: "Showroom Neon Streaks",
+    description: "Premium-Dunkelshowroom mit dramatischen Neon-Lichtspuren und Spiegelungen.",
     prompt:
-      "Place the exact same vehicle in a cinematic premium showroom: deep matte-black surroundings, focused warm spotlights highlighting body lines, glossy black floor with subtle reflection, soft volumetric haze. Editorial automotive photography, 35mm, shallow depth of field.",
+      "Place the exact same vehicle in a premium dark showroom environment. Dramatic neon light streaks in cyan and magenta sweep across the glossy floor, reflecting off the car's paint. Volumetric fog catches the neon beams. Ultra-modern automotive exhibition look, 8k, photorealistic.",
   },
   {
-    id: "coastal-sunrise",
-    label: "Küste bei Sonnenaufgang",
-    description: "Warmes Morgenlicht, Küstenstraße, weicher Bokeh-Hintergrund.",
+    id: "popstyle-neon",
+    label: "Popstyle Neon",
+    description: "Knalliger Pop-Art-Retro-Look mit Neonfarben und grafischem Hintergrund.",
     prompt:
-      "Re-place the exact same vehicle on a scenic coastal road at sunrise. Warm golden light from low sun, soft sea mist, ocean and cliffs in soft bokeh background. Cinematic ad still, photorealistic, 35mm.",
+      "Re-stage the exact same vehicle in a bold pop-art inspired scene. Vibrant neon pink, electric blue and lime green background with halftone dot patterns. Retro-futuristic 1980s poster aesthetic mixed with modern automotive photography. High contrast, saturated colors, graphic design composition.",
   },
   {
-    id: "studio-white",
-    label: "Studio – Reinweiß",
-    description: "Sauberer weißer Studio-Hintergrund, weiche Schatten, Katalog-Look.",
+    id: "deal-car-tower",
+    label: "Deal Car Tower",
+    description: "Modernes Hochhaus als dramatische urbane Kulisse, Executive-Dealership-Stil.",
     prompt:
-      "Place the exact same vehicle in a clean white photo studio. Seamless white cyclorama, soft diffused key light, gentle contact shadow under tires. Premium automotive catalog look, ultra crisp, no extra props.",
+      "Place the exact same vehicle in front of a sleek modern glass skyscraper tower at dusk. The building's illuminated windows create a dramatic geometric backdrop. Professional automotive dealership photography, urban corporate setting, sharp reflections on the car's surface, premium executive feel.",
   },
   {
-    id: "urban-night",
-    label: "Urban Night – Neon",
-    description: "Nasse Stadtstraße, Neonreflexionen, Großstadt-Atmosphäre.",
+    id: "lifestyle-alpineescape",
+    label: "Lifestyle Alpine Escape",
+    description: "Freiheits- und Abenteuer-Lifestyle in den Alpen bei Sonnenaufgang.",
     prompt:
-      "Place the exact same vehicle on a wet urban street at night. Reflections of neon signage in the wet asphalt, blurred city lights, light rain in the air. Moody cinematic ad, anamorphic flares, photorealistic.",
+      "Place the exact same vehicle on a winding alpine mountain pass at sunrise. Fresh snow-capped peaks, crystal clear turquoise mountain lake in the background, golden morning light. Freedom and adventure lifestyle photography, cinematic wide angle, inviting travel atmosphere.",
   },
   {
-    id: "mountain-panorama",
-    label: "Bergpanorama",
-    description: "Alpenkulisse, klare Bergluft, Serpentine.",
+    id: "peminere-imited",
+    label: "Peminere Imited",
+    description: "Exklusive Limited-Edition-Präsentation mit Goldakzenten und Museum-Spotlight.",
     prompt:
-      "Place the exact same vehicle on a panoramic alpine mountain road with snowy peaks in the background. Crisp midday light, dramatic clouds, asphalt curve leading into the scene. Cinematic automotive ad photography.",
-  },
-  {
-    id: "motion-blur",
-    label: "Dynamic Motion",
-    description: "Fahrendes Auto, Bewegungsunschärfe der Umgebung, sportlich.",
-    prompt:
-      "Re-render the exact same vehicle as if driving fast. Sharp vehicle, strong motion-blur on the surrounding road and background, light streaks, low panning shot perspective. Dynamic automotive ad still.",
-  },
-  {
-    id: "luxury-garage",
-    label: "Luxus Garage",
-    description: "Warme Architektur, Glas, Beton, hochwertige Atmosphäre.",
-    prompt:
-      "Place the exact same vehicle in a modern luxury private garage: polished concrete floor, warm wood and glass walls, designer pendant lights, subtle warm rim light on the car. Architectural ad photography.",
-  },
-  {
-    id: "editorial-magazine",
-    label: "Editorial Magazin",
-    description: "Magazin-Cover-Look, leicht stilisiert, klare Komposition.",
-    prompt:
-      "Re-stage the exact same vehicle as a magazine cover hero shot. Minimal, slightly stylized background with one strong color gradient, clean composition with negative space top-right for headline, soft directional studio light. Premium editorial automotive look.",
-  },
-  {
-    id: "desert-golden-hour",
-    label: "Wüste – Golden Hour",
-    description: "Weite Wüstenlandschaft, langes Schattenspiel, warme Töne.",
-    prompt:
-      "Place the exact same vehicle on a smooth desert road during golden hour. Endless dunes in the background, long warm shadows, light dust haze, very low sun angle. Cinematic, photorealistic ad still.",
-  },
-  {
-    id: "forest-road",
-    label: "Waldstraße – Lichtstrahlen",
-    description: "Sonnenstrahlen durch Bäume, mystische Atmosphäre.",
-    prompt:
-    "Place the exact same vehicle on a quiet forest road. Sun beams piercing through tall trees, soft morning mist on the ground, lush green tones. Cinematic automotive lifestyle photography.",
+      "Place the exact same vehicle in an exclusive limited-edition presentation setting. Matte black backdrop with subtle gold accents, museum-quality spotlighting, velvet rope barriers barely visible. Ultra-premium product launch photography, meticulous attention to detail, aspirational luxury aesthetic.",
   },
   {
     id: "german-city-neon",
