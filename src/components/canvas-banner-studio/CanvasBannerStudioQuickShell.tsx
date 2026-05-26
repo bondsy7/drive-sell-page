@@ -382,9 +382,10 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
     );
   };
 
-  // CI-Farben aus dem aktuell gewählten Preset (oder Dealer-Profil bei custom).
+  // CI-Farben aus dem aktuell gewählten Preset (oder Dealer-Profil bei custom) –
+  // pro Feld via Color-Picker überschreibbar.
   const activePreset = getBrandPreset(brandPresetKey);
-  const ciColors = (() => {
+  const baseCiColors = (() => {
     if (brandPresetKey !== "custom") return activePreset.colors;
     return {
       primary: dealerProfile?.primary_color || activePreset.colors.primary,
@@ -393,6 +394,17 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
       bg: activePreset.colors.bg,
     };
   })();
+  const [colorOverrides, setColorOverrides] = useState<Partial<Record<"primary" | "secondary" | "text" | "bg", string>>>({});
+  // Bei Preset-Wechsel Overrides zurücksetzen, damit das neue Preset sichtbar wird.
+  useEffect(() => { setColorOverrides({}); }, [brandPresetKey]);
+  const ciColors = {
+    primary: colorOverrides.primary || baseCiColors.primary,
+    secondary: colorOverrides.secondary || baseCiColors.secondary,
+    text: colorOverrides.text || baseCiColors.text,
+    bg: colorOverrides.bg || baseCiColors.bg,
+  };
+  const setCiColor = (k: "primary" | "secondary" | "text" | "bg", v: string) =>
+    setColorOverrides(prev => ({ ...prev, [k]: v }));
 
   const hasDataSource = !!pdfFile || vehiclePrefillUsed;
   const canGenerate =
