@@ -706,7 +706,7 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
 
         {/* Quellen */}
         <div className="grid gap-4 md:grid-cols-2 mb-4">
-          {/* PDF */}
+          {/* PDF / Daten */}
           <Card
             className="p-4 border-dashed border-2 cursor-pointer hover:border-accent transition-colors"
             onClick={() => pdfInputRef.current?.click()}
@@ -721,7 +721,9 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
             <div className="flex items-start gap-3">
               <FileText className="w-8 h-8 text-accent shrink-0" />
               <div className="flex-1 min-w-0">
-                <div className="font-semibold text-foreground">Datenblatt / Exposé <span className="text-red-500">*</span></div>
+                <div className="font-semibold text-foreground">
+                  Datenblatt / Exposé {!canvasVehicleId && <span className="text-red-500">*</span>}
+                </div>
                 {pdfFile ? (
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-sm text-foreground truncate">{pdfFile.name}</span>
@@ -738,8 +740,21 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
                       <X className="w-3 h-3" />
                     </Button>
                   </div>
+                ) : vehiclePrefillUsed ? (
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    <Badge variant="secondary" className="text-[10px] py-0">
+                      <Car className="w-3 h-3 mr-1" /> Daten aus Fahrzeug übernommen
+                    </Badge>
+                    <span className="text-[11px] text-muted-foreground">
+                      Klick, um stattdessen ein PDF zu laden.
+                    </span>
+                  </div>
                 ) : (
-                  <div className="text-xs text-muted-foreground mt-1">PDF oder Bild — wird sofort nach Upload automatisch analysiert</div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {canvasVehicleId
+                      ? "Optional — Daten werden automatisch aus dem verknüpften Fahrzeug übernommen."
+                      : "PDF oder Bild — wird sofort nach Upload automatisch analysiert"}
+                  </div>
                 )}
                 {analysisError && (
                   <div className="text-[11px] text-destructive mt-1">{analysisError}</div>
@@ -782,10 +797,55 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
                 ) : (
                   <div className="text-xs text-muted-foreground mt-1">Klicken zum Hochladen — wird passend auf jedes Format zugeschnitten</div>
                 )}
+                {canvasVehicleId && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-2"
+                    onClick={(e) => { e.stopPropagation(); setAssetPickerOpen(true); }}
+                  >
+                    <Car className="w-3 h-3 mr-1" /> Aus Fahrzeug wählen
+                  </Button>
+                )}
               </div>
             </div>
           </Card>
         </div>
+
+        <VehicleAssetPicker
+          open={assetPickerOpen}
+          vehicleId={canvasVehicleId ?? null}
+          allowedKinds={["original", "gallery", "banner"]}
+          multi={false}
+          title="Fahrzeugbild wählen"
+          description="Wähle ein vorhandenes Bild aus diesem Fahrzeug als Grundlage für das Banner."
+          onCancel={() => setAssetPickerOpen(false)}
+          onConfirm={async (assets) => {
+            setAssetPickerOpen(false);
+            const a = assets[0];
+            if (!a?.url) return;
+            try {
+              const res = await fetch(a.url);
+              const blob = await res.blob();
+              const ext = (blob.type.split("/")[1] || "jpg").replace("jpeg", "jpg");
+              const name = (a.label || `fahrzeugbild.${ext}`).replace(/[^a-zA-Z0-9._-]/g, "_");
+              const file = new File([blob], name, { type: blob.type || "image/jpeg" });
+              const dataUrl = await new Promise<string>((resolve, reject) => {
+                const r = new FileReader();
+                r.onload = () => resolve(String(r.result));
+                r.onerror = () => reject(r.error);
+                r.readAsDataURL(file);
+              });
+              setImageFile(file);
+              setImageDataUrl(dataUrl);
+              toast.success("Bild übernommen.");
+            } catch (e: any) {
+              console.error("asset pick failed", e);
+              toast.error(e?.message ?? "Bild konnte nicht übernommen werden.");
+            }
+          }}
+        />
+
 
         {/* Format-Chips */}
         <Card className="p-4 mb-4">
