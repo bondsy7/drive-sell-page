@@ -57,7 +57,7 @@ LIGHTING: Clean luxury studio lighting with soft overhead key light, fill lights
     key: 'EXT_FRONT',
     label: 'Front View',
     labelDe: 'Frontansicht',
-    defaultSelected: false,
+    defaultSelected: true,
     category: 'exterior',
     prompt: `<CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Exterior - Direct Head-On Front View
@@ -71,7 +71,7 @@ LIGHTING: Balanced showroom lighting with realistic floor reflections.
     key: 'EXT_REAR',
     label: 'Rear View',
     labelDe: 'Heckansicht',
-    defaultSelected: false,
+    defaultSelected: true,
     category: 'exterior',
     prompt: `<CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Exterior - Direct Rear View
@@ -85,7 +85,7 @@ LIGHTING: Shadows consistent with showroom lighting.
     key: 'EXT_SIDE_LEFT',
     label: 'Left Side',
     labelDe: 'Linke Seite',
-    defaultSelected: false,
+    defaultSelected: true,
     category: 'exterior',
     prompt: `<CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Exterior - Perfect LEFT Side Profile
@@ -100,7 +100,7 @@ LIGHTING: Flat, even lighting to highlight body lines.
     key: 'EXT_SIDE_RIGHT',
     label: 'Right Side',
     labelDe: 'Rechte Seite',
-    defaultSelected: false,
+    defaultSelected: true,
     category: 'exterior',
     prompt: `<CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Exterior - Perfect RIGHT Side Profile
@@ -115,7 +115,7 @@ LIGHTING: Clean studio lighting emphasizing body lines.
     key: 'EXT_34_FRONT_RIGHT',
     label: '3/4 Front Right',
     labelDe: '3/4 Vorne Rechts',
-    defaultSelected: false,
+    defaultSelected: true,
     category: 'exterior',
     prompt: `<CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Exterior - Front-Right 3/4 View
@@ -129,7 +129,7 @@ LIGHTING: Realistic lighting and floor reflections.
     key: 'EXT_34_REAR_LEFT',
     label: '3/4 Rear Left',
     labelDe: '3/4 Hinten Links',
-    defaultSelected: false,
+    defaultSelected: true,
     category: 'exterior',
     prompt: `<CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Exterior - Rear-Left 3/4 View
@@ -242,7 +242,7 @@ RULES: Maintain exact interior layout from reference. View through windshield MU
     key: 'DET_HEADLIGHT',
     label: 'Headlight',
     labelDe: 'Scheinwerfer',
-    defaultSelected: false,
+    defaultSelected: true,
     category: 'detail',
     prompt: `<CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Detail - Front Headlight in Vehicle Context
@@ -274,7 +274,7 @@ LIGHTING: High-contrast studio lighting that reveals every internal texture, LED
     key: 'DET_TAILLIGHT',
     label: 'Taillight',
     labelDe: 'Rücklicht',
-    defaultSelected: false,
+    defaultSelected: true,
     category: 'detail',
     prompt: `<CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Detail - Rear Taillight in Vehicle Context
@@ -289,7 +289,7 @@ LIGHTING: High-contrast studio lighting revealing internal textures and reflecti
     key: 'DET_WHEEL',
     label: 'Wheel / Rim',
     labelDe: 'Felge',
-    defaultSelected: false,
+    defaultSelected: true,
     category: 'detail',
     prompt: `<CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Detail - Front Wheel in Context
@@ -322,7 +322,7 @@ LIGHTING: High-contrast studio lighting emphasizing material textures, chrome re
     key: 'GRID_EXTERIOR_4',
     label: 'Exterior Grid (4 views)',
     labelDe: 'Exterieur-Grid (4 Ansichten)',
-    defaultSelected: false,
+    defaultSelected: true,
     category: 'composite',
     prompt: `<CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Composite - Exterior 2×2 Grid
@@ -334,7 +334,7 @@ RULES: All 4 cells show COMPLETE IDENTICAL vehicle in SAME PROVIDED SHOWROOM wit
     key: 'GRID_INTERIOR_4',
     label: 'Interior Grid (4 views)',
     labelDe: 'Interieur-Grid (4 Ansichten)',
-    defaultSelected: false,
+    defaultSelected: true,
     category: 'composite',
     prompt: `<CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Composite - Interior 2×2 Grid
