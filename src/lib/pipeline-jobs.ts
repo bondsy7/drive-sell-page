@@ -57,7 +57,7 @@ LIGHTING: Clean luxury studio lighting with soft overhead key light, fill lights
     key: 'EXT_FRONT',
     label: 'Front View',
     labelDe: 'Frontansicht',
-    defaultSelected: false,
+    defaultSelected: true,
     category: 'exterior',
     prompt: `<CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Exterior - Direct Head-On Front View
@@ -71,7 +71,7 @@ LIGHTING: Balanced showroom lighting with realistic floor reflections.
     key: 'EXT_REAR',
     label: 'Rear View',
     labelDe: 'Heckansicht',
-    defaultSelected: false,
+    defaultSelected: true,
     category: 'exterior',
     prompt: `<CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Exterior - Direct Rear View
@@ -85,7 +85,7 @@ LIGHTING: Shadows consistent with showroom lighting.
     key: 'EXT_SIDE_LEFT',
     label: 'Left Side',
     labelDe: 'Linke Seite',
-    defaultSelected: false,
+    defaultSelected: true,
     category: 'exterior',
     prompt: `<CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Exterior - Perfect LEFT Side Profile
@@ -100,7 +100,7 @@ LIGHTING: Flat, even lighting to highlight body lines.
     key: 'EXT_SIDE_RIGHT',
     label: 'Right Side',
     labelDe: 'Rechte Seite',
-    defaultSelected: false,
+    defaultSelected: true,
     category: 'exterior',
     prompt: `<CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Exterior - Perfect RIGHT Side Profile
@@ -115,7 +115,7 @@ LIGHTING: Clean studio lighting emphasizing body lines.
     key: 'EXT_34_FRONT_RIGHT',
     label: '3/4 Front Right',
     labelDe: '3/4 Vorne Rechts',
-    defaultSelected: false,
+    defaultSelected: true,
     category: 'exterior',
     prompt: `<CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Exterior - Front-Right 3/4 View
@@ -129,7 +129,7 @@ LIGHTING: Realistic lighting and floor reflections.
     key: 'EXT_34_REAR_LEFT',
     label: '3/4 Rear Left',
     labelDe: '3/4 Hinten Links',
-    defaultSelected: false,
+    defaultSelected: true,
     category: 'exterior',
     prompt: `<CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Exterior - Rear-Left 3/4 View
@@ -242,7 +242,7 @@ RULES: Maintain exact interior layout from reference. View through windshield MU
     key: 'DET_HEADLIGHT',
     label: 'Headlight',
     labelDe: 'Scheinwerfer',
-    defaultSelected: false,
+    defaultSelected: true,
     category: 'detail',
     prompt: `<CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Detail - Front Headlight in Vehicle Context
@@ -274,7 +274,7 @@ LIGHTING: High-contrast studio lighting that reveals every internal texture, LED
     key: 'DET_TAILLIGHT',
     label: 'Taillight',
     labelDe: 'Rücklicht',
-    defaultSelected: false,
+    defaultSelected: true,
     category: 'detail',
     prompt: `<CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Detail - Rear Taillight in Vehicle Context
@@ -289,7 +289,7 @@ LIGHTING: High-contrast studio lighting revealing internal textures and reflecti
     key: 'DET_WHEEL',
     label: 'Wheel / Rim',
     labelDe: 'Felge',
-    defaultSelected: false,
+    defaultSelected: true,
     category: 'detail',
     prompt: `<CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Detail - Front Wheel in Context
@@ -322,7 +322,7 @@ LIGHTING: High-contrast studio lighting emphasizing material textures, chrome re
     key: 'GRID_EXTERIOR_4',
     label: 'Exterior Grid (4 views)',
     labelDe: 'Exterieur-Grid (4 Ansichten)',
-    defaultSelected: false,
+    defaultSelected: true,
     category: 'composite',
     prompt: `<CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Composite - Exterior 2×2 Grid
@@ -334,7 +334,7 @@ RULES: All 4 cells show COMPLETE IDENTICAL vehicle in SAME PROVIDED SHOWROOM wit
     key: 'GRID_INTERIOR_4',
     label: 'Interior Grid (4 views)',
     labelDe: 'Interieur-Grid (4 Ansichten)',
-    defaultSelected: false,
+    defaultSelected: true,
     category: 'composite',
     prompt: `<CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Composite - Interior 2×2 Grid
@@ -361,7 +361,7 @@ RULES: All images show IDENTICAL vehicle. PROVIDED SHOWROOM. ${LOGO_LINE} Modern
 
   // ── BMW CI ──
   {
-    key: 'CI_BMW_34_FRONT', label: 'BMW CI – 3/4 Front', labelDe: 'BMW CI – 3/4 Front', defaultSelected: true, category: 'ci', brand: 'bmw',
+    key: 'CI_BMW_34_FRONT', label: 'BMW CI – 3/4 Front', labelDe: 'BMW CI – 3/4 Front', defaultSelected: false, category: 'ci', brand: 'bmw',
     prompt: `<BRAND_ENVIRONMENT_OVERRIDE>
 BMW Corporate Identity: Clean white/grey studio. Strong key light from front-left, soft fill from right. Polished floor with subtle reflections.
 </BRAND_ENVIRONMENT_OVERRIDE>
@@ -374,7 +374,7 @@ ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
-    key: 'CI_BMW_SIDE', label: 'BMW CI – Side Profile', labelDe: 'BMW CI – Seite', defaultSelected: true, category: 'ci', brand: 'bmw',
+    key: 'CI_BMW_SIDE', label: 'BMW CI – Side Profile', labelDe: 'BMW CI – Seite', defaultSelected: false, category: 'ci', brand: 'bmw',
     prompt: `<BRAND_ENVIRONMENT_OVERRIDE>
 BMW Corporate Identity: Clean white/grey studio. Even lighting highlighting Hofmeister kink and body lines.
 </BRAND_ENVIRONMENT_OVERRIDE>
@@ -387,7 +387,7 @@ ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
-    key: 'CI_BMW_34_REAR', label: 'BMW CI – 3/4 Rear', labelDe: 'BMW CI – 3/4 Heck', defaultSelected: true, category: 'ci', brand: 'bmw',
+    key: 'CI_BMW_34_REAR', label: 'BMW CI – 3/4 Rear', labelDe: 'BMW CI – 3/4 Heck', defaultSelected: false, category: 'ci', brand: 'bmw',
     prompt: `<BRAND_ENVIRONMENT_OVERRIDE>BMW Corporate Identity: Clean white/grey studio.</BRAND_ENVIRONMENT_OVERRIDE>
 
 <CURRENT_PIPELINE_SHOT>
@@ -397,7 +397,7 @@ ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
-    key: 'CI_BMW_REAR', label: 'BMW CI – Rear', labelDe: 'BMW CI – Heck', defaultSelected: true, category: 'ci', brand: 'bmw',
+    key: 'CI_BMW_REAR', label: 'BMW CI – Rear', labelDe: 'BMW CI – Heck', defaultSelected: false, category: 'ci', brand: 'bmw',
     prompt: `<BRAND_ENVIRONMENT_OVERRIDE>BMW Corporate Identity: Clean white/grey studio.</BRAND_ENVIRONMENT_OVERRIDE>
 
 <CURRENT_PIPELINE_SHOT>
@@ -435,7 +435,7 @@ CRITICAL: Do NOT isolate the wheel. It MUST be mounted on the vehicle with surro
 
   // ── Mercedes-Benz CI ──
   {
-    key: 'CI_MERCEDES_34_FRONT', label: 'Mercedes CI – 3/4 Front', labelDe: 'Mercedes CI – 3/4 Front', defaultSelected: true, category: 'ci', brand: 'mercedes',
+    key: 'CI_MERCEDES_34_FRONT', label: 'Mercedes CI – 3/4 Front', labelDe: 'Mercedes CI – 3/4 Front', defaultSelected: false, category: 'ci', brand: 'mercedes',
     prompt: `<BRAND_ENVIRONMENT_OVERRIDE>
 Mercedes-Benz Corporate Identity: Elegant studio with subtle gradient background. Soft, even, premium lighting.
 </BRAND_ENVIRONMENT_OVERRIDE>
@@ -447,7 +447,7 @@ ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
-    key: 'CI_MERCEDES_SIDE', label: 'Mercedes CI – Side', labelDe: 'Mercedes CI – Seite', defaultSelected: true, category: 'ci', brand: 'mercedes',
+    key: 'CI_MERCEDES_SIDE', label: 'Mercedes CI – Side', labelDe: 'Mercedes CI – Seite', defaultSelected: false, category: 'ci', brand: 'mercedes',
     prompt: `<BRAND_ENVIRONMENT_OVERRIDE>Mercedes-Benz CI: Subtle gradient studio background.</BRAND_ENVIRONMENT_OVERRIDE>
 
 <CURRENT_PIPELINE_SHOT>
@@ -457,7 +457,7 @@ ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
-    key: 'CI_MERCEDES_34_REAR', label: 'Mercedes CI – 3/4 Rear', labelDe: 'Mercedes CI – 3/4 Heck', defaultSelected: true, category: 'ci', brand: 'mercedes',
+    key: 'CI_MERCEDES_34_REAR', label: 'Mercedes CI – 3/4 Rear', labelDe: 'Mercedes CI – 3/4 Heck', defaultSelected: false, category: 'ci', brand: 'mercedes',
     prompt: `<BRAND_ENVIRONMENT_OVERRIDE>Mercedes-Benz CI: Elegant studio.</BRAND_ENVIRONMENT_OVERRIDE>
 
 <CURRENT_PIPELINE_SHOT>
@@ -467,7 +467,7 @@ ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
-    key: 'CI_MERCEDES_FRONT', label: 'Mercedes CI – Front', labelDe: 'Mercedes CI – Front', defaultSelected: true, category: 'ci', brand: 'mercedes',
+    key: 'CI_MERCEDES_FRONT', label: 'Mercedes CI – Front', labelDe: 'Mercedes CI – Front', defaultSelected: false, category: 'ci', brand: 'mercedes',
     prompt: `<BRAND_ENVIRONMENT_OVERRIDE>Mercedes-Benz CI: Even studio lighting.</BRAND_ENVIRONMENT_OVERRIDE>
 
 <CURRENT_PIPELINE_SHOT>
@@ -505,7 +505,7 @@ CRITICAL: Do NOT isolate the wheel. It MUST be mounted on the vehicle with surro
 
   // ── Audi CI ──
   {
-    key: 'CI_AUDI_34_FRONT', label: 'Audi CI – 3/4 Front', labelDe: 'Audi CI – 3/4 Front', defaultSelected: true, category: 'ci', brand: 'audi',
+    key: 'CI_AUDI_34_FRONT', label: 'Audi CI – 3/4 Front', labelDe: 'Audi CI – 3/4 Front', defaultSelected: false, category: 'ci', brand: 'audi',
     prompt: `<BRAND_ENVIRONMENT_OVERRIDE>Audi Corporate Identity: Clean, bright studio with minimal shadows.</BRAND_ENVIRONMENT_OVERRIDE>
 
 <CURRENT_PIPELINE_SHOT>
@@ -515,7 +515,7 @@ ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
-    key: 'CI_AUDI_SIDE', label: 'Audi CI – Side', labelDe: 'Audi CI – Seite', defaultSelected: true, category: 'ci', brand: 'audi',
+    key: 'CI_AUDI_SIDE', label: 'Audi CI – Side', labelDe: 'Audi CI – Seite', defaultSelected: false, category: 'ci', brand: 'audi',
     prompt: `<BRAND_ENVIRONMENT_OVERRIDE>Audi CI: Clean bright studio.</BRAND_ENVIRONMENT_OVERRIDE>
 
 <CURRENT_PIPELINE_SHOT>
@@ -525,7 +525,7 @@ ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
-    key: 'CI_AUDI_34_REAR', label: 'Audi CI – 3/4 Rear', labelDe: 'Audi CI – 3/4 Heck', defaultSelected: true, category: 'ci', brand: 'audi',
+    key: 'CI_AUDI_34_REAR', label: 'Audi CI – 3/4 Rear', labelDe: 'Audi CI – 3/4 Heck', defaultSelected: false, category: 'ci', brand: 'audi',
     prompt: `<BRAND_ENVIRONMENT_OVERRIDE>Audi CI: Clean studio.</BRAND_ENVIRONMENT_OVERRIDE>
 
 <CURRENT_PIPELINE_SHOT>
@@ -535,7 +535,7 @@ ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
-    key: 'CI_AUDI_REAR', label: 'Audi CI – Rear', labelDe: 'Audi CI – Heck', defaultSelected: true, category: 'ci', brand: 'audi',
+    key: 'CI_AUDI_REAR', label: 'Audi CI – Rear', labelDe: 'Audi CI – Heck', defaultSelected: false, category: 'ci', brand: 'audi',
     prompt: `<BRAND_ENVIRONMENT_OVERRIDE>Audi CI: Bright studio.</BRAND_ENVIRONMENT_OVERRIDE>
 
 <CURRENT_PIPELINE_SHOT>
@@ -548,7 +548,7 @@ ENVIRONMENT: ${LOGO_LINE}
 
   // ── Volkswagen CI ──
   {
-    key: 'CI_VW_34_FRONT', label: 'VW CI – 3/4 Front', labelDe: 'VW CI – 3/4 Front', defaultSelected: true, category: 'ci', brand: 'volkswagen',
+    key: 'CI_VW_34_FRONT', label: 'VW CI – 3/4 Front', labelDe: 'VW CI – 3/4 Front', defaultSelected: false, category: 'ci', brand: 'volkswagen',
     prompt: `<BRAND_ENVIRONMENT_OVERRIDE>Volkswagen CI: Clean, modern white studio. Friendly, approachable lighting.</BRAND_ENVIRONMENT_OVERRIDE>
 
 <CURRENT_PIPELINE_SHOT>
@@ -558,7 +558,7 @@ ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
-    key: 'CI_VW_SIDE', label: 'VW CI – Side', labelDe: 'VW CI – Seite', defaultSelected: true, category: 'ci', brand: 'volkswagen',
+    key: 'CI_VW_SIDE', label: 'VW CI – Side', labelDe: 'VW CI – Seite', defaultSelected: false, category: 'ci', brand: 'volkswagen',
     prompt: `<BRAND_ENVIRONMENT_OVERRIDE>VW CI: Modern white studio.</BRAND_ENVIRONMENT_OVERRIDE>
 
 <CURRENT_PIPELINE_SHOT>
@@ -568,7 +568,7 @@ ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
-    key: 'CI_VW_34_REAR', label: 'VW CI – 3/4 Rear', labelDe: 'VW CI – 3/4 Heck', defaultSelected: true, category: 'ci', brand: 'volkswagen',
+    key: 'CI_VW_34_REAR', label: 'VW CI – 3/4 Rear', labelDe: 'VW CI – 3/4 Heck', defaultSelected: false, category: 'ci', brand: 'volkswagen',
     prompt: `<BRAND_ENVIRONMENT_OVERRIDE>VW CI: White studio.</BRAND_ENVIRONMENT_OVERRIDE>
 
 <CURRENT_PIPELINE_SHOT>
@@ -578,7 +578,7 @@ ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
-    key: 'CI_VW_FRONT', label: 'VW CI – Front', labelDe: 'VW CI – Front', defaultSelected: true, category: 'ci', brand: 'volkswagen',
+    key: 'CI_VW_FRONT', label: 'VW CI – Front', labelDe: 'VW CI – Front', defaultSelected: false, category: 'ci', brand: 'volkswagen',
     prompt: `<BRAND_ENVIRONMENT_OVERRIDE>VW CI: White studio.</BRAND_ENVIRONMENT_OVERRIDE>
 
 <CURRENT_PIPELINE_SHOT>
@@ -591,7 +591,7 @@ ENVIRONMENT: ${LOGO_LINE}
 
   // ── Porsche CI ──
   {
-    key: 'CI_PORSCHE_34_FRONT', label: 'Porsche CI – 3/4 Front', labelDe: 'Porsche CI – 3/4 Front', defaultSelected: true, category: 'ci', brand: 'porsche',
+    key: 'CI_PORSCHE_34_FRONT', label: 'Porsche CI – 3/4 Front', labelDe: 'Porsche CI – 3/4 Front', defaultSelected: false, category: 'ci', brand: 'porsche',
     prompt: `<BRAND_ENVIRONMENT_OVERRIDE>Porsche CI: Dark dramatic studio with controlled highlights on body lines.</BRAND_ENVIRONMENT_OVERRIDE>
 
 <CURRENT_PIPELINE_SHOT>
@@ -601,7 +601,7 @@ ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
-    key: 'CI_PORSCHE_SIDE', label: 'Porsche CI – Side', labelDe: 'Porsche CI – Seite', defaultSelected: true, category: 'ci', brand: 'porsche',
+    key: 'CI_PORSCHE_SIDE', label: 'Porsche CI – Side', labelDe: 'Porsche CI – Seite', defaultSelected: false, category: 'ci', brand: 'porsche',
     prompt: `<BRAND_ENVIRONMENT_OVERRIDE>Porsche CI: Dark dramatic studio with rim focus.</BRAND_ENVIRONMENT_OVERRIDE>
 
 <CURRENT_PIPELINE_SHOT>
@@ -611,7 +611,7 @@ ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
-    key: 'CI_PORSCHE_34_REAR', label: 'Porsche CI – 3/4 Rear', labelDe: 'Porsche CI – 3/4 Heck', defaultSelected: true, category: 'ci', brand: 'porsche',
+    key: 'CI_PORSCHE_34_REAR', label: 'Porsche CI – 3/4 Rear', labelDe: 'Porsche CI – 3/4 Heck', defaultSelected: false, category: 'ci', brand: 'porsche',
     prompt: `<BRAND_ENVIRONMENT_OVERRIDE>Porsche CI: Dramatic lighting.</BRAND_ENVIRONMENT_OVERRIDE>
 
 <CURRENT_PIPELINE_SHOT>
@@ -621,7 +621,7 @@ ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
-    key: 'CI_PORSCHE_LOW', label: 'Porsche CI – Low Angle', labelDe: 'Porsche CI – Low-Angle', defaultSelected: true, category: 'ci', brand: 'porsche',
+    key: 'CI_PORSCHE_LOW', label: 'Porsche CI – Low Angle', labelDe: 'Porsche CI – Low-Angle', defaultSelected: false, category: 'ci', brand: 'porsche',
     prompt: `<BRAND_ENVIRONMENT_OVERRIDE>Porsche CI: Dark studio, dramatic key light.</BRAND_ENVIRONMENT_OVERRIDE>
 
 <CURRENT_PIPELINE_SHOT>
@@ -635,7 +635,7 @@ ENVIRONMENT: ${LOGO_LINE}
   // ── Volvo CI ──
   // Standard Views (7)
   {
-    key: 'CI_VOLVO_34_FRONT_LEFT', label: 'Volvo CI – 3/4 Front Left', labelDe: 'Volvo CI – 3/4 Front Links', defaultSelected: true, category: 'ci', brand: 'volvo',
+    key: 'CI_VOLVO_34_FRONT_LEFT', label: 'Volvo CI – 3/4 Front Left', labelDe: 'Volvo CI – 3/4 Front Links', defaultSelected: false, category: 'ci', brand: 'volvo',
     prompt: `<BRAND_ENVIRONMENT_OVERRIDE>
 Volvo Corporate Identity: Minimalist high-tech Scandinavian showroom. Highly reflective dark polished resin floor. Large seamless frosted glass panels illuminated from behind with soft diffused cool-white gradient light. Ultra-premium, cold, clinical magazine quality.
 </BRAND_ENVIRONMENT_OVERRIDE>
@@ -648,7 +648,7 @@ ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
-    key: 'CI_VOLVO_34_FRONT_RIGHT', label: 'Volvo CI – 3/4 Front Right', labelDe: 'Volvo CI – 3/4 Front Rechts', defaultSelected: true, category: 'ci', brand: 'volvo',
+    key: 'CI_VOLVO_34_FRONT_RIGHT', label: 'Volvo CI – 3/4 Front Right', labelDe: 'Volvo CI – 3/4 Front Rechts', defaultSelected: false, category: 'ci', brand: 'volvo',
     prompt: `<BRAND_ENVIRONMENT_OVERRIDE>Volvo CI: Minimalist high-tech showroom, reflective dark polished resin floor, frosted glass panels with cool-white gradient.</BRAND_ENVIRONMENT_OVERRIDE>
 
 <CURRENT_PIPELINE_SHOT>
@@ -659,7 +659,7 @@ ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
-    key: 'CI_VOLVO_34_REAR_LEFT', label: 'Volvo CI – 3/4 Rear Left', labelDe: 'Volvo CI – 3/4 Heck Links', defaultSelected: true, category: 'ci', brand: 'volvo',
+    key: 'CI_VOLVO_34_REAR_LEFT', label: 'Volvo CI – 3/4 Rear Left', labelDe: 'Volvo CI – 3/4 Heck Links', defaultSelected: false, category: 'ci', brand: 'volvo',
     prompt: `<BRAND_ENVIRONMENT_OVERRIDE>Volvo CI: Minimalist high-tech showroom, reflective dark polished resin floor, frosted glass panels.</BRAND_ENVIRONMENT_OVERRIDE>
 
 <CURRENT_PIPELINE_SHOT>
@@ -669,7 +669,7 @@ ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
-    key: 'CI_VOLVO_34_REAR_RIGHT', label: 'Volvo CI – 3/4 Rear Right', labelDe: 'Volvo CI – 3/4 Heck Rechts', defaultSelected: true, category: 'ci', brand: 'volvo',
+    key: 'CI_VOLVO_34_REAR_RIGHT', label: 'Volvo CI – 3/4 Rear Right', labelDe: 'Volvo CI – 3/4 Heck Rechts', defaultSelected: false, category: 'ci', brand: 'volvo',
     prompt: `<BRAND_ENVIRONMENT_OVERRIDE>Volvo CI: Minimalist showroom, dark resin floor, frosted glass panels.</BRAND_ENVIRONMENT_OVERRIDE>
 
 <CURRENT_PIPELINE_SHOT>
@@ -679,7 +679,7 @@ ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
-    key: 'CI_VOLVO_SIDE', label: 'Volvo CI – Side', labelDe: 'Volvo CI – Seite', defaultSelected: true, category: 'ci', brand: 'volvo',
+    key: 'CI_VOLVO_SIDE', label: 'Volvo CI – Side', labelDe: 'Volvo CI – Seite', defaultSelected: false, category: 'ci', brand: 'volvo',
     prompt: `<BRAND_ENVIRONMENT_OVERRIDE>Volvo CI: Minimalist showroom, dark resin floor, frosted glass panels.</BRAND_ENVIRONMENT_OVERRIDE>
 
 <CURRENT_PIPELINE_SHOT>
@@ -690,7 +690,7 @@ ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
-    key: 'CI_VOLVO_FRONT', label: 'Volvo CI – Front', labelDe: 'Volvo CI – Front', defaultSelected: true, category: 'ci', brand: 'volvo',
+    key: 'CI_VOLVO_FRONT', label: 'Volvo CI – Front', labelDe: 'Volvo CI – Front', defaultSelected: false, category: 'ci', brand: 'volvo',
     prompt: `<BRAND_ENVIRONMENT_OVERRIDE>Volvo CI: Minimalist showroom, dark resin floor, frosted glass panels.</BRAND_ENVIRONMENT_OVERRIDE>
 
 <CURRENT_PIPELINE_SHOT>
@@ -701,7 +701,7 @@ ENVIRONMENT: ${LOGO_LINE}
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
-    key: 'CI_VOLVO_REAR', label: 'Volvo CI – Rear', labelDe: 'Volvo CI – Heck', defaultSelected: true, category: 'ci', brand: 'volvo',
+    key: 'CI_VOLVO_REAR', label: 'Volvo CI – Rear', labelDe: 'Volvo CI – Heck', defaultSelected: false, category: 'ci', brand: 'volvo',
     prompt: `<BRAND_ENVIRONMENT_OVERRIDE>Volvo CI: Minimalist showroom, dark resin floor, frosted glass panels.</BRAND_ENVIRONMENT_OVERRIDE>
 
 <CURRENT_PIPELINE_SHOT>
@@ -714,7 +714,7 @@ ENVIRONMENT: ${LOGO_LINE}
 
   // Interior (5)
   {
-    key: 'CI_VOLVO_INT_PASSENGER', label: 'Volvo CI – Interior Passenger', labelDe: 'Volvo CI – Innenraum Beifahrer', defaultSelected: true, category: 'ci', brand: 'volvo',
+    key: 'CI_VOLVO_INT_PASSENGER', label: 'Volvo CI – Interior Passenger', labelDe: 'Volvo CI – Innenraum Beifahrer', defaultSelected: false, category: 'ci', brand: 'volvo',
     prompt: `<CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Volvo CI - Interior from Passenger Door
 CAMERA_ANGLE: From open passenger door looking toward dashboard, center console, steering wheel, driver seat.
@@ -722,7 +722,7 @@ FOCUS_ELEMENTS: Exact leather grain, stitching, trim materials (open-pore wood, 
 </CURRENT_PIPELINE_SHOT>`,
   },
   {
-    key: 'CI_VOLVO_INT_CENTER', label: 'Volvo CI – Interior Center', labelDe: 'Volvo CI – Innenraum Mitte', defaultSelected: true, category: 'ci', brand: 'volvo',
+    key: 'CI_VOLVO_INT_CENTER', label: 'Volvo CI – Interior Center', labelDe: 'Volvo CI – Innenraum Mitte', defaultSelected: false, category: 'ci', brand: 'volvo',
     prompt: `<CURRENT_PIPELINE_SHOT>
 SHOT_TYPE: Volvo CI - Interior Center View
 CAMERA_ANGLE: Between front seats looking forward at dashboard and center console.
