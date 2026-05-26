@@ -403,7 +403,20 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
           const renderDone = p.stage === "render" || p.stage === "done"
             ? Math.max(0, p.done - 1 - formats.length)
             : 0;
-          bgTasks.updateTask(taskId, { completed: Math.min(formats.length, renderDone) });
+          const pct = p.total > 0 ? Math.round((p.done / p.total) * 100) : 0;
+          const stageLabel =
+            p.stage === "analyze" ? "Datenblatt analysieren"
+            : p.stage === "master" ? "Masterbild erstellen"
+            : p.stage === "reframe" ? "Bilder anpassen"
+            : p.stage === "render" ? "Banner rendern"
+            : p.stage === "done" ? "Fertig"
+            : "Fehler";
+          bgTasks.updateTask(taskId, {
+            completed: Math.min(formats.length, renderDone),
+            stageLabel,
+            currentLabel: p.current,
+            percent: pct,
+          });
         },
       );
       setResults(out.results);
