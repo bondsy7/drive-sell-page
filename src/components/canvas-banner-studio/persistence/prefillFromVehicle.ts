@@ -70,31 +70,55 @@ export function buildPrefillFromVehicle(
 
   const offer = detectOfferType(d);
 
-  // Subline: Hook mit Firmen-Shortcode
-  let subline: string | undefined;
-  if (offer === "leasing") subline = "Leasingangebot von {{firma}}";
-  else if (offer === "finanzierung") subline = "Top-Finanzierung von {{firma}}";
-  else subline = "Hauspreis bei {{firma}}";
-
-  // Price
+  // Daten für Subline-Logik
   const cashPrice = pick(d, "pricing.cash_price", "price", "vehicle.price", "barpreis", "finance.total_price");
   const monthly = pick(d, "financing.monthly_rate", "leasing.monthly_rate", "finance.monthly_rate", "monthly_rate");
+  const durationRaw = pick(d, "financing.duration", "leasing.duration", "finance.duration");
+  const durationMonths = durationRaw ? (String(durationRaw).match(/\d+/)?.[0]) : undefined;
+  const annualKmRaw = pick(d, "financing.annual_mileage", "leasing.annual_mileage", "finance.annual_mileage");
+  const downRaw = pick(d, "financing.down_payment", "leasing.special_payment", "finance.down_payment", "finance.special_payment");
+  const interestRate = pick(d, "financing.interest_rate", "finance.interest_rate", "finance.nominal_interest_rate", "finance.effective_interest_rate");
+  const finalRate = pick(d, "financing.final_rate", "finance.final_rate", "finance.balloon");
+  const listPrice = pick(d, "pricing.list_price", "vehicle.list_price", "list_price", "uvp");
+  const savings = pick(d, "pricing.savings", "vehicle.savings", "savings", "preisvorteil");
+  const fmtMonthly = monthly ? (fmtEUR(monthly) ?? monthly) : undefined;
+  const fmtDown = downRaw ? (fmtEUR(downRaw) ?? downRaw) : undefined;
+
+  // Subline: kontextabhängig, mit {{firma}}
+  let subline: string | undefined;
+  if (offer === "leasing") {
+    if (fmtMonthly && durationMonths) subline = `Leasing ab ${fmtMonthly} mtl. bei ${durationMonths} Monaten`;
+    else if (fmtDown) subline = `Leasing mit ${fmtDown} Anzahlung bei {{firma}}`;
+    else if (customerType === "business") subline = "Gewerbeleasing mit attraktiven Raten bei {{firma}}";
+    else if (downRaw === undefined || /^0/.test(String(downRaw))) subline = "Leasing ohne Anzahlung bei {{firma}}";
+    else subline = "Attraktives Leasingangebot von {{firma}}";
+  } else if (offer === "finanzierung") {
+    if (fmtMonthly && durationMonths) subline = `Finanzierung ab ${fmtMonthly} mtl. bei ${durationMonths} Monaten`;
+    else if (interestRate) subline = `Finanzierung ab ${String(interestRate).replace(/\s+/g, "")} eff. Jahreszins`;
+    else if (finalRate) subline = "Flexible Finanzierung mit Schlussrate bei {{firma}}";
+    else if (fmtDown) subline = `Finanzierung mit ${fmtDown} Anzahlung bei {{firma}}`;
+    else subline = "Finanzierung mit starken Konditionen bei {{firma}}";
+  } else {
+    if (savings) subline = `Jetzt mit ${fmtEUR(savings) ?? savings} Preisvorteil bei {{firma}}`;
+    else if (listPrice) subline = `Statt ${fmtEUR(listPrice) ?? listPrice} Listenpreis bei {{firma}}`;
+    else subline = "Sofort verfügbar bei {{firma}}";
+  }
+
+  // Price-Zeile
   let price: string | undefined;
-  if ((offer === "leasing" || offer === "finanzierung") && monthly) {
-    price = `ab ${fmtEUR(monthly) ?? monthly} mtl.${vat}`;
+  if ((offer === "leasing" || offer === "finanzierung") && fmtMonthly) {
+    price = `ab ${fmtMonthly} mtl.${vat}`;
   } else if (cashPrice) {
-    price = `${fmtEUR(cashPrice) ?? cashPrice}${vat}`;
+    const cp = fmtEUR(cashPrice) ?? cashPrice;
+    price = offer === "barkauf" ? `Barpreis ${cp}${vat}` : `${cp}${vat}`;
   }
 
   // smallInfo: Faktencluster
   const parts: string[] = [];
   if (offer === "leasing" || offer === "finanzierung") {
-    const duration = pick(d, "financing.duration", "leasing.duration", "finance.duration");
-    const annualKm = pick(d, "financing.annual_mileage", "leasing.annual_mileage", "finance.annual_mileage");
-    const down = pick(d, "financing.down_payment", "leasing.special_payment", "finance.down_payment", "finance.special_payment");
-    if (duration) parts.push(String(duration).replace(/\bMonate?\b/i, "Mon."));
-    if (annualKm) parts.push(String(annualKm).replace(/\s*km\s*\/\s*jahr/i, " km"));
-    if (down) parts.push(`${fmtEUR(down) ?? down} Anzahlung`);
+    if (durationRaw) parts.push(String(durationRaw).replace(/\bMonate?\b/i, "Mon."));
+    if (annualKmRaw) parts.push(String(annualKmRaw).replace(/\s*km\s*\/\s*jahr/i, " km"));
+    if (fmtDown) parts.push(`${fmtDown} Anzahlung`);
     else if (offer === "leasing") parts.push("0 € Anzahlung");
   } else {
     if (year) parts.push(`EZ ${String(year).slice(-4)}`);
@@ -104,8 +128,11 @@ export function buildPrefillFromVehicle(
   }
   const smallInfo = parts.filter(Boolean).join(" · ").slice(0, 70) || undefined;
 
-  // CTA
-  const cta = offer === "barkauf" ? "Jetzt Probefahrt!" : "Jetzt sichern!";
+  // CTA – kontextabhängig
+  let cta: string;
+  if (offer === "leasing") cta = fmtMonthly ? "Jetzt Rate sichern" : "Leasing anfragen";
+  else if (offer === "finanzierung") cta = fmtMonthly ? "Jetzt finanzieren" : "Rate berechnen";
+  else cta = "Jetzt sichern";
 
   // Mandatory disclosure
   const drv: MandatoryDisclosureInput = {

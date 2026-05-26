@@ -85,18 +85,42 @@ export async function extractBannerDataFromPdf(pdfBase64: string): Promise<Extra
   const offer = detectOfferType(category, f);
   const vat = vatSuffix(customerType);
 
-  // --- Subline: Angebots-Hook mit Firmen-Shortcode ---
-  let subline = "";
-  if (offer === "leasing") subline = "Leasingangebot von {{firma}}";
-  else if (offer === "finanzierung") subline = "Top-Finanzierung von {{firma}}";
-  else subline = "Hauspreis bei {{firma}}";
+  const monthlyFmt = f?.monthlyRate ? formatEUR(f.monthlyRate) : "";
+  const downRaw = f?.downPayment || f?.specialPayment;
+  const downFmt = downRaw ? formatEUR(downRaw) : "";
+  const durationMonths = f?.duration ? (String(f.duration).match(/\d+/)?.[0]) : "";
+  const interestRate = f?.interestRate || f?.nominalInterestRate || f?.effectiveInterestRate;
+  const finalRate = f?.finalRate || f?.balloon;
+  const listPrice = v?.listPrice || (data as any)?.pricing?.list_price;
+  const savings = v?.savings || (data as any)?.pricing?.savings;
+  const cashPrice = v?.price || f?.totalPrice;
 
-  // --- Price: kompakte Aussage ---
+  // --- Subline: kontextabhängig + {{firma}} ---
+  let subline = "";
+  if (offer === "leasing") {
+    if (monthlyFmt && durationMonths) subline = `Leasing ab ${monthlyFmt} mtl. bei ${durationMonths} Monaten`;
+    else if (downFmt) subline = `Leasing mit ${downFmt} Anzahlung bei {{firma}}`;
+    else if (String(customerType).toLowerCase() === "business") subline = "Gewerbeleasing mit attraktiven Raten bei {{firma}}";
+    else subline = "Attraktives Leasingangebot von {{firma}}";
+  } else if (offer === "finanzierung") {
+    if (monthlyFmt && durationMonths) subline = `Finanzierung ab ${monthlyFmt} mtl. bei ${durationMonths} Monaten`;
+    else if (interestRate) subline = `Finanzierung ab ${String(interestRate).replace(/\s+/g, "")} eff. Jahreszins`;
+    else if (finalRate) subline = "Flexible Finanzierung mit Schlussrate bei {{firma}}";
+    else if (downFmt) subline = `Finanzierung mit ${downFmt} Anzahlung bei {{firma}}`;
+    else subline = "Finanzierung mit starken Konditionen bei {{firma}}";
+  } else {
+    if (savings) subline = `Jetzt mit ${formatEUR(savings)} Preisvorteil bei {{firma}}`;
+    else if (listPrice) subline = `Statt ${formatEUR(listPrice)} Listenpreis bei {{firma}}`;
+    else subline = "Sofort verfügbar bei {{firma}}";
+  }
+
+  // --- Price ---
   let price = "";
-  if ((offer === "leasing" || offer === "finanzierung") && f?.monthlyRate) {
-    price = `ab ${formatEUR(f.monthlyRate)} mtl.${vat}`;
-  } else if (v?.price || f?.totalPrice) {
-    price = `${formatEUR(v?.price || f?.totalPrice)}${vat}`;
+  if ((offer === "leasing" || offer === "finanzierung") && monthlyFmt) {
+    price = `ab ${monthlyFmt} mtl.${vat}`;
+  } else if (cashPrice) {
+    const cp = formatEUR(cashPrice);
+    price = offer === "barkauf" ? `Barpreis ${cp}${vat}` : `${cp}${vat}`;
   }
   price = price.slice(0, 40);
 
@@ -105,11 +129,8 @@ export async function extractBannerDataFromPdf(pdfBase64: string): Promise<Extra
   if (offer === "leasing" || offer === "finanzierung") {
     if (f?.duration) smallInfoParts.push(shortMonths(f.duration));
     if (f?.annualMileage) smallInfoParts.push(compactKm(f.annualMileage));
-    if (f?.downPayment || f?.specialPayment) {
-      smallInfoParts.push(`${formatEUR(f.downPayment || f.specialPayment)} Anzahlung`);
-    } else if (offer === "leasing") {
-      smallInfoParts.push("0 € Anzahlung");
-    }
+    if (downFmt) smallInfoParts.push(`${downFmt} Anzahlung`);
+    else if (offer === "leasing") smallInfoParts.push("0 € Anzahlung");
   } else {
     if (v?.year || v?.firstRegistration) smallInfoParts.push(`EZ ${String(v.year || v.firstRegistration).slice(-4)}`);
     if (v?.mileage || c?.mileage) smallInfoParts.push(`${String(v.mileage || c.mileage).replace(/\s*km.*$/i, "")} km`);
@@ -121,8 +142,11 @@ export async function extractBannerDataFromPdf(pdfBase64: string): Promise<Extra
   }
   const smallInfo = smallInfoParts.filter(Boolean).join(" · ").slice(0, 70);
 
-  // --- CTA: kurz & aktiv ---
-  const cta = offer === "barkauf" ? "Jetzt Probefahrt!" : "Jetzt sichern!";
+  // --- CTA ---
+  let cta: string;
+  if (offer === "leasing") cta = monthlyFmt ? "Jetzt Rate sichern" : "Leasing anfragen";
+  else if (offer === "finanzierung") cta = monthlyFmt ? "Jetzt finanzieren" : "Rate berechnen";
+  else cta = "Jetzt sichern";
 
   // --- Pflichtangabe (legalText) ---
   const legalParts: string[] = [];
