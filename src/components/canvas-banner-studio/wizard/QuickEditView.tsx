@@ -284,6 +284,10 @@ const QuickEditView: React.FC<Props> = ({
                 <RotateCcw className="w-4 h-4" />
               </button>
             )}
+            <Button size="sm" variant="ghost" onClick={handleManualSave} disabled={saving} title="Als Canvas-Projekt speichern">
+              {saving ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : state.bannerProjectId ? <Check className="w-3.5 h-3.5 mr-1 text-emerald-600" /> : <Save className="w-3.5 h-3.5 mr-1" />}
+              {state.bannerProjectId ? "Gespeichert" : "Speichern"}
+            </Button>
             <Button size="sm" variant="outline" onClick={downloadSingle}>
               <Download className="w-3.5 h-3.5 mr-1" /> PNG
             </Button>
@@ -291,6 +295,32 @@ const QuickEditView: React.FC<Props> = ({
               <Package className="w-3.5 h-3.5 mr-1" /> ZIP
             </Button>
           </div>
+        </div>
+
+        {/* Projekt-Metadaten: Titel + Fahrzeug verknüpfen (auto-Speichern als Canvas-Projekt) */}
+        <div className="container mx-auto px-3 pb-2 max-w-6xl grid gap-2 md:grid-cols-[1fr_1fr]">
+          <Input
+            placeholder="Projekttitel (z. B. Frühlingsaktion 2026)"
+            value={state.projectTitle ?? ""}
+            onChange={(e) => actions.setProjectTitle(e.target.value)}
+            className="h-9 text-sm"
+          />
+          <div className="text-[11px] text-muted-foreground self-center">
+            {state.vehicleId === null
+              ? "Ohne Fahrzeug (No-VIN) – im Dashboard unter Canvas-Projekte verfügbar."
+              : state.vehicleId
+                ? "An Fahrzeug verknüpft – Banner werden im Fahrzeug abgelegt."
+                : "Wähle ein Fahrzeug oder „Ohne Fahrzeug", damit das Projekt im Dashboard erscheint."}
+          </div>
+        </div>
+        <div className="container mx-auto px-3 pb-2 max-w-6xl">
+          <VehicleBannerPicker
+            vehicleId={state.vehicleId}
+            projectTitle={state.projectTitle}
+            onChangeVehicle={(v) => actions.setVehicle(v)}
+            onChangeTitle={(t) => actions.setProjectTitle(t)}
+            bannerProjectId={state.bannerProjectId}
+          />
         </div>
 
         {/* Format-Tabs */}
