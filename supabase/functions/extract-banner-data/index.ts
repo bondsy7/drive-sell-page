@@ -9,22 +9,31 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { handleCors, jsonResponse, errorResponse } from "../_shared/cors.ts";
 import { getSecret } from "../_shared/get-secret.ts";
 
-const PROMPT = `Du erhältst das Foto/Scan eines Fahrzeug-Datenblatts oder Angebots.
-Extrahiere die wichtigsten Werbe-Felder für einen kompakten Werbebanner.
+const PROMPT = `Du bist Werbetexter:in für Auto-Banner. Du erhältst das Foto/Scan eines Fahrzeug-Datenblatts oder Angebots.
+Ziel: kompakter, verkaufsfördernder Banner – auf einen Blick muss klar sein, worum es geht (Marke/Modell, Angebotsart, Preis-Hook, CTA).
+
+Erkenne zuerst:
+- Angebotsart: Leasing | Finanzierung | Barkauf (Kauf/Hauspreis). Hinweise: "mtl.", "monatlich", "Rate", "Leasingsonderzahlung", "Restwert", "Sollzins", "eff. Jahreszins", "Anzahlung", "Hauspreis".
+- Kundentyp: private (brutto, "inkl. MwSt.") oder business (netto, "zzgl. MwSt.", "Gewerbeleasing").
+
 Antworte AUSSCHLIESSLICH mit gültigem JSON, ohne Markdown.
 
 Schema:
 {
-  "brand": "Fahrzeug-Marke (z.B. 'Volkswagen', 'Renault', 'BMW') — nur die Marke, kein Modell. Falls nicht erkennbar, leer.",
-  "headline": "Marke + Modell, kurz und werblich (max. 40 Zeichen)",
-  "subline": "Knackiger Untertitel, z.B. 'Jetzt sichern' oder Highlight-Ausstattung (max. 60 Zeichen)",
-  "price": "Z.B. 'ab 249 € mtl.' oder '29.990 € Barpreis' (max. 30 Zeichen)",
-  "cta": "Call-to-Action, z.B. 'Jetzt Probefahrt sichern' (max. 30 Zeichen)",
-  "smallInfo": "Kurze Zusatzinfo, z.B. Laufzeit/Leasingfaktor (optional, max. 60 Zeichen)",
-  "legalText": "Pflichtangaben-Kurzform mit Verbrauch und CO₂ falls erkennbar (1 Zeile)"
+  "brand": "Marke (z.B. 'Volkswagen', 'BMW') – nie das Modell. Offizieller Name (Volkswagen statt VW).",
+  "headline": "MARKE MODELL in GROSSBUCHSTABEN, knapp & werblich, max 28 Zeichen.",
+  "subline": "Angebots-Hook mit Anbieter. Nutze Shortcode {{firma}} statt eines erfundenen Händlernamens. Beispiele: 'Leasingangebot von {{firma}}', 'Top-Finanzierung von {{firma}}', 'Hauspreis bei {{firma}}', 'Jahreswagen-Deal bei {{firma}}'. Max 50 Zeichen.",
+  "price": "Stärkste Preisaussage in 1 Zeile. Leasing/Finanzierung: 'ab 249 € mtl.' – bei Gewerbe IMMER ' zzgl. MwSt.' anhängen, bei Privat OHNE Zusatz. Barkauf: '29.990 €' (oder 'nur 29.990 €'). Max 36 Zeichen.",
+  "cta": "Kurzer aktiver Call-to-Action, max 22 Zeichen. Beispiele: 'Jetzt Probefahrt!', 'Jetzt sichern', 'Heute anfragen', 'Termin sichern'. Kein Punkt am Ende, gerne Ausrufezeichen.",
+  "smallInfo": "Faktencluster mit ' · ' getrennt. Leasing/Finanzierung: 'Laufzeit · km/Jahr · Anzahlung' z.B. '48 Mon. · 10.000 km · 0 € Anzahlung'. Barkauf: 'EZ · km · Leistung' z.B. 'EZ 2022 · 35.000 km · 150 PS'. Max 70 Zeichen.",
+  "legalText": "Einzeilige Pflichtangabe in Kurzform. Reihenfolge: Verbrauch komb. X l/100km · CO₂ Y g/km · Klasse Z. Bei PHEV zusätzlich Stromverbrauch. Max 240 Zeichen."
 }
 
-Wichtig: Die Marke ist Pflichtfeld — gib sie immer aus, wenn sie irgendwie erkennbar ist (Logo, Schriftzug, Headline, Tabellenzeile, Modell-Code). Verwende den offiziellen Markennamen (z.B. "Volkswagen" statt "VW", "Mercedes-Benz" statt "Mercedes"). Fehlende Felder als leeren String "" ausgeben. Kein zusätzlicher Text.`;
+Regeln:
+- Keine generischen Floskeln ('Top-Angebot', 'Sensationspreis' alleine). Immer konkret mit Zahl/Modell.
+- Niemals Felder erfinden – fehlt eine Information, liefere "" für genau dieses Feld.
+- Verwende Shortcodes wenn sinnvoll: {{firma}}, {{telefon}}, {{stadt}}. Niemals Platzhalter wie '[Händler]'.
+- Keine Markdown-Sterne, keine Emojis, keine Anführungszeichen um Werte.`;
 
 Deno.serve(async (req) => {
   const pre = handleCors(req);
@@ -85,14 +94,12 @@ Deno.serve(async (req) => {
         lastStatus = resp.status;
         lastBody = await resp.text();
         console.warn(`gemini ${model} attempt ${attempt + 1} -> ${resp.status}`);
-        // Retry on 429/5xx, otherwise break and try next model
         if (resp.status !== 429 && resp.status < 500) break;
         await new Promise((res) => setTimeout(res, 600 * (attempt + 1)));
       }
     }
     if (!r) {
       console.error("gemini extract-banner-data exhausted", lastStatus, lastBody.slice(0, 400));
-      // Return 200 with fallback flag so the orchestrator can use defaults instead of crashing.
       return jsonResponse({
         fallback: true,
         error: lastStatus >= 500 || lastStatus === 429 ? "GEMINI_UNAVAILABLE" : `gemini_${lastStatus}`,
