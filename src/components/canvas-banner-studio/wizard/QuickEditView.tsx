@@ -19,7 +19,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
+
 import { useCanvasBannerStore } from "../state/useCanvasBannerStore";
 import BannerCanvas from "../canvas/BannerCanvas";
 import TextFieldsPanel from "../controls/TextFieldsPanel";
