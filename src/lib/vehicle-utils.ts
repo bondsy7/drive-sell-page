@@ -186,3 +186,62 @@ export async function ensureVehicleAuto(
   });
   return ensureVehicle(userId, placeholder, vehicleData, coverImageUrl);
 }
+
+/**
+ * Set the vehicle cover_image_url only when it is currently empty.
+ * Returns true if a change was applied.
+ */
+export async function setVehicleCoverIfMissing(
+  vehicleId: string,
+  coverImageUrl: string | null | undefined,
+): Promise<boolean> {
+  if (!vehicleId || !coverImageUrl) return false;
+  try {
+    const { data } = await supabase
+      .from('vehicles')
+      .select('cover_image_url')
+      .eq('id', vehicleId)
+      .maybeSingle();
+    if (!data || (data as any).cover_image_url) return false;
+    const { error } = await supabase
+      .from('vehicles')
+      .update({ cover_image_url: coverImageUrl } as never)
+      .eq('id', vehicleId);
+    return !error;
+  } catch (e) {
+    console.warn('[setVehicleCoverIfMissing] failed', e);
+    return false;
+  }
+}
+
+/**
+ * Upload base64 originals into the `originals` storage bucket and associate
+ * them with a vehicle. Best-effort: failures are logged but never throw.
+ */
+export async function uploadOriginalsToVehicle(
+  userId: string,
+  vehicleId: string,
+  originalsBase64: string[],
+): Promise<number> {
+  if (!userId || !vehicleId || !originalsBase64?.length) return 0;
+  const prefix = `${userId}/${vehicleId}`;
+  let ok = 0;
+  await Promise.all(originalsBase64.map(async (b64, idx) => {
+    try {
+      const raw = b64.includes(',') ? b64.split(',')[1] : b64;
+      const mimeMatch = b64.startsWith('data:') ? b64.match(/^data:(image\/\w+);base64,/) : null;
+      const contentType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+      const bytes = Uint8Array.from(atob(raw), c => c.charCodeAt(0));
+      const blob = new Blob([bytes], { type: contentType });
+      const path = `${prefix}/${Date.now()}-${idx}-original.jpg`;
+      const { error } = await supabase.storage
+        .from('originals')
+        .upload(path, blob, { contentType, upsert: false });
+      if (!error) ok++;
+    } catch (e) {
+      console.warn('[uploadOriginalsToVehicle] one upload failed', e);
+    }
+  }));
+  return ok;
+}
+
