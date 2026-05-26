@@ -143,7 +143,7 @@ const CustomLayersPanel: React.FC<Props> = ({
       borderRadius: 0,
       visible: true,
       draggable: true,
-      gradient: { direction: "bottom-top", color: "#000000" },
+      gradient: { direction: "top-bottom", color: "#000000" },
     };
     const stepsToBack = composition.layers.length;
     onAddLayer(layer);
