@@ -41,7 +41,7 @@ interface Props {
   onSwitchToPro: () => void;
 }
 
-const DEFAULT_FORMAT_IDS = ["ig-square", "ig-story", "fb-feed"];
+const DEFAULT_FORMAT_IDS = ["ig-story", "fb-link", "g-medrect"];
 
 // Sechs Master-Prompt-Stile für Quick-Mode – alle anderen sind deaktiviert.
 type ScenePresetId =
