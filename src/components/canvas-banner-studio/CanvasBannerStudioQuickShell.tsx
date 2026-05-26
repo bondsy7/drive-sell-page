@@ -449,7 +449,7 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
     try {
       const out = await generateBannersFromInputs(
         {
-          datenblattFile: pdfFile,
+          datenblattFile: pdfFile ?? null,
           vehicleImageDataUrl: imageDataUrl,
           formats,
           ciContext: { ...ciContext, marke: effectiveBrand || ciContext.marke },
