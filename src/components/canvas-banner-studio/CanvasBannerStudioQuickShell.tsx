@@ -286,8 +286,10 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
   // Auto-Analyse, sobald ein Datenblatt hochgeladen wurde.
   useEffect(() => {
     if (!pdfFile) {
-      setAnalyzedFields(null);
-      setAnalyzedBrand("");
+      if (!vehiclePrefillUsed) {
+        setAnalyzedFields(null);
+        setAnalyzedBrand("");
+      }
       setAnalysisError(null);
       return;
     }
