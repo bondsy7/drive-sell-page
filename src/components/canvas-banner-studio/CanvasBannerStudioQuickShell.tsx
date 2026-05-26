@@ -41,21 +41,14 @@ interface Props {
 
 const DEFAULT_FORMAT_IDS = ["ig-square", "ig-story", "fb-feed"];
 
-// Drei Master-Prompt-Stile für Quick-Mode.
+// Sechs Master-Prompt-Stile für Quick-Mode – alle anderen sind deaktiviert.
 type ScenePresetId =
-  | "showroom-neon"
-  | "cinematic-showroom"
-  | "studio-white"
-  | "premium-serious"
-  | "popstyle"
-  | "minimal-clean"
-  | "retro-vintage"
-  | "deal-tower"
-  | "alpine-lifestyle"
-  | "premiere-night"
+  | "showroom-neon-streaks"
+  | "popstyle-neon"
+  | "deal-car-tower"
+  | "lifestyle-alpineescape"
+  | "peminere-imited"
   | "german-city-neon";
-
-
 
 // HERO-SIZE GUARDRAIL: in jedem Prompt enthalten, damit das Auto das dominierende
 // Motiv ist und nach Ideogram-Reframe (Outpainting) NICHT zu klein wirkt.
@@ -72,8 +65,8 @@ const NEG_RULES = "Strictly NO text, NO logos, NO watermarks, NO badges, NO visi
 
 const SCENE_PRESETS: { id: ScenePresetId; label: string; description: string; build: (p: string, s: string) => string }[] = [
   {
-    id: "showroom-neon",
-    label: "Showroom · Neon-Streaks",
+    id: "showroom-neon-streaks",
+    label: "Showroom Neon Streaks",
     description: "Heller Showroom mit Lichtstreifen in deinen CI-Farben.",
     build: (primary, secondary) => [
       "Re-stage the EXACT same vehicle inside a modern, bright premium car dealership showroom.",
@@ -86,44 +79,8 @@ const SCENE_PRESETS: { id: ScenePresetId; label: string; description: string; bu
     ].join(" "),
   },
   {
-    id: "cinematic-showroom",
-    label: "Cinematic Studio",
-    description: "Dunkler Studio-Hintergrund, dramatische Spotlights.",
-    build: (primary, secondary) => [
-      "Place the EXACT same vehicle in a cinematic premium dark studio.",
-      HERO_SIZE_RULES,
-      `Deep matte-black surroundings kept close around the car, focused warm spotlights highlighting body lines, glossy black floor with crisp reflection directly under the car, soft volumetric haze. Add a clear accent rim light in ${primary} on one side of the car and ${secondary} on the other side.`,
-      "Editorial automotive photography, 35mm, shallow depth of field, hero-large vehicle in the center.",
-      NEG_RULES,
-    ].join(" "),
-  },
-  {
-    id: "studio-white",
-    label: "Studio · Reinweiß",
-    description: "Sauberer weißer Hintergrund, Katalog-Look.",
-    build: (primary, secondary) => [
-      "Place the EXACT same vehicle in a clean white photo studio.",
-      HERO_SIZE_RULES,
-      `Seamless white cyclorama tight behind the car, soft diffused key light, gentle contact shadow directly under the tires. Premium automotive catalog look, ultra crisp, no extra props. A very subtle accent color gradient on the floor in ${primary}/${secondary} for a hint of brand identity (must stay subtle and never push the car backwards).`,
-      NEG_RULES,
-    ].join(" "),
-  },
-  {
-    id: "premium-serious",
-    label: "Seriös · Premium",
-    description: "Elegant, hochwertig, OEM-Stil mit deinen CI-Farben.",
-    build: (primary, secondary) => [
-      "Stage the EXACT same vehicle inside a premium car dealership showroom in an elegant, high-end OEM advertising scene.",
-      HERO_SIZE_RULES,
-      `Scene: real modern showroom with polished glossy floor, soft architectural walls and ceiling LED strips, one or two other cars softly out of focus far in the background (no logos). Integrate the brand colors organically: a calm wash of ${primary} on a back wall or large soft gradient panel behind the car, and a delicate ${secondary} rim light / thin LED line along ceiling or floor edge. Colors must feel like part of the architecture and lighting, not stickers.`,
-      "Lighting: soft cinematic key light from the front side, gentle rim light, controlled reflections on the bodywork picking up subtle hints of the brand colors. Confident, expensive, trustworthy OEM campaign mood – never a discount flyer.",
-      "Editorial automotive photography, 35mm, shallow depth of field, ultra crisp on the car, magazine quality.",
-      NEG_RULES,
-    ].join(" "),
-  },
-  {
-    id: "popstyle",
-    label: "Popstyle · Neon",
+    id: "popstyle-neon",
+    label: "Popstyle Neon",
     description: "Knallig, energiegeladen, Pop-Art mit CI-Neon-Farben.",
     build: (primary, secondary) => [
       "Stage the EXACT same vehicle inside a modern car dealership showroom transformed into a bold pop-style advertising scene with explosive energy.",
@@ -135,34 +92,8 @@ const SCENE_PRESETS: { id: ScenePresetId; label: string; description: string; bu
     ].join(" "),
   },
   {
-    id: "minimal-clean",
-    label: "Minimalistisch · Clean",
-    description: "Viel Weißraum, reduziert, CI-Farbe nur als Akzent.",
-    build: (primary, secondary) => [
-      "Stage the EXACT same vehicle inside a minimalist, ultra-clean car dealership showroom – calm, reduced, lots of breathing room.",
-      HERO_SIZE_RULES,
-      `Scene: bright airy showroom with seamless light walls, polished concrete floor, and a soft horizon line where wall meets floor. Integrate the brand colors with restraint: one single subtle architectural element in ${primary} (a thin horizontal LED line on the back wall, a soft color block on one side panel, or a delicate gradient zone) and one tiny accent in ${secondary} (a thin floor line or a small reflected light). Everything else stays neutral and quiet.`,
-      "Lighting: soft, even, diffused – like a high-end design magazine shoot inside a showroom. Crisp contact shadow under the tires, subtle floor reflection. The car remains the unmistakable hero; the brand colors whisper instead of shout.",
-      "Minimalist premium automotive photography, 35mm, ultra crisp, calm, refined, editorial quality.",
-      NEG_RULES,
-    ].join(" "),
-  },
-  {
-    id: "retro-vintage",
-    label: "Retro · Vintage",
-    description: "80er-Look, warme Töne, CI-Farben als Sonnenuntergang.",
-    build: (primary, secondary) => [
-      "Stage the EXACT same vehicle inside a car dealership showroom re-imagined in a retro 80s synthwave advertising scene with vintage color grading.",
-      HERO_SIZE_RULES,
-      `Scene: real showroom architecture (glossy floor, glass walls, ceiling structure) bathed in a stylised retro sunset visible through the large showroom glass wall: a glowing sun disc, horizontal neon grid lines on the floor extending back, distant low mountains beyond the glass, warm hazy atmosphere. Re-color the palette using brand colors: sun and sky gradient blending from ${primary} into ${secondary}, floor grid lines glowing in ${secondary}, soft warm haze and ambient wash in ${primary}.`,
-      "Lighting: warm low golden-hour light streaming into the showroom from behind, gentle rim light on the bodywork in the secondary brand color, soft chromatic glow, reflections on the showroom floor. The car stays photoreal and hero-large – the retro mood lives in the background, grading and light, not in the vehicle itself.",
-      "Nostalgic premium automotive ad photography with vintage film grain, soft halation around highlights, 35mm, ultra crisp on the car.",
-      NEG_RULES,
-    ].join(" "),
-  },
-  {
-    id: "deal-tower",
-    label: "Deal · Car-Tower",
+    id: "deal-car-tower",
+    label: "Deal Car Tower",
     description: "Futuristischer Collection Point – exklusiver Top-Deal.",
     build: (primary, secondary) => [
       "Stage the EXACT same vehicle as a high-end ad photo on a sunlit morning inside a minimalist futuristic 'collection point' on the upper floor of a modern car tower in a German city.",
@@ -173,8 +104,8 @@ const SCENE_PRESETS: { id: ScenePresetId; label: string; description: string; bu
     ].join(" "),
   },
   {
-    id: "alpine-lifestyle",
-    label: "Lifestyle · Alpine Escape",
+    id: "lifestyle-alpineescape",
+    label: "Lifestyle Alpine Escape",
     description: "Sonnige Alpen-Plattform mit Abenteuer-Vibe.",
     build: (primary, secondary) => [
       "Stage the EXACT same vehicle in a stunning sunny ad photo set in a modern architectural escape zone in the German Alps on a clear afternoon.",
@@ -185,8 +116,8 @@ const SCENE_PRESETS: { id: ScenePresetId; label: string; description: string; bu
     ].join(" "),
   },
   {
-    id: "premiere-night",
-    label: "Premiere · Limited",
+    id: "peminere-imited",
+    label: "Peminere Imited",
     description: "Exklusives Invite-only Premiere-Event mit Lichtbogen.",
     build: (primary, secondary) => [
       "Stage the EXACT same vehicle as an exclusive invite-only premiere event inside a minimalist pop-up showcase space.",
@@ -198,7 +129,7 @@ const SCENE_PRESETS: { id: ScenePresetId; label: string; description: string; bu
   },
   {
     id: "german-city-neon",
-    label: "German City · Neon",
+    label: "German City Neon",
     description: "Deutscher Stadtplatz mit Cyberpunk-Neon-Akzenten in CI-Farben.",
     build: (primary, secondary) => [
       "An 8k resolution, professionally photographed automotive commercial image for a high-impact, engaging social media banner, featuring the EXACT same vehicle from the provided image in its precise front three-quarter pose, now centrally positioned on a clean, sun-drenched historic city square in a major German city (e.g. Berlin near Gendarmenmarkt, Munich, Hamburg, Frankfurt), with subtle classic European architecture in the background.",
