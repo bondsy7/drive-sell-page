@@ -293,58 +293,61 @@ ABSOLUTE OUTPUT STANDARD: Render this as a professional automotive photograph ta
       }
     }
 
-    // Custom showroom
-    if (customShowroomBase64) {
+    // Custom showroom – unified strong instructions for BOTH file_uri and base64 paths
+    if (customShowroomBase64 || customShowroomFileUri?.uri) {
       parts.push({ text: `<CUSTOM_SHOWROOM_INSTRUCTION>
 The following image is the CUSTOM SHOWROOM BACKGROUND. This is an IMMUTABLE ASSET.
 
 OUTPUT FORMAT: The result MUST be in 4:3 (landscape) aspect ratio.
 
-MUTUAL ADAPTATION (CRITICAL):
-This is NOT a simple background swap or collage. You must RE-RENDER the ENTIRE scene as ONE cohesive photograph – as if a professional photographer took a real photo of this car parked inside this exact showroom.
+FULL RE-RENDER (NON-NEGOTIABLE):
+This is NOT a background swap, NOT a composite, NOT a collage. You MUST RE-RENDER the entire scene from scratch as ONE cohesive photograph – as if a professional automotive photographer took a real photo of this exact car parked inside this exact showroom, with a single camera, a single light setup, and a single white balance.
 
-VEHICLE INTEGRATION:
-1. Place the vehicle NATURALLY in this showroom – it must look PHYSICALLY PRESENT and STANDING on the floor.
-2. The vehicle should occupy approximately 55-65% of the image width. This size MUST be IDENTICAL across ALL perspectives.
-3. The vehicle MUST be lit by the showroom's actual light sources – matching direction, color temperature, and intensity.
-4. Vehicle paint, glass, chrome, rims and glossy trim MUST reflect the showroom environment (walls, ceiling, windows, floor and light fixtures) — NOT the original source photo environment.
-5. Ceiling lights/window bands from the showroom MUST be visible as soft, natural highlights on hood, roof, windshield, side glass and body sides, showing exactly where the light comes from.
-6. Vehicle MUST cast realistic shadows onto the showroom floor. Tires MUST make contact with the floor surface with subtle ambient occlusion.
-7. If the showroom floor is reflective, show a realistic, faint reflection of the vehicle on the floor.
-8. All old reflections from the source photo MUST be erased: no trees, sky, people, photographer, other cars, asphalt, parking lines, old showroom, old logos, banners, text or watermarks may remain on paint, glass, chrome or rims.
+PAINT & SURFACE REBUILD (CRITICAL – erase all source artifacts):
+- Treat the vehicle paint, glass, chrome, headlights, rims and all glossy trim as if freshly re-rendered. Do NOT carry over ANY pixel of reflection, highlight, color cast or environment that existed on the original source photo.
+- Old reflections of trees, sky, clouds, asphalt, parking lines, buildings, people, photographer, other cars, old showrooms, banners, logos, text or stickers MUST be COMPLETELY ERASED from paint, glass, chrome and rims. Zero residue allowed.
+- Rebuild all reflections from scratch using ONLY the geometry, materials, light fixtures, windows, walls and ceiling of the CUSTOM SHOWROOM image. Reflections on the car MUST visibly match what is physically around it in the showroom.
+- Repaint the body with clean, even, freshly-applied factory-grade lacquer. No swirl marks, no dust, no fingerprints, no old micro-scratches from the source photo.
 
-SHOWROOM PRESERVATION (CRITICAL):
-- Do NOT modify, replace, remove, or obscure ANY element in the showroom.
-- ALL logos, signs, wall decorations, furniture, branding, display cases MUST remain EXACTLY as they are.
-- The showroom floor, walls, ceiling, windows MUST be reproduced faithfully with their exact materials and colors.
-- When camera perspective changes, architectural elements and logos shift naturally by 3D perspective – but NEVER disappear or change.
-- The showroom MUST be CLEARLY RECOGNIZABLE as the SAME room in EVERY generated image.
+LIGHTING LOCK (must be IDENTICAL across every image of the same vehicle in this showroom):
+- Light direction: from the showroom's ceiling fixtures and window bands as visible in the asset.
+- Color temperature: neutral 5000-5500 K daylight balanced to the showroom, NOT to the source photo.
+- Intensity: bright but soft, no blown highlights, no crushed shadows.
+- Vehicle exposure MUST match the showroom exposure – car and room belong to the SAME photograph, not two stitched layers.
+- Ceiling light strips / window light bands MUST appear as soft elongated highlights on hood, roof, windshield, side glass and body sides, clearly indicating where the light comes from.
+
+GROUND CONTACT & SHADOWS:
+- Tires MUST physically touch the showroom floor with realistic contact shadow and ambient occlusion under each wheel.
+- Cast a soft, directional shadow on the floor matching the showroom's ceiling lights.
+- If the floor is glossy/polished, add a faint, realistic vehicle reflection on the floor – never a sharp mirror copy.
+
+VEHICLE PLACEMENT & SCALE (must be IDENTICAL across every perspective):
+- The vehicle is the hero subject, centered horizontally, occupying ~55-65% of image width. Same scale in EVERY shot.
+- Camera height around hip/door-handle level, slight wide-lens feel (~35-50mm equivalent), no extreme tilt.
+- The showroom MUST remain fully visible and clearly recognizable in EVERY shot – architecture, logos, signage, furniture all preserved 1:1.
+
+SHOWROOM PRESERVATION:
+- Do NOT modify, replace, remove, recolor or obscure ANY element of the showroom (logos, signs, wall panels, furniture, displays, ceiling, floor, windows).
+- When the camera angle changes for front/side/rear/3-quarter shots, the showroom shifts naturally by 3D perspective – elements may move within the frame but NEVER disappear, change shape, change color or get replaced.
 
 ORIGINAL ENVIRONMENT REMOVAL (ZERO TOLERANCE):
-- The reference vehicle photo may contain an OLD showroom, OLD studio, dealer banner strips, abbinder footer bars, slogan text (e.g. "AUTOS KAUFT MAN BEI ..."), URLs, watermarks, advertising overlays, sticker prints, or any branded backdrop.
-- ALL of these MUST be FULLY REMOVED. They MUST NOT appear in the output – not as text, not as a strip, not as a faint trace, not on walls, not on the floor, not on the vehicle body.
-- Only the VEHICLE is taken from the reference. The ENTIRE environment is replaced by the custom showroom asset above. Zero pixel of the old environment may survive.
+- The source vehicle photo may contain an OLD showroom, OLD studio, dealer banners, footer bars, slogans (e.g. "AUTOS KAUFT MAN BEI ..."), URLs, watermarks, overlays or sticker prints. ALL of these MUST be fully removed. None of it may remain – not as text, not as a faint strip, not as a color trace, not on walls, not on the floor, not on the car body, not in reflections.
+- Only the VEHICLE itself (geometry, color, trim, wheels, badges) is taken from the source. The entire environment, lighting and reflections are rebuilt from the custom showroom asset.
 
-CAMERA PERSPECTIVE:
-- The camera perspective of the showroom MUST match the requested vehicle perspective.
-- Adapt the showroom view to match front, side, rear, or 3/4 angles naturally.
-- The showroom must ALWAYS be fully visible – never cropped out or replaced.
+CROSS-IMAGE CONSISTENCY (STYLE LOCK):
+- Every image in this series MUST look like it was shot in the SAME 10-minute photo session, with the SAME camera, SAME lens, SAME exposure, SAME white balance, SAME post-processing.
+- Same paint hue/saturation, same chrome brightness, same glass tint, same floor reflectivity, same lighting mood across ALL angles.
 
-INTERIOR SHOTS WITH CUSTOM SHOWROOM:
-For INTERIOR vehicle shots, the custom showroom MUST be visible THROUGH ALL vehicle windows (windshield, side windows, rear window).
-The showroom architecture, walls, floor, ceiling, and any logos/branding MUST be clearly recognizable through the glass.
-Do NOT show a random outdoor scene or generic background through the windows – it MUST be THIS showroom.
-The interior itself should only receive improved lighting – do NOT change the dashboard, seats, or any interior elements.
+INTERIOR SHOTS:
+- For interior views, the custom showroom MUST be visible THROUGH the windshield, side windows and rear window – clearly recognizable as the SAME room. No outdoor scene, no generic background.
+- Do NOT alter dashboard, seats, trim or any interior element – only improve lighting to match the showroom ambience.
 </CUSTOM_SHOWROOM_INSTRUCTION>` });
       if (customShowroomFileUri?.uri) {
         parts.push({ file_data: { mime_type: customShowroomFileUri.mimeType, file_uri: customShowroomFileUri.uri } });
         console.log(`[remaster] Showroom via file_uri`);
-      } else {
+      } else if (customShowroomBase64) {
         parts.push(toInlineData(customShowroomBase64));
       }
-    } else if (customShowroomFileUri?.uri) {
-      parts.push({ text: `<CUSTOM_SHOWROOM_INSTRUCTION>The following is the CUSTOM SHOWROOM BACKGROUND. This is an IMMUTABLE ASSET. Place the vehicle naturally in this showroom.</CUSTOM_SHOWROOM_INSTRUCTION>` });
-      parts.push({ file_data: { mime_type: customShowroomFileUri.mimeType, file_uri: customShowroomFileUri.uri } });
     }
 
     if (customPlateImageBase64 || customPlateImageFileUri?.uri) {
