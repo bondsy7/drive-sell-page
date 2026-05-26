@@ -154,6 +154,9 @@ export async function generateBannersFromInputs(
         brand: (preDetectedBrand ?? "").trim(),
       })
     : (async () => {
+        if (!datenblattFile) {
+          return { textFields: { ...DEFAULT_TEXT_FIELDS }, brand: "" };
+        }
         try {
           let extracted: ExtractedBannerFields;
           if (isPdf) {
