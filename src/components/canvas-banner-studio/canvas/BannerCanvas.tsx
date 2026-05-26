@@ -316,7 +316,10 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
         tr.enabledAnchors(["top-left", "top-right", "bottom-left", "bottom-right"]);
         tr.keepRatio(true);
         tr.rotateEnabled(false);
-      } else if (layer?.type === "logo") {
+      } else if (
+        layer?.type === "logo" ||
+        (layer?.type === "image" && typeof layer.id === "string" && layer.id.startsWith("logo"))
+      ) {
         tr.enabledAnchors(["top-left", "top-right", "bottom-left", "bottom-right"]);
         tr.keepRatio(true);
         tr.rotateEnabled(false);
