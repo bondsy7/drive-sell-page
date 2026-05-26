@@ -378,7 +378,7 @@ const QuickEditView: React.FC<Props> = ({
             onSelectLayer={actions.selectLayer}
             onReorderLayer={actions.reorderLayer}
             onResetLayout={actions.resetLayout}
-            canRegenerateBackground={!!vehicleImageDataUrl}
+            canRegenerateBackground={!!regenSourceUrl}
             backgroundRegenerating={bgRegenerating}
             onRegenerateBackground={handleRegenerateBackground}
           />
