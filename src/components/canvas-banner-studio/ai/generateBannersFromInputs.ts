@@ -25,8 +25,8 @@ import { startReframeJob, subscribeJob, disposeJob } from "./reframeJobManager";
 import type { CiContext } from "../ci/profileSources";
 
 export interface QuickGenerateInput {
-  /** PDF-Exposé ODER Datenblatt-Bild (z.B. Screenshot, Foto). */
-  datenblattFile: File;
+  /** PDF-Exposé ODER Datenblatt-Bild (z.B. Screenshot, Foto). Optional, wenn `preExtractedTextFields` gesetzt ist (z.B. wenn Fahrzeugdaten aus dem verknüpften Fahrzeug stammen). */
+  datenblattFile?: File | null;
   vehicleImageDataUrl: string;
   formats: BannerFormat[];
   ci?: CiState;
