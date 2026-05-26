@@ -182,6 +182,20 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
   const [canvasProjectTitle, setCanvasProjectTitle] = useState<string>("");
   const [canvasBannerProjectId, setCanvasBannerProjectId] = useState<string | undefined>(undefined);
 
+  // Pre-link vehicle from URL (?vehicle=...) – z. B. wenn aus Fahrzeug-Detailseite gestartet.
+  const vehicleParamConsumedRef = useRef(false);
+  useEffect(() => {
+    if (vehicleParamConsumedRef.current) return;
+    const v = searchParams.get("vehicle");
+    if (!v) return;
+    vehicleParamConsumedRef.current = true;
+    setCanvasVehicleId(v);
+    // URL aufräumen, damit ein späterer Wechsel den Picker nicht zurücksetzt.
+    const next = new URLSearchParams(searchParams);
+    next.delete("vehicle");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
+
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const imgInputRef = useRef<HTMLInputElement>(null);
   const lastTextFieldsRef = useRef<BannerTextFields | null>(null);
