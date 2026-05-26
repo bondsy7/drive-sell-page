@@ -561,39 +561,22 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
                     ? document.createElement("canvas").getContext("2d")
                     : null);
                   let textW = 0;
-                  let lines = 1;
                   if (c2d) {
                     const weight = (l.fontWeight ?? 400) >= 600 ? "700 " : "400 ";
                     c2d.font = `${weight}${effFont}px ${layerFont}`;
-                    const maxW = l.width ?? 1000;
-                    const words = text.split(/\s+/);
-                    let line = "";
-                    let maxLine = 0;
-                    for (const wd of words) {
-                      const test = line ? line + " " + wd : wd;
-                      if (c2d.measureText(test).width > maxW && line) {
-                        maxLine = Math.max(maxLine, c2d.measureText(line).width);
-                        line = wd;
-                        lines++;
-                      } else {
-                        line = test;
-                      }
-                    }
-                    maxLine = Math.max(maxLine, c2d.measureText(line).width);
-                    textW = Math.min(maxW, maxLine);
+                    textW = c2d.measureText(text).width;
                   } else {
-                    textW = (l.width ?? text.length * effFont * 0.55);
+                    textW = text.length * effFont * 0.55;
                   }
-                  const padX = effFont * 0.7;
-                  const padY = effFont * 0.45;
+                  const padX = effFont * 0.9;
+                  const padY = effFont * 0.5;
                   const boxW = textW + padX * 2;
-                  const boxH = effFont * 1.2 * lines + padY * 2;
+                  const boxH = effFont * 1.2 + padY * 2;
                   let bx = -padX;
-                  const boxArea = l.width ?? textW;
-                  if (l.align === "center") bx = (boxArea - textW) / 2 - padX;
-                  else if (l.align === "right") bx = boxArea - textW - padX;
+                  if (l.width && l.align === "center") bx = (l.width - textW) / 2 - padX;
+                  else if (l.width && l.align === "right") bx = l.width - textW - padX;
                   const fill = ci?.colors?.primary || resolveColor("primary") || "#174f6b";
-                  ctaBg = { x: bx, y: -padY, w: boxW, h: boxH, r: Math.min(boxH / 2, 12), fill };
+                  ctaBg = { x: bx, y: -padY, w: boxW, h: boxH, r: Math.min(boxH / 2, 10), fill };
                   const tokenIsPrimary = (l.color ?? "").toLowerCase() === "primary"
                     || (l.color ?? "").toLowerCase() === "accent"
                     || color.toLowerCase() === fill.toLowerCase();
