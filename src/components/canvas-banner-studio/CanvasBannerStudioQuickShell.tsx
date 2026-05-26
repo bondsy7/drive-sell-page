@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Download, FileText, ImageIcon, Loader2, Palette, Pencil, RefreshCw, Settings2, Sparkles, X } from "lucide-react";
 import { reframeImageForFormat } from "./ai/reframeClient";
 import QuickEditView from "./wizard/QuickEditView";
@@ -147,6 +147,7 @@ const SCENE_PRESETS: { id: ScenePresetId; label: string; description: string; bu
 
 const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const { getLogoForMake } = useVehicleMakes();
   const bgTasks = useBackgroundTasks();
@@ -180,6 +181,20 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
   const [canvasVehicleId, setCanvasVehicleId] = useState<string | null | undefined>(undefined);
   const [canvasProjectTitle, setCanvasProjectTitle] = useState<string>("");
   const [canvasBannerProjectId, setCanvasBannerProjectId] = useState<string | undefined>(undefined);
+
+  // Pre-link vehicle from URL (?vehicle=...) – z. B. wenn aus Fahrzeug-Detailseite gestartet.
+  const vehicleParamConsumedRef = useRef(false);
+  useEffect(() => {
+    if (vehicleParamConsumedRef.current) return;
+    const v = searchParams.get("vehicle");
+    if (!v) return;
+    vehicleParamConsumedRef.current = true;
+    setCanvasVehicleId(v);
+    // URL aufräumen, damit ein späterer Wechsel den Picker nicht zurücksetzt.
+    const next = new URLSearchParams(searchParams);
+    next.delete("vehicle");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const imgInputRef = useRef<HTMLInputElement>(null);
