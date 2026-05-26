@@ -931,10 +931,11 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                   )}
                 </Button>
                 <Button
-                  onClick={() => setShowPipeline(true)}
+                  onClick={openPipeline}
+                  disabled={isEnsuringVehicle}
                   className="gap-2 gradient-accent text-accent-foreground font-semibold hidden sm:inline-flex"
                 >
-                  <Zap className="w-4 h-4" /> Bilderset generieren
+                  {isEnsuringVehicle ? <><Loader2 className="w-4 h-4 animate-spin" /> Vorbereiten…</> : <><Zap className="w-4 h-4" /> Bilderset generieren</>}
                 </Button>
               </div>
             )}
