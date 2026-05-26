@@ -23,7 +23,7 @@ interface ImageCaptureGridProps {
   modelTier?: string;
   projectId?: string | null;
   vehicleId?: string | null;
-  onComplete: (mainImage: string, galleryImages: string[], vin?: string) => void;
+  onComplete: (mainImage: string, galleryImages: string[], vin?: string, originals?: string[]) => void;
   onVehicleDataChange?: (data: VehicleData) => void;
   onBack: () => void;
   onPipelineComplete?: () => void;
@@ -596,8 +596,9 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     }
     const main = captures[doneSlots[0].key].remasteredBase64!;
     const gallery = doneSlots.slice(1).map(s => captures[s.key].remasteredBase64!);
+    const originals = doneSlots.map(s => captures[s.key].base64);
     toast.success(`${doneSlots.length} Bilder erfolgreich remastered.`);
-    onComplete(main, gallery, detectedVin || undefined);
+    onComplete(main, gallery, detectedVin || undefined, originals);
   };
 
   const allVehicleDone = capturedVehicleImages.length > 0 &&

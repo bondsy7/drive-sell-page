@@ -29,7 +29,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useCredits } from '@/hooks/useCredits';
 import { uploadImagesToStorage, saveImagesToGallery, getGalleryFolderName } from '@/lib/storage-utils';
-import { ensureVehicle, ensureVehicleAuto, mergeVehicleById } from '@/lib/vehicle-utils';
+import { ensureVehicle, ensureVehicleAuto, mergeVehicleById, setVehicleCoverIfMissing, uploadOriginalsToVehicle } from '@/lib/vehicle-utils';
 import type { AppState, VehicleData } from '@/types/vehicle';
 import type { TemplateId } from '@/types/template';
 import type { ModelTier } from '@/components/ModelSelector';
@@ -545,14 +545,18 @@ const Index = () => {
   }, [vehicleData, saveProject, selectedTemplate, savedProjectId, savedVehicleId, user]);
 
   // ─── Save standalone images to gallery (NO project creation!) ───
-  const saveStandaloneImages = useCallback(async (allImages: string[], vin?: string) => {
+  const saveStandaloneImages = useCallback(async (
+    allImages: string[],
+    vin?: string,
+    originals?: string[],
+  ) => {
     if (!user || allImages.length === 0) return;
     try {
       const folderName = getGalleryFolderName(vin);
       // Prefer the currently selected/deep-linked vehicle; only create a placeholder when none exists.
       const vehicleId = savedVehicleId || deepLinkVehicleId || await ensureVehicleAuto(user.id, vin, vehicleData);
       if (vehicleId && !savedVehicleId) setSavedVehicleId(vehicleId);
-      await saveImagesToGallery(
+      const uploadedUrls = await saveImagesToGallery(
         allImages,
         user.id,
         folderName,
@@ -560,27 +564,37 @@ const Index = () => {
         null,
         vehicleId,
       );
+      // Set the master (first remastered) image as the vehicle's cover when missing.
+      if (vehicleId && uploadedUrls[0]) {
+        await setVehicleCoverIfMissing(vehicleId, uploadedUrls[0]);
+      }
+      // Upload the user's original photos to the private `originals` bucket so
+      // they remain associated with the vehicle (mirrors the One-Shot Studio flow).
+      if (vehicleId && originals && originals.length > 0) {
+        await uploadOriginalsToVehicle(user.id, vehicleId, originals);
+      }
     } catch (e) {
       console.error('Error saving standalone images:', e);
     }
   }, [user, savedVehicleId, deepLinkVehicleId, vehicleData]);
 
   // ─── Standalone Photo Flow ───
-  const handleStandaloneCaptureComplete = useCallback((mainImage: string, gallery: string[], vin?: string) => {
+  const handleStandaloneCaptureComplete = useCallback((mainImage: string, gallery: string[], vin?: string, originals?: string[]) => {
     const allImages = [mainImage, ...gallery];
     setStandalonePhotoResults(allImages);
-    saveStandaloneImages(allImages, vin);
+    saveStandaloneImages(allImages, vin, originals);
     toast.success(`${allImages.length} Showroom-Bilder in Galerie gespeichert!`);
     navigate('/dashboard?tab=gallery');
   }, [saveStandaloneImages, navigate]);
 
-  const handleStandaloneRemasterComplete = useCallback((mainImage: string, gallery: string[]) => {
+  const handleStandaloneRemasterComplete = useCallback((mainImage: string, gallery: string[], originals?: string[]) => {
     const allImages = [mainImage, ...gallery];
     setStandalonePhotoResults(allImages);
-    saveStandaloneImages(allImages);
+    saveStandaloneImages(allImages, undefined, originals);
     toast.success(`${allImages.length} Showroom-Bilder in Galerie gespeichert!`);
     navigate('/dashboard?tab=gallery');
   }, [saveStandaloneImages, navigate]);
+
 
   // ─── Standalone AI Generate (without PDF) ───
   const doStandaloneGenerate = useCallback(async (vData: VehicleData) => {

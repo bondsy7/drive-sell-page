@@ -16,7 +16,7 @@ interface ImageUploadRemasterProps {
   vehicleDescription: string;
   vehicleBrand?: string;
   modelTier?: string;
-  onComplete: (mainImage: string, galleryImages: string[]) => void;
+  onComplete: (mainImage: string, galleryImages: string[], originals?: string[]) => void;
   onBack: () => void;
   completeLabel?: string;
 }
@@ -258,8 +258,9 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
     }
     const main = done[0].remasteredBase64!;
     const gallery = done.slice(1).map(img => img.remasteredBase64!);
+    const originals = done.map(img => img.originalBase64);
     toast.success(`${done.length} Bilder erfolgreich remastered.`);
-    onComplete(main, gallery);
+    onComplete(main, gallery, originals);
   };
 
   const doneCount = images.filter(i => i.status === 'done').length;
