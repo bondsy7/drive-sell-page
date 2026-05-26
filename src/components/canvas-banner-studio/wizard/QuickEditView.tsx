@@ -297,16 +297,6 @@ const QuickEditView: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Canvas-Projekt: Titel + Fahrzeug verknüpfen (Auto-Save im Dashboard) */}
-        <div className="container mx-auto px-3 pb-2 max-w-6xl">
-          <VehicleBannerPicker
-            vehicleId={state.vehicleId}
-            projectTitle={state.projectTitle}
-            onChangeVehicle={(v) => actions.setVehicle(v)}
-            onChangeTitle={(t) => actions.setProjectTitle(t)}
-            bannerProjectId={state.bannerProjectId}
-          />
-        </div>
 
         {/* Format-Tabs */}
         <div className="container mx-auto px-3 pb-2 max-w-6xl">
