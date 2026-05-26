@@ -15,6 +15,7 @@ export const BRAND_FONTS: FontPreset[] = [
   { family: "Ford Antenna", googleSpec: "local:Ford+Antenna:wght@300;400;700;900", category: "display", note: "Ford CI" },
   { family: "Ford Antenna Cond", googleSpec: "local:Ford+Antenna+Cond:wght@400;700", category: "display", note: "Ford CI (Condensed)" },
   { family: "Cupra", googleSpec: "local:Cupra:wght@300;400;500", category: "display", note: "CUPRA CI" },
+  { family: "BMW Helvetica", googleSpec: "local:BMW+Helvetica:wght@700", category: "display", note: "BMW CI" },
 ];
 
 export const DISPLAY_FONTS: FontPreset[] = [
