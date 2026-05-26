@@ -310,7 +310,7 @@ const QuickEditView: React.FC<Props> = ({
               ? "Ohne Fahrzeug (No-VIN) – im Dashboard unter Canvas-Projekte verfügbar."
               : state.vehicleId
                 ? "An Fahrzeug verknüpft – Banner werden im Fahrzeug abgelegt."
-                : "Wähle ein Fahrzeug oder „Ohne Fahrzeug", damit das Projekt im Dashboard erscheint."}
+                : "Wähle ein Fahrzeug oder \u201eOhne Fahrzeug\u201c, damit das Projekt im Dashboard erscheint."}
           </div>
         </div>
         <div className="container mx-auto px-3 pb-2 max-w-6xl">
