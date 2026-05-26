@@ -244,6 +244,11 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
   const [scenePresetId, setScenePresetId] = useState<ScenePresetId>("showroom-neon");
   const [extraPromptInstruction, setExtraPromptInstruction] = useState<string>("");
 
+  // Canvas-Projekt Persistenz (vor und nach editMode wiederverwendet)
+  const [canvasVehicleId, setCanvasVehicleId] = useState<string | null | undefined>(undefined);
+  const [canvasProjectTitle, setCanvasProjectTitle] = useState<string>("");
+  const [canvasBannerProjectId, setCanvasBannerProjectId] = useState<string | undefined>(undefined);
+
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const imgInputRef = useRef<HTMLInputElement>(null);
   const lastTextFieldsRef = useRef<BannerTextFields | null>(null);
