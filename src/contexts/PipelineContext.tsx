@@ -6,6 +6,7 @@ import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 import { buildMasterPrompt, fetchPromptOverrides, type RemasterConfig } from '@/lib/remaster-prompt';
 import { type PipelineJob, injectLogoPlaceholder } from '@/lib/pipeline-jobs';
 import { ensureLogoCachedAsPng } from '@/lib/image-base64-cache';
+import { ensureVehicleAuto } from '@/lib/vehicle-utils';
 
 /* ─── Types ─── */
 export type JobStatus = 'pending' | 'running' | 'done' | 'error';
