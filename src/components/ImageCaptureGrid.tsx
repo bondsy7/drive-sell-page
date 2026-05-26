@@ -15,6 +15,8 @@ import { resolveCanonicalBrand, normalizeBrand } from '@/lib/brand-aliases';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 import { uploadToGeminiFiles } from '@/lib/gemini-file-upload';
 import { ensureLogoCachedAsPng } from '@/lib/image-base64-cache';
+import { ensureVehicleAuto } from '@/lib/vehicle-utils';
+import { useAuth } from '@/hooks/useAuth';
 import type { VehicleData } from '@/types/vehicle';
 
 interface ImageCaptureGridProps {
@@ -159,7 +161,10 @@ const EMPTY_CONSUMPTION: VehicleData['consumption'] = {
 };
 
 const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription, vehicleData, modelTier, projectId, vehicleId, onComplete, onVehicleDataChange, onBack, onPipelineComplete }) => {
+  const { user } = useAuth();
   const [showPipeline, setShowPipeline] = useState(false);
+  const [ensuredVehicleId, setEnsuredVehicleId] = useState<string | null>(vehicleId || null);
+  const [isEnsuringVehicle, setIsEnsuringVehicle] = useState(false);
   const [captures, setCaptures] = useState<Record<string, CapturedImage>>({});
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
@@ -174,6 +179,31 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   const brandDetectionAttempted = useRef(false);
   const latestVehicleDataRef = useRef<VehicleData | undefined>(vehicleData);
   latestVehicleDataRef.current = vehicleData;
+
+  /**
+   * Ensure a vehicle row exists (using VIN if detected, otherwise a NOVIN
+   * placeholder) before the pipeline runs, so every generated image is
+   * attached to a vehicle and shows up in the dashboard.
+   */
+  const ensureVehicleForPipeline = useCallback(async (): Promise<string | null> => {
+    if (ensuredVehicleId) return ensuredVehicleId;
+    if (vehicleId) { setEnsuredVehicleId(vehicleId); return vehicleId; }
+    if (!user) return null;
+    setIsEnsuringVehicle(true);
+    try {
+      const vid = await ensureVehicleAuto(user.id, detectedVin || (vehicleData as any)?.vehicle?.vin || null, vehicleData);
+      if (vid) setEnsuredVehicleId(vid);
+      return vid;
+    } finally {
+      setIsEnsuringVehicle(false);
+    }
+  }, [ensuredVehicleId, vehicleId, user, vehicleData, detectedVin]);
+
+  const openPipeline = useCallback(async () => {
+    await ensureVehicleForPipeline();
+    setShowPipeline(true);
+  }, [ensureVehicleForPipeline]);
+
 
   const makeKeys = useMemo(() => makes.map(m => m.key), [makes]);
 
@@ -626,7 +656,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         remasterConfig={remasterConfig}
         modelTier={modelTier}
         projectId={projectId}
-        vehicleId={vehicleId}
+        vehicleId={ensuredVehicleId || vehicleId}
         vin={detectedVin}
         onComplete={() => {
           if (onPipelineComplete) {
@@ -901,10 +931,11 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                   )}
                 </Button>
                 <Button
-                  onClick={() => setShowPipeline(true)}
+                  onClick={openPipeline}
+                  disabled={isEnsuringVehicle}
                   className="gap-2 gradient-accent text-accent-foreground font-semibold hidden sm:inline-flex"
                 >
-                  <Zap className="w-4 h-4" /> Bilderset generieren
+                  {isEnsuringVehicle ? <><Loader2 className="w-4 h-4 animate-spin" /> Vorbereiten…</> : <><Zap className="w-4 h-4" /> Bilderset generieren</>}
                 </Button>
               </div>
             )}
@@ -926,10 +957,11 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
           </Button>
         ) : (
           <Button
-            onClick={() => setShowPipeline(true)}
+            onClick={openPipeline}
+            disabled={isEnsuringVehicle}
             className="w-full gap-2 gradient-accent text-accent-foreground font-semibold sm:hidden"
           >
-            <Zap className="w-4 h-4" /> Bilderset generieren
+            {isEnsuringVehicle ? <><Loader2 className="w-4 h-4 animate-spin" /> Vorbereiten…</> : <><Zap className="w-4 h-4" /> Bilderset generieren</>}
           </Button>
         )}
       </div>
