@@ -416,14 +416,6 @@ const CanvasBannerStudioShell: React.FC<ProShellProps> = ({ onSwitchToQuick }) =
           )}
         </div>
 
-        {/* Schritt 0 — Fahrzeug-Verknüpfung */}
-        <VehicleBannerPicker
-          vehicleId={state.vehicleId}
-          projectTitle={state.projectTitle}
-          bannerProjectId={state.bannerProjectId}
-          onChangeVehicle={(v) => actions.setVehicle(v)}
-          onChangeTitle={(t) => actions.setProjectTitle(t)}
-        />
 
         {/* Schritt 0b — Corporate Identity */}
         {state.ci && (
