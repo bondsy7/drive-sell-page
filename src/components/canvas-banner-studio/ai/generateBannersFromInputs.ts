@@ -143,8 +143,10 @@ export async function generateBannersFromInputs(
 
   // 1) Datenblatt-Analyse + Masterbild PARALLEL
   const isPdf =
-    datenblattFile.type === "application/pdf" ||
-    datenblattFile.name.toLowerCase().endsWith(".pdf");
+    !!datenblattFile && (
+      datenblattFile.type === "application/pdf" ||
+      datenblattFile.name.toLowerCase().endsWith(".pdf")
+    );
 
   const analyzePromise: Promise<{ textFields: BannerTextFields; brand: string }> = skipAnalyze
     ? Promise.resolve({
