@@ -28,30 +28,43 @@ const TaskCard: React.FC<{ task: BgTask; onClose: () => void; onClick: () => voi
   }, [task.status]);
 
   const elapsed = (task.finishedAt ?? now) - task.startedAt;
-  const percent = task.total > 0 ? Math.min(100, (task.completed / task.total) * 100) : (task.status === 'done' ? 100 : 0);
+  const derivedPct = task.total > 0 ? (task.completed / task.total) * 100 : (task.status === 'done' ? 100 : 0);
+  const percent = Math.min(100, task.percent ?? derivedPct);
+
+  const headline = task.status === 'done'
+    ? `${task.label} fertig!`
+    : task.status === 'error'
+      ? `${task.label} – Fehler`
+      : (task.stageLabel || task.label);
 
   return (
     <div
-      className="bg-card border border-border rounded-xl shadow-lg p-3 w-64 cursor-pointer hover:shadow-xl transition-shadow"
+      className="bg-card border border-border rounded-xl shadow-lg p-3 w-80 cursor-pointer hover:shadow-xl transition-shadow"
       onClick={onClick}
     >
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between gap-2 mb-1.5">
         <div className="flex items-center gap-2 min-w-0">
           {taskIcon(task)}
           <span className="text-xs font-semibold text-foreground truncate">
-            {task.status === 'running' ? task.label : task.status === 'done' ? `${task.label} fertig!` : `${task.label} – Fehler`}
+            {headline}
           </span>
         </div>
-        {task.status !== 'running' && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onClose(); }}
-            className="w-5 h-5 rounded-full hover:bg-muted flex items-center justify-center shrink-0"
-          >
-            <X className="w-3 h-3 text-muted-foreground" />
-          </button>
-        )}
+        <div className="flex items-center gap-1 shrink-0">
+          <span className="text-[10px] text-muted-foreground tabular-nums">{Math.round(percent)}%</span>
+          {task.status !== 'running' && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onClose(); }}
+              className="w-5 h-5 rounded-full hover:bg-muted flex items-center justify-center"
+            >
+              <X className="w-3 h-3 text-muted-foreground" />
+            </button>
+          )}
+        </div>
       </div>
-      <Progress value={percent} className="h-1 mb-1.5" />
+      {task.currentLabel && task.status === 'running' && (
+        <p className="text-[11px] text-muted-foreground truncate mb-1.5">{task.currentLabel}</p>
+      )}
+      <Progress value={percent} className="h-1.5 mb-1.5" />
       <div className="flex justify-between text-[10px] text-muted-foreground">
         <span>
           {task.total > 1 ? `${task.completed}/${task.total}` : task.status === 'running' ? 'läuft…' : task.status === 'done' ? 'fertig' : 'Fehler'}
