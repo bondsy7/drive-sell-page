@@ -119,6 +119,8 @@ LIGHTING: Bright, even, professional interior lighting that matches the showroom
     description: 'Anweisungen für die Integration des Fahrzeugs in einen benutzerdefinierten Showroom. Hier die Realismus-Regeln anpassen!',
     prompt: `MUTUAL ADAPTATION (CRITICAL):
 - This is NOT a simple background swap. You must RE-RENDER the ENTIRE scene as one cohesive photograph – as if a REAL professional automotive photographer took a REAL photo of this car parked inside this exact showroom.
+- FULL VEHICLE RECONSTRUCTION: Do NOT edit, paste, cut out, relight, or reuse pixels from the original vehicle photo. Build a NEW photorealistic vehicle from the reference identity: same body, trim, rims, badges and paint color, but completely NEW lacquer, NEW glass, NEW chrome, NEW shadows and NEW reflections from this showroom only.
+- The source vehicle photo is ONLY an identity blueprint. Its lighting, perspective conflicts, window content, highlight pattern, old wall/floor reflections, banners, stickers, text, people, photographer and original environment are forbidden in the output.
 - PHOTOREALISM IS THE GOAL: The result must be INDISTINGUISHABLE from a real photograph. No CGI look, no pasted cut-out, no artificial lighting, no exaggerated reflections.
 - The showroom provides the ENVIRONMENT and LIGHTING. The vehicle must be LIT BY the showroom's actual light sources – matching their direction, color temperature, intensity and falloff.
 - LIGHT-SOURCE PROOF: Ceiling lights, window bands, LED strips, or cove lights from the showroom MUST appear as natural soft highlights/reflections on hood, roof, windshield, side windows, side panels and chrome.
@@ -127,7 +129,7 @@ LIGHTING: Bright, even, professional interior lighting that matches the showroom
 - Every old reflection from the original vehicle photo MUST be erased and replaced by reflections from this showroom only. No trees, sky, photographer, street, old walls, old logos, old studio strips, or other cars may survive on paint, glass, rims or chrome.
 - The vehicle must be PROPORTIONALLY CORRECT relative to the showroom architecture. Compare vehicle height to door frames, windows, ceiling. A sedan is ~1.4m tall, an SUV ~1.7m.
 - VEHICLE SIZE IN SHOWROOM: The vehicle MUST appear SMALL relative to the showroom – as if standing several meters AWAY from the camera, DEEP INSIDE the showroom. The car should occupy only 40-50% of the image width. There must be GENEROUS visible floor space in front of and around the vehicle. The showroom architecture (ceiling, walls, windows) must DOMINATE the image composition – the vehicle is an element WITHIN the space, not filling it.
-- The camera perspective of the showroom must MATCH the camera perspective of the vehicle shot.
+- The vehicle perspective must be adapted to the showroom's floor plane and vanishing point. Do NOT preserve the original vehicle-photo camera perspective if it conflicts with the showroom; re-pose the car naturally so all tires sit physically on the polished concrete floor.
 - ALL architectural details, wall logos, branding, furniture MUST remain in their EXACT positions.
 - Do NOT overlay or collage. The room MUST be fully visible and recognizable.
 - ZERO WHITE BORDERS: The showroom MUST fill the ENTIRE image canvas. Every pixel of every edge MUST show showroom content (walls, floor, ceiling, windows). There must be ABSOLUTELY NO white margins, blank areas, or unfilled edges anywhere in the output.
