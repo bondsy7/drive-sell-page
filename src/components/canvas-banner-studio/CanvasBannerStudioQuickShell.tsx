@@ -147,6 +147,7 @@ const SCENE_PRESETS: { id: ScenePresetId; label: string; description: string; bu
 
 const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const { getLogoForMake } = useVehicleMakes();
   const bgTasks = useBackgroundTasks();
