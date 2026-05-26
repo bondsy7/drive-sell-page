@@ -16,7 +16,7 @@ interface ImageUploadRemasterProps {
   vehicleDescription: string;
   vehicleBrand?: string;
   modelTier?: string;
-  onComplete: (mainImage: string, galleryImages: string[]) => void;
+  onComplete: (mainImage: string, galleryImages: string[], originals?: string[]) => void;
   onBack: () => void;
   completeLabel?: string;
 }
