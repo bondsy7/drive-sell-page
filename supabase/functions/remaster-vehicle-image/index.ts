@@ -118,7 +118,7 @@ ${REFERENCE_TRUTH_PROTOCOL}
   return parts.join('\n\n');
 }
 
-async function authenticateAndDeductCredits(req: Request, actionType: string, cost: number): Promise<{ userId: string } | Response> {
+async function authenticateAndDeductCredits(req: Request, actionType: string, cost: number): Promise<{ userId: string; email?: string } | Response> {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
     return new Response(JSON.stringify({ error: "Nicht authentifiziert" }), {
@@ -137,6 +137,7 @@ async function authenticateAndDeductCredits(req: Request, actionType: string, co
     });
   }
   const userId = data.claims.sub as string;
+  const email = (data.claims as any)?.email as string | undefined;
   const serviceSb = createServiceClient();
   const { data: result, error: deductError } = await serviceSb.rpc("deduct_credits", {
     _user_id: userId, _amount: cost, _action_type: actionType, _description: `${actionType} (serverseitig)`,
@@ -152,8 +153,51 @@ async function authenticateAndDeductCredits(req: Request, actionType: string, co
       status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-  return { userId };
+  return { userId, email };
 }
+
+// DEKRA showroom JSON scene fallback – injected for specific user emails when a custom showroom is used.
+const DEKRA_SHOWROOM_USERS = new Set([
+  "paul@autoactiva.de",
+  "erik.wakolbinger@dekra.de",
+  "d.bonds@autoactiva.de",
+]);
+
+const DEKRA_SHOWROOM_SCENE_JSON = `{
+  "scene_name": "DEKRA_modern_showroom_consistent",
+  "scene_type": "modern automotive showroom interior",
+  "camera": {
+    "view": "wide angle interior view",
+    "orientation": "landscape",
+    "camera_height": "approximately 1.45 meters",
+    "camera_position": "front left side of the showroom, looking diagonally toward the rear feature wall and reception desk",
+    "lens": "24mm to 28mm realistic architectural lens",
+    "perspective": "straight vertical lines, no fisheye distortion, realistic showroom photography",
+    "vanishing_point": "centered near the rear metallic feature wall",
+    "framing": "large open polished floor area in foreground, glass facade on the left, reception desk on the right, decorative wall centered in background"
+  },
+  "architecture": {
+    "floor": { "material": "smooth polished concrete", "color": "light warm grey", "finish": "glossy with soft natural reflections", "important_rule": "vehicles must cast soft contact shadows and subtle reflections on the polished concrete floor" },
+    "left_side": { "elements": ["full height glass facade","black metal window frames","large exterior view with parking area and DEKRA signage","glass entrance doors near the front left"], "lighting_effect": "strong daylight entering from the left side, creating soft reflections on the floor and vehicle body" },
+    "right_side": { "elements": ["white mezzanine structure","green horizontal accent stripe","glass office railing on upper level","modern reception counter with white surfaces, light wood panels and green accent line","DEKRA logo on reception counter","small waiting area with white armchairs and green cushions behind the counter"] },
+    "back_wall": { "position": "center rear of the showroom", "elements": ["large metallic panel feature wall","dark grey and brushed silver rectangular panels","vertical green LED light strips","thin warm white LED lines","two white information panels with DEKRA branding on left and right side of the feature wall"], "style": "clean technical inspection center branding, premium automotive presentation area" },
+    "ceiling": { "height": "high industrial ceiling", "elements": ["visible corrugated metal ceiling","white structural beams","linear LED light strips following the room geometry","round suspended industrial lamps","visible technical pipes and ventilation ducts"], "lighting": "combination of daylight, overhead industrial lamps and green decorative LED accents" }
+  },
+  "branding": { "brand": "DEKRA", "colors": { "primary": "white", "secondary": "dark grey", "accent": "DEKRA green" }, "logo_presence": ["DEKRA logo visible on reception counter","DEKRA signage visible outside through glass facade","DEKRA branding on rear information panels"], "important_rule": "do not invent new logos, slogans or additional signage" },
+  "lighting": {
+    "main_light_source": "soft daylight from the large glass facade on the left",
+    "secondary_light_sources": ["overhead ceiling lamps","linear warm white LED ceiling strips","green LED accent strips on rear wall"],
+    "vehicle_lighting_rules": ["left side of the vehicle should receive soft natural daylight","right side of the vehicle should have softer indoor fill light","vehicle roof and hood should reflect ceiling light strips subtly","vehicle sides should reflect the glass facade and green LED accents naturally","no harsh studio lighting","no unrealistic glowing edges","no floating vehicle"],
+    "shadow_rules": ["soft contact shadow directly underneath the tires","slightly darker shadow under the chassis","shadow direction should be consistent with daylight from the left and overhead lights","floor reflection must be visible but subtle"]
+  },
+  "vehicle_integration_rules": {
+    "general": ["place exactly one vehicle in the showroom","vehicle must sit naturally on the polished concrete floor","all four tires must touch the floor correctly","vehicle scale must match the showroom architecture","do not alter the showroom architecture","do not move the reception desk, rear wall, glass facade or ceiling structure","keep the showroom clean and empty except for the single vehicle","no people","no extra furniture","no additional cars","no artificial showroom platform"],
+    "perspective_alignment": ["vehicle must follow the same vanishing point as the floor and rear wall","vehicle wheelbase must align with the floor plane","vehicle must not appear pasted in","vehicle must have realistic occlusion and grounding","vehicle reflections must match surrounding glass, ceiling lights and green LED accents"],
+    "material_response": ["paint should show soft reflections of windows, ceiling LEDs and green accent lights","windows should reflect the showroom interior and glass facade","chrome and black trim should react naturally to the indoor lighting","tires should remain matte black with realistic tread visibility"]
+  },
+  "negative_instructions": ["do not redesign the showroom","do not change the DEKRA green accent lighting","do not add people","do not add multiple cars","do not add a car lift","do not add workshop tools","do not add banners or new text","do not create a different reception desk","do not change the floor material","do not make the vehicle float","do not create unrealistic tire shadows","do not make the car too large for the room","do not make the car too small","do not use outdoor lighting on the car","do not add dramatic smoke or cinematic fog","do not overexpose the windows","do not blur the showroom architecture","do not remove existing DEKRA branding"],
+  "output_style": { "quality": "photorealistic", "rendering": "realistic automotive showroom photography", "resolution": "high resolution", "color_grading": "clean neutral daylight, subtle green corporate accent reflections", "sharpness": "sharp architectural lines, realistic vehicle details", "mood": "premium, clean, modern, professional inspection center showroom" }
+}`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -186,6 +230,8 @@ serve(async (req) => {
     } catch {}
     const authResult = await authenticateAndDeductCredits(req, "image_remaster", cost);
     if (authResult instanceof Response) return authResult;
+    const userEmail = (authResult as any).email as string | undefined;
+    const isDekraShowroomUser = !!userEmail && DEKRA_SHOWROOM_USERS.has(userEmail.toLowerCase());
 
     // Engine routing per user-selected tier (binding, no cross-engine fallback)
     interface EngineConfig { engine: 'gemini' | 'openai'; model: string }
@@ -341,7 +387,13 @@ CROSS-IMAGE CONSISTENCY (STYLE LOCK):
 INTERIOR SHOTS:
 - For interior views, the custom showroom MUST be visible THROUGH the windshield, side windows and rear window – clearly recognizable as the SAME room. No outdoor scene, no generic background.
 - Do NOT alter dashboard, seats, trim or any interior element – only improve lighting to match the showroom ambience.
-</CUSTOM_SHOWROOM_INSTRUCTION>` });
+</CUSTOM_SHOWROOM_INSTRUCTION>${isDekraShowroomUser ? `
+
+<DEKRA_SHOWROOM_SCENE_SPEC>
+This showroom is the DEKRA modern automotive showroom. The following JSON is the AUTHORITATIVE structural and lighting description of that exact scene. Treat it as ground truth – it overrides any guess based on the source vehicle photo. Re-render the vehicle inside this scene exactly as described: architecture, materials, light sources, reflections, vehicle placement, scale and shadows MUST match this spec. Use it together with the showroom reference image.
+
+${DEKRA_SHOWROOM_SCENE_JSON}
+</DEKRA_SHOWROOM_SCENE_SPEC>` : ""}` });
       if (customShowroomFileUri?.uri) {
         parts.push({ file_data: { mime_type: customShowroomFileUri.mimeType, file_uri: customShowroomFileUri.uri } });
         console.log(`[remaster] Showroom via file_uri`);
