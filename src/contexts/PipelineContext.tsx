@@ -514,6 +514,17 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           setGalleryFolder(folderName);
           const storagePath = cfg.projectId ? cfg.projectId : `gallery/${folderName}`;
 
+          // Safety net: ensure a vehicle row exists (creates VIN row or NOVIN placeholder)
+          // so generated images always appear under a vehicle in the dashboard.
+          let resolvedVehicleId = cfg.vehicleId || null;
+          if (!resolvedVehicleId) {
+            try {
+              resolvedVehicleId = await ensureVehicleAuto(cfg.userId, cfg.vin, null);
+            } catch (e) {
+              console.warn('[pipeline] ensureVehicleAuto failed:', e);
+            }
+          }
+
           const { data: existingImages } = cfg.projectId
             ? await supabase.from('project_images').select('sort_order').eq('project_id', cfg.projectId)
                 .order('sort_order', { ascending: false }).limit(1)
@@ -529,20 +540,32 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
           if (urls.length > 0) {
             const imageRows = urls.map((url, i) => ({
-              project_id: cfg.projectId || null, vehicle_id: cfg.vehicleId || null,
+              project_id: cfg.projectId || null, vehicle_id: resolvedVehicleId || null,
               user_id: cfg.userId, image_url: url, image_base64: '',
               perspective: `Pipeline: ${allResults[i]?.label || `Bild ${i + 1}`}`, sort_order: startOrder + i,
               gallery_folder: folderName,
             }));
             await supabase.from('project_images').insert(imageRows as any);
 
+            // Backfill any earlier rows in this gallery_folder that were saved with null vehicle_id
+            if (resolvedVehicleId) {
+              try {
+                await supabase
+                  .from('project_images')
+                  .update({ vehicle_id: resolvedVehicleId } as never)
+                  .eq('user_id', cfg.userId)
+                  .eq('gallery_folder', folderName)
+                  .is('vehicle_id', null);
+              } catch (e) { console.warn('[pipeline] backfill vehicle_id skipped:', e); }
+            }
+
             // Auto-set vehicle cover image (best-effort, only if missing)
-            if (cfg.vehicleId) {
+            if (resolvedVehicleId) {
               try {
                 const { data: vRow } = await supabase
-                  .from('vehicles').select('cover_image_url').eq('id', cfg.vehicleId).maybeSingle();
+                  .from('vehicles').select('cover_image_url').eq('id', resolvedVehicleId).maybeSingle();
                 if (vRow && !(vRow as any).cover_image_url) {
-                  await supabase.from('vehicles').update({ cover_image_url: urls[0] }).eq('id', cfg.vehicleId);
+                  await supabase.from('vehicles').update({ cover_image_url: urls[0] }).eq('id', resolvedVehicleId);
                 }
               } catch (e) { console.warn('Vehicle cover update skipped:', e); }
             }
