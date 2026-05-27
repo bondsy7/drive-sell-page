@@ -20,7 +20,7 @@ async function uploadDataUrl(
     const blob = await (await fetch(dataUrl)).blob();
     const ext = (blob.type.split("/")[1] || "png").split(";")[0];
     const folder = vehicleId ? `${userId}/${vehicleId}` : `${userId}/no-vehicle`;
-    const path = `${folder}/state-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const path = `_banner-state/${folder}/state-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
     const { error } = await supabase.storage
       .from("banners")
       .upload(path, blob, { contentType: blob.type || "image/png", upsert: false });
