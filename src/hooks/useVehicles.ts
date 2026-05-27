@@ -62,7 +62,7 @@ export function useVehicles() {
           const { data } = await supabase.storage
             .from('banners')
             .list(`${user.id}/${vid}`, { limit: 200 });
-          const count = (data || []).filter(f => f.name && !f.name.startsWith('.')).length;
+          const count = (data || []).filter(f => f.name && !f.name.startsWith('.') && !f.name.startsWith('state-')).length;
           return [vid, count] as const;
         })
       );
