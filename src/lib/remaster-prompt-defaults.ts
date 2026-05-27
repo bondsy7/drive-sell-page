@@ -202,7 +202,14 @@ The reference photo may contain dealer banners, abbinder bars, slogans (e.g. "AU
 - Lighting may improve visibility, but it must NEVER re-interpret the actual upholstery or trim color.
 
 5. STRUCTURAL INTEGRITY:
-- Roof, ALL pillars (A/B/C), headliner, door panels, sun visors, rearview mirror MUST remain FULLY visible and UNCUT.`,
+- Roof, ALL pillars (A/B/C), headliner, door panels, sun visors, rearview mirror MUST remain FULLY visible and UNCUT.
+
+6. ROOF / HEADLINER (CRITICAL – ZERO TOLERANCE):
+- The vehicle roof MUST be shown CLOSED with a SOLID, OPAQUE headliner (Dachhimmel) in the original interior color (typically anthracite/black fabric or alcantara).
+- ABSOLUTELY FORBIDDEN: panoramic sunroof, glass roof, open sunroof, sky visible through the roof, bright white ceiling, transparent roof, missing roof, or any view of the showroom ceiling through the car's roof.
+- Even if the reference image is bright, washed out, or ambiguous at the top, ALWAYS render a fully closed, opaque, dark headliner with visible fabric/alcantara texture, interior dome light and grab handles.
+- The headliner is a continuous closed surface from windshield header to rear window header. No glass panel, no opening, no light leak from above.
+- If unsure whether the car has a sunroof, default to CLOSED SOLID HEADLINER. Never invent a panoramic roof.`,
   },
 
   license_plate_remove: {
