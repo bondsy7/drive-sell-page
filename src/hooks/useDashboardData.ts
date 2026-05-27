@@ -102,7 +102,7 @@ export function useBanners(enabled: boolean) {
         .from('banners')
         .list(user.id, { limit: 100, sortBy: { column: 'created_at', order: 'desc' } });
       if (error || !files) return [];
-      return files.filter(f => f.name.endsWith('.png')).map(f => {
+      return files.filter(f => f.name.endsWith('.png') && !f.name.startsWith('state-')).map(f => {
         const { data: urlData } = supabase.storage.from('banners').getPublicUrl(`${user.id}/${f.name}`);
         return { name: f.name, url: urlData.publicUrl, created_at: f.created_at, fullPath: `${user.id}/${f.name}` };
       });
@@ -164,7 +164,7 @@ export function useDashboardCounts() {
         gallery: imgRes.count ?? 0,
         leads: leadsRes.count ?? 0,
         videos: videosRes.data?.filter(f => f.name.endsWith('.mp4')).length ?? 0,
-        banners: bannersRes.data?.filter(f => f.name.endsWith('.png')).length ?? 0,
+        banners: bannersRes.data?.filter(f => f.name.endsWith('.png') && !f.name.startsWith('state-')).length ?? 0,
         spin360: spinRes.count ?? 0,
       };
     },
