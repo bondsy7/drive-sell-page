@@ -125,8 +125,9 @@ FRAMING: Both taillights, exhaust outlets, rear badge, and model designation sym
 SHOT_TYPE: Interior - Rear Seat POV Looking Forward
 CAMERA_ANGLE: From center of rear seat, looking at dashboard, steering wheel, and windshield.
 STRUCTURAL_INTEGRITY: Complete roof, ALL A/B pillars, headliner, and rearview mirror MUST be FULLY visible and UNCUT.
+ROOF_RULE: Roof MUST be CLOSED with a SOLID, OPAQUE, DARK headliner (Dachhimmel) – NO panoramic sunroof, NO glass roof, NO sky/ceiling visible through the roof. Default to closed solid headliner if unsure.
 PRESERVATION_PRIORITY: Dashboard layout, steering wheel shape, upholstery colors, trim finishes, button legends, screen content, icons, and all visible inscriptions MUST match the reference images exactly.
-FORBIDDEN: Do NOT crop roof. Do NOT shoot from above without roof. Do NOT generate an exterior view.
+FORBIDDEN: Do NOT crop roof. Do NOT shoot from above without roof. Do NOT generate an exterior view. Do NOT add a panoramic/glass sunroof. Do NOT show the showroom ceiling through the car roof.
 WINDOW_VIEW: The selected showroom/scene MUST be visible THROUGH the windshield – NOT a random outdoor scene.
 </CURRENT_PERSPECTIVE>`,
 
@@ -134,8 +135,9 @@ WINDOW_VIEW: The selected showroom/scene MUST be visible THROUGH the windshield 
 SHOT_TYPE: Interior - Driver Seat POV Looking Backward
 CAMERA_ANGLE: From driver seat position, looking at rear seats, headrests, and rear bench.
 STRUCTURAL_INTEGRITY: Complete roof, ALL B/C pillars, headliner, and rear window MUST be FULLY visible and UNCUT.
+ROOF_RULE: Roof MUST be CLOSED with a SOLID, OPAQUE, DARK headliner (Dachhimmel) – NO panoramic sunroof, NO glass roof, NO sky/ceiling visible through the roof. Default to closed solid headliner if unsure.
 PRESERVATION_PRIORITY: Rear bench shape, upholstery color, stitching, perforation, seatbelt colors, trim materials, speaker grilles, and all visible inscriptions MUST match the reference images exactly.
-FORBIDDEN: Do NOT crop roof. Do NOT shoot from above without roof. Do NOT generate an exterior view.
+FORBIDDEN: Do NOT crop roof. Do NOT shoot from above without roof. Do NOT generate an exterior view. Do NOT add a panoramic/glass sunroof. Do NOT show the showroom ceiling through the car roof.
 WINDOW_VIEW: The selected showroom/scene MUST be visible THROUGH the rear window – NOT a random outdoor scene.
 </CURRENT_PERSPECTIVE>`,
 };
