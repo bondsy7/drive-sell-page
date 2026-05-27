@@ -129,7 +129,7 @@ export default function VehicleView() {
     queryFn: async (): Promise<BannerFile[]> => {
       const prefix = `${user!.id}/${id}`;
       const { data } = await supabase.storage.from('banners').list(prefix, { limit: 200, sortBy: { column: 'created_at', order: 'desc' } });
-      return (data || []).filter(f => f.name && !f.name.startsWith('.')).map(f => {
+      return (data || []).filter(f => f.name && !f.name.startsWith('.') && !f.name.startsWith('state-')).map(f => {
         const fullPath = `${prefix}/${f.name}`;
         return {
           name: f.name,
