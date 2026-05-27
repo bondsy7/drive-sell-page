@@ -5,8 +5,10 @@ import VehicleAssetPicker from "@/components/VehicleAssetPicker";
 import type { VehicleAsset } from "@/hooks/useVehicleAssets";
 import { reframeImageForFormat } from "./ai/reframeClient";
 import QuickEditView from "./wizard/QuickEditView";
-import { renderCompositionToDataURL } from "./export/renderComposition";
+import { renderCompositionToDataURL, renderCompositionToBlob } from "./export/renderComposition";
 import type { BannerComposition } from "./state/types";
+import { uploadBannerToStorage } from "./persistence/useBannerProject";
+import { buildFilename } from "./export/exportCanvas";
 import { toast } from "sonner";
 import JSZip from "jszip";
 
