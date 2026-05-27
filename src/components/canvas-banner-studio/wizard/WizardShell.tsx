@@ -178,13 +178,17 @@ const WizardShell: React.FC<Props> = ({ onSwitchToPro }) => {
     });
   };
 
-  const hasVisibleText = useMemo(
-    () => activeComposition.layers.some((layer) => {
-      if (!layer.visible || (layer.type !== "text" && layer.type !== "legal")) return false;
-      const raw = layer.field ? state.textFields[layer.field] : (layer.content ?? "");
-      return raw.trim().length > 0;
+  const selectedFormatsHaveVisibleText = useMemo(
+    () => state.selectedFormatIds.every((fid) => {
+      const comp = state.compositions[fid];
+      if (!comp) return false;
+      return comp.layers.some((layer) => {
+        if (!layer.visible || (layer.type !== "text" && layer.type !== "legal")) return false;
+        const raw = layer.field ? state.textFields[layer.field] : (layer.content ?? "");
+        return raw.trim().length > 0;
+      });
     }),
-    [activeComposition.layers, state.textFields],
+    [state.selectedFormatIds, state.compositions, state.textFields],
   );
 
   const handleExport = async (type: ExportFormat) => {
@@ -214,7 +218,7 @@ const WizardShell: React.FC<Props> = ({ onSwitchToPro }) => {
   const handleReleaseToDashboard = async () => {
     if (!user) { toast.error("Bitte zuerst einloggen."); return; }
     if (state.selectedFormatIds.length === 0) { toast.error("Bitte mindestens ein Format auswählen."); return; }
-    if (!hasVisibleText) { toast.error("Freigabe gestoppt: Der Banner enthält keinen sichtbaren Text."); return; }
+    if (!selectedFormatsHaveVisibleText) { toast.error("Freigabe gestoppt: Mindestens ein ausgewähltes Format enthält keinen sichtbaren Text."); return; }
     setReleaseBusy(true);
     let done = 0;
     try {
@@ -412,7 +416,7 @@ const WizardShell: React.FC<Props> = ({ onSwitchToPro }) => {
                 <p className="text-xs text-muted-foreground">
                   Downloads speichern nichts im Dashboard. Erst diese Freigabe legt die fertigen PNG-Banner im Banner-Tab ab.
                 </p>
-                <Button onClick={handleReleaseToDashboard} disabled={releaseBusy || !hasVisibleText} className="w-full">
+                <Button onClick={handleReleaseToDashboard} disabled={releaseBusy || !selectedFormatsHaveVisibleText} className="w-full">
                   <CheckCircle2 className="w-4 h-4 mr-1" />
                   {releaseBusy ? "Freigabe läuft…" : "Fertige Banner ins Dashboard setzen"}
                 </Button>
