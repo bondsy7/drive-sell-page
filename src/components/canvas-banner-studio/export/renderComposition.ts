@@ -259,7 +259,7 @@ export async function renderCompositionToDataURL(
       ctx.restore();
       continue;
     }
-    const raw = layer.field ? textFields[layer.field] : "";
+    const raw = layer.field ? textFields[layer.field] : (layer.content ?? "");
     const text = resolveShortcodes(raw, ciContext);
     if (!text) continue;
     const fontSize = effectiveFontSize(layer, text, formatScale);
