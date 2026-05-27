@@ -593,6 +593,58 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
+  const [releaseBusy, setReleaseBusy] = useState(false);
+  const handleReleaseToDashboard = useCallback(async () => {
+    if (!user) { toast.error("Bitte zuerst einloggen."); return; }
+    if (results.length === 0) { toast.error("Keine Banner zum Freigeben."); return; }
+    const textFields = lastTextFieldsRef.current ?? (DEFAULT_TEXT_FIELDS as any);
+    const ciContext = buildCiContext(dealerProfile, null);
+    const ciState = {
+      brandKey: brandPresetKey,
+      colors: {
+        primary: ciColors.primary,
+        secondary: ciColors.secondary,
+        text: ciColors.text,
+        bg: ciColors.bg,
+      },
+    } as any;
+    // Validierung: mindestens ein sichtbares Textfeld pro Format
+    const allHaveText = results.every((r) => {
+      const comp = r.composition;
+      return comp.layers.some((layer) => {
+        if (!layer.visible || (layer.type !== "text" && layer.type !== "legal")) return false;
+        const raw = layer.field ? (textFields as any)[layer.field] : (layer.content ?? "");
+        return String(raw ?? "").trim().length > 0;
+      });
+    });
+    if (!allHaveText) {
+      toast.error("Freigabe gestoppt: Mindestens ein Banner enthält keinen sichtbaren Text.");
+      return;
+    }
+    setReleaseBusy(true);
+    let done = 0;
+    try {
+      for (const r of results) {
+        const comp = { ...r.composition, logoUrl: resolvedLogoUrl ?? r.composition.logoUrl };
+        const blob = await renderCompositionToBlob(r.format, comp, textFields, "png", ciState, ciContext);
+        await uploadBannerToStorage({
+          userId: user.id,
+          vehicleId: canvasVehicleId ?? null,
+          blob,
+          filename: buildFilename(r.format, "png"),
+          contentType: "image/png",
+        });
+        done++;
+      }
+      toast.success(`${done} Banner ins Dashboard freigegeben.`);
+    } catch (e: any) {
+      console.error("release failed", e);
+      toast.error(e?.message ?? "Freigabe fehlgeschlagen");
+    } finally {
+      setReleaseBusy(false);
+    }
+  }, [user, results, dealerProfile, brandPresetKey, ciColors, resolvedLogoUrl, canvasVehicleId]);
+
   const openInEditor = useCallback(() => {
     if (results.length === 0) return;
     const compositions: Record<string, typeof results[number]["composition"]> = {};
