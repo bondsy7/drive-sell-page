@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Download, FileText, ImageIcon, Loader2, Palette, Pencil, RefreshCw, Settings2, Sparkles, X, Car } from "lucide-react";
+import { ArrowLeft, Check, Download, FileText, ImageIcon, Loader2, Palette, Pencil, RefreshCw, Settings2, Sparkles, Upload, X, Car } from "lucide-react";
 import VehicleAssetPicker from "@/components/VehicleAssetPicker";
 import type { VehicleAsset } from "@/hooks/useVehicleAssets";
 import { reframeImageForFormat } from "./ai/reframeClient";
