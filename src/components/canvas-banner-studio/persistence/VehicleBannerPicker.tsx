@@ -83,7 +83,7 @@ const VehicleBannerPicker: React.FC<Props> = ({
       </div>
       <p className="text-[11px] text-muted-foreground">
         Wenn ein Fahrzeug verknüpft ist, werden Headline, Preis, Pflichtangaben und Marken-Logo
-        automatisch befüllt. Exportierte Banner landen im Fahrzeug-Ordner.
+        automatisch befüllt. Freigegebene Banner landen im Fahrzeug-Ordner.
       </p>
     </section>
   );
