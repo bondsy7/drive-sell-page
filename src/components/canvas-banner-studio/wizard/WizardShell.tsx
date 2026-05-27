@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import type Konva from "konva";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Download, Package, Sparkles, Wand2, Undo2, Redo2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Download, Package, Sparkles, Wand2, Undo2, Redo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { toast } from "sonner";
@@ -16,7 +16,7 @@ import { useCanvasBannerStore } from "../state/useCanvasBannerStore";
 import { getFormatById } from "../data/formats";
 import BannerCanvas from "../canvas/BannerCanvas";
 import LegalCheck from "../controls/LegalCheck";
-import { useBannerProject, uploadBannerToStorage, dataUrlToBlob } from "../persistence/useBannerProject";
+import { useBannerProject, uploadBannerToStorage } from "../persistence/useBannerProject";
 import { renderCompositionToBlob } from "../export/renderComposition";
 import { buildFilename, downloadDataUrl, exportStage, type ExportFormat } from "../export/exportCanvas";
 import { exportAllAsZip } from "../export/zipExport";
@@ -52,6 +52,7 @@ const WizardShell: React.FC<Props> = ({ onSwitchToPro }) => {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [applyLogoToAll, setApplyLogoToAll] = useState(true);
   const [zipBusy, setZipBusy] = useState(false);
+  const [releaseBusy, setReleaseBusy] = useState(false);
   const [aiBusy, setAiBusy] = useState(false);
 
   // Persistence + profile
@@ -177,6 +178,19 @@ const WizardShell: React.FC<Props> = ({ onSwitchToPro }) => {
     });
   };
 
+  const selectedFormatsHaveVisibleText = useMemo(
+    () => state.selectedFormatIds.every((fid) => {
+      const comp = state.compositions[fid];
+      if (!comp) return false;
+      return comp.layers.some((layer) => {
+        if (!layer.visible || (layer.type !== "text" && layer.type !== "legal")) return false;
+        const raw = layer.field ? state.textFields[layer.field] : (layer.content ?? "");
+        return raw.trim().length > 0;
+      });
+    }),
+    [state.selectedFormatIds, state.compositions, state.textFields],
+  );
+
   const handleExport = async (type: ExportFormat) => {
     const stage = stageRef.current;
     if (!stage) { toast.error("Vorschau noch nicht bereit."); return; }
@@ -184,9 +198,6 @@ const WizardShell: React.FC<Props> = ({ onSwitchToPro }) => {
       const url = exportStage(stage, activeFormat, type);
       const filename = buildFilename(activeFormat, type);
       downloadDataUrl(url, filename);
-      const mime = type === "png" ? "image/png" : type === "jpg" ? "image/jpeg" : "image/webp";
-      const blob = await dataUrlToBlob(url);
-      void persistExportedBlob(blob, filename, mime);
       toast.success(`Exportiert · ${activeFormat.width}×${activeFormat.height}`);
     } catch (e) {
       console.error(e); toast.error("Export fehlgeschlagen.");
@@ -198,20 +209,34 @@ const WizardShell: React.FC<Props> = ({ onSwitchToPro }) => {
     setZipBusy(true);
     try {
       await exportAllAsZip(state, state.textFields, type, state.ci, ciContext);
-      const mime = type === "png" ? "image/png" : type === "jpg" ? "image/jpeg" : "image/webp";
-      for (const fid of state.selectedFormatIds) {
-        const f = getFormatById(fid);
-        const comp = state.compositions[fid];
-        if (!comp) continue;
-        try {
-          const blob = await renderCompositionToBlob(f, comp, state.textFields, type, state.ci, ciContext);
-          await persistExportedBlob(blob, buildFilename(f, type), mime);
-        } catch (err) { console.warn("persist fail", fid, err); }
-      }
       toast.success(`${state.selectedFormatIds.length} Banner als ZIP exportiert`);
     } catch (e) {
       console.error(e); toast.error("ZIP-Export fehlgeschlagen.");
     } finally { setZipBusy(false); }
+  };
+
+  const handleReleaseToDashboard = async () => {
+    if (!user) { toast.error("Bitte zuerst einloggen."); return; }
+    if (state.selectedFormatIds.length === 0) { toast.error("Bitte mindestens ein Format auswählen."); return; }
+    if (!selectedFormatsHaveVisibleText) { toast.error("Freigabe gestoppt: Mindestens ein ausgewähltes Format enthält keinen sichtbaren Text."); return; }
+    setReleaseBusy(true);
+    let done = 0;
+    try {
+      for (const fid of state.selectedFormatIds) {
+        const f = getFormatById(fid);
+        const comp = state.compositions[fid];
+        if (!comp) continue;
+        const blob = await renderCompositionToBlob(f, comp, state.textFields, "png", state.ci, ciContext);
+        await persistExportedBlob(blob, buildFilename(f, "png"), "image/png");
+        done++;
+      }
+      toast.success(`${done} Banner mit Text ins Dashboard freigegeben`);
+    } catch (e) {
+      console.error(e);
+      toast.error("Freigabe fehlgeschlagen.");
+    } finally {
+      setReleaseBusy(false);
+    }
   };
 
   const canGoStep2 = !!activeComposition.backgroundImageUrl || !!state.textFields.headline;
@@ -385,6 +410,16 @@ const WizardShell: React.FC<Props> = ({ onSwitchToPro }) => {
                 <Button onClick={() => handleExport("png")}><Download className="w-4 h-4 mr-1" /> PNG</Button>
                 <Button variant="outline" onClick={() => handleExport("jpg")}><Download className="w-4 h-4 mr-1" /> JPG</Button>
                 <Button variant="outline" onClick={() => handleExport("webp")}><Download className="w-4 h-4 mr-1" /> WebP</Button>
+              </div>
+              <div className="rounded-lg border border-border bg-card p-3 space-y-2">
+                <h3 className="text-sm font-semibold text-foreground">Dashboard-Freigabe</h3>
+                <p className="text-xs text-muted-foreground">
+                  Downloads speichern nichts im Dashboard. Erst diese Freigabe legt die fertigen PNG-Banner im Banner-Tab ab.
+                </p>
+                <Button onClick={handleReleaseToDashboard} disabled={releaseBusy || !selectedFormatsHaveVisibleText} className="w-full">
+                  <CheckCircle2 className="w-4 h-4 mr-1" />
+                  {releaseBusy ? "Freigabe läuft…" : "Fertige Banner ins Dashboard setzen"}
+                </Button>
               </div>
               {state.selectedFormatIds.length > 1 && (
                 <div className="pt-3 border-t border-border space-y-2">

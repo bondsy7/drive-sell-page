@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import type Konva from "konva";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Download, Eye, EyeOff, Package, Sparkles, Wand2, Undo2, Redo2, RotateCcw } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Download, Eye, EyeOff, Package, Sparkles, Wand2, Undo2, Redo2, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
@@ -30,7 +30,7 @@ import ReframeHistoryStrip from "./step2/ReframeHistoryStrip";
 import ReframeVariantsDialog from "./step2/ReframeVariantsDialog";
 import ManualCropDialog from "./step2/ManualCropDialog";
 import VehicleBannerPicker from "./persistence/VehicleBannerPicker";
-import { useBannerProject, uploadBannerToStorage, dataUrlToBlob } from "./persistence/useBannerProject";
+import { useBannerProject, uploadBannerToStorage } from "./persistence/useBannerProject";
 import { buildPrefillFromVehicle } from "./persistence/prefillFromVehicle";
 import { renderCompositionToBlob } from "./export/renderComposition";
 import type { BannerTextFieldKey } from "./state/types";
@@ -94,6 +94,7 @@ const CanvasBannerStudioShell: React.FC<ProShellProps> = ({ onSwitchToQuick }) =
   }, []);
 
   const [zipBusy, setZipBusy] = useState(false);
+  const [releaseBusy, setReleaseBusy] = useState(false);
   const [applyLogoToAll, setApplyLogoToAll] = useState(true);
   const [aiBusy, setAiBusy] = useState(false);
   const [reframeBusy, setReframeBusy] = useState(false);
@@ -224,17 +225,27 @@ const CanvasBannerStudioShell: React.FC<ProShellProps> = ({ onSwitchToQuick }) =
 
   const persistExportedBlob = async (blob: Blob, filename: string, contentType: string) => {
     if (!user) return;
-    const publicUrl = await uploadBannerToStorage({
+    await uploadBannerToStorage({
       userId: user.id,
       vehicleId: state.vehicleId ?? null,
       blob,
       filename,
       contentType,
     });
-    if (publicUrl) {
-      toast.success(state.vehicleId ? "Im Fahrzeug-Ordner gespeichert" : "Im Banner-Ordner gespeichert");
-    }
   };
+
+  const selectedFormatsHaveVisibleText = useMemo(
+    () => state.selectedFormatIds.every((fid) => {
+      const comp = state.compositions[fid];
+      if (!comp) return false;
+      return comp.layers.some((layer) => {
+        if (!layer.visible || (layer.type !== "text" && layer.type !== "legal")) return false;
+        const raw = layer.field ? state.textFields[layer.field] : (layer.content ?? "");
+        return raw.trim().length > 0;
+      });
+    }),
+    [state.selectedFormatIds, state.compositions, state.textFields],
+  );
 
 
   /** Apply a new reframe result for a specific format and push the previous bg into history. */
@@ -307,9 +318,6 @@ const CanvasBannerStudioShell: React.FC<ProShellProps> = ({ onSwitchToQuick }) =
       const filename = buildFilename(activeFormat, type);
       downloadDataUrl(url, filename);
       toast.success(`Exportiert in ${activeFormat.width}×${activeFormat.height}`);
-      const mime = type === "png" ? "image/png" : type === "jpg" ? "image/jpeg" : "image/webp";
-      const blob = await dataUrlToBlob(url);
-      void persistExportedBlob(blob, filename, mime);
     } catch (e) {
       console.error(e);
       toast.error("Export fehlgeschlagen.");
@@ -322,24 +330,35 @@ const CanvasBannerStudioShell: React.FC<ProShellProps> = ({ onSwitchToQuick }) =
     try {
       await exportAllAsZip(state, state.textFields, type, state.ci, ciContext);
       toast.success(`${state.selectedFormatIds.length} Banner als ZIP exportiert`);
-      // Also persist each format individually to storage.
-      const mime = type === "png" ? "image/png" : type === "jpg" ? "image/jpeg" : "image/webp";
-      for (const fid of state.selectedFormatIds) {
-        const f = getFormatById(fid);
-        const comp = state.compositions[fid];
-        if (!comp) continue;
-        try {
-          const blob = await renderCompositionToBlob(f, comp, state.textFields, type, state.ci, ciContext);
-          await persistExportedBlob(blob, buildFilename(f, type), mime);
-        } catch (err) {
-          console.warn("persist failed for", fid, err);
-        }
-      }
     } catch (e) {
       console.error(e);
       toast.error("ZIP-Export fehlgeschlagen.");
     } finally {
       setZipBusy(false);
+    }
+  };
+
+  const handleReleaseToDashboard = async () => {
+    if (!user) { toast.error("Bitte zuerst einloggen."); return; }
+    if (state.selectedFormatIds.length === 0) { toast.error("Bitte mindestens ein Format auswählen."); return; }
+    if (!selectedFormatsHaveVisibleText) { toast.error("Freigabe gestoppt: Mindestens ein ausgewähltes Format enthält keinen sichtbaren Text."); return; }
+    setReleaseBusy(true);
+    let done = 0;
+    try {
+      for (const fid of state.selectedFormatIds) {
+        const f = getFormatById(fid);
+        const comp = state.compositions[fid];
+        if (!comp) continue;
+        const blob = await renderCompositionToBlob(f, comp, state.textFields, "png", state.ci, ciContext);
+        await persistExportedBlob(blob, buildFilename(f, "png"), "image/png");
+        done++;
+      }
+      toast.success(`${done} Banner mit Text ins Dashboard freigegeben`);
+    } catch (e) {
+      console.error(e);
+      toast.error("Freigabe fehlgeschlagen.");
+    } finally {
+      setReleaseBusy(false);
     }
   };
 
@@ -747,6 +766,16 @@ const CanvasBannerStudioShell: React.FC<ProShellProps> = ({ onSwitchToQuick }) =
                   <Button onClick={() => handleExport("png")}><Download className="w-4 h-4 mr-1" /> PNG</Button>
                   <Button variant="outline" onClick={() => handleExport("jpg")}><Download className="w-4 h-4 mr-1" /> JPG</Button>
                   <Button variant="outline" onClick={() => handleExport("webp")}><Download className="w-4 h-4 mr-1" /> WebP</Button>
+                </div>
+                <div className="rounded-lg border border-border bg-card p-3 space-y-2">
+                  <h3 className="text-sm font-semibold text-foreground">Dashboard-Freigabe</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Downloads speichern nichts im Dashboard. Erst diese Freigabe legt die fertigen PNG-Banner im Banner-Tab ab.
+                  </p>
+                  <Button onClick={handleReleaseToDashboard} disabled={releaseBusy || !selectedFormatsHaveVisibleText} className="w-full">
+                    <CheckCircle2 className="w-4 h-4 mr-1" />
+                    {releaseBusy ? "Freigabe läuft…" : "Fertige Banner ins Dashboard setzen"}
+                  </Button>
                 </div>
                 <div className="text-xs text-muted-foreground">
                   Dateiname: <code className="bg-muted px-1 py-0.5 rounded">{buildFilename(activeFormat, "png")}</code>

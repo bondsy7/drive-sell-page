@@ -120,7 +120,7 @@ export function useVehicleAssets(vehicleId: string | null | undefined) {
         .from('banners')
         .list(prefix, { limit: 200, sortBy: { column: 'created_at', order: 'desc' } })
         .then(({ data }) => {
-          const files = (data || []).filter(f => f.name && !f.name.startsWith('.') && f.name.endsWith('.png'));
+          const files = (data || []).filter(f => f.name && !f.name.startsWith('.') && !f.name.startsWith('state-') && f.name.endsWith('.png'));
           return files.map<VehicleAsset>(f => {
             const path = `${prefix}/${f.name}`;
             const { data: pub } = supabase.storage.from('banners').getPublicUrl(path);

@@ -50,7 +50,7 @@ export default function BannersTab({ banners, onDownload, onDelete }: Props) {
       <div className="text-center py-20 space-y-3">
         <LayoutGrid className="w-12 h-12 text-muted-foreground mx-auto" />
         <p className="text-muted-foreground">Noch keine Banner generiert.</p>
-        <p className="text-xs text-muted-foreground max-w-md mx-auto">Generierte Banner aus dem Banner Generator werden hier automatisch gespeichert.</p>
+        <p className="text-xs text-muted-foreground max-w-md mx-auto">Freigegebene Banner aus dem Banner Studio werden hier gespeichert.</p>
       </div>
     );
   }
