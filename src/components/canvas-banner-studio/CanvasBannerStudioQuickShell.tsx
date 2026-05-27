@@ -1175,8 +1175,12 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
                 <Button size="sm" variant="outline" onClick={() => setEditMode(true)}>
                   <Pencil className="w-4 h-4 mr-1" /> Bearbeiten
                 </Button>
-                <Button size="sm" onClick={downloadZip}>
+                <Button size="sm" variant="outline" onClick={downloadZip}>
                   <Download className="w-4 h-4 mr-1" /> Alle als ZIP
+                </Button>
+                <Button size="sm" onClick={handleReleaseToDashboard} disabled={releaseBusy}>
+                  {releaseBusy ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Check className="w-4 h-4 mr-1" />}
+                  {releaseBusy ? "Freigabe läuft…" : "Fertige Banner ins Dashboard setzen"}
                 </Button>
               </div>
             </div>
