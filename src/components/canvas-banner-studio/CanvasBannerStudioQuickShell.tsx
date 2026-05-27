@@ -1,12 +1,14 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Download, FileText, ImageIcon, Loader2, Palette, Pencil, RefreshCw, Settings2, Sparkles, X, Car } from "lucide-react";
+import { ArrowLeft, Check, Download, FileText, ImageIcon, Loader2, Palette, Pencil, RefreshCw, Settings2, Sparkles, Upload, X, Car } from "lucide-react";
 import VehicleAssetPicker from "@/components/VehicleAssetPicker";
 import type { VehicleAsset } from "@/hooks/useVehicleAssets";
 import { reframeImageForFormat } from "./ai/reframeClient";
 import QuickEditView from "./wizard/QuickEditView";
-import { renderCompositionToDataURL } from "./export/renderComposition";
+import { renderCompositionToDataURL, renderCompositionToBlob } from "./export/renderComposition";
 import type { BannerComposition } from "./state/types";
+import { uploadBannerToStorage } from "./persistence/useBannerProject";
+import { buildFilename } from "./export/exportCanvas";
 import { toast } from "sonner";
 import JSZip from "jszip";
 
@@ -464,6 +466,15 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
           datenblattFile: pdfFile ?? null,
           vehicleImageDataUrl: imageDataUrl,
           formats,
+          ci: {
+            brandKey: brandPresetKey,
+            colors: {
+              primary: ciColors.primary,
+              secondary: ciColors.secondary,
+              text: ciColors.text,
+              bg: ciColors.bg,
+            },
+          } as any,
           ciContext: { ...ciContext, marke: effectiveBrand || ciContext.marke },
           manufacturerLogoUrl,
           primaryColorHex: ciColors.primary,
@@ -519,7 +530,7 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
     } finally {
       setBusy(false);
     }
-  }, [pdfFile, imageDataUrl, selectedFormatIds, dealerProfile, getLogoForMake, bgTasks, analyzedFields, analyzedBrand, manualBrand, resolvedLogoUrl, ciColors, scenePresetId, extraPromptInstruction, hasDataSource, vehiclePrefillUsed]);
+  }, [pdfFile, imageDataUrl, selectedFormatIds, dealerProfile, getLogoForMake, bgTasks, analyzedFields, analyzedBrand, manualBrand, resolvedLogoUrl, ciColors, brandPresetKey, scenePresetId, extraPromptInstruction, hasDataSource, vehiclePrefillUsed]);
 
   const regenerateSingle = useCallback(async (r: QuickBannerResult) => {
     const source = r.composition.masterImageUrl || r.composition.backgroundImageUrl;
@@ -581,6 +592,58 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
     document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
+
+  const [releaseBusy, setReleaseBusy] = useState(false);
+  const handleReleaseToDashboard = useCallback(async () => {
+    if (!user) { toast.error("Bitte zuerst einloggen."); return; }
+    if (results.length === 0) { toast.error("Keine Banner zum Freigeben."); return; }
+    const textFields = lastTextFieldsRef.current ?? (DEFAULT_TEXT_FIELDS as any);
+    const ciContext = buildCiContext(dealerProfile, null);
+    const ciState = {
+      brandKey: brandPresetKey,
+      colors: {
+        primary: ciColors.primary,
+        secondary: ciColors.secondary,
+        text: ciColors.text,
+        bg: ciColors.bg,
+      },
+    } as any;
+    // Validierung: mindestens ein sichtbares Textfeld pro Format
+    const allHaveText = results.every((r) => {
+      const comp = r.composition;
+      return comp.layers.some((layer) => {
+        if (!layer.visible || (layer.type !== "text" && layer.type !== "legal")) return false;
+        const raw = layer.field ? (textFields as any)[layer.field] : (layer.content ?? "");
+        return String(raw ?? "").trim().length > 0;
+      });
+    });
+    if (!allHaveText) {
+      toast.error("Freigabe gestoppt: Mindestens ein Banner enthält keinen sichtbaren Text.");
+      return;
+    }
+    setReleaseBusy(true);
+    let done = 0;
+    try {
+      for (const r of results) {
+        const comp = { ...r.composition, logoUrl: resolvedLogoUrl ?? r.composition.logoUrl };
+        const blob = await renderCompositionToBlob(r.format, comp, textFields, "png", ciState, ciContext);
+        await uploadBannerToStorage({
+          userId: user.id,
+          vehicleId: canvasVehicleId ?? null,
+          blob,
+          filename: buildFilename(r.format, "png"),
+          contentType: "image/png",
+        });
+        done++;
+      }
+      toast.success(`${done} Banner ins Dashboard freigegeben.`);
+    } catch (e: any) {
+      console.error("release failed", e);
+      toast.error(e?.message ?? "Freigabe fehlgeschlagen");
+    } finally {
+      setReleaseBusy(false);
+    }
+  }, [user, results, dealerProfile, brandPresetKey, ciColors, resolvedLogoUrl, canvasVehicleId]);
 
   const openInEditor = useCallback(() => {
     if (results.length === 0) return;
@@ -1112,8 +1175,12 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
                 <Button size="sm" variant="outline" onClick={() => setEditMode(true)}>
                   <Pencil className="w-4 h-4 mr-1" /> Bearbeiten
                 </Button>
-                <Button size="sm" onClick={downloadZip}>
+                <Button size="sm" variant="outline" onClick={downloadZip}>
                   <Download className="w-4 h-4 mr-1" /> Alle als ZIP
+                </Button>
+                <Button size="sm" onClick={handleReleaseToDashboard} disabled={releaseBusy}>
+                  {releaseBusy ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Check className="w-4 h-4 mr-1" />}
+                  {releaseBusy ? "Freigabe läuft…" : "Fertige Banner ins Dashboard setzen"}
                 </Button>
               </div>
             </div>
