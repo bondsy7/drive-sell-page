@@ -466,6 +466,15 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
           datenblattFile: pdfFile ?? null,
           vehicleImageDataUrl: imageDataUrl,
           formats,
+          ci: {
+            brandKey: brandPresetKey,
+            colors: {
+              primary: ciColors.primary,
+              secondary: ciColors.secondary,
+              text: ciColors.text,
+              bg: ciColors.bg,
+            },
+          } as any,
           ciContext: { ...ciContext, marke: effectiveBrand || ciContext.marke },
           manufacturerLogoUrl,
           primaryColorHex: ciColors.primary,
