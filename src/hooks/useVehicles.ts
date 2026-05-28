@@ -197,21 +197,55 @@ export function useDeleteVehicle() {
     mutationFn: async (id: string) => {
       if (!user) throw new Error('Nicht eingeloggt');
 
-      // 1) Storage cleanup across all per-vehicle prefixes
-      const prefix = `${user.id}/${id}`;
-      const buckets: Array<{ name: string; sub?: string }> = [
-        { name: 'originals' },
-        { name: 'banners' },
-        { name: 'vehicle-images', sub: 'videos' },
+      // Read VIN BEFORE deleting so we can also purge legacy storage
+      // folders keyed by VIN (older code paths used VIN-prefixed paths).
+      const { data: vRow } = await supabase
+        .from('vehicles')
+        .select('vin')
+        .eq('id', id)
+        .maybeSingle();
+      const vin = ((vRow as { vin?: string } | null)?.vin || '').trim().toUpperCase();
+
+      // Recursively list every file under a given storage prefix.
+      const listRecursive = async (bucket: string, prefix: string): Promise<string[]> => {
+        const out: string[] = [];
+        const walk = async (p: string) => {
+          const { data } = await supabase.storage.from(bucket).list(p, { limit: 1000 });
+          for (const entry of data || []) {
+            if (!entry.name || entry.name.startsWith('.')) continue;
+            // Folders have null id/metadata in Supabase storage listings.
+            const isFolder = !(entry as { id?: string | null }).id;
+            const full = `${p}/${entry.name}`;
+            if (isFolder) await walk(full);
+            else out.push(full);
+          }
+        };
+        await walk(prefix);
+        return out;
+      };
+
+      // 1) Storage cleanup across all per-vehicle prefixes (recursive)
+      const prefixes: Array<{ bucket: string; path: string }> = [
+        { bucket: 'originals', path: `${user.id}/${id}` },
+        { bucket: 'banners', path: `${user.id}/${id}` },
+        { bucket: 'vehicle-images', path: `${user.id}/${id}` },
       ];
-      for (const b of buckets) {
-        const path = b.sub ? `${prefix}/${b.sub}` : prefix;
-        const { data: files } = await supabase.storage.from(b.name).list(path, { limit: 1000 });
-        const paths = (files || [])
-          .filter(f => f.name && !f.name.startsWith('.'))
-          .map(f => `${path}/${f.name}`);
-        if (paths.length > 0) {
-          await supabase.storage.from(b.name).remove(paths);
+      if (vin) {
+        prefixes.push(
+          { bucket: 'vehicle-images', path: `${user.id}/${vin}` },
+          { bucket: 'banners', path: `${user.id}/${vin}` },
+          { bucket: 'originals', path: `${user.id}/${vin}` },
+        );
+      }
+      for (const p of prefixes) {
+        try {
+          const files = await listRecursive(p.bucket, p.path);
+          for (let i = 0; i < files.length; i += 100) {
+            const chunk = files.slice(i, i + 100);
+            if (chunk.length) await supabase.storage.from(p.bucket).remove(chunk);
+          }
+        } catch (e) {
+          console.warn('[deleteVehicle] storage cleanup failed', p, e);
         }
       }
 
@@ -231,6 +265,7 @@ export function useDeleteVehicle() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['vehicles'] });
       qc.invalidateQueries({ queryKey: ['vehicle'] });
+      qc.invalidateQueries({ queryKey: ['dashboard-counts'] });
       toast.success('Fahrzeug und alle zugehörigen Daten gelöscht');
     },
     onError: (e: Error) => toast.error(`Fehler: ${e.message}`),
