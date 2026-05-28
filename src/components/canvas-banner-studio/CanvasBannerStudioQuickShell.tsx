@@ -147,7 +147,47 @@ const SCENE_PRESETS: { id: ScenePresetId; label: string; description: string; bu
       NEG_RULES,
     ].join(" "),
   },
+  {
+    id: "highclass-showroom-dark",
+    label: "Highclass Showroom Dark",
+    description: "Dunkler Premium-Showroom mit Vollton-Wand in CI-Primärfarbe.",
+    build: (primary, secondary) => [
+      "Re-stage the EXACT same vehicle inside an ultra-premium DARK architectural car showroom.",
+      HERO_SIZE_RULES,
+      `Background (supporting only, kept tight behind the car): polished glossy dark floor with soft mirror reflection of the vehicle, modern minimal architecture, long linear LED ceiling light strips creating dramatic streaks across the ceiling and floor. ONE prominent solid-color accent wall directly behind the car painted as a clean flat uniform fill in the brand primary color ${primary} (no gradient, no pattern, no graphics, no text). Subtle architectural accent lines in ${secondary} along edges only.`,
+      "Lighting: warm rim light on the car body, cinematic depth, subtle volumetric haze. The vehicle stays perfectly sharp, photoreal, hero-large in frame; bodywork picks up clean reflections with hints of the brand colors.",
+      "8k high-end automotive commercial photography, razor-sharp focus on the car, premium magazine quality.",
+      NEG_RULES,
+    ].join(" "),
+  },
+  {
+    id: "highclass-showroom-bright",
+    label: "Highclass Showroom Bright",
+    description: "Heller, cleaner Premium-Showroom mit ruhiger CI-Primärfarben-Wand.",
+    build: (primary, secondary) => [
+      "Re-stage the EXACT same vehicle inside a bright, clean, minimalist HIGH-END car showroom.",
+      HERO_SIZE_RULES,
+      `Background (supporting only): soft diffuse daylight from large overhead light coves, polished light-grey floor with subtle mirror reflection of the car, pure white architectural surfaces. ONE large flat solid-color back wall directly behind the car painted as a uniform clean fill in the brand primary color ${primary} (no gradient, no texture, no graphics, no text). A thin precise accent line in ${secondary} along the floor/wall edge only.`,
+      "Lighting: editorial automotive magazine composition, photoreal, calm premium atmosphere. The car stays hero-large in frame, razor-sharp, with clean reflections picking up hints of the brand colors.",
+      "8k premium automotive commercial photography, ultra crisp on the car.",
+      NEG_RULES,
+    ].join(" "),
+  },
+  {
+    id: "highclass-aerial-countryroad",
+    label: "Highclass Aerial Countryroad",
+    description: "Drohnen-Top-Down: das Auto fährt highclass über eine Landstraße.",
+    build: (primary, secondary) => [
+      "Re-stage the EXACT same vehicle captured from a high AERIAL TOP-DOWN drone perspective (slight 15–25° tilt) driving along a scenic empty countryside road.",
+      HERO_SIZE_RULES,
+      `Scene: smooth dark asphalt with crisp lane markings curving gently through green rolling fields and soft tree lines. Subtle motion blur ONLY on the road surface (the car remains tack sharp), long soft shadow of the car on the asphalt. Atmospheric color grading uses the brand primary color ${primary} as a tonal tint in the sky/horizon and ${secondary} as a faint accent in distant light – still natural, never cartoonish.`,
+      "Lighting: cinematic golden-hour or clean overcast premium mood, the vehicle spotless and high-gloss, hero-large in frame from above, bodywork picking up subtle hints of the brand colors.",
+      "Ultra-premium 8k automotive commercial aerial photography, razor-sharp focus on the vehicle.",
+      NEG_RULES + " NO other vehicles, NO road signs with text, NO road workers.",
+    ].join(" "),
+  },
 ];
+
 
 
 
