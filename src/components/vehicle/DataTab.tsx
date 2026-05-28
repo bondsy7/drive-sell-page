@@ -494,7 +494,7 @@ export default function DataTab({ vehicle }: Props) {
       if (userId) {
         await supabase
           .from('vehicle_data_cache')
-          .upsert({ user_id: userId, vin, data: rec as unknown as Record<string, unknown> }, { onConflict: 'user_id,vin' });
+          .upsert([{ user_id: userId, vin, data: rec as unknown as Record<string, unknown> }], { onConflict: 'user_id,vin' });
       }
     }
     setDirty(false);
