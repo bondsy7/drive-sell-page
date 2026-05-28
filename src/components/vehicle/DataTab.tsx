@@ -486,6 +486,17 @@ export default function DataTab({ vehicle }: Props) {
         color: rec.color || null,
       },
     });
+    // Mirror into the per-VIN cache so a delete + re-import restores everything.
+    const vin = (rec.vin || vehicle.vin || '').trim().toUpperCase();
+    if (vin && vin.length === 17) {
+      const { data: auth } = await supabase.auth.getUser();
+      const userId = auth.user?.id;
+      if (userId) {
+        await supabase
+          .from('vehicle_data_cache')
+          .upsert({ user_id: userId, vin, data: rec as unknown as Record<string, unknown> }, { onConflict: 'user_id,vin' });
+      }
+    }
     setDirty(false);
     toast.success('Fahrzeugdaten gespeichert');
   };
