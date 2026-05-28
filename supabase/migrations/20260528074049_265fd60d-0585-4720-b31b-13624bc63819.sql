@@ -1,0 +1,1 @@
+UPDATE public.vehicles SET vin = 'WBA13AR08MCF16714' WHERE id = '6b65fa7b-2b21-4f9d-8774-94ac50ee0bf6';
