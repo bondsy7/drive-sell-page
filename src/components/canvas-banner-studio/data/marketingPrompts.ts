@@ -53,6 +53,27 @@ export const MARKETING_PROMPTS: MarketingPromptPreset[] = [
     prompt:
       "An 8k resolution, professionally photographed automotive commercial image for a high-impact, engaging social media banner, featuring the exact car from the provided image in its precise front three-quarter pose, now centrally positioned on a clean, sun-drenched historic city square in Germany, a random big city in Germany, like Berlin or near details of classic European architecture like Gendarmenmarkt, Frankfurt, Hamburg harbor, Munich etc. The entire city environment is bright and joyful, bathed in clear, natural daylight from a recent Golden Hour, with details of the historic buildings invitingly clear and not dark or gloomy, conveying pure joy and making the viewer want to step in. The car boasts a flawless, immaculate glossy finish that brilliantly catches and reflects natural sunlight. Integrating a stylized, engaging cyberpunk advertising flair, elegant, glowing primary color neon light trails and secondary color laser lines intricately wrap around the vehicle, weaving through complex abstract floating geometric shapes. The entire composition has advanced raytracing reflections on the car paint texture and razor-sharp focus, making the vehicle feel incredibly premium and central under the bright daylight. All text, words, letters, typography, people, license plate details, and blurry elements are completely absent from the clean advertising canvas, ensuring a pure, click-worthy visual experience.",
   },
+  {
+    id: "highclass-showroom-dark",
+    label: "Highclass Showroom Dark",
+    description: "Dunkler Premium-Showroom mit dramatischen Deckenlichtern und Glanzboden – Vollton-Akzentwand in CI-Primärfarbe.",
+    prompt:
+      "Place the exact same vehicle – identical model, color, wheels, badges and license plate area – inside an ultra-premium dark architectural car showroom. Polished glossy dark floor with soft mirror reflections of the car. Long linear LED ceiling light strips create dramatic streaks across the ceiling and floor. Modern minimal architecture with large angular wall surfaces; one prominent solid-color accent wall using the brand primary color as a clean flat fill (no gradient, no pattern, no text). Warm rim light on the car body, cinematic depth, subtle volumetric haze. 8k high-end automotive commercial photography, razor-sharp focus, photoreal. Absolutely no text, no typography, no added logos, no buttons, no UI elements, no people, no price tags – clean empty canvas for later overlay.",
+  },
+  {
+    id: "highclass-showroom-bright",
+    label: "Highclass Showroom Bright",
+    description: "Heller, cleaner Premium-Showroom, viel Weißraum, spiegelnder Boden – ruhige Vollton-Rückwand in CI-Primärfarbe.",
+    prompt:
+      "Place the exact same vehicle – identical model, color, wheels, badges and license plate area – inside a bright, clean, minimalist high-end car showroom. Soft diffuse daylight from large overhead light coves, polished light grey floor with subtle mirror reflection of the car. Pure white architectural surfaces with one large flat solid-color back wall painted in the brand primary color as a uniform fill (no gradient, no texture, no graphics, no text). Generous negative space around the vehicle, editorial automotive magazine composition, photoreal, 8k, razor-sharp focus, premium calm atmosphere. Absolutely no text, no typography, no added logos, no buttons, no UI, no people, no price tags – completely empty advertising canvas ready for overlay.",
+  },
+  {
+    id: "highclass-aerial-countryroad",
+    label: "Highclass Aerial Countryroad",
+    description: "Aufnahme von oben: Auto fährt highclass über eine Landstraße – cineastisch, dezente CI-Primärfarbe im Himmel möglich.",
+    prompt:
+      "Place the exact same vehicle – identical model, color, wheels, badges and license plate area – captured from a high aerial top-down perspective (drone shot, slight 15–25 degree tilt) driving along a scenic empty countryside road. Smooth dark asphalt with crisp lane markings curving gently through green rolling fields and soft tree lines. Cinematic golden-hour or clean overcast lighting, subtle motion blur on the road surface only (car remains tack sharp), long soft shadow of the car on the asphalt. Optional atmospheric color grading using the brand primary color as a tonal tint in the sky or distant horizon (still natural, never cartoonish). Ultra-premium automotive commercial look, photoreal, 8k, razor-sharp focus on the vehicle. Absolutely no text, no typography, no added logos, no buttons, no UI, no people, no other vehicles, no road signs with text – completely empty advertising canvas ready for overlay.",
+  },
 ];
 
 export function getMarketingPromptById(id: string): MarketingPromptPreset | undefined {
