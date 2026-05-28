@@ -303,11 +303,66 @@ export default function DataTab({ vehicle }: Props) {
   const [vinLoading, setVinLoading] = useState(false);
   const [autoStatus, setAutoStatus] = useState<string>('');
   const autoRanRef = useRef(false);
+  const cacheLoadedRef = useRef<string | null>(null);
 
   useEffect(() => {
     setRec(initial);
     setDirty(false);
   }, [initial]);
+
+  // Auto-restore from per-VIN cache when the current record is mostly empty.
+  // Lets a deleted + re-imported vehicle re-appear with its previously entered data.
+  useEffect(() => {
+    const vin = (initial.vin || vehicle.vin || '').trim().toUpperCase();
+    if (!vin || vin.length !== 17) return;
+    if (cacheLoadedRef.current === vin) return;
+    const filledCount = Object.values(initial).filter(v => (v || '').toString().trim() !== '').length;
+    if (filledCount > 4) { cacheLoadedRef.current = vin; return; }
+    cacheLoadedRef.current = vin;
+    (async () => {
+      const { data: auth } = await supabase.auth.getUser();
+      const userId = auth.user?.id;
+      if (!userId) return;
+      const { data } = await supabase
+        .from('vehicle_data_cache')
+        .select('data')
+        .eq('user_id', userId)
+        .eq('vin', vin)
+        .maybeSingle();
+      const cached = (data?.data || null) as Record<string, unknown> | null;
+      if (!cached || Object.keys(cached).length === 0) return;
+      let merged: VehicleDataRecord | null = null;
+      let restored = 0;
+      setRec(prev => {
+        const next = { ...prev };
+        for (const [k, v] of Object.entries(cached)) {
+          const key = k as keyof VehicleDataRecord;
+          const cur = (prev[key] || '').toString().trim();
+          const incoming = (v ?? '').toString().trim();
+          if (incoming && !cur) { next[key] = incoming; restored++; }
+        }
+        merged = next;
+        return next;
+      });
+      if (restored > 0 && merged) {
+        setDirty(true);
+        setAutoStatus(`${restored} Feld${restored !== 1 ? 'er' : ''} aus VIN-Archiv wiederhergestellt.`);
+        try {
+          await update.mutateAsync({
+            id: vehicle.id,
+            patch: {
+              vehicle_data: { ...(vehicle.vehicle_data || {}), ...merged } as Record<string, unknown>,
+              brand: merged.brand || vehicle.brand || null,
+              model: merged.model || vehicle.model || null,
+              year: merged.year ? Number(merged.year) || vehicle.year || null : vehicle.year || null,
+              color: merged.color || vehicle.color || null,
+            },
+          });
+          setDirty(false);
+        } catch {}
+      }
+    })();
+  }, [initial, vehicle, update]);
 
   const set = <K extends keyof VehicleDataRecord>(key: K, val: string) => {
     setRec(prev => ({ ...prev, [key]: val }));
@@ -431,6 +486,17 @@ export default function DataTab({ vehicle }: Props) {
         color: rec.color || null,
       },
     });
+    // Mirror into the per-VIN cache so a delete + re-import restores everything.
+    const vin = (rec.vin || vehicle.vin || '').trim().toUpperCase();
+    if (vin && vin.length === 17) {
+      const { data: auth } = await supabase.auth.getUser();
+      const userId = auth.user?.id;
+      if (userId) {
+        await supabase
+          .from('vehicle_data_cache')
+          .upsert([{ user_id: userId, vin, data: rec as any }], { onConflict: 'user_id,vin' });
+      }
+    }
     setDirty(false);
     toast.success('Fahrzeugdaten gespeichert');
   };
