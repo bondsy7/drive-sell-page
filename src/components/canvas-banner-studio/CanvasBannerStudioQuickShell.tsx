@@ -52,7 +52,11 @@ type ScenePresetId =
   | "deal-car-tower"
   | "lifestyle-alpineescape"
   | "peminere-imited"
-  | "german-city-neon";
+  | "german-city-neon"
+  | "highclass-showroom-dark"
+  | "highclass-showroom-bright"
+  | "highclass-aerial-countryroad";
+
 
 // HERO-SIZE GUARDRAIL: in jedem Prompt enthalten, damit das Auto das dominierende
 // Motiv ist und nach Ideogram-Reframe (Outpainting) NICHT zu klein wirkt.
