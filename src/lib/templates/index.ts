@@ -4,6 +4,7 @@ import { generateAutohausHTML } from "./autohaus";
 import { generateModernHTML } from "./modern";
 import { generateKlassischHTML } from "./klassisch";
 import { generateMinimalistHTML } from "./minimalist";
+import { generateAuto3HTML } from "./auto3";
 import { buildContactFormHTML, ContactFormOptions } from "./shared";
 
 type GeneratorFn = (data: VehicleData, imageBase64: string | null, galleryImages?: string[]) => string;
@@ -13,6 +14,7 @@ const generators: Record<TemplateId, GeneratorFn> = {
   modern: generateModernHTML,
   klassisch: generateKlassischHTML,
   minimalist: generateMinimalistHTML,
+  auto3: generateAuto3HTML,
 };
 
 export interface GenerateHTMLOptions {

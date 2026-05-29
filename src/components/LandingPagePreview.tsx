@@ -7,6 +7,7 @@ import AutohausEditor from '@/components/template-editors/AutohausEditor';
 import ModernEditor from '@/components/template-editors/ModernEditor';
 import KlassischEditor from '@/components/template-editors/KlassischEditor';
 import MinimalistEditor from '@/components/template-editors/MinimalistEditor';
+import Auto3Editor from '@/components/template-editors/Auto3Editor';
 import type { VehicleData, ConsumptionData, DealerData } from '@/types/vehicle';
 import { isPluginHybrid } from '@/lib/co2-utils';
 import type { TemplateId } from '@/types/template';
@@ -323,6 +324,7 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
           case 'modern': return <ModernEditor {...editorProps} />;
           case 'klassisch': return <KlassischEditor {...editorProps} />;
           case 'minimalist': return <MinimalistEditor {...editorProps} />;
+          case 'auto3': return <Auto3Editor {...editorProps} />;
           default: return <AutohausEditor {...editorProps} />;
         }
       })()}

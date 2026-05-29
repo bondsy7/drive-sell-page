@@ -101,7 +101,13 @@ export interface VehicleData {
   };
   dealer: DealerData;
   consumption: ConsumptionData;
+  /** Optional per-template color overrides (currently used by the "auto3" template). */
+  templateColors?: {
+    accent?: string;
+    dark?: string;
+  };
 }
+
 
 export interface GenerationResult {
   vehicleData: VehicleData;
