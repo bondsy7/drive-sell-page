@@ -324,6 +324,7 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
           case 'modern': return <ModernEditor {...editorProps} />;
           case 'klassisch': return <KlassischEditor {...editorProps} />;
           case 'minimalist': return <MinimalistEditor {...editorProps} />;
+          case 'auto3': return <Auto3Editor {...editorProps} />;
           default: return <AutohausEditor {...editorProps} />;
         }
       })()}
