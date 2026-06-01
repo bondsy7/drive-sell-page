@@ -341,19 +341,16 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
                 </div>
               )}
               <div className="flex justify-between items-baseline my-2">
-                <span className="text-[13px] text-gray-600 font-medium">{isLeasing ? 'Leasingpreis' : 'Fahrzeugpreis'}</span>
+                <span className="text-[13px] text-gray-600 font-medium">{sidebarPriceLabel}</span>
                 <span className="inline-flex items-baseline">
-                  <EditableField value={data.finance.totalPrice || '–'} onChange={(v) => updateFinance('totalPrice', v)}
-                    suffix="€" className="text-[26px] font-extrabold" />
-                  {data.finance.totalPrice && <sup className="text-[11px] font-bold ml-0.5" style={{ color: dark }}>1</sup>}
+                  <EditableField value={sidebarPriceValue || '–'} onChange={sidebarOnChange}
+                    suffix={sidebarPriceSuffix} className="text-[26px] font-extrabold" />
+                  {sidebarPriceValue && <sup className="text-[11px] font-bold ml-0.5" style={{ color: dark }}>1</sup>}
                 </span>
               </div>
-              {!isBuyCategory && data.finance.monthlyRate && (
-                <div className="text-[12px] text-gray-600 mt-2">
-                  oder ab <strong className="inline-flex items-baseline">
-                    <EditableField value={data.finance.monthlyRate} onChange={(v) => updateFinance('monthlyRate', v)} suffix="€/mtl." className="font-bold inline" />
-                    <sup className="text-[9px] font-bold ml-0.5" style={{ color: dark }}>1</sup>
-                  </strong>
+              {isMonthlyOffer && data.finance.totalPrice && (
+                <div className="text-[12px] text-gray-500 mt-1 text-right">
+                  Gesamtpreis: <EditableField value={data.finance.totalPrice} onChange={(v) => updateFinance('totalPrice', v)} suffix="€" className="font-semibold inline" />
                 </div>
               )}
             </div>
