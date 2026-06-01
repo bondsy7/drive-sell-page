@@ -4,6 +4,9 @@ import CO2LabelSelector from '@/components/CO2LabelSelector';
 import { Palette, RotateCcw, Plus, Trash2, ChevronLeft, ChevronRight, Upload } from 'lucide-react';
 import { isPluginHybrid } from '@/lib/co2-utils';
 import { getFinanceSectionTitle } from '@/lib/templates/shared';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 import type { TemplateEditorProps } from './types';
 
 const PRESETS: Array<{ label: string; accent: string; dark: string }> = [
