@@ -79,6 +79,8 @@ export interface VehicleData {
     features: string[];
     description?: string;
     vin?: string;
+    /** Karosserietyp, z.B. "Kombi", "SUV", "Limousine". */
+    bodyType?: string;
   };
   finance: {
     monthlyRate: string;

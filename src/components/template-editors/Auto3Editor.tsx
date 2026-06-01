@@ -148,7 +148,7 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
             {/* Specs */}
             <div className="grid grid-cols-2 sm:grid-cols-3 mt-5 border border-[#eaeaea] rounded-xl px-5 py-4">
               {[
-                { label: 'Fahrzeugtyp', value: data.category || '', onChange: (v: string) => onDataChange({ ...data, category: v }) },
+                { label: 'Fahrzeugtyp', value: data.vehicle.bodyType || '', onChange: (v: string) => updateVehicle('bodyType' as any, v) },
                 { label: 'Getriebe', value: data.vehicle.transmission || '', onChange: (v: string) => updateVehicle('transmission', v) },
                 { label: 'Leistung', value: data.vehicle.power || '', onChange: updatePower },
                 { label: 'Kraftstoff', value: data.vehicle.fuelType || '', onChange: updateFuelType },
