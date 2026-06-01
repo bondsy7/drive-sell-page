@@ -279,10 +279,6 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
                   </strong>
                 </div>
               )}
-              <button className="block w-full text-center font-bold text-sm py-3.5 rounded-[10px] text-white mt-3.5"
-                style={{ background: accent }}>
-                Zum unverbindlichen Angebot
-              </button>
             </div>
 
             <div className="bg-white border border-[#eaeaea] rounded-[14px] p-5 shadow-[0_2px_14px_rgba(0,0,0,.04)]">
