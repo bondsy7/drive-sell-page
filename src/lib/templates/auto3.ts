@@ -108,7 +108,7 @@ export function generateAuto3HTML(data: VehicleData, imageBase64: string | null,
         </div>
 
         <div class="specs">
-          <div class="spec"><div class="spec-label">Fahrzeugtyp</div><div class="spec-value">${data.category || '–'}</div></div>
+          <div class="spec"><div class="spec-label">Fahrzeugtyp</div><div class="spec-value">${data.vehicle.bodyType || '–'}</div></div>
           <div class="spec"><div class="spec-label">Getriebe</div><div class="spec-value">${data.vehicle.transmission || '–'}</div></div>
           <div class="spec"><div class="spec-label">Leistung</div><div class="spec-value">${data.vehicle.power || '–'}</div></div>
           <div class="spec"><div class="spec-label">Kraftstoff</div><div class="spec-value">${data.vehicle.fuelType || '–'}</div></div>

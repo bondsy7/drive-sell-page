@@ -83,6 +83,7 @@ JSON-Schema:
     "firstRegistration": "string (Erstzulassungsdatum, Format 'MM/YYYY' oder 'TT.MM.YYYY', z.B. '03/2023'. Leer bei Neuwagen ohne Zulassung)",
     "condition": "Neuwagen|Gebrauchtwagen|Tageszulassung|Vorführwagen|Jahreswagen (Fahrzeugzustand)",
     "color": "string (Außenfarbe, z.B. 'Alpinweiß uni')",
+    "bodyType": "string (Karosserieform, z.B. 'Kombi', 'SUV', 'Limousine', 'Coupé', 'Cabrio', 'Kleinwagen', 'Van', 'Pickup'. Leite aus Modell/Beschreibung ab wenn nicht explizit genannt.)",
     "fuelType": "Benzin|Diesel|Elektro|Hybrid|Plug-in-Hybrid",
     "transmission": "Automatik|Manuell|Doppelkupplungsgetriebe|CVT",
     "power": "string (z.B. '150 PS / 110 kW' oder Systemleistung bei Hybrid)",
