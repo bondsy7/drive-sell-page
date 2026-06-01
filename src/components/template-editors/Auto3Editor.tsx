@@ -245,6 +245,68 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
               </div>
             </div>
 
+            {/* Bankangaben / Pflichthinweis */}
+            {(() => {
+              const isFinanzierung = cat.includes('finanzierung') || cat.includes('kredit');
+              const legalKey: 'leasingLegalText' | 'financingLegalText' | 'defaultLegalText' =
+                isLeasing ? 'leasingLegalText' : isFinanzierung ? 'financingLegalText' : 'defaultLegalText';
+              const bankKey: 'leasingBank' | 'financingBank' | null =
+                isLeasing ? 'leasingBank' : isFinanzierung ? 'financingBank' : null;
+              const filterType = isLeasing ? 'leasing' : isFinanzierung ? 'financing' : null;
+              const banks = filterType ? dealerBanks.filter(b => b.bank_type === filterType) : dealerBanks;
+              const value = (data.dealer as any)[legalKey] || '';
+              const isEmpty = !value.trim();
+              return (
+                <div className="mt-7 pt-6 border-t border-[#eaeaea]">
+                  <div className="text-sm font-semibold flex items-center gap-2 mb-3" style={{ color: dark }}>
+                    Bankangaben / Pflichthinweis
+                    <span className="text-[10px] font-bold uppercase tracking-wider bg-red-500 text-white px-2 py-0.5 rounded">Pflichtfeld</span>
+                  </div>
+                  {banks.length > 0 && (
+                    <div className="space-y-1.5 mb-2">
+                      <label className="text-xs text-gray-500">Gespeicherte Banktexte</label>
+                      <Select
+                        value=""
+                        onValueChange={(bankId) => {
+                          const bank = banks.find(b => b.id === bankId);
+                          if (!bank) return;
+                          if (bankKey) updateDealer(bankKey, bank.bank_name);
+                          updateDealer(legalKey, bank.legal_text);
+                        }}
+                      >
+                        <SelectTrigger className="h-9 text-sm bg-white">
+                          <SelectValue placeholder="Banktext aus Profil wählen..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {banks.map(bank => (
+                            <SelectItem key={bank.id} value={bank.id}>
+                              {bank.bank_name} ({bank.bank_type === 'leasing' ? 'Leasing' : 'Finanzierung'})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  <div className="relative">
+                    <span className="absolute top-3 left-3 text-xs font-bold text-gray-700 select-none"><sup>1</sup></span>
+                    <textarea
+                      value={value}
+                      onChange={(e) => updateDealer(legalKey, e.target.value)}
+                      className="w-full text-sm text-gray-800 bg-gray-50 border border-gray-200 rounded-xl p-3 pl-6 min-h-[80px] resize-y focus:outline-none focus:ring-2"
+                      style={{ ['--tw-ring-color' as any]: accent }}
+                      placeholder="Ihre Bankangaben und Pflichthinweise eintragen..."
+                    />
+                  </div>
+                  {isEmpty && (
+                    <div className="flex items-center gap-1.5 text-amber-600 text-xs font-medium mt-2">
+                      <span className="text-base">⚠</span>
+                      Pflichtfeld – Bankangaben müssen ausgefüllt sein
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
             {/* Dealer */}
             <div className="mt-7 pt-6 border-t border-[#eaeaea] grid grid-cols-1 sm:grid-cols-2 gap-6 text-[13px] text-gray-600 leading-[1.8]">
               <div>
