@@ -327,21 +327,26 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
           <aside className="space-y-5">
             <div className="bg-white border border-[#eaeaea] rounded-[14px] p-5 shadow-[0_2px_14px_rgba(0,0,0,.04)]">
               <h4 className="text-[13px] font-bold mb-1.5" style={{ color: dark }}>Mehr Angebote</h4>
-              <div className="text-[12px] text-gray-500 mb-3">Wähle Deine Finanzierungsart</div>
-              <div className="flex gap-1.5 bg-gray-100 rounded-[10px] p-1 mb-3.5">
-                <span className="flex-1 text-center py-2 text-[12px] font-semibold rounded-[7px] text-gray-500 cursor-pointer">Leasing</span>
-                <span className="flex-1 text-center py-2 text-[12px] font-semibold rounded-[7px] text-white" style={{ background: dark }}>Kauf / Finanzierung</span>
-                <span className="flex-1 text-center py-2 text-[12px] font-semibold rounded-[7px] text-gray-500 cursor-pointer">Abo +</span>
-              </div>
+              <div className="text-[12px] text-gray-500 mb-3">{isBuyCategory ? 'Kaufpreis-Angebot' : 'Wähle Deine Finanzierungsart'}</div>
+              {!isBuyCategory && (
+                <div className="flex gap-1.5 bg-gray-100 rounded-[10px] p-1 mb-3.5">
+                  <span className={`flex-1 text-center py-2 text-[12px] font-semibold rounded-[7px] ${isLeasing ? 'text-white' : 'text-gray-500 cursor-pointer'}`} style={isLeasing ? { background: dark } : undefined}>Leasing</span>
+                  <span className={`flex-1 text-center py-2 text-[12px] font-semibold rounded-[7px] ${!isLeasing ? 'text-white' : 'text-gray-500 cursor-pointer'}`} style={!isLeasing ? { background: dark } : undefined}>Kauf / Finanzierung</span>
+                </div>
+              )}
               <div className="flex justify-between items-baseline my-2">
-                <span className="text-[13px] text-gray-600 font-medium">Fahrzeugpreis</span>
-                <EditableField value={data.finance.totalPrice || '–'} onChange={(v) => updateFinance('totalPrice', v)}
-                  suffix="€" className="text-[26px] font-extrabold" />
+                <span className="text-[13px] text-gray-600 font-medium">{isLeasing ? 'Leasingpreis' : 'Fahrzeugpreis'}</span>
+                <span className="inline-flex items-baseline">
+                  <EditableField value={data.finance.totalPrice || '–'} onChange={(v) => updateFinance('totalPrice', v)}
+                    suffix="€" className="text-[26px] font-extrabold" />
+                  {data.finance.totalPrice && <sup className="text-[11px] font-bold ml-0.5" style={{ color: dark }}>1</sup>}
+                </span>
               </div>
-              {data.finance.monthlyRate && (
+              {!isBuyCategory && data.finance.monthlyRate && (
                 <div className="text-[12px] text-gray-600 mt-2">
-                  oder ab <strong>
+                  oder ab <strong className="inline-flex items-baseline">
                     <EditableField value={data.finance.monthlyRate} onChange={(v) => updateFinance('monthlyRate', v)} suffix="€/mtl." className="font-bold inline" />
+                    <sup className="text-[9px] font-bold ml-0.5" style={{ color: dark }}>1</sup>
                   </strong>
                 </div>
               )}
