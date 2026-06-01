@@ -710,8 +710,19 @@ The showroom wall must remain CLEAN and EMPTY. No manufacturer logos, no dealer 
     });
   } catch (e) {
     console.error("remaster-vehicle-image error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    const msg = e instanceof Error ? e.message : "Unknown error";
+    const overloaded = /überlastet|503|UNAVAILABLE|Zeitüberschreitung|budget exhausted|overload/i.test(msg);
+    // Return 200 with structured error so supabase.functions.invoke doesn't throw
+    // and the frontend can show a friendly toast instead of crashing.
+    return new Response(
+      JSON.stringify({
+        error: overloaded
+          ? "Das KI-Modell ist gerade überlastet. Bitte versuche es in einigen Sekunden erneut."
+          : msg,
+        overloaded,
+        fallback: overloaded,
+      }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   }
 });
