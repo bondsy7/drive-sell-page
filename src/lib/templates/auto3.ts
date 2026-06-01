@@ -166,11 +166,11 @@ export function generateAuto3HTML(data: VehicleData, imageBase64: string | null,
             <span${!isLeasing ? ' class="active"' : ''}>Kauf / Finanzierung</span>
           </div>` : ''}
           <div class="price-row">
-            <span class="price-label">${priceLabel}</span>
-            <span class="price">${data.finance.totalPrice || '–'}${data.finance.totalPrice ? sup : ''}</span>
+            <span class="price-label">${sidebarLabel}</span>
+            <span class="price">${sidebarValueRaw || '–'}${sidebarValueRaw ? sidebarSuffix : ''}${sidebarValueRaw ? sup : ''}</span>
           </div>
           ${vatNoteHTML(data, 'display:block;text-align:right;font-size:11px;color:#999')}
-          ${!isBuy && data.finance.monthlyRate ? `<div style="font-size:12px;color:#666;margin-top:8px">oder ab <strong>${data.finance.monthlyRate} €/mtl.${sup}</strong> / ${getMonthlyRateLabel(data)} auf Anfrage möglich</div>` : ''}
+          ${isMonthlyOffer && data.finance.totalPrice ? `<div style="font-size:11px;color:#999;margin-top:6px;text-align:right">Gesamtpreis: <strong>${data.finance.totalPrice} €</strong></div>` : ''}
         </div>
 
         <div class="side-card" id="anfrage">
