@@ -23,6 +23,7 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
   updateVehicle, updateFinance, updateDealer, updateConsumption,
   updatePower, updateFuelType, onDataChange,
   addFeature, updateFeature, removeFeature,
+  dealerBanks = [],
 }) => {
   const [selectedImage, setSelectedImage] = useState(0);
   const colors = data.templateColors ?? { accent: '#e30613', dark: '#111111' };
