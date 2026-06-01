@@ -7,11 +7,14 @@ export const MODULE_KEYS = [
   'photos-preset',
   'photos-multi',
   'photos-spin360',
-  'oneshot',
+  'studio',
   'pdf-landing',
   'manual-landing',
   'banner',
+  'canvas-banner-studio',
   'video',
+  'damage-repair',
+  'damage-analysis',
   'sales-assistant',
 ] as const;
 
@@ -22,11 +25,14 @@ export const MODULE_LABELS: Record<ModuleKey, string> = {
   'photos-preset': 'Bildergenerator',
   'photos-multi': 'Mehrfach-Perspektiven',
   'photos-spin360': '360° Spin',
-  'oneshot': 'One-Shot Studio',
+  'studio': 'One-Shot Studio',
   'pdf-landing': 'PDF → Angebotsseite',
   'manual-landing': 'Landing Page manuell',
   'banner': 'Banner Generator',
+  'canvas-banner-studio': 'Banner Studio',
   'video': 'Video Erstellung',
+  'damage-repair': 'Schadensreparatur',
+  'damage-analysis': 'Schadensanalyse',
   'sales-assistant': 'KI Verkaufsassistent',
 };
 
