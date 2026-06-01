@@ -223,10 +223,10 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
             <div className="mt-7">
               <h2 className="text-lg font-bold mb-3.5" style={{ color: dark }}>{getFinanceSectionTitle(data)}</h2>
               <div className="border border-[#eaeaea] rounded-xl px-5 py-4 grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                <FinItem label="Gesamtpreis" value={data.finance.totalPrice} onChange={(v) => updateFinance('totalPrice', v)} suffix="€" />
+                <FinItem label={isLeasing ? 'Leasingpreis' : 'Gesamtpreis'} value={data.finance.totalPrice} onChange={(v) => updateFinance('totalPrice', v)} suffix="€" sup />
                 {!isBuyCategory && (
                   <>
-                    <FinItem label="Rate" value={data.finance.monthlyRate || ''} onChange={(v) => updateFinance('monthlyRate', v)} suffix="€" />
+                    <FinItem label="Rate" value={data.finance.monthlyRate || ''} onChange={(v) => updateFinance('monthlyRate', v)} suffix="€" sup />
                     <FinItem label="Laufzeit" value={data.finance.duration || ''} onChange={(v) => updateFinance('duration', v)} suffix="Monate" />
                     {isLeasing ? (
                       <>
@@ -327,21 +327,26 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
           <aside className="space-y-5">
             <div className="bg-white border border-[#eaeaea] rounded-[14px] p-5 shadow-[0_2px_14px_rgba(0,0,0,.04)]">
               <h4 className="text-[13px] font-bold mb-1.5" style={{ color: dark }}>Mehr Angebote</h4>
-              <div className="text-[12px] text-gray-500 mb-3">Wähle Deine Finanzierungsart</div>
-              <div className="flex gap-1.5 bg-gray-100 rounded-[10px] p-1 mb-3.5">
-                <span className="flex-1 text-center py-2 text-[12px] font-semibold rounded-[7px] text-gray-500 cursor-pointer">Leasing</span>
-                <span className="flex-1 text-center py-2 text-[12px] font-semibold rounded-[7px] text-white" style={{ background: dark }}>Kauf / Finanzierung</span>
-                <span className="flex-1 text-center py-2 text-[12px] font-semibold rounded-[7px] text-gray-500 cursor-pointer">Abo +</span>
-              </div>
+              <div className="text-[12px] text-gray-500 mb-3">{isBuyCategory ? 'Kaufpreis-Angebot' : 'Wähle Deine Finanzierungsart'}</div>
+              {!isBuyCategory && (
+                <div className="flex gap-1.5 bg-gray-100 rounded-[10px] p-1 mb-3.5">
+                  <span className={`flex-1 text-center py-2 text-[12px] font-semibold rounded-[7px] ${isLeasing ? 'text-white' : 'text-gray-500 cursor-pointer'}`} style={isLeasing ? { background: dark } : undefined}>Leasing</span>
+                  <span className={`flex-1 text-center py-2 text-[12px] font-semibold rounded-[7px] ${!isLeasing ? 'text-white' : 'text-gray-500 cursor-pointer'}`} style={!isLeasing ? { background: dark } : undefined}>Kauf / Finanzierung</span>
+                </div>
+              )}
               <div className="flex justify-between items-baseline my-2">
-                <span className="text-[13px] text-gray-600 font-medium">Fahrzeugpreis</span>
-                <EditableField value={data.finance.totalPrice || '–'} onChange={(v) => updateFinance('totalPrice', v)}
-                  suffix="€" className="text-[26px] font-extrabold" />
+                <span className="text-[13px] text-gray-600 font-medium">{isLeasing ? 'Leasingpreis' : 'Fahrzeugpreis'}</span>
+                <span className="inline-flex items-baseline">
+                  <EditableField value={data.finance.totalPrice || '–'} onChange={(v) => updateFinance('totalPrice', v)}
+                    suffix="€" className="text-[26px] font-extrabold" />
+                  {data.finance.totalPrice && <sup className="text-[11px] font-bold ml-0.5" style={{ color: dark }}>1</sup>}
+                </span>
               </div>
-              {data.finance.monthlyRate && (
+              {!isBuyCategory && data.finance.monthlyRate && (
                 <div className="text-[12px] text-gray-600 mt-2">
-                  oder ab <strong>
+                  oder ab <strong className="inline-flex items-baseline">
                     <EditableField value={data.finance.monthlyRate} onChange={(v) => updateFinance('monthlyRate', v)} suffix="€/mtl." className="font-bold inline" />
+                    <sup className="text-[9px] font-bold ml-0.5" style={{ color: dark }}>1</sup>
                   </strong>
                 </div>
               )}
@@ -381,10 +386,13 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
   );
 };
 
-const FinItem: React.FC<{ label: string; value: string; onChange: (v: string) => void; suffix?: string }> = ({ label, value, onChange, suffix }) => (
+const FinItem: React.FC<{ label: string; value: string; onChange: (v: string) => void; suffix?: string; sup?: boolean }> = ({ label, value, onChange, suffix, sup }) => (
   <div className="bg-[#f7f7f7] rounded-[10px] p-3">
     <div className="text-[10px] text-gray-500 uppercase tracking-[.5px] font-semibold">{label}</div>
-    <EditableField value={value} onChange={onChange} suffix={suffix} className="text-sm font-bold mt-0.5" />
+    <div className="inline-flex items-baseline">
+      <EditableField value={value} onChange={onChange} suffix={suffix} className="text-sm font-bold mt-0.5" />
+      {sup && value && <sup className="text-[8px] font-bold ml-0.5 text-gray-700">1</sup>}
+    </div>
   </div>
 );
 
