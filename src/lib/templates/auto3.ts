@@ -34,8 +34,8 @@ export function generateAuto3HTML(data: VehicleData, imageBase64: string | null,
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Inter',sans-serif;background:#ffffff;color:var(--dark);line-height:1.5}
     .container{max-width:1280px;margin:0 auto;padding:32px 24px}
-    .layout{display:grid;grid-template-columns:1fr 380px;gap:32px;align-items:start}
-    @media(max-width:1024px){.layout{grid-template-columns:1fr}}
+    .layout{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:28px;align-items:start}
+    @media(max-width:720px){.layout{grid-template-columns:1fr}}
     .gallery-main{position:relative;border-radius:16px;overflow:hidden;background:#f4f4f4}
     .gallery-main img{width:100%;aspect-ratio:16/10;object-fit:cover;display:block}
     .thumbs{display:flex;gap:8px;margin-top:12px;overflow-x:auto;padding-bottom:4px}
