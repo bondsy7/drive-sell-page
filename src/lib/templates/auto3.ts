@@ -19,6 +19,12 @@ export function generateAuto3HTML(data: VehicleData, imageBase64: string | null,
   const galleryHTML = getGalleryHTML(allImages);
   const hasConsumption = consumptionRows || detailedConsumption || costRows;
 
+  const cat = (data.category || '').toLowerCase();
+  const isBuy = cat.includes('barkauf') || cat.includes('neuwagen') || cat.includes('gebrauchtwagen') || cat.includes('tageszulassung');
+  const isLeasing = cat.includes('leasing');
+  const priceLabel = isLeasing ? 'Leasingpreis' : 'Fahrzeugpreis';
+  const sup = `<sup style="font-size:0.55em;vertical-align:super;font-weight:700;margin-left:2px">1</sup>`;
+
   const accent = data.templateColors?.accent || '#e30613';
   const dark = data.templateColors?.dark || '#111111';
 
