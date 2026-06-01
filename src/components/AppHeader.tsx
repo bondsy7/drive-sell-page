@@ -40,16 +40,10 @@ export default function AppHeader({ leftActions, variant = 'card' }: AppHeaderPr
     <>
       <header className={`${headerBg} sticky top-0 z-50`}>
         <div className="max-w-7xl mx-auto px-3 sm:px-4 h-14 flex items-center justify-between">
-          {/* Left: Logo */}
-            {user ? (
-              <a href={logoLink} className="flex items-center shrink-0">
-                <img src={auto3Logo} alt="AUTO3" className="h-7 sm:h-8" />
-              </a>
-            ) : (
-              <Link to={logoLink} className="flex items-center shrink-0">
-                <img src={auto3Logo} alt="AUTO3" className="h-7 sm:h-8" />
-              </Link>
-            )}
+          {/* Left: Logo (non-clickable image) */}
+          <div className="flex items-center shrink-0">
+            <img src={auto3Logo} alt="AUTO3" className="h-7 sm:h-8" />
+          </div>
 
           {/* Right: actions */}
           <div className="flex items-center gap-1 sm:gap-1.5">
