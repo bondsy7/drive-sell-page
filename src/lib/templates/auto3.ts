@@ -162,7 +162,6 @@ export function generateAuto3HTML(data: VehicleData, imageBase64: string | null,
           </div>
           ${vatNoteHTML(data, 'display:block;text-align:right;font-size:11px;color:#999')}
           ${data.finance.monthlyRate ? `<div style="font-size:12px;color:#666;margin-top:8px">oder ab <strong>${data.finance.monthlyRate} €/mtl.</strong> / ${getMonthlyRateLabel(data)} auf Anfrage möglich</div>` : ''}
-          <a href="#anfrage" class="cta">Zum unverbindlichen Angebot</a>
         </div>
 
         <div class="side-card" id="anfrage">
