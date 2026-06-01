@@ -156,18 +156,17 @@ export function generateAuto3HTML(data: VehicleData, imageBase64: string | null,
       <aside>
         <div class="side-card">
           <h4>Mehr Angebote</h4>
-          <div class="muted">Wähle Deine Finanzierungsart</div>
-          <div class="toggle-row">
-            <span>Leasing</span>
-            <span class="active">Kauf / Finanzierung</span>
-            <span>Abo +</span>
-          </div>
+          <div class="muted">${isBuy ? 'Kaufpreis-Angebot' : 'Wähle Deine Finanzierungsart'}</div>
+          ${!isBuy ? `<div class="toggle-row">
+            <span${isLeasing ? ' class="active"' : ''}>Leasing</span>
+            <span${!isLeasing ? ' class="active"' : ''}>Kauf / Finanzierung</span>
+          </div>` : ''}
           <div class="price-row">
-            <span class="price-label">Fahrzeugpreis</span>
-            <span class="price">${data.finance.totalPrice || '–'}</span>
+            <span class="price-label">${priceLabel}</span>
+            <span class="price">${data.finance.totalPrice || '–'}${data.finance.totalPrice ? sup : ''}</span>
           </div>
           ${vatNoteHTML(data, 'display:block;text-align:right;font-size:11px;color:#999')}
-          ${data.finance.monthlyRate ? `<div style="font-size:12px;color:#666;margin-top:8px">oder ab <strong>${data.finance.monthlyRate} €/mtl.</strong> / ${getMonthlyRateLabel(data)} auf Anfrage möglich</div>` : ''}
+          ${!isBuy && data.finance.monthlyRate ? `<div style="font-size:12px;color:#666;margin-top:8px">oder ab <strong>${data.finance.monthlyRate} €/mtl.${sup}</strong> / ${getMonthlyRateLabel(data)} auf Anfrage möglich</div>` : ''}
         </div>
 
         <div class="side-card" id="anfrage">
