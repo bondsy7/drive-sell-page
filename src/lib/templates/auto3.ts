@@ -22,7 +22,11 @@ export function generateAuto3HTML(data: VehicleData, imageBase64: string | null,
   const cat = (data.category || '').toLowerCase();
   const isBuy = cat.includes('barkauf') || cat.includes('neuwagen') || cat.includes('gebrauchtwagen') || cat.includes('tageszulassung');
   const isLeasing = cat.includes('leasing');
-  const priceLabel = isLeasing ? 'Leasingpreis' : 'Fahrzeugpreis';
+  const isFinanzierung = cat.includes('finanzierung') || cat.includes('kredit');
+  const isMonthlyOffer = isLeasing || isFinanzierung;
+  const sidebarLabel = isLeasing ? 'Leasing ab' : isFinanzierung ? 'Finanzierung ab' : 'Fahrzeugpreis';
+  const sidebarValueRaw = isMonthlyOffer ? (data.finance.monthlyRate || '') : (data.finance.totalPrice || '');
+  const sidebarSuffix = isMonthlyOffer ? ' €/mtl.' : '';
   const sup = `<sup style="font-size:0.55em;vertical-align:super;font-weight:700;margin-left:2px">1</sup>`;
 
   const accent = data.templateColors?.accent || '#e30613';
@@ -162,11 +166,11 @@ export function generateAuto3HTML(data: VehicleData, imageBase64: string | null,
             <span${!isLeasing ? ' class="active"' : ''}>Kauf / Finanzierung</span>
           </div>` : ''}
           <div class="price-row">
-            <span class="price-label">${priceLabel}</span>
-            <span class="price">${data.finance.totalPrice || '–'}${data.finance.totalPrice ? sup : ''}</span>
+            <span class="price-label">${sidebarLabel}</span>
+            <span class="price">${sidebarValueRaw || '–'}${sidebarValueRaw ? sidebarSuffix : ''}${sidebarValueRaw ? sup : ''}</span>
           </div>
           ${vatNoteHTML(data, 'display:block;text-align:right;font-size:11px;color:#999')}
-          ${!isBuy && data.finance.monthlyRate ? `<div style="font-size:12px;color:#666;margin-top:8px">oder ab <strong>${data.finance.monthlyRate} €/mtl.${sup}</strong> / ${getMonthlyRateLabel(data)} auf Anfrage möglich</div>` : ''}
+          ${isMonthlyOffer && data.finance.totalPrice ? `<div style="font-size:11px;color:#999;margin-top:6px;text-align:right">Gesamtpreis: <strong>${data.finance.totalPrice} €</strong></div>` : ''}
         </div>
 
         <div class="side-card" id="anfrage">
