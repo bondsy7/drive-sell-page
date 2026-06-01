@@ -386,10 +386,13 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
   );
 };
 
-const FinItem: React.FC<{ label: string; value: string; onChange: (v: string) => void; suffix?: string }> = ({ label, value, onChange, suffix }) => (
+const FinItem: React.FC<{ label: string; value: string; onChange: (v: string) => void; suffix?: string; sup?: boolean }> = ({ label, value, onChange, suffix, sup }) => (
   <div className="bg-[#f7f7f7] rounded-[10px] p-3">
     <div className="text-[10px] text-gray-500 uppercase tracking-[.5px] font-semibold">{label}</div>
-    <EditableField value={value} onChange={onChange} suffix={suffix} className="text-sm font-bold mt-0.5" />
+    <div className="inline-flex items-baseline">
+      <EditableField value={value} onChange={onChange} suffix={suffix} className="text-sm font-bold mt-0.5" />
+      {sup && value && <sup className="text-[8px] font-bold ml-0.5 text-gray-700">1</sup>}
+    </div>
   </div>
 );
 
