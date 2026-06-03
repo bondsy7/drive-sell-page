@@ -2248,6 +2248,39 @@ export type Database = {
           },
         ]
       }
+      user_download_limits: {
+        Row: {
+          created_at: string
+          id: string
+          monthly_limit: number
+          period_end: string
+          period_start: string
+          updated_at: string
+          used_count: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          monthly_limit?: number
+          period_end?: string
+          period_start?: string
+          updated_at?: string
+          used_count?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          monthly_limit?: number
+          period_end?: string
+          period_start?: string
+          updated_at?: string
+          used_count?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_module_access: {
         Row: {
           enabled: boolean
@@ -2467,6 +2500,7 @@ export type Database = {
         }
         Returns: Json
       }
+      consume_download: { Args: { _user_id: string }; Returns: Json }
       deduct_credits: {
         Args: {
           _action_type: Database["public"]["Enums"]["credit_action_type"]
