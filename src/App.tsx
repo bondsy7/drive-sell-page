@@ -10,6 +10,8 @@ import { PipelineProvider } from "@/contexts/PipelineContext";
 import { BackgroundTasksProvider } from "@/contexts/BackgroundTasksContext";
 import BackgroundPipelineIndicator from "@/components/BackgroundPipelineIndicator";
 import BackgroundTasksIndicator from "@/components/BackgroundTasksIndicator";
+import { DownloadLimitProvider } from "@/hooks/useDownloadLimit";
+import DownloadGuardBridge from "@/components/DownloadGuardBridge";
 
 const Landing = lazy(() => import("./pages/Landing"));
 const Index = lazy(() => import("./pages/Index"));
@@ -101,6 +103,8 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <DownloadLimitProvider>
+          <DownloadGuardBridge />
           <PipelineProvider>
           <BackgroundTasksProvider>
           <BackgroundPipelineIndicator />
@@ -157,6 +161,7 @@ const App = () => (
           </Suspense>
           </BackgroundTasksProvider>
           </PipelineProvider>
+          </DownloadLimitProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Plus, CreditCard, LogIn, MessageSquare, Home } from 'lucide-react';
 import auto3Logo from '@/assets/auto3-logo.png';
 import CreditBadge from '@/components/CreditBadge';
+import DownloadLimitBadge from '@/components/DownloadLimitBadge';
 import UserMenuSheet from '@/components/UserMenuSheet';
 import SalesChatWidget, { useSalesChatUnread } from '@/components/sales/SalesChatWidget';
 
@@ -84,6 +85,9 @@ export default function AppHeader({ leftActions, variant = 'card' }: AppHeaderPr
 
                 {/* Credits */}
                 <CreditBadge />
+
+                {/* Download-Limit (nur sichtbar wenn konfiguriert) */}
+                <DownloadLimitBadge />
 
                 {/* Tabbed user menu */}
                 <UserMenuSheet
