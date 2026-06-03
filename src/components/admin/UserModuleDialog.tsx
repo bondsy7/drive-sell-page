@@ -139,7 +139,7 @@ export default function UserModuleDialog({ userId, userEmail, open, onOpenChange
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogTitle>Module verwalten</DialogTitle>
         <DialogDescription className="text-xs">{userEmail}</DialogDescription>
         <div className="space-y-3 mt-4">
@@ -150,6 +150,53 @@ export default function UserModuleDialog({ userId, userEmail, open, onOpenChange
             </React.Fragment>
           ))}
         </div>
+
+        {/* Download-Limit */}
+        <div className="mt-6 pt-4 border-t border-border space-y-3">
+          <div className="flex items-center justify-between">
+            <Label className="text-sm font-medium">Monatliches Download-Limit</Label>
+            <Switch
+              checked={downloadLimitEnabled}
+              onCheckedChange={setDownloadLimitEnabled}
+            />
+          </div>
+          {downloadLimitEnabled && (
+            <div className="space-y-2 pl-1">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Limit / Monat</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={monthlyLimit}
+                    onChange={e => setMonthlyLimit(Number(e.target.value))}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Bereits genutzt</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={usedCount}
+                    onChange={e => setUsedCount(Number(e.target.value))}
+                  />
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Periode endet am</Label>
+                <Input
+                  type="date"
+                  value={periodEnd}
+                  onChange={e => setPeriodEnd(e.target.value)}
+                />
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Wird automatisch auf den Folgemonat zurückgesetzt sobald das Datum überschritten ist.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+
         <div className="flex justify-end gap-2 pt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Abbrechen</Button>
           <Button onClick={save} disabled={saving}>{saving ? 'Speichern…' : 'Speichern'}</Button>
