@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/compone
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { MODULE_KEYS, MODULE_LABELS, MODULE_CHILDREN, type ModuleKey } from '@/hooks/useModuleAccess';
 
@@ -27,6 +28,13 @@ export default function UserModuleDialog({ userId, userEmail, open, onOpenChange
   });
   const [saving, setSaving] = useState(false);
 
+  // Download-limit state
+  const [downloadLimitEnabled, setDownloadLimitEnabled] = useState(false);
+  const [monthlyLimit, setMonthlyLimit] = useState<number>(100);
+  const [usedCount, setUsedCount] = useState<number>(0);
+  const [periodEnd, setPeriodEnd] = useState<string>('');
+  const [hasExistingLimit, setHasExistingLimit] = useState(false);
+
   useEffect(() => {
     if (!open) return;
     const init: any = {};
@@ -43,6 +51,27 @@ export default function UserModuleDialog({ userId, userEmail, open, onOpenChange
           }
         }
         setModules({ ...init });
+      });
+
+    supabase
+      .from('user_download_limits')
+      .select('monthly_limit, used_count, period_end')
+      .eq('user_id', userId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) {
+          setDownloadLimitEnabled(true);
+          setHasExistingLimit(true);
+          setMonthlyLimit(data.monthly_limit);
+          setUsedCount(data.used_count);
+          setPeriodEnd(data.period_end);
+        } else {
+          setDownloadLimitEnabled(false);
+          setHasExistingLimit(false);
+          setMonthlyLimit(100);
+          setUsedCount(0);
+          setPeriodEnd('');
+        }
       });
   }, [open, userId]);
 
@@ -61,10 +90,37 @@ export default function UserModuleDialog({ userId, userEmail, open, onOpenChange
 
     if (error) {
       toast.error('Fehler: ' + error.message);
-    } else {
-      toast.success('Module gespeichert');
-      onOpenChange(false);
+      setSaving(false);
+      return;
     }
+
+    // Download-limit handling
+    if (downloadLimitEnabled) {
+      const today = new Date();
+      const defaultEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0)
+        .toISOString().slice(0, 10);
+      const defaultStart = new Date(today.getFullYear(), today.getMonth(), 1)
+        .toISOString().slice(0, 10);
+      const { error: dlErr } = await supabase
+        .from('user_download_limits')
+        .upsert({
+          user_id: userId,
+          monthly_limit: Math.max(0, Math.floor(monthlyLimit)),
+          used_count: Math.max(0, Math.floor(usedCount)),
+          period_end: periodEnd || defaultEnd,
+          period_start: defaultStart,
+        }, { onConflict: 'user_id' });
+      if (dlErr) {
+        toast.error('Download-Limit Fehler: ' + dlErr.message);
+        setSaving(false);
+        return;
+      }
+    } else if (hasExistingLimit) {
+      await supabase.from('user_download_limits').delete().eq('user_id', userId);
+    }
+
+    toast.success('Einstellungen gespeichert');
+    onOpenChange(false);
     setSaving(false);
   };
 
