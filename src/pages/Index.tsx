@@ -689,6 +689,27 @@ const Index = () => {
   const vehicleDescription = vehicleData
     ? `${vehicleData.vehicle.brand} ${vehicleData.vehicle.model} ${vehicleData.vehicle.variant || ''}, ${vehicleData.vehicle.color || ''}, ${vehicleData.vehicle.fuelType || ''}`.replace(/,\s*,/g, ',').replace(/,\s*$/, '').trim() : '';
 
+  // ─── Debounced auto-save of manual edits ───
+  // Persists every change made in edit mode to the project row, so preview,
+  // future opens and HTML export always reflect the latest manual changes.
+  useEffect(() => {
+    if (!savedProjectId || !vehicleData || appState !== 'preview') return;
+    const t = setTimeout(() => {
+      supabase
+        .from('projects')
+        .update({
+          vehicle_data: vehicleData as any,
+          template_id: selectedTemplate,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', savedProjectId)
+        .then(({ error }) => {
+          if (error) console.warn('[autosave] project update failed', error);
+        });
+    }, 800);
+    return () => clearTimeout(t);
+  }, [vehicleData, savedProjectId, selectedTemplate, appState]);
+
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
