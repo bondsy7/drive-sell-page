@@ -24,6 +24,8 @@ serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+  const guard = requireServiceRole(req);
+  if (guard) return guard;
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
