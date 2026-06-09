@@ -2,16 +2,20 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { handleCors, jsonResponse, errorResponse } from "../_shared/cors.ts";
 import { createAdminClient } from "../_shared/auth.ts";
+import { requireServiceRole } from "../_shared/service-auth.ts";
 
 const DRY_RUN = true; // Set to false when ready to actually delete
 
 serve(async (req) => {
   const corsResp = handleCors(req);
   if (corsResp) return corsResp;
+  const guard = requireServiceRole(req);
+  if (guard) return guard;
 
   try {
     const body = await req.json().catch(() => ({}));
-    const dryRun = body.dry_run ?? DRY_RUN;
+    // dry_run is controlled server-side; ignore caller overrides.
+    const dryRun = DRY_RUN;
     const adminSupabase = createAdminClient();
 
     // 1. Collect all referenced URLs from database
