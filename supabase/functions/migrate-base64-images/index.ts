@@ -2,12 +2,15 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { handleCors, jsonResponse } from "../_shared/cors.ts";
 import { createAdminClient } from "../_shared/auth.ts";
+import { requireServiceRole } from "../_shared/service-auth.ts";
 
 const BATCH_SIZE = 10;
 
 serve(async (req) => {
   const corsResp = handleCors(req);
   if (corsResp) return corsResp;
+  const guard = requireServiceRole(req);
+  if (guard) return guard;
 
   try {
     const adminSupabase = createAdminClient();
