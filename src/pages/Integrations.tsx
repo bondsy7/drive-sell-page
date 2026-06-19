@@ -259,8 +259,14 @@ export default function Integrations() {
                     <Input value={ftp.username} onChange={e => setFtp({ ...ftp, username: e.target.value })} />
                   </div>
                   <div className="space-y-1.5">
-                    <Label>Passwort</Label>
-                    <Input type="password" value={ftp.password} onChange={e => setFtp({ ...ftp, password: e.target.value })} />
+                    <Label>Passwort {hasStoredPassword && <span className="text-xs text-muted-foreground font-normal">(verschlüsselt gespeichert)</span>}</Label>
+                    <Input
+                      type="password"
+                      placeholder={hasStoredPassword ? "••••••••  – leer lassen zum Beibehalten" : "Passwort eingeben"}
+                      value={ftpPassword}
+                      onChange={e => setFtpPassword(e.target.value)}
+                      autoComplete="new-password"
+                    />
                   </div>
                   <div className="space-y-1.5">
                     <Label>Zielverzeichnis</Label>
