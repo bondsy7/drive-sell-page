@@ -6,6 +6,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+async function sha256Hex(input: string): Promise<string> {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
+  return Array.from(new Uint8Array(buf), (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -19,17 +24,18 @@ serve(async (req) => {
     );
 
     const { token } = await req.json();
-    if (!token) {
+    if (!token || typeof token !== "string") {
       return new Response(JSON.stringify({ error: "Token is required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Look up token
+    // Look up token by hash — plaintext is never stored
+    const tokenHash = await sha256Hex(token);
     const { data: tokenRow, error: fetchErr } = await supabase
       .from("qr_login_tokens")
       .select("*")
-      .eq("token", token)
+      .eq("token_hash", tokenHash)
       .eq("is_active", true)
-      .single();
+      .maybeSingle();
 
     if (fetchErr || !tokenRow) {
       return new Response(JSON.stringify({ error: "Ungültiger oder deaktivierter QR-Login-Token" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });

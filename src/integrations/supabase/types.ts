@@ -1137,7 +1137,7 @@ export type Database = {
           is_active: boolean
           max_uses: number | null
           redirect_path: string
-          token: string
+          token_hash: string
           used_count: number
           user_id: string
         }
@@ -1150,7 +1150,7 @@ export type Database = {
           is_active?: boolean
           max_uses?: number | null
           redirect_path?: string
-          token?: string
+          token_hash: string
           used_count?: number
           user_id: string
         }
@@ -1163,7 +1163,7 @@ export type Database = {
           is_active?: boolean
           max_uses?: number | null
           redirect_path?: string
-          token?: string
+          token_hash?: string
           used_count?: number
           user_id?: string
         }

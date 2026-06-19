@@ -6,6 +6,16 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Generate a cryptographically random token (hex) and its sha256 hash (hex)
+async function generateTokenAndHash(): Promise<{ token: string; hash: string }> {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  const token = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+  const hashBuf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
+  const hash = Array.from(new Uint8Array(hashBuf), (b) => b.toString(16).padStart(2, "0")).join("");
+  return { token, hash };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -53,10 +63,13 @@ serve(async (req) => {
       expiresAt = new Date(Date.now() + expiresInHours * 60 * 60 * 1000).toISOString();
     }
 
-    // Create token
+    // Generate token + hash; only the hash is persisted
+    const { token, hash } = await generateTokenAndHash();
+
     const { data: tokenRow, error: insertErr } = await supabase
       .from("qr_login_tokens")
       .insert({
+        token_hash: hash,
         user_id: targetUser.id,
         email,
         redirect_path: redirectPath || "/generator",
@@ -64,17 +77,17 @@ serve(async (req) => {
         max_uses: maxUses || null,
         created_by: caller.id,
       })
-      .select("token, expires_at")
+      .select("expires_at")
       .single();
 
     if (insertErr) throw insertErr;
 
     const domain = appDomain || "https://pdf.anzeige.ai";
-    const loginUrl = `${domain}/qr-login?token=${tokenRow.token}`;
+    const loginUrl = `${domain}/qr-login?token=${token}`;
 
     return new Response(JSON.stringify({
       link: loginUrl,
-      token: tokenRow.token,
+      token,
       expiresAt: tokenRow.expires_at,
       expiresInHours: expiresInHours || null,
     }), {
