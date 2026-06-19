@@ -93,7 +93,7 @@ export default function SalesBookingsTab() {
   // Realtime bookings
   useEffect(() => {
     if (!user) return;
-    const ch = supabase.channel('bookings-rt').on('postgres_changes', { event: '*', schema: 'public', table: 'test_drive_bookings', filter: `user_id=eq.${user.id}` }, () => loadData()).subscribe();
+    const ch = supabase.channel(`user:${user.id}:bookings-rt`, { config: { private: true } }).on('postgres_changes', { event: '*', schema: 'public', table: 'test_drive_bookings', filter: `user_id=eq.${user.id}` }, () => loadData()).subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [user, loadData]);
 
