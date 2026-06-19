@@ -59,7 +59,7 @@ export default function SalesMailboxTab() {
 
   useEffect(() => {
     if (!user) return;
-    const channel = supabase.channel('mailbox-leads')
+    const channel = supabase.channel(`user:${user.id}:mailbox-leads`, { config: { private: true } })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'leads', filter: `dealer_user_id=eq.${user.id}` },
         (payload: any) => setLeads(prev => [payload.new as Lead, ...prev])
       )

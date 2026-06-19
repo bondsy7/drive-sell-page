@@ -65,7 +65,7 @@ export default function SalesChatPage() {
   // Realtime
   useEffect(() => {
     if (!user) return;
-    const channel = supabase.channel('sales-chat-notifs')
+    const channel = supabase.channel(`user:${user.id}:sales-chat-notifs`, { config: { private: true } })
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
