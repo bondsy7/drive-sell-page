@@ -102,11 +102,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Use service role to read project (RLS scoped to user already verified)
-    const adminClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    // Read project via service role (RLS scoping enforced via user_id below)
+
 
     const { data: project, error: projErr } = await adminClient
       .from("projects")
