@@ -19,12 +19,11 @@ interface FtpConfig {
   host: string;
   port: number;
   username: string;
-  password: string;
   directory: string;
   is_sftp: boolean;
 }
 
-const defaultFtp: FtpConfig = { host: "", port: 21, username: "", password: "", directory: "/", is_sftp: false };
+const defaultFtp: FtpConfig = { host: "", port: 21, username: "", directory: "/", is_sftp: false };
 
 export default function Integrations() {
   const { user } = useAuth();
@@ -38,6 +37,8 @@ export default function Integrations() {
   const [ftpSaving, setFtpSaving] = useState(false);
   const [ftpTesting, setFtpTesting] = useState(false);
   const [ftpTestResult, setFtpTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [ftpPassword, setFtpPassword] = useState(""); // write-only; never populated from DB
+  const [hasStoredPassword, setHasStoredPassword] = useState(false);
 
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const apiBase = `${supabaseUrl}/functions/v1/api-vehicles`;
@@ -61,7 +62,7 @@ export default function Integrations() {
   const loadFtpConfig = async () => {
     const { data } = await supabase
       .from("ftp_configs" as any)
-      .select("*")
+      .select("host, port, username, directory, is_sftp")
       .eq("user_id", user!.id)
       .single();
     if (data) {
@@ -70,11 +71,13 @@ export default function Integrations() {
         host: d.host || "",
         port: d.port || 21,
         username: d.username || "",
-        password: d.password || "",
         directory: d.directory || "/",
         is_sftp: d.is_sftp || false,
       });
     }
+    // Check whether an encrypted password is stored (never read the ciphertext)
+    const { data: hasPw } = await supabase.rpc("has_ftp_password" as any);
+    setHasStoredPassword(Boolean(hasPw));
     setFtpLoading(false);
   };
 
@@ -101,6 +104,7 @@ export default function Integrations() {
 
   const saveFtpConfig = async () => {
     setFtpSaving(true);
+    // Non-secret fields go directly to the table (RLS-scoped)
     const payload = { ...ftp, user_id: user!.id, updated_at: new Date().toISOString() };
 
     const { data: existing } = await supabase
@@ -114,6 +118,17 @@ export default function Integrations() {
       ({ error } = await supabase.from("ftp_configs" as any).update(payload as any).eq("user_id", user!.id));
     } else {
       ({ error } = await supabase.from("ftp_configs" as any).insert(payload as any));
+    }
+
+    // Password is encrypted server-side via SECURITY DEFINER RPC and never stored in plaintext
+    if (!error && ftpPassword) {
+      const { error: pwErr } = await supabase.rpc("set_ftp_password" as any, { _password: ftpPassword });
+      if (pwErr) {
+        error = pwErr;
+      } else {
+        setFtpPassword("");
+        setHasStoredPassword(true);
+      }
     }
 
     if (error) {
@@ -244,8 +259,14 @@ export default function Integrations() {
                     <Input value={ftp.username} onChange={e => setFtp({ ...ftp, username: e.target.value })} />
                   </div>
                   <div className="space-y-1.5">
-                    <Label>Passwort</Label>
-                    <Input type="password" value={ftp.password} onChange={e => setFtp({ ...ftp, password: e.target.value })} />
+                    <Label>Passwort {hasStoredPassword && <span className="text-xs text-muted-foreground font-normal">(verschlüsselt gespeichert)</span>}</Label>
+                    <Input
+                      type="password"
+                      placeholder={hasStoredPassword ? "••••••••  – leer lassen zum Beibehalten" : "Passwort eingeben"}
+                      value={ftpPassword}
+                      onChange={e => setFtpPassword(e.target.value)}
+                      autoComplete="new-password"
+                    />
                   </div>
                   <div className="space-y-1.5">
                     <Label>Zielverzeichnis</Label>

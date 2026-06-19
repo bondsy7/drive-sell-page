@@ -547,7 +547,7 @@ export type Database = {
           host: string
           id: string
           is_sftp: boolean
-          password: string
+          password_encrypted: string | null
           port: number
           updated_at: string
           user_id: string
@@ -559,7 +559,7 @@ export type Database = {
           host?: string
           id?: string
           is_sftp?: boolean
-          password?: string
+          password_encrypted?: string | null
           port?: number
           updated_at?: string
           user_id: string
@@ -571,7 +571,7 @@ export type Database = {
           host?: string
           id?: string
           is_sftp?: boolean
-          password?: string
+          password_encrypted?: string | null
           port?: number
           updated_at?: string
           user_id?: string
@@ -2512,6 +2512,8 @@ export type Database = {
         Returns: Json
       }
       generate_api_key: { Args: never; Returns: string }
+      get_ftp_password: { Args: { _user_id: string }; Returns: string }
+      has_ftp_password: { Args: never; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -2519,6 +2521,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      set_ftp_password: { Args: { _password: string }; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
