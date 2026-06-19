@@ -37,6 +37,8 @@ export default function Integrations() {
   const [ftpSaving, setFtpSaving] = useState(false);
   const [ftpTesting, setFtpTesting] = useState(false);
   const [ftpTestResult, setFtpTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [ftpPassword, setFtpPassword] = useState(""); // write-only; never populated from DB
+  const [hasStoredPassword, setHasStoredPassword] = useState(false);
 
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const apiBase = `${supabaseUrl}/functions/v1/api-vehicles`;
