@@ -71,35 +71,57 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Check if dealer has autopilot enabled and trigger auto-processing
+    // Check if dealer has autopilot enabled and trigger auto-processing.
+    // Hardening (lead_credit_drain): autopilot only fires when the dealer
+    //   (a) actually exists as a profile, and
+    //   (b) still has credits left.
+    // Otherwise we degrade to a normal in-app notification — never burn
+    // credits for an unknown/exhausted dealer that an attacker could spoof.
     if (lead?.id) {
-      const { data: profile } = await supabase.from("sales_assistant_profiles")
-        .select("autopilot_mode, active")
-        .eq("user_id", dealerUserId)
-        .eq("active", true)
-        .single();
+      const { data: dealerProfile } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("id", dealerUserId)
+        .maybeSingle();
 
-      if (profile && profile.autopilot_mode !== 'off') {
-        // Trigger auto-process in background (fire and forget)
-        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-        const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-        fetch(`${supabaseUrl}/functions/v1/auto-process-lead`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${serviceKey}`,
-          },
-          body: JSON.stringify({ leadId: lead.id, dealerUserId }),
-        }).catch(err => console.error("Auto-process trigger error:", err));
+      if (!dealerProfile) {
+        console.warn("submit-lead: unknown dealerUserId, skipping autopilot", { dealerUserId });
       } else {
-        await supabase.from("sales_notifications").insert({
-          user_id: dealerUserId,
-          notification_type: "new_lead",
-          title: "Neuer Lead eingegangen",
-          body: `${String(name).slice(0, 200)} hat eine Anfrage${vehicleTitle ? ` zu ${String(vehicleTitle).slice(0, 120)}` : ''} gesendet.`,
-          related_lead_id: lead.id,
-          requires_approval: false,
-        });
+        const { data: profile } = await supabase.from("sales_assistant_profiles")
+          .select("autopilot_mode, active")
+          .eq("user_id", dealerUserId)
+          .eq("active", true)
+          .maybeSingle();
+
+        const { data: creditRow } = await supabase
+          .from("credit_balances")
+          .select("balance")
+          .eq("user_id", dealerUserId)
+          .maybeSingle();
+        const balance = creditRow?.balance ?? 0;
+
+        if (profile && profile.autopilot_mode !== 'off' && balance > 0) {
+          // Trigger auto-process in background (fire and forget)
+          const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+          const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+          fetch(`${supabaseUrl}/functions/v1/auto-process-lead`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${serviceKey}`,
+            },
+            body: JSON.stringify({ leadId: lead.id, dealerUserId }),
+          }).catch(err => console.error("Auto-process trigger error:", err));
+        } else {
+          await supabase.from("sales_notifications").insert({
+            user_id: dealerUserId,
+            notification_type: "new_lead",
+            title: "Neuer Lead eingegangen",
+            body: `${String(name).slice(0, 200)} hat eine Anfrage${vehicleTitle ? ` zu ${String(vehicleTitle).slice(0, 120)}` : ''} gesendet.`,
+            related_lead_id: lead.id,
+            requires_approval: false,
+          });
+        }
       }
     }
 
