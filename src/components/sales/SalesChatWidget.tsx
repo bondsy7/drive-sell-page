@@ -83,7 +83,7 @@ export default function SalesChatWidget({ open, onOpenChange }: SalesChatWidgetP
   // Realtime notifications
   useEffect(() => {
     if (!user) return;
-    const channel = supabase.channel('sales-notifications')
+    const channel = supabase.channel(`user:${user.id}:sales-notifications`, { config: { private: true } })
       .on('postgres_changes', {
         event: 'INSERT', schema: 'public', table: 'sales_notifications',
         filter: `user_id=eq.${user.id}`,
