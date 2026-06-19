@@ -47,19 +47,43 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { project_id, action } = body;
 
-    // Load FTP config
-    const { data: ftpConfig, error: ftpErr } = await supabase
+    // Service role client — needed to call get_ftp_password (decryption)
+    const adminClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // Load FTP config (non-secret fields)
+    const { data: ftpRow, error: ftpErr } = await adminClient
       .from("ftp_configs")
-      .select("*")
+      .select("host, port, username, directory, is_sftp")
       .eq("user_id", userId)
       .single();
 
-    if (ftpErr || !ftpConfig) {
+    if (ftpErr || !ftpRow) {
       return new Response(
         JSON.stringify({ error: "Keine FTP-Konfiguration gefunden. Bitte zuerst unter Schnittstellen konfigurieren." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // Decrypt password server-side; plaintext only lives in this function's memory
+    const { data: pw, error: pwErr } = await adminClient.rpc("get_ftp_password", { _user_id: userId });
+    if (pwErr || !pw) {
+      return new Response(
+        JSON.stringify({ error: "Kein FTP-Passwort hinterlegt. Bitte unter Schnittstellen ein Passwort speichern." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const ftpConfig: FtpConfig = {
+      host: ftpRow.host,
+      port: ftpRow.port,
+      username: ftpRow.username,
+      password: pw as string,
+      directory: ftpRow.directory,
+      is_sftp: ftpRow.is_sftp,
+    };
 
     // Action: test connection
     if (action === "test") {
