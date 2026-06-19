@@ -19,12 +19,11 @@ interface FtpConfig {
   host: string;
   port: number;
   username: string;
-  password: string;
   directory: string;
   is_sftp: boolean;
 }
 
-const defaultFtp: FtpConfig = { host: "", port: 21, username: "", password: "", directory: "/", is_sftp: false };
+const defaultFtp: FtpConfig = { host: "", port: 21, username: "", directory: "/", is_sftp: false };
 
 export default function Integrations() {
   const { user } = useAuth();
