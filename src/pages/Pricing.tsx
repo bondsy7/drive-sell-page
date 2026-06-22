@@ -9,7 +9,7 @@ import { Check, Zap, Loader2, Plus, Crown, Calendar, AlertTriangle, RefreshCw, C
 import CancelSubscriptionDialog from '@/components/CancelSubscriptionDialog';
 import AppHeader from '@/components/AppHeader';
 import { STRIPE_PRICES, CREDIT_PACKS } from '@/lib/stripe-plans';
-import CreditSlider from '@/components/CreditSlider';
+
 import { toast } from 'sonner';
 
 interface Plan {
@@ -395,10 +395,8 @@ const Pricing = () => {
           </div>
         </div>
 
-        {/* Visual Credit-Rechner */}
-        <div className="mt-16 max-w-3xl mx-auto">
-          <CreditSlider defaultCredits={50} />
-        </div>
+
+
 
 
         {Object.keys(costs).length > 0 && (
