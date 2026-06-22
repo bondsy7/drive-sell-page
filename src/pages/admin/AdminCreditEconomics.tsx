@@ -176,7 +176,9 @@ export default function AdminCreditEconomics() {
           {" "}<a className="underline" href="https://about.ideogram.ai/api-pricing" target="_blank" rel="noreferrer">ideogram.ai/api-pricing</a>.
         </p>
         <p>
-          Nicht enthalten: Stripe-Gebühren (~1,5 % + 0,25 €), Supabase-Storage/Egress, Resend-Mails, Vercel-Hosting.
+          Im EK enthalten: alle API-Calls + Overhead $0,014 (Stripe, Resend, Edge-Compute, Egress)
+          + $0,0005 pro transportiertem Bild (Gemini-File-API-Upload, Supabase-Storage-Egress, signed URLs).
+          Gemini File API selbst ist gratis – Bandbreite & Speicher sind eingerechnet.
         </p>
       </div>
     </div>
