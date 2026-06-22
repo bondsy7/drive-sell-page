@@ -10,6 +10,12 @@
 
 export const USD_TO_EUR = 0.92;
 
+// Overhead pro Kunden-Aktion (USD), gemittelt über alle Aktionen.
+// Enthält: Stripe-Gebühr (1,5 % + 0,25 € auf Credit-Kauf, umgelegt auf
+// ~50 Credits pro Kauf ≈ $0,010 / Credit-Aktion), Resend-Mailversand
+// (~$0,0004) und Supabase Egress/Storage (~$0,0015). Zusammen ≈ $0,012.
+export const OVERHEAD_USD = 0.012;
+
 // Verkaufspreis pro Credit (€) – aus CREDIT_PACKS:
 //   10 Cr → 5,00 € = 0,500 €/Cr (worst margin for us)
 //   50 Cr → 15,00 € = 0,300 €/Cr
@@ -344,7 +350,8 @@ export function effectiveCredits(
 }
 
 export function ekEur(t: ActionTier): number {
-  return t.ekUsd * USD_TO_EUR;
+  // EK + pauschaler Overhead (Stripe + Resend + Egress)
+  return (t.ekUsd + OVERHEAD_USD) * USD_TO_EUR;
 }
 
 export function vkEur(credits: number, tier: keyof typeof VK_PER_CREDIT = "best"): number {
