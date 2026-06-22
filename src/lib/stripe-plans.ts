@@ -22,8 +22,14 @@ export const STRIPE_PRODUCTS: Record<string, string> = {
 };
 
 // Credit packs for one-time purchase
+// Pack-Preise neu kalkuliert (2026-06-22) so, dass auch der teuerste
+// Use-Case (Veo-3.1-Standard-Video, 18 Cr) im 200er-Pack noch >30 %
+// Marge fährt. Quelle: src/lib/credit-economics.ts (VK_PER_CREDIT).
+//   10 Cr  →  5,00 € = 0,500 €/Cr
+//   50 Cr  → 18,00 € = 0,360 €/Cr (-28 % ggü. 10er)
+//  200 Cr  → 55,00 € = 0,275 €/Cr (-45 % ggü. 10er)
 export const CREDIT_PACKS = [
-  { priceId: 'price_1T8kL9P3eWRHEALNnK3GQmXI', credits: 10, priceCents: 500, label: '10 Credits' },
-  { priceId: 'price_1T8kLAP3eWRHEALN1wl28rEl', credits: 50, priceCents: 1500, label: '50 Credits', badge: '-40%' },
-  { priceId: 'price_1T8kLBP3eWRHEALNZCqMlh0N', credits: 200, priceCents: 4500, label: '200 Credits', badge: '-55%' },
+  { priceId: 'price_1T8kL9P3eWRHEALNnK3GQmXI', credits: 10,  priceCents:  500, label: '10 Credits' },
+  { priceId: 'price_1T8kLAP3eWRHEALN1wl28rEl', credits: 50,  priceCents: 1800, label: '50 Credits',  badge: '-28%' },
+  { priceId: 'price_1T8kLBP3eWRHEALNZCqMlh0N', credits: 200, priceCents: 5500, label: '200 Credits', badge: '-45%' },
 ];
