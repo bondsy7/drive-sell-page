@@ -534,6 +534,79 @@ export const CATALOG: ActionTier[] = [
     produces: "1 vollständiger 360°-Spin (36 Frames)",
     inMix: false,
   },
+
+  // ════════════════════════════════════════════════════════
+  // KOMPLETT-WORKFLOWS (End-to-End-Gesamtkosten)
+  // Summe aller Sub-Aufrufe, so wie sie der Kunde wirklich auslöst.
+  // ════════════════════════════════════════════════════════
+  {
+    id: "bundle-banner-studio-complete", category: "bundle",
+    action: "image_generate", tier: "bundle_banner_studio",
+    label: "Banner-Studio · komplett (Master + Reframe + Analyse)",
+    icon: "🪧", defaultCredits: 9,
+    model: "Daten-Extract + Master-Bild + Ideogram-Reframe",
+    ekUsd: API.geminiFlashText + API.geminiFlashImage + API.ideogramV3Reframe,
+    ekBreakdown:
+      `Daten-Extract (Gemini Flash) $${API.geminiFlashText} ` +
+      `+ Master-Bild (Gemini 2.5 Flash Image) $${API.geminiFlashImage} ` +
+      `+ Reframe (Ideogram v3) $${API.ideogramV3Reframe} ` +
+      `= $${(API.geminiFlashText + API.geminiFlashImage + API.ideogramV3Reframe).toFixed(3)}`,
+    source: "Gemini + Ideogram",
+    produces: "1 fertiger Banner (Daten-Auslesen + KI-Bild + Format-Anpassung)",
+    inMix: false,
+  },
+  {
+    id: "bundle-banner-studio-premium", category: "bundle",
+    action: "image_generate", tier: "bundle_banner_premium",
+    label: "Banner-Studio · Premium komplett (Pro-Bild + Reframe)",
+    icon: "✨", defaultCredits: 14,
+    model: "Daten-Extract + Gemini 3 Pro Image + Ideogram-Reframe",
+    ekUsd: API.geminiFlashText + API.geminiProImage_2k + API.ideogramV3Reframe,
+    ekBreakdown:
+      `Daten-Extract $${API.geminiFlashText} ` +
+      `+ Pro-Bild 2K $${API.geminiProImage_2k} ` +
+      `+ Reframe $${API.ideogramV3Reframe} ` +
+      `= $${(API.geminiFlashText + API.geminiProImage_2k + API.ideogramV3Reframe).toFixed(3)}`,
+    source: "Gemini Pro + Ideogram",
+    produces: "1 Premium-Banner komplett (Pro-Bildqualität + Format-Reframe)",
+    inMix: false,
+  },
+  {
+    id: "bundle-pdf-full-pipeline", category: "bundle",
+    action: "pdf_analysis", tier: "bundle_full",
+    label: "PDF-Pipeline · komplett (PDF + VIN + 7 Bilder + Landingpage)",
+    icon: "📑", defaultCredits: 12,
+    model: "PDF-Analyse + OUTVIN + Content + 7× Hero-Bilder",
+    ekUsd:
+      API.geminiFlashTextLong +
+      API.outvinLookup +
+      API.geminiProText +
+      7 * API.geminiFlashImage,
+    ekBreakdown:
+      `PDF-Analyse $${API.geminiFlashTextLong} ` +
+      `+ VIN-Lookup (OUTVIN) $${API.outvinLookup} ` +
+      `+ Content-Gen Pro $${API.geminiProText} ` +
+      `+ 7× Bilder $${(7 * API.geminiFlashImage).toFixed(3)} ` +
+      `= $${(API.geminiFlashTextLong + API.outvinLookup + API.geminiProText + 7 * API.geminiFlashImage).toFixed(3)}`,
+    source: "Gemini Flash + OUTVIN + Gemini Pro + Gemini Flash Image",
+    produces: "1 vollständige PDF→Landingpage-Pipeline (Daten + Bilder + Content)",
+    inMix: false,
+  },
+  {
+    id: "bundle-pdf-extract-only", category: "bundle",
+    action: "pdf_analysis", tier: "bundle_extract",
+    label: "PDF · Daten + VIN-Anreicherung",
+    icon: "📋", defaultCredits: 3,
+    model: "PDF-Vision + OUTVIN-Lookup",
+    ekUsd: API.geminiFlashTextLong + API.outvinLookup,
+    ekBreakdown:
+      `PDF-Analyse $${API.geminiFlashTextLong} ` +
+      `+ VIN-Lookup $${API.outvinLookup} ` +
+      `= $${(API.geminiFlashTextLong + API.outvinLookup).toFixed(3)}`,
+    source: "Gemini 2.5 Flash + OUTVIN",
+    produces: "1 vollständiger Fahrzeug-Stammdatensatz aus PDF (inkl. VIN-Anreicherung)",
+    inMix: false,
+  },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────
