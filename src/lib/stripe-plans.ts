@@ -1,35 +1,22 @@
 // Mapping between subscription_plans slugs and Stripe price IDs
+// Vereinfachte Preisstruktur (2026-06-22):
+//   • EIN Grundpaket "basis" – 1000 Credits/Monat für 490 €
+//   • EIN Top-Up "200 Credits" für 100 €
 export const STRIPE_PRICES: Record<string, { monthly: string; yearly: string }> = {
-  starter: {
-    monthly: 'price_1T8hVQP3eWRHEALNj9S6p0Ci',
-    yearly: 'price_1T8jl2P3eWRHEALNgN05G4uH',
-  },
-  pro: {
-    monthly: 'price_1T8hW0P3eWRHEALN6oM3lCnH',
-    yearly: 'price_1T8kGPP3eWRHEALNfEabkqKC',
-  },
-  enterprise: {
-    monthly: 'price_1T8hZFP3eWRHEALNKgntuNEe',
-    yearly: 'price_1T8kH6P3eWRHEALNMOPfmibG',
+  basis: {
+    monthly: 'price_1Tl8cuP3eWRHEALNPuSwqIZe',
+    // Kein separater Jahrespreis – wir verrechnen auf identischer Basis.
+    yearly: 'price_1Tl8cuP3eWRHEALNPuSwqIZe',
   },
 };
 
 // Stripe product IDs per plan slug
 export const STRIPE_PRODUCTS: Record<string, string> = {
-  starter: 'prod_U6vMgZiKJOuEph',
-  pro: 'prod_U6vMFLF7W8nh43',
-  enterprise: 'prod_U6vQHQJucwwipk',
+  basis: 'prod_Ukduqj0YRUxMYt',
 };
 
 // Credit packs for one-time purchase
-// Pack-Preise neu kalkuliert (2026-06-22) so, dass auch der teuerste
-// Use-Case (Veo-3.1-Standard-Video, 18 Cr) im 200er-Pack noch >30 %
-// Marge fährt. Quelle: src/lib/credit-economics.ts (VK_PER_CREDIT).
-//   10 Cr  →  5,00 € = 0,500 €/Cr
-//   50 Cr  → 18,00 € = 0,360 €/Cr (-28 % ggü. 10er)
-//  200 Cr  → 55,00 € = 0,275 €/Cr (-45 % ggü. 10er)
+//   200 Cr → 100,00 € = 0,50 €/Cr
 export const CREDIT_PACKS = [
-  { priceId: 'price_1T8kL9P3eWRHEALNnK3GQmXI', credits: 10,  priceCents:  500, label: '10 Credits' },
-  { priceId: 'price_1T8kLAP3eWRHEALN1wl28rEl', credits: 50,  priceCents: 1800, label: '50 Credits',  badge: '-28%' },
-  { priceId: 'price_1T8kLBP3eWRHEALNZCqMlh0N', credits: 200, priceCents: 5500, label: '200 Credits', badge: '-45%' },
+  { priceId: 'price_1Tl8cvP3eWRHEALNhWR3taMN', credits: 200, priceCents: 10000, label: '200 Credits' },
 ];

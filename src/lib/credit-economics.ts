@@ -29,18 +29,16 @@ export const OVERHEAD_USD = 0.014;
 export const INFRA_PER_IMAGE_USD = 0.0005;
 
 
-// Verkaufspreis pro Credit (€) – aus CREDIT_PACKS in stripe-plans.ts.
-// Aktuell:
-//   10 Cr  →  5,00 € = 0,500 €/Cr (worst margin for us)
-//   50 Cr  → 18,00 € = 0,360 €/Cr
-//  200 Cr  → 55,00 € = 0,275 €/Cr (best margin for us)
-// (Anpassung 2026-06-22: Pack-Preise erhöht, damit auch Video-Mix
-//  bei 200er-Pack noch ≥30 % Marge fährt.)
+// Verkaufspreis pro Credit (€) – aus den vereinfachten Tarifen:
+//   • Basis-Abo:   1000 Cr / 490 €/Mo = 0,49 €/Cr
+//   • Top-Up-Pack:  200 Cr / 100 €    = 0,50 €/Cr
+// Alle Margenrechnungen nutzen "best" (0,49 €/Cr) als Worst-Case.
 export const VK_PER_CREDIT = {
-  best: 0.275,   // 200er-Pack – Worst-Case-Marge
-  mid: 0.36,     // 50er-Pack
-  worst: 0.50,   // 10er-Pack – Best-Case-Marge
+  best: 0.49,    // Basis-Abo – Worst-Case-Marge für uns
+  mid: 0.49,     // identisch (keine Tier-Pakete mehr)
+  worst: 0.50,   // 200er-Top-Up
 } as const;
+
 
 export type Category =
   | "image"        // Reine Bildgenerierung
