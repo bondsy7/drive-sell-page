@@ -12,10 +12,22 @@
 export const USD_TO_EUR = 0.92;
 
 // Overhead pro Kunden-Aktion (USD), gemittelt über alle Aktionen.
-// Enthält: Stripe-Gebühr (~1,5 % + 0,25 € auf Credit-Kauf, umgelegt
-// auf ~50 Cr/Kauf ≈ $0,010 / Cr-Aktion), Resend-Mailversand (~$0,0004),
-// Supabase Egress/Storage (~$0,0015). Zusammen ≈ $0,012.
-export const OVERHEAD_USD = 0.012;
+// Enthält:
+//  • Stripe-Gebühr (~1,5 % + 0,25 € auf Credit-Kauf, umgelegt auf ~50 Cr/Kauf) ≈ $0,010
+//  • Resend-Mailversand (Bestätigungs-/System-Mails)                            ≈ $0,0005
+//  • Supabase Egress + DB-Writes (Projekt-Row, Logs, RLS)                       ≈ $0,0020
+//  • Gemini File-API Upload-Quota & Retention (frei, aber Bandbreite/Latenz)   ≈ $0,0003
+//  • CDN/Edge-Function Cold-Start & Runtime (Supabase Edge)                    ≈ $0,0012
+//  → Summe ≈ $0,014 pro Aktion
+export const OVERHEAD_USD = 0.014;
+
+// Infrastruktur-Kosten pro **transportiertem Bild** (Upload zu Gemini File API
+// + Supabase Storage Egress + signed URLs + Re-Download in Edge Function).
+// Gemini File API selbst ist gratis, aber jeder Bild-Roundtrip kostet
+// Supabase-Egress ≈ $0,09/GB → bei ~2 MB/Bild ≈ $0,00018 + Edge-Function
+// Compute ≈ $0,00012 → konservativ $0,0005 pro Bild im Workflow.
+export const INFRA_PER_IMAGE_USD = 0.0005;
+
 
 // Verkaufspreis pro Credit (€) – aus CREDIT_PACKS in stripe-plans.ts.
 // Aktuell:
@@ -358,8 +370,8 @@ export const CATALOG: ActionTier[] = [
     action: "landing_page_export", tier: "standard",
     label: "Landingpage (Verbund)", icon: "📄", defaultCredits: 5,
     model: "gemini-2.5-pro + 7× gemini-2.5-flash-image",
-    ekUsd: API.geminiProText + 7 * API.geminiFlashImage,
-    ekBreakdown: `1× Content-Gen $${API.geminiProText} + 7× Bilder $${(7 * API.geminiFlashImage).toFixed(3)} = $${(API.geminiProText + 7 * API.geminiFlashImage).toFixed(3)}`,
+    ekUsd: API.geminiProText + 7 * API.geminiFlashImage + 8 * INFRA_PER_IMAGE_USD,
+    ekBreakdown: `1× Content-Gen $${API.geminiProText} + 7× Bilder $${(7 * API.geminiFlashImage).toFixed(3)} + 8× Bild-Transfer $${(8 * INFRA_PER_IMAGE_USD).toFixed(4)}`,
     source: "Gemini 2.5 Pro + 2.5 Flash Image",
     produces: "1 vollständige Landingpage (Content + 6–8 KI-Bilder)",
     inMix: true,
@@ -369,8 +381,8 @@ export const CATALOG: ActionTier[] = [
     action: "landing_page_export", tier: "premium",
     label: "Landingpage · Premium", icon: "📄", defaultCredits: 10,
     model: "gemini-2.5-pro + 7× gemini-3.1-flash-image",
-    ekUsd: API.geminiProText + 7 * API.geminiFlashImage2_1k,
-    ekBreakdown: `1× Content-Gen $${API.geminiProText} + 7× Bilder 1K $${(7 * API.geminiFlashImage2_1k).toFixed(3)}`,
+    ekUsd: API.geminiProText + 7 * API.geminiFlashImage2_1k + 8 * INFRA_PER_IMAGE_USD,
+    ekBreakdown: `1× Content-Gen $${API.geminiProText} + 7× Bilder 1K $${(7 * API.geminiFlashImage2_1k).toFixed(3)} + 8× Bild-Transfer $${(8 * INFRA_PER_IMAGE_USD).toFixed(4)}`,
     source: "Gemini 2.5 Pro + 3.1 Flash Image",
     produces: "1 Premium-Landingpage mit hochwertigeren Bildern",
     inMix: false,
@@ -384,10 +396,21 @@ export const CATALOG: ActionTier[] = [
     action: "damage_analyze", tier: "standard",
     label: "Schadensanalyse (Verbund)", icon: "🔧", defaultCredits: 4,
     model: "gemini-2.5-pro + 3× gemini-3.1-flash-image (Annotation)",
-    ekUsd: API.geminiProText + 3 * (API.geminiFlashImage2_1k + 0.0006),
-    ekBreakdown: `1× Analyse Pro $${API.geminiProText} + ~3× annotierte Bilder $${(3 * API.geminiFlashImage2_1k).toFixed(3)}`,
+    ekUsd: API.geminiProText + 3 * (API.geminiFlashImage2_1k + 0.0006) + 6 * INFRA_PER_IMAGE_USD,
+    ekBreakdown: `1× Analyse Pro $${API.geminiProText} + 3× Annot-Bilder $${(3 * API.geminiFlashImage2_1k).toFixed(3)} + 6× Bild-Transfer $${(6 * INFRA_PER_IMAGE_USD).toFixed(4)}`,
     source: "Gemini 2.5 Pro + 3.1 Flash Image",
     produces: "1 Schadensbericht mit annotierten Fotos",
+    inMix: true,
+  },
+  {
+    id: "damage-repair", category: "damage",
+    action: "image_remaster", tier: "damage_repair",
+    label: "Schadensreparatur (Visualisierung)", icon: "🛠️", defaultCredits: 2,
+    model: "gemini-3.1-flash-image-preview",
+    ekUsd: API.geminiFlashImage2_1k + 0.0006 + 2 * INFRA_PER_IMAGE_USD,
+    ekBreakdown: `1× Edit $${API.geminiFlashImage2_1k} + 2× Bild-Transfer`,
+    source: "Gemini 3.1 Flash Image",
+    produces: "1 reparierte Schadens-Visualisierung",
     inMix: true,
   },
   {
@@ -528,8 +551,8 @@ export const CATALOG: ActionTier[] = [
     action: "spin360_generate", tier: "standard",
     label: "360°-Spin (36 Frames)", icon: "🔄", defaultCredits: 20,
     model: "36× gemini-2.5-flash-image + Analyse + Normalize",
-    ekUsd: 36 * API.geminiFlashImage + API.geminiFlashText + 4 * API.geminiFlashImage,
-    ekBreakdown: `1× Analyse $${API.geminiFlashText} + 4× Normalize $${(4 * API.geminiFlashImage).toFixed(3)} + 36× Frames $${(36 * API.geminiFlashImage).toFixed(3)}`,
+    ekUsd: 36 * API.geminiFlashImage + API.geminiFlashText + 4 * API.geminiFlashImage + 41 * INFRA_PER_IMAGE_USD,
+    ekBreakdown: `1× Analyse $${API.geminiFlashText} + 4× Normalize $${(4 * API.geminiFlashImage).toFixed(3)} + 36× Frames $${(36 * API.geminiFlashImage).toFixed(3)} + 41× Bild-Transfer $${(41 * INFRA_PER_IMAGE_USD).toFixed(4)}`,
     source: "Gemini 2.5 Flash Image",
     produces: "1 vollständiger 360°-Spin (36 Frames)",
     inMix: false,
@@ -537,7 +560,8 @@ export const CATALOG: ActionTier[] = [
 
   // ════════════════════════════════════════════════════════
   // KOMPLETT-WORKFLOWS (End-to-End-Gesamtkosten)
-  // Summe aller Sub-Aufrufe, so wie sie der Kunde wirklich auslöst.
+  // Summe aller Sub-Aufrufe inkl. Bild-Transfer (Gemini File API
+  // Upload + Supabase Storage Egress + signed URLs).
   // ════════════════════════════════════════════════════════
   {
     id: "bundle-banner-studio-complete", category: "bundle",
@@ -545,12 +569,13 @@ export const CATALOG: ActionTier[] = [
     label: "Banner-Studio · komplett (Master + Reframe + Analyse)",
     icon: "🪧", defaultCredits: 9,
     model: "Daten-Extract + Master-Bild + Ideogram-Reframe",
-    ekUsd: API.geminiFlashText + API.geminiFlashImage + API.ideogramV3Reframe,
+    ekUsd: API.geminiFlashText + API.geminiFlashImage + API.ideogramV3Reframe + 4 * INFRA_PER_IMAGE_USD,
     ekBreakdown:
-      `Daten-Extract (Gemini Flash) $${API.geminiFlashText} ` +
-      `+ Master-Bild (Gemini 2.5 Flash Image) $${API.geminiFlashImage} ` +
+      `Daten-Extract $${API.geminiFlashText} ` +
+      `+ Master-Bild $${API.geminiFlashImage} ` +
       `+ Reframe (Ideogram v3) $${API.ideogramV3Reframe} ` +
-      `= $${(API.geminiFlashText + API.geminiFlashImage + API.ideogramV3Reframe).toFixed(3)}`,
+      `+ 4× Bild-Transfer $${(4 * INFRA_PER_IMAGE_USD).toFixed(4)} ` +
+      `= $${(API.geminiFlashText + API.geminiFlashImage + API.ideogramV3Reframe + 4 * INFRA_PER_IMAGE_USD).toFixed(3)}`,
     source: "Gemini + Ideogram",
     produces: "1 fertiger Banner (Daten-Auslesen + KI-Bild + Format-Anpassung)",
     inMix: false,
@@ -561,12 +586,13 @@ export const CATALOG: ActionTier[] = [
     label: "Banner-Studio · Premium komplett (Pro-Bild + Reframe)",
     icon: "✨", defaultCredits: 14,
     model: "Daten-Extract + Gemini 3 Pro Image + Ideogram-Reframe",
-    ekUsd: API.geminiFlashText + API.geminiProImage_2k + API.ideogramV3Reframe,
+    ekUsd: API.geminiFlashText + API.geminiProImage_2k + API.ideogramV3Reframe + 4 * INFRA_PER_IMAGE_USD,
     ekBreakdown:
       `Daten-Extract $${API.geminiFlashText} ` +
       `+ Pro-Bild 2K $${API.geminiProImage_2k} ` +
       `+ Reframe $${API.ideogramV3Reframe} ` +
-      `= $${(API.geminiFlashText + API.geminiProImage_2k + API.ideogramV3Reframe).toFixed(3)}`,
+      `+ 4× Bild-Transfer $${(4 * INFRA_PER_IMAGE_USD).toFixed(4)} ` +
+      `= $${(API.geminiFlashText + API.geminiProImage_2k + API.ideogramV3Reframe + 4 * INFRA_PER_IMAGE_USD).toFixed(3)}`,
     source: "Gemini Pro + Ideogram",
     produces: "1 Premium-Banner komplett (Pro-Bildqualität + Format-Reframe)",
     inMix: false,
@@ -581,13 +607,15 @@ export const CATALOG: ActionTier[] = [
       API.geminiFlashTextLong +
       API.outvinLookup +
       API.geminiProText +
-      7 * API.geminiFlashImage,
+      7 * API.geminiFlashImage +
+      9 * INFRA_PER_IMAGE_USD,
     ekBreakdown:
       `PDF-Analyse $${API.geminiFlashTextLong} ` +
       `+ VIN-Lookup (OUTVIN) $${API.outvinLookup} ` +
       `+ Content-Gen Pro $${API.geminiProText} ` +
       `+ 7× Bilder $${(7 * API.geminiFlashImage).toFixed(3)} ` +
-      `= $${(API.geminiFlashTextLong + API.outvinLookup + API.geminiProText + 7 * API.geminiFlashImage).toFixed(3)}`,
+      `+ 9× Datei-Transfer $${(9 * INFRA_PER_IMAGE_USD).toFixed(4)} ` +
+      `= $${(API.geminiFlashTextLong + API.outvinLookup + API.geminiProText + 7 * API.geminiFlashImage + 9 * INFRA_PER_IMAGE_USD).toFixed(3)}`,
     source: "Gemini Flash + OUTVIN + Gemini Pro + Gemini Flash Image",
     produces: "1 vollständige PDF→Landingpage-Pipeline (Daten + Bilder + Content)",
     inMix: false,
@@ -598,11 +626,12 @@ export const CATALOG: ActionTier[] = [
     label: "PDF · Daten + VIN-Anreicherung",
     icon: "📋", defaultCredits: 3,
     model: "PDF-Vision + OUTVIN-Lookup",
-    ekUsd: API.geminiFlashTextLong + API.outvinLookup,
+    ekUsd: API.geminiFlashTextLong + API.outvinLookup + 1 * INFRA_PER_IMAGE_USD,
     ekBreakdown:
       `PDF-Analyse $${API.geminiFlashTextLong} ` +
       `+ VIN-Lookup $${API.outvinLookup} ` +
-      `= $${(API.geminiFlashTextLong + API.outvinLookup).toFixed(3)}`,
+      `+ 1× PDF-Transfer $${INFRA_PER_IMAGE_USD.toFixed(4)} ` +
+      `= $${(API.geminiFlashTextLong + API.outvinLookup + INFRA_PER_IMAGE_USD).toFixed(3)}`,
     source: "Gemini 2.5 Flash + OUTVIN",
     produces: "1 vollständiger Fahrzeug-Stammdatensatz aus PDF (inkl. VIN-Anreicherung)",
     inMix: false,

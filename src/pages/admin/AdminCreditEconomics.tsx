@@ -40,7 +40,8 @@ export default function AdminCreditEconomics() {
         <h1 className="text-3xl font-bold tracking-tight">Credit-Ökonomie</h1>
         <p className="text-muted-foreground text-sm mt-1">
           EK = echte API-Kosten (Gemini, OpenAI Image, Veo 3.1, Ideogram, OUTVIN) +
-          Overhead (Stripe, Resend, Egress). VK = Pack-Preis pro Credit.
+          Overhead $0,014 (Stripe, Resend, Edge-Compute, Egress, Gemini-File-API-Quota)
+          + Bild-Transfer $0,0005 je Bild (Upload→Gemini + Supabase-Egress). VK = Pack-Preis pro Credit.
           Worst-Case basiert auf 200er-Pack ({formatEur(VK_PER_CREDIT.best)}/Cr).
           Kurs USD→EUR: {USD_TO_EUR}. Preise verifiziert 2026-06-22.
         </p>
@@ -175,7 +176,9 @@ export default function AdminCreditEconomics() {
           {" "}<a className="underline" href="https://about.ideogram.ai/api-pricing" target="_blank" rel="noreferrer">ideogram.ai/api-pricing</a>.
         </p>
         <p>
-          Nicht enthalten: Stripe-Gebühren (~1,5 % + 0,25 €), Supabase-Storage/Egress, Resend-Mails, Vercel-Hosting.
+          Im EK enthalten: alle API-Calls + Overhead $0,014 (Stripe, Resend, Edge-Compute, Egress)
+          + $0,0005 pro transportiertem Bild (Gemini-File-API-Upload, Supabase-Storage-Egress, signed URLs).
+          Gemini File API selbst ist gratis – Bandbreite & Speicher sind eingerechnet.
         </p>
       </div>
     </div>
