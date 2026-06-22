@@ -5,11 +5,11 @@ import { authenticateRequest } from "../_shared/auth.ts";
 import { getSecret } from "../_shared/get-secret.ts";
 
 // Credit pack mapping: priceId -> credits
+// Vereinfacht (2026-06-22): nur noch EIN Top-Up-Pack (200 Cr / 100 €).
 const CREDIT_PACKS: Record<string, number> = {
-  "price_1T8kL9P3eWRHEALNnK3GQmXI": 10,
-  "price_1T8kLAP3eWRHEALN1wl28rEl": 50,
-  "price_1T8kLBP3eWRHEALNZCqMlh0N": 200,
+  "price_1Tl8cvP3eWRHEALNhWR3taMN": 200,
 };
+
 
 serve(async (req) => {
   const corsResp = handleCors(req);
