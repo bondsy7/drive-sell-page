@@ -25,6 +25,7 @@ const LeasingCalculator = lazy(() => import("./pages/LeasingCalculator"));
 const FinancingCalculator = lazy(() => import("./pages/FinancingCalculator"));
 const KfzSteuerRechner = lazy(() => import("./pages/KfzSteuerRechner"));
 const Pricing = lazy(() => import("./pages/Pricing"));
+const CreditRechner = lazy(() => import("./pages/CreditRechner"));
 const Integrations = lazy(() => import("./pages/Integrations"));
 const ApiDocs = lazy(() => import("./pages/ApiDocs"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -127,6 +128,7 @@ const App = () => (
               <Route path="/finanzierungsrechner" element={<ProtectedRoute><FinancingCalculator /></ProtectedRoute>} />
               <Route path="/kfz-steuer-rechner" element={<ProtectedRoute><KfzSteuerRechner /></ProtectedRoute>} />
               <Route path="/pricing" element={<Pricing />} />
+              <Route path="/credit-rechner" element={<CreditRechner />} />
               <Route path="/docs" element={<ApiDocs />} />
               <Route path="/integrations" element={<ProtectedRoute><Integrations /></ProtectedRoute>} />
               <Route path="/sales-assistant" element={<ProtectedRoute><ErrorBoundary moduleName="Sales Assistant"><SalesAssistant /></ErrorBoundary></ProtectedRoute>} />
