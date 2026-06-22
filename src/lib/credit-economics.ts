@@ -146,8 +146,64 @@ export const CATALOG: ActionTier[] = [
     inMix: false,
   },
 
-  // ════════════════════════════════════════════════════════
-  // REMASTERING (Foto-Aufbereitung, Edit-Modus)
+  // ─── OpenAI Image (gpt-image-1, 3 Qualitätsstufen) ───────
+  {
+    id: "image-openai-low", category: "image",
+    action: "image_generate", tier: "openai_low",
+    label: "Bild · OpenAI Low", icon: "🖼️", defaultCredits: 2,
+    model: "openai/gpt-image-1 (low)",
+    ekUsd: API.gptImage1_low,
+    ekBreakdown: `1× gpt-image-1 low $${API.gptImage1_low}`,
+    source: "OpenAI gpt-image-1",
+    produces: "1 KI-Bild via OpenAI (günstig)",
+    inMix: false,
+  },
+  {
+    id: "image-openai-med", category: "image",
+    action: "image_generate", tier: "openai_med",
+    label: "Bild · OpenAI Medium", icon: "🖼️", defaultCredits: 4,
+    model: "openai/gpt-image-1 (medium)",
+    ekUsd: API.gptImage1_med,
+    ekBreakdown: `1× gpt-image-1 medium $${API.gptImage1_med}`,
+    source: "OpenAI gpt-image-1",
+    produces: "1 KI-Bild via OpenAI (Standard)",
+    inMix: false,
+  },
+  {
+    id: "image-openai-high", category: "image",
+    action: "image_generate", tier: "openai_high",
+    label: "Bild · OpenAI High", icon: "✨", defaultCredits: 10,
+    model: "openai/gpt-image-1 (high)",
+    ekUsd: API.gptImage1_high,
+    ekBreakdown: `1× gpt-image-1 high $${API.gptImage1_high}`,
+    source: "OpenAI gpt-image-1",
+    produces: "1 Premium-Bild via OpenAI (höchste Qualität)",
+    inMix: false,
+  },
+
+  // ─── Ideogram Bilderweitern (Reframe = Outpainting) ──────
+  {
+    id: "image-extend-turbo", category: "image",
+    action: "image_generate", tier: "extend_turbo",
+    label: "Bilderweitern · Turbo (Ideogram)", icon: "↔️", defaultCredits: 2,
+    model: "ideogram-v4 turbo",
+    ekUsd: API.ideogramV4Turbo,
+    ekBreakdown: `1× Ideogram 4.0 Turbo Reframe $${API.ideogramV4Turbo}`,
+    source: "Ideogram API",
+    produces: "1 erweitertes Bild (Outpainting, schnell)",
+    inMix: false,
+  },
+  {
+    id: "image-extend-default", category: "image",
+    action: "image_generate", tier: "extend_default",
+    label: "Bilderweitern · Default (Ideogram)", icon: "↔️", defaultCredits: 3,
+    model: "ideogram-v3 reframe / v4 default",
+    ekUsd: API.ideogramV3Reframe,
+    ekBreakdown: `1× Ideogram Reframe $${API.ideogramV3Reframe}`,
+    source: "Ideogram API",
+    produces: "1 erweitertes Bild (Outpainting, höchste Qualität)",
+    inMix: false,
+  },
   // ════════════════════════════════════════════════════════
   {
     id: "remaster-schnell", category: "remaster",
