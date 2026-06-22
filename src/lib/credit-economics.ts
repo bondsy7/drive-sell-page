@@ -39,7 +39,8 @@ export type Category =
   | "damage"       // Schadensanalyse / -reparatur
   | "analysis"     // PDF / VIN / Bild / Angebot
   | "sales"        // Sales-Assistent / KI-Chat
-  | "spin";        // 360° (optional, nicht in Kunden-Mix)
+  | "spin"         // 360° (optional, nicht in Kunden-Mix)
+  | "bundle";      // End-to-End-Workflows (Gesamtkosten)
 
 export interface ActionTier {
   id: string;
@@ -145,8 +146,64 @@ export const CATALOG: ActionTier[] = [
     inMix: false,
   },
 
-  // ════════════════════════════════════════════════════════
-  // REMASTERING (Foto-Aufbereitung, Edit-Modus)
+  // ─── OpenAI Image (gpt-image-1, 3 Qualitätsstufen) ───────
+  {
+    id: "image-openai-low", category: "image",
+    action: "image_generate", tier: "openai_low",
+    label: "Bild · OpenAI Low", icon: "🖼️", defaultCredits: 2,
+    model: "openai/gpt-image-1 (low)",
+    ekUsd: API.gptImage1_low,
+    ekBreakdown: `1× gpt-image-1 low $${API.gptImage1_low}`,
+    source: "OpenAI gpt-image-1",
+    produces: "1 KI-Bild via OpenAI (günstig)",
+    inMix: false,
+  },
+  {
+    id: "image-openai-med", category: "image",
+    action: "image_generate", tier: "openai_med",
+    label: "Bild · OpenAI Medium", icon: "🖼️", defaultCredits: 4,
+    model: "openai/gpt-image-1 (medium)",
+    ekUsd: API.gptImage1_med,
+    ekBreakdown: `1× gpt-image-1 medium $${API.gptImage1_med}`,
+    source: "OpenAI gpt-image-1",
+    produces: "1 KI-Bild via OpenAI (Standard)",
+    inMix: false,
+  },
+  {
+    id: "image-openai-high", category: "image",
+    action: "image_generate", tier: "openai_high",
+    label: "Bild · OpenAI High", icon: "✨", defaultCredits: 10,
+    model: "openai/gpt-image-1 (high)",
+    ekUsd: API.gptImage1_high,
+    ekBreakdown: `1× gpt-image-1 high $${API.gptImage1_high}`,
+    source: "OpenAI gpt-image-1",
+    produces: "1 Premium-Bild via OpenAI (höchste Qualität)",
+    inMix: false,
+  },
+
+  // ─── Ideogram Bilderweitern (Reframe = Outpainting) ──────
+  {
+    id: "image-extend-turbo", category: "image",
+    action: "image_generate", tier: "extend_turbo",
+    label: "Bilderweitern · Turbo (Ideogram)", icon: "↔️", defaultCredits: 2,
+    model: "ideogram-v4 turbo",
+    ekUsd: API.ideogramV4Turbo,
+    ekBreakdown: `1× Ideogram 4.0 Turbo Reframe $${API.ideogramV4Turbo}`,
+    source: "Ideogram API",
+    produces: "1 erweitertes Bild (Outpainting, schnell)",
+    inMix: false,
+  },
+  {
+    id: "image-extend-default", category: "image",
+    action: "image_generate", tier: "extend_default",
+    label: "Bilderweitern · Default (Ideogram)", icon: "↔️", defaultCredits: 3,
+    model: "ideogram-v3 reframe / v4 default",
+    ekUsd: API.ideogramV3Reframe,
+    ekBreakdown: `1× Ideogram Reframe $${API.ideogramV3Reframe}`,
+    source: "Ideogram API",
+    produces: "1 erweitertes Bild (Outpainting, höchste Qualität)",
+    inMix: false,
+  },
   // ════════════════════════════════════════════════════════
   {
     id: "remaster-schnell", category: "remaster",
@@ -477,6 +534,79 @@ export const CATALOG: ActionTier[] = [
     produces: "1 vollständiger 360°-Spin (36 Frames)",
     inMix: false,
   },
+
+  // ════════════════════════════════════════════════════════
+  // KOMPLETT-WORKFLOWS (End-to-End-Gesamtkosten)
+  // Summe aller Sub-Aufrufe, so wie sie der Kunde wirklich auslöst.
+  // ════════════════════════════════════════════════════════
+  {
+    id: "bundle-banner-studio-complete", category: "bundle",
+    action: "image_generate", tier: "bundle_banner_studio",
+    label: "Banner-Studio · komplett (Master + Reframe + Analyse)",
+    icon: "🪧", defaultCredits: 9,
+    model: "Daten-Extract + Master-Bild + Ideogram-Reframe",
+    ekUsd: API.geminiFlashText + API.geminiFlashImage + API.ideogramV3Reframe,
+    ekBreakdown:
+      `Daten-Extract (Gemini Flash) $${API.geminiFlashText} ` +
+      `+ Master-Bild (Gemini 2.5 Flash Image) $${API.geminiFlashImage} ` +
+      `+ Reframe (Ideogram v3) $${API.ideogramV3Reframe} ` +
+      `= $${(API.geminiFlashText + API.geminiFlashImage + API.ideogramV3Reframe).toFixed(3)}`,
+    source: "Gemini + Ideogram",
+    produces: "1 fertiger Banner (Daten-Auslesen + KI-Bild + Format-Anpassung)",
+    inMix: false,
+  },
+  {
+    id: "bundle-banner-studio-premium", category: "bundle",
+    action: "image_generate", tier: "bundle_banner_premium",
+    label: "Banner-Studio · Premium komplett (Pro-Bild + Reframe)",
+    icon: "✨", defaultCredits: 14,
+    model: "Daten-Extract + Gemini 3 Pro Image + Ideogram-Reframe",
+    ekUsd: API.geminiFlashText + API.geminiProImage_2k + API.ideogramV3Reframe,
+    ekBreakdown:
+      `Daten-Extract $${API.geminiFlashText} ` +
+      `+ Pro-Bild 2K $${API.geminiProImage_2k} ` +
+      `+ Reframe $${API.ideogramV3Reframe} ` +
+      `= $${(API.geminiFlashText + API.geminiProImage_2k + API.ideogramV3Reframe).toFixed(3)}`,
+    source: "Gemini Pro + Ideogram",
+    produces: "1 Premium-Banner komplett (Pro-Bildqualität + Format-Reframe)",
+    inMix: false,
+  },
+  {
+    id: "bundle-pdf-full-pipeline", category: "bundle",
+    action: "pdf_analysis", tier: "bundle_full",
+    label: "PDF-Pipeline · komplett (PDF + VIN + 7 Bilder + Landingpage)",
+    icon: "📑", defaultCredits: 12,
+    model: "PDF-Analyse + OUTVIN + Content + 7× Hero-Bilder",
+    ekUsd:
+      API.geminiFlashTextLong +
+      API.outvinLookup +
+      API.geminiProText +
+      7 * API.geminiFlashImage,
+    ekBreakdown:
+      `PDF-Analyse $${API.geminiFlashTextLong} ` +
+      `+ VIN-Lookup (OUTVIN) $${API.outvinLookup} ` +
+      `+ Content-Gen Pro $${API.geminiProText} ` +
+      `+ 7× Bilder $${(7 * API.geminiFlashImage).toFixed(3)} ` +
+      `= $${(API.geminiFlashTextLong + API.outvinLookup + API.geminiProText + 7 * API.geminiFlashImage).toFixed(3)}`,
+    source: "Gemini Flash + OUTVIN + Gemini Pro + Gemini Flash Image",
+    produces: "1 vollständige PDF→Landingpage-Pipeline (Daten + Bilder + Content)",
+    inMix: false,
+  },
+  {
+    id: "bundle-pdf-extract-only", category: "bundle",
+    action: "pdf_analysis", tier: "bundle_extract",
+    label: "PDF · Daten + VIN-Anreicherung",
+    icon: "📋", defaultCredits: 3,
+    model: "PDF-Vision + OUTVIN-Lookup",
+    ekUsd: API.geminiFlashTextLong + API.outvinLookup,
+    ekBreakdown:
+      `PDF-Analyse $${API.geminiFlashTextLong} ` +
+      `+ VIN-Lookup $${API.outvinLookup} ` +
+      `= $${(API.geminiFlashTextLong + API.outvinLookup).toFixed(3)}`,
+    source: "Gemini 2.5 Flash + OUTVIN",
+    produces: "1 vollständiger Fahrzeug-Stammdatensatz aus PDF (inkl. VIN-Anreicherung)",
+    inMix: false,
+  },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────
@@ -517,4 +647,5 @@ export const CATEGORY_META: Record<Category, { label: string; icon: string; colo
   analysis: { label: "Analyse / Daten", icon: "🔍", color: "from-slate-500/15 to-slate-500/5" },
   sales:    { label: "Sales-Assistent", icon: "💬", color: "from-teal-500/15 to-teal-500/5" },
   spin:     { label: "360°-Spin",       icon: "🔄", color: "from-indigo-500/15 to-indigo-500/5" },
+  bundle:   { label: "Komplett-Workflows", icon: "📦", color: "from-fuchsia-500/15 to-fuchsia-500/5" },
 };
