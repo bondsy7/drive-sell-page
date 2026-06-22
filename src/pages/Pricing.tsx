@@ -151,24 +151,15 @@ const Pricing = () => {
       <main className="max-w-5xl mx-auto px-3 sm:px-4 py-8 sm:py-16">
         <div className="text-center mb-8 sm:mb-12">
           <h1 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-3">
-            Wähle deinen Plan
+            Einfach. Transparent. Komplett.
           </h1>
-          <p className="text-muted-foreground max-w-md mx-auto mb-6 text-sm sm:text-base">
-            Starte kostenlos mit 10 Credits. Upgrade jederzeit für mehr Power.
+          <p className="text-muted-foreground max-w-xl mx-auto mb-4 text-sm sm:text-base">
+            <strong className="text-foreground">Ein Grundpaket</strong> – 1000 Credits pro Monat für 490 €. Alle Portal-Gebühren und API-Kosten sind enthalten. Brauchst du mehr? Lade nach Bedarf <strong className="text-foreground">200 Credits für 100 €</strong> nach.
           </p>
-          <div className="inline-flex items-center gap-2 p-1 rounded-lg bg-muted">
-            <button
-              onClick={() => setYearly(false)}
-              className={`px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors ${!yearly ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}
-            >Monatlich</button>
-            <button
-              onClick={() => setYearly(true)}
-              className={`px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors ${yearly ? 'bg-accent text-accent-foreground shadow-sm' : 'text-muted-foreground'}`}
-            >Jährlich <span className="text-[10px] font-bold ml-1">-20%</span></button>
-          </div>
         </div>
 
-        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 max-w-3xl mx-auto">
           {plans.map((plan) => {
             const price = yearly ? Math.round(plan.price_yearly_cents / 12) : plan.price_monthly_cents;
             const isPro = plan.slug === 'pro';
@@ -368,12 +359,7 @@ const Pricing = () => {
           <p className="text-muted-foreground text-center text-sm mb-6">Einmalig – kein Abo nötig</p>
           <div className="grid gap-4 md:grid-cols-3 max-w-2xl mx-auto">
             {CREDIT_PACKS.map((pack) => (
-              <div key={pack.priceId} className="relative rounded-xl border border-border bg-card p-5 flex flex-col items-center text-center">
-                {pack.badge && (
-                  <span className="absolute -top-2.5 right-3 px-2 py-0.5 rounded-full bg-accent text-accent-foreground text-[10px] font-bold">
-                    {pack.badge}
-                  </span>
-                )}
+              <div key={pack.priceId} className="relative rounded-xl border border-border bg-card p-5 flex flex-col items-center text-center md:col-span-3 max-w-sm mx-auto w-full">
                 <Zap className="w-6 h-6 text-accent mb-2" />
                 <span className="font-display font-bold text-foreground text-lg">{pack.label}</span>
                 <span className="text-2xl font-bold text-foreground mt-1">{(pack.priceCents / 100).toFixed(0)}€</span>
@@ -388,10 +374,11 @@ const Pricing = () => {
                   onClick={() => handleBuyCredits(pack.priceId)}
                 >
                   {loadingCredit === pack.priceId ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Plus className="w-4 h-4 mr-1" />}
-                  Kaufen
+                  Nachkaufen
                 </Button>
               </div>
             ))}
+
           </div>
         </div>
 
