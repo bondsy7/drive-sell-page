@@ -41,7 +41,7 @@ export default function CreditSlider({
     return init as Record<Category, number>;
   });
 
-  const total = MIX_CATEGORIES.reduce((sum, c) => sum + (mix[c] || 0), 0) || 1;
+  const total = 100;
 
   const reprMap = useMemo(() => {
     const m: Partial<Record<Category, ActionTier>> = {};
@@ -63,7 +63,42 @@ export default function CreditSlider({
     return { cat: c, tier, pct: Math.round(pct * 100), allocated, perItem, count };
   }).filter(Boolean) as Array<{ cat: Category; tier: ActionTier; pct: number; allocated: number; perItem: number; count: number }>;
 
-  const setPct = (c: Category, v: number) => setMix((m) => ({ ...m, [c]: v }));
+  // Auto-Balance: erhöht der Nutzer einen Wert, schrumpfen die anderen
+  // proportional, sodass die Summe immer = 100 % bleibt.
+  const setPct = (target: Category, newVal: number) => {
+    setMix((m) => {
+      const clamped = Math.max(0, Math.min(100, newVal));
+      const remaining = 100 - clamped;
+      const others = MIX_CATEGORIES.filter((c) => c !== target);
+      const othersSum = others.reduce((s, c) => s + (m[c] || 0), 0);
+      const next: Record<string, number> = { [target]: clamped };
+      if (othersSum === 0) {
+        // Gleichmäßig auf alle anderen verteilen
+        const share = remaining / others.length;
+        others.forEach((c) => (next[c] = share));
+      } else {
+        others.forEach((c) => {
+          next[c] = ((m[c] || 0) / othersSum) * remaining;
+        });
+      }
+      // Auf ganze Zahlen runden, Rest dem größten "other" zuschlagen
+      const rounded: Record<string, number> = {};
+      let sumRounded = 0;
+      MIX_CATEGORIES.forEach((c) => {
+        rounded[c] = Math.round(next[c] || 0);
+        sumRounded += rounded[c];
+      });
+      const diff = 100 - sumRounded;
+      if (diff !== 0) {
+        const biggestOther = others.reduce((a, b) =>
+          (rounded[a] >= rounded[b] ? a : b),
+        );
+        rounded[biggestOther] = Math.max(0, rounded[biggestOther] + diff);
+      }
+      return rounded as Record<Category, number>;
+    });
+  };
+
 
   return (
     <Card className="p-6 md:p-8 bg-card border-border/50 rounded-2xl">
@@ -101,7 +136,9 @@ export default function CreditSlider({
           <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
             Aufteilung
           </h4>
-          <Badge variant="outline" className="text-[10px]">Summe: {total}%</Badge>
+          <Badge variant="outline" className="text-[10px]">
+            Summe: 100% (Auto-Balance)
+          </Badge>
         </div>
 
         {rows.map((r) => {
