@@ -136,7 +136,9 @@ export default function CreditSlider({
           <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
             Aufteilung
           </h4>
-          <Badge variant="outline" className="text-[10px]">Summe: {total}%</Badge>
+          <Badge variant="outline" className="text-[10px]">
+            Summe: 100% (Auto-Balance)
+          </Badge>
         </div>
 
         {rows.map((r) => {
