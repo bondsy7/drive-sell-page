@@ -12,10 +12,22 @@
 export const USD_TO_EUR = 0.92;
 
 // Overhead pro Kunden-Aktion (USD), gemittelt über alle Aktionen.
-// Enthält: Stripe-Gebühr (~1,5 % + 0,25 € auf Credit-Kauf, umgelegt
-// auf ~50 Cr/Kauf ≈ $0,010 / Cr-Aktion), Resend-Mailversand (~$0,0004),
-// Supabase Egress/Storage (~$0,0015). Zusammen ≈ $0,012.
-export const OVERHEAD_USD = 0.012;
+// Enthält:
+//  • Stripe-Gebühr (~1,5 % + 0,25 € auf Credit-Kauf, umgelegt auf ~50 Cr/Kauf) ≈ $0,010
+//  • Resend-Mailversand (Bestätigungs-/System-Mails)                            ≈ $0,0005
+//  • Supabase Egress + DB-Writes (Projekt-Row, Logs, RLS)                       ≈ $0,0020
+//  • Gemini File-API Upload-Quota & Retention (frei, aber Bandbreite/Latenz)   ≈ $0,0003
+//  • CDN/Edge-Function Cold-Start & Runtime (Supabase Edge)                    ≈ $0,0012
+//  → Summe ≈ $0,014 pro Aktion
+export const OVERHEAD_USD = 0.014;
+
+// Infrastruktur-Kosten pro **transportiertem Bild** (Upload zu Gemini File API
+// + Supabase Storage Egress + signed URLs + Re-Download in Edge Function).
+// Gemini File API selbst ist gratis, aber jeder Bild-Roundtrip kostet
+// Supabase-Egress ≈ $0,09/GB → bei ~2 MB/Bild ≈ $0,00018 + Edge-Function
+// Compute ≈ $0,00012 → konservativ $0,0005 pro Bild im Workflow.
+export const INFRA_PER_IMAGE_USD = 0.0005;
+
 
 // Verkaufspreis pro Credit (€) – aus CREDIT_PACKS in stripe-plans.ts.
 // Aktuell:
