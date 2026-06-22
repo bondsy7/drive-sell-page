@@ -214,7 +214,7 @@ async function handleVideoStart(req: Request, GEMINI_API_KEY: string, body: any)
 
   const aspectRatio = rawAspect === "9:16" ? "9:16" : "16:9";
   const isSpin360 = action === "spin360_start";
-  const creditAmount = 10;
+  const creditAmount = 15;
   const creditAction = "image_generate";
   const creditDesc = isSpin360 ? "360° Video-Spin (Veo)" : "Video-Generierung (Veo)";
 
