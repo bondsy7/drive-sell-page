@@ -11,7 +11,6 @@ import { useCredits } from "@/hooks/useCredits";
 // nimmt die "mittlere" / verbreitetste Variante.
 const REPR_PER_CATEGORY: Partial<Record<Category, string>> = {
   image:    "image-qualitaet",
-  remaster: "remaster-qualitaet",
   banner:   "banner-studio-qualitaet",
   video:    "video-standard",
   landing:  "landing-standard",
@@ -19,7 +18,7 @@ const REPR_PER_CATEGORY: Partial<Record<Category, string>> = {
   analysis: "pdf-analysis",
 };
 
-const MIX_CATEGORIES: Category[] = ["image", "remaster", "banner", "video", "landing", "damage", "analysis"];
+const MIX_CATEGORIES: Category[] = ["image", "banner", "video", "landing", "damage", "analysis"];
 
 export default function CreditSlider({
   defaultCredits = 200,
@@ -29,15 +28,15 @@ export default function CreditSlider({
   const [credits, setCredits] = useState(defaultCredits);
   const { costs } = useCredits();
 
-  // Prozent-Verteilung pro Kategorie (Default: nur "image" voll)
+  // Prozent-Verteilung pro Kategorie
   const [mix, setMix] = useState<Record<Category, number>>(() => {
     const init: Record<string, number> = {};
     MIX_CATEGORIES.forEach((c) => (init[c] = 0));
-    init.image = 40;
-    init.remaster = 30;
-    init.banner = 15;
-    init.video = 10;
-    init.landing = 5;
+    init.image = 50;
+    init.banner = 20;
+    init.video = 15;
+    init.landing = 10;
+    init.damage = 5;
     return init as Record<Category, number>;
   });
 
