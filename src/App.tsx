@@ -57,6 +57,7 @@ const AdminTestDrives = lazy(() => import("./pages/admin/AdminTestDrives"));
 const AdminPipelineStats = lazy(() => import("./pages/admin/AdminPipelineStats"));
 const AdminQrLogin = lazy(() => import("./pages/admin/AdminQrLogin"));
 const AdminBannerTemplates = lazy(() => import("./pages/admin/AdminBannerTemplates"));
+const AdminCreditEconomics = lazy(() => import("./pages/admin/AdminCreditEconomics"));
 import AdminRoute from "./components/AdminRoute";
 
 const queryClient = new QueryClient();
@@ -153,6 +154,7 @@ const App = () => (
                 <Route path="pipeline-stats" element={<AdminPipelineStats />} />
                 <Route path="qr-login" element={<AdminQrLogin />} />
                 <Route path="banner-templates" element={<AdminBannerTemplates />} />
+                <Route path="credit-economics" element={<AdminCreditEconomics />} />
               </Route>
               <Route path="/architecture" element={<ProtectedRoute><AdminRoute><ArchitectureDoc /></AdminRoute></ProtectedRoute>} />
               <Route path="/sales-assistant/chat" element={<ProtectedRoute><ErrorBoundary moduleName="Sales Assistant"><SalesAssistant /></ErrorBoundary></ProtectedRoute>} />

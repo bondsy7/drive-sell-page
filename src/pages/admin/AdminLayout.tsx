@@ -32,6 +32,7 @@ const NAV_GROUPS: NavGroupDef[] = [
       { to: '/admin/transactions', icon: Receipt, label: 'Transaktionen' },
       { to: '/admin/revenue', icon: TrendingUp, label: 'Umsatz & Abos' },
       { to: '/admin/pricing', icon: CreditCard, label: 'Preise' },
+      { to: '/admin/credit-economics', icon: CreditCard, label: 'Credit-Ökonomie' },
     ],
   },
   {
