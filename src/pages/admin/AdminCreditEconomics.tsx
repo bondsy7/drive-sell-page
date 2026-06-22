@@ -39,8 +39,16 @@ export default function AdminCreditEconomics() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Credit-Ökonomie</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          EK = echte API-Kosten (Gemini, OpenAI, Veo, Ideogram, OUTVIN) · VK = Pack-Preis pro Credit ·
-          Worst-Case basiert auf 200er-Pack ({formatEur(VK_PER_CREDIT.best)}/Cr). Kurs USD→EUR: {USD_TO_EUR}.
+          EK = echte API-Kosten (Gemini, OpenAI Image, Veo 3.1, Ideogram, OUTVIN) +
+          Overhead (Stripe, Resend, Egress). VK = Pack-Preis pro Credit.
+          Worst-Case basiert auf 200er-Pack ({formatEur(VK_PER_CREDIT.best)}/Cr).
+          Kurs USD→EUR: {USD_TO_EUR}. Preise verifiziert 2026-06-22.
+        </p>
+        <p className="text-[11px] text-muted-foreground/70 mt-2">
+          Pack-Preise: 10 Cr → 5,00 € · 50 Cr → 18,00 € · 200 Cr → 55,00 €.
+          Aufgeführt sind ALLE kostenverursachenden Tools (Bild, Remaster, Banner,
+          Canvas-Reframe via Ideogram, Video, Landingpage, Schaden, PDF, VIN,
+          Bild-/Marken-Erkennung, Angebots-Analyse, Sales-Chat, 360°-Spin).
         </p>
       </div>
 
