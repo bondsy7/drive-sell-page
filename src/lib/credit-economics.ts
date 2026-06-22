@@ -647,4 +647,5 @@ export const CATEGORY_META: Record<Category, { label: string; icon: string; colo
   analysis: { label: "Analyse / Daten", icon: "🔍", color: "from-slate-500/15 to-slate-500/5" },
   sales:    { label: "Sales-Assistent", icon: "💬", color: "from-teal-500/15 to-teal-500/5" },
   spin:     { label: "360°-Spin",       icon: "🔄", color: "from-indigo-500/15 to-indigo-500/5" },
+  bundle:   { label: "Komplett-Workflows", icon: "📦", color: "from-fuchsia-500/15 to-fuchsia-500/5" },
 };
