@@ -42,21 +42,22 @@ export default function AdminCreditEconomics() {
           EK = echte API-Kosten (Gemini, OpenAI Image, Veo 3.1, Ideogram, OUTVIN) +
           Overhead $0,014 (Stripe, Resend, Edge-Compute, Egress, Gemini-File-API-Quota)
           + Bild-Transfer $0,0005 je Bild (Upload→Gemini + Supabase-Egress). VK = Pack-Preis pro Credit.
-          Worst-Case basiert auf 200er-Pack ({formatEur(VK_PER_CREDIT.best)}/Cr).
+          Worst-Case basiert auf dem Basis-Abo ({formatEur(VK_PER_CREDIT.best)}/Cr).
           Kurs USD→EUR: {USD_TO_EUR}. Preise verifiziert 2026-06-22.
         </p>
         <p className="text-[11px] text-muted-foreground/70 mt-2">
-          Pack-Preise: 10 Cr → 5,00 € · 50 Cr → 18,00 € · 200 Cr → 55,00 €.
+          Tarife: Basis-Abo 1000 Cr → 490 € (0,49 €/Cr) · Top-Up 200 Cr → 100 € (0,50 €/Cr).
           Aufgeführt sind ALLE kostenverursachenden Tools (Bild, Remaster, Banner,
           Canvas-Reframe via Ideogram, Video, Landingpage, Schaden, PDF, VIN,
           Bild-/Marken-Erkennung, Angebots-Analyse, Sales-Chat, 360°-Spin).
         </p>
+
       </div>
 
       {lossActions.length > 0 && (
         <Card className="p-4 border-destructive/40 bg-destructive/5">
           <div className="text-sm font-semibold text-destructive mb-1">
-            ⚠️ {lossActions.length} Aktion(en) im Minus (200er-Pack)
+            ⚠️ {lossActions.length} Aktion(en) im Minus (Basis-Abo, 0,49 €/Cr)
           </div>
           <ul className="text-xs text-muted-foreground space-y-0.5">
             {lossActions.map((r) => (
@@ -87,7 +88,7 @@ export default function AdminCreditEconomics() {
                   vkTier === k ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-accent"
                 }`}
               >
-                {k === "best" ? "200-Pack" : k === "mid" ? "50-Pack" : "10-Pack"}
+                {k === "best" ? "Basis-Abo" : k === "mid" ? "Basis-Abo" : "Top-Up 200"}
                 <span className="block text-[10px] opacity-70">{formatEur(VK_PER_CREDIT[k])}/Cr</span>
               </button>
             ))}
