@@ -1,85 +1,146 @@
 import { useMemo, useState } from "react";
 import { Slider } from "@/components/ui/slider";
 import { Card } from "@/components/ui/card";
-import { CATALOG, effectiveCredits, type ActionTier } from "@/lib/credit-economics";
+import { Badge } from "@/components/ui/badge";
+import {
+  CATALOG, CATEGORY_META, effectiveCredits, type ActionTier, type Category,
+} from "@/lib/credit-economics";
 import { useCredits } from "@/hooks/useCredits";
 
-// Reihenfolge & Auswahl für Kunden-Ansicht (keine internen Stufen)
-const CUSTOMER_KEYS: Array<{ action: string; tier: string }> = [
-  { action: "image_generate", tier: "schnell" },
-  { action: "image_generate", tier: "qualitaet" },
-  { action: "image_generate", tier: "ultra" }, // Banner == ultra
-  { action: "image_remaster", tier: "qualitaet" },
-  { action: "spin360_generate", tier: "standard" },
-  { action: "video_generate", tier: "standard" },
-  { action: "landing_page_export", tier: "standard" },
-];
+// Eine Repräsentations-Aktion pro Kategorie (für Mix-Auflösung):
+// nimmt die "mittlere" / verbreitetste Variante.
+const REPR_PER_CATEGORY: Partial<Record<Category, string>> = {
+  image:    "image-qualitaet",
+  remaster: "remaster-qualitaet",
+  banner:   "banner-studio-qualitaet",
+  video:    "video-standard",
+  landing:  "landing-standard",
+  damage:   "damage-analysis",
+  analysis: "pdf-analysis",
+};
 
-function pick(action: string, tier: string): ActionTier | undefined {
-  return CATALOG.find((t) => t.action === action && t.tier === tier);
-}
+const MIX_CATEGORIES: Category[] = ["image", "remaster", "banner", "video", "landing", "damage", "analysis"];
 
 export default function CreditSlider({
-  defaultCredits = 50,
-  min = 5,
-  max = 500,
+  defaultCredits = 200,
+  min = 10,
+  max = 1000,
 }: { defaultCredits?: number; min?: number; max?: number }) {
   const [credits, setCredits] = useState(defaultCredits);
   const { costs } = useCredits();
 
-  const items = useMemo(() => {
-    return CUSTOMER_KEYS.map((k) => pick(k.action, k.tier)).filter(Boolean) as ActionTier[];
+  // Prozent-Verteilung pro Kategorie (Default: nur "image" voll)
+  const [mix, setMix] = useState<Record<Category, number>>(() => {
+    const init: Record<string, number> = {};
+    MIX_CATEGORIES.forEach((c) => (init[c] = 0));
+    init.image = 40;
+    init.remaster = 30;
+    init.banner = 15;
+    init.video = 10;
+    init.landing = 5;
+    return init as Record<Category, number>;
+  });
+
+  const total = MIX_CATEGORIES.reduce((sum, c) => sum + (mix[c] || 0), 0) || 1;
+
+  const reprMap = useMemo(() => {
+    const m: Partial<Record<Category, ActionTier>> = {};
+    MIX_CATEGORIES.forEach((c) => {
+      const id = REPR_PER_CATEGORY[c];
+      m[c] = CATALOG.find((t) => t.id === id);
+    });
+    return m;
   }, []);
+
+  // Aufteilung der Credits gemäß Mix → Anzahl Stück pro Kategorie
+  const rows = MIX_CATEGORIES.map((c) => {
+    const tier = reprMap[c];
+    if (!tier) return null;
+    const pct = (mix[c] || 0) / total;
+    const allocated = Math.floor(credits * pct);
+    const perItem = effectiveCredits(tier, costs);
+    const count = Math.floor(allocated / perItem);
+    return { cat: c, tier, pct: Math.round(pct * 100), allocated, perItem, count };
+  }).filter(Boolean) as Array<{ cat: Category; tier: ActionTier; pct: number; allocated: number; perItem: number; count: number }>;
+
+  const setPct = (c: Category, v: number) => setMix((m) => ({ ...m, [c]: v }));
 
   return (
     <Card className="p-6 md:p-8 bg-card border-border/50 rounded-2xl">
       <div className="space-y-2">
         <h3 className="text-xl md:text-2xl font-semibold tracking-tight">
-          Was kann ich mit Credits machen?
+          Was kann ich mit meinen Credits machen?
         </h3>
         <p className="text-sm text-muted-foreground">
-          Schieb den Regler – siehe sofort, wie viele Inhalte du erstellen kannst.
+          Stell oben dein Budget ein, dann verteil unten die Prozente auf die Bereiche – du siehst live, wie viele Inhalte rauskommen.
         </p>
       </div>
 
+      {/* Budget */}
       <div className="mt-6 space-y-3">
         <div className="flex items-baseline justify-between">
-          <span className="text-sm text-muted-foreground">Credits</span>
+          <span className="text-sm text-muted-foreground">Credit-Budget</span>
           <span className="text-4xl font-bold tabular-nums text-foreground">{credits}</span>
         </div>
         <Slider
           value={[credits]}
           min={min}
           max={max}
-          step={5}
+          step={10}
           onValueChange={(v) => setCredits(v[0])}
           className="my-4"
         />
         <div className="flex justify-between text-xs text-muted-foreground">
-          <span>{min}</span>
-          <span>{max}</span>
+          <span>{min}</span><span>{max}</span>
         </div>
       </div>
 
-      <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {items.map((t) => {
-          const c = effectiveCredits(t, costs);
-          const possible = Math.floor(credits / c);
+      {/* Mix-Allokator */}
+      <div className="mt-8 space-y-4">
+        <div className="flex items-center justify-between">
+          <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            Aufteilung
+          </h4>
+          <Badge variant="outline" className="text-[10px]">Summe: {total}%</Badge>
+        </div>
+
+        {rows.map((r) => {
+          const meta = CATEGORY_META[r.cat];
           return (
             <div
-              key={`${t.action}-${t.tier}`}
-              className="flex items-center gap-4 p-4 rounded-xl bg-background/60 border border-border/40 hover:border-border transition"
+              key={r.cat}
+              className={`p-4 rounded-xl border border-border/40 bg-gradient-to-br ${meta.color}`}
             >
-              <div className="text-3xl shrink-0">{t.icon}</div>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium leading-tight">{t.label}</div>
-                <div className="text-xs text-muted-foreground">{c} Credits / Stück</div>
-              </div>
-              <div className="text-right shrink-0">
-                <div className="text-2xl font-bold tabular-nums text-primary">{possible}</div>
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                  möglich
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-2xl">{meta.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold">{meta.label}</div>
+                  <div className="text-[11px] text-muted-foreground">
+                    {r.tier.label} · {r.perItem} Cr/Stück
+                  </div>
                 </div>
+                <div className="text-right">
+                  <div className="text-3xl font-bold tabular-nums leading-none">{r.count}</div>
+                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground mt-1">
+                    Stück
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Slider
+                  value={[mix[r.cat] || 0]}
+                  min={0}
+                  max={100}
+                  step={5}
+                  onValueChange={(v) => setPct(r.cat, v[0])}
+                  className="flex-1"
+                />
+                <span className="text-xs font-mono w-14 text-right tabular-nums">
+                  {r.pct}%
+                </span>
+              </div>
+              <div className="text-[10px] text-muted-foreground mt-1">
+                ≈ {r.allocated} Credits zugeteilt
               </div>
             </div>
           );
@@ -87,8 +148,8 @@ export default function CreditSlider({
       </div>
 
       <p className="text-[11px] text-muted-foreground/70 mt-6 leading-relaxed">
-        Angaben gerundet. Tatsächlicher Verbrauch hängt vom gewählten Qualitäts-Modell ab.
-        Aktuelle Preise siehe Tabelle in den Plänen.
+        Hinweis: Eine Landingpage erzeugt automatisch 6–8 KI-Bilder, eine Schadensanalyse
+        beinhaltet annotierte Fotos. Tatsächlicher Verbrauch hängt vom gewählten Qualitäts-Modell ab.
       </p>
     </Card>
   );
