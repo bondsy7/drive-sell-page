@@ -293,7 +293,9 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: `Unbekannter pageType: ${pageType}` }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const totalCost = 3;
+    // Landingpage erzeugt 1× Content + 6-8× Bilder (Gemini Flash Image).
+    // Real-EK ≈ $0.30 → 5 Credits = €1,125 @200er-Pack ≈ +€0,84 Marge.
+    const totalCost = 5;
     const authResult = await authenticateAndDeductCredits(req, totalCost);
     if (authResult instanceof Response) return authResult;
 
