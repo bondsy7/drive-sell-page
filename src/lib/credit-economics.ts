@@ -39,7 +39,8 @@ export type Category =
   | "damage"       // Schadensanalyse / -reparatur
   | "analysis"     // PDF / VIN / Bild / Angebot
   | "sales"        // Sales-Assistent / KI-Chat
-  | "spin";        // 360° (optional, nicht in Kunden-Mix)
+  | "spin"         // 360° (optional, nicht in Kunden-Mix)
+  | "bundle";      // End-to-End-Workflows (Gesamtkosten)
 
 export interface ActionTier {
   id: string;
