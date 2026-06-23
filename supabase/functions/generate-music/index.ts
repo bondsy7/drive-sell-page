@@ -52,8 +52,9 @@ Deno.serve(async (req) => {
     const model = body.model === "lyria-3-clip-preview" ? "lyria-3-clip-preview" : "lyria-3-pro-preview";
     const wantWav = body.responseFormat === "wav" && model === "lyria-3-pro-preview";
 
-    // Credits: Pro = 8, Clip = 4
-    const cost = model === "lyria-3-pro-preview" ? 8 : 4;
+    // Credits: Pro Song (bis 3 Min) = 1 Cr (~82% Marge bei 0,49€/Cr, EK $0.08)
+    //          Clip (30 Sek)        = 1 Cr (~90% Marge,             EK $0.04)
+    const cost = 1;
     await deductCredits(
       supabaseAdmin,
       userId,
