@@ -113,7 +113,7 @@ export const CATALOG: ActionTier[] = [
   {
     id: "image-schnell", category: "image",
     action: "image_generate", tier: "schnell",
-    label: "Bild · schnell", icon: "🖼️", defaultCredits: 3,
+    label: "Bild · schnell", icon: "🖼️", defaultCredits: 1,
     model: "gemini-2.5-flash-image (Nano Banana)",
     ekUsd: API.geminiFlashImage,
     ekBreakdown: `1× Bild $${API.geminiFlashImage}`,
@@ -124,7 +124,7 @@ export const CATALOG: ActionTier[] = [
   {
     id: "image-qualitaet", category: "image",
     action: "image_generate", tier: "qualitaet",
-    label: "Bild · Qualität", icon: "🖼️", defaultCredits: 5,
+    label: "Bild · Qualität", icon: "🖼️", defaultCredits: 1,
     model: "gemini-3.1-flash-image-preview (Nano Banana 2)",
     ekUsd: API.geminiFlashImage2_1k,
     ekBreakdown: `1× Bild 1K $${API.geminiFlashImage2_1k}`,
@@ -135,7 +135,7 @@ export const CATALOG: ActionTier[] = [
   {
     id: "image-ultra", category: "image",
     action: "image_generate", tier: "ultra",
-    label: "Bild · Ultra (2K)", icon: "✨", defaultCredits: 10,
+    label: "Bild · Ultra (2K)", icon: "✨", defaultCredits: 2,
     model: "gemini-3-pro-image-preview",
     ekUsd: API.geminiProImage_2k,
     ekBreakdown: `1× Bild 2K $${API.geminiProImage_2k}`,
@@ -146,7 +146,7 @@ export const CATALOG: ActionTier[] = [
   {
     id: "image-ultra-4k", category: "image",
     action: "image_generate", tier: "ultra_4k",
-    label: "Bild · Ultra 4K", icon: "✨", defaultCredits: 15,
+    label: "Bild · Ultra 4K", icon: "✨", defaultCredits: 3,
     model: "gemini-3-pro-image-preview (4K)",
     ekUsd: API.geminiProImage_4k,
     ekBreakdown: `1× Bild 4K $${API.geminiProImage_4k}`,
@@ -159,7 +159,7 @@ export const CATALOG: ActionTier[] = [
   {
     id: "image-openai-low", category: "image",
     action: "image_generate", tier: "openai_low",
-    label: "Bild · OpenAI Low", icon: "🖼️", defaultCredits: 2,
+    label: "Bild · OpenAI Low", icon: "🖼️", defaultCredits: 1,
     model: "openai/gpt-image-1 (low)",
     ekUsd: API.gptImage1_low,
     ekBreakdown: `1× gpt-image-1 low $${API.gptImage1_low}`,
@@ -170,7 +170,7 @@ export const CATALOG: ActionTier[] = [
   {
     id: "image-openai-med", category: "image",
     action: "image_generate", tier: "openai_med",
-    label: "Bild · OpenAI Medium", icon: "🖼️", defaultCredits: 4,
+    label: "Bild · OpenAI Medium", icon: "🖼️", defaultCredits: 1,
     model: "openai/gpt-image-1 (medium)",
     ekUsd: API.gptImage1_med,
     ekBreakdown: `1× gpt-image-1 medium $${API.gptImage1_med}`,
@@ -181,7 +181,7 @@ export const CATALOG: ActionTier[] = [
   {
     id: "image-openai-high", category: "image",
     action: "image_generate", tier: "openai_high",
-    label: "Bild · OpenAI High", icon: "✨", defaultCredits: 10,
+    label: "Bild · OpenAI High", icon: "✨", defaultCredits: 2,
     model: "openai/gpt-image-1 (high)",
     ekUsd: API.gptImage1_high,
     ekBreakdown: `1× gpt-image-1 high $${API.gptImage1_high}`,
@@ -194,7 +194,7 @@ export const CATALOG: ActionTier[] = [
   {
     id: "image-extend-turbo", category: "image",
     action: "image_generate", tier: "extend_turbo",
-    label: "Bilderweitern · Turbo (Ideogram)", icon: "↔️", defaultCredits: 2,
+    label: "Bilderweitern · Turbo (Ideogram)", icon: "↔️", defaultCredits: 1,
     model: "ideogram-v4 turbo",
     ekUsd: API.ideogramV4Turbo,
     ekBreakdown: `1× Ideogram 4.0 Turbo Reframe $${API.ideogramV4Turbo}`,
@@ -205,7 +205,7 @@ export const CATALOG: ActionTier[] = [
   {
     id: "image-extend-default", category: "image",
     action: "image_generate", tier: "extend_default",
-    label: "Bilderweitern · Default (Ideogram)", icon: "↔️", defaultCredits: 3,
+    label: "Bilderweitern · Default (Ideogram)", icon: "↔️", defaultCredits: 1,
     model: "ideogram-v3 reframe / v4 default",
     ekUsd: API.ideogramV3Reframe,
     ekBreakdown: `1× Ideogram Reframe $${API.ideogramV3Reframe}`,
@@ -217,7 +217,7 @@ export const CATALOG: ActionTier[] = [
   {
     id: "remaster-schnell", category: "remaster",
     action: "image_remaster", tier: "schnell",
-    label: "Remaster · schnell", icon: "🎨", defaultCredits: 2,
+    label: "Remaster · schnell", icon: "🎨", defaultCredits: 1,
     model: "gemini-2.5-flash-image (Edit)",
     ekUsd: API.geminiFlashImage + 0.0006,
     ekBreakdown: `1× Edit $${API.geminiFlashImage} + Bild-Input`,
@@ -228,7 +228,7 @@ export const CATALOG: ActionTier[] = [
   {
     id: "remaster-qualitaet", category: "remaster",
     action: "image_remaster", tier: "qualitaet",
-    label: "Remaster · Qualität", icon: "🎨", defaultCredits: 3,
+    label: "Remaster · Qualität", icon: "🎨", defaultCredits: 1,
     model: "gemini-3.1-flash-image-preview (Edit)",
     ekUsd: API.geminiFlashImage2_1k + 0.0006,
     ekBreakdown: `1× Edit $${API.geminiFlashImage2_1k} + Bild-Input`,
@@ -239,7 +239,7 @@ export const CATALOG: ActionTier[] = [
   {
     id: "remaster-ultra", category: "remaster",
     action: "image_remaster", tier: "ultra",
-    label: "Remaster · Ultra", icon: "✨", defaultCredits: 7,
+    label: "Remaster · Ultra", icon: "✨", defaultCredits: 2,
     model: "gemini-3-pro-image-preview (Edit)",
     ekUsd: API.geminiProImage_2k + 0.001,
     ekBreakdown: `1× Edit $${API.geminiProImage_2k} + Bild-Input`,
@@ -254,7 +254,7 @@ export const CATALOG: ActionTier[] = [
   {
     id: "banner-studio-schnell", category: "banner",
     action: "image_generate", tier: "banner_schnell",
-    label: "Banner-Studio · schnell", icon: "🪧", defaultCredits: 3,
+    label: "Banner-Studio · schnell", icon: "🪧", defaultCredits: 1,
     model: "gemini-2.5-flash-image",
     ekUsd: API.geminiFlashImage,
     ekBreakdown: `1× Bild $${API.geminiFlashImage}`,
@@ -265,7 +265,7 @@ export const CATALOG: ActionTier[] = [
   {
     id: "banner-studio-qualitaet", category: "banner",
     action: "image_generate", tier: "banner_qualitaet",
-    label: "Banner-Studio · Qualität", icon: "🪧", defaultCredits: 5,
+    label: "Banner-Studio · Qualität", icon: "🪧", defaultCredits: 1,
     model: "gemini-3.1-flash-image-preview",
     ekUsd: API.geminiFlashImage2_1k,
     ekBreakdown: `1× Bild $${API.geminiFlashImage2_1k}`,
@@ -276,7 +276,7 @@ export const CATALOG: ActionTier[] = [
   {
     id: "banner-studio-premium", category: "banner",
     action: "image_generate", tier: "banner_premium",
-    label: "Banner-Studio · Premium", icon: "✨", defaultCredits: 8,
+    label: "Banner-Studio · Premium", icon: "✨", defaultCredits: 2,
     model: "gemini-3-pro-image-preview + 2.5-pro",
     ekUsd: API.geminiProImage_2k + API.geminiProText,
     ekBreakdown: `1× Pro-Bild $${API.geminiProImage_2k} + Prompt-Aufbau $${API.geminiProText}`,
@@ -287,7 +287,7 @@ export const CATALOG: ActionTier[] = [
   {
     id: "banner-studio-ultra", category: "banner",
     action: "image_generate", tier: "banner_ultra",
-    label: "Banner-Studio · Ultra (OpenAI)", icon: "✨", defaultCredits: 10,
+    label: "Banner-Studio · Ultra (OpenAI)", icon: "✨", defaultCredits: 2,
     model: "openai/gpt-image-1 (high)",
     ekUsd: API.gptImage1_high,
     ekBreakdown: `1× gpt-image-1 high $${API.gptImage1_high}`,
@@ -302,7 +302,7 @@ export const CATALOG: ActionTier[] = [
   {
     id: "banner-canvas-master", category: "banner",
     action: "image_generate", tier: "canvas_master",
-    label: "Canvas-Banner Master-Bild", icon: "🖌️", defaultCredits: 4,
+    label: "Canvas-Banner Master-Bild", icon: "🖌️", defaultCredits: 1,
     model: "gemini-2.5-flash-image",
     ekUsd: API.geminiFlashImage,
     ekBreakdown: `1× Master-Bild $${API.geminiFlashImage}`,
@@ -313,7 +313,7 @@ export const CATALOG: ActionTier[] = [
   {
     id: "banner-canvas-reframe-turbo", category: "banner",
     action: "image_generate", tier: "canvas_reframe_turbo",
-    label: "Canvas-Reframe · Turbo (Ideogram)", icon: "🖼️", defaultCredits: 3,
+    label: "Canvas-Reframe · Turbo (Ideogram)", icon: "🖼️", defaultCredits: 1,
     model: "ideogram-v4 turbo",
     ekUsd: API.ideogramV4Turbo,
     ekBreakdown: `1× Ideogram 4.0 Turbo $${API.ideogramV4Turbo}`,
@@ -324,7 +324,7 @@ export const CATALOG: ActionTier[] = [
   {
     id: "banner-canvas-reframe", category: "banner",
     action: "image_generate", tier: "canvas_reframe",
-    label: "Canvas-Reframe · Default (Ideogram)", icon: "🖼️", defaultCredits: 5,
+    label: "Canvas-Reframe · Default (Ideogram)", icon: "🖼️", defaultCredits: 1,
     model: "ideogram-v3 reframe / v4 default",
     ekUsd: API.ideogramV3Reframe,
     ekBreakdown: `1× Ideogram Reframe $${API.ideogramV3Reframe}`,
@@ -339,7 +339,7 @@ export const CATALOG: ActionTier[] = [
   {
     id: "video-fast", category: "video",
     action: "video_generate", tier: "fast",
-    label: "Video · Fast/Lite (8 Sek.)", icon: "🎬", defaultCredits: 8,
+    label: "Video · Fast/Lite (8 Sek.)", icon: "🎬", defaultCredits: 4,
     model: "veo-3.1-fast / lite",
     ekUsd: API.veo31Fast_PerSec * 8,
     ekBreakdown: `8 Sek × $${API.veo31Fast_PerSec}/s`,
@@ -350,7 +350,7 @@ export const CATALOG: ActionTier[] = [
   {
     id: "video-standard", category: "video",
     action: "video_generate", tier: "standard",
-    label: "Video · Standard (8 Sek.)", icon: "🎬", defaultCredits: 18,
+    label: "Video · Standard (8 Sek.)", icon: "🎬", defaultCredits: 10,
     model: "veo-3.1-generate-preview",
     ekUsd: API.veo31Std_PerSec * 8,
     ekBreakdown: `8 Sek × $${API.veo31Std_PerSec}/s`,
@@ -365,7 +365,7 @@ export const CATALOG: ActionTier[] = [
   {
     id: "landing-standard", category: "landing",
     action: "landing_page_export", tier: "standard",
-    label: "Landingpage (Verbund)", icon: "📄", defaultCredits: 5,
+    label: "Landingpage (Verbund)", icon: "📄", defaultCredits: 10,
     model: "gemini-2.5-pro + 7× gemini-2.5-flash-image",
     ekUsd: API.geminiProText + 7 * API.geminiFlashImage + 8 * INFRA_PER_IMAGE_USD,
     ekBreakdown: `1× Content-Gen $${API.geminiProText} + 7× Bilder $${(7 * API.geminiFlashImage).toFixed(3)} + 8× Bild-Transfer $${(8 * INFRA_PER_IMAGE_USD).toFixed(4)}`,
@@ -376,7 +376,7 @@ export const CATALOG: ActionTier[] = [
   {
     id: "landing-premium", category: "landing",
     action: "landing_page_export", tier: "premium",
-    label: "Landingpage · Premium", icon: "📄", defaultCredits: 10,
+    label: "Landingpage · Premium", icon: "📄", defaultCredits: 15,
     model: "gemini-2.5-pro + 7× gemini-3.1-flash-image",
     ekUsd: API.geminiProText + 7 * API.geminiFlashImage2_1k + 8 * INFRA_PER_IMAGE_USD,
     ekBreakdown: `1× Content-Gen $${API.geminiProText} + 7× Bilder 1K $${(7 * API.geminiFlashImage2_1k).toFixed(3)} + 8× Bild-Transfer $${(8 * INFRA_PER_IMAGE_USD).toFixed(4)}`,
@@ -391,7 +391,7 @@ export const CATALOG: ActionTier[] = [
   {
     id: "damage-analysis", category: "damage",
     action: "damage_analyze", tier: "standard",
-    label: "Schadensanalyse (Verbund)", icon: "🔧", defaultCredits: 4,
+    label: "Schadensanalyse (Verbund)", icon: "🔧", defaultCredits: 2,
     model: "gemini-2.5-pro + 3× gemini-3.1-flash-image (Annotation)",
     ekUsd: API.geminiProText + 3 * (API.geminiFlashImage2_1k + 0.0006) + 6 * INFRA_PER_IMAGE_USD,
     ekBreakdown: `1× Analyse Pro $${API.geminiProText} + 3× Annot-Bilder $${(3 * API.geminiFlashImage2_1k).toFixed(3)} + 6× Bild-Transfer $${(6 * INFRA_PER_IMAGE_USD).toFixed(4)}`,
@@ -402,7 +402,7 @@ export const CATALOG: ActionTier[] = [
   {
     id: "damage-repair", category: "damage",
     action: "image_remaster", tier: "damage_repair",
-    label: "Schadensreparatur (Visualisierung)", icon: "🛠️", defaultCredits: 2,
+    label: "Schadensreparatur (Visualisierung)", icon: "🛠️", defaultCredits: 1,
     model: "gemini-3.1-flash-image-preview",
     ekUsd: API.geminiFlashImage2_1k + 0.0006 + 2 * INFRA_PER_IMAGE_USD,
     ekBreakdown: `1× Edit $${API.geminiFlashImage2_1k} + 2× Bild-Transfer`,
@@ -413,7 +413,7 @@ export const CATALOG: ActionTier[] = [
   {
     id: "damage-repair", category: "damage",
     action: "image_remaster", tier: "damage_repair",
-    label: "Schadensreparatur (Visualisierung)", icon: "🛠️", defaultCredits: 2,
+    label: "Schadensreparatur (Visualisierung)", icon: "🛠️", defaultCredits: 1,
     model: "gemini-3.1-flash-image-preview",
     ekUsd: API.geminiFlashImage2_1k + 0.0006,
     ekBreakdown: `1× Edit $${API.geminiFlashImage2_1k}`,
@@ -450,7 +450,7 @@ export const CATALOG: ActionTier[] = [
   {
     id: "vin-lookup", category: "analysis",
     action: "vin_lookup", tier: "standard",
-    label: "VIN-Lookup (Stammdaten)", icon: "🆔", defaultCredits: 2,
+    label: "VIN-Lookup (Stammdaten)", icon: "🆔", defaultCredits: 1,
     model: "OUTVIN API + Gemini-Fallback",
     ekUsd: API.outvinLookup,
     ekBreakdown: `1× OUTVIN $${API.outvinLookup}`,
@@ -483,7 +483,7 @@ export const CATALOG: ActionTier[] = [
   {
     id: "offer-analysis", category: "analysis",
     action: "pdf_analysis", tier: "offer",
-    label: "Angebots-/Inserat-Analyse", icon: "💰", defaultCredits: 2,
+    label: "Angebots-/Inserat-Analyse", icon: "💰", defaultCredits: 1,
     model: "gemini-2.5-pro (Vision)",
     ekUsd: API.geminiProText,
     ekBreakdown: `1× Pro-Vision-Call $${API.geminiProText}`,
@@ -520,7 +520,7 @@ export const CATALOG: ActionTier[] = [
   {
     id: "sales-response-pro", category: "sales",
     action: "sales_chat", tier: "pro",
-    label: "Sales-Antwort · Pro", icon: "💬", defaultCredits: 2,
+    label: "Sales-Antwort · Pro", icon: "💬", defaultCredits: 1,
     model: "gemini-2.5-pro",
     ekUsd: API.geminiProText,
     ekBreakdown: `1× Pro-Antwort $${API.geminiProText}`,
@@ -546,7 +546,7 @@ export const CATALOG: ActionTier[] = [
   {
     id: "spin-standard", category: "spin",
     action: "spin360_generate", tier: "standard",
-    label: "360°-Spin (36 Frames)", icon: "🔄", defaultCredits: 20,
+    label: "360°-Spin (36 Frames)", icon: "🔄", defaultCredits: 10,
     model: "36× gemini-2.5-flash-image + Analyse + Normalize",
     ekUsd: 36 * API.geminiFlashImage + API.geminiFlashText + 4 * API.geminiFlashImage + 41 * INFRA_PER_IMAGE_USD,
     ekBreakdown: `1× Analyse $${API.geminiFlashText} + 4× Normalize $${(4 * API.geminiFlashImage).toFixed(3)} + 36× Frames $${(36 * API.geminiFlashImage).toFixed(3)} + 41× Bild-Transfer $${(41 * INFRA_PER_IMAGE_USD).toFixed(4)}`,
@@ -564,7 +564,7 @@ export const CATALOG: ActionTier[] = [
     id: "bundle-banner-studio-complete", category: "bundle",
     action: "image_generate", tier: "bundle_banner_studio",
     label: "Banner-Studio · komplett (Master + Reframe + Analyse)",
-    icon: "🪧", defaultCredits: 9,
+    icon: "🪧", defaultCredits: 2,
     model: "Daten-Extract + Master-Bild + Ideogram-Reframe",
     ekUsd: API.geminiFlashText + API.geminiFlashImage + API.ideogramV3Reframe + 4 * INFRA_PER_IMAGE_USD,
     ekBreakdown:
@@ -581,7 +581,7 @@ export const CATALOG: ActionTier[] = [
     id: "bundle-banner-studio-premium", category: "bundle",
     action: "image_generate", tier: "bundle_banner_premium",
     label: "Banner-Studio · Premium komplett (Pro-Bild + Reframe)",
-    icon: "✨", defaultCredits: 14,
+    icon: "✨", defaultCredits: 3,
     model: "Daten-Extract + Gemini 3 Pro Image + Ideogram-Reframe",
     ekUsd: API.geminiFlashText + API.geminiProImage_2k + API.ideogramV3Reframe + 4 * INFRA_PER_IMAGE_USD,
     ekBreakdown:
@@ -598,7 +598,7 @@ export const CATALOG: ActionTier[] = [
     id: "bundle-pdf-full-pipeline", category: "bundle",
     action: "pdf_analysis", tier: "bundle_full",
     label: "PDF-Pipeline · komplett (PDF + VIN + 7 Bilder + Landingpage)",
-    icon: "📑", defaultCredits: 12,
+    icon: "📑", defaultCredits: 10,
     model: "PDF-Analyse + OUTVIN + Content + 7× Hero-Bilder",
     ekUsd:
       API.geminiFlashTextLong +
@@ -621,7 +621,7 @@ export const CATALOG: ActionTier[] = [
     id: "bundle-pdf-extract-only", category: "bundle",
     action: "pdf_analysis", tier: "bundle_extract",
     label: "PDF · Daten + VIN-Anreicherung",
-    icon: "📋", defaultCredits: 3,
+    icon: "📋", defaultCredits: 2,
     model: "PDF-Vision + OUTVIN-Lookup",
     ekUsd: API.geminiFlashTextLong + API.outvinLookup + 1 * INFRA_PER_IMAGE_USD,
     ekBreakdown:
