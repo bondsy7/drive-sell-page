@@ -2326,6 +2326,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_songs: {
+        Row: {
+          created_at: string
+          id: string
+          lyrics: string | null
+          mime_type: string
+          model: string | null
+          prompt: string | null
+          storage_path: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lyrics?: string | null
+          mime_type?: string
+          model?: string | null
+          prompt?: string | null
+          storage_path: string
+          title?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lyrics?: string | null
+          mime_type?: string
+          model?: string | null
+          prompt?: string | null
+          storage_path?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_subscriptions: {
         Row: {
           billing_cycle: Database["public"]["Enums"]["billing_cycle"]
