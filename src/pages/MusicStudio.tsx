@@ -12,6 +12,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCredits } from "@/hooks/useCredits";
+import { useMusicJobs, MUSIC_EST_DURATION } from "@/contexts/MusicJobsContext";
 
 type ModelChoice = "lyria-3-pro-preview" | "lyria-3-clip-preview";
 
@@ -62,6 +63,7 @@ just the road and you and me.`,
 export default function MusicStudio() {
   const navigate = useNavigate();
   const { balance, fetchBalance } = useCredits();
+  const musicJobs = useMusicJobs();
   const [prompt, setPrompt] = useState("");
   const [model, setModel] = useState<ModelChoice>("lyria-3-pro-preview");
   const [instrumental, setInstrumental] = useState(false);
@@ -111,6 +113,12 @@ export default function MusicStudio() {
       });
       if (error) throw error;
       fetchBalance();
+      // Register job for background indicator + ETA tracking
+      musicJobs.addJob({
+        title,
+        model,
+        estDurationMs: MUSIC_EST_DURATION[model],
+      });
       toast.success(
         data?.message ||
           "Song wird im Hintergrund erstellt. Du findest ihn im Dashboard sobald er fertig ist.",
