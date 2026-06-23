@@ -61,7 +61,7 @@ just the road and you and me.`,
 
 export default function MusicStudio() {
   const navigate = useNavigate();
-  const { balance, refresh } = useCredits();
+  const { balance, fetchBalance } = useCredits();
   const [prompt, setPrompt] = useState("");
   const [model, setModel] = useState<ModelChoice>("lyria-3-pro-preview");
   const [instrumental, setInstrumental] = useState(false);
