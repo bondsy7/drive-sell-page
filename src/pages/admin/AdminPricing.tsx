@@ -18,22 +18,22 @@ type TierCosts = Record<string, number>;
 interface CreditCosts { [action: string]: TierCosts }
 
 const ALL_ACTIONS: { key: string; label: string; category: string; defaults: Record<string, number> }[] = [
-  { key: 'pdf_analysis', label: 'PDF-Analyse', category: 'PDF & Analyse', defaults: { schnell: 2, qualitaet: 3, premium: 5, turbo: 4, ultra: 7, neu: 7 } },
-  { key: 'vin_ocr', label: 'VIN-OCR (Kennzeichen)', category: 'PDF & Analyse', defaults: { schnell: 1, qualitaet: 1, premium: 2, turbo: 1, ultra: 2, neu: 2 } },
-  { key: 'image_generate', label: 'Bildgenerierung (pro Bild)', category: 'Bildgenerierung', defaults: { schnell: 3, qualitaet: 5, premium: 8, turbo: 6, ultra: 10, neu: 12 } },
-  { key: 'image_remaster', label: 'Bild-Remastering', category: 'Bildgenerierung', defaults: { schnell: 2, qualitaet: 3, premium: 5, turbo: 4, ultra: 7, neu: 7 } },
-  { key: 'banner_generate', label: 'Banner-Generierung', category: 'Bildgenerierung', defaults: { schnell: 3, qualitaet: 5, premium: 8, turbo: 6, ultra: 10, neu: 12 } },
-  { key: 'video_generate', label: 'Video (Veo Fast)', category: 'Video', defaults: { schnell: 10, qualitaet: 10, premium: 15, turbo: 10, ultra: 20, neu: 20 } },
-  { key: 'video_generate_standard', label: 'Video (Veo Standard)', category: 'Video', defaults: { schnell: 15, qualitaet: 15, premium: 20, turbo: 15, ultra: 25, neu: 25 } },
-  { key: 'video_generate_audio', label: 'Video (Veo Std + Audio)', category: 'Video', defaults: { schnell: 20, qualitaet: 20, premium: 25, turbo: 20, ultra: 30, neu: 30 } },
-  { key: 'spin360_analysis', label: '360° Spin – Analyse', category: '360° Spin', defaults: { schnell: 1, qualitaet: 1, premium: 2, turbo: 1, ultra: 2, neu: 2 } },
-  { key: 'spin360_normalize', label: '360° Spin – Normalisierung', category: '360° Spin', defaults: { schnell: 3, qualitaet: 4, premium: 6, turbo: 5, ultra: 8, neu: 8 } },
-  { key: 'spin360_generate', label: '360° Spin – Frame-Gen (Image)', category: '360° Spin', defaults: { schnell: 20, qualitaet: 25, premium: 30, turbo: 25, ultra: 35, neu: 35 } },
-  { key: 'spin360_video', label: '360° Spin – Video (Veo)', category: '360° Spin', defaults: { schnell: 10, qualitaet: 10, premium: 15, turbo: 10, ultra: 20, neu: 20 } },
-  { key: 'spin360_export', label: '360° Spin – Export', category: '360° Spin', defaults: { schnell: 1, qualitaet: 2, premium: 3, turbo: 2, ultra: 4, neu: 4 } },
-  { key: 'landing_page_export', label: 'Landing Page Export', category: 'Landing Pages', defaults: { schnell: 2, qualitaet: 3, premium: 5, turbo: 3, ultra: 5, neu: 5 } },
-  { key: 'sales_response', label: 'Sales-Antwort generieren', category: 'Sales & CRM', defaults: { schnell: 1, qualitaet: 1, premium: 2, turbo: 1, ultra: 2, neu: 2 } },
-  { key: 'auto_process_lead', label: 'Lead Auto-Verarbeitung', category: 'Sales & CRM', defaults: { schnell: 1, qualitaet: 1, premium: 2, turbo: 1, ultra: 2, neu: 2 } },
+  { key: 'pdf_analysis', label: 'PDF-Analyse', category: 'PDF & Analyse', defaults: { schnell: 1, qualitaet: 1, premium: 2, turbo: 1, ultra: 2, neu: 2 } },
+  { key: 'vin_ocr', label: 'VIN-OCR (Kennzeichen)', category: 'PDF & Analyse', defaults: { schnell: 1, qualitaet: 1, premium: 1, turbo: 1, ultra: 1, neu: 1 } },
+  { key: 'image_generate', label: 'Bildgenerierung (pro Bild)', category: 'Bildgenerierung', defaults: { schnell: 1, qualitaet: 1, premium: 2, turbo: 1, ultra: 2, neu: 3 } },
+  { key: 'image_remaster', label: 'Bild-Remastering', category: 'Bildgenerierung', defaults: { schnell: 1, qualitaet: 1, premium: 2, turbo: 1, ultra: 2, neu: 2 } },
+  { key: 'banner_generate', label: 'Banner-Generierung', category: 'Bildgenerierung', defaults: { schnell: 1, qualitaet: 1, premium: 2, turbo: 1, ultra: 2, neu: 2 } },
+  { key: 'video_generate', label: 'Video (Veo Fast)', category: 'Video', defaults: { schnell: 4, qualitaet: 4, premium: 5, turbo: 4, ultra: 5, neu: 5 } },
+  { key: 'video_generate_standard', label: 'Video (Veo Standard)', category: 'Video', defaults: { schnell: 10, qualitaet: 10, premium: 12, turbo: 10, ultra: 12, neu: 12 } },
+  { key: 'video_generate_audio', label: 'Video (Veo Std + Audio)', category: 'Video', defaults: { schnell: 10, qualitaet: 10, premium: 12, turbo: 10, ultra: 12, neu: 12 } },
+  { key: 'spin360_analysis', label: '360° Spin – Analyse', category: '360° Spin', defaults: { schnell: 1, qualitaet: 1, premium: 1, turbo: 1, ultra: 1, neu: 1 } },
+  { key: 'spin360_normalize', label: '360° Spin – Normalisierung', category: '360° Spin', defaults: { schnell: 1, qualitaet: 1, premium: 2, turbo: 1, ultra: 2, neu: 2 } },
+  { key: 'spin360_generate', label: '360° Spin – Frame-Gen (Image)', category: '360° Spin', defaults: { schnell: 8, qualitaet: 10, premium: 12, turbo: 10, ultra: 12, neu: 12 } },
+  { key: 'spin360_video', label: '360° Spin – Video (Veo)', category: '360° Spin', defaults: { schnell: 4, qualitaet: 4, premium: 5, turbo: 4, ultra: 5, neu: 5 } },
+  { key: 'spin360_export', label: '360° Spin – Export', category: '360° Spin', defaults: { schnell: 1, qualitaet: 1, premium: 1, turbo: 1, ultra: 1, neu: 1 } },
+  { key: 'landing_page_export', label: 'Landing Page Export (Premium-Produkt)', category: 'Landing Pages', defaults: { schnell: 8, qualitaet: 10, premium: 15, turbo: 10, ultra: 15, neu: 15 } },
+  { key: 'sales_response', label: 'Sales-Antwort generieren', category: 'Sales & CRM', defaults: { schnell: 1, qualitaet: 1, premium: 1, turbo: 1, ultra: 1, neu: 1 } },
+  { key: 'auto_process_lead', label: 'Lead Auto-Verarbeitung', category: 'Sales & CRM', defaults: { schnell: 1, qualitaet: 1, premium: 1, turbo: 1, ultra: 1, neu: 1 } },
 ];
 
 const CATEGORIES = [...new Set(ALL_ACTIONS.map(a => a.category))];
