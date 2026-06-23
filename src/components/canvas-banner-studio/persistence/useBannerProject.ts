@@ -141,13 +141,16 @@ export function useBannerProject({ state, onProjectIdAssigned }: Args) {
   // Debounced autosave on every state change.
   useEffect(() => {
     if (!user) return;
+    // Include full compositions (layers, background/master image URLs, reframe history)
+    // so that generating or reframing a background image triggers a re-save.
     const serialized = JSON.stringify({
       v: state.vehicleId,
       t: state.textFields,
-      cKeys: Object.keys(state.compositions),
+      c: state.compositions,
       sf: state.selectedFormatIds,
       af: state.activeFormatId,
       title: state.projectTitle,
+      ci: state.ci,
     });
     if (serialized === lastSerialized.current) return;
     lastSerialized.current = serialized;
