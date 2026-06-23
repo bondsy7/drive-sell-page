@@ -245,25 +245,9 @@ const PresetUploadFlow: React.FC<PresetUploadFlowProps> = ({ onComplete, onBack 
           </div>
         </div>
 
-        {/* Model Tier */}
+        {/* Modell-Auswahl entfernt: Standard ist Nano Banana 2. Fallback im Hintergrund. */}
         <Card className="p-4">
-          <label className="text-sm font-semibold mb-3 block">Qualitätsstufe</label>
-          <div className="flex items-center gap-1 p-1 rounded-lg bg-muted flex-wrap">
-            {TIERS.map((tier) => (
-              <button
-                key={tier.id}
-                onClick={() => setModelTier(tier.id)}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium transition-colors ${
-                  modelTier === tier.id
-                    ? 'bg-card text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {tier.icon} {tier.label}
-              </button>
-            ))}
-          </div>
-          <div className="flex items-center gap-1.5 mt-3 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Zap className="w-3 h-3 text-accent" />
             <span>Guthaben: <strong className="text-foreground">{balance} Credits</strong></span>
             <span className="ml-2">• {costPerImage} Credit{costPerImage !== 1 ? 's' : ''}/Bild</span>

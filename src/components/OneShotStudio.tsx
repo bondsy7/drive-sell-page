@@ -357,7 +357,7 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
   const [wantVideo, setWantVideo] = useState(false);
   const [videoPrompt, setVideoPrompt] = useState('');
   // Model tier
-  const [modelTier, setModelTier] = useState<ModelTier>('premium');
+  const [modelTier, setModelTier] = useState<ModelTier>('qualitaet');
 
   /* ─── Step 3: Generation runtime ─── */
   const [heroBase64, setHeroBase64] = useState<string | null>(null);
@@ -1663,10 +1663,7 @@ This is the MARKETING MASTER (Hero) shot — push lighting one notch beyond the 
             )}
           </div>
 
-          {/* Model tier */}
-          <div className="rounded-xl border border-border bg-card p-4">
-            <ModelSelector value={modelTier} onChange={setModelTier} actionType="image_generate" />
-          </div>
+          {/* Model tier fixed (Nano Banana 2). Fallback im Hintergrund. */}
 
           {/* CTAs */}
           <div className="flex gap-2">
