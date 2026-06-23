@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useMusicJobsSafe } from '@/contexts/MusicJobsContext';
 import { Loader2, Check, Timer, X, Music } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
@@ -7,14 +7,10 @@ import { Progress } from '@/components/ui/progress';
 const BackgroundMusicIndicator: React.FC = () => {
   const ctx = useMusicJobsSafe();
   const navigate = useNavigate();
-  const location = useLocation();
 
   if (!ctx || ctx.jobs.length === 0) return null;
   const job = ctx.activeJob;
   if (!job) return null;
-
-  // Don't double-render on music studio itself
-  if (location.pathname === '/generator/music-studio') return null;
 
   const isRunning = job.status === 'running';
   const elapsed = isRunning ? Date.now() - job.startTime : (job.endTime || Date.now()) - job.startTime;
