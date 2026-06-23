@@ -12,7 +12,7 @@ import { useCredits } from "@/hooks/useCredits";
 export default function AdminCreditEconomics() {
   const { costs } = useCredits();
   const [credits, setCredits] = useState(200);
-  const [vkTier, setVkTier] = useState<keyof typeof VK_PER_CREDIT>("best");
+  const [vkTier, setVkTier] = useState<keyof typeof VK_PER_CREDIT>("basis");
   const [filter, setFilter] = useState<Category | "all">("all");
 
   const rows = useMemo(() => {
@@ -22,17 +22,16 @@ export default function AdminCreditEconomics() {
         t,
         credits: c,
         ek: ekEur(t),
-        vkBest: vkEur(c, "best"),
-        vkMid: vkEur(c, "mid"),
-        vkWorst: vkEur(c, "worst"),
-        margeBest: margeEur(t, c, "best"),
-        marginPctBest: (margeEur(t, c, "best") / vkEur(c, "best")) * 100,
+        vkBasis: vkEur(c, "basis"),
+        vkTopup: vkEur(c, "topup"),
+        margeBasis: margeEur(t, c, "basis"),
+        marginPctBasis: (margeEur(t, c, "basis") / vkEur(c, "basis")) * 100,
       };
     });
   }, [costs]);
 
   const filteredRows = filter === "all" ? rows : rows.filter((r) => r.t.category === filter);
-  const lossActions = rows.filter((r) => r.margeBest < 0);
+  const lossActions = rows.filter((r) => r.margeBasis < 0);
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
@@ -41,17 +40,16 @@ export default function AdminCreditEconomics() {
         <p className="text-muted-foreground text-sm mt-1">
           EK = echte API-Kosten (Gemini, OpenAI Image, Veo 3.1, Ideogram, OUTVIN) +
           Overhead $0,014 (Stripe, Resend, Edge-Compute, Egress, Gemini-File-API-Quota)
-          + Bild-Transfer $0,0005 je Bild (Upload→Gemini + Supabase-Egress). VK = Pack-Preis pro Credit.
-          Worst-Case basiert auf dem Basis-Abo ({formatEur(VK_PER_CREDIT.best)}/Cr).
-          Kurs USD→EUR: {USD_TO_EUR}. Preise verifiziert 2026-06-22.
+          + Bild-Transfer $0,0005 je Bild. VK = Preis pro Credit.
+          Worst-Case basiert auf dem Basis-Abo ({formatEur(VK_PER_CREDIT.basis)}/Cr).
+          Kurs USD→EUR: {USD_TO_EUR}.
         </p>
         <p className="text-[11px] text-muted-foreground/70 mt-2">
-          Tarife: Basis-Abo 1000 Cr → 490 € (0,49 €/Cr) · Top-Up 200 Cr → 100 € (0,50 €/Cr).
-          Aufgeführt sind ALLE kostenverursachenden Tools (Bild, Remaster, Banner,
-          Canvas-Reframe via Ideogram, Video, Landingpage, Schaden, PDF, VIN,
-          Bild-/Marken-Erkennung, Angebots-Analyse, Sales-Chat, 360°-Spin).
+          <strong>Nur ZWEI Tarife</strong> – totale Transparenz:
+          Basis-Abo 1000 Cr → 490 € (0,49 €/Cr) · Top-Up 200 Cr → 100 € (0,50 €/Cr).
+          Aktionen sind günstig kalkuliert (mehr Generierungen pro Abo);
+          Landingpages bewusst hochpreisiger (Premium-Produkt).
         </p>
-
       </div>
 
       {lossActions.length > 0 && (
@@ -62,7 +60,7 @@ export default function AdminCreditEconomics() {
           <ul className="text-xs text-muted-foreground space-y-0.5">
             {lossActions.map((r) => (
               <li key={r.t.id}>
-                {r.t.icon} {r.t.label}: EK {formatEur(r.ek)} · VK {formatEur(r.vkBest)} · Marge {formatEur(r.margeBest)}
+                {r.t.icon} {r.t.label}: EK {formatEur(r.ek)} · VK {formatEur(r.vkBasis)} · Marge {formatEur(r.margeBasis)}
               </li>
             ))}
           </ul>
@@ -80,7 +78,7 @@ export default function AdminCreditEconomics() {
             <Slider value={[credits]} min={10} max={1000} step={10} onValueChange={(v) => setCredits(v[0])} />
           </div>
           <div className="flex gap-2">
-            {(["best", "mid", "worst"] as const).map((k) => (
+            {(["basis", "topup"] as const).map((k) => (
               <button
                 key={k}
                 onClick={() => setVkTier(k)}
@@ -88,7 +86,7 @@ export default function AdminCreditEconomics() {
                   vkTier === k ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-accent"
                 }`}
               >
-                {k === "best" ? "Basis-Abo" : k === "mid" ? "Basis-Abo" : "Top-Up 200"}
+                {k === "basis" ? "Basis-Abo (1000 Cr / 490 €)" : "Top-Up (200 Cr / 100 €)"}
                 <span className="block text-[10px] opacity-70">{formatEur(VK_PER_CREDIT[k])}/Cr</span>
               </button>
             ))}
@@ -128,10 +126,9 @@ export default function AdminCreditEconomics() {
                 <th className="text-left p-3">Modell / EK-Setup</th>
                 <th className="text-right p-3">Cr</th>
                 <th className="text-right p-3">EK</th>
-                <th className="text-right p-3">VK 200</th>
-                <th className="text-right p-3">VK 50</th>
-                <th className="text-right p-3">VK 10</th>
-                <th className="text-right p-3">Marge 200</th>
+                <th className="text-right p-3">VK Basis</th>
+                <th className="text-right p-3">VK Top-Up</th>
+                <th className="text-right p-3">Marge Basis</th>
                 <th className="text-right p-3">%</th>
               </tr>
             </thead>
@@ -152,15 +149,14 @@ export default function AdminCreditEconomics() {
                   </td>
                   <td className="p-3 text-right tabular-nums font-semibold">{r.credits}</td>
                   <td className="p-3 text-right tabular-nums">{formatEur(r.ek)}</td>
-                  <td className="p-3 text-right tabular-nums">{formatEur(r.vkBest)}</td>
-                  <td className="p-3 text-right tabular-nums">{formatEur(r.vkMid)}</td>
-                  <td className="p-3 text-right tabular-nums">{formatEur(r.vkWorst)}</td>
-                  <td className={`p-3 text-right tabular-nums font-medium ${r.margeBest >= 0 ? "text-emerald-600" : "text-destructive"}`}>
-                    {formatEur(r.margeBest)}
+                  <td className="p-3 text-right tabular-nums">{formatEur(r.vkBasis)}</td>
+                  <td className="p-3 text-right tabular-nums">{formatEur(r.vkTopup)}</td>
+                  <td className={`p-3 text-right tabular-nums font-medium ${r.margeBasis >= 0 ? "text-emerald-600" : "text-destructive"}`}>
+                    {formatEur(r.margeBasis)}
                   </td>
                   <td className="p-3 text-right">
-                    <Badge variant={r.marginPctBest >= 50 ? "default" : r.marginPctBest >= 0 ? "secondary" : "destructive"}>
-                      {r.marginPctBest.toFixed(0)}%
+                    <Badge variant={r.marginPctBasis >= 50 ? "default" : r.marginPctBasis >= 0 ? "secondary" : "destructive"}>
+                      {r.marginPctBasis.toFixed(0)}%
                     </Badge>
                   </td>
                 </tr>
@@ -178,8 +174,7 @@ export default function AdminCreditEconomics() {
         </p>
         <p>
           Im EK enthalten: alle API-Calls + Overhead $0,014 (Stripe, Resend, Edge-Compute, Egress)
-          + $0,0005 pro transportiertem Bild (Gemini-File-API-Upload, Supabase-Storage-Egress, signed URLs).
-          Gemini File API selbst ist gratis – Bandbreite & Speicher sind eingerechnet.
+          + $0,0005 pro transportiertem Bild (Gemini-File-API-Upload, Supabase-Storage-Egress).
         </p>
       </div>
     </div>
