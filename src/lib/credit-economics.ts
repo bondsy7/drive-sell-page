@@ -647,14 +647,14 @@ export function ekEur(t: ActionTier): number {
   return (t.ekUsd + OVERHEAD_USD) * USD_TO_EUR;
 }
 
-export function vkEur(credits: number, tier: keyof typeof VK_PER_CREDIT = "best"): number {
+export function vkEur(credits: number, tier: keyof typeof VK_PER_CREDIT = "basis"): number {
   return credits * VK_PER_CREDIT[tier];
 }
 
 export function margeEur(
   t: ActionTier,
   credits: number,
-  vkTier: keyof typeof VK_PER_CREDIT = "best",
+  vkTier: keyof typeof VK_PER_CREDIT = "basis",
 ): number {
   return vkEur(credits, vkTier) - ekEur(t);
 }
