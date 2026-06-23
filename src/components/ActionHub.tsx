@@ -1,5 +1,5 @@
 import React from 'react';
-import { Camera, FileText, Layout, Image, Video, Sparkles, Lock, Zap, Wrench, Search } from 'lucide-react';
+import { Camera, FileText, Layout, Image, Video, Sparkles, Lock, Zap, Wrench, Search, Music } from 'lucide-react';
 import { useCredits } from '@/hooks/useCredits';
 import { useModuleAccess } from '@/hooks/useModuleAccess';
 
@@ -11,6 +11,7 @@ export type HubAction =
   | 'banner'          // Banner Generator
   | 'canvas-banner-studio' // Deterministischer Canvas-Banner-Editor
   | 'video'           // Video Erstellung
+  | 'music-studio'    // Musik mit Lyria 3 generieren
   | 'damage-repair'    // Schadensreparatur – KI repariert Schäden auf Fahrzeugbildern
   | 'damage-analysis'  // Schadensanalyse – KI bewertet Schäden + erstellt Bericht
   | 'sales-assistant'; // KI Verkaufsassistent
@@ -68,6 +69,13 @@ const TILES: ActionTile[] = [
     icon: <Video className="w-7 h-7" />,
     title: 'Video Erstellung',
     description: 'Fahrzeugbild hochladen und ein professionelles Showroom-Video per KI erstellen.',
+  },
+  {
+    id: 'music-studio',
+    icon: <Music className="w-7 h-7" />,
+    title: 'Musik Studio',
+    description: 'Eigene Musik, Jingles & Spot-Soundtracks per KI komponieren – mit Gesang, Lyrics & Instrumenten.',
+    badge: 'NEU',
   },
   {
     id: 'damage-repair',
