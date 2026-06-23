@@ -1416,12 +1416,7 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
           </p>
         </div>
 
-        {/* Model Tier */}
-        <div className="space-y-1.5">
-          <Label className="text-xs font-medium">KI-Modell</Label>
-          <ModelSelector actionType="image_generate" value={modelTier}
-            onChange={(t) => { if (filteredTiers(t)) setModelTier(t); else toast.info('"Schnell" ist für Banner nicht geeignet.'); }} />
-        </div>
+        {/* Model tier fixed to 'qualitaet' (Nano Banana 2). Fallback-Modelle laufen im Hintergrund. */}
 
         {/* Variant Count */}
         <div className="space-y-1.5">
