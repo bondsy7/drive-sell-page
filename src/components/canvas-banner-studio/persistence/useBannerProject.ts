@@ -19,8 +19,11 @@ async function uploadDataUrl(
   try {
     const blob = await (await fetch(dataUrl)).blob();
     const ext = (blob.type.split("/")[1] || "png").split(";")[0];
-    const folder = vehicleId ? `${userId}/${vehicleId}` : `${userId}/no-vehicle`;
-    const path = `_banner-state/${folder}/state-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    // Pfad MUSS mit userId beginnen, sonst lehnt die Storage-RLS den Upload ab
+    // (Policy: foldername[1] = auth.uid()). Andernfalls landen Hintergrundbilder
+    // stillschweigend im "drop on failure"-Pfad und Canvas-Projekte sehen leer aus.
+    const sub = vehicleId ?? "no-vehicle";
+    const path = `${userId}/_banner-state/${sub}/state-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
     const { error } = await supabase.storage
       .from("banners")
       .upload(path, blob, { contentType: blob.type || "image/png", upsert: false });
