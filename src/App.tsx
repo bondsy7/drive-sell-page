@@ -8,8 +8,10 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { PipelineProvider } from "@/contexts/PipelineContext";
 import { BackgroundTasksProvider } from "@/contexts/BackgroundTasksContext";
+import { MusicJobsProvider } from "@/contexts/MusicJobsContext";
 import BackgroundPipelineIndicator from "@/components/BackgroundPipelineIndicator";
 import BackgroundTasksIndicator from "@/components/BackgroundTasksIndicator";
+import BackgroundMusicIndicator from "@/components/BackgroundMusicIndicator";
 import { DownloadLimitProvider } from "@/hooks/useDownloadLimit";
 import DownloadGuardBridge from "@/components/DownloadGuardBridge";
 
@@ -110,8 +112,10 @@ const App = () => (
           <DownloadGuardBridge />
           <PipelineProvider>
           <BackgroundTasksProvider>
+          <MusicJobsProvider>
           <BackgroundPipelineIndicator />
           <BackgroundTasksIndicator />
+          <BackgroundMusicIndicator />
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/" element={<Landing />} />
@@ -165,6 +169,7 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
+          </MusicJobsProvider>
           </BackgroundTasksProvider>
           </PipelineProvider>
           </DownloadLimitProvider>
