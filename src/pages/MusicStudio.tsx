@@ -149,11 +149,11 @@ export default function MusicStudio() {
         <div className="space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/10 text-accent text-xs font-semibold">
             <Sparkles className="w-3.5 h-3.5" />
-            Musik Studio · Lyria 3
+            Musik Studio
           </div>
           <h1 className="font-display text-3xl md:text-4xl font-bold">Musik mit KI komponieren</h1>
           <p className="text-muted-foreground text-sm max-w-2xl">
-            Beschreibe deinen Sound in Worten – Lyria 3 generiert hochwertiges Stereo-Audio (44,1 kHz) inkl.
+            Beschreibe deinen Sound in Worten – wir generieren hochwertiges Stereo-Audio (44,1 kHz) inkl.
             Gesang, Lyrics und Instrumenten. Nutze Stil-Presets, Stimmungen oder eigene Lyrics.
           </p>
         </div>
@@ -164,7 +164,7 @@ export default function MusicStudio() {
             <Card className="p-5 space-y-5">
               {/* Model */}
               <div className="space-y-2">
-                <Label className="text-sm font-semibold">Modell</Label>
+                <Label className="text-sm font-semibold">Modus</Label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
@@ -176,7 +176,7 @@ export default function MusicStudio() {
                     }`}
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <span className="font-semibold text-sm">Lyria 3 Pro</span>
+                      <span className="font-semibold text-sm">Song</span>
                       <Badge variant="secondary" className="text-[10px]">1 Cr</Badge>
                     </div>
                     <p className="text-xs text-muted-foreground">Vollständige Songs bis 3 Min., mit Gesang & WAV-Option.</p>
@@ -191,7 +191,7 @@ export default function MusicStudio() {
                     }`}
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <span className="font-semibold text-sm">Lyria 3 Clip</span>
+                      <span className="font-semibold text-sm">Clip</span>
                       <Badge variant="secondary" className="text-[10px]">1 Cr</Badge>
                     </div>
                     <p className="text-xs text-muted-foreground">30-Sek.-Clips & Loops, perfekt für Spots & Hintergrund.</p>
