@@ -29,14 +29,13 @@ export const OVERHEAD_USD = 0.014;
 export const INFRA_PER_IMAGE_USD = 0.0005;
 
 
-// Verkaufspreis pro Credit (€) – aus den vereinfachten Tarifen:
-//   • Basis-Abo:   1000 Cr / 490 €/Mo = 0,49 €/Cr
-//   • Top-Up-Pack:  200 Cr / 100 €    = 0,50 €/Cr
-// Alle Margenrechnungen nutzen "best" (0,49 €/Cr) als Worst-Case.
+// Verkaufspreis pro Credit (€) – nur ZWEI Tarife, totale Transparenz:
+//   • Basis-Abo:   1000 Cr / 490 €/Monat = 0,49 €/Cr  (Worst-Case-Marge)
+//   • Top-Up-Pack:  200 Cr / 100 €       = 0,50 €/Cr
+// Alle Margenrechnungen nutzen "basis" (0,49 €/Cr) als Worst-Case.
 export const VK_PER_CREDIT = {
-  best: 0.49,    // Basis-Abo – Worst-Case-Marge für uns
-  mid: 0.49,     // identisch (keine Tier-Pakete mehr)
-  worst: 0.50,   // 200er-Top-Up
+  basis: 0.49,   // Basis-Abo – Worst-Case-Marge
+  topup: 0.50,   // 200er-Top-Up-Pack
 } as const;
 
 
