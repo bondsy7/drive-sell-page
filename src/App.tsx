@@ -33,6 +33,7 @@ const ArchitectureDoc = lazy(() => import("./pages/ArchitectureDoc"));
 const SalesAssistant = lazy(() => import("./pages/SalesAssistant"));
 const QrLogin = lazy(() => import("./pages/QrLogin"));
 const CanvasBannerStudio = lazy(() => import("./pages/CanvasBannerStudio"));
+const MusicStudio = lazy(() => import("./pages/MusicStudio"));
 
 // Admin pages
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
@@ -118,6 +119,7 @@ const App = () => (
               <Route path="/qr-login" element={<QrLogin />} />
               <Route path="/generator" element={<ProtectedRoute><ErrorBoundary moduleName="Generator"><Index /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/generator/canvas-banner-studio" element={<ProtectedRoute><ErrorBoundary moduleName="Banner Studio"><CanvasBannerStudio /></ErrorBoundary></ProtectedRoute>} />
+              <Route path="/generator/music-studio" element={<ProtectedRoute><ErrorBoundary moduleName="Music Studio"><MusicStudio /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/generator/:tool" element={<ProtectedRoute><ErrorBoundary moduleName="Generator"><Index /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/dashboard" element={<ProtectedRoute><ErrorBoundary moduleName="Dashboard"><Dashboard /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

@@ -648,6 +648,9 @@ const Index = () => {
       case 'canvas-banner-studio':
         navigate('/generator/canvas-banner-studio');
         break;
+      case 'music-studio':
+        navigate('/generator/music-studio');
+        break;
       case 'manual-landing':
         setAppState('manual-landing');
         break;
