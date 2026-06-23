@@ -2539,6 +2539,7 @@ export type Database = {
         | "spin360_normalize"
         | "spin360_generate"
         | "spin360_export"
+        | "music_generate"
       subscription_status: "active" | "cancelled" | "past_due" | "trialing"
     }
     CompositeTypes: {
@@ -2682,6 +2683,7 @@ export const Constants = {
         "spin360_normalize",
         "spin360_generate",
         "spin360_export",
+        "music_generate",
       ],
       subscription_status: ["active", "cancelled", "past_due", "trialing"],
     },

@@ -1,0 +1,1 @@
+ALTER TYPE public.credit_action_type ADD VALUE IF NOT EXISTS 'music_generate';
