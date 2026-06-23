@@ -112,11 +112,41 @@ export default function MusicStudio() {
       const bin = atob(data.audioBase64);
       const bytes = new Uint8Array(bin.length);
       for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-      const blob = new Blob([bytes], { type: data.mimeType || "audio/mpeg" });
+      const mime = data.mimeType || "audio/mpeg";
+      const blob = new Blob([bytes], { type: mime });
       const url = URL.createObjectURL(blob);
       setAudioUrl(url);
-      setMimeOut(data.mimeType || "audio/mpeg");
+      setMimeOut(mime);
       setLyricsOut(data.lyrics || "");
+
+      // Persist song to dashboard
+      try {
+        const { data: auth } = await supabase.auth.getUser();
+        const uid = auth.user?.id;
+        if (uid) {
+          const ext = mime.includes("wav") ? "wav" : "mp3";
+          const path = `${uid}/${Date.now()}.${ext}`;
+          const up = await supabase.storage.from("songs").upload(path, blob, {
+            contentType: mime,
+            upsert: false,
+          });
+          if (!up.error) {
+            const title = prompt.trim().split("\n")[0].slice(0, 60) || "Neuer Song";
+            await supabase.from("user_songs").insert({
+              user_id: uid,
+              title,
+              prompt: finalPrompt,
+              lyrics: data.lyrics || null,
+              storage_path: path,
+              mime_type: mime,
+              model,
+            });
+          }
+        }
+      } catch (saveErr) {
+        console.warn("[MusicStudio] save failed", saveErr);
+      }
+
       fetchBalance();
       toast.success(`Musik erstellt (-${data.creditsUsed} Credits)`);
     } catch (e: any) {
