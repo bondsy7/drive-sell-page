@@ -117,7 +117,7 @@ export default function MusicStudio() {
       setAudioUrl(url);
       setMimeOut(data.mimeType || "audio/mpeg");
       setLyricsOut(data.lyrics || "");
-      refresh();
+      fetchBalance();
       toast.success(`Musik erstellt (-${data.creditsUsed} Credits)`);
     } catch (e: any) {
       const msg = e?.message || String(e);
