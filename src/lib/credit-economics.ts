@@ -44,6 +44,7 @@ export type Category =
   | "remaster"     // Foto-Aufbereitung
   | "banner"       // Marketing-Banner
   | "video"        // Video
+  | "music"        // Musik (Lyria 3)
   | "landing"      // Landingpages (Verbund)
   | "damage"       // Schadensanalyse / -reparatur
   | "analysis"     // PDF / VIN / Bild / Angebot
@@ -101,6 +102,10 @@ const API = {
   // Video
   veo31Fast_PerSec:        0.15,    // veo-3.1-fast / lite
   veo31Std_PerSec:         0.40,    // veo-3.1 standard (mit Audio)
+  // Musik (Lyria 3 – offizielle GCP-Preise, Stand 2026-06-23)
+  // https://cloud.google.com/gemini-enterprise-agent-platform/generative-ai/pricing
+  lyria3Pro:               0.08,    // Lyria 3 Pro – Full Song bis 3 Min.
+  lyria3Clip:              0.04,    // Lyria 3 – 30 Sek. Clip
   // Daten-APIs
   outvinLookup:            0.05,
 } as const;
@@ -356,6 +361,34 @@ export const CATALOG: ActionTier[] = [
     ekBreakdown: `8 Sek × $${API.veo31Std_PerSec}/s`,
     source: "Veo 3.1 Standard (mit Audio)",
     produces: "1 Showroom-Video, 8 Sek., 1080p, mit Audio",
+    inMix: true,
+  },
+
+  // ════════════════════════════════════════════════════════
+  // MUSIK (Lyria 3)
+  // EK Pro: $0.08 + Overhead → ~0,087 € → 1 Cr (0,49 €) = ~82 % Marge
+  // EK Clip: $0.04 + Overhead → ~0,050 € → 1 Cr (0,49 €) = ~90 % Marge
+  // ════════════════════════════════════════════════════════
+  {
+    id: "music-clip", category: "music",
+    action: "music_generate", tier: "clip",
+    label: "Musik · Clip (30 Sek.)", icon: "🎵", defaultCredits: 1,
+    model: "lyria-3-clip-preview",
+    ekUsd: API.lyria3Clip,
+    ekBreakdown: `1× Lyria 3 Clip $${API.lyria3Clip} (30 Sek.)`,
+    source: "Google Lyria 3 (Gemini API)",
+    produces: "1 Musikclip, 30 Sek., 44,1 kHz Stereo MP3",
+    inMix: true,
+  },
+  {
+    id: "music-pro", category: "music",
+    action: "music_generate", tier: "pro",
+    label: "Musik · Pro (Full Song)", icon: "🎼", defaultCredits: 1,
+    model: "lyria-3-pro-preview",
+    ekUsd: API.lyria3Pro,
+    ekBreakdown: `1× Lyria 3 Pro $${API.lyria3Pro} (bis 3 Min., MP3/WAV)`,
+    source: "Google Lyria 3 Pro (Gemini API)",
+    produces: "1 vollständiger Song bis 3 Min. mit Gesang & Lyrics",
     inMix: true,
   },
 
@@ -668,6 +701,7 @@ export const CATEGORY_META: Record<Category, { label: string; icon: string; colo
   remaster: { label: "Remastering",     icon: "🎨", color: "from-violet-500/15 to-violet-500/5" },
   banner:   { label: "Banner",          icon: "🪧", color: "from-amber-500/15 to-amber-500/5" },
   video:    { label: "Video",           icon: "🎬", color: "from-rose-500/15 to-rose-500/5" },
+  music:    { label: "Musik (Lyria)",   icon: "🎵", color: "from-pink-500/15 to-pink-500/5" },
   landing:  { label: "Landingpages",    icon: "📄", color: "from-emerald-500/15 to-emerald-500/5" },
   damage:   { label: "Schaden",         icon: "🔧", color: "from-orange-500/15 to-orange-500/5" },
   analysis: { label: "Analyse / Daten", icon: "🔍", color: "from-slate-500/15 to-slate-500/5" },

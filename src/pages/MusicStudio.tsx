@@ -75,7 +75,7 @@ export default function MusicStudio() {
   const [lyricsOut, setLyricsOut] = useState<string>("");
   const [mimeOut, setMimeOut] = useState<string>("audio/mpeg");
 
-  const credits = model === "lyria-3-pro-preview" ? 8 : 4;
+  const credits = 1;
 
   const finalPrompt = useMemo(() => {
     let p = prompt.trim();
@@ -177,9 +177,9 @@ export default function MusicStudio() {
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="font-semibold text-sm">Lyria 3 Pro</span>
-                      <Badge variant="secondary" className="text-[10px]">8 Cr</Badge>
+                      <Badge variant="secondary" className="text-[10px]">1 Cr</Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground">Volle Songs mit Gesang, bis ~30s, WAV möglich.</p>
+                    <p className="text-xs text-muted-foreground">Vollständige Songs bis 3 Min., mit Gesang & WAV-Option.</p>
                   </button>
                   <button
                     type="button"
@@ -192,9 +192,9 @@ export default function MusicStudio() {
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="font-semibold text-sm">Lyria 3 Clip</span>
-                      <Badge variant="secondary" className="text-[10px]">4 Cr</Badge>
+                      <Badge variant="secondary" className="text-[10px]">1 Cr</Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground">Kurze Loops/Clips, perfekt für Hintergrund & Spots.</p>
+                    <p className="text-xs text-muted-foreground">30-Sek.-Clips & Loops, perfekt für Spots & Hintergrund.</p>
                   </button>
                 </div>
               </div>
