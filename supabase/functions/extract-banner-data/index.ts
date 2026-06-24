@@ -86,12 +86,20 @@ Deno.serve(async (req) => {
       generationConfig: { responseMimeType: "application/json" },
     };
 
-    const models = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.5-pro"];
+    const models = [
+      "gemini-2.5-flash",
+      "gemini-2.5-flash-lite",
+      "gemini-2.0-flash",
+      "gemini-2.0-flash-lite",
+      "gemini-1.5-flash",
+      "gemini-2.5-pro",
+      "gemini-1.5-pro",
+    ];
     let r: Response | null = null;
     let lastStatus = 0;
     let lastBody = "";
     outer: for (const model of models) {
-      for (let attempt = 0; attempt < 3; attempt++) {
+      for (let attempt = 0; attempt < 2; attempt++) {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
         const resp = await fetch(url, {
           method: "POST",
@@ -102,23 +110,68 @@ Deno.serve(async (req) => {
         lastStatus = resp.status;
         lastBody = await resp.text();
         console.warn(`gemini ${model} attempt ${attempt + 1} -> ${resp.status}`);
-        if (resp.status !== 429 && resp.status < 500) break;
-        await new Promise((res) => setTimeout(res, 600 * (attempt + 1)));
+        // 503 (overloaded) / 429 (rate limit) -> try next model immediately, don't waste time retrying same
+        if (resp.status === 503 || resp.status === 429) break;
+        if (resp.status < 500) break;
+        await new Promise((res) => setTimeout(res, 500 * (attempt + 1)));
       }
     }
+
+    // Fallback: OpenAI Vision (gpt-4o-mini) when all Gemini models overloaded
+    let openaiText: string | null = null;
     if (!r) {
-      console.error("gemini extract-banner-data exhausted", lastStatus, lastBody.slice(0, 400));
+      const openaiKey = await getSecret("OPENAI_API_KEY");
+      if (openaiKey) {
+        try {
+          console.warn("gemini exhausted, falling back to OpenAI gpt-4o-mini vision");
+          const oResp = await fetch("https://api.openai.com/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${openaiKey}`,
+            },
+            body: JSON.stringify({
+              model: "gpt-4o-mini",
+              response_format: { type: "json_object" },
+              messages: [
+                {
+                  role: "user",
+                  content: [
+                    { type: "text", text: PROMPT },
+                    { type: "image_url", image_url: { url: fileDataUrl } },
+                  ],
+                },
+              ],
+            }),
+          });
+          if (oResp.ok) {
+            const oj = await oResp.json();
+            openaiText = oj?.choices?.[0]?.message?.content ?? null;
+          } else {
+            const ob = await oResp.text();
+            console.error("openai fallback failed", oResp.status, ob.slice(0, 300));
+          }
+        } catch (e) {
+          console.error("openai fallback threw", e);
+        }
+      }
+    }
+
+    if (!r && !openaiText) {
+      console.error("extract-banner-data all providers exhausted", lastStatus, lastBody.slice(0, 400));
       return jsonResponse({
         fallback: true,
-        error: lastStatus >= 500 || lastStatus === 429 ? "GEMINI_UNAVAILABLE" : `gemini_${lastStatus}`,
+        error: lastStatus >= 500 || lastStatus === 429 ? "AI_UNAVAILABLE" : `gemini_${lastStatus}`,
         fields: {
           brand: "", headline: "", subline: "", price: "", cta: "", smallInfo: "", legalText: "",
         },
       });
     }
-    const json = await r.json();
-    const text: string =
-      json?.candidates?.[0]?.content?.parts?.map((p: any) => p?.text || "").join("") || "{}";
+
+    const json = r ? await r.json() : null;
+    const text: string = openaiText
+      ?? (json?.candidates?.[0]?.content?.parts?.map((p: any) => p?.text || "").join("") || "{}");
+
 
     let parsed: Record<string, string> = {};
     try {
