@@ -14,9 +14,10 @@ import type { StudioState } from "./state/types";
 type Mode = "quick" | "pro";
 
 const CanvasBannerStudioShell: React.FC = () => {
-  const [mode, setMode] = useState<Mode>("quick");
   const [params, setParams] = useSearchParams();
   const projectId = params.get("project");
+  const initialMode: Mode = params.get("mode") === "pro" ? "pro" : "quick";
+  const [mode, setMode] = useState<Mode>(initialMode);
   const { user } = useAuth();
 
   const [resumeState, setResumeState] = useState<StudioState | null>(null);
