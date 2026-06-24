@@ -77,10 +77,9 @@ function snapToGeminiRatio(target: number): number {
 }
 
 /**
- * Pad an image to the target aspect ratio using a BLURRED + MIRRORED extension
- * of the source instead of a flat white/cream background. This prevents Gemini's
- * fast fallback model from reproducing large flat empty zones in the output
- * (the root cause of "lots of cream space" 9:16 banners).
+ * Pad an image to the target aspect ratio using a blurred cover background plus
+ * a contained foreground reference. This keeps the complete car visible in the
+ * reference frame so portrait/square models do not learn a cropped bumper/wheel.
  */
 function padToAspectRatio(dataUrl: string, rawTargetRatio: number, _bg: string = '#f4f4f4'): Promise<string> {
   // Always snap references to the closest Gemini-native ratio. Unsupported ad
@@ -95,21 +94,21 @@ function padToAspectRatio(dataUrl: string, rawTargetRatio: number, _bg: string =
         // Already matches → return original
         if (Math.abs(srcRatio - targetRatio) / targetRatio < 0.02) return resolve(dataUrl);
 
-        // COVER FIT (no padding bars): the canvas is exactly the target ratio,
-        // and the source image is scaled to fully cover it (cropping overflow
-        // on the long axis). This way the reference Gemini sees is already
-        // edge-to-edge at the requested ratio — no grey/cream/blurred bands
-        // get reproduced as part of the final banner. The model is then free
-        // to recompose around the cropped subject and fill the entire frame.
-        const canvasW = srcRatio > targetRatio
-          ? Math.round(img.height * targetRatio)
-          : img.width;
-        const canvasH = srcRatio > targetRatio
-          ? img.height
-          : Math.round(img.width / targetRatio);
-        const scale = Math.max(canvasW / img.width, canvasH / img.height);
-        const drawW = Math.round(img.width * scale);
-        const drawH = Math.round(img.height * scale);
+        const canvasW = 1440;
+        const canvasH = Math.round(canvasW / targetRatio);
+        const coverScale = Math.max(canvasW / img.width, canvasH / img.height);
+        const coverW = Math.round(img.width * coverScale);
+        const coverH = Math.round(img.height * coverScale);
+        const coverX = Math.round((canvasW - coverW) / 2);
+        const coverY = Math.round((canvasH - coverH) / 2);
+
+        const innerMargin = targetRatio <= 0.6 ? 0.18 : targetRatio < 1 ? 0.14 : 0.1;
+        const containScale = Math.min(
+          (canvasW * (1 - innerMargin * 2)) / img.width,
+          (canvasH * (1 - innerMargin * 2)) / img.height,
+        );
+        const drawW = Math.round(img.width * containScale);
+        const drawH = Math.round(img.height * containScale);
         const dx = Math.round((canvasW - drawW) / 2);
         const dy = Math.round((canvasH - drawH) / 2);
 
@@ -119,9 +118,12 @@ function padToAspectRatio(dataUrl: string, rawTargetRatio: number, _bg: string =
         const ctx = canvas.getContext('2d');
         if (!ctx) return reject(new Error('canvas unsupported'));
 
-        // Fallback fill in case of rounding gaps — neutral grey, fully covered
-        // by the image draw below.
         ctx.fillStyle = '#7d7d7d';
+        ctx.fillRect(0, 0, canvasW, canvasH);
+        ctx.filter = 'blur(28px) saturate(0.9) brightness(0.92)';
+        ctx.drawImage(img, coverX, coverY, coverW, coverH);
+        ctx.filter = 'none';
+        ctx.fillStyle = 'rgba(244, 244, 244, 0.18)';
         ctx.fillRect(0, 0, canvasW, canvasH);
         ctx.drawImage(img, dx, dy, drawW, drawH);
 
@@ -634,10 +636,19 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
     const isWideSkyscraper = fmt.id === 'wide-skyscraper';
     const isBillboard = fmt.id === 'billboard';
     const isLandscapeAd = fmt.id === 'hero' || fmt.id === 'fb-ad';
+    const isInstagramStory = fmt.id === 'story';
+    const isInstagramPost = fmt.id === 'post';
+    const isHalfPage = fmt.id === 'half-page';
     const formatDirective = isWideSkyscraper
       ? `WIDE SKYSCRAPER SPECIAL LAYOUT (MANDATORY): This is a very narrow 160×600 display ad, NOT a 9:16 story. Use one continuous vertical composition from top edge to bottom edge. No repeated road/background sections, no duplicated vehicle, no stacked poster panels, no white/cream caps, no blank rounded card. Put compact logo/headline/price in the top 18–24%, one single vehicle in the central 38–48%, CTA and legal line in the bottom 18–24%. Background/art direction must be designed as a full-height image and continue naturally behind every zone edge-to-edge.`
       : isBillboard
       ? `BILLBOARD SPECIAL LAYOUT (MANDATORY): This is a 970×250 ultra-wide strip. Compose it as an ultra-wide full image from the start, not as a cropped 16:9/21:9 image and not as a centered motif with side extensions. Every pixel from the far left edge to the far right edge must be an intentional part of the banner image. Keep all important content inside a central safe area. Vehicle should occupy the middle/right 42–52% of canvas width and remain fully visible. Copy/price/logo should sit left or right in compact blocks. Do NOT crop through the vehicle, headline, logo or price. No empty white/cream bands, no blurred side caps, no duplicated background extensions.`
+      : isInstagramStory
+      ? `INSTAGRAM STORY 9:16 VEHICLE-FIT LOCK (MANDATORY): This is a tall story format, but the vehicle is a wide object. Size the car by WIDTH, not by height: the complete vehicle must fit within 72–82% of canvas width with generous left/right margin and must not exceed roughly 34–42% of canvas height. Show the full front bumper, rear bumper, roofline, mirrors, all wheels and tires on the ground. Do NOT zoom in for drama. Use top/bottom zones for headline, price, logo, CTA and legal copy; never place them over the car silhouette.`
+      : isInstagramPost
+      ? `INSTAGRAM POST 1:1 VEHICLE-FIT LOCK (MANDATORY): The complete vehicle must fit inside the square with a visible safety margin on all four sides. Size the car by WIDTH: occupy roughly 74–84% of canvas width and never crop bumpers, wheels, roofline, mirrors or tires. Put copy/logo/price in protected top or bottom zones; never solve layout by cutting through the car.`
+      : isHalfPage
+      ? `GOOGLE HALF PAGE 300×600 VEHICLE-FIT LOCK (MANDATORY): This is a narrow 1:2 display ad. The vehicle is wide, so it must be composed smaller and fully visible: fit the entire car within 68–78% of canvas width, with clear side margins, full roofline, both bumpers, all wheels and tires visible. Use compact stacked typography above and below the vehicle. Do NOT crop the car at left/right/top/bottom, do NOT zoom in, and do NOT turn it into a close-up.`
       : isLandscapeAd
       ? `LANDSCAPE AD LAYOUT (MANDATORY): Compose natively for ${fmt.w}×${fmt.h} as a complete full-bleed banner image. Keep the vehicle fully visible with breathing room, and keep headline/logo/price within safe margins. Do NOT crop text or brand marks. No generated image may sit as a smaller rectangle inside the canvas; it must fill the whole format.`
       : '';
@@ -654,7 +665,7 @@ FORMAT: ${fmt.w}x${fmt.h} pixels (${fmt.ratio} aspect ratio). The output image M
 FULL-BLEED COMPOSITION (MANDATORY — APPLIES TO EVERY STYLE AND FORMAT):
 - The artwork MUST fill the ENTIRE canvas edge-to-edge, top to bottom AND left to right as ONE complete banner image. Zero empty/white/cream/blurred bands, zero letterboxing, zero side bars, zero rounded inner card, zero pasted smaller image inside a larger canvas.
 - The vehicle/scene/graphics must extend all the way to every edge of the banner. If there is a text/brand zone, it must still be a designed image area (color, scene, lighting, gradient or layout surface), never blank padding.
-- The vehicle must be sized GENEROUSLY for the format (not a tiny centered motif). It should be the clear hero and visually fill the available image area while leaving safe space for required text/logo.
+- The vehicle must be the clear hero, but FIT beats size: if a format is portrait, narrow or square, reduce the vehicle until the entire car is visible with a safety margin. Never zoom in so much that any bumper, wheel, mirror, roofline or tire is cut off.
 - Do NOT crop through the vehicle, headline, subline, price, logo or CTA. ALL required elements must be fully visible inside the canvas.
 - Treat the outermost ~4% as a safe margin: keep important content inside, but the BACKGROUND must still reach the edge.
 - If the exact requested ratio is hard, choose a simpler layout with fewer elements — NEVER solve it by adding empty margins, blurred extensions, repeated background strips or cropping important content.
@@ -725,6 +736,9 @@ ACCENT COLORS — PRIMARY (${accentColor}) & SECONDARY (${secondaryColor}):
 ${showLogo && logoBase64 ? '- The provided logo MUST appear in the banner exactly as given' : '- Do NOT add watermarks or extra logos'}
 ${isWideSkyscraper ? '- For 160×600 specifically: ZERO blank white/cream rectangles. No empty top cap and no empty bottom cap. No duplicated lower street/road image. One continuous vertical scene only.' : ''}
 ${isBillboard ? '- For 970×250 specifically: ZERO hard crop look. All car edges, headline, logo and price must remain inside the banner. Use wide composition and compact typography, not a zoomed-in hero crop.' : ''}
+${isInstagramStory ? '- For Instagram Story specifically: full car visibility is more important than dramatic scale. If necessary, make the car smaller and use the remaining space for designed background and text zones.' : ''}
+${isInstagramPost ? '- For Instagram Post specifically: never crop the car inside the 1:1 square; keep a full safety border around the complete vehicle.' : ''}
+${isHalfPage ? '- For Google Half Page specifically: never use a close-up crop. The full car must remain visible even if it occupies less vertical space.' : ''}
 ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` : ''}
 - Generate the image – never refuse`;
   }, [occasion, scene, style, priceDisplay, vehicleTitle, priceText, headline, subline, ctaText, accentColor, secondaryColor, legalText, headlineFont, sublineFont, showLogo, logoBase64, freePrompt]);
