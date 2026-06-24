@@ -400,31 +400,6 @@ const Pricing = () => {
           </div>
         </div>
 
-        {Object.keys(costs).length > 0 && (
-          <div className="mt-16">
-            <h2 className="font-display text-xl font-bold text-foreground text-center mb-6">Credit-Kosten pro Aktion</h2>
-            <div className="max-w-lg mx-auto bg-card rounded-xl border border-border overflow-hidden">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border bg-muted/50">
-                    <th className="text-left p-3 font-medium text-muted-foreground">Aktion</th>
-                    <th className="text-center p-3 font-medium text-muted-foreground">Standard</th>
-                    <th className="text-center p-3 font-medium text-muted-foreground">Pro</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {Object.entries(costs).map(([action, tiers]) => (
-                    <tr key={action} className="border-b border-border last:border-0">
-                      <td className="p-3 text-foreground capitalize">{action.replace(/_/g, ' ')}</td>
-                      <td className="p-3 text-center text-muted-foreground">{(tiers as any).standard} Cr.</td>
-                      <td className="p-3 text-center text-muted-foreground">{(tiers as any).pro} Cr.</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
       </main>
     </div>
   );
