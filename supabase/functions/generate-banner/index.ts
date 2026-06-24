@@ -344,12 +344,18 @@ async function generateGemini(prompt: string, imageBase64: string | null, logoBa
     const targetRatio = width / height;
     const isExtremePortrait = isPortrait && targetRatio < 0.4;
     const isExtremeLandscape = isLandscape && targetRatio > 2.6;
+    const isNarrowPortrait = isPortrait && targetRatio >= 0.4 && targetRatio <= 0.62;
+    const isSquareish = targetRatio >= 0.9 && targetRatio <= 1.1;
     const fillRule = isExtremePortrait
       ? `- EXTREME VERTICAL DISPLAY AD: this is a ${width}×${height} skyscraper. NO centered mini-poster, NO repeated road, NO duplicated vehicle, NO blank caps. ONE single vehicle, COMPLETELY visible (entire car from front bumper to rear bumper, full roofline, all wheels on ground, NOTHING cropped at any canvas edge), occupying the central 30-40% of height with comfortable margin all around. Logo/headline/price in compact top zone, CTA/legal in compact bottom zone, scene/background continues edge-to-edge behind every zone.`
       : isExtremeLandscape
       ? `- EXTREME HORIZONTAL DISPLAY AD: this is a ${width}×${height} ultra-wide strip. Compose natively as a complete ultra-wide full-bleed banner. Vehicle COMPLETELY visible (entire car, NOTHING cropped at any canvas edge) in the middle/right 40-50% of canvas width, with compact copy/price/logo blocks on the opposite side. NO crop through vehicle/text/logo/price, NO centered mini-banner, NO blank side caps, NO blurred extension columns.`
+      : isNarrowPortrait
+      ? `- NARROW PORTRAIT VEHICLE-FIT LOCK: this ${width}×${height} format is tall/narrow, but a car is wide. Size the vehicle by WIDTH, not by height. The complete vehicle MUST fit within 68-82% of canvas width with clear left/right margins and must not exceed roughly 34-42% of canvas height. Show full front bumper, rear bumper, full roofline, mirrors, all wheels and tires on the ground. NOTHING cropped at top/bottom/left/right. Use compact text/logo/price zones above and below the vehicle; never zoom in and never create a close-up crop.`
+      : isSquareish
+      ? `- SQUARE VEHICLE-FIT LOCK: the complete vehicle MUST fit inside the square with a visible safety margin on all four sides. Size by WIDTH: occupy roughly 74-84% of canvas width, not more. Full bumpers, wheels, roofline, mirrors and tires must be visible. No dramatic close-up crop.`
       : isPortrait
-      ? `- The ENTIRE vehicle MUST be fully visible: complete car from front bumper to rear bumper, full roofline, all wheels on ground, NOTHING cropped at top/bottom/left/right canvas edges. Vehicle occupies ~55-65% of canvas HEIGHT, horizontally centered, with comfortable margin around it. Leave clear breathing room between the vehicle and every canvas edge. Background scene/design surface extends edge-to-edge to all 4 borders.`
+      ? `- The ENTIRE vehicle MUST be fully visible: complete car from front bumper to rear bumper, full roofline, all wheels on ground, NOTHING cropped at top/bottom/left/right canvas edges. Because cars are wide, size by canvas WIDTH: vehicle occupies ~70-82% of canvas width and stays below ~45% of canvas height, horizontally centered, with comfortable margin around it. Background scene/design surface extends edge-to-edge to all 4 borders.`
       : isLandscape
       ? `- The ENTIRE vehicle MUST be fully visible: complete car, NOTHING cropped at any canvas edge. Vehicle occupies ~70% of canvas WIDTH with comfortable margin. Background scene extends edge-to-edge. NO flat empty bands on left/right sides.`
       : `- The ENTIRE vehicle MUST be fully visible: complete car, NOTHING cropped at any canvas edge. Vehicle occupies ~65% of the canvas with comfortable margin. Background scene extends edge-to-edge.`;
