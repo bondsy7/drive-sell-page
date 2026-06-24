@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Check, Zap, Loader2, Plus, Crown, Calendar, AlertTriangle, RefreshCw, CreditCard, ArrowUpDown, XCircle } from 'lucide-react';
 import CancelSubscriptionDialog from '@/components/CancelSubscriptionDialog';
 import AppHeader from '@/components/AppHeader';
+import CreditSlider from '@/components/CreditSlider';
 import { STRIPE_PRICES, CREDIT_PACKS } from '@/lib/stripe-plans';
 
 import { toast } from 'sonner';
@@ -385,6 +386,19 @@ const Pricing = () => {
 
 
 
+
+        {/* Credit-Rechner */}
+        <div className="mt-16">
+          <div className="text-center mb-6">
+            <h2 className="font-display text-xl font-bold text-foreground mb-2">Credit-Rechner</h2>
+            <p className="text-muted-foreground text-sm">
+              Plane dein Budget und sieh, wie viele Bilder, Banner, Videos und Landingpages du erstellen kannst.
+            </p>
+          </div>
+          <div className="max-w-3xl mx-auto">
+            <CreditSlider defaultCredits={1000} />
+          </div>
+        </div>
 
         {Object.keys(costs).length > 0 && (
           <div className="mt-16">
