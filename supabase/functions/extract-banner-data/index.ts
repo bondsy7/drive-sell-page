@@ -168,9 +168,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    const json = await r.json();
-    const text: string =
-      json?.candidates?.[0]?.content?.parts?.map((p: any) => p?.text || "").join("") || "{}";
+    const json = r ? await r.json() : null;
+    const text: string = openaiText
+      ?? (json?.candidates?.[0]?.content?.parts?.map((p: any) => p?.text || "").join("") || "{}");
+
 
     let parsed: Record<string, string> = {};
     try {
