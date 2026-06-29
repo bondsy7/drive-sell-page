@@ -157,6 +157,7 @@ const OCCASIONS = [
 ];
 
 const SCENES = [
+  { id: 'original', label: 'Wie Originalbild (Szene erhalten)', prompt: 'KEEP the exact environment, background, location, lighting, time of day, weather, ground surface and atmosphere from the uploaded vehicle reference photo. Do NOT replace the scene. Re-create the SAME setting faithfully around the vehicle (same type of location, same surroundings, same materials, same light direction and color temperature, same reflections), only adapting framing and composition to the banner format.' },
   { id: 'city', label: 'In der Stadt', prompt: 'modern city street at golden hour, urban skyline background' },
   { id: 'beach', label: 'Am Strand', prompt: 'scenic beach with ocean view, sunset lighting, palm trees' },
   { id: 'showroom', label: 'Im Autohaus', prompt: 'luxury car dealership showroom, polished floor, soft LED lighting' },
@@ -672,9 +673,9 @@ FULL-BLEED COMPOSITION (MANDATORY — APPLIES TO EVERY STYLE AND FORMAT):
 
 ${formatDirective}
 
-VEHICLE: "${vehicleTitle}" – use the uploaded vehicle image as the central hero element. Keep vehicle identity, shape, colour, trim, wheels and proportions accurate, but re-render lighting, shadows and reflections to match the NEW scene.
+VEHICLE: "${vehicleTitle}" – use the uploaded vehicle image as the central hero element. Keep vehicle identity, shape, colour, trim, wheels and proportions accurate${scene === 'original' ? ', and KEEP the original lighting, shadows and reflections from the uploaded photo as faithfully as possible' : ', but re-render lighting, shadows and reflections to match the NEW scene'}.
 
-SCENE: ${scn.prompt}. Place the vehicle naturally in this environment.
+SCENE: ${scn.prompt}${scene === 'original' ? '' : ' Place the vehicle naturally in this environment.'}
 
 STYLE (HIGHEST PRIORITY — overrides any conflicting tone/color/mood guidance below): ${sty.prompt}
 
@@ -717,10 +718,13 @@ PROFESSIONAL LIGHTING & INTEGRATION (MANDATORY):
 - The vehicle must cast a soft realistic contact shadow; tires must visibly touch the ground.
 - The paint must receive new specular highlights from the selected scene; do not keep the highlight/reflection pattern from the uploaded photo.
 
-REFLECTION PURGE (ZERO TOLERANCE – NON-NEGOTIABLE):
+${scene === 'original' ? `SCENE PRESERVATION (MANDATORY because "Wie Originalbild" is selected):
+- KEEP the original environment, background, ground, lighting and reflections from the uploaded vehicle photo. Do NOT replace, restyle or relocate the scene.
+- Reflections in paint, windows, mirrors, chrome and rims MUST stay consistent with the original photo's surroundings.
+- You MAY clean up distracting objects (people, other cars, trash, watermarks, license plates) and gently extend the background to fill the banner format, but the location and atmosphere must remain clearly the same.` : `REFLECTION PURGE (ZERO TOLERANCE – NON-NEGOTIABLE):
 - The provided vehicle reference photo was taken in a DIFFERENT environment. EVERY reflection on EVERY reflective surface (paint, windows, side mirrors, chrome, headlights, taillights, wheel rims, glossy black trim, sunroof) MUST be COMPLETELY ERASED and RE-RENDERED to match ONLY the new banner scene.
 - ABSOLUTELY FORBIDDEN in any reflection or window: trees, sky, clouds, other cars, buildings, dealerships, people, photographers, asphalt patterns, parking lines, old dealer logos, banners, watermarks, price tags, or any trace of the original photo's environment.
-- Through the windows the viewer must see ONLY the new scene — never the old environment, never a generic outdoor view, never a black void.
+- Through the windows the viewer must see ONLY the new scene — never the old environment, never a generic outdoor view, never a black void.`}
 
 ${isCleanStyle ? `CLEAN-STYLE TONE BASELINE (applies because the chosen style is "${style}"):
 ACCENT COLORS — PRIMARY (${accentColor}) & SECONDARY (${secondaryColor}):
