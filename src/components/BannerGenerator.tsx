@@ -157,6 +157,7 @@ const OCCASIONS = [
 ];
 
 const SCENES = [
+  { id: 'original', label: 'Wie Originalbild (Szene erhalten)', prompt: 'KEEP the exact environment, background, location, lighting, time of day, weather, ground surface and atmosphere from the uploaded vehicle reference photo. Do NOT replace the scene. Re-create the SAME setting faithfully around the vehicle (same type of location, same surroundings, same materials, same light direction and color temperature, same reflections), only adapting framing and composition to the banner format.' },
   { id: 'city', label: 'In der Stadt', prompt: 'modern city street at golden hour, urban skyline background' },
   { id: 'beach', label: 'Am Strand', prompt: 'scenic beach with ocean view, sunset lighting, palm trees' },
   { id: 'showroom', label: 'Im Autohaus', prompt: 'luxury car dealership showroom, polished floor, soft LED lighting' },
