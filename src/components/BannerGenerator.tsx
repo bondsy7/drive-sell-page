@@ -673,9 +673,9 @@ FULL-BLEED COMPOSITION (MANDATORY — APPLIES TO EVERY STYLE AND FORMAT):
 
 ${formatDirective}
 
-VEHICLE: "${vehicleTitle}" – use the uploaded vehicle image as the central hero element. Keep vehicle identity, shape, colour, trim, wheels and proportions accurate, but re-render lighting, shadows and reflections to match the NEW scene.
+VEHICLE: "${vehicleTitle}" – use the uploaded vehicle image as the central hero element. Keep vehicle identity, shape, colour, trim, wheels and proportions accurate${scene === 'original' ? ', and KEEP the original lighting, shadows and reflections from the uploaded photo as faithfully as possible' : ', but re-render lighting, shadows and reflections to match the NEW scene'}.
 
-SCENE: ${scn.prompt}. Place the vehicle naturally in this environment.
+SCENE: ${scn.prompt}${scene === 'original' ? '' : ' Place the vehicle naturally in this environment.'}
 
 STYLE (HIGHEST PRIORITY — overrides any conflicting tone/color/mood guidance below): ${sty.prompt}
 
