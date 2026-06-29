@@ -719,9 +719,12 @@ PROFESSIONAL LIGHTING & INTEGRATION (MANDATORY):
 - The paint must receive new specular highlights from the selected scene; do not keep the highlight/reflection pattern from the uploaded photo.
 
 ${scene === 'original' ? `SCENE PRESERVATION (MANDATORY because "Wie Originalbild" is selected):
-- KEEP the original environment, background, ground, lighting and reflections from the uploaded vehicle photo. Do NOT replace, restyle or relocate the scene.
-- Reflections in paint, windows, mirrors, chrome and rims MUST stay consistent with the original photo's surroundings.
-- You MAY clean up distracting objects (people, other cars, trash, watermarks, license plates) and gently extend the background to fill the banner format, but the location and atmosphere must remain clearly the same.` : `REFLECTION PURGE (ZERO TOLERANCE – NON-NEGOTIABLE):
+- RE-CREATE the original environment, background, ground, lighting and reflections from the uploaded vehicle photo as ONE SINGLE CONTINUOUS SCENE that FILLS THE ENTIRE CANVAS edge-to-edge at the ${fmt.ratio} aspect ratio.
+- OUTPAINT / EXTEND the original location naturally beyond the borders of the uploaded photo so the same showroom / street / studio continues seamlessly to all four edges of the banner. Same architecture, same floor material, same wall panels, same windows, same light sources, same color temperature, same time of day.
+- ABSOLUTELY FORBIDDEN: do NOT place the uploaded photo as a smaller inset, framed picture, polaroid, card, screen, monitor, billboard, poster or "picture-in-picture" inside another scene. NO inner rectangle, NO border around the vehicle, NO second background behind a smaller image. The vehicle and its scene ARE the banner — not a thumbnail on top of one.
+- Treat the uploaded image purely as a CONTENT REFERENCE for vehicle + environment. Re-render the whole banner from scratch at the target aspect ratio; do not letterbox, do not pad with colored bands, do not duplicate the car.
+- Reflections in paint, windows, mirrors, chrome and rims MUST stay consistent with the (extended) original surroundings.
+- You MAY clean up distracting objects (people, other cars, trash, watermarks, license plates), but the location and atmosphere must remain clearly the same.` : `REFLECTION PURGE (ZERO TOLERANCE – NON-NEGOTIABLE):
 - The provided vehicle reference photo was taken in a DIFFERENT environment. EVERY reflection on EVERY reflective surface (paint, windows, side mirrors, chrome, headlights, taillights, wheel rims, glossy black trim, sunroof) MUST be COMPLETELY ERASED and RE-RENDERED to match ONLY the new banner scene.
 - ABSOLUTELY FORBIDDEN in any reflection or window: trees, sky, clouds, other cars, buildings, dealerships, people, photographers, asphalt patterns, parking lines, old dealer logos, banners, watermarks, price tags, or any trace of the original photo's environment.
 - Through the windows the viewer must see ONLY the new scene — never the old environment, never a generic outdoor view, never a black void.`}
@@ -773,7 +776,11 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
 
   const ensureFileRefsForAspect = useCallback(async (targetRatio: number): Promise<{ vehicleFileRef: FileRef | null; logoFileRef: FileRef | null }> => {
     const cache = fileRefCacheRef.current;
-    const aspectKey = targetRatio.toFixed(4);
+    // Include scene mode in the cache key: "original" must NOT be padded
+    // (padding creates a cream frame that the model interprets as a
+    // picture-in-picture inset), while other scenes use the padded ref so
+    // fallback models hit the right aspect ratio.
+    const aspectKey = `${targetRatio.toFixed(4)}_${scene === 'original' ? 'raw' : 'pad'}`;
 
     // Drop vehicle aspect cache if source changed
     if (cache.vehicleSrc !== vehicleImage) {
@@ -787,7 +794,9 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
 
     const toUpload: string[] = [];
     if (needVehicle) {
-      const padded = await padToAspectRatio(vehicleImage as string, targetRatio).catch(() => vehicleImage as string);
+      const padded = scene === 'original'
+        ? (vehicleImage as string)
+        : await padToAspectRatio(vehicleImage as string, targetRatio).catch(() => vehicleImage as string);
       toUpload.push(padded);
     }
     if (needLogo) toUpload.push(logoBase64 as string);
@@ -823,7 +832,7 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
       vehicleFileRef: cache.vehicleByAspect[aspectKey] || null,
       logoFileRef: wantLogo ? cache.logoRef : null,
     };
-  }, [vehicleImage, logoBase64, showLogo]);
+  }, [vehicleImage, logoBase64, showLogo, scene]);
 
   // Generate a single banner for a given format
   const generateForFormat = useCallback(async (formatId: string): Promise<BannerResult | null> => {
@@ -838,7 +847,7 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
 
       // Fallback Base64: only sent when Files API upload failed for this asset.
       const vehicleFallbackB64 = !vehicleFileRef && vehicleImage
-        ? await padToAspectRatio(vehicleImage, targetRatio).catch(() => vehicleImage)
+        ? (scene === 'original' ? vehicleImage : await padToAspectRatio(vehicleImage, targetRatio).catch(() => vehicleImage))
         : undefined;
       const logoFallbackB64 = !logoFileRef && showLogo && logoBase64 ? logoBase64 : undefined;
 
