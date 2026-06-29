@@ -844,7 +844,7 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
 
       // Fallback Base64: only sent when Files API upload failed for this asset.
       const vehicleFallbackB64 = !vehicleFileRef && vehicleImage
-        ? await padToAspectRatio(vehicleImage, targetRatio).catch(() => vehicleImage)
+        ? (scene === 'original' ? vehicleImage : await padToAspectRatio(vehicleImage, targetRatio).catch(() => vehicleImage))
         : undefined;
       const logoFallbackB64 = !logoFileRef && showLogo && logoBase64 ? logoBase64 : undefined;
 
