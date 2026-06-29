@@ -718,10 +718,13 @@ PROFESSIONAL LIGHTING & INTEGRATION (MANDATORY):
 - The vehicle must cast a soft realistic contact shadow; tires must visibly touch the ground.
 - The paint must receive new specular highlights from the selected scene; do not keep the highlight/reflection pattern from the uploaded photo.
 
-REFLECTION PURGE (ZERO TOLERANCE – NON-NEGOTIABLE):
+${scene === 'original' ? `SCENE PRESERVATION (MANDATORY because "Wie Originalbild" is selected):
+- KEEP the original environment, background, ground, lighting and reflections from the uploaded vehicle photo. Do NOT replace, restyle or relocate the scene.
+- Reflections in paint, windows, mirrors, chrome and rims MUST stay consistent with the original photo's surroundings.
+- You MAY clean up distracting objects (people, other cars, trash, watermarks, license plates) and gently extend the background to fill the banner format, but the location and atmosphere must remain clearly the same.` : `REFLECTION PURGE (ZERO TOLERANCE – NON-NEGOTIABLE):
 - The provided vehicle reference photo was taken in a DIFFERENT environment. EVERY reflection on EVERY reflective surface (paint, windows, side mirrors, chrome, headlights, taillights, wheel rims, glossy black trim, sunroof) MUST be COMPLETELY ERASED and RE-RENDERED to match ONLY the new banner scene.
 - ABSOLUTELY FORBIDDEN in any reflection or window: trees, sky, clouds, other cars, buildings, dealerships, people, photographers, asphalt patterns, parking lines, old dealer logos, banners, watermarks, price tags, or any trace of the original photo's environment.
-- Through the windows the viewer must see ONLY the new scene — never the old environment, never a generic outdoor view, never a black void.
+- Through the windows the viewer must see ONLY the new scene — never the old environment, never a generic outdoor view, never a black void.`}
 
 ${isCleanStyle ? `CLEAN-STYLE TONE BASELINE (applies because the chosen style is "${style}"):
 ACCENT COLORS — PRIMARY (${accentColor}) & SECONDARY (${secondaryColor}):
