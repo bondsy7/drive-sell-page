@@ -773,7 +773,11 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
 
   const ensureFileRefsForAspect = useCallback(async (targetRatio: number): Promise<{ vehicleFileRef: FileRef | null; logoFileRef: FileRef | null }> => {
     const cache = fileRefCacheRef.current;
-    const aspectKey = targetRatio.toFixed(4);
+    // Include scene mode in the cache key: "original" must NOT be padded
+    // (padding creates a cream frame that the model interprets as a
+    // picture-in-picture inset), while other scenes use the padded ref so
+    // fallback models hit the right aspect ratio.
+    const aspectKey = `${targetRatio.toFixed(4)}_${scene === 'original' ? 'raw' : 'pad'}`;
 
     // Drop vehicle aspect cache if source changed
     if (cache.vehicleSrc !== vehicleImage) {
@@ -787,7 +791,9 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
 
     const toUpload: string[] = [];
     if (needVehicle) {
-      const padded = await padToAspectRatio(vehicleImage as string, targetRatio).catch(() => vehicleImage as string);
+      const padded = scene === 'original'
+        ? (vehicleImage as string)
+        : await padToAspectRatio(vehicleImage as string, targetRatio).catch(() => vehicleImage as string);
       toUpload.push(padded);
     }
     if (needLogo) toUpload.push(logoBase64 as string);
