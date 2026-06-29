@@ -829,7 +829,7 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
       vehicleFileRef: cache.vehicleByAspect[aspectKey] || null,
       logoFileRef: wantLogo ? cache.logoRef : null,
     };
-  }, [vehicleImage, logoBase64, showLogo]);
+  }, [vehicleImage, logoBase64, showLogo, scene]);
 
   // Generate a single banner for a given format
   const generateForFormat = useCallback(async (formatId: string): Promise<BannerResult | null> => {
