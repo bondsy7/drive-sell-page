@@ -77,62 +77,12 @@ function snapToGeminiRatio(target: number): number {
 }
 
 /**
- * Pad an image to the target aspect ratio using a blurred cover background plus
- * a contained foreground reference. This keeps the complete car visible in the
- * reference frame so portrait/square models do not learn a cropped bumper/wheel.
+ * Keep the uploaded vehicle photo raw. Earlier we pre-padded references to a
+ * target aspect ratio; on mobile/story formats Gemini reproduced that padded
+ * reference as a small picture-in-picture photo inside the generated banner.
  */
-function padToAspectRatio(dataUrl: string, rawTargetRatio: number, _bg: string = '#f4f4f4'): Promise<string> {
-  // Always snap references to the closest Gemini-native ratio. Unsupported ad
-  // inventory like 970×250 or 160×600 is then finalized to the exact requested
-  // size by fitImageToSize without adding any padding/caps.
-  const targetRatio = snapToGeminiRatio(rawTargetRatio);
-  return new Promise((resolve, reject) => {
-    const img = new window.Image();
-    img.onload = () => {
-      try {
-        const srcRatio = img.width / img.height;
-        // Already matches → return original
-        if (Math.abs(srcRatio - targetRatio) / targetRatio < 0.02) return resolve(dataUrl);
-
-        const canvasW = 1440;
-        const canvasH = Math.round(canvasW / targetRatio);
-        const coverScale = Math.max(canvasW / img.width, canvasH / img.height);
-        const coverW = Math.round(img.width * coverScale);
-        const coverH = Math.round(img.height * coverScale);
-        const coverX = Math.round((canvasW - coverW) / 2);
-        const coverY = Math.round((canvasH - coverH) / 2);
-
-        const innerMargin = targetRatio <= 0.6 ? 0.18 : targetRatio < 1 ? 0.14 : 0.1;
-        const containScale = Math.min(
-          (canvasW * (1 - innerMargin * 2)) / img.width,
-          (canvasH * (1 - innerMargin * 2)) / img.height,
-        );
-        const drawW = Math.round(img.width * containScale);
-        const drawH = Math.round(img.height * containScale);
-        const dx = Math.round((canvasW - drawW) / 2);
-        const dy = Math.round((canvasH - drawH) / 2);
-
-        const canvas = document.createElement('canvas');
-        canvas.width = canvasW;
-        canvas.height = canvasH;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return reject(new Error('canvas unsupported'));
-
-        ctx.fillStyle = '#7d7d7d';
-        ctx.fillRect(0, 0, canvasW, canvasH);
-        ctx.filter = 'blur(28px) saturate(0.9) brightness(0.92)';
-        ctx.drawImage(img, coverX, coverY, coverW, coverH);
-        ctx.filter = 'none';
-        ctx.fillStyle = 'rgba(244, 244, 244, 0.18)';
-        ctx.fillRect(0, 0, canvasW, canvasH);
-        ctx.drawImage(img, dx, dy, drawW, drawH);
-
-        resolve(canvas.toDataURL('image/jpeg', 0.9));
-      } catch (e) { reject(e); }
-    };
-    img.onerror = () => reject(new Error('image load failed'));
-    img.src = dataUrl;
-  });
+function getVehicleReferenceImage(dataUrl: string): Promise<string> {
+  return Promise.resolve(dataUrl);
 }
 
 // ─── Config ───
@@ -780,11 +730,9 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
 
   const ensureFileRefsForAspect = useCallback(async (targetRatio: number): Promise<{ vehicleFileRef: FileRef | null; logoFileRef: FileRef | null }> => {
     const cache = fileRefCacheRef.current;
-    // Include scene mode in the cache key: "original" must NOT be padded
-    // (padding creates a cream frame that the model interprets as a
-    // picture-in-picture inset), while other scenes use the padded ref so
-    // fallback models hit the right aspect ratio.
-    const aspectKey = `${targetRatio.toFixed(4)}_${scene === 'original' ? 'raw' : 'pad'}`;
+    // Raw reference only. Padded aspect-ratio reference images can be copied by
+    // the model as a small inset photo inside the banner, especially on mobile.
+    const aspectKey = 'raw-reference';
 
     // Drop vehicle aspect cache if source changed
     if (cache.vehicleSrc !== vehicleImage) {
@@ -798,10 +746,8 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
 
     const toUpload: string[] = [];
     if (needVehicle) {
-      const padded = scene === 'original'
-        ? (vehicleImage as string)
-        : await padToAspectRatio(vehicleImage as string, targetRatio).catch(() => vehicleImage as string);
-      toUpload.push(padded);
+      const reference = await getVehicleReferenceImage(vehicleImage as string).catch(() => vehicleImage as string);
+      toUpload.push(reference);
     }
     if (needLogo) toUpload.push(logoBase64 as string);
 
@@ -851,7 +797,7 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
 
       // Fallback Base64: only sent when Files API upload failed for this asset.
       const vehicleFallbackB64 = !vehicleFileRef && vehicleImage
-        ? (scene === 'original' ? vehicleImage : await padToAspectRatio(vehicleImage, targetRatio).catch(() => vehicleImage))
+        ? await getVehicleReferenceImage(vehicleImage).catch(() => vehicleImage)
         : undefined;
       const logoFallbackB64 = !logoFileRef && showLogo && logoBase64 ? logoBase64 : undefined;
 
