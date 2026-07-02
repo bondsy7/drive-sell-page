@@ -370,7 +370,7 @@ async function generateGemini(prompt: string, imageBase64: string | null, logoBa
 
 COMPOSITION FILL RULE (NO EMPTY ZONES):
 ${fillRule}
-- The padded blurred areas of the reference image are NOT part of the output — they exist only to hint at the target ratio. DO NOT reproduce flat blurred or flat colored bands in the final banner.
+- The uploaded reference photo is NOT a layout element. Use it only to identify the vehicle; never reproduce it as a smaller photo, card, screenshot, thumbnail, framed rectangle, poster or picture-in-picture inside the final banner.
 - Every pixel of the output must contribute to the composition: scene, vehicle, typography, lighting, CI layout surface or accent. ZERO dead space.
 - The final output must be a single full-canvas image. Do not place a normal photo/banner as an inset, cutout, centered card, framed rectangle or cropped excerpt inside a larger blank canvas.
 - If the format is difficult, simplify typography and layout, but never add margins/side caps/top caps and never crop essential content.`
@@ -386,8 +386,8 @@ ${fillRule}
     parts.push({ text:
 `VEHICLE REFERENCE IMAGE (identity only):
 The next image shows the vehicle. Use it ONLY for identity (model, color, trim, wheels, proportions).
-DO NOT copy its background, lighting, reflections, framing or aspect ratio.
-The image may have blurred padding bands around the vehicle — IGNORE those bands, they are only an aspect-ratio hint and are NOT part of the vehicle or final composition.` });
+DO NOT copy its framing or aspect ratio.
+DO NOT place the uploaded photo itself into the banner. Rebuild the car and scene as one continuous full-canvas advertising image with no inner photo rectangle.` });
     if (vehicleFileRef?.fileUri) {
       parts.push({ fileData: { fileUri: vehicleFileRef.fileUri, mimeType: vehicleFileRef.mimeType || "image/jpeg" } });
       log?.info("gemini.ref", "vehicle via Files API", { uri: vehicleFileRef.fileUri });
