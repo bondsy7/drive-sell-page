@@ -419,8 +419,7 @@ The logo image follows now:` });
   }
 
   // D) Activate native aspectRatio control on gemini-3* preview models via imageConfig.
-  // gemini-3* DO honour imageConfig.aspectRatio. The fast fallback gemini-2.5-flash-image
-  // still ignores it, so the pre-padded blurred reference image (B) remains as a visual anchor.
+  // The vehicle reference itself stays raw to avoid picture-in-picture artifacts.
   const canUseNativeAspectField = GEMINI_SUPPORTED_RATIOS.some(r => r.label === aspectLabel);
   const supportsAspectField = /^gemini-3/.test(model) && canUseNativeAspectField;
   const generationConfig: Record<string, unknown> = {
