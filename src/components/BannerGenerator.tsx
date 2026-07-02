@@ -57,26 +57,6 @@ function fitImageToSize(dataUrl: string, targetW: number, targetH: number): Prom
 }
 
 /**
- * Pre-pad an input image to the target aspect ratio before sending it to the
- * AI model. Gemini tends to mirror the input image's aspect ratio, so feeding
- * it a canvas with the desired ratio dramatically increases the chance the
- * generated banner matches (e.g. 9:16, 16:9, etc.).
- */
-// Gemini image models only honour a fixed set of output aspect ratios. Snap
-// the requested target to the closest supported value so the pre-padded input
-// matches exactly what the model will produce.
-const GEMINI_SUPPORTED_RATIOS = [1/1, 2/3, 3/2, 3/4, 4/3, 4/5, 5/4, 9/16, 16/9, 21/9];
-function snapToGeminiRatio(target: number): number {
-  let best = GEMINI_SUPPORTED_RATIOS[0];
-  let bestDiff = Math.abs(Math.log(target / best));
-  for (const r of GEMINI_SUPPORTED_RATIOS) {
-    const d = Math.abs(Math.log(target / r));
-    if (d < bestDiff) { bestDiff = d; best = r; }
-  }
-  return best;
-}
-
-/**
  * Keep the uploaded vehicle photo raw. Earlier we pre-padded references to a
  * target aspect ratio; on mobile/story formats Gemini reproduced that padded
  * reference as a small picture-in-picture photo inside the generated banner.
@@ -728,7 +708,7 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
     fileRefCacheRef.current.logoSrc = null;
   }, [logoBase64]);
 
-  const ensureFileRefsForAspect = useCallback(async (targetRatio: number): Promise<{ vehicleFileRef: FileRef | null; logoFileRef: FileRef | null }> => {
+  const ensureFileRefsForAspect = useCallback(async (): Promise<{ vehicleFileRef: FileRef | null; logoFileRef: FileRef | null }> => {
     const cache = fileRefCacheRef.current;
     // Raw reference only. Padded aspect-ratio reference images can be copied by
     // the model as a small inset photo inside the banner, especially on mobile.
@@ -782,7 +762,7 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
       vehicleFileRef: cache.vehicleByAspect[aspectKey] || null,
       logoFileRef: wantLogo ? cache.logoRef : null,
     };
-  }, [vehicleImage, logoBase64, showLogo, scene]);
+  }, [vehicleImage, logoBase64, showLogo]);
 
   // Generate a single banner for a given format
   const generateForFormat = useCallback(async (formatId: string): Promise<BannerResult | null> => {
@@ -790,10 +770,8 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
     const prompt = buildPromptForFormat(formatId);
 
     try {
-      // Per-aspect Files API upload (cached). The vehicle reference is pre-padded to the
-      // target aspect ratio so even Gemini's fast fallback model produces the correct format.
-      const targetRatio = fmt.w / fmt.h;
-      const { vehicleFileRef, logoFileRef } = await ensureFileRefsForAspect(targetRatio);
+      // Raw Files API upload (cached). The prompt/native imageConfig controls output format.
+      const { vehicleFileRef, logoFileRef } = await ensureFileRefsForAspect();
 
       // Fallback Base64: only sent when Files API upload failed for this asset.
       const vehicleFallbackB64 = !vehicleFileRef && vehicleImage
