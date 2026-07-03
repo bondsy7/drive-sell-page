@@ -32,6 +32,7 @@ export const MODULE_LABELS: Record<ModuleKey, string> = {
   'banner': 'Banner Generator',
   'canvas-banner-studio': 'Banner Studio',
   'video': 'Video Erstellung',
+  'music-studio': 'Musik Studio',
   'damage-repair': 'Schadensreparatur',
   'damage-analysis': 'Schadensanalyse',
   'sales-assistant': 'KI Verkaufsassistent',
