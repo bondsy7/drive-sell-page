@@ -1,0 +1,1 @@
+DELETE FROM public.user_download_limits WHERE user_id = '3c49b62c-4713-4d39-8e1c-f4392d68fc80';
