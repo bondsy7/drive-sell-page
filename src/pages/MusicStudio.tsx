@@ -12,6 +12,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCredits } from "@/hooks/useCredits";
+import { useModuleAccess } from "@/hooks/useModuleAccess";
+import { useEffect } from "react";
 import { useMusicJobs, MUSIC_EST_DURATION } from "@/contexts/MusicJobsContext";
 
 type ModelChoice = "lyria-3-pro-preview" | "lyria-3-clip-preview";
@@ -63,7 +65,16 @@ just the road and you and me.`,
 export default function MusicStudio() {
   const navigate = useNavigate();
   const { balance, fetchBalance } = useCredits();
+  const { disabledModules, loading: moduleLoading } = useModuleAccess();
   const musicJobs = useMusicJobs();
+
+  useEffect(() => {
+    if (!moduleLoading && disabledModules.has('music-studio')) {
+      toast.error('Kein Zugriff auf das Musik Studio.');
+      navigate('/generator', { replace: true });
+    }
+  }, [moduleLoading, disabledModules, navigate]);
+
   const [prompt, setPrompt] = useState("");
   const [model, setModel] = useState<ModelChoice>("lyria-3-pro-preview");
   const [instrumental, setInstrumental] = useState(false);
