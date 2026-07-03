@@ -13,6 +13,7 @@ export const MODULE_KEYS = [
   'banner',
   'canvas-banner-studio',
   'video',
+  'music-studio',
   'damage-repair',
   'damage-analysis',
   'sales-assistant',
