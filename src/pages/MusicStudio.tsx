@@ -12,6 +12,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCredits } from "@/hooks/useCredits";
+import { useModuleAccess } from "@/hooks/useModuleAccess";
+import { useEffect } from "react";
 import { useMusicJobs, MUSIC_EST_DURATION } from "@/contexts/MusicJobsContext";
 
 type ModelChoice = "lyria-3-pro-preview" | "lyria-3-clip-preview";
