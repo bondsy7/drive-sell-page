@@ -170,6 +170,9 @@ export default function VehiclesTab() {
           [v.brand, v.model, v.year].filter(Boolean).join(' ') ||
           v.vin;
         const cover = v.cover_image_url;
+        const editedAt = v.updated_at || v.created_at;
+        const wasEdited = v.updated_at && v.created_at && new Date(v.updated_at).getTime() - new Date(v.created_at).getTime() > 2000;
+        const editedLabel = formatRelativeTime(editedAt);
 
         return (
           <div key={v.id} className="relative group">
