@@ -146,7 +146,7 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
           const fp = parsePrice(data.finance.residualValue);
           const mr = parsePrice(data.finance.monthlyRate);
           const dur = parseInt((data.finance.duration || '').match(/(\d+)/)?.[1] || '0');
-          const nettodarlehensbetrag = tp > 0 && dp >= 0 ? tp - dp : 0;
+          const nettodarlehensbetrag = data.finance.netLoanAmount ? parsePrice(data.finance.netLoanAmount) : (tp > 0 && dp >= 0 ? tp - dp : 0);
           const gesamtbetrag = data.finance.totalAmount ? parsePrice(data.finance.totalAmount) : (mr > 0 && dur > 0 ? (mr * dur + dp + fp) : 0);
           const hasAnyRow = (!isLeasing && fp > 0) || data.finance.interestRate || (!isLeasing && data.finance.nominalInterestRate) || nettodarlehensbetrag > 0 || gesamtbetrag > 0;
           if (!hasAnyRow) return '';

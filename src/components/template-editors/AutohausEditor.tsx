@@ -411,17 +411,21 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
                     {!isLeasing && (
                       <ConsumptionRow label="Gebundener Sollzinssatz" value={data.finance.nominalInterestRate || ''} onChange={(v) => updateFinance('nominalInterestRate', v)} suffix="% p.a." />
                     )}
-                    {/* Nettodarlehensbetrag (calculated) */}
+                    {/* Nettodarlehensbetrag (editable, calculated as fallback) */}
                     {(() => {
+                      const manualVal = data.finance.netLoanAmount || '';
+                      if (manualVal) {
+                        return <ConsumptionRow label="Nettodarlehensbetrag" value={manualVal} onChange={(v) => updateFinance('netLoanAmount', v)} suffix="€" />;
+                      }
                       const tp = parsePrice(data.finance.totalPrice);
                       const dp = isLeasing ? parsePrice(data.finance.specialPayment) : parsePrice(data.finance.downPayment);
                       const netto = tp - dp;
-                      return netto > 0 ? (
+                      return (
                         <div className="flex items-center justify-between py-1.5 border-b border-border/30">
                           <span className="text-xs text-muted-foreground">Nettodarlehensbetrag</span>
-                          <span className="text-sm font-semibold text-foreground">{formatPrice(netto)}</span>
+                          <EditableField value={netto > 0 ? formatPrice(netto) : ''} onChange={(v) => updateFinance('netLoanAmount', v)} className="text-sm font-semibold text-foreground" suffix="€" />
                         </div>
-                      ) : null;
+                      );
                     })()}
                     {/* Gesamtbetrag (from PDF or manual, auto-calculated as fallback) */}
                     {(() => {

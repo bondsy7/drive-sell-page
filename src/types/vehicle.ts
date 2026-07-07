@@ -93,6 +93,7 @@ export interface VehicleData {
     interestRate: string;
     nominalInterestRate?: string;
     totalAmount?: string;
+    netLoanAmount?: string;
     excessMileageCost?: string;
     underMileageCost?: string;
     mileageTolerance?: string;
