@@ -547,14 +547,14 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
               {data.customerType === 'business' ? 'Gewerbekundenangebot' : 'Privatkundenangebot'}
             </button>
             <h2 className="font-display text-lg font-bold text-foreground leading-tight flex flex-wrap items-baseline gap-x-1.5">
-              <EditableField value={data.vehicle.brand} onChange={(v) => updateVehicle('brand', v)} className="font-display text-lg font-bold text-foreground" placeholder="Marke" />
-              <EditableField value={data.vehicle.model} onChange={(v) => updateVehicle('model', v)} className="font-display text-lg font-bold text-foreground" placeholder="Modell" />
-              <EditableField value={data.vehicle.variant || ''} onChange={(v) => updateVehicle('variant', v)} className="font-display text-lg font-bold text-foreground" placeholder="Variante" />
+              <EditableField value={data.vehicle.brand} onChange={(v) => updateVehicle('brand', v)} className="font-display text-lg font-bold text-foreground" />
+              <EditableField value={data.vehicle.model} onChange={(v) => updateVehicle('model', v)} className="font-display text-lg font-bold text-foreground" />
+              <EditableField value={data.vehicle.variant || ''} onChange={(v) => updateVehicle('variant', v)} className="font-display text-lg font-bold text-foreground" />
             </h2>
             <p className="text-xs text-muted-foreground mt-1 uppercase tracking-wider flex flex-wrap items-baseline gap-x-1">
-              <EditableField value={data.category || ''} onChange={(v) => onDataChange({ ...data, category: v })} className="text-xs text-muted-foreground uppercase tracking-wider" placeholder="Kategorie" />
+              <EditableField value={data.category || ''} onChange={(v) => onDataChange({ ...data, category: v })} className="text-xs text-muted-foreground uppercase tracking-wider" />
               <span>·</span>
-              <EditableField value={data.vehicle.color || ''} onChange={(v) => updateVehicle('color', v)} className="text-xs text-muted-foreground uppercase tracking-wider" placeholder="Farbe" />
+              <EditableField value={data.vehicle.color || ''} onChange={(v) => updateVehicle('color', v)} className="text-xs text-muted-foreground uppercase tracking-wider" />
             </p>
 
             {/* Internal number */}
