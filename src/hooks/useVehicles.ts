@@ -91,8 +91,22 @@ export function useVehicles() {
         if (vehicleId) cL.set(vehicleId, (cL.get(vehicleId) || 0) + 1);
       }
 
+      // Cover fallback: newest project.main_image_url, then newest project_images.image_url
+      const coverFallback = new Map<string, string>();
+      for (const row of (pr.data as Array<{ vehicle_id: string | null; main_image_url: string | null }>) || []) {
+        if (row.vehicle_id && row.main_image_url && !coverFallback.has(row.vehicle_id)) {
+          coverFallback.set(row.vehicle_id, row.main_image_url);
+        }
+      }
+      for (const row of (pi.data as Array<{ vehicle_id: string | null; image_url: string | null }>) || []) {
+        if (row.vehicle_id && row.image_url && !coverFallback.has(row.vehicle_id)) {
+          coverFallback.set(row.vehicle_id, row.image_url);
+        }
+      }
+
       return vehicles.map(v => ({
         ...v,
+        cover_image_url: v.cover_image_url || coverFallback.get(v.id) || null,
         counts: {
           projects: cP.get(v.id) || 0,
           images: cI.get(v.id) || 0,
@@ -101,6 +115,7 @@ export function useVehicles() {
           leads: cL.get(v.id) || 0,
         },
       }));
+
     },
   });
 }
