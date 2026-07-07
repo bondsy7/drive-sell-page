@@ -219,6 +219,9 @@ export default function VehiclesTab() {
                     <p className="text-xs text-muted-foreground font-mono mt-0.5">
                       {v.vin}
                     </p>
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      {wasEdited ? 'Zuletzt bearbeitet' : 'Angelegt'} {editedLabel}
+                    </p>
                   </div>
 
                   <div className="grid grid-cols-4 gap-1.5 text-xs">
