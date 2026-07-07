@@ -50,11 +50,12 @@ export function useVehicles() {
       const ids = vehicles.map(v => v.id);
 
       const [pr, pi, sp, ld] = await Promise.all([
-        supabase.from('projects').select('id, vehicle_id').in('vehicle_id', ids),
-        supabase.from('project_images').select('id, vehicle_id').in('vehicle_id', ids),
+        supabase.from('projects').select('id, vehicle_id, main_image_url, updated_at').in('vehicle_id', ids).order('updated_at', { ascending: false }),
+        supabase.from('project_images').select('id, vehicle_id, image_url, created_at').in('vehicle_id', ids).order('created_at', { ascending: false }),
         supabase.from('spin360_jobs').select('id, vehicle_id').in('vehicle_id', ids),
         supabase.from('leads').select('id, vehicle_id, project_id').eq('dealer_user_id', user.id),
       ]);
+
 
       // Banner counts via storage list per vehicle (parallel)
       const bannerEntries = await Promise.all(
@@ -90,8 +91,22 @@ export function useVehicles() {
         if (vehicleId) cL.set(vehicleId, (cL.get(vehicleId) || 0) + 1);
       }
 
+      // Cover fallback: newest project.main_image_url, then newest project_images.image_url
+      const coverFallback = new Map<string, string>();
+      for (const row of (pr.data as Array<{ vehicle_id: string | null; main_image_url: string | null }>) || []) {
+        if (row.vehicle_id && row.main_image_url && !coverFallback.has(row.vehicle_id)) {
+          coverFallback.set(row.vehicle_id, row.main_image_url);
+        }
+      }
+      for (const row of (pi.data as Array<{ vehicle_id: string | null; image_url: string | null }>) || []) {
+        if (row.vehicle_id && row.image_url && !coverFallback.has(row.vehicle_id)) {
+          coverFallback.set(row.vehicle_id, row.image_url);
+        }
+      }
+
       return vehicles.map(v => ({
         ...v,
+        cover_image_url: v.cover_image_url || coverFallback.get(v.id) || null,
         counts: {
           projects: cP.get(v.id) || 0,
           images: cI.get(v.id) || 0,
@@ -100,6 +115,7 @@ export function useVehicles() {
           leads: cL.get(v.id) || 0,
         },
       }));
+
     },
   });
 }
