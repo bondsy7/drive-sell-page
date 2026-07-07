@@ -16,6 +16,19 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 
+function formatRelativeTime(iso: string): string {
+  const then = new Date(iso).getTime();
+  const diff = Date.now() - then;
+  const min = Math.floor(diff / 60000);
+  if (min < 1) return 'gerade eben';
+  if (min < 60) return `vor ${min} Min.`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `vor ${h} Std.`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `vor ${d} Tag${d === 1 ? '' : 'en'}`;
+  return new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
 export default function VehiclesTab() {
   const { user } = useAuth();
   const qc = useQueryClient();
