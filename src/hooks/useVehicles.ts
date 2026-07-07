@@ -50,11 +50,12 @@ export function useVehicles() {
       const ids = vehicles.map(v => v.id);
 
       const [pr, pi, sp, ld] = await Promise.all([
-        supabase.from('projects').select('id, vehicle_id').in('vehicle_id', ids),
-        supabase.from('project_images').select('id, vehicle_id').in('vehicle_id', ids),
+        supabase.from('projects').select('id, vehicle_id, main_image_url, updated_at').in('vehicle_id', ids).order('updated_at', { ascending: false }),
+        supabase.from('project_images').select('id, vehicle_id, image_url, created_at').in('vehicle_id', ids).order('created_at', { ascending: false }),
         supabase.from('spin360_jobs').select('id, vehicle_id').in('vehicle_id', ids),
         supabase.from('leads').select('id, vehicle_id, project_id').eq('dealer_user_id', user.id),
       ]);
+
 
       // Banner counts via storage list per vehicle (parallel)
       const bannerEntries = await Promise.all(
