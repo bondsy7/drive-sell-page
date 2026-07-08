@@ -179,9 +179,9 @@ export function generateLandingPageHTML(data: VehicleData, imageBase64: string |
           ${buildSocialLinksHTML(data.dealer)}
         </div>
         <div class="rate-box">
-          <div class="rate-label">Monatliche Rate</div>
-          <div class="rate-amount">${data.finance.monthlyRate || '–'}</div>
-          <div class="rate-period">pro Monat</div>
+          <div class="rate-label">${(data.category || '').toLowerCase().match(/barkauf|neuwagen|gebrauchtwagen|tageszulassung/) ? 'Kaufpreis' : 'Monatliche Rate'}</div>
+          <div class="rate-amount">${((data.category || '').toLowerCase().match(/barkauf|neuwagen|gebrauchtwagen|tageszulassung/) ? data.finance.totalPrice : data.finance.monthlyRate) || '–'}</div>
+          <div class="rate-period">${(data.category || '').toLowerCase().match(/barkauf|neuwagen|gebrauchtwagen|tageszulassung/) ? 'gesamt' : 'pro Monat'}</div>
         </div>
       </div>
     </div>
