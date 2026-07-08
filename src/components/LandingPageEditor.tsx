@@ -309,6 +309,17 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
             <span>Kontaktformular</span>
             <Switch checked={contactFormEnabled} onCheckedChange={setContactFormEnabled} />
           </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleGenerateAllScenes}
+            disabled={imageLoading === '__bulk__'}
+            className="gap-2"
+            title="Für jede Section ein passendes AI-Bild generieren"
+          >
+            {imageLoading === '__bulk__' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+            Alle Szenen generieren
+          </Button>
           <Button size="sm" onClick={handleExport} className="gap-2">
             <Download className="w-4 h-4" /> HTML herunterladen
           </Button>
