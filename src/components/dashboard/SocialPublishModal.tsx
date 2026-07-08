@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { X, Instagram, Facebook, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { X, Instagram, Facebook, Loader2, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -38,6 +39,9 @@ export default function SocialPublishModal({
   const [publishing, setPublishing] = useState(false);
   const [results, setResults] = useState<PlatformResult[] | null>(null);
   const [status, setStatus] = useState<{ instagram: boolean; facebook: boolean } | null>(null);
+  const [tone, setTone] = useState<'seriös' | 'verkaufsstark' | 'kurz' | 'locker' | 'premium'>('verkaufsstark');
+  const [format, setFormat] = useState<'image' | 'video' | 'reel' | 'carousel'>('image');
+  const [generatingCaption, setGeneratingCaption] = useState(false);
 
   // Load platform configuration status (no tokens exposed)
   useEffect(() => {
@@ -79,6 +83,40 @@ export default function SocialPublishModal({
   }, [vehicleTitle, vehiclePrice, dealerName]);
 
   const selectedPlatforms = (Object.keys(platforms) as Platform[]).filter((p) => platforms[p]);
+
+  const generateCaption = async () => {
+    // Prefer a selected platform, else instagram as default target
+    const targetPlatform: Platform = selectedPlatforms[0] ?? 'instagram';
+    setGeneratingCaption(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-social-caption', {
+        body: {
+          platform: targetPlatform,
+          format,
+          tone,
+          imageUrl: banner.url,
+          bannerName: banner.name,
+          vehicleId: vehicleId ?? null,
+        },
+      });
+      if (error) {
+        const detail = error instanceof FunctionsHttpError ? await error.context.text().catch(() => '') : error.message;
+        toast.error(`Textgenerierung fehlgeschlagen: ${detail || 'Unbekannter Fehler'}`);
+        return;
+      }
+      if (data?.caption) {
+        setCaption(data.caption);
+        toast.success('Text erstellt – bitte prüfen und anpassen.');
+      } else {
+        toast.error('Kein Text erhalten.');
+      }
+    } catch (e) {
+      toast.error(`Fehler: ${(e as Error).message}`);
+    } finally {
+      setGeneratingCaption(false);
+    }
+  };
+
 
   const publish = async () => {
     if (selectedPlatforms.length === 0) {
@@ -195,14 +233,63 @@ export default function SocialPublishModal({
                 )}
               </div>
 
+              <div className="rounded-xl border border-border bg-muted/30 p-3 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                  <Label className="text-sm font-medium">KI-Posting-Assistent</Label>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-1 block">Stil</Label>
+                    <Select value={tone} onValueChange={(v) => setTone(v as typeof tone)}>
+                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="seriös">Seriös</SelectItem>
+                        <SelectItem value="verkaufsstark">Verkaufsstark</SelectItem>
+                        <SelectItem value="kurz">Kurz & direkt</SelectItem>
+                        <SelectItem value="locker">Locker</SelectItem>
+                        <SelectItem value="premium">Premium</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-1 block">Format</Label>
+                    <Select value={format} onValueChange={(v) => setFormat(v as typeof format)}>
+                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="image">Bildbeitrag</SelectItem>
+                        <SelectItem value="video">Video</SelectItem>
+                        <SelectItem value="reel">Reel</SelectItem>
+                        <SelectItem value="carousel">Carousel</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="w-full"
+                  onClick={generateCaption}
+                  disabled={generatingCaption}
+                >
+                  {generatingCaption
+                    ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Text wird erstellt...</>
+                    : <><Sparkles className="w-4 h-4 mr-2" /> Text automatisch erstellen</>}
+                </Button>
+                <p className="text-[11px] text-muted-foreground">
+                  Nutzt Fahrzeugdaten, Profil und Bild. Angepasst an {selectedPlatforms[0] === 'facebook' ? 'Facebook' : 'Instagram'}.
+                </p>
+              </div>
+
               <div>
                 <Label htmlFor="caption" className="mb-2 block">Caption &amp; Hashtags</Label>
                 <Textarea
                   id="caption"
                   value={caption}
                   onChange={(e) => setCaption(e.target.value)}
-                  rows={7}
-                  placeholder="Text und #Hashtags..."
+                  rows={8}
+                  placeholder="Text und #Hashtags... (oder oben automatisch erstellen lassen)"
                 />
                 <p className="text-xs text-muted-foreground mt-1">{caption.length} Zeichen</p>
               </div>
