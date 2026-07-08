@@ -4,7 +4,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
-import { getSecret } from "../_shared/get-secret.ts";
+
 
 const IG_GRAPH_VERSION = "v21.0";
 const FB_GRAPH_VERSION = "v25.0";
