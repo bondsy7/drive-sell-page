@@ -310,6 +310,28 @@ export default function VideoPublishModal({
                 />
                 <p className="text-xs text-muted-foreground mt-1">{caption.length} Zeichen</p>
               </div>
+
+              <div className="rounded-xl border border-border p-3 space-y-2">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <Checkbox checked={scheduleEnabled} onCheckedChange={(v) => setScheduleEnabled(!!v)} />
+                  <Clock className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm font-medium flex-1">Später veröffentlichen</span>
+                </label>
+                {scheduleEnabled && (
+                  <div>
+                    <Input
+                      type="datetime-local"
+                      value={scheduledAt}
+                      onChange={(e) => setScheduledAt(e.target.value)}
+                      className="h-9"
+                    />
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      Video wird automatisch zum gewählten Zeitpunkt veröffentlicht.
+                    </p>
+                  </div>
+                )}
+              </div>
+
             </>
           )}
 
