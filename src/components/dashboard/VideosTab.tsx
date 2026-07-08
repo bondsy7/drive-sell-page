@@ -136,6 +136,3 @@ export default function VideosTab({ videos, onPlay, onDownload, onDelete, vehicl
     </>
   );
 }
-
-  );
-}
