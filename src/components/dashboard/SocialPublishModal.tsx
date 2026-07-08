@@ -39,6 +39,9 @@ export default function SocialPublishModal({
   const [publishing, setPublishing] = useState(false);
   const [results, setResults] = useState<PlatformResult[] | null>(null);
   const [status, setStatus] = useState<{ instagram: boolean; facebook: boolean } | null>(null);
+  const [tone, setTone] = useState<'seriös' | 'verkaufsstark' | 'kurz' | 'locker' | 'premium'>('verkaufsstark');
+  const [format, setFormat] = useState<'image' | 'video' | 'reel' | 'carousel'>('image');
+  const [generatingCaption, setGeneratingCaption] = useState(false);
 
   // Load platform configuration status (no tokens exposed)
   useEffect(() => {
