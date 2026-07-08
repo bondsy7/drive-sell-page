@@ -1857,6 +1857,65 @@ export type Database = {
         }
         Relationships: []
       }
+      social_publications: {
+        Row: {
+          banner_name: string | null
+          banner_path: string
+          banner_url: string
+          caption: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          meta_container_id: string | null
+          meta_post_id: string | null
+          platform: string
+          status: string
+          updated_at: string
+          user_id: string
+          vehicle_id: string | null
+        }
+        Insert: {
+          banner_name?: string | null
+          banner_path: string
+          banner_url: string
+          caption?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          meta_container_id?: string | null
+          meta_post_id?: string | null
+          platform: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          vehicle_id?: string | null
+        }
+        Update: {
+          banner_name?: string | null
+          banner_path?: string
+          banner_url?: string
+          caption?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          meta_container_id?: string | null
+          meta_post_id?: string | null
+          platform?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_publications_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       spin360_canonical_images: {
         Row: {
           created_at: string
