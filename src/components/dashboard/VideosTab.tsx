@@ -2,14 +2,19 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Video, Play, Download, Trash2, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { type VideoFile } from './types';
+import VideoPublishModal from './VideoPublishModal';
 
 interface Props {
   videos: VideoFile[];
   onPlay: (video: VideoFile) => void;
   onDownload: (video: VideoFile) => void;
   onDelete: (name: string) => void;
-  onPost?: (video: VideoFile) => void;
+  vehicleId?: string;
+  vehicleTitle?: string;
+  vehiclePrice?: string;
+  dealerName?: string;
 }
+
 
 function useVideoThumbnail(videoUrl: string) {
   const [thumb, setThumb] = useState<string | null>(null);
