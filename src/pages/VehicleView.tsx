@@ -301,7 +301,7 @@ export default function VehicleView() {
       case 'banners':
         return <BannersTab banners={banners} onDownload={(b) => downloadFile(b.url, b.name)} onDelete={(fp) => onDeleteBanner(fp)} />;
       case 'videos':
-        return <VideosTab videos={videos} onPlay={setPlayerVideo} onDownload={(v) => downloadFile(v.url, v.name)} onDelete={onDeleteVideo} />;
+        return <VideosTab videos={videos} onPlay={setPlayerVideo} onDownload={(v) => downloadFile(v.url, v.name)} onDelete={onDeleteVideo} vehicleId={vehicle.id} />;
       case 'spin360':
         return <Spin360Tab jobs={spinJobs} onOpen={openSpinViewer} onDelete={onDeleteSpin} />;
       case 'leads':
