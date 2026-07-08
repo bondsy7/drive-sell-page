@@ -489,7 +489,15 @@ const Profile = () => {
                 </div>
               </div>
             </Section>
+
+            <Section icon={<Share2 className="w-4 h-4" />} title="Posting-Verbindung (Instagram & Facebook)">
+              <p className="text-xs text-muted-foreground -mt-2 mb-2">
+                Zugangsdaten für das direkte Posten aus dem Banner-Modul. Getrennt von den Landingpage-Links oben.
+              </p>
+              <SocialCredentialsSection />
+            </Section>
           </TabsContent>
+
 
           {/* Tab: Finanzen */}
           <TabsContent value="finanzen" className="space-y-5 mt-0">
