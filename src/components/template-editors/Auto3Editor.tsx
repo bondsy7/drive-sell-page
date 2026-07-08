@@ -345,7 +345,7 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
                 <span className="inline-flex items-baseline">
                   <EditableField value={sidebarPriceValue || '–'} onChange={sidebarOnChange}
                     suffix={sidebarPriceSuffix} className="text-[26px] font-extrabold" />
-                  {sidebarPriceValue && <sup className="text-[11px] font-bold ml-0.5" style={{ color: dark }}>1</sup>}
+                  {sidebarPriceValue && !isBuyCategory && <sup className="text-[11px] font-bold ml-0.5" style={{ color: dark }}>1</sup>}
                 </span>
               </div>
               {isMonthlyOffer && data.finance.totalPrice && (
