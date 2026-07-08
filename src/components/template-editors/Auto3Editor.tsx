@@ -348,6 +348,13 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
                   {sidebarPriceValue && !isBuyCategory && <sup className="text-[11px] font-bold ml-0.5" style={{ color: dark }}>1</sup>}
                 </span>
               </div>
+              <div className="text-[11px] text-gray-400 mt-0.5 text-right">
+                <EditableField
+                  value={data.finance.vatNote || 'inkl. MwSt.'}
+                  onChange={(v) => updateFinance('vatNote', v)}
+                  className="text-[11px] text-gray-400 inline"
+                />
+              </div>
               {isMonthlyOffer && data.finance.totalPrice && (
                 <div className="text-[12px] text-gray-500 mt-1 text-right">
                   Gesamtpreis: <EditableField value={data.finance.totalPrice} onChange={(v) => updateFinance('totalPrice', v)} suffix="€" className="font-semibold inline" />
