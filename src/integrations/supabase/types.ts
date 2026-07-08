@@ -2385,6 +2385,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_social_credentials: {
+        Row: {
+          created_at: string
+          fb_page_id: string | null
+          fb_page_token_encrypted: string | null
+          ig_access_token_encrypted: string | null
+          ig_user_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          fb_page_id?: string | null
+          fb_page_token_encrypted?: string | null
+          ig_access_token_encrypted?: string | null
+          ig_user_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          fb_page_id?: string | null
+          fb_page_token_encrypted?: string | null
+          ig_access_token_encrypted?: string | null
+          ig_user_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_songs: {
         Row: {
           created_at: string
@@ -2595,6 +2625,10 @@ export type Database = {
         }
         Returns: Json
       }
+      clear_social_credentials: {
+        Args: { _platform: string }
+        Returns: undefined
+      }
       consume_download: { Args: { _user_id: string }; Returns: Json }
       deduct_credits: {
         Args: {
@@ -2608,6 +2642,24 @@ export type Database = {
       }
       generate_api_key: { Args: never; Returns: string }
       get_ftp_password: { Args: { _user_id: string }; Returns: string }
+      get_social_credentials_for_user: {
+        Args: { _user_id: string }
+        Returns: {
+          fb_page_id: string
+          fb_page_token: string
+          ig_access_token: string
+          ig_user_id: string
+        }[]
+      }
+      get_social_credentials_status: {
+        Args: never
+        Returns: {
+          facebook_configured: boolean
+          fb_page_id: string
+          ig_user_id: string
+          instagram_configured: boolean
+        }[]
+      }
       has_ftp_password: { Args: never; Returns: boolean }
       has_role: {
         Args: {
@@ -2617,6 +2669,15 @@ export type Database = {
         Returns: boolean
       }
       set_ftp_password: { Args: { _password: string }; Returns: undefined }
+      set_social_credentials: {
+        Args: {
+          _fb_page_id: string
+          _fb_page_token: string
+          _ig_access_token: string
+          _ig_user_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"

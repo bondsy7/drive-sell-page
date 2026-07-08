@@ -181,9 +181,16 @@ export default function SocialPublishModal({
                     )}
                   </label>
                 </div>
-                {status?.facebook === false && (
+                {status && !status.instagram && !status.facebook && (
+                  <p className="text-xs text-destructive mt-2">
+                    Keine Social-Media-Zugangsdaten hinterlegt. Bitte im{' '}
+                    <a href="/profile" className="underline font-medium">Profil</a>{' '}
+                    unter „Posting-Verbindung" konfigurieren.
+                  </p>
+                )}
+                {status?.facebook === false && (status?.instagram === true) && (
                   <p className="text-xs text-muted-foreground mt-2">
-                    Facebook wird verfügbar, sobald META_FACEBOOK_PAGE_ID und META_PAGE_ACCESS_TOKEN konfiguriert sind.
+                    Facebook wird verfügbar, sobald Page ID und Page Access Token im Profil hinterlegt sind.
                   </p>
                 )}
               </div>
