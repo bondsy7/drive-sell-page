@@ -259,10 +259,9 @@ export default function SocialPublishModal({
                       <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="image">Bildbeitrag</SelectItem>
-                        <SelectItem value="video">Video</SelectItem>
-                        <SelectItem value="reel">Reel</SelectItem>
                         <SelectItem value="carousel">Carousel</SelectItem>
                       </SelectContent>
+
                     </Select>
                   </div>
                 </div>
