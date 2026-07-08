@@ -13,14 +13,21 @@ const FACEBOOK_GRAPH = `https://graph.facebook.com/${FB_GRAPH_VERSION}`;
 
 type Platform = "instagram" | "facebook";
 
+type MediaType = "image" | "video";
+
 interface PublishPayload {
-  bannerPath: string;      // storage path inside `banners` bucket
+  bannerPath?: string;      // legacy: storage path inside `banners` bucket
+  mediaPath?: string;       // preferred: storage path (banners or vehicle-images)
   bannerName?: string;
-  imageUrl: string;        // public https url meta can fetch
+  mediaName?: string;
+  imageUrl?: string;        // legacy alias for mediaUrl (image)
+  mediaUrl?: string;        // public https url meta can fetch (image or video)
+  mediaType?: MediaType;    // defaults to "image"
   caption: string;
   platforms: Platform[];
   vehicleId?: string | null;
 }
+
 
 interface PlatformResult {
   platform: Platform;
