@@ -255,6 +255,18 @@ async function validateInstagramUser(
   };
 }
 
+async function validateFacebookPage(
+  pageId: string,
+  accessToken: string,
+): Promise<{ ok: true; name?: string } | { ok: false; error: string }> {
+  const url = new URL(`${FACEBOOK_GRAPH}/${pageId}`);
+  url.searchParams.set("fields", "id,name");
+  url.searchParams.set("access_token", accessToken);
+  const res = await fetch(url.toString());
+  const j = await res.json().catch(() => ({}));
+  if (res.ok && j.id) return { ok: true, name: j.name };
+  return { ok: false, error: humanizeMetaError(j, "Facebook Page konnte nicht validiert werden") };
+
 async function waitForContainer(
   creationId: string,
   accessToken: string,
