@@ -7,7 +7,8 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { getSecret } from "../_shared/get-secret.ts";
 
 const GRAPH_VERSION = "v21.0";
-const GRAPH = `https://graph.facebook.com/${GRAPH_VERSION}`;
+const INSTAGRAM_GRAPH = `https://graph.instagram.com/${GRAPH_VERSION}`;
+const FACEBOOK_GRAPH = `https://graph.facebook.com/${GRAPH_VERSION}`;
 
 type Platform = "instagram" | "facebook";
 
@@ -73,10 +74,9 @@ Deno.serve(async (req) => {
 
     // ── Secrets ──────────────────────────────────────────────
     const metaAccessToken = await getSecret("META_ACCESS_TOKEN", admin);
-    const igUserId = (await getSecret("META_IG_USER_ID", admin)) || "17841477944343968";
+    const igUserId = await getSecret("META_IG_USER_ID", admin);
     const fbPageId = await getSecret("META_FACEBOOK_PAGE_ID", admin);
-    const fbPageToken =
-      (await getSecret("META_PAGE_ACCESS_TOKEN", admin)) || metaAccessToken;
+    const fbPageToken = await getSecret("META_PAGE_ACCESS_TOKEN", admin);
 
     const results: PlatformResult[] = [];
 
@@ -140,13 +140,19 @@ async function publishInstagram(opts: {
   caption: string;
 }): Promise<Omit<PlatformResult, "platform">> {
   if (!opts.accessToken) return { status: "failed", error: "META_ACCESS_TOKEN nicht konfiguriert" };
-  if (!opts.igUserId) return { status: "failed", error: "Instagram Business Account ID fehlt" };
+  if (!opts.igUserId) return { status: "failed", error: "META_IG_USER_ID nicht konfiguriert" };
 
-  // 1. Create media container
-  const containerRes = await fetch(`${GRAPH}/${opts.igUserId}/media`, {
+  // 1. Validate Instagram user against the Instagram API host. Tokens created
+  // through "Instagram API → API setup with Instagram login" are not valid on
+  // the Facebook/Page Graph host.
+  const validation = await validateInstagramUser(opts.igUserId, opts.accessToken);
+  if (!validation.ok) return { status: "failed", error: validation.error };
+
+  // 2. Create media container
+  const containerRes = await fetch(`${INSTAGRAM_GRAPH}/${opts.igUserId}/media`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
       image_url: opts.imageUrl,
       caption: opts.caption,
       access_token: opts.accessToken,
@@ -161,17 +167,17 @@ async function publishInstagram(opts: {
   }
   const creationId = containerJson.id as string;
 
-  // 2. Poll container status until FINISHED (Meta needs to fetch the image)
+  // Poll container status until FINISHED (Meta needs to fetch the image)
   const finished = await waitForContainer(creationId, opts.accessToken);
   if (!finished.ok) {
     return { status: "failed", containerId: creationId, error: finished.error };
   }
 
   // 3. Publish
-  const publishRes = await fetch(`${GRAPH}/${opts.igUserId}/media_publish`, {
+  const publishRes = await fetch(`${INSTAGRAM_GRAPH}/${opts.igUserId}/media_publish`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
       creation_id: creationId,
       access_token: opts.accessToken,
     }),
@@ -187,6 +193,28 @@ async function publishInstagram(opts: {
   return { status: "success", postId: publishJson.id as string, containerId: creationId };
 }
 
+async function validateInstagramUser(
+  igUserId: string,
+  accessToken: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const url = new URL(`${INSTAGRAM_GRAPH}/${igUserId}`);
+  url.searchParams.set("fields", "id,username");
+  url.searchParams.set("access_token", accessToken);
+
+  const res = await fetch(url.toString());
+  const j = await res.json().catch(() => ({}));
+  if (res.ok && j.id) return { ok: true };
+
+  return {
+    ok: false,
+    error: humanizeMetaError(
+      j,
+      "Instagram Token oder META_IG_USER_ID konnte nicht validiert werden",
+      "instagram",
+    ),
+  };
+}
+
 async function waitForContainer(
   creationId: string,
   accessToken: string,
@@ -195,12 +223,12 @@ async function waitForContainer(
   for (let i = 0; i < maxAttempts; i++) {
     await new Promise((r) => setTimeout(r, 1500));
     const res = await fetch(
-      `${GRAPH}/${creationId}?fields=status_code,status&access_token=${encodeURIComponent(accessToken)}`,
+      `${INSTAGRAM_GRAPH}/${creationId}?fields=status_code,status&access_token=${encodeURIComponent(accessToken)}`,
     );
     const j = await res.json().catch(() => ({}));
     if (j.status_code === "FINISHED") return { ok: true };
     if (j.status_code === "ERROR" || j.status_code === "EXPIRED") {
-      return { ok: false, error: humanizeMetaError(j, "Container-Status: " + j.status_code) };
+      return { ok: false, error: humanizeMetaError(j, "Container-Status: " + j.status_code, "instagram") };
     }
   }
   return { ok: false, error: "Timeout: Instagram konnte das Bild nicht rechtzeitig laden" };
@@ -218,7 +246,7 @@ async function publishFacebookPage(opts: {
   if (!opts.accessToken) return { status: "failed", error: "META_PAGE_ACCESS_TOKEN nicht konfiguriert" };
   if (!opts.pageId) return { status: "failed", error: "META_FACEBOOK_PAGE_ID nicht konfiguriert" };
 
-  const res = await fetch(`${GRAPH}/${opts.pageId}/photos`, {
+  const res = await fetch(`${FACEBOOK_GRAPH}/${opts.pageId}/photos`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -241,12 +269,15 @@ async function publishFacebookPage(opts: {
 // ────────────────────────────────────────────────────────────
 // Helpers
 // ────────────────────────────────────────────────────────────
-function humanizeMetaError(payload: any, fallback: string): string {
+function humanizeMetaError(payload: any, fallback: string, mode: Platform | "meta" = "meta"): string {
   const err = payload?.error;
   if (!err) return fallback;
   const code = err.code;
   const sub = err.error_subcode;
   const msg = err.message || err.error_user_msg || fallback;
+  if (code === 190 && mode === "instagram") {
+    return "Instagram Access Token ungültig, abgelaufen oder nicht für META_IG_USER_ID berechtigt. Bitte META_ACCESS_TOKEN und META_IG_USER_ID prüfen.";
+  }
   if (code === 190) return "Meta Access Token ungültig oder abgelaufen. Bitte Token erneuern.";
   if (code === 200 || code === 10) return `Berechtigung fehlt: ${msg}`;
   if (code === 100 && /image/i.test(msg)) return `Bild nicht erreichbar oder ungültig: ${msg}`;
