@@ -175,17 +175,17 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
 
   const handleRegenerate = async (sectionId: string) => {
     const section = content.sections.find(s => s.id === sectionId);
-    const prompt = sectionId === 'hero' ? content.hero.imagePrompt : section?.imagePrompt;
-    const fallback = sectionId === 'hero'
-      ? `Cinematic wide shot of a ${brand} ${model} in a premium studio setting, dramatic lighting`
-      : `Editorial automotive photograph of a ${brand} ${model}, ${section?.headline || 'showroom scene'}`;
+    const headline = sectionId === 'hero' ? content.hero.headline : section?.headline;
+    const { prompt } = buildScenePrompt({
+      brand, model,
+      sectionId,
+      sectionType: section?.type,
+      headline,
+    });
     setImageLoading(sectionId);
     try {
       const { data, error } = await supabase.functions.invoke('generate-vehicle-image', {
-        body: {
-          imagePrompt: `Professional automotive marketing photo: ${prompt || fallback}. Modern, clean, professional. No text overlays.`,
-          modelTier: 'schnell',
-        },
+        body: { imagePrompt: prompt, modelTier: 'schnell' },
       });
       if (error || !data?.imageBase64) { toast.error('Generierung fehlgeschlagen'); return; }
       if (user) {
@@ -201,6 +201,35 @@ const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
       setImageLoading(null);
       setImageDialogSection(null);
     }
+  };
+
+  const handleGenerateAllScenes = async () => {
+    if (!user) return;
+    const targets: { id: string; type?: string; headline?: string }[] = [
+      { id: 'hero', headline: content.hero.headline },
+      ...content.sections
+        .filter(s => s.enabled !== false && ['content', 'gallery', 'specs'].includes(s.type))
+        .map(s => ({ id: s.id, type: s.type, headline: s.headline })),
+    ];
+    setImageLoading('__bulk__');
+    let ok = 0;
+    for (const t of targets) {
+      const { prompt } = buildScenePrompt({ brand, model, sectionId: t.id, sectionType: t.type, headline: t.headline });
+      try {
+        const { data } = await supabase.functions.invoke('generate-vehicle-image', {
+          body: { imagePrompt: prompt, modelTier: 'schnell' },
+        });
+        if (data?.imageBase64) {
+          const url = await uploadImageToStorage(data.imageBase64, user.id, `landing/${projectId}/${t.id}-${Date.now()}.png`);
+          if (url) {
+            setImages(prev => ({ ...prev, [t.id]: url }));
+            ok++;
+          }
+        }
+      } catch (e) { console.warn('scene gen failed', t.id, e); }
+    }
+    setImageLoading(null);
+    toast.success(`${ok} von ${targets.length} Szenen generiert`);
   };
 
   const handleRemaster = async (sectionId: string, file: File) => {
