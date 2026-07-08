@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { X, Instagram, Facebook, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { X, Instagram, Facebook, Loader2, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
