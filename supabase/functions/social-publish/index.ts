@@ -52,20 +52,41 @@ Deno.serve(async (req) => {
     const userId = claimsData?.claims?.sub;
     if (claimsErr || !userId) return json({ error: "unauthorized" }, 401);
 
+    // ── Load per-user credentials ────────────────────────────
+    const { data: credRows } = await admin.rpc("get_social_credentials_for_user", { _user_id: userId });
+    const cred = Array.isArray(credRows) ? credRows[0] : credRows;
+    const igUserId: string | undefined = cred?.ig_user_id ?? undefined;
+    const metaAccessToken: string | undefined = cred?.ig_access_token ?? undefined;
+    const fbPageId: string | undefined = cred?.fb_page_id ?? undefined;
+    const fbPageToken: string | undefined = cred?.fb_page_token ?? undefined;
+
+    const igConfigured = !!(igUserId && metaAccessToken);
+    const fbConfigured = !!(fbPageId && fbPageToken);
+
     // ── Status check (no tokens exposed) ─────────────────────
     const rawBody = await req.text();
     const parsedBody = rawBody ? (() => { try { return JSON.parse(rawBody); } catch { return null; } })() : null;
     if (parsedBody && parsedBody.action === "status") {
-      const [igTok, igId, fbId, fbTok] = await Promise.all([
-        getSecret("META_ACCESS_TOKEN", admin),
-        getSecret("META_IG_USER_ID", admin),
-        getSecret("META_FACEBOOK_PAGE_ID", admin),
-        getSecret("META_PAGE_ACCESS_TOKEN", admin),
-      ]);
       return json({
-        instagram: { configured: !!(igTok && igId) },
-        facebook: { configured: !!(fbId && fbTok) },
+        instagram: { configured: igConfigured, accountId: igUserId ?? null },
+        facebook: { configured: fbConfigured, pageId: fbPageId ?? null },
       });
+    }
+
+    // ── Test connection ──────────────────────────────────────
+    if (parsedBody && parsedBody.action === "test") {
+      const platform = parsedBody.platform as Platform;
+      if (platform === "instagram") {
+        if (!igConfigured) return json({ ok: false, error: "Instagram nicht konfiguriert" });
+        const v = await validateInstagramUser(igUserId!, metaAccessToken!);
+        return json(v.ok ? { ok: true } : { ok: false, error: v.error });
+      }
+      if (platform === "facebook") {
+        if (!fbConfigured) return json({ ok: false, error: "Facebook nicht konfiguriert" });
+        const v = await validateFacebookPage(fbPageId!, fbPageToken!);
+        return json(v.ok ? { ok: true, name: v.name } : { ok: false, error: v.error });
+      }
+      return json({ ok: false, error: "unknown_platform" }, 400);
     }
 
     // ── Input ────────────────────────────────────────────────
@@ -74,12 +95,6 @@ Deno.serve(async (req) => {
 
     const { bannerPath, bannerName, imageUrl, caption, platforms, vehicleId } = body;
     if (!bannerPath || !imageUrl || !Array.isArray(platforms) || platforms.length === 0) {
-      console.log("[social-publish] missing_fields", {
-        hasBannerPath: !!bannerPath,
-        hasImageUrl: !!imageUrl,
-        platformsType: Array.isArray(platforms) ? `array(${platforms.length})` : typeof platforms,
-        keys: Object.keys(body ?? {}),
-      });
       return json({ error: "missing_fields" }, 400);
     }
     if (!/^https:\/\//i.test(imageUrl)) {
@@ -95,11 +110,13 @@ Deno.serve(async (req) => {
       return json({ error: "forbidden" }, 403);
     }
 
-    // ── Secrets ──────────────────────────────────────────────
-    const metaAccessToken = await getSecret("META_ACCESS_TOKEN", admin);
-    const igUserId = await getSecret("META_IG_USER_ID", admin);
-    const fbPageId = await getSecret("META_FACEBOOK_PAGE_ID", admin);
-    const fbPageToken = await getSecret("META_PAGE_ACCESS_TOKEN", admin);
+    // Gate: refuse if user hasn't configured the requested platform
+    if (validPlatforms.includes("instagram") && !igConfigured) {
+      return json({ error: "instagram_not_configured" }, 400);
+    }
+    if (validPlatforms.includes("facebook") && !fbConfigured) {
+      return json({ error: "facebook_not_configured" }, 400);
+    }
 
     const results: PlatformResult[] = [];
 
