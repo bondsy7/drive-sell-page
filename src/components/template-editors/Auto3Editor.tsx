@@ -229,7 +229,7 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
             <div className="mt-7">
               <h2 className="text-lg font-bold mb-3.5" style={{ color: dark }}>{getFinanceSectionTitle(data)}</h2>
               <div className="border border-[#eaeaea] rounded-xl px-5 py-4 grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                <FinItem label={isLeasing ? 'Leasingpreis' : 'Gesamtpreis'} value={data.finance.totalPrice} onChange={(v) => updateFinance('totalPrice', v)} suffix="€" sup />
+                <FinItem label={isLeasing ? 'Leasingpreis' : 'Gesamtpreis'} value={data.finance.totalPrice} onChange={(v) => updateFinance('totalPrice', v)} suffix="€" sup={!isBuyCategory} />
                 {!isBuyCategory && (
                   <>
                     <FinItem label="Rate" value={data.finance.monthlyRate || ''} onChange={(v) => updateFinance('monthlyRate', v)} suffix="€" sup />
@@ -294,7 +294,7 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
                     </div>
                   )}
                   <div className="relative">
-                    <span className="absolute top-3 left-3 text-xs font-bold text-gray-700 select-none"><sup>1</sup></span>
+                    {!isBuyCategory && <span className="absolute top-3 left-3 text-xs font-bold text-gray-700 select-none"><sup>1</sup></span>}
                     <textarea
                       value={value}
                       onChange={(e) => updateDealer(legalKey, e.target.value)}
@@ -345,7 +345,7 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
                 <span className="inline-flex items-baseline">
                   <EditableField value={sidebarPriceValue || '–'} onChange={sidebarOnChange}
                     suffix={sidebarPriceSuffix} className="text-[26px] font-extrabold" />
-                  {sidebarPriceValue && <sup className="text-[11px] font-bold ml-0.5" style={{ color: dark }}>1</sup>}
+                  {sidebarPriceValue && !isBuyCategory && <sup className="text-[11px] font-bold ml-0.5" style={{ color: dark }}>1</sup>}
                 </span>
               </div>
               {isMonthlyOffer && data.finance.totalPrice && (

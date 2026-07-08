@@ -27,7 +27,9 @@ export function generateAuto3HTML(data: VehicleData, imageBase64: string | null,
   const sidebarLabel = isLeasing ? 'Leasing ab' : isFinanzierung ? 'Finanzierung ab' : 'Fahrzeugpreis';
   const sidebarValueRaw = isMonthlyOffer ? (data.finance.monthlyRate || '') : (data.finance.totalPrice || '');
   const sidebarSuffix = isMonthlyOffer ? ' €/mtl.' : '';
-  const sup = `<sup style="font-size:0.55em;vertical-align:super;font-weight:700;margin-left:2px">1</sup>`;
+  // Hochgestellte "1" nur bei Leasing/Finanzierung (verweist auf Bankangaben/Pflichthinweise).
+  // Bei reinem Kaufpreis-Angebot entfällt die Fußnote komplett.
+  const sup = isBuy ? '' : `<sup style="font-size:0.55em;vertical-align:super;font-weight:700;margin-left:2px">1</sup>`;
 
   const accent = data.templateColors?.accent || '#e30613';
   const dark = data.templateColors?.dark || '#111111';
