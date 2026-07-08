@@ -233,14 +233,63 @@ export default function SocialPublishModal({
                 )}
               </div>
 
+              <div className="rounded-xl border border-border bg-muted/30 p-3 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                  <Label className="text-sm font-medium">KI-Posting-Assistent</Label>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-1 block">Stil</Label>
+                    <Select value={tone} onValueChange={(v) => setTone(v as typeof tone)}>
+                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="seriös">Seriös</SelectItem>
+                        <SelectItem value="verkaufsstark">Verkaufsstark</SelectItem>
+                        <SelectItem value="kurz">Kurz & direkt</SelectItem>
+                        <SelectItem value="locker">Locker</SelectItem>
+                        <SelectItem value="premium">Premium</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-1 block">Format</Label>
+                    <Select value={format} onValueChange={(v) => setFormat(v as typeof format)}>
+                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="image">Bildbeitrag</SelectItem>
+                        <SelectItem value="video">Video</SelectItem>
+                        <SelectItem value="reel">Reel</SelectItem>
+                        <SelectItem value="carousel">Carousel</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="w-full"
+                  onClick={generateCaption}
+                  disabled={generatingCaption}
+                >
+                  {generatingCaption
+                    ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Text wird erstellt...</>
+                    : <><Sparkles className="w-4 h-4 mr-2" /> Text automatisch erstellen</>}
+                </Button>
+                <p className="text-[11px] text-muted-foreground">
+                  Nutzt Fahrzeugdaten, Profil und Bild. Angepasst an {selectedPlatforms[0] === 'facebook' ? 'Facebook' : 'Instagram'}.
+                </p>
+              </div>
+
               <div>
                 <Label htmlFor="caption" className="mb-2 block">Caption &amp; Hashtags</Label>
                 <Textarea
                   id="caption"
                   value={caption}
                   onChange={(e) => setCaption(e.target.value)}
-                  rows={7}
-                  placeholder="Text und #Hashtags..."
+                  rows={8}
+                  placeholder="Text und #Hashtags... (oder oben automatisch erstellen lassen)"
                 />
                 <p className="text-xs text-muted-foreground mt-1">{caption.length} Zeichen</p>
               </div>
