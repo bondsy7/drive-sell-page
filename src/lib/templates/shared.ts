@@ -211,7 +211,11 @@ export function buildFinanceItems(data: VehicleData, itemClass = 'fin-item', lab
 
   const items: [string, string][] = [];
 
-  if (!isBuy) {
+  if (isBuy) {
+    // Kaufpreis-Angebote: Fahrzeugpreis (Kaufpreis) muss auch in Preview / HTML-Export sichtbar sein.
+    items.push([getFinanceSectionTitle(data), data.finance.totalPrice]);
+    if (data.finance.downPayment) items.push(['Anzahlung', data.finance.downPayment]);
+  } else {
     items.push(['Monatliche Rate', data.finance.monthlyRate]);
     if (cat.includes('leasing')) {
       items.push(['Sonderzahlung', data.finance.specialPayment]);
@@ -231,6 +235,8 @@ export function buildFinanceItems(data: VehicleData, itemClass = 'fin-item', lab
       const lf = calculateLeasingFactor(data);
       if (lf) items.push(['Leasingfaktor', lf]);
     }
+    // Gesamtpreis (falls angegeben) – sichert Sichtbarkeit auch bei Finanzierung/Leasing.
+    if (data.finance.totalPrice) items.push(['Gesamtpreis', data.finance.totalPrice]);
   }
 
   return items.filter(([, v]) => v).map(([l, v]) => `
