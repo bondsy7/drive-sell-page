@@ -296,10 +296,14 @@ export function buildLegalTextHTML(data: VehicleData): string {
 
   if (!legalText && !bankInfo) return '';
 
+  // Fußnoten-"1" nur bei Leasing/Finanzierung – bei reinem Kaufpreis-Angebot entfällt sie.
+  const isBuy = !category.includes('leasing') && !category.includes('finanzierung') && !category.includes('kredit');
+  const supMarker = isBuy ? '' : `<sup style="font-size:9px;vertical-align:super">1</sup> `;
+
   return `<div class="legal-text" style="margin-top:24px;padding:20px;background:#ffffff;border-radius:12px;border:1px solid #e8eaee">
     <div style="font-size:12px;font-weight:700;margin-bottom:8px">Bankangaben / Pflichthinweise</div>
     ${bankInfo ? `<div style="font-size:12px;font-weight:600;margin-bottom:8px">${bankInfo}</div>` : ''}
-    <div style="font-size:11px;color:#6b7280;line-height:1.6;white-space:pre-line"><sup style="font-size:9px;vertical-align:super">1</sup> ${legalText}</div>
+    <div style="font-size:11px;color:#6b7280;line-height:1.6;white-space:pre-line">${supMarker}${legalText}</div>
   </div>`;
 }
 
