@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
     }
 
     // ── Input ────────────────────────────────────────────────
-    const body = (await req.json().catch(() => null)) as PublishPayload | null;
+    const body = parsedBody as PublishPayload | null;
     if (!body) return json({ error: "invalid_body" }, 400);
 
     const { bannerPath, bannerName, imageUrl, caption, platforms, vehicleId } = body;
