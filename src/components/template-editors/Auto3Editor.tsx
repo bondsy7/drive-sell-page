@@ -229,7 +229,7 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
             <div className="mt-7">
               <h2 className="text-lg font-bold mb-3.5" style={{ color: dark }}>{getFinanceSectionTitle(data)}</h2>
               <div className="border border-[#eaeaea] rounded-xl px-5 py-4 grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                <FinItem label={isLeasing ? 'Leasingpreis' : 'Gesamtpreis'} value={data.finance.totalPrice} onChange={(v) => updateFinance('totalPrice', v)} suffix="€" sup />
+                <FinItem label={isLeasing ? 'Leasingpreis' : 'Gesamtpreis'} value={data.finance.totalPrice} onChange={(v) => updateFinance('totalPrice', v)} suffix="€" sup={!isBuyCategory} />
                 {!isBuyCategory && (
                   <>
                     <FinItem label="Rate" value={data.finance.monthlyRate || ''} onChange={(v) => updateFinance('monthlyRate', v)} suffix="€" sup />
