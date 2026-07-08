@@ -37,6 +37,31 @@ export default function SocialPublishModal({
   });
   const [publishing, setPublishing] = useState(false);
   const [results, setResults] = useState<PlatformResult[] | null>(null);
+  const [status, setStatus] = useState<{ instagram: boolean; facebook: boolean } | null>(null);
+
+  // Load platform configuration status (no tokens exposed)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase.functions.invoke('social-publish', {
+          body: { action: 'status' },
+        });
+        if (cancelled || !data) return;
+        setStatus({
+          instagram: !!data.instagram?.configured,
+          facebook: !!data.facebook?.configured,
+        });
+        setPlatforms((p) => ({
+          instagram: !!data.instagram?.configured && p.instagram,
+          facebook: !!data.facebook?.configured && p.facebook,
+        }));
+      } catch {
+        setStatus({ instagram: false, facebook: false });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   // Prefill caption from vehicle data
   useEffect(() => {
