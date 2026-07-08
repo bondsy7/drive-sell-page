@@ -268,10 +268,11 @@ async function validateFacebookPage(
 async function waitForContainer(
   creationId: string,
   accessToken: string,
+  maxAttempts = 8,
+  delayMs = 1500,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const maxAttempts = 8;
   for (let i = 0; i < maxAttempts; i++) {
-    await new Promise((r) => setTimeout(r, 1500));
+    await new Promise((r) => setTimeout(r, delayMs));
     const res = await fetch(
       `${INSTAGRAM_GRAPH}/${creationId}?fields=status_code,status&access_token=${encodeURIComponent(accessToken)}`,
     );
@@ -281,8 +282,9 @@ async function waitForContainer(
       return { ok: false, error: humanizeMetaError(j, "Container-Status: " + j.status_code, "instagram") };
     }
   }
-  return { ok: false, error: "Timeout: Instagram konnte das Bild nicht rechtzeitig laden" };
+  return { ok: false, error: "Timeout: Instagram konnte das Medium nicht rechtzeitig verarbeiten" };
 }
+
 
 // ────────────────────────────────────────────────────────────
 // Facebook Page Photo
