@@ -73,6 +73,12 @@ Deno.serve(async (req) => {
 
     const { bannerPath, bannerName, imageUrl, caption, platforms, vehicleId } = body;
     if (!bannerPath || !imageUrl || !Array.isArray(platforms) || platforms.length === 0) {
+      console.log("[social-publish] missing_fields", {
+        hasBannerPath: !!bannerPath,
+        hasImageUrl: !!imageUrl,
+        platformsType: Array.isArray(platforms) ? `array(${platforms.length})` : typeof platforms,
+        keys: Object.keys(body ?? {}),
+      });
       return json({ error: "missing_fields" }, 400);
     }
     if (!/^https:\/\//i.test(imageUrl)) {
