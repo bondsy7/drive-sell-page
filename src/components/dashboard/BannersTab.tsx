@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { LayoutGrid, Download, Trash2 } from 'lucide-react';
+import { LayoutGrid, Download, Trash2, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { type BannerFile } from './types';
 import BannerLightbox from './BannerLightbox';
+import SocialPublishModal from './SocialPublishModal';
 
 interface Props {
   banners: BannerFile[];
@@ -44,6 +45,7 @@ function detectFormat(w: number, h: number): FormatInfo {
 export default function BannersTab({ banners, onDownload, onDelete }: Props) {
   const [lightboxIndex, setLightboxIndex] = useState(-1);
   const [formats, setFormats] = useState<Record<string, FormatInfo>>({});
+  const [publishBanner, setPublishBanner] = useState<BannerFile | null>(null);
 
   if (banners.length === 0) {
     return (
@@ -97,6 +99,7 @@ export default function BannersTab({ banners, onDownload, onDelete }: Props) {
                   {banner.created_at ? new Date(banner.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Banner'}
                 </p>
                 <div className="flex gap-1.5">
+                  <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setPublishBanner(banner); }} title="Auf Social Media posten"><Share2 className="w-3.5 h-3.5" /></Button>
                   <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); onDownload(banner); }}><Download className="w-3.5 h-3.5" /></Button>
                   <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); onDelete(banner.fullPath, banner.name); }}><Trash2 className="w-3.5 h-3.5 text-destructive" /></Button>
                 </div>
@@ -121,6 +124,13 @@ export default function BannersTab({ banners, onDownload, onDelete }: Props) {
           }
         }}
       />
+
+      {publishBanner && (
+        <SocialPublishModal
+          banner={publishBanner}
+          onClose={() => setPublishBanner(null)}
+        />
+      )}
     </>
   );
 }
