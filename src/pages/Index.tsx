@@ -634,7 +634,7 @@ const Index = () => {
         setAppState('studio' as ExtendedAppState);
         break;
       case 'photos':
-        setAppState('standalone-photo-mode' as ExtendedAppState);
+        setAppState('standalone-photo-choice');
         break;
       case 'pdf-landing':
         setAppState('idle');
