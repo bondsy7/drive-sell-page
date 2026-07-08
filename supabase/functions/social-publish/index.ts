@@ -51,13 +51,26 @@ Deno.serve(async (req) => {
     const token = authHeader.replace(/^Bearer\s+/i, "");
     if (!token) return json({ error: "unauthorized" }, 401);
 
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      serviceRoleKey,
     );
-    const { data: claimsData, error: claimsErr } = await admin.auth.getClaims(token);
-    const userId = claimsData?.claims?.sub;
-    if (claimsErr || !userId) return json({ error: "unauthorized" }, 401);
+
+    // Parse body first (needed to know if this is an internal cron call)
+    const rawBody = await req.text();
+    const parsedBody = rawBody ? (() => { try { return JSON.parse(rawBody); } catch { return null; } })() : null;
+
+    // Internal service-role call (scheduled cron): use provided user id
+    const isServiceCall = token === serviceRoleKey && parsedBody?.internalUserId;
+    let userId: string | undefined;
+    if (isServiceCall) {
+      userId = parsedBody.internalUserId as string;
+    } else {
+      const { data: claimsData, error: claimsErr } = await admin.auth.getClaims(token);
+      userId = claimsData?.claims?.sub;
+      if (claimsErr || !userId) return json({ error: "unauthorized" }, 401);
+    }
 
     // ── Load per-user credentials ────────────────────────────
     const { data: credRows } = await admin.rpc("get_social_credentials_for_user", { _user_id: userId });
@@ -71,8 +84,7 @@ Deno.serve(async (req) => {
     const fbConfigured = !!(fbPageId && fbPageToken);
 
     // ── Status check (no tokens exposed) ─────────────────────
-    const rawBody = await req.text();
-    const parsedBody = rawBody ? (() => { try { return JSON.parse(rawBody); } catch { return null; } })() : null;
+
     if (parsedBody && parsedBody.action === "status") {
       return json({
         instagram: { configured: igConfigured, accountId: igUserId ?? null },

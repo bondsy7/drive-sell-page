@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { X, Instagram, Facebook, Loader2, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
+import { X, Instagram, Facebook, Loader2, CheckCircle2, AlertCircle, Sparkles, Clock } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -43,6 +45,14 @@ export default function SocialPublishModal({
   const [format, setFormat] = useState<'image' | 'carousel'>('image');
 
   const [generatingCaption, setGeneratingCaption] = useState(false);
+  const [scheduleEnabled, setScheduleEnabled] = useState(false);
+  const [scheduledAt, setScheduledAt] = useState<string>(() => {
+    const d = new Date(Date.now() + 60 * 60 * 1000);
+    d.setSeconds(0, 0);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  });
+
 
   // Load platform configuration status (no tokens exposed)
   useEffect(() => {
@@ -130,7 +140,45 @@ export default function SocialPublishModal({
     }
     setPublishing(true);
     setResults(null);
+
+    // ── Scheduled: insert into queue instead of publishing now ─
+    if (scheduleEnabled) {
+      const when = new Date(scheduledAt);
+      if (isNaN(when.getTime()) || when.getTime() < Date.now() - 60_000) {
+        toast.error('Bitte einen zukünftigen Zeitpunkt wählen.');
+        setPublishing(false);
+        return;
+      }
+      const { data: userRes } = await supabase.auth.getUser();
+      const uid = userRes?.user?.id;
+      if (!uid) {
+        toast.error('Nicht angemeldet.');
+        setPublishing(false);
+        return;
+      }
+      const { error: insertErr } = await supabase.from('scheduled_social_posts').insert({
+        user_id: uid,
+        vehicle_id: vehicleId ?? null,
+        media_type: 'image',
+        media_path: banner.fullPath,
+        media_name: banner.name,
+        media_url: banner.url,
+        caption,
+        platforms: selectedPlatforms,
+        scheduled_at: when.toISOString(),
+      });
+      setPublishing(false);
+      if (insertErr) {
+        toast.error(`Planung fehlgeschlagen: ${insertErr.message}`);
+        return;
+      }
+      toast.success(`Post geplant für ${when.toLocaleString('de-DE')}`);
+      onClose();
+      return;
+    }
+
     try {
+
       const { data, error } = await supabase.functions.invoke('social-publish', {
         body: {
           bannerPath: banner.fullPath,
@@ -293,6 +341,31 @@ export default function SocialPublishModal({
                 />
                 <p className="text-xs text-muted-foreground mt-1">{caption.length} Zeichen</p>
               </div>
+
+              <div className="rounded-xl border border-border p-3 space-y-2">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <Checkbox
+                    checked={scheduleEnabled}
+                    onCheckedChange={(v) => setScheduleEnabled(!!v)}
+                  />
+                  <Clock className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm font-medium flex-1">Später veröffentlichen</span>
+                </label>
+                {scheduleEnabled && (
+                  <div>
+                    <Input
+                      type="datetime-local"
+                      value={scheduledAt}
+                      onChange={(e) => setScheduledAt(e.target.value)}
+                      className="h-9"
+                    />
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      Der Post wird automatisch zum gewählten Zeitpunkt veröffentlicht (Zeitzone deines Geräts).
+                    </p>
+                  </div>
+                )}
+              </div>
+
             </>
           )}
 
@@ -330,8 +403,11 @@ export default function SocialPublishModal({
               <Button variant="outline" onClick={onClose} disabled={publishing}>Abbrechen</Button>
               <Button onClick={publish} disabled={publishing}>
                 {publishing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                {publishing ? 'Veröffentliche...' : 'Jetzt veröffentlichen'}
+                {publishing
+                  ? (scheduleEnabled ? 'Plane...' : 'Veröffentliche...')
+                  : (scheduleEnabled ? 'Post planen' : 'Jetzt veröffentlichen')}
               </Button>
+
             </>
           )}
         </div>
