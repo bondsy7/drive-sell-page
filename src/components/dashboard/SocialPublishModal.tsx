@@ -150,23 +150,42 @@ export default function SocialPublishModal({
               <div>
                 <Label className="mb-2 block">Plattformen</Label>
                 <div className="flex flex-col gap-2">
-                  <label className="flex items-center gap-3 p-3 rounded-lg border border-border cursor-pointer hover:bg-muted/50">
+                  <label className={`flex items-center gap-3 p-3 rounded-lg border border-border ${status?.instagram === false ? 'opacity-60' : 'cursor-pointer hover:bg-muted/50'}`}>
                     <Checkbox
                       checked={platforms.instagram}
+                      disabled={status?.instagram === false}
                       onCheckedChange={(v) => setPlatforms((p) => ({ ...p, instagram: !!v }))}
                     />
                     <Instagram className="w-5 h-5 text-pink-600" />
-                    <span className="font-medium">Instagram</span>
+                    <span className="font-medium flex-1">Instagram</span>
+                    {status?.instagram === true && (
+                      <span className="text-xs text-green-600 font-medium">Verbunden</span>
+                    )}
+                    {status?.instagram === false && (
+                      <span className="text-xs text-muted-foreground">Nicht konfiguriert</span>
+                    )}
                   </label>
-                  <label className="flex items-center gap-3 p-3 rounded-lg border border-border cursor-pointer hover:bg-muted/50">
+                  <label className={`flex items-center gap-3 p-3 rounded-lg border border-border ${status?.facebook === false ? 'opacity-60' : 'cursor-pointer hover:bg-muted/50'}`}>
                     <Checkbox
                       checked={platforms.facebook}
+                      disabled={status?.facebook === false}
                       onCheckedChange={(v) => setPlatforms((p) => ({ ...p, facebook: !!v }))}
                     />
                     <Facebook className="w-5 h-5 text-blue-600" />
-                    <span className="font-medium">Facebook Page</span>
+                    <span className="font-medium flex-1">Facebook Page</span>
+                    {status?.facebook === true && (
+                      <span className="text-xs text-green-600 font-medium">Verbunden</span>
+                    )}
+                    {status?.facebook === false && (
+                      <span className="text-xs text-muted-foreground">Nicht konfiguriert</span>
+                    )}
                   </label>
                 </div>
+                {status?.facebook === false && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Facebook wird verfügbar, sobald META_FACEBOOK_PAGE_ID und META_PAGE_ACCESS_TOKEN konfiguriert sind.
+                  </p>
+                )}
               </div>
 
               <div>
