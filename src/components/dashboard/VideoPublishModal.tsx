@@ -362,8 +362,11 @@ export default function VideoPublishModal({
               <Button variant="outline" onClick={onClose} disabled={publishing}>Abbrechen</Button>
               <Button onClick={publish} disabled={publishing}>
                 {publishing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                {publishing ? 'Veröffentliche...' : 'Jetzt veröffentlichen'}
+                {publishing
+                  ? (scheduleEnabled ? 'Plane...' : 'Veröffentliche...')
+                  : (scheduleEnabled ? 'Video planen' : 'Jetzt veröffentlichen')}
               </Button>
+
             </>
           )}
         </div>
