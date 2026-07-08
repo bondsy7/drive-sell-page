@@ -8,10 +8,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { FunctionsHttpError } from '@supabase/supabase-js';
-import type { BannerFile } from './types';
+import type { VideoFile } from './types';
 
 interface Props {
-  banner: BannerFile;
+  video: VideoFile;
   vehicleId?: string;
   vehicleTitle?: string;
   vehiclePrice?: string;
@@ -28,8 +28,8 @@ interface PlatformResult {
   error?: string;
 }
 
-export default function SocialPublishModal({
-  banner, vehicleId, vehicleTitle, vehiclePrice, dealerName, onClose,
+export default function VideoPublishModal({
+  video, vehicleId, vehicleTitle, vehiclePrice, dealerName, onClose,
 }: Props) {
   const [caption, setCaption] = useState('');
   const [platforms, setPlatforms] = useState<Record<Platform, boolean>>({
@@ -40,18 +40,14 @@ export default function SocialPublishModal({
   const [results, setResults] = useState<PlatformResult[] | null>(null);
   const [status, setStatus] = useState<{ instagram: boolean; facebook: boolean } | null>(null);
   const [tone, setTone] = useState<'seriös' | 'verkaufsstark' | 'kurz' | 'locker' | 'premium'>('verkaufsstark');
-  const [format, setFormat] = useState<'image' | 'carousel'>('image');
-
+  const [format, setFormat] = useState<'reel' | 'video'>('reel');
   const [generatingCaption, setGeneratingCaption] = useState(false);
 
-  // Load platform configuration status (no tokens exposed)
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const { data } = await supabase.functions.invoke('social-publish', {
-          body: { action: 'status' },
-        });
+        const { data } = await supabase.functions.invoke('social-publish', { body: { action: 'status' } });
         if (cancelled || !data) return;
         setStatus({
           instagram: !!data.instagram?.configured,
@@ -68,25 +64,21 @@ export default function SocialPublishModal({
     return () => { cancelled = true; };
   }, []);
 
-  // Prefill caption from vehicle data
   useEffect(() => {
     const title = vehicleTitle?.trim();
     const price = vehiclePrice?.trim();
     const dealer = dealerName?.trim();
     const parts: string[] = [];
-    if (title) parts.push(`Jetzt entdecken: ${title}.`);
-    else parts.push('Jetzt entdecken – unser neues Angebot.');
+    if (title) parts.push(`Jetzt in Bewegung: ${title}.`);
+    else parts.push('Unser neues Fahrzeug im Video.');
     if (price) parts.push(`Preis: ${price}.`);
     if (dealer) parts.push(`Direkt bei ${dealer} anfragen.`);
-    else parts.push('Mehr Informationen direkt bei uns anfragen.');
-    const hashtags = '#Autohaus #Gebrauchtwagen #Fahrzeugangebot';
-    setCaption(`${parts.join(' ')}\n\n${hashtags}`);
+    setCaption(`${parts.join(' ')}\n\n#Autohaus #Fahrzeugvideo #Gebrauchtwagen`);
   }, [vehicleTitle, vehiclePrice, dealerName]);
 
   const selectedPlatforms = (Object.keys(platforms) as Platform[]).filter((p) => platforms[p]);
 
   const generateCaption = async () => {
-    // Prefer a selected platform, else instagram as default target
     const targetPlatform: Platform = selectedPlatforms[0] ?? 'instagram';
     setGeneratingCaption(true);
     try {
@@ -95,9 +87,10 @@ export default function SocialPublishModal({
           platform: targetPlatform,
           format,
           tone,
-          imageUrl: banner.url,
-          bannerName: banner.name,
+          imageUrl: video.url, // caption fn will fetch a poster frame if needed; ok to pass video URL
+          bannerName: video.name,
           vehicleId: vehicleId ?? null,
+          mediaKind: 'video',
         },
       });
       if (error) {
@@ -118,7 +111,6 @@ export default function SocialPublishModal({
     }
   };
 
-
   const publish = async () => {
     if (selectedPlatforms.length === 0) {
       toast.error('Bitte mindestens eine Plattform auswählen.');
@@ -128,30 +120,29 @@ export default function SocialPublishModal({
       toast.error('Bitte eine Caption eingeben.');
       return;
     }
+    if (!video.fullPath) {
+      toast.error('Video-Pfad fehlt.');
+      return;
+    }
     setPublishing(true);
     setResults(null);
     try {
       const { data, error } = await supabase.functions.invoke('social-publish', {
         body: {
-          bannerPath: banner.fullPath,
-          bannerName: banner.name,
-          imageUrl: banner.url,
+          mediaPath: video.fullPath,
+          mediaName: video.name,
+          mediaUrl: video.url,
+          mediaType: 'video',
           caption,
           platforms: selectedPlatforms,
           vehicleId: vehicleId ?? null,
         },
       });
       if (error) {
-        const detail = error instanceof FunctionsHttpError
-          ? await error.context.text().catch(() => '')
-          : error.message;
-        // Try to parse body for platform results
+        const detail = error instanceof FunctionsHttpError ? await error.context.text().catch(() => '') : error.message;
         try {
           const parsed = JSON.parse(detail);
-          if (Array.isArray(parsed?.results)) {
-            setResults(parsed.results);
-            return;
-          }
+          if (Array.isArray(parsed?.results)) { setResults(parsed.results); return; }
         } catch { /* fallthrough */ }
         toast.error(`Veröffentlichung fehlgeschlagen: ${detail || 'Unbekannter Fehler'}`);
         return;
@@ -170,18 +161,15 @@ export default function SocialPublishModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/70 backdrop-blur-sm p-4" onClick={onClose}>
-      <div
-        className="bg-card w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-border shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="bg-card w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-border shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-4 border-b border-border sticky top-0 bg-card">
-          <h2 className="font-semibold text-foreground">Auf Social Media posten</h2>
+          <h2 className="font-semibold text-foreground">Video auf Social Media posten</h2>
           <button onClick={onClose} aria-label="Schließen"><X className="w-5 h-5" /></button>
         </div>
 
         <div className="p-4 space-y-4">
           <div className="rounded-xl overflow-hidden border border-border bg-muted">
-            <img src={banner.url} alt={banner.name} className="w-full max-h-64 object-contain bg-muted" />
+            <video src={video.url} controls className="w-full max-h-64 bg-muted" />
           </div>
 
           {!done && (
@@ -196,13 +184,9 @@ export default function SocialPublishModal({
                       onCheckedChange={(v) => setPlatforms((p) => ({ ...p, instagram: !!v }))}
                     />
                     <Instagram className="w-5 h-5 text-pink-600" />
-                    <span className="font-medium flex-1">Instagram</span>
-                    {status?.instagram === true && (
-                      <span className="text-xs text-green-600 font-medium">Verbunden</span>
-                    )}
-                    {status?.instagram === false && (
-                      <span className="text-xs text-muted-foreground">Nicht konfiguriert</span>
-                    )}
+                    <span className="font-medium flex-1">Instagram Reel</span>
+                    {status?.instagram === true && <span className="text-xs text-green-600 font-medium">Verbunden</span>}
+                    {status?.instagram === false && <span className="text-xs text-muted-foreground">Nicht konfiguriert</span>}
                   </label>
                   <label className={`flex items-center gap-3 p-3 rounded-lg border border-border ${status?.facebook === false ? 'opacity-60' : 'cursor-pointer hover:bg-muted/50'}`}>
                     <Checkbox
@@ -211,13 +195,9 @@ export default function SocialPublishModal({
                       onCheckedChange={(v) => setPlatforms((p) => ({ ...p, facebook: !!v }))}
                     />
                     <Facebook className="w-5 h-5 text-blue-600" />
-                    <span className="font-medium flex-1">Facebook Page</span>
-                    {status?.facebook === true && (
-                      <span className="text-xs text-green-600 font-medium">Verbunden</span>
-                    )}
-                    {status?.facebook === false && (
-                      <span className="text-xs text-muted-foreground">Nicht konfiguriert</span>
-                    )}
+                    <span className="font-medium flex-1">Facebook Page Video</span>
+                    {status?.facebook === true && <span className="text-xs text-green-600 font-medium">Verbunden</span>}
+                    {status?.facebook === false && <span className="text-xs text-muted-foreground">Nicht konfiguriert</span>}
                   </label>
                 </div>
                 {status && !status.instagram && !status.facebook && (
@@ -227,17 +207,15 @@ export default function SocialPublishModal({
                     unter „Posting-Verbindung" konfigurieren.
                   </p>
                 )}
-                {status?.facebook === false && (status?.instagram === true) && (
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Facebook wird verfügbar, sobald Page ID und Page Access Token im Profil hinterlegt sind.
-                  </p>
-                )}
+                <p className="text-[11px] text-muted-foreground mt-2">
+                  Instagram-Videos werden als Reel veröffentlicht (max. 90 Sek. empfohlen, MP4/H.264).
+                </p>
               </div>
 
               <div className="rounded-xl border border-border bg-muted/30 p-3 space-y-3">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-primary" />
-                  <Label className="text-sm font-medium">KI-Posting-Assistent</Label>
+                  <Label className="text-sm font-medium">KI-Posting-Assistent (Video)</Label>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
@@ -258,39 +236,30 @@ export default function SocialPublishModal({
                     <Select value={format} onValueChange={(v) => setFormat(v as typeof format)}>
                       <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="image">Bildbeitrag</SelectItem>
-                        <SelectItem value="video">Video</SelectItem>
-                        <SelectItem value="reel">Reel</SelectItem>
-                        <SelectItem value="carousel">Carousel</SelectItem>
+                        <SelectItem value="reel">Reel (Hook-fokus)</SelectItem>
+                        <SelectItem value="video">Video (informativ)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  className="w-full"
-                  onClick={generateCaption}
-                  disabled={generatingCaption}
-                >
+                <Button type="button" variant="secondary" size="sm" className="w-full" onClick={generateCaption} disabled={generatingCaption}>
                   {generatingCaption
                     ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Text wird erstellt...</>
                     : <><Sparkles className="w-4 h-4 mr-2" /> Text automatisch erstellen</>}
                 </Button>
                 <p className="text-[11px] text-muted-foreground">
-                  Nutzt Fahrzeugdaten, Profil und Bild. Angepasst an {selectedPlatforms[0] === 'facebook' ? 'Facebook' : 'Instagram'}.
+                  Optimiert für bewegte Inhalte: starker Hook in Zeile 1, kurze Sätze, klarer CTA.
                 </p>
               </div>
 
               <div>
-                <Label htmlFor="caption" className="mb-2 block">Caption &amp; Hashtags</Label>
+                <Label htmlFor="video-caption" className="mb-2 block">Caption &amp; Hashtags</Label>
                 <Textarea
-                  id="caption"
+                  id="video-caption"
                   value={caption}
                   onChange={(e) => setCaption(e.target.value)}
                   rows={8}
-                  placeholder="Text und #Hashtags... (oder oben automatisch erstellen lassen)"
+                  placeholder="Text und #Hashtags..."
                 />
                 <p className="text-xs text-muted-foreground mt-1">{caption.length} Zeichen</p>
               </div>
@@ -300,14 +269,7 @@ export default function SocialPublishModal({
           {done && results && (
             <div className="space-y-2">
               {results.map((r) => (
-                <div
-                  key={r.platform}
-                  className={`flex items-start gap-3 p-3 rounded-lg border ${
-                    r.status === 'success'
-                      ? 'border-green-500/40 bg-green-500/5'
-                      : 'border-destructive/40 bg-destructive/5'
-                  }`}
-                >
+                <div key={r.platform} className={`flex items-start gap-3 p-3 rounded-lg border ${r.status === 'success' ? 'border-green-500/40 bg-green-500/5' : 'border-destructive/40 bg-destructive/5'}`}>
                   {r.status === 'success'
                     ? <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
                     : <AlertCircle className="w-5 h-5 text-destructive shrink-0" />}

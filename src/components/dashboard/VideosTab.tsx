@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Video, Play, Download, Trash2 } from 'lucide-react';
+import { Video, Play, Download, Trash2, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { type VideoFile } from './types';
 
@@ -8,9 +8,9 @@ interface Props {
   onPlay: (video: VideoFile) => void;
   onDownload: (video: VideoFile) => void;
   onDelete: (name: string) => void;
+  onPost?: (video: VideoFile) => void;
 }
 
-/** Generate a thumbnail from a video URL by seeking to 1s */
 function useVideoThumbnail(videoUrl: string) {
   const [thumb, setThumb] = useState<string | null>(null);
   const attempted = useRef(false);
@@ -24,10 +24,7 @@ function useVideoThumbnail(videoUrl: string) {
     video.muted = true;
     video.preload = 'metadata';
 
-    video.onloadeddata = () => {
-      video.currentTime = Math.min(1, video.duration * 0.1);
-    };
-
+    video.onloadeddata = () => { video.currentTime = Math.min(1, video.duration * 0.1); };
     video.onseeked = () => {
       try {
         const canvas = document.createElement('canvas');
@@ -38,24 +35,23 @@ function useVideoThumbnail(videoUrl: string) {
           ctx.drawImage(video, 0, 0);
           setThumb(canvas.toDataURL('image/jpeg', 0.7));
         }
-      } catch { /* CORS or other error – fallback to no thumb */ }
+      } catch { /* CORS */ }
       video.src = '';
     };
-
     video.onerror = () => { attempted.current = false; };
     video.src = videoUrl;
   }, [videoUrl]);
 
   useEffect(() => { generate(); }, [generate]);
-
   return thumb;
 }
 
-function VideoCard({ video, onPlay, onDownload, onDelete }: {
+function VideoCard({ video, onPlay, onDownload, onDelete, onPost }: {
   video: VideoFile;
   onPlay: (v: VideoFile) => void;
   onDownload: (v: VideoFile) => void;
   onDelete: (name: string) => void;
+  onPost?: (v: VideoFile) => void;
 }) {
   const thumbnail = useVideoThumbnail(video.url);
 
@@ -77,11 +73,16 @@ function VideoCard({ video, onPlay, onDownload, onDelete }: {
           <div className="bg-background/80 backdrop-blur rounded-full p-3"><Play className="w-6 h-6 text-foreground" /></div>
         </div>
       </div>
-      <div className="p-3 flex items-center justify-between">
-        <p className="text-xs text-muted-foreground">
+      <div className="p-3 flex items-center justify-between gap-2">
+        <p className="text-xs text-muted-foreground truncate">
           {video.created_at ? new Date(video.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Video'}
         </p>
-        <div className="flex gap-1.5">
+        <div className="flex gap-1.5 shrink-0">
+          {onPost && (
+            <Button variant="outline" size="sm" onClick={() => onPost(video)} title="Auf Social Media posten">
+              <Share2 className="w-3.5 h-3.5" />
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={() => onDownload(video)}><Download className="w-3.5 h-3.5" /></Button>
           <Button variant="outline" size="sm" onClick={() => onDelete(video.name)}><Trash2 className="w-3.5 h-3.5 text-destructive" /></Button>
         </div>
@@ -90,7 +91,7 @@ function VideoCard({ video, onPlay, onDownload, onDelete }: {
   );
 }
 
-export default function VideosTab({ videos, onPlay, onDownload, onDelete }: Props) {
+export default function VideosTab({ videos, onPlay, onDownload, onDelete, onPost }: Props) {
   if (videos.length === 0) {
     return (
       <div className="text-center py-20 space-y-3">
@@ -104,7 +105,7 @@ export default function VideosTab({ videos, onPlay, onDownload, onDelete }: Prop
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {videos.map(video => (
-        <VideoCard key={video.name} video={video} onPlay={onPlay} onDownload={onDownload} onDelete={onDelete} />
+        <VideoCard key={video.name} video={video} onPlay={onPlay} onDownload={onDownload} onDelete={onDelete} onPost={onPost} />
       ))}
     </div>
   );
