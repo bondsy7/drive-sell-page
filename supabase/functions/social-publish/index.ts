@@ -266,6 +266,7 @@ async function validateFacebookPage(
   const j = await res.json().catch(() => ({}));
   if (res.ok && j.id) return { ok: true, name: j.name };
   return { ok: false, error: humanizeMetaError(j, "Facebook Page konnte nicht validiert werden") };
+}
 
 async function waitForContainer(
   creationId: string,
