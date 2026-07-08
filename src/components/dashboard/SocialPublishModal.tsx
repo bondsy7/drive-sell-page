@@ -140,7 +140,45 @@ export default function SocialPublishModal({
     }
     setPublishing(true);
     setResults(null);
+
+    // ── Scheduled: insert into queue instead of publishing now ─
+    if (scheduleEnabled) {
+      const when = new Date(scheduledAt);
+      if (isNaN(when.getTime()) || when.getTime() < Date.now() - 60_000) {
+        toast.error('Bitte einen zukünftigen Zeitpunkt wählen.');
+        setPublishing(false);
+        return;
+      }
+      const { data: userRes } = await supabase.auth.getUser();
+      const uid = userRes?.user?.id;
+      if (!uid) {
+        toast.error('Nicht angemeldet.');
+        setPublishing(false);
+        return;
+      }
+      const { error: insertErr } = await supabase.from('scheduled_social_posts').insert({
+        user_id: uid,
+        vehicle_id: vehicleId ?? null,
+        media_type: 'image',
+        media_path: banner.fullPath,
+        media_name: banner.name,
+        media_url: banner.url,
+        caption,
+        platforms: selectedPlatforms,
+        scheduled_at: when.toISOString(),
+      });
+      setPublishing(false);
+      if (insertErr) {
+        toast.error(`Planung fehlgeschlagen: ${insertErr.message}`);
+        return;
+      }
+      toast.success(`Post geplant für ${when.toLocaleString('de-DE')}`);
+      onClose();
+      return;
+    }
+
     try {
+
       const { data, error } = await supabase.functions.invoke('social-publish', {
         body: {
           bannerPath: banner.fullPath,
