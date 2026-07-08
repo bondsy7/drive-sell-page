@@ -100,20 +100,25 @@ Deno.serve(async (req) => {
     const body = parsedBody as PublishPayload | null;
     if (!body) return json({ error: "invalid_body" }, 400);
 
-    const { bannerPath, bannerName, imageUrl, caption, platforms, vehicleId } = body;
-    if (!bannerPath || !imageUrl || !Array.isArray(platforms) || platforms.length === 0) {
+    const mediaType: MediaType = body.mediaType === "video" ? "video" : "image";
+    const mediaPath = body.mediaPath ?? body.bannerPath ?? "";
+    const mediaName = body.mediaName ?? body.bannerName ?? null;
+    const mediaUrl = body.mediaUrl ?? body.imageUrl ?? "";
+    const { caption, platforms, vehicleId } = body;
+
+    if (!mediaPath || !mediaUrl || !Array.isArray(platforms) || platforms.length === 0) {
       return json({ error: "missing_fields" }, 400);
     }
-    if (!/^https:\/\//i.test(imageUrl)) {
-      return json({ error: "image_url_must_be_public_https" }, 400);
+    if (!/^https:\/\//i.test(mediaUrl)) {
+      return json({ error: "media_url_must_be_public_https" }, 400);
     }
     const validPlatforms: Platform[] = platforms.filter(
       (p) => p === "instagram" || p === "facebook",
     );
     if (validPlatforms.length === 0) return json({ error: "no_valid_platform" }, 400);
 
-    // Ownership check: banner path must start with `${userId}/`
-    if (!bannerPath.startsWith(`${userId}/`)) {
+    // Ownership check: media path must start with `${userId}/`
+    if (!mediaPath.startsWith(`${userId}/`)) {
       return json({ error: "forbidden" }, 403);
     }
 
@@ -129,43 +134,27 @@ Deno.serve(async (req) => {
 
     // ── Instagram ────────────────────────────────────────────
     if (validPlatforms.includes("instagram")) {
-      const res = await publishInstagram({
-        igUserId,
-        accessToken: metaAccessToken,
-        imageUrl,
-        caption,
-      });
+      const res = mediaType === "video"
+        ? await publishInstagramVideo({ igUserId, accessToken: metaAccessToken, videoUrl: mediaUrl, caption })
+        : await publishInstagram({ igUserId, accessToken: metaAccessToken, imageUrl: mediaUrl, caption });
       results.push({ platform: "instagram", ...res });
       await logPublication(admin, {
-        userId,
-        vehicleId: vehicleId ?? null,
-        bannerPath,
-        bannerName: bannerName ?? null,
-        bannerUrl: imageUrl,
-        platform: "instagram",
-        caption,
-        result: res,
+        userId, vehicleId: vehicleId ?? null,
+        bannerPath: mediaPath, bannerName: mediaName, bannerUrl: mediaUrl,
+        platform: "instagram", caption, result: res,
       });
     }
 
     // ── Facebook Page ────────────────────────────────────────
     if (validPlatforms.includes("facebook")) {
-      const res = await publishFacebookPage({
-        pageId: fbPageId,
-        accessToken: fbPageToken,
-        imageUrl,
-        caption,
-      });
+      const res = mediaType === "video"
+        ? await publishFacebookVideo({ pageId: fbPageId, accessToken: fbPageToken, videoUrl: mediaUrl, caption })
+        : await publishFacebookPage({ pageId: fbPageId, accessToken: fbPageToken, imageUrl: mediaUrl, caption });
       results.push({ platform: "facebook", ...res });
       await logPublication(admin, {
-        userId,
-        vehicleId: vehicleId ?? null,
-        bannerPath,
-        bannerName: bannerName ?? null,
-        bannerUrl: imageUrl,
-        platform: "facebook",
-        caption,
-        result: res,
+        userId, vehicleId: vehicleId ?? null,
+        bannerPath: mediaPath, bannerName: mediaName, bannerUrl: mediaUrl,
+        platform: "facebook", caption, result: res,
       });
     }
 
@@ -176,6 +165,7 @@ Deno.serve(async (req) => {
     return json({ error: "internal_error", detail: String((e as Error)?.message ?? e) }, 500);
   }
 });
+
 
 // ────────────────────────────────────────────────────────────
 // Instagram Content Publishing
