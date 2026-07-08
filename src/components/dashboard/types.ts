@@ -35,7 +35,9 @@ export interface VideoFile {
   name: string;
   url: string;
   created_at: string;
+  fullPath?: string;
 }
+
 
 export interface BannerFile {
   name: string;

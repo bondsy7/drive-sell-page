@@ -13,14 +13,21 @@ const FACEBOOK_GRAPH = `https://graph.facebook.com/${FB_GRAPH_VERSION}`;
 
 type Platform = "instagram" | "facebook";
 
+type MediaType = "image" | "video";
+
 interface PublishPayload {
-  bannerPath: string;      // storage path inside `banners` bucket
+  bannerPath?: string;      // legacy: storage path inside `banners` bucket
+  mediaPath?: string;       // preferred: storage path (banners or vehicle-images)
   bannerName?: string;
-  imageUrl: string;        // public https url meta can fetch
+  mediaName?: string;
+  imageUrl?: string;        // legacy alias for mediaUrl (image)
+  mediaUrl?: string;        // public https url meta can fetch (image or video)
+  mediaType?: MediaType;    // defaults to "image"
   caption: string;
   platforms: Platform[];
   vehicleId?: string | null;
 }
+
 
 interface PlatformResult {
   platform: Platform;
@@ -93,20 +100,25 @@ Deno.serve(async (req) => {
     const body = parsedBody as PublishPayload | null;
     if (!body) return json({ error: "invalid_body" }, 400);
 
-    const { bannerPath, bannerName, imageUrl, caption, platforms, vehicleId } = body;
-    if (!bannerPath || !imageUrl || !Array.isArray(platforms) || platforms.length === 0) {
+    const mediaType: MediaType = body.mediaType === "video" ? "video" : "image";
+    const mediaPath = body.mediaPath ?? body.bannerPath ?? "";
+    const mediaName = body.mediaName ?? body.bannerName ?? null;
+    const mediaUrl = body.mediaUrl ?? body.imageUrl ?? "";
+    const { caption, platforms, vehicleId } = body;
+
+    if (!mediaPath || !mediaUrl || !Array.isArray(platforms) || platforms.length === 0) {
       return json({ error: "missing_fields" }, 400);
     }
-    if (!/^https:\/\//i.test(imageUrl)) {
-      return json({ error: "image_url_must_be_public_https" }, 400);
+    if (!/^https:\/\//i.test(mediaUrl)) {
+      return json({ error: "media_url_must_be_public_https" }, 400);
     }
     const validPlatforms: Platform[] = platforms.filter(
       (p) => p === "instagram" || p === "facebook",
     );
     if (validPlatforms.length === 0) return json({ error: "no_valid_platform" }, 400);
 
-    // Ownership check: banner path must start with `${userId}/`
-    if (!bannerPath.startsWith(`${userId}/`)) {
+    // Ownership check: media path must start with `${userId}/`
+    if (!mediaPath.startsWith(`${userId}/`)) {
       return json({ error: "forbidden" }, 403);
     }
 
@@ -122,43 +134,27 @@ Deno.serve(async (req) => {
 
     // ── Instagram ────────────────────────────────────────────
     if (validPlatforms.includes("instagram")) {
-      const res = await publishInstagram({
-        igUserId,
-        accessToken: metaAccessToken,
-        imageUrl,
-        caption,
-      });
+      const res = mediaType === "video"
+        ? await publishInstagramVideo({ igUserId, accessToken: metaAccessToken, videoUrl: mediaUrl, caption })
+        : await publishInstagram({ igUserId, accessToken: metaAccessToken, imageUrl: mediaUrl, caption });
       results.push({ platform: "instagram", ...res });
       await logPublication(admin, {
-        userId,
-        vehicleId: vehicleId ?? null,
-        bannerPath,
-        bannerName: bannerName ?? null,
-        bannerUrl: imageUrl,
-        platform: "instagram",
-        caption,
-        result: res,
+        userId, vehicleId: vehicleId ?? null,
+        bannerPath: mediaPath, bannerName: mediaName, bannerUrl: mediaUrl,
+        platform: "instagram", caption, result: res,
       });
     }
 
     // ── Facebook Page ────────────────────────────────────────
     if (validPlatforms.includes("facebook")) {
-      const res = await publishFacebookPage({
-        pageId: fbPageId,
-        accessToken: fbPageToken,
-        imageUrl,
-        caption,
-      });
+      const res = mediaType === "video"
+        ? await publishFacebookVideo({ pageId: fbPageId, accessToken: fbPageToken, videoUrl: mediaUrl, caption })
+        : await publishFacebookPage({ pageId: fbPageId, accessToken: fbPageToken, imageUrl: mediaUrl, caption });
       results.push({ platform: "facebook", ...res });
       await logPublication(admin, {
-        userId,
-        vehicleId: vehicleId ?? null,
-        bannerPath,
-        bannerName: bannerName ?? null,
-        bannerUrl: imageUrl,
-        platform: "facebook",
-        caption,
-        result: res,
+        userId, vehicleId: vehicleId ?? null,
+        bannerPath: mediaPath, bannerName: mediaName, bannerUrl: mediaUrl,
+        platform: "facebook", caption, result: res,
       });
     }
 
@@ -169,6 +165,7 @@ Deno.serve(async (req) => {
     return json({ error: "internal_error", detail: String((e as Error)?.message ?? e) }, 500);
   }
 });
+
 
 // ────────────────────────────────────────────────────────────
 // Instagram Content Publishing
@@ -271,10 +268,11 @@ async function validateFacebookPage(
 async function waitForContainer(
   creationId: string,
   accessToken: string,
+  maxAttempts = 8,
+  delayMs = 1500,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const maxAttempts = 8;
   for (let i = 0; i < maxAttempts; i++) {
-    await new Promise((r) => setTimeout(r, 1500));
+    await new Promise((r) => setTimeout(r, delayMs));
     const res = await fetch(
       `${INSTAGRAM_GRAPH}/${creationId}?fields=status_code,status&access_token=${encodeURIComponent(accessToken)}`,
     );
@@ -284,8 +282,9 @@ async function waitForContainer(
       return { ok: false, error: humanizeMetaError(j, "Container-Status: " + j.status_code, "instagram") };
     }
   }
-  return { ok: false, error: "Timeout: Instagram konnte das Bild nicht rechtzeitig laden" };
+  return { ok: false, error: "Timeout: Instagram konnte das Medium nicht rechtzeitig verarbeiten" };
 }
+
 
 // ────────────────────────────────────────────────────────────
 // Facebook Page Photo
@@ -318,6 +317,84 @@ async function publishFacebookPage(opts: {
   }
   return { status: "success", postId: (j.post_id as string) || (j.id as string) };
 }
+
+// ────────────────────────────────────────────────────────────
+// Instagram Reel (Video)
+// ────────────────────────────────────────────────────────────
+async function publishInstagramVideo(opts: {
+  igUserId?: string;
+  accessToken?: string;
+  videoUrl: string;
+  caption: string;
+}): Promise<Omit<PlatformResult, "platform">> {
+  if (!opts.accessToken) return { status: "failed", error: "Instagram Access Token nicht konfiguriert" };
+  if (!opts.igUserId) return { status: "failed", error: "Instagram User ID nicht konfiguriert" };
+
+  const validation = await validateInstagramUser(opts.igUserId, opts.accessToken);
+  if (!validation.ok) return { status: "failed", error: validation.error };
+
+  // 1. Create Reels container
+  const containerRes = await fetch(`${INSTAGRAM_GRAPH}/${opts.igUserId}/media`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      media_type: "REELS",
+      video_url: opts.videoUrl,
+      caption: opts.caption,
+      access_token: opts.accessToken,
+    }),
+  });
+  const containerJson = await containerRes.json().catch(() => ({}));
+  if (!containerRes.ok || !containerJson.id) {
+    return { status: "failed", error: humanizeMetaError(containerJson, "Instagram Video-Container fehlgeschlagen", "instagram") };
+  }
+  const creationId = containerJson.id as string;
+
+  // 2. Poll — videos need longer than photos
+  const finished = await waitForContainer(creationId, opts.accessToken, 30, 3000);
+  if (!finished.ok) return { status: "failed", containerId: creationId, error: finished.error };
+
+  // 3. Publish
+  const publishRes = await fetch(`${INSTAGRAM_GRAPH}/${opts.igUserId}/media_publish`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ creation_id: creationId, access_token: opts.accessToken }),
+  });
+  const publishJson = await publishRes.json().catch(() => ({}));
+  if (!publishRes.ok || !publishJson.id) {
+    return { status: "failed", containerId: creationId, error: humanizeMetaError(publishJson, "Instagram Reel-Veröffentlichung fehlgeschlagen", "instagram") };
+  }
+  return { status: "success", postId: publishJson.id as string, containerId: creationId };
+}
+
+// ────────────────────────────────────────────────────────────
+// Facebook Page Video
+// ────────────────────────────────────────────────────────────
+async function publishFacebookVideo(opts: {
+  pageId?: string;
+  accessToken?: string;
+  videoUrl: string;
+  caption: string;
+}): Promise<Omit<PlatformResult, "platform">> {
+  if (!opts.accessToken) return { status: "failed", error: "Facebook Page Access Token nicht konfiguriert" };
+  if (!opts.pageId) return { status: "failed", error: "Facebook Page ID nicht konfiguriert" };
+
+  const res = await fetch(`${FACEBOOK_GRAPH}/${opts.pageId}/videos`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      file_url: opts.videoUrl,
+      description: opts.caption,
+      access_token: opts.accessToken,
+    }),
+  });
+  const j = await res.json().catch(() => ({}));
+  if (!res.ok || !j.id) {
+    return { status: "failed", error: humanizeMetaError(j, "Facebook Video-Veröffentlichung fehlgeschlagen") };
+  }
+  return { status: "success", postId: j.id as string };
+}
+
 
 // ────────────────────────────────────────────────────────────
 // Helpers
