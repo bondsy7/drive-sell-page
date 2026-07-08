@@ -88,21 +88,31 @@ Deno.serve(async (req) => {
     push("Preis", v.price);
 
     // ── Prompt ───────────────────────────────────────────────
+    const companyName = (profile as any).company_name?.trim() || "";
+    const cityLine = [(profile as any).postal_code, (profile as any).city].filter(Boolean).join(" ").trim();
+    const locationLabel = companyName && cityLine
+      ? `${companyName} in ${cityLine}`
+      : companyName || cityLine || "";
+
     const platformRules = platform === "instagram"
       ? `INSTAGRAM (${format}):
-- Kurz, aufmerksamkeitsstark, erste Zeile ist ein starker Hook.
-- 4-8 relevante Hashtags am Ende (Automobil-/Standort-/Modell-Tags).
-- Klarer CTA (z. B. "Jetzt anfragen", "Link in Bio", "DM für Details").
-- Keine URLs im Fließtext, Instagram klickt sie nicht.
-- ${format === "reel" || format === "video" ? "Erste Zeile knallharter Hook (max. 6 Wörter). Danach 2-3 kurze Sätze." : "Maximal ~150 Wörter."}`
+- Erste Zeile: knallharter Hook (max. 8 Wörter), emotional oder mit Zahl/Nutzen.
+- Danach 2-4 kurze, kraftvolle Sätze mit klarem Verkaufsnutzen (Fahrgefühl, Ausstattung, Vorteil).
+- Fahrzeug-Highlights mit Emojis wie ✅ ⚡️ 🔥 einbauen, aber sparsam (max. 4-6).
+- Klarer CTA-Satz am Ende (z. B. "Jetzt Probefahrt sichern bei ${locationLabel || "uns"}", "DM für Details", "Link in Bio").
+- 5-8 relevante Hashtags: Marke, Modell, Standort/Stadt, #Autohaus, #Gebrauchtwagen o. ä.
+- Keine URLs im Fließtext.
+- ${format === "reel" || format === "video" ? "Reel-Modus: Hook + max. 3 Sätze, extrem knackig." : "Post-Modus: max. ~150 Wörter."}`
       : `FACEBOOK (${format}):
-- Etwas ausführlicher, informativ, mit klarem Anfrage-CTA.
-- Fahrzeug-Highlights aufzählen (Bulletpoints mit Emojis wie ✅ oder •).
-- Website-Link/Kontakt am Ende einbinden.
-- 2-4 dezente Hashtags am Ende.
-- ${format === "reel" || format === "video" ? "Erste Zeile ist der Hook, dann 3-4 Sätze mit Details." : "Maximal ~220 Wörter."}`;
+- Erste Zeile: starker Aufmacher, der Neugier weckt.
+- 3-5 Sätze Fließtext mit Verkaufsargumenten (Zustand, Ausstattung, Fahrspaß, Sicherheit).
+- Danach Bulletpoint-Liste der wichtigsten Ausstattungs-Highlights (mit ✅ oder •).
+- Klarer CTA-Absatz mit Firma + Standort: "Jetzt anfragen oder Probefahrt vereinbaren bei ${locationLabel || "uns"}."
+- Website/Telefon/WhatsApp aus dem Händlerprofil am Ende einbinden, falls vorhanden.
+- 3-5 dezente Hashtags am Ende.
+- ${format === "reel" || format === "video" ? "Video-Modus: Hook + 3-5 Sätze + CTA." : "Post-Modus: max. ~220 Wörter."}`;
 
-    const promptText = `Du bist ein erfahrener Automotive-Social-Media-Manager. Erstelle EINEN fertigen Post auf Deutsch.
+    const promptText = `Du bist ein Top-Automotive-Social-Media-Copywriter. Erstelle EINEN fertigen, verkaufsstarken Post auf Deutsch, der Aufmerksamkeit erzeugt, klar verkauft und den Leser zur Anfrage bewegt.
 
 TONE: ${tone.toUpperCase()} — ${TONE_HINTS[tone]}
 
@@ -111,16 +121,23 @@ ${platformRules}
 FAHRZEUGDATEN (bevorzugt gegenüber Bildanalyse verwenden, wenn vorhanden):
 ${vehicleLines.length ? vehicleLines.join("\n") : "(keine strukturierten Daten – nutze sichtbare Infos aus dem Bild)"}
 
-HÄNDLER-KONTEXT:
+HÄNDLER-KONTEXT (MUSS im Post genannt werden):
 ${dealerLines.length ? dealerLines.join("\n") : "(kein Händlerprofil hinterlegt)"}
+
+PFLICHT-ANGABE:
+- Firma und Ort MÜSSEN im Post vorkommen, mindestens einmal in der Form "${locationLabel || "Firmenname in Stadt"}" (oder sehr ähnlich).
+- Der Ort/Standort taucht zusätzlich in mindestens einem Hashtag auf (z. B. #${((profile as any).city || "Standort").toString().replace(/\s+/g, "")}).
+- Wenn das Händlerprofil unvollständig ist, verwende die vorhandenen Angaben so wörtlich wie möglich und erfinde nichts.
 
 BILD/BANNER: ${body.bannerName ?? "Marketing-Banner"} — beachte auch sichtbare Details im angehängten Bild, aber erfinde keine Fakten.
 
 REGELN:
-- Keine erfundenen Fakten, Preise oder Ausstattungen.
-- Keine Emojis übertreiben (max. 4-6 sinnvolle).
+- Der Post muss verkaufsstark sein: konkreter Nutzen, klare Kaufmotive, aktive Sprache. KEINE laue "schauen Sie mal"-Formulierung.
+- Keine erfundenen Fakten, Preise, Kilometerstände oder Ausstattungen.
+- Emojis gezielt einsetzen (max. 4-6, keine Emoji-Wand).
 - Keine Anführungszeichen um den Post.
-- Antwort ist AUSSCHLIESSLICH der fertige Post-Text, kein Vor-/Nachspann, keine Erklärungen.`;
+- Antwort ist AUSSCHLIESSLICH der fertige Post-Text, kein Vor-/Nachspann, keine Erklärungen, keine Markdown-Fences.`;
+
 
     const parts: any[] = [{ text: promptText }];
     if (body.imageUrl && /^https?:\/\//i.test(body.imageUrl)) {
