@@ -294,7 +294,7 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
                     </div>
                   )}
                   <div className="relative">
-                    <span className="absolute top-3 left-3 text-xs font-bold text-gray-700 select-none"><sup>1</sup></span>
+                    {!isBuyCategory && <span className="absolute top-3 left-3 text-xs font-bold text-gray-700 select-none"><sup>1</sup></span>}
                     <textarea
                       value={value}
                       onChange={(e) => updateDealer(legalKey, e.target.value)}
