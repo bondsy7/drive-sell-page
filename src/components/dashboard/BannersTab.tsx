@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { LayoutGrid, Download, Trash2 } from 'lucide-react';
+import { LayoutGrid, Download, Trash2, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { type BannerFile } from './types';
 import BannerLightbox from './BannerLightbox';
+import SocialPublishModal from './SocialPublishModal';
 
 interface Props {
   banners: BannerFile[];
