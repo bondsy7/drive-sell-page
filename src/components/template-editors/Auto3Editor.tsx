@@ -350,10 +350,9 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
               </div>
               <div className="text-[11px] text-gray-400 mt-0.5 text-right">
                 <EditableField
-                  value={data.finance.vatNote ?? 'inkl. MwSt.'}
+                  value={data.finance.vatNote || 'inkl. MwSt.'}
                   onChange={(v) => updateFinance('vatNote', v)}
                   className="text-[11px] text-gray-400 inline"
-                  placeholder="inkl. MwSt."
                 />
               </div>
               {isMonthlyOffer && data.finance.totalPrice && (
