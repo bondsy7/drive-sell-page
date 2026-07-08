@@ -96,7 +96,9 @@ function VideoCard({ video, onPlay, onDownload, onDelete, onPost }: {
   );
 }
 
-export default function VideosTab({ videos, onPlay, onDownload, onDelete, onPost }: Props) {
+export default function VideosTab({ videos, onPlay, onDownload, onDelete, vehicleId, vehicleTitle, vehiclePrice, dealerName }: Props) {
+  const [publishVideo, setPublishVideo] = useState<VideoFile | null>(null);
+
   if (videos.length === 0) {
     return (
       <div className="text-center py-20 space-y-3">
@@ -108,10 +110,32 @@ export default function VideosTab({ videos, onPlay, onDownload, onDelete, onPost
   }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {videos.map(video => (
-        <VideoCard key={video.name} video={video} onPlay={onPlay} onDownload={onDownload} onDelete={onDelete} onPost={onPost} />
-      ))}
-    </div>
+    <>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {videos.map(video => (
+          <VideoCard
+            key={video.name}
+            video={video}
+            onPlay={onPlay}
+            onDownload={onDownload}
+            onDelete={onDelete}
+            onPost={video.fullPath ? setPublishVideo : undefined}
+          />
+        ))}
+      </div>
+      {publishVideo && (
+        <VideoPublishModal
+          video={publishVideo}
+          vehicleId={vehicleId}
+          vehicleTitle={vehicleTitle}
+          vehiclePrice={vehiclePrice}
+          dealerName={dealerName}
+          onClose={() => setPublishVideo(null)}
+        />
+      )}
+    </>
+  );
+}
+
   );
 }
