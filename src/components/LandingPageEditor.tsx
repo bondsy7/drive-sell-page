@@ -22,6 +22,7 @@ import {
 import { downloadHTML } from '@/lib/templates/download';
 import { uploadImageToStorage } from '@/lib/storage-utils';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
+import { buildScenePrompt } from '@/lib/landing-scene-prompts';
 
 interface LandingPageEditorProps {
   projectId: string;
