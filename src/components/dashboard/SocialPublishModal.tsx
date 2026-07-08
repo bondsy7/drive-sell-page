@@ -84,6 +84,40 @@ export default function SocialPublishModal({
 
   const selectedPlatforms = (Object.keys(platforms) as Platform[]).filter((p) => platforms[p]);
 
+  const generateCaption = async () => {
+    // Prefer a selected platform, else instagram as default target
+    const targetPlatform: Platform = selectedPlatforms[0] ?? 'instagram';
+    setGeneratingCaption(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-social-caption', {
+        body: {
+          platform: targetPlatform,
+          format,
+          tone,
+          imageUrl: banner.url,
+          bannerName: banner.name,
+          vehicleId: vehicleId ?? null,
+        },
+      });
+      if (error) {
+        const detail = error instanceof FunctionsHttpError ? await error.context.text().catch(() => '') : error.message;
+        toast.error(`Textgenerierung fehlgeschlagen: ${detail || 'Unbekannter Fehler'}`);
+        return;
+      }
+      if (data?.caption) {
+        setCaption(data.caption);
+        toast.success('Text erstellt – bitte prüfen und anpassen.');
+      } else {
+        toast.error('Kein Text erhalten.');
+      }
+    } catch (e) {
+      toast.error(`Fehler: ${(e as Error).message}`);
+    } finally {
+      setGeneratingCaption(false);
+    }
+  };
+
+
   const publish = async () => {
     if (selectedPlatforms.length === 0) {
       toast.error('Bitte mindestens eine Plattform auswählen.');
