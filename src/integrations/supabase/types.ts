@@ -1857,6 +1857,66 @@ export type Database = {
         }
         Relationships: []
       }
+      scheduled_social_posts: {
+        Row: {
+          attempts: number
+          caption: string
+          created_at: string
+          id: string
+          last_error: string | null
+          media_name: string | null
+          media_path: string
+          media_type: string
+          media_url: string
+          platforms: string[]
+          published_at: string | null
+          results: Json | null
+          scheduled_at: string
+          status: string
+          updated_at: string
+          user_id: string
+          vehicle_id: string | null
+        }
+        Insert: {
+          attempts?: number
+          caption: string
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          media_name?: string | null
+          media_path: string
+          media_type: string
+          media_url: string
+          platforms: string[]
+          published_at?: string | null
+          results?: Json | null
+          scheduled_at: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          vehicle_id?: string | null
+        }
+        Update: {
+          attempts?: number
+          caption?: string
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          media_name?: string | null
+          media_path?: string
+          media_type?: string
+          media_url?: string
+          platforms?: string[]
+          published_at?: string | null
+          results?: Json | null
+          scheduled_at?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          vehicle_id?: string | null
+        }
+        Relationships: []
+      }
       social_publications: {
         Row: {
           banner_name: string | null
