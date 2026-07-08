@@ -317,6 +317,84 @@ async function publishFacebookPage(opts: {
 }
 
 // ────────────────────────────────────────────────────────────
+// Instagram Reel (Video)
+// ────────────────────────────────────────────────────────────
+async function publishInstagramVideo(opts: {
+  igUserId?: string;
+  accessToken?: string;
+  videoUrl: string;
+  caption: string;
+}): Promise<Omit<PlatformResult, "platform">> {
+  if (!opts.accessToken) return { status: "failed", error: "Instagram Access Token nicht konfiguriert" };
+  if (!opts.igUserId) return { status: "failed", error: "Instagram User ID nicht konfiguriert" };
+
+  const validation = await validateInstagramUser(opts.igUserId, opts.accessToken);
+  if (!validation.ok) return { status: "failed", error: validation.error };
+
+  // 1. Create Reels container
+  const containerRes = await fetch(`${INSTAGRAM_GRAPH}/${opts.igUserId}/media`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      media_type: "REELS",
+      video_url: opts.videoUrl,
+      caption: opts.caption,
+      access_token: opts.accessToken,
+    }),
+  });
+  const containerJson = await containerRes.json().catch(() => ({}));
+  if (!containerRes.ok || !containerJson.id) {
+    return { status: "failed", error: humanizeMetaError(containerJson, "Instagram Video-Container fehlgeschlagen", "instagram") };
+  }
+  const creationId = containerJson.id as string;
+
+  // 2. Poll — videos need longer than photos
+  const finished = await waitForContainer(creationId, opts.accessToken, 30, 3000);
+  if (!finished.ok) return { status: "failed", containerId: creationId, error: finished.error };
+
+  // 3. Publish
+  const publishRes = await fetch(`${INSTAGRAM_GRAPH}/${opts.igUserId}/media_publish`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ creation_id: creationId, access_token: opts.accessToken }),
+  });
+  const publishJson = await publishRes.json().catch(() => ({}));
+  if (!publishRes.ok || !publishJson.id) {
+    return { status: "failed", containerId: creationId, error: humanizeMetaError(publishJson, "Instagram Reel-Veröffentlichung fehlgeschlagen", "instagram") };
+  }
+  return { status: "success", postId: publishJson.id as string, containerId: creationId };
+}
+
+// ────────────────────────────────────────────────────────────
+// Facebook Page Video
+// ────────────────────────────────────────────────────────────
+async function publishFacebookVideo(opts: {
+  pageId?: string;
+  accessToken?: string;
+  videoUrl: string;
+  caption: string;
+}): Promise<Omit<PlatformResult, "platform">> {
+  if (!opts.accessToken) return { status: "failed", error: "Facebook Page Access Token nicht konfiguriert" };
+  if (!opts.pageId) return { status: "failed", error: "Facebook Page ID nicht konfiguriert" };
+
+  const res = await fetch(`${FACEBOOK_GRAPH}/${opts.pageId}/videos`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      file_url: opts.videoUrl,
+      description: opts.caption,
+      access_token: opts.accessToken,
+    }),
+  });
+  const j = await res.json().catch(() => ({}));
+  if (!res.ok || !j.id) {
+    return { status: "failed", error: humanizeMetaError(j, "Facebook Video-Veröffentlichung fehlgeschlagen") };
+  }
+  return { status: "success", postId: j.id as string };
+}
+
+
+// ────────────────────────────────────────────────────────────
 // Helpers
 // ────────────────────────────────────────────────────────────
 function humanizeMetaError(payload: any, fallback: string, mode: Platform | "meta" = "meta"): string {
