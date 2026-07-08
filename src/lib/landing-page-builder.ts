@@ -1,4 +1,4 @@
-import { buildContactFormHTML, type ContactFormOptions } from '@/lib/templates/shared';
+import { buildContactFormHTML } from '@/lib/templates/shared';
 
 export interface LandingPageContent {
   meta: { title: string; description: string; h1: string };
@@ -14,6 +14,7 @@ export interface LandingPageSection {
   content: string;
   imagePrompt?: string | null;
   bgStyle: string;
+  enabled?: boolean;
 }
 
 export interface LandingPageDealer {
@@ -44,129 +45,111 @@ export interface LandingPageContactForm {
   pageType?: string;
 }
 
-let __PRIMARY = '#3b82f6';
-let __SECONDARY = '#1e3a5f';
-
-// ─── Section Renderers ───
-
-function renderSectionBase(bg: string, inner: string): string {
-  return `<section style="${bg};padding:64px 24px">${inner}</section>`;
+/* ─── color helpers ─── */
+function hexToRgb(hex: string) {
+  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return m ? { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) } : null;
+}
+function rgba(hex: string, a: number) {
+  const rgb = hexToRgb(hex);
+  return rgb ? `rgba(${rgb.r},${rgb.g},${rgb.b},${a})` : `rgba(23,79,107,${a})`;
+}
+function luma(hex: string) {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return 0.2;
+  const [r, g, b] = [rgb.r, rgb.g, rgb.b].map((v) => {
+    const s = v / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+function readableOn(hex: string) {
+  return luma(hex) > 0.55 ? '#0f172a' : '#ffffff';
+}
+function escapeHtml(s: string): string {
+  return String(s || '').replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' } as any)[c]
+  );
 }
 
-function getColors(bgStyle: string) {
+/* ─── Section renderers (matching React renderer 1:1) ─── */
+
+function renderSection(
+  s: LandingPageSection,
+  idx: number,
+  image: string,
+  primary: string,
+  secondary: string,
+  onSec: string,
+  phone: string,
+  whatsapp: string
+): string {
+  if (s.enabled === false) return '';
+
   const bgMap: Record<string, string> = {
-    white: 'background:#ffffff',
-    light: 'background:#f8fafc',
-    dark: 'background:#0f172a;color:#f1f5f9',
-    accent: 'background:${__SECONDARY};color:#ffffff',
+    white: '#ffffff',
+    light: rgba(primary, 0.04),
+    dark: '#0b1220',
+    accent: primary,
   };
-  const bg = bgMap[bgStyle] || bgMap.white;
-  const isDark = bgStyle === 'dark' || bgStyle === 'accent';
-  return {
-    bg,
-    headlineColor: isDark ? '#ffffff' : '#0f172a',
-    subColor: isDark ? '#cbd5e1' : '#475569',
-  };
-}
-
-function renderSteps(s: LandingPageSection, colors: ReturnType<typeof getColors>): string {
-  return renderSectionBase(colors.bg,
-    `<div style="max-width:960px;margin:0 auto;text-align:center">
-      <h2 style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;color:${colors.headlineColor};margin-bottom:40px">${s.headline}</h2>
-      <div style="font-size:15px;line-height:1.8;color:${colors.subColor}">${s.content}</div>
-    </div>`);
-}
-
-function renderFaq(s: LandingPageSection, colors: ReturnType<typeof getColors>): string {
-  return renderSectionBase(colors.bg,
-    `<div style="max-width:760px;margin:0 auto">
-      <h2 style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;color:${colors.headlineColor};margin-bottom:32px;text-align:center">${s.headline}</h2>
-      <div style="font-size:15px;line-height:1.8;color:${colors.subColor}">${s.content}</div>
-    </div>`);
-}
-
-function renderCta(s: LandingPageSection, phone: string, whatsapp: string): string {
-  const sec = __SECONDARY;
-  const pri = __PRIMARY;
-  return `<section style="background:linear-gradient(135deg,${sec},#0f172a);color:#ffffff;padding:80px 24px;text-align:center">
-    <div style="max-width:640px;margin:0 auto">
-      <h2 style="font-family:'Space Grotesk',sans-serif;font-size:32px;font-weight:700;margin-bottom:16px">${s.headline}</h2>
-      <div style="font-size:16px;line-height:1.7;opacity:0.9;margin-bottom:32px">${s.content}</div>
-      ${phone ? `<a href="tel:${phone}" style="display:inline-block;background:${pri};color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:16px">📞 Jetzt anrufen</a>` : ''}
-      ${whatsapp ? `<a href="https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}" target="_blank" style="display:inline-block;background:#25d366;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:16px;margin-left:12px">💬 WhatsApp</a>` : ''}
-    </div>
-  </section>`;
-}
-
-function renderSpecs(s: LandingPageSection, img: string, colors: ReturnType<typeof getColors>): string {
-  const imgBlock = img ? `<div style="flex:1;min-width:280px"><img src="${img}" alt="${s.headline}" style="width:100%;border-radius:12px;object-fit:cover;max-height:420px" loading="lazy" /></div>` : '';
-  return renderSectionBase(colors.bg,
-    `<div style="max-width:960px;margin:0 auto">
-      <h2 style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;color:${colors.headlineColor};margin-bottom:32px;text-align:center">${s.headline}</h2>
-      <div style="display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start">
-        ${imgBlock}
-        <div style="flex:1;min-width:280px;font-size:14px;line-height:1.8;color:${colors.subColor}">${s.content}</div>
-      </div>
-    </div>`);
-}
-
-function renderComparison(s: LandingPageSection, colors: ReturnType<typeof getColors>): string {
-  return renderSectionBase(colors.bg,
-    `<div style="max-width:860px;margin:0 auto">
-      <h2 style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;color:${colors.headlineColor};margin-bottom:32px;text-align:center">${s.headline}</h2>
-      <div style="font-size:14px;line-height:1.8;color:${colors.subColor};overflow-x:auto">${s.content}</div>
-    </div>`);
-}
-
-function renderBenefits(s: LandingPageSection, colors: ReturnType<typeof getColors>): string {
-  return renderSectionBase(colors.bg,
-    `<div style="max-width:960px;margin:0 auto;text-align:center">
-      <h2 style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;color:${colors.headlineColor};margin-bottom:40px">${s.headline}</h2>
-      <div style="font-size:15px;line-height:1.8;color:${colors.subColor}">${s.content}</div>
-    </div>`);
-}
-
-function renderGallery(s: LandingPageSection, img: string, colors: ReturnType<typeof getColors>): string {
-  return renderSectionBase(colors.bg,
-    `<div style="max-width:960px;margin:0 auto">
-      <h2 style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;color:${colors.headlineColor};margin-bottom:32px;text-align:center">${s.headline}</h2>
-      ${img ? `<img src="${img}" alt="${s.headline}" style="width:100%;border-radius:12px;object-fit:cover;max-height:500px" loading="lazy" />` : ''}
-      <div style="font-size:15px;line-height:1.8;color:${colors.subColor};margin-top:20px">${s.content}</div>
-    </div>`);
-}
-
-function renderContentWithImage(s: LandingPageSection, img: string, idx: number, colors: ReturnType<typeof getColors>): string {
-  const imageOnLeft = idx % 2 === 0;
+  const bg = bgMap[s.bgStyle] || '#ffffff';
   const isDark = s.bgStyle === 'dark' || s.bgStyle === 'accent';
-  const overlayGradient = imageOnLeft
-    ? isDark
-      ? "linear-gradient(to right, rgba(15,23,42,0.0) 0%, rgba(15,23,42,0.0) 40%, rgba(15,23,42,0.95) 50%, rgba(15,23,42,1) 55%)"
-      : "linear-gradient(to right, rgba(255,255,255,0.0) 0%, rgba(255,255,255,0.0) 40%, rgba(255,255,255,0.95) 50%, rgba(255,255,255,1) 55%)"
-    : isDark
-      ? "linear-gradient(to left, rgba(15,23,42,0.0) 0%, rgba(15,23,42,0.0) 40%, rgba(15,23,42,0.95) 50%, rgba(15,23,42,1) 55%)"
-      : "linear-gradient(to left, rgba(255,255,255,0.0) 0%, rgba(255,255,255,0.0) 40%, rgba(255,255,255,0.95) 50%, rgba(255,255,255,1) 55%)";
-  const textPadding = imageOnLeft ? "padding:64px 48px 64px 55%" : "padding:64px 55% 64px 48px";
-  const bgPos = imageOnLeft ? "left center" : "right center";
+  const textColor = isDark ? '#ffffff' : '#0f172a';
+  const bodyColor = isDark ? 'rgba(255,255,255,0.85)' : '#475569';
 
-  return `<section style="position:relative;min-height:420px;overflow:hidden;${colors.bg}">
-  <div style="position:absolute;inset:0;background:url('${img}') ${bgPos}/50% 100% no-repeat"></div>
-  <div style="position:absolute;inset:0;background:${overlayGradient}"></div>
-  <div style="position:relative;z-index:1;max-width:1200px;margin:0 auto;${textPadding}">
-    <h2 style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;color:${colors.headlineColor};margin-bottom:16px">${s.headline}</h2>
-    <div style="font-size:15px;line-height:1.8;color:${colors.subColor}">${s.content}</div>
+  if (s.type === 'cta') {
+    return `<section style="background:linear-gradient(135deg,${primary},#0b1220);color:#fff;padding:88px 24px;text-align:center">
+  <div style="max-width:720px;margin:0 auto">
+    <h2 style="font-size:36px;font-weight:700;margin-bottom:16px;color:#fff">${escapeHtml(s.headline)}</h2>
+    <div class="lp-body-html" style="font-size:17px;opacity:0.9;margin-bottom:32px">${s.content || ''}</div>
+    <div style="display:inline-flex;gap:12px;flex-wrap:wrap;justify-content:center">
+      ${phone ? `<a href="tel:${phone}" style="background:${secondary};color:${onSec};padding:14px 28px;border-radius:12px;font-weight:600;text-decoration:none">📞 Anrufen</a>` : ''}
+      ${whatsapp ? `<a href="https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}" target="_blank" rel="noopener" style="background:#25d366;color:#fff;padding:14px 28px;border-radius:12px;font-weight:600;text-decoration:none">💬 WhatsApp</a>` : ''}
+    </div>
+  </div>
+</section>`;
+  }
+
+  const isFullWidth = ['steps', 'faq', 'comparison', 'benefits'].includes(s.type) || (!image && !s.imagePrompt);
+
+  if (isFullWidth) {
+    return `<section style="background:${bg}">
+  <div style="max-width:900px;margin:0 auto;padding:96px 32px">
+    <h2 style="font-size:34px;font-weight:700;margin-bottom:24px;text-align:center;color:${textColor}">${escapeHtml(s.headline)}</h2>
+    <div class="lp-body-html" style="font-size:16px;color:${bodyColor};line-height:1.75">${s.content || ''}</div>
+  </div>
+</section>`;
+  }
+
+  if (s.type === 'gallery' || s.type === 'specs') {
+    return `<section style="background:${bg}">
+  <div style="max-width:1100px;margin:0 auto;padding:96px 32px">
+    <h2 style="font-size:34px;font-weight:700;margin-bottom:32px;text-align:center;color:${textColor}">${escapeHtml(s.headline)}</h2>
+    ${image ? `<div style="aspect-ratio:16/9;border-radius:16px;overflow:hidden;background:${rgba(primary, 0.06)};margin-bottom:28px"><img src="${image}" alt="${escapeHtml(s.headline)}" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy" decoding="async"/></div>` : ''}
+    <div class="lp-body-html" style="font-size:16px;color:${bodyColor};line-height:1.75">${s.content || ''}</div>
+  </div>
+</section>`;
+  }
+
+  // Editorial split
+  const imageOnLeft = idx % 2 === 0;
+  const imgHtml = `<div style="aspect-ratio:4/3;border-radius:16px;overflow:hidden;background:${rgba(primary, 0.06)}">${image ? `<img src="${image}" alt="${escapeHtml(s.headline)}" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy" decoding="async"/>` : ''}</div>`;
+  const textHtml = `<div>
+    <div style="font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:${isDark ? 'rgba(255,255,255,0.6)' : primary};margin-bottom:14px">${`0${idx + 1}`.slice(-2)}</div>
+    <h2 style="font-size:32px;font-weight:700;margin-bottom:20px;line-height:1.15;color:${textColor}">${escapeHtml(s.headline)}</h2>
+    <div class="lp-body-html" style="font-size:16px;color:${bodyColor};line-height:1.75">${s.content || ''}</div>
+  </div>`;
+
+  return `<section style="background:${bg}">
+  <div style="max-width:1200px;margin:0 auto;padding:96px 32px">
+    <div class="lp-split" style="display:grid;grid-template-columns:${imageOnLeft ? '1.1fr 1fr' : '1fr 1.1fr'};gap:56px;align-items:center">
+      ${imageOnLeft ? imgHtml + textHtml : textHtml + imgHtml}
+    </div>
   </div>
 </section>`;
 }
 
-function renderContentOnly(s: LandingPageSection, colors: ReturnType<typeof getColors>): string {
-  return renderSectionBase(colors.bg,
-    `<div style="max-width:760px;margin:0 auto">
-      <h2 style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;color:${colors.headlineColor};margin-bottom:20px;text-align:center">${s.headline}</h2>
-      <div style="font-size:15px;line-height:1.8;color:${colors.subColor}">${s.content}</div>
-    </div>`);
-}
-
-// ─── Main Builder ───
+/* ─── Main builder ─── */
 
 export function buildLandingPageHTML(
   content: LandingPageContent,
@@ -177,60 +160,36 @@ export function buildLandingPageHTML(
   brandLogoUrl?: string,
   contactForm?: LandingPageContactForm
 ): string {
-  const meta = content.meta || {} as any;
-  const hero = content.hero || {} as any;
+  const meta = content.meta || ({} as any);
+  const hero = content.hero || ({} as any);
   const sections = content.sections || [];
-  const seo = content.seo || {} as any;
+  const seo = content.seo || ({} as any);
+
+  const primary = /^#[0-9a-fA-F]{6}$/.test(dealer.primaryColor || '') ? dealer.primaryColor! : '#174f6b';
+  const secondary = /^#[0-9a-fA-F]{6}$/.test(dealer.secondaryColor || '') ? dealer.secondaryColor! : '#e2b04a';
+  const onPrimary = readableOn(primary);
+  const onSecondary = readableOn(secondary);
 
   const heroImage = images.hero || '';
-  const dealerName = dealer?.name || '';
-  const dealerLogo = dealer?.logoUrl || '';
-  const phone = dealer?.phone || '';
-  const email = dealer?.email || '';
-  const website = dealer?.website || '';
-  const whatsapp = dealer?.whatsappNumber || '';
-  const address = [dealer?.address, dealer?.postalCode, dealer?.city].filter(Boolean).join(', ');
-  const PRIMARY = (dealer?.primaryColor && /^#[0-9a-fA-F]{6}$/.test(dealer.primaryColor)) ? dealer.primaryColor : '#3b82f6';
-  const SECONDARY = (dealer?.secondaryColor && /^#[0-9a-fA-F]{6}$/.test(dealer.secondaryColor)) ? dealer.secondaryColor : '#1e3a5f';
-  __PRIMARY = PRIMARY; __SECONDARY = SECONDARY;
-
-  const socials = [
-    dealer?.facebookUrl && `<a href="${dealer.facebookUrl}" target="_blank" style="color:#94a3b8;text-decoration:none">Facebook</a>`,
-    dealer?.instagramUrl && `<a href="${dealer.instagramUrl}" target="_blank" style="color:#94a3b8;text-decoration:none">Instagram</a>`,
-    dealer?.youtubeUrl && `<a href="${dealer.youtubeUrl}" target="_blank" style="color:#94a3b8;text-decoration:none">YouTube</a>`,
-    dealer?.tiktokUrl && `<a href="${dealer.tiktokUrl}" target="_blank" style="color:#94a3b8;text-decoration:none">TikTok</a>`,
-  ].filter(Boolean).join(' · ');
+  const dealerName = dealer.name || '';
+  const dealerLogo = dealer.logoUrl || '';
+  const phone = dealer.phone || '';
+  const email = dealer.email || '';
+  const website = dealer.website || '';
+  const whatsapp = dealer.whatsappNumber || '';
+  const address = [dealer.address, dealer.postalCode, dealer.city].filter(Boolean).join(', ');
 
   const jsonLd = seo.structuredData
     ? `<script type="application/ld+json">${JSON.stringify(seo.structuredData)}</script>`
     : '';
-
   const ogImage = heroImage ? `<meta property="og:image" content="${heroImage}">` : '';
 
-  const logoHeader = [
-    brandLogoUrl ? `<img src="${brandLogoUrl}" alt="${brand}" style="max-height:32px" />` : '',
-    dealerLogo ? `<img src="${dealerLogo}" alt="${dealerName}" style="max-height:40px" />` : '',
-  ].filter(Boolean).join('');
+  const heroCtaText = hero.ctaText || 'Jetzt anfragen';
+  const heroHeadline = hero.headline || `${brand} ${model}`;
+  const heroSub = hero.subheadline || '';
 
   const sectionBlocks = sections
-    .map((s, idx) => {
-      const img = images[s.id] || '';
-      const colors = getColors(s.bgStyle);
-
-      switch (s.type) {
-        case 'steps': return renderSteps(s, colors);
-        case 'faq': return renderFaq(s, colors);
-        case 'cta': return renderCta(s, phone, whatsapp);
-        case 'specs': return renderSpecs(s, img, colors);
-        case 'comparison': return renderComparison(s, colors);
-        case 'benefits': return renderBenefits(s, colors);
-        case 'gallery': return renderGallery(s, img, colors);
-        default:
-          return img
-            ? renderContentWithImage(s, img, idx, colors)
-            : renderContentOnly(s, colors);
-      }
-    })
+    .map((s, idx) => renderSection(s, idx, images[s.id] || '', primary, secondary, onSecondary, phone, whatsapp))
     .join('\n');
 
   const contactFormHTML = contactForm
@@ -249,77 +208,87 @@ export function buildLandingPageHTML(
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${meta.title || `${brand} ${model}`}</title>
-  <meta name="description" content="${meta.description || ''}">
-  <meta name="keywords" content="${(seo.keywords || []).join(', ')}">
+  <title>${escapeHtml(meta.title || `${brand} ${model}`)}</title>
+  <meta name="description" content="${escapeHtml(meta.description || '')}">
+  <meta name="keywords" content="${(seo.keywords || []).map(escapeHtml).join(', ')}">
   <link rel="canonical" href="${website || '#'}">
-  <meta property="og:title" content="${meta.title || `${brand} ${model}`}">
-  <meta property="og:description" content="${meta.description || ''}">
+  <meta property="og:title" content="${escapeHtml(meta.title || `${brand} ${model}`)}">
+  <meta property="og:description" content="${escapeHtml(meta.description || '')}">
   <meta property="og:type" content="website">
   ${ogImage}
   ${jsonLd}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+    :root{--lp-primary:${primary};--lp-primary-on:${onPrimary};--lp-secondary:${secondary};--lp-secondary-on:${onSecondary};--lp-tint:${rgba(primary, 0.06)};--lp-border:${rgba(primary, 0.14)}}
     *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:'Inter',sans-serif;color:#1e293b;background:#ffffff}
-    img{max-width:100%}
-    a{color:${__PRIMARY}}
-    h1,h2,h3{font-family:'Space Grotesk',sans-serif}
-    h3{font-size:18px;font-weight:600;margin:20px 0 8px}
-    ul,ol{padding-left:20px}
-    li{margin-bottom:8px}
-    table{width:100%;border-collapse:collapse;margin:16px 0}
-    th,td{padding:10px 14px;border:1px solid #e2e8f0;text-align:left;font-size:13px}
-    th{background:#f1f5f9;font-weight:600;font-family:'Space Grotesk',sans-serif}
+    body{font-family:'Inter',ui-sans-serif,system-ui,sans-serif;color:#0f172a;background:#fff;-webkit-font-smoothing:antialiased}
+    img{max-width:100%;display:block}
+    a{color:var(--lp-primary);text-decoration:none}
+    h1,h2,h3{font-family:'Space Grotesk',ui-sans-serif,system-ui,sans-serif;letter-spacing:-0.01em;color:#0f172a}
+    .lp-body-html h3{font-size:17px;font-weight:600;margin:18px 0 8px}
+    .lp-body-html ul,.lp-body-html ol{padding-left:20px;margin:8px 0}
+    .lp-body-html li{margin-bottom:6px}
+    .lp-body-html p{margin-bottom:10px}
+    .lp-body-html table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px}
+    .lp-body-html th,.lp-body-html td{padding:8px 12px;border:1px solid var(--lp-border);text-align:left}
+    .lp-body-html th{background:var(--lp-tint);font-weight:600}
     @media(max-width:768px){
-      .hero-content{padding:40px 20px !important}
-      .hero-content h1{font-size:28px !important}
-      table{font-size:12px}
-      th,td{padding:6px 8px}
-      section[style*="min-height:420px"] > div:last-child{padding:40px 24px !important}
-      section[style*="min-height:420px"] > div:first-child{background-size:cover !important}
-      section[style*="min-height:420px"] > div:nth-child(2){background:linear-gradient(to bottom,rgba(0,0,0,0) 0%,rgba(255,255,255,0.9) 30%,rgba(255,255,255,1) 40%) !important}
+      section > div{padding:56px 20px !important}
+      .lp-split{grid-template-columns:1fr !important;gap:24px !important}
+      h1{font-size:32px !important;line-height:1.15 !important}
+      h2{font-size:26px !important}
     }
   </style>
 </head>
 <body>
-  <header style="background:#ffffff;border-bottom:1px solid #e2e8f0;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100">
-    <div style="display:flex;align-items:center;gap:12px">
-      ${logoHeader}
-      <span style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px;color:#0f172a">${dealerName}</span>
+  <header style="position:sticky;top:0;z-index:50;background:rgba(255,255,255,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--lp-border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px">
+    <div style="display:flex;align-items:center;gap:14px">
+      ${brandLogoUrl ? `<img src="${brandLogoUrl}" alt="${escapeHtml(brand)}" style="height:30px;width:auto"/>` : ''}
+      ${dealerLogo ? `<img src="${dealerLogo}" alt="${escapeHtml(dealerName)}" style="height:34px;width:auto"/>` : ''}
+      ${!dealerLogo && dealerName ? `<span style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px">${escapeHtml(dealerName)}</span>` : ''}
     </div>
-    ${phone ? `<a href="tel:${phone}" style="background:${__PRIMARY};color:#fff;padding:8px 20px;border-radius:6px;text-decoration:none;font-size:13px;font-weight:600">Jetzt anfragen</a>` : ''}
+    ${phone ? `<a href="tel:${phone}" style="background:var(--lp-primary);color:var(--lp-primary-on);padding:10px 20px;border-radius:10px;font-size:14px;font-weight:600">Jetzt anfragen</a>` : ''}
   </header>
 
-  <section style="position:relative;min-height:480px;display:flex;align-items:center;overflow:hidden;${heroImage ? `background:url('${heroImage}') center/cover no-repeat` : 'background:linear-gradient(135deg,#0f172a,${__SECONDARY})'}">
-    <div style="position:absolute;inset:0;background:linear-gradient(to right,rgba(15,23,42,0.85) 0%,rgba(15,23,42,0.4) 100%)"></div>
-    <div class="hero-content" style="position:relative;z-index:1;max-width:640px;padding:80px 48px;color:#ffffff">
-      <h1 style="font-family:'Space Grotesk',sans-serif;font-size:42px;font-weight:800;line-height:1.15;margin-bottom:16px">${hero.headline || `${brand} ${model}`}</h1>
-      <p style="font-size:18px;line-height:1.6;opacity:0.9;margin-bottom:32px">${hero.subheadline || ''}</p>
-      ${hero.ctaText ? `<a href="#kontakt" style="display:inline-block;background:${__PRIMARY};color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:16px">${hero.ctaText}</a>` : ''}
+  <section style="position:relative;min-height:560px;overflow:hidden;background:#0b1220">
+    <div style="display:grid;grid-template-columns:1fr 1fr;min-height:560px" class="lp-split">
+      <div style="display:flex;flex-direction:column;justify-content:center;padding:80px 56px;background:linear-gradient(135deg,#0b1220 0%,${primary} 130%);color:#fff;min-height:420px">
+        <div style="max-width:520px">
+          <div style="display:inline-flex;align-items:center;padding:6px 12px;border-radius:999px;background:${rgba(secondary, 0.2)};border:1px solid ${rgba(secondary, 0.4)};color:${secondary};font-size:12px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:20px">${escapeHtml(brand)}</div>
+          <h1 style="font-size:52px;font-weight:800;line-height:1.05;margin-bottom:20px;color:#fff">${escapeHtml(heroHeadline)}</h1>
+          <p style="font-size:19px;line-height:1.55;color:rgba(255,255,255,0.85);margin-bottom:36px">${escapeHtml(heroSub)}</p>
+          <div style="display:flex;gap:12px;flex-wrap:wrap">
+            <a href="#kontakt" style="display:inline-flex;align-items:center;background:${secondary};color:${onSecondary};padding:14px 28px;border-radius:12px;font-weight:600;font-size:15px">${escapeHtml(heroCtaText)}</a>
+            ${whatsapp ? `<a href="https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;background:rgba(255,255,255,0.1);color:#fff;padding:14px 28px;border-radius:12px;font-weight:600;font-size:15px;border:1px solid rgba(255,255,255,0.2)">💬 WhatsApp</a>` : ''}
+          </div>
+        </div>
+      </div>
+      <div style="position:relative;min-height:420px;background:#0f172a">
+        ${heroImage ? `<img src="${heroImage}" alt="${escapeHtml(brand)} ${escapeHtml(model)}" style="width:100%;height:100%;object-fit:cover;display:block" loading="eager" decoding="async"/>` : ''}
+      </div>
     </div>
   </section>
 
   ${sectionBlocks}
 
-  <section id="kontakt" style="background:#f8fafc;padding:64px 24px;border-top:1px solid #e2e8f0">
-    <div style="max-width:760px;margin:0 auto;text-align:center">
-      ${dealerLogo ? `<img src="${dealerLogo}" alt="${dealerName}" style="max-height:56px;margin-bottom:16px" />` : ''}
-      <h2 style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;margin-bottom:8px">${dealerName}</h2>
-      ${address ? `<p style="color:#64748b;font-size:14px;margin-bottom:4px">${address}</p>` : ''}
-      <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:16px;margin-top:16px;font-size:14px">
-        ${phone ? `<a href="tel:${phone}" style="color:${__PRIMARY};text-decoration:none">📞 ${phone}</a>` : ''}
-        ${email ? `<a href="mailto:${email}" style="color:${__PRIMARY};text-decoration:none">✉️ ${email}</a>` : ''}
-        ${website ? `<a href="${website.startsWith('http') ? website : 'https://' + website}" target="_blank" style="color:${__PRIMARY};text-decoration:none">🌐 Website</a>` : ''}
-        ${whatsapp ? `<a href="https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}" target="_blank" style="color:#25d366;text-decoration:none">💬 WhatsApp</a>` : ''}
+  <section id="kontakt" style="background:var(--lp-tint);border-top:1px solid var(--lp-border);padding:80px 24px">
+    <div style="max-width:960px;margin:0 auto;text-align:center">
+      ${dealerLogo ? `<img src="${dealerLogo}" alt="${escapeHtml(dealerName)}" style="height:56px;margin:0 auto 20px"/>` : ''}
+      <h2 style="font-size:30px;font-weight:700;margin-bottom:10px">${escapeHtml(dealerName)}</h2>
+      ${address ? `<p style="color:#64748b;font-size:15px;margin-bottom:20px">${escapeHtml(address)}</p>` : ''}
+      <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:14px;margin-top:20px">
+        ${phone ? `<a href="tel:${phone}" style="display:inline-flex;align-items:center;padding:10px 18px;border-radius:999px;background:#fff;color:${primary};border:1px solid ${rgba(primary, 0.2)};font-size:14px;font-weight:600">📞 ${escapeHtml(phone)}</a>` : ''}
+        ${email ? `<a href="mailto:${email}" style="display:inline-flex;align-items:center;padding:10px 18px;border-radius:999px;background:#fff;color:${primary};border:1px solid ${rgba(primary, 0.2)};font-size:14px;font-weight:600">✉ ${escapeHtml(email)}</a>` : ''}
+        ${whatsapp ? `<a href="https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;padding:10px 18px;border-radius:999px;background:#25d366;color:#fff;border:1px solid #25d366;font-size:14px;font-weight:600">💬 WhatsApp</a>` : ''}
       </div>
-      ${socials ? `<div style="margin-top:16px;font-size:13px">${socials}</div>` : ''}
     </div>
   </section>
 
-  <footer style="background:#0f172a;color:#94a3b8;padding:32px 24px;text-align:center;font-size:12px">
-    <p>&copy; ${new Date().getFullYear()} ${dealerName}. Alle Angaben ohne Gewähr.</p>
-    ${dealer?.defaultLegalText ? `<p style="margin-top:8px;max-width:640px;margin-left:auto;margin-right:auto;line-height:1.6">${dealer.defaultLegalText}</p>` : ''}
+  <footer style="background:#0b1220;color:#94a3b8;padding:32px 24px;text-align:center;font-size:12px">
+    <p>© ${new Date().getFullYear()} ${escapeHtml(dealerName)}. Alle Angaben ohne Gewähr.</p>
+    ${dealer.defaultLegalText ? `<p style="margin-top:10px;max-width:800px;margin-left:auto;margin-right:auto;line-height:1.6">${escapeHtml(dealer.defaultLegalText)}</p>` : ''}
   </footer>
 
   ${contactFormHTML}
