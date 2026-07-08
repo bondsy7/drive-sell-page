@@ -149,9 +149,11 @@ export default function VehicleView() {
       const { data } = await supabase.storage.from('vehicle-images').list(`${prefix}/videos`, { limit: 200, sortBy: { column: 'created_at', order: 'desc' } });
       return (data || []).filter(f => f.name && !f.name.startsWith('.')).map(f => ({
         name: f.name,
+        fullPath: `${prefix}/videos/${f.name}`,
         url: supabase.storage.from('vehicle-images').getPublicUrl(`${prefix}/videos/${f.name}`).data.publicUrl,
         created_at: f.created_at || '',
       }));
+
     },
   });
 
