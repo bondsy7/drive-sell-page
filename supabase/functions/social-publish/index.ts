@@ -51,6 +51,22 @@ Deno.serve(async (req) => {
     const userId = claimsData?.claims?.sub;
     if (claimsErr || !userId) return json({ error: "unauthorized" }, 401);
 
+    // ── Status check (no tokens exposed) ─────────────────────
+    const rawBody = await req.text();
+    const parsedBody = rawBody ? (() => { try { return JSON.parse(rawBody); } catch { return null; } })() : null;
+    if (parsedBody && parsedBody.action === "status") {
+      const [igTok, igId, fbId, fbTok] = await Promise.all([
+        getSecret("META_ACCESS_TOKEN", admin),
+        getSecret("META_IG_USER_ID", admin),
+        getSecret("META_FACEBOOK_PAGE_ID", admin),
+        getSecret("META_PAGE_ACCESS_TOKEN", admin),
+      ]);
+      return json({
+        instagram: { configured: !!(igTok && igId) },
+        facebook: { configured: !!(fbId && fbTok) },
+      });
+    }
+
     // ── Input ────────────────────────────────────────────────
     const body = (await req.json().catch(() => null)) as PublishPayload | null;
     if (!body) return json({ error: "invalid_body" }, 400);
