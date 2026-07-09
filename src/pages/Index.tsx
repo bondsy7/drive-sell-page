@@ -118,10 +118,15 @@ const Index = () => {
     if (appState === 'hub') {
       if (currentPath !== '/generator') navigate(`/generator${search}`, { replace: true });
     } else if (toolSlug) {
+      // Do NOT push back to a tool URL when the user just navigated to bare `/generator`
+      // (e.g. clicking "Neues Fahrzeug"). The URL→state effect will reset appState to 'hub'
+      // on the next tick; forcing navigation here caused a bounce /generator → /generator/<tool>.
+      if (currentPath === '/generator') return;
       const target = `/generator/${toolSlug}`;
       if (currentPath !== target) navigate(`${target}${search}`, { replace: true });
     }
   }, [appState, navigate]);
+
 
   // Preload deep-linked vehicle: existing data (incl. VIN-lookup results) + gallery images
   useEffect(() => {
