@@ -299,8 +299,13 @@ const Profile = () => {
       default_legal_text: profile.default_legal_text || null,
       primary_color: profile.primary_color || null,
       secondary_color: profile.secondary_color || null,
+      auto3_account_email: profile.auto3_account_email.trim() || null,
+      auto3_channels_default: profile.auto3_channels_default,
+      auto3_default_caption: profile.auto3_default_caption || null,
+      auto3_default_cta_url: profile.auto3_default_cta_url || null,
       updated_at: new Date().toISOString(),
-    }).eq('id', user.id);
+    } as any).eq('id', user.id);
+
     await saveBanks();
     setSaving(false);
     if (error) { toast.error('Fehler beim Speichern'); console.error(error); return; }
