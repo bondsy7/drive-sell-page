@@ -1,9 +1,13 @@
 import { useState } from 'react';
-import { LayoutGrid, Download, Trash2, Share2 } from 'lucide-react';
+import { LayoutGrid, Download, Trash2, Share2, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 import { type BannerFile } from './types';
 import BannerLightbox from './BannerLightbox';
 import SocialPublishModal from './SocialPublishModal';
+import Auto3PublishDialog from './Auto3PublishDialog';
+import { useAuto3Config } from '@/hooks/useAuto3Config';
+
 
 interface Props {
   banners: BannerFile[];
