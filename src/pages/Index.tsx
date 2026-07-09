@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Sparkles } from 'lucide-react';
@@ -93,18 +93,25 @@ const Index = () => {
     return 'hub';
   });
 
-  // Sync URL → appState (so clicking "Neues Fahrzeug" while already inside a tool resets back to the hub)
+  // When the URL changed externally (e.g. click on "Neues Fahrzeug" Link),
+  // we must NOT immediately re-push a tool URL from the stale appState.
+  // This ref is set whenever the URL→state effect adjusts appState to match
+  // the current path; the state→URL effect then skips that one run.
+  const suppressUrlSyncRef = useRef(false);
+
+  // Sync URL → appState
   useEffect(() => {
     const currentSlug = STATE_TO_TOOL[appState];
     if (!tool) {
-      // /generator (no tool) → hub, unless we're already there
       if (appState !== 'hub' && currentSlug !== undefined) {
+        suppressUrlSyncRef.current = true;
         setAppState('hub');
       }
       return;
     }
     const targetState = TOOL_TO_STATE[tool];
     if (targetState && targetState !== appState && currentSlug !== tool) {
+      suppressUrlSyncRef.current = true;
       setAppState(targetState);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -112,20 +119,21 @@ const Index = () => {
 
   // Sync appState → URL (preserve query params like ?vehicle=...&image=...)
   useEffect(() => {
+    if (suppressUrlSyncRef.current) {
+      suppressUrlSyncRef.current = false;
+      return;
+    }
     const toolSlug = STATE_TO_TOOL[appState];
     const currentPath = window.location.pathname;
     const search = window.location.search;
     if (appState === 'hub') {
       if (currentPath !== '/generator') navigate(`/generator${search}`, { replace: true });
     } else if (toolSlug) {
-      // Do NOT push back to a tool URL when the user just navigated to bare `/generator`
-      // (e.g. clicking "Neues Fahrzeug"). The URL→state effect will reset appState to 'hub'
-      // on the next tick; forcing navigation here caused a bounce /generator → /generator/<tool>.
-      if (currentPath === '/generator') return;
       const target = `/generator/${toolSlug}`;
       if (currentPath !== target) navigate(`${target}${search}`, { replace: true });
     }
   }, [appState, navigate]);
+
 
 
   // Preload deep-linked vehicle: existing data (incl. VIN-lookup results) + gallery images
