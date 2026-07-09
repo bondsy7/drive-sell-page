@@ -512,34 +512,10 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
         isPluginHybrid: !!(ext.consumptionElectric || ext.consumptionCombinedDischarged || ext.co2ClassDischarged),
       });
 
-      const financeParts: string[] = [];
-      const pushFin = (label: string, value?: string) => {
-        if (!value || isDatOnlyValue(value)) return;
-        financeParts.push(`${label}: ${value}`);
-      };
-      pushFin('Rate', ext.monthlyRate);
-      pushFin('Laufzeit', ext.duration ? `${ext.duration} Mon.` : '');
-      pushFin('Fahrleistung', ext.mileage ? `${ext.mileage}/Jahr` : '');
-      pushFin('Anzahlung', ext.downPayment);
-      pushFin('Sonderzahlung', ext.specialPayment);
-      pushFin('Schlussrate', ext.residualValue);
-      pushFin('Effektiver Jahreszins', ext.effectiveInterestRate);
-      pushFin('Sollzins (geb.)', ext.fixedInterestRate);
-      pushFin('Gesamtbetrag', ext.totalAmount);
-      pushFin('Bank', ext.financingBank || ext.leasingBank);
-
-      // Optionale weitere Verbraucherinfos (nicht aus DAT)
-      if (ext.electricRange && !isDatOnlyValue(ext.electricRange)) {
-        financeParts.push(`E-Reichweite: ${ext.electricRange}`);
-      }
-
-      if (ext.legalText && !isDatOnlyValue(ext.legalText)) {
-        financeParts.push(ext.legalText);
-      }
-
-      const combined = [envkvLine, ...financeParts].filter(Boolean).join(' | ');
-      if (combined) {
-        setLegalText(prev => prev ? `${prev}${prev.endsWith('|') ? '' : ' | '}${combined}` : combined);
+      // Kompakte Pflichtangabe. Lange Fülltexte (Richtlinie 1999/94/EG-Blöcke etc.) werden
+      // ausgelassen. Leasing-/Finanzierungs-Rechtstexte kommen aus dem User-Profil / Bank.
+      if (envkvLine) {
+        setLegalText(prev => prev ? `${prev}${prev.endsWith('|') ? '' : ' | '}${envkvLine}` : envkvLine);
       }
 
       if (ext.brand) {
