@@ -117,7 +117,7 @@ Deno.serve(async (req) => {
         return json(v.ok ? { ok: true, name: v.name } : { ok: false, error: v.error });
       }
       if (platform === "x") {
-        if (!xCreds) return json({ ok: false, error: "X.com nicht konfiguriert (Environment Variables fehlen)" });
+        if (!xCreds) return json({ ok: false, error: "X.com nicht konfiguriert – bitte im Profil hinterlegen" });
         const v = await verifyX(xCreds);
         return json(v.ok ? { ok: true, name: v.screenName ? "@" + v.screenName : undefined } : { ok: false, error: v.error });
       }
