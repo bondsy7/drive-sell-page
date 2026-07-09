@@ -18,6 +18,8 @@ export interface XCreds {
   accessTokenSecret: string;
 }
 
+type XFailure = { ok: false; error: string; status?: number; stage?: string };
+
 export function loadXCreds(): XCreds | null {
   const apiKey = Deno.env.get("X_API_KEY");
   const apiSecret = Deno.env.get("X_API_KEY_SECRET");
@@ -105,7 +107,7 @@ async function buildAuthHeader(
 // ────────────────────────────────────────────────────────────
 export async function verifyCredentials(
   creds: XCreds,
-): Promise<{ ok: true; screenName?: string; userId?: string } | { ok: false; error: string; status?: number }> {
+): Promise<{ ok: true; screenName?: string; userId?: string } | XFailure> {
   const url = `${VERIFY_URL}?skip_status=true&include_entities=false`;
   const auth = await buildAuthHeader("GET", url, {
     skip_status: "true",
@@ -114,7 +116,7 @@ export async function verifyCredentials(
   const res = await fetch(url, { headers: { Authorization: auth } });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    return { ok: false, status: res.status, error: humanizeXError(res.status, body) };
+    return { ok: false, status: res.status, stage: "verify_credentials", error: humanizeXError(res.status, body, "verify_credentials") };
   }
   const j: any = await res.json().catch(() => ({}));
   return { ok: true, screenName: j.screen_name, userId: j.id_str };
@@ -126,7 +128,7 @@ export async function verifyCredentials(
 export async function uploadImage(
   creds: XCreds,
   imageUrl: string,
-): Promise<{ ok: true; mediaId: string } | { ok: false; error: string }> {
+): Promise<{ ok: true; mediaId: string } | XFailure> {
   const fetched = await fetchMedia(imageUrl);
   if (!fetched.ok) return { ok: false, error: fetched.error };
 
@@ -142,7 +144,7 @@ export async function uploadImage(
   });
   const j: any = await res.json().catch(() => ({}));
   if (!res.ok || !j.media_id_string) {
-    return { ok: false, error: humanizeXError(res.status, JSON.stringify(j)) };
+    return { ok: false, status: res.status, stage: "media_upload_image", error: humanizeXError(res.status, JSON.stringify(j), "media_upload_image") };
   }
   return { ok: true, mediaId: j.media_id_string };
 }
@@ -153,7 +155,7 @@ export async function uploadImage(
 export async function uploadVideo(
   creds: XCreds,
   videoUrl: string,
-): Promise<{ ok: true; mediaId: string } | { ok: false; error: string }> {
+): Promise<{ ok: true; mediaId: string } | XFailure> {
   const fetched = await fetchMedia(videoUrl, 512 * 1024 * 1024);
   if (!fetched.ok) return { ok: false, error: fetched.error };
   const bytes = fetched.bytes;
@@ -178,7 +180,7 @@ export async function uploadVideo(
   });
   const initJson: any = await initRes.json().catch(() => ({}));
   if (!initRes.ok || !initJson.media_id_string) {
-    return { ok: false, error: humanizeXError(initRes.status, JSON.stringify(initJson)) };
+    return { ok: false, status: initRes.status, stage: "media_upload_video_init", error: humanizeXError(initRes.status, JSON.stringify(initJson), "media_upload_video_init") };
   }
   const mediaId = initJson.media_id_string as string;
 
@@ -202,7 +204,7 @@ export async function uploadVideo(
     });
     if (!appendRes.ok) {
       const body = await appendRes.text().catch(() => "");
-      return { ok: false, error: humanizeXError(appendRes.status, body) };
+      return { ok: false, status: appendRes.status, stage: "media_upload_video_append", error: humanizeXError(appendRes.status, body, "media_upload_video_append") };
     }
     // 2xx returns empty body on APPEND — nothing to parse
     await appendRes.text().catch(() => "");
@@ -222,7 +224,7 @@ export async function uploadVideo(
   });
   const finJson: any = await finRes.json().catch(() => ({}));
   if (!finRes.ok) {
-    return { ok: false, error: humanizeXError(finRes.status, JSON.stringify(finJson)) };
+    return { ok: false, status: finRes.status, stage: "media_upload_video_finalize", error: humanizeXError(finRes.status, JSON.stringify(finJson), "media_upload_video_finalize") };
   }
 
   // STATUS — poll if async processing required
@@ -238,7 +240,7 @@ async function pollVideoStatus(
   creds: XCreds,
   mediaId: string,
   initialInfo: any,
-): Promise<{ ok: true } | { ok: false; error: string }> {
+): Promise<{ ok: true } | XFailure> {
   let info = initialInfo;
   const maxAttempts = 40;
   for (let i = 0; i < maxAttempts; i++) {
@@ -256,7 +258,7 @@ async function pollVideoStatus(
     const auth = await buildAuthHeader("GET", url, params, creds);
     const res = await fetch(url, { headers: { Authorization: auth } });
     const j: any = await res.json().catch(() => ({}));
-    if (!res.ok) return { ok: false, error: humanizeXError(res.status, JSON.stringify(j)) };
+    if (!res.ok) return { ok: false, status: res.status, stage: "media_upload_video_status", error: humanizeXError(res.status, JSON.stringify(j), "media_upload_video_status") };
     info = j?.processing_info ?? { state: "succeeded" };
   }
   return { ok: false, error: "Timeout: X.com Video-Verarbeitung dauerte zu lange" };
@@ -269,7 +271,7 @@ export async function postTweet(
   creds: XCreds,
   text: string,
   mediaIds: string[] = [],
-): Promise<{ ok: true; postId: string; url: string } | { ok: false; error: string }> {
+): Promise<{ ok: true; postId: string; url: string } | XFailure> {
   const url = `${API_BASE}/tweets`;
   // JSON body — not signed. Only oauth_* params contribute to signature.
   const auth = await buildAuthHeader("POST", url, {}, creds);
@@ -286,7 +288,7 @@ export async function postTweet(
   });
   const j: any = await res.json().catch(() => ({}));
   if (!res.ok || !j?.data?.id) {
-    return { ok: false, error: humanizeXError(res.status, JSON.stringify(j)) };
+    return { ok: false, status: res.status, stage: "create_tweet", error: humanizeXError(res.status, JSON.stringify(j), "create_tweet") };
   }
   const postId = j.data.id as string;
   return { ok: true, postId, url: `https://x.com/i/web/status/${postId}` };
@@ -313,14 +315,20 @@ async function fetchMedia(
   }
 }
 
-function humanizeXError(status: number, body: string): string {
+function humanizeXError(status: number, body: string, stage?: string): string {
   // Never surface raw tokens or full auth headers. body may contain provider messages.
   const safe = body.slice(0, 400);
   if (status === 401) return "X.com Authentifizierung fehlgeschlagen (401). Bitte X_API_KEY / X_ACCESS_TOKEN prüfen — Bearer Token darf für Posts nicht verwendet werden.";
   if (status === 403) {
     if (/duplicate/i.test(safe)) return "X.com hat den Post als Duplikat abgelehnt (403).";
     if (/write/i.test(safe) || /permission/i.test(safe)) return 'X.com App hat keine Schreibrechte (403). Im Developer Portal auf „Read and Write" umstellen und Access Token neu erzeugen.';
-    return "X.com Zugriff verweigert (403).";
+    if (stage?.startsWith("media_upload")) {
+      return "X.com Media-Upload verweigert (403). Der Account-Token ist gültig, aber X blockiert den Bild/Video-Upload für diese App bzw. diesen API-Zugang. Prüfe im X Developer Portal zusätzlich den API-Plan/Produktzugriff für Media Upload; reine Textposts können trotzdem funktionieren.";
+    }
+    if (stage === "create_tweet") {
+      return "X.com Tweet-Erstellung verweigert (403). Token ist gültig, aber X erlaubt dieser App aktuell kein Schreiben über /2/tweets oder hat den Inhalt blockiert.";
+    }
+    return "X.com Zugriff verweigert (403). Token ist gültig, aber X blockiert diese Aktion für App/API-Zugang oder Inhalt.";
   }
   if (status === 429) return "X.com Rate Limit erreicht (429). Bitte später erneut versuchen.";
   if (status === 413) return "X.com: Datei zu groß.";
