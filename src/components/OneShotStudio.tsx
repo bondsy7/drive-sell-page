@@ -1135,16 +1135,24 @@ This is the MARKETING MASTER (Hero) shot — push lighting one notch beyond the 
         ? realVin
         : `OS-${Date.now().toString(36).toUpperCase()}`;
 
-      const vehicleData = {
+      // Merge Datenblatt-Scan (Verbrauch, CO₂, Ausstattung, Leistung, …) in
+      // die Vehicle-Row, damit Banner/PDF/Landing-Page später direkt darauf
+      // zugreifen können. Form-Felder haben Vorrang, ScanData füllt Lücken.
+      const scanVData: any = scanData ? scanDataToVehicleData(scanData as Record<string, any>) : {};
+      const vehicleData: any = {
+        ...scanVData,
         vehicle: {
-          brand: form.brand,
-          model: form.model,
-          variant: form.variant,
-          color: '',
-          year: null as any,
+          ...(scanVData.vehicle || {}),
+          brand: form.brand || scanVData.vehicle?.brand || '',
+          model: form.model || scanVData.vehicle?.model || '',
+          variant: form.variant || scanVData.vehicle?.variant || '',
+          color: scanVData.vehicle?.color || '',
+          year: scanVData.vehicle?.year || null,
         },
       };
-      const newVehicleId = await ensureVehicle(user.id, effectiveVin, vehicleData);
+      const newVehicleId = savedVehicleId
+        ? (await mergeVehicleById(user.id, savedVehicleId, vehicleData)) || savedVehicleId
+        : await ensureVehicle(user.id, effectiveVin, vehicleData);
       if (!newVehicleId) {
         toast.error('Fahrzeug konnte nicht angelegt werden');
         return;
