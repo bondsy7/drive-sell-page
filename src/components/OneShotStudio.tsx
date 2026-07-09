@@ -651,9 +651,16 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
         setScanData(ext);
         mergeScanIntoForm(ext, 'datasheet');
         if (user?.id) {
-          const targetVin = (ext.vin || vin || '').toString();
-          const vid = await persistScanData(user.id, targetVin, ext as Record<string, any>);
-          if (vid) setSavedVehicleId(vid);
+          try {
+            const vData = scanDataToVehicleData(ext as Record<string, any>);
+            const targetVin = (ext.vin || vin || '').toString();
+            const vid = savedVehicleId
+              ? await mergeVehicleById(user.id, savedVehicleId, vData)
+              : await ensureVehicleAuto(user.id, targetVin, vData);
+            if (vid && vid !== savedVehicleId) setSavedVehicleId(vid);
+          } catch (e) {
+            console.warn('[OneShot] persist scanData (re-analyze) failed:', e);
+          }
         }
       }
     } finally {
