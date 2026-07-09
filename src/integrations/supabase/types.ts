@@ -2454,6 +2454,11 @@ export type Database = {
           ig_user_id: string | null
           updated_at: string
           user_id: string
+          x_access_token_encrypted: string | null
+          x_access_token_secret_encrypted: string | null
+          x_api_key_encrypted: string | null
+          x_api_secret_encrypted: string | null
+          x_screen_name: string | null
         }
         Insert: {
           created_at?: string
@@ -2463,6 +2468,11 @@ export type Database = {
           ig_user_id?: string | null
           updated_at?: string
           user_id: string
+          x_access_token_encrypted?: string | null
+          x_access_token_secret_encrypted?: string | null
+          x_api_key_encrypted?: string | null
+          x_api_secret_encrypted?: string | null
+          x_screen_name?: string | null
         }
         Update: {
           created_at?: string
@@ -2472,6 +2482,11 @@ export type Database = {
           ig_user_id?: string | null
           updated_at?: string
           user_id?: string
+          x_access_token_encrypted?: string | null
+          x_access_token_secret_encrypted?: string | null
+          x_api_key_encrypted?: string | null
+          x_api_secret_encrypted?: string | null
+          x_screen_name?: string | null
         }
         Relationships: []
       }
@@ -2709,6 +2724,10 @@ export type Database = {
           fb_page_token: string
           ig_access_token: string
           ig_user_id: string
+          x_access_token: string
+          x_access_token_secret: string
+          x_api_key: string
+          x_api_secret: string
         }[]
       }
       get_social_credentials_status: {
@@ -2718,6 +2737,8 @@ export type Database = {
           fb_page_id: string
           ig_user_id: string
           instagram_configured: boolean
+          x_configured: boolean
+          x_screen_name: string
         }[]
       }
       has_ftp_password: { Args: never; Returns: boolean }
@@ -2735,6 +2756,10 @@ export type Database = {
           _fb_page_token: string
           _ig_access_token: string
           _ig_user_id: string
+          _x_access_token?: string
+          _x_access_token_secret?: string
+          _x_api_key?: string
+          _x_api_secret?: string
         }
         Returns: undefined
       }
