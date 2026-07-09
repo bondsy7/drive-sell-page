@@ -599,11 +599,21 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
       const ext = (data?.extracted || {}) as ScanData;
       setScanData(ext);
       mergeScanIntoForm(ext, 'datasheet');
-      // Persist into vehicle row immediately (VIN-keyed) so Daten-Tab shows it
+      // Persist the FULL scan (incl. Verbrauch, CO₂-Klasse, Ausstattung, …)
+      // to the vehicle row so Banner/PDF/Landing-Page später sauber darauf
+      // zugreifen können. Ohne VIN wird ein Platzhalter-VIN erzeugt, damit die
+      // Daten nie verloren gehen.
       if (user?.id) {
-        const targetVin = (ext.vin || vin || '').toString();
-        const vid = await persistScanData(user.id, targetVin, ext as Record<string, any>);
-        if (vid) setSavedVehicleId(vid);
+        try {
+          const vData = scanDataToVehicleData(ext as Record<string, any>);
+          const targetVin = (ext.vin || vin || '').toString();
+          const vid = savedVehicleId
+            ? await mergeVehicleById(user.id, savedVehicleId, vData)
+            : await ensureVehicleAuto(user.id, targetVin, vData);
+          if (vid && vid !== savedVehicleId) setSavedVehicleId(vid);
+        } catch (e) {
+          console.warn('[OneShot] persist scanData failed:', e);
+        }
       }
       toast.success(
         merged.length > 1
