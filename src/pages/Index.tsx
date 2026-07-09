@@ -93,6 +93,23 @@ const Index = () => {
     return 'hub';
   });
 
+  // Sync URL → appState (so clicking "Neues Fahrzeug" while already inside a tool resets back to the hub)
+  useEffect(() => {
+    const currentSlug = STATE_TO_TOOL[appState];
+    if (!tool) {
+      // /generator (no tool) → hub, unless we're already there
+      if (appState !== 'hub' && currentSlug !== undefined) {
+        setAppState('hub');
+      }
+      return;
+    }
+    const targetState = TOOL_TO_STATE[tool];
+    if (targetState && targetState !== appState && currentSlug !== tool) {
+      setAppState(targetState);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tool]);
+
   // Sync appState → URL (preserve query params like ?vehicle=...&image=...)
   useEffect(() => {
     const toolSlug = STATE_TO_TOOL[appState];
