@@ -40,7 +40,16 @@ export default function SocialCredentialsSection() {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    // Fetch X.com configuration status (env-based, no per-user credentials)
+    (async () => {
+      try {
+        const { data } = await supabase.functions.invoke('social-publish', { body: { action: 'status' } });
+        setXStatus(!!data?.x?.configured);
+      } catch { setXStatus(false); }
+    })();
+  }, []);
 
   const save = async () => {
     setSaving(true);
