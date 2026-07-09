@@ -60,6 +60,7 @@ import OneShotMarketingForm from './oneshot/OneShotMarketingForm';
 import { persistVinLookup, scanDataToVehicleData } from '@/lib/scan-to-vehicle-data';
 import ProcessTimer, { formatDuration } from '@/components/ProcessTimer';
 import { uploadToGeminiFiles } from '@/lib/gemini-file-upload';
+import { formatMandatoryDisclosure } from '@/lib/mandatory-disclosure';
 import OneShotLightbox, { type LightboxItem } from './oneshot/OneShotLightbox';
 import {
   DEFAULT_FORM, DEFAULT_SOURCES, ONESHOT_BANNER_FORMATS,
