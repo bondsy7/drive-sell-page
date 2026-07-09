@@ -174,15 +174,22 @@ Wenn ein Feld nicht erkennbar ist, setze es auf null. Extrahiere so viel wie mö
           ])).flat(),
         ],
       }],
-      generationConfig: { temperature: 0 },
+      generationConfig: {
+        temperature: 0,
+        // Force clean JSON from the model — no more Markdown fences / trailing
+        // commas / partial repair rounds. Cuts response time and fixes the
+        // "Analyse-Format ungültig" failure mode.
+        responseMimeType: "application/json",
+      },
     });
 
     let response: Response | null = null;
     let lastErr = "";
-    // Per-attempt timeout to avoid long UI stalls. Do not retry the same overloaded
-    // model inside one request; fall through to the faster fallback instead.
-    const ATTEMPT_TIMEOUT_MS = isBannerQuick ? 12_000 : 18_000;
-    const MAX_ATTEMPTS = 1;
+    // Give Gemini enough headroom for dense datasheet tables (Verbrauch,
+    // CO₂-Klassen, Ausstattung). Old 18s cap aborted mid-response on WLTP-heavy
+    // sheets — the whole reason the analysis "didn't work".
+    const ATTEMPT_TIMEOUT_MS = isBannerQuick ? 15_000 : 45_000;
+    const MAX_ATTEMPTS = isBannerQuick ? 1 : 2;
     outer: for (const model of models) {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
       for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
