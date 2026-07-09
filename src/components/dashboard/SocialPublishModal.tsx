@@ -280,25 +280,28 @@ export default function SocialPublishModal({
               <div>
                 <Label className="mb-2 block">Plattformen</Label>
                 <div className="flex flex-col gap-2">
-                  <label className={`flex items-center gap-3 p-3 rounded-lg border border-border ${status?.instagram === false ? 'opacity-60' : 'cursor-pointer hover:bg-muted/50'}`}>
+                  <label className={`flex items-center gap-3 p-3 rounded-lg border border-border ${status?.instagram === false || !instagramCompatible ? 'opacity-60' : 'cursor-pointer hover:bg-muted/50'}`}>
                     <Checkbox
-                      checked={platforms.instagram}
-                      disabled={status?.instagram === false}
+                      checked={platforms.instagram && instagramCompatible}
+                      disabled={status?.instagram === false || !instagramCompatible}
                       onCheckedChange={(v) => setPlatforms((p) => ({ ...p, instagram: !!v }))}
                     />
                     <Instagram className="w-5 h-5 text-pink-600" />
                     <span className="font-medium flex-1">Instagram</span>
-                    {status?.instagram === true && (
+                    {!instagramCompatible && (
+                      <span className="text-xs text-amber-600 font-medium">Format nicht unterstützt</span>
+                    )}
+                    {instagramCompatible && status?.instagram === true && (
                       <span className="text-xs text-green-600 font-medium">Verbunden</span>
                     )}
-                    {status?.instagram === false && (
+                    {instagramCompatible && status?.instagram === false && (
                       <span className="text-xs text-muted-foreground">Nicht konfiguriert</span>
                     )}
                   </label>
-                  <label className={`flex items-center gap-3 p-3 rounded-lg border border-border ${status?.facebook === false ? 'opacity-60' : 'cursor-pointer hover:bg-muted/50'}`}>
+                  <label className={`flex items-center gap-3 p-3 rounded-lg border border-border ${status?.facebook === false || !facebookCompatible ? 'opacity-60' : 'cursor-pointer hover:bg-muted/50'}`}>
                     <Checkbox
-                      checked={platforms.facebook}
-                      disabled={status?.facebook === false}
+                      checked={platforms.facebook && facebookCompatible}
+                      disabled={status?.facebook === false || !facebookCompatible}
                       onCheckedChange={(v) => setPlatforms((p) => ({ ...p, facebook: !!v }))}
                     />
                     <Facebook className="w-5 h-5 text-blue-600" />
