@@ -161,6 +161,15 @@ export default function BannersTab({ banners, onDownload, onDelete }: Props) {
           onClose={() => setPublishBanner(null)}
         />
       )}
+
+      {auto3Banner && auto3Config && (
+        <Auto3PublishDialog
+          banner={auto3Banner}
+          config={auto3Config}
+          onClose={() => setAuto3Banner(null)}
+        />
+      )}
+
     </>
   );
 }
