@@ -63,13 +63,15 @@ export default function VideoPublishModal({
         setStatus({
           instagram: !!data.instagram?.configured,
           facebook: !!data.facebook?.configured,
+          x: !!data.x?.configured,
         });
         setPlatforms((p) => ({
           instagram: !!data.instagram?.configured && p.instagram,
           facebook: !!data.facebook?.configured && p.facebook,
+          x: !!data.x?.configured && p.x,
         }));
       } catch {
-        setStatus({ instagram: false, facebook: false });
+        setStatus({ instagram: false, facebook: false, x: false });
       }
     })();
     return () => { cancelled = true; };
