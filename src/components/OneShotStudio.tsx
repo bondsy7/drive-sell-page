@@ -1134,14 +1134,26 @@ This is the MARKETING MASTER (Hero) shot — push lighting one notch beyond the 
       }
       setSavedVehicleId(newVehicleId);
 
-      // 2) Upload all original photos to originals/{user}/{vehicleId}/...
+      // 2) Upload all original photos + Datenblätter to originals/{user}/{vehicleId}/…
+      //    Auch Datenblatt-Aufnahmen landen hier – sie können später für weitere
+      //    Generierungen (Banner, PDF, …) wichtig sein.
       try {
         const prefix = `${user.id}/${newVehicleId}`;
-        await Promise.all(vehicleImages.map(async (img, idx) => {
-          const base64Data = img.base64.includes(',') ? img.base64.split(',')[1] : img.base64;
+        const uploads: Array<{ base64: string; name: string }> = [
+          ...vehicleImages.map((img, idx) => ({
+            base64: img.base64,
+            name: (img.fileName || `original-${idx}.jpg`),
+          })),
+          ...dataSheetBase64s.map((b64, idx) => ({
+            base64: b64,
+            name: `datenblatt-${idx + 1}.jpg`,
+          })),
+        ];
+        await Promise.all(uploads.map(async (u, idx) => {
+          const base64Data = u.base64.includes(',') ? u.base64.split(',')[1] : u.base64;
           const bytes = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
           const blob = new Blob([bytes], { type: 'image/jpeg' });
-          const safe = (img.fileName || `original-${idx}.jpg`).replace(/[^a-zA-Z0-9._-]/g, '_');
+          const safe = u.name.replace(/[^a-zA-Z0-9._-]/g, '_');
           const path = `${prefix}/${Date.now()}-${idx}-${safe}`;
           await supabase.storage.from('originals').upload(path, blob, {
             contentType: 'image/jpeg',
