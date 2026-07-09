@@ -10,6 +10,7 @@
 const API_BASE = "https://api.x.com/2";
 const UPLOAD_URL = "https://upload.twitter.com/1.1/media/upload.json";
 const VERIFY_URL = "https://api.x.com/1.1/account/verify_credentials.json";
+const STATUS_UPDATE_URL = "https://api.x.com/1.1/statuses/update.json";
 
 export interface XCreds {
   apiKey: string;
@@ -288,9 +289,55 @@ export async function postTweet(
   });
   const j: any = await res.json().catch(() => ({}));
   if (!res.ok || !j?.data?.id) {
-    return { ok: false, status: res.status, stage: "create_tweet", error: humanizeXError(res.status, JSON.stringify(j), "create_tweet") };
+    const v2ErrorBody = JSON.stringify(j);
+    console.warn(`[x-oauth] stage=create_tweet_v2 status=${res.status} body=${sanitizeForLog(v2ErrorBody)}`);
+
+    // Some X app/API combinations still accept OAuth 1.0a credentials for media
+    // upload and credential verification, but reject POST /2/tweets with 403.
+    // In that case, fall back to the classic OAuth 1.0a status endpoint using
+    // the same already-uploaded media_ids.
+    if (res.status === 403 || res.status === 401) {
+      const fallback = await postStatusV1(creds, text, mediaIds);
+      if (fallback.ok) return fallback;
+      return {
+        ...fallback,
+        error: `${fallback.error} Vorheriger /2/tweets Fehler: ${humanizeXError(res.status, v2ErrorBody, "create_tweet")}`,
+      };
+    }
+
+    return { ok: false, status: res.status, stage: "create_tweet", error: humanizeXError(res.status, v2ErrorBody, "create_tweet") };
   }
   const postId = j.data.id as string;
+  return { ok: true, postId, url: `https://x.com/i/web/status/${postId}` };
+}
+
+async function postStatusV1(
+  creds: XCreds,
+  text: string,
+  mediaIds: string[] = [],
+): Promise<{ ok: true; postId: string; url: string } | XFailure> {
+  const params: Record<string, string> = { status: text };
+  if (mediaIds.length > 0) params.media_ids = mediaIds.join(",");
+
+  const auth = await buildAuthHeader("POST", STATUS_UPDATE_URL, params, creds);
+  const res = await fetch(STATUS_UPDATE_URL, {
+    method: "POST",
+    headers: {
+      Authorization: auth,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams(params).toString(),
+  });
+  const raw = await res.text().catch(() => "");
+  let j: any = {};
+  try { j = raw ? JSON.parse(raw) : {}; } catch { /* non-json */ }
+
+  if (!res.ok || !j?.id_str) {
+    console.warn(`[x-oauth] stage=create_tweet_v1_fallback status=${res.status} body=${sanitizeForLog(raw)}`);
+    return { ok: false, status: res.status, stage: "create_tweet_v1_fallback", error: humanizeXError(res.status, raw || JSON.stringify(j), "create_tweet_v1_fallback") };
+  }
+
+  const postId = j.id_str as string;
   return { ok: true, postId, url: `https://x.com/i/web/status/${postId}` };
 }
 
@@ -318,25 +365,46 @@ async function fetchMedia(
 function humanizeXError(status: number, body: string, stage?: string): string {
   // Never surface raw tokens or full auth headers. body may contain provider messages.
   const safe = body.slice(0, 400);
-  if (status === 401) return "X.com Authentifizierung fehlgeschlagen (401). Bitte X_API_KEY / X_ACCESS_TOKEN prüfen — Bearer Token darf für Posts nicht verwendet werden.";
+  const providerMessage = extractProviderMessage(safe);
+  if (status === 401) return `X.com Authentifizierung fehlgeschlagen (401).${providerMessage ? ` ${providerMessage}` : " Bitte X_API_KEY / X_ACCESS_TOKEN prüfen — Bearer Token darf für Posts nicht verwendet werden."}`;
   if (status === 403) {
     if (/duplicate/i.test(safe)) return "X.com hat den Post als Duplikat abgelehnt (403).";
+    if (/453/.test(safe) || /subset of (X API )?v2 endpoints/i.test(safe)) return "X.com API-Zugang verweigert (403/453). Dein Developer-Account hat aktuell nur Zugriff auf einen Teil der X-Endpoints; bitte im X Developer Portal API-Plan/Projektzugriff für Post-Erstellung prüfen.";
+    if (/unsupported authentication/i.test(safe)) return "X.com lehnt die Authentifizierungsart für diesen Endpoint ab (403). Der OAuth‑1.0a-Fallback wurde versucht; falls es weiter fehlschlägt, benötigt die App OAuth 2.0 User Context mit tweet.write/media.write.";
     if (/write/i.test(safe) || /permission/i.test(safe)) return 'X.com App hat keine Schreibrechte (403). Im Developer Portal auf „Read and Write" umstellen und Access Token neu erzeugen.';
     if (stage?.startsWith("media_upload")) {
       return "X.com Media-Upload verweigert (403). Der Account-Token ist gültig, aber X blockiert den Bild/Video-Upload für diese App bzw. diesen API-Zugang. Prüfe im X Developer Portal zusätzlich den API-Plan/Produktzugriff für Media Upload; reine Textposts können trotzdem funktionieren.";
     }
     if (stage === "create_tweet") {
-      return "X.com Tweet-Erstellung verweigert (403). Token ist gültig, aber X erlaubt dieser App aktuell kein Schreiben über /2/tweets oder hat den Inhalt blockiert.";
+      return `X.com Tweet-Erstellung verweigert (403). Token ist gültig, aber X erlaubt dieser App aktuell kein Schreiben über /2/tweets oder hat den Inhalt blockiert.${providerMessage ? ` ${providerMessage}` : ""}`;
     }
-    return "X.com Zugriff verweigert (403). Token ist gültig, aber X blockiert diese Aktion für App/API-Zugang oder Inhalt.";
+    return `X.com Zugriff verweigert (403). Token ist gültig, aber X blockiert diese Aktion für App/API-Zugang oder Inhalt.${providerMessage ? ` ${providerMessage}` : ""}`;
   }
   if (status === 429) return "X.com Rate Limit erreicht (429). Bitte später erneut versuchen.";
   if (status === 413) return "X.com: Datei zu groß.";
   if (status >= 500) return `X.com Server-Fehler (${status}).`;
   try {
     const j = JSON.parse(safe);
-    const msg = j?.detail || j?.title || j?.errors?.[0]?.message || j?.error;
+    const msg = j?.detail || j?.title || j?.errors?.[0]?.message || j?.errors?.[0]?.detail || j?.error || j?.errors?.[0]?.code;
     if (msg) return `X.com: ${String(msg).slice(0, 200)}`;
   } catch { /* not json */ }
   return `X.com Fehler (${status}).`;
+}
+
+function extractProviderMessage(body: string): string | null {
+  try {
+    const j = JSON.parse(body);
+    const err = Array.isArray(j?.errors) ? j.errors[0] : null;
+    const msg = j?.detail || err?.detail || err?.message || j?.title || j?.error || j?.message;
+    return msg ? `X meldet: ${String(msg).slice(0, 220)}` : null;
+  } catch {
+    return body && !/[A-Za-z0-9_-]{24,}/.test(body) ? `X meldet: ${body.slice(0, 220)}` : null;
+  }
+}
+
+function sanitizeForLog(body: string): string {
+  return body
+    .slice(0, 700)
+    .replace(/oauth_[a-z_]+="[^"]+"/gi, '$&'.replace(/"[^"]+"/, '"[redacted]"'))
+    .replace(/[A-Za-z0-9_-]{32,}/g, "[redacted]");
 }
