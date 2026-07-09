@@ -4,7 +4,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
-import { loadXCreds, verifyCredentials as verifyX, uploadImage as xUploadImage, uploadVideo as xUploadVideo, postTweet as xPostTweet } from "../_shared/x-oauth.ts";
+import { verifyCredentials as verifyX, uploadImage as xUploadImage, uploadVideo as xUploadVideo, postTweet as xPostTweet, type XCreds } from "../_shared/x-oauth.ts";
 
 
 const IG_GRAPH_VERSION = "v21.0";
@@ -83,7 +83,14 @@ Deno.serve(async (req) => {
 
     const igConfigured = !!(igUserId && metaAccessToken);
     const fbConfigured = !!(fbPageId && fbPageToken);
-    const xCreds = loadXCreds();
+    const xCreds: XCreds | null = (cred?.x_api_key && cred?.x_api_secret && cred?.x_access_token && cred?.x_access_token_secret)
+      ? {
+          apiKey: cred.x_api_key,
+          apiSecret: cred.x_api_secret,
+          accessToken: cred.x_access_token,
+          accessTokenSecret: cred.x_access_token_secret,
+        }
+      : null;
     const xConfigured = !!xCreds;
 
     // ── Status check (no tokens exposed) ─────────────────────
@@ -110,7 +117,7 @@ Deno.serve(async (req) => {
         return json(v.ok ? { ok: true, name: v.name } : { ok: false, error: v.error });
       }
       if (platform === "x") {
-        if (!xCreds) return json({ ok: false, error: "X.com nicht konfiguriert (Environment Variables fehlen)" });
+        if (!xCreds) return json({ ok: false, error: "X.com nicht konfiguriert – bitte im Profil hinterlegen" });
         const v = await verifyX(xCreds);
         return json(v.ok ? { ok: true, name: v.screenName ? "@" + v.screenName : undefined } : { ok: false, error: v.error });
       }
@@ -206,7 +213,7 @@ Deno.serve(async (req) => {
 // X.com (Twitter) publish
 // ────────────────────────────────────────────────────────────
 async function publishX(
-  creds: NonNullable<ReturnType<typeof loadXCreds>>,
+  creds: XCreds,
   opts: { mediaUrl: string; mediaType: MediaType; caption: string },
 ): Promise<Omit<PlatformResult, "platform">> {
   // Truncate to 280 chars server-side as a safety net (frontend already warns).
