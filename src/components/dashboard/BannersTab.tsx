@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { LayoutGrid, Download, Trash2, Share2, Send } from 'lucide-react';
+import { LayoutGrid, Download, Trash2, Share2 } from 'lucide-react';
+import auto3IconUrl from '@/assets/auto3-icon.svg';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { type BannerFile } from './types';
@@ -113,7 +114,8 @@ export default function BannersTab({ banners, onDownload, onDelete }: Props) {
                       onClick={(e) => { e.stopPropagation(); setAuto3Banner(banner); }}
                       title="An Auto3 senden"
                     >
-                      <Send className="w-3.5 h-3.5" />
+                      <img src={auto3IconUrl} alt="Auto3" className="w-3.5 h-3.5" />
+
                     </Button>
                   ) : (
                     <Button
@@ -124,7 +126,7 @@ export default function BannersTab({ banners, onDownload, onDelete }: Props) {
                       onClick={(e) => e.stopPropagation()}
                     >
                       <Link to="/profile" className="opacity-50 hover:opacity-100">
-                        <Send className="w-3.5 h-3.5" />
+                        <img src={auto3IconUrl} alt="Auto3" className="w-3.5 h-3.5" />
                       </Link>
                     </Button>
                   )}
