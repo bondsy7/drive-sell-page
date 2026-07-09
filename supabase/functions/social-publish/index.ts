@@ -4,7 +4,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
-import { loadXCreds, verifyCredentials as verifyX, uploadImage as xUploadImage, uploadVideo as xUploadVideo, postTweet as xPostTweet } from "../_shared/x-oauth.ts";
+import { verifyCredentials as verifyX, uploadImage as xUploadImage, uploadVideo as xUploadVideo, postTweet as xPostTweet, type XCreds } from "../_shared/x-oauth.ts";
 
 
 const IG_GRAPH_VERSION = "v21.0";
