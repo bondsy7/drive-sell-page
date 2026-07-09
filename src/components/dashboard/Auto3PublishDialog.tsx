@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Send } from 'lucide-react';
+import auto3IconUrl from '@/assets/auto3-icon.svg';
 import type { BannerFile } from './types';
 import type { Auto3Config } from '@/hooks/useAuto3Config';
 
