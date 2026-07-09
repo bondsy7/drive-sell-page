@@ -414,13 +414,25 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
       else if (ext.priceType === 'finance') setOccasion('finance');
       else if (ext.priceType === 'abo') setOccasion('abo');
       if (!legalText) {
-        const parts: string[] = [];
-        if (ext.monthlyRate) parts.push(`Rate: ${ext.monthlyRate}`);
-        if (ext.duration) parts.push(`Laufzeit: ${ext.duration} Mon.`);
-        if (ext.mileage) parts.push(`Fahrleistung: ${ext.mileage}/Jahr`);
-        if (ext.downPayment) parts.push(`Anzahlung: ${ext.downPayment}`);
-        if (ext.legalText) parts.push(ext.legalText);
-        if (parts.length) setLegalText(parts.join(' | '));
+        // Kompakte Pflichtangabe: Zustand • kW (PS) • Kraftstoff Verbrauch • CO₂ • CO₂-Klasse.
+        // Lange Füll-/Richtlinientexte werden bewusst weggelassen.
+        // Leasing-/Finanzierungs-Rechtstexte kommen aus dem User-Profil (Dealer/Bank).
+        const envkv = formatMandatoryDisclosure({
+          condition: ext.condition,
+          powerKw: ext.powerKw,
+          powerPs: ext.powerPs,
+          fuelType: ext.fuelType,
+          driveType: ext.driveType,
+          consumptionCombined: ext.consumptionCombined,
+          consumptionElectric: ext.consumptionElectric,
+          consumptionCombinedDischarged: ext.consumptionCombinedDischarged,
+          co2Emissions: ext.co2Emissions,
+          co2EmissionsDischarged: ext.co2EmissionsDischarged,
+          co2Class: ext.co2Class,
+          co2ClassDischarged: ext.co2ClassDischarged,
+          isPluginHybrid: !!(ext.consumptionElectric || ext.consumptionCombinedDischarged || ext.co2ClassDischarged),
+        });
+        if (envkv) setLegalText(envkv);
       }
       if (ext.brand) {
         const brandLower = ext.brand.toLowerCase();
