@@ -114,7 +114,8 @@ export default function BannersTab({ banners, onDownload, onDelete }: Props) {
                       onClick={(e) => { e.stopPropagation(); setAuto3Banner(banner); }}
                       title="An Auto3 senden"
                     >
-                      <Send className="w-3.5 h-3.5" />
+                      <img src={auto3IconUrl} alt="Auto3" className="w-3.5 h-3.5" />
+
                     </Button>
                   ) : (
                     <Button
