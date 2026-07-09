@@ -57,17 +57,12 @@ export function useVehicles() {
       ]);
 
 
-      // Banner counts via storage list per vehicle (parallel)
-      const bannerEntries = await Promise.all(
-        ids.map(async (vid) => {
-          const { data } = await supabase.storage
-            .from('banners')
-            .list(`${user.id}/${vid}`, { limit: 200 });
-          const count = (data || []).filter(f => f.name && !f.name.startsWith('.') && !f.name.startsWith('state-')).length;
-          return [vid, count] as const;
-        })
-      );
-      const cB = new Map<string, number>(bannerEntries);
+      // Banner counts: skipped in list view for performance.
+      // Previously did 1 storage.list() per vehicle → N HTTP roundtrips which
+      // made the vehicle list load extremely slowly for users with many cars.
+      // Banner count is shown on the vehicle detail page instead.
+      const cB = new Map<string, number>();
+
 
       const tally = (rows: Array<{ vehicle_id: string | null }> | null) => {
         const map = new Map<string, number>();
