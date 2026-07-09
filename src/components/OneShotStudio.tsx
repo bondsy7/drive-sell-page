@@ -60,6 +60,7 @@ import OneShotMarketingForm from './oneshot/OneShotMarketingForm';
 import { persistVinLookup, scanDataToVehicleData } from '@/lib/scan-to-vehicle-data';
 import ProcessTimer, { formatDuration } from '@/components/ProcessTimer';
 import { uploadToGeminiFiles } from '@/lib/gemini-file-upload';
+import { formatMandatoryDisclosure } from '@/lib/mandatory-disclosure';
 import OneShotLightbox, { type LightboxItem } from './oneshot/OneShotLightbox';
 import {
   DEFAULT_FORM, DEFAULT_SOURCES, ONESHOT_BANNER_FORMATS,
@@ -707,19 +708,26 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
         next.occasion = ext.priceType;
       }
 
-      // Build legal-text footer if empty
+      // Kompakte Pflichtangabe: Zustand • kW (PS) • Kraftstoff Verbrauch • CO₂ • CO₂-Klasse.
+      // Lange Richtlinien-/Fülltexte werden bewusst weggelassen.
+      // Leasing-/Finanzierungs-Rechtstexte kommen aus dem User-Profil (Dealer/Bank).
       if (!next.legalText) {
-        const parts: string[] = [];
-        if (ext.monthlyRate) parts.push(`Rate: ${ext.monthlyRate}`);
-        if (ext.duration) parts.push(`Laufzeit: ${ext.duration} Mon.`);
-        if (ext.mileage) parts.push(`Fahrleistung: ${ext.mileage}/Jahr`);
-        if (ext.downPayment) parts.push(`Anzahlung: ${ext.downPayment}`);
-        if (ext.consumptionCombined) parts.push(`Verbrauch komb.: ${ext.consumptionCombined}`);
-        if (ext.co2Emissions) parts.push(`CO₂ komb.: ${ext.co2Emissions}`);
-        if (ext.co2Class) parts.push(`CO₂-Klasse: ${ext.co2Class}`);
-        if (ext.electricRange) parts.push(`E-Reichweite: ${ext.electricRange}`);
-        if (ext.legalText) parts.push(ext.legalText);
-        if (parts.length) next.legalText = parts.join(' | ');
+        const envkv = formatMandatoryDisclosure({
+          condition: (ext as any).condition,
+          powerKw: (ext as any).powerKw,
+          powerPs: (ext as any).powerPs,
+          fuelType: (ext as any).fuelType,
+          driveType: (ext as any).driveType,
+          consumptionCombined: ext.consumptionCombined,
+          consumptionElectric: (ext as any).consumptionElectric,
+          consumptionCombinedDischarged: (ext as any).consumptionCombinedDischarged,
+          co2Emissions: ext.co2Emissions,
+          co2EmissionsDischarged: (ext as any).co2EmissionsDischarged,
+          co2Class: ext.co2Class,
+          co2ClassDischarged: (ext as any).co2ClassDischarged,
+          isPluginHybrid: !!((ext as any).consumptionElectric || (ext as any).consumptionCombinedDischarged || (ext as any).co2ClassDischarged),
+        });
+        if (envkv) next.legalText = envkv;
       }
       return next;
     });
