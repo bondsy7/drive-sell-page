@@ -4,7 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { getSecret } from "../_shared/get-secret.ts";
 
-type Platform = "instagram" | "facebook";
+type Platform = "instagram" | "facebook" | "x";
 type Format = "image" | "video" | "reel" | "carousel";
 type Tone = "seriös" | "verkaufsstark" | "kurz" | "locker" | "premium";
 
@@ -103,6 +103,15 @@ Deno.serve(async (req) => {
 - 5-8 relevante Hashtags: Marke, Modell, Standort/Stadt, #Autohaus, #Gebrauchtwagen o. ä.
 - Keine URLs im Fließtext.
 - ${format === "reel" || format === "video" ? "Reel-Modus: Hook + max. 3 Sätze, extrem knackig." : "Post-Modus: max. ~150 Wörter."}`
+      : platform === "x"
+      ? `X.COM / TWITTER (${format}):
+- HARTES LIMIT: maximal 260 Zeichen inklusive Hashtags (Zeichen zählen, nicht Wörter!).
+- Erste Zeile = starker Hook oder konkreter Nutzen. Direkt, kein Small-Talk.
+- 1-2 Kernsätze mit dem wichtigsten Kaufargument (z. B. Preis, KM, Ausstattung).
+- Klarer CTA in einem knappen Satz: "Anfragen bei ${locationLabel || "uns"}" o. ä.
+- Maximal 2-3 gezielte Hashtags am Ende (Marke, Modell oder #Autohaus).
+- Emojis maximal 1-2, kein Fließtext-Ornament.
+- Keine "Link in Bio"-Phrasen (existiert auf X nicht).`
       : `FACEBOOK (${format}):
 - Erste Zeile: starker Aufmacher, der Neugier weckt.
 - 3-5 Sätze Fließtext mit Verkaufsargumenten (Zustand, Ausstattung, Fahrspaß, Sicherheit).

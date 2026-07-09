@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Instagram, Facebook, CheckCircle2, AlertCircle, Loader2, Link2, Link2Off, ShieldCheck } from 'lucide-react';
+import { Instagram, Facebook, Twitter, CheckCircle2, AlertCircle, Loader2, Link2, Link2Off, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Status {
@@ -17,7 +17,8 @@ export default function SocialCredentialsSection() {
   const [status, setStatus] = useState<Status | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [testing, setTesting] = useState<'instagram' | 'facebook' | null>(null);
+  const [testing, setTesting] = useState<'instagram' | 'facebook' | 'x' | null>(null);
+  const [xStatus, setXStatus] = useState<boolean | null>(null);
 
   // form fields — tokens are write-only, never prefilled
   const [igUserId, setIgUserId] = useState('');
@@ -39,7 +40,16 @@ export default function SocialCredentialsSection() {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    // Fetch X.com configuration status (env-based, no per-user credentials)
+    (async () => {
+      try {
+        const { data } = await supabase.functions.invoke('social-publish', { body: { action: 'status' } });
+        setXStatus(!!data?.x?.configured);
+      } catch { setXStatus(false); }
+    })();
+  }, []);
 
   const save = async () => {
     setSaving(true);
@@ -61,14 +71,15 @@ export default function SocialCredentialsSection() {
     await load();
   };
 
-  const test = async (platform: 'instagram' | 'facebook') => {
+  const test = async (platform: 'instagram' | 'facebook' | 'x') => {
     setTesting(platform);
     try {
       const { data, error } = await supabase.functions.invoke('social-publish', {
         body: { action: 'test', platform },
       });
       if (error) throw error;
-      if (data?.ok) toast.success(`${platform === 'instagram' ? 'Instagram' : 'Facebook'} erfolgreich verbunden${data.name ? ' – ' + data.name : ''}`);
+      const label = platform === 'instagram' ? 'Instagram' : platform === 'facebook' ? 'Facebook' : 'X.com';
+      if (data?.ok) toast.success(`${label} erfolgreich verbunden${data.name ? ' – ' + data.name : ''}`);
       else toast.error(data?.error || 'Verbindung fehlgeschlagen');
     } catch (e) {
       toast.error('Test fehlgeschlagen: ' + (e as Error).message);
@@ -210,6 +221,41 @@ export default function SocialCredentialsSection() {
           )}
         </div>
       </div>
+
+      {/* X.com — app-level credentials via server env vars, kein per-User Token */}
+      <div className="rounded-xl border border-border p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <Twitter className="w-5 h-5 text-sky-500" />
+          <h3 className="font-medium flex-1">X.com (Twitter)</h3>
+          {xStatus === true ? (
+            <span className="inline-flex items-center gap-1 text-xs text-green-600 font-medium">
+              <CheckCircle2 className="w-3.5 h-3.5" /> Verbunden
+            </span>
+          ) : xStatus === false ? (
+            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+              <AlertCircle className="w-3.5 h-3.5" /> Nicht konfiguriert
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Prüfe...
+            </span>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          X.com nutzt zentrale App-Zugangsdaten (serverseitig gespeichert). Zum Posten wird OAuth 1.0a User Context verwendet — der Bearer Token wird nicht fürs Posten benutzt.
+        </p>
+        <div className="flex flex-wrap gap-2 pt-1">
+          <Button
+            size="sm" variant="outline"
+            onClick={() => test('x')}
+            disabled={!xStatus || testing === 'x'}
+          >
+            {testing === 'x' ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : <Link2 className="w-3.5 h-3.5 mr-1.5" />}
+            Verbindung prüfen
+          </Button>
+        </div>
+      </div>
+
 
       <div className="flex justify-end">
         <Button onClick={save} disabled={saving}>

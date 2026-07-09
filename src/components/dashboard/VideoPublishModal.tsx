@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { X, Instagram, Facebook, Loader2, CheckCircle2, AlertCircle, Sparkles, Clock } from 'lucide-react';
+import { X, Instagram, Facebook, Loader2, CheckCircle2, AlertCircle, Sparkles, Clock, Twitter } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -21,7 +21,7 @@ interface Props {
   onClose: () => void;
 }
 
-type Platform = 'instagram' | 'facebook';
+type Platform = 'instagram' | 'facebook' | 'x';
 
 interface PlatformResult {
   platform: Platform;
@@ -37,10 +37,11 @@ export default function VideoPublishModal({
   const [platforms, setPlatforms] = useState<Record<Platform, boolean>>({
     instagram: true,
     facebook: false,
+    x: false,
   });
   const [publishing, setPublishing] = useState(false);
   const [results, setResults] = useState<PlatformResult[] | null>(null);
-  const [status, setStatus] = useState<{ instagram: boolean; facebook: boolean } | null>(null);
+  const [status, setStatus] = useState<{ instagram: boolean; facebook: boolean; x: boolean } | null>(null);
   const [tone, setTone] = useState<'seriös' | 'verkaufsstark' | 'kurz' | 'locker' | 'premium'>('verkaufsstark');
   const [format, setFormat] = useState<'reel' | 'video'>('reel');
   const [generatingCaption, setGeneratingCaption] = useState(false);
@@ -62,13 +63,15 @@ export default function VideoPublishModal({
         setStatus({
           instagram: !!data.instagram?.configured,
           facebook: !!data.facebook?.configured,
+          x: !!data.x?.configured,
         });
         setPlatforms((p) => ({
           instagram: !!data.instagram?.configured && p.instagram,
           facebook: !!data.facebook?.configured && p.facebook,
+          x: !!data.x?.configured && p.x,
         }));
       } catch {
-        setStatus({ instagram: false, facebook: false });
+        setStatus({ instagram: false, facebook: false, x: false });
       }
     })();
     return () => { cancelled = true; };
@@ -246,6 +249,17 @@ export default function VideoPublishModal({
                     {status?.facebook === true && <span className="text-xs text-green-600 font-medium">Verbunden</span>}
                     {status?.facebook === false && <span className="text-xs text-muted-foreground">Nicht konfiguriert</span>}
                   </label>
+                  <label className={`flex items-center gap-3 p-3 rounded-lg border border-border ${status?.x === false ? 'opacity-60' : 'cursor-pointer hover:bg-muted/50'}`}>
+                    <Checkbox
+                      checked={platforms.x}
+                      disabled={status?.x === false}
+                      onCheckedChange={(v) => setPlatforms((p) => ({ ...p, x: !!v }))}
+                    />
+                    <Twitter className="w-5 h-5 text-sky-500" />
+                    <span className="font-medium flex-1">X.com Video</span>
+                    {status?.x === true && <span className="text-xs text-green-600 font-medium">Verbunden</span>}
+                    {status?.x === false && <span className="text-xs text-muted-foreground">Nicht konfiguriert</span>}
+                  </label>
                 </div>
                 {status && !status.instagram && !status.facebook && (
                   <p className="text-xs text-destructive mt-2">
@@ -308,7 +322,15 @@ export default function VideoPublishModal({
                   rows={8}
                   placeholder="Text und #Hashtags..."
                 />
-                <p className="text-xs text-muted-foreground mt-1">{caption.length} Zeichen</p>
+                <div className="flex items-center justify-between mt-1">
+                  <p className="text-xs text-muted-foreground">{caption.length} Zeichen</p>
+                  {platforms.x && (
+                    <p className={`text-xs font-medium ${caption.length > 280 ? 'text-destructive' : caption.length > 240 ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                      X.com: {caption.length}/280
+                      {caption.length > 280 && ' – wird beim Posten gekürzt'}
+                    </p>
+                  )}
+                </div>
               </div>
 
               <div className="rounded-xl border border-border p-3 space-y-2">

@@ -4,6 +4,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { loadXCreds, verifyCredentials as verifyX, uploadImage as xUploadImage, uploadVideo as xUploadVideo, postTweet as xPostTweet } from "../_shared/x-oauth.ts";
 
 
 const IG_GRAPH_VERSION = "v21.0";
@@ -11,7 +12,7 @@ const FB_GRAPH_VERSION = "v25.0";
 const INSTAGRAM_GRAPH = `https://graph.instagram.com/${IG_GRAPH_VERSION}`;
 const FACEBOOK_GRAPH = `https://graph.facebook.com/${FB_GRAPH_VERSION}`;
 
-type Platform = "instagram" | "facebook";
+type Platform = "instagram" | "facebook" | "x";
 
 type MediaType = "image" | "video";
 
@@ -82,6 +83,8 @@ Deno.serve(async (req) => {
 
     const igConfigured = !!(igUserId && metaAccessToken);
     const fbConfigured = !!(fbPageId && fbPageToken);
+    const xCreds = loadXCreds();
+    const xConfigured = !!xCreds;
 
     // ── Status check (no tokens exposed) ─────────────────────
 
@@ -89,6 +92,7 @@ Deno.serve(async (req) => {
       return json({
         instagram: { configured: igConfigured, accountId: igUserId ?? null },
         facebook: { configured: fbConfigured, pageId: fbPageId ?? null },
+        x: { configured: xConfigured },
       });
     }
 
@@ -104,6 +108,11 @@ Deno.serve(async (req) => {
         if (!fbConfigured) return json({ ok: false, error: "Facebook nicht konfiguriert" });
         const v = await validateFacebookPage(fbPageId!, fbPageToken!);
         return json(v.ok ? { ok: true, name: v.name } : { ok: false, error: v.error });
+      }
+      if (platform === "x") {
+        if (!xCreds) return json({ ok: false, error: "X.com nicht konfiguriert (Environment Variables fehlen)" });
+        const v = await verifyX(xCreds);
+        return json(v.ok ? { ok: true, name: v.screenName ? "@" + v.screenName : undefined } : { ok: false, error: v.error });
       }
       return json({ ok: false, error: "unknown_platform" }, 400);
     }
@@ -125,7 +134,7 @@ Deno.serve(async (req) => {
       return json({ error: "media_url_must_be_public_https" }, 400);
     }
     const validPlatforms: Platform[] = platforms.filter(
-      (p) => p === "instagram" || p === "facebook",
+      (p) => p === "instagram" || p === "facebook" || p === "x",
     );
     if (validPlatforms.length === 0) return json({ error: "no_valid_platform" }, 400);
 
@@ -140,6 +149,9 @@ Deno.serve(async (req) => {
     }
     if (validPlatforms.includes("facebook") && !fbConfigured) {
       return json({ error: "facebook_not_configured" }, 400);
+    }
+    if (validPlatforms.includes("x") && !xConfigured) {
+      return json({ error: "x_not_configured" }, 400);
     }
 
     const results: PlatformResult[] = [];
@@ -170,6 +182,17 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── X.com (Twitter) ──────────────────────────────────────
+    if (validPlatforms.includes("x")) {
+      const res = await publishX(xCreds!, { mediaUrl, mediaType, caption });
+      results.push({ platform: "x", ...res });
+      await logPublication(admin, {
+        userId, vehicleId: vehicleId ?? null,
+        bannerPath: mediaPath, bannerName: mediaName, bannerUrl: mediaUrl,
+        platform: "x", caption, result: res,
+      });
+    }
+
     const anySuccess = results.some((r) => r.status === "success");
     return json({ ok: anySuccess, results }, anySuccess ? 200 : 502);
   } catch (e) {
@@ -177,6 +200,31 @@ Deno.serve(async (req) => {
     return json({ error: "internal_error", detail: String((e as Error)?.message ?? e) }, 500);
   }
 });
+
+
+// ────────────────────────────────────────────────────────────
+// X.com (Twitter) publish
+// ────────────────────────────────────────────────────────────
+async function publishX(
+  creds: NonNullable<ReturnType<typeof loadXCreds>>,
+  opts: { mediaUrl: string; mediaType: MediaType; caption: string },
+): Promise<Omit<PlatformResult, "platform">> {
+  // Truncate to 280 chars server-side as a safety net (frontend already warns).
+  const text = opts.caption.length > 280 ? opts.caption.slice(0, 277) + "…" : opts.caption;
+
+  const mediaIds: string[] = [];
+  if (opts.mediaUrl) {
+    const up = opts.mediaType === "video"
+      ? await xUploadVideo(creds, opts.mediaUrl)
+      : await xUploadImage(creds, opts.mediaUrl);
+    if (!up.ok) return { status: "failed", error: up.error };
+    mediaIds.push(up.mediaId);
+  }
+
+  const post = await xPostTweet(creds, text, mediaIds);
+  if (!post.ok) return { status: "failed", error: post.error };
+  return { status: "success", postId: post.postId };
+}
 
 
 // ────────────────────────────────────────────────────────────

@@ -1,0 +1,2 @@
+ALTER TABLE public.social_publications DROP CONSTRAINT IF EXISTS social_publications_platform_check;
+ALTER TABLE public.social_publications ADD CONSTRAINT social_publications_platform_check CHECK (platform = ANY (ARRAY['instagram'::text, 'facebook'::text, 'x'::text]));
