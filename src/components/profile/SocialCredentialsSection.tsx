@@ -9,8 +9,10 @@ import { toast } from 'sonner';
 interface Status {
   instagram_configured: boolean;
   facebook_configured: boolean;
+  x_configured: boolean;
   ig_user_id: string | null;
   fb_page_id: string | null;
+  x_screen_name: string | null;
 }
 
 export default function SocialCredentialsSection() {
@@ -18,13 +20,16 @@ export default function SocialCredentialsSection() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState<'instagram' | 'facebook' | 'x' | null>(null);
-  const [xStatus, setXStatus] = useState<boolean | null>(null);
 
   // form fields — tokens are write-only, never prefilled
   const [igUserId, setIgUserId] = useState('');
   const [igToken, setIgToken] = useState('');
   const [fbPageId, setFbPageId] = useState('');
   const [fbToken, setFbToken] = useState('');
+  const [xApiKey, setXApiKey] = useState('');
+  const [xApiSecret, setXApiSecret] = useState('');
+  const [xAccessToken, setXAccessToken] = useState('');
+  const [xAccessTokenSecret, setXAccessTokenSecret] = useState('');
 
   const load = async () => {
     setLoading(true);
@@ -35,21 +40,12 @@ export default function SocialCredentialsSection() {
       setIgUserId(s.ig_user_id ?? '');
       setFbPageId(s.fb_page_id ?? '');
     } else {
-      setStatus({ instagram_configured: false, facebook_configured: false, ig_user_id: null, fb_page_id: null });
+      setStatus({ instagram_configured: false, facebook_configured: false, x_configured: false, ig_user_id: null, fb_page_id: null, x_screen_name: null });
     }
     setLoading(false);
   };
 
-  useEffect(() => {
-    load();
-    // Fetch X.com configuration status (env-based, no per-user credentials)
-    (async () => {
-      try {
-        const { data } = await supabase.functions.invoke('social-publish', { body: { action: 'status' } });
-        setXStatus(!!data?.x?.configured);
-      } catch { setXStatus(false); }
-    })();
-  }, []);
+  useEffect(() => { load(); }, []);
 
   const save = async () => {
     setSaving(true);
@@ -58,6 +54,10 @@ export default function SocialCredentialsSection() {
       _ig_access_token: igToken || null,
       _fb_page_id: fbPageId || null,
       _fb_page_token: fbToken || null,
+      _x_api_key: xApiKey || null,
+      _x_api_secret: xApiSecret || null,
+      _x_access_token: xAccessToken || null,
+      _x_access_token_secret: xAccessTokenSecret || null,
     });
     setSaving(false);
     if (error) {
@@ -67,6 +67,10 @@ export default function SocialCredentialsSection() {
     // Clear token fields from memory immediately
     setIgToken('');
     setFbToken('');
+    setXApiKey('');
+    setXApiSecret('');
+    setXAccessToken('');
+    setXAccessTokenSecret('');
     toast.success('Zugangsdaten sicher gespeichert');
     await load();
   };
@@ -88,16 +92,15 @@ export default function SocialCredentialsSection() {
     }
   };
 
-  const disconnect = async (platform: 'instagram' | 'facebook') => {
+  const disconnect = async (platform: 'instagram' | 'facebook' | 'x') => {
     const { error } = await supabase.rpc('clear_social_credentials', { _platform: platform });
     if (error) { toast.error(error.message); return; }
     if (platform === 'instagram') { setIgUserId(''); setIgToken(''); }
-    else { setFbPageId(''); setFbToken(''); }
+    else if (platform === 'facebook') { setFbPageId(''); setFbToken(''); }
+    else { setXApiKey(''); setXApiSecret(''); setXAccessToken(''); setXAccessTokenSecret(''); }
     toast.success('Verbindung getrennt');
     await load();
   };
-
-  const mask = (v: string | null) => (v ? '••••' + v.slice(-4) : '—');
 
   if (loading) {
     return <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin" /> Lädt...</div>;
@@ -131,33 +134,15 @@ export default function SocialCredentialsSection() {
         <div className="grid sm:grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label>Instagram Business Account ID</Label>
-            <Input
-              value={igUserId}
-              onChange={(e) => setIgUserId(e.target.value)}
-              placeholder="z. B. 17841477944343968"
-              inputMode="numeric"
-            />
+            <Input value={igUserId} onChange={(e) => setIgUserId(e.target.value)} placeholder="z. B. 17841477944343968" inputMode="numeric" />
           </div>
           <div className="space-y-1.5">
             <Label>Instagram Access Token</Label>
-            <Input
-              type="password"
-              value={igToken}
-              onChange={(e) => setIgToken(e.target.value)}
-              placeholder={status?.instagram_configured ? 'Gespeichert – nur ändern durch Eingabe' : 'IGQVJ...'}
-              autoComplete="off"
-            />
-            {status?.instagram_configured && (
-              <p className="text-[11px] text-muted-foreground">Aktueller Token: {mask(null)}</p>
-            )}
+            <Input type="password" value={igToken} onChange={(e) => setIgToken(e.target.value)} placeholder={status?.instagram_configured ? 'Gespeichert – nur ändern durch Eingabe' : 'IGQVJ...'} autoComplete="off" />
           </div>
         </div>
         <div className="flex flex-wrap gap-2 pt-1">
-          <Button
-            size="sm" variant="outline"
-            onClick={() => test('instagram')}
-            disabled={!status?.instagram_configured || testing === 'instagram'}
-          >
+          <Button size="sm" variant="outline" onClick={() => test('instagram')} disabled={!status?.instagram_configured || testing === 'instagram'}>
             {testing === 'instagram' ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : <Link2 className="w-3.5 h-3.5 mr-1.5" />}
             Verbindung prüfen
           </Button>
@@ -187,30 +172,15 @@ export default function SocialCredentialsSection() {
         <div className="grid sm:grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label>Facebook Page ID</Label>
-            <Input
-              value={fbPageId}
-              onChange={(e) => setFbPageId(e.target.value)}
-              placeholder="z. B. 939562169231924"
-              inputMode="numeric"
-            />
+            <Input value={fbPageId} onChange={(e) => setFbPageId(e.target.value)} placeholder="z. B. 939562169231924" inputMode="numeric" />
           </div>
           <div className="space-y-1.5">
             <Label>Facebook Page Access Token</Label>
-            <Input
-              type="password"
-              value={fbToken}
-              onChange={(e) => setFbToken(e.target.value)}
-              placeholder={status?.facebook_configured ? 'Gespeichert – nur ändern durch Eingabe' : 'EAAG...'}
-              autoComplete="off"
-            />
+            <Input type="password" value={fbToken} onChange={(e) => setFbToken(e.target.value)} placeholder={status?.facebook_configured ? 'Gespeichert – nur ändern durch Eingabe' : 'EAAG...'} autoComplete="off" />
           </div>
         </div>
         <div className="flex flex-wrap gap-2 pt-1">
-          <Button
-            size="sm" variant="outline"
-            onClick={() => test('facebook')}
-            disabled={!status?.facebook_configured || testing === 'facebook'}
-          >
+          <Button size="sm" variant="outline" onClick={() => test('facebook')} disabled={!status?.facebook_configured || testing === 'facebook'}>
             {testing === 'facebook' ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : <Link2 className="w-3.5 h-3.5 mr-1.5" />}
             Verbindung prüfen
           </Button>
@@ -222,40 +192,54 @@ export default function SocialCredentialsSection() {
         </div>
       </div>
 
-      {/* X.com — app-level credentials via server env vars, kein per-User Token */}
+      {/* X.com — per-user OAuth 1.0a credentials */}
       <div className="rounded-xl border border-border p-4 space-y-3">
         <div className="flex items-center gap-2">
           <Twitter className="w-5 h-5 text-sky-500" />
           <h3 className="font-medium flex-1">X.com (Twitter)</h3>
-          {xStatus === true ? (
+          {status?.x_configured ? (
             <span className="inline-flex items-center gap-1 text-xs text-green-600 font-medium">
               <CheckCircle2 className="w-3.5 h-3.5" /> Verbunden
             </span>
-          ) : xStatus === false ? (
-            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-              <AlertCircle className="w-3.5 h-3.5" /> Nicht konfiguriert
-            </span>
           ) : (
             <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Prüfe...
+              <AlertCircle className="w-3.5 h-3.5" /> Nicht verbunden
             </span>
           )}
         </div>
         <p className="text-xs text-muted-foreground">
-          X.com nutzt zentrale App-Zugangsdaten (serverseitig gespeichert). Zum Posten wird OAuth 1.0a User Context verwendet — der Bearer Token wird nicht fürs Posten benutzt.
+          Erstelle im X Developer Portal eine App mit „Read and Write"-Berechtigung und trage hier deine OAuth 1.0a Zugangsdaten ein. Der Bearer Token wird für Posts nicht benötigt.
         </p>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label>Consumer Key (API Key)</Label>
+            <Input type="password" value={xApiKey} onChange={(e) => setXApiKey(e.target.value)} placeholder={status?.x_configured ? 'Gespeichert – nur ändern durch Eingabe' : 'z. B. xvz1evFS4wEEPTGEFPHBog'} autoComplete="off" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Consumer Secret (API Key Secret)</Label>
+            <Input type="password" value={xApiSecret} onChange={(e) => setXApiSecret(e.target.value)} placeholder={status?.x_configured ? 'Gespeichert – nur ändern durch Eingabe' : '50-stelliges Secret'} autoComplete="off" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Access Token</Label>
+            <Input type="password" value={xAccessToken} onChange={(e) => setXAccessToken(e.target.value)} placeholder={status?.x_configured ? 'Gespeichert – nur ändern durch Eingabe' : 'enthält meist einen Bindestrich'} autoComplete="off" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Access Token Secret</Label>
+            <Input type="password" value={xAccessTokenSecret} onChange={(e) => setXAccessTokenSecret(e.target.value)} placeholder={status?.x_configured ? 'Gespeichert – nur ändern durch Eingabe' : '45-stelliges Secret'} autoComplete="off" />
+          </div>
+        </div>
         <div className="flex flex-wrap gap-2 pt-1">
-          <Button
-            size="sm" variant="outline"
-            onClick={() => test('x')}
-            disabled={!xStatus || testing === 'x'}
-          >
+          <Button size="sm" variant="outline" onClick={() => test('x')} disabled={!status?.x_configured || testing === 'x'}>
             {testing === 'x' ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : <Link2 className="w-3.5 h-3.5 mr-1.5" />}
             Verbindung prüfen
           </Button>
+          {status?.x_configured && (
+            <Button size="sm" variant="ghost" onClick={() => disconnect('x')}>
+              <Link2Off className="w-3.5 h-3.5 mr-1.5" /> Trennen
+            </Button>
+          )}
         </div>
       </div>
-
 
       <div className="flex justify-end">
         <Button onClick={save} disabled={saving}>
