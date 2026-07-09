@@ -244,8 +244,36 @@ export default function SocialPublishModal({
 
         <div className="p-4 space-y-4">
           <div className="rounded-xl overflow-hidden border border-border bg-muted">
-            <img src={banner.url} alt={banner.name} className="w-full max-h-64 object-contain bg-muted" />
+            <img
+              src={banner.url}
+              alt={banner.name}
+              className="w-full max-h-64 object-contain bg-muted"
+              onLoad={(e) => {
+                const img = e.currentTarget;
+                if (img.naturalWidth && img.naturalHeight) {
+                  setDimensions({ w: img.naturalWidth, h: img.naturalHeight });
+                }
+              }}
+            />
           </div>
+
+          {dimensions && (!instagramCompatible || !facebookCompatible) && (
+            <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-3 text-xs text-amber-800 dark:text-amber-200">
+              <p className="font-medium mb-1">
+                Seitenverhältnis {dimensions.w}×{dimensions.h} ({ratio!.toFixed(2)}:1)
+              </p>
+              {!instagramCompatible && (
+                <p>
+                  Instagram akzeptiert nur Seitenverhältnisse zwischen 4:5 (0,80) und 1,91:1.
+                  Dieses Banner passt nicht und wurde deaktiviert. Nutze z. B. 1080×1080 (Quadrat),
+                  1080×1350 (Portrait 4:5) oder 1080×566 (Landscape 1,91:1).
+                </p>
+              )}
+              {!facebookCompatible && (
+                <p>Facebook akzeptiert dieses extrem schmale/hohe Format nicht.</p>
+              )}
+            </div>
+          )}
 
           {!done && (
             <>
