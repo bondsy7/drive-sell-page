@@ -44,6 +44,18 @@ export default function SocialPublishModal({
   const [status, setStatus] = useState<{ instagram: boolean; facebook: boolean; x: boolean } | null>(null);
   const [tone, setTone] = useState<'seriös' | 'verkaufsstark' | 'kurz' | 'locker' | 'premium'>('verkaufsstark');
   const [format, setFormat] = useState<'image' | 'carousel'>('image');
+  const [dimensions, setDimensions] = useState<{ w: number; h: number } | null>(null);
+
+  // Instagram supports aspect ratios between 4:5 (0.8) and 1.91:1 (1.91).
+  // Common web/story sizes like 300x600 (0.5) or 1080x1920 (0.5625) are rejected.
+  const ratio = dimensions ? dimensions.w / dimensions.h : null;
+  const IG_MIN = 0.8;   // 4:5 portrait
+  const IG_MAX = 1.91;  // 1.91:1 landscape
+  const instagramCompatible = ratio === null ? true : ratio >= IG_MIN && ratio <= IG_MAX;
+  // Facebook accepts almost anything but very extreme; keep a soft range.
+  const FB_MIN = 0.4;
+  const FB_MAX = 2.5;
+  const facebookCompatible = ratio === null ? true : ratio >= FB_MIN && ratio <= FB_MAX;
 
   const [generatingCaption, setGeneratingCaption] = useState(false);
   const [scheduleEnabled, setScheduleEnabled] = useState(false);
@@ -232,33 +244,64 @@ export default function SocialPublishModal({
 
         <div className="p-4 space-y-4">
           <div className="rounded-xl overflow-hidden border border-border bg-muted">
-            <img src={banner.url} alt={banner.name} className="w-full max-h-64 object-contain bg-muted" />
+            <img
+              src={banner.url}
+              alt={banner.name}
+              className="w-full max-h-64 object-contain bg-muted"
+              onLoad={(e) => {
+                const img = e.currentTarget;
+                if (img.naturalWidth && img.naturalHeight) {
+                  setDimensions({ w: img.naturalWidth, h: img.naturalHeight });
+                }
+              }}
+            />
           </div>
+
+          {dimensions && (!instagramCompatible || !facebookCompatible) && (
+            <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-3 text-xs text-amber-800 dark:text-amber-200">
+              <p className="font-medium mb-1">
+                Seitenverhältnis {dimensions.w}×{dimensions.h} ({ratio!.toFixed(2)}:1)
+              </p>
+              {!instagramCompatible && (
+                <p>
+                  Instagram akzeptiert nur Seitenverhältnisse zwischen 4:5 (0,80) und 1,91:1.
+                  Dieses Banner passt nicht und wurde deaktiviert. Nutze z. B. 1080×1080 (Quadrat),
+                  1080×1350 (Portrait 4:5) oder 1080×566 (Landscape 1,91:1).
+                </p>
+              )}
+              {!facebookCompatible && (
+                <p>Facebook akzeptiert dieses extrem schmale/hohe Format nicht.</p>
+              )}
+            </div>
+          )}
 
           {!done && (
             <>
               <div>
                 <Label className="mb-2 block">Plattformen</Label>
                 <div className="flex flex-col gap-2">
-                  <label className={`flex items-center gap-3 p-3 rounded-lg border border-border ${status?.instagram === false ? 'opacity-60' : 'cursor-pointer hover:bg-muted/50'}`}>
+                  <label className={`flex items-center gap-3 p-3 rounded-lg border border-border ${status?.instagram === false || !instagramCompatible ? 'opacity-60' : 'cursor-pointer hover:bg-muted/50'}`}>
                     <Checkbox
-                      checked={platforms.instagram}
-                      disabled={status?.instagram === false}
+                      checked={platforms.instagram && instagramCompatible}
+                      disabled={status?.instagram === false || !instagramCompatible}
                       onCheckedChange={(v) => setPlatforms((p) => ({ ...p, instagram: !!v }))}
                     />
                     <Instagram className="w-5 h-5 text-pink-600" />
                     <span className="font-medium flex-1">Instagram</span>
-                    {status?.instagram === true && (
+                    {!instagramCompatible && (
+                      <span className="text-xs text-amber-600 font-medium">Format nicht unterstützt</span>
+                    )}
+                    {instagramCompatible && status?.instagram === true && (
                       <span className="text-xs text-green-600 font-medium">Verbunden</span>
                     )}
-                    {status?.instagram === false && (
+                    {instagramCompatible && status?.instagram === false && (
                       <span className="text-xs text-muted-foreground">Nicht konfiguriert</span>
                     )}
                   </label>
-                  <label className={`flex items-center gap-3 p-3 rounded-lg border border-border ${status?.facebook === false ? 'opacity-60' : 'cursor-pointer hover:bg-muted/50'}`}>
+                  <label className={`flex items-center gap-3 p-3 rounded-lg border border-border ${status?.facebook === false || !facebookCompatible ? 'opacity-60' : 'cursor-pointer hover:bg-muted/50'}`}>
                     <Checkbox
-                      checked={platforms.facebook}
-                      disabled={status?.facebook === false}
+                      checked={platforms.facebook && facebookCompatible}
+                      disabled={status?.facebook === false || !facebookCompatible}
                       onCheckedChange={(v) => setPlatforms((p) => ({ ...p, facebook: !!v }))}
                     />
                     <Facebook className="w-5 h-5 text-blue-600" />
