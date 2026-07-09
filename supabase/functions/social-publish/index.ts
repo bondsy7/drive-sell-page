@@ -83,7 +83,14 @@ Deno.serve(async (req) => {
 
     const igConfigured = !!(igUserId && metaAccessToken);
     const fbConfigured = !!(fbPageId && fbPageToken);
-    const xCreds = loadXCreds();
+    const xCreds: XCreds | null = (cred?.x_api_key && cred?.x_api_secret && cred?.x_access_token && cred?.x_access_token_secret)
+      ? {
+          apiKey: cred.x_api_key,
+          apiSecret: cred.x_api_secret,
+          accessToken: cred.x_access_token,
+          accessTokenSecret: cred.x_access_token_secret,
+        }
+      : null;
     const xConfigured = !!xCreds;
 
     // ── Status check (no tokens exposed) ─────────────────────
