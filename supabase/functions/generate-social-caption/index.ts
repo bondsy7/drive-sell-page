@@ -4,7 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { getSecret } from "../_shared/get-secret.ts";
 
-type Platform = "instagram" | "facebook";
+type Platform = "instagram" | "facebook" | "x";
 type Format = "image" | "video" | "reel" | "carousel";
 type Tone = "seriös" | "verkaufsstark" | "kurz" | "locker" | "premium";
 
