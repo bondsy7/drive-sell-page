@@ -21,7 +21,7 @@ interface Props {
   onClose: () => void;
 }
 
-type Platform = 'instagram' | 'facebook';
+type Platform = 'instagram' | 'facebook' | 'x';
 
 interface PlatformResult {
   platform: Platform;
@@ -37,10 +37,11 @@ export default function SocialPublishModal({
   const [platforms, setPlatforms] = useState<Record<Platform, boolean>>({
     instagram: true,
     facebook: false,
+    x: false,
   });
   const [publishing, setPublishing] = useState(false);
   const [results, setResults] = useState<PlatformResult[] | null>(null);
-  const [status, setStatus] = useState<{ instagram: boolean; facebook: boolean } | null>(null);
+  const [status, setStatus] = useState<{ instagram: boolean; facebook: boolean; x: boolean } | null>(null);
   const [tone, setTone] = useState<'seriös' | 'verkaufsstark' | 'kurz' | 'locker' | 'premium'>('verkaufsstark');
   const [format, setFormat] = useState<'image' | 'carousel'>('image');
 
