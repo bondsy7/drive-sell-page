@@ -319,7 +319,7 @@ function humanizeXError(status: number, body: string): string {
   if (status === 401) return "X.com Authentifizierung fehlgeschlagen (401). Bitte X_API_KEY / X_ACCESS_TOKEN prüfen — Bearer Token darf für Posts nicht verwendet werden.";
   if (status === 403) {
     if (/duplicate/i.test(safe)) return "X.com hat den Post als Duplikat abgelehnt (403).";
-    if (/write/i.test(safe) || /permission/i.test(safe)) return "X.com App hat keine Schreibrechte (403). In der Developer Portal auf „Read and Write" umstellen und Access Token neu erzeugen.";
+    if (/write/i.test(safe) || /permission/i.test(safe)) return 'X.com App hat keine Schreibrechte (403). Im Developer Portal auf „Read and Write" umstellen und Access Token neu erzeugen.';
     return "X.com Zugriff verweigert (403).";
   }
   if (status === 429) return "X.com Rate Limit erreicht (429). Bitte später erneut versuchen.";
