@@ -405,6 +405,6 @@ function extractProviderMessage(body: string): string | null {
 function sanitizeForLog(body: string): string {
   return body
     .slice(0, 700)
-    .replace(/oauth_[a-z_]+="[^"]+"/gi, '$&'.replace(/"[^"]+"/, '"[redacted]"'))
+    .replace(/(oauth_[a-z_]+=)"[^"]+"/gi, '$1"[redacted]"')
     .replace(/[A-Za-z0-9_-]{32,}/g, "[redacted]");
 }
