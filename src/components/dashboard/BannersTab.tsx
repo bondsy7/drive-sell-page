@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { LayoutGrid, Download, Trash2, Share2, Send } from 'lucide-react';
+import { LayoutGrid, Download, Trash2, Share2 } from 'lucide-react';
+import auto3IconUrl from '@/assets/auto3-icon.svg';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { type BannerFile } from './types';
