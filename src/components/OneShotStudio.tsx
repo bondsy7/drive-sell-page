@@ -54,10 +54,10 @@ import { lookupBrandFromVin } from '@/lib/vin-wmi-lookup';
 import { usePipelineSafe } from '@/contexts/PipelineContext';
 import { compressImageForAI, fileToBase64 } from '@/lib/image-compress';
 import { useVehicleMakes } from '@/hooks/useVehicleMakes';
-import { ensureVehicle } from '@/lib/vehicle-utils';
+import { ensureVehicle, ensureVehicleAuto, mergeVehicleById } from '@/lib/vehicle-utils';
 
 import OneShotMarketingForm from './oneshot/OneShotMarketingForm';
-import { persistScanData, persistVinLookup } from '@/lib/scan-to-vehicle-data';
+import { persistVinLookup, scanDataToVehicleData } from '@/lib/scan-to-vehicle-data';
 import ProcessTimer, { formatDuration } from '@/components/ProcessTimer';
 import { uploadToGeminiFiles } from '@/lib/gemini-file-upload';
 import OneShotLightbox, { type LightboxItem } from './oneshot/OneShotLightbox';
@@ -599,11 +599,21 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
       const ext = (data?.extracted || {}) as ScanData;
       setScanData(ext);
       mergeScanIntoForm(ext, 'datasheet');
-      // Persist into vehicle row immediately (VIN-keyed) so Daten-Tab shows it
+      // Persist the FULL scan (incl. Verbrauch, CO₂-Klasse, Ausstattung, …)
+      // to the vehicle row so Banner/PDF/Landing-Page später sauber darauf
+      // zugreifen können. Ohne VIN wird ein Platzhalter-VIN erzeugt, damit die
+      // Daten nie verloren gehen.
       if (user?.id) {
-        const targetVin = (ext.vin || vin || '').toString();
-        const vid = await persistScanData(user.id, targetVin, ext as Record<string, any>);
-        if (vid) setSavedVehicleId(vid);
+        try {
+          const vData = scanDataToVehicleData(ext as Record<string, any>);
+          const targetVin = (ext.vin || vin || '').toString();
+          const vid = savedVehicleId
+            ? await mergeVehicleById(user.id, savedVehicleId, vData)
+            : await ensureVehicleAuto(user.id, targetVin, vData);
+          if (vid && vid !== savedVehicleId) setSavedVehicleId(vid);
+        } catch (e) {
+          console.warn('[OneShot] persist scanData failed:', e);
+        }
       }
       toast.success(
         merged.length > 1
@@ -641,9 +651,16 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
         setScanData(ext);
         mergeScanIntoForm(ext, 'datasheet');
         if (user?.id) {
-          const targetVin = (ext.vin || vin || '').toString();
-          const vid = await persistScanData(user.id, targetVin, ext as Record<string, any>);
-          if (vid) setSavedVehicleId(vid);
+          try {
+            const vData = scanDataToVehicleData(ext as Record<string, any>);
+            const targetVin = (ext.vin || vin || '').toString();
+            const vid = savedVehicleId
+              ? await mergeVehicleById(user.id, savedVehicleId, vData)
+              : await ensureVehicleAuto(user.id, targetVin, vData);
+            if (vid && vid !== savedVehicleId) setSavedVehicleId(vid);
+          } catch (e) {
+            console.warn('[OneShot] persist scanData (re-analyze) failed:', e);
+          }
         }
       }
     } finally {
@@ -1118,16 +1135,24 @@ This is the MARKETING MASTER (Hero) shot — push lighting one notch beyond the 
         ? realVin
         : `OS-${Date.now().toString(36).toUpperCase()}`;
 
-      const vehicleData = {
+      // Merge Datenblatt-Scan (Verbrauch, CO₂, Ausstattung, Leistung, …) in
+      // die Vehicle-Row, damit Banner/PDF/Landing-Page später direkt darauf
+      // zugreifen können. Form-Felder haben Vorrang, ScanData füllt Lücken.
+      const scanVData: any = scanData ? scanDataToVehicleData(scanData as Record<string, any>) : {};
+      const vehicleData: any = {
+        ...scanVData,
         vehicle: {
-          brand: form.brand,
-          model: form.model,
-          variant: form.variant,
-          color: '',
-          year: null as any,
+          ...(scanVData.vehicle || {}),
+          brand: form.brand || scanVData.vehicle?.brand || '',
+          model: form.model || scanVData.vehicle?.model || '',
+          variant: form.variant || scanVData.vehicle?.variant || '',
+          color: scanVData.vehicle?.color || '',
+          year: scanVData.vehicle?.year || null,
         },
       };
-      const newVehicleId = await ensureVehicle(user.id, effectiveVin, vehicleData);
+      const newVehicleId = savedVehicleId
+        ? (await mergeVehicleById(user.id, savedVehicleId, vehicleData)) || savedVehicleId
+        : await ensureVehicle(user.id, effectiveVin, vehicleData);
       if (!newVehicleId) {
         toast.error('Fahrzeug konnte nicht angelegt werden');
         return;
@@ -1168,7 +1193,7 @@ This is the MARKETING MASTER (Hero) shot — push lighting one notch beyond the 
     } finally {
       setEnsuringVehicle(false);
     }
-  }, [form.vehicleTitle, form.brand, form.model, form.variant, user, vin, vehicleImages, dataSheetBase64s]);
+  }, [form.vehicleTitle, form.brand, form.model, form.variant, user, vin, vehicleImages, dataSheetBase64s, scanData, savedVehicleId]);
 
   /* ─────────────────────────────────────────────────────────────
    * Render
