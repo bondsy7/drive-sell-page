@@ -109,6 +109,51 @@ export type Database = {
           },
         ]
       }
+      banner_publications: {
+        Row: {
+          banner_path: string
+          banner_url: string | null
+          channels: string[]
+          client_reference_id: string
+          created_at: string
+          error: string | null
+          id: string
+          response: Json | null
+          status: string
+          target_email: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          banner_path: string
+          banner_url?: string | null
+          channels?: string[]
+          client_reference_id: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          response?: Json | null
+          status?: string
+          target_email: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          banner_path?: string
+          banner_url?: string | null
+          channels?: string[]
+          client_reference_id?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          response?: Json | null
+          status?: string
+          target_email?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       banner_templates: {
         Row: {
           brand_key: string | null
@@ -931,6 +976,10 @@ export type Database = {
         Row: {
           address: string | null
           api_key: string | null
+          auto3_account_email: string | null
+          auto3_channels_default: string[]
+          auto3_default_caption: string | null
+          auto3_default_cta_url: string | null
           ci_settings: Json | null
           city: string | null
           company_name: string | null
@@ -962,6 +1011,10 @@ export type Database = {
         Insert: {
           address?: string | null
           api_key?: string | null
+          auto3_account_email?: string | null
+          auto3_channels_default?: string[]
+          auto3_default_caption?: string | null
+          auto3_default_cta_url?: string | null
           ci_settings?: Json | null
           city?: string | null
           company_name?: string | null
@@ -993,6 +1046,10 @@ export type Database = {
         Update: {
           address?: string | null
           api_key?: string | null
+          auto3_account_email?: string | null
+          auto3_channels_default?: string[]
+          auto3_default_caption?: string | null
+          auto3_default_cta_url?: string | null
           ci_settings?: Json | null
           city?: string | null
           company_name?: string | null
