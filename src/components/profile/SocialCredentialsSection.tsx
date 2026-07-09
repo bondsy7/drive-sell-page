@@ -222,6 +222,41 @@ export default function SocialCredentialsSection() {
         </div>
       </div>
 
+      {/* X.com — app-level credentials via server env vars, kein per-User Token */}
+      <div className="rounded-xl border border-border p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <Twitter className="w-5 h-5 text-sky-500" />
+          <h3 className="font-medium flex-1">X.com (Twitter)</h3>
+          {xStatus === true ? (
+            <span className="inline-flex items-center gap-1 text-xs text-green-600 font-medium">
+              <CheckCircle2 className="w-3.5 h-3.5" /> Verbunden
+            </span>
+          ) : xStatus === false ? (
+            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+              <AlertCircle className="w-3.5 h-3.5" /> Nicht konfiguriert
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Prüfe...
+            </span>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          X.com nutzt zentrale App-Zugangsdaten (serverseitig gespeichert). Zum Posten wird OAuth 1.0a User Context verwendet — der Bearer Token wird nicht fürs Posten benutzt.
+        </p>
+        <div className="flex flex-wrap gap-2 pt-1">
+          <Button
+            size="sm" variant="outline"
+            onClick={() => test('x')}
+            disabled={!xStatus || testing === 'x'}
+          >
+            {testing === 'x' ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : <Link2 className="w-3.5 h-3.5 mr-1.5" />}
+            Verbindung prüfen
+          </Button>
+        </div>
+      </div>
+
+
       <div className="flex justify-end">
         <Button onClick={save} disabled={saving}>
           {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
