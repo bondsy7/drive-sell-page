@@ -1193,7 +1193,7 @@ This is the MARKETING MASTER (Hero) shot — push lighting one notch beyond the 
     } finally {
       setEnsuringVehicle(false);
     }
-  }, [form.vehicleTitle, form.brand, form.model, form.variant, user, vin, vehicleImages, dataSheetBase64s]);
+  }, [form.vehicleTitle, form.brand, form.model, form.variant, user, vin, vehicleImages, dataSheetBase64s, scanData, savedVehicleId]);
 
   /* ─────────────────────────────────────────────────────────────
    * Render
