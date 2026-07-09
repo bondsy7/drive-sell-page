@@ -54,10 +54,10 @@ import { lookupBrandFromVin } from '@/lib/vin-wmi-lookup';
 import { usePipelineSafe } from '@/contexts/PipelineContext';
 import { compressImageForAI, fileToBase64 } from '@/lib/image-compress';
 import { useVehicleMakes } from '@/hooks/useVehicleMakes';
-import { ensureVehicle } from '@/lib/vehicle-utils';
+import { ensureVehicle, ensureVehicleAuto, mergeVehicleById } from '@/lib/vehicle-utils';
 
 import OneShotMarketingForm from './oneshot/OneShotMarketingForm';
-import { persistScanData, persistVinLookup } from '@/lib/scan-to-vehicle-data';
+import { persistScanData, persistVinLookup, scanDataToVehicleData } from '@/lib/scan-to-vehicle-data';
 import ProcessTimer, { formatDuration } from '@/components/ProcessTimer';
 import { uploadToGeminiFiles } from '@/lib/gemini-file-upload';
 import OneShotLightbox, { type LightboxItem } from './oneshot/OneShotLightbox';
