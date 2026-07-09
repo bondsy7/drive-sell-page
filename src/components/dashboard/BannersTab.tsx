@@ -126,7 +126,7 @@ export default function BannersTab({ banners, onDownload, onDelete }: Props) {
                       onClick={(e) => e.stopPropagation()}
                     >
                       <Link to="/profile" className="opacity-50 hover:opacity-100">
-                        <Send className="w-3.5 h-3.5" />
+                        <img src={auto3IconUrl} alt="Auto3" className="w-3.5 h-3.5" />
                       </Link>
                     </Button>
                   )}
