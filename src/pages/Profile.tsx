@@ -164,9 +164,6 @@ const Profile = () => {
     });
   }, [user]);
 
-      }
-    });
-  }, [user]);
 
   const loadTransactions = useCallback(async () => {
     if (!user) return;
