@@ -40,6 +40,10 @@ interface ProfileData {
   default_legal_text: string;
   primary_color: string;
   secondary_color: string;
+  auto3_account_email: string;
+  auto3_channels_default: string[];
+  auto3_default_caption: string;
+  auto3_default_cta_url: string;
 }
 
 const emptyProfile: ProfileData = {
@@ -48,7 +52,10 @@ const emptyProfile: ProfileData = {
   facebook_url: '', instagram_url: '', x_url: '', tiktok_url: '', youtube_url: '', whatsapp_number: '',
   leasing_bank: '', leasing_legal_text: '', financing_bank: '', financing_legal_text: '', default_legal_text: '',
   primary_color: '#174f6b', secondary_color: '#e2b04a',
+  auto3_account_email: '', auto3_channels_default: ['website', 'instagram', 'facebook'],
+  auto3_default_caption: '', auto3_default_cta_url: '',
 };
+
 
 const Section: React.FC<{ icon: React.ReactNode; title: string; children: React.ReactNode }> = ({ icon, title, children }) => (
   <div className="bg-card rounded-xl border border-border p-4 sm:p-6 space-y-4">
