@@ -549,10 +549,26 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
       const result = await fileToBase64(file);
       setDataSheetImage(result);
       analyzeDataSheet(result);
+      // Wenn ein Fahrzeug bekannt ist, das Datenblatt auch als "Original"
+      // ablegen – Roh-Aufnahmen können später für weitere Generierungen wichtig sein.
+      if (user && vehicleId) {
+        try {
+          const raw = result.includes(',') ? result.split(',')[1] : result;
+          const bytes = Uint8Array.from(atob(raw), c => c.charCodeAt(0));
+          const blob = new Blob([bytes], { type: file.type || 'image/jpeg' });
+          const path = `${user.id}/${vehicleId}/${Date.now()}-datenblatt-${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+          await supabase.storage.from('originals').upload(path, blob, {
+            contentType: file.type || 'image/jpeg',
+            upsert: false,
+          });
+        } catch (err) {
+          console.warn('[BannerGenerator] datasheet → originals upload skipped:', err);
+        }
+      }
     } catch {
       toast.error('Datenblatt konnte nicht geladen werden');
     }
-  }, [analyzeDataSheet]);
+  }, [analyzeDataSheet, user, vehicleId]);
 
   // Build prompt for a specific format
   const buildPromptForFormat = useCallback((formatId: string) => {

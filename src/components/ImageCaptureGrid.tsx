@@ -626,7 +626,14 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     }
     const main = captures[doneSlots[0].key].remasteredBase64!;
     const gallery = doneSlots.slice(1).map(s => captures[s.key].remasteredBase64!);
-    const originals = doneSlots.map(s => captures[s.key].base64);
+    // Include ALL raw sources as originals: main perspective shots + weitere
+    // Detailaufnahmen (Datenblatt, Innenraum, Felgen, Motor, Schäden, …).
+    // So jede Aufnahme, die der Nutzer draußen am Auto macht, landet später
+    // im Dashboard unter "Originale".
+    const originals = [
+      ...doneSlots.map(s => captures[s.key].base64),
+      ...detailImages,
+    ];
     toast.success(`${doneSlots.length} Bilder erfolgreich remastered.`);
     onComplete(main, gallery, detectedVin || undefined, originals);
   };
