@@ -4,6 +4,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { loadXCreds, verifyCredentials as verifyX, uploadImage as xUploadImage, uploadVideo as xUploadVideo, postTweet as xPostTweet } from "../_shared/x-oauth.ts";
 
 
 const IG_GRAPH_VERSION = "v21.0";
@@ -11,7 +12,7 @@ const FB_GRAPH_VERSION = "v25.0";
 const INSTAGRAM_GRAPH = `https://graph.instagram.com/${IG_GRAPH_VERSION}`;
 const FACEBOOK_GRAPH = `https://graph.facebook.com/${FB_GRAPH_VERSION}`;
 
-type Platform = "instagram" | "facebook";
+type Platform = "instagram" | "facebook" | "x";
 
 type MediaType = "image" | "video";
 
