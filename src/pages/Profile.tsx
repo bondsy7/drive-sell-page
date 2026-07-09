@@ -40,6 +40,10 @@ interface ProfileData {
   default_legal_text: string;
   primary_color: string;
   secondary_color: string;
+  auto3_account_email: string;
+  auto3_channels_default: string[];
+  auto3_default_caption: string;
+  auto3_default_cta_url: string;
 }
 
 const emptyProfile: ProfileData = {
@@ -48,7 +52,10 @@ const emptyProfile: ProfileData = {
   facebook_url: '', instagram_url: '', x_url: '', tiktok_url: '', youtube_url: '', whatsapp_number: '',
   leasing_bank: '', leasing_legal_text: '', financing_bank: '', financing_legal_text: '', default_legal_text: '',
   primary_color: '#174f6b', secondary_color: '#e2b04a',
+  auto3_account_email: '', auto3_channels_default: ['website', 'instagram', 'facebook'],
+  auto3_default_caption: '', auto3_default_cta_url: '',
 };
+
 
 const Section: React.FC<{ icon: React.ReactNode; title: string; children: React.ReactNode }> = ({ icon, title, children }) => (
   <div className="bg-card rounded-xl border border-border p-4 sm:p-6 space-y-4">
@@ -148,10 +155,15 @@ const Profile = () => {
           default_legal_text: data.default_legal_text || '',
           primary_color: (data as any).primary_color || '#174f6b',
           secondary_color: (data as any).secondary_color || '#e2b04a',
+          auto3_account_email: (data as any).auto3_account_email || '',
+          auto3_channels_default: (data as any).auto3_channels_default || ['website', 'instagram', 'facebook'],
+          auto3_default_caption: (data as any).auto3_default_caption || '',
+          auto3_default_cta_url: (data as any).auto3_default_cta_url || '',
         });
       }
     });
   }, [user]);
+
 
   const loadTransactions = useCallback(async () => {
     if (!user) return;
@@ -287,8 +299,13 @@ const Profile = () => {
       default_legal_text: profile.default_legal_text || null,
       primary_color: profile.primary_color || null,
       secondary_color: profile.secondary_color || null,
+      auto3_account_email: profile.auto3_account_email.trim() || null,
+      auto3_channels_default: profile.auto3_channels_default,
+      auto3_default_caption: profile.auto3_default_caption || null,
+      auto3_default_cta_url: profile.auto3_default_cta_url || null,
       updated_at: new Date().toISOString(),
-    }).eq('id', user.id);
+    } as any).eq('id', user.id);
+
     await saveBanks();
     setSaving(false);
     if (error) { toast.error('Fehler beim Speichern'); console.error(error); return; }
@@ -496,7 +513,68 @@ const Profile = () => {
               </p>
               <SocialCredentialsSection />
             </Section>
+
+            <Section icon={<Share2 className="w-4 h-4" />} title="Auto3-Integration">
+              <p className="text-xs text-muted-foreground -mt-2 mb-2">
+                Banner aus dem Dashboard direkt an dein Auto3-Konto pushen (Listing-Banner, Instagram, Facebook).
+                Ohne hinterlegte Auto3-Login-E-Mail ist der Push-Button im Banner-Dashboard deaktiviert.
+              </p>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5 sm:col-span-2">
+                  <Label>Auto3-Login-E-Mail *</Label>
+                  <Input
+                    type="email"
+                    value={profile.auto3_account_email}
+                    onChange={e => update('auto3_account_email', e.target.value)}
+                    placeholder="dein-login@autohaus.de"
+                  />
+                  <p className="text-[11px] text-muted-foreground">Die E-Mail-Adresse, mit der du dich bei Auto3 anmeldest. Wird zur Identifikation deines Kontos genutzt.</p>
+                </div>
+                <div className="space-y-1.5 sm:col-span-2">
+                  <Label>Standard-Kanäle</Label>
+                  <div className="flex flex-wrap gap-3">
+                    {(['website', 'instagram', 'facebook'] as const).map((ch) => {
+                      const checked = profile.auto3_channels_default.includes(ch);
+                      return (
+                        <label key={ch} className="flex items-center gap-2 text-sm cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={(e) => {
+                              setProfile(p => ({
+                                ...p,
+                                auto3_channels_default: e.target.checked
+                                  ? Array.from(new Set([...p.auto3_channels_default, ch]))
+                                  : p.auto3_channels_default.filter(c => c !== ch),
+                              }));
+                            }}
+                          />
+                          <span className="capitalize">{ch === 'website' ? 'Listing-Banner (Website)' : ch}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Standard-CTA-URL (optional)</Label>
+                  <Input
+                    value={profile.auto3_default_cta_url}
+                    onChange={e => update('auto3_default_cta_url', e.target.value)}
+                    placeholder="https://www.autohaus-mustermann.de"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Standard-Caption (optional)</Label>
+                  <Input
+                    value={profile.auto3_default_caption}
+                    onChange={e => update('auto3_default_caption', e.target.value)}
+                    placeholder="Wird als Post-Text / Banner-Beschreibung genutzt"
+                  />
+                </div>
+              </div>
+            </Section>
           </TabsContent>
+
 
 
           {/* Tab: Finanzen */}

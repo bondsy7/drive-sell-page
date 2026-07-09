@@ -1,9 +1,13 @@
 import { useState } from 'react';
-import { LayoutGrid, Download, Trash2, Share2 } from 'lucide-react';
+import { LayoutGrid, Download, Trash2, Share2, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 import { type BannerFile } from './types';
 import BannerLightbox from './BannerLightbox';
 import SocialPublishModal from './SocialPublishModal';
+import Auto3PublishDialog from './Auto3PublishDialog';
+import { useAuto3Config } from '@/hooks/useAuto3Config';
+
 
 interface Props {
   banners: BannerFile[];
@@ -46,6 +50,9 @@ export default function BannersTab({ banners, onDownload, onDelete }: Props) {
   const [lightboxIndex, setLightboxIndex] = useState(-1);
   const [formats, setFormats] = useState<Record<string, FormatInfo>>({});
   const [publishBanner, setPublishBanner] = useState<BannerFile | null>(null);
+  const [auto3Banner, setAuto3Banner] = useState<BannerFile | null>(null);
+  const { config: auto3Config, isConfigured: auto3Ready } = useAuto3Config();
+
 
   if (banners.length === 0) {
     return (
@@ -99,10 +106,33 @@ export default function BannersTab({ banners, onDownload, onDelete }: Props) {
                   {banner.created_at ? new Date(banner.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Banner'}
                 </p>
                 <div className="flex gap-1.5">
+                  {auto3Ready ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => { e.stopPropagation(); setAuto3Banner(banner); }}
+                      title="An Auto3 senden"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      asChild
+                      title="Auto3-Konto im Profil hinterlegen, um Banner an Auto3 zu senden"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Link to="/profile" className="opacity-50 hover:opacity-100">
+                        <Send className="w-3.5 h-3.5" />
+                      </Link>
+                    </Button>
+                  )}
                   <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setPublishBanner(banner); }} title="Auf Social Media posten"><Share2 className="w-3.5 h-3.5" /></Button>
                   <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); onDownload(banner); }}><Download className="w-3.5 h-3.5" /></Button>
                   <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); onDelete(banner.fullPath, banner.name); }}><Trash2 className="w-3.5 h-3.5 text-destructive" /></Button>
                 </div>
+
               </div>
             </div>
           );
@@ -131,6 +161,15 @@ export default function BannersTab({ banners, onDownload, onDelete }: Props) {
           onClose={() => setPublishBanner(null)}
         />
       )}
+
+      {auto3Banner && auto3Config && (
+        <Auto3PublishDialog
+          banner={auto3Banner}
+          config={auto3Config}
+          onClose={() => setAuto3Banner(null)}
+        />
+      )}
+
     </>
   );
 }

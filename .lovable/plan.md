@@ -1,170 +1,80 @@
-
 ## Ziel
 
-Aus dem aktuellen, unrunden Landing-Page-Flow ein Produkt-Feature machen, das sich anfühlt wie das PDF-Tool: **ein Klick → fertige, exzellente Seite** mit sektionsspezifisch generierten Fahrzeugbildern, live editierbar direkt auf der Seite. Datenfundament kommt automatisch aus dem, was AUTO3 schon weiß (PDF/VIN, Dealer-Profil, Galerie, Pflichtangaben). Farben strikt aus `profile.primary_color` / `secondary_color`.
+Aus dem Banner-Dashboard heraus ein Banner-Bild per Klick an Auto3 pushen (Website-Listing-Banner + Instagram + Facebook). Der Nutzer hinterlegt einmalig seine Auto3-Zugangsdaten im Usermenü; ohne diese Daten ist der Push-Button inaktiv (nur Hinweis, Daten zu hinterlegen).
 
----
+## 1. Usermenü – Auto3-Konfiguration (Profile)
 
-## 1. Wie eine Fahrzeug-Landing-Page „vom Profi" aufgebaut ist
+Neuer Abschnitt „Auto3-Integration" in `src/pages/Profile.tsx` (bzw. `UserMenuSheet` verlinkt dorthin):
 
-Feste, kuratierte Section-Reihenfolge (jede Section ein- / ausblendbar, per Drag umsortierbar):
+Felder pro User (in `profiles`):
 
-```text
-1. Sticky Header       Händlerlogo · Fahrzeugname · CTA "Anfragen"
-2. Hero (Full-Bleed)   generiertes Szenenbild, Overlay-Text, Preis/Rate-Badge, 2 CTAs (Anfrage / WhatsApp)
-3. Key Facts Strip     6 Kacheln: EZ · km · Leistung · Getriebe · Kraftstoff · Farbe (auto aus VIN/PDF)
-4. Design & Exterior   Editorial 60/40 Split, generiertes 3/4-Frontbild, Fließtext
-5. Interieur           Empty-Car Innenraum-Szene, Highlights als Chip-Liste
-6. Performance / Antrieb  Zahlen groß (PS/kW, 0-100, Reichweite, Verbrauch), Detail-Crop
-7. Ausstattung         2-spaltige Feature-Liste (Kategorien: Komfort, Sicherheit, Multimedia …)
-8. Finanzierung        Rate-Karte + Konditionen + § 17 PAngV-Zeile (Bank aus Profil)
-9. Galerie             Bestehende Fahrzeugbilder aus useVehicleAssets (Grid + Lightbox)
-10. CTA-Band           Volltonstreifen in primary-color, Anfrage-Buttons
-11. Kontakt / Standort Adresse, Telefon, WhatsApp, Socials, Öffnungszeiten (optional Map-Embed)
-12. Footer + Pflichtangaben  formatMandatoryDisclosure() + Impressum-Link
-```
+- `auto3_account_email` (TEXT) – Login-Mail des Auto3-Accounts (Pflicht)
+- `auto3_channels_default` (TEXT[]) – Default-Kanäle `{website,instagram,facebook}` mit Checkboxen
+- `auto3_default_caption` (TEXT, optional) – Standard-Caption-Vorlage
+- `auto3_default_cta_url` (TEXT, optional)
 
-Jede Section hat: `id`, `type`, `enabled`, `headline`, `body`, `imagePrompt?`, `imageUrl?`. Reihenfolge und `enabled` sind pro Projekt persistiert.
+Kein API-Key beim User – der ist server-side als Secret gespeichert (`PDF_ANZEIGE_AUTO3_API_KEY`) und wird nur in der Edge Function verwendet.
 
----
+„Verbindung testen"-Button → ruft die Edge Function im Test-Modus auf (siehe unten) und zeigt grünes/rotes Feedback.
 
-## 2. Was automatisch befüllt wird (kein Neu-Eintippen)
+## 2. Backend
 
-Prefill-Reihenfolge beim „Landing Page erstellen"-Klick:
+**Secret:** `PDF_ANZEIGE_AUTO3_API_KEY` (initial `dev-pdf-anzeige-integration-key`, wird via `add_secret` gespeichert; getrennt für Prod, sobald Pravin den Prod-Key liefert). Optional zusätzlich `AUTO3_API_BASE_URL` (default `https://dev-api.autoversus.de`).
 
-| Quelle | Was |
-|---|---|
-| `projects.vehicle_data` (PDF/VIN-Flow) | Marke, Modell, Titel, Preis, Rate, Laufzeit, Verbrauch, CO₂, CO₂-Klasse, Ausstattung, Bank |
-| `profiles` | Firmenname, Logo, Adresse, Telefon, WhatsApp, Socials, `primary_color`, `secondary_color`, `default_legal_text`, `financing_bank` |
-| `useVehicleAssets(vehicleId)` | Vorhandene remasterte Bilder + 360°-Frames → Galerie-Section, Fallback für Section-Bilder |
-| `getLogoForMake` | Aktuelles Markenlogo (nie historisch, siehe Memory) |
-| `formatMandatoryDisclosure()` | Footer-Pflichtzeile (PHEV/BEV/Verbrenner korrekt) |
-| Manuell nachgereichte Felder | Nur was noch fehlt (Occasion-Text, freier Prompt) — Modal fragt gezielt |
+**Migration:**
 
-Wenn ein Feld fehlt → Section wird nicht mit Platzhaltern gefüllt, sondern **automatisch ausgeblendet**. Kein „Lorem ipsum".
+- Spalten in `profiles` ergänzen: `auto3_account_email`, `auto3_channels_default`, `auto3_default_caption`, `auto3_default_cta_url`.
+- Neue Tabelle `banner_publications` (id, user_id, banner_id, target_email, client_reference_id UNIQUE, channels TEXT[], status, response JSONB, error TEXT, created_at) inkl. GRANTs + RLS (owner-only).
 
----
+**Edge Function `publish-banner-to-auto3`:**
 
-## 3. Sektion-spezifische AI-Bilder (der wichtigste Fix)
+- Auth via `sb.auth.getClaims(token)` (Projekt-Regel).
+- Input: `{ bannerId, imageUrl (Storage-URL/Base64), caption?, channels?, title?, position?, ctaUrl?, active? }`.
+- Lädt `profiles.auto3_account_email` des Users – fehlt sie → 400 „Auto3 nicht konfiguriert".
+- `client_reference_id = pdf-<userId>-<bannerId>-<timestamp>` (idempotent, wird in `banner_publications` gespeichert).
+- Multipart-POST an `${AUTO3_API_BASE_URL}/v1/vehicle/social/post` mit `X-Auto3-Api-Key`. Bilddatei-Bytes bevorzugt (aus Storage geladen). Fallback JSON+`image_url`, wenn Bild bereits öffentlich signierbar ist.
+- Persistiert Ergebnis (inkl. per-channel Status) in `banner_publications`.
+- Gibt strukturierte Response an das Frontend zurück (`success | partial_success | failed | duplicate`).
 
-Aktuell: ein Hero-Bild, andere Sections nutzen Wiederholungen/Crops → wirkt verzerrt und unpassend.
+## 3. Frontend – Banner-Karte im Dashboard
 
-Neu: Pro sichtbarer Bild-Section wird ein eigenes Bild mit **Reference Truth Protocol** generiert (identisches Fahrzeug, Kennzeichen, Räder, Badges), aber **passender Szene**:
+In `src/components/dashboard/BannersTab.tsx` (Karte mit Datum · leeres Feld · Share · Download · Löschen):
 
-| Section | Szene | Aspect |
-|---|---|---|
-| Hero | Cinematic Wide, Umgebung passt zu Occasion (Showroom / City / Alpen) | 16:9 |
-| Design & Exterior | 3/4-Front, ruhiger Studiohintergrund in `primary` als flatter Wandton | 4:3 |
-| Interieur | Empty-Car Cockpit-Perspektive, warmes Ambient Light | 4:3 |
-| Performance | 3/4-Rear in Bewegung / Dynamic Motion Blur nur am Asphalt | 16:9 |
-| CTA-Band | abstrakte Detailaufnahme (Scheinwerfer / Felge) mit `secondary`-Tint | 21:9 |
+- Das leere Icon-Feld links neben Share wird zum **„An Auto3 pushen"-Button** (Icon: Upload/Cloud, z. B. `<Send />`).
+- **Aktivierungslogik:** Button nur enabled, wenn `profile.auto3_account_email` gesetzt ist. Sonst disabled + Tooltip: „Auto3-Zugang im Profil hinterlegen" mit Link zu Profile → Auto3.
+- Klick öffnet einen kleinen Dialog `Auto3PublishDialog`:
+  - Vorschau des Banner-Bilds
+  - Ziel-E-Mail (vorbelegt aus Profil, editierbar für den Notfall)
+  - Kanäle als Checkboxen (Website / Instagram / Facebook), vorbelegt aus `auto3_channels_default`
+  - Caption-Feld (vorbelegt aus Default oder aus Banner-Pflichttext via `formatMandatoryDisclosure`)
+  - CTA-URL (optional, vorbelegt)
+  - Button „Jetzt an Auto3 senden"
+- Nach Erfolg: grünes Badge „Auto3 · gepostet" auf der Kachel + Zeitstempel; bei `partial_success` gelbes Badge mit Details pro Kanal; bei Fehler roter Toast.
+- Nach erneutem Klick auf bereits gepushtes Banner: Dialog zeigt vorherigen Status (aus `banner_publications`) und bietet „Erneut versuchen mit neuem Bild-Job" (neuer `client_reference_id`) an.
 
-Umsetzung:
-- Neue Edge Function `generate-landing-scenes` orchestriert 5 parallele Aufrufe von `remaster-vehicle-image` mit sektionsspezifischen Prompts (Templates + Occasion-Kontext + User-CI-Farbe als Environment-Tint).
-- **Model-Tier-Routing bindend** (siehe Skill): Nutzerwahl schnell/qualitaet/premium → Gemini-Familie, turbo/ultra/neu → OpenAI. Kein Cross-Engine-Fallback.
-- Bilder werden in `vehicle-images` Bucket unter `landing/{projectId}/{sectionId}.jpg` gespeichert und in `projects.vehicle_data.imageMap` referenziert.
-- Regenerate pro Section einzeln möglich (bereits vorhandener Flow, aber mit sektionsspezifischem Prompt statt Hero-Wiederverwendung).
+## 4. Sicherheit & Robustheit
 
-Aspect-Ratio via Prompt + Post-Crop (Gemini kennt kein `aspectRatio`, siehe Memory).
+- API-Key ausschließlich server-side (Edge Function, `Deno.env.get` bzw. `getSecret`), nie im Client.
+- Owner-Check: nur der Banner-Eigentümer darf pushen.
+- Idempotenz über `client_reference_id`; Doppelklicks erzeugen keinen Doppel-Post (HTTP 409 wird als „bereits gepostet" behandelt).
+- 1× automatischer Retry bei 5xx, danach Fehler im UI.
+- Audit-Trail: jeder Versuch (Erfolg/Fehler) in `banner_publications`.
 
----
+## 5. Offene Fragen an dich
 
-## 4. WYSIWYG-Inline-Editor
+1. Sollen die Kanäle **pro Push wählbar** sein (Dialog) oder immer die im Profil hinterlegten Defaults nutzen ohne Rückfrage? ja die defauls nutzen
+2. Als **Caption** default: (a) leer, (b) `formatMandatoryDisclosure(...)` aus dem Banner, (c) freie Vorlage aus dem Profil – was ist dein Wunsch? fangen wir mit a an.
+3. Prod-API-Key von Pravin schon da, oder starten wir zunächst nur auf dem **Dev-Endpoint** (`dev-api.autoversus.de` + `dev-pdf-anzeige-integration-key`) für den Showcase? erst auf dev
 
-Ersetzt den aktuellen Formularpanel-Editor komplett.
+Sag mir kurz Bescheid, dann setze ich es in genau dieser Form um.
 
-- **Rendering:** Landing-Page wird als React-Komponente (`LandingPageRenderer`) direkt gerendert — nicht mehr als HTML-String in iframe. HTML-Export wird beim Download aus derselben Datenstruktur erzeugt.
-- **Inline-Editierung:**
-  - Klick auf Headline / Fließtext → `contentEditable` inline, Auto-Save nach Blur (debounced).
-  - Hover auf Bild → Overlay mit „Neu generieren" / „Hochladen" / „Aus Galerie wählen" / „Prompt bearbeiten".
-  - Section-Rand zeigt beim Hover Toolbar: `Nach oben ↑` `Nach unten ↓` `Ausblenden 👁` `Löschen 🗑`.
-  - Floating „+ Section einfügen"-Button zwischen zwei Sections mit Auswahlmenü (Steps, FAQ, Custom Text/Image, Comparison, Benefits).
-- **Toolbar oben:** Zurück · Vorschau (Toggle blendet alle Edit-Overlays aus) · Gerätevorschau Mobile/Tablet/Desktop · HTML herunterladen · Publizieren-Toggle.
-- **Keine zwei-Spalten-Ansicht mehr** — die Preview *ist* der Editor.
-- Auto-Save läuft weiterhin gegen `projects` (bereits existent).
+## Technische Zusammenfassung (Dateien)
 
----
-
-## 5. Layout- und Design-Qualität
-
-- **Farben:** Ausschließlich `profile.primary_color` und `secondary_color`. Sekundäre Semantiken aus diesen Farben abgeleitet: `bg-tint = primary @ 6%`, `border = primary @ 15%`, `cta-hover = secondary`. **Keine** hardcodierten Tailwind-Farbklassen im Renderer.
-- **Typografie:** Space Grotesk (Display) + Inter (Body) — bereits im Projekt. H1 40–56px, H2 28–36px, Fließtext 16–17px, Line-Height 1.65.
-- **Layout-Prinzipien:** 12-Column-Grid mit `max-w-6xl`, konsistentes vertikales Rhythmus-Raster (`py-24` pro Section, `py-16` mobile), großzügige Weißräume, Bilder in fixen Aspect-Ratios (Tailwind `aspect-*`) → **keine verzerrten Bilder mehr**.
-- **Bild-Rendering:** `object-cover` + fixe Aspect-Ratio pro Section-Typ, `loading="lazy"`, `decoding="async"`, korrekte `alt`-Texte aus Marke/Modell.
-- **Editorial Split-Sections:** 60/40 statt 50/50 mit Overlay-Gradient, alternierend links/rechts, Bild bleibt in fixer Ratio.
-- **Motion:** Sanfte Fade-In-on-Scroll für Sections (framer-motion, bereits im Projekt).
-- **Responsive:** Mobile-First, sticky CTA-Button unten auf Mobile.
-
----
-
-## 6. Erstellungs-Flow (nutzerseitig)
-
-1. Nutzer öffnet Fahrzeug im Dashboard → Button „Landing Page erstellen".
-2. **Ein Modal**, drei Zeilen:
-   - Anlass (Dropdown: Verkauf / Leasing / Finanzierung / Neuwagen-Launch / Tageszulassung).
-   - Szenen-Stil (Dropdown: Cinematic / Editorial Studio / Urban / Alpine).
-   - Modell-Tier (Slider: schnell → qualitaet → premium, mapped auf Engine).
-3. „Generieren"-Klick → Edge Function `generate-landing-page` liefert:
-   - Strukturierten Text (SEO-Titel, Hero-Copy, alle Section-Bodies) via Gemini/OpenAI mit Prefill-Daten als Kontext.
-   - Parallel: `generate-landing-scenes` erzeugt 5 Section-Bilder.
-   - Pflichtangaben werden lokal via `formatMandatoryDisclosure()` gesetzt (nicht vom LLM erfunden).
-4. Nutzer landet direkt im Inline-Editor mit fertiger Seite.
-5. Editieren nach Belieben → Auto-Save → „HTML herunterladen" oder „Publizieren".
-
-**Keine Zwischenschritte, keine leeren Formulare** — analog zum PDF-Flow.
-
----
-
-## 7. Technische Umsetzung
-
-### Frontend
-- **Neu:** `src/components/landing/LandingRenderer.tsx` — React-Renderer mit allen Section-Typen als Sub-Komponenten (`HeroSection`, `FactsStrip`, `EditorialSplit`, `SpecsSection`, `FinanceSection`, `GallerySection`, `CtaBand`, `ContactSection`, `LegalFooter`).
-- **Neu:** `src/components/landing/InlineEditor.tsx` — Hook, der `contentEditable`, Bild-Overlays und Section-Toolbars steuert; nutzt Context `LandingEditContext`.
-- **Neu:** `src/components/landing/SectionInserter.tsx` — der „+ Section"-Button zwischen Blöcken.
-- **Neu:** `src/components/landing/GenerateLandingModal.tsx` — 3-Feld-Modal für Occasion/Szene/Tier.
-- **Refactor:** `LandingPageEditor.tsx` schrumpft auf Shell (Toolbar + Renderer + Editor-Overlays).
-- **Refactor:** `landing-page-builder.ts` → wird zu `buildLandingPageHTMLFromModel(model)` und rendert dieselbe Datenstruktur zu statischem HTML **nur beim Export/Download**.
-- **Datenmodell** (in `projects.vehicle_data`):
-  ```ts
-  {
-    type: 'landing-page-v2',
-    occasion, sceneStyle, tier,
-    hero: { headline, subheadline, ctaText, priceBadge, imageUrl, imagePrompt },
-    facts: [{ label, value }...],
-    sections: [{ id, type, enabled, order, headline, body, imageUrl?, imagePrompt? }],
-    finance: { rate, duration, downPayment, bank, effectiveRate, legalLine },
-    disclosure: '<gesamter Pflichttext>',
-    dealer, brand, model, colors: { primary, secondary }
-  }
-  ```
-
-### Edge Functions
-- **Refactor:** `generate-landing-page` — Prompt komplett neu (strukturiertes JSON-Schema fest, keine kreativen Section-Typen aus dem Nichts, Pflichtangaben werden **nicht** vom LLM erzeugt).
-- **Neu:** `generate-landing-scenes` — orchestriert 5 parallele `remaster-vehicle-image`-Calls mit sektionsspezifischen Templates. Nutzt File-API-First (`uploadToGeminiFiles`).
-
-### Farben & Design-Tokens
-- CI-Farben aus Profil werden als CSS-Variablen `--lp-primary` / `--lp-secondary` in den Renderer injected. Alle Sub-Komponenten nutzen ausschließlich diese + `--lp-bg-tint`, `--lp-border`, `--lp-text` (aus HSL-Helligkeit abgeleitet).
-- Kein `text-white` / `bg-black` in Komponenten (siehe Core-Regel).
-
----
-
-## 8. Migration
-
-- `type: 'landing-page'` (alt) wird beim Laden erkannt und bleibt im alten Renderer öffnungsfähig (readonly-Fallback), damit alte Projekte nicht brechen.
-- Neue Generierungen → immer `landing-page-v2`.
-
----
-
-## 9. Was NICHT Teil dieses Schritts ist
-
-- API-Integration nach außen (Publish an Kunden-Domain) — kommt im nächsten Schritt „wie beim PDF-Tool", separater Plan.
-- CMS-artige Multi-Version-Verwaltung.
-- A/B-Varianten pro Landing Page.
-
-Die Grundlage dafür (saubere Datenstruktur, statisch renderbares HTML) wird hier bereits gelegt.
-
----
-
-## Ergebnis
-
-Ein einziger Klick auf einem Fahrzeug erzeugt eine visuell konsistente, technisch saubere Landing Page mit fünf sektionsspezifisch generierten Fahrzeugbildern in den CI-Farben des Händlers, direkt inline editierbar wie in Notion / Framer — ohne Formular-Sidebar. Bilder sind nicht mehr verzogen (fixe Aspect-Ratios + `object-cover`), Texte sitzen im 12-Col-Grid mit sauberem vertikalem Rhythmus, Pflichtangaben stimmen automatisch.
+- Migration: `profiles` erweitern, `banner_publications` neu (inkl. GRANT + RLS)
+- Secret: `PDF_ANZEIGE_AUTO3_API_KEY` (+ optional `AUTO3_API_BASE_URL`)
+- Edge Function: `supabase/functions/publish-banner-to-auto3/index.ts`
+- Frontend:
+  - `src/pages/Profile.tsx` – neuer Auto3-Abschnitt
+  - `src/components/dashboard/BannersTab.tsx` – Push-Button + Status-Badge
+  - `src/components/dashboard/Auto3PublishDialog.tsx` (neu) – Push-Dialog
+  - `src/hooks/useAuto3Publish.ts` (neu) – Aufruf der Edge Function + State
