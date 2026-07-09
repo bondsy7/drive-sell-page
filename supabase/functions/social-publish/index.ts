@@ -206,7 +206,7 @@ Deno.serve(async (req) => {
 // X.com (Twitter) publish
 // ────────────────────────────────────────────────────────────
 async function publishX(
-  creds: ReturnType<typeof loadXCreds> & object,
+  creds: NonNullable<ReturnType<typeof loadXCreds>>,
   opts: { mediaUrl: string; mediaType: MediaType; caption: string },
 ): Promise<Omit<PlatformResult, "platform">> {
   // Truncate to 280 chars server-side as a safety net (frontend already warns).
