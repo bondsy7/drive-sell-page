@@ -50,6 +50,9 @@ export default function BannersTab({ banners, onDownload, onDelete }: Props) {
   const [lightboxIndex, setLightboxIndex] = useState(-1);
   const [formats, setFormats] = useState<Record<string, FormatInfo>>({});
   const [publishBanner, setPublishBanner] = useState<BannerFile | null>(null);
+  const [auto3Banner, setAuto3Banner] = useState<BannerFile | null>(null);
+  const { config: auto3Config, isConfigured: auto3Ready } = useAuto3Config();
+
 
   if (banners.length === 0) {
     return (
