@@ -44,6 +44,18 @@ export default function SocialPublishModal({
   const [status, setStatus] = useState<{ instagram: boolean; facebook: boolean; x: boolean } | null>(null);
   const [tone, setTone] = useState<'seriös' | 'verkaufsstark' | 'kurz' | 'locker' | 'premium'>('verkaufsstark');
   const [format, setFormat] = useState<'image' | 'carousel'>('image');
+  const [dimensions, setDimensions] = useState<{ w: number; h: number } | null>(null);
+
+  // Instagram supports aspect ratios between 4:5 (0.8) and 1.91:1 (1.91).
+  // Common web/story sizes like 300x600 (0.5) or 1080x1920 (0.5625) are rejected.
+  const ratio = dimensions ? dimensions.w / dimensions.h : null;
+  const IG_MIN = 0.8;   // 4:5 portrait
+  const IG_MAX = 1.91;  // 1.91:1 landscape
+  const instagramCompatible = ratio === null ? true : ratio >= IG_MIN && ratio <= IG_MAX;
+  // Facebook accepts almost anything but very extreme; keep a soft range.
+  const FB_MIN = 0.4;
+  const FB_MAX = 2.5;
+  const facebookCompatible = ratio === null ? true : ratio >= FB_MIN && ratio <= FB_MAX;
 
   const [generatingCaption, setGeneratingCaption] = useState(false);
   const [scheduleEnabled, setScheduleEnabled] = useState(false);
