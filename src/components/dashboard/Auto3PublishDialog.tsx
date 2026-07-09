@@ -116,7 +116,7 @@ export default function Auto3PublishDialog({ banner, config, onClose }: Props) {
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={busy}>Abbrechen</Button>
           <Button onClick={handleSubmit} disabled={busy} className="gap-1.5">
-            <Send className="w-4 h-4" />
+            <img src={auto3IconUrl} alt="Auto3" className="w-4 h-4" />
             {busy ? 'Sende...' : 'Jetzt an Auto3 senden'}
           </Button>
         </DialogFooter>
