@@ -155,7 +155,15 @@ const Profile = () => {
           default_legal_text: data.default_legal_text || '',
           primary_color: (data as any).primary_color || '#174f6b',
           secondary_color: (data as any).secondary_color || '#e2b04a',
+          auto3_account_email: (data as any).auto3_account_email || '',
+          auto3_channels_default: (data as any).auto3_channels_default || ['website', 'instagram', 'facebook'],
+          auto3_default_caption: (data as any).auto3_default_caption || '',
+          auto3_default_cta_url: (data as any).auto3_default_cta_url || '',
         });
+      }
+    });
+  }, [user]);
+
       }
     });
   }, [user]);
