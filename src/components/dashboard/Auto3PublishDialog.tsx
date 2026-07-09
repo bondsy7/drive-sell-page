@@ -48,13 +48,22 @@ export default function Auto3PublishDialog({ banner, config, onClose }: Props) {
           targetEmailOverride: email !== config.accountEmail ? email : undefined,
         },
       });
-      if (error) throw error;
-      const status = (data as any)?.status;
-      if (status === 'success') toast.success('Erfolgreich an Auto3 gesendet');
-      else if (status === 'partial_success') toast.warning('Teilweise erfolgreich – prüfe die Kanäle');
-      else if (status === 'duplicate') toast.info('Bereits gepostet (idempotent)');
-      else toast.error('Auto3 hat Fehler zurückgegeben');
-      onClose();
+      const payload: any = data ?? (error as any)?.context;
+      const auto3Msg: string | undefined = payload?.auto3?.message || payload?.auto3?.error;
+      const status: string | undefined = payload?.status;
+
+      if (status === 'success') { toast.success('Erfolgreich an Auto3 gesendet'); onClose(); }
+      else if (status === 'partial_success') { toast.warning('Teilweise erfolgreich – prüfe die Kanäle'); onClose(); }
+      else if (status === 'duplicate') { toast.info('Bereits gepostet (idempotent)'); onClose(); }
+      else if (auto3Msg?.toLowerCase().includes('user not found')) {
+        toast.error(`Auto3 kennt diese E-Mail nicht: ${email}. Bitte im Profil eine gültige Auto3-Account-E-Mail hinterlegen (Dev-Test: d.bonds@autoactiva.de).`);
+      } else if (auto3Msg) {
+        toast.error(`Auto3-Fehler: ${auto3Msg}`);
+      } else if (error) {
+        throw error;
+      } else {
+        toast.error('Auto3 hat einen Fehler zurückgegeben');
+      }
     } catch (e) {
       console.error(e);
       toast.error('Push fehlgeschlagen: ' + (e as Error).message);
