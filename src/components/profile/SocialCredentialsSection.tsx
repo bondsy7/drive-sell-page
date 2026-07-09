@@ -71,14 +71,15 @@ export default function SocialCredentialsSection() {
     await load();
   };
 
-  const test = async (platform: 'instagram' | 'facebook') => {
+  const test = async (platform: 'instagram' | 'facebook' | 'x') => {
     setTesting(platform);
     try {
       const { data, error } = await supabase.functions.invoke('social-publish', {
         body: { action: 'test', platform },
       });
       if (error) throw error;
-      if (data?.ok) toast.success(`${platform === 'instagram' ? 'Instagram' : 'Facebook'} erfolgreich verbunden${data.name ? ' – ' + data.name : ''}`);
+      const label = platform === 'instagram' ? 'Instagram' : platform === 'facebook' ? 'Facebook' : 'X.com';
+      if (data?.ok) toast.success(`${label} erfolgreich verbunden${data.name ? ' – ' + data.name : ''}`);
       else toast.error(data?.error || 'Verbindung fehlgeschlagen');
     } catch (e) {
       toast.error('Test fehlgeschlagen: ' + (e as Error).message);
