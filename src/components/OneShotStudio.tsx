@@ -57,7 +57,7 @@ import { useVehicleMakes } from '@/hooks/useVehicleMakes';
 import { ensureVehicle, ensureVehicleAuto, mergeVehicleById } from '@/lib/vehicle-utils';
 
 import OneShotMarketingForm from './oneshot/OneShotMarketingForm';
-import { persistScanData, persistVinLookup, scanDataToVehicleData } from '@/lib/scan-to-vehicle-data';
+import { persistVinLookup, scanDataToVehicleData } from '@/lib/scan-to-vehicle-data';
 import ProcessTimer, { formatDuration } from '@/components/ProcessTimer';
 import { uploadToGeminiFiles } from '@/lib/gemini-file-upload';
 import OneShotLightbox, { type LightboxItem } from './oneshot/OneShotLightbox';
