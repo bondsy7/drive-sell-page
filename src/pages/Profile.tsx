@@ -513,7 +513,68 @@ const Profile = () => {
               </p>
               <SocialCredentialsSection />
             </Section>
+
+            <Section icon={<Share2 className="w-4 h-4" />} title="Auto3-Integration">
+              <p className="text-xs text-muted-foreground -mt-2 mb-2">
+                Banner aus dem Dashboard direkt an dein Auto3-Konto pushen (Listing-Banner, Instagram, Facebook).
+                Ohne hinterlegte Auto3-Login-E-Mail ist der Push-Button im Banner-Dashboard deaktiviert.
+              </p>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5 sm:col-span-2">
+                  <Label>Auto3-Login-E-Mail *</Label>
+                  <Input
+                    type="email"
+                    value={profile.auto3_account_email}
+                    onChange={e => update('auto3_account_email', e.target.value)}
+                    placeholder="dein-login@autohaus.de"
+                  />
+                  <p className="text-[11px] text-muted-foreground">Die E-Mail-Adresse, mit der du dich bei Auto3 anmeldest. Wird zur Identifikation deines Kontos genutzt.</p>
+                </div>
+                <div className="space-y-1.5 sm:col-span-2">
+                  <Label>Standard-Kanäle</Label>
+                  <div className="flex flex-wrap gap-3">
+                    {(['website', 'instagram', 'facebook'] as const).map((ch) => {
+                      const checked = profile.auto3_channels_default.includes(ch);
+                      return (
+                        <label key={ch} className="flex items-center gap-2 text-sm cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={(e) => {
+                              setProfile(p => ({
+                                ...p,
+                                auto3_channels_default: e.target.checked
+                                  ? Array.from(new Set([...p.auto3_channels_default, ch]))
+                                  : p.auto3_channels_default.filter(c => c !== ch),
+                              }));
+                            }}
+                          />
+                          <span className="capitalize">{ch === 'website' ? 'Listing-Banner (Website)' : ch}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Standard-CTA-URL (optional)</Label>
+                  <Input
+                    value={profile.auto3_default_cta_url}
+                    onChange={e => update('auto3_default_cta_url', e.target.value)}
+                    placeholder="https://www.autohaus-mustermann.de"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Standard-Caption (optional)</Label>
+                  <Input
+                    value={profile.auto3_default_caption}
+                    onChange={e => update('auto3_default_caption', e.target.value)}
+                    placeholder="Wird als Post-Text / Banner-Beschreibung genutzt"
+                  />
+                </div>
+              </div>
+            </Section>
           </TabsContent>
+
 
 
           {/* Tab: Finanzen */}
