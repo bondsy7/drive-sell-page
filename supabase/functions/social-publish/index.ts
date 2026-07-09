@@ -83,6 +83,8 @@ Deno.serve(async (req) => {
 
     const igConfigured = !!(igUserId && metaAccessToken);
     const fbConfigured = !!(fbPageId && fbPageToken);
+    const xCreds = loadXCreds();
+    const xConfigured = !!xCreds;
 
     // ── Status check (no tokens exposed) ─────────────────────
 
@@ -90,6 +92,7 @@ Deno.serve(async (req) => {
       return json({
         instagram: { configured: igConfigured, accountId: igUserId ?? null },
         facebook: { configured: fbConfigured, pageId: fbPageId ?? null },
+        x: { configured: xConfigured },
       });
     }
 
@@ -105,6 +108,11 @@ Deno.serve(async (req) => {
         if (!fbConfigured) return json({ ok: false, error: "Facebook nicht konfiguriert" });
         const v = await validateFacebookPage(fbPageId!, fbPageToken!);
         return json(v.ok ? { ok: true, name: v.name } : { ok: false, error: v.error });
+      }
+      if (platform === "x") {
+        if (!xCreds) return json({ ok: false, error: "X.com nicht konfiguriert (Environment Variables fehlen)" });
+        const v = await verifyX(xCreds);
+        return json(v.ok ? { ok: true, name: v.screenName ? "@" + v.screenName : undefined } : { ok: false, error: v.error });
       }
       return json({ ok: false, error: "unknown_platform" }, 400);
     }
