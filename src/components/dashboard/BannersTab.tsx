@@ -106,10 +106,33 @@ export default function BannersTab({ banners, onDownload, onDelete }: Props) {
                   {banner.created_at ? new Date(banner.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Banner'}
                 </p>
                 <div className="flex gap-1.5">
+                  {auto3Ready ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => { e.stopPropagation(); setAuto3Banner(banner); }}
+                      title="An Auto3 senden"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      asChild
+                      title="Auto3-Konto im Profil hinterlegen, um Banner an Auto3 zu senden"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Link to="/profile" className="opacity-50 hover:opacity-100">
+                        <Send className="w-3.5 h-3.5" />
+                      </Link>
+                    </Button>
+                  )}
                   <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setPublishBanner(banner); }} title="Auf Social Media posten"><Share2 className="w-3.5 h-3.5" /></Button>
                   <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); onDownload(banner); }}><Download className="w-3.5 h-3.5" /></Button>
                   <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); onDelete(banner.fullPath, banner.name); }}><Trash2 className="w-3.5 h-3.5 text-destructive" /></Button>
                 </div>
+
               </div>
             </div>
           );
