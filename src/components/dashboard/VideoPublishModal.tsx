@@ -249,6 +249,17 @@ export default function VideoPublishModal({
                     {status?.facebook === true && <span className="text-xs text-green-600 font-medium">Verbunden</span>}
                     {status?.facebook === false && <span className="text-xs text-muted-foreground">Nicht konfiguriert</span>}
                   </label>
+                  <label className={`flex items-center gap-3 p-3 rounded-lg border border-border ${status?.x === false ? 'opacity-60' : 'cursor-pointer hover:bg-muted/50'}`}>
+                    <Checkbox
+                      checked={platforms.x}
+                      disabled={status?.x === false}
+                      onCheckedChange={(v) => setPlatforms((p) => ({ ...p, x: !!v }))}
+                    />
+                    <Twitter className="w-5 h-5 text-sky-500" />
+                    <span className="font-medium flex-1">X.com Video</span>
+                    {status?.x === true && <span className="text-xs text-green-600 font-medium">Verbunden</span>}
+                    {status?.x === false && <span className="text-xs text-muted-foreground">Nicht konfiguriert</span>}
+                  </label>
                 </div>
                 {status && !status.instagram && !status.facebook && (
                   <p className="text-xs text-destructive mt-2">
