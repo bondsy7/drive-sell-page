@@ -357,7 +357,15 @@ export default function SocialPublishModal({
                   rows={8}
                   placeholder="Text und #Hashtags... (oder oben automatisch erstellen lassen)"
                 />
-                <p className="text-xs text-muted-foreground mt-1">{caption.length} Zeichen</p>
+                <div className="flex items-center justify-between mt-1">
+                  <p className="text-xs text-muted-foreground">{caption.length} Zeichen</p>
+                  {platforms.x && (
+                    <p className={`text-xs font-medium ${caption.length > 280 ? 'text-destructive' : caption.length > 240 ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                      X.com: {caption.length}/280
+                      {caption.length > 280 && ' – wird beim Posten gekürzt'}
+                    </p>
+                  )}
+                </div>
               </div>
 
               <div className="rounded-xl border border-border p-3 space-y-2">
