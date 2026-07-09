@@ -134,7 +134,7 @@ Deno.serve(async (req) => {
       return json({ error: "media_url_must_be_public_https" }, 400);
     }
     const validPlatforms: Platform[] = platforms.filter(
-      (p) => p === "instagram" || p === "facebook",
+      (p) => p === "instagram" || p === "facebook" || p === "x",
     );
     if (validPlatforms.length === 0) return json({ error: "no_valid_platform" }, 400);
 
@@ -149,6 +149,9 @@ Deno.serve(async (req) => {
     }
     if (validPlatforms.includes("facebook") && !fbConfigured) {
       return json({ error: "facebook_not_configured" }, 400);
+    }
+    if (validPlatforms.includes("x") && !xConfigured) {
+      return json({ error: "x_not_configured" }, 400);
     }
 
     const results: PlatformResult[] = [];
@@ -179,6 +182,17 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── X.com (Twitter) ──────────────────────────────────────
+    if (validPlatforms.includes("x")) {
+      const res = await publishX(xCreds!, { mediaUrl, mediaType, caption });
+      results.push({ platform: "x", ...res });
+      await logPublication(admin, {
+        userId, vehicleId: vehicleId ?? null,
+        bannerPath: mediaPath, bannerName: mediaName, bannerUrl: mediaUrl,
+        platform: "x", caption, result: res,
+      });
+    }
+
     const anySuccess = results.some((r) => r.status === "success");
     return json({ ok: anySuccess, results }, anySuccess ? 200 : 502);
   } catch (e) {
@@ -186,6 +200,31 @@ Deno.serve(async (req) => {
     return json({ error: "internal_error", detail: String((e as Error)?.message ?? e) }, 500);
   }
 });
+
+
+// ────────────────────────────────────────────────────────────
+// X.com (Twitter) publish
+// ────────────────────────────────────────────────────────────
+async function publishX(
+  creds: ReturnType<typeof loadXCreds> & object,
+  opts: { mediaUrl: string; mediaType: MediaType; caption: string },
+): Promise<Omit<PlatformResult, "platform">> {
+  // Truncate to 280 chars server-side as a safety net (frontend already warns).
+  const text = opts.caption.length > 280 ? opts.caption.slice(0, 277) + "…" : opts.caption;
+
+  const mediaIds: string[] = [];
+  if (opts.mediaUrl) {
+    const up = opts.mediaType === "video"
+      ? await xUploadVideo(creds, opts.mediaUrl)
+      : await xUploadImage(creds, opts.mediaUrl);
+    if (!up.ok) return { status: "failed", error: up.error };
+    mediaIds.push(up.mediaId);
+  }
+
+  const post = await xPostTweet(creds, text, mediaIds);
+  if (!post.ok) return { status: "failed", error: post.error };
+  return { status: "success", postId: post.postId };
+}
 
 
 // ────────────────────────────────────────────────────────────
