@@ -17,7 +17,8 @@ export default function SocialCredentialsSection() {
   const [status, setStatus] = useState<Status | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [testing, setTesting] = useState<'instagram' | 'facebook' | null>(null);
+  const [testing, setTesting] = useState<'instagram' | 'facebook' | 'x' | null>(null);
+  const [xStatus, setXStatus] = useState<boolean | null>(null);
 
   // form fields — tokens are write-only, never prefilled
   const [igUserId, setIgUserId] = useState('');
