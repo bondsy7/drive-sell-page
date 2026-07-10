@@ -77,10 +77,16 @@ serve(async (req) => {
 
     const getStreamText = (key: string): string => {
       const node = streamMap?.[key]?.stream_result;
-      if (!node) return "";
+      if (node === null || node === undefined) return "";
       if (typeof node === "string" || typeof node === "number") return String(node);
+      if (Array.isArray(node)) {
+        if (node.length === 0) return "";
+        const first = node[0] as any;
+        if (typeof first === "string" || typeof first === "number") return String(first);
+        return String(first?.translation?.translationCurrent || first?.description || first?.code || "");
+      }
       if (typeof node === "object") {
-        const first = Object.values(node)[0] as Record<string, unknown> | undefined;
+        const first = Object.values(node)[0] as Record<string, any> | undefined;
         if (!first) return "";
         return String(first.translation?.translationCurrent || first.description || first.code || "");
       }
@@ -90,10 +96,10 @@ serve(async (req) => {
     // Extract equipment/options list from stream_map
     const extractEquipment = (): string[] => {
       const items: string[] = [];
-      const equipKeys = ["equipment", "options", "standard_equipment", "optional_equipment", "special_equipment", "packages"];
+      const equipKeys = ["options", "equipment", "standard_equipment", "optional_equipment", "special_equipment", "packages"];
       for (const key of equipKeys) {
         const node = streamMap?.[key]?.stream_result;
-        if (!node || typeof node !== "object") continue;
+        if (!node || typeof node !== "object" || Array.isArray(node)) continue;
         for (const entry of Object.values(node) as any[]) {
           const desc = entry?.translation?.translationCurrent || entry?.description || entry?.text || "";
           if (desc && typeof desc === "string" && desc.length > 1) {
@@ -176,16 +182,44 @@ Regeln:
       }
     }
 
+    // Derive year from production_date ("DD.MM.YYYY" or "YYYY-MM-DD"), fall back to model_year
+    const parseYear = (): number | null => {
+      const prod = getStreamText("production_date") || getStreamText("model_year") || "";
+      const m = prod.match(/(\d{4})/g);
+      if (!m) return null;
+      // Prefer trailing year for "DD.MM.YYYY"
+      return Number(m[m.length - 1]) || null;
+    };
+
+    // Displacement: API returns liters (e.g. "3.00"). Normalize to "X.Y L".
+    const rawDisp = getStreamText("displacement");
+    const dispNum = parseFloat(rawDisp.replace(",", "."));
+    const displacement = isFinite(dispNum) && dispNum > 0
+      ? (dispNum < 20 ? `${dispNum.toFixed(1)} L` : `${Math.round(dispNum)} cm³`)
+      : "";
+
+    const powerRaw = getStreamText("system_power") || getStreamText("power_kw");
+    const powerNum = parseFloat(powerRaw);
+
+    // Model name description is the granular variant ("630d xDrive Gran Turismo").
+    // Series is the model family ("6"). Combine for a user-friendly model.
+    const modelName = getStreamText("model_name");
+    const series = getStreamText("series");
+    const brand = vehicleNode?.make?.make || "";
+    // e.g. BMW "6" + "630d xDrive Gran Turismo" → model="6er", variant="630d xDrive Gran Turismo"
+    const model = modelName || series || "";
+    const variant = (modelName && series && !modelName.startsWith(series)) ? modelName : (modelName && series ? modelName : "");
+
     const mapped = {
-      brand: vehicleNode?.make?.make || "",
-      model: getStreamText("model"),
-      variant: getStreamText("variant"),
-      year: Number(getStreamText("model_year")) || null,
+      brand,
+      model: series && brand.toLowerCase() === "bmw" ? `${series}er` : (series || modelName),
+      variant: modelName || "",
+      year: parseYear(),
       fuelType: getStreamText("fuel_type"),
-      transmission: getStreamText("transmission"),
-      power: getStreamText("power_kw") ? `${getStreamText("power_kw")} kW` : "",
+      transmission: getStreamText("transmission_type") || getStreamText("transmission"),
+      power: isFinite(powerNum) && powerNum > 0 ? `${Math.round(powerNum)} kW` : "",
       color: getStreamText("color_code"),
-      displacement: getStreamText("displacement"),
+      displacement,
       driveType: getStreamText("drive_type"),
       bodyType: getStreamText("body_type"),
       doors: Number(getStreamText("number_of_doors")) || null,
