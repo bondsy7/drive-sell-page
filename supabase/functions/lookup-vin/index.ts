@@ -77,10 +77,16 @@ serve(async (req) => {
 
     const getStreamText = (key: string): string => {
       const node = streamMap?.[key]?.stream_result;
-      if (!node) return "";
+      if (node === null || node === undefined) return "";
       if (typeof node === "string" || typeof node === "number") return String(node);
+      if (Array.isArray(node)) {
+        if (node.length === 0) return "";
+        const first = node[0] as any;
+        if (typeof first === "string" || typeof first === "number") return String(first);
+        return String(first?.translation?.translationCurrent || first?.description || first?.code || "");
+      }
       if (typeof node === "object") {
-        const first = Object.values(node)[0] as Record<string, unknown> | undefined;
+        const first = Object.values(node)[0] as Record<string, any> | undefined;
         if (!first) return "";
         return String(first.translation?.translationCurrent || first.description || first.code || "");
       }
@@ -90,10 +96,10 @@ serve(async (req) => {
     // Extract equipment/options list from stream_map
     const extractEquipment = (): string[] => {
       const items: string[] = [];
-      const equipKeys = ["equipment", "options", "standard_equipment", "optional_equipment", "special_equipment", "packages"];
+      const equipKeys = ["options", "equipment", "standard_equipment", "optional_equipment", "special_equipment", "packages"];
       for (const key of equipKeys) {
         const node = streamMap?.[key]?.stream_result;
-        if (!node || typeof node !== "object") continue;
+        if (!node || typeof node !== "object" || Array.isArray(node)) continue;
         for (const entry of Object.values(node) as any[]) {
           const desc = entry?.translation?.translationCurrent || entry?.description || entry?.text || "";
           if (desc && typeof desc === "string" && desc.length > 1) {
