@@ -46,23 +46,23 @@ export default function SocialPublishModal({
   const [format, setFormat] = useState<'image' | 'carousel'>('image');
   const [dimensions, setDimensions] = useState<{ w: number; h: number } | null>(null);
 
-  // Instagram: Feed (4:5 – 1.91:1) ODER Story (9:16 ≈ 0.5625). Min. 320 px kürzeste Kante,
-  // min. 600 px längste Kante. Damit fallen Google-Display-Banner (300×250, 728×90, 160×600) raus,
-  // aber 1080×1920 Story bleibt gültig.
   const ratio = dimensions ? dimensions.w / dimensions.h : null;
   const minEdge = dimensions ? Math.min(dimensions.w, dimensions.h) : null;
-  const maxEdge = dimensions ? Math.max(dimensions.w, dimensions.h) : null;
-  const IG_MIN_RATIO = 0.5;
-  const IG_MAX_RATIO = 1.91;
-  const IG_MIN_EDGE = 320;
-  const IG_MIN_LONG = 600;
-  const instagramCompatible =
-    ratio === null || minEdge === null || maxEdge === null
-      ? true
-      : ratio >= IG_MIN_RATIO &&
-        ratio <= IG_MAX_RATIO &&
-        minEdge >= IG_MIN_EDGE &&
-        maxEdge >= IG_MIN_LONG;
+  const normalizedBannerName = banner.name.toLowerCase();
+  const isGoogleMediumRectangle = dimensions
+    ? (dimensions.w === 300 && dimensions.h === 250) ||
+      normalizedBannerName.includes('medium rectangle') ||
+      normalizedBannerName.includes('300x250') ||
+      normalizedBannerName.includes('300×250')
+    : false;
+  const isGoogleLeaderboard = dimensions
+    ? (dimensions.w === 728 && dimensions.h === 90) ||
+      normalizedBannerName.includes('leaderboard') ||
+      normalizedBannerName.includes('728x90') ||
+      normalizedBannerName.includes('728×90')
+    : false;
+  // Instagram wird nur für die beiden explizit ausgeschlossenen Google-Display-Formate deaktiviert.
+  const instagramCompatible = !isGoogleMediumRectangle && !isGoogleLeaderboard;
   // Facebook toleriert fast alles, blockiert nur extrem schmale Banner-Formate.
   const FB_MIN_RATIO = 0.4;
   const FB_MAX_RATIO = 2.5;
@@ -123,7 +123,12 @@ export default function SocialPublishModal({
     setCaption(`${parts.join(' ')}\n\n${hashtags}`);
   }, [vehicleTitle, vehiclePrice, dealerName]);
 
-  const selectedPlatforms = (Object.keys(platforms) as Platform[]).filter((p) => platforms[p]);
+  const selectedPlatforms = (Object.keys(platforms) as Platform[]).filter((p) => {
+    if (!platforms[p]) return false;
+    if (p === 'instagram') return instagramCompatible;
+    if (p === 'facebook') return facebookCompatible;
+    return true;
+  });
 
   const generateCaption = async () => {
     // Prefer a selected platform, else instagram as default target
@@ -279,10 +284,9 @@ export default function SocialPublishModal({
               </p>
               {!instagramCompatible && (
                 <p>
-                  Instagram braucht mindestens 320 px kürzeste Kante und akzeptiert Seitenverhältnisse
-                  zwischen 9:16 (Story, 0,56) und 1,91:1 (Landscape). Nutze z. B. 1080×1080 (Quadrat),
-                  1080×1350 (Portrait 4:5), 1080×1920 (Story 9:16) oder 1080×566 (Landscape 1,91:1).
-                  Displayformate wie 300×250 oder 728×90 sind nicht unterstützt – dafür Facebook Page oder X.com verwenden.
+                  Instagram ist hier nur für Google Display Medium Rectangle 300×250 und Google Display
+                  Leaderboard 728×90 deaktiviert. Web Banner 21:9, Facebook Feed 1200×628 und Story/Reel 9:16
+                  bleiben auswählbar.
                 </p>
               )}
               {!facebookCompatible && (
