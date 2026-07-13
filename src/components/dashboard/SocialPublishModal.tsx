@@ -46,16 +46,31 @@ export default function SocialPublishModal({
   const [format, setFormat] = useState<'image' | 'carousel'>('image');
   const [dimensions, setDimensions] = useState<{ w: number; h: number } | null>(null);
 
-  // Instagram supports aspect ratios between 4:5 (0.8) and 1.91:1 (1.91).
-  // Common web/story sizes like 300x600 (0.5) or 1080x1920 (0.5625) are rejected.
+  // Instagram: Feed (4:5 – 1.91:1) ODER Story (9:16 ≈ 0.5625). Min. 320 px kürzeste Kante,
+  // min. 600 px längste Kante. Damit fallen Google-Display-Banner (300×250, 728×90, 160×600) raus,
+  // aber 1080×1920 Story bleibt gültig.
   const ratio = dimensions ? dimensions.w / dimensions.h : null;
-  const IG_MIN = 0.8;   // 4:5 portrait
-  const IG_MAX = 1.91;  // 1.91:1 landscape
-  const instagramCompatible = ratio === null ? true : ratio >= IG_MIN && ratio <= IG_MAX;
-  // Facebook accepts almost anything but very extreme; keep a soft range.
-  const FB_MIN = 0.4;
-  const FB_MAX = 2.5;
-  const facebookCompatible = ratio === null ? true : ratio >= FB_MIN && ratio <= FB_MAX;
+  const minEdge = dimensions ? Math.min(dimensions.w, dimensions.h) : null;
+  const maxEdge = dimensions ? Math.max(dimensions.w, dimensions.h) : null;
+  const IG_MIN_RATIO = 0.5;
+  const IG_MAX_RATIO = 1.91;
+  const IG_MIN_EDGE = 320;
+  const IG_MIN_LONG = 600;
+  const instagramCompatible =
+    ratio === null || minEdge === null || maxEdge === null
+      ? true
+      : ratio >= IG_MIN_RATIO &&
+        ratio <= IG_MAX_RATIO &&
+        minEdge >= IG_MIN_EDGE &&
+        maxEdge >= IG_MIN_LONG;
+  // Facebook toleriert fast alles, blockiert nur extrem schmale Banner-Formate.
+  const FB_MIN_RATIO = 0.4;
+  const FB_MAX_RATIO = 2.5;
+  const FB_MIN_EDGE = 200;
+  const facebookCompatible =
+    ratio === null || minEdge === null
+      ? true
+      : ratio >= FB_MIN_RATIO && ratio <= FB_MAX_RATIO && minEdge >= FB_MIN_EDGE;
 
   const [generatingCaption, setGeneratingCaption] = useState(false);
   const [scheduleEnabled, setScheduleEnabled] = useState(false);
@@ -264,9 +279,10 @@ export default function SocialPublishModal({
               </p>
               {!instagramCompatible && (
                 <p>
-                  Instagram akzeptiert nur Seitenverhältnisse zwischen 4:5 (0,80) und 1,91:1.
-                  Dieses Banner passt nicht und wurde deaktiviert. Nutze z. B. 1080×1080 (Quadrat),
-                  1080×1350 (Portrait 4:5) oder 1080×566 (Landscape 1,91:1).
+                  Instagram braucht mindestens 320 px kürzeste Kante und akzeptiert Seitenverhältnisse
+                  zwischen 9:16 (Story, 0,56) und 1,91:1 (Landscape). Nutze z. B. 1080×1080 (Quadrat),
+                  1080×1350 (Portrait 4:5), 1080×1920 (Story 9:16) oder 1080×566 (Landscape 1,91:1).
+                  Displayformate wie 300×250 oder 728×90 sind nicht unterstützt – dafür Facebook Page oder X.com verwenden.
                 </p>
               )}
               {!facebookCompatible && (

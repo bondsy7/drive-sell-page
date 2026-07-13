@@ -1,80 +1,74 @@
-## Ziel
+## Problem
 
-Aus dem Banner-Dashboard heraus ein Banner-Bild per Klick an Auto3 pushen (Website-Listing-Banner + Instagram + Facebook). Der Nutzer hinterlegt einmalig seine Auto3-Zugangsdaten im Usermenü; ohne diese Daten ist der Push-Button inaktiv (nur Hinweis, Daten zu hinterlegen).
+Der Kompatibilitäts-Check im `SocialPublishModal` sperrt zu viele Banner-Formate für Instagram. Aktuell erlaubt er nur Ratio **0.80 – 1.91** (Feed). Damit wird auch **1080×1920 (9:16, 0.5625)** blockiert, obwohl Instagram Stories/Reels genau dieses Format brauchen.
 
-## 1. Usermenü – Auto3-Konfiguration (Profile)
+Tatsächlich soll nur zwei Formate ablehnen:
+- **Google Display Medium Rectangle 300×250** — zu klein (Instagram Minimum 320 px Kantenlänge) und Ratio egal
+- **Google Display Leaderboard 728×90** — Ratio 8.09:1, extrem breit, nicht unterstützt
 
-Neuer Abschnitt „Auto3-Integration" in `src/pages/Profile.tsx` (bzw. `UserMenuSheet` verlinkt dorthin):
+Alle anderen (Square 1:1, Portrait 4:5, Story 9:16, Landscape 1.91:1, Hero 1920×800) sollen posten dürfen.
 
-Felder pro User (in `profiles`):
+## Neue Regel für Instagram-Kompatibilität
 
-- `auto3_account_email` (TEXT) – Login-Mail des Auto3-Accounts (Pflicht)
-- `auto3_channels_default` (TEXT[]) – Default-Kanäle `{website,instagram,facebook}` mit Checkboxen
-- `auto3_default_caption` (TEXT, optional) – Standard-Caption-Vorlage
-- `auto3_default_cta_url` (TEXT, optional)
+Datei: `src/components/dashboard/SocialPublishModal.tsx`
 
-Kein API-Key beim User – der ist server-side als Secret gespeichert (`PDF_ANZEIGE_AUTO3_API_KEY`) und wird nur in der Edge Function verwendet.
+Instagram akzeptiert, wenn **alle drei** Bedingungen erfüllt sind:
 
-„Verbindung testen"-Button → ruft die Edge Function im Test-Modus auf (siehe unten) und zeigt grünes/rotes Feedback.
+1. **Ratio zwischen 0.5 und 1.91** (deckt 9:16 Story = 0.5625, 4:5 = 0.8, 1:1, 1.91:1)
+2. **Kleinste Kante ≥ 320 px** (Instagrams Mindest-Uploadgröße)
+3. **Größte Kante ≥ 600 px** (Sanity-Guard gegen 728×90-artige Banner mit extrem geringer Höhe)
 
-## 2. Backend
+Damit:
 
-**Secret:** `PDF_ANZEIGE_AUTO3_API_KEY` (initial `dev-pdf-anzeige-integration-key`, wird via `add_secret` gespeichert; getrennt für Prod, sobald Pravin den Prod-Key liefert). Optional zusätzlich `AUTO3_API_BASE_URL` (default `https://dev-api.autoversus.de`).
+| Format | Größe | Ratio | Erlaubt? |
+|---|---|---|---|
+| IG Square | 1080×1080 | 1.00 | ✅ |
+| IG Portrait 4:5 | 1080×1350 | 0.80 | ✅ |
+| IG Story 9:16 | 1080×1920 | 0.5625 | ✅ (bisher fälschlich blockiert) |
+| FB Feed | 1200×1200 | 1.00 | ✅ |
+| FB Link Ad | 1200×628 | 1.91 | ✅ |
+| Web Hero | 1920×800 | 2.40 | ⚠️ FB ok, IG blockiert (Ratio zu breit) |
+| Google MedRect | 300×250 | 1.20 | ❌ (Kante < 320) |
+| Google Leaderboard | 728×90 | 8.09 | ❌ (Ratio + Höhe < 320) |
+| Google Skyscraper | 160×600 | 0.27 | ❌ (Kante < 320) |
 
-**Migration:**
+Facebook-Regel bleibt wie sie ist (Ratio 0.4 – 2.5), passt zu allen außer 728×90 und 160×600.
 
-- Spalten in `profiles` ergänzen: `auto3_account_email`, `auto3_channels_default`, `auto3_default_caption`, `auto3_default_cta_url`.
-- Neue Tabelle `banner_publications` (id, user_id, banner_id, target_email, client_reference_id UNIQUE, channels TEXT[], status, response JSONB, error TEXT, created_at) inkl. GRANTs + RLS (owner-only).
+## Umsetzung — nur eine Datei
 
-**Edge Function `publish-banner-to-auto3`:**
+`src/components/dashboard/SocialPublishModal.tsx`, Zeilen 56–66:
 
-- Auth via `sb.auth.getClaims(token)` (Projekt-Regel).
-- Input: `{ bannerId, imageUrl (Storage-URL/Base64), caption?, channels?, title?, position?, ctaUrl?, active? }`.
-- Lädt `profiles.auto3_account_email` des Users – fehlt sie → 400 „Auto3 nicht konfiguriert".
-- `client_reference_id = pdf-<userId>-<bannerId>-<timestamp>` (idempotent, wird in `banner_publications` gespeichert).
-- Multipart-POST an `${AUTO3_API_BASE_URL}/v1/vehicle/social/post` mit `X-Auto3-Api-Key`. Bilddatei-Bytes bevorzugt (aus Storage geladen). Fallback JSON+`image_url`, wenn Bild bereits öffentlich signierbar ist.
-- Persistiert Ergebnis (inkl. per-channel Status) in `banner_publications`.
-- Gibt strukturierte Response an das Frontend zurück (`success | partial_success | failed | duplicate`).
+```ts
+const ratio = dimensions ? dimensions.w / dimensions.h : null;
+const minEdge = dimensions ? Math.min(dimensions.w, dimensions.h) : null;
+const maxEdge = dimensions ? Math.max(dimensions.w, dimensions.h) : null;
 
-## 3. Frontend – Banner-Karte im Dashboard
+// Instagram: Feed 4:5–1.91:1 ODER Story 9:16, min. 320 px kürzeste Kante, min. 600 px längste Kante
+const IG_MIN_RATIO = 0.5;   // 9:16 Story = 0.5625
+const IG_MAX_RATIO = 1.91;  // Landscape Feed
+const IG_MIN_EDGE  = 320;
+const IG_MIN_LONG  = 600;
+const instagramCompatible = ratio === null || minEdge === null || maxEdge === null
+  ? true
+  : ratio >= IG_MIN_RATIO && ratio <= IG_MAX_RATIO
+    && minEdge >= IG_MIN_EDGE
+    && maxEdge >= IG_MIN_LONG;
 
-In `src/components/dashboard/BannersTab.tsx` (Karte mit Datum · leeres Feld · Share · Download · Löschen):
+// Facebook bleibt tolerant, blockiert nur extreme Banner-Formate
+const FB_MIN_RATIO = 0.4;
+const FB_MAX_RATIO = 2.5;
+const FB_MIN_EDGE  = 200;
+const facebookCompatible = ratio === null || minEdge === null
+  ? true
+  : ratio >= FB_MIN_RATIO && ratio <= FB_MAX_RATIO && minEdge >= FB_MIN_EDGE;
+```
 
-- Das leere Icon-Feld links neben Share wird zum **„An Auto3 pushen"-Button** (Icon: Upload/Cloud, z. B. `<Send />`).
-- **Aktivierungslogik:** Button nur enabled, wenn `profile.auto3_account_email` gesetzt ist. Sonst disabled + Tooltip: „Auto3-Zugang im Profil hinterlegen" mit Link zu Profile → Auto3.
-- Klick öffnet einen kleinen Dialog `Auto3PublishDialog`:
-  - Vorschau des Banner-Bilds
-  - Ziel-E-Mail (vorbelegt aus Profil, editierbar für den Notfall)
-  - Kanäle als Checkboxen (Website / Instagram / Facebook), vorbelegt aus `auto3_channels_default`
-  - Caption-Feld (vorbelegt aus Default oder aus Banner-Pflichttext via `formatMandatoryDisclosure`)
-  - CTA-URL (optional, vorbelegt)
-  - Button „Jetzt an Auto3 senden"
-- Nach Erfolg: grünes Badge „Auto3 · gepostet" auf der Kachel + Zeitstempel; bei `partial_success` gelbes Badge mit Details pro Kanal; bei Fehler roter Toast.
-- Nach erneutem Klick auf bereits gepushtes Banner: Dialog zeigt vorherigen Status (aus `banner_publications`) und bietet „Erneut versuchen mit neuem Bild-Job" (neuer `client_reference_id`) an.
+Warnhinweis-Text im gelben Banner anpassen: statt „nur 4:5–1.91:1" jetzt
 
-## 4. Sicherheit & Robustheit
+> „Instagram braucht mindestens 320 px kürzeste Kante und akzeptiert Seitenverhältnisse zwischen 9:16 (Story) und 1,91:1 (Landscape). Für Displaywerbung wie 300×250 oder 728×90 bitte Facebook Page oder X.com nutzen."
 
-- API-Key ausschließlich server-side (Edge Function, `Deno.env.get` bzw. `getSecret`), nie im Client.
-- Owner-Check: nur der Banner-Eigentümer darf pushen.
-- Idempotenz über `client_reference_id`; Doppelklicks erzeugen keinen Doppel-Post (HTTP 409 wird als „bereits gepostet" behandelt).
-- 1× automatischer Retry bei 5xx, danach Fehler im UI.
-- Audit-Trail: jeder Versuch (Erfolg/Fehler) in `banner_publications`.
+## Betroffene Datei
 
-## 5. Offene Fragen an dich
+- `src/components/dashboard/SocialPublishModal.tsx` — Kompatibilitäts-Logik + Warntext
 
-1. Sollen die Kanäle **pro Push wählbar** sein (Dialog) oder immer die im Profil hinterlegten Defaults nutzen ohne Rückfrage? ja die defauls nutzen
-2. Als **Caption** default: (a) leer, (b) `formatMandatoryDisclosure(...)` aus dem Banner, (c) freie Vorlage aus dem Profil – was ist dein Wunsch? fangen wir mit a an.
-3. Prod-API-Key von Pravin schon da, oder starten wir zunächst nur auf dem **Dev-Endpoint** (`dev-api.autoversus.de` + `dev-pdf-anzeige-integration-key`) für den Showcase? erst auf dev
-
-Sag mir kurz Bescheid, dann setze ich es in genau dieser Form um.
-
-## Technische Zusammenfassung (Dateien)
-
-- Migration: `profiles` erweitern, `banner_publications` neu (inkl. GRANT + RLS)
-- Secret: `PDF_ANZEIGE_AUTO3_API_KEY` (+ optional `AUTO3_API_BASE_URL`)
-- Edge Function: `supabase/functions/publish-banner-to-auto3/index.ts`
-- Frontend:
-  - `src/pages/Profile.tsx` – neuer Auto3-Abschnitt
-  - `src/components/dashboard/BannersTab.tsx` – Push-Button + Status-Badge
-  - `src/components/dashboard/Auto3PublishDialog.tsx` (neu) – Push-Dialog
-  - `src/hooks/useAuto3Publish.ts` (neu) – Aufruf der Edge Function + State
+Keine Änderungen an Edge Functions oder Formaten-Katalog nötig.
