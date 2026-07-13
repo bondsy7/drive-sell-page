@@ -279,9 +279,10 @@ export default function SocialPublishModal({
               </p>
               {!instagramCompatible && (
                 <p>
-                  Instagram akzeptiert nur Seitenverhältnisse zwischen 4:5 (0,80) und 1,91:1.
-                  Dieses Banner passt nicht und wurde deaktiviert. Nutze z. B. 1080×1080 (Quadrat),
-                  1080×1350 (Portrait 4:5) oder 1080×566 (Landscape 1,91:1).
+                  Instagram braucht mindestens 320 px kürzeste Kante und akzeptiert Seitenverhältnisse
+                  zwischen 9:16 (Story, 0,56) und 1,91:1 (Landscape). Nutze z. B. 1080×1080 (Quadrat),
+                  1080×1350 (Portrait 4:5), 1080×1920 (Story 9:16) oder 1080×566 (Landscape 1,91:1).
+                  Displayformate wie 300×250 oder 728×90 sind nicht unterstützt – dafür Facebook Page oder X.com verwenden.
                 </p>
               )}
               {!facebookCompatible && (
