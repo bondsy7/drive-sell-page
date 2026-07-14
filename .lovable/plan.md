@@ -1,74 +1,134 @@
-## Problem
+# Skalierungs-Analyse & Härtungs-Plan AUTO3
 
-Der Kompatibilitäts-Check im `SocialPublishModal` sperrt zu viele Banner-Formate für Instagram. Aktuell erlaubt er nur Ratio **0.80 – 1.91** (Feed). Damit wird auch **1080×1920 (9:16, 0.5625)** blockiert, obwohl Instagram Stories/Reels genau dieses Format brauchen.
+**Ziel:** Dokument `.lovable/skalierung-audit-und-plan.md` erstellen (keine Code-Änderung), das (A) den Ist-Zustand jedes AI-Endpoints misst und (B) einen priorisierten Härtungs-Plan enthält.
 
-Tatsächlich soll nur zwei Formate ablehnen:
-- **Google Display Medium Rectangle 300×250** — zu klein (Instagram Minimum 320 px Kantenlänge) und Ratio egal
-- **Google Display Leaderboard 728×90** — Ratio 8.09:1, extrem breit, nicht unterstützt
+---
 
-Alle anderen (Square 1:1, Portrait 4:5, Story 9:16, Landscape 1.91:1, Hero 1920×800) sollen posten dürfen.
+## Teil A – Kapazitäts-Audit (Ist-Stand)
 
-## Neue Regel für Instagram-Kompatibilität
+Pro Endpoint dokumentieren: Provider, Upstream-Limit, aktueller Retry, Bruchstelle, gemessene/geschätzte Fehlerquote bei 50/100/300/500 parallel.
 
-Datei: `src/components/dashboard/SocialPublishModal.tsx`
+**Endpoints, die im Audit-Dokument einzeln analysiert werden:**
 
-Instagram akzeptiert, wenn **alle drei** Bedingungen erfüllt sind:
-
-1. **Ratio zwischen 0.5 und 1.91** (deckt 9:16 Story = 0.5625, 4:5 = 0.8, 1:1, 1.91:1)
-2. **Kleinste Kante ≥ 320 px** (Instagrams Mindest-Uploadgröße)
-3. **Größte Kante ≥ 600 px** (Sanity-Guard gegen 728×90-artige Banner mit extrem geringer Höhe)
-
-Damit:
-
-| Format | Größe | Ratio | Erlaubt? |
+| # | Edge Function | Provider | Kritisches Limit |
 |---|---|---|---|
-| IG Square | 1080×1080 | 1.00 | ✅ |
-| IG Portrait 4:5 | 1080×1350 | 0.80 | ✅ |
-| IG Story 9:16 | 1080×1920 | 0.5625 | ✅ (bisher fälschlich blockiert) |
-| FB Feed | 1200×1200 | 1.00 | ✅ |
-| FB Link Ad | 1200×628 | 1.91 | ✅ |
-| Web Hero | 1920×800 | 2.40 | ⚠️ FB ok, IG blockiert (Ratio zu breit) |
-| Google MedRect | 300×250 | 1.20 | ❌ (Kante < 320) |
-| Google Leaderboard | 728×90 | 8.09 | ❌ (Ratio + Höhe < 320) |
-| Google Skyscraper | 160×600 | 0.27 | ❌ (Kante < 320) |
+| 1 | `remaster-vehicle-image` | Gemini Nano Banana 2 | ~2.000 RPM/Key |
+| 2 | `generate-master-banner-image` | Gemini | ~2.000 RPM/Key |
+| 3 | `reframe-banner-image` | Ideogram v3 | ~60 RPM |
+| 4 | `generate-video` | Veo 3.1 | ~10-20 concurrent |
+| 5 | `generate-landing-page` | Gemini (7 Bilder) | RPM + Wall-Time |
+| 6 | `analyze-pdf` | Gemini Vision | RPM |
+| 7 | `generate-banner` | Gemini | RPM |
+| 8 | `generate-360-spin` | Gemini + Frame-Compose | RPM + CPU |
+| 9 | `generate-music` | Extern | RPM |
+| 10 | `generate-sales-response` / `sales-chat` | Gemini/OpenAI | RPM |
+| 11 | `repair-damage-image` / `annotate-damage-image` | Gemini | RPM |
+| 12 | `social-publish` + `publish-banner-to-auto3` | Meta/Auto3 | eigenes Rate-Limit |
 
-Facebook-Regel bleibt wie sie ist (Ratio 0.4 – 2.5), passt zu allen außer 728×90 und 160×600.
+**Systemebene:**
+- Supabase Edge Functions: 1.000 concurrent Invocations, 150s Wall, 400ms Boot
+- DB Pooler: ~200 gleichzeitige Connections
+- Storage Egress: Kostentreiber, kein Fehler
+- Client-seitige Job-Orchestrierung (`reframeJobManager`, `PipelineContext`): bricht bei Tab-Close
 
-## Umsetzung — nur eine Datei
+---
 
-`src/components/dashboard/SocialPublishModal.tsx`, Zeilen 56–66:
+## Teil B – Einschätzung Fehlerquote
 
-```ts
-const ratio = dimensions ? dimensions.w / dimensions.h : null;
-const minEdge = dimensions ? Math.min(dimensions.w, dimensions.h) : null;
-const maxEdge = dimensions ? Math.max(dimensions.w, dimensions.h) : null;
+| Parallele Jobs | Erwartete Fehlerquote heute | Hauptursache |
+|---|---|---|
+| < 50 | 1–2 % | zufällige 503, Netzwerk |
+| 50–100 | 3–5 % | Ideogram RPM |
+| 100–300 | 5–15 % | Gemini 429, Veo Quota |
+| 300–500 | 15–30 % | mehrere Provider gleichzeitig |
+| > 500 | > 30 % | ohne Queue-Layer nicht tragbar |
 
-// Instagram: Feed 4:5–1.91:1 ODER Story 9:16, min. 320 px kürzeste Kante, min. 600 px längste Kante
-const IG_MIN_RATIO = 0.5;   // 9:16 Story = 0.5625
-const IG_MAX_RATIO = 1.91;  // Landscape Feed
-const IG_MIN_EDGE  = 320;
-const IG_MIN_LONG  = 600;
-const instagramCompatible = ratio === null || minEdge === null || maxEdge === null
-  ? true
-  : ratio >= IG_MIN_RATIO && ratio <= IG_MAX_RATIO
-    && minEdge >= IG_MIN_EDGE
-    && maxEdge >= IG_MIN_LONG;
+**Was heute schon schützt:**
+- Atomare Credit-Abbuchung vor API-Call (kein Doppel-Charge)
+- Model-Fallback-Chain (Nano Banana 2 → Gemini 3 Pro → 2.5 Flash → Ideogram → GPT-Image)
+- Retry mit Backoff bei 429/503
+- Step-based Self-Invoking für lange Pipelines
+- `sb.auth.getClaims` statt `getUser` (kein Auth-Roundtrip)
+- Gemini File API First (weniger Payload → weniger Timeouts)
 
-// Facebook bleibt tolerant, blockiert nur extreme Banner-Formate
-const FB_MIN_RATIO = 0.4;
-const FB_MAX_RATIO = 2.5;
-const FB_MIN_EDGE  = 200;
-const facebookCompatible = ratio === null || minEdge === null
-  ? true
-  : ratio >= FB_MIN_RATIO && ratio <= FB_MAX_RATIO && minEdge >= FB_MIN_EDGE;
+---
+
+## Teil C – Härtungs-Plan (priorisiert nach Impact / Aufwand)
+
+### Priorität 1 – Blocker-Fixes (unverzichtbar für >100 parallel)
+
+**1.1 Zentrale Job-Queue in DB**
+- Neue Tabelle `generation_jobs` (id, user_id, type, status, priority, payload, result, retries, provider, created_at, started_at, finished_at)
+- Ersetzt Client-Orchestrierung → Tab-Close bricht nichts mehr ab
+- Cron-Worker (pg_cron + pg_net) zieht Jobs im 5s-Takt, respektiert `max_concurrent_per_provider`
+- Aufwand: ~1 Woche
+
+**1.2 Globales Rate-Limit-Gate pro Provider**
+- Tabelle `provider_rate_limits` (provider, rpm_limit, current_window_count, window_start)
+- Vor jedem AI-Call: `SELECT … FOR UPDATE` + Check → wenn Limit voll: Job zurück in Queue mit `retry_after`
+- Verhindert 90 % der 429er
+- Aufwand: ~3 Tage
+
+**1.3 Circuit-Breaker pro Provider**
+- Tabelle `provider_health` (provider, error_rate_60s, state: closed/open/half-open, opened_at)
+- Bei 5× 5xx in 60s → auf Fallback-Modell umschalten für 5 min
+- Aufwand: ~2 Tage
+
+### Priorität 2 – Skalierung (für >300 parallel)
+
+**2.1 Priority Queue**
+- Bezahlender Kunde `priority=10`, Trial `priority=1`
+- Worker zieht nach `ORDER BY priority DESC, created_at ASC`
+- Aufwand: ~1 Tag (baut auf 1.1 auf)
+
+**2.2 Dead-Letter-Queue + Auto-Refund**
+- Nach N Retries → `status=failed`, atomare Credit-Rückbuchung via neuer RPC `refund_credits`
+- Kunde sieht "Job fehlgeschlagen, Credits erstattet" statt hängender Spinner
+- Aufwand: ~2 Tage
+
+**2.3 Multi-Key-Rotation für Gemini/Ideogram**
+- Mehrere API-Keys pro Provider in `admin_secrets` (z. B. `GEMINI_API_KEY_1..5`)
+- Round-Robin im Rate-Gate → verfünffacht effektives RPM-Limit legitim
+- Aufwand: ~1 Tag
+
+### Priorität 3 – Monitoring & Ops
+
+**3.1 Admin-Dashboard „Live-Load"**
+- Neue Seite `AdminLoadMonitor.tsx`: aktuelle Queue-Länge, Fehlerquote pro Provider (letzte 5/60/1440 min), Circuit-Breaker-Status, aktive Jobs
+- Aufwand: ~2 Tage
+
+**3.2 Alerting**
+- Cron prüft alle 5 min: Fehlerquote >10 % / Queue >500 → Resend-Mail an Admin
+- Aufwand: ~1 Tag
+
+**3.3 Storage-Cleanup-Cron aktivieren**
+- `cleanup-orphaned-storage` als pg_cron alle 24h, ab 500 Kunden 90-Tage-Regel
+- Aufwand: ~2 Stunden
+
+### Priorität 4 – Optional (>1.000 Kunden)
+
+**4.1 CDN vor Storage** (Cloudflare) → Egress-Kosten −70 %
+**4.2 Cold-Storage** für Assets > 90 Tage
+**4.3 Regionale Worker** (EU/US) falls internationale Kunden
+
+---
+
+## Teil D – Umsetzungs-Reihenfolge (Empfehlung)
+
+```text
+Woche 1 → 1.1 Job-Queue-Tabelle + Worker-Cron
+Woche 2 → 1.2 Rate-Limit-Gate + 1.3 Circuit-Breaker
+Woche 3 → 2.1 Priority + 2.2 Dead-Letter + 2.3 Multi-Key
+Woche 4 → 3.1 Load-Monitor + 3.2 Alerting + 3.3 Cleanup-Cron
 ```
 
-Warnhinweis-Text im gelben Banner anpassen: statt „nur 4:5–1.91:1" jetzt
+**Nach Woche 2:** stabile 300 parallel möglich (< 5 % Fehler).
+**Nach Woche 3:** stabile 500–800 parallel möglich (< 3 % Fehler).
 
-> „Instagram braucht mindestens 320 px kürzeste Kante und akzeptiert Seitenverhältnisse zwischen 9:16 (Story) und 1,91:1 (Landscape). Für Displaywerbung wie 300×250 oder 728×90 bitte Facebook Page oder X.com nutzen."
+---
 
-## Betroffene Datei
+## Deliverable dieses Plans
 
-- `src/components/dashboard/SocialPublishModal.tsx` — Kompatibilitäts-Logik + Warntext
+Ein einziges Dokument: `.lovable/skalierung-audit-und-plan.md` mit den Teilen A–D vollständig ausgeschrieben. Danach zusätzlich in `/mnt/documents/` kopiert für Download.
 
-Keine Änderungen an Edge Functions oder Formaten-Katalog nötig.
+**Keine Code-Änderungen. Nur Dokument.**
