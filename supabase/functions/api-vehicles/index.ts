@@ -55,22 +55,26 @@ Deno.serve(async (req) => {
   // Path after /api-vehicles: e.g. [] or [":id"] or [":id", "html"]
   const subPath = pathParts.slice(pathParts.indexOf("api-vehicles") + 1);
 
-  // Helper: overlay authoritative fields from the linked vehicles row.
-  // Users edit title/brand/model/year/color in the Vehicles table via the
-  // EditVehicleDialog, so those values must win over the older projects row.
+  // Helper: overlay authoritative identity fields from the linked vehicles row.
+  // Users edit title/brand/model/year/color/vin in the Vehicles table via the
+  // EditVehicleDialog. All other data (finance, dealer, tech specs, ...) is
+  // auto-saved on the projects row and MUST win over the older vehicles snapshot.
   const overlayVehicle = (project: any, vehicle: any) => {
     if (!vehicle) return project;
-    const vData = (vehicle.vehicle_data as Record<string, any>) || {};
     const pData = (project.vehicle_data as Record<string, any>) || {};
-    const mergedVehicleData = {
-      ...pData,
-      ...vData,
-      vehicle: { ...(pData.vehicle || {}), ...(vData.vehicle || {}) },
-    };
+    const vNested = ((vehicle.vehicle_data as Record<string, any>) || {}).vehicle || {};
+    const pNested = pData.vehicle || {};
+    // Vehicle identity: vehicles-row scalar columns win, then vehicles.vehicle_data.vehicle, then project fallback
+    const identity: Record<string, any> = { ...pNested, ...vNested };
+    if (vehicle.brand) identity.brand = vehicle.brand;
+    if (vehicle.model) identity.model = vehicle.model;
+    if (vehicle.year) identity.year = vehicle.year;
+    if (vehicle.color) identity.color = vehicle.color;
+    if (vehicle.vin) identity.vin = vehicle.vin;
     return {
       ...project,
       title: vehicle.title || project.title,
-      vehicle_data: mergedVehicleData,
+      vehicle_data: { ...pData, vehicle: identity },
     };
   };
 
