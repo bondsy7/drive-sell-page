@@ -52,18 +52,52 @@ Deno.serve(async (req) => {
   // Path after /api-vehicles: e.g. [] or [":id"] or [":id", "html"]
   const subPath = pathParts.slice(pathParts.indexOf("api-vehicles") + 1);
 
+  // Helper: overlay authoritative fields from the linked vehicles row.
+  // Users edit title/brand/model/year/color in the Vehicles table via the
+  // EditVehicleDialog, so those values must win over the older projects row.
+  const overlayVehicle = (project: any, vehicle: any) => {
+    if (!vehicle) return project;
+    const vData = (vehicle.vehicle_data as Record<string, any>) || {};
+    const pData = (project.vehicle_data as Record<string, any>) || {};
+    const mergedVehicleData = {
+      ...pData,
+      ...vData,
+      vehicle: { ...(pData.vehicle || {}), ...(vData.vehicle || {}) },
+    };
+    return {
+      ...project,
+      title: vehicle.title || project.title,
+      vehicle_data: mergedVehicleData,
+    };
+  };
+
   try {
     // GET /api-vehicles — list all vehicles
     if (subPath.length === 0) {
       const { data: projects, error } = await supabase
         .from("projects")
-        .select("id, title, template_id, vehicle_data, main_image_url, created_at, updated_at")
+        .select("id, title, template_id, vehicle_data, main_image_url, vehicle_id, created_at, updated_at")
         .eq("user_id", userId)
         .order("updated_at", { ascending: false });
 
       if (error) throw error;
 
-      return new Response(JSON.stringify({ vehicles: projects }), {
+      const vehicleIds = Array.from(new Set((projects || []).map((p: any) => p.vehicle_id).filter(Boolean)));
+      let vehicleMap: Record<string, any> = {};
+      if (vehicleIds.length) {
+        const { data: vehicles } = await supabase
+          .from("vehicles")
+          .select("id, title, brand, model, year, color, vin, vehicle_data")
+          .in("id", vehicleIds);
+        (vehicles || []).forEach((v: any) => { vehicleMap[v.id] = v; });
+      }
+
+      const merged = (projects || []).map((p: any) => {
+        const { vehicle_id, ...rest } = p;
+        return overlayVehicle(rest, vehicleMap[vehicle_id]);
+      });
+
+      return new Response(JSON.stringify({ vehicles: merged }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -98,6 +132,19 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Overlay the linked vehicles row (authoritative for user edits)
+    let linkedVehicle: any = null;
+    if (project.vehicle_id) {
+      const { data: v } = await supabase
+        .from("vehicles")
+        .select("id, title, brand, model, year, color, vin, vehicle_data")
+        .eq("id", project.vehicle_id)
+        .eq("user_id", userId)
+        .maybeSingle();
+      linkedVehicle = v;
+    }
+    const merged = overlayVehicle(project, linkedVehicle);
+
     // GET /api-vehicles/:id — return JSON
     // Also fetch images
     const { data: images } = await supabase
@@ -110,19 +157,19 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         vehicle: {
-          id: project.id,
-          title: project.title,
-          template_id: project.template_id,
-          vehicle_data: project.vehicle_data,
-          main_image_url: project.main_image_url,
+          id: merged.id,
+          title: merged.title,
+          template_id: merged.template_id,
+          vehicle_data: merged.vehicle_data,
+          main_image_url: merged.main_image_url,
           images: (images || []).map((img: any) => ({
             id: img.id,
             url: img.image_url,
             perspective: img.perspective,
             sort_order: img.sort_order,
           })),
-          created_at: project.created_at,
-          updated_at: project.updated_at,
+          created_at: merged.created_at,
+          updated_at: merged.updated_at,
         },
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
