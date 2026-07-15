@@ -57,6 +57,8 @@ export default function AdminCostCalculator() {
   // Basiseinstellungen
   const [customers, setCustomers] = useState(100);
   const [pricePerCustomer, setPricePerCustomer] = useState(490);
+  const [imagesPerVehicle, setImagesPerVehicle] = useState(12);
+  const [vkPerImage, setVkPerImage] = useState(0.49);
 
   // Aktions-Mix pro Kunde/Monat
   const [mix, setMix] = useState({
