@@ -203,7 +203,7 @@ export default function AdminCostCalculator() {
                     <th className="text-right p-2 font-semibold" colSpan={3}>Kostenstelle anteilig</th>
                     <th className="text-right p-2 font-semibold">Summe EK</th>
                     <th className="text-right p-2 font-semibold">VK</th>
-                    <th className="text-right p-2 font-semibold">VK gerundet</th>
+                    
                   </tr>
                   <tr className="border-b text-[10px] text-muted-foreground">
                     <th></th><th></th><th></th>
