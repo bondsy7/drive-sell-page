@@ -164,7 +164,7 @@ export default function AdminCostCalculator() {
           const eurServer = bilder * serverPerImage;
           const summeEk = eurCredits + eurStaff + eurServer;
           const vk = r.fz * vkPerVehicle;
-          return { ...r, bilder, credits, eurCredits, eurStaff, eurServer, summeEk, vk, vkRund: roundVk(vk) };
+          return { ...r, bilder, credits, eurCredits, eurStaff, eurServer, summeEk, vk };
         });
         return (
           <Card className="p-5 space-y-3 border-2 border-accent/30 bg-accent/5">
