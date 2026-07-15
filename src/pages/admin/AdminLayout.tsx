@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Outlet, Link } from 'react-router-dom';
-import { LayoutDashboard, Users, Receipt, MessageSquare, Settings, CreditCard, ArrowLeft, FileText, Mail, Menu, X, Car, Hash, ShieldCheck, BookOpen, Activity, Send, TrendingUp, HardDrive, Filter, CalendarDays, ChevronDown, Timer, LayoutTemplate } from 'lucide-react';
+import { LayoutDashboard, Users, Receipt, MessageSquare, Settings, CreditCard, ArrowLeft, FileText, Mail, Menu, X, Car, Hash, ShieldCheck, BookOpen, Activity, Send, TrendingUp, HardDrive, Filter, CalendarDays, ChevronDown, Timer, LayoutTemplate, Calculator } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import logoLight from '@/assets/logo-light.png';
@@ -33,6 +33,7 @@ const NAV_GROUPS: NavGroupDef[] = [
       { to: '/admin/revenue', icon: TrendingUp, label: 'Umsatz & Abos' },
       { to: '/admin/pricing', icon: CreditCard, label: 'Preise' },
       { to: '/admin/credit-economics', icon: CreditCard, label: 'Credit-Ökonomie' },
+      { to: '/admin/cost-calculator', icon: Calculator, label: 'Kostenrechner' },
     ],
   },
   {
