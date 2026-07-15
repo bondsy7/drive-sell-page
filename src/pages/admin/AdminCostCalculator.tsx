@@ -143,13 +143,6 @@ export default function AdminCostCalculator() {
         const totalActions = Math.max(1, customers * calc.actionsPerCustomer);
         const ekPerImage = ACTION_EK.image.ekEur + OVERHEAD_EUR;
         const serverPerImage = (calc.storageCost + calc.egressCost + calc.fixCost) / totalActions;
-        const roundVk = (n: number) => {
-          if (n < 10) return Math.ceil(n * 2) / 2;
-          if (n < 100) return Math.ceil(n);
-          if (n < 1000) return Math.ceil(n / 10) * 10;
-          if (n < 10000) return Math.ceil(n / 100) * 100;
-          return Math.ceil(n / 1000) * 1000;
-        };
         const rows = [
           { label: "1 Fahrzeug", fz: 1 },
           { label: "/ Tag", fz: 100 },
@@ -164,7 +157,7 @@ export default function AdminCostCalculator() {
           const eurServer = bilder * serverPerImage;
           const summeEk = eurCredits + eurStaff + eurServer;
           const vk = r.fz * vkPerVehicle;
-          return { ...r, bilder, credits, eurCredits, eurStaff, eurServer, summeEk, vk, vkRund: roundVk(vk) };
+          return { ...r, bilder, credits, eurCredits, eurStaff, eurServer, summeEk, vk };
         });
         return (
           <Card className="p-5 space-y-3 border-2 border-accent/30 bg-accent/5">
@@ -203,14 +196,14 @@ export default function AdminCostCalculator() {
                     <th className="text-right p-2 font-semibold" colSpan={3}>Kostenstelle anteilig</th>
                     <th className="text-right p-2 font-semibold">Summe EK</th>
                     <th className="text-right p-2 font-semibold">VK</th>
-                    <th className="text-right p-2 font-semibold">VK gerundet</th>
+                    
                   </tr>
                   <tr className="border-b text-[10px] text-muted-foreground">
                     <th></th><th></th><th></th>
                     <th className="text-right p-1">€/Credits</th>
                     <th className="text-right p-1">€/Mitarbeiter</th>
                     <th className="text-right p-1">€/Server</th>
-                    <th></th><th></th><th></th>
+                    <th></th><th></th>
                   </tr>
                 </thead>
                 <tbody className="tabular-nums">
@@ -224,7 +217,7 @@ export default function AdminCostCalculator() {
                       <td className="text-right p-2">{fmt2(r.eurServer)}</td>
                       <td className="text-right p-2 font-semibold">{fmt2(r.summeEk)}</td>
                       <td className="text-right p-2">{fmt2(r.vk)}</td>
-                      <td className="text-right p-2 font-bold text-emerald-600">{fmt(r.vkRund)}</td>
+                      
                     </tr>
                   ))}
                 </tbody>
