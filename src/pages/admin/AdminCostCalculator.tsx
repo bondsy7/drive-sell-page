@@ -57,6 +57,8 @@ export default function AdminCostCalculator() {
   // Basiseinstellungen
   const [customers, setCustomers] = useState(100);
   const [pricePerCustomer, setPricePerCustomer] = useState(490);
+  const [imagesPerVehicle, setImagesPerVehicle] = useState(12);
+  const [vkPerImage, setVkPerImage] = useState(0.49);
 
   // Aktions-Mix pro Kunde/Monat
   const [mix, setMix] = useState({
@@ -160,7 +162,104 @@ export default function AdminCostCalculator() {
         </Card>
       </div>
 
+      {/* Kosten pro Fahrzeugvolumen */}
+      {(() => {
+        const totalActions = Math.max(1, customers * calc.actionsPerCustomer);
+        const ekPerImage = ACTION_EK.image.ekEur + OVERHEAD_EUR;
+        const staffPerImage = calc.staffCost / totalActions;
+        const serverPerImage = (calc.storageCost + calc.egressCost + calc.fixCost) / totalActions;
+        const roundVk = (n: number) => {
+          if (n < 10) return Math.ceil(n * 2) / 2;
+          if (n < 100) return Math.ceil(n);
+          if (n < 1000) return Math.ceil(n / 10) * 10;
+          if (n < 10000) return Math.ceil(n / 100) * 100;
+          return Math.ceil(n / 1000) * 1000;
+        };
+        const rows = [
+          { label: "1 Fahrzeug", fz: 1 },
+          { label: "/ Tag", fz: 100 },
+          { label: "/ Woche", fz: 500 },
+          { label: "/ Monat", fz: 2000 },
+          { label: "/ Jahr", fz: 25000 },
+        ].map((r) => {
+          const bilder = r.fz * imagesPerVehicle;
+          const credits = bilder; // 1 Credit / Bild
+          const eurCredits = bilder * ekPerImage;
+          const eurStaff = bilder * staffPerImage;
+          const eurServer = bilder * serverPerImage;
+          const summeEk = eurCredits + eurStaff + eurServer;
+          const vk = bilder * vkPerImage;
+          return { ...r, bilder, credits, eurCredits, eurStaff, eurServer, summeEk, vk, vkRund: roundVk(vk) };
+        });
+        return (
+          <Card className="p-5 space-y-3">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div>
+                <div className="font-semibold flex items-center gap-2"><Calculator className="w-4 h-4" /> Kosten pro Fahrzeugvolumen</div>
+                <div className="text-[11px] text-muted-foreground">
+                  Kalkuliert auf Basis der aktuellen Parameter · Kostenstellen anteilig auf Bild-Basis
+                </div>
+              </div>
+              <div className="flex gap-3 items-end">
+                <div>
+                  <Label className="text-[10px]">Bilder / Fahrzeug</Label>
+                  <Input type="number" className="h-8 w-20" value={imagesPerVehicle}
+                    onChange={(e) => setImagesPerVehicle(Number(e.target.value) || 0)} />
+                </div>
+                <div>
+                  <Label className="text-[10px]">VK / Bild (€)</Label>
+                  <Input type="number" step="0.01" className="h-8 w-20" value={vkPerImage}
+                    onChange={(e) => setVkPerImage(Number(e.target.value) || 0)} />
+                </div>
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b bg-muted/40">
+                    <th className="text-left p-2 font-semibold">Fahrzeugvolumen</th>
+                    <th className="text-right p-2 font-semibold">Anzahl Bilder</th>
+                    <th className="text-right p-2 font-semibold">Credit-Volumen</th>
+                    <th className="text-right p-2 font-semibold" colSpan={3}>Kostenstelle anteilig</th>
+                    <th className="text-right p-2 font-semibold">Summe EK</th>
+                    <th className="text-right p-2 font-semibold">VK</th>
+                    <th className="text-right p-2 font-semibold">VK gerundet</th>
+                  </tr>
+                  <tr className="border-b text-[10px] text-muted-foreground">
+                    <th></th><th></th><th></th>
+                    <th className="text-right p-1">€/Credits</th>
+                    <th className="text-right p-1">€/Mitarbeiter</th>
+                    <th className="text-right p-1">€/Server</th>
+                    <th></th><th></th><th></th>
+                  </tr>
+                </thead>
+                <tbody className="tabular-nums">
+                  {rows.map((r) => (
+                    <tr key={r.label} className="border-b hover:bg-muted/30">
+                      <td className="p-2 font-medium">{r.label} <span className="text-muted-foreground/70">({r.fz.toLocaleString("de-DE")} Fz)</span></td>
+                      <td className="text-right p-2">{r.bilder.toLocaleString("de-DE")}</td>
+                      <td className="text-right p-2">{r.credits.toLocaleString("de-DE")}</td>
+                      <td className="text-right p-2">{fmt2(r.eurCredits)}</td>
+                      <td className="text-right p-2">{fmt2(r.eurStaff)}</td>
+                      <td className="text-right p-2">{fmt2(r.eurServer)}</td>
+                      <td className="text-right p-2 font-semibold">{fmt2(r.summeEk)}</td>
+                      <td className="text-right p-2">{fmt2(r.vk)}</td>
+                      <td className="text-right p-2 font-bold text-emerald-600">{fmt(r.vkRund)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="text-[10px] text-muted-foreground pt-1 border-t">
+              Basis pro Bild: EK-Credits {fmt2(ekPerImage)} · Mitarbeiter-Anteil {fmt2(staffPerImage)} · Server-Anteil {fmt2(serverPerImage)}
+              · Verteilung auf {totalActions.toLocaleString("de-DE")} Aktionen/Monat ({customers} Kunden × {calc.actionsPerCustomer} Aktionen)
+            </div>
+          </Card>
+        );
+      })()}
+
       <div className="grid md:grid-cols-2 gap-6">
+
         {/* Linke Spalte: Inputs */}
         <div className="space-y-6">
           <Card className="p-5 space-y-4">
