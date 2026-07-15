@@ -164,6 +164,7 @@ const App = () => (
                 <Route path="qr-login" element={<AdminQrLogin />} />
                 <Route path="banner-templates" element={<AdminBannerTemplates />} />
                 <Route path="credit-economics" element={<AdminCreditEconomics />} />
+                <Route path="cost-calculator" element={<AdminCostCalculator />} />
               </Route>
               <Route path="/architecture" element={<ProtectedRoute><AdminRoute><ArchitectureDoc /></AdminRoute></ProtectedRoute>} />
               <Route path="/sales-assistant/chat" element={<ProtectedRoute><ErrorBoundary moduleName="Sales Assistant"><SalesAssistant /></ErrorBoundary></ProtectedRoute>} />
