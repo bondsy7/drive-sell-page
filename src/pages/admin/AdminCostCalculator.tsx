@@ -143,13 +143,6 @@ export default function AdminCostCalculator() {
         const totalActions = Math.max(1, customers * calc.actionsPerCustomer);
         const ekPerImage = ACTION_EK.image.ekEur + OVERHEAD_EUR;
         const serverPerImage = (calc.storageCost + calc.egressCost + calc.fixCost) / totalActions;
-        const roundVk = (n: number) => {
-          if (n < 10) return Math.ceil(n * 2) / 2;
-          if (n < 100) return Math.ceil(n);
-          if (n < 1000) return Math.ceil(n / 10) * 10;
-          if (n < 10000) return Math.ceil(n / 100) * 100;
-          return Math.ceil(n / 1000) * 1000;
-        };
         const rows = [
           { label: "1 Fahrzeug", fz: 1 },
           { label: "/ Tag", fz: 100 },
