@@ -58,7 +58,7 @@ export default function AdminCostCalculator() {
   const [customers, setCustomers] = useState(100);
   const [pricePerCustomer, setPricePerCustomer] = useState(490);
   const [imagesPerVehicle, setImagesPerVehicle] = useState(12);
-  const [vkPerImage, setVkPerImage] = useState(0.49);
+  const [vkPerVehicle, setVkPerVehicle] = useState(4.50);
   const [staffPerVehicle, setStaffPerVehicle] = useState(0.5);
 
   // Aktions-Mix pro Kunde/Monat
@@ -163,7 +163,7 @@ export default function AdminCostCalculator() {
           const eurStaff = r.fz * staffPerVehicle; // fix pro Fahrzeug
           const eurServer = bilder * serverPerImage;
           const summeEk = eurCredits + eurStaff + eurServer;
-          const vk = bilder * vkPerImage;
+          const vk = r.fz * vkPerVehicle;
           return { ...r, bilder, credits, eurCredits, eurStaff, eurServer, summeEk, vk, vkRund: roundVk(vk) };
         });
         return (
@@ -187,9 +187,9 @@ export default function AdminCostCalculator() {
                     onChange={(e) => setStaffPerVehicle(Number(e.target.value) || 0)} />
                 </div>
                 <div>
-                  <Label className="text-[10px]">VK / Bild (€)</Label>
-                  <Input type="number" step="0.01" className="h-8 w-20" value={vkPerImage}
-                    onChange={(e) => setVkPerImage(Number(e.target.value) || 0)} />
+                  <Label className="text-[10px]">VK / Fahrzeug (€)</Label>
+                  <Input type="number" step="0.01" className="h-8 w-24" value={vkPerVehicle}
+                    onChange={(e) => setVkPerVehicle(Number(e.target.value) || 0)} />
                 </div>
               </div>
             </div>
@@ -232,7 +232,7 @@ export default function AdminCostCalculator() {
             </div>
             <div className="text-[10px] text-muted-foreground pt-1 border-t">
               Basis: EK-Credits {fmt2(ekPerImage)} / Bild · Mitarbeiter {fmt2(staffPerVehicle)} / Fahrzeug (fix, hochgerechnet) · Server {fmt2(serverPerImage)} / Bild
-              (anteilig auf {totalActions.toLocaleString("de-DE")} Aktionen/Monat aus Parametern unten)
+              (anteilig auf {totalActions.toLocaleString("de-DE")} Aktionen/Monat aus Parametern unten) · VK {fmt2(vkPerVehicle)} / Fahrzeug
             </div>
           </Card>
         );
