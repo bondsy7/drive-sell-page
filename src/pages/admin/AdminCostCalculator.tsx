@@ -59,6 +59,7 @@ export default function AdminCostCalculator() {
   const [pricePerCustomer, setPricePerCustomer] = useState(490);
   const [imagesPerVehicle, setImagesPerVehicle] = useState(12);
   const [vkPerImage, setVkPerImage] = useState(0.49);
+  const [staffPerVehicle, setStaffPerVehicle] = useState(0.5);
 
   // Aktions-Mix pro Kunde/Monat
   const [mix, setMix] = useState({
@@ -137,36 +138,10 @@ export default function AdminCostCalculator() {
         </p>
       </div>
 
-      {/* KPI Zusammenfassung */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card className="p-4">
-          <div className="text-xs text-muted-foreground">Umsatz / Monat</div>
-          <div className="text-2xl font-bold tabular-nums">{fmt(calc.revenue)}</div>
-        </Card>
-        <Card className="p-4">
-          <div className="text-xs text-muted-foreground">Gesamtkosten / Monat</div>
-          <div className="text-2xl font-bold tabular-nums">{fmt(calc.totalCost)}</div>
-        </Card>
-        <Card className={`p-4 ${calc.profit >= 0 ? "bg-emerald-50 dark:bg-emerald-950/20" : "bg-destructive/10"}`}>
-          <div className="text-xs text-muted-foreground flex items-center gap-1">
-            {calc.profit >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-            Gewinn / Monat
-          </div>
-          <div className={`text-2xl font-bold tabular-nums ${calc.profit >= 0 ? "text-emerald-600" : "text-destructive"}`}>
-            {fmt(calc.profit)}
-          </div>
-        </Card>
-        <Card className="p-4">
-          <div className="text-xs text-muted-foreground">Marge</div>
-          <div className="text-2xl font-bold tabular-nums">{calc.margin.toFixed(1)} %</div>
-        </Card>
-      </div>
-
-      {/* Kosten pro Fahrzeugvolumen */}
+      {/* Kosten pro Fahrzeugvolumen – oben, separat */}
       {(() => {
         const totalActions = Math.max(1, customers * calc.actionsPerCustomer);
         const ekPerImage = ACTION_EK.image.ekEur + OVERHEAD_EUR;
-        const staffPerImage = calc.staffCost / totalActions;
         const serverPerImage = (calc.storageCost + calc.egressCost + calc.fixCost) / totalActions;
         const roundVk = (n: number) => {
           if (n < 10) return Math.ceil(n * 2) / 2;
@@ -185,26 +160,31 @@ export default function AdminCostCalculator() {
           const bilder = r.fz * imagesPerVehicle;
           const credits = bilder; // 1 Credit / Bild
           const eurCredits = bilder * ekPerImage;
-          const eurStaff = bilder * staffPerImage;
+          const eurStaff = r.fz * staffPerVehicle; // fix pro Fahrzeug
           const eurServer = bilder * serverPerImage;
           const summeEk = eurCredits + eurStaff + eurServer;
           const vk = bilder * vkPerImage;
           return { ...r, bilder, credits, eurCredits, eurStaff, eurServer, summeEk, vk, vkRund: roundVk(vk) };
         });
         return (
-          <Card className="p-5 space-y-3">
+          <Card className="p-5 space-y-3 border-2 border-accent/30 bg-accent/5">
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div>
-                <div className="font-semibold flex items-center gap-2"><Calculator className="w-4 h-4" /> Kosten pro Fahrzeugvolumen</div>
+                <div className="font-semibold flex items-center gap-2 text-base"><Calculator className="w-4 h-4" /> Kosten pro Fahrzeugvolumen</div>
                 <div className="text-[11px] text-muted-foreground">
-                  Kalkuliert auf Basis der aktuellen Parameter · Kostenstellen anteilig auf Bild-Basis
+                  Übersicht EK/VK je Volumen · Mitarbeiterkosten fix pro Fahrzeug · Server anteilig auf Bild-Basis
                 </div>
               </div>
-              <div className="flex gap-3 items-end">
+              <div className="flex gap-3 items-end flex-wrap">
                 <div>
                   <Label className="text-[10px]">Bilder / Fahrzeug</Label>
                   <Input type="number" className="h-8 w-20" value={imagesPerVehicle}
                     onChange={(e) => setImagesPerVehicle(Number(e.target.value) || 0)} />
+                </div>
+                <div>
+                  <Label className="text-[10px]">€ / Mitarbeiter / Fz</Label>
+                  <Input type="number" step="0.01" className="h-8 w-24" value={staffPerVehicle}
+                    onChange={(e) => setStaffPerVehicle(Number(e.target.value) || 0)} />
                 </div>
                 <div>
                   <Label className="text-[10px]">VK / Bild (€)</Label>
@@ -251,12 +231,40 @@ export default function AdminCostCalculator() {
               </table>
             </div>
             <div className="text-[10px] text-muted-foreground pt-1 border-t">
-              Basis pro Bild: EK-Credits {fmt2(ekPerImage)} · Mitarbeiter-Anteil {fmt2(staffPerImage)} · Server-Anteil {fmt2(serverPerImage)}
-              · Verteilung auf {totalActions.toLocaleString("de-DE")} Aktionen/Monat ({customers} Kunden × {calc.actionsPerCustomer} Aktionen)
+              Basis: EK-Credits {fmt2(ekPerImage)} / Bild · Mitarbeiter {fmt2(staffPerVehicle)} / Fahrzeug (fix, hochgerechnet) · Server {fmt2(serverPerImage)} / Bild
+              (anteilig auf {totalActions.toLocaleString("de-DE")} Aktionen/Monat aus Parametern unten)
             </div>
           </Card>
         );
       })()}
+
+      <div className="border-t pt-6" />
+
+      {/* KPI Zusammenfassung */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <Card className="p-4">
+          <div className="text-xs text-muted-foreground">Umsatz / Monat</div>
+          <div className="text-2xl font-bold tabular-nums">{fmt(calc.revenue)}</div>
+        </Card>
+        <Card className="p-4">
+          <div className="text-xs text-muted-foreground">Gesamtkosten / Monat</div>
+          <div className="text-2xl font-bold tabular-nums">{fmt(calc.totalCost)}</div>
+        </Card>
+        <Card className={`p-4 ${calc.profit >= 0 ? "bg-emerald-50 dark:bg-emerald-950/20" : "bg-destructive/10"}`}>
+          <div className="text-xs text-muted-foreground flex items-center gap-1">
+            {calc.profit >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+            Gewinn / Monat
+          </div>
+          <div className={`text-2xl font-bold tabular-nums ${calc.profit >= 0 ? "text-emerald-600" : "text-destructive"}`}>
+            {fmt(calc.profit)}
+          </div>
+        </Card>
+        <Card className="p-4">
+          <div className="text-xs text-muted-foreground">Marge</div>
+          <div className="text-2xl font-bold tabular-nums">{calc.margin.toFixed(1)} %</div>
+        </Card>
+      </div>
+
 
       <div className="grid md:grid-cols-2 gap-6">
 
