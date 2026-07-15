@@ -62,6 +62,7 @@ const AdminPipelineStats = lazy(() => import("./pages/admin/AdminPipelineStats")
 const AdminQrLogin = lazy(() => import("./pages/admin/AdminQrLogin"));
 const AdminBannerTemplates = lazy(() => import("./pages/admin/AdminBannerTemplates"));
 const AdminCreditEconomics = lazy(() => import("./pages/admin/AdminCreditEconomics"));
+const AdminCostCalculator = lazy(() => import("./pages/admin/AdminCostCalculator"));
 import AdminRoute from "./components/AdminRoute";
 
 const queryClient = new QueryClient();
