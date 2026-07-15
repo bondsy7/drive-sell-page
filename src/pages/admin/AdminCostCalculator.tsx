@@ -224,7 +224,7 @@ export default function AdminCostCalculator() {
                       <td className="text-right p-2">{fmt2(r.eurServer)}</td>
                       <td className="text-right p-2 font-semibold">{fmt2(r.summeEk)}</td>
                       <td className="text-right p-2">{fmt2(r.vk)}</td>
-                      <td className="text-right p-2 font-bold text-emerald-600">{fmt(r.vkRund)}</td>
+                      
                     </tr>
                   ))}
                 </tbody>
