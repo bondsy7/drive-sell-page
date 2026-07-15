@@ -210,7 +210,7 @@ export default function AdminCostCalculator() {
                     <th className="text-right p-1">€/Credits</th>
                     <th className="text-right p-1">€/Mitarbeiter</th>
                     <th className="text-right p-1">€/Server</th>
-                    <th></th><th></th><th></th>
+                    <th></th><th></th>
                   </tr>
                 </thead>
                 <tbody className="tabular-nums">
