@@ -89,7 +89,7 @@ export function generateMagazinHTML(data: VehicleData, imageBase64: string | nul
         ${customerTypeBadgeHTML(data)}<h1>${data.vehicle.brand} ${data.vehicle.model}</h1>
         <div class="variant">${data.vehicle.variant||''}</div>
         <div class="price">${data.finance.totalPrice||'–'}</div>${vatNoteHTML(data)}
-        <div class="rate-inline">${getMonthlyRateLabel(data)}: ab <strong>${data.finance.monthlyRate||'–'}</strong> / Monat${rateTypeSuffixHTML(data, 'font-size:.85em;font-weight:500;opacity:.75;margin-left:.15em')}</div>
+        <div class="rate-inline">${getMonthlyRateLabel(data)}: ab <strong>${data.finance.monthlyRate||'–'}</strong><span style="font-size:.85em;font-weight:500;opacity:.85">/mtl.</span>${rateTypeSuffixHTML(data)}</div>
       </div>
     </div>
     <div class="columns">
@@ -121,7 +121,7 @@ export function generateMagazinHTML(data: VehicleData, imageBase64: string | nul
           ${buildSocialLinksHTML(data.dealer)}
           ${buildWhatsAppButtonHTML(data.dealer, `${data.vehicle.brand} ${data.vehicle.model}`)}
         </div>
-        <div class="rate-badge"><div style="font-size:.7rem;opacity:.7;margin-bottom:.2rem">${getMonthlyRateLabel(data)}</div><div class="amount">${data.finance.monthlyRate||'–'}${rateTypeSuffixHTML(data, 'font-size:.5em;font-weight:600;opacity:.7;margin-left:.25em;vertical-align:middle')}</div><div class="period">pro Monat</div>${vatNoteHTML(data, 'font-size:.7rem;color:#9ca3af;margin-top:.3rem;display:block;text-align:center')}</div>
+        <div class="rate-badge"><div style="font-size:.7rem;opacity:.7;margin-bottom:.2rem">${getMonthlyRateLabel(data)}</div><div class="amount">${data.finance.monthlyRate||'–'}<span style="font-size:.7em;font-weight:500;opacity:.85">/mtl.</span>${rateTypeSuffixHTML(data)}</div><div class="period">pro Monat</div>${vatNoteHTML(data, 'font-size:.7rem;color:#9ca3af;margin-top:.3rem;display:block;text-align:center')}</div>
       </div>
     </div>
     ${buildLegalTextHTML(data)}
