@@ -245,19 +245,21 @@ const Index = () => {
     if (!p) return vData;
     const pr = p as any;
     const d = vData.dealer || {} as any;
+    // Profile-Daten sind der Standard für Firmeninformationen (Firmenname, Adresse, Rufnummer, Email).
+    // Falls Profil-Feld leer ist, wird auf ggf. aus der PDF extrahierten Wert zurückgefallen.
     return {
       ...vData,
       dealer: {
         ...vData.dealer,
-        name: d.name || pr.company_name || '',
-        address: d.address || pr.address || '',
-        postalCode: d.postalCode || pr.postal_code || '',
-        city: d.city || pr.city || '',
-        phone: d.phone || pr.phone || '',
-        email: d.email || pr.email || '',
-        website: d.website || pr.website || '',
+        name: pr.company_name || d.name || '',
+        address: pr.address || d.address || '',
+        postalCode: pr.postal_code || d.postalCode || '',
+        city: pr.city || d.city || '',
+        phone: pr.phone || d.phone || '',
+        email: pr.email || d.email || '',
+        website: pr.website || d.website || '',
         taxId: d.taxId || pr.tax_id || '',
-        logoUrl: d.logoUrl || pr.logo_url || '',
+        logoUrl: pr.logo_url || d.logoUrl || '',
         facebookUrl: d.facebookUrl || pr.facebook_url || '',
         instagramUrl: d.instagramUrl || pr.instagram_url || '',
         xUrl: d.xUrl || pr.x_url || '',
