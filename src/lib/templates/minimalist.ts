@@ -103,7 +103,7 @@ export function generateMinimalistHTML(data: VehicleData, imageBase64: string | 
         ${buildSocialLinksHTML(data.dealer)}
         ${buildWhatsAppButtonHTML(data.dealer, `${data.vehicle.brand} ${data.vehicle.model}`)}
       </div>
-      <div class="rate-pill"><div style="font-size:.7rem;opacity:.7;margin-bottom:.2rem">${getMonthlyRateLabel(data)}</div><div class="amount">${data.finance.monthlyRate||'–'}${rateTypeSuffixHTML(data, 'font-size:.5em;font-weight:600;opacity:.7;margin-left:.25em;vertical-align:middle')}</div><div class="period">pro Monat</div>${vatNoteHTML(data, 'font-size:.7rem;color:#9ca3af;margin-top:.3rem;display:block;text-align:center')}</div>
+      <div class="rate-pill"><div style="font-size:.7rem;opacity:.7;margin-bottom:.2rem">${getMonthlyRateLabel(data)}</div><div class="amount">${data.finance.monthlyRate||'–'}<span style="font-size:.7em;font-weight:500;opacity:.85">/mtl.</span>${rateTypeSuffixHTML(data)}</div><div class="period">pro Monat</div>${vatNoteHTML(data, 'font-size:.7rem;color:#9ca3af;margin-top:.3rem;display:block;text-align:center')}</div>
     </div>
     ${buildLegalTextHTML(data)}
   </div>
