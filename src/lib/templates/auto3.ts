@@ -172,10 +172,10 @@ export function generateAuto3HTML(data: VehicleData, imageBase64: string | null,
           </div>` : ''}
           <div class="price-row">
             <span class="price-label">${sidebarLabel}</span>
-            <span class="price">${sidebarValueRaw || '–'}${sidebarValueRaw ? sidebarSuffix : ''}${sidebarValueRaw && isMonthlyOffer ? rateTypeSuffixHTML(data) : ''}${sidebarValueRaw ? sup : ''}</span>
+            <span class="price">${sidebarValueRaw || '–'}${sidebarValueRaw ? sup : ''}${rateInlineSuffix}</span>
           </div>
           ${vatNoteHTML(data, 'display:block;text-align:right;font-size:11px;color:#999')}
-          ${isMonthlyOffer && data.finance.totalPrice ? `<div style="font-size:11px;color:#999;margin-top:6px;text-align:right">Gesamtpreis: <strong>${data.finance.totalPrice} €</strong></div>` : ''}
+          ${isMonthlyOffer && data.finance.totalPrice ? `<div style="font-size:11px;color:#999;margin-top:6px;text-align:right">Gesamtpreis: <strong>${data.finance.totalPrice}</strong></div>` : ''}
         </div>
 
         <div class="side-card" id="anfrage">
