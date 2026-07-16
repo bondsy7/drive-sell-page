@@ -5,7 +5,7 @@ import {
   buildFinanceItems, buildFeatures, buildSocialLinksHTML,
   buildWhatsAppButtonHTML, buildLegalTextHTML, buildDealerAddressHTML,
   buildDealerFooterHTML, buildWebsiteLinkHTML, getFinanceSectionTitle,
-  vatNoteHTML, getMonthlyRateLabel, customerTypeBadgeHTML,
+  vatNoteHTML, getMonthlyRateLabel, customerTypeBadgeHTML, rateTypeSuffixHTML,
 } from "./shared";
 
 export function generateAuto3HTML(data: VehicleData, imageBase64: string | null, galleryImages: string[] = []): string {
@@ -169,7 +169,7 @@ export function generateAuto3HTML(data: VehicleData, imageBase64: string | null,
           </div>` : ''}
           <div class="price-row">
             <span class="price-label">${sidebarLabel}</span>
-            <span class="price">${sidebarValueRaw || '–'}${sidebarValueRaw ? sidebarSuffix : ''}${sidebarValueRaw ? sup : ''}</span>
+            <span class="price">${sidebarValueRaw || '–'}${sidebarValueRaw ? sidebarSuffix : ''}${sidebarValueRaw && isMonthlyOffer ? rateTypeSuffixHTML(data, 'font-size:.5em;font-weight:600;opacity:.7;margin-left:.2em') : ''}${sidebarValueRaw ? sup : ''}</span>
           </div>
           ${vatNoteHTML(data, 'display:block;text-align:right;font-size:11px;color:#999')}
           ${isMonthlyOffer && data.finance.totalPrice ? `<div style="font-size:11px;color:#999;margin-top:6px;text-align:right">Gesamtpreis: <strong>${data.finance.totalPrice} €</strong></div>` : ''}
