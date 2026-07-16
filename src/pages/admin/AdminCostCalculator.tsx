@@ -196,14 +196,14 @@ export default function AdminCostCalculator() {
                     <th className="text-right p-2 font-semibold" colSpan={3}>Kostenstelle anteilig</th>
                     <th className="text-right p-2 font-semibold">Summe EK</th>
                     <th className="text-right p-2 font-semibold">VK</th>
-                    
+                    <th className="text-right p-2 font-semibold">Delta</th>
                   </tr>
                   <tr className="border-b text-[10px] text-muted-foreground">
                     <th></th><th></th><th></th>
                     <th className="text-right p-1">€/Credits</th>
                     <th className="text-right p-1">€/Mitarbeiter</th>
                     <th className="text-right p-1">€/Server</th>
-                    <th></th><th></th>
+                    <th></th><th></th><th></th>
                   </tr>
                 </thead>
                 <tbody className="tabular-nums">
@@ -217,7 +217,7 @@ export default function AdminCostCalculator() {
                       <td className="text-right p-2">{fmt2(r.eurServer)}</td>
                       <td className="text-right p-2 font-semibold">{fmt2(r.summeEk)}</td>
                       <td className="text-right p-2">{fmt2(r.vk)}</td>
-                      
+                      <td className="text-right p-2 font-semibold text-emerald-600">{fmt2(r.vk - r.summeEk)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -225,7 +225,7 @@ export default function AdminCostCalculator() {
             </div>
             <div className="text-[10px] text-muted-foreground pt-1 border-t">
               Basis: EK-Credits {fmt2(ekPerImage)} / Bild · Mitarbeiter {fmt2(staffPerVehicle)} / Fahrzeug (fix, hochgerechnet) · Server {fmt2(serverPerImage)} / Bild
-              (anteilig auf {totalActions.toLocaleString("de-DE")} Aktionen/Monat aus Parametern unten) · VK {fmt2(vkPerVehicle)} / Fahrzeug
+              (anteilig auf {totalActions.toLocaleString("de-DE")} Aktionen/Monat aus Parametern unten) · VK {fmt2(vkPerVehicle)} / Fahrzeug · Delta = VK − Summe EK
             </div>
           </Card>
         );
