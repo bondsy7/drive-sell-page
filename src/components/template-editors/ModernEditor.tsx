@@ -158,9 +158,11 @@ const ModernEditor: React.FC<TemplateEditorProps> = ({
                 <>
                   <div className="bg-muted/50 rounded-xl p-3">
                     <div className="text-[10px] text-muted-foreground uppercase">Rate</div>
-                    <div className="flex items-center gap-1 flex-wrap">
-                      <EditableField value={data.finance.monthlyRate || ''} onChange={(v) => updateFinance('monthlyRate', v)} className="text-sm font-bold" suffix="€" />
-                      <RateTypeSelect value={data.finance.rateType} onChange={(v) => updateFinance('rateType', v)} />
+                    <div className="flex items-baseline gap-1 flex-wrap">
+                      <EditableField value={data.finance.monthlyRate || ''} onChange={(v) => updateFinance('monthlyRate', v)} className="text-sm font-bold" suffix="€/mtl." />
+                      <span className="text-[10px] text-muted-foreground font-normal">
+                        <RateTypeSelect value={data.finance.rateType} onChange={(v) => updateFinance('rateType', v)} />
+                      </span>
                     </div>
                   </div>
                   <div className="bg-muted/50 rounded-xl p-3">
