@@ -43,9 +43,9 @@ const RateTypeSelect: React.FC<Props> = ({ value, onChange, className = '', inli
         }}
         className={'rate-type-inline ' + className}
       >
-        <option value="">, netto/brutto?</option>
-        <option value="netto">, netto</option>
-        <option value="brutto">, brutto</option>
+        <option value="" disabled hidden>netto/brutto?</option>
+        <option value="netto">netto</option>
+        <option value="brutto">brutto</option>
       </select>
     );
   }
@@ -61,7 +61,7 @@ const RateTypeSelect: React.FC<Props> = ({ value, onChange, className = '', inli
         className
       }
     >
-      <option value="">– netto/brutto –</option>
+      <option value="" disabled hidden>– wählen –</option>
       <option value="netto">netto</option>
       <option value="brutto">brutto</option>
     </select>

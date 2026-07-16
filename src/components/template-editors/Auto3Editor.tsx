@@ -44,7 +44,7 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
   const isMonthlyOffer = isLeasing || isFinanzierung;
   const sidebarPriceLabel = isLeasing ? 'Leasing ab' : isFinanzierung ? 'Finanzierung ab' : 'Fahrzeugpreis';
   const sidebarPriceValue = isMonthlyOffer ? (data.finance.monthlyRate || '') : (data.finance.totalPrice || '');
-  const sidebarPriceSuffix = isMonthlyOffer ? '€/mtl.' : '€';
+  const sidebarPriceSuffix = isMonthlyOffer ? '' : '€';
   const sidebarOnChange = (v: string) => updateFinance(isMonthlyOffer ? 'monthlyRate' : 'totalPrice', v);
   const mainImage = allImages[selectedImage] || allImages[0] || imageBase64;
   const features = data.vehicle.features || [];
@@ -350,18 +350,19 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
                   <span className={`flex-1 text-center py-2 text-[12px] font-semibold rounded-[7px] ${!isLeasing ? 'text-white' : 'text-gray-500 cursor-pointer'}`} style={!isLeasing ? { background: dark } : undefined}>Kauf / Finanzierung</span>
                 </div>
               )}
-              <div className="flex justify-between items-baseline my-2 flex-wrap gap-1">
-                <span className="text-[13px] text-gray-600 font-medium">{sidebarPriceLabel}</span>
-                <span className="inline-flex items-baseline flex-wrap gap-1">
+              <div className="flex items-baseline flex-wrap gap-x-2 gap-y-1 my-2">
+                <span className="text-[13px] text-gray-500 font-medium">{sidebarPriceLabel}</span>
+                <span className="inline-flex items-baseline">
                   <EditableField value={sidebarPriceValue || '–'} onChange={sidebarOnChange}
-                    suffix={sidebarPriceSuffix} className="text-[26px] font-extrabold" />
-                  {isMonthlyOffer && (
-                    <span className="text-[11px] text-gray-400 font-normal">
-                      <RateTypeSelect value={data.finance.rateType} onChange={(v) => updateFinance('rateType', v)} />
-                    </span>
-                  )}
+                    suffix={sidebarPriceSuffix} className="text-[26px] font-extrabold leading-none" />
                   {sidebarPriceValue && !isBuyCategory && <sup className="text-[11px] font-bold ml-0.5" style={{ color: dark }}>1</sup>}
                 </span>
+                {isMonthlyOffer && (
+                  <span className="text-[13px] text-gray-500 font-medium inline-flex items-baseline">
+                    mtl.,&nbsp;
+                    <RateTypeSelect value={data.finance.rateType} onChange={(v) => updateFinance('rateType', v)} />
+                  </span>
+                )}
               </div>
               <div className="text-[11px] text-gray-400 mt-0.5 text-right">
                 <EditableField
@@ -372,7 +373,7 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
               </div>
               {isMonthlyOffer && data.finance.totalPrice && (
                 <div className="text-[12px] text-gray-500 mt-1 text-right">
-                  Gesamtpreis: <EditableField value={data.finance.totalPrice} onChange={(v) => updateFinance('totalPrice', v)} suffix="€" className="font-semibold inline" />
+                  Gesamtpreis: <EditableField value={data.finance.totalPrice} onChange={(v) => updateFinance('totalPrice', v)} className="font-semibold inline" />
                 </div>
               )}
             </div>
