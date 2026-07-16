@@ -196,14 +196,14 @@ export default function AdminCostCalculator() {
                     <th className="text-right p-2 font-semibold" colSpan={3}>Kostenstelle anteilig</th>
                     <th className="text-right p-2 font-semibold">Summe EK</th>
                     <th className="text-right p-2 font-semibold">VK</th>
-                    
+                    <th className="text-right p-2 font-semibold">Delta</th>
                   </tr>
                   <tr className="border-b text-[10px] text-muted-foreground">
                     <th></th><th></th><th></th>
                     <th className="text-right p-1">€/Credits</th>
                     <th className="text-right p-1">€/Mitarbeiter</th>
                     <th className="text-right p-1">€/Server</th>
-                    <th></th><th></th>
+                    <th></th><th></th><th></th>
                   </tr>
                 </thead>
                 <tbody className="tabular-nums">
@@ -217,7 +217,7 @@ export default function AdminCostCalculator() {
                       <td className="text-right p-2">{fmt2(r.eurServer)}</td>
                       <td className="text-right p-2 font-semibold">{fmt2(r.summeEk)}</td>
                       <td className="text-right p-2">{fmt2(r.vk)}</td>
-                      
+                      <td className="text-right p-2 font-semibold text-emerald-600">{fmt2(r.vk - r.summeEk)}</td>
                     </tr>
                   ))}
                 </tbody>
