@@ -3,6 +3,7 @@ import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from '@/components/ui/accordion';
 import EditableField from '@/components/EditableField';
+import RateTypeSelect from './RateTypeSelect';
 import CO2LabelSelector from '@/components/CO2LabelSelector';
 import FuelTypeDropdown from '@/components/FuelTypeDropdown';
 import CategoryDropdown from '@/components/CategoryDropdown';
@@ -97,7 +98,10 @@ const ModernEditor: React.FC<TemplateEditorProps> = ({
             {!isBuyCategory && data.finance.monthlyRate && (
               <div className="mt-4 bg-primary text-primary-foreground rounded-xl p-4 text-center">
                 <div className="text-xs opacity-70 mb-1">Monatliche Rate</div>
-                <EditableField value={data.finance.monthlyRate} onChange={(v) => updateFinance('monthlyRate', v)} className="text-2xl font-bold text-primary-foreground" suffix="€" />
+                <div className="inline-flex items-baseline gap-1 flex-wrap justify-center">
+                  <EditableField value={data.finance.monthlyRate} onChange={(v) => updateFinance('monthlyRate', v)} className="text-2xl font-bold text-primary-foreground" suffix="€" />
+                  <RateTypeSelect value={data.finance.rateType} onChange={(v) => updateFinance('rateType', v)} className="bg-primary-foreground/10 text-primary-foreground border-primary-foreground/30" />
+                </div>
                 <div className="text-xs opacity-70 mt-1">pro Monat</div>
               </div>
             )}
@@ -152,7 +156,10 @@ const ModernEditor: React.FC<TemplateEditorProps> = ({
                 <>
                   <div className="bg-muted/50 rounded-xl p-3">
                     <div className="text-[10px] text-muted-foreground uppercase">Rate</div>
-                    <EditableField value={data.finance.monthlyRate || ''} onChange={(v) => updateFinance('monthlyRate', v)} className="text-sm font-bold" suffix="€" />
+                    <div className="flex items-center gap-1 flex-wrap">
+                      <EditableField value={data.finance.monthlyRate || ''} onChange={(v) => updateFinance('monthlyRate', v)} className="text-sm font-bold" suffix="€" />
+                      <RateTypeSelect value={data.finance.rateType} onChange={(v) => updateFinance('rateType', v)} />
+                    </div>
                   </div>
                   <div className="bg-muted/50 rounded-xl p-3">
                     <div className="text-[10px] text-muted-foreground uppercase">Laufzeit</div>
