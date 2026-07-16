@@ -578,10 +578,14 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
                 value={isBuyCategory ? data.finance.totalPrice : (data.finance.monthlyRate || data.finance.totalPrice)}
                 onChange={(v) => updateFinance(isBuyCategory ? 'totalPrice' : 'monthlyRate', v)}
                 className="text-2xl font-bold text-foreground"
-                suffix="€"
+                suffix={isBuyCategory ? '€' : '€/mtl.'}
               />
-              {!isBuyCategory && <span className="text-sm text-muted-foreground">/ Monat <sup>1</sup></span>}
-              {!isBuyCategory && <RateTypeSelect value={data.finance.rateType} onChange={(v) => updateFinance('rateType', v)} />}
+              {!isBuyCategory && (
+                <span className="text-xs text-muted-foreground font-normal">
+                  <RateTypeSelect value={data.finance.rateType} onChange={(v) => updateFinance('rateType', v)} />
+                </span>
+              )}
+              {!isBuyCategory && <sup className="text-[10px] text-muted-foreground">1</sup>}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Fahrzeugpreis: <EditableField value={data.finance.totalPrice} onChange={(v) => updateFinance('totalPrice', v)} className="text-xs text-muted-foreground inline" suffix={`€ ${data.finance.vatNote ?? 'inkl. MwSt.'}`} />
