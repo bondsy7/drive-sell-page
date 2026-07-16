@@ -1,6 +1,6 @@
 import { VehicleData, ConsumptionData } from "@/types/vehicle";
 import { getCO2LabelPath } from "@/lib/co2-utils";
-import { buildSocialLinksHTML, buildLegalTextHTML, buildDealerAddressHTML, buildDealerFooterHTML, buildWebsiteLinkHTML, getFinanceSectionTitle } from "@/lib/templates/shared";
+import { buildSocialLinksHTML, buildLegalTextHTML, buildDealerAddressHTML, buildDealerFooterHTML, buildWebsiteLinkHTML, getFinanceSectionTitle, rateTypeSuffixHTML } from "@/lib/templates/shared";
 
 function generateCO2LabelHTML(consumption: ConsumptionData): string {
   const path = getCO2LabelPath(consumption);
@@ -180,7 +180,7 @@ export function generateLandingPageHTML(data: VehicleData, imageBase64: string |
         </div>
         <div class="rate-box">
           <div class="rate-label">${(data.category || '').toLowerCase().match(/barkauf|neuwagen|gebrauchtwagen|tageszulassung/) ? 'Kaufpreis' : 'Monatliche Rate'}</div>
-          <div class="rate-amount">${((data.category || '').toLowerCase().match(/barkauf|neuwagen|gebrauchtwagen|tageszulassung/) ? data.finance.totalPrice : data.finance.monthlyRate) || '–'}</div>
+          <div class="rate-amount">${((data.category || '').toLowerCase().match(/barkauf|neuwagen|gebrauchtwagen|tageszulassung/) ? data.finance.totalPrice : data.finance.monthlyRate) || '–'}${!(data.category || '').toLowerCase().match(/barkauf|neuwagen|gebrauchtwagen|tageszulassung/) ? rateTypeSuffixHTML(data, 'font-size:.5em;font-weight:600;opacity:.7;margin-left:.25em;vertical-align:middle') : ''}</div>
           <div class="rate-period">${(data.category || '').toLowerCase().match(/barkauf|neuwagen|gebrauchtwagen|tageszulassung/) ? 'gesamt' : 'pro Monat'}</div>
         </div>
       </div>
