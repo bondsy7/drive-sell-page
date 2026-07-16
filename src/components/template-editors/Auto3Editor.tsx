@@ -60,7 +60,7 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
   return (
     <div className="space-y-4">
       {/* Color controls (sticky bar) */}
-      <div className="sticky top-0 z-20 bg-card/95 backdrop-blur rounded-2xl border border-border p-4 shadow-sm">
+      <div className="sticky top-0 z-30 w-full shrink-0 bg-card/95 backdrop-blur rounded-2xl border border-border p-4 shadow-sm">
         <div className="flex items-center gap-2 mb-3">
           <Palette className="w-4 h-4" style={{ color: accent }} />
           <h3 className="text-sm font-semibold">Auto3 Farben</h3>
