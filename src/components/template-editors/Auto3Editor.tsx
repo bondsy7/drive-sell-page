@@ -44,7 +44,7 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
   const isMonthlyOffer = isLeasing || isFinanzierung;
   const sidebarPriceLabel = isLeasing ? 'Leasing ab' : isFinanzierung ? 'Finanzierung ab' : 'Fahrzeugpreis';
   const sidebarPriceValue = isMonthlyOffer ? (data.finance.monthlyRate || '') : (data.finance.totalPrice || '');
-  const sidebarPriceSuffix = isMonthlyOffer ? '€/mtl.' : '€';
+  const sidebarPriceSuffix = isMonthlyOffer ? '' : '€';
   const sidebarOnChange = (v: string) => updateFinance(isMonthlyOffer ? 'monthlyRate' : 'totalPrice', v);
   const mainImage = allImages[selectedImage] || allImages[0] || imageBase64;
   const features = data.vehicle.features || [];
