@@ -117,9 +117,11 @@ const KlassischEditor: React.FC<TemplateEditorProps> = ({
                 <>
                   <div className="border border-border rounded-lg bg-muted/30 p-3">
                     <div className="text-[10px] uppercase text-muted-foreground tracking-wide">Rate</div>
-                    <div className="flex items-center gap-1 flex-wrap">
-                      <EditableField value={data.finance.monthlyRate || ''} onChange={(v) => updateFinance('monthlyRate', v)} className="text-sm font-semibold" suffix="€" />
-                      <RateTypeSelect value={data.finance.rateType} onChange={(v) => updateFinance('rateType', v)} />
+                    <div className="flex items-baseline gap-1 flex-wrap">
+                      <EditableField value={data.finance.monthlyRate || ''} onChange={(v) => updateFinance('monthlyRate', v)} className="text-sm font-semibold" suffix="€/mtl." />
+                      <span className="text-[10px] text-muted-foreground font-normal">
+                        <RateTypeSelect value={data.finance.rateType} onChange={(v) => updateFinance('rateType', v)} />
+                      </span>
                     </div>
                   </div>
                   <div className="border border-border rounded-lg bg-muted/30 p-3">

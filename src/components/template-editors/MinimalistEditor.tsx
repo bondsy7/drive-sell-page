@@ -117,9 +117,11 @@ const MinimalistEditor: React.FC<TemplateEditorProps> = ({
                 <>
                   <div className="border-b border-border/20 pb-3">
                     <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Rate</div>
-                    <div className="flex items-center gap-1 flex-wrap">
-                      <EditableField value={data.finance.monthlyRate || ''} onChange={(v) => updateFinance('monthlyRate', v)} className="text-[15px] font-semibold" suffix="€" />
-                      <RateTypeSelect value={data.finance.rateType} onChange={(v) => updateFinance('rateType', v)} />
+                    <div className="flex items-baseline gap-1 flex-wrap">
+                      <EditableField value={data.finance.monthlyRate || ''} onChange={(v) => updateFinance('monthlyRate', v)} className="text-[15px] font-semibold" suffix="€/mtl." />
+                      <span className="text-[10px] text-muted-foreground font-normal">
+                        <RateTypeSelect value={data.finance.rateType} onChange={(v) => updateFinance('rateType', v)} />
+                      </span>
                     </div>
                   </div>
                   <div className="border-b border-border/20 pb-3">

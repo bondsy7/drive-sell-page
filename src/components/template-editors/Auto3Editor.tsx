@@ -235,10 +235,12 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
                   <>
                     <div className="bg-[#f7f7f7] rounded-[10px] p-3">
                       <div className="text-[10px] text-gray-500 uppercase tracking-[.5px] font-semibold">Rate</div>
-                      <div className="inline-flex items-center flex-wrap gap-1">
-                        <EditableField value={data.finance.monthlyRate || ''} onChange={(v) => updateFinance('monthlyRate', v)} suffix="€" className="text-sm font-bold mt-0.5" />
+                      <div className="inline-flex items-baseline flex-wrap gap-1">
+                        <EditableField value={data.finance.monthlyRate || ''} onChange={(v) => updateFinance('monthlyRate', v)} suffix="€/mtl." className="text-sm font-bold mt-0.5" />
+                        <span className="text-[10px] text-gray-500 font-normal">
+                          <RateTypeSelect value={data.finance.rateType} onChange={(v) => updateFinance('rateType', v)} />
+                        </span>
                         {data.finance.monthlyRate && <sup className="text-[8px] font-bold ml-0.5 text-gray-700">1</sup>}
-                        <RateTypeSelect value={data.finance.rateType} onChange={(v) => updateFinance('rateType', v)} />
                       </div>
                     </div>
                     <FinItem label="Laufzeit" value={data.finance.duration || ''} onChange={(v) => updateFinance('duration', v)} suffix="Monate" />
@@ -353,8 +355,12 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
                 <span className="inline-flex items-baseline flex-wrap gap-1">
                   <EditableField value={sidebarPriceValue || '–'} onChange={sidebarOnChange}
                     suffix={sidebarPriceSuffix} className="text-[26px] font-extrabold" />
+                  {isMonthlyOffer && (
+                    <span className="text-[11px] text-gray-400 font-normal">
+                      <RateTypeSelect value={data.finance.rateType} onChange={(v) => updateFinance('rateType', v)} />
+                    </span>
+                  )}
                   {sidebarPriceValue && !isBuyCategory && <sup className="text-[11px] font-bold ml-0.5" style={{ color: dark }}>1</sup>}
-                  {isMonthlyOffer && <RateTypeSelect value={data.finance.rateType} onChange={(v) => updateFinance('rateType', v)} />}
                 </span>
               </div>
               <div className="text-[11px] text-gray-400 mt-0.5 text-right">

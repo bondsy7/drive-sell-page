@@ -350,14 +350,16 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
                     onChange={(v) => updateFinance('monthlyRateLabel', v)}
                     className="text-xs font-medium opacity-60 mb-1 block"
                   />
-                  <div className="flex items-baseline gap-2 flex-wrap">
+                  <div className="flex items-baseline gap-1 flex-wrap">
                     <EditableField
                       value={data.finance.monthlyRate}
                       onChange={(v) => updateFinance('monthlyRate', v)}
                       className="text-3xl font-bold text-background"
-                      suffix="€"
+                      suffix="€/mtl."
                     />
-                    <RateTypeSelect value={data.finance.rateType} onChange={(v) => updateFinance('rateType', v)} className="bg-background/20 text-background border-background/30" />
+                    <span className="text-xs opacity-60 font-normal text-background">
+                      <RateTypeSelect value={data.finance.rateType} onChange={(v) => updateFinance('rateType', v)} />
+                    </span>
                   </div>
                   <EditableField
                     value={data.finance.vatNote ?? 'inkl. MwSt.'}
@@ -576,10 +578,14 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
                 value={isBuyCategory ? data.finance.totalPrice : (data.finance.monthlyRate || data.finance.totalPrice)}
                 onChange={(v) => updateFinance(isBuyCategory ? 'totalPrice' : 'monthlyRate', v)}
                 className="text-2xl font-bold text-foreground"
-                suffix="€"
+                suffix={isBuyCategory ? '€' : '€/mtl.'}
               />
-              {!isBuyCategory && <span className="text-sm text-muted-foreground">/ Monat <sup>1</sup></span>}
-              {!isBuyCategory && <RateTypeSelect value={data.finance.rateType} onChange={(v) => updateFinance('rateType', v)} />}
+              {!isBuyCategory && (
+                <span className="text-xs text-muted-foreground font-normal">
+                  <RateTypeSelect value={data.finance.rateType} onChange={(v) => updateFinance('rateType', v)} />
+                </span>
+              )}
+              {!isBuyCategory && <sup className="text-[10px] text-muted-foreground">1</sup>}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Fahrzeugpreis: <EditableField value={data.finance.totalPrice} onChange={(v) => updateFinance('totalPrice', v)} className="text-xs text-muted-foreground inline" suffix={`€ ${data.finance.vatNote ?? 'inkl. MwSt.'}`} />
