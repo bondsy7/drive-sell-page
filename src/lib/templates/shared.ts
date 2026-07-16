@@ -58,10 +58,11 @@ export function rateTypeSuffix(data: VehicleData): string {
   return t ? `, ${t}` : '';
 }
 
-/** Small styled span with the rate type suffix (", netto" / ", brutto"). */
+/** Small styled span with the rate type suffix (", netto" / ", brutto").
+ *  Standard-Style entspricht der Größe des "inkl. MwSt."-Hinweises. */
 export function rateTypeSuffixHTML(
   data: VehicleData,
-  style = 'font-size:.72em;font-weight:500;opacity:.75;margin-left:.15em',
+  style = 'font-size:.75rem;font-weight:500;color:#9ca3af;margin-left:.25em;white-space:nowrap',
 ): string {
   const t = getRateType(data);
   if (!t) return '';
