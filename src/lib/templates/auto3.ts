@@ -26,10 +26,13 @@ export function generateAuto3HTML(data: VehicleData, imageBase64: string | null,
   const isMonthlyOffer = isLeasing || isFinanzierung;
   const sidebarLabel = isLeasing ? 'Leasing ab' : isFinanzierung ? 'Finanzierung ab' : 'Fahrzeugpreis';
   const sidebarValueRaw = isMonthlyOffer ? (data.finance.monthlyRate || '') : (data.finance.totalPrice || '');
-  const sidebarSuffix = isMonthlyOffer ? ' €/mtl.' : '';
   // Hochgestellte "1" nur bei Leasing/Finanzierung (verweist auf Bankangaben/Pflichthinweise).
   // Bei reinem Kaufpreis-Angebot entfällt die Fußnote komplett.
   const sup = isBuy ? '' : `<sup style="font-size:0.55em;vertical-align:super;font-weight:700;margin-left:2px">1</sup>`;
+  const rt = getRateType(data);
+  const rateInlineSuffix = isMonthlyOffer && sidebarValueRaw
+    ? ` <span style="font-size:13px;font-weight:500;color:#999;letter-spacing:.02em;white-space:nowrap">mtl.${rt ? ', ' + rt : ''}</span>`
+    : '';
 
   const accent = data.templateColors?.accent || '#e30613';
   const dark = data.templateColors?.dark || '#111111';
