@@ -225,7 +225,7 @@ export default function AdminCostCalculator() {
             </div>
             <div className="text-[10px] text-muted-foreground pt-1 border-t">
               Basis: EK-Credits {fmt2(ekPerImage)} / Bild · Mitarbeiter {fmt2(staffPerVehicle)} / Fahrzeug (fix, hochgerechnet) · Server {fmt2(serverPerImage)} / Bild
-              (anteilig auf {totalActions.toLocaleString("de-DE")} Aktionen/Monat aus Parametern unten) · VK {fmt2(vkPerVehicle)} / Fahrzeug
+              (anteilig auf {totalActions.toLocaleString("de-DE")} Aktionen/Monat aus Parametern unten) · VK {fmt2(vkPerVehicle)} / Fahrzeug · Delta = VK − Summe EK
             </div>
           </Card>
         );
