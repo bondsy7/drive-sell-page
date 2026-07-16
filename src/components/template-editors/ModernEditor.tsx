@@ -99,8 +99,10 @@ const ModernEditor: React.FC<TemplateEditorProps> = ({
               <div className="mt-4 bg-primary text-primary-foreground rounded-xl p-4 text-center">
                 <div className="text-xs opacity-70 mb-1">Monatliche Rate</div>
                 <div className="inline-flex items-baseline gap-1 flex-wrap justify-center">
-                  <EditableField value={data.finance.monthlyRate} onChange={(v) => updateFinance('monthlyRate', v)} className="text-2xl font-bold text-primary-foreground" suffix="€" />
-                  <RateTypeSelect value={data.finance.rateType} onChange={(v) => updateFinance('rateType', v)} className="bg-primary-foreground/10 text-primary-foreground border-primary-foreground/30" />
+                  <EditableField value={data.finance.monthlyRate} onChange={(v) => updateFinance('monthlyRate', v)} className="text-2xl font-bold text-primary-foreground" suffix="€/mtl." />
+                  <span className="text-xs opacity-70 font-normal">
+                    <RateTypeSelect value={data.finance.rateType} onChange={(v) => updateFinance('rateType', v)} />
+                  </span>
                 </div>
                 <div className="text-xs opacity-70 mt-1">pro Monat</div>
               </div>
