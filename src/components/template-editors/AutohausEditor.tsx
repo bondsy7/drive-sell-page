@@ -350,14 +350,16 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
                     onChange={(v) => updateFinance('monthlyRateLabel', v)}
                     className="text-xs font-medium opacity-60 mb-1 block"
                   />
-                  <div className="flex items-baseline gap-2 flex-wrap">
+                  <div className="flex items-baseline gap-1 flex-wrap">
                     <EditableField
                       value={data.finance.monthlyRate}
                       onChange={(v) => updateFinance('monthlyRate', v)}
                       className="text-3xl font-bold text-background"
-                      suffix="€"
+                      suffix="€/mtl."
                     />
-                    <RateTypeSelect value={data.finance.rateType} onChange={(v) => updateFinance('rateType', v)} className="bg-background/20 text-background border-background/30" />
+                    <span className="text-xs opacity-60 font-normal text-background">
+                      <RateTypeSelect value={data.finance.rateType} onChange={(v) => updateFinance('rateType', v)} />
+                    </span>
                   </div>
                   <EditableField
                     value={data.finance.vatNote ?? 'inkl. MwSt.'}
