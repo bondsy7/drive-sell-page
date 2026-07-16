@@ -101,6 +101,8 @@ export interface VehicleData {
     vatNote?: string;
     /** Label for the monthly rate ("Monatliche Rate", "Leasingrate", ...) */
     monthlyRateLabel?: string;
+    /** Optional tax note that follows the monthly rate ("netto" / "brutto"). Empty = disabled. */
+    rateType?: '' | 'netto' | 'brutto';
   };
   dealer: DealerData;
   consumption: ConsumptionData;

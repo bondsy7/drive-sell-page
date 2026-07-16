@@ -46,6 +46,28 @@ export function getMonthlyRateLabel(data: VehicleData): string {
   return data.finance?.monthlyRateLabel || 'Monatliche Rate';
 }
 
+/** Returns "netto" / "brutto" / "" for the rate. */
+export function getRateType(data: VehicleData): '' | 'netto' | 'brutto' {
+  const t = data.finance?.rateType;
+  return t === 'netto' || t === 'brutto' ? t : '';
+}
+
+/** Inline suffix for the rate (e.g. ", netto"). Empty when not set. */
+export function rateTypeSuffix(data: VehicleData): string {
+  const t = getRateType(data);
+  return t ? `, ${t}` : '';
+}
+
+/** Small styled span with the rate type suffix (", netto" / ", brutto"). */
+export function rateTypeSuffixHTML(
+  data: VehicleData,
+  style = 'font-size:.72em;font-weight:500;opacity:.75;margin-left:.15em',
+): string {
+  const t = getRateType(data);
+  if (!t) return '';
+  return `<span class="rate-type-suffix" style="${style}">, ${t}</span>`;
+}
+
 /** Customer-type badge ("Privatkundenangebot" / "Gewerbekundenangebot"). */
 export function customerTypeBadgeHTML(data: VehicleData): string {
   const isBusiness = data.customerType === 'business';

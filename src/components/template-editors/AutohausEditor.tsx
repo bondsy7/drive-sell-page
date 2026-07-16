@@ -6,6 +6,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import EditableField from '@/components/EditableField';
+import RateTypeSelect from './RateTypeSelect';
 import CO2LabelSelector from '@/components/CO2LabelSelector';
 import FuelTypeDropdown from '@/components/FuelTypeDropdown';
 import CategoryDropdown from '@/components/CategoryDropdown';
@@ -349,13 +350,14 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
                     onChange={(v) => updateFinance('monthlyRateLabel', v)}
                     className="text-xs font-medium opacity-60 mb-1 block"
                   />
-                  <div className="flex items-baseline gap-2">
+                  <div className="flex items-baseline gap-2 flex-wrap">
                     <EditableField
                       value={data.finance.monthlyRate}
                       onChange={(v) => updateFinance('monthlyRate', v)}
                       className="text-3xl font-bold text-background"
                       suffix="€"
                     />
+                    <RateTypeSelect value={data.finance.rateType} onChange={(v) => updateFinance('rateType', v)} className="bg-background/20 text-background border-background/30" />
                   </div>
                   <EditableField
                     value={data.finance.vatNote ?? 'inkl. MwSt.'}
@@ -569,7 +571,7 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
 
           {/* Price */}
           <div className="p-5 border-b border-border/60">
-            <div className="flex items-baseline gap-1">
+            <div className="flex items-baseline gap-1 flex-wrap">
               <EditableField
                 value={isBuyCategory ? data.finance.totalPrice : (data.finance.monthlyRate || data.finance.totalPrice)}
                 onChange={(v) => updateFinance(isBuyCategory ? 'totalPrice' : 'monthlyRate', v)}
@@ -577,6 +579,7 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
                 suffix="€"
               />
               {!isBuyCategory && <span className="text-sm text-muted-foreground">/ Monat <sup>1</sup></span>}
+              {!isBuyCategory && <RateTypeSelect value={data.finance.rateType} onChange={(v) => updateFinance('rateType', v)} />}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Fahrzeugpreis: <EditableField value={data.finance.totalPrice} onChange={(v) => updateFinance('totalPrice', v)} className="text-xs text-muted-foreground inline" suffix={`€ ${data.finance.vatNote ?? 'inkl. MwSt.'}`} />
