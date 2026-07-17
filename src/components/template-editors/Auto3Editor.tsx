@@ -71,6 +71,39 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
     color: dark,
   };
 
+  const renderCustomerTypeToggle = (variant: 'toolbar' | 'inline' = 'inline') => (
+    <div className={variant === 'toolbar'
+      ? 'mb-4 flex flex-col gap-3 rounded-xl border-2 bg-background p-3 sm:flex-row sm:items-center sm:justify-between'
+      : 'flex items-center gap-3 mb-3 p-2 rounded-lg border-2 border-dashed bg-background'
+    }
+      style={{ borderColor: `${accent}66`, backgroundColor: variant === 'toolbar' ? `${accent}10` : `${accent}08` }}>
+      <span className={variant === 'toolbar'
+        ? 'text-sm font-black uppercase text-foreground'
+        : 'text-[11px] font-bold uppercase tracking-wider text-foreground shrink-0'
+      }>
+        Angebotstyp: Privat / Gewerbe
+      </span>
+      <div className="grid grid-cols-2 gap-1 rounded-full border border-border bg-card p-1 sm:min-w-[260px]" role="radiogroup" aria-label="Angebotstyp wählen">
+        {(['private', 'business'] as const).map((type) => {
+          const active = inferredCustomerType === type;
+          return (
+            <button
+              key={type}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              onClick={() => setCustomerType(type)}
+              className={`rounded-full px-4 py-2 text-xs font-bold uppercase transition-colors ${active ? 'shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+              style={active ? { background: type === 'business' ? dark : accent, color: '#fff' } : undefined}
+            >
+              {type === 'business' ? 'Gewerbe' : 'Privat'}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-4">
       {/* Color controls (sticky bar) */}
@@ -79,29 +112,8 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
           <Palette className="w-4 h-4" style={{ color: accent }} />
           <h3 className="text-sm font-semibold">Auto3 Farben</h3>
           <span className="text-[11px] text-muted-foreground">— Akzent & Dunkel anpassen</span>
-
-          <div className="ml-auto flex items-center gap-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Angebotstyp:</span>
-            <div className="inline-flex items-center gap-1 rounded-full border border-border bg-background p-1" role="radiogroup" aria-label="Angebotstyp wählen">
-              {(['private', 'business'] as const).map((type) => {
-                const active = inferredCustomerType === type;
-                return (
-                  <button
-                    key={type}
-                    type="button"
-                    role="radio"
-                    aria-checked={active}
-                    onClick={() => setCustomerType(type)}
-                    className={`text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full transition-colors ${active ? 'text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
-                    style={active ? { background: type === 'business' ? dark : accent } : undefined}
-                  >
-                    {type === 'business' ? 'Gewerbe' : 'Privat'}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
         </div>
+        {renderCustomerTypeToggle('toolbar')}
         <div className="grid sm:grid-cols-2 gap-3 mb-3">
           <label className="flex items-center gap-3 bg-muted/40 rounded-xl p-3">
             <input type="color" value={accent} onChange={(e) => updateColors({ accent: e.target.value })}
@@ -181,27 +193,7 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
 
             {/* Title block */}
             <div className="mt-6">
-              <div className="flex items-center gap-3 mb-3 p-2 rounded-lg border-2 border-dashed border-[#e30613]/40 bg-[#fff5f5]">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#e30613] shrink-0">Angebotstyp:</span>
-                <div className="inline-flex items-center gap-1 rounded-full border border-[#e5e7eb] bg-white p-1" role="radiogroup" aria-label="Angebotstyp wählen">
-                  {(['private', 'business'] as const).map((type) => {
-                    const active = inferredCustomerType === type;
-                    return (
-                      <button
-                        key={type}
-                        type="button"
-                        role="radio"
-                        aria-checked={active}
-                        onClick={() => setCustomerType(type)}
-                        className={`text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-full transition-colors ${active ? 'text-white shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}
-                        style={active ? { background: type === 'business' ? dark : accent } : undefined}
-                      >
-                        {type === 'business' ? 'Gewerbe' : 'Privat'}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              {renderCustomerTypeToggle('inline')}
               <h1 className="text-[28px] font-bold leading-tight" style={{ color: dark }}>
                 <EditableField
                   value={`${data.vehicle.brand} ${data.vehicle.model}`}
