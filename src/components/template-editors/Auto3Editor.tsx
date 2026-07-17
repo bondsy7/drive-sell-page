@@ -396,6 +396,7 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
             <div className="bg-white border border-[#eaeaea] rounded-[14px] p-5 shadow-[0_2px_14px_rgba(0,0,0,.04)]">
               <h4 className="text-[13px] font-bold mb-1.5" style={{ color: dark }}>Mehr Angebote</h4>
               <div className="text-[12px] text-gray-500 mb-3">{isBuyCategory ? 'Kaufpreis-Angebot' : 'Wähle Deine Finanzierungsart'}</div>
+              {renderCustomerTypeToggle('inline')}
               {!isBuyCategory && (
                 <div className="flex gap-1.5 bg-gray-100 rounded-[10px] p-1 mb-3.5">
                   <span className={`flex-1 text-center py-2 text-[12px] font-semibold rounded-[7px] ${isLeasing ? 'text-white' : 'text-gray-500 cursor-pointer'}`} style={isLeasing ? { background: dark } : undefined}>Leasing</span>
