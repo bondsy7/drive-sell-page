@@ -209,7 +209,8 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
             </div>
 
             {/* Specs */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 mt-5 border border-[#eaeaea] rounded-xl px-5 py-4">
+            <div className="mt-5">{renderCustomerTypeToggle('inline')}</div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 border border-[#eaeaea] rounded-xl px-5 py-4">
               {[
                 { label: 'Fahrzeugtyp', value: data.vehicle.bodyType || '', onChange: (v: string) => updateVehicle('bodyType' as any, v) },
                 { label: 'Getriebe', value: data.vehicle.transmission || '', onChange: (v: string) => updateVehicle('transmission', v) },
