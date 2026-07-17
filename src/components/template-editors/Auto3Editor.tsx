@@ -159,21 +159,26 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
 
             {/* Title block */}
             <div className="mt-6">
-              <div className="inline-flex items-center gap-1 rounded-full border border-[#e5e7eb] bg-[#f8fafc] p-1 mb-2" aria-label="Angebotstyp wählen">
-                {(['private', 'business'] as const).map((type) => {
-                  const active = inferredCustomerType === type;
-                  return (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => setCustomerType(type)}
-                      className={`text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full transition-colors ${active ? 'text-white shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}
-                      style={active ? { background: type === 'business' ? dark : accent } : undefined}
-                    >
-                      {type === 'business' ? 'Gewerbe' : 'Privat'}
-                    </button>
-                  );
-                })}
+              <div className="flex items-center gap-3 mb-3 p-2 rounded-lg border-2 border-dashed border-[#e30613]/40 bg-[#fff5f5]">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#e30613] shrink-0">Angebotstyp:</span>
+                <div className="inline-flex items-center gap-1 rounded-full border border-[#e5e7eb] bg-white p-1" role="radiogroup" aria-label="Angebotstyp wählen">
+                  {(['private', 'business'] as const).map((type) => {
+                    const active = inferredCustomerType === type;
+                    return (
+                      <button
+                        key={type}
+                        type="button"
+                        role="radio"
+                        aria-checked={active}
+                        onClick={() => setCustomerType(type)}
+                        className={`text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-full transition-colors ${active ? 'text-white shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}
+                        style={active ? { background: type === 'business' ? dark : accent } : undefined}
+                      >
+                        {type === 'business' ? 'Gewerbe' : 'Privat'}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
               <h1 className="text-[28px] font-bold leading-tight" style={{ color: dark }}>
                 <EditableField
