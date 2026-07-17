@@ -106,47 +106,50 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Color controls (sticky bar) */}
-      <div className="sticky top-0 z-30 w-full shrink-0 bg-card/95 backdrop-blur rounded-2xl border border-border p-4 shadow-sm">
-        <div className="flex items-center gap-2 mb-3 flex-wrap">
-          <Palette className="w-4 h-4" style={{ color: accent }} />
-          <h3 className="text-sm font-semibold">Auto3 Farben</h3>
-          <span className="text-[11px] text-muted-foreground">— Akzent & Dunkel anpassen</span>
-        </div>
+      {/* Angebotstyp + Color controls (sticky bar) */}
+      <div className="sticky top-0 z-30 w-full shrink-0 bg-card/95 backdrop-blur rounded-2xl border border-border p-4 shadow-sm space-y-4">
         {renderCustomerTypeToggle('toolbar')}
-        <div className="grid sm:grid-cols-2 gap-3 mb-3">
-          <label className="flex items-center gap-3 bg-muted/40 rounded-xl p-3">
-            <input type="color" value={accent} onChange={(e) => updateColors({ accent: e.target.value })}
-              className="w-10 h-10 rounded-md border border-border cursor-pointer bg-transparent" />
-            <div className="flex-1">
-              <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">Akzentfarbe (CTA)</div>
-              <input type="text" value={accent} onChange={(e) => updateColors({ accent: e.target.value })}
-                className="w-full bg-transparent text-sm font-mono font-semibold outline-none" />
-            </div>
-          </label>
-          <label className="flex items-center gap-3 bg-muted/40 rounded-xl p-3">
-            <input type="color" value={dark} onChange={(e) => updateColors({ dark: e.target.value })}
-              className="w-10 h-10 rounded-md border border-border cursor-pointer bg-transparent" />
-            <div className="flex-1">
-              <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">Dunkelton (Text / Badges)</div>
-              <input type="text" value={dark} onChange={(e) => updateColors({ dark: e.target.value })}
-                className="w-full bg-transparent text-sm font-mono font-semibold outline-none" />
-            </div>
-          </label>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {PRESETS.map((p) => (
-            <button key={p.label} type="button" onClick={() => updateColors({ accent: p.accent, dark: p.dark })}
-              className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-full border border-border bg-background hover:bg-muted transition-colors">
-              <span className="w-3 h-3 rounded-full border border-border" style={{ background: p.accent }} />
-              <span className="w-3 h-3 rounded-full border border-border" style={{ background: p.dark }} />
-              {p.label}
+
+        <div>
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
+            <Palette className="w-4 h-4" style={{ color: accent }} />
+            <h3 className="text-sm font-semibold">Auto3 Farben</h3>
+            <span className="text-[11px] text-muted-foreground">— Akzent & Dunkel anpassen</span>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-3 mb-3">
+            <label className="flex items-center gap-3 bg-muted/40 rounded-xl p-3">
+              <input type="color" value={accent} onChange={(e) => updateColors({ accent: e.target.value })}
+                className="w-10 h-10 rounded-md border border-border cursor-pointer bg-transparent" />
+              <div className="flex-1">
+                <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">Akzentfarbe (CTA)</div>
+                <input type="text" value={accent} onChange={(e) => updateColors({ accent: e.target.value })}
+                  className="w-full bg-transparent text-sm font-mono font-semibold outline-none" />
+              </div>
+            </label>
+            <label className="flex items-center gap-3 bg-muted/40 rounded-xl p-3">
+              <input type="color" value={dark} onChange={(e) => updateColors({ dark: e.target.value })}
+                className="w-10 h-10 rounded-md border border-border cursor-pointer bg-transparent" />
+              <div className="flex-1">
+                <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">Dunkelton (Text / Badges)</div>
+                <input type="text" value={dark} onChange={(e) => updateColors({ dark: e.target.value })}
+                  className="w-full bg-transparent text-sm font-mono font-semibold outline-none" />
+              </div>
+            </label>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            {PRESETS.map((p) => (
+              <button key={p.label} type="button" onClick={() => updateColors({ accent: p.accent, dark: p.dark })}
+                className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-full border border-border bg-background hover:bg-muted transition-colors">
+                <span className="w-3 h-3 rounded-full border border-border" style={{ background: p.accent }} />
+                <span className="w-3 h-3 rounded-full border border-border" style={{ background: p.dark }} />
+                {p.label}
+              </button>
+            ))}
+            <button type="button" onClick={() => updateColors({ accent: '#e30613', dark: '#111111' })}
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-border bg-background hover:bg-muted ml-auto">
+              <RotateCcw className="w-3 h-3" /> Zurücksetzen
             </button>
-          ))}
-          <button type="button" onClick={() => updateColors({ accent: '#e30613', dark: '#111111' })}
-            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-border bg-background hover:bg-muted ml-auto">
-            <RotateCcw className="w-3 h-3" /> Zurücksetzen
-          </button>
+          </div>
         </div>
       </div>
 
