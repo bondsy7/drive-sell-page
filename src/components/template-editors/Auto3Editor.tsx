@@ -145,6 +145,19 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
 
             {/* Title block */}
             <div className="mt-6">
+              {/* Customer type badge (Privat- vs. Gewerbekundenangebot) – click to toggle */}
+              <button
+                type="button"
+                onClick={() => onDataChange({ ...data, customerType: data.customerType === 'business' ? 'private' : 'business' })}
+                className={`inline-block text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full mb-2 transition-colors ${
+                  data.customerType === 'business'
+                    ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                    : 'bg-pink-100 text-pink-700 hover:bg-pink-200'
+                }`}
+                title="Klick zum Wechseln zwischen Privat- und Gewerbekundenangebot"
+              >
+                {data.customerType === 'business' ? 'Gewerbekundenangebot' : 'Privatkundenangebot'}
+              </button>
               <h1 className="text-[28px] font-bold leading-tight" style={{ color: dark }}>
                 <EditableField
                   value={`${data.vehicle.brand} ${data.vehicle.model}`}
