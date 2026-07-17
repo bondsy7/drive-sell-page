@@ -75,10 +75,32 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
     <div className="space-y-4">
       {/* Color controls (sticky bar) */}
       <div className="sticky top-0 z-30 w-full shrink-0 bg-card/95 backdrop-blur rounded-2xl border border-border p-4 shadow-sm">
-        <div className="flex items-center gap-2 mb-3">
+        <div className="flex items-center gap-2 mb-3 flex-wrap">
           <Palette className="w-4 h-4" style={{ color: accent }} />
           <h3 className="text-sm font-semibold">Auto3 Farben</h3>
           <span className="text-[11px] text-muted-foreground">— Akzent & Dunkel anpassen</span>
+
+          <div className="ml-auto flex items-center gap-2">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Angebotstyp:</span>
+            <div className="inline-flex items-center gap-1 rounded-full border border-border bg-background p-1" role="radiogroup" aria-label="Angebotstyp wählen">
+              {(['private', 'business'] as const).map((type) => {
+                const active = inferredCustomerType === type;
+                return (
+                  <button
+                    key={type}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    onClick={() => setCustomerType(type)}
+                    className={`text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full transition-colors ${active ? 'text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                    style={active ? { background: type === 'business' ? dark : accent } : undefined}
+                  >
+                    {type === 'business' ? 'Gewerbe' : 'Privat'}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
         <div className="grid sm:grid-cols-2 gap-3 mb-3">
           <label className="flex items-center gap-3 bg-muted/40 rounded-xl p-3">
