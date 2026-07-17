@@ -193,7 +193,6 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
 
             {/* Title block */}
             <div className="mt-6">
-              {renderCustomerTypeToggle('inline')}
               <h1 className="text-[28px] font-bold leading-tight" style={{ color: dark }}>
                 <EditableField
                   value={`${data.vehicle.brand} ${data.vehicle.model}`}
@@ -206,8 +205,7 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
             </div>
 
             {/* Specs */}
-            <div className="mt-5">{renderCustomerTypeToggle('inline')}</div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 border border-[#eaeaea] rounded-xl px-5 py-4">
+            <div className="mt-5 grid grid-cols-2 sm:grid-cols-3 border border-[#eaeaea] rounded-xl px-5 py-4">
               {[
                 { label: 'Fahrzeugtyp', value: data.vehicle.bodyType || '', onChange: (v: string) => updateVehicle('bodyType' as any, v) },
                 { label: 'Getriebe', value: data.vehicle.transmission || '', onChange: (v: string) => updateVehicle('transmission', v) },
