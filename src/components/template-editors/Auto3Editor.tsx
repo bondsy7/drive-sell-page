@@ -152,9 +152,6 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
 
       {/* === Visual replica of auto3 preview === */}
       <div className="bg-white rounded-2xl border border-border overflow-hidden" style={rootStyle}>
-        <div className="px-6 pt-6 sm:px-8 sm:pt-8">
-          {renderCustomerTypeToggle('toolbar')}
-        </div>
         <div className="max-w-[1280px] mx-auto p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8 items-start">
           {/* LEFT */}
           <div>
