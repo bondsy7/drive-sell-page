@@ -48,6 +48,20 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
   const sidebarOnChange = (v: string) => updateFinance(isMonthlyOffer ? 'monthlyRate' : 'totalPrice', v);
   const mainImage = allImages[selectedImage] || allImages[0] || imageBase64;
   const features = data.vehicle.features || [];
+  const inferredCustomerType: 'private' | 'business' =
+    data.customerType || (cat.includes('gewerbe') || data.finance.rateType === 'netto' || (data.finance.vatNote || '').toLowerCase().includes('zzgl') ? 'business' : 'private');
+
+  const setCustomerType = (type: 'private' | 'business') => {
+    onDataChange({
+      ...data,
+      customerType: type,
+      finance: {
+        ...data.finance,
+        rateType: type === 'business' ? 'netto' : 'brutto',
+        vatNote: type === 'business' ? 'zzgl. MwSt.' : 'inkl. MwSt.',
+      },
+    });
+  };
 
   // Inline style helpers — use CSS variables so children inherit
   const rootStyle: React.CSSProperties = {
@@ -145,19 +159,22 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
 
             {/* Title block */}
             <div className="mt-6">
-              {/* Customer type badge (Privat- vs. Gewerbekundenangebot) – click to toggle */}
-              <button
-                type="button"
-                onClick={() => onDataChange({ ...data, customerType: data.customerType === 'business' ? 'private' : 'business' })}
-                className={`inline-block text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full mb-2 transition-colors ${
-                  data.customerType === 'business'
-                    ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
-                    : 'bg-pink-100 text-pink-700 hover:bg-pink-200'
-                }`}
-                title="Klick zum Wechseln zwischen Privat- und Gewerbekundenangebot"
-              >
-                {data.customerType === 'business' ? 'Gewerbekundenangebot' : 'Privatkundenangebot'}
-              </button>
+              <div className="inline-flex items-center gap-1 rounded-full border border-[#e5e7eb] bg-[#f8fafc] p-1 mb-2" aria-label="Angebotstyp wählen">
+                {(['private', 'business'] as const).map((type) => {
+                  const active = inferredCustomerType === type;
+                  return (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => setCustomerType(type)}
+                      className={`text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full transition-colors ${active ? 'text-white shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}
+                      style={active ? { background: type === 'business' ? dark : accent } : undefined}
+                    >
+                      {type === 'business' ? 'Gewerbe' : 'Privat'}
+                    </button>
+                  );
+                })}
+              </div>
               <h1 className="text-[28px] font-bold leading-tight" style={{ color: dark }}>
                 <EditableField
                   value={`${data.vehicle.brand} ${data.vehicle.model}`}
