@@ -443,6 +443,19 @@ Rules for using this list:
     }
 
     if (lines.length > 0) {
+      const basePaintUnification = !config.changeColor ? `
+
+<BASE_PAINT_UNIFICATION>
+BODY PAINT MUST BE ONE SINGLE, UNIFORM OEM COLOR:
+1. Identify the dominant OEM base paint color of the vehicle body from the largest, cleanest painted areas (roof, hood, upper doors, rear quarter panels — areas without decals).
+2. Extend that EXACT paint color, shade, metallic flake pattern and finish (glossy/matte/pearl) across the ENTIRE painted body: cab, doors, side panels, wind deflectors, spoilers, side skirts, bumpers, wheel arches, fenders, tailgate, box body / trailer walls where they are painted metal.
+3. Any surface area that currently shows a different color than this base — stickers, decals, wraps, side stripes, neon/yellow/red accents, camo patterns, gradient graphics, painted logos, printed tarpaulin sections, contrast panels added by the operator — MUST be OVERPAINTED with the identified base color so it becomes visually indistinguishable from the surrounding factory paint.
+4. This rule is a SAFETY NET: even if an individual sticker or colored zone was not listed in DETECTED_BRANDING, if it clearly breaks the uniform OEM base color it MUST be painted over with the base color.
+5. Preserve genuine OEM two-tone paint schemes ONLY when they are clearly factory (e.g. black roof on a factory two-tone, black plastic lower cladding, black window surrounds). If in doubt whether a color break is factory or operator-added, treat it as operator-added and unify with the base color.
+6. WHITELIST (do NOT repaint): OEM manufacturer emblem, OEM model-name lettering, glass, lights, tires, wheels, chrome trim, black plastic cladding, mirror housings that are factory-black, grille.
+7. After unification, the entire painted body must look like a single continuous, freshly-polished OEM paint job — no color patches, no ghost outlines of removed graphics, no halos, no seams.
+</BASE_PAINT_UNIFICATION>` : '';
+
       parts.push(`<BODY_CLEANUP>
 MANDATORY OPERATOR / FLEET DE-BRANDING (ZERO TOLERANCE — the vehicle must look ready for resale to a new dealer, with NO trace of the previous operator):
 ${lines.join('\n')}
@@ -460,6 +473,7 @@ WHITELIST — keep untouched:
 - OEM model-name lettering placed by the manufacturer (e.g. "Actros", "TGX", "R 500", "FH16").
 - OEM type plate / VIN plate.
 - Mandatory legal/safety markings integrated by the OEM (retro-reflective contour tape when factory-fitted, DOT/ECE markings).
+${basePaintUnification}
 
 RECONSTRUCTION RULES:
 - After removal, seamlessly rebuild the underlying surface (paint, panel seams, rivets, trim, tarpaulin fabric weave, glass) so there is no ghosting, halo, color patch, blurred zone, or paint mismatch left behind.
