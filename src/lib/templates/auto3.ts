@@ -167,7 +167,7 @@ export function generateAuto3HTML(data: VehicleData, imageBase64: string | null,
       <!-- RIGHT: Offer + Inquiry -->
       <aside>
         <div class="side-card">
-          <h4>Mehr Angebote</h4>
+          <h4>Unser Angebot</h4>
           <div class="muted">${isBuy ? 'Kaufpreis-Angebot' : 'Wähle Deine Finanzierungsart'}</div>
           ${!isBuy ? `<div class="toggle-row">
             <span${isLeasing ? ' class="active"' : ''}>Leasing</span>
