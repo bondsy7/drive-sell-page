@@ -37,6 +37,7 @@ export const SCENE_OPTIONS = [
   { value: 'parking-garage', label: 'Tiefgarage / Parkhaus' },
   { value: 'racetrack', label: 'Rennstrecke' },
   { value: 'mansion', label: 'Villa / Anwesen' },
+  { value: 'dealer-lot', label: 'Fahrzeugplatz' },
 ] as const;
 
 export const LICENSE_PLATE_OPTIONS = [
