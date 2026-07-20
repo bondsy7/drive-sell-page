@@ -20,6 +20,7 @@ import {
 import { ensureCachedBase64, prewarmCache, ensureLogoCachedAsPng } from '@/lib/image-base64-cache';
 import { compressImageForAI, fileToBase64 } from '@/lib/image-compress';
 import VehicleBrandModelPicker from '@/components/VehicleBrandModelPicker';
+import { useModuleAccess } from '@/hooks/useModuleAccess';
 
 interface RemasterOptionsProps {
   config: RemasterConfig;
@@ -36,6 +37,8 @@ interface RemasterOptionsProps {
 
 const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, vehicleBrand, onBrandChange, onModelChange, vehicleModel, brandDetectionStatus = 'idle' }) => {
   const { user } = useAuth();
+  const { disabledModules } = useModuleAccess();
+  const cleanupAllowed = !disabledModules.has('remaster-cleanup');
   const [profileShowroomUrl, setProfileShowroomUrl] = useState<string | null>(null);
   const [profileLogoUrl, setProfileLogoUrl] = useState<string | null>(null);
   const [dynamicLogos, setDynamicLogos] = useState<DynamicLogo[]>([]);
@@ -139,6 +142,14 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedBrand, dynamicLogos]);
+
+  // Clear cleanup items if user is not allowed to use the feature
+  useEffect(() => {
+    if (!cleanupAllowed && (configRef.current.cleanupItems?.length ?? 0) > 0) {
+      onChange({ ...configRef.current, cleanupItems: [] });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cleanupAllowed]);
 
   const update = (partial: Partial<RemasterConfig>) => onChange({ ...config, ...partial });
 
@@ -367,7 +378,7 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
       </div>
 
       {/* Spezifische Bereinigung – LKW/Flotten-Debranding */}
-      {(() => {
+      {cleanupAllowed && (() => {
         const items = config.cleanupItems || [];
         const allValues = CLEANUP_OPTIONS.map(o => o.value);
         const allChecked = items.length === CLEANUP_OPTIONS.length;

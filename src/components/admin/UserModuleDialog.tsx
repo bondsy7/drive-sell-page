@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { MODULE_KEYS, MODULE_LABELS, MODULE_CHILDREN, type ModuleKey } from '@/hooks/useModuleAccess';
+import { MODULE_KEYS, MODULE_LABELS, MODULE_CHILDREN, MODULE_DEFAULT_DISABLED, type ModuleKey } from '@/hooks/useModuleAccess';
 
 interface Props {
   userId: string;
@@ -23,7 +23,7 @@ const TOP_LEVEL_KEYS = MODULE_KEYS.filter(
 export default function UserModuleDialog({ userId, userEmail, open, onOpenChange }: Props) {
   const [modules, setModules] = useState<Record<ModuleKey, boolean>>(() => {
     const init: any = {};
-    MODULE_KEYS.forEach(k => init[k] = true);
+    MODULE_KEYS.forEach(k => init[k] = !MODULE_DEFAULT_DISABLED.has(k));
     return init;
   });
   const [saving, setSaving] = useState(false);
@@ -38,7 +38,7 @@ export default function UserModuleDialog({ userId, userEmail, open, onOpenChange
   useEffect(() => {
     if (!open) return;
     const init: any = {};
-    MODULE_KEYS.forEach(k => init[k] = true);
+    MODULE_KEYS.forEach(k => init[k] = !MODULE_DEFAULT_DISABLED.has(k));
 
     supabase
       .from('user_module_access')
