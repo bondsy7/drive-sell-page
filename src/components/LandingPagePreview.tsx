@@ -1,8 +1,8 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
 import { useDealerBanks } from '@/hooks/useDealerBanks';
 import { supabase } from '@/integrations/supabase/client';
 import { urlToBase64, urlsToBase64, compressToWebP, compressAllToWebP } from '@/lib/storage-utils';
-import { Download, RotateCcw, Car, Fuel, Gauge, Calendar, Palette, Cog, Zap, MapPin, Phone, Mail, Globe, Plus, Trash2, ChevronLeft, ChevronRight, Eye, Pencil, Calculator, Loader2, Search } from 'lucide-react';
+import { Download, RotateCcw, Undo2, Car, Fuel, Gauge, Calendar, Palette, Cog, Zap, MapPin, Phone, Mail, Globe, Plus, Trash2, ChevronLeft, ChevronRight, Eye, Pencil, Calculator, Loader2, Search } from 'lucide-react';
 import AutohausEditor from '@/components/template-editors/AutohausEditor';
 import ModernEditor from '@/components/template-editors/ModernEditor';
 import KlassischEditor from '@/components/template-editors/KlassischEditor';
@@ -59,7 +59,7 @@ const ConsumptionRow: React.FC<{ label: string; value: string; onChange: (v: str
   </div>
 );
 
-const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, imageBase64, galleryImages = [], onReset, onDataChange, selectedTemplate, projectId, vehicleId }) => {
+const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, imageBase64, galleryImages = [], onReset, onDataChange: onDataChangeRaw, selectedTemplate, projectId, vehicleId }) => {
   const emptyDealer = { name: '', address: '', postalCode: '', city: '', phone: '', email: '', website: '', taxId: '', logoUrl: '', facebookUrl: '', instagramUrl: '', xUrl: '', tiktokUrl: '', youtubeUrl: '', whatsappNumber: '', leasingBank: '', leasingLegalText: '', financingBank: '', financingLegalText: '', defaultLegalText: '' };
   const emptyConsumption = { origin: '', mileage: '', displacement: '', power: '', driveType: '', fuelType: '', consumptionCombined: '', co2Emissions: '', co2Class: '', consumptionCity: '', consumptionSuburban: '', consumptionRural: '', consumptionHighway: '', energyCostPerYear: '', fuelPrice: '', co2CostMedium: '', co2CostLow: '', co2CostHigh: '', vehicleTax: '', isPluginHybrid: false, co2EmissionsDischarged: '', co2ClassDischarged: '', consumptionCombinedDischarged: '', electricRange: '', consumptionElectric: '', hsnTsn: '', electricMotorPower: '', electricMotorTorque: '', gearboxType: '', topSpeed: '', acceleration: '', curbWeight: '', grossWeight: '', warranty: '', paintColor: '' };
   const data: VehicleData = {
@@ -76,6 +76,21 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
   const [costCalculating, setCostCalculating] = useState(false);
   const [costMissingFields, setCostMissingFields] = useState<string[]>([]);
   const vinLookup = useVinLookup();
+
+  // Undo history: stack of previous vehicleData snapshots
+  const historyRef = useRef<VehicleData[]>([]);
+  const [historyLen, setHistoryLen] = useState(0);
+  const onDataChange = useCallback((next: VehicleData) => {
+    historyRef.current.push(vehicleData);
+    if (historyRef.current.length > 50) historyRef.current.shift();
+    setHistoryLen(historyRef.current.length);
+    onDataChangeRaw(next);
+  }, [vehicleData, onDataChangeRaw]);
+  const handleUndo = useCallback(() => {
+    const prev = historyRef.current.pop();
+    setHistoryLen(historyRef.current.length);
+    if (prev) onDataChangeRaw(prev);
+  }, [onDataChangeRaw]);
 
   const vehicleTitle = `${data.vehicle.brand} ${data.vehicle.model} ${data.vehicle.variant || ''}`.trim();
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -292,6 +307,19 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
               <Pencil className="w-3.5 h-3.5" /> <span className="hidden xs:inline">Bearbeiten</span>
             </button>
           </div>
+          {viewMode === 'edit' && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleUndo}
+              disabled={historyLen === 0}
+              className="gap-1.5"
+              title="Letzten Bearbeitungsschritt rückgängig machen"
+            >
+              <Undo2 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Rückgängig</span>
+            </Button>
+          )}
         </div>
         <Button onClick={handleExportClick} size="sm" className="gap-2 gradient-accent text-accent-foreground font-semibold shadow-glow hover:opacity-90 transition-opacity w-full sm:w-auto">
           <Download className="w-4 h-4" />
