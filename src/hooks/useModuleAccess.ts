@@ -17,6 +17,7 @@ export const MODULE_KEYS = [
   'damage-repair',
   'damage-analysis',
   'sales-assistant',
+  'remaster-cleanup',
 ] as const;
 
 export type ModuleKey = typeof MODULE_KEYS[number];
@@ -36,6 +37,7 @@ export const MODULE_LABELS: Record<ModuleKey, string> = {
   'damage-repair': 'Schadensreparatur',
   'damage-analysis': 'Schadensanalyse',
   'sales-assistant': 'KI Verkaufsassistent',
+  'remaster-cleanup': 'Spezifische Bereinigung (Remaster)',
 };
 
 /** Sub-modules grouped under a parent module */
@@ -44,12 +46,22 @@ export const MODULE_CHILDREN: Partial<Record<ModuleKey, ModuleKey[]>> = {
 };
 
 /**
+ * Modules that are DISABLED by default and require explicit opt-in per user.
+ * All other modules default to enabled.
+ */
+export const MODULE_DEFAULT_DISABLED: Set<ModuleKey> = new Set<ModuleKey>([
+  'remaster-cleanup',
+]);
+
+/**
  * Returns a set of disabled module keys for the current user.
- * If no rows exist for a module, it's enabled by default.
+ * Modules in MODULE_DEFAULT_DISABLED are disabled unless a row with enabled=true exists.
  */
 export function useModuleAccess() {
   const { user } = useAuth();
-  const [disabledModules, setDisabledModules] = useState<Set<ModuleKey>>(new Set());
+  const [disabledModules, setDisabledModules] = useState<Set<ModuleKey>>(
+    () => new Set(MODULE_DEFAULT_DISABLED)
+  );
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -60,9 +72,11 @@ export function useModuleAccess() {
       .select('module_key, enabled')
       .eq('user_id', user.id)
       .then(({ data }) => {
-        const disabled = new Set<ModuleKey>();
+        const disabled = new Set<ModuleKey>(MODULE_DEFAULT_DISABLED);
         for (const row of data || []) {
-          if (!row.enabled) disabled.add(row.module_key as ModuleKey);
+          const key = row.module_key as ModuleKey;
+          if (row.enabled) disabled.delete(key);
+          else disabled.add(key);
         }
         setDisabledModules(disabled);
         setLoading(false);
