@@ -13,6 +13,7 @@ import PipelineRunner from '@/components/PipelineRunner';
 import { lookupBrandFromVin } from '@/lib/vin-wmi-lookup';
 import { resolveCanonicalBrand, normalizeBrand } from '@/lib/brand-aliases';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
+import { detectVehicleBranding } from '@/lib/detect-branding';
 import { uploadToGeminiFiles } from '@/lib/gemini-file-upload';
 import { ensureLogoCachedAsPng } from '@/lib/image-base64-cache';
 import { ensureVehicleAuto } from '@/lib/vehicle-utils';
@@ -526,8 +527,19 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
 
     const promptOverrides = await fetchPromptOverrides();
     const processSlot = async (slot: typeof toProcess[0]) => {
+      // Vision pre-scan for non-OEM branding when cleanup categories are selected.
+      let detectedBranding: import('@/lib/detect-branding').DetectedBrandingItem[] | undefined;
+      if (remasterConfig.cleanupItems && remasterConfig.cleanupItems.length > 0) {
+        try {
+          detectedBranding = await detectVehicleBranding(captures[slot.key].base64);
+          console.log(`[Remaster] branding pre-scan slot=${slot.key} items=${detectedBranding?.length ?? 0}`);
+        } catch (e) {
+          console.warn('[Remaster] branding pre-scan failed, continuing without inventory:', e);
+        }
+      }
+      const slotConfig = { ...remasterConfig, detectedBranding };
       // Build per-slot prompt with perspective-specific instructions
-      const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription, slot.key, promptOverrides);
+      const dynamicPrompt = buildMasterPrompt(slotConfig, vehicleDescription, slot.key, promptOverrides);
 
       const MAX_RETRIES = 2;
       for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
@@ -592,7 +604,11 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     setCaptures(prev => ({ ...prev, [slotKey]: { ...prev[slotKey], status: 'processing', error: undefined } }));
     try {
       const overrides = await fetchPromptOverrides();
-      const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription, undefined, overrides);
+      let detectedBranding: import('@/lib/detect-branding').DetectedBrandingItem[] | undefined;
+      if (remasterConfig.cleanupItems && remasterConfig.cleanupItems.length > 0) {
+        try { detectedBranding = await detectVehicleBranding(captures[slotKey].base64); } catch { /* continue */ }
+      }
+      const dynamicPrompt = buildMasterPrompt({ ...remasterConfig, detectedBranding }, vehicleDescription, undefined, overrides);
       const { data, error } = await invokeRemasterVehicleImage({
         imageBase64: captures[slotKey].base64,
         additionalImages: detailImages.length > 0 ? detailImages : undefined,

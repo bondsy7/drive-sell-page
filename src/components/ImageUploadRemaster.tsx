@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import RemasterOptions from '@/components/RemasterOptions';
 import { type RemasterConfig, buildMasterPrompt, fetchPromptOverrides } from '@/lib/remaster-prompt';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
+import { detectVehicleBranding } from '@/lib/detect-branding';
 import { compressImageForAI, fileToBase64 } from '@/lib/image-compress';
 import { uploadToGeminiFiles, type GeminiFileRef } from '@/lib/gemini-file-upload';
 import ProcessTimer from '@/components/ProcessTimer';
@@ -117,7 +118,8 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
     setImages(prev => prev.map(x => pending.some(p => p.id === x.id) ? { ...x, status: 'processing' } : x));
 
     const promptOverrides = await fetchPromptOverrides();
-    const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription, undefined, promptOverrides);
+    const cleanupActive = !!(remasterConfig.cleanupItems && remasterConfig.cleanupItems.length > 0);
+    const defaultPrompt = buildMasterPrompt(remasterConfig, vehicleDescription, undefined, promptOverrides);
 
     // Phase 4: Upload shared assets (showroom, plate, logos) ONCE via File API
     const sharedAssets: { key: string; b64: string }[] = [];
@@ -134,7 +136,7 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
       }
     }
 
-    const buildBody = (mainBase64: string, mainFileUri: GeminiFileRef | null) => ({
+    const buildBody = (mainBase64: string, mainFileUri: GeminiFileRef | null, dynamicPrompt: string) => ({
       imageBase64: mainBase64,
       mainImageFileUri: mainFileUri,
       vehicleDescription,
@@ -152,13 +154,27 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
       manufacturerLogoFileUri: sharedRefs.mfgLogo,
     });
 
+
     const processImage = async (img: UploadedImage) => {
       try {
         // Upload main image via File API
         const mainUploaded = await uploadToGeminiFiles([{ id: img.id, imageBase64: img.originalBase64 }]);
         const mainRef = mainUploaded?.[0] || null;
 
-        const { data, error } = await invokeRemasterVehicleImage(buildBody(img.originalBase64, mainRef));
+        // Per-image branding pre-scan when cleanup categories are selected.
+        let dynamicPrompt = defaultPrompt;
+        if (cleanupActive) {
+          try {
+            const detectedBranding = await detectVehicleBranding(img.originalBase64);
+            console.log(`[Remaster] branding pre-scan img=${img.id} items=${detectedBranding?.length ?? 0}`);
+            dynamicPrompt = buildMasterPrompt({ ...remasterConfig, detectedBranding }, vehicleDescription, undefined, promptOverrides);
+          } catch (e) {
+            console.warn('[Remaster] branding pre-scan failed, using default prompt:', e);
+          }
+        }
+
+        const { data, error } = await invokeRemasterVehicleImage(buildBody(img.originalBase64, mainRef, dynamicPrompt));
+
 
         if (error || !data?.imageBase64) {
           const errMsg = data?.error || error?.message || 'Fehler beim Remastering';
@@ -194,7 +210,11 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
     setRegeneratingIds(prev => new Set(prev).add(id));
     try {
       const overrides = await fetchPromptOverrides();
-      const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription, undefined, overrides);
+      let detectedBranding: import('@/lib/detect-branding').DetectedBrandingItem[] | undefined;
+      if (remasterConfig.cleanupItems && remasterConfig.cleanupItems.length > 0) {
+        try { detectedBranding = await detectVehicleBranding(img.originalBase64); } catch { /* continue */ }
+      }
+      const dynamicPrompt = buildMasterPrompt({ ...remasterConfig, detectedBranding }, vehicleDescription, undefined, overrides);
 
       // Upload main + shared assets via File API
       const assets: { id: string; b64: string }[] = [{ id: 'main', b64: img.originalBase64 }];

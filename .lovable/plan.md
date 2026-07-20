@@ -1,134 +1,90 @@
-# Skalierungs-Analyse & Härtungs-Plan AUTO3
+# Zuverlässige Erkennung von Sticker/Schriftzügen/Schildern beim Remaster
 
-**Ziel:** Dokument `.lovable/skalierung-audit-und-plan.md` erstellen (keine Code-Änderung), das (A) den Ist-Zustand jedes AI-Endpoints misst und (B) einen priorisierten Härtungs-Plan enthält.
+## Ursache
+Das Bild-Modell muss aktuell in einem einzigen Pass Fremd-Branding gleichzeitig **finden** und **entfernen**. Ohne konkrete Positionsangaben rät es — deshalb bleiben Elemente wie `TRUCKTAT Every Mile in Style` oder gelbe Warnschilder stehen bzw. es wird versehentlich OEM-Grafik entfernt. Lösung: die Erkennung von der Entfernung entkoppeln.
 
----
+## Umfang
+Änderung nur im Remaster-Pfad. Kein neues UI, kein Verifikations-Pass, keine Kostenexplosion — genau **ein** zusätzlicher, günstiger Vision-Call (`google/gemini-3.1-flash-lite`) pro Bild, nur wenn mindestens eine Bereinigungs-Kategorie angehakt ist.
 
-## Teil A – Kapazitäts-Audit (Ist-Stand)
-
-Pro Endpoint dokumentieren: Provider, Upstream-Limit, aktueller Retry, Bruchstelle, gemessene/geschätzte Fehlerquote bei 50/100/300/500 parallel.
-
-**Endpoints, die im Audit-Dokument einzeln analysiert werden:**
-
-| # | Edge Function | Provider | Kritisches Limit |
-|---|---|---|---|
-| 1 | `remaster-vehicle-image` | Gemini Nano Banana 2 | ~2.000 RPM/Key |
-| 2 | `generate-master-banner-image` | Gemini | ~2.000 RPM/Key |
-| 3 | `reframe-banner-image` | Ideogram v3 | ~60 RPM |
-| 4 | `generate-video` | Veo 3.1 | ~10-20 concurrent |
-| 5 | `generate-landing-page` | Gemini (7 Bilder) | RPM + Wall-Time |
-| 6 | `analyze-pdf` | Gemini Vision | RPM |
-| 7 | `generate-banner` | Gemini | RPM |
-| 8 | `generate-360-spin` | Gemini + Frame-Compose | RPM + CPU |
-| 9 | `generate-music` | Extern | RPM |
-| 10 | `generate-sales-response` / `sales-chat` | Gemini/OpenAI | RPM |
-| 11 | `repair-damage-image` / `annotate-damage-image` | Gemini | RPM |
-| 12 | `social-publish` + `publish-banner-to-auto3` | Meta/Auto3 | eigenes Rate-Limit |
-
-**Systemebene:**
-- Supabase Edge Functions: 1.000 concurrent Invocations, 150s Wall, 400ms Boot
-- DB Pooler: ~200 gleichzeitige Connections
-- Storage Egress: Kostentreiber, kein Fehler
-- Client-seitige Job-Orchestrierung (`reframeJobManager`, `PipelineContext`): bricht bei Tab-Close
-
----
-
-## Teil B – Einschätzung Fehlerquote
-
-| Parallele Jobs | Erwartete Fehlerquote heute | Hauptursache |
-|---|---|---|
-| < 50 | 1–2 % | zufällige 503, Netzwerk |
-| 50–100 | 3–5 % | Ideogram RPM |
-| 100–300 | 5–15 % | Gemini 429, Veo Quota |
-| 300–500 | 15–30 % | mehrere Provider gleichzeitig |
-| > 500 | > 30 % | ohne Queue-Layer nicht tragbar |
-
-**Was heute schon schützt:**
-- Atomare Credit-Abbuchung vor API-Call (kein Doppel-Charge)
-- Model-Fallback-Chain (Nano Banana 2 → Gemini 3 Pro → 2.5 Flash → Ideogram → GPT-Image)
-- Retry mit Backoff bei 429/503
-- Step-based Self-Invoking für lange Pipelines
-- `sb.auth.getClaims` statt `getUser` (kein Auth-Roundtrip)
-- Gemini File API First (weniger Payload → weniger Timeouts)
-
----
-
-## Teil C – Härtungs-Plan (priorisiert nach Impact / Aufwand)
-
-### Priorität 1 – Blocker-Fixes (unverzichtbar für >100 parallel)
-
-**1.1 Zentrale Job-Queue in DB**
-- Neue Tabelle `generation_jobs` (id, user_id, type, status, priority, payload, result, retries, provider, created_at, started_at, finished_at)
-- Ersetzt Client-Orchestrierung → Tab-Close bricht nichts mehr ab
-- Cron-Worker (pg_cron + pg_net) zieht Jobs im 5s-Takt, respektiert `max_concurrent_per_provider`
-- Aufwand: ~1 Woche
-
-**1.2 Globales Rate-Limit-Gate pro Provider**
-- Tabelle `provider_rate_limits` (provider, rpm_limit, current_window_count, window_start)
-- Vor jedem AI-Call: `SELECT … FOR UPDATE` + Check → wenn Limit voll: Job zurück in Queue mit `retry_after`
-- Verhindert 90 % der 429er
-- Aufwand: ~3 Tage
-
-**1.3 Circuit-Breaker pro Provider**
-- Tabelle `provider_health` (provider, error_rate_60s, state: closed/open/half-open, opened_at)
-- Bei 5× 5xx in 60s → auf Fallback-Modell umschalten für 5 min
-- Aufwand: ~2 Tage
-
-### Priorität 2 – Skalierung (für >300 parallel)
-
-**2.1 Priority Queue**
-- Bezahlender Kunde `priority=10`, Trial `priority=1`
-- Worker zieht nach `ORDER BY priority DESC, created_at ASC`
-- Aufwand: ~1 Tag (baut auf 1.1 auf)
-
-**2.2 Dead-Letter-Queue + Auto-Refund**
-- Nach N Retries → `status=failed`, atomare Credit-Rückbuchung via neuer RPC `refund_credits`
-- Kunde sieht "Job fehlgeschlagen, Credits erstattet" statt hängender Spinner
-- Aufwand: ~2 Tage
-
-**2.3 Multi-Key-Rotation für Gemini/Ideogram**
-- Mehrere API-Keys pro Provider in `admin_secrets` (z. B. `GEMINI_API_KEY_1..5`)
-- Round-Robin im Rate-Gate → verfünffacht effektives RPM-Limit legitim
-- Aufwand: ~1 Tag
-
-### Priorität 3 – Monitoring & Ops
-
-**3.1 Admin-Dashboard „Live-Load"**
-- Neue Seite `AdminLoadMonitor.tsx`: aktuelle Queue-Länge, Fehlerquote pro Provider (letzte 5/60/1440 min), Circuit-Breaker-Status, aktive Jobs
-- Aufwand: ~2 Tage
-
-**3.2 Alerting**
-- Cron prüft alle 5 min: Fehlerquote >10 % / Queue >500 → Resend-Mail an Admin
-- Aufwand: ~1 Tag
-
-**3.3 Storage-Cleanup-Cron aktivieren**
-- `cleanup-orphaned-storage` als pg_cron alle 24h, ab 500 Kunden 90-Tage-Regel
-- Aufwand: ~2 Stunden
-
-### Priorität 4 – Optional (>1.000 Kunden)
-
-**4.1 CDN vor Storage** (Cloudflare) → Egress-Kosten −70 %
-**4.2 Cold-Storage** für Assets > 90 Tage
-**4.3 Regionale Worker** (EU/US) falls internationale Kunden
-
----
-
-## Teil D – Umsetzungs-Reihenfolge (Empfehlung)
-
+## Ablauf
 ```text
-Woche 1 → 1.1 Job-Queue-Tabelle + Worker-Cron
-Woche 2 → 1.2 Rate-Limit-Gate + 1.3 Circuit-Breaker
-Woche 3 → 2.1 Priority + 2.2 Dead-Letter + 2.3 Multi-Key
-Woche 4 → 3.1 Load-Monitor + 3.2 Alerting + 3.3 Cleanup-Cron
+User startet Remaster
+      │
+      ▼
+cleanupItems.length > 0 ?
+  ├── nein → wie bisher, direkt Bild-Edit
+  └── ja  → Detect-Call (siehe unten)
+              ▼
+        Detect-JSON:
+        [{ kind, location, text?, color?, size }, …]
+              ▼
+        In Master-Prompt als
+        <DETECTED_BRANDING>-Block einfügen
+              ▼
+        Bild-Edit wie bisher (Nano Banana),
+        BODY_CLEANUP-Regeln greifen jetzt
+        auf eine benannte Liste statt Blindsuche
 ```
 
-**Nach Woche 2:** stabile 300 parallel möglich (< 5 % Fehler).
-**Nach Woche 3:** stabile 500–800 parallel möglich (< 3 % Fehler).
+## Änderungen im Detail
 
----
+### 1. Neue Edge Function `detect-vehicle-branding`
+- Input: `imageFileUri` (Gemini File API, gemäß Projekt-Regel „File API First") + Liste der aktivierten Cleanup-Kategorien.
+- Modell: `google/gemini-3.1-flash-lite` (direct API, wie andere Functions per `GEMINI_API_KEY` aus `admin_secrets`, kein Lovable Gateway).
+- Auth: `sb.auth.getClaims(token)` (Projekt-Regel).
+- Prompt in stichfestem Englisch, verlangt strikt JSON-Array:
+  ```
+  For each non-OEM element on the vehicle body, return an object with:
+    kind      = "lettering" | "logo" | "sign" | "sticker" | "banner" | "external-accessory"
+    location  = concrete vehicle region (e.g. "wind deflector above windshield",
+                "driver door lower half", "left B-pillar", "trailer curtain side")
+    text      = literal text if readable, else null
+    color     = dominant color, e.g. "yellow", "blue on white"
+    size      = "small" | "medium" | "large"
+  Include ONLY elements that are NOT part of the base OEM vehicle
+  (i.e. NOT the manufacturer emblem, NOT model badge, NOT type plate,
+   NOT mandatory legal markings integrated by the OEM).
+  Return `[]` if nothing found. No prose, JSON only.
+  ```
+- Robust: JSON-Repair-Fallback (Regex extrahiert erstes `[...]`), bei Parse-Fail leeres Array — Remaster läuft trotzdem, nur ohne Inventar.
+- Response: `{ items: DetectedBrandingItem[] }`.
 
-## Deliverable dieses Plans
+### 2. `src/lib/remaster-prompt.ts`
+- `RemasterConfig` bekommt optionales Feld `detectedBranding?: DetectedBrandingItem[]`.
+- Neuer Prompt-Abschnitt `<DETECTED_BRANDING>` direkt **vor** `<BODY_CLEANUP>`, wird nur eingefügt wenn Liste vorhanden. Format:
+  ```
+  <DETECTED_BRANDING>
+  A vision pre-scan of the input image identified the following non-OEM
+  elements on this vehicle. Treat this as an authoritative removal
+  checklist — every item MUST be gone in the output:
+  - [LETTERING] "TRUCKTAT Every Mile in Style" — wind deflector above windshield, white text, large
+  - [SIGN]      yellow warning plate — front grille left side, medium
+  - [STICKER]   blue decal strip — right B-pillar, medium
+  …
+  Only remove items matching the user-selected cleanup categories: {lettering, signs, stickers}.
+  Any item whose `kind` is not in this whitelist must remain untouched.
+  </DETECTED_BRANDING>
+  ```
+- Die `<BODY_CLEANUP>`-Rekonstruktions-Regeln bleiben — sie greifen nun auf konkret benannte Regionen statt eine Blindsuche.
 
-Ein einziges Dokument: `.lovable/skalierung-audit-und-plan.md` mit den Teilen A–D vollständig ausgeschrieben. Danach zusätzlich in `/mnt/documents/` kopiert für Download.
+### 3. Prompt-Härtung in `<BODY_CLEANUP>` (Zusatz zu bestehendem Block)
+- „Definition of operator branding": jeder lesbare Text (Wort, URL, Telefon, E-Mail) und jede Grafik, die **nicht** auf offiziellen OEM-Pressebildern eines Base-`<make> <model>` erscheint, gilt automatisch als Fremd-Branding.
+- Systematische Scan-Anweisung: top→bottom, front→rear, beide Seiten, Dach, Spiegel, Windleitblech, Kotflügelverbreiterungen, Radlaufblenden, Plane/Kofferaufbau, Anhänger, Mudflaps.
+- Whitelist präzisieren: nur Hersteller-Emblem, Modell-Schriftzug, Typenschild, gesetzlich vorgeschriebene OEM-Markierungen bleiben.
 
-**Keine Code-Änderungen. Nur Dokument.**
+### 4. Verdrahtung im Remaster-Aufruf
+- In der bestehenden Remaster-Client-Logik (`src/hooks/useRemaster*.ts` bzw. dort wo `RemasterConfig` gebaut wird): wenn `cleanupItems.length > 0`, vor dem eigentlichen Edit-Call `detect-vehicle-branding` invoken, Ergebnis in `config.detectedBranding` schreiben.
+- Fehlschlag des Detect-Calls loggt eine Warnung, blockiert aber den Remaster nicht — Fallback = alter Zustand.
+
+### 5. Logging & Monitoring
+- Edge-Function loggt strukturiert: `[detect-vehicle-branding] items=N kinds=[lettering,sign] user=…`.
+- Remaster-Function loggt, ob ein `<DETECTED_BRANDING>`-Block im Prompt war (`detected=1|0`) — dadurch A/B-Vergleich im Job-Monitor möglich.
+
+## Nicht-Ziele (aus Umfang bewusst raus)
+- Kein Verifikations-Pass nach dem Remaster.
+- Kein Auto-Upgrade auf Nano Banana Pro.
+- Kein UI zum manuellen Markieren von Bereichen.
+- Diese Optionen bleiben als spätere Ausbaustufe möglich, sind aber jetzt nicht Teil der Änderung.
+
+## Erwartetes Ergebnis
+Wenn du z. B. „Schriftzüge" und „Schilder" anhakst, sieht der Bild-Prompt eine namentliche Liste („`TRUCKTAT Every Mile in Style` — Windleitblech", „gelbes Warnschild — Kühlergrill links") statt einer abstrakten Kategorie. Damit steigt die Trefferquote deutlich, ohne dass Nutzer manuell markieren müssen oder der Credit-Verbrauch spürbar wächst (Flash-Lite Call ist gegenüber dem Nano-Banana-Edit vernachlässigbar).
