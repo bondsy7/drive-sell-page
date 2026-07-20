@@ -604,7 +604,11 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     setCaptures(prev => ({ ...prev, [slotKey]: { ...prev[slotKey], status: 'processing', error: undefined } }));
     try {
       const overrides = await fetchPromptOverrides();
-      const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription, undefined, overrides);
+      let detectedBranding: import('@/lib/detect-branding').DetectedBrandingItem[] | undefined;
+      if (remasterConfig.cleanupItems && remasterConfig.cleanupItems.length > 0) {
+        try { detectedBranding = await detectVehicleBranding(captures[slotKey].base64); } catch { /* continue */ }
+      }
+      const dynamicPrompt = buildMasterPrompt({ ...remasterConfig, detectedBranding }, vehicleDescription, undefined, overrides);
       const { data, error } = await invokeRemasterVehicleImage({
         imageBase64: captures[slotKey].base64,
         additionalImages: detailImages.length > 0 ? detailImages : undefined,
