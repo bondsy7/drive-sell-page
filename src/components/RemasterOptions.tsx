@@ -20,6 +20,7 @@ import {
 import { ensureCachedBase64, prewarmCache, ensureLogoCachedAsPng } from '@/lib/image-base64-cache';
 import { compressImageForAI, fileToBase64 } from '@/lib/image-compress';
 import VehicleBrandModelPicker from '@/components/VehicleBrandModelPicker';
+import { useModuleAccess } from '@/hooks/useModuleAccess';
 
 interface RemasterOptionsProps {
   config: RemasterConfig;
