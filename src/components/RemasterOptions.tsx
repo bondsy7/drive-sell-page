@@ -37,6 +37,8 @@ interface RemasterOptionsProps {
 
 const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, vehicleBrand, onBrandChange, onModelChange, vehicleModel, brandDetectionStatus = 'idle' }) => {
   const { user } = useAuth();
+  const { disabledModules } = useModuleAccess();
+  const cleanupAllowed = !disabledModules.has('remaster-cleanup');
   const [profileShowroomUrl, setProfileShowroomUrl] = useState<string | null>(null);
   const [profileLogoUrl, setProfileLogoUrl] = useState<string | null>(null);
   const [dynamicLogos, setDynamicLogos] = useState<DynamicLogo[]>([]);
