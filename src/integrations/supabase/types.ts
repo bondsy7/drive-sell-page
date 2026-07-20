@@ -2798,6 +2798,18 @@ export type Database = {
           x_screen_name: string
         }[]
       }
+      get_vehicle_dashboard: {
+        Args: never
+        Returns: {
+          banners_count: number
+          cover_fallback: string
+          images_count: number
+          leads_count: number
+          projects_count: number
+          spin360_count: number
+          vehicle_id: string
+        }[]
+      }
       has_ftp_password: { Args: never; Returns: boolean }
       has_role: {
         Args: {
