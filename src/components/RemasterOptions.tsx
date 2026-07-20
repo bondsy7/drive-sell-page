@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, X, Paintbrush, Tag, Building2, Car, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Upload, X, Paintbrush, Tag, Building2, Car, CheckCircle2, AlertCircle, Eraser } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -12,6 +13,7 @@ import {
   type RemasterConfig,
   SCENE_OPTIONS,
   LICENSE_PLATE_OPTIONS,
+  CLEANUP_OPTIONS,
   fetchManufacturerLogos,
   type DynamicLogo,
 } from '@/lib/remaster-prompt';
