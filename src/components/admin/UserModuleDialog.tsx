@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { MODULE_KEYS, MODULE_LABELS, MODULE_CHILDREN, type ModuleKey } from '@/hooks/useModuleAccess';
+import { MODULE_KEYS, MODULE_LABELS, MODULE_CHILDREN, MODULE_DEFAULT_DISABLED, type ModuleKey } from '@/hooks/useModuleAccess';
 
 interface Props {
   userId: string;
