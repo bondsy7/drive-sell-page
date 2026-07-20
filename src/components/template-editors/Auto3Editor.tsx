@@ -336,8 +336,10 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
                     <FinItem label="Eff. Jahreszins" value={data.finance.interestRate || ''} onChange={(v) => updateFinance('interestRate', v)} suffix="%" />
                   </>
                 )}
+                </div>
               </div>
             </div>
+
 
             {/* Bankangaben / Pflichthinweis */}
             {(() => {
