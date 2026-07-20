@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import EditableField from '@/components/EditableField';
 import CO2LabelSelector from '@/components/CO2LabelSelector';
 import RateTypeSelect from './RateTypeSelect';
-import { Palette, RotateCcw, Plus, Trash2, ChevronLeft, ChevronRight, Upload } from 'lucide-react';
+import { Palette, RotateCcw, Plus, Trash2, ChevronLeft, ChevronRight, Upload, ChevronDown } from 'lucide-react';
 import { isPluginHybrid } from '@/lib/co2-utils';
 import { getFinanceSectionTitle } from '@/lib/templates/shared';
 import {
