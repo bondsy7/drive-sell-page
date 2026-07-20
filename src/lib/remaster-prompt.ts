@@ -399,14 +399,67 @@ Do NOT use the original plate. Do NOT invent plate text. Use ONLY the provided c
 
   // ── BODY CLEANUP (Schriftzüge, Logos, Schilder, Sticker – für LKW/Flottenfahrzeuge) ──
   if (config.cleanupItems && config.cleanupItems.length > 0) {
-    const lines = config.cleanupItems
+    const selectedOptions = config.cleanupItems
       .map(v => CLEANUP_OPTIONS.find(o => o.value === v))
-      .filter((o): o is typeof CLEANUP_OPTIONS[number] => !!o)
-      .map(o => `- ${o.label.toUpperCase()}: ${o.prompt}`);
+      .filter((o): o is typeof CLEANUP_OPTIONS[number] => !!o);
+    const lines = selectedOptions.map(o => `- ${o.label.toUpperCase()}: ${o.prompt}`);
+
+    // Map cleanup option value -> detected kind (keep in sync with detect-branding.ts)
+    const CLEANUP_TO_KIND: Record<string, string> = {
+      lettering: 'lettering',
+      logos: 'logo',
+      signs: 'sign',
+      stickers: 'sticker',
+      banners: 'banner',
+      'external-accessories': 'external-accessory',
+    };
+    const selectedKinds = new Set(
+      config.cleanupItems.map(v => CLEANUP_TO_KIND[v]).filter(Boolean),
+    );
+
+    // ── DETECTED_BRANDING inventory (authoritative removal checklist from vision pre-scan) ──
+    if (config.detectedBranding && config.detectedBranding.length > 0) {
+      const matching = config.detectedBranding.filter(item => selectedKinds.has(item.kind));
+      if (matching.length > 0) {
+        const inventoryLines = matching.map(item => {
+          const bits: string[] = [];
+          if (item.text) bits.push(`"${item.text}"`);
+          bits.push(`— ${item.location}`);
+          if (item.color) bits.push(`, ${item.color}`);
+          if (item.size) bits.push(`, ${item.size}`);
+          return `- [${item.kind.toUpperCase()}] ${bits.join(' ')}`;
+        }).join('\n');
+        const kindsWhitelist = Array.from(selectedKinds).join(', ');
+        parts.push(`<DETECTED_BRANDING>
+A vision pre-scan of THIS EXACT input image identified the following non-OEM elements on this vehicle. Treat this as an AUTHORITATIVE REMOVAL CHECKLIST — every item listed here MUST be gone in the output image:
+${inventoryLines}
+
+Rules for using this list:
+- Remove ONLY items whose kind is in the user-selected cleanup whitelist: {${kindsWhitelist}}. Any detected item outside this whitelist stays untouched.
+- The listed locations are the primary targets, but if you also spot the same kind of non-OEM element in a location the pre-scan missed, remove it too — the list is a minimum, not a maximum.
+- Do NOT invent replacement text, logos or graphics on the cleaned surfaces.
+</DETECTED_BRANDING>`);
+      }
+    }
+
     if (lines.length > 0) {
       parts.push(`<BODY_CLEANUP>
 MANDATORY OPERATOR / FLEET DE-BRANDING (ZERO TOLERANCE — the vehicle must look ready for resale to a new dealer, with NO trace of the previous operator):
 ${lines.join('\n')}
+
+DEFINITION OF OPERATOR BRANDING (what counts as non-OEM and MUST go):
+- Any readable text you can parse as a word, company name, URL, phone number, e-mail, slogan, or tagline that is not the OEM model badge.
+- Any graphic, emblem, stripe, wrap, sticker, sign, or banner that would NOT appear on official manufacturer press photos of a base <make> <model> in factory trim.
+- If in doubt whether an element is OEM or operator-added, treat it as operator-added and remove it.
+
+SYSTEMATIC SCAN PROCEDURE — check EVERY zone in this order and clean each one before you finalize the image:
+front bumper & grille → hood → windshield & wind deflector → both A-pillars → roof & any roof-mounted signs/lights → both doors (upper + lower halves) → both mirrors → both B-pillars → both side panels / cargo box / tarpaulin curtains → wheel arches & mudflaps → both C-pillars & rear quarter panels → rear doors / tailgate → rear bumper → trailer walls & trailer rear (if present).
+
+WHITELIST — keep untouched:
+- OEM vehicle-manufacturer emblem (VW, MAN lion, Mercedes-Benz star, Scania griffin, DAF, Volvo iron mark, Iveco, Renault Trucks, etc.).
+- OEM model-name lettering placed by the manufacturer (e.g. "Actros", "TGX", "R 500", "FH16").
+- OEM type plate / VIN plate.
+- Mandatory legal/safety markings integrated by the OEM (retro-reflective contour tape when factory-fitted, DOT/ECE markings).
 
 RECONSTRUCTION RULES:
 - After removal, seamlessly rebuild the underlying surface (paint, panel seams, rivets, trim, tarpaulin fabric weave, glass) so there is no ghosting, halo, color patch, blurred zone, or paint mismatch left behind.
@@ -416,6 +469,8 @@ RECONSTRUCTION RULES:
 </BODY_CLEANUP>`);
     }
   }
+
+
 
   // ── INTERIOR RULES (ONLY for interior slots) ──
   if (interior) {
