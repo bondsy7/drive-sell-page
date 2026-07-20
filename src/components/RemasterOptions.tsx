@@ -143,6 +143,14 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedBrand, dynamicLogos]);
 
+  // Clear cleanup items if user is not allowed to use the feature
+  useEffect(() => {
+    if (!cleanupAllowed && (configRef.current.cleanupItems?.length ?? 0) > 0) {
+      onChange({ ...configRef.current, cleanupItems: [] });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cleanupAllowed]);
+
   const update = (partial: Partial<RemasterConfig>) => onChange({ ...config, ...partial });
 
   const handleBrandChange = (brand: string) => {
