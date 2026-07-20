@@ -27,6 +27,7 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
   dealerBanks = [],
 }) => {
   const [selectedImage, setSelectedImage] = useState(0);
+  const [toolbarOpen, setToolbarOpen] = useState(true);
   const colors = data.templateColors ?? { accent: '#e30613', dark: '#111111' };
   const accent = colors.accent || '#e30613';
   const dark = colors.dark || '#111111';
