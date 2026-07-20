@@ -19,7 +19,43 @@ export interface RemasterConfig {
   dealerLogoBase64?: string | null;
   manufacturerLogoUrl?: string | null;
   manufacturerLogoBase64?: string | null;
+  /** Optional list of body cleanup items to strip (Schriftzüge, Logos, Schilder, Sticker, …) */
+  cleanupItems?: string[];
 }
+
+/** Bereinigungs-Optionen für Fahrzeug-Karosserie (z.B. LKW-Spedition entfernen) */
+export const CLEANUP_OPTIONS = [
+  {
+    value: 'lettering',
+    label: 'Schriftzüge',
+    prompt: 'ALL painted, printed, vinyl or magnetic lettering, company names, slogans, taglines, URLs, phone numbers, e-mails, and any other text on the vehicle body (doors, side panels, rear, cab front, wind deflectors, tailgate, tarpaulin, box body, trailer walls, wheel arches). Remove them fully and reconstruct the underlying body paint, panel, tarpaulin or trim texture seamlessly.',
+  },
+  {
+    value: 'logos',
+    label: 'Logos / Firmenlogos',
+    prompt: 'ALL company logos, brand marks of the operator/fleet (NOT the vehicle manufacturer badge), transport-company emblems, association logos, sponsor logos on any body surface. Remove them fully and reconstruct the underlying paint or panel material seamlessly. Keep only the original vehicle-manufacturer emblem and model badge.',
+  },
+  {
+    value: 'signs',
+    label: 'Schilder',
+    prompt: 'ALL attached signs, name plates, warning boards, hazard plaques, ADR plates, operator plates, route boards, destination signs, magnetic signs, screwed-on identification boards on the body. Remove them and rebuild the mounting surface flush with the surrounding body.',
+  },
+  {
+    value: 'stickers',
+    label: 'Sticker / Aufkleber',
+    prompt: 'ALL stickers, decals, adhesive graphics, foil wraps of the fleet operator, promotional decals, partial wraps, colored side stripes that were added post-factory. Remove them and reconstruct clean OEM paint. (Keep small mandatory legal stickers such as TÜV/HU inspection dots on the plate area only if the plate is kept.)',
+  },
+  {
+    value: 'banners',
+    label: 'Werbebanner / Planen-Werbung',
+    prompt: 'ALL advertising banners, printed tarpaulins/curtainsides with company graphics, tarp-mounted logos, side-curtain prints on trucks/trailers. Replace printed tarps with a clean, neutral, single-color factory tarpaulin in a subtle neutral tone that matches the vehicle, without ANY text or graphics.',
+  },
+  {
+    value: 'external-accessories',
+    label: 'Externe Anbauteile',
+    prompt: 'ALL non-OEM external accessories that carry branding: flag poles, pennant holders, roof-mounted light bars with company names, extra antennas with logos, magnetic taxi/rental/company signs. Keep OEM antennas, OEM mirrors, and OEM lights untouched.',
+  },
+] as const;
 
 export const SCENE_OPTIONS = [
   { value: 'none', label: 'Keine Änderung am Bild' },
