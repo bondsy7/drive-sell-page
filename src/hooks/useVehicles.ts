@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -34,6 +34,8 @@ export function useVehicles() {
   return useQuery({
     queryKey: ['vehicles', user?.id],
     enabled: !!user,
+    staleTime: 60_000,
+    placeholderData: keepPreviousData,
     queryFn: async (): Promise<VehicleWithCounts[]> => {
       if (!user) return [];
 
@@ -47,82 +49,38 @@ export function useVehicles() {
       const vehicles = (vs || []) as Vehicle[];
       if (vehicles.length === 0) return [];
 
-      const ids = vehicles.map(v => v.id);
+      // Single aggregated RPC: counts + cover fallback per vehicle in one round-trip.
+      const { data: agg, error: aggErr } = await supabase.rpc('get_vehicle_dashboard');
+      if (aggErr) {
+        console.warn('[useVehicles] get_vehicle_dashboard failed', aggErr);
+      }
 
-      const [pr, pi, sp, ld] = await Promise.all([
-        supabase.from('projects').select('id, vehicle_id, main_image_url, updated_at').in('vehicle_id', ids).order('updated_at', { ascending: false }),
-        supabase.from('project_images').select('id, vehicle_id, image_url, created_at').in('vehicle_id', ids).order('created_at', { ascending: false }),
-        supabase.from('spin360_jobs').select('id, vehicle_id').in('vehicle_id', ids),
-        supabase.from('leads').select('id, vehicle_id, project_id').eq('dealer_user_id', user.id),
-      ]);
-
-
-      // Banner counts: banners live at `banners/{userId}/{vehicleId}/*.png`.
-      // We list each vehicle's folder in parallel (Promise.all) so it stays fast
-      // even for dealers with many cars. Falls back to 0 on error.
-      const bannerCountEntries = await Promise.all(
-        ids.map(async (vid) => {
-          const { data } = await supabase.storage
-            .from('banners')
-            .list(`${user.id}/${vid}`, { limit: 200 });
-          const count = (data || []).filter(
-            f => f.name && f.name.endsWith('.png') && !f.name.startsWith('state-') && !f.name.startsWith('.')
-          ).length;
-          return [vid, count] as const;
-        })
-      );
-      const cB = new Map<string, number>(bannerCountEntries);
-
-
-
-
-      const tally = (rows: Array<{ vehicle_id: string | null }> | null) => {
-        const map = new Map<string, number>();
-        for (const r of rows || []) {
-          if (!r.vehicle_id) continue;
-          map.set(r.vehicle_id, (map.get(r.vehicle_id) || 0) + 1);
-        }
-        return map;
+      type AggRow = {
+        vehicle_id: string;
+        projects_count: number;
+        images_count: number;
+        spin360_count: number;
+        banners_count: number;
+        leads_count: number;
+        cover_fallback: string | null;
       };
+      const byId = new Map<string, AggRow>();
+      for (const r of ((agg as AggRow[]) || [])) byId.set(r.vehicle_id, r);
 
-      const cP = tally(pr.data as Array<{ vehicle_id: string | null }>);
-      const cI = tally(pi.data as Array<{ vehicle_id: string | null }>);
-      const cS = tally(sp.data as Array<{ vehicle_id: string | null }>);
-      const projectToVehicle = new Map<string, string>();
-      for (const row of (pr.data as Array<{ id: string; vehicle_id: string | null }>) || []) {
-        if (row.vehicle_id) projectToVehicle.set(row.id, row.vehicle_id);
-      }
-      const cL = new Map<string, number>();
-      for (const row of (ld.data as Array<{ vehicle_id: string | null; project_id: string | null }>) || []) {
-        const vehicleId = row.vehicle_id || (row.project_id ? projectToVehicle.get(row.project_id) : null);
-        if (vehicleId) cL.set(vehicleId, (cL.get(vehicleId) || 0) + 1);
-      }
-
-      // Cover fallback: newest project.main_image_url, then newest project_images.image_url
-      const coverFallback = new Map<string, string>();
-      for (const row of (pr.data as Array<{ vehicle_id: string | null; main_image_url: string | null }>) || []) {
-        if (row.vehicle_id && row.main_image_url && !coverFallback.has(row.vehicle_id)) {
-          coverFallback.set(row.vehicle_id, row.main_image_url);
-        }
-      }
-      for (const row of (pi.data as Array<{ vehicle_id: string | null; image_url: string | null }>) || []) {
-        if (row.vehicle_id && row.image_url && !coverFallback.has(row.vehicle_id)) {
-          coverFallback.set(row.vehicle_id, row.image_url);
-        }
-      }
-
-      return vehicles.map(v => ({
-        ...v,
-        cover_image_url: v.cover_image_url || coverFallback.get(v.id) || null,
-        counts: {
-          projects: cP.get(v.id) || 0,
-          images: cI.get(v.id) || 0,
-          spin360: cS.get(v.id) || 0,
-          banners: cB.get(v.id) || 0,
-          leads: cL.get(v.id) || 0,
-        },
-      }));
-
+      return vehicles.map(v => {
+        const a = byId.get(v.id);
+        return {
+          ...v,
+          cover_image_url: v.cover_image_url || a?.cover_fallback || null,
+          counts: {
+            projects: a?.projects_count || 0,
+            images: a?.images_count || 0,
+            spin360: a?.spin360_count || 0,
+            banners: a?.banners_count || 0,
+            leads: a?.leads_count || 0,
+          },
+        };
+      });
     },
   });
 }
