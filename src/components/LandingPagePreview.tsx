@@ -77,6 +77,21 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
   const [costMissingFields, setCostMissingFields] = useState<string[]>([]);
   const vinLookup = useVinLookup();
 
+  // Undo history: stack of previous vehicleData snapshots
+  const historyRef = useRef<VehicleData[]>([]);
+  const [historyLen, setHistoryLen] = useState(0);
+  const onDataChange = useCallback((next: VehicleData) => {
+    historyRef.current.push(vehicleData);
+    if (historyRef.current.length > 50) historyRef.current.shift();
+    setHistoryLen(historyRef.current.length);
+    onDataChangeRaw(next);
+  }, [vehicleData, onDataChangeRaw]);
+  const handleUndo = useCallback(() => {
+    const prev = historyRef.current.pop();
+    setHistoryLen(historyRef.current.length);
+    if (prev) onDataChangeRaw(prev);
+  }, [onDataChangeRaw]);
+
   const vehicleTitle = `${data.vehicle.brand} ${data.vehicle.model} ${data.vehicle.variant || ''}`.trim();
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 
