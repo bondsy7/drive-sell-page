@@ -57,6 +57,11 @@ export const CLEANUP_OPTIONS = [
     label: 'Externe Anbauteile',
     prompt: 'ALL non-OEM external accessories that carry branding: flag poles, pennant holders, roof-mounted light bars with company names, extra antennas with logos, magnetic taxi/rental/company signs. Keep OEM antennas, OEM mirrors, and OEM lights untouched.',
   },
+  {
+    value: 'trailer',
+    label: 'Auflieger / Anhänger entfernen',
+    prompt: 'COMPLETELY REMOVE any and all trailers, semi-trailers, swap bodies, containers, box bodies, flatbeds, tippers, tankers, curtainsiders, car-carriers, drawbar trailers or any towed / mounted cargo units that are attached to, coupled behind, or resting on the vehicle. The final image MUST show ONLY the tractor unit / prime mover / bare chassis (Zugmaschine) itself — no cargo body behind the cab, no fifth-wheel load, no trailer of any kind visible anywhere in the frame. After removal, rebuild the tractor rear end cleanly: expose the fifth-wheel coupling plate (Sattelkupplung), rear chassis frame rails, rear lights, mudflaps, and the road/ground surface behind the cab as they would look on an uncoupled solo tractor. Reconstruct the background (road, floor, scenery) seamlessly where the trailer used to be — no ghosting, no cut-off silhouette, no leftover wheels or landing gear. Do NOT invent a replacement trailer or cargo. If the vehicle is a rigid truck with a fixed body, still remove any DETACHABLE trailer or drawbar unit behind it, but keep the rigid truck body itself intact.',
+  },
 ] as const;
 
 export const SCENE_OPTIONS = [
