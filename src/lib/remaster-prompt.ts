@@ -394,12 +394,25 @@ Do NOT use the original plate. Do NOT invent plate text. Use ONLY the provided c
   } else {
     parts.push(`<LICENSE_PLATE>\n${plateContext}\n\n${getBlock(overrides, 'license_plate_remove')}\n\nApply this removal to EVERY plate location listed above — front, rear, cab-mounted repeats, trailer plates. Zero plates may remain anywhere on the vehicle.\n</LICENSE_PLATE>`);
   }
-  } else if (config.licensePlate === 'custom' && config.customPlateText) {
-    parts.push(`<LICENSE_PLATE>\nReplace the license plate with a German plate reading "${config.customPlateText}". Photorealistic rendering.\n</LICENSE_PLATE>`);
-  } else if (config.licensePlate === 'keep') {
-    parts.push(`<LICENSE_PLATE>\nKeep the original license plate exactly as it is. Do NOT alter, blur, or remove it.\n</LICENSE_PLATE>`);
-  } else {
-    parts.push(`<LICENSE_PLATE>\n${getBlock(overrides, 'license_plate_remove')}\n</LICENSE_PLATE>`);
+
+  // ── BODY CLEANUP (Schriftzüge, Logos, Schilder, Sticker – für LKW/Flottenfahrzeuge) ──
+  if (config.cleanupItems && config.cleanupItems.length > 0) {
+    const lines = config.cleanupItems
+      .map(v => CLEANUP_OPTIONS.find(o => o.value === v))
+      .filter((o): o is typeof CLEANUP_OPTIONS[number] => !!o)
+      .map(o => `- ${o.label.toUpperCase()}: ${o.prompt}`);
+    if (lines.length > 0) {
+      parts.push(`<BODY_CLEANUP>
+MANDATORY OPERATOR / FLEET DE-BRANDING (ZERO TOLERANCE — the vehicle must look ready for resale to a new dealer, with NO trace of the previous operator):
+${lines.join('\n')}
+
+RECONSTRUCTION RULES:
+- After removal, seamlessly rebuild the underlying surface (paint, panel seams, rivets, trim, tarpaulin fabric weave, glass) so there is no ghosting, halo, color patch, blurred zone, or paint mismatch left behind.
+- Preserve the vehicle's factory paint color, metallic flakes, panel geometry, panel gaps, and OEM emblems / model badges of the vehicle manufacturer.
+- Do NOT invent new logos, new company names, new decals, or any replacement graphics. The cleaned surfaces must remain FACTORY-CLEAN and neutral.
+- Apply this cleanup CONSISTENTLY on every visible side of the vehicle in this image.
+</BODY_CLEANUP>`);
+    }
   }
 
   // ── INTERIOR RULES (ONLY for interior slots) ──
