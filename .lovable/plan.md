@@ -1,90 +1,55 @@
-# Zuverlässige Erkennung von Sticker/Schriftzügen/Schildern beim Remaster
+## Diagnose
 
-## Ursache
-Das Bild-Modell muss aktuell in einem einzigen Pass Fremd-Branding gleichzeitig **finden** und **entfernen**. Ohne konkrete Positionsangaben rät es — deshalb bleiben Elemente wie `TRUCKTAT Every Mile in Style` oder gelbe Warnschilder stehen bzw. es wird versehentlich OEM-Grafik entfernt. Lösung: die Erkennung von der Entfernung entkoppeln.
+Ja, die Ladezeit hängt an der Fahrzeugmenge — aber nicht primär an den Fahrzeugen selbst, sondern an dem, was `useVehicles()` pro Fahrzeug parallel nachlädt.
 
-## Umfang
-Änderung nur im Remaster-Pfad. Kein neues UI, kein Verifikations-Pass, keine Kostenexplosion — genau **ein** zusätzlicher, günstiger Vision-Call (`google/gemini-3.1-flash-lite`) pro Bild, nur wenn mindestens eine Bereinigungs-Kategorie angehakt ist.
+Aktueller Ablauf in `src/hooks/useVehicles.ts` (das ist die Query hinter der Übersicht):
 
-## Ablauf
-```text
-User startet Remaster
-      │
-      ▼
-cleanupItems.length > 0 ?
-  ├── nein → wie bisher, direkt Bild-Edit
-  └── ja  → Detect-Call (siehe unten)
-              ▼
-        Detect-JSON:
-        [{ kind, location, text?, color?, size }, …]
-              ▼
-        In Master-Prompt als
-        <DETECTED_BRANDING>-Block einfügen
-              ▼
-        Bild-Edit wie bisher (Nano Banana),
-        BODY_CLEANUP-Regeln greifen jetzt
-        auf eine benannte Liste statt Blindsuche
-```
+1. `vehicles` laden (schnell, ~175 Zeilen projektweit; bei dir max. 62).
+2. `projects`, `project_images`, `spin360_jobs`, `leads` in einem `Promise.all` — **ohne LIMIT** und mit `select('*')`-ähnlichen Feldern. Bei aktuell 2.861 `project_images` projektweit ist das der größte Batzen.
+3. **Der eigentliche Bremser:** Für **jedes Fahrzeug** wird ein separater `supabase.storage.from('banners').list(...)` Aufruf gemacht, nur um die Banner-Anzahl zu ermitteln. Bei 62 Fahrzeugen = 62 sequentiell aufgelöste Storage-Requests (zwar `Promise.all`, aber der Browser limitiert parallel Requests pro Origin auf ~6, der Rest wartet in der Queue).
 
-## Änderungen im Detail
+Also: Skalierung ist **linear zur Fahrzeugmenge** durch die Banner-Zählung, plus wachsender Payload bei `project_images`.
 
-### 1. Neue Edge Function `detect-vehicle-branding`
-- Input: `imageFileUri` (Gemini File API, gemäß Projekt-Regel „File API First") + Liste der aktivierten Cleanup-Kategorien.
-- Modell: `google/gemini-3.1-flash-lite` (direct API, wie andere Functions per `GEMINI_API_KEY` aus `admin_secrets`, kein Lovable Gateway).
-- Auth: `sb.auth.getClaims(token)` (Projekt-Regel).
-- Prompt in stichfestem Englisch, verlangt strikt JSON-Array:
+## Lösung
+
+### 1. Banner-Counts serverseitig aggregieren
+Statt pro Fahrzeug einen Storage-List-Call:
+- Neue Postgres-View `vehicle_banner_counts` (bzw. RPC `get_banner_counts_for_user`), die `storage.objects` filtert:
+  ```sql
+  select split_part(name, '/', 2) as vehicle_id, count(*)
+  from storage.objects
+  where bucket_id = 'banners'
+    and split_part(name, '/', 1) = auth.uid()::text
+    and name like '%.png'
+    and split_part(name, '/', 3) not like 'state-%'
+  group by 1;
   ```
-  For each non-OEM element on the vehicle body, return an object with:
-    kind      = "lettering" | "logo" | "sign" | "sticker" | "banner" | "external-accessory"
-    location  = concrete vehicle region (e.g. "wind deflector above windshield",
-                "driver door lower half", "left B-pillar", "trailer curtain side")
-    text      = literal text if readable, else null
-    color     = dominant color, e.g. "yellow", "blue on white"
-    size      = "small" | "medium" | "large"
-  Include ONLY elements that are NOT part of the base OEM vehicle
-  (i.e. NOT the manufacturer emblem, NOT model badge, NOT type plate,
-   NOT mandatory legal markings integrated by the OEM).
-  Return `[]` if nothing found. No prose, JSON only.
-  ```
-- Robust: JSON-Repair-Fallback (Regex extrahiert erstes `[...]`), bei Parse-Fail leeres Array — Remaster läuft trotzdem, nur ohne Inventar.
-- Response: `{ items: DetectedBrandingItem[] }`.
+- Ein einziger RPC-Call statt N Storage-Requests.
 
-### 2. `src/lib/remaster-prompt.ts`
-- `RemasterConfig` bekommt optionales Feld `detectedBranding?: DetectedBrandingItem[]`.
-- Neuer Prompt-Abschnitt `<DETECTED_BRANDING>` direkt **vor** `<BODY_CLEANUP>`, wird nur eingefügt wenn Liste vorhanden. Format:
-  ```
-  <DETECTED_BRANDING>
-  A vision pre-scan of the input image identified the following non-OEM
-  elements on this vehicle. Treat this as an authoritative removal
-  checklist — every item MUST be gone in the output:
-  - [LETTERING] "TRUCKTAT Every Mile in Style" — wind deflector above windshield, white text, large
-  - [SIGN]      yellow warning plate — front grille left side, medium
-  - [STICKER]   blue decal strip — right B-pillar, medium
-  …
-  Only remove items matching the user-selected cleanup categories: {lettering, signs, stickers}.
-  Any item whose `kind` is not in this whitelist must remain untouched.
-  </DETECTED_BRANDING>
-  ```
-- Die `<BODY_CLEANUP>`-Rekonstruktions-Regeln bleiben — sie greifen nun auf konkret benannte Regionen statt eine Blindsuche.
+### 2. Payload verkleinern
+- `project_images`: nur `vehicle_id` + (für Cover-Fallback) `image_url, created_at` selektieren — steht schon so, aber zusätzlich per SQL-Aggregation (`count(*) group by vehicle_id`) via RPC lösen. Für den Cover-Fallback reicht ein `distinct on (vehicle_id)` neuestes Bild.
+- Analog `projects` und `spin360_jobs` als Aggregat-RPC.
 
-### 3. Prompt-Härtung in `<BODY_CLEANUP>` (Zusatz zu bestehendem Block)
-- „Definition of operator branding": jeder lesbare Text (Wort, URL, Telefon, E-Mail) und jede Grafik, die **nicht** auf offiziellen OEM-Pressebildern eines Base-`<make> <model>` erscheint, gilt automatisch als Fremd-Branding.
-- Systematische Scan-Anweisung: top→bottom, front→rear, beide Seiten, Dach, Spiegel, Windleitblech, Kotflügelverbreiterungen, Radlaufblenden, Plane/Kofferaufbau, Anhänger, Mudflaps.
-- Whitelist präzisieren: nur Hersteller-Emblem, Modell-Schriftzug, Typenschild, gesetzlich vorgeschriebene OEM-Markierungen bleiben.
+Idealziel: **1 RPC** liefert `{ vehicle_id, projects, images, spin360, banners, leads, cover_fallback }` — dann läuft die Übersicht in einem einzigen Roundtrip.
 
-### 4. Verdrahtung im Remaster-Aufruf
-- In der bestehenden Remaster-Client-Logik (`src/hooks/useRemaster*.ts` bzw. dort wo `RemasterConfig` gebaut wird): wenn `cleanupItems.length > 0`, vor dem eigentlichen Edit-Call `detect-vehicle-branding` invoken, Ergebnis in `config.detectedBranding` schreiben.
-- Fehlschlag des Detect-Calls loggt eine Warnung, blockiert aber den Remaster nicht — Fallback = alter Zustand.
+### 3. React Query Feintuning
+- `staleTime: 60_000` setzen, damit ein Tab-Wechsel nicht jedes Mal neu lädt.
+- `placeholderData: keepPreviousData` — beim Refetch die alte Liste stehen lassen statt Spinner.
 
-### 5. Logging & Monitoring
-- Edge-Function loggt strukturiert: `[detect-vehicle-branding] items=N kinds=[lettering,sign] user=…`.
-- Remaster-Function loggt, ob ein `<DETECTED_BRANDING>`-Block im Prompt war (`detected=1|0`) — dadurch A/B-Vergleich im Job-Monitor möglich.
-
-## Nicht-Ziele (aus Umfang bewusst raus)
-- Kein Verifikations-Pass nach dem Remaster.
-- Kein Auto-Upgrade auf Nano Banana Pro.
-- Kein UI zum manuellen Markieren von Bereichen.
-- Diese Optionen bleiben als spätere Ausbaustufe möglich, sind aber jetzt nicht Teil der Änderung.
+### 4. Optional: DB-Indizes prüfen
+- `create index if not exists idx_project_images_vehicle_id on project_images(vehicle_id);`
+- `create index if not exists idx_projects_vehicle_id on projects(vehicle_id);`
+- `create index if not exists idx_spin360_jobs_vehicle_id on spin360_jobs(vehicle_id);`
+- `create index if not exists idx_leads_dealer_user on leads(dealer_user_id);`
 
 ## Erwartetes Ergebnis
-Wenn du z. B. „Schriftzüge" und „Schilder" anhakst, sieht der Bild-Prompt eine namentliche Liste („`TRUCKTAT Every Mile in Style` — Windleitblech", „gelbes Warnschild — Kühlergrill links") statt einer abstrakten Kategorie. Damit steigt die Trefferquote deutlich, ohne dass Nutzer manuell markieren müssen oder der Credit-Verbrauch spürbar wächst (Flash-Lite Call ist gegenüber dem Nano-Banana-Edit vernachlässigbar).
+- Bei 60 Fahrzeugen heute: typisch 3–6 s → **unter 500 ms** (ein einziger aggregierter Roundtrip).
+- Skaliert danach flach auch bei 500+ Fahrzeugen.
+
+## Umsetzung (technisch)
+1. Migration: RPC `get_vehicle_dashboard(user_id uuid)` mit `security definer`, aggregiert projects/project_images/spin360/leads/banner-objects/cover-fallback in einem Query.
+2. `useVehicles()` umbauen: nur noch `vehicles` + der eine RPC; Banner-Storage-Listing entfernen.
+3. `staleTime` + `placeholderData` ergänzen.
+4. Indizes per Migration.
+
+Kein UI-Change — nur schneller.
