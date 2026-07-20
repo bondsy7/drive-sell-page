@@ -21,6 +21,8 @@ export interface RemasterConfig {
   manufacturerLogoBase64?: string | null;
   /** Optional list of body cleanup items to strip (Schriftzüge, Logos, Schilder, Sticker, …) */
   cleanupItems?: string[];
+  /** Optional vision-pre-scan inventory of non-OEM branding on this specific image */
+  detectedBranding?: import('./detect-branding').DetectedBrandingItem[];
 }
 
 /** Bereinigungs-Optionen für Fahrzeug-Karosserie (z.B. LKW-Spedition entfernen) */
