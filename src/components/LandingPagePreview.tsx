@@ -1,8 +1,8 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
 import { useDealerBanks } from '@/hooks/useDealerBanks';
 import { supabase } from '@/integrations/supabase/client';
 import { urlToBase64, urlsToBase64, compressToWebP, compressAllToWebP } from '@/lib/storage-utils';
-import { Download, RotateCcw, Car, Fuel, Gauge, Calendar, Palette, Cog, Zap, MapPin, Phone, Mail, Globe, Plus, Trash2, ChevronLeft, ChevronRight, Eye, Pencil, Calculator, Loader2, Search } from 'lucide-react';
+import { Download, RotateCcw, Undo2, Car, Fuel, Gauge, Calendar, Palette, Cog, Zap, MapPin, Phone, Mail, Globe, Plus, Trash2, ChevronLeft, ChevronRight, Eye, Pencil, Calculator, Loader2, Search } from 'lucide-react';
 import AutohausEditor from '@/components/template-editors/AutohausEditor';
 import ModernEditor from '@/components/template-editors/ModernEditor';
 import KlassischEditor from '@/components/template-editors/KlassischEditor';
