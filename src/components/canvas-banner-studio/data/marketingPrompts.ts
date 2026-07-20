@@ -74,6 +74,13 @@ export const MARKETING_PROMPTS: MarketingPromptPreset[] = [
     prompt:
       "Place the exact same vehicle – identical model, color, wheels, badges and license plate area – captured from a high aerial top-down perspective (drone shot, slight 15–25 degree tilt) driving along a scenic empty countryside road. Smooth dark asphalt with crisp lane markings curving gently through green rolling fields and soft tree lines. Cinematic golden-hour or clean overcast lighting, subtle motion blur on the road surface only (car remains tack sharp), long soft shadow of the car on the asphalt. Optional atmospheric color grading using the brand primary color as a tonal tint in the sky or distant horizon (still natural, never cartoonish). Ultra-premium automotive commercial look, photoreal, 8k, razor-sharp focus on the vehicle. Absolutely no text, no typography, no added logos, no buttons, no UI, no people, no other vehicles, no road signs with text – completely empty advertising canvas ready for overlay.",
   },
+  {
+    id: "dealer-lot",
+    label: "Fahrzeugplatz",
+    description: "Leerer Händler-Fahrzeugplatz mit Betonpflaster vor moderner Lagerhalle – ideal für PKW und LKW.",
+    prompt:
+      "Place the exact same vehicle – identical make, model, color, wheels, badges and license plate area – on an empty dealership vehicle lot in front of a modern industrial warehouse hall. GROUND: wide flat lot of light gray-beige interlocking concrete pavers in a subtle diagonal H-pattern, clean and dry, no puddles, no road markings. BACKGROUND: a long single-story warehouse with a light gray metal panel facade, a darker anthracite-gray vertical section with tall narrow windows on the right side, a horizontal band of small dark rectangular clerestory windows above four to five closed anthracite sectional roll-up gates aligned in a row; a group of green deciduous trees behind a low black metal fence on the far left; smooth soft blue sky. LIGHTING: soft cool daylight from the upper front-left, one clean feathered contact shadow under the vehicle. Photoreal 8k automotive commercial photography, razor-sharp focus on the vehicle. STRICT: absolutely NO other cars, NO trucks, NO trailers, NO people, NO signage, NO added logos, NO text, NO typography, NO UI, NO cones, NO pallets – completely empty advertising canvas ready for overlay.",
+  },
 ];
 
 export function getMarketingPromptById(id: string): MarketingPromptPreset | undefined {
