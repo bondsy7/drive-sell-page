@@ -368,16 +368,32 @@ ${isCustomShowroom ? getBlock(overrides, 'custom_showroom_instruction') : ''}
   }
 
   // ── LICENSE PLATE ──
+  const plateContext = `LICENSE PLATE LOCATIONS (apply to ALL vehicle classes — cars AND trucks/vans/buses):
+- PASSENGER CARS: front bumper/grille plate AND rear tailgate/bumper plate.
+- TRUCKS / LORRIES: front cab plate (usually low-center on the bumper or grille), rear plate on the tailgate, box body or trailer rear door. Some trucks additionally carry a repeat plate high on the cab or on side panels — treat ALL of these as license plates.
+- VANS / TRANSPORTERS: front bumper plate and rear plate on the swing door / roller shutter.
+- TRAILERS / SEMI-TRAILERS: rear plate on the trailer, and any repeat plate on the trailer body.
+Detect the plate by its standard rectangular shape, EU blue band, country code, and alphanumeric registration — even when partially obscured, dirty, angled, small in frame, or mounted at unusual heights.`;
+
   if (config.licensePlate === 'blur') {
-    parts.push(`<LICENSE_PLATE>\n${getBlock(overrides, 'license_plate_blur')}\n</LICENSE_PLATE>`);
+    parts.push(`<LICENSE_PLATE>\n${plateContext}\n\n${getBlock(overrides, 'license_plate_blur')}\n</LICENSE_PLATE>`);
   } else if (config.licensePlate === 'custom' && config.customPlateImageBase64) {
     parts.push(`<LICENSE_PLATE>
+${plateContext}
+
 CRITICAL: A separate reference image of a CUSTOM LICENSE PLATE is provided as an additional input image.
-You MUST replace the vehicle's existing license plate with this EXACT custom plate image.
+You MUST replace EVERY license plate on the vehicle (front, rear, cab, trailer — see locations above) with this EXACT custom plate image.
 Reproduce the plate PIXEL-FOR-PIXEL: exact text, font, colors, EU badge, city seal, spacing, and proportions.
-The plate must be photorealistically integrated – correct perspective, lighting, and reflections matching the vehicle.
+The plate must be photorealistically integrated on each mounting position — correct perspective, scale, lighting, and reflections matching that surface.
 Do NOT use the original plate. Do NOT invent plate text. Use ONLY the provided custom plate image.
 </LICENSE_PLATE>`);
+  } else if (config.licensePlate === 'custom' && config.customPlateText) {
+    parts.push(`<LICENSE_PLATE>\n${plateContext}\n\nReplace EVERY license plate on the vehicle with a German plate reading "${config.customPlateText}". Photorealistic rendering on each mounting position (front, rear, cab, trailer).\n</LICENSE_PLATE>`);
+  } else if (config.licensePlate === 'keep') {
+    parts.push(`<LICENSE_PLATE>\n${plateContext}\n\nKeep the original license plates exactly as they are on ALL mounting positions. Do NOT alter, blur, or remove them.\n</LICENSE_PLATE>`);
+  } else {
+    parts.push(`<LICENSE_PLATE>\n${plateContext}\n\n${getBlock(overrides, 'license_plate_remove')}\n\nApply this removal to EVERY plate location listed above — front, rear, cab-mounted repeats, trailer plates. Zero plates may remain anywhere on the vehicle.\n</LICENSE_PLATE>`);
+  }
   } else if (config.licensePlate === 'custom' && config.customPlateText) {
     parts.push(`<LICENSE_PLATE>\nReplace the license plate with a German plate reading "${config.customPlateText}". Photorealistic rendering.\n</LICENSE_PLATE>`);
   } else if (config.licensePlate === 'keep') {
