@@ -250,6 +250,7 @@ export const SCENE_PROMPT_DEFAULTS: Record<string, string> = {
   'parking-garage': 'Modern underground parking garage. GROUND: Polished light-gray concrete floor with painted parking lines and subtle oil stains for realism – consistent floor in every image. WALLS: Clean concrete with painted section numbers. CEILING: Exposed concrete with evenly spaced LED tube lights. Same garage in every image.',
   'racetrack': 'Professional racetrack straight. GROUND: Smooth dark racing asphalt with rubber marks and red-white curbs on the left. BACKGROUND: Grandstands, catch fencing, clear sky. Same track surface in every image.',
   'mansion': 'Villa driveway. GROUND: Interlocking gray-beige stone pavers in herringbone pattern – consistent pattern in every image. BACKGROUND: Mediterranean stone villa with manicured hedges, warm evening light. Same driveway and villa in every image.',
+  'dealer-lot': 'Empty dealership vehicle lot in front of a modern industrial warehouse hall. GROUND: Wide, flat lot paved with light gray-beige interlocking concrete pavers in a subtle diagonal/H-pattern, clean and dry, no puddles, no oil stains, no road markings – consistent paving pattern in every image. BACKGROUND: A long single-story warehouse/logistics hall with a light gray metal panel facade, a darker anthracite-gray vertical section with tall narrow windows on the right, a horizontal band of small dark rectangular clerestory windows above four to five closed anthracite sectional roll-up gates aligned in a row. To the far left of the building a group of green deciduous trees behind a low black metal fence. Clear soft blue sky with a smooth gradient. STRICT: absolutely NO other vehicles, NO cars, NO trucks, NO people, NO signage, NO logos, NO text, NO cones, NO trailers, NO pallets – the lot must be completely empty. Same warehouse, same pavers, same sky in every image.',
 };
 
 /**
@@ -364,4 +365,11 @@ FILL_LIGHT: Warm wall bounce from the villa facade on the shadow side.
 SHADOW: Long soft warm shadow stretched across the herringbone pavers, opacity 40–50 %.
 REFLECTIONS: Paint mirrors the villa facade, hedges and warm sky.
 MOOD: Cinematic luxury lifestyle – elegant, glowing, premium, photorealistic.`,
+
+  'dealer-lot': `CINEMATIC LIGHTING – Dealership Lot Daylight:
+KEY_LIGHT: Soft, slightly cool daylight (5500–6000 K) from an overcast-to-clear sky, coming from the upper front-left, evenly illuminating the vehicle body without harsh highlights.
+FILL_LIGHT: Broad sky-dome ambient bounce plus a subtle warm bounce from the light gray-beige concrete pavers on the lower body.
+SHADOW: One clean, soft directional contact shadow on the pavers beneath and slightly behind the vehicle, opacity 40–50 %, feathered edges. NO multiple shadows, NO hard black shadows.
+REFLECTIONS: Paint and chrome mirror the light warehouse facade, the row of dark anthracite roll-up gates, the clerestory window band and the soft blue sky – with a clean horizon line on the body. Very subtle sheen on the pavers under the tires (≈10–15 % opacity), never mirror-wet.
+MOOD: Clean, honest, commercial dealership hero shot – bright, calm, photorealistic, absolutely no other vehicles or people reflected on the body.`,
 };
