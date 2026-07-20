@@ -370,7 +370,7 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
       </div>
 
       {/* Spezifische Bereinigung – LKW/Flotten-Debranding */}
-      {(() => {
+      {cleanupAllowed && (() => {
         const items = config.cleanupItems || [];
         const allValues = CLEANUP_OPTIONS.map(o => o.value);
         const allChecked = items.length === CLEANUP_OPTIONS.length;
