@@ -250,7 +250,8 @@ export const SCENE_PROMPT_DEFAULTS: Record<string, string> = {
   'parking-garage': 'Modern underground parking garage. GROUND: Polished light-gray concrete floor with painted parking lines and subtle oil stains for realism – consistent floor in every image. WALLS: Clean concrete with painted section numbers. CEILING: Exposed concrete with evenly spaced LED tube lights. Same garage in every image.',
   'racetrack': 'Professional racetrack straight. GROUND: Smooth dark racing asphalt with rubber marks and red-white curbs on the left. BACKGROUND: Grandstands, catch fencing, clear sky. Same track surface in every image.',
   'mansion': 'Villa driveway. GROUND: Interlocking gray-beige stone pavers in herringbone pattern – consistent pattern in every image. BACKGROUND: Mediterranean stone villa with manicured hedges, warm evening light. Same driveway and villa in every image.',
-};
+  'dealer-lot': 'Empty dealership vehicle lot in front of a modern industrial warehouse hall. GROUND: Wide, flat lot paved with light gray-beige interlocking concrete pavers in a subtle diagonal/H-pattern, clean and dry, no puddles, no oil stains, no road markings – consistent paving pattern in every image. BACKGROUND: A long single-story warehouse/logistics hall with a light gray metal panel facade, a darker anthracite-gray vertical section with tall narrow windows on the right, a horizontal band of small dark rectangular clerestory windows above four to five closed anthracite sectional roll-up gates aligned in a row. To the far left of the building a group of green deciduous trees behind a low black metal fence. Clear soft blue sky with a smooth gradient. STRICT: absolutely NO other vehicles, NO cars, NO trucks, NO people, NO signage, NO logos, NO text, NO cones, NO trailers, NO pallets – the lot must be completely empty. Same warehouse, same pavers, same sky in every image.',
+] as const;
 
 /**
  * Per-scene CINEMATIC lighting profiles.
