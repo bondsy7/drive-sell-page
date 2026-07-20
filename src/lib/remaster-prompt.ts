@@ -19,7 +19,43 @@ export interface RemasterConfig {
   dealerLogoBase64?: string | null;
   manufacturerLogoUrl?: string | null;
   manufacturerLogoBase64?: string | null;
+  /** Optional list of body cleanup items to strip (Schriftzüge, Logos, Schilder, Sticker, …) */
+  cleanupItems?: string[];
 }
+
+/** Bereinigungs-Optionen für Fahrzeug-Karosserie (z.B. LKW-Spedition entfernen) */
+export const CLEANUP_OPTIONS = [
+  {
+    value: 'lettering',
+    label: 'Schriftzüge',
+    prompt: 'ALL painted, printed, vinyl or magnetic lettering, company names, slogans, taglines, URLs, phone numbers, e-mails, and any other text on the vehicle body (doors, side panels, rear, cab front, wind deflectors, tailgate, tarpaulin, box body, trailer walls, wheel arches). Remove them fully and reconstruct the underlying body paint, panel, tarpaulin or trim texture seamlessly.',
+  },
+  {
+    value: 'logos',
+    label: 'Logos / Firmenlogos',
+    prompt: 'ALL company logos, brand marks of the operator/fleet (NOT the vehicle manufacturer badge), transport-company emblems, association logos, sponsor logos on any body surface. Remove them fully and reconstruct the underlying paint or panel material seamlessly. Keep only the original vehicle-manufacturer emblem and model badge.',
+  },
+  {
+    value: 'signs',
+    label: 'Schilder',
+    prompt: 'ALL attached signs, name plates, warning boards, hazard plaques, ADR plates, operator plates, route boards, destination signs, magnetic signs, screwed-on identification boards on the body. Remove them and rebuild the mounting surface flush with the surrounding body.',
+  },
+  {
+    value: 'stickers',
+    label: 'Sticker / Aufkleber',
+    prompt: 'ALL stickers, decals, adhesive graphics, foil wraps of the fleet operator, promotional decals, partial wraps, colored side stripes that were added post-factory. Remove them and reconstruct clean OEM paint. (Keep small mandatory legal stickers such as TÜV/HU inspection dots on the plate area only if the plate is kept.)',
+  },
+  {
+    value: 'banners',
+    label: 'Werbebanner / Planen-Werbung',
+    prompt: 'ALL advertising banners, printed tarpaulins/curtainsides with company graphics, tarp-mounted logos, side-curtain prints on trucks/trailers. Replace printed tarps with a clean, neutral, single-color factory tarpaulin in a subtle neutral tone that matches the vehicle, without ANY text or graphics.',
+  },
+  {
+    value: 'external-accessories',
+    label: 'Externe Anbauteile',
+    prompt: 'ALL non-OEM external accessories that carry branding: flag poles, pennant holders, roof-mounted light bars with company names, extra antennas with logos, magnetic taxi/rental/company signs. Keep OEM antennas, OEM mirrors, and OEM lights untouched.',
+  },
+] as const;
 
 export const SCENE_OPTIONS = [
   { value: 'none', label: 'Keine Änderung am Bild' },
@@ -332,22 +368,51 @@ ${isCustomShowroom ? getBlock(overrides, 'custom_showroom_instruction') : ''}
   }
 
   // ── LICENSE PLATE ──
+  const plateContext = `LICENSE PLATE LOCATIONS (apply to ALL vehicle classes — cars AND trucks/vans/buses):
+- PASSENGER CARS: front bumper/grille plate AND rear tailgate/bumper plate.
+- TRUCKS / LORRIES: front cab plate (usually low-center on the bumper or grille), rear plate on the tailgate, box body or trailer rear door. Some trucks additionally carry a repeat plate high on the cab or on side panels — treat ALL of these as license plates.
+- VANS / TRANSPORTERS: front bumper plate and rear plate on the swing door / roller shutter.
+- TRAILERS / SEMI-TRAILERS: rear plate on the trailer, and any repeat plate on the trailer body.
+Detect the plate by its standard rectangular shape, EU blue band, country code, and alphanumeric registration — even when partially obscured, dirty, angled, small in frame, or mounted at unusual heights.`;
+
   if (config.licensePlate === 'blur') {
-    parts.push(`<LICENSE_PLATE>\n${getBlock(overrides, 'license_plate_blur')}\n</LICENSE_PLATE>`);
+    parts.push(`<LICENSE_PLATE>\n${plateContext}\n\n${getBlock(overrides, 'license_plate_blur')}\n</LICENSE_PLATE>`);
   } else if (config.licensePlate === 'custom' && config.customPlateImageBase64) {
     parts.push(`<LICENSE_PLATE>
+${plateContext}
+
 CRITICAL: A separate reference image of a CUSTOM LICENSE PLATE is provided as an additional input image.
-You MUST replace the vehicle's existing license plate with this EXACT custom plate image.
+You MUST replace EVERY license plate on the vehicle (front, rear, cab, trailer — see locations above) with this EXACT custom plate image.
 Reproduce the plate PIXEL-FOR-PIXEL: exact text, font, colors, EU badge, city seal, spacing, and proportions.
-The plate must be photorealistically integrated – correct perspective, lighting, and reflections matching the vehicle.
+The plate must be photorealistically integrated on each mounting position — correct perspective, scale, lighting, and reflections matching that surface.
 Do NOT use the original plate. Do NOT invent plate text. Use ONLY the provided custom plate image.
 </LICENSE_PLATE>`);
   } else if (config.licensePlate === 'custom' && config.customPlateText) {
-    parts.push(`<LICENSE_PLATE>\nReplace the license plate with a German plate reading "${config.customPlateText}". Photorealistic rendering.\n</LICENSE_PLATE>`);
+    parts.push(`<LICENSE_PLATE>\n${plateContext}\n\nReplace EVERY license plate on the vehicle with a German plate reading "${config.customPlateText}". Photorealistic rendering on each mounting position (front, rear, cab, trailer).\n</LICENSE_PLATE>`);
   } else if (config.licensePlate === 'keep') {
-    parts.push(`<LICENSE_PLATE>\nKeep the original license plate exactly as it is. Do NOT alter, blur, or remove it.\n</LICENSE_PLATE>`);
+    parts.push(`<LICENSE_PLATE>\n${plateContext}\n\nKeep the original license plates exactly as they are on ALL mounting positions. Do NOT alter, blur, or remove them.\n</LICENSE_PLATE>`);
   } else {
-    parts.push(`<LICENSE_PLATE>\n${getBlock(overrides, 'license_plate_remove')}\n</LICENSE_PLATE>`);
+    parts.push(`<LICENSE_PLATE>\n${plateContext}\n\n${getBlock(overrides, 'license_plate_remove')}\n\nApply this removal to EVERY plate location listed above — front, rear, cab-mounted repeats, trailer plates. Zero plates may remain anywhere on the vehicle.\n</LICENSE_PLATE>`);
+  }
+
+  // ── BODY CLEANUP (Schriftzüge, Logos, Schilder, Sticker – für LKW/Flottenfahrzeuge) ──
+  if (config.cleanupItems && config.cleanupItems.length > 0) {
+    const lines = config.cleanupItems
+      .map(v => CLEANUP_OPTIONS.find(o => o.value === v))
+      .filter((o): o is typeof CLEANUP_OPTIONS[number] => !!o)
+      .map(o => `- ${o.label.toUpperCase()}: ${o.prompt}`);
+    if (lines.length > 0) {
+      parts.push(`<BODY_CLEANUP>
+MANDATORY OPERATOR / FLEET DE-BRANDING (ZERO TOLERANCE — the vehicle must look ready for resale to a new dealer, with NO trace of the previous operator):
+${lines.join('\n')}
+
+RECONSTRUCTION RULES:
+- After removal, seamlessly rebuild the underlying surface (paint, panel seams, rivets, trim, tarpaulin fabric weave, glass) so there is no ghosting, halo, color patch, blurred zone, or paint mismatch left behind.
+- Preserve the vehicle's factory paint color, metallic flakes, panel geometry, panel gaps, and OEM emblems / model badges of the vehicle manufacturer.
+- Do NOT invent new logos, new company names, new decals, or any replacement graphics. The cleaned surfaces must remain FACTORY-CLEAN and neutral.
+- Apply this cleanup CONSISTENTLY on every visible side of the vehicle in this image.
+</BODY_CLEANUP>`);
+    }
   }
 
   // ── INTERIOR RULES (ONLY for interior slots) ──

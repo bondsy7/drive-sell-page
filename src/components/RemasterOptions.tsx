@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, X, Paintbrush, Tag, Building2, Car, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Upload, X, Paintbrush, Tag, Building2, Car, CheckCircle2, AlertCircle, Eraser } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -12,6 +13,7 @@ import {
   type RemasterConfig,
   SCENE_OPTIONS,
   LICENSE_PLATE_OPTIONS,
+  CLEANUP_OPTIONS,
   fetchManufacturerLogos,
   type DynamicLogo,
 } from '@/lib/remaster-prompt';
@@ -363,6 +365,51 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
           </div>
         )}
       </div>
+
+      {/* Spezifische Bereinigung – LKW/Flotten-Debranding */}
+      {(() => {
+        const items = config.cleanupItems || [];
+        const allValues = CLEANUP_OPTIONS.map(o => o.value);
+        const allChecked = items.length === CLEANUP_OPTIONS.length;
+        const toggle = (v: string, on: boolean) => {
+          const next = on
+            ? Array.from(new Set([...(items), v]))
+            : items.filter(x => x !== v);
+          update({ cleanupItems: next });
+        };
+        const toggleAll = (on: boolean) => update({ cleanupItems: on ? allValues : [] });
+        return (
+          <div className="space-y-2 rounded-lg border border-dashed border-border bg-muted/20 p-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                <Eraser className="w-3.5 h-3.5" /> Spezifische Bereinigung
+              </Label>
+              <label className="flex items-center gap-1.5 cursor-pointer">
+                <Checkbox
+                  checked={allChecked}
+                  onCheckedChange={(v) => toggleAll(!!v)}
+                />
+                <span className="text-[10px] text-muted-foreground">Alle</span>
+              </label>
+            </div>
+            <p className="text-[11px] text-muted-foreground/70">
+              Entferne beim Remastern Spediteurs-/Firmenmerkmale (ideal für LKW & Flottenfahrzeuge).
+            </p>
+            <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+              {CLEANUP_OPTIONS.map(opt => (
+                <label key={opt.value} className="flex items-center gap-2 cursor-pointer">
+                  <Checkbox
+                    checked={items.includes(opt.value)}
+                    onCheckedChange={(v) => toggle(opt.value, !!v)}
+                  />
+                  <span className="text-[11px] text-foreground">{opt.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
 
       {/* Color Change */}
       <div className="space-y-2">

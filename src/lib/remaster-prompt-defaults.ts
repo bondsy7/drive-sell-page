@@ -191,10 +191,12 @@ The reference photo may contain dealer banners, abbinder bars, slogans (e.g. "AU
 - If a specific area is not clearly visible in the reference, extend ONLY from immediately adjacent visible surfaces with the most conservative continuation possible. Never guess a different trim line or colorway.
 - Additional interior detail photos are AUTHORITATIVE SOURCE MATERIAL and override any text instruction if there is a conflict.
 
-3. CLEANUP ONLY (the ONLY changes allowed):
-- Remove items NOT belonging to vehicle: trash, bags, papers, plastic covers, dust, dirt, personal belongings.
-- Remove temporary WARNING stickers (keep permanent vehicle labels).
-- Clean all surfaces to showroom-ready condition.
+3. CLEANUP ONLY (the ONLY changes allowed – apply thoroughly, especially for trucks / commercial vehicles / fleet cabs):
+- Remove ALL items NOT belonging to the vehicle: rubbish, food wrappers, coffee cups, bottles, cans, cigarette packs, ashtray contents, receipts, papers, maps, delivery notes, clipboards, tools, gloves, high-vis vests, jackets, blankets, cushions, plush toys, air fresheners, hanging decorations, dashcams, phone mounts, phones, tablets, chargers, cables, USB sticks, coins, keychains, bags, backpacks, plastic covers, floor-mat dirt.
+- Remove ALL personal belongings and driver-added accessories (custom seat covers, aftermarket steering-wheel covers, decorative shift knobs, curtains, LED strips, stickers on the dashboard, prayer beads, flags).
+- Remove ALL temporary WARNING / promotional / dealer stickers on the dashboard, sun visors, glove box lid, or headliner. Keep permanent OEM vehicle labels (airbag, VIN sticker, fuse-box legend, tire-pressure label).
+- Deep-clean all surfaces: no dust, no fingerprints, no smudges on screens/glass, no stains on upholstery, no scuff marks on plastics, no dirt in cup holders / door pockets / footwell — showroom-ready condition on every visible surface.
+- The interior must look EMPTY, TIDY, and READY FOR SALE — as if just detailed at the dealership.
 
 4. LIGHTING ENHANCEMENT ONLY:
 - Improve to bright, even, professional lighting.
