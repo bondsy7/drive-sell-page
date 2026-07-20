@@ -365,4 +365,11 @@ FILL_LIGHT: Warm wall bounce from the villa facade on the shadow side.
 SHADOW: Long soft warm shadow stretched across the herringbone pavers, opacity 40–50 %.
 REFLECTIONS: Paint mirrors the villa facade, hedges and warm sky.
 MOOD: Cinematic luxury lifestyle – elegant, glowing, premium, photorealistic.`,
+
+  'dealer-lot': `CINEMATIC LIGHTING – Dealership Lot Daylight:
+KEY_LIGHT: Soft, slightly cool daylight (5500–6000 K) from an overcast-to-clear sky, coming from the upper front-left, evenly illuminating the vehicle body without harsh highlights.
+FILL_LIGHT: Broad sky-dome ambient bounce plus a subtle warm bounce from the light gray-beige concrete pavers on the lower body.
+SHADOW: One clean, soft directional contact shadow on the pavers beneath and slightly behind the vehicle, opacity 40–50 %, feathered edges. NO multiple shadows, NO hard black shadows.
+REFLECTIONS: Paint and chrome mirror the light warehouse facade, the row of dark anthracite roll-up gates, the clerestory window band and the soft blue sky – with a clean horizon line on the body. Very subtle sheen on the pavers under the tires (≈10–15 % opacity), never mirror-wet.
+MOOD: Clean, honest, commercial dealership hero shot – bright, calm, photorealistic, absolutely no other vehicles or people reflected on the body.`,
 };
