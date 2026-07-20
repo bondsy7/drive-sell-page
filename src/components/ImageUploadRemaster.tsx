@@ -117,9 +117,9 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
     // Mark all as processing
     setImages(prev => prev.map(x => pending.some(p => p.id === x.id) ? { ...x, status: 'processing' } : x));
 
+    const promptOverrides = await fetchPromptOverrides();
     const cleanupActive = !!(remasterConfig.cleanupItems && remasterConfig.cleanupItems.length > 0);
     const defaultPrompt = buildMasterPrompt(remasterConfig, vehicleDescription, undefined, promptOverrides);
-
 
     // Phase 4: Upload shared assets (showroom, plate, logos) ONCE via File API
     const sharedAssets: { key: string; b64: string }[] = [];
@@ -136,7 +136,7 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
       }
     }
 
-    const buildBody = (mainBase64: string, mainFileUri: GeminiFileRef | null) => ({
+    const buildBody = (mainBase64: string, mainFileUri: GeminiFileRef | null, dynamicPrompt: string) => ({
       imageBase64: mainBase64,
       mainImageFileUri: mainFileUri,
       vehicleDescription,
@@ -153,6 +153,7 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
       manufacturerLogoBase64: sharedRefs.mfgLogo ? null : (remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoBase64 : null),
       manufacturerLogoFileUri: sharedRefs.mfgLogo,
     });
+
 
     const processImage = async (img: UploadedImage) => {
       try {
