@@ -38,7 +38,7 @@ export default function UserModuleDialog({ userId, userEmail, open, onOpenChange
   useEffect(() => {
     if (!open) return;
     const init: any = {};
-    MODULE_KEYS.forEach(k => init[k] = true);
+    MODULE_KEYS.forEach(k => init[k] = !MODULE_DEFAULT_DISABLED.has(k));
 
     supabase
       .from('user_module_access')
