@@ -23,7 +23,7 @@ const TOP_LEVEL_KEYS = MODULE_KEYS.filter(
 export default function UserModuleDialog({ userId, userEmail, open, onOpenChange }: Props) {
   const [modules, setModules] = useState<Record<ModuleKey, boolean>>(() => {
     const init: any = {};
-    MODULE_KEYS.forEach(k => init[k] = true);
+    MODULE_KEYS.forEach(k => init[k] = !MODULE_DEFAULT_DISABLED.has(k));
     return init;
   });
   const [saving, setSaving] = useState(false);
