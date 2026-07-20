@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import RemasterOptions from '@/components/RemasterOptions';
 import { type RemasterConfig, buildMasterPrompt, fetchPromptOverrides } from '@/lib/remaster-prompt';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
+import { detectVehicleBranding } from '@/lib/detect-branding';
 import { compressImageForAI, fileToBase64 } from '@/lib/image-compress';
 import { uploadToGeminiFiles, type GeminiFileRef } from '@/lib/gemini-file-upload';
 import ProcessTimer from '@/components/ProcessTimer';
