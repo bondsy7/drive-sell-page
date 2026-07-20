@@ -210,7 +210,11 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
     setRegeneratingIds(prev => new Set(prev).add(id));
     try {
       const overrides = await fetchPromptOverrides();
-      const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription, undefined, overrides);
+      let detectedBranding: import('@/lib/detect-branding').DetectedBrandingItem[] | undefined;
+      if (remasterConfig.cleanupItems && remasterConfig.cleanupItems.length > 0) {
+        try { detectedBranding = await detectVehicleBranding(img.originalBase64); } catch { /* continue */ }
+      }
+      const dynamicPrompt = buildMasterPrompt({ ...remasterConfig, detectedBranding }, vehicleDescription, undefined, overrides);
 
       // Upload main + shared assets via File API
       const assets: { id: string; b64: string }[] = [{ id: 'main', b64: img.originalBase64 }];
