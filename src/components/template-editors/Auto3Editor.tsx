@@ -422,7 +422,7 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
           {/* RIGHT — Aside cards */}
           <aside className="space-y-5">
             <div className="bg-white border border-[#eaeaea] rounded-[14px] p-5 shadow-[0_2px_14px_rgba(0,0,0,.04)]">
-              <h4 className="text-[13px] font-bold mb-1.5" style={{ color: dark }}>Mehr Angebote</h4>
+              <h4 className="text-[13px] font-bold mb-1.5" style={{ color: dark }}>Unser Angebot</h4>
               <div className="text-[12px] text-gray-500 mb-3">{isBuyCategory ? 'Kaufpreis-Angebot' : 'Wähle Deine Finanzierungsart'}</div>
               {!isBuyCategory && (
                 <div className="flex gap-1.5 bg-gray-100 rounded-[10px] p-1 mb-3.5">
