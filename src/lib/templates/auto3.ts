@@ -142,7 +142,7 @@ export function generateAuto3HTML(data: VehicleData, imageBase64: string | null,
           </div>
         </div>` : ''}
 
-        <div class="section"><h2>${getFinanceSectionTitle(data)}</h2>
+        <div class="section"><h2>${getFinanceSectionTitle(data)}${!isBuy ? '<sup style="font-size:0.55em;vertical-align:super;font-weight:700;margin-left:2px">1</sup>' : ''}</h2>
           <div class="accordion"><div class="fin-grid">${financeItems}</div></div>
         </div>
 
