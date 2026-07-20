@@ -527,8 +527,19 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
 
     const promptOverrides = await fetchPromptOverrides();
     const processSlot = async (slot: typeof toProcess[0]) => {
+      // Vision pre-scan for non-OEM branding when cleanup categories are selected.
+      let detectedBranding: import('@/lib/detect-branding').DetectedBrandingItem[] | undefined;
+      if (remasterConfig.cleanupItems && remasterConfig.cleanupItems.length > 0) {
+        try {
+          detectedBranding = await detectVehicleBranding(captures[slot.key].base64);
+          console.log(`[Remaster] branding pre-scan slot=${slot.key} items=${detectedBranding?.length ?? 0}`);
+        } catch (e) {
+          console.warn('[Remaster] branding pre-scan failed, continuing without inventory:', e);
+        }
+      }
+      const slotConfig = { ...remasterConfig, detectedBranding };
       // Build per-slot prompt with perspective-specific instructions
-      const dynamicPrompt = buildMasterPrompt(remasterConfig, vehicleDescription, slot.key, promptOverrides);
+      const dynamicPrompt = buildMasterPrompt(slotConfig, vehicleDescription, slot.key, promptOverrides);
 
       const MAX_RETRIES = 2;
       for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
