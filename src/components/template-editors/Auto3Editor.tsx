@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import EditableField from '@/components/EditableField';
 import CO2LabelSelector from '@/components/CO2LabelSelector';
 import RateTypeSelect from './RateTypeSelect';
-import { Palette, RotateCcw, Plus, Trash2, ChevronLeft, ChevronRight, Upload } from 'lucide-react';
+import { Palette, RotateCcw, Plus, Trash2, ChevronLeft, ChevronRight, Upload, ChevronDown } from 'lucide-react';
 import { isPluginHybrid } from '@/lib/co2-utils';
 import { getFinanceSectionTitle } from '@/lib/templates/shared';
 import {
@@ -27,6 +27,7 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
   dealerBanks = [],
 }) => {
   const [selectedImage, setSelectedImage] = useState(0);
+  const [toolbarOpen, setToolbarOpen] = useState(true);
   const colors = data.templateColors ?? { accent: '#e30613', dark: '#111111' };
   const accent = colors.accent || '#e30613';
   const dark = colors.dark || '#111111';
@@ -106,52 +107,74 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Angebotstyp + Color controls (sticky bar) */}
-      <div className="sticky top-0 z-30 w-full shrink-0 bg-card/95 backdrop-blur rounded-2xl border border-border p-4 shadow-sm space-y-4">
-        {renderCustomerTypeToggle('toolbar')}
-
-        <div>
-          <div className="flex items-center gap-2 mb-3 flex-wrap">
+      {/* Angebotstyp + Color controls (sticky bar, collapsible) */}
+      <div className="sticky top-0 z-30 w-full shrink-0 bg-card/95 backdrop-blur rounded-2xl border border-border shadow-sm">
+        <button
+          type="button"
+          onClick={() => setToolbarOpen((o) => !o)}
+          aria-expanded={toolbarOpen}
+          className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left"
+        >
+          <div className="flex items-center gap-2">
             <Palette className="w-4 h-4" style={{ color: accent }} />
-            <h3 className="text-sm font-semibold">Auto3 Farben</h3>
-            <span className="text-[11px] text-muted-foreground">— Akzent & Dunkel anpassen</span>
+            <span className="text-sm font-semibold">Angebotstyp & Farben</span>
+            {!toolbarOpen && (
+              <span className="text-[11px] text-muted-foreground hidden sm:inline">
+                — {inferredCustomerType === 'business' ? 'Gewerbe' : 'Privat'}
+              </span>
+            )}
           </div>
-          <div className="grid sm:grid-cols-2 gap-3 mb-3">
-            <label className="flex items-center gap-3 bg-muted/40 rounded-xl p-3">
-              <input type="color" value={accent} onChange={(e) => updateColors({ accent: e.target.value })}
-                className="w-10 h-10 rounded-md border border-border cursor-pointer bg-transparent" />
-              <div className="flex-1">
-                <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">Akzentfarbe (CTA)</div>
-                <input type="text" value={accent} onChange={(e) => updateColors({ accent: e.target.value })}
-                  className="w-full bg-transparent text-sm font-mono font-semibold outline-none" />
+          <ChevronDown className={`w-4 h-4 transition-transform ${toolbarOpen ? 'rotate-180' : ''}`} />
+        </button>
+        {toolbarOpen && (
+          <div className="px-4 pb-4 space-y-4">
+            {renderCustomerTypeToggle('toolbar')}
+
+            <div>
+              <div className="flex items-center gap-2 mb-3 flex-wrap">
+                <Palette className="w-4 h-4" style={{ color: accent }} />
+                <h3 className="text-sm font-semibold">Auto3 Farben</h3>
+                <span className="text-[11px] text-muted-foreground">— Akzent & Dunkel anpassen</span>
               </div>
-            </label>
-            <label className="flex items-center gap-3 bg-muted/40 rounded-xl p-3">
-              <input type="color" value={dark} onChange={(e) => updateColors({ dark: e.target.value })}
-                className="w-10 h-10 rounded-md border border-border cursor-pointer bg-transparent" />
-              <div className="flex-1">
-                <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">Dunkelton (Text / Badges)</div>
-                <input type="text" value={dark} onChange={(e) => updateColors({ dark: e.target.value })}
-                  className="w-full bg-transparent text-sm font-mono font-semibold outline-none" />
+              <div className="grid sm:grid-cols-2 gap-3 mb-3">
+                <label className="flex items-center gap-3 bg-muted/40 rounded-xl p-3">
+                  <input type="color" value={accent} onChange={(e) => updateColors({ accent: e.target.value })}
+                    className="w-10 h-10 rounded-md border border-border cursor-pointer bg-transparent" />
+                  <div className="flex-1">
+                    <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">Akzentfarbe (CTA)</div>
+                    <input type="text" value={accent} onChange={(e) => updateColors({ accent: e.target.value })}
+                      className="w-full bg-transparent text-sm font-mono font-semibold outline-none" />
+                  </div>
+                </label>
+                <label className="flex items-center gap-3 bg-muted/40 rounded-xl p-3">
+                  <input type="color" value={dark} onChange={(e) => updateColors({ dark: e.target.value })}
+                    className="w-10 h-10 rounded-md border border-border cursor-pointer bg-transparent" />
+                  <div className="flex-1">
+                    <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">Dunkelton (Text / Badges)</div>
+                    <input type="text" value={dark} onChange={(e) => updateColors({ dark: e.target.value })}
+                      className="w-full bg-transparent text-sm font-mono font-semibold outline-none" />
+                  </div>
+                </label>
               </div>
-            </label>
+              <div className="flex items-center gap-2 flex-wrap">
+                {PRESETS.map((p) => (
+                  <button key={p.label} type="button" onClick={() => updateColors({ accent: p.accent, dark: p.dark })}
+                    className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-full border border-border bg-background hover:bg-muted transition-colors">
+                    <span className="w-3 h-3 rounded-full border border-border" style={{ background: p.accent }} />
+                    <span className="w-3 h-3 rounded-full border border-border" style={{ background: p.dark }} />
+                    {p.label}
+                  </button>
+                ))}
+                <button type="button" onClick={() => updateColors({ accent: '#e30613', dark: '#111111' })}
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-border bg-background hover:bg-muted ml-auto">
+                  <RotateCcw className="w-3 h-3" /> Zurücksetzen
+                </button>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            {PRESETS.map((p) => (
-              <button key={p.label} type="button" onClick={() => updateColors({ accent: p.accent, dark: p.dark })}
-                className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-full border border-border bg-background hover:bg-muted transition-colors">
-                <span className="w-3 h-3 rounded-full border border-border" style={{ background: p.accent }} />
-                <span className="w-3 h-3 rounded-full border border-border" style={{ background: p.dark }} />
-                {p.label}
-              </button>
-            ))}
-            <button type="button" onClick={() => updateColors({ accent: '#e30613', dark: '#111111' })}
-              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-border bg-background hover:bg-muted ml-auto">
-              <RotateCcw className="w-3 h-3" /> Zurücksetzen
-            </button>
-          </div>
-        </div>
+        )}
       </div>
+
 
       {/* === Visual replica of auto3 preview === */}
       <div className="bg-white rounded-2xl border border-border overflow-hidden" style={rootStyle}>
