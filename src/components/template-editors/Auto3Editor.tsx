@@ -302,11 +302,12 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
 
             {/* Finance section */}
             <div className="mt-7">
-              <h2 className="text-lg font-bold mb-3.5" style={{ color: dark }}>
-                {getFinanceSectionTitle(data)}
-                {!isBuyCategory && <sup className="text-[10px] font-bold ml-0.5">1</sup>}
-              </h2>
-              <div className="border border-[#eaeaea] rounded-xl px-5 py-4 grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+              <div className="border border-[#eaeaea] rounded-xl px-5 py-4">
+                <h2 className="text-lg font-bold mb-3.5" style={{ color: dark }}>
+                  {getFinanceSectionTitle(data)}
+                  {!isBuyCategory && <sup className="text-[10px] font-bold ml-0.5">1</sup>}
+                </h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                 <FinItem label={isLeasing ? 'Leasingpreis' : 'Gesamtpreis'} value={data.finance.totalPrice} onChange={(v) => updateFinance('totalPrice', v)} suffix="€" sup={!isBuyCategory} />
                 {!isBuyCategory && (
                   <>
@@ -335,8 +336,10 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
                     <FinItem label="Eff. Jahreszins" value={data.finance.interestRate || ''} onChange={(v) => updateFinance('interestRate', v)} suffix="%" />
                   </>
                 )}
+                </div>
               </div>
             </div>
+
 
             {/* Bankangaben / Pflichthinweis */}
             {(() => {
