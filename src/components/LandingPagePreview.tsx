@@ -307,6 +307,19 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ vehicleData, im
               <Pencil className="w-3.5 h-3.5" /> <span className="hidden xs:inline">Bearbeiten</span>
             </button>
           </div>
+          {viewMode === 'edit' && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleUndo}
+              disabled={historyLen === 0}
+              className="gap-1.5"
+              title="Letzten Bearbeitungsschritt rückgängig machen"
+            >
+              <Undo2 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Rückgängig</span>
+            </Button>
+          )}
         </div>
         <Button onClick={handleExportClick} size="sm" className="gap-2 gradient-accent text-accent-foreground font-semibold shadow-glow hover:opacity-90 transition-opacity w-full sm:w-auto">
           <Download className="w-4 h-4" />
