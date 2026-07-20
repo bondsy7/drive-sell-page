@@ -161,7 +161,20 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
         const mainUploaded = await uploadToGeminiFiles([{ id: img.id, imageBase64: img.originalBase64 }]);
         const mainRef = mainUploaded?.[0] || null;
 
-        const { data, error } = await invokeRemasterVehicleImage(buildBody(img.originalBase64, mainRef));
+        // Per-image branding pre-scan when cleanup categories are selected.
+        let dynamicPrompt = defaultPrompt;
+        if (cleanupActive) {
+          try {
+            const detectedBranding = await detectVehicleBranding(img.originalBase64);
+            console.log(`[Remaster] branding pre-scan img=${img.id} items=${detectedBranding?.length ?? 0}`);
+            dynamicPrompt = buildMasterPrompt({ ...remasterConfig, detectedBranding }, vehicleDescription, undefined, promptOverrides);
+          } catch (e) {
+            console.warn('[Remaster] branding pre-scan failed, using default prompt:', e);
+          }
+        }
+
+        const { data, error } = await invokeRemasterVehicleImage(buildBody(img.originalBase64, mainRef, dynamicPrompt));
+
 
         if (error || !data?.imageBase64) {
           const errMsg = data?.error || error?.message || 'Fehler beim Remastering';
