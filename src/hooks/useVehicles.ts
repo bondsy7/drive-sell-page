@@ -1,4 +1,5 @@
-import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient, keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -28,61 +29,88 @@ export interface VehicleWithCounts extends Vehicle {
   };
 }
 
-/** List of vehicles with aggregated asset counts. */
-export function useVehicles() {
+interface VehiclesPage {
+  items: VehicleWithCounts[];
+  total: number;
+}
+
+const VEHICLES_PAGE_SIZE = 24;
+
+type VehicleDashboardPageRow = Vehicle & {
+  projects_count: number | null;
+  images_count: number | null;
+  spin360_count: number | null;
+  banners_count: number | null;
+  leads_count: number | null;
+  cover_fallback: string | null;
+  total_count: number | null;
+};
+
+/** List of vehicles with aggregated asset counts, loaded page-by-page for a fast first paint. */
+export function useVehicles(options: { autoLoadAll?: boolean } = {}) {
   const { user } = useAuth();
-  return useQuery({
+  const autoLoadAll = options.autoLoadAll ?? true;
+
+  const query = useInfiniteQuery({
     queryKey: ['vehicles', user?.id],
     enabled: !!user,
     staleTime: 60_000,
+    initialPageParam: 0,
     placeholderData: keepPreviousData,
-    queryFn: async (): Promise<VehicleWithCounts[]> => {
-      if (!user) return [];
+    queryFn: async ({ pageParam }): Promise<VehiclesPage> => {
+      if (!user) return { items: [], total: 0 };
 
-      const { data: vs, error } = await supabase
-        .from('vehicles')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('updated_at', { ascending: false });
+      const { data, error } = await supabase.rpc('get_vehicle_dashboard_page', {
+        _limit: VEHICLES_PAGE_SIZE,
+        _offset: Number(pageParam) || 0,
+      });
 
       if (error) throw error;
-      const vehicles = (vs || []) as Vehicle[];
-      if (vehicles.length === 0) return [];
 
-      // Single aggregated RPC: counts + cover fallback per vehicle in one round-trip.
-      const { data: agg, error: aggErr } = await supabase.rpc('get_vehicle_dashboard');
-      if (aggErr) {
-        console.warn('[useVehicles] get_vehicle_dashboard failed', aggErr);
-      }
+      const rows = (data || []) as VehicleDashboardPageRow[];
+      const total = rows[0]?.total_count ?? rows.length;
 
-      type AggRow = {
-        vehicle_id: string;
-        projects_count: number;
-        images_count: number;
-        spin360_count: number;
-        banners_count: number;
-        leads_count: number;
-        cover_fallback: string | null;
-      };
-      const byId = new Map<string, AggRow>();
-      for (const r of ((agg as AggRow[]) || [])) byId.set(r.vehicle_id, r);
-
-      return vehicles.map(v => {
-        const a = byId.get(v.id);
-        return {
-          ...v,
-          cover_image_url: v.cover_image_url || a?.cover_fallback || null,
+      return {
+        total,
+        items: rows.map((row) => ({
+          id: row.id,
+          user_id: row.user_id,
+          vin: row.vin,
+          brand: row.brand,
+          model: row.model,
+          year: row.year,
+          color: row.color,
+          title: row.title,
+          vehicle_data: row.vehicle_data,
+          cover_image_url: row.cover_image_url || row.cover_fallback || null,
+          created_at: row.created_at,
+          updated_at: row.updated_at,
           counts: {
-            projects: a?.projects_count || 0,
-            images: a?.images_count || 0,
-            spin360: a?.spin360_count || 0,
-            banners: a?.banners_count || 0,
-            leads: a?.leads_count || 0,
+            projects: row.projects_count || 0,
+            images: row.images_count || 0,
+            spin360: row.spin360_count || 0,
+            banners: row.banners_count || 0,
+            leads: row.leads_count || 0,
           },
-        };
-      });
+        })),
+      };
     },
+    getNextPageParam: (lastPage, allPages) => {
+      const loaded = allPages.reduce((sum, page) => sum + page.items.length, 0);
+      return loaded < lastPage.total ? loaded : undefined;
+    },
+    select: (data) => data.pages.flatMap((page) => page.items),
   });
+
+  useEffect(() => {
+    if (!autoLoadAll || !query.hasNextPage || query.isFetchingNextPage) return;
+    const id = window.setTimeout(() => {
+      query.fetchNextPage();
+    }, 80);
+    return () => window.clearTimeout(id);
+  }, [autoLoadAll, query.data?.length, query.fetchNextPage, query.hasNextPage, query.isFetchingNextPage]);
+
+  return query;
 }
 
 /** Single vehicle by id. */
