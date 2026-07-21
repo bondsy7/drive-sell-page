@@ -3,6 +3,17 @@ import { getCO2ClassFromEmissions, getCO2LabelPath, isPluginHybrid } from "@/lib
 import { parsePrice } from "@/lib/finance-utils";
 
 /**
+ * Liefert den anzuzeigenden Fahrzeugtitel.
+ * Wenn `titleOverride` im Editor gesetzt wurde, wird dieser 1:1 verwendet
+ * (kein automatisches Voranstellen der Marke). Sonst Fallback auf "Marke Modell".
+ */
+export function getDisplayTitle(data: VehicleData): string {
+  const override = (data.vehicle?.titleOverride || '').trim();
+  if (override) return override;
+  return `${data.vehicle?.brand || ''} ${data.vehicle?.model || ''}`.trim();
+}
+
+/**
  * Calculate leasing factor: (monthlyRate / totalPrice) * 100
  * Returns formatted string or empty if not determinable.
  */

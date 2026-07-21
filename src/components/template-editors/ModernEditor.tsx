@@ -88,7 +88,7 @@ const ModernEditor: React.FC<TemplateEditorProps> = ({
           <div className="p-6 flex flex-col">
             <CategoryDropdown value={data.category || ''} onChange={(v) => onDataChange({ ...data, category: v })} />
             <h1 className="text-2xl font-bold text-foreground mt-2">
-              <EditableField value={`${data.vehicle.brand} ${data.vehicle.model}`} onChange={(v) => { const parts = v.split(' '); updateVehicle('brand', parts[0] || ''); updateVehicle('model', parts.slice(1).join(' ') || ''); }} className="text-2xl font-bold text-foreground" />
+              <EditableField value={(data.vehicle.titleOverride ?? `${data.vehicle.brand} ${data.vehicle.model}`.trim())} onChange={(v) => updateVehicle('titleOverride' as any, v)} className="text-2xl font-bold text-foreground" />
             </h1>
             <EditableField value={data.vehicle.variant || ''} onChange={(v) => updateVehicle('variant', v)} className="text-sm text-muted-foreground mt-1" />
             <div className="mt-4">

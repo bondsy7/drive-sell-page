@@ -221,8 +221,8 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
             <div className="mt-6">
               <h1 className="text-[28px] font-bold leading-tight" style={{ color: dark }}>
                 <EditableField
-                  value={`${data.vehicle.brand} ${data.vehicle.model}`}
-                  onChange={(v) => { const parts = v.split(' '); updateVehicle('brand', parts[0] || ''); updateVehicle('model', parts.slice(1).join(' ') || ''); }}
+                  value={(data.vehicle.titleOverride ?? `${data.vehicle.brand} ${data.vehicle.model}`.trim())}
+                  onChange={(v) => updateVehicle('titleOverride' as any, v)}
                   className="text-[28px] font-bold"
                 />
               </h1>

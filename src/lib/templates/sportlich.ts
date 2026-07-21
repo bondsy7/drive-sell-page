@@ -1,5 +1,5 @@
 import { VehicleData } from "@/types/vehicle";
-import { getCO2LabelHTML, getGalleryHTML, getConsumptionData, buildConsumptionRows, buildDetailedConsumption, buildCostRows, buildFinanceItems, buildFeatures, buildSocialLinksHTML, buildWhatsAppButtonHTML, buildLegalTextHTML, buildDealerAddressHTML, buildDealerFooterHTML, buildWebsiteLinkHTML, getFinanceSectionTitle, vatNoteHTML, getMonthlyRateLabel, customerTypeBadgeHTML, rateTypeSuffixHTML } from "./shared";
+import { getCO2LabelHTML, getGalleryHTML, getConsumptionData, buildConsumptionRows, buildDetailedConsumption, buildCostRows, buildFinanceItems, buildFeatures, buildSocialLinksHTML, buildWhatsAppButtonHTML, buildLegalTextHTML, buildDealerAddressHTML, buildDealerFooterHTML, buildWebsiteLinkHTML, getFinanceSectionTitle, vatNoteHTML, getMonthlyRateLabel, customerTypeBadgeHTML, rateTypeSuffixHTML, getDisplayTitle } from "./shared";
 
 export function generateSportlichHTML(data: VehicleData, imageBase64: string | null, galleryImages: string[] = []): string {
   const consumption = getConsumptionData(data);
@@ -69,7 +69,7 @@ export function generateSportlichHTML(data: VehicleData, imageBase64: string | n
       ${imageBase64 ? `<img id="mainImg" src="${imageBase64}" alt="${data.vehicle.brand} ${data.vehicle.model}"/>` : ''}
       <div class="hero-overlay">
         <div style="font-size:10px;color:#e63946;text-transform:uppercase;letter-spacing:3px;margin-bottom:4px;font-weight:600">${data.category || 'Angebot'}</div>
-        ${customerTypeBadgeHTML(data)}<h1>${data.vehicle.brand} ${data.vehicle.model}</h1>
+        ${customerTypeBadgeHTML(data)}<h1>${getDisplayTitle(data)}</h1>
         <div style="font-size:13px;color:#6a7080;margin-bottom:8px">${data.vehicle.variant || ''}</div>
         <div class="price">${data.finance.totalPrice || '–'}</div>${vatNoteHTML(data)}
       </div>

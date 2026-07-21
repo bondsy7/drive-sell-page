@@ -1,5 +1,5 @@
 import { VehicleData } from "@/types/vehicle";
-import { getCO2LabelHTML, getGalleryHTML, getConsumptionData, buildConsumptionRows, buildDetailedConsumption, buildCostRows, buildFinanceItems, buildFeatures, buildSocialLinksHTML, buildWhatsAppButtonHTML, buildLegalTextHTML, buildDealerAddressHTML, buildDealerFooterHTML, buildWebsiteLinkHTML, getFinanceSectionTitle, vatNoteHTML, getMonthlyRateLabel, customerTypeBadgeHTML, rateTypeSuffixHTML } from "./shared";
+import { getCO2LabelHTML, getGalleryHTML, getConsumptionData, buildConsumptionRows, buildDetailedConsumption, buildCostRows, buildFinanceItems, buildFeatures, buildSocialLinksHTML, buildWhatsAppButtonHTML, buildLegalTextHTML, buildDealerAddressHTML, buildDealerFooterHTML, buildWebsiteLinkHTML, getFinanceSectionTitle, vatNoteHTML, getMonthlyRateLabel, customerTypeBadgeHTML, rateTypeSuffixHTML, getDisplayTitle } from "./shared";
 
 export function generateMinimalistHTML(data: VehicleData, imageBase64: string | null, galleryImages: string[] = []): string {
   const consumption = getConsumptionData(data);
@@ -67,7 +67,7 @@ export function generateMinimalistHTML(data: VehicleData, imageBase64: string | 
   <div class="container">
     <div class="title-block">
       <div class="cat">${data.category||'Angebot'}</div>
-      ${customerTypeBadgeHTML(data)}<h1>${data.vehicle.brand} ${data.vehicle.model}</h1>
+      ${customerTypeBadgeHTML(data)}<h1>${getDisplayTitle(data)}</h1>
       <div class="variant">${data.vehicle.variant||''}</div>
       <div class="price">${data.finance.totalPrice||'–'}</div>${vatNoteHTML(data)}
     </div>
