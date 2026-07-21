@@ -329,7 +329,7 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
     <div class="right-col">
       <div class="card price-card">
         ${customerTypeBadgeHTML(data)}
-        <h1>${data.vehicle.brand} ${data.vehicle.model}${data.vehicle.variant ? ' ' + data.vehicle.variant : ''}</h1>
+        <h1>${getDisplayTitle(data)}${data.vehicle.titleOverride ? '' : (data.vehicle.variant ? ' ' + data.vehicle.variant : '')}</h1>
         ${!isBuy && data.finance.monthlyRate
           ? `<div style="font-size:.8rem;color:#6b7280;margin-bottom:.2rem">${getMonthlyRateLabel(data)}</div>
              <div class="rate">${data.finance.monthlyRate}<span style="font-size:.75em;font-weight:400;color:#6b7280">/mtl.</span>${rateTypeSuffixHTML(data)}<sup style="font-size:.6rem;vertical-align:super;margin-left:.15em">1</sup></div>

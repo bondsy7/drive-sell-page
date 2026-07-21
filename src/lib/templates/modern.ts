@@ -78,7 +78,7 @@ export function generateModernHTML(data: VehicleData, imageBase64: string | null
       </div>
       <div class="info-side">
         <div class="category">${data.category || 'Angebot'}</div>
-        ${customerTypeBadgeHTML(data)}<h1>${data.vehicle.brand} ${data.vehicle.model}</h1>
+        ${customerTypeBadgeHTML(data)}<h1>${getDisplayTitle(data)}</h1>
         <p class="variant">${data.vehicle.variant || ''}</p>
         <div class="price-row"><div class="price">${data.finance.totalPrice || '–'}</div></div>${vatNoteHTML(data)}
         <div class="specs">

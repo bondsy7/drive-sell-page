@@ -72,7 +72,7 @@ export function generatePremiumHTML(data: VehicleData, imageBase64: string | nul
       ${imageBase64 ? `<img id="mainImg" src="${imageBase64}" alt="${data.vehicle.brand} ${data.vehicle.model}"/>` : ''}
       <div class="hero-overlay">
         <div class="cat">${data.category||'Angebot'}</div>
-        ${customerTypeBadgeHTML(data)}<h1>${data.vehicle.brand} ${data.vehicle.model}</h1>
+        ${customerTypeBadgeHTML(data)}<h1>${getDisplayTitle(data)}</h1>
         <div class="variant">${data.vehicle.variant||''}</div>
         <div class="price">${data.finance.totalPrice||'–'}</div>${vatNoteHTML(data)}
       </div>

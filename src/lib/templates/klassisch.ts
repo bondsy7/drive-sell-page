@@ -68,7 +68,7 @@ export function generateKlassischHTML(data: VehicleData, imageBase64: string | n
   <div class="container">
     <div class="header">
       <div class="cat">${data.category || 'Angebot'}</div>
-      ${customerTypeBadgeHTML(data)}<h1>${data.vehicle.brand} ${data.vehicle.model}</h1>
+      ${customerTypeBadgeHTML(data)}<h1>${getDisplayTitle(data)}</h1>
       <div class="variant">${data.vehicle.variant || ''}</div>
       <div class="price">${data.finance.totalPrice || '–'}</div>${vatNoteHTML(data)}
     </div>

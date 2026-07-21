@@ -118,7 +118,7 @@ export function generateAuto3HTML(data: VehicleData, imageBase64: string | null,
 
         <div class="title-block">
           ${customerTypeBadgeHTML(data)}
-          <h1>${data.vehicle.brand} ${data.vehicle.model}</h1>
+          <h1>${getDisplayTitle(data)}</h1>
           <div class="variant">${data.vehicle.variant || ''}</div>
         </div>
 
