@@ -47,7 +47,7 @@ const KlassischEditor: React.FC<TemplateEditorProps> = ({
           <CategoryDropdown value={data.category || ''} onChange={(v) => onDataChange({ ...data, category: v })} />
         </div>
         <h1 className="font-display text-3xl font-bold text-foreground">
-          <EditableField value={`${data.vehicle.brand} ${data.vehicle.model}`} onChange={(v) => { const parts = v.split(' '); updateVehicle('brand', parts[0] || ''); updateVehicle('model', parts.slice(1).join(' ') || ''); }} className="font-display text-3xl font-bold text-foreground" />
+          <EditableField value={(data.vehicle.titleOverride ?? `${data.vehicle.brand} ${data.vehicle.model}`.trim())} onChange={(v) => updateVehicle('titleOverride' as any, v)} className="font-display text-3xl font-bold text-foreground" />
         </h1>
         <EditableField value={data.vehicle.variant || ''} onChange={(v) => updateVehicle('variant', v)} className="text-sm italic text-muted-foreground mt-1" />
         <div className="mt-3">
