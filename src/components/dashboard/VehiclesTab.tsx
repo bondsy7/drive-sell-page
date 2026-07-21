@@ -32,7 +32,13 @@ function formatRelativeTime(iso: string): string {
 export default function VehiclesTab() {
   const { user } = useAuth();
   const qc = useQueryClient();
-  const { data: vehicles = [], isLoading } = useVehicles();
+  const {
+    data: vehicles = [],
+    isLoading,
+    isFetchingNextPage,
+    loadedVehicles = 0,
+    totalVehicles = 0,
+  } = useVehicles();
   const [reclaiming, setReclaiming] = useState(false);
   const deleteVehicle = useDeleteVehicle();
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -169,7 +175,17 @@ export default function VehiclesTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="text-xs text-muted-foreground min-h-5">
+          {totalVehicles > loadedVehicles
+            ? `${loadedVehicles} von ${totalVehicles} Fahrzeugen geladen`
+            : `${vehicles.length} Fahrzeug${vehicles.length === 1 ? '' : 'e'} geladen`}
+          {isFetchingNextPage && (
+            <span className="inline-flex items-center gap-1.5 ml-2 text-accent">
+              <Loader2 className="w-3 h-3 animate-spin" /> weitere werden geladen…
+            </span>
+          )}
+        </div>
         <Button onClick={reclaimOrphans} disabled={reclaiming} variant="outline" size="sm">
           {reclaiming
             ? <><Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> Verknüpfe…</>
