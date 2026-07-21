@@ -5,7 +5,7 @@ import {
   buildFinanceItems, buildFeatures, buildSocialLinksHTML,
   buildWhatsAppButtonHTML, buildLegalTextHTML, buildDealerAddressHTML,
   buildDealerFooterHTML, buildWebsiteLinkHTML, getFinanceSectionTitle,
-  vatNoteHTML, getMonthlyRateLabel, customerTypeBadgeHTML, getRateType,
+  vatNoteHTML, getMonthlyRateLabel, customerTypeBadgeHTML, getRateType, getDisplayTitle,
 } from "./shared";
 
 export function generateAuto3HTML(data: VehicleData, imageBase64: string | null, galleryImages: string[] = []): string {
