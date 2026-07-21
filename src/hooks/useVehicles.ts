@@ -99,8 +99,10 @@ export function useVehicles(options: { autoLoadAll?: boolean } = {}) {
       const loaded = allPages.reduce((sum, page) => sum + page.items.length, 0);
       return loaded < lastPage.total ? loaded : undefined;
     },
-    select: (data) => data.pages.flatMap((page) => page.items),
   });
+
+  const vehicles = query.data?.pages.flatMap((page) => page.items) ?? [];
+  const totalVehicles = query.data?.pages[0]?.total ?? vehicles.length;
 
   useEffect(() => {
     if (!autoLoadAll || !query.hasNextPage || query.isFetchingNextPage) return;
@@ -108,9 +110,14 @@ export function useVehicles(options: { autoLoadAll?: boolean } = {}) {
       query.fetchNextPage();
     }, 80);
     return () => window.clearTimeout(id);
-  }, [autoLoadAll, query.data?.length, query.fetchNextPage, query.hasNextPage, query.isFetchingNextPage]);
+  }, [autoLoadAll, vehicles.length, query.fetchNextPage, query.hasNextPage, query.isFetchingNextPage]);
 
-  return query;
+  return {
+    ...query,
+    data: vehicles,
+    loadedVehicles: vehicles.length,
+    totalVehicles,
+  };
 }
 
 /** Single vehicle by id. */
