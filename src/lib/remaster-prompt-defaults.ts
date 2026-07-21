@@ -83,6 +83,38 @@ If ANY check fails, regenerate that detail from the reference image.
 9. FULL BLEED: The generated image MUST fill the ENTIRE canvas edge-to-edge. There must be ZERO white borders, ZERO blank margins, ZERO unfilled edges. The background/scene MUST extend to every pixel of the image boundary.`,
   },
 
+  mirror_system_lock: {
+    key: 'remaster_mirror_system_lock',
+    label: 'Mirror & Camera System Lock (LKW-Rückspiegel / Kamera-Ersatz)',
+    description: 'Erzwingt exakte Reproduktion klassischer Glasspiegel ODER moderner Kamera-Monitor-Systeme (MirrorCam, OptiView, CMS) an LKWs / Nutzfahrzeugen.',
+    prompt: `MIRROR & CAMERA-MONITOR SYSTEM – ABSOLUTE FIDELITY (critical for trucks, tractors, vans, buses):
+
+STEP 1 – ANALYZE THE REFERENCE BEFORE RENDERING:
+Inspect the A-pillar area, cab roof corners, upper door frame and upper cab edges in the reference photo(s) and determine WHICH mirror system the vehicle actually uses:
+(A) CLASSIC GLASS MIRRORS – large mirror heads on tubular/aerodynamic support arms extending outward from the cab. Typically a main mirror + wide-angle mirror + optional front ramp mirror + kerb mirror.
+(B) CAMERA-MONITOR SYSTEM (CMS / digital mirrors) – slim aerodynamic camera housings ("wings" or "fins") mounted at the top-front corners of the cab or on short stalks, REPLACING the classic mirror heads. Examples: Mercedes-Benz Actros MirrorCam, MAN OptiView, Volvo FH Camera Monitor System, Scania OptiView-style setups.
+
+STEP 2 – REPRODUCE PIXEL-ACCURATELY:
+- Reproduce the EXACT number, position, mounting geometry, arm length, housing shape, housing color, and orientation of every mirror or camera unit shown in the reference.
+- Match the connection between the arm and the cab exactly: same attachment point, same angle, same thickness.
+- Keep any integrated indicator repeaters, marker lights, or antennas on the arm/housing.
+
+STEP 3 – ABSOLUTE PROHIBITIONS:
+- Do NOT add classic glass mirrors if the reference shows a camera-monitor system.
+- Do NOT invent or add camera housings if the reference shows classic glass mirrors.
+- Do NOT mix the two systems (no "hybrid" camera + glass mirror combo unless clearly visible in the reference).
+- Do NOT delete, shorten, shrink, or crop the mirror/camera arm. Do NOT leave a floating mirror head without its arm.
+- Do NOT fall back to a generic "default truck" mirror layout from training memory.
+
+STEP 4 – INTERIOR CONSISTENCY:
+If a camera-monitor system is present in exterior references, then in any interior perspective the corresponding A-pillar display screens MUST also be preserved. Do NOT replace them with blank pillars or classic wing-mirror views through the side window.
+
+VERIFICATION BEFORE FINALIZING:
+1. Does the mirror/camera system type in the output match the reference (glass vs. camera)? If not, regenerate.
+2. Is every arm fully rendered from cab to housing (no cut-offs, no missing arm)?
+3. Are housing shape, color and position identical to the reference?`,
+  },
+
   anti_cropping: {
     key: 'remaster_anti_cropping',
     label: 'Anti-Cropping',

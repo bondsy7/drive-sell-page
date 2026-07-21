@@ -272,6 +272,11 @@ PAINT COLOR CHANGE – ABSOLUTE, NON-NEGOTIABLE, APPLIES TO EVERY IMAGE:
 
   parts.push(`<IDENTITY_LOCK>\n${colorLock}\n${getBlock(overrides, 'identity_lock')}\n</IDENTITY_LOCK>`);
 
+  // ── MIRROR & CAMERA SYSTEM LOCK (LKW / Nutzfahrzeuge: Glasspiegel vs. MirrorCam / OptiView / CMS) ──
+  if (!interior) {
+    parts.push(`<MIRROR_SYSTEM_LOCK>\n${getBlock(overrides, 'mirror_system_lock')}\n</MIRROR_SYSTEM_LOCK>`);
+  }
+
   // ── VEHICLE SCALE LOCK ──
   if (!interior) {
     const isCustomShowroom = config.scene === 'custom-showroom';
