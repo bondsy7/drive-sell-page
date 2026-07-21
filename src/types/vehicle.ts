@@ -81,6 +81,8 @@ export interface VehicleData {
     vin?: string;
     /** Karosserietyp, z.B. "Kombi", "SUV", "Limousine". */
     bodyType?: string;
+    /** Frei editierbarer Fahrzeugtitel. Wenn gesetzt, überschreibt er die Anzeige `${brand} ${model}`. */
+    titleOverride?: string;
   };
   finance: {
     monthlyRate: string;
