@@ -1,6 +1,6 @@
 import { VehicleData } from "@/types/vehicle";
 import { parsePrice, formatPrice } from "@/lib/finance-utils";
-import { getCO2LabelHTML, getConsumptionData, buildLegalTextHTML, buildDealerAddressHTML, buildDealerFooterHTML, buildSocialLinksHTML, buildWhatsAppButtonHTML, buildWebsiteLinkHTML, getFinanceSectionTitle, calculateLeasingFactor, getVatNote, vatNoteHTML, vatNoteInline, getMonthlyRateLabel, customerTypeBadgeHTML, rateTypeSuffixHTML } from "./shared";
+import { getCO2LabelHTML, getConsumptionData, buildLegalTextHTML, buildDealerAddressHTML, buildDealerFooterHTML, buildSocialLinksHTML, buildWhatsAppButtonHTML, buildWebsiteLinkHTML, getFinanceSectionTitle, calculateLeasingFactor, getVatNote, vatNoteHTML, vatNoteInline, getMonthlyRateLabel, customerTypeBadgeHTML, rateTypeSuffixHTML, getDisplayTitle } from "./shared";
 
 export function generateAutohausHTML(data: VehicleData, imageBase64: string | null, galleryImages: string[] = []): string {
   const consumption = getConsumptionData(data);
