@@ -1,0 +1,1 @@
+SELECT public.add_credits('3b3ef9f0-11a6-418c-b839-287a3956fe5e'::uuid, 10, 'admin_adjustment'::credit_action_type, 'Manuelle Gutschrift: +10 Credits');
