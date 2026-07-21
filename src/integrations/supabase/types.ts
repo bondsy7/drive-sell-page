@@ -2810,6 +2810,30 @@ export type Database = {
           vehicle_id: string
         }[]
       }
+      get_vehicle_dashboard_page: {
+        Args: { _limit?: number; _offset?: number }
+        Returns: {
+          banners_count: number
+          brand: string
+          color: string
+          cover_fallback: string
+          cover_image_url: string
+          created_at: string
+          id: string
+          images_count: number
+          leads_count: number
+          model: string
+          projects_count: number
+          spin360_count: number
+          title: string
+          total_count: number
+          updated_at: string
+          user_id: string
+          vehicle_data: Json
+          vin: string
+          year: number
+        }[]
+      }
       has_ftp_password: { Args: never; Returns: boolean }
       has_role: {
         Args: {
