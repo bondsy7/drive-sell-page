@@ -62,11 +62,22 @@ serve(async (req) => {
         continue;
       }
 
-      throw new Error(`OutVin API error: ${response.status}`);
+      break;
     }
 
     if (!response || !response.ok) {
-      throw new Error("OutVin API failed after retries");
+      const status = response?.status ?? 503;
+      const isUpstream = !response || status === 503 || status === 429 || status >= 500;
+      return new Response(JSON.stringify({
+        error: isUpstream
+          ? "Der VIN-Dienst (OutVin) ist derzeit nicht erreichbar. Bitte in ein paar Minuten erneut versuchen."
+          : `OutVin API error: ${status}`,
+        upstream_status: status,
+        fallback: true,
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const data = await response.json();
