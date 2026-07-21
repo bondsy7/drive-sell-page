@@ -55,25 +55,25 @@ Deno.serve(async (req) => {
   // Path after /api-vehicles: e.g. [] or [":id"] or [":id", "html"]
   const subPath = pathParts.slice(pathParts.indexOf("api-vehicles") + 1);
 
-  // Helper: overlay authoritative identity fields from the linked vehicles row.
-  // Users edit title/brand/model/year/color/vin in the Vehicles table via the
-  // EditVehicleDialog. All other data (finance, dealer, tech specs, ...) is
-  // auto-saved on the projects row and MUST win over the older vehicles snapshot.
+  // Helper: merge project + linked vehicles row.
+  // The PDF/Landing-Page editor auto-saves every manual change into
+  // projects.vehicle_data. That is the single source of truth and MUST win.
+  // The vehicles-row scalar columns (brand/model/year/color/vin/title) only
+  // serve as a fallback when a field has never been touched in the editor.
   const overlayVehicle = (project: any, vehicle: any) => {
-    if (!vehicle) return project;
     const pData = (project.vehicle_data as Record<string, any>) || {};
+    const pNested = (pData.vehicle as Record<string, any>) || {};
+    if (!vehicle) return project;
     const vNested = ((vehicle.vehicle_data as Record<string, any>) || {}).vehicle || {};
-    const pNested = pData.vehicle || {};
-    // Vehicle identity: vehicles-row scalar columns win, then vehicles.vehicle_data.vehicle, then project fallback
-    const identity: Record<string, any> = { ...pNested, ...vNested };
-    if (vehicle.brand) identity.brand = vehicle.brand;
-    if (vehicle.model) identity.model = vehicle.model;
-    if (vehicle.year) identity.year = vehicle.year;
-    if (vehicle.color) identity.color = vehicle.color;
-    if (vehicle.vin) identity.vin = vehicle.vin;
+    const nonEmpty = (v: any) => v !== undefined && v !== null && String(v).trim() !== '';
+    // Priority per field: project.vehicle_data.vehicle → vehicles.vehicle_data.vehicle → vehicles.<col>
+    const identity: Record<string, any> = { ...vNested, ...pNested };
+    for (const k of ['brand', 'model', 'year', 'color', 'vin'] as const) {
+      if (!nonEmpty(identity[k]) && nonEmpty(vehicle[k])) identity[k] = vehicle[k];
+    }
     return {
       ...project,
-      title: vehicle.title || project.title,
+      title: project.title || vehicle.title,
       vehicle_data: { ...pData, vehicle: identity },
     };
   };
