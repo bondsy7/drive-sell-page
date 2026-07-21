@@ -729,21 +729,41 @@ const Index = () => {
   // future opens and HTML export always reflect the latest manual changes.
   useEffect(() => {
     if (!savedProjectId || !vehicleData || appState !== 'preview') return;
-    const t = setTimeout(() => {
-      supabase
+    const linkedVehicleId = savedVehicleId || deepLinkVehicleId;
+    const t = setTimeout(async () => {
+      const { error } = await supabase
         .from('projects')
         .update({
           vehicle_data: vehicleData as any,
           template_id: selectedTemplate,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', savedProjectId)
-        .then(({ error }) => {
-          if (error) console.warn('[autosave] project update failed', error);
-        });
+        .eq('id', savedProjectId);
+      if (error) { console.warn('[autosave] project update failed', error); return; }
+
+      // Write-through: keep the linked vehicles row in sync so both the
+      // dashboard list AND the public API (api-vehicles) return the latest
+      // edits, not the stale snapshot captured at import time.
+      if (linkedVehicleId) {
+        const v = (vehicleData as any).vehicle || {};
+        const yearNum = v.year ? Number(v.year) || null : null;
+        const { error: vErr } = await supabase
+          .from('vehicles')
+          .update({
+            brand: v.brand || null,
+            model: v.model || null,
+            year: yearNum,
+            color: v.color || null,
+            vin: v.vin || null,
+            vehicle_data: vehicleData as any,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', linkedVehicleId);
+        if (vErr) console.warn('[autosave] vehicle sync failed', vErr);
+      }
     }, 800);
     return () => clearTimeout(t);
-  }, [vehicleData, savedProjectId, selectedTemplate, appState]);
+  }, [vehicleData, savedProjectId, savedVehicleId, deepLinkVehicleId, selectedTemplate, appState]);
 
   return (
     <div className="min-h-screen bg-background">
