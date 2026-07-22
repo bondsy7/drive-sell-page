@@ -66,7 +66,6 @@ Deno.serve(async (req) => {
     const vData = ((vehicle?.vehicle_data as Record<string, any>) || {});
     const vNested = (vData.vehicle as Record<string, any>) || {};
     const nonEmpty = (v: any) => v !== undefined && v !== null && String(v).trim() !== '';
-    // Priority per field: project.vehicle_data.vehicle → vehicles.vehicle_data.vehicle → vehicles.<col>
     const identity: Record<string, any> = { ...vNested, ...pNested };
     if (vehicle) {
       for (const k of ['brand', 'model', 'year', 'color', 'vin'] as const) {
@@ -74,27 +73,38 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Titel-Regel (Source of Truth = im Tool sichtbarer Angebotstitel):
-    //   1. titleOverride aus vehicle_data.vehicle (vom Editor gesetzt)
-    //   2. sonst rekonstruiert aus dem AKTUELLEN brand/model/variant
-    //      exakt wie der Preview-Titel (keine Normalisierung).
-    //   3. projects.title / vehicles.title dienen nur als letzter Fallback,
-    //      wenn vehicle_data.vehicle leer ist.
+    // ─── Zwei getrennte Titel ─────────────────────────────────────────────
+    // 1) offerTitle  = Angebotsseiten-/Preview-H1-Titel.
+    //    EXAKT wie im Editor rekonstruiert aus brand/model/variant
+    //    (bzw. titleOverride). Keine Normalisierung.
+    // 2) dashboardTitle = kurzer Fahrzeugkarten-/Marketing-Titel
+    //    (z. B. „Volkswagen Polo Life - 145 €/mtl."). Kommt aus der
+    //    vehicles-Row (brand + model) bzw. vehicles.title.
     const override = nonEmpty(identity.titleOverride) ? String(identity.titleOverride).trim() : '';
     const brand = String(identity.brand || '').trim();
     const model = String(identity.model || '').trim();
     const variant = String(identity.variant || '').trim();
     const base = override || `${brand} ${model}`.trim();
-    let computedTitle = base;
+    let offerTitle = base;
     if (variant && !base.toLowerCase().includes(variant.toLowerCase())) {
-      computedTitle = `${base} ${variant}`.trim();
+      offerTitle = `${base} ${variant}`.trim();
     }
     const fallbackTitle = (project.title || vehicle?.title || '').trim();
-    const finalTitle = computedTitle || fallbackTitle;
+    offerTitle = offerTitle || fallbackTitle;
+
+    const vBrand = String(vehicle?.brand || '').trim();
+    const vModel = String(vehicle?.model || '').trim();
+    const vTitle = String(vehicle?.title || '').trim();
+    const dashboardTitle =
+      (vBrand || vModel ? `${vBrand} ${vModel}`.trim() : '') ||
+      vTitle ||
+      offerTitle;
 
     return {
       ...project,
-      title: finalTitle,
+      title: offerTitle,
+      offerTitle,
+      dashboardTitle,
       vehicle_data: { ...pData, vehicle: identity },
     };
   };
@@ -187,6 +197,8 @@ Deno.serve(async (req) => {
         vehicle: {
           id: merged.id,
           title: merged.title,
+          offerTitle: merged.offerTitle,
+          dashboardTitle: merged.dashboardTitle,
           template_id: merged.template_id,
           vehicle_data: merged.vehicle_data,
           main_image_url: merged.main_image_url,
