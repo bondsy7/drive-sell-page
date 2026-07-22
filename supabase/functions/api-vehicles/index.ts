@@ -84,10 +84,16 @@ Deno.serve(async (req) => {
     const brand = String(identity.brand || '').trim();
     const model = String(identity.model || '').trim();
     const variant = String(identity.variant || '').trim();
-    const base = override || `${brand} ${model}`.trim();
-    let offerTitle = base;
-    if (variant && !base.toLowerCase().includes(variant.toLowerCase())) {
-      offerTitle = `${base} ${variant}`.trim();
+    let offerTitle: string;
+    if (override) {
+      // titleOverride ist bereits der finale H1-Titel — variant NICHT anhängen.
+      offerTitle = override;
+    } else {
+      const base = `${brand} ${model}`.trim();
+      offerTitle = base;
+      if (variant && !base.toLowerCase().includes(variant.toLowerCase())) {
+        offerTitle = `${base} ${variant}`.trim();
+      }
     }
     const fallbackTitle = (project.title || vehicle?.title || '').trim();
     offerTitle = offerTitle || fallbackTitle;
