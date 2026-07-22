@@ -732,10 +732,12 @@ const Index = () => {
     if (!savedProjectId || !vehicleData || appState !== 'preview') return;
     const linkedVehicleId = savedVehicleId || deepLinkVehicleId;
     const t = setTimeout(async () => {
-      // Der im Editor sichtbare Angebotstitel ist die Source of Truth.
-      // Er wird 1:1 in projects.title UND vehicles.title geschrieben,
-      // damit /api-vehicles denselben Titel ausliefert wie das Tool zeigt.
+      // Der im Editor sichtbare Angebotstitel ist die Source of Truth für die
+      // Angebotsseite (offerTitle). Der Dashboard-/Marketing-Titel wird –
+      // getrennt davon – über `vehicle.dashboardTitleOverride` gesteuert.
       const angebotsTitle = getAngebotsTitle(vehicleData);
+      const dashboardOverride = String((vehicleData as any)?.vehicle?.dashboardTitleOverride || '').trim();
+
       const { error } = await supabase
         .from('projects')
         .update({
@@ -747,30 +749,36 @@ const Index = () => {
         .eq('id', savedProjectId);
       if (error) { console.warn('[autosave] project update failed', error); return; }
 
-      // Write-through: keep the linked vehicles row in sync so both the
-      // dashboard list AND the public API (api-vehicles) return the latest
-      // edits, not the stale snapshot captured at import time.
+      // Write-through in die vehicles-Row.
+      // Wichtig: `vehicles.brand` und `vehicles.model` bleiben die technische
+      // Basis (saubere Werte). `vehicles.title` speichert den Marketing-Titel
+      // – aber NUR wenn der Nutzer einen `dashboardTitleOverride` gesetzt hat.
+      // Ohne Override bleibt der bestehende `vehicles.title` unangetastet,
+      // damit historische Marketing-Titel (z. B. inkl. Leasing-Suffix) nicht
+      // durch Autosave verloren gehen.
       if (linkedVehicleId) {
         const v = (vehicleData as any).vehicle || {};
         const yearNum = v.year ? Number(v.year) || null : null;
+        const patch: Record<string, any> = {
+          brand: v.brand || null,
+          model: v.model || null,
+          year: yearNum,
+          color: v.color || null,
+          vin: v.vin || null,
+          vehicle_data: vehicleData as any,
+          updated_at: new Date().toISOString(),
+        };
+        if (dashboardOverride) patch.title = dashboardOverride;
         const { error: vErr } = await supabase
           .from('vehicles')
-          .update({
-            title: angebotsTitle,
-            brand: v.brand || null,
-            model: v.model || null,
-            year: yearNum,
-            color: v.color || null,
-            vin: v.vin || null,
-            vehicle_data: vehicleData as any,
-            updated_at: new Date().toISOString(),
-          })
+          .update(patch)
           .eq('id', linkedVehicleId);
         if (vErr) console.warn('[autosave] vehicle sync failed', vErr);
       }
     }, 800);
     return () => clearTimeout(t);
   }, [vehicleData, savedProjectId, savedVehicleId, deepLinkVehicleId, selectedTemplate, appState]);
+
 
   return (
     <div className="min-h-screen bg-background">

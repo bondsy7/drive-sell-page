@@ -228,7 +228,23 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
               </h1>
               <EditableField value={data.vehicle.variant || ''} onChange={(v) => updateVehicle('variant', v)}
                 className="text-sm text-gray-500 mt-1" />
+
+              {/* Marketing-/Dashboard-Titel — getrennt vom Angebots-H1 */}
+              <div className="mt-4 p-3 rounded-lg border border-dashed border-gray-300 bg-gray-50">
+                <label className="block text-[10px] uppercase tracking-[1px] text-gray-500 font-semibold mb-1">
+                  Dashboard-Titel / Fahrzeugkarte
+                </label>
+                <EditableField
+                  value={data.vehicle.dashboardTitleOverride || ''}
+                  onChange={(v) => updateVehicle('dashboardTitleOverride' as any, v)}
+                  className="text-sm font-medium text-gray-800"
+                />
+                <p className="text-[11px] text-gray-500 mt-1">
+                  Wird im Dashboard, in Listen und über die API als <code>dashboardTitle</code> ausgeliefert. Darf einen Leasing-/Preis-Suffix enthalten (z. B. „- 145 €/mtl.“). Leer lassen = Angebotstitel wird verwendet.
+                </p>
+              </div>
             </div>
+
 
             {/* Specs */}
             <div className="mt-5 grid grid-cols-2 sm:grid-cols-3 border border-[#eaeaea] rounded-xl px-5 py-4">
