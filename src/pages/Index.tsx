@@ -32,6 +32,7 @@ import { uploadImagesToStorage, saveImagesToGallery, getGalleryFolderName } from
 import { ensureVehicle, ensureVehicleAuto, mergeVehicleById, setVehicleCoverIfMissing, uploadOriginalsToVehicle } from '@/lib/vehicle-utils';
 import type { AppState, VehicleData } from '@/types/vehicle';
 import type { TemplateId } from '@/types/template';
+import { getAngebotsTitle } from '@/lib/templates/shared';
 import type { ModelTier } from '@/components/ModelSelector';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
