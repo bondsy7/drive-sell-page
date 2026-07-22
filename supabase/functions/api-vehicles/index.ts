@@ -117,26 +117,44 @@ Deno.serve(async (req) => {
 
   try {
     // GET /api-vehicles — list all vehicles
+    // Sortierung identisch zum Dashboard (get_vehicle_dashboard_page):
+    //   1) Fahrzeuge nach vehicles.updated_at DESC NULLS LAST, created_at DESC, id
+    //   2) Projekte ohne verknüpftes Fahrzeug am Ende, nach projects.updated_at DESC
     if (subPath.length === 0) {
+      const { data: vehiclesOrdered, error: vErr } = await supabase
+        .from("vehicles")
+        .select("id, title, brand, model, year, color, vin, vehicle_data, updated_at, created_at")
+        .eq("user_id", userId)
+        .order("updated_at", { ascending: false, nullsFirst: false })
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: true });
+      if (vErr) throw vErr;
+
+      const vehicleMap: Record<string, any> = {};
+      const vehicleOrder = new Map<string, number>();
+      (vehiclesOrdered || []).forEach((v: any, i: number) => {
+        vehicleMap[v.id] = v;
+        vehicleOrder.set(v.id, i);
+      });
+
       const { data: projects, error } = await supabase
         .from("projects")
         .select("id, title, template_id, vehicle_data, main_image_url, vehicle_id, created_at, updated_at")
         .eq("user_id", userId)
         .order("updated_at", { ascending: false });
-
       if (error) throw error;
 
-      const vehicleIds = Array.from(new Set((projects || []).map((p: any) => p.vehicle_id).filter(Boolean)));
-      let vehicleMap: Record<string, any> = {};
-      if (vehicleIds.length) {
-        const { data: vehicles } = await supabase
-          .from("vehicles")
-          .select("id, title, brand, model, year, color, vin, vehicle_data")
-          .in("id", vehicleIds);
-        (vehicles || []).forEach((v: any) => { vehicleMap[v.id] = v; });
-      }
+      const sorted = [...(projects || [])].sort((a: any, b: any) => {
+        const ai = a.vehicle_id ? (vehicleOrder.get(a.vehicle_id) ?? Number.MAX_SAFE_INTEGER) : Number.MAX_SAFE_INTEGER;
+        const bi = b.vehicle_id ? (vehicleOrder.get(b.vehicle_id) ?? Number.MAX_SAFE_INTEGER) : Number.MAX_SAFE_INTEGER;
+        if (ai !== bi) return ai - bi;
+        const at = new Date(a.updated_at || 0).getTime();
+        const bt = new Date(b.updated_at || 0).getTime();
+        if (at !== bt) return bt - at;
+        return String(a.id).localeCompare(String(b.id));
+      });
 
-      const merged = (projects || []).map((p: any) => {
+      const merged = sorted.map((p: any) => {
         const { vehicle_id, ...rest } = p;
         return overlayVehicle(rest, vehicleMap[vehicle_id]);
       });
