@@ -33,16 +33,24 @@ Wenn im PDF "A+++" o.ä. steht, IGNORIERE diesen Wert und leite die Klasse aus d
 - >175 g/km → G
 Bei PHEVs: co2Class = aus gewichteten g/km, co2ClassDischarged = aus entladenen g/km. Diese können stark abweichen (z.B. C gewichtet, G entladen).
 
-PLUGIN-HYBRID (PHEV) ERKENNUNG:
+HYBRID-KLASSIFIZIERUNG (WICHTIG: Unterscheide klar zwischen Plug-in-Hybrid und Mild-Hybrid!):
+
+1) PLUG-IN-HYBRID (PHEV) — extern aufladbar, isPluginHybrid=true, fuelType="Plug-in-Hybrid"
 Erkenne PHEVs anhand folgender Hinweise:
-- Begriffe: "Plug-in-Hybrid", "PHEV", "extern aufladbar", "Hybridelektrofahrzeug"
-- Kraftstoffart enthält "Strom" oder "Elektro" zusammen mit Benzin/Diesel
+- Begriffe: "Plug-in-Hybrid", "Plug-in Hybrid", "PHEV", "extern aufladbar", "Hybridelektrofahrzeug (extern aufladbar)", "OVC-HEV"
 - Es gibt ZWEI verschiedene Verbrauchs-/Emissionswerte (gewichtet + entladen)
-- Begriffe wie "gewichtet, kombiniert", "bei entladener Batterie", "EAER", "elektrische Reichweite"
-PHEVs haben:
-- Gewichtete kombinierte Werte (co2Emissions, consumptionCombined, co2Class)
-- Werte bei entladener Batterie (co2EmissionsDischarged, consumptionCombinedDischarged, co2ClassDischarged)
-- Stromverbrauch und elektrische Reichweite
+- Begriffe wie "gewichtet, kombiniert", "bei entladener Batterie", "EAER", elektrische Reichweite > 25 km
+- Stromverbrauch in kWh/100km ZUSÄTZLICH zum Verbrenner-Verbrauch
+PHEVs haben: gewichtete kombinierte Werte UND Werte bei entladener Batterie UND Stromverbrauch UND elektrische Reichweite.
+
+2) MILD-HYBRID (MHEV) — NICHT extern aufladbar, isPluginHybrid=false, fuelType="Mild-Hybrid (Benzin)" oder "Mild-Hybrid (Diesel)"
+Erkenne Mild-Hybride anhand folgender Hinweise:
+- Begriffe: "Mild-Hybrid", "Mild Hybrid", "MHEV", "48V-Hybrid", "48-Volt-Hybrid", "Micro-Hybrid", "Hybridelektrofahrzeug (nicht extern aufladbar)", "NOVC-HEV"
+- KEINE Ladebuchse, KEINE elektrische Reichweite, KEIN separater Verbrauch "bei entladener Batterie"
+- Nur EIN Verbrauchswert (kombiniert)
+Mild-Hybride verwenden das STANDARD-Verbrauchslabel (einspaltig) — NIEMALS die PHEV-Werte-Felder befüllen!
+
+Wenn nur "Hybrid" ohne weitere Angaben steht und weder Ladebuchse noch entladene Werte erwähnt sind, gehe von Mild-Hybrid aus.
 
 LEISTUNG:
 - Kombiniere PS und kW wenn beide vorhanden, z.B. "110 kW (150 PS)"
@@ -84,7 +92,7 @@ JSON-Schema:
     "condition": "Neuwagen|Gebrauchtwagen|Tageszulassung|Vorführwagen|Jahreswagen (Fahrzeugzustand)",
     "color": "string (Außenfarbe, z.B. 'Alpinweiß uni')",
     "bodyType": "string (Karosserieform, z.B. 'Kombi', 'SUV', 'Limousine', 'Coupé', 'Cabrio', 'Kleinwagen', 'Van', 'Pickup'. Leite aus Modell/Beschreibung ab wenn nicht explizit genannt.)",
-    "fuelType": "Benzin|Diesel|Elektro|Hybrid|Plug-in-Hybrid",
+    "fuelType": "Benzin|Diesel|Elektro|Mild-Hybrid (Benzin)|Mild-Hybrid (Diesel)|Plug-in-Hybrid",
     "transmission": "Automatik|Manuell|Doppelkupplungsgetriebe|CVT",
     "power": "string (z.B. '150 PS / 110 kW' oder Systemleistung bei Hybrid)",
     "features": ["NUR Highlights, max 15-20, keine 'Ohne'-Einträge, keine Trivialausstattung"],
@@ -478,11 +486,17 @@ Gib das Ergebnis als JSON zurück.`;
     for (const f of stringFields) { c[f] = c[f] || ''; }
     c.isPluginHybrid = c.isPluginHybrid || false;
 
-    // Auto-detect PHEV
+    // Auto-detect PHEV (Plug-in-Hybrid) — Mild-Hybrid darf NICHT als PHEV markiert werden
     const dtLower = (c.driveType || '').toLowerCase();
     const ftLower = (c.fuelType || '').toLowerCase();
     const vftLower = (parsed.vehicle?.fuelType || '').toLowerCase();
-    if (!c.isPluginHybrid) {
+    const isMildHybrid =
+      ftLower.includes('mild') || vftLower.includes('mild') || dtLower.includes('mild') ||
+      ftLower.includes('mhev') || vftLower.includes('mhev') ||
+      ftLower.includes('48v') || vftLower.includes('48v') ||
+      ftLower.includes('48-volt') || vftLower.includes('48-volt');
+
+    if (!c.isPluginHybrid && !isMildHybrid) {
       if (dtLower.includes('plug') || dtLower.includes('phev') ||
           ftLower.includes('plug') || ftLower.includes('phev') ||
           vftLower.includes('plug-in') || vftLower === 'plug-in-hybrid' ||
@@ -492,12 +506,29 @@ Gib das Ergebnis als JSON zurück.`;
       }
     }
 
+    // Mild-Hybrid: PHEV-spezifische Felder leeren, isPluginHybrid=false, fuelType normalisieren
+    if (isMildHybrid) {
+      c.isPluginHybrid = false;
+      c.co2EmissionsDischarged = '';
+      c.co2ClassDischarged = '';
+      c.consumptionCombinedDischarged = '';
+      c.electricRange = '';
+      c.consumptionElectric = '';
+      const combined = `${ftLower} ${vftLower} ${dtLower}`;
+      const hasDiesel = combined.includes('diesel');
+      const hasBenzin = combined.includes('benzin') || combined.includes('otto') || combined.includes('super');
+      const normalized = hasDiesel ? 'Mild-Hybrid (Diesel)' : hasBenzin ? 'Mild-Hybrid (Benzin)' : 'Mild-Hybrid';
+      c.fuelType = normalized;
+      if (parsed.vehicle) parsed.vehicle.fuelType = normalized;
+    }
+
     // Auto-derive CO₂ classes (NUR A-G, alle Plus-Klassen verwerfen!)
     const isValidCO2Class = (v: string) => /^[A-G]$/i.test((v || '').trim());
     if (!isValidCO2Class(c.co2Class) && c.co2Emissions) c.co2Class = deriveCO2Class(c.co2Emissions);
     else if (c.co2Class) c.co2Class = c.co2Class.trim().toUpperCase().replace(/\+/g, '').slice(0, 1);
     if (!isValidCO2Class(c.co2ClassDischarged) && c.co2EmissionsDischarged) c.co2ClassDischarged = deriveCO2Class(c.co2EmissionsDischarged);
     else if (c.co2ClassDischarged) c.co2ClassDischarged = c.co2ClassDischarged.trim().toUpperCase().replace(/\+/g, '').slice(0, 1);
+
 
     // Auto-derive vehicle.condition aus Erstzulassung + Kilometerstand (Pkw-EnVKV)
     if (parsed.vehicle && !parsed.vehicle.condition) {
