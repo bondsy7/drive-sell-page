@@ -490,7 +490,17 @@ Gib das Ergebnis als JSON zurück.`;
     const dtLower = (c.driveType || '').toLowerCase();
     const ftLower = (c.fuelType || '').toLowerCase();
     const vftLower = (parsed.vehicle?.fuelType || '').toLowerCase();
-    if (!c.isPluginHybrid) {
+    // Auto-detect PHEV (Plug-in-Hybrid) — Mild-Hybrid darf NICHT als PHEV markiert werden
+    const dtLower = (c.driveType || '').toLowerCase();
+    const ftLower = (c.fuelType || '').toLowerCase();
+    const vftLower = (parsed.vehicle?.fuelType || '').toLowerCase();
+    const isMildHybrid =
+      ftLower.includes('mild') || vftLower.includes('mild') || dtLower.includes('mild') ||
+      ftLower.includes('mhev') || vftLower.includes('mhev') ||
+      ftLower.includes('48v') || vftLower.includes('48v') ||
+      ftLower.includes('48-volt') || vftLower.includes('48-volt');
+
+    if (!c.isPluginHybrid && !isMildHybrid) {
       if (dtLower.includes('plug') || dtLower.includes('phev') ||
           ftLower.includes('plug') || ftLower.includes('phev') ||
           vftLower.includes('plug-in') || vftLower === 'plug-in-hybrid' ||
@@ -500,9 +510,23 @@ Gib das Ergebnis als JSON zurück.`;
       }
     }
 
-    // Auto-derive CO₂ classes (NUR A-G, alle Plus-Klassen verwerfen!)
-    const isValidCO2Class = (v: string) => /^[A-G]$/i.test((v || '').trim());
-    if (!isValidCO2Class(c.co2Class) && c.co2Emissions) c.co2Class = deriveCO2Class(c.co2Emissions);
+    // Mild-Hybrid: PHEV-spezifische Felder leeren, isPluginHybrid=false
+    if (isMildHybrid) {
+      c.isPluginHybrid = false;
+      c.co2EmissionsDischarged = '';
+      c.co2ClassDischarged = '';
+      c.consumptionCombinedDischarged = '';
+      c.electricRange = '';
+      c.consumptionElectric = '';
+      // fuelType-Normalisierung: "Mild-Hybrid (Benzin)" / "Mild-Hybrid (Diesel)"
+      const combined = `${ftLower} ${vftLower} ${dtLower}`;
+      const hasDiesel = combined.includes('diesel');
+      const hasBenzin = combined.includes('benzin') || combined.includes('otto') || combined.includes('super');
+      const normalized = hasDiesel ? 'Mild-Hybrid (Diesel)' : hasBenzin ? 'Mild-Hybrid (Benzin)' : 'Mild-Hybrid';
+      c.fuelType = normalized;
+      if (parsed.vehicle) parsed.vehicle.fuelType = normalized;
+    }
+
     else if (c.co2Class) c.co2Class = c.co2Class.trim().toUpperCase().replace(/\+/g, '').slice(0, 1);
     if (!isValidCO2Class(c.co2ClassDischarged) && c.co2EmissionsDischarged) c.co2ClassDischarged = deriveCO2Class(c.co2EmissionsDischarged);
     else if (c.co2ClassDischarged) c.co2ClassDischarged = c.co2ClassDischarged.trim().toUpperCase().replace(/\+/g, '').slice(0, 1);
