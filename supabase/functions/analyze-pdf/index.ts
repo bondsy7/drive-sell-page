@@ -33,16 +33,24 @@ Wenn im PDF "A+++" o.ä. steht, IGNORIERE diesen Wert und leite die Klasse aus d
 - >175 g/km → G
 Bei PHEVs: co2Class = aus gewichteten g/km, co2ClassDischarged = aus entladenen g/km. Diese können stark abweichen (z.B. C gewichtet, G entladen).
 
-PLUGIN-HYBRID (PHEV) ERKENNUNG:
+HYBRID-KLASSIFIZIERUNG (WICHTIG: Unterscheide klar zwischen Plug-in-Hybrid und Mild-Hybrid!):
+
+1) PLUG-IN-HYBRID (PHEV) — extern aufladbar, isPluginHybrid=true, fuelType="Plug-in-Hybrid"
 Erkenne PHEVs anhand folgender Hinweise:
-- Begriffe: "Plug-in-Hybrid", "PHEV", "extern aufladbar", "Hybridelektrofahrzeug"
-- Kraftstoffart enthält "Strom" oder "Elektro" zusammen mit Benzin/Diesel
+- Begriffe: "Plug-in-Hybrid", "Plug-in Hybrid", "PHEV", "extern aufladbar", "Hybridelektrofahrzeug (extern aufladbar)", "OVC-HEV"
 - Es gibt ZWEI verschiedene Verbrauchs-/Emissionswerte (gewichtet + entladen)
-- Begriffe wie "gewichtet, kombiniert", "bei entladener Batterie", "EAER", "elektrische Reichweite"
-PHEVs haben:
-- Gewichtete kombinierte Werte (co2Emissions, consumptionCombined, co2Class)
-- Werte bei entladener Batterie (co2EmissionsDischarged, consumptionCombinedDischarged, co2ClassDischarged)
-- Stromverbrauch und elektrische Reichweite
+- Begriffe wie "gewichtet, kombiniert", "bei entladener Batterie", "EAER", elektrische Reichweite > 25 km
+- Stromverbrauch in kWh/100km ZUSÄTZLICH zum Verbrenner-Verbrauch
+PHEVs haben: gewichtete kombinierte Werte UND Werte bei entladener Batterie UND Stromverbrauch UND elektrische Reichweite.
+
+2) MILD-HYBRID (MHEV) — NICHT extern aufladbar, isPluginHybrid=false, fuelType="Mild-Hybrid (Benzin)" oder "Mild-Hybrid (Diesel)"
+Erkenne Mild-Hybride anhand folgender Hinweise:
+- Begriffe: "Mild-Hybrid", "Mild Hybrid", "MHEV", "48V-Hybrid", "48-Volt-Hybrid", "Micro-Hybrid", "Hybridelektrofahrzeug (nicht extern aufladbar)", "NOVC-HEV"
+- KEINE Ladebuchse, KEINE elektrische Reichweite, KEIN separater Verbrauch "bei entladener Batterie"
+- Nur EIN Verbrauchswert (kombiniert)
+Mild-Hybride verwenden das STANDARD-Verbrauchslabel (einspaltig) — NIEMALS die PHEV-Werte-Felder befüllen!
+
+Wenn nur "Hybrid" ohne weitere Angaben steht und weder Ladebuchse noch entladene Werte erwähnt sind, gehe von Mild-Hybrid aus.
 
 LEISTUNG:
 - Kombiniere PS und kW wenn beide vorhanden, z.B. "110 kW (150 PS)"
