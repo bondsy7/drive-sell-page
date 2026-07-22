@@ -83,6 +83,12 @@ export interface VehicleData {
     bodyType?: string;
     /** Frei editierbarer Fahrzeugtitel. Wenn gesetzt, überschreibt er die Anzeige `${brand} ${model}`. */
     titleOverride?: string;
+    /**
+     * Marketing-/Fahrzeugkarten-Titel für Dashboard, Listen und Übersichten.
+     * Getrennt vom Angebotsseiten-H1 (`titleOverride`/`variant`). Darf einen
+     * Leasing-/Preis-Suffix enthalten (z. B. „Volkswagen Polo Life - 145 €/mtl.“).
+     */
+    dashboardTitleOverride?: string;
   };
   finance: {
     monthlyRate: string;

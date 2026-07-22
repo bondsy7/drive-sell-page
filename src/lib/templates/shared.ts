@@ -38,6 +38,18 @@ export function getAngebotsTitle(data: VehicleData): string {
 }
 
 /**
+ * Liefert den Dashboard-/Marketing-Titel. Priorität:
+ *   1. dashboardTitleOverride (frei editierbar im Editor)
+ *   2. Angebotsseiten-Titel (Fallback, wenn kein Marketing-Titel gesetzt ist)
+ */
+export function getDashboardTitle(data: VehicleData): string {
+  const v = data.vehicle || ({} as VehicleData['vehicle']);
+  const override = (v.dashboardTitleOverride || '').trim();
+  if (override) return override;
+  return getAngebotsTitle(data);
+}
+
+/**
  * Calculate leasing factor: (monthlyRate / totalPrice) * 100
  * Returns formatted string or empty if not determinable.
  */

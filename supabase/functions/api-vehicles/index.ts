@@ -75,11 +75,11 @@ Deno.serve(async (req) => {
 
     // ─── Zwei getrennte Titel ─────────────────────────────────────────────
     // 1) offerTitle  = Angebotsseiten-/Preview-H1-Titel.
-    //    EXAKT wie im Editor rekonstruiert aus brand/model/variant
-    //    (bzw. titleOverride). Keine Normalisierung.
-    // 2) dashboardTitle = kurzer Fahrzeugkarten-/Marketing-Titel
-    //    (z. B. „Volkswagen Polo Life - 145 €/mtl."). Kommt aus der
-    //    vehicles-Row (brand + model) bzw. vehicles.title.
+    //    Aus projects.vehicle_data.vehicle: titleOverride ODER brand+model+variant.
+    //    Keine Normalisierung.
+    // 2) dashboardTitle = Marketing-/Fahrzeugkarten-Titel.
+    //    Priorität: dashboardTitleOverride → vehicles.title → brand+model → offerTitle.
+    // 3) title  = Backward-Compat-Alias für offerTitle.
     const override = nonEmpty(identity.titleOverride) ? String(identity.titleOverride).trim() : '';
     const brand = String(identity.brand || '').trim();
     const model = String(identity.model || '').trim();
@@ -92,13 +92,19 @@ Deno.serve(async (req) => {
     const fallbackTitle = (project.title || vehicle?.title || '').trim();
     offerTitle = offerTitle || fallbackTitle;
 
+    const dashboardOverride = nonEmpty(identity.dashboardTitleOverride)
+      ? String(identity.dashboardTitleOverride).trim()
+      : '';
+    const vTitle = String(vehicle?.title || '').trim();
     const vBrand = String(vehicle?.brand || '').trim();
     const vModel = String(vehicle?.model || '').trim();
-    const vTitle = String(vehicle?.title || '').trim();
+    const vBrandModel = (vBrand || vModel) ? `${vBrand} ${vModel}`.trim() : '';
     const dashboardTitle =
-      (vBrand || vModel ? `${vBrand} ${vModel}`.trim() : '') ||
+      dashboardOverride ||
       vTitle ||
+      vBrandModel ||
       offerTitle;
+
 
     return {
       ...project,
