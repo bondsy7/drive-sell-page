@@ -32,6 +32,7 @@ import { uploadImagesToStorage, saveImagesToGallery, getGalleryFolderName } from
 import { ensureVehicle, ensureVehicleAuto, mergeVehicleById, setVehicleCoverIfMissing, uploadOriginalsToVehicle } from '@/lib/vehicle-utils';
 import type { AppState, VehicleData } from '@/types/vehicle';
 import type { TemplateId } from '@/types/template';
+import { getAngebotsTitle } from '@/lib/templates/shared';
 import type { ModelTier } from '@/components/ModelSelector';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -731,9 +732,14 @@ const Index = () => {
     if (!savedProjectId || !vehicleData || appState !== 'preview') return;
     const linkedVehicleId = savedVehicleId || deepLinkVehicleId;
     const t = setTimeout(async () => {
+      // Der im Editor sichtbare Angebotstitel ist die Source of Truth.
+      // Er wird 1:1 in projects.title UND vehicles.title geschrieben,
+      // damit /api-vehicles denselben Titel ausliefert wie das Tool zeigt.
+      const angebotsTitle = getAngebotsTitle(vehicleData);
       const { error } = await supabase
         .from('projects')
         .update({
+          title: angebotsTitle,
           vehicle_data: vehicleData as any,
           template_id: selectedTemplate,
           updated_at: new Date().toISOString(),
@@ -750,6 +756,7 @@ const Index = () => {
         const { error: vErr } = await supabase
           .from('vehicles')
           .update({
+            title: angebotsTitle,
             brand: v.brand || null,
             model: v.model || null,
             year: yearNum,
