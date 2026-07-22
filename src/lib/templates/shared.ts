@@ -14,6 +14,30 @@ export function getDisplayTitle(data: VehicleData): string {
 }
 
 /**
+ * Liefert den vollständigen Angebots-/Preview-Titel EXAKT so, wie er im
+ * Editor sichtbar ist ("brand model variant"). Diese Funktion ist die
+ * SOURCE OF TRUTH für den Titel in projects.title, vehicles.title und der
+ * öffentlichen API (api-vehicles → vehicle.title).
+ *
+ * Regeln (bewusst KEINE Normalisierung):
+ * - Wenn `titleOverride` gesetzt ist, wird dieser als Basis verwendet.
+ * - Sonst wird `brand model` verwendet.
+ * - Zusätzlich wird `variant` angehängt, sofern nicht bereits enthalten.
+ * - Es wird nichts umgeschrieben: "ID.Polo" bleibt "ID.Polo",
+ *   "Automatik" bleibt "Automatik", "- 255 €/mtl." bleibt erhalten.
+ */
+export function getAngebotsTitle(data: VehicleData): string {
+  const v = data.vehicle || ({} as VehicleData['vehicle']);
+  const override = (v.titleOverride || '').trim();
+  const base = override || `${v.brand || ''} ${v.model || ''}`.trim();
+  const variant = (v.variant || '').trim();
+  if (!variant) return base;
+  // Variante nur anhängen, wenn sie im Basistitel noch nicht enthalten ist.
+  if (base.toLowerCase().includes(variant.toLowerCase())) return base;
+  return `${base} ${variant}`.trim();
+}
+
+/**
  * Calculate leasing factor: (monthlyRate / totalPrice) * 100
  * Returns formatted string or empty if not determinable.
  */
