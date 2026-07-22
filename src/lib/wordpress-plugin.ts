@@ -154,7 +154,16 @@ function autohaus_ai_sync_vehicles() {
     $synced = 0;
     foreach ($body['vehicles'] as $vehicle) {
         $external_id = $vehicle['id'];
-        $title = $vehicle['title'] ?? 'Fahrzeug';
+        // Titel-Logik (Autohaus.AI API):
+        //  - offerTitle    = Angebotsseiten-/Detail-H1-Titel  (technisch: Marke + Modell + Variante)
+        //  - dashboardTitle = Fahrzeugkarten-/Marketing-Titel (darf Leasing-Suffix enthalten, z. B. "… - 145 €/mtl.")
+        //  - title         = Backward-Compat-Alias von offerTitle
+        //
+        // Regel für WordPress:
+        //  - Detail-/Angebotsseite (post_title):        offerTitle bzw. title
+        //  - Listen-/Kartenansicht (Meta _vehicle_card_title): dashboardTitle (Fallback offerTitle)
+        $offer_title     = $vehicle['offerTitle']     ?? $vehicle['title'] ?? 'Fahrzeug';
+        $dashboard_title = $vehicle['dashboardTitle'] ?? $offer_title;
         $vehicle_data = $vehicle['vehicle_data'] ?? [];
         $image_url = $vehicle['main_image_url'] ?? '';
 
@@ -177,7 +186,8 @@ function autohaus_ai_sync_vehicles() {
         }
 
         $post_data = [
-            'post_title'   => sanitize_text_field($title),
+            // Detail-/Angebotsseite verwendet offerTitle (= vehicle.title)
+            'post_title'   => sanitize_text_field($offer_title),
             'post_content' => $html_content,
             'post_type'    => 'fahrzeug_angebot',
             'post_status'  => 'publish',
@@ -193,17 +203,22 @@ function autohaus_ai_sync_vehicles() {
 
         if ($post_id && !is_wp_error($post_id)) {
             update_post_meta($post_id, '_autohaus_ai_id', $external_id);
-            
+
             // Store vehicle data as meta
             $v = $vehicle_data['vehicle'] ?? [];
             $meta_fields = [
-                '_vehicle_brand'    => $v['brand'] ?? '',
-                '_vehicle_model'    => $v['model'] ?? '',
-                '_vehicle_price'    => $v['price'] ?? '',
-                '_vehicle_year'     => $v['year'] ?? $v['ez'] ?? '',
-                '_vehicle_mileage'  => $v['mileage'] ?? $v['km'] ?? '',
-                '_vehicle_fuel'     => $v['fuelType'] ?? $v['fuel'] ?? '',
-                '_vehicle_power'    => $v['power'] ?? '',
+                '_vehicle_brand'      => $v['brand'] ?? '',
+                '_vehicle_model'      => $v['model'] ?? '',
+                '_vehicle_price'      => $v['price'] ?? '',
+                '_vehicle_year'       => $v['year'] ?? $v['ez'] ?? '',
+                '_vehicle_mileage'    => $v['mileage'] ?? $v['km'] ?? '',
+                '_vehicle_fuel'       => $v['fuelType'] ?? $v['fuel'] ?? '',
+                '_vehicle_power'      => $v['power'] ?? '',
+                // Getrennte Titel für Themes/Templates:
+                //  - _vehicle_offer_title: Angebotsseiten-H1 (technisch)
+                //  - _vehicle_card_title:  Fahrzeugkarten-/Listen-Titel (Marketing, inkl. Leasing-Suffix)
+                '_vehicle_offer_title' => $offer_title,
+                '_vehicle_card_title'  => $dashboard_title,
             ];
             foreach ($meta_fields as $key => $value) {
                 update_post_meta($post_id, $key, sanitize_text_field($value));
@@ -211,12 +226,13 @@ function autohaus_ai_sync_vehicles() {
 
             // Download and set featured image
             if ($image_url && !has_post_thumbnail($post_id)) {
-                autohaus_ai_set_featured_image($post_id, $image_url, $title);
+                autohaus_ai_set_featured_image($post_id, $image_url, $offer_title);
             }
 
             $synced++;
         }
     }
+
 
     return ['success' => true, 'message' => $synced . ' Fahrzeug(e) synchronisiert.'];
 }
