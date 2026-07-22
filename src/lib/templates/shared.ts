@@ -29,10 +29,11 @@ export function getDisplayTitle(data: VehicleData): string {
 export function getAngebotsTitle(data: VehicleData): string {
   const v = data.vehicle || ({} as VehicleData['vehicle']);
   const override = (v.titleOverride || '').trim();
-  const base = override || `${v.brand || ''} ${v.model || ''}`.trim();
+  // titleOverride ist der finale H1-Titel — variant NICHT anhängen.
+  if (override) return override;
+  const base = `${v.brand || ''} ${v.model || ''}`.trim();
   const variant = (v.variant || '').trim();
   if (!variant) return base;
-  // Variante nur anhängen, wenn sie im Basistitel noch nicht enthalten ist.
   if (base.toLowerCase().includes(variant.toLowerCase())) return base;
   return `${base} ${variant}`.trim();
 }
