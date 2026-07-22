@@ -92,7 +92,7 @@ JSON-Schema:
     "condition": "Neuwagen|Gebrauchtwagen|Tageszulassung|Vorführwagen|Jahreswagen (Fahrzeugzustand)",
     "color": "string (Außenfarbe, z.B. 'Alpinweiß uni')",
     "bodyType": "string (Karosserieform, z.B. 'Kombi', 'SUV', 'Limousine', 'Coupé', 'Cabrio', 'Kleinwagen', 'Van', 'Pickup'. Leite aus Modell/Beschreibung ab wenn nicht explizit genannt.)",
-    "fuelType": "Benzin|Diesel|Elektro|Hybrid|Plug-in-Hybrid",
+    "fuelType": "Benzin|Diesel|Elektro|Mild-Hybrid (Benzin)|Mild-Hybrid (Diesel)|Plug-in-Hybrid",
     "transmission": "Automatik|Manuell|Doppelkupplungsgetriebe|CVT",
     "power": "string (z.B. '150 PS / 110 kW' oder Systemleistung bei Hybrid)",
     "features": ["NUR Highlights, max 15-20, keine 'Ohne'-Einträge, keine Trivialausstattung"],
