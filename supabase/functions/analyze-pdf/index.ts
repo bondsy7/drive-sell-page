@@ -486,10 +486,6 @@ Gib das Ergebnis als JSON zurück.`;
     for (const f of stringFields) { c[f] = c[f] || ''; }
     c.isPluginHybrid = c.isPluginHybrid || false;
 
-    // Auto-detect PHEV
-    const dtLower = (c.driveType || '').toLowerCase();
-    const ftLower = (c.fuelType || '').toLowerCase();
-    const vftLower = (parsed.vehicle?.fuelType || '').toLowerCase();
     // Auto-detect PHEV (Plug-in-Hybrid) — Mild-Hybrid darf NICHT als PHEV markiert werden
     const dtLower = (c.driveType || '').toLowerCase();
     const ftLower = (c.fuelType || '').toLowerCase();
@@ -510,7 +506,7 @@ Gib das Ergebnis als JSON zurück.`;
       }
     }
 
-    // Mild-Hybrid: PHEV-spezifische Felder leeren, isPluginHybrid=false
+    // Mild-Hybrid: PHEV-spezifische Felder leeren, isPluginHybrid=false, fuelType normalisieren
     if (isMildHybrid) {
       c.isPluginHybrid = false;
       c.co2EmissionsDischarged = '';
@@ -518,7 +514,6 @@ Gib das Ergebnis als JSON zurück.`;
       c.consumptionCombinedDischarged = '';
       c.electricRange = '';
       c.consumptionElectric = '';
-      // fuelType-Normalisierung: "Mild-Hybrid (Benzin)" / "Mild-Hybrid (Diesel)"
       const combined = `${ftLower} ${vftLower} ${dtLower}`;
       const hasDiesel = combined.includes('diesel');
       const hasBenzin = combined.includes('benzin') || combined.includes('otto') || combined.includes('super');
@@ -527,9 +522,13 @@ Gib das Ergebnis als JSON zurück.`;
       if (parsed.vehicle) parsed.vehicle.fuelType = normalized;
     }
 
+    // Auto-derive CO₂ classes (NUR A-G, alle Plus-Klassen verwerfen!)
+    const isValidCO2Class = (v: string) => /^[A-G]$/i.test((v || '').trim());
+    if (!isValidCO2Class(c.co2Class) && c.co2Emissions) c.co2Class = deriveCO2Class(c.co2Emissions);
     else if (c.co2Class) c.co2Class = c.co2Class.trim().toUpperCase().replace(/\+/g, '').slice(0, 1);
     if (!isValidCO2Class(c.co2ClassDischarged) && c.co2EmissionsDischarged) c.co2ClassDischarged = deriveCO2Class(c.co2EmissionsDischarged);
     else if (c.co2ClassDischarged) c.co2ClassDischarged = c.co2ClassDischarged.trim().toUpperCase().replace(/\+/g, '').slice(0, 1);
+
 
     // Auto-derive vehicle.condition aus Erstzulassung + Kilometerstand (Pkw-EnVKV)
     if (parsed.vehicle && !parsed.vehicle.condition) {
