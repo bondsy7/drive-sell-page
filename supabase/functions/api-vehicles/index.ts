@@ -196,7 +196,8 @@ Deno.serve(async (req) => {
 
       const merged = sorted.map((p: any) => {
         const { vehicle_id, ...rest } = p;
-        return overlayVehicle(rest, vehicleMap[vehicle_id]);
+        const m = overlayVehicle(rest, vehicleMap[vehicle_id]);
+        return { ...m, legalNotice: computeLegalNotice(m.vehicle_data) };
       });
 
       return new Response(JSON.stringify({ vehicles: merged }), {
