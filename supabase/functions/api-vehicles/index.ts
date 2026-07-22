@@ -197,6 +197,8 @@ Deno.serve(async (req) => {
         vehicle: {
           id: merged.id,
           title: merged.title,
+          offerTitle: merged.offerTitle,
+          dashboardTitle: merged.dashboardTitle,
           template_id: merged.template_id,
           vehicle_data: merged.vehicle_data,
           main_image_url: merged.main_image_url,
