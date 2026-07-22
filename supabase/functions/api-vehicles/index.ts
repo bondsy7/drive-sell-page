@@ -266,6 +266,7 @@ Deno.serve(async (req) => {
           dashboardTitle: merged.dashboardTitle,
           template_id: merged.template_id,
           vehicle_data: merged.vehicle_data,
+          legalNotice: computeLegalNotice(merged.vehicle_data),
           main_image_url: merged.main_image_url,
           images: (images || []).map((img: any) => ({
             id: img.id,
