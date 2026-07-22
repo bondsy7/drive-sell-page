@@ -63,17 +63,38 @@ Deno.serve(async (req) => {
   const overlayVehicle = (project: any, vehicle: any) => {
     const pData = (project.vehicle_data as Record<string, any>) || {};
     const pNested = (pData.vehicle as Record<string, any>) || {};
-    if (!vehicle) return project;
-    const vNested = ((vehicle.vehicle_data as Record<string, any>) || {}).vehicle || {};
+    const vData = ((vehicle?.vehicle_data as Record<string, any>) || {});
+    const vNested = (vData.vehicle as Record<string, any>) || {};
     const nonEmpty = (v: any) => v !== undefined && v !== null && String(v).trim() !== '';
     // Priority per field: project.vehicle_data.vehicle → vehicles.vehicle_data.vehicle → vehicles.<col>
     const identity: Record<string, any> = { ...vNested, ...pNested };
-    for (const k of ['brand', 'model', 'year', 'color', 'vin'] as const) {
-      if (!nonEmpty(identity[k]) && nonEmpty(vehicle[k])) identity[k] = vehicle[k];
+    if (vehicle) {
+      for (const k of ['brand', 'model', 'year', 'color', 'vin'] as const) {
+        if (!nonEmpty(identity[k]) && nonEmpty(vehicle[k])) identity[k] = vehicle[k];
+      }
     }
+
+    // Titel-Regel (Source of Truth = im Tool sichtbarer Angebotstitel):
+    //   1. titleOverride aus vehicle_data.vehicle (vom Editor gesetzt)
+    //   2. sonst rekonstruiert aus dem AKTUELLEN brand/model/variant
+    //      exakt wie der Preview-Titel (keine Normalisierung).
+    //   3. projects.title / vehicles.title dienen nur als letzter Fallback,
+    //      wenn vehicle_data.vehicle leer ist.
+    const override = nonEmpty(identity.titleOverride) ? String(identity.titleOverride).trim() : '';
+    const brand = String(identity.brand || '').trim();
+    const model = String(identity.model || '').trim();
+    const variant = String(identity.variant || '').trim();
+    const base = override || `${brand} ${model}`.trim();
+    let computedTitle = base;
+    if (variant && !base.toLowerCase().includes(variant.toLowerCase())) {
+      computedTitle = `${base} ${variant}`.trim();
+    }
+    const fallbackTitle = (project.title || vehicle?.title || '').trim();
+    const finalTitle = computedTitle || fallbackTitle;
+
     return {
       ...project,
-      title: project.title || vehicle.title,
+      title: finalTitle,
       vehicle_data: { ...pData, vehicle: identity },
     };
   };
