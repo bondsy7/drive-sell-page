@@ -121,6 +121,40 @@ Deno.serve(async (req) => {
     };
   };
 
+  // Bankangaben / Pflichthinweise — kategorieabhängig aus dealer.* zusammensetzen.
+  // Quelle: vehicle_data.dealer.{leasingLegalText, financingLegalText, defaultLegalText,
+  // leasingBank, financingBank}. Identisch zur Tool-Preview (buildLegalTextHTML).
+  const computeLegalNotice = (vd: any) => {
+    const dealer = (vd?.dealer as Record<string, any>) || {};
+    const category = String(vd?.category || '').toLowerCase();
+    const isLeasing = category.includes('leasing');
+    const isFinancing = category.includes('finanzierung') || category.includes('kredit');
+
+    let type: 'leasing' | 'financing' | 'default' | null = null;
+    let text = '';
+    let bank = '';
+    if (isLeasing && dealer.leasingLegalText) {
+      type = 'leasing';
+      text = String(dealer.leasingLegalText || '');
+      bank = String(dealer.leasingBank || '');
+    } else if (isFinancing && dealer.financingLegalText) {
+      type = 'financing';
+      text = String(dealer.financingLegalText || '');
+      bank = String(dealer.financingBank || '');
+    } else if (dealer.defaultLegalText) {
+      type = 'default';
+      text = String(dealer.defaultLegalText || '');
+    }
+    if (!text && !bank) return null;
+    return {
+      label: 'Bankangaben / Pflichthinweise',
+      type,
+      bank: bank || null,
+      text,               // Zeilenumbrüche (\n) bleiben erhalten — nicht kürzen.
+      footnoteMarker: (isLeasing || isFinancing) ? '1' : null,
+    };
+  };
+
   try {
     // GET /api-vehicles — list all vehicles
     // Sortierung identisch zum Dashboard (get_vehicle_dashboard_page):
@@ -162,7 +196,8 @@ Deno.serve(async (req) => {
 
       const merged = sorted.map((p: any) => {
         const { vehicle_id, ...rest } = p;
-        return overlayVehicle(rest, vehicleMap[vehicle_id]);
+        const m = overlayVehicle(rest, vehicleMap[vehicle_id]);
+        return { ...m, legalNotice: computeLegalNotice(m.vehicle_data) };
       });
 
       return new Response(JSON.stringify({ vehicles: merged }), {
@@ -231,6 +266,7 @@ Deno.serve(async (req) => {
           dashboardTitle: merged.dashboardTitle,
           template_id: merged.template_id,
           vehicle_data: merged.vehicle_data,
+          legalNotice: computeLegalNotice(merged.vehicle_data),
           main_image_url: merged.main_image_url,
           images: (images || []).map((img: any) => ({
             id: img.id,
