@@ -60,7 +60,7 @@ export const CLEANUP_OPTIONS = [
   {
     value: 'trailer',
     label: 'Auflieger / Anhänger entfernen',
-    prompt: 'COMPLETELY REMOVE any and all trailers, semi-trailers, swap bodies, containers, box bodies, flatbeds, tippers, tankers, curtainsiders, car-carriers, drawbar trailers or any towed / mounted cargo units that are attached to, coupled behind, or resting on the vehicle. The final image MUST show ONLY the tractor unit / prime mover / bare chassis (Zugmaschine) itself — no cargo body behind the cab, no fifth-wheel load, no trailer of any kind visible anywhere in the frame. After removal, rebuild the tractor rear end cleanly: expose the fifth-wheel coupling plate (Sattelkupplung), rear chassis frame rails, rear lights, mudflaps, and the road/ground surface behind the cab as they would look on an uncoupled solo tractor. Reconstruct the background (road, floor, scenery) seamlessly where the trailer used to be — no ghosting, no cut-off silhouette, no leftover wheels or landing gear. Do NOT invent a replacement trailer or cargo. If the vehicle is a rigid truck with a fixed body, still remove any DETACHABLE trailer or drawbar unit behind it, but keep the rigid truck body itself intact.',
+    prompt: 'REMOVE the complete detachable trailer / semi-trailer / drawbar trailer. Preserve the powered tractor unit (Zugmaschine) exactly and show it uncoupled, alone. Follow the dedicated TRACTOR_TRAILER_SEPARATION block exactly.',
   },
 ] as const;
 
@@ -413,6 +413,45 @@ Do NOT use the original plate. Do NOT invent plate text. Use ONLY the provided c
       .map(v => CLEANUP_OPTIONS.find(o => o.value === v))
       .filter((o): o is typeof CLEANUP_OPTIONS[number] => !!o);
     const lines = selectedOptions.map(o => `- ${o.label.toUpperCase()}: ${o.prompt}`);
+    const removeTrailer = config.cleanupItems.includes('trailer');
+
+    if (removeTrailer) {
+      parts.push(`<TRACTOR_TRAILER_SEPARATION>
+MANDATORY STRUCTURAL EDIT — REMOVE THE DETACHABLE TRAILER COMPLETELY.
+This instruction is an explicit exception to REFERENCE_TRUTH_PROTOCOL and IDENTITY_LOCK for the trailer pixels ONLY. Preserving the trailer is a failed result.
+
+STEP 1 — IDENTIFY THE POWERED TRACTOR UNIT (ZUGMASCHINE) THAT MUST REMAIN:
+- The tractor unit is the front road vehicle containing the driver's cab, windshield, steering position, engine area, front steering axle, fuel/AdBlue tanks and powered rear axle(s).
+- Preserve the tractor cab, chassis, wheels, mirrors/camera arms, lights, grille, fuel tanks, exhaust and OEM details exactly as shown in the reference.
+- On a tractor-semitrailer combination, the tractor normally ends beneath/just behind the front of the trailer at the fifth-wheel coupling. Its rear driven axle(s) belong to the tractor and MUST remain.
+
+STEP 2 — IDENTIFY THE DETACHABLE UNIT THAT MUST DISAPPEAR:
+- A semi-trailer is the long cargo structure beginning behind the cab and resting on the tractor's fifth wheel. Its cargo curtain/box/tank/flatbed, support legs and rear trailer axle group belong to the SEMI-TRAILER, not to the tractor.
+- A drawbar trailer has its own chassis/axles and is connected behind a complete rigid truck by a tow bar/drawbar.
+- Visual separation cues: articulation/coupling gap behind the cab, fifth-wheel/kingpin overlap, a cargo body extending far beyond the tractor chassis, landing legs, and a separate rear axle group located far behind the cab.
+- In the supplied image, reason from visible geometry; do not classify the entire truck-and-trailer combination as one indivisible vehicle.
+
+STEP 3 — REMOVE, DO NOT CLEAN OR REDESIGN:
+- Delete EVERY pixel belonging to the detachable trailer/semi-trailer/drawbar unit: cargo body, blue or colored curtain/box, roof, chassis, underrun bars, trailer axle group and wheels, mudguards, landing legs, rear doors, lights, plate, cables and shadows/reflections caused by it.
+- Removal starts at the kingpin/fifth-wheel coupling boundary for a semi-trailer, or at the drawbar coupling for a conventional trailer.
+- Do NOT merely remove its advertising, recolor it, shorten it, make it white/neutral, turn it into a box body, or generate a replacement cargo unit.
+
+STEP 4 — RECONSTRUCT THE NOW-VISIBLE TRACTOR AND SCENE:
+- Render a physically plausible uncoupled solo tractor: visible fifth-wheel coupling plate, clean rear chassis frame, catwalk/lines where supported by the reference, tractor rear axle(s), rear lights and mudflaps.
+- Reconstruct the selected scene's floor, building/background and open space continuously through the entire area formerly hidden by the trailer.
+- Recalculate the tractor's contact shadow only. There must be no trailer-shaped shadow, reflection, ghost outline, cut edge, wheel, support leg or floating fragment.
+- Keep the original camera angle and tractor scale; center/reframe the remaining tractor naturally if needed without cropping it.
+
+RIGID-TRUCK SAFETY RULE:
+- If there is NO articulation/coupling and the cargo body is permanently mounted on the same powered chassis as the cab, it is a rigid truck body and must remain. Remove only a separately coupled trailer behind it.
+
+FINAL BINARY CHECK BEFORE OUTPUT:
+1. Is the driver's cab and powered tractor chassis intact? YES.
+2. Is the fifth wheel / uncoupled rear tractor area plausible? YES.
+3. Is every part, wheel, shadow and reflection of the detachable trailer gone? YES.
+If answer 3 is NO, the image is invalid: redo the removal before returning it.
+</TRACTOR_TRAILER_SEPARATION>`);
+    }
 
     // Map cleanup option value -> detected kind (keep in sync with detect-branding.ts)
     const CLEANUP_TO_KIND: Record<string, string> = {
