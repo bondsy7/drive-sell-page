@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel, SelectSeparator } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -273,9 +273,22 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
             <SelectValue placeholder="Bitte wählen *" />
           </SelectTrigger>
           <SelectContent>
-            {SCENE_OPTIONS.map(opt => (
+            {SCENE_OPTIONS.filter(o => (o as any).group === 'none').map(opt => (
               <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
             ))}
+            <SelectGroup>
+              <SelectLabel>Innen</SelectLabel>
+              {SCENE_OPTIONS.filter(o => (o as any).group === 'indoor').map(opt => (
+                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+              ))}
+            </SelectGroup>
+            <SelectSeparator />
+            <SelectGroup>
+              <SelectLabel>Außen</SelectLabel>
+              {SCENE_OPTIONS.filter(o => (o as any).group === 'outdoor').map(opt => (
+                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+              ))}
+            </SelectGroup>
           </SelectContent>
         </Select>
 
