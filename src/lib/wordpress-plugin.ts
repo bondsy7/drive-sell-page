@@ -166,6 +166,10 @@ function autohaus_ai_sync_vehicles() {
         $dashboard_title = $vehicle['dashboardTitle'] ?? $offer_title;
         $vehicle_data = $vehicle['vehicle_data'] ?? [];
         $image_url = $vehicle['main_image_url'] ?? '';
+        $internal_number = sanitize_text_field($vehicle['internalNumber'] ?? ($vehicle_data['vehicle']['internalNumber'] ?? ''));
+        if (stripos($internal_number, 'NOVIN-') === 0) {
+            $internal_number = '';
+        }
 
         // Check if already exists
         $existing = get_posts([
@@ -214,6 +218,8 @@ function autohaus_ai_sync_vehicles() {
                 '_vehicle_mileage'    => $v['mileage'] ?? $v['km'] ?? '',
                 '_vehicle_fuel'       => $v['fuelType'] ?? $v['fuel'] ?? '',
                 '_vehicle_power'      => $v['power'] ?? '',
+                '_vehicle_internal_number' => $internal_number,
+                '_vehicle_internalNumber' => $internal_number,
                 // Getrennte Titel für Themes/Templates:
                 //  - _vehicle_offer_title: Angebotsseiten-H1 (technisch)
                 //  - _vehicle_card_title:  Fahrzeugkarten-/Listen-Titel (Marketing, inkl. Leasing-Suffix)

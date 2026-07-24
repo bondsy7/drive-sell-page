@@ -50,6 +50,14 @@ const KlassischEditor: React.FC<TemplateEditorProps> = ({
           <EditableField value={(data.vehicle.titleOverride ?? `${data.vehicle.brand} ${data.vehicle.model}`.trim())} onChange={(v) => updateVehicle('titleOverride' as any, v)} className="font-display text-3xl font-bold text-foreground" />
         </h1>
         <EditableField value={data.vehicle.variant || ''} onChange={(v) => updateVehicle('variant', v)} className="text-sm italic text-muted-foreground mt-1" />
+        <div className="mt-3 inline-flex flex-col items-center rounded-lg border border-dashed border-border bg-muted/30 px-4 py-2">
+          <span className="text-[10px] uppercase tracking-[2px] text-muted-foreground">Interne Fahrzeugnummer / Bestandsnummer</span>
+          <EditableField
+            value={(data.vehicle as any).internalNumber || ''}
+            onChange={(v) => updateVehicle('internalNumber' as any, v)}
+            className="text-sm font-semibold text-foreground text-center"
+          />
+        </div>
         <div className="mt-3">
           <EditableField value={data.finance.totalPrice} onChange={(v) => updateFinance('totalPrice', v)} className="font-display text-2xl font-semibold text-primary" suffix="€" />
         </div>
@@ -101,6 +109,7 @@ const KlassischEditor: React.FC<TemplateEditorProps> = ({
                   <td className="py-2.5"><FuelTypeDropdown value={data.vehicle.fuelType} onChange={updateFuelType} /></td>
                 </tr>
                 <Row label="Farbe" value={data.vehicle.color} onChange={(v) => updateVehicle('color', v)} />
+                <Row label="Interne Fahrzeugnummer" value={(data.vehicle as any).internalNumber || ''} onChange={(v) => updateVehicle('internalNumber' as any, v)} />
                 <Row label="Baujahr" value={String(data.vehicle.year || '–')} onChange={() => {}} />
                 {data.vehicle.vin && <Row label="VIN" value={data.vehicle.vin} onChange={(v) => updateVehicle('vin', v)} />}
               </tbody>

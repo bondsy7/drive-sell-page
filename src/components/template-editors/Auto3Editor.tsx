@@ -229,6 +229,17 @@ const Auto3Editor: React.FC<TemplateEditorProps> = ({
               <EditableField value={data.vehicle.variant || ''} onChange={(v) => updateVehicle('variant', v)}
                 className="text-sm text-gray-500 mt-1" />
 
+              <div className="mt-4 p-3 rounded-lg border border-dashed border-gray-300 bg-gray-50">
+                <label className="block text-[10px] uppercase tracking-[1px] text-gray-500 font-semibold mb-1">
+                  Interne Fahrzeugnummer / Bestandsnummer
+                </label>
+                <EditableField
+                  value={(data.vehicle as any).internalNumber || ''}
+                  onChange={(v) => updateVehicle('internalNumber' as any, v)}
+                  className="text-sm font-semibold text-gray-800"
+                />
+              </div>
+
               {/* Marketing-/Dashboard-Titel — getrennt vom Angebots-H1 */}
               <div className="mt-4 p-3 rounded-lg border border-dashed border-gray-300 bg-gray-50">
                 <label className="block text-[10px] uppercase tracking-[1px] text-gray-500 font-semibold mb-1">
