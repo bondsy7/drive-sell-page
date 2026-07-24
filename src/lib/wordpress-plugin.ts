@@ -219,6 +219,7 @@ function autohaus_ai_sync_vehicles() {
                 '_vehicle_fuel'       => $v['fuelType'] ?? $v['fuel'] ?? '',
                 '_vehicle_power'      => $v['power'] ?? '',
                 '_vehicle_internal_number' => $internal_number,
+                '_vehicle_internalNumber' => $internal_number,
                 // Getrennte Titel für Themes/Templates:
                 //  - _vehicle_offer_title: Angebotsseiten-H1 (technisch)
                 //  - _vehicle_card_title:  Fahrzeugkarten-/Listen-Titel (Marketing, inkl. Leasing-Suffix)
