@@ -95,6 +95,7 @@ export interface VehicleData {
      * `vehicle.vehicle_data.vehicle.internalNumber` bzw. `vehicle.internalNumber` ausgeliefert.
      */
     internalNumber?: string;
+  };
   finance: {
     monthlyRate: string;
     downPayment: string;
