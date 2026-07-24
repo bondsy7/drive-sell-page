@@ -65,22 +65,22 @@ export const CLEANUP_OPTIONS = [
 ] as const;
 
 export const SCENE_OPTIONS = [
-  { value: 'none', label: 'Keine Änderung am Bild' },
-  { value: 'showroom-1', label: 'Showroom 1 – Modern Hell', preview: '/images/showrooms/showroom-1.webp' },
-  { value: 'showroom-2', label: 'Showroom 2 – Elegant', preview: '/images/showrooms/showroom-2.webp' },
-  { value: 'showroom-3', label: 'Showroom 3 – Glasfront', preview: '/images/showrooms/showroom-3.webp' },
-  { value: 'custom-showroom', label: 'Eigener Showroom' },
-  { value: 'forest', label: 'Wald' },
-  { value: 'mountain', label: 'Berglandschaft' },
-  { value: 'city', label: 'Stadtkulisse' },
-  { value: 'street', label: 'Straße' },
-  { value: 'beach', label: 'Strand' },
-  { value: 'desert', label: 'Wüste' },
-  { value: 'night-city', label: 'Stadt bei Nacht' },
-  { value: 'parking-garage', label: 'Tiefgarage / Parkhaus' },
-  { value: 'racetrack', label: 'Rennstrecke' },
-  { value: 'mansion', label: 'Villa / Anwesen' },
-  { value: 'dealer-lot', label: 'Fahrzeugplatz' },
+  { value: 'none', label: 'Keine Änderung am Bild', group: 'none' as const },
+  { value: 'showroom-1', label: 'Showroom 1 – Modern Hell', preview: '/images/showrooms/showroom-1.webp', group: 'indoor' as const },
+  { value: 'showroom-2', label: 'Showroom 2 – Elegant', preview: '/images/showrooms/showroom-2.webp', group: 'indoor' as const },
+  { value: 'showroom-3', label: 'Showroom 3 – Glasfront', preview: '/images/showrooms/showroom-3.webp', group: 'indoor' as const },
+  { value: 'custom-showroom', label: 'Eigener Showroom', group: 'indoor' as const },
+  { value: 'parking-garage', label: 'Tiefgarage / Parkhaus', group: 'indoor' as const },
+  { value: 'forest', label: 'Wald', group: 'outdoor' as const },
+  { value: 'mountain', label: 'Berglandschaft', group: 'outdoor' as const },
+  { value: 'city', label: 'Stadtkulisse', group: 'outdoor' as const },
+  { value: 'street', label: 'Straße', group: 'outdoor' as const },
+  { value: 'beach', label: 'Strand', group: 'outdoor' as const },
+  { value: 'desert', label: 'Wüste', group: 'outdoor' as const },
+  { value: 'night-city', label: 'Stadt bei Nacht', group: 'outdoor' as const },
+  { value: 'racetrack', label: 'Rennstrecke', group: 'outdoor' as const },
+  { value: 'mansion', label: 'Villa / Anwesen', group: 'outdoor' as const },
+  { value: 'dealer-lot', label: 'Fahrzeugplatz', group: 'outdoor' as const },
 ] as const;
 
 export const LICENSE_PLATE_OPTIONS = [
