@@ -561,12 +561,12 @@ const AutohausEditor: React.FC<TemplateEditorProps> = ({
               <EditableField value={data.vehicle.color || ''} onChange={(v) => updateVehicle('color', v)} className="text-xs text-muted-foreground uppercase tracking-wider" />
             </p>
 
-            {/* Internal number */}
+            {/* Internal number (Aktnummer / Bestandsnummer) — persisted as vehicle.internalNumber */}
             <input
               type="text"
               placeholder="Interne Fahrzeugnummer eingeben..."
-              value={data.vehicle.vin || ''}
-              onChange={(e) => updateVehicle('vin', e.target.value)}
+              value={(data.vehicle as any).internalNumber || ''}
+              onChange={(e) => updateVehicle('internalNumber' as any, e.target.value)}
               className="mt-3 w-full text-sm bg-muted/50 border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400 placeholder:text-muted-foreground/50"
             />
           </div>
