@@ -81,6 +81,7 @@ export const SCENE_OPTIONS = [
   { value: 'racetrack', label: 'Rennstrecke', group: 'outdoor' as const },
   { value: 'mansion', label: 'Villa / Anwesen', group: 'outdoor' as const },
   { value: 'dealer-lot', label: 'Fahrzeugplatz', group: 'outdoor' as const },
+  { value: 'dealer-lot-dekra', label: 'Fahrzeugplatz – DEKRA', group: 'outdoor' as const },
 ] as const;
 
 export const LICENSE_PLATE_OPTIONS = [
