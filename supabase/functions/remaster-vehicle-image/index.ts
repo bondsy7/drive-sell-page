@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecret } from "../_shared/get-secret.ts";
+import { DEKRA_LOGO_BASE64, DEKRA_LOGO_MIME } from "../_shared/dekra-logo.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -480,6 +481,29 @@ Do NOT add ANY logo, brand mark, emblem, or wall decoration to the background.
 The showroom wall must remain CLEAN and EMPTY. No manufacturer logos, no dealer logos, no decorative elements.
 </NO_LOGO_INSTRUCTION>` });
       console.log("No logos provided – injected NO_LOGO_INSTRUCTION");
+    }
+
+
+    // ── DEKRA scene asset: inject official logo as immutable reference ──
+    // Triggered whenever the resolved scene prompt contains our unique marker
+    // (present in the "dealer-lot-dekra" scene default). Guarantees the same
+    // pixel-perfect DEKRA logo appears on the hall facade in every image.
+    if (prompt.includes('DEKRA LOGO PLACEMENT')) {
+      parts.push({ text: `<SCENE_ASSET_DEKRA_LOGO>
+OFFICIAL DEKRA LOGO – IMMUTABLE SCENE ASSET (HIGHEST PRIORITY):
+The following image is the ONE AND ONLY official DEKRA logo you may render on the hall facade in the background.
+
+REPRODUCTION RULES (ZERO DEVIATION):
+1. PIXEL-FOR-PIXEL COPY: Reproduce this logo exactly – green "play"-triangle mark on the LEFT + bold uppercase green wordmark "DEKRA" on the RIGHT. Preserve the exact official DEKRA green.
+2. DO NOT redesign, restyle, recolor, add outlines, add shadows, mirror, rotate, stretch, distort, italicize, add extra letters, or change letter spacing.
+3. POSITION: Mount ONE single DEKRA logo flush on the bright hall facade, high above the row of anthracite roll-up gates, centered horizontally over the gate row.
+4. SIZE: Large enough to be clearly readable but not covering the whole facade – roughly the width of two roll-up gates.
+5. UNIQUE: Only ONE DEKRA logo per image. NO repeated logos, NO additional signage, NO other text anywhere on the building or lot.
+6. CONSISTENCY: The SAME logo in the SAME position on the SAME hall must appear in EVERY generated image / perspective for this vehicle.
+7. SOURCE OF TRUTH: This asset OVERRIDES any DEKRA-like logo, text or banner the model might otherwise invent. Use ONLY this image.
+</SCENE_ASSET_DEKRA_LOGO>` });
+      parts.push({ inlineData: { mimeType: DEKRA_LOGO_MIME, data: DEKRA_LOGO_BASE64 } });
+      console.log('[remaster] DEKRA scene asset injected (dealer-lot-dekra)');
     }
 
     // ── DEBUG: Log full payload summary ──
