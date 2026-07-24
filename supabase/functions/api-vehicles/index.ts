@@ -264,6 +264,7 @@ Deno.serve(async (req) => {
           title: merged.title,
           offerTitle: merged.offerTitle,
           dashboardTitle: merged.dashboardTitle,
+          internalNumber: (merged.vehicle_data?.vehicle?.internalNumber ?? null),
           template_id: merged.template_id,
           vehicle_data: merged.vehicle_data,
           legalNotice: computeLegalNotice(merged.vehicle_data),
