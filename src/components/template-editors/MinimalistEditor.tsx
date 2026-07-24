@@ -50,6 +50,14 @@ const MinimalistEditor: React.FC<TemplateEditorProps> = ({
           <EditableField value={(data.vehicle.titleOverride ?? `${data.vehicle.brand} ${data.vehicle.model}`.trim())} onChange={(v) => updateVehicle('titleOverride' as any, v)} className="text-[30px] font-bold tracking-tight text-foreground" />
         </h1>
         <EditableField value={data.vehicle.variant || ''} onChange={(v) => updateVehicle('variant', v)} className="text-[13px] text-muted-foreground mt-1" />
+        <div className="mt-3 max-w-sm border border-dashed border-border/70 rounded p-3">
+          <div className="text-[10px] text-muted-foreground uppercase tracking-[2px]">Interne Fahrzeugnummer / Bestandsnummer</div>
+          <EditableField
+            value={(data.vehicle as any).internalNumber || ''}
+            onChange={(v) => updateVehicle('internalNumber' as any, v)}
+            className="text-[13px] font-semibold text-foreground"
+          />
+        </div>
         <div className="mt-4">
           <EditableField value={data.finance.totalPrice} onChange={(v) => updateFinance('totalPrice', v)} className="text-[26px] font-bold text-foreground" suffix="€" />
         </div>
@@ -101,6 +109,7 @@ const MinimalistEditor: React.FC<TemplateEditorProps> = ({
               <FuelTypeDropdown value={data.vehicle.fuelType} onChange={updateFuelType} />
             </div>
             <Row label="Farbe" value={data.vehicle.color} onChange={(v) => updateVehicle('color', v)} />
+            <Row label="Interne Fahrzeugnummer" value={(data.vehicle as any).internalNumber || ''} onChange={(v) => updateVehicle('internalNumber' as any, v)} />
             <Row label="Baujahr" value={String(data.vehicle.year || '–')} onChange={() => {}} />
             {data.vehicle.vin && <Row label="VIN" value={data.vehicle.vin} onChange={(v) => updateVehicle('vin', v)} />}
           </AccordionContent>

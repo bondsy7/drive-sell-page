@@ -91,6 +91,14 @@ const ModernEditor: React.FC<TemplateEditorProps> = ({
               <EditableField value={(data.vehicle.titleOverride ?? `${data.vehicle.brand} ${data.vehicle.model}`.trim())} onChange={(v) => updateVehicle('titleOverride' as any, v)} className="text-2xl font-bold text-foreground" />
             </h1>
             <EditableField value={data.vehicle.variant || ''} onChange={(v) => updateVehicle('variant', v)} className="text-sm text-muted-foreground mt-1" />
+            <div className="mt-3 rounded-xl border border-dashed border-border bg-muted/40 p-3">
+              <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Interne Fahrzeugnummer / Bestandsnummer</div>
+              <EditableField
+                value={(data.vehicle as any).internalNumber || ''}
+                onChange={(v) => updateVehicle('internalNumber' as any, v)}
+                className="text-sm font-semibold text-foreground"
+              />
+            </div>
             <div className="mt-4">
               <EditableField value={data.finance.totalPrice} onChange={(v) => updateFinance('totalPrice', v)} className="text-3xl font-bold text-primary" suffix="€" />
             </div>

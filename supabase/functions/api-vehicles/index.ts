@@ -66,6 +66,12 @@ Deno.serve(async (req) => {
     const vData = ((vehicle?.vehicle_data as Record<string, any>) || {});
     const vNested = (vData.vehicle as Record<string, any>) || {};
     const nonEmpty = (v: any) => v !== undefined && v !== null && String(v).trim() !== '';
+    const normalizeInternalNumber = (value: any) => {
+      const s = String(value || '').trim();
+      if (!s) return null;
+      if (s.toUpperCase().startsWith('NOVIN-')) return null;
+      return s;
+    };
     const identity: Record<string, any> = { ...vNested, ...pNested };
     if (vehicle) {
       for (const k of ['brand', 'model', 'year', 'color', 'vin'] as const) {
@@ -111,6 +117,7 @@ Deno.serve(async (req) => {
       vBrandModel ||
       offerTitle;
 
+    identity.internalNumber = normalizeInternalNumber(identity.internalNumber);
 
     return {
       ...project,
@@ -199,7 +206,7 @@ Deno.serve(async (req) => {
         const m = overlayVehicle(rest, vehicleMap[vehicle_id]);
         return {
           ...m,
-          internalNumber: (m.vehicle_data?.vehicle?.internalNumber ?? null),
+          internalNumber: (m.vehicle_data?.vehicle?.internalNumber || null),
           legalNotice: computeLegalNotice(m.vehicle_data),
         };
       });
@@ -268,7 +275,7 @@ Deno.serve(async (req) => {
           title: merged.title,
           offerTitle: merged.offerTitle,
           dashboardTitle: merged.dashboardTitle,
-          internalNumber: (merged.vehicle_data?.vehicle?.internalNumber ?? null),
+          internalNumber: (merged.vehicle_data?.vehicle?.internalNumber || null),
           template_id: merged.template_id,
           vehicle_data: merged.vehicle_data,
           legalNotice: computeLegalNotice(merged.vehicle_data),
