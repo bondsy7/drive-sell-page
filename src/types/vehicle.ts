@@ -89,7 +89,12 @@ export interface VehicleData {
      * Leasing-/Preis-Suffix enthalten (z. B. „Volkswagen Polo Life - 145 €/mtl.“).
      */
     dashboardTitleOverride?: string;
-  };
+    /**
+     * Interne Fahrzeug-/Akten-/Bestandsnummer (z. B. für WordPress-Sync/Bitrix).
+     * Wird im Autohaus-Editor manuell erfasst und via API als
+     * `vehicle.vehicle_data.vehicle.internalNumber` bzw. `vehicle.internalNumber` ausgeliefert.
+     */
+    internalNumber?: string;
   finance: {
     monthlyRate: string;
     downPayment: string;
