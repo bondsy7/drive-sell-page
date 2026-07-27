@@ -60,7 +60,7 @@ export const CLEANUP_OPTIONS = [
   {
     value: 'trailer',
     label: 'Auflieger / Anhänger entfernen',
-    prompt: 'REMOVE the complete detachable trailer / semi-trailer / drawbar trailer. Preserve the powered tractor unit (Zugmaschine) exactly and show it uncoupled, alone. Follow the dedicated TRACTOR_TRAILER_SEPARATION block exactly.',
+    prompt: 'REMOVE the complete detachable trailer / semi-trailer / drawbar trailer — regardless of its size, length or visual dominance in the image, including oversized car transporters (Autotransporter) with multi-level loading decks, ramps and masts that overhang the cab. Preserve the powered tractor unit (Zugmaschine) exactly and show it uncoupled, alone. Follow the dedicated TRACTOR_TRAILER_SEPARATION block exactly.',
   },
 ] as const;
 
