@@ -454,7 +454,7 @@ STEP 4 — RECONSTRUCT THE NOW-VISIBLE TRACTOR AND SCENE:
 - Render a physically plausible uncoupled solo tractor: visible fifth-wheel coupling plate, clean rear chassis frame, catwalk/lines where supported by the reference, tractor rear axle(s), rear lights and mudflaps.
 - Reconstruct the selected scene's floor, building/background and open space continuously through the entire area formerly hidden by the trailer.
 - Recalculate the tractor's contact shadow only. There must be no trailer-shaped shadow, reflection, ghost outline, cut edge, wheel, support leg or floating fragment.
-- Keep the original camera angle and tractor scale; center/reframe the remaining tractor naturally if needed without cropping it.
+- Keep the original camera angle and perspective. Because the solo tractor is much shorter than the original combination, RE-FRAME the shot around the tractor: place it centered in the frame at a natural, well-filling scale, without cropping any part of it and without distorting its proportions.
 
 RIGID-TRUCK SAFETY RULE:
 - If there is NO articulation/coupling and the cargo body is permanently mounted on the same powered chassis as the cab, it is a rigid truck body and must remain. Remove only a separately coupled trailer behind it.
@@ -462,8 +462,9 @@ RIGID-TRUCK SAFETY RULE:
 FINAL BINARY CHECK BEFORE OUTPUT:
 1. Is the driver's cab and powered tractor chassis intact? YES.
 2. Is the fifth wheel / uncoupled rear tractor area plausible? YES.
-3. Is every part, wheel, shadow and reflection of the detachable trailer gone? YES.
-If answer 3 is NO, the image is invalid: redo the removal before returning it.
+3. Is every part, wheel, deck, ramp, mast, rail, shadow and reflection of the detachable trailer gone — including any structure overhanging the cab roof? YES.
+4. Would a viewer describe the output as "a solo tractor unit", not as "a truck with a trailer"? YES.
+If answer 3 or 4 is NO, the image is invalid: redo the removal before returning it.
 </TRACTOR_TRAILER_SEPARATION>`);
     }
 
