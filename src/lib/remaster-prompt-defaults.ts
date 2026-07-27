@@ -135,6 +135,40 @@ VERIFICATION BEFORE FINALIZING (mandatory self-check, regenerate if any answer i
 5. Did I avoid adding ANY extra mirror or camera unit that isn't in the reference?`,
   },
 
+  side_skirt_lock: {
+    key: 'remaster_side_skirt_lock',
+    label: 'Side Skirt / Chassis Fairing Lock (LKW-Seitenverkleidungen)',
+    description: 'Verhindert das fälschliche Hinzugenerieren oder Entfernen von Seitenschwellern / Chassis-Verkleidungen (Sideskirts) an LKWs und Nutzfahrzeugen.',
+    prompt: `SIDE SKIRTS / CHASSIS SIDE FAIRINGS – ABSOLUTE PRESENCE FIDELITY (critical for trucks, tractors, trailers, vans, buses).
+This is a TOP failure mode: aerodynamic side skirts (Seitenverkleidungen / Seitenschweller / chassis fairings / sideguards) are frequently HALLUCINATED onto vehicles that do not have them, or deleted from vehicles that do.
+
+STEP 0 – MANDATORY PRESENCE CHECK (do this FIRST):
+Examine the lower side area of the reference photo between the front and rear wheels, below the door line and along the chassis frame. Explicitly classify into EXACTLY ONE state:
+
+(A) NO SIDE SKIRTS / OPEN CHASSIS
+Visual cues: the bare chassis frame rails, fuel/AdBlue tanks, battery boxes, air tanks, exhaust stack, catwalk, steps, hoses, cables, drive shaft and the ground BEHIND the vehicle are directly visible between the wheels. Nothing covers them.
+=> The output MUST keep this area completely OPEN. Do NOT add any panel, fairing, skirt, cover, apron, valance or aerodynamic cladding. Reproduce every exposed component (tanks, boxes, frame rails, steps, hoses) exactly as in the reference.
+
+(B) SIDE SKIRTS / FAIRINGS PRESENT
+Visual cues: continuous flat or curved panels covering the chassis area, sideguard bars, aerodynamic cladding, or lower body-colored/painted skirts.
+=> Reproduce them EXACTLY: same length, same start and end point, same height above ground, same panel segmentation and joint lines, same material and finish (painted body-color / plain plastic / aluminum / matte black), same graphics or lettering position, same gap to the wheels.
+
+ABSOLUTE PROHIBITIONS (ZERO TOLERANCE):
+- Do NOT add side skirts, chassis fairings, sideguards, aero cladding, lower valances or "clean" cover panels that are NOT clearly visible in the reference photo.
+- Do NOT remove, shorten or partially delete side skirts that ARE present in the reference.
+- Do NOT "tidy up" the underbody by covering exposed tanks, frame rails, battery boxes or air lines with an invented panel.
+- Do NOT change skirt length, height, segmentation or color to a generic factory/aero configuration from training memory.
+- Do NOT extend a partial skirt (e.g. tank cover only) into a full-length fairing, and do NOT split a full-length fairing into segments.
+- The same rule applies to the passenger side, driver side, trailer/semi-trailer sides and any 3/4 view.
+
+VERIFICATION BEFORE FINALIZING (regenerate if any answer is "no"):
+1. Did I classify the reference as (A) open chassis or (B) skirts present?
+2. Does the output show the SAME state on BOTH sides as the reference?
+3. If open: are the chassis rails, tanks, boxes and steps still visible and unobstructed?
+4. If present: do length, height, segmentation, material and color match the reference exactly?
+5. Did I avoid inventing ANY lower-side panel that is not in the reference?`,
+  },
+
   anti_cropping: {
     key: 'remaster_anti_cropping',
     label: 'Anti-Cropping',

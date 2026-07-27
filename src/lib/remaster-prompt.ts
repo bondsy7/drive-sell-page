@@ -278,6 +278,11 @@ PAINT COLOR CHANGE – ABSOLUTE, NON-NEGOTIABLE, APPLIES TO EVERY IMAGE:
     parts.push(`<MIRROR_SYSTEM_LOCK>\n${getBlock(overrides, 'mirror_system_lock')}\n</MIRROR_SYSTEM_LOCK>`);
   }
 
+  // ── SIDE SKIRT / CHASSIS FAIRING LOCK (LKW: keine erfundenen Seitenverkleidungen) ──
+  if (!interior) {
+    parts.push(`<SIDE_SKIRT_LOCK>\n${getBlock(overrides, 'side_skirt_lock')}\n</SIDE_SKIRT_LOCK>`);
+  }
+
   // ── VEHICLE SCALE LOCK ──
   if (!interior) {
     const isCustomShowroom = config.scene === 'custom-showroom';
