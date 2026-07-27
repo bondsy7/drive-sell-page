@@ -24,6 +24,7 @@ async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: numbe
 const FALLBACK_BLOCK_KEYS = [
   'remaster_base_instruction',
   'remaster_identity_lock',
+  'remaster_side_skirt_lock',
   'remaster_vehicle_scale_lock',
   'remaster_anti_cropping',
   'remaster_negative_constraints',
@@ -47,6 +48,14 @@ HEADLIGHTS_TAILLIGHTS: EXACT internal LED structure, DRL signatures, lens shape,
 GRILLE_BADGES: EXACT grille mesh pattern, badge shape, material, model designation in exact position, size, font.
 BODY_DETAILS: EXACT body lines, creases, fender flares, air intakes, roof rails, spoilers, exhaust tips, mirror shapes, door handles.
 MATERIALS: Match exact finishes – chrome vs. gloss black vs. matte vs. satin. Do NOT substitute.`,
+  },
+  remaster_side_skirt_lock: {
+    tag: 'SIDE_SKIRT_LOCK',
+    text: `SIDE SKIRTS / CHASSIS SIDE FAIRINGS (trucks, tractors, trailers, vans, buses) – PRESENCE FIDELITY:
+1. First inspect the lower side area between front and rear wheels in the reference photo.
+2. If the chassis is OPEN (visible frame rails, fuel/AdBlue tanks, battery/air boxes, steps, hoses, ground visible through), keep it OPEN. Do NOT add any skirt, fairing, sideguard, cover panel or aero cladding.
+3. If side skirts / fairings ARE present, reproduce them exactly: same length, height, segmentation, joint lines, material, finish and gap to the wheels. Do NOT remove or shorten them.
+4. FORBIDDEN: inventing lower-side panels to "tidy up" the underbody, extending partial covers into full-length fairings, or applying a generic aero configuration from memory. Same rule on both sides and on any trailer.`,
   },
   remaster_vehicle_scale_lock: {
     tag: 'VEHICLE_SCALE_LOCK',
