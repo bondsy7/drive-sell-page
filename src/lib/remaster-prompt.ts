@@ -60,7 +60,7 @@ export const CLEANUP_OPTIONS = [
   {
     value: 'trailer',
     label: 'Auflieger / Anhänger entfernen',
-    prompt: 'REMOVE the complete detachable trailer / semi-trailer / drawbar trailer. Preserve the powered tractor unit (Zugmaschine) exactly and show it uncoupled, alone. Follow the dedicated TRACTOR_TRAILER_SEPARATION block exactly.',
+    prompt: 'REMOVE the complete detachable trailer / semi-trailer / drawbar trailer — regardless of its size, length or visual dominance in the image, including oversized car transporters (Autotransporter) with multi-level loading decks, ramps and masts that overhang the cab. Preserve the powered tractor unit (Zugmaschine) exactly and show it uncoupled, alone. Follow the dedicated TRACTOR_TRAILER_SEPARATION block exactly.',
   },
 ] as const;
 
@@ -437,16 +437,24 @@ STEP 2 — IDENTIFY THE DETACHABLE UNIT THAT MUST DISAPPEAR:
 - Visual separation cues: articulation/coupling gap behind the cab, fifth-wheel/kingpin overlap, a cargo body extending far beyond the tractor chassis, landing legs, and a separate rear axle group located far behind the cab.
 - In the supplied image, reason from visible geometry; do not classify the entire truck-and-trailer combination as one indivisible vehicle.
 
+STEP 2b — OVERSIZED / DOMINANT TRAILERS (CRITICAL FAILURE CASE):
+- SIZE IS IRRELEVANT. A trailer that is very long, very tall, occupies most of the frame, or is the visually dominant subject MUST still be removed completely. Large size is NOT a reason to keep it.
+- Explicitly includes: car transporters / vehicle carriers (Autotransporter) with multi-level loading decks and ramps, low-loaders, machine transporters, tippers, tank trailers, container chassis, logging trailers and any oversized special-purpose trailer.
+- CAR-TRANSPORTER SPECIAL RULE: on an Autotransporter the upper loading deck, ramps, hydraulic masts/posts and rails often extend FORWARD over the cab roof. Any deck/ramp/post/rail structure that belongs to the transport superstructure of the DETACHABLE trailer, including the parts overhanging the cab, must be removed as well. Only the road tractor itself (cab, chassis, wheels, mirrors, lights) stays. Never leave a floating deck, mast, ramp, rail or loading platform above or behind the cab.
+- If the trailer is so dominant that removing it leaves mostly empty scene, that is the CORRECT result: output the solo tractor in the empty scene.
+- If you are unsure whether an oversized structure belongs to the tractor or the trailer, apply this rule: everything behind/above the driver's cab that is part of a coupled load-carrying structure is TRAILER and is removed.
+
 STEP 3 — REMOVE, DO NOT CLEAN OR REDESIGN:
-- Delete EVERY pixel belonging to the detachable trailer/semi-trailer/drawbar unit: cargo body, blue or colored curtain/box, roof, chassis, underrun bars, trailer axle group and wheels, mudguards, landing legs, rear doors, lights, plate, cables and shadows/reflections caused by it.
+- Delete EVERY pixel belonging to the detachable trailer/semi-trailer/drawbar unit: cargo body, loading decks, ramps, hydraulic masts and posts, rails, blue or colored curtain/box, roof, chassis, underrun bars, trailer axle group and wheels, mudguards, landing legs, rear doors, lights, plate, cables and shadows/reflections caused by it.
 - Removal starts at the kingpin/fifth-wheel coupling boundary for a semi-trailer, or at the drawbar coupling for a conventional trailer.
 - Do NOT merely remove its advertising, recolor it, shorten it, make it white/neutral, turn it into a box body, or generate a replacement cargo unit.
+
 
 STEP 4 — RECONSTRUCT THE NOW-VISIBLE TRACTOR AND SCENE:
 - Render a physically plausible uncoupled solo tractor: visible fifth-wheel coupling plate, clean rear chassis frame, catwalk/lines where supported by the reference, tractor rear axle(s), rear lights and mudflaps.
 - Reconstruct the selected scene's floor, building/background and open space continuously through the entire area formerly hidden by the trailer.
 - Recalculate the tractor's contact shadow only. There must be no trailer-shaped shadow, reflection, ghost outline, cut edge, wheel, support leg or floating fragment.
-- Keep the original camera angle and tractor scale; center/reframe the remaining tractor naturally if needed without cropping it.
+- Keep the original camera angle and perspective. Because the solo tractor is much shorter than the original combination, RE-FRAME the shot around the tractor: place it centered in the frame at a natural, well-filling scale, without cropping any part of it and without distorting its proportions.
 
 RIGID-TRUCK SAFETY RULE:
 - If there is NO articulation/coupling and the cargo body is permanently mounted on the same powered chassis as the cab, it is a rigid truck body and must remain. Remove only a separately coupled trailer behind it.
@@ -454,8 +462,9 @@ RIGID-TRUCK SAFETY RULE:
 FINAL BINARY CHECK BEFORE OUTPUT:
 1. Is the driver's cab and powered tractor chassis intact? YES.
 2. Is the fifth wheel / uncoupled rear tractor area plausible? YES.
-3. Is every part, wheel, shadow and reflection of the detachable trailer gone? YES.
-If answer 3 is NO, the image is invalid: redo the removal before returning it.
+3. Is every part, wheel, deck, ramp, mast, rail, shadow and reflection of the detachable trailer gone — including any structure overhanging the cab roof? YES.
+4. Would a viewer describe the output as "a solo tractor unit", not as "a truck with a trailer"? YES.
+If answer 3 or 4 is NO, the image is invalid: redo the removal before returning it.
 </TRACTOR_TRAILER_SEPARATION>`);
     }
 
