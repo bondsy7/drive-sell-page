@@ -24,6 +24,7 @@ async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: numbe
 const FALLBACK_BLOCK_KEYS = [
   'remaster_base_instruction',
   'remaster_identity_lock',
+  'remaster_side_skirt_lock',
   'remaster_vehicle_scale_lock',
   'remaster_anti_cropping',
   'remaster_negative_constraints',
