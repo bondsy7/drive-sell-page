@@ -46,6 +46,6 @@ export const TRUCK_PROFILE: VehicleClassProfile = {
   hasWorkflowWizard: true,
   showSlotSections: true,
   allowedPipelineJobs: TRUCK_ALLOWED_PIPELINE_JOBS,
-  requiredSourceCoverage: {},
+  requiredSourceCoverage: TRUCK_PIPELINE_JOB_COVERAGE,
   captureHeadline: 'Aufnahmen passend zur gewählten Lkw-Konfiguration',
 };
