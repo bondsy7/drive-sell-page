@@ -32,22 +32,12 @@ interface ImageCaptureGridProps {
   onPipelineComplete?: () => void;
 }
 
-interface PerspectiveSlot {
-  key: string;
-  label: string;
-  icon: string; // path to placeholder icon
-  capture: 'environment' | 'user'; // camera facing
-  isVin?: boolean;
-}
-
-const SLOTS: PerspectiveSlot[] = [
-  { key: '34front', label: '3/4 Front', icon: '/images/perspectives/34_Vorne.png', capture: 'environment' },
-  { key: 'side', label: 'Seite', icon: '/images/perspectives/Seite.png', capture: 'environment' },
-  { key: 'rear', label: 'Hinten', icon: '/images/perspectives/Hinten.png', capture: 'environment' },
-  { key: 'interior-front', label: 'Interieur Fahrersitz', icon: '/images/perspectives/Interieur_Fahrersitz.png', capture: 'environment' },
-  { key: 'interior-rear', label: 'Interieur Rücksitz', icon: '/images/perspectives/Interieur_Ruecksitz.png', capture: 'environment' },
-  { key: 'vin', label: 'VIN', icon: '/images/perspectives/VIN.png', capture: 'environment', isVin: true },
-];
+/**
+ * Slots kommen aus der Fahrzeugklassen-Registry.
+ * Pkw: statische Liste (identisch zur bisherigen Hardcoding-Variante).
+ * Lkw: dynamisch aus der Wizard-Auswahl.
+ */
+type PerspectiveSlot = CaptureSlot;
 
 interface CapturedImage {
   base64: string;
