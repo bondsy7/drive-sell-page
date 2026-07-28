@@ -4,6 +4,9 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { REMASTER_PROMPT_BLOCKS, SCENE_PROMPT_DEFAULTS, SCENE_LIGHTING_PROFILES } from './remaster-prompt-defaults';
+import type { VehicleClassContext } from '@/config/vehicle-class-types';
+import { resolveVehicleClass } from '@/config/vehicle-classes';
+import { buildTruckPromptBlocks, TRUCK_PERSPECTIVE_PROMPTS } from '@/prompts/remaster/truck';
 
 export interface RemasterConfig {
   scene: string;
