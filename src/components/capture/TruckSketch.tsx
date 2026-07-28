@@ -5,6 +5,13 @@ import imgRigidTruckTrailer from '@/assets/truck/rigid_truck_with_trailer.png';
 import imgSemiTruck from '@/assets/truck/semi_truck.png';
 import imgSemiTruckTrailer from '@/assets/truck/semi_truck_with_trailer.png';
 import imgTrailerOnly from '@/assets/truck/trailer_only.png';
+import imgBodyBoxClosed from '@/assets/truck/body_box_closed.png';
+import imgBodyPlatformOpen from '@/assets/truck/body_platform_open.png';
+import imgBodyTipper from '@/assets/truck/body_tipper.png';
+import imgBodyTank from '@/assets/truck/body_tank.png';
+import imgBodyLowLoader from '@/assets/truck/body_low_loader.png';
+import imgBodyVehicleTransport from '@/assets/truck/body_vehicle_transport.png';
+import imgBodyUnknown from '@/assets/truck/body_unknown.png';
 
 
 /**
@@ -312,6 +319,13 @@ const CONFIG_IMAGES: Record<string, string> = {
   semi_truck: imgSemiTruck,
   semi_truck_with_trailer: imgSemiTruckTrailer,
   trailer_only: imgTrailerOnly,
+  body_box_closed: imgBodyBoxClosed,
+  body_platform_open: imgBodyPlatformOpen,
+  body_tipper: imgBodyTipper,
+  body_tank: imgBodyTank,
+  body_low_loader: imgBodyLowLoader,
+  body_vehicle_transport: imgBodyVehicleTransport,
+  body_unknown: imgBodyUnknown,
 };
 
 export interface TruckSketchProps {
