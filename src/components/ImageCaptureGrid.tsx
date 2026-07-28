@@ -737,7 +737,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
             if (cur) onVehicleDataChange?.({ ...cur, vehicleClass: cls });
           }}
         />
-        <Button variant="ghost" onClick={onBack} className="w-full">Zurück</Button>
+        <Button variant="outlineGray" onClick={onBack} className="w-full">Zurück</Button>
       </div>
     );
   }
@@ -1062,7 +1062,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       {/* Actions */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <Button variant="outline" size="sm" onClick={onBack} disabled={isProcessing}>
+          <Button variant="outlineGray" size="sm" onClick={onBack} disabled={isProcessing}>
             Zurück
           </Button>
           <div className="flex items-center gap-3">
