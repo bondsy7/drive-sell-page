@@ -12,6 +12,9 @@ import imgBodyTank from '@/assets/truck/body_tank.png';
 import imgBodyLowLoader from '@/assets/truck/body_low_loader.png';
 import imgBodyVehicleTransport from '@/assets/truck/body_vehicle_transport.png';
 import imgBodyUnknown from '@/assets/truck/body_unknown.png';
+import imgCargoEmpty from '@/assets/truck/cargo_empty.png';
+import imgCargoLoaded from '@/assets/truck/cargo_loaded.png';
+import imgCargoClosed from '@/assets/truck/cargo_closed.png';
 
 
 /**
@@ -326,6 +329,9 @@ const CONFIG_IMAGES: Record<string, string> = {
   body_low_loader: imgBodyLowLoader,
   body_vehicle_transport: imgBodyVehicleTransport,
   body_unknown: imgBodyUnknown,
+  cargo_empty: imgCargoEmpty,
+  cargo_loaded_accessible: imgCargoLoaded,
+  cargo_not_accessible: imgCargoClosed,
 };
 
 export interface TruckSketchProps {
