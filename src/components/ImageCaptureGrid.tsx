@@ -733,7 +733,8 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
             setVehicleClass(cls);
             setCaptures({});
             setTruckWizardDone(cls !== 'truck');
-            onVehicleDataChange?.({ ...(latestVehicleDataRef.current as VehicleData), vehicleClass: cls });
+            const cur = latestVehicleDataRef.current;
+            if (cur) onVehicleDataChange?.({ ...cur, vehicleClass: cls });
           }}
         />
         <Button variant="ghost" onClick={onBack} className="w-full">Zurück</Button>
@@ -751,8 +752,9 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
           onComplete={(sel) => {
             setTruckSelection(sel);
             setTruckWizardDone(true);
-            onVehicleDataChange?.({
-              ...(latestVehicleDataRef.current as VehicleData),
+            const cur = latestVehicleDataRef.current;
+            if (cur) onVehicleDataChange?.({
+              ...cur,
               vehicleClass: 'truck',
               truckConfiguration: sel.truckConfiguration,
               truckBodyType: sel.truckBodyType,
