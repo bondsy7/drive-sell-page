@@ -326,6 +326,9 @@ const CONFIG_IMAGES: Record<string, string> = {
   body_low_loader: imgBodyLowLoader,
   body_vehicle_transport: imgBodyVehicleTransport,
   body_unknown: imgBodyUnknown,
+  cargo_empty: imgCargoEmpty,
+  cargo_loaded_accessible: imgCargoLoaded,
+  cargo_not_accessible: imgCargoClosed,
 };
 
 export interface TruckSketchProps {
