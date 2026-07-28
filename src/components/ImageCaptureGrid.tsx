@@ -1062,7 +1062,19 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       {/* Actions */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <Button variant="outlineGray" size="sm" onClick={onBack} disabled={isProcessing}>
+          <Button
+            variant="outlineGray"
+            size="sm"
+            onClick={() => {
+              if (activeClass === 'truck') {
+                // Zurück in den Lkw-Konfigurator (letzter beantworteter Schritt)
+                setTruckWizardDone(false);
+              } else {
+                onBack();
+              }
+            }}
+            disabled={isProcessing}
+          >
             Zurück
           </Button>
           <div className="flex items-center gap-3">
