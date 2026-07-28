@@ -57,7 +57,7 @@ const OptionCard: React.FC<OptionCardProps> = ({ active, sketch, label, descript
         <Check className="h-3.5 w-3.5 text-accent-foreground" />
       </span>
     )}
-    {sketch && <TruckSketch id={sketch} className="mx-auto mb-5 h-20 w-full max-w-[220px] text-foreground/70" />}
+    {sketch && <TruckSketch id={sketch} className="mx-auto mb-5 h-20 w-full max-w-[260px] text-foreground/70" />}
     <div className="text-base font-semibold text-foreground">{label}</div>
     <div className="mt-1 text-sm text-muted-foreground">{description}</div>
   </Card>

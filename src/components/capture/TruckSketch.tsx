@@ -1,4 +1,11 @@
 import React from 'react';
+import imgTractorUnit from '@/assets/truck/tractor_unit.png';
+import imgRigidTruck from '@/assets/truck/rigid_truck.png';
+import imgRigidTruckTrailer from '@/assets/truck/rigid_truck_with_trailer.png';
+import imgSemiTruck from '@/assets/truck/semi_truck.png';
+import imgSemiTruckTrailer from '@/assets/truck/semi_truck_with_trailer.png';
+import imgTrailerOnly from '@/assets/truck/trailer_only.png';
+
 
 /**
  * Technische Strichzeichnungen (Schemaskizzen) für den Lkw-Workflow.
@@ -297,12 +304,35 @@ const VIEWBOXES: Record<string, string> = {
   trailer_only: '0 0 168 100',
 };
 
+/** Exakte Fahrzeugskizzen (aus der Gestaltungsvorlage) je Konfiguration. */
+const CONFIG_IMAGES: Record<string, string> = {
+  tractor_unit: imgTractorUnit,
+  rigid_truck: imgRigidTruck,
+  rigid_truck_with_trailer: imgRigidTruckTrailer,
+  semi_truck: imgSemiTruck,
+  semi_truck_with_trailer: imgSemiTruckTrailer,
+  trailer_only: imgTrailerOnly,
+};
+
 export interface TruckSketchProps {
   id?: string | null;
   className?: string;
 }
 
 export const TruckSketch: React.FC<TruckSketchProps> = ({ id, className }) => {
+  const image = id ? CONFIG_IMAGES[id] : null;
+  if (image) {
+    return (
+      <img
+        src={image}
+        alt=""
+        aria-hidden="true"
+        loading="lazy"
+        className={`object-contain ${className ?? ''}`}
+      />
+    );
+  }
+
   const content = id ? SKETCHES[id] : null;
   if (!content) return null;
   return (
@@ -320,5 +350,6 @@ export const TruckSketch: React.FC<TruckSketchProps> = ({ id, className }) => {
     </svg>
   );
 };
+
 
 export default TruckSketch;
