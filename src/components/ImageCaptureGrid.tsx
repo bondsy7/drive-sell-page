@@ -19,6 +19,19 @@ import { ensureLogoCachedAsPng } from '@/lib/image-base64-cache';
 import { ensureVehicleAuto } from '@/lib/vehicle-utils';
 import { useAuth } from '@/hooks/useAuth';
 import type { VehicleData } from '@/types/vehicle';
+import type {
+  ActiveVehicleClassKey,
+  CaptureSlot,
+  TruckWorkflowSelection,
+  VehicleClassContext,
+} from '@/config/vehicle-class-types';
+import { getVehicleClassProfile, resolveVehicleClass } from '@/config/vehicle-classes';
+import { resolveCaptureSlots } from '@/config/resolve-slots';
+import { isTruckSelectionComplete } from '@/config/truck-workflow';
+import { checkSourceCoverage } from '@/lib/source-coverage';
+import VehicleClassPicker from '@/components/capture/VehicleClassPicker';
+import TruckWizard from '@/components/capture/TruckWizard';
+import { TruckSketch } from '@/components/capture/TruckSketch';
 
 interface ImageCaptureGridProps {
   vehicleDescription: string;
