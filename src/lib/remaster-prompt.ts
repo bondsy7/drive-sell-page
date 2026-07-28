@@ -219,8 +219,12 @@ export function buildMasterPrompt(
   vehicleDescription?: string,
   slotKey?: string,
   overrides: Record<string, string> = {},
+  classContext?: VehicleClassContext | null,
 ): string {
   const parts: string[] = [];
+  // Fehlender Kontext => 'car' (Rückwärtskompatibilität, Pkw-Prompt unverändert)
+  const vehicleClass = resolveVehicleClass(classContext?.vehicleClass);
+  const isTruck = vehicleClass === 'truck';
   const interior = isInteriorSlot(slotKey);
 
   // ── Base instruction ──
