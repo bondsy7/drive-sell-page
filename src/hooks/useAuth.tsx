@@ -23,11 +23,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Consume OAuth tokens returned via full-page redirect (mobile / non-iframe flow)
+    const consumeOAuthRedirect = async (): Promise<boolean> => {
+      try {
+        const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+        const query = new URLSearchParams(window.location.search);
+        const access_token = hash.get('access_token') || query.get('access_token');
+        const refresh_token = hash.get('refresh_token') || query.get('refresh_token');
+        if (!access_token || !refresh_token) return false;
+
+        const { error } = await supabase.auth.setSession({ access_token, refresh_token });
+
+        // Clean tokens out of the URL
+        ['access_token', 'refresh_token', 'expires_in', 'expires_at', 'token_type', 'state', 'provider_token'].forEach((k) => query.delete(k));
+        const cleanUrl = window.location.pathname + (query.toString() ? `?${query}` : '');
+        window.history.replaceState({}, '', cleanUrl);
+
+        return !error;
+      } catch {
+        return false;
+      }
+    };
+
+    (async () => {
+      await consumeOAuthRedirect();
+      const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
-    });
+    })();
 
     return () => subscription.unsubscribe();
   }, []);
