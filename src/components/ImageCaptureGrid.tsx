@@ -363,16 +363,16 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   }), [activeClass, truckSelection]);
 
   const slots: PerspectiveSlot[] = useMemo(
-    () => resolveCaptureSlots(activeClass, truckSelection),
-    [activeClass, truckSelection],
+    () => resolveCaptureSlots(classProfile, truckSelection),
+    [classProfile, truckSelection],
   );
 
   const capturedCount = Object.keys(captures).length;
   const vehicleSlots = slots.filter(s => !s.isVin);
   const capturedVehicleImages = vehicleSlots.filter(s => captures[s.key]);
   const coverage = useMemo(
-    () => checkSourceCoverage(classProfile, slots, Object.keys(captures)),
-    [classProfile, slots, captures],
+    () => checkSourceCoverage(slots, captures),
+    [slots, captures],
   );
 
   const handleCapture = useCallback(async (slot: PerspectiveSlot, file: File) => {
