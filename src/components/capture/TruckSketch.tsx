@@ -11,68 +11,133 @@ const wheel = (cx: number, cy = 48, r = 7) => (
   <circle key={`w${cx}`} cx={cx} cy={cy} r={r} />
 );
 
+/* ── Bausteine für die detaillierten Konfigurations-Skizzen ───────────────── */
+
+/** Rad mit Nabe (Seitenansicht). */
+const rim = (cx: number, key: string) => (
+  <g key={key}>
+    <circle cx={cx} cy={80} r={10} />
+    <circle cx={cx} cy={80} r={4} />
+  </g>
+);
+
+/** Fahrerhaus / Zugmaschine, Front zeigt nach links. Breite ca. 52. */
+const cab = (x: number) => (
+  <g key={`cab${x}`}>
+    <path
+      d={`M${x} 78 V46 Q${x} 40 ${x + 8} 39 L${x + 12} 20 Q${x + 13} 15 ${x + 20} 15 H${x + 46} Q${x + 52} 15 ${x + 52} 22 V78`}
+    />
+    <path d={`M${x + 14} 38 L${x + 18} 22 Q${x + 19} 19 ${x + 24} 19 H${x + 36} V38 Z`} />
+    <path d={`M${x + 38} 20 V62`} />
+    <path d={`M${x + 41} 46 h5`} />
+    <path d={`M${x} 66 H${x + 9}`} />
+    <path d={`M${x + 6} 30 v8`} />
+  </g>
+);
+
+/** Kastenaufbau / Auflieger-Box. */
+const box = (x: number, w: number, top = 16) => (
+  <g key={`box${x}`}>
+    <rect x={x} y={top} width={w} height={54 - (top - 16)} rx={2} />
+    <path d={`M${x} ${top + 6} H${x + w}`} />
+  </g>
+);
+
+/** Fahrgestell-Rahmen unter einem Aufbau. */
+const frame = (x1: number, x2: number) => (
+  <g key={`fr${x1}`}>
+    <path d={`M${x1} 70 H${x2}`} />
+    <path d={`M${x1} 74 H${x2}`} />
+  </g>
+);
+
+/** Deichsel zwischen Motorwagen und Anhänger. */
+const drawbar = (x1: number, x2: number) => (
+  <g key={`db${x1}`}>
+    <path d={`M${x1} 72 H${x2}`} />
+    <path d={`M${x1 + 2} 68 v8`} />
+  </g>
+);
+
+/** Stützfüße eines Aufliegers. */
+const legs = (x: number) => (
+  <g key={`lg${x}`}>
+    <path d={`M${x} 70 v18 M${x - 5} 88 h10`} />
+    <path d={`M${x + 12} 70 v18 M${x + 7} 88 h10`} />
+  </g>
+);
+
 const SKETCHES: Record<string, React.ReactNode> = {
-  // ── Konfigurationen ──
+  // ── Konfigurationen (detaillierte Seitenansichten) ──
   tractor_unit: (
     <>
-      <path d="M14 48V26h16l6-10h16v32" />
-      <path d="M52 34h10" />
-      {wheel(24)}
-      {wheel(48)}
+      {cab(8)}
+      <path d="M60 70 H74 V78" />
+      <path d="M56 62 h16" />
+      {rim(24, 'a')}
+      {rim(58, 'b')}
     </>
   ),
   rigid_truck: (
     <>
-      <path d="M8 48V26h14l6-10h12v32" />
-      <rect x="40" y="14" width="70" height="34" />
-      {wheel(20)}
-      {wheel(78)}
-      {wheel(96)}
+      {cab(8)}
+      {box(60, 96)}
+      {frame(60, 158)}
+      {rim(24, 'a')}
+      {rim(112, 'b')}
+      {rim(136, 'c')}
     </>
   ),
   rigid_truck_with_trailer: (
     <>
-      <path d="M4 48V28h10l5-9h9v29" />
-      <rect x="28" y="18" width="36" height="30" />
-      <path d="M64 42h8" />
-      <rect x="72" y="18" width="44" height="30" />
-      {wheel(14, 50, 5)}
-      {wheel(46, 50, 5)}
-      {wheel(82, 50, 5)}
-      {wheel(108, 50, 5)}
+      {cab(8)}
+      {box(60, 80)}
+      {frame(60, 142)}
+      {drawbar(142, 162)}
+      {box(162, 84)}
+      {frame(162, 246)}
+      {rim(24, 'a')}
+      {rim(112, 'b')}
+      {rim(178, 'c')}
+      {rim(230, 'd')}
     </>
   ),
   semi_truck: (
     <>
-      <path d="M6 48V28h12l5-10h11v30" />
-      <rect x="30" y="14" width="84" height="34" />
-      {wheel(18)}
-      {wheel(38)}
-      {wheel(94)}
-      {wheel(108)}
+      {cab(8)}
+      {box(52, 154, 14)}
+      {frame(60, 206)}
+      {rim(24, 'a')}
+      {rim(48, 'b')}
+      {rim(158, 'c')}
+      {rim(182, 'd')}
     </>
   ),
   semi_truck_with_trailer: (
     <>
-      <path d="M2 48V30h9l4-8h8v26" />
-      <rect x="23" y="18" width="46" height="30" />
-      <path d="M69 42h7" />
-      <rect x="76" y="20" width="42" height="28" />
-      {wheel(12, 50, 5)}
-      {wheel(28, 50, 5)}
-      {wheel(60, 50, 5)}
-      {wheel(86, 50, 5)}
-      {wheel(110, 50, 5)}
+      {cab(8)}
+      {box(52, 118, 14)}
+      {frame(60, 170)}
+      {drawbar(170, 190)}
+      {box(190, 94, 14)}
+      {frame(190, 284)}
+      {rim(24, 'a')}
+      {rim(48, 'b')}
+      {rim(132, 'c')}
+      {rim(206, 'd')}
+      {rim(262, 'e')}
     </>
   ),
   trailer_only: (
     <>
-      <rect x="12" y="16" width="96" height="32" />
-      <path d="M24 48v8M24 56h-8" />
-      {wheel(88)}
-      {wheel(102)}
+      {box(10, 148, 14)}
+      {frame(10, 158)}
+      {legs(40)}
+      {rim(108, 'a')}
+      {rim(132, 'b')}
     </>
   ),
+
 
   // ── Aufbauarten ──
   body_box_closed: (
@@ -222,6 +287,16 @@ const SKETCHES: Record<string, React.ReactNode> = {
   ),
 };
 
+/** Eigene viewBox je Konfigurations-Skizze (unterschiedliche Fahrzeuglängen). */
+const VIEWBOXES: Record<string, string> = {
+  tractor_unit: '0 0 84 100',
+  rigid_truck: '0 0 168 100',
+  rigid_truck_with_trailer: '0 0 256 100',
+  semi_truck: '0 0 216 100',
+  semi_truck_with_trailer: '0 0 294 100',
+  trailer_only: '0 0 168 100',
+};
+
 export interface TruckSketchProps {
   id?: string | null;
   className?: string;
@@ -232,11 +307,11 @@ export const TruckSketch: React.FC<TruckSketchProps> = ({ id, className }) => {
   if (!content) return null;
   return (
     <svg
-      viewBox={VB}
+      viewBox={(id && VIEWBOXES[id]) || VB}
       className={className}
       fill="none"
       stroke="currentColor"
-      strokeWidth={2}
+      strokeWidth={id && VIEWBOXES[id] ? 2.4 : 2}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
