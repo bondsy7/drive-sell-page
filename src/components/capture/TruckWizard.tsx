@@ -77,7 +77,9 @@ const TruckWizard: React.FC<TruckWizardProps> = ({ selection, onChange, onComple
     const merged: Partial<TruckWorkflowSelection> = {
       ...selection,
       ...next,
-      subjectScope: resolveSubjectScope(next.truckConfiguration ?? selection.truckConfiguration),
+      subjectScope: resolveSubjectScope(
+        'truckConfiguration' in next ? next.truckConfiguration : selection.truckConfiguration
+      ),
     };
     onChange(merged);
 
