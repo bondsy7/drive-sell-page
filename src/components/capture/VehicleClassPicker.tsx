@@ -1,13 +1,21 @@
 import React from 'react';
-import { Card } from '@/components/ui/card';
-import { Check } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { getActiveProfiles } from '@/config/vehicle-classes';
 import type { ActiveVehicleClassKey } from '@/config/vehicle-class-types';
-import { TruckSketch } from './TruckSketch';
+import carLine from '@/assets/class-car-line.png';
+import truckLine from '@/assets/class-truck-line.png';
 
-const CLASS_SKETCH: Record<string, string> = {
-  car: 'cab_34_front_left',
-  truck: 'semi_truck',
+const CLASS_VISUAL: Record<string, { image: string; title: string; examples: string }> = {
+  car: {
+    image: carLine,
+    title: 'PKW',
+    examples: 'z. B. Limousine, Kombi, SUV, Coupé, Cabrio',
+  },
+  truck: {
+    image: truckLine,
+    title: 'LKW',
+    examples: 'z. B. Transporter, LKW über 7,5 t, Sattelzug',
+  },
 };
 
 interface VehicleClassPickerProps {
@@ -23,46 +31,55 @@ const VehicleClassPicker: React.FC<VehicleClassPickerProps> = ({ value, onChange
   const profiles = getActiveProfiles();
 
   return (
-    <div className="space-y-3">
-      <div>
+    <div className="space-y-6">
+      <div className="text-center">
         <h2 className="text-lg font-semibold text-foreground">Fahrzeugart auswählen</h2>
         <p className="text-sm text-muted-foreground">
           Die Fahrzeugart bestimmt Aufnahmen, Prüfungen und Aufbereitungslogik.
         </p>
       </div>
-      <div className="grid grid-cols-2 gap-3">
+
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         {profiles.map((p) => {
+          const visual = CLASS_VISUAL[p.key] ?? {
+            image: carLine,
+            title: p.label,
+            examples: p.description,
+          };
           const active = value === p.key;
           return (
-            <Card
+            <button
               key={p.key}
-              role="button"
-              tabIndex={0}
+              type="button"
               onClick={() => onChange(p.key as ActiveVehicleClassKey)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  onChange(p.key as ActiveVehicleClassKey);
-                }
-              }}
-              className={`relative cursor-pointer p-4 transition-all ${
+              className={`group flex flex-col items-center rounded-2xl border-2 border-dashed bg-card px-6 py-8 transition-all ${
                 active
-                  ? 'border-accent ring-2 ring-accent/40 bg-accent/5'
-                  : 'hover:border-accent/50'
+                  ? 'border-accent bg-accent/5'
+                  : 'border-border hover:border-accent/60 hover:bg-muted/40'
               }`}
             >
-              {active && (
-                <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-accent">
-                  <Check className="h-3 w-3 text-accent-foreground" />
-                </span>
-              )}
-              <TruckSketch
-                id={CLASS_SKETCH[p.key]}
-                className="mb-3 h-14 w-full text-foreground/70"
+              <img
+                src={visual.image}
+                alt={`${visual.title} Strichzeichnung`}
+                loading="lazy"
+                width={1024}
+                height={640}
+                className="h-32 w-full max-w-[320px] object-contain opacity-80 transition-opacity group-hover:opacity-100 sm:h-40"
               />
-              <div className="text-sm font-semibold text-foreground">{p.label}</div>
-              <div className="mt-1 text-xs text-muted-foreground">{p.description}</div>
-            </Card>
+              <div className="mt-6 text-2xl font-semibold tracking-tight text-foreground">
+                {visual.title}
+              </div>
+              <p className="mt-2 text-sm text-muted-foreground">{visual.examples}</p>
+              <span
+                className={`mt-5 flex h-8 w-8 items-center justify-center rounded-md border transition-colors ${
+                  active
+                    ? 'border-accent bg-accent text-accent-foreground'
+                    : 'border-border text-muted-foreground group-hover:border-accent/60 group-hover:text-accent'
+                }`}
+              >
+                <ArrowRight className="h-4 w-4" />
+              </span>
+            </button>
           );
         })}
       </div>
