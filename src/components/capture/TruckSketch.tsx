@@ -15,6 +15,17 @@ import imgBodyUnknown from '@/assets/truck/body_unknown.png';
 import imgCargoEmpty from '@/assets/truck/cargo_empty.png';
 import imgCargoLoaded from '@/assets/truck/cargo_loaded.png';
 import imgCargoClosed from '@/assets/truck/cargo_closed.png';
+import imgSlotCab34FrontLeft from '@/assets/truck/slot_cab_34_front_left.png';
+import imgSlotCabSideLeft from '@/assets/truck/slot_cab_side_left.png';
+import imgSlotCabFront from '@/assets/truck/slot_cab_front.png';
+import imgSlotMirrorDetail from '@/assets/truck/slot_mirror_detail.png';
+import imgSlotCabInterior from '@/assets/truck/slot_cab_interior.png';
+import imgSlotFifthWheel from '@/assets/truck/slot_fifth_wheel.png';
+import imgSlotBodySideLeft from '@/assets/truck/slot_body_side_left.png';
+import imgSlotBodyRear from '@/assets/truck/slot_body_rear.png';
+import imgSlotBody34RearRight from '@/assets/truck/slot_body_34_rear_right.png';
+import imgSlotCargoArea from '@/assets/truck/slot_cargo_area.png';
+import imgSlotVinPlate from '@/assets/truck/slot_vin_plate.png';
 
 
 /**
@@ -332,6 +343,18 @@ const CONFIG_IMAGES: Record<string, string> = {
   cargo_empty: imgCargoEmpty,
   cargo_loaded_accessible: imgCargoLoaded,
   cargo_not_accessible: imgCargoClosed,
+  // ── Aufnahme-Slots (gleicher Skizzenstil) ──
+  cab_34_front_left: imgSlotCab34FrontLeft,
+  cab_side_left: imgSlotCabSideLeft,
+  cab_front: imgSlotCabFront,
+  mirror_detail: imgSlotMirrorDetail,
+  cab_interior: imgSlotCabInterior,
+  fifth_wheel: imgSlotFifthWheel,
+  body_side_left: imgSlotBodySideLeft,
+  body_rear: imgSlotBodyRear,
+  body_34_rear_right: imgSlotBody34RearRight,
+  cargo_area: imgSlotCargoArea,
+  vin_plate: imgSlotVinPlate,
 };
 
 export interface TruckSketchProps {
