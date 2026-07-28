@@ -337,6 +337,17 @@ serve(async (req) => {
     if (!imageBase64 && !mainImageFileUri?.uri) throw new Error("No image provided");
 
     // 2. Use dynamic prompt if provided, otherwise build fallback from admin blocks
+    // Fahrzeugklassen-Kontext prüfen (verbindliche Promptübergabe)
+    const ctx = normalizeClassContext(classContext);
+    const ctxError = validateClassContext(ctx);
+    if (ctxError) {
+      console.error(`[remaster] class=truck rejected: ${ctxError}`);
+      return new Response(
+        JSON.stringify({ error: `Fahrzeugkontext unvollständig: ${ctxError}` }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     const basePrompt = dynamicPrompt || await buildFallbackPrompt(vehicleDescription);
     const PROFESSIONAL_REFLECTION_LIGHTING_LOCK = `<PROFESSIONAL_REFLECTION_LIGHTING_LOCK>
 ABSOLUTE OUTPUT STANDARD: Render this as a professional automotive photograph taken in the NEW scene, not as a vehicle pasted onto a background.
