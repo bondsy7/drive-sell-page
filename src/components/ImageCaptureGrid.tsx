@@ -892,14 +892,24 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
               ) : (
                 <button
                   onClick={() => fileRefs.current[slot.key]?.click()}
-                  className="w-full aspect-[4/3] flex flex-col items-center justify-center gap-2 p-3 hover:bg-muted/50 transition-colors"
+                  className="w-full aspect-[4/3] flex flex-col items-center justify-center gap-1.5 p-3 hover:bg-muted/50 transition-colors"
                 >
-                  <img
-                    src={slot.icon}
-                    alt={slot.label}
-                    className="w-16 h-12 object-contain opacity-40"
-                  />
-                  <span className="text-xs font-medium text-muted-foreground">{slot.label}</span>
+                  {slot.icon ? (
+                    <img
+                      src={slot.icon}
+                      alt={slot.label}
+                      className="w-16 h-12 object-contain opacity-40"
+                    />
+                  ) : (
+                    <TruckSketch id={slot.sketch} className="w-20 h-12 text-muted-foreground/50" />
+                  )}
+                  <span className="text-xs font-medium text-muted-foreground text-center leading-tight">
+                    {slot.label}
+                    {!slot.required && <span className="text-muted-foreground/60"> (optional)</span>}
+                  </span>
+                  {slot.hint && (
+                    <span className="text-[10px] text-muted-foreground/70 text-center leading-tight px-1">{slot.hint}</span>
+                  )}
                   <Camera className="w-4 h-4 text-muted-foreground/50" />
                 </button>
               )}
