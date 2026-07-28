@@ -222,7 +222,16 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     }
   }, [ensuredVehicleId, vehicleId, user, vehicleData, detectedVin]);
 
+  /** Coverage-Snapshot für Callbacks, die vor der Berechnung definiert sind. */
+  const coverageRef = useRef<{ ok: boolean; missingLabels: string[] }>({ ok: true, missingLabels: [] });
+
   const openPipeline = useCallback(async () => {
+    // Source-Coverage-Validierung: fehlende Pflichtperspektiven werden NIE
+    // aus anderen Winkeln hochgerechnet – der Start wird stattdessen blockiert.
+    if (!coverageRef.current.ok) {
+      toast.error(`Fehlende Pflichtaufnahmen: ${coverageRef.current.missingLabels.join(', ')}`);
+      return;
+    }
     await ensureVehicleForPipeline();
     setShowPipeline(true);
   }, [ensureVehicleForPipeline]);
@@ -374,6 +383,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     () => checkSourceCoverage(slots, captures),
     [slots, captures],
   );
+  coverageRef.current = { ok: coverage.ok, missingLabels: coverage.missingLabels };
 
   const handleCapture = useCallback(async (slot: PerspectiveSlot, file: File) => {
     if (!file.type.startsWith('image/')) {
