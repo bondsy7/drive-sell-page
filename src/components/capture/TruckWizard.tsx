@@ -46,20 +46,23 @@ const OptionCard: React.FC<OptionCardProps> = ({ active, sketch, label, descript
         onSelect();
       }
     }}
-    className={`relative cursor-pointer p-4 transition-all ${
-      active ? 'border-accent ring-2 ring-accent/40 bg-accent/5' : 'hover:border-accent/50'
+    className={`relative cursor-pointer rounded-2xl border-2 border-dashed px-5 py-6 text-center shadow-none transition-all ${
+      active
+        ? 'border-accent border-solid bg-accent/5'
+        : 'border-border bg-muted/20 hover:border-accent/60 hover:bg-muted/40'
     }`}
   >
     {active && (
-      <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-accent">
-        <Check className="h-3 w-3 text-accent-foreground" />
+      <span className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full bg-accent">
+        <Check className="h-3.5 w-3.5 text-accent-foreground" />
       </span>
     )}
-    {sketch && <TruckSketch id={sketch} className="mb-3 h-12 w-full text-foreground/70" />}
-    <div className="text-sm font-semibold text-foreground">{label}</div>
-    <div className="mt-1 text-xs text-muted-foreground">{description}</div>
+    {sketch && <TruckSketch id={sketch} className="mx-auto mb-5 h-20 w-full max-w-[220px] text-foreground/70" />}
+    <div className="text-base font-semibold text-foreground">{label}</div>
+    <div className="mt-1 text-sm text-muted-foreground">{description}</div>
   </Card>
 );
+
 
 /**
  * Lkw-Schritte 1–3: Konfiguration → Aufbau-/Anhängerart → Ladebereich.
@@ -114,7 +117,7 @@ const TruckWizard: React.FC<TruckWizardProps> = ({ selection, onChange, onComple
             im Bild zu sehen sein muss.
           </p>
         </div>
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {TRUCK_CONFIGURATIONS.map((o) => (
             <OptionCard
               key={o.key}
@@ -147,7 +150,7 @@ const TruckWizard: React.FC<TruckWizardProps> = ({ selection, onChange, onComple
               dürfen.
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {TRUCK_BODY_TYPES.map((o) => (
               <OptionCard
                 key={o.key}
