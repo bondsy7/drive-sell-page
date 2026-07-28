@@ -158,7 +158,13 @@ const TruckWizard: React.FC<TruckWizardProps> = ({ selection, onChange, onComple
                 sketch={o.sketch}
                 label={o.label}
                 description={o.description}
-                onSelect={() => emit({ truckBodyType: o.key, cargoState: null })}
+                onSelect={() =>
+                  emit(
+                    selection.truckBodyType === o.key
+                      ? { truckBodyType: null, cargoState: null }
+                      : { truckBodyType: o.key, cargoState: null }
+                  )
+                }
               />
             ))}
           </div>
