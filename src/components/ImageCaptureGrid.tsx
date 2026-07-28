@@ -582,12 +582,13 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       }
       const slotConfig = { ...remasterConfig, detectedBranding };
       // Build per-slot prompt with perspective-specific instructions
-      const dynamicPrompt = buildMasterPrompt(slotConfig, vehicleDescription, slot.key, promptOverrides);
+      const dynamicPrompt = buildMasterPrompt(slotConfig, vehicleDescription, slot.key, promptOverrides, classContext);
 
       const MAX_RETRIES = 2;
       for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
         try {
           const { data, error } = await invokeRemasterVehicleImage({
+            classContext,
             imageBase64: captures[slot.key].base64,
             additionalImages: detailImages.length > 0 ? detailImages : undefined,
             vehicleDescription,
@@ -651,8 +652,9 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       if (remasterConfig.cleanupItems && remasterConfig.cleanupItems.length > 0) {
         try { detectedBranding = await detectVehicleBranding(captures[slotKey].base64); } catch { /* continue */ }
       }
-      const dynamicPrompt = buildMasterPrompt({ ...remasterConfig, detectedBranding }, vehicleDescription, undefined, overrides);
+      const dynamicPrompt = buildMasterPrompt({ ...remasterConfig, detectedBranding }, vehicleDescription, slotKey, overrides, classContext);
       const { data, error } = await invokeRemasterVehicleImage({
+        classContext,
         imageBase64: captures[slotKey].base64,
         additionalImages: detailImages.length > 0 ? detailImages : undefined,
         vehicleDescription,
