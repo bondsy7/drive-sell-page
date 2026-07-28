@@ -713,6 +713,49 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     .filter(s => captures[s.key])
     .map(s => captures[s.key].base64);
 
+  // ── Schritt 1.1: Fahrzeugart ──
+  if (!vehicleClass) {
+    return (
+      <div className="w-full max-w-2xl mx-auto space-y-6">
+        <VehicleClassPicker
+          value={vehicleClass}
+          onChange={(cls) => {
+            setVehicleClass(cls);
+            setCaptures({});
+            setTruckWizardDone(cls !== 'truck');
+            onVehicleDataChange?.({ ...(latestVehicleDataRef.current as VehicleData), vehicleClass: cls });
+          }}
+        />
+        <Button variant="ghost" onClick={onBack} className="w-full">Zurück</Button>
+      </div>
+    );
+  }
+
+  // ── Schritt 1.2–1.4: Lkw-Konfiguration ──
+  if (activeClass === 'truck' && !truckWizardDone) {
+    return (
+      <div className="w-full max-w-2xl mx-auto">
+        <TruckWizard
+          selection={truckSelection}
+          onChange={setTruckSelection}
+          onComplete={(sel) => {
+            setTruckSelection(sel);
+            setTruckWizardDone(true);
+            onVehicleDataChange?.({
+              ...(latestVehicleDataRef.current as VehicleData),
+              vehicleClass: 'truck',
+              truckConfiguration: sel.truckConfiguration,
+              truckBodyType: sel.truckBodyType,
+              cargoState: sel.cargoState,
+              subjectScope: sel.subjectScope,
+            });
+          }}
+          onBack={() => setVehicleClass(null)}
+        />
+      </div>
+    );
+  }
+
   if (showPipeline) {
     return (
       <PipelineRunner
@@ -722,6 +765,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         vehicleDescription={vehicleDescription}
         vehicleBrand={vehicleData?.vehicle?.brand}
         remasterConfig={remasterConfig}
+        classContext={classContext}
         modelTier={modelTier}
         projectId={projectId}
         vehicleId={ensuredVehicleId || vehicleId}
