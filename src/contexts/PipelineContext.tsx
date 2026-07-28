@@ -289,6 +289,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const dealerLogoFileUri2 = cfg.remasterConfig.showDealerLogo ? fileUriCache.dealerLogo : null;
 
     const { data, error } = await invokeRemasterVehicleImage({
+      classContext: cfg.classContext ?? null,
       imageBase64: primaryReference,
       additionalImages: inlineSupportingImages && inlineSupportingImages.length > 0 ? inlineSupportingImages : undefined,
       additionalFileUris: additionalFileUris && additionalFileUris.length > 0 ? additionalFileUris : undefined,
