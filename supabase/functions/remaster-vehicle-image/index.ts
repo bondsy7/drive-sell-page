@@ -358,7 +358,9 @@ ABSOLUTE OUTPUT STANDARD: Render this as a professional automotive photograph ta
 5. GROUNDING: Tires must visibly contact the floor/ground. Add soft contact shadows, ambient occlusion under the car, and a faint floor reflection on polished or wet surfaces. Shadow direction, length and softness must match the visible light sources.
 6. FINAL CHECK: If any original reflection or old environment content is still visible anywhere on the vehicle or through the windows, regenerate those surfaces from scratch using only the new scene.
 </PROFESSIONAL_REFLECTION_LIGHTING_LOCK>`;
-    const prompt = `${basePrompt}\n\n${PROFESSIONAL_REFLECTION_LIGHTING_LOCK}`;
+    const classGuard = buildClassGuardBlock(ctx);
+    const prompt = `${basePrompt}\n\n${PROFESSIONAL_REFLECTION_LIGHTING_LOCK}${classGuard ? `\n\n${classGuard}` : ''}`;
+    console.log(`[remaster] class=${ctx.vehicleClass} scope=${ctx.subjectScope ?? 'n/a'} config=${ctx.truckConfiguration ?? 'n/a'} body=${ctx.truckBodyType ?? 'n/a'} cargo=${ctx.cargoState ?? 'n/a'} slot=${ctx.sourcePerspectiveKey ?? 'n/a'}`);
     console.log(`[remaster] Using ${dynamicPrompt ? 'DYNAMIC' : 'FALLBACK (from admin blocks)'} prompt (${prompt.length} chars), model: ${geminiModel}, tier: ${tier}`);
     const hasLicensePlate = prompt.includes('LICENSE_PLATE');
     const hasScene = prompt.includes('SCENE_AND_LIGHTING') || prompt.includes('CUSTOM_SHOWROOM');
