@@ -96,12 +96,18 @@ const Auth = () => {
   };
 
   const handleGoogle = async () => {
-    const { error } = await lovable.auth.signInWithOAuth('google', {
-      redirect_uri: plan
-        ? `${window.location.origin}/auth?plan=${plan}&cycle=${cycle}`
-        : window.location.origin,
-    });
-    if (error) toast.error('Google Login fehlgeschlagen');
+    try {
+      const result = await lovable.auth.signInWithOAuth('google', {
+        redirect_uri: plan
+          ? `${window.location.origin}/auth?plan=${plan}&cycle=${cycle}`
+          : window.location.origin,
+      });
+      if (result.error) {
+        toast.error(`Google Login fehlgeschlagen: ${result.error.message ?? ''}`);
+      }
+    } catch (e: any) {
+      toast.error(`Google Login fehlgeschlagen: ${e?.message ?? ''}`);
+    }
   };
 
   const PLAN_LABELS: Record<string, string> = {
