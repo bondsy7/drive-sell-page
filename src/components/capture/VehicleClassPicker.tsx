@@ -14,7 +14,7 @@ const CLASS_VISUAL: Record<string, { image: string; title: string; examples: str
   truck: {
     image: truckLine,
     title: 'LKW',
-    examples: 'z. B. Transporter, LKW über 7,5 t, Sattelzug',
+    examples: 'z. B. LKW über 7,5 t, Sattelzug',
   },
 };
 
