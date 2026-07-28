@@ -37,8 +37,8 @@ export interface TruckConfigurationOption {
 export const TRUCK_CONFIGURATIONS: TruckConfigurationOption[] = [
   {
     key: 'tractor_unit',
-    label: 'Sattelzugmaschine (solo)',
-    description: 'Nur Zugmaschine, ohne Auflieger und ohne Anhänger.',
+    label: 'Zugmaschine',
+    description: 'Ohne Auflieger oder Anhänger',
     sketch: 'tractor_unit',
     subjectScope: 'tractor_unit_only',
     hasCab: true,
@@ -49,8 +49,8 @@ export const TRUCK_CONFIGURATIONS: TruckConfigurationOption[] = [
   },
   {
     key: 'rigid_truck',
-    label: 'Motorwagen mit festem Aufbau',
-    description: 'Fahrerhaus und Aufbau auf einem Fahrgestell, kein Anhänger.',
+    label: 'LKW mit festem Aufbau',
+    description: 'Aufbau fest mit dem Fahrzeug verbunden',
     sketch: 'rigid_truck',
     subjectScope: 'rigid_truck_complete',
     hasCab: true,
@@ -61,8 +61,8 @@ export const TRUCK_CONFIGURATIONS: TruckConfigurationOption[] = [
   },
   {
     key: 'rigid_truck_with_trailer',
-    label: 'Motorwagen mit Anhänger',
-    description: 'Motorwagen mit festem Aufbau plus gezogenem Anhänger.',
+    label: 'LKW mit festem Aufbau und Anhänger',
+    description: 'Motorwagen mit zusätzlichem Anhänger',
     sketch: 'rigid_truck_with_trailer',
     subjectScope: 'rigid_truck_and_trailer_complete',
     hasCab: true,
@@ -73,8 +73,8 @@ export const TRUCK_CONFIGURATIONS: TruckConfigurationOption[] = [
   },
   {
     key: 'semi_truck',
-    label: 'Sattelzug (Zugmaschine + Auflieger)',
-    description: 'Sattelzugmaschine mit angekuppeltem Sattelauflieger.',
+    label: 'Sattelzug mit Auflieger',
+    description: 'Zugmaschine mit Auflieger',
     sketch: 'semi_truck',
     subjectScope: 'tractor_and_semi_trailer_complete',
     hasCab: true,
@@ -85,8 +85,8 @@ export const TRUCK_CONFIGURATIONS: TruckConfigurationOption[] = [
   },
   {
     key: 'semi_truck_with_trailer',
-    label: 'Sattelzug mit zusätzlichem Anhänger',
-    description: 'Mehrgliedriger Zug: Zugmaschine, Auflieger und Anhänger.',
+    label: 'Sattelzug mit Auflieger und Anhänger',
+    description: 'Sattelzug mit zusätzlichem Anhänger',
     sketch: 'semi_truck_with_trailer',
     subjectScope: 'complete_multi_part_combination',
     hasCab: true,
@@ -97,8 +97,8 @@ export const TRUCK_CONFIGURATIONS: TruckConfigurationOption[] = [
   },
   {
     key: 'trailer_only',
-    label: 'Auflieger / Anhänger (einzeln)',
-    description: 'Nur die gezogene Einheit, ohne Zugmaschine.',
+    label: 'Nur Anhänger / Auflieger',
+    description: 'Separat fotografieren',
     sketch: 'trailer_only',
     subjectScope: 'trailer_or_semi_trailer_only',
     hasCab: false,
