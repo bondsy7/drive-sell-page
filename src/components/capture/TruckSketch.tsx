@@ -287,6 +287,16 @@ const SKETCHES: Record<string, React.ReactNode> = {
   ),
 };
 
+/** Eigene viewBox je Konfigurations-Skizze (unterschiedliche Fahrzeuglängen). */
+const VIEWBOXES: Record<string, string> = {
+  tractor_unit: '0 0 84 100',
+  rigid_truck: '0 0 168 100',
+  rigid_truck_with_trailer: '0 0 256 100',
+  semi_truck: '0 0 216 100',
+  semi_truck_with_trailer: '0 0 294 100',
+  trailer_only: '0 0 168 100',
+};
+
 export interface TruckSketchProps {
   id?: string | null;
   className?: string;
@@ -297,11 +307,11 @@ export const TruckSketch: React.FC<TruckSketchProps> = ({ id, className }) => {
   if (!content) return null;
   return (
     <svg
-      viewBox={VB}
+      viewBox={(id && VIEWBOXES[id]) || VB}
       className={className}
       fill="none"
       stroke="currentColor"
-      strokeWidth={2}
+      strokeWidth={id && VIEWBOXES[id] ? 2.4 : 2}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
