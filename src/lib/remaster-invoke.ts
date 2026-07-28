@@ -1,10 +1,16 @@
 import { supabase } from '@/integrations/supabase/client';
+import type { VehicleClassContext } from '@/config/vehicle-class-types';
 
 export interface RemasterInvokePayload {
   imageBase64: string;
   vehicleDescription?: string;
   modelTier?: string;
   dynamicPrompt?: string;
+  /**
+   * Verbindlicher Fahrzeugklassen-Kontext. Fehlt er, behandelt die Edge Function
+   * den Request als 'car' (Rückwärtskompatibilität für Altdaten).
+   */
+  classContext?: VehicleClassContext | null;
   additionalImages?: string[];
   /** Pre-uploaded Gemini File API URIs – used INSTEAD of additionalImages when available */
   additionalFileUris?: { uri: string; mimeType: string }[];
