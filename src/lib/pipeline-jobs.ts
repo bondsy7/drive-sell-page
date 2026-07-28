@@ -903,3 +903,29 @@ export function applyPromptOverrides(jobs: PipelineJob[], overrides: Record<stri
     return { ...job, prompt, extraPrompts };
   });
 }
+
+/**
+ * Fahrzeugklassen-Filter für Pipeline-Jobs.
+ *
+ * - `allowedPipelineJobs === null` (Pkw): alle Jobs, unverändert.
+ * - Sonst: nur explizit freigegebene Jobs.
+ * - Zusätzlich optional Source-Coverage: Jobs ohne vorhandene Quellperspektive
+ *   werden entfernt, statt sie aus anderen Winkeln "hochzurechnen".
+ */
+export function getJobsForProfile(
+  jobs: PipelineJob[],
+  profile: { allowedPipelineJobs: string[] | null; requiredSourceCoverage: Record<string, string[]> },
+  coveredTags?: string[],
+): PipelineJob[] {
+  const allowed = profile.allowedPipelineJobs;
+  let result = allowed === null ? jobs : jobs.filter(j => allowed.includes(j.key));
+
+  if (coveredTags) {
+    result = result.filter(j => {
+      const required = profile.requiredSourceCoverage[j.key];
+      if (!required || required.length === 0) return true;
+      return required.every(t => coveredTags.includes(t));
+    });
+  }
+  return result;
+}

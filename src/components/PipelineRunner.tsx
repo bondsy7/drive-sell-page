@@ -11,10 +11,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useCredits } from '@/hooks/useCredits';
 import { uploadImageToStorage, getGalleryFolderName } from '@/lib/storage-utils';
+import type { VehicleClassContext } from '@/config/vehicle-class-types';
+import { getVehicleClassProfile } from '@/config/vehicle-classes';
 import { toast } from 'sonner';
 import CreditConfirmDialog from '@/components/CreditConfirmDialog';
 import {
   PIPELINE_JOBS,
+  getJobsForProfile,
   PIPELINE_CATEGORIES,
   type PipelineJob,
   detectBrandFromDescription,
@@ -32,6 +35,8 @@ interface PipelineRunnerProps {
   vehicleDescription: string;
   vehicleBrand?: string;
   remasterConfig: RemasterConfig;
+  /** Verbindlicher Fahrzeugklassen-Kontext (fehlt => 'car'). */
+  classContext?: VehicleClassContext | null;
   modelTier?: string;
   projectId?: string | null;
   vehicleId?: string | null;
@@ -51,6 +56,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   vehicleDescription,
   vehicleBrand,
   remasterConfig,
+  classContext,
   modelTier = 'standard',
   projectId,
   vehicleId,
@@ -112,11 +118,14 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   );
 
   const localAvailableJobs = useMemo(() =>
-    applyPromptOverrides(PIPELINE_JOBS, promptOverrides).filter(j => {
+    getJobsForProfile(
+      applyPromptOverrides(PIPELINE_JOBS, promptOverrides),
+      getVehicleClassProfile(classContext?.vehicleClass),
+    ).filter(j => {
       if (j.category !== 'ci') return true;
       return j.brand === detectedBrand;
     }),
-    [detectedBrand, promptOverrides],
+    [detectedBrand, promptOverrides, classContext?.vehicleClass],
   );
 
   // Use context's jobs when pipeline is active, else local
@@ -289,6 +298,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       additionalImages: additionalImages || [],
       vehicleDescription,
       remasterConfig,
+      classContext: classContext ?? null,
       modelTier,
       projectId: projectId || null,
       vehicleId: vehicleId || null,
@@ -300,7 +310,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       detectedBrand: detectedBrand || null,
       totalImages: getTotalImageCount(selectedKeys),
     });
-  }, [user, localSelectedJobs, localAvailableJobs, inputImages, originalImages, additionalImages, vehicleDescription, remasterConfig, modelTier, projectId, vehicleId, vin, resolvedManufacturerLogoUrl, detectedBrand, selectedKeys, pipeline]);
+  }, [user, localSelectedJobs, localAvailableJobs, inputImages, originalImages, additionalImages, vehicleDescription, remasterConfig, classContext, modelTier, projectId, vehicleId, vin, resolvedManufacturerLogoUrl, detectedBrand, selectedKeys, pipeline]);
 
   /* ─── Credit pre-check ─── */
   const handleStartClick = () => {

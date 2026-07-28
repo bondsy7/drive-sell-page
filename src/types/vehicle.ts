@@ -67,6 +67,19 @@ export interface VehicleData {
   category: string;
   /** Audience: 'private' (Privatkundenangebot) or 'business' (Gewerbekundenangebot). */
   customerType?: 'private' | 'business';
+  /**
+   * Fahrzeugklasse für den Aufbereitungs-Workflow ('car' | 'truck').
+   * Fehlt der Wert (Altdaten), wird überall 'car' angenommen.
+   */
+  vehicleClass?: import('@/config/vehicle-class-types').ActiveVehicleClassKey;
+  /** Nur Lkw: gewählte Zug-/Aufbaukonfiguration. */
+  truckConfiguration?: import('@/config/vehicle-class-types').TruckConfigurationKey | null;
+  /** Nur Lkw: Aufbau- oder Anhängerart. */
+  truckBodyType?: import('@/config/vehicle-class-types').TruckBodyTypeKey | null;
+  /** Nur Lkw: Zustand des Ladebereichs. */
+  cargoState?: import('@/config/vehicle-class-types').CargoStateKey | null;
+  /** Abgeleiteter, verbindlicher Bildinhalt (was im Bild zu sehen sein muss). */
+  subjectScope?: import('@/config/vehicle-class-types').SubjectScopeKey | null;
   vehicle: {
     brand: string;
     model: string;

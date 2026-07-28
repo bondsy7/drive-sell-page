@@ -4,6 +4,9 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { REMASTER_PROMPT_BLOCKS, SCENE_PROMPT_DEFAULTS, SCENE_LIGHTING_PROFILES } from './remaster-prompt-defaults';
+import type { VehicleClassContext } from '@/config/vehicle-class-types';
+import { resolveVehicleClass } from '@/config/vehicle-classes';
+import { buildTruckPromptBlocks, TRUCK_PERSPECTIVE_PROMPTS } from '@/prompts/remaster/truck';
 
 export interface RemasterConfig {
   scene: string;
@@ -192,9 +195,12 @@ export function getPerspectivePrompt(slotKey: string): string {
 }
 
 /** Helper: is this an interior slot? */
+/** Interior slots across all vehicle classes (car: `interior-*`, truck: `truck_cab_interior`, `truck_cargo_area`). */
+const INTERIOR_SLOT_KEYS = new Set(['truck_cab_interior', 'truck_cargo_area']);
+
 function isInteriorSlot(slotKey?: string): boolean {
   if (!slotKey) return false;
-  return slotKey.startsWith('interior');
+  return slotKey.startsWith('interior') || INTERIOR_SLOT_KEYS.has(slotKey);
 }
 
 const REFERENCE_TRUTH_PROTOCOL = `REFERENCE IMAGES ARE THE ONLY SOURCE OF TRUTH.
@@ -216,8 +222,12 @@ export function buildMasterPrompt(
   vehicleDescription?: string,
   slotKey?: string,
   overrides: Record<string, string> = {},
+  classContext?: VehicleClassContext | null,
 ): string {
   const parts: string[] = [];
+  // Fehlender Kontext => 'car' (Rückwärtskompatibilität, Pkw-Prompt unverändert)
+  const vehicleClass = resolveVehicleClass(classContext?.vehicleClass);
+  const isTruck = vehicleClass === 'truck';
   const interior = isInteriorSlot(slotKey);
 
   // ── Base instruction ──
@@ -272,6 +282,17 @@ PAINT COLOR CHANGE – ABSOLUTE, NON-NEGOTIABLE, APPLIES TO EVERY IMAGE:
     : 'PAINT COLOR: Reproduce the EXACT paint color, shade, and finish (metallic/matte/pearl) from the original. Do NOT shift, tint, saturate, desaturate, lighten, or darken. Applies to ALL body panels, bumpers, mirrors, and painted surfaces.';
 
   parts.push(`<IDENTITY_LOCK>\n${colorLock}\n${getBlock(overrides, 'identity_lock')}\n</IDENTITY_LOCK>`);
+
+  // ── LKW-SPEZIFISCHE BLÖCKE (niemals im Pkw-Prompt) ──
+  if (isTruck) {
+    parts.push(...buildTruckPromptBlocks({
+      truckConfiguration: classContext?.truckConfiguration ?? null,
+      truckBodyType: classContext?.truckBodyType ?? null,
+      cargoState: classContext?.cargoState ?? null,
+      subjectScope: classContext?.subjectScope ?? null,
+      slotKey,
+    }));
+  }
 
   // ── MIRROR & CAMERA SYSTEM LOCK (LKW / Nutzfahrzeuge: Glasspiegel vs. MirrorCam / OptiView / CMS) ──
   if (!interior) {
@@ -563,9 +584,13 @@ RECONSTRUCTION RULES:
     parts.push(`Vehicle: ${vehicleDescription}`);
   }
 
-  // ── Perspective-specific instructions ──
+  // ── Perspective-specific instructions (class-scoped) ──
   if (slotKey) {
-    const perspPrompt = PERSPECTIVE_PROMPTS[slotKey];
+    const perspPrompt = isTruck
+      ? TRUCK_PERSPECTIVE_PROMPTS[slotKey]
+        ? `<CURRENT_PERSPECTIVE>\n${TRUCK_PERSPECTIVE_PROMPTS[slotKey]}\n</CURRENT_PERSPECTIVE>`
+        : ''
+      : PERSPECTIVE_PROMPTS[slotKey];
     if (perspPrompt) {
       parts.push(perspPrompt);
     }

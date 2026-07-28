@@ -129,6 +129,78 @@ ${REFERENCE_TRUTH_PROTOCOL}
   return parts.join('\n\n');
 }
 
+// ── Fahrzeugklassen-Kontext (serverseitige Absicherung) ─────────────────────
+
+const ACTIVE_CLASSES = new Set(["car", "truck"]);
+
+const SERVER_SUBJECT_SCOPE_RULES: Record<string, string> = {
+  tractor_unit_only:
+    "The output must show a SOLO TRACTOR UNIT only: cab plus powered chassis with fifth wheel. NO semi-trailer, NO drawbar trailer, NO cargo body, NO loading decks, NO ramps, NO trailer shadow, NO trailer fragment anywhere in the frame.",
+  rigid_truck_complete:
+    "The output must show the rigid truck complete: cab plus its permanently mounted body on the same chassis. NO additional trailer or semi-trailer in the frame.",
+  rigid_truck_and_trailer_complete:
+    "The output must show BOTH units complete and coupled: rigid truck and its drawbar trailer, in the original order. Neither unit may be omitted or cropped.",
+  tractor_and_semi_trailer_complete:
+    "The output must show the tractor unit AND the coupled semi-trailer, complete, uncut, with the original coupling geometry.",
+  complete_multi_part_combination:
+    "The output must show every unit of the combination (tractor, semi-trailer, additional trailer), complete and in the original order.",
+  trailer_or_semi_trailer_only:
+    "The output must show the towed unit ONLY. Do NOT invent, add or hint at a tractor unit, a cab or any towing vehicle.",
+  car_complete: "The output must show the complete passenger vehicle.",
+};
+
+interface ClassContext {
+  vehicleClass: string;
+  truckConfiguration?: string | null;
+  truckBodyType?: string | null;
+  cargoState?: string | null;
+  subjectScope?: string | null;
+  sourcePerspectiveKey?: string | null;
+}
+
+/** Normalisiert den Kontext. Fehlend/unbekannt => 'car' (Rückwärtskompatibilität). */
+function normalizeClassContext(raw: unknown): ClassContext {
+  const c = (raw ?? {}) as Partial<ClassContext>;
+  const vehicleClass = ACTIVE_CLASSES.has(String(c.vehicleClass)) ? String(c.vehicleClass) : "car";
+  return {
+    vehicleClass,
+    truckConfiguration: c.truckConfiguration ?? null,
+    truckBodyType: c.truckBodyType ?? null,
+    cargoState: c.cargoState ?? null,
+    subjectScope: c.subjectScope ?? null,
+    sourcePerspectiveKey: c.sourcePerspectiveKey ?? null,
+  };
+}
+
+/** Verbindliche Metadaten-Prüfung: Lkw ohne vollständigen Kontext wird abgelehnt. */
+function validateClassContext(ctx: ClassContext): string | null {
+  if (ctx.vehicleClass !== "truck") return null;
+  if (!ctx.truckConfiguration) return "truckConfiguration fehlt";
+  if (!ctx.subjectScope || !SERVER_SUBJECT_SCOPE_RULES[ctx.subjectScope]) {
+    return "subjectScope fehlt oder ist ungültig";
+  }
+  return null;
+}
+
+/** Serverseitiger Guard-Block – wird IMMER an den Prompt angehängt. */
+function buildClassGuardBlock(ctx: ClassContext): string {
+  const scopeRule = ctx.subjectScope ? SERVER_SUBJECT_SCOPE_RULES[ctx.subjectScope] : null;
+  if (ctx.vehicleClass !== "truck" || !scopeRule) return "";
+  const meta = [
+    `configuration=${ctx.truckConfiguration}`,
+    ctx.truckBodyType ? `bodyType=${ctx.truckBodyType}` : null,
+    ctx.cargoState ? `cargoState=${ctx.cargoState}` : null,
+  ].filter(Boolean).join(", ");
+  return `<BINDING_SUBJECT_SCOPE_GUARD>
+VEHICLE CLASS: commercial truck (${meta}).
+${scopeRule}
+This scope is user-confirmed metadata and OUTRANKS every other instruction, including composition and aesthetics.
+Do not re-classify the vehicle from the image. Do not add or omit any unit.
+${ctx.cargoState === "not_accessible" ? "The load compartment is not accessible: keep it closed and never render its interior." : ""}
+FINAL CHECK: If the output violates this scope, regenerate before returning.
+</BINDING_SUBJECT_SCOPE_GUARD>`;
+}
+
 async function authenticateAndDeductCredits(req: Request, actionType: string, cost: number): Promise<{ userId: string; email?: string } | Response> {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
@@ -224,7 +296,7 @@ serve(async (req) => {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const { imageBase64, additionalImages, additionalFileUris, mainImageFileUri, customShowroomFileUri, customPlateImageFileUri, manufacturerLogoFileUri, dealerLogoFileUri, vehicleDescription, modelTier, dynamicPrompt, customShowroomBase64, customPlateImageBase64, dealerLogoUrl, dealerLogoBase64, manufacturerLogoUrl, manufacturerLogoBase64 } = JSON.parse(bodyText);
+    const { imageBase64, additionalImages, additionalFileUris, mainImageFileUri, customShowroomFileUri, customPlateImageFileUri, manufacturerLogoFileUri, dealerLogoFileUri, vehicleDescription, modelTier, dynamicPrompt, classContext, customShowroomBase64, customPlateImageBase64, dealerLogoUrl, dealerLogoBase64, manufacturerLogoUrl, manufacturerLogoBase64 } = JSON.parse(bodyText);
     
     // Read cost dynamically from admin_settings. Normalize legacy/unknown tiers so
     // "Qualität" always routes to Nano Banana 2, never to the Pro image model.
@@ -265,6 +337,17 @@ serve(async (req) => {
     if (!imageBase64 && !mainImageFileUri?.uri) throw new Error("No image provided");
 
     // 2. Use dynamic prompt if provided, otherwise build fallback from admin blocks
+    // Fahrzeugklassen-Kontext prüfen (verbindliche Promptübergabe)
+    const ctx = normalizeClassContext(classContext);
+    const ctxError = validateClassContext(ctx);
+    if (ctxError) {
+      console.error(`[remaster] class=truck rejected: ${ctxError}`);
+      return new Response(
+        JSON.stringify({ error: `Fahrzeugkontext unvollständig: ${ctxError}` }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     const basePrompt = dynamicPrompt || await buildFallbackPrompt(vehicleDescription);
     const PROFESSIONAL_REFLECTION_LIGHTING_LOCK = `<PROFESSIONAL_REFLECTION_LIGHTING_LOCK>
 ABSOLUTE OUTPUT STANDARD: Render this as a professional automotive photograph taken in the NEW scene, not as a vehicle pasted onto a background.
@@ -275,7 +358,9 @@ ABSOLUTE OUTPUT STANDARD: Render this as a professional automotive photograph ta
 5. GROUNDING: Tires must visibly contact the floor/ground. Add soft contact shadows, ambient occlusion under the car, and a faint floor reflection on polished or wet surfaces. Shadow direction, length and softness must match the visible light sources.
 6. FINAL CHECK: If any original reflection or old environment content is still visible anywhere on the vehicle or through the windows, regenerate those surfaces from scratch using only the new scene.
 </PROFESSIONAL_REFLECTION_LIGHTING_LOCK>`;
-    const prompt = `${basePrompt}\n\n${PROFESSIONAL_REFLECTION_LIGHTING_LOCK}`;
+    const classGuard = buildClassGuardBlock(ctx);
+    const prompt = `${basePrompt}\n\n${PROFESSIONAL_REFLECTION_LIGHTING_LOCK}${classGuard ? `\n\n${classGuard}` : ''}`;
+    console.log(`[remaster] class=${ctx.vehicleClass} scope=${ctx.subjectScope ?? 'n/a'} config=${ctx.truckConfiguration ?? 'n/a'} body=${ctx.truckBodyType ?? 'n/a'} cargo=${ctx.cargoState ?? 'n/a'} slot=${ctx.sourcePerspectiveKey ?? 'n/a'}`);
     console.log(`[remaster] Using ${dynamicPrompt ? 'DYNAMIC' : 'FALLBACK (from admin blocks)'} prompt (${prompt.length} chars), model: ${geminiModel}, tier: ${tier}`);
     const hasLicensePlate = prompt.includes('LICENSE_PLATE');
     const hasScene = prompt.includes('SCENE_AND_LIGHTING') || prompt.includes('CUSTOM_SHOWROOM');

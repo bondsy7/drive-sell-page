@@ -19,6 +19,19 @@ import { ensureLogoCachedAsPng } from '@/lib/image-base64-cache';
 import { ensureVehicleAuto } from '@/lib/vehicle-utils';
 import { useAuth } from '@/hooks/useAuth';
 import type { VehicleData } from '@/types/vehicle';
+import type {
+  ActiveVehicleClassKey,
+  CaptureSlot,
+  TruckWorkflowSelection,
+  VehicleClassContext,
+} from '@/config/vehicle-class-types';
+import { getVehicleClassProfile, resolveVehicleClass } from '@/config/vehicle-classes';
+import { resolveCaptureSlots } from '@/config/resolve-slots';
+import { isTruckSelectionComplete } from '@/config/truck-workflow';
+import { checkSourceCoverage } from '@/lib/source-coverage';
+import VehicleClassPicker from '@/components/capture/VehicleClassPicker';
+import TruckWizard from '@/components/capture/TruckWizard';
+import { TruckSketch } from '@/components/capture/TruckSketch';
 
 interface ImageCaptureGridProps {
   vehicleDescription: string;
@@ -32,22 +45,12 @@ interface ImageCaptureGridProps {
   onPipelineComplete?: () => void;
 }
 
-interface PerspectiveSlot {
-  key: string;
-  label: string;
-  icon: string; // path to placeholder icon
-  capture: 'environment' | 'user'; // camera facing
-  isVin?: boolean;
-}
-
-const SLOTS: PerspectiveSlot[] = [
-  { key: '34front', label: '3/4 Front', icon: '/images/perspectives/34_Vorne.png', capture: 'environment' },
-  { key: 'side', label: 'Seite', icon: '/images/perspectives/Seite.png', capture: 'environment' },
-  { key: 'rear', label: 'Hinten', icon: '/images/perspectives/Hinten.png', capture: 'environment' },
-  { key: 'interior-front', label: 'Interieur Fahrersitz', icon: '/images/perspectives/Interieur_Fahrersitz.png', capture: 'environment' },
-  { key: 'interior-rear', label: 'Interieur Rücksitz', icon: '/images/perspectives/Interieur_Ruecksitz.png', capture: 'environment' },
-  { key: 'vin', label: 'VIN', icon: '/images/perspectives/VIN.png', capture: 'environment', isVin: true },
-];
+/**
+ * Slots kommen aus der Fahrzeugklassen-Registry.
+ * Pkw: statische Liste (identisch zur bisherigen Hardcoding-Variante).
+ * Lkw: dynamisch aus der Wizard-Auswahl.
+ */
+type PerspectiveSlot = CaptureSlot;
 
 interface CapturedImage {
   base64: string;
@@ -164,6 +167,25 @@ const EMPTY_CONSUMPTION: VehicleData['consumption'] = {
 const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription, vehicleData, modelTier, projectId, vehicleId, onComplete, onVehicleDataChange, onBack, onPipelineComplete }) => {
   const { user } = useAuth();
   const [showPipeline, setShowPipeline] = useState(false);
+
+  // ── Fahrzeugklassen-Workflow ──
+  const initialClass = resolveVehicleClass(vehicleData?.vehicleClass);
+  const [vehicleClass, setVehicleClass] = useState<ActiveVehicleClassKey | null>(
+    vehicleData?.vehicleClass ? initialClass : null,
+  );
+  const [truckSelection, setTruckSelection] = useState<Partial<TruckWorkflowSelection>>({
+    truckConfiguration: vehicleData?.truckConfiguration ?? null,
+    truckBodyType: vehicleData?.truckBodyType ?? null,
+    cargoState: vehicleData?.cargoState ?? null,
+    subjectScope: vehicleData?.subjectScope ?? null,
+  });
+  const [truckWizardDone, setTruckWizardDone] = useState(
+    () => isTruckSelectionComplete({
+      truckConfiguration: vehicleData?.truckConfiguration ?? null,
+      truckBodyType: vehicleData?.truckBodyType ?? null,
+      cargoState: vehicleData?.cargoState ?? null,
+    }),
+  );
   const [ensuredVehicleId, setEnsuredVehicleId] = useState<string | null>(vehicleId || null);
   const [isEnsuringVehicle, setIsEnsuringVehicle] = useState(false);
   const [captures, setCaptures] = useState<Record<string, CapturedImage>>({});
@@ -200,7 +222,16 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     }
   }, [ensuredVehicleId, vehicleId, user, vehicleData, detectedVin]);
 
+  /** Coverage-Snapshot für Callbacks, die vor der Berechnung definiert sind. */
+  const coverageRef = useRef<{ ok: boolean; missingLabels: string[] }>({ ok: true, missingLabels: [] });
+
   const openPipeline = useCallback(async () => {
+    // Source-Coverage-Validierung: fehlende Pflichtperspektiven werden NIE
+    // aus anderen Winkeln hochgerechnet – der Start wird stattdessen blockiert.
+    if (!coverageRef.current.ok) {
+      toast.error(`Fehlende Pflichtaufnahmen: ${coverageRef.current.missingLabels.join(', ')}`);
+      return;
+    }
     await ensureVehicleForPipeline();
     setShowPipeline(true);
   }, [ensureVehicleForPipeline]);
@@ -328,9 +359,31 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     }));
   }, [buildVehicleState, detectedVin, makes, onVehicleDataChange, patchVehicleData, resolveBrandFromSource, resolveModelForBrand, vinLookup.outvinData]);
 
+  const activeClass: ActiveVehicleClassKey = vehicleClass ?? 'car';
+  const classProfile = getVehicleClassProfile(activeClass);
+
+  /** Verbindlicher Klassen-Kontext für Prompt-Bau und Edge Function. */
+  const classContext: VehicleClassContext = useMemo(() => ({
+    vehicleClass: activeClass,
+    truckConfiguration: truckSelection.truckConfiguration ?? null,
+    truckBodyType: truckSelection.truckBodyType ?? null,
+    cargoState: truckSelection.cargoState ?? null,
+    subjectScope: truckSelection.subjectScope ?? null,
+  }), [activeClass, truckSelection]);
+
+  const slots: PerspectiveSlot[] = useMemo(
+    () => resolveCaptureSlots(classProfile, truckSelection),
+    [classProfile, truckSelection],
+  );
+
   const capturedCount = Object.keys(captures).length;
-  const vehicleSlots = SLOTS.filter(s => !s.isVin);
+  const vehicleSlots = slots.filter(s => !s.isVin);
   const capturedVehicleImages = vehicleSlots.filter(s => captures[s.key]);
+  const coverage = useMemo(
+    () => checkSourceCoverage(slots, captures),
+    [slots, captures],
+  );
+  coverageRef.current = { ok: coverage.ok, missingLabels: coverage.missingLabels };
 
   const handleCapture = useCallback(async (slot: PerspectiveSlot, file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -539,12 +592,13 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       }
       const slotConfig = { ...remasterConfig, detectedBranding };
       // Build per-slot prompt with perspective-specific instructions
-      const dynamicPrompt = buildMasterPrompt(slotConfig, vehicleDescription, slot.key, promptOverrides);
+      const dynamicPrompt = buildMasterPrompt(slotConfig, vehicleDescription, slot.key, promptOverrides, classContext);
 
       const MAX_RETRIES = 2;
       for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
         try {
           const { data, error } = await invokeRemasterVehicleImage({
+            classContext,
             imageBase64: captures[slot.key].base64,
             additionalImages: detailImages.length > 0 ? detailImages : undefined,
             vehicleDescription,
@@ -608,8 +662,9 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       if (remasterConfig.cleanupItems && remasterConfig.cleanupItems.length > 0) {
         try { detectedBranding = await detectVehicleBranding(captures[slotKey].base64); } catch { /* continue */ }
       }
-      const dynamicPrompt = buildMasterPrompt({ ...remasterConfig, detectedBranding }, vehicleDescription, undefined, overrides);
+      const dynamicPrompt = buildMasterPrompt({ ...remasterConfig, detectedBranding }, vehicleDescription, slotKey, overrides, classContext);
       const { data, error } = await invokeRemasterVehicleImage({
+        classContext,
         imageBase64: captures[slotKey].base64,
         additionalImages: detailImages.length > 0 ? detailImages : undefined,
         vehicleDescription,
@@ -668,6 +723,51 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     .filter(s => captures[s.key])
     .map(s => captures[s.key].base64);
 
+  // ── Schritt 1.1: Fahrzeugart ──
+  if (!vehicleClass) {
+    return (
+      <div className="w-full max-w-2xl mx-auto space-y-6">
+        <VehicleClassPicker
+          value={vehicleClass}
+          onChange={(cls) => {
+            setVehicleClass(cls);
+            setCaptures({});
+            setTruckWizardDone(cls !== 'truck');
+            const cur = latestVehicleDataRef.current;
+            if (cur) onVehicleDataChange?.({ ...cur, vehicleClass: cls });
+          }}
+        />
+        <Button variant="ghost" onClick={onBack} className="w-full">Zurück</Button>
+      </div>
+    );
+  }
+
+  // ── Schritt 1.2–1.4: Lkw-Konfiguration ──
+  if (activeClass === 'truck' && !truckWizardDone) {
+    return (
+      <div className="w-full max-w-2xl mx-auto">
+        <TruckWizard
+          selection={truckSelection}
+          onChange={setTruckSelection}
+          onComplete={(sel) => {
+            setTruckSelection(sel);
+            setTruckWizardDone(true);
+            const cur = latestVehicleDataRef.current;
+            if (cur) onVehicleDataChange?.({
+              ...cur,
+              vehicleClass: 'truck',
+              truckConfiguration: sel.truckConfiguration,
+              truckBodyType: sel.truckBodyType,
+              cargoState: sel.cargoState,
+              subjectScope: sel.subjectScope,
+            });
+          }}
+          onBack={() => setVehicleClass(null)}
+        />
+      </div>
+    );
+  }
+
   if (showPipeline) {
     return (
       <PipelineRunner
@@ -677,6 +777,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         vehicleDescription={vehicleDescription}
         vehicleBrand={vehicleData?.vehicle?.brand}
         remasterConfig={remasterConfig}
+        classContext={classContext}
         modelTier={modelTier}
         projectId={projectId}
         vehicleId={ensuredVehicleId || vehicleId}
@@ -696,15 +797,46 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   return (
     <div className="w-full max-w-2xl mx-auto space-y-6">
       <div className="text-center">
-        <h2 className="font-display text-xl font-bold text-foreground mb-2">Fahrzeugfotos aufnehmen</h2>
+        <h2 className="font-display text-xl font-bold text-foreground mb-2">
+          {classProfile.captureHeadline || 'Fahrzeugfotos aufnehmen'}
+        </h2>
         <p className="text-sm text-muted-foreground">
-          Fotografiere das Fahrzeug aus den vorgegebenen Perspektiven. Die KI setzt es in einen professionellen Showroom.
+          {activeClass === 'truck'
+            ? 'Nimm die Pflichtperspektiven für die gewählte Lkw-Konfiguration auf. Fehlende Perspektiven werden nicht ersetzt.'
+            : 'Fotografiere das Fahrzeug aus den vorgegebenen Perspektiven. Die KI setzt es in einen professionellen Showroom.'}
         </p>
+        <div className="mt-2 flex flex-wrap items-center justify-center gap-2 text-xs">
+          <span className="px-2 py-1 rounded-full bg-muted text-muted-foreground font-medium">
+            {classProfile.label}
+          </span>
+          <button
+            onClick={() => { setVehicleClass(null); setTruckWizardDone(false); }}
+            className="underline text-muted-foreground hover:text-foreground"
+          >
+            Fahrzeugart ändern
+          </button>
+          {activeClass === 'truck' && (
+            <button
+              onClick={() => setTruckWizardDone(false)}
+              className="underline text-muted-foreground hover:text-foreground"
+            >
+              Konfiguration ändern
+            </button>
+          )}
+        </div>
       </div>
+
+      {!coverage.ok && (
+        <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
+          <span className="font-semibold text-foreground">Pflichtaufnahmen fehlen: </span>
+          {coverage.missingLabels.join(', ')}
+        </div>
+      )}
+
 
       {/* Grid of perspective slots */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {SLOTS.map((slot) => {
+        {slots.map((slot) => {
           const cap = captures[slot.key];
           return (
             <div
@@ -762,14 +894,24 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
               ) : (
                 <button
                   onClick={() => fileRefs.current[slot.key]?.click()}
-                  className="w-full aspect-[4/3] flex flex-col items-center justify-center gap-2 p-3 hover:bg-muted/50 transition-colors"
+                  className="w-full aspect-[4/3] flex flex-col items-center justify-center gap-1.5 p-3 hover:bg-muted/50 transition-colors"
                 >
-                  <img
-                    src={slot.icon}
-                    alt={slot.label}
-                    className="w-16 h-12 object-contain opacity-40"
-                  />
-                  <span className="text-xs font-medium text-muted-foreground">{slot.label}</span>
+                  {slot.icon ? (
+                    <img
+                      src={slot.icon}
+                      alt={slot.label}
+                      className="w-16 h-12 object-contain opacity-40"
+                    />
+                  ) : (
+                    <TruckSketch id={slot.sketch} className="w-20 h-12 text-muted-foreground/50" />
+                  )}
+                  <span className="text-xs font-medium text-muted-foreground text-center leading-tight">
+                    {slot.label}
+                    {!slot.required && <span className="text-muted-foreground/60"> (optional)</span>}
+                  </span>
+                  {slot.hint && (
+                    <span className="text-[10px] text-muted-foreground/70 text-center leading-tight px-1">{slot.hint}</span>
+                  )}
                   <Camera className="w-4 h-4 text-muted-foreground/50" />
                 </button>
               )}

@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { uploadImageToStorage, getGalleryFolderName } from '@/lib/storage-utils';
 import { toast } from 'sonner';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
+import type { VehicleClassContext } from '@/config/vehicle-class-types';
 import { buildMasterPrompt, fetchPromptOverrides, type RemasterConfig } from '@/lib/remaster-prompt';
 import { type PipelineJob, injectLogoPlaceholder } from '@/lib/pipeline-jobs';
 import { ensureLogoCachedAsPng } from '@/lib/image-base64-cache';
@@ -33,6 +34,8 @@ export interface PipelineConfig {
   additionalImages: string[];
   vehicleDescription: string;
   remasterConfig: RemasterConfig;
+  /** Verbindlicher Fahrzeugklassen-Kontext; null => 'car' (Rückwärtskompatibilität). */
+  classContext?: VehicleClassContext | null;
   modelTier: string;
   projectId: string | null;
   vehicleId: string | null;
@@ -231,7 +234,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const interiorSlotKey = isInteriorJob
       ? (REAR_INTERIOR_PATTERNS.test(`${job?.key || ''} ${job?.label || ''} ${job?.labelDe || ''}`) ? 'interior-rear' : 'interior-front')
       : undefined;
-    const baseContext = buildMasterPrompt(cfg.remasterConfig, cfg.vehicleDescription, interiorSlotKey, promptOverrides);
+    const baseContext = buildMasterPrompt(cfg.remasterConfig, cfg.vehicleDescription, interiorSlotKey, promptOverrides, cfg.classContext ?? null);
     const taskLock = buildTaskOutputLock(job);
 
     // Determine if logos are enabled
@@ -286,6 +289,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const dealerLogoFileUri2 = cfg.remasterConfig.showDealerLogo ? fileUriCache.dealerLogo : null;
 
     const { data, error } = await invokeRemasterVehicleImage({
+      classContext: cfg.classContext ?? null,
       imageBase64: primaryReference,
       additionalImages: inlineSupportingImages && inlineSupportingImages.length > 0 ? inlineSupportingImages : undefined,
       additionalFileUris: additionalFileUris && additionalFileUris.length > 0 ? additionalFileUris : undefined,
