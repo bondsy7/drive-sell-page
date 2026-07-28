@@ -386,17 +386,30 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   coverageRef.current = { ok: coverage.ok, missingLabels: coverage.missingLabels };
 
   const handleCapture = useCallback(async (slot: PerspectiveSlot, file: File) => {
-    if (!file.type.startsWith('image/')) {
+    const isImage = file.type.startsWith('image/') || /\.(jpe?g|png|webp|heic|heif|avif)$/i.test(file.name);
+    if (!isImage) {
       toast.error('Bitte ein Bild auswählen.');
       return;
     }
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('Bild zu groß (max 10MB).');
+    if (file.size > 25 * 1024 * 1024) {
+      toast.error('Bild zu groß (max 25MB).');
       return;
     }
-    const rawBase64 = await fileToBase64(file);
-    // Compress to max 2048px and JPEG quality 0.85 to prevent edge function timeouts
-    const base64 = await compressImage(rawBase64);
+
+    let base64: string;
+    try {
+      const rawBase64 = await fileToBase64(file);
+      // Compress to max 2048px and JPEG quality 0.85 to prevent edge function timeouts
+      try {
+        base64 = await compressImage(rawBase64);
+      } catch {
+        // z.B. HEIC/HEIF: Browser kann das Bild nicht in Canvas laden → Original verwenden
+        base64 = rawBase64;
+      }
+    } catch {
+      toast.error('Bild konnte nicht gelesen werden.');
+      return;
+    }
     setCaptures(prev => ({ ...prev, [slot.key]: { base64, status: 'captured' } }));
 
     if (!slot.isVin && (!brandDetectionAttempted.current || brandDetectionStatus === 'not-found') && makes.length > 0) {
@@ -918,8 +931,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
               <input
                 ref={(el) => { fileRefs.current[slot.key] = el; }}
                 type="file"
-                accept="image/*"
-                capture="environment"
+                accept="image/*,.heic,.heif"
                 className="hidden"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
