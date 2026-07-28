@@ -573,9 +573,13 @@ RECONSTRUCTION RULES:
     parts.push(`Vehicle: ${vehicleDescription}`);
   }
 
-  // ── Perspective-specific instructions ──
+  // ── Perspective-specific instructions (class-scoped) ──
   if (slotKey) {
-    const perspPrompt = PERSPECTIVE_PROMPTS[slotKey];
+    const perspPrompt = isTruck
+      ? TRUCK_PERSPECTIVE_PROMPTS[slotKey]
+        ? `<CURRENT_PERSPECTIVE>\n${TRUCK_PERSPECTIVE_PROMPTS[slotKey]}\n</CURRENT_PERSPECTIVE>`
+        : ''
+      : PERSPECTIVE_PROMPTS[slotKey];
     if (perspPrompt) {
       parts.push(perspPrompt);
     }
