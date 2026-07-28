@@ -343,6 +343,18 @@ const CONFIG_IMAGES: Record<string, string> = {
   cargo_empty: imgCargoEmpty,
   cargo_loaded_accessible: imgCargoLoaded,
   cargo_not_accessible: imgCargoClosed,
+  // ── Aufnahme-Slots (gleicher Skizzenstil) ──
+  cab_34_front_left: imgSlotCab34FrontLeft,
+  cab_side_left: imgSlotCabSideLeft,
+  cab_front: imgSlotCabFront,
+  mirror_detail: imgSlotMirrorDetail,
+  cab_interior: imgSlotCabInterior,
+  fifth_wheel: imgSlotFifthWheel,
+  body_side_left: imgSlotBodySideLeft,
+  body_rear: imgSlotBodyRear,
+  body_34_rear_right: imgSlotBody34RearRight,
+  cargo_area: imgSlotCargoArea,
+  vin_plate: imgSlotVinPlate,
 };
 
 export interface TruckSketchProps {
