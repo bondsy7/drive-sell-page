@@ -350,9 +350,30 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     }));
   }, [buildVehicleState, detectedVin, makes, onVehicleDataChange, patchVehicleData, resolveBrandFromSource, resolveModelForBrand, vinLookup.outvinData]);
 
+  const activeClass: ActiveVehicleClassKey = vehicleClass ?? 'car';
+  const classProfile = getVehicleClassProfile(activeClass);
+
+  /** Verbindlicher Klassen-Kontext für Prompt-Bau und Edge Function. */
+  const classContext: VehicleClassContext = useMemo(() => ({
+    vehicleClass: activeClass,
+    truckConfiguration: truckSelection.truckConfiguration ?? null,
+    truckBodyType: truckSelection.truckBodyType ?? null,
+    cargoState: truckSelection.cargoState ?? null,
+    subjectScope: truckSelection.subjectScope ?? null,
+  }), [activeClass, truckSelection]);
+
+  const slots: PerspectiveSlot[] = useMemo(
+    () => resolveCaptureSlots(activeClass, truckSelection),
+    [activeClass, truckSelection],
+  );
+
   const capturedCount = Object.keys(captures).length;
-  const vehicleSlots = SLOTS.filter(s => !s.isVin);
+  const vehicleSlots = slots.filter(s => !s.isVin);
   const capturedVehicleImages = vehicleSlots.filter(s => captures[s.key]);
+  const coverage = useMemo(
+    () => checkSourceCoverage(classProfile, slots, Object.keys(captures)),
+    [classProfile, slots, captures],
+  );
 
   const handleCapture = useCallback(async (slot: PerspectiveSlot, file: File) => {
     if (!file.type.startsWith('image/')) {
