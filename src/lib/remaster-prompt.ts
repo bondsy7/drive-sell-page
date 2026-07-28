@@ -195,9 +195,12 @@ export function getPerspectivePrompt(slotKey: string): string {
 }
 
 /** Helper: is this an interior slot? */
+/** Interior slots across all vehicle classes (car: `interior-*`, truck: `truck_cab_interior`, `truck_cargo_area`). */
+const INTERIOR_SLOT_KEYS = new Set(['truck_cab_interior', 'truck_cargo_area']);
+
 function isInteriorSlot(slotKey?: string): boolean {
   if (!slotKey) return false;
-  return slotKey.startsWith('interior');
+  return slotKey.startsWith('interior') || INTERIOR_SLOT_KEYS.has(slotKey);
 }
 
 const REFERENCE_TRUTH_PROTOCOL = `REFERENCE IMAGES ARE THE ONLY SOURCE OF TRUTH.
