@@ -795,11 +795,42 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   return (
     <div className="w-full max-w-2xl mx-auto space-y-6">
       <div className="text-center">
-        <h2 className="font-display text-xl font-bold text-foreground mb-2">Fahrzeugfotos aufnehmen</h2>
+        <h2 className="font-display text-xl font-bold text-foreground mb-2">
+          {classProfile.captureHeadline || 'Fahrzeugfotos aufnehmen'}
+        </h2>
         <p className="text-sm text-muted-foreground">
-          Fotografiere das Fahrzeug aus den vorgegebenen Perspektiven. Die KI setzt es in einen professionellen Showroom.
+          {activeClass === 'truck'
+            ? 'Nimm die Pflichtperspektiven für die gewählte Lkw-Konfiguration auf. Fehlende Perspektiven werden nicht ersetzt.'
+            : 'Fotografiere das Fahrzeug aus den vorgegebenen Perspektiven. Die KI setzt es in einen professionellen Showroom.'}
         </p>
+        <div className="mt-2 flex flex-wrap items-center justify-center gap-2 text-xs">
+          <span className="px-2 py-1 rounded-full bg-muted text-muted-foreground font-medium">
+            {classProfile.label}
+          </span>
+          <button
+            onClick={() => { setVehicleClass(null); setTruckWizardDone(false); }}
+            className="underline text-muted-foreground hover:text-foreground"
+          >
+            Fahrzeugart ändern
+          </button>
+          {activeClass === 'truck' && (
+            <button
+              onClick={() => setTruckWizardDone(false)}
+              className="underline text-muted-foreground hover:text-foreground"
+            >
+              Konfiguration ändern
+            </button>
+          )}
+        </div>
       </div>
+
+      {!coverage.ok && (
+        <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
+          <span className="font-semibold text-foreground">Pflichtaufnahmen fehlen: </span>
+          {coverage.missingLabels.join(', ')}
+        </div>
+      )}
+
 
       {/* Grid of perspective slots */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
