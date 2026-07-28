@@ -1,4 +1,11 @@
 import React from 'react';
+import imgTractorUnit from '@/assets/truck/tractor_unit.png';
+import imgRigidTruck from '@/assets/truck/rigid_truck.png';
+import imgRigidTruckTrailer from '@/assets/truck/rigid_truck_with_trailer.png';
+import imgSemiTruck from '@/assets/truck/semi_truck.png';
+import imgSemiTruckTrailer from '@/assets/truck/semi_truck_with_trailer.png';
+import imgTrailerOnly from '@/assets/truck/trailer_only.png';
+
 
 /**
  * Technische Strichzeichnungen (Schemaskizzen) für den Lkw-Workflow.
