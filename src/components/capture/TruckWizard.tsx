@@ -191,7 +191,9 @@ const TruckWizard: React.FC<TruckWizardProps> = ({ selection, onChange, onComple
                 sketch={`cargo_${o.key}`}
                 label={o.label}
                 description={o.description}
-                onSelect={() => emit({ cargoState: o.key })}
+                onSelect={() =>
+                  emit({ cargoState: selection.cargoState === o.key ? null : o.key })
+                }
               />
             ))}
           </div>
