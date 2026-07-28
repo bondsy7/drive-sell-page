@@ -167,6 +167,25 @@ const EMPTY_CONSUMPTION: VehicleData['consumption'] = {
 const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription, vehicleData, modelTier, projectId, vehicleId, onComplete, onVehicleDataChange, onBack, onPipelineComplete }) => {
   const { user } = useAuth();
   const [showPipeline, setShowPipeline] = useState(false);
+
+  // ── Fahrzeugklassen-Workflow ──
+  const initialClass = resolveVehicleClass(vehicleData?.vehicleClass);
+  const [vehicleClass, setVehicleClass] = useState<ActiveVehicleClassKey | null>(
+    vehicleData?.vehicleClass ? initialClass : null,
+  );
+  const [truckSelection, setTruckSelection] = useState<Partial<TruckWorkflowSelection>>({
+    truckConfiguration: vehicleData?.truckConfiguration ?? null,
+    truckBodyType: vehicleData?.truckBodyType ?? null,
+    cargoState: vehicleData?.cargoState ?? null,
+    subjectScope: vehicleData?.subjectScope ?? null,
+  });
+  const [truckWizardDone, setTruckWizardDone] = useState(
+    () => isTruckSelectionComplete({
+      truckConfiguration: vehicleData?.truckConfiguration ?? null,
+      truckBodyType: vehicleData?.truckBodyType ?? null,
+      cargoState: vehicleData?.cargoState ?? null,
+    }),
+  );
   const [ensuredVehicleId, setEnsuredVehicleId] = useState<string | null>(vehicleId || null);
   const [isEnsuringVehicle, setIsEnsuringVehicle] = useState(false);
   const [captures, setCaptures] = useState<Record<string, CapturedImage>>({});
