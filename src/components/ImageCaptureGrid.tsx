@@ -747,7 +747,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
 
       {/* Grid of perspective slots */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {SLOTS.map((slot) => {
+        {slots.map((slot) => {
           const cap = captures[slot.key];
           return (
             <div
