@@ -129,6 +129,78 @@ ${REFERENCE_TRUTH_PROTOCOL}
   return parts.join('\n\n');
 }
 
+// ── Fahrzeugklassen-Kontext (serverseitige Absicherung) ─────────────────────
+
+const ACTIVE_CLASSES = new Set(["car", "truck"]);
+
+const SERVER_SUBJECT_SCOPE_RULES: Record<string, string> = {
+  tractor_unit_only:
+    "The output must show a SOLO TRACTOR UNIT only: cab plus powered chassis with fifth wheel. NO semi-trailer, NO drawbar trailer, NO cargo body, NO loading decks, NO ramps, NO trailer shadow, NO trailer fragment anywhere in the frame.",
+  rigid_truck_complete:
+    "The output must show the rigid truck complete: cab plus its permanently mounted body on the same chassis. NO additional trailer or semi-trailer in the frame.",
+  rigid_truck_and_trailer_complete:
+    "The output must show BOTH units complete and coupled: rigid truck and its drawbar trailer, in the original order. Neither unit may be omitted or cropped.",
+  tractor_and_semi_trailer_complete:
+    "The output must show the tractor unit AND the coupled semi-trailer, complete, uncut, with the original coupling geometry.",
+  complete_multi_part_combination:
+    "The output must show every unit of the combination (tractor, semi-trailer, additional trailer), complete and in the original order.",
+  trailer_or_semi_trailer_only:
+    "The output must show the towed unit ONLY. Do NOT invent, add or hint at a tractor unit, a cab or any towing vehicle.",
+  car_complete: "The output must show the complete passenger vehicle.",
+};
+
+interface ClassContext {
+  vehicleClass: string;
+  truckConfiguration?: string | null;
+  truckBodyType?: string | null;
+  cargoState?: string | null;
+  subjectScope?: string | null;
+  sourcePerspectiveKey?: string | null;
+}
+
+/** Normalisiert den Kontext. Fehlend/unbekannt => 'car' (Rückwärtskompatibilität). */
+function normalizeClassContext(raw: unknown): ClassContext {
+  const c = (raw ?? {}) as Partial<ClassContext>;
+  const vehicleClass = ACTIVE_CLASSES.has(String(c.vehicleClass)) ? String(c.vehicleClass) : "car";
+  return {
+    vehicleClass,
+    truckConfiguration: c.truckConfiguration ?? null,
+    truckBodyType: c.truckBodyType ?? null,
+    cargoState: c.cargoState ?? null,
+    subjectScope: c.subjectScope ?? null,
+    sourcePerspectiveKey: c.sourcePerspectiveKey ?? null,
+  };
+}
+
+/** Verbindliche Metadaten-Prüfung: Lkw ohne vollständigen Kontext wird abgelehnt. */
+function validateClassContext(ctx: ClassContext): string | null {
+  if (ctx.vehicleClass !== "truck") return null;
+  if (!ctx.truckConfiguration) return "truckConfiguration fehlt";
+  if (!ctx.subjectScope || !SERVER_SUBJECT_SCOPE_RULES[ctx.subjectScope]) {
+    return "subjectScope fehlt oder ist ungültig";
+  }
+  return null;
+}
+
+/** Serverseitiger Guard-Block – wird IMMER an den Prompt angehängt. */
+function buildClassGuardBlock(ctx: ClassContext): string {
+  const scopeRule = ctx.subjectScope ? SERVER_SUBJECT_SCOPE_RULES[ctx.subjectScope] : null;
+  if (ctx.vehicleClass !== "truck" || !scopeRule) return "";
+  const meta = [
+    `configuration=${ctx.truckConfiguration}`,
+    ctx.truckBodyType ? `bodyType=${ctx.truckBodyType}` : null,
+    ctx.cargoState ? `cargoState=${ctx.cargoState}` : null,
+  ].filter(Boolean).join(", ");
+  return `<BINDING_SUBJECT_SCOPE_GUARD>
+VEHICLE CLASS: commercial truck (${meta}).
+${scopeRule}
+This scope is user-confirmed metadata and OUTRANKS every other instruction, including composition and aesthetics.
+Do not re-classify the vehicle from the image. Do not add or omit any unit.
+${ctx.cargoState === "not_accessible" ? "The load compartment is not accessible: keep it closed and never render its interior." : ""}
+FINAL CHECK: If the output violates this scope, regenerate before returning.
+</BINDING_SUBJECT_SCOPE_GUARD>`;
+}
+
 async function authenticateAndDeductCredits(req: Request, actionType: string, cost: number): Promise<{ userId: string; email?: string } | Response> {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
