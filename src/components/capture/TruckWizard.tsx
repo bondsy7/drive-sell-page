@@ -117,7 +117,7 @@ const TruckWizard: React.FC<TruckWizardProps> = ({ selection, onChange, onComple
             im Bild zu sehen sein muss.
           </p>
         </div>
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {TRUCK_CONFIGURATIONS.map((o) => (
             <OptionCard
               key={o.key}
@@ -150,7 +150,7 @@ const TruckWizard: React.FC<TruckWizardProps> = ({ selection, onChange, onComple
               dürfen.
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {TRUCK_BODY_TYPES.map((o) => (
               <OptionCard
                 key={o.key}
