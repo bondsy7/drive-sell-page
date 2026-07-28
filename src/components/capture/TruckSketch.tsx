@@ -12,6 +12,9 @@ import imgBodyTank from '@/assets/truck/body_tank.png';
 import imgBodyLowLoader from '@/assets/truck/body_low_loader.png';
 import imgBodyVehicleTransport from '@/assets/truck/body_vehicle_transport.png';
 import imgBodyUnknown from '@/assets/truck/body_unknown.png';
+import imgCargoEmpty from '@/assets/truck/cargo_empty.png';
+import imgCargoLoaded from '@/assets/truck/cargo_loaded.png';
+import imgCargoClosed from '@/assets/truck/cargo_closed.png';
 
 
 /**
