@@ -77,7 +77,9 @@ const TruckWizard: React.FC<TruckWizardProps> = ({ selection, onChange, onComple
     const merged: Partial<TruckWorkflowSelection> = {
       ...selection,
       ...next,
-      subjectScope: resolveSubjectScope(next.truckConfiguration ?? selection.truckConfiguration),
+      subjectScope: resolveSubjectScope(
+        'truckConfiguration' in next ? next.truckConfiguration : selection.truckConfiguration
+      ),
     };
     onChange(merged);
 
@@ -126,11 +128,11 @@ const TruckWizard: React.FC<TruckWizardProps> = ({ selection, onChange, onComple
               label={o.label}
               description={o.description}
               onSelect={() =>
-                emit({
-                  truckConfiguration: o.key,
-                  truckBodyType: null,
-                  cargoState: null,
-                })
+                emit(
+                  selection.truckConfiguration === o.key
+                    ? { truckConfiguration: null, truckBodyType: null, cargoState: null }
+                    : { truckConfiguration: o.key, truckBodyType: null, cargoState: null }
+                )
               }
             />
           ))}
@@ -158,7 +160,13 @@ const TruckWizard: React.FC<TruckWizardProps> = ({ selection, onChange, onComple
                 sketch={o.sketch}
                 label={o.label}
                 description={o.description}
-                onSelect={() => emit({ truckBodyType: o.key, cargoState: null })}
+                onSelect={() =>
+                  emit(
+                    selection.truckBodyType === o.key
+                      ? { truckBodyType: null, cargoState: null }
+                      : { truckBodyType: o.key, cargoState: null }
+                  )
+                }
               />
             ))}
           </div>
@@ -185,7 +193,9 @@ const TruckWizard: React.FC<TruckWizardProps> = ({ selection, onChange, onComple
                 sketch={`cargo_${o.key}`}
                 label={o.label}
                 description={o.description}
-                onSelect={() => emit({ cargoState: o.key })}
+                onSelect={() =>
+                  emit({ cargoState: selection.cargoState === o.key ? null : o.key })
+                }
               />
             ))}
           </div>
