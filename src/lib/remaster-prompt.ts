@@ -283,6 +283,17 @@ PAINT COLOR CHANGE – ABSOLUTE, NON-NEGOTIABLE, APPLIES TO EVERY IMAGE:
 
   parts.push(`<IDENTITY_LOCK>\n${colorLock}\n${getBlock(overrides, 'identity_lock')}\n</IDENTITY_LOCK>`);
 
+  // ── LKW-SPEZIFISCHE BLÖCKE (niemals im Pkw-Prompt) ──
+  if (isTruck) {
+    parts.push(...buildTruckPromptBlocks({
+      truckConfiguration: classContext?.truckConfiguration ?? null,
+      truckBodyType: classContext?.truckBodyType ?? null,
+      cargoState: classContext?.cargoState ?? null,
+      subjectScope: classContext?.subjectScope ?? null,
+      slotKey,
+    }));
+  }
+
   // ── MIRROR & CAMERA SYSTEM LOCK (LKW / Nutzfahrzeuge: Glasspiegel vs. MirrorCam / OptiView / CMS) ──
   if (!interior) {
     parts.push(`<MIRROR_SYSTEM_LOCK>\n${getBlock(overrides, 'mirror_system_lock')}\n</MIRROR_SYSTEM_LOCK>`);
