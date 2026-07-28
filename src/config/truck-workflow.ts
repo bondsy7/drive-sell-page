@@ -11,7 +11,7 @@ import type {
   TruckBodyTypeKey,
   TruckConfigurationKey,
   TruckWorkflowSelection,
-} from '../vehicle-class-types';
+} from './vehicle-class-types';
 
 // ── Schritt 1: Konfiguration ────────────────────────────────────────────────
 
