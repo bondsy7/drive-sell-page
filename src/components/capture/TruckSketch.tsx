@@ -349,6 +349,8 @@ const CONFIG_IMAGES: Record<string, string> = {
   // ── Aufnahme-Slots (gleicher Skizzenstil) ──
   cab_34_front_left: imgSlotCab34FrontLeft,
   cab_side_left: imgSlotCabSideLeft,
+  // Rechte Seite: gespiegelte Variante der linken Seitenskizze
+  cab_side_right: imgSlotCabSideLeft,
   cab_front: imgSlotCabFront,
   mirror_detail: imgSlotMirrorDetail,
   cab_interior: imgSlotCabInterior,
