@@ -10,19 +10,26 @@ const BackgroundPipelineIndicator: React.FC = () => {
   const location = useLocation();
 
   const isFinished = !!pipeline?.isFinished;
-  const clearPipeline = pipeline?.clearPipeline;
+  const [dismissed, setDismissed] = React.useState(false);
 
-  // Auto-close 5s after the pipeline finished
+  // Reset local dismiss state when a new pipeline starts
   React.useEffect(() => {
-    if (!isFinished || !clearPipeline) return;
-    const t = setTimeout(() => clearPipeline(), 5000);
+    if (pipeline?.isRunning) setDismissed(false);
+  }, [pipeline?.isRunning]);
+
+  // Auto-hide the toast 5s after the pipeline finished (without clearing pipeline state)
+  React.useEffect(() => {
+    if (!isFinished) return;
+    const t = setTimeout(() => setDismissed(true), 5000);
     return () => clearTimeout(t);
-  }, [isFinished, clearPipeline]);
+  }, [isFinished]);
 
   if (!pipeline || pipeline.status === 'idle') return null;
+  if (dismissed) return null;
 
   // Hide on generator page – PipelineRunner handles display there
   if (location.pathname === '/generator') return null;
+
 
   const doneImages = Object.values(pipeline.jobs).reduce((s, j) => s + j.results.length, 0);
   const total = pipeline.totalImages;
