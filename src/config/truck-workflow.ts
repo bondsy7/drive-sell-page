@@ -308,14 +308,35 @@ export function resolveTruckSlots(selection: Partial<TruckWorkflowSelection>): C
       }),
       slot({
         key: 'truck_cab_interior',
-        label: 'Fahrerhaus innen',
-        sketch: 'cab_interior',
+        label: 'Fahrersitz',
+        sketch: 'driver_seat',
         hint: 'Fahrersitz, Lenkrad und Armaturenbrett.',
         required: false,
         aspect: '4/3',
         capture: 'environment',
-        coverageTags: ['interior_front', 'cockpit'],
+        coverageTags: ['interior_front', 'cockpit', 'driver_seat'],
       }),
+      slot({
+        key: 'truck_passenger_seat',
+        label: 'Beifahrersitz',
+        sketch: 'passenger_seat',
+        hint: 'Beifahrersitz mit Tür- und Armaturenbereich.',
+        required: false,
+        aspect: '4/3',
+        capture: 'environment',
+        coverageTags: ['passenger_seat'],
+      }),
+      slot({
+        key: 'truck_sleeper_cabin',
+        label: 'Fahrerkabine (optional)',
+        sketch: 'sleeper_cabin',
+        hint: 'Schlafkabine, Staufächer und Ablagen.',
+        required: false,
+        aspect: '4/3',
+        capture: 'environment',
+        coverageTags: ['sleeper_cabin'],
+      }),
+
     );
   }
 

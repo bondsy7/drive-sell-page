@@ -20,6 +20,9 @@ import imgSlotCabSideLeft from '@/assets/truck/slot_cab_side_left.png';
 import imgSlotCabFront from '@/assets/truck/slot_cab_front.png';
 import imgSlotMirrorDetail from '@/assets/truck/slot_mirror_detail.png';
 import imgSlotCabInterior from '@/assets/truck/slot_cab_interior.png';
+import imgSlotDriverSeat from '@/assets/truck/slot_driver_seat.png';
+import imgSlotPassengerSeat from '@/assets/truck/slot_passenger_seat.png';
+import imgSlotSleeperCabin from '@/assets/truck/slot_sleeper_cabin.png';
 import imgSlotFifthWheel from '@/assets/truck/slot_fifth_wheel.png';
 import imgSlotBodySideLeft from '@/assets/truck/slot_body_side_left.png';
 import imgSlotBodyRear from '@/assets/truck/slot_body_rear.png';
@@ -349,6 +352,9 @@ const CONFIG_IMAGES: Record<string, string> = {
   cab_front: imgSlotCabFront,
   mirror_detail: imgSlotMirrorDetail,
   cab_interior: imgSlotCabInterior,
+  driver_seat: imgSlotDriverSeat,
+  passenger_seat: imgSlotPassengerSeat,
+  sleeper_cabin: imgSlotSleeperCabin,
   fifth_wheel: imgSlotFifthWheel,
   body_side_left: imgSlotBodySideLeft,
   body_rear: imgSlotBodyRear,
