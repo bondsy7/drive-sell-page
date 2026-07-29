@@ -59,7 +59,8 @@ export const CAR_CAPTURE_SLOTS: CaptureSlot[] = [
     label: 'VIN',
     icon: '/images/perspectives/VIN.png',
     capture: 'environment',
-    required: true,
+    required: false,
+
     aspect: '4/3',
     isVin: true,
     coverageTags: ['vin'],
