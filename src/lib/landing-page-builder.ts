@@ -1,4 +1,5 @@
 import { buildContactFormHTML } from '@/lib/templates/shared';
+import { buildAiDisclosureFooterHTML } from "@/lib/ai-disclosure";
 
 export interface LandingPageContent {
   meta: { title: string; description: string; h1: string };
@@ -288,6 +289,7 @@ export function buildLandingPageHTML(
 
   <footer style="background:#0b1220;color:#94a3b8;padding:32px 24px;text-align:center;font-size:12px">
     <p>© ${new Date().getFullYear()} ${escapeHtml(dealerName)}. Alle Angaben ohne Gewähr.</p>
+    ${buildAiDisclosureFooterHTML("landing")}
     ${dealer.defaultLegalText ? `<p style="margin-top:10px;max-width:800px;margin-left:auto;margin-right:auto;line-height:1.6">${escapeHtml(dealer.defaultLegalText)}</p>` : ''}
   </footer>
 

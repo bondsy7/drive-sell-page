@@ -2,6 +2,7 @@ import React, { useCallback, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { RefreshCw, Upload, Sparkles, ArrowUp, ArrowDown, Eye, EyeOff, Trash2, Plus, ImageIcon } from 'lucide-react';
 import type { LandingPageContent, LandingPageSection, LandingPageDealer, LandingPageContactForm } from '@/lib/landing-page-builder';
+import { getAiDisclosureText } from "@/lib/ai-disclosure";
 
 /* ─── Helpers ─── */
 
@@ -602,6 +603,7 @@ const LandingRenderer: React.FC<RendererProps> = ({
 
       <footer style={{ background: '#0b1220', color: '#94a3b8', padding: '32px 24px', textAlign: 'center', fontSize: 12 }}>
         <p>© {new Date().getFullYear()} {dealerName}. Alle Angaben ohne Gewähr.</p>
+        <p style={{ marginTop: 8 }}>{getAiDisclosureText('landing')}</p>
         {dealer.defaultLegalText && (
           <p style={{ marginTop: 10, maxWidth: 800, margin: '10px auto 0', lineHeight: 1.6 }}>{dealer.defaultLegalText}</p>
         )}

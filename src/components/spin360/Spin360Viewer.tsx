@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Maximize2, Minimize2, Play, Pause, RotateCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import AiDisclosureBadge from "@/components/AiDisclosureBadge";
 
 interface Spin360ViewerProps {
   frames: string[];
@@ -149,6 +150,8 @@ const Spin360Viewer: React.FC<Spin360ViewerProps> = ({
           </div>
         )}
       </div>
+
+      <AiDisclosureBadge context="spin" overlay className="bottom-3 left-3" />
 
       {/* Controls */}
       {showControls && (

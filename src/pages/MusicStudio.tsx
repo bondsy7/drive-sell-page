@@ -15,6 +15,7 @@ import { useCredits } from "@/hooks/useCredits";
 import { useModuleAccess } from "@/hooks/useModuleAccess";
 import { useEffect } from "react";
 import { useMusicJobs, MUSIC_EST_DURATION } from "@/contexts/MusicJobsContext";
+import AiDisclosureBadge from "@/components/AiDisclosureBadge";
 
 type ModelChoice = "lyria-3-pro-preview" | "lyria-3-clip-preview";
 
@@ -353,6 +354,7 @@ export default function MusicStudio() {
                   </Button>
                 </div>
                 <audio controls src={audioUrl} className="w-full" />
+                <AiDisclosureBadge context="music" />
                 {lyricsOut && (
                   <div className="space-y-1">
                     <Label className="text-xs text-muted-foreground">Lyrics</Label>
