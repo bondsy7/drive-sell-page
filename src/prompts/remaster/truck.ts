@@ -120,7 +120,11 @@ export const TRUCK_PERSPECTIVE_PROMPTS: Record<string, string> = {
   truck_mirror_camera_detail:
     'CAMERA: close detail of the A-pillar area showing the mirror or camera-monitor system. Reproduce the mounting arms and housings exactly; do not substitute the system type.',
   truck_cab_interior:
-    'CAMERA: driver workplace from the open driver door. Steering wheel, instrument cluster, seat and dashboard fully visible. Do NOT cut the A/B-pillars or the roof line.',
+    'CAMERA: driver workplace from the open driver door. Steering wheel, instrument cluster, driver seat and dashboard fully visible. Do NOT cut the A/B-pillars or the roof line.',
+  truck_passenger_seat:
+    'CAMERA: passenger workplace from the open passenger door. Passenger seat, door panel and adjacent dashboard section fully visible. Do NOT cut the pillars or the roof line.',
+  truck_sleeper_cabin:
+    'CAMERA: view into the sleeper compartment behind the seats. Bunk, overhead lockers and storage shelves visible. Do NOT invent beds, lockers or equipment that are not in the reference.',
   truck_fifth_wheel:
     'CAMERA: rear three-quarter of the tractor unit showing the fifth wheel plate, frame end and rear lights. No trailer.',
   truck_body_side_left:
