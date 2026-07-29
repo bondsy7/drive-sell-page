@@ -64,10 +64,14 @@ const BackgroundPipelineIndicator: React.FC = () => {
         </div>
         {pipeline.isFinished && (
           <button
-            onClick={(e) => { e.stopPropagation(); pipeline.clearPipeline(); }}
-            className="w-5 h-5 rounded-full hover:bg-muted flex items-center justify-center"
+            type="button"
+            aria-label="Meldung schließen"
+            onPointerDown={(e) => { e.stopPropagation(); }}
+            onTouchStart={(e) => { e.stopPropagation(); }}
+            onClick={(e) => { e.stopPropagation(); e.preventDefault(); pipeline.clearPipeline(); }}
+            className="-m-2 p-2 rounded-full hover:bg-muted flex items-center justify-center touch-manipulation"
           >
-            <X className="w-3 h-3 text-muted-foreground" />
+            <X className="w-4 h-4 text-muted-foreground" />
           </button>
         )}
       </div>
