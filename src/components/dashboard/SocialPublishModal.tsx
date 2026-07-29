@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { FunctionsHttpError } from '@supabase/supabase-js';
 import type { BannerFile } from './types';
+import { appendAiDisclosureToCaption } from "@/lib/ai-disclosure";
 
 interface Props {
   banner: BannerFile;
@@ -198,7 +199,7 @@ export default function SocialPublishModal({
         media_path: banner.fullPath,
         media_name: banner.name,
         media_url: banner.url,
-        caption,
+        caption: appendAiDisclosureToCaption(caption),
         platforms: selectedPlatforms,
         scheduled_at: when.toISOString(),
       });
@@ -219,7 +220,7 @@ export default function SocialPublishModal({
           bannerPath: banner.fullPath,
           bannerName: banner.name,
           imageUrl: banner.url,
-          caption,
+          caption: appendAiDisclosureToCaption(caption),
           platforms: selectedPlatforms,
           vehicleId: vehicleId ?? null,
         },
