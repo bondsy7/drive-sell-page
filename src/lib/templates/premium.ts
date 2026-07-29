@@ -1,3 +1,4 @@
+import { getAiDisclosureText } from "@/lib/ai-disclosure";
 import { VehicleData } from "@/types/vehicle";
 import { getCO2LabelHTML, getGalleryHTML, getConsumptionData, buildConsumptionRows, buildDetailedConsumption, buildCostRows, buildFinanceItems, buildFeatures, buildSocialLinksHTML, buildWhatsAppButtonHTML, buildLegalTextHTML, buildDealerAddressHTML, buildDealerFooterHTML, buildWebsiteLinkHTML, getFinanceSectionTitle, vatNoteHTML, getMonthlyRateLabel, customerTypeBadgeHTML, rateTypeSuffixHTML, getDisplayTitle } from "./shared";
 
@@ -110,6 +111,6 @@ export function generatePremiumHTML(data: VehicleData, imageBase64: string | nul
     </div>
     ${buildLegalTextHTML(data)}
   </div>
-  <div class="footer">Alle Angaben ohne Gewähr.</div>
+  <div class="footer">Alle Angaben ohne Gewähr.<br/>${getAiDisclosureText("landing")}</div>
 </body></html>`;
 }

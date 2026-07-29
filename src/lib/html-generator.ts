@@ -1,3 +1,4 @@
+import { getAiDisclosureText } from "@/lib/ai-disclosure";
 import { VehicleData, ConsumptionData } from "@/types/vehicle";
 import { getCO2LabelPath } from "@/lib/co2-utils";
 import { buildSocialLinksHTML, buildLegalTextHTML, buildDealerAddressHTML, buildDealerFooterHTML, buildWebsiteLinkHTML, getFinanceSectionTitle, rateTypeSuffixHTML } from "@/lib/templates/shared";
@@ -187,7 +188,7 @@ export function generateLandingPageHTML(data: VehicleData, imageBase64: string |
     </div>
     ${buildLegalTextHTML(data)}
   </div>
-  <div class="footer">Alle Angaben ohne Gewähr.</div>
+  <div class="footer">Alle Angaben ohne Gewähr.<br/>${getAiDisclosureText("pdf")}</div>
 </body></html>`;
 }
 
