@@ -365,6 +365,9 @@ const CONFIG_IMAGES: Record<string, string> = {
   vin_plate: imgSlotVinPlate,
 };
 
+/** Skizzen, die horizontal gespiegelt dargestellt werden (rechte Fahrzeugseite). */
+const MIRRORED_SKETCH_IDS = new Set<string>(['cab_side_right']);
+
 export interface TruckSketchProps {
   id?: string | null;
   className?: string;
@@ -372,6 +375,7 @@ export interface TruckSketchProps {
 
 export const TruckSketch: React.FC<TruckSketchProps> = ({ id, className }) => {
   const image = id ? CONFIG_IMAGES[id] : null;
+  const mirrored = id ? MIRRORED_SKETCH_IDS.has(id) : false;
   if (image) {
     return (
       <img
@@ -379,10 +383,11 @@ export const TruckSketch: React.FC<TruckSketchProps> = ({ id, className }) => {
         alt=""
         aria-hidden="true"
         loading="lazy"
-        className={`object-contain ${className ?? ''}`}
+        className={`object-contain ${mirrored ? 'scale-x-[-1] ' : ''}${className ?? ''}`}
       />
     );
   }
+
 
   const content = id ? SKETCHES[id] : null;
   if (!content) return null;
