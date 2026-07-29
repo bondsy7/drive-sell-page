@@ -19,7 +19,7 @@ export const TRUCK_PIPELINE_JOB_COVERAGE: Record<string, string[]> = {
   EXT_FRONT: ['front'],
   EXT_REAR: ['body_rear'],
   EXT_SIDE_LEFT: ['side_left'],
-  EXT_SIDE_RIGHT: ['side_left'],
+  EXT_SIDE_RIGHT: ['side_right'],
   EXT_34_FRONT_RIGHT: ['cab_34_front_left'],
   EXT_34_REAR_LEFT: ['body_rear'],
   EXT_34_REAR_RIGHT: ['body_rear'],
