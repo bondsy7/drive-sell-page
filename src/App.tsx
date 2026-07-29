@@ -64,6 +64,7 @@ const AdminBannerTemplates = lazy(() => import("./pages/admin/AdminBannerTemplat
 const AdminCreditEconomics = lazy(() => import("./pages/admin/AdminCreditEconomics"));
 const AdminCostCalculator = lazy(() => import("./pages/admin/AdminCostCalculator"));
 import AdminRoute from "./components/AdminRoute";
+import KiTransparenz from "./pages/KiTransparenz";
 
 const queryClient = new QueryClient();
 
@@ -135,6 +136,7 @@ const App = () => (
               <Route path="/finanzierungsrechner" element={<ProtectedRoute><FinancingCalculator /></ProtectedRoute>} />
               <Route path="/kfz-steuer-rechner" element={<ProtectedRoute><KfzSteuerRechner /></ProtectedRoute>} />
               <Route path="/pricing" element={<Pricing />} />
+              <Route path="/ki-transparenz" element={<KiTransparenz />} />
               <Route path="/credit-rechner" element={<CreditRechner />} />
               <Route path="/docs" element={<ApiDocs />} />
               <Route path="/integrations" element={<ProtectedRoute><Integrations /></ProtectedRoute>} />

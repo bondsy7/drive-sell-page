@@ -1,3 +1,4 @@
+import { getAiDisclosureText } from "@/lib/ai-disclosure";
 import { VehicleData } from "@/types/vehicle";
 import {
   getCO2LabelHTML, getGalleryHTML, getConsumptionData,
@@ -196,6 +197,6 @@ Mit freundlichen Grüßen</textarea></div>
       </aside>
     </div>
   </div>
-  <div class="footer">Alle Angaben ohne Gewähr.</div>
+  <div class="footer">Alle Angaben ohne Gewähr.<br/>${getAiDisclosureText("landing")}</div>
 </body></html>`;
 }

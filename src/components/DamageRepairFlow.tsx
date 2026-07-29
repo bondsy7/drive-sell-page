@@ -9,6 +9,7 @@ import { compressImageForAI, fileToBase64 } from '@/lib/image-compress';
 import { uploadToGeminiFiles, type GeminiFileRef } from '@/lib/gemini-file-upload';
 import ImagePreviewLightbox from '@/components/ImagePreviewLightbox';
 import ProcessTimer from '@/components/ProcessTimer';
+import AiDisclosureBadge from "@/components/AiDisclosureBadge";
 
 interface DamageRepairFlowProps {
   onBack: () => void;
@@ -267,6 +268,9 @@ const DamageRepairFlow: React.FC<DamageRepairFlowProps> = ({ onBack, onComplete 
                   }
                 }}
               />
+              {img.repairedBase64 && (
+                <AiDisclosureBadge context="repair" overlay className="bottom-1.5 left-1.5" />
+              )}
               {img.status === 'done' && !isProcessing && (
                 <button
                   onClick={() => {

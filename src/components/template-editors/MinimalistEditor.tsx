@@ -17,6 +17,7 @@ import {
 import { isPluginHybrid } from '@/lib/co2-utils';
 import { getFinanceSectionTitle, calculateLeasingFactor } from '@/lib/templates/shared';
 import type { TemplateEditorProps } from './types';
+import { getAiDisclosureText } from "@/lib/ai-disclosure";
 
 const Row: React.FC<{
   label: string; value: string; onChange: (v: string) => void; suffix?: string;
@@ -269,7 +270,7 @@ const MinimalistEditor: React.FC<TemplateEditorProps> = ({
         </div>
       </div>
 
-      <div className="text-center py-8 text-[11px] text-muted-foreground/40">Alle Angaben ohne Gewähr.</div>
+      <div className="text-center py-8 text-[11px] text-muted-foreground/40">Alle Angaben ohne Gewähr.<br />{getAiDisclosureText('landing')}</div>
     </div>
   );
 };

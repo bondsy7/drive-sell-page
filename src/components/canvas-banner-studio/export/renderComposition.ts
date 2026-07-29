@@ -14,6 +14,7 @@ import { effectiveFontSize, FONT_FAMILY as DEFAULT_FONT_FAMILY } from "../canvas
 import { resolveShortcodes } from "../ci/shortcodes";
 import type { CiContext } from "../ci/profileSources";
 import { recolorSvg } from "../ci/svgRecolor";
+import { drawAiDisclosureOnCanvas } from "@/lib/ai-disclosure";
 
 type ExportFormat = "png" | "jpg" | "webp";
 
@@ -303,6 +304,9 @@ export async function renderCompositionToDataURL(
 
     drawTextLayer(ctx, layer, text, textColor, fontSize, family);
   }
+
+  // Pflicht: sichtbare KI-Kennzeichnung (EU AI Act Art. 50) fest einbrennen.
+  drawAiDisclosureOnCanvas(ctx, format.width, format.height);
 
   const mime = type === "png" ? "image/png" : type === "jpg" ? "image/jpeg" : "image/webp";
   return canvas.toDataURL(mime, 0.95);
