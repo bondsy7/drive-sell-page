@@ -9,6 +9,16 @@ const BackgroundPipelineIndicator: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const isFinished = !!pipeline?.isFinished;
+  const clearPipeline = pipeline?.clearPipeline;
+
+  // Auto-close 5s after the pipeline finished
+  React.useEffect(() => {
+    if (!isFinished || !clearPipeline) return;
+    const t = setTimeout(() => clearPipeline(), 5000);
+    return () => clearTimeout(t);
+  }, [isFinished, clearPipeline]);
+
   if (!pipeline || pipeline.status === 'idle') return null;
 
   // Hide on generator page – PipelineRunner handles display there
