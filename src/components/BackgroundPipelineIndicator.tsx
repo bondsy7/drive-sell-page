@@ -9,6 +9,16 @@ const BackgroundPipelineIndicator: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const isFinished = !!pipeline?.isFinished;
+  const clearPipeline = pipeline?.clearPipeline;
+
+  // Auto-close 5s after the pipeline finished
+  React.useEffect(() => {
+    if (!isFinished || !clearPipeline) return;
+    const t = setTimeout(() => clearPipeline(), 5000);
+    return () => clearTimeout(t);
+  }, [isFinished, clearPipeline]);
+
   if (!pipeline || pipeline.status === 'idle') return null;
 
   // Hide on generator page – PipelineRunner handles display there
@@ -54,10 +64,14 @@ const BackgroundPipelineIndicator: React.FC = () => {
         </div>
         {pipeline.isFinished && (
           <button
-            onClick={(e) => { e.stopPropagation(); pipeline.clearPipeline(); }}
-            className="w-5 h-5 rounded-full hover:bg-muted flex items-center justify-center"
+            type="button"
+            aria-label="Meldung schließen"
+            onPointerDown={(e) => { e.stopPropagation(); }}
+            onTouchStart={(e) => { e.stopPropagation(); }}
+            onClick={(e) => { e.stopPropagation(); e.preventDefault(); pipeline.clearPipeline(); }}
+            className="-m-2 p-2 rounded-full hover:bg-muted flex items-center justify-center touch-manipulation"
           >
-            <X className="w-3 h-3 text-muted-foreground" />
+            <X className="w-4 h-4 text-muted-foreground" />
           </button>
         )}
       </div>
