@@ -115,6 +115,8 @@ export const TRUCK_PERSPECTIVE_PROMPTS: Record<string, string> = {
     'CAMERA: three-quarter view from the front left. Show the full front and the full left flank of the subject. Camera at roughly headlight height, no upward tilt that distorts the cab.',
   truck_cab_side_left:
     'CAMERA: strict side view from the left, perpendicular to the vehicle axis. The complete length of the subject must be inside the frame with clearance on both ends.',
+  truck_cab_side_right:
+    'CAMERA: strict side view from the right, perpendicular to the vehicle axis. The complete length of the subject must be inside the frame with clearance on both ends. Reproduce the right flank exactly as photographed — never mirror the left side, since equipment (tanks, boxes, steps, exhaust, doors) often differs between sides.',
   truck_cab_front:
     'CAMERA: straight frontal view. Grille, bumper, headlamps and windshield fully visible and symmetrical.',
   truck_mirror_camera_detail:
