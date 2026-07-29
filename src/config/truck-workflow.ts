@@ -287,6 +287,17 @@ export function resolveTruckSlots(selection: Partial<TruckWorkflowSelection>): C
         coverageTags: ['side_left', 'ext_side_left'],
       }),
       slot({
+        key: 'truck_cab_side_right',
+        label: 'Seite rechts',
+        sketch: 'cab_side_right',
+        hint: 'Rechtwinklig zur rechten Fahrzeugseite, gesamte Länge im Bild.',
+        required: true,
+        aspect: '2/1',
+        capture: 'environment',
+        coverageTags: ['side_right', 'ext_side_right'],
+      }),
+
+      slot({
         key: 'truck_cab_front',
         label: 'Front frontal',
         sketch: 'cab_front',
