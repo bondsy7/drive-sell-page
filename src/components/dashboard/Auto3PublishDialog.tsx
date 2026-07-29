@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import auto3IconUrl from '@/assets/auto3-icon.svg';
 import type { BannerFile } from './types';
 import type { Auto3Config } from '@/hooks/useAuto3Config';
+import { appendAiDisclosureToCaption } from "@/lib/ai-disclosure";
 
 interface Props {
   banner: BannerFile;
@@ -42,7 +43,7 @@ export default function Auto3PublishDialog({ banner, config, onClose }: Props) {
         body: {
           bannerPath: banner.fullPath,
           bannerUrl: banner.url,
-          caption: caption || undefined,
+          caption: appendAiDisclosureToCaption(caption),
           channels,
           ctaUrl: ctaUrl || undefined,
           targetEmailOverride: email !== config.accountEmail ? email : undefined,

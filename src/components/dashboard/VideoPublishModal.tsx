@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { FunctionsHttpError } from '@supabase/supabase-js';
 import type { VideoFile } from './types';
+import { appendAiDisclosureToCaption } from "@/lib/ai-disclosure";
 
 interface Props {
   video: VideoFile;
@@ -161,7 +162,7 @@ export default function VideoPublishModal({
         media_path: video.fullPath,
         media_name: video.name,
         media_url: video.url,
-        caption,
+        caption: appendAiDisclosureToCaption(caption),
         platforms: selectedPlatforms,
         scheduled_at: when.toISOString(),
       });
@@ -183,7 +184,7 @@ export default function VideoPublishModal({
           mediaName: video.name,
           mediaUrl: video.url,
           mediaType: 'video',
-          caption,
+          caption: appendAiDisclosureToCaption(caption),
           platforms: selectedPlatforms,
           vehicleId: vehicleId ?? null,
         },
