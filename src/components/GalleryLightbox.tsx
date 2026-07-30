@@ -4,6 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useSwipeNavigation } from '@/hooks/use-swipe-navigation';
+import AiDisclosureBadge from '@/components/AiDisclosureBadge';
+import { withAiDisclosureAlt } from '@/lib/ai-disclosure';
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
