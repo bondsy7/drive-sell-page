@@ -1,4 +1,4 @@
-import { getAiDisclosureText } from "@/lib/ai-disclosure";
+import { getAiDisclosureText, withAiDisclosureAlt } from "@/lib/ai-disclosure";
 import { VehicleData } from "@/types/vehicle";
 import { getCO2LabelHTML, getGalleryHTML, getConsumptionData, buildConsumptionRows, buildDetailedConsumption, buildCostRows, buildFinanceItems, buildFeatures, buildSocialLinksHTML, buildWhatsAppButtonHTML, buildLegalTextHTML, buildDealerAddressHTML, buildDealerFooterHTML, buildWebsiteLinkHTML, getFinanceSectionTitle, vatNoteHTML, getMonthlyRateLabel, customerTypeBadgeHTML, rateTypeSuffixHTML, getDisplayTitle } from "./shared";
 
@@ -82,7 +82,7 @@ export function generateMagazinHTML(data: VehicleData, imageBase64: string | nul
     </div>
     <div class="hero-grid">
       <div class="hero-img">
-        ${imageBase64 ? `<img id="mainImg" src="${imageBase64}" alt="${data.vehicle.brand} ${data.vehicle.model}"/>` : ''}
+        ${imageBase64 ? `<img id="mainImg" src="${imageBase64}" alt="${withAiDisclosureAlt(`${data.vehicle.brand} ${data.vehicle.model}`)}"/>` : ''}
         ${allImages.length > 1 ? galleryHTML : ''}
       </div>
       <div class="hero-info">

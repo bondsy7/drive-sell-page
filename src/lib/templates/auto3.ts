@@ -1,4 +1,4 @@
-import { getAiDisclosureText } from "@/lib/ai-disclosure";
+import { getAiDisclosureText, withAiDisclosureAlt } from "@/lib/ai-disclosure";
 import { VehicleData } from "@/types/vehicle";
 import {
   getCO2LabelHTML, getGalleryHTML, getConsumptionData,
@@ -113,9 +113,9 @@ export function generateAuto3HTML(data: VehicleData, imageBase64: string | null,
       <!-- LEFT: Gallery + details -->
       <div>
         <div class="gallery-main">
-          ${imageBase64 ? `<img id="mainImg" src="${imageBase64}" alt="${data.vehicle.brand} ${data.vehicle.model}" />` : `<div style="padding:120px;text-align:center;color:#aaa">Kein Bild</div>`}
+          ${imageBase64 ? `<img id="mainImg" src="${imageBase64}" alt="${withAiDisclosureAlt(`${data.vehicle.brand} ${data.vehicle.model}`)}" />` : `<div style="padding:120px;text-align:center;color:#aaa">Kein Bild</div>`}
         </div>
-        ${allImages.length > 1 ? `<div class="thumbs">${allImages.map(img => `<img class="thumb" src="${img}" alt="" />`).join('')}</div>` : galleryHTML}
+        ${allImages.length > 1 ? `<div class="thumbs">${allImages.map(img => `<img class="thumb" src="${img}" alt="${withAiDisclosureAlt('')}" />`).join('')}</div>` : galleryHTML}
 
         <div class="title-block">
           ${customerTypeBadgeHTML(data)}

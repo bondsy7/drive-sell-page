@@ -1,4 +1,4 @@
-import { getAiDisclosureText } from "@/lib/ai-disclosure";
+import { getAiDisclosureText, withAiDisclosureAlt } from "@/lib/ai-disclosure";
 import { VehicleData } from "@/types/vehicle";
 import { getCO2LabelHTML, getGalleryHTML, getConsumptionData, buildConsumptionRows, buildDetailedConsumption, buildCostRows, buildFinanceItems, buildFeatures, buildSocialLinksHTML, buildWhatsAppButtonHTML, buildLegalTextHTML, buildDealerAddressHTML, buildDealerFooterHTML, buildWebsiteLinkHTML, getFinanceSectionTitle, buildVinHTML, vatNoteHTML, getMonthlyRateLabel, customerTypeBadgeHTML, rateTypeSuffixHTML, getDisplayTitle } from "./shared";
 
@@ -74,7 +74,7 @@ export function generateModernHTML(data: VehicleData, imageBase64: string | null
   <div class="container">
     <div class="main-card">
       <div class="image-side">
-        ${imageBase64 ? `<img id="mainImg" src="${imageBase64}" alt="${data.vehicle.brand} ${data.vehicle.model}" />` : `<div style="color:#a0aec0;text-align:center;padding:60px">Kein Bild</div>`}
+        ${imageBase64 ? `<img id="mainImg" src="${imageBase64}" alt="${withAiDisclosureAlt(`${data.vehicle.brand} ${data.vehicle.model}`)}" />` : `<div style="color:#a0aec0;text-align:center;padding:60px">Kein Bild</div>`}
         ${galleryHTML}
       </div>
       <div class="info-side">

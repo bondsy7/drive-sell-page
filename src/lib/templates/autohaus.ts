@@ -1,3 +1,4 @@
+import { withAiDisclosureAlt } from "@/lib/ai-disclosure";
 import { VehicleData } from "@/types/vehicle";
 import { parsePrice, formatPrice } from "@/lib/finance-utils";
 import { getCO2LabelHTML, getConsumptionData, buildLegalTextHTML, buildDealerAddressHTML, buildDealerFooterHTML, buildSocialLinksHTML, buildWhatsAppButtonHTML, buildWebsiteLinkHTML, getFinanceSectionTitle, calculateLeasingFactor, getVatNote, vatNoteHTML, vatNoteInline, getMonthlyRateLabel, customerTypeBadgeHTML, rateTypeSuffixHTML, getDisplayTitle } from "./shared";
@@ -308,13 +309,13 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
       <div class="gallery-card">
         <div class="gallery-main-wrap">
         ${imageBase64
-          ? `<img id="mainImg" class="gallery-main-img" src="${imageBase64}" alt="${data.vehicle.brand} ${data.vehicle.model}"/>`
+          ? `<img id="mainImg" class="gallery-main-img" src="${imageBase64}" alt="${withAiDisclosureAlt(`${data.vehicle.brand} ${data.vehicle.model}`)}"/>`
           : `<div style="color:#bbb;text-align:center;padding:80px">Kein Bild verfügbar</div>`
         }
         </div>
         ${allImages.length > 1 ? `
           <div class="gallery-thumbs">
-            ${allImages.map((img, i) => `<img src="${img}" alt="Bild ${i + 1}" class="thumb${i === 0 ? ' active' : ''}" onclick="setMain(this)" />`).join('')}
+            ${allImages.map((img, i) => `<img src="${img}" alt="${withAiDisclosureAlt(`Bild ${i + 1}`)}" class="thumb${i === 0 ? ' active' : ''}" onclick="setMain(this)" />`).join('')}
           </div>` : ''}
       </div>
 
