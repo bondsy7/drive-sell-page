@@ -3,6 +3,8 @@ import { Video, Play, Download, Trash2, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { type VideoFile } from './types';
 import VideoPublishModal from './VideoPublishModal';
+import AiDisclosureBadge from '@/components/AiDisclosureBadge';
+
 
 interface Props {
   videos: VideoFile[];
@@ -77,7 +79,9 @@ function VideoCard({ video, onPlay, onDownload, onDelete, onPost }: {
         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-foreground/20">
           <div className="bg-background/80 backdrop-blur rounded-full p-3"><Play className="w-6 h-6 text-foreground" /></div>
         </div>
+        <AiDisclosureBadge context="video" overlay />
       </div>
+
       <div className="p-3 flex items-center justify-between gap-2">
         <p className="text-xs text-muted-foreground truncate">
           {video.created_at ? new Date(video.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Video'}

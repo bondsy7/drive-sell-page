@@ -379,7 +379,7 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onBack, preloadedImage,
       {/* Result */}
       {videoState === 'done' && videoBase64 && (
         <div className="space-y-4">
-          <div className="rounded-xl overflow-hidden border border-border bg-card">
+          <div className="rounded-xl overflow-hidden border border-border bg-card relative">
             <video
               src={videoBase64}
               controls
@@ -387,6 +387,8 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onBack, preloadedImage,
               loop
               className="w-full max-h-[400px]"
             />
+            <AiDisclosureBadge context="video" overlay className="bottom-14" />
+
           </div>
           <div className="flex gap-2">
             <Button onClick={handleDownload} className="gap-1.5">

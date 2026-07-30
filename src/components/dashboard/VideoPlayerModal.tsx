@@ -15,7 +15,11 @@ export default function VideoPlayerModal({ video, onClose, onDownload }: Props) 
         <button onClick={onClose} className="absolute -top-10 right-0 text-background hover:text-background/80 transition-colors">
           <X className="w-6 h-6" />
         </button>
-        <video src={video.url} controls autoPlay className="w-full rounded-xl shadow-2xl" />
+        <div className="relative">
+          <video src={video.url} controls autoPlay className="w-full rounded-xl shadow-2xl" />
+          <AiDisclosureBadge context="video" overlay className="bottom-14" />
+        </div>
+
         <div className="flex items-center justify-between mt-3">
           <p className="text-xs text-background/70">
             {video.created_at ? new Date(video.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
