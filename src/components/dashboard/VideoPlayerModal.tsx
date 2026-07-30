@@ -1,6 +1,8 @@
 import { X, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { type VideoFile } from './types';
+import AiDisclosureBadge from '@/components/AiDisclosureBadge';
+
 
 interface Props {
   video: VideoFile;

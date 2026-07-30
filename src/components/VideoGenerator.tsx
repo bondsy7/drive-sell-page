@@ -4,6 +4,8 @@ import { ArrowLeft, Upload, Video, Loader2, Download, RotateCcw, Play, FolderOpe
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Progress } from '@/components/ui/progress';
+import AiDisclosureBadge from '@/components/AiDisclosureBadge';
+
 import ProcessTimer from '@/components/ProcessTimer';
 import { Badge } from '@/components/ui/badge';
 import VehicleAssetPicker from '@/components/VehicleAssetPicker';
