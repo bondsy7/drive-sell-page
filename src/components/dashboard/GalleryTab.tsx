@@ -142,9 +142,11 @@ export default function GalleryTab({ images, onLightbox, highlightFolder }: Prop
                     return (
                       <div key={img.id} className="bg-muted rounded-lg overflow-hidden group relative">
                         <div className="cursor-pointer" onClick={() => onLightbox(folder, idxInFolder)}>
-                          <div className="aspect-video">
-                            <img src={getImageSrc(img)} alt={img.perspective || 'Fahrzeugbild'} className="w-full h-full object-cover" />
+                          <div className="aspect-video relative">
+                            <img src={getImageSrc(img)} alt={withAiDisclosureAlt(img.perspective || 'Fahrzeugbild')} className="w-full h-full object-cover" />
+                            <AiDisclosureBadge overlay />
                           </div>
+
                           <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none">
                             <span className="text-sm font-medium text-background">Öffnen</span>
                           </div>
