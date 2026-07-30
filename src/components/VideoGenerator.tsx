@@ -4,6 +4,8 @@ import { ArrowLeft, Upload, Video, Loader2, Download, RotateCcw, Play, FolderOpe
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Progress } from '@/components/ui/progress';
+import AiDisclosureBadge from '@/components/AiDisclosureBadge';
+
 import ProcessTimer from '@/components/ProcessTimer';
 import { Badge } from '@/components/ui/badge';
 import VehicleAssetPicker from '@/components/VehicleAssetPicker';
@@ -379,7 +381,7 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onBack, preloadedImage,
       {/* Result */}
       {videoState === 'done' && videoBase64 && (
         <div className="space-y-4">
-          <div className="rounded-xl overflow-hidden border border-border bg-card">
+          <div className="rounded-xl overflow-hidden border border-border bg-card relative">
             <video
               src={videoBase64}
               controls
@@ -387,6 +389,8 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onBack, preloadedImage,
               loop
               className="w-full max-h-[400px]"
             />
+            <AiDisclosureBadge context="video" overlay className="bottom-14" />
+
           </div>
           <div className="flex gap-2">
             <Button onClick={handleDownload} className="gap-1.5">
