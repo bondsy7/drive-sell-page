@@ -1,3 +1,4 @@
+import { withAiDisclosureAlt } from "@/lib/ai-disclosure";
 import { VehicleData, ConsumptionData } from "@/types/vehicle";
 import { getCO2ClassFromEmissions, getCO2LabelPath, isPluginHybrid } from "@/lib/co2-utils";
 import { parsePrice } from "@/lib/finance-utils";
@@ -189,7 +190,7 @@ export async function embedCO2LabelsInHTML(html: string): Promise<string> {
 export function getGalleryHTML(allImages: string[]): string {
   if (allImages.length <= 1) return '';
   return `<div class="gallery">
-    ${allImages.map((img, i) => `<img src="${img}" alt="Bild ${i + 1}" class="gallery-thumb" onclick="document.getElementById('mainImg').src=this.src" />`).join('')}
+    ${allImages.map((img, i) => `<img src="${img}" alt="${withAiDisclosureAlt(`Bild ${i + 1}`)}" class="gallery-thumb" onclick="document.getElementById('mainImg').src=this.src" />`).join('')}
   </div>`;
 }
 

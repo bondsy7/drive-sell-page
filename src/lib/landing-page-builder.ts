@@ -1,5 +1,5 @@
 import { buildContactFormHTML } from '@/lib/templates/shared';
-import { buildAiDisclosureFooterHTML } from "@/lib/ai-disclosure";
+import { buildAiDisclosureFooterHTML, withAiDisclosureAlt } from "@/lib/ai-disclosure";
 
 export interface LandingPageContent {
   meta: { title: string; description: string; h1: string };
@@ -126,7 +126,7 @@ function renderSection(
     return `<section style="background:${bg}">
   <div style="max-width:1100px;margin:0 auto;padding:96px 32px">
     <h2 style="font-size:34px;font-weight:700;margin-bottom:32px;text-align:center;color:${textColor}">${escapeHtml(s.headline)}</h2>
-    ${image ? `<div style="aspect-ratio:16/9;border-radius:16px;overflow:hidden;background:${rgba(primary, 0.06)};margin-bottom:28px"><img src="${image}" alt="${escapeHtml(s.headline)}" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy" decoding="async"/></div>` : ''}
+    ${image ? `<div style="aspect-ratio:16/9;border-radius:16px;overflow:hidden;background:${rgba(primary, 0.06)};margin-bottom:28px"><img src="${image}" alt="${escapeHtml(withAiDisclosureAlt(s.headline))}" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy" decoding="async"/></div>` : ''}
     <div class="lp-body-html" style="font-size:16px;color:${bodyColor};line-height:1.75">${s.content || ''}</div>
   </div>
 </section>`;
@@ -134,7 +134,7 @@ function renderSection(
 
   // Editorial split
   const imageOnLeft = idx % 2 === 0;
-  const imgHtml = `<div style="aspect-ratio:4/3;border-radius:16px;overflow:hidden;background:${rgba(primary, 0.06)}">${image ? `<img src="${image}" alt="${escapeHtml(s.headline)}" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy" decoding="async"/>` : ''}</div>`;
+  const imgHtml = `<div style="aspect-ratio:4/3;border-radius:16px;overflow:hidden;background:${rgba(primary, 0.06)}">${image ? `<img src="${image}" alt="${escapeHtml(withAiDisclosureAlt(s.headline))}" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy" decoding="async"/>` : ''}</div>`;
   const textHtml = `<div>
     <div style="font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:${isDark ? 'rgba(255,255,255,0.6)' : primary};margin-bottom:14px">${`0${idx + 1}`.slice(-2)}</div>
     <h2 style="font-size:32px;font-weight:700;margin-bottom:20px;line-height:1.15;color:${textColor}">${escapeHtml(s.headline)}</h2>
@@ -267,7 +267,7 @@ export function buildLandingPageHTML(
         </div>
       </div>
       <div style="position:relative;min-height:420px;background:#0f172a">
-        ${heroImage ? `<img src="${heroImage}" alt="${escapeHtml(brand)} ${escapeHtml(model)}" style="width:100%;height:100%;object-fit:cover;display:block" loading="eager" decoding="async"/>` : ''}
+        ${heroImage ? `<img src="${heroImage}" alt="${escapeHtml(withAiDisclosureAlt(`${brand} ${model}`))}" style="width:100%;height:100%;object-fit:cover;display:block" loading="eager" decoding="async"/>` : ''}
       </div>
     </div>
   </section>
