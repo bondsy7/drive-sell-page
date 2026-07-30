@@ -2,6 +2,9 @@ import { useMemo, useState, useEffect, useRef } from 'react';
 import { Image, FolderOpen, ChevronDown, ChevronRight, Trash2 } from 'lucide-react';
 import { type ProjectImage, getImageSrc } from './types';
 import { PIPELINE_JOBS } from '@/lib/pipeline-jobs';
+import AiDisclosureBadge from '@/components/AiDisclosureBadge';
+import { withAiDisclosureAlt } from '@/lib/ai-disclosure';
+
 
 /* ── Fixed sort order for images within a gallery folder ── */
 const REMASTER_ORDER: string[] = [
