@@ -309,7 +309,7 @@ export function generateAutohausHTML(data: VehicleData, imageBase64: string | nu
       <div class="gallery-card">
         <div class="gallery-main-wrap">
         ${imageBase64
-          ? `<img id="mainImg" class="gallery-main-img" src="${imageBase64}" alt="${withAiDisclosureAlt(`${data.vehicle.brand} ${data.vehicle.model}`)}"/>`
+          ? `<span style="position:relative;display:block"><img id="mainImg" class="gallery-main-img" src="${imageBase64}" alt="${withAiDisclosureAlt(`${data.vehicle.brand} ${data.vehicle.model}`)}"/><span style="position:absolute;left:10px;bottom:10px;z-index:5;display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;background:rgba(0,0,0,0.6);color:#fff;font-size:10px;font-weight:600;letter-spacing:0.02em;pointer-events:none">KI-generiert</span></span>`
           : `<div style="color:#bbb;text-align:center;padding:80px">Kein Bild verfügbar</div>`
         }
         </div>

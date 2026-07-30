@@ -73,7 +73,7 @@ export function generateMinimalistHTML(data: VehicleData, imageBase64: string | 
       <div class="price">${data.finance.totalPrice||'–'}</div>${vatNoteHTML(data)}
     </div>
     <div class="img-block">
-      ${imageBase64 ? `<img id="mainImg" src="${imageBase64}" alt="${withAiDisclosureAlt(`${data.vehicle.brand} ${data.vehicle.model}`)}"/>` : ''}
+      ${imageBase64 ? `<span style="position:relative;display:block"><img id="mainImg" src="${imageBase64}" alt="${withAiDisclosureAlt(`${data.vehicle.brand} ${data.vehicle.model}`)}"/><span style="position:absolute;left:10px;bottom:10px;z-index:5;display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;background:rgba(0,0,0,0.6);color:#fff;font-size:10px;font-weight:600;letter-spacing:0.02em;pointer-events:none">KI-generiert</span></span>` : ''}
       ${galleryHTML}
     </div>
     <div class="divider"></div>
