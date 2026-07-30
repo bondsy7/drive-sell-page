@@ -4,6 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useSwipeNavigation } from '@/hooks/use-swipe-navigation';
+import AiDisclosureBadge from '@/components/AiDisclosureBadge';
+import { withAiDisclosureAlt } from '@/lib/ai-disclosure';
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -252,10 +255,12 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
         <div className="relative">
           <img
             src={current.src}
-            alt={current.perspective || 'Fahrzeugbild'}
+            alt={withAiDisclosureAlt(current.perspective || 'Fahrzeugbild')}
             className="max-h-[80vh] max-w-[90vw] object-contain rounded-xl shadow-2xl"
             {...swipeHandlers}
           />
+          <AiDisclosureBadge overlay className="bottom-4 left-4" />
+
           {regenerating && (
             <div className="absolute inset-0 bg-background/60 backdrop-blur-sm rounded-xl flex items-center justify-center">
               <div className="flex flex-col items-center gap-2">
