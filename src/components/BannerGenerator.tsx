@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { formatMandatoryDisclosure, isDatOnlyValue } from '@/lib/mandatory-disclosure';
 import { compressImageForAI, fileToBase64 } from '@/lib/image-compress';
+import { stampAiDisclosureOnDataUrl } from '@/lib/ai-disclosure';
 import { uploadToGeminiFiles } from '@/lib/gemini-file-upload';
 import VehicleAssetPicker from '@/components/VehicleAssetPicker';
 import VehicleBrandPicker from '@/components/VehicleBrandPicker';
@@ -818,7 +819,9 @@ ${freePrompt.trim() ? `\nADDITIONAL CREATIVE DIRECTION:\n${freePrompt.trim()}` :
       if (data?.imageBase64) {
         console.log(`[banner-client] ✓ ${formatId} ok in ${dur}ms`, data?.debug);
         const fitted = await fitImageToSize(data.imageBase64, fmt.w, fmt.h).catch(() => data.imageBase64);
-        return { formatId: fmt.id, formatLabel: fmt.label, ratio: fmt.ratio, image: fitted, w: fmt.w, h: fmt.h };
+        // EU AI Act Art. 50: sichtbares KI-Label fest ins Banner einbrennen
+        const labeledImage = await stampAiDisclosureOnDataUrl(fitted);
+        return { formatId: fmt.id, formatLabel: fmt.label, ratio: fmt.ratio, image: labeledImage, w: fmt.w, h: fmt.h };
       }
     } catch (e: any) {
       if (e?.message === 'insufficient_credits') throw e;

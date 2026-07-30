@@ -104,3 +104,29 @@ export function drawAiDisclosureOnCanvas(
   ctx.fillText(text, x + padX, y + padY);
   ctx.restore();
 }
+
+/**
+ * Brennt das KI-Label in ein vorhandenes Bild (DataURL/URL) ein.
+ * Fällt bei Fehlern auf das Originalbild zurück.
+ */
+export async function stampAiDisclosureOnDataUrl(src: string): Promise<string> {
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const i = new Image();
+      i.crossOrigin = "anonymous";
+      i.onload = () => resolve(i);
+      i.onerror = () => reject(new Error("image load failed"));
+      i.src = src;
+    });
+    const canvas = document.createElement("canvas");
+    canvas.width = img.naturalWidth || img.width;
+    canvas.height = img.naturalHeight || img.height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return src;
+    ctx.drawImage(img, 0, 0);
+    drawAiDisclosureOnCanvas(ctx, canvas.width, canvas.height);
+    return canvas.toDataURL("image/png");
+  } catch {
+    return src;
+  }
+}

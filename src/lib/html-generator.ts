@@ -1,4 +1,4 @@
-import { getAiDisclosureText } from "@/lib/ai-disclosure";
+import { getAiDisclosureText, withAiDisclosureAlt } from "@/lib/ai-disclosure";
 import { VehicleData, ConsumptionData } from "@/types/vehicle";
 import { getCO2LabelPath } from "@/lib/co2-utils";
 import { buildSocialLinksHTML, buildLegalTextHTML, buildDealerAddressHTML, buildDealerFooterHTML, buildWebsiteLinkHTML, getFinanceSectionTitle, rateTypeSuffixHTML } from "@/lib/templates/shared";
@@ -28,7 +28,7 @@ export function generateLandingPageHTML(data: VehicleData, imageBase64: string |
   const allImages = [imageBase64, ...galleryImages].filter(Boolean);
   const galleryHTML = allImages.length > 1 ? `
     <div class="gallery">
-      ${allImages.map((img, i) => `<img src="${img}" alt="Bild ${i + 1}" class="gallery-thumb" onclick="document.getElementById('mainImg').src=this.src" />`).join('')}
+      ${allImages.map((img, i) => `<img src="${img}" alt="${withAiDisclosureAlt(`Bild ${i + 1}`)}" class="gallery-thumb" onclick="document.getElementById('mainImg').src=this.src" />`).join('')}
     </div>` : '';
 
   const consumptionRows = [
@@ -130,7 +130,7 @@ export function generateLandingPageHTML(data: VehicleData, imageBase64: string |
   <div class="container">
     <div class="main-card">
       <div class="image-side">
-        ${imageBase64 ? `<img id="mainImg" src="${imageBase64}" alt="${data.vehicle.brand} ${data.vehicle.model}" />` : `<div style="color:#a0aec0;text-align:center;padding:60px">Kein Bild</div>`}
+        ${imageBase64 ? `<span style="position:relative;display:block"><img id="mainImg" src="${imageBase64}" alt="${withAiDisclosureAlt(`${data.vehicle.brand} ${data.vehicle.model}`)}" /><span style="position:absolute;left:10px;bottom:10px;z-index:5;display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;background:rgba(0,0,0,0.6);color:#fff;font-size:10px;font-weight:600;letter-spacing:0.02em;pointer-events:none">KI-generiert</span></span>` : `<div style="color:#a0aec0;text-align:center;padding:60px">Kein Bild</div>`}
         ${galleryHTML}
       </div>
       <div class="info-side">
