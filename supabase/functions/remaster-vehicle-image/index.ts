@@ -474,31 +474,18 @@ ${DEKRA_SHOWROOM_SCENE_JSON}
       parts.push({ text: "VEHICLE IDENTITY BLUEPRINT ONLY: The next image defines the exact vehicle geometry, trim, wheels, badges, paint color and equipment. It is NOT the output base image. Do NOT preserve its environment, lighting, reflections, window content, shadows, floor, background, banners, text, or any source-photo pixels." });
     }
     if (mainImageFileUri?.uri) {
-      parts.push({ file_data: { mime_type: mainImageFileUri.mimeType, file_uri: mainImageFileUri.uri } });
+      const p = { file_data: { mime_type: mainImageFileUri.mimeType, file_uri: mainImageFileUri.uri } };
+      imageLabels.set(p, 'VEHICLE BLUEPRINT – overall vehicle photo (geometry, trim, paint)');
+      parts.push(p);
       console.log(`[remaster] Main image via file_uri`);
     } else {
-      parts.push(toInlineData(imageBase64));
+      const p = toInlineData(imageBase64);
+      imageLabels.set(p, 'VEHICLE BLUEPRINT – overall vehicle photo (geometry, trim, paint)');
+      parts.push(p);
     }
 
-    // Additional reference images
-    if ((Array.isArray(additionalFileUris) && additionalFileUris.length > 0) || (Array.isArray(additionalImages) && additionalImages.length > 0)) {
-      parts.push({ text: "AUTHORITATIVE DETAIL REFERENCES: The following extra images are the highest-priority source material for exact reproduction of the vehicle. Match every visible color, material, trim, label, inscription, button, texture, and geometry exactly. Do NOT replace missing certainty with generic model-memory or guessed defaults." });
-    }
-
-    if (Array.isArray(additionalFileUris) && additionalFileUris.length > 0) {
-      for (const fu of additionalFileUris) {
-        parts.push({ file_data: { mime_type: fu.mimeType, file_uri: fu.uri } });
-      }
-      console.log(`[remaster] ${additionalFileUris.length} additional images via file_uri`);
-    }
-
-    if (Array.isArray(additionalImages) && additionalImages.length > 0) {
-      for (const img of additionalImages.slice(0, 10)) {
-        parts.push(toInlineData(img));
-      }
-    }
-
-    // ── DEDIZIERTE FELGENREFERENZ (nur wenn der Job sie braucht) ──
+    // ── DEDIZIERTE FELGENREFERENZ ── direkt nach dem Fahrzeugbild und VOR allen
+    // allgemeinen Detailreferenzen, damit sie im Kontext maximal stark gewichtet ist.
     const hasWheelReference = !!(wheelReferenceBase64 || wheelReferenceFileUri?.uri);
     if (hasWheelReference) {
       const analysisLines: string[] = [];
@@ -509,24 +496,54 @@ ${DEKRA_SHOWROOM_SCENE_JSON}
         }
       }
       parts.push({ text: `<CRITICAL_WHEEL_REFERENCE>
-AUTHORITATIVE WHEEL ASSET: The NEXT image is a dedicated close-up of THIS vehicle's actual wheel/rim.
+AUTHORITATIVE WHEEL ASSET: The image labelled "WHEEL REFERENCE" is a dedicated close-up of THIS vehicle's actual wheel/rim.
 It is the ONLY authoritative source for every visible wheel in the output.
-- It OVERRIDES generic OEM/catalog knowledge and any differing rim visible on the other vehicle photos.
+- It OVERRIDES generic OEM/catalog knowledge, the vehicle model name, and any differing rim visible on the other vehicle photos.
+- MODEL KNOWLEDGE IS LOCKED for wheels: never render "the usual/common rim of this model or trim line". Only what the WHEEL REFERENCE shows.
+- MANDATORY COUNTING STEP: count the spokes in the WHEEL REFERENCE, note their shape (split / Y / mesh / turbine), the finish (diamond-cut, gloss black, silver, bicolor, polished), any second colour, the concavity, the centre cap and the brake caliper colour. Reproduce exactly these values.
 - Reproduce EXACTLY: spoke count, spoke geometry/thickness, split-/Y-/mesh structure, concavity, finish, all colours, centre cap, visible bolt pattern, tyre sidewall/tread, and the visible brake caliper/disc where clearly recognisable.
 - FORBIDDEN: generic OEM wheels, simplified spokes, a different trim/equipment line, invented centre caps, altered finish or colour.
 - The SAME rim must appear on EVERY visible wheel.
+- SELF-CHECK BEFORE OUTPUT: Does the rendered rim have the SAME spoke count as the WHEEL REFERENCE? Is the finish and colour identical? Is the centre cap identical? If any answer is no, re-draw the wheels before returning the image.
 - If the textual analysis below conflicts with this IMAGE, the IMAGE wins.${analysisLines.length ? `\n\nWHEEL_ANALYSIS (support hint only):\n${analysisLines.join('\n')}` : ''}
 </CRITICAL_WHEEL_REFERENCE>` });
       if (wheelReferenceFileUri?.uri) {
-        parts.push({ file_data: { mime_type: wheelReferenceFileUri.mimeType || 'image/jpeg', file_uri: wheelReferenceFileUri.uri } });
+        const p = { file_data: { mime_type: wheelReferenceFileUri.mimeType || 'image/jpeg', file_uri: wheelReferenceFileUri.uri } };
+        imageLabels.set(p, 'WHEEL REFERENCE – authoritative source for ALL visible rims');
+        parts.push(p);
         console.log('[remaster][wheel] wheel reference attached via file_uri');
       } else {
-        parts.push(toInlineData(wheelReferenceBase64));
+        const p = toInlineData(wheelReferenceBase64);
+        imageLabels.set(p, 'WHEEL REFERENCE – authoritative source for ALL visible rims');
+        parts.push(p);
         console.log('[remaster][wheel] wheel reference attached via inline base64');
       }
     } else {
       console.log('[remaster][wheel] no wheel reference for this request');
     }
+
+    // Additional reference images
+    if ((Array.isArray(additionalFileUris) && additionalFileUris.length > 0) || (Array.isArray(additionalImages) && additionalImages.length > 0)) {
+      parts.push({ text: `AUTHORITATIVE DETAIL REFERENCES: The following extra images are the highest-priority source material for exact reproduction of the vehicle. Match every visible color, material, trim, label, inscription, button, texture, and geometry exactly. Do NOT replace missing certainty with generic model-memory or guessed defaults.${hasWheelReference ? ' EXCEPTION: for wheels/rims these images NEVER override the WHEEL REFERENCE image – the WHEEL REFERENCE always wins.' : ''}` });
+    }
+
+    if (Array.isArray(additionalFileUris) && additionalFileUris.length > 0) {
+      for (const fu of additionalFileUris) {
+        const p = { file_data: { mime_type: fu.mimeType, file_uri: fu.uri } };
+        imageLabels.set(p, 'Detail reference photo');
+        parts.push(p);
+      }
+      console.log(`[remaster] ${additionalFileUris.length} additional images via file_uri`);
+    }
+
+    if (Array.isArray(additionalImages) && additionalImages.length > 0) {
+      for (const img of additionalImages.slice(0, 10)) {
+        const p = toInlineData(img);
+        imageLabels.set(p, 'Detail reference photo');
+        parts.push(p);
+      }
+    }
+
 
     if (customPlateImageBase64 || customPlateImageFileUri?.uri) {
       parts.push({ text: "CRITICAL – CUSTOM LICENSE PLATE IMAGE: The following image is the EXACT license plate you MUST use. Replace the vehicle's existing plate with this plate PIXEL-FOR-PIXEL. Reproduce every character, color, seal, EU badge, and spacing exactly. Do NOT invent or modify any element. This is an IMMUTABLE ASSET:" });
