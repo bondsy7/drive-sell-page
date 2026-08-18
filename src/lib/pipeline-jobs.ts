@@ -23,6 +23,12 @@ export interface PipelineJob {
   outputCount?: number;
   /** For CI jobs: which brand this applies to (lowercase). If set, only shown for that brand. */
   brand?: string;
+  /**
+   * Explizite Referenz-Bedarfe dieses Jobs. 'wheel' => die dedizierte
+   * Felgenreferenz wird diesem Job als verbindliches Asset mitgegeben.
+   * Reine Innenraumjobs bekommen sie NIE.
+   */
+  referenceNeeds?: ('wheel')[];
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -39,6 +45,7 @@ export const PIPELINE_JOBS: PipelineJob[] = [
   // ── Hero ──
   {
     key: 'MASTER_IMAGE',
+    referenceNeeds: ['wheel'],
     label: 'Master Image',
     labelDe: 'Master-Bild',
     defaultSelected: true,
@@ -287,6 +294,7 @@ LIGHTING: High-contrast studio lighting revealing internal textures and reflecti
   },
   {
     key: 'DET_WHEEL',
+    referenceNeeds: ['wheel'],
     label: 'Wheel / Rim',
     labelDe: 'Felge',
     defaultSelected: true,
@@ -295,8 +303,9 @@ LIGHTING: High-contrast studio lighting revealing internal textures and reflecti
 SHOT_TYPE: Detail - Front Wheel in Context
 CAMERA_ANGLE: Low angle, close-up of the FRONT wheel area. Camera positioned at wheel height, slightly angled to show the wheel, tire, fender, and part of the vehicle body.
 FRAMING: The wheel and tire MUST remain attached to the vehicle. Show the wheel arch, fender, lower door sill, and part of the front bumper. The vehicle body MUST be visible — this is NOT an isolated wheel shot.
-FOCUS_ELEMENTS: Rim finish (machined/matte/gloss), center brand cap, tire sidewall, brake caliper visible behind spokes, exact spoke count and shape from reference.
-CRITICAL: Do NOT isolate or detach the wheel from the car. Do NOT show a standalone tire/rim. The wheel MUST be mounted on the vehicle with surrounding bodywork clearly visible.
+FOCUS_ELEMENTS: Rim finish (machined/matte/gloss/bicolor), centre cap, tyre sidewall and tread, brake caliper and disc visible behind the spokes, EXACT spoke count, spoke geometry, spoke thickness and dish/concavity.
+DEDICATED WHEEL REFERENCE (ABSOLUTE PRIORITY): If a dedicated wheel reference image is provided, it is the ONLY authoritative source for this rim. Reproduce it 1:1 – count the spokes and match them exactly, match split/Y/mesh structure, concavity, finish, every colour, the centre cap and the visible bolt pattern. It OVERRIDES generic OEM/catalog knowledge and any differing rim visible on the general vehicle photos. Special/aftermarket rims must NEVER be replaced by a standard OEM wheel or simplified.
+CRITICAL: Do NOT isolate or detach the wheel from the car. Do NOT show a standalone tire/rim. The wheel MUST be mounted on the vehicle with surrounding bodywork clearly visible. All visible wheels of the vehicle show the SAME rim.
 LIGHTING: Dramatic low lighting emphasizing rim geometry. Background shows the showroom environment.
 {{LOGO_LINE}}
 </CURRENT_PIPELINE_SHOT>`,
@@ -320,6 +329,7 @@ LIGHTING: High-contrast studio lighting emphasizing material textures, chrome re
   // ── Composite / Grid Images ──
   {
     key: 'GRID_EXTERIOR_4',
+    referenceNeeds: ['wheel'],
     label: 'Exterior Grid (4 views)',
     labelDe: 'Exterieur-Grid (4 Ansichten)',
     defaultSelected: true,
@@ -344,6 +354,7 @@ RULES: All cells show IDENTICAL vehicle interior. Consistent professional lighti
   },
   {
     key: 'GRID_SOCIAL_MEDIA',
+    referenceNeeds: ['wheel'],
     label: 'Social Media Collage',
     labelDe: 'Social-Media-Collage',
     defaultSelected: false,
@@ -928,4 +939,28 @@ export function getJobsForProfile(
     });
   }
   return result;
+}
+
+
+/**
+ * Zentrale Routing-Regel: Braucht dieser Job die dedizierte Felgenreferenz?
+ *
+ * Explizite `referenceNeeds` gewinnen. Ansonsten gilt: alle Außen-, Hero-,
+ * Felgen-/Detail- und Composite-Jobs sowie CI-Exterieur-/CI-Wheel-Jobs
+ * bekommen die Felgenreferenz – reine Innenraumjobs NIEMALS.
+ */
+const INTERIOR_JOB_PATTERN = /(interior|innen|cabin|kabine|dashboard|armatur|mbux|cluster|screen|display|steering|lenkrad|seat|sitz|boot|kofferraum)/i;
+
+export function jobNeedsWheelReference(job: PipelineJob | undefined): boolean {
+  if (!job) return false;
+  if (job.referenceNeeds?.includes('wheel')) return true;
+  if (job.category === 'interior') return false;
+  const signature = `${job.key} ${job.label} ${job.labelDe}`;
+  if (/wheel|felge|rim/i.test(signature)) return true;
+  if (INTERIOR_JOB_PATTERN.test(signature)) return false;
+  return job.category === 'hero'
+    || job.category === 'exterior'
+    || job.category === 'composite'
+    || job.category === 'detail'
+    || job.category === 'ci';
 }

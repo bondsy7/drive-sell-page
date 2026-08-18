@@ -296,7 +296,7 @@ serve(async (req) => {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const { imageBase64, additionalImages, additionalFileUris, mainImageFileUri, customShowroomFileUri, customPlateImageFileUri, manufacturerLogoFileUri, dealerLogoFileUri, vehicleDescription, modelTier, dynamicPrompt, classContext, customShowroomBase64, customPlateImageBase64, dealerLogoUrl, dealerLogoBase64, manufacturerLogoUrl, manufacturerLogoBase64 } = JSON.parse(bodyText);
+    const { imageBase64, additionalImages, additionalFileUris, mainImageFileUri, customShowroomFileUri, customPlateImageFileUri, manufacturerLogoFileUri, dealerLogoFileUri, vehicleDescription, modelTier, dynamicPrompt, classContext, customShowroomBase64, customPlateImageBase64, dealerLogoUrl, dealerLogoBase64, manufacturerLogoUrl, manufacturerLogoBase64, wheelReferenceBase64, wheelReferenceFileUri, wheelReferenceAnalysis } = JSON.parse(bodyText);
     
     // Read cost dynamically from admin_settings. Normalize legacy/unknown tiers so
     // "Qualität" always routes to Nano Banana 2, never to the Pro image model.
@@ -496,6 +496,36 @@ ${DEKRA_SHOWROOM_SCENE_JSON}
       for (const img of additionalImages.slice(0, 10)) {
         parts.push(toInlineData(img));
       }
+    }
+
+    // ── DEDIZIERTE FELGENREFERENZ (nur wenn der Job sie braucht) ──
+    const hasWheelReference = !!(wheelReferenceBase64 || wheelReferenceFileUri?.uri);
+    if (hasWheelReference) {
+      const analysisLines: string[] = [];
+      if (wheelReferenceAnalysis && typeof wheelReferenceAnalysis === 'object') {
+        for (const [k, v] of Object.entries(wheelReferenceAnalysis)) {
+          if (v === null || v === undefined || v === '' || v === 'unknown') continue;
+          analysisLines.push(`- ${k}: ${v}`);
+        }
+      }
+      parts.push({ text: `<CRITICAL_WHEEL_REFERENCE>
+AUTHORITATIVE WHEEL ASSET: The NEXT image is a dedicated close-up of THIS vehicle's actual wheel/rim.
+It is the ONLY authoritative source for every visible wheel in the output.
+- It OVERRIDES generic OEM/catalog knowledge and any differing rim visible on the other vehicle photos.
+- Reproduce EXACTLY: spoke count, spoke geometry/thickness, split-/Y-/mesh structure, concavity, finish, all colours, centre cap, visible bolt pattern, tyre sidewall/tread, and the visible brake caliper/disc where clearly recognisable.
+- FORBIDDEN: generic OEM wheels, simplified spokes, a different trim/equipment line, invented centre caps, altered finish or colour.
+- The SAME rim must appear on EVERY visible wheel.
+- If the textual analysis below conflicts with this IMAGE, the IMAGE wins.${analysisLines.length ? `\n\nWHEEL_ANALYSIS (support hint only):\n${analysisLines.join('\n')}` : ''}
+</CRITICAL_WHEEL_REFERENCE>` });
+      if (wheelReferenceFileUri?.uri) {
+        parts.push({ file_data: { mime_type: wheelReferenceFileUri.mimeType || 'image/jpeg', file_uri: wheelReferenceFileUri.uri } });
+        console.log('[remaster][wheel] wheel reference attached via file_uri');
+      } else {
+        parts.push(toInlineData(wheelReferenceBase64));
+        console.log('[remaster][wheel] wheel reference attached via inline base64');
+      }
+    } else {
+      console.log('[remaster][wheel] no wheel reference for this request');
     }
 
     if (customPlateImageBase64 || customPlateImageFileUri?.uri) {

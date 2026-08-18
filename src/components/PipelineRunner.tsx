@@ -26,12 +26,15 @@ import {
 } from '@/lib/pipeline-jobs';
 import { type RemasterConfig, fetchManufacturerLogos } from '@/lib/remaster-prompt';
 import { usePipeline, type ResultImage } from '@/contexts/PipelineContext';
+import type { WheelReference } from '@/types/wheel-reference';
 
 /* ─── Types ─── */
 interface PipelineRunnerProps {
   inputImages: string[];
   originalImages?: string[];
   additionalImages?: string[];
+  /** Dedizierte Felgenreferenz (getrennt vom allgemeinen Multiupload). */
+  wheelReference?: WheelReference | null;
   vehicleDescription: string;
   vehicleBrand?: string;
   remasterConfig: RemasterConfig;
@@ -53,6 +56,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   inputImages,
   originalImages,
   additionalImages,
+  wheelReference,
   vehicleDescription,
   vehicleBrand,
   remasterConfig,
@@ -296,6 +300,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       inputImages,
       originalImages: originalImages || [],
       additionalImages: additionalImages || [],
+      wheelReference: wheelReference || null,
       vehicleDescription,
       remasterConfig,
       classContext: classContext ?? null,
@@ -310,7 +315,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       detectedBrand: detectedBrand || null,
       totalImages: getTotalImageCount(selectedKeys),
     });
-  }, [user, localSelectedJobs, localAvailableJobs, inputImages, originalImages, additionalImages, vehicleDescription, remasterConfig, classContext, modelTier, projectId, vehicleId, vin, resolvedManufacturerLogoUrl, detectedBrand, selectedKeys, pipeline]);
+  }, [user, localSelectedJobs, localAvailableJobs, inputImages, originalImages, additionalImages, wheelReference, vehicleDescription, remasterConfig, classContext, modelTier, projectId, vehicleId, vin, resolvedManufacturerLogoUrl, detectedBrand, selectedKeys, pipeline]);
 
   /* ─── Credit pre-check ─── */
   const handleStartClick = () => {

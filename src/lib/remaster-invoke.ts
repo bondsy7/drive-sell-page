@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { VehicleClassContext } from '@/config/vehicle-class-types';
+import type { WheelAnalysis } from '@/types/wheel-reference';
 
 export interface RemasterInvokePayload {
   imageBase64: string;
@@ -16,6 +17,13 @@ export interface RemasterInvokePayload {
   additionalFileUris?: { uri: string; mimeType: string }[];
   /** Pre-uploaded main image file URI */
   mainImageFileUri?: { uri: string; mimeType: string } | null;
+  /**
+   * Dedizierte Felgenreferenz – eigenständige, hoch priorisierte Bildquelle.
+   * NIEMALS in additionalImages verstecken.
+   */
+  wheelReferenceBase64?: string | null;
+  wheelReferenceFileUri?: { uri: string; mimeType: string } | null;
+  wheelReferenceAnalysis?: WheelAnalysis | null;
   customShowroomBase64?: string | null;
   customShowroomFileUri?: { uri: string; mimeType: string } | null;
   customPlateImageBase64?: string | null;
