@@ -413,11 +413,11 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
       if (!ext) return;
       setExtractedData(ext);
       if (!vehicleTitle && ext.vehicleTitle) setVehicleTitle(ext.vehicleTitle);
-      if (!priceText && (ext.price || ext.monthlyRate)) {
+      if (isPristineText(priceText, DEFAULT_PRICE_TEXT) && (ext.price || ext.monthlyRate)) {
         setPriceText(ext.monthlyRate ? `ab ${ext.monthlyRate}/mtl.` : ext.price || '');
       }
-      if (!headline && ext.headline) setHeadline(ext.headline);
-      if (!subline && ext.subline) setSubline(ext.subline);
+      if (isPristineText(headline, DEFAULT_HEADLINE) && ext.headline) setHeadline(ext.headline);
+      if (isPristineText(subline, DEFAULT_SUBLINE) && ext.subline) setSubline(ext.subline);
       if (ext.priceType === 'lease') setOccasion('lease');
       else if (ext.priceType === 'finance') setOccasion('finance');
       else if (ext.priceType === 'abo') setOccasion('abo');
