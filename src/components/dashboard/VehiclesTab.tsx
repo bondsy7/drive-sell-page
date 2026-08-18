@@ -41,7 +41,9 @@ export default function VehiclesTab() {
     isLoading,
     isFetching,
     refetch,
+    prefetchPage,
   } = useVehiclesPage(page);
+  const prefetchNext = () => prefetchPage(page + 1);
 
   // Wenn die aktuelle Seite (z. B. nach dem Löschen) leer ist, eine Seite zurück.
   useEffect(() => {
