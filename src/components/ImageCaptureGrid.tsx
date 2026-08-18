@@ -8,13 +8,15 @@ import { useVinLookup } from '@/hooks/useVinLookup';
 import { useVehicleMakes } from '@/hooks/useVehicleMakes';
 import VinDataDialog from '@/components/VinDataDialog';
 import RemasterOptions from '@/components/RemasterOptions';
-import { type RemasterConfig, buildMasterPrompt, fetchPromptOverrides } from '@/lib/remaster-prompt';
+import { type RemasterConfig, buildMasterPrompt, fetchPromptOverrides, isInteriorSlotKey, WHEEL_VISIBILITY_RULE } from '@/lib/remaster-prompt';
 import PipelineRunner from '@/components/PipelineRunner';
 import { lookupBrandFromVin } from '@/lib/vin-wmi-lookup';
 import { resolveCanonicalBrand, normalizeBrand } from '@/lib/brand-aliases';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 import { detectVehicleBranding } from '@/lib/detect-branding';
 import { uploadToGeminiFiles } from '@/lib/gemini-file-upload';
+import { analyzeWheelReference } from '@/lib/wheel-reference';
+import type { WheelReference } from '@/types/wheel-reference';
 import { ensureLogoCachedAsPng } from '@/lib/image-base64-cache';
 import { ensureVehicleAuto } from '@/lib/vehicle-utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -196,6 +198,10 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   const [brandDetectionStatus, setBrandDetectionStatus] = useState<'idle' | 'detecting' | 'found' | 'not-found'>('idle');
   const [detailImages, setDetailImages] = useState<string[]>([]);
   const detailFileRef = useRef<HTMLInputElement | null>(null);
+  /** Dedizierte Felgenreferenz – bewusst eigener State, NICHT detailImages. */
+  const [wheelReference, setWheelReference] = useState<WheelReference | null>(null);
+  const [wheelAnalyzing, setWheelAnalyzing] = useState(false);
+  const wheelFileRef = useRef<HTMLInputElement | null>(null);
   const vinLookup = useVinLookup();
   const { makes } = useVehicleMakes();
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -516,6 +522,40 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     }
   }, [brandDetectionStatus, buildVehicleState, makes.length, patchVehicleData, resolveBrandFromSource, resolveModelForBrand, vehicleDescription, vinLookup]);
 
+  /** Upload/Ersetzen der dedizierten Felgenreferenz (genau EIN Bild). */
+  const handleWheelReferenceFile = useCallback(async (file: File) => {
+    const isImage = file.type.startsWith('image/') || /\.(jpe?g|png|webp|heic|heif|avif)$/i.test(file.name);
+    if (!isImage) { toast.error('Bitte ein Bild auswählen.'); return; }
+    if (file.size > 25 * 1024 * 1024) { toast.error('Bild zu groß (max 25MB).'); return; }
+
+    let base64: string;
+    try {
+      const raw = await fileToBase64(file);
+      try { base64 = await compressImage(raw); } catch { base64 = raw; }
+    } catch {
+      toast.error('Bild konnte nicht gelesen werden.');
+      return;
+    }
+
+    // Bild sofort übernehmen – die Analyse darf den Upload NIE blockieren.
+    setWheelReference({ image: base64, analysis: null, confidence: 'unknown' });
+    setWheelAnalyzing(true);
+    try {
+      const analyzed = await analyzeWheelReference(base64);
+      setWheelReference(analyzed);
+      if (analyzed.analysis) {
+        console.log('[wheel-reference] Analyse:', analyzed.analysis, analyzed.confidence);
+        toast.success('Felgenreferenz analysiert.');
+      } else {
+        toast.success('Felgenreferenz hinzugefügt.');
+      }
+    } catch {
+      toast.success('Felgenreferenz hinzugefügt.');
+    } finally {
+      setWheelAnalyzing(false);
+    }
+  }, []);
+
   const removeCapture = (key: string) => {
     setCaptures(prev => {
       const next = { ...prev };
@@ -603,9 +643,13 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
           console.warn('[Remaster] branding pre-scan failed, continuing without inventory:', e);
         }
       }
-      const slotConfig = { ...remasterConfig, detectedBranding };
+      const slotIsInterior = isInteriorSlotKey(slot.key);
+      const slotWheelRef = !slotIsInterior && wheelReference?.image ? wheelReference : null;
+      console.log(`[Remaster][wheel] slot=${slot.key} wheelAssetAvailable=${!!wheelReference} routed=${!!slotWheelRef}`);
+      const slotConfig = { ...remasterConfig, detectedBranding, wheelReference: slotWheelRef };
       // Build per-slot prompt with perspective-specific instructions
-      const dynamicPrompt = buildMasterPrompt(slotConfig, vehicleDescription, slot.key, promptOverrides, classContext);
+      let dynamicPrompt = buildMasterPrompt(slotConfig, vehicleDescription, slot.key, promptOverrides, classContext);
+      if (slotWheelRef) dynamicPrompt += `\n\n${WHEEL_VISIBILITY_RULE}`;
 
       const MAX_RETRIES = 2;
       for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
@@ -614,6 +658,8 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
             classContext,
             imageBase64: captures[slot.key].base64,
             additionalImages: detailImages.length > 0 ? detailImages : undefined,
+            wheelReferenceBase64: slotWheelRef?.image || null,
+            wheelReferenceAnalysis: slotWheelRef?.analysis || null,
             vehicleDescription,
             modelTier: modelTier || 'standard',
             dynamicPrompt,
@@ -675,11 +721,16 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       if (remasterConfig.cleanupItems && remasterConfig.cleanupItems.length > 0) {
         try { detectedBranding = await detectVehicleBranding(captures[slotKey].base64); } catch { /* continue */ }
       }
-      const dynamicPrompt = buildMasterPrompt({ ...remasterConfig, detectedBranding }, vehicleDescription, slotKey, overrides, classContext);
+      const slotIsInterior = isInteriorSlotKey(slotKey);
+      const slotWheelRef = !slotIsInterior && wheelReference?.image ? wheelReference : null;
+      let dynamicPrompt = buildMasterPrompt({ ...remasterConfig, detectedBranding, wheelReference: slotWheelRef }, vehicleDescription, slotKey, overrides, classContext);
+      if (slotWheelRef) dynamicPrompt += `\n\n${WHEEL_VISIBILITY_RULE}`;
       const { data, error } = await invokeRemasterVehicleImage({
         classContext,
         imageBase64: captures[slotKey].base64,
         additionalImages: detailImages.length > 0 ? detailImages : undefined,
+        wheelReferenceBase64: slotWheelRef?.image || null,
+        wheelReferenceAnalysis: slotWheelRef?.analysis || null,
         vehicleDescription,
         modelTier: modelTier || 'standard',
         dynamicPrompt,
@@ -717,6 +768,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     const originals = [
       ...doneSlots.map(s => captures[s.key].base64),
       ...detailImages,
+      ...(wheelReference?.image ? [wheelReference.image] : []),
     ];
     toast.success(`${doneSlots.length} Bilder erfolgreich remastered.`);
     onComplete(main, gallery, detectedVin || undefined, originals);
@@ -732,9 +784,10 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     .map(s => captures[s.key].remasteredBase64 || captures[s.key].base64);
 
   // Collect original (pre-remaster) images for AI reference
-  const allOriginalBase64 = vehicleSlots
-    .filter(s => captures[s.key])
-    .map(s => captures[s.key].base64);
+  const allOriginalBase64 = [
+    ...vehicleSlots.filter(s => captures[s.key]).map(s => captures[s.key].base64),
+    ...(wheelReference?.image ? [wheelReference.image] : []),
+  ];
 
   // ── Schritt 1.1: Fahrzeugart ──
   if (!vehicleClass) {
@@ -787,6 +840,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         inputImages={allCapturedBase64}
         originalImages={allOriginalBase64}
         additionalImages={detailImages.length > 0 ? detailImages : undefined}
+        wheelReference={wheelReference}
         vehicleDescription={vehicleDescription}
         vehicleBrand={vehicleData?.vehicle?.brand}
         remasterConfig={remasterConfig}

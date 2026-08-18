@@ -5,7 +5,9 @@ import { toast } from 'sonner';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 import type { VehicleClassContext } from '@/config/vehicle-class-types';
 import { buildMasterPrompt, fetchPromptOverrides, type RemasterConfig } from '@/lib/remaster-prompt';
-import { type PipelineJob, injectLogoPlaceholder } from '@/lib/pipeline-jobs';
+import { type PipelineJob, injectLogoPlaceholder, jobNeedsWheelReference } from '@/lib/pipeline-jobs';
+import type { WheelReference } from '@/types/wheel-reference';
+import { WHEEL_VISIBILITY_RULE } from '@/lib/remaster-prompt';
 import { ensureLogoCachedAsPng } from '@/lib/image-base64-cache';
 import { ensureVehicleAuto, uploadOriginalsToVehicle } from '@/lib/vehicle-utils';
 
@@ -32,6 +34,8 @@ export interface PipelineConfig {
   inputImages: string[];
   originalImages: string[];
   additionalImages: string[];
+  /** Dedizierte Felgenreferenz (genau EIN Bild) – getrennt von additionalImages. */
+  wheelReference?: WheelReference | null;
   vehicleDescription: string;
   remasterConfig: RemasterConfig;
   /** Verbindlicher Fahrzeugklassen-Kontext; null => 'car' (Rückwärtskompatibilität). */
@@ -165,7 +169,9 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     plate: { uri: string; mimeType: string } | null;
     manufacturerLogo: { uri: string; mimeType: string } | null;
     dealerLogo: { uri: string; mimeType: string } | null;
-  }>({ references: [], showroom: null, plate: null, manufacturerLogo: null, dealerLogo: null });
+    /** Dedizierte Felgenreferenz – separat gecacht (File API First). */
+    wheel: { uri: string; mimeType: string } | null;
+  }>({ references: [], showroom: null, plate: null, manufacturerLogo: null, dealerLogo: null, wheel: null });
 
   // Helper to fetch a URL and convert to data URL (base64)
   const fetchUrlToBase64 = useCallback(async (url: string): Promise<string | null> => {
@@ -234,7 +240,18 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const interiorSlotKey = isInteriorJob
       ? (REAR_INTERIOR_PATTERNS.test(`${job?.key || ''} ${job?.label || ''} ${job?.labelDe || ''}`) ? 'interior-rear' : 'interior-front')
       : undefined;
-    const baseContext = buildMasterPrompt(cfg.remasterConfig, cfg.vehicleDescription, interiorSlotKey, promptOverrides, cfg.classContext ?? null);
+    // ── Dedizierte Felgenreferenz: explizites Job-Routing ──
+    const wheelReference = cfg.wheelReference?.image ? cfg.wheelReference : null;
+    const needsWheel = !!wheelReference && !isInteriorJob && jobNeedsWheelReference(job);
+    console.log(`[Pipeline][wheel] job=${job?.key} wheelAssetAvailable=${!!wheelReference} routed=${needsWheel}`);
+
+    const baseContext = buildMasterPrompt(
+      { ...cfg.remasterConfig, wheelReference: needsWheel ? wheelReference : null },
+      cfg.vehicleDescription,
+      interiorSlotKey,
+      promptOverrides,
+      cfg.classContext ?? null,
+    );
     const taskLock = buildTaskOutputLock(job);
 
     // Determine if logos are enabled
@@ -245,7 +262,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     // buildMasterPrompt already includes INTERIOR_RULES when interiorSlotKey is set
     // No need for a separate interiorOverride – this was the source of triple redundancy
-    const fullPrompt = `${baseContext}\n\n${taskLock}\n\n--- PERSPECTIVE INSTRUCTION ---\n${processedPrompt}`;
+    const fullPrompt = `${baseContext}\n\n${taskLock}\n\n--- PERSPECTIVE INSTRUCTION ---\n${processedPrompt}${needsWheel ? `\n\n${WHEEL_VISIBILITY_RULE}` : ''}`;
 
     // Always prefer cached base64 logos over URLs for consistency
     const manufacturerLogoBase64 = cfg.remasterConfig.showManufacturerLogo
@@ -294,6 +311,9 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       additionalImages: inlineSupportingImages && inlineSupportingImages.length > 0 ? inlineSupportingImages : undefined,
       additionalFileUris: additionalFileUris && additionalFileUris.length > 0 ? additionalFileUris : undefined,
       mainImageFileUri: mainImageFileUri,
+      wheelReferenceFileUri: needsWheel ? fileCache.wheel : null,
+      wheelReferenceBase64: needsWheel && !fileCache.wheel ? wheelReference!.image : null,
+      wheelReferenceAnalysis: needsWheel ? (wheelReference!.analysis ?? null) : null,
       vehicleDescription: cfg.vehicleDescription,
       modelTier: cfg.modelTier,
       dynamicPrompt: fullPrompt,
@@ -388,7 +408,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       // ── Phase 4: Upload images to Gemini File API ONCE ──
       // This avoids sending MB of base64 with every single job request
-      cachedFileUrisRef.current = { references: [], showroom: null, plate: null, manufacturerLogo: null, dealerLogo: null };
+      cachedFileUrisRef.current = { references: [], showroom: null, plate: null, manufacturerLogo: null, dealerLogo: null, wheel: null };
       try {
         const referenceImages = cfg.originalImages.length > 0 ? cfg.originalImages : cfg.inputImages;
         const imagesToUpload: string[] = [...referenceImages];
@@ -413,6 +433,11 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const dealerLogoIdx = dealerLogoB64 ? imagesToUpload.length : -1;
         if (dealerLogoB64) imagesToUpload.push(dealerLogoB64);
 
+        // Dedizierte Felgenreferenz – EINMAL hochladen, separat cachen
+        const wheelB64 = cfg.wheelReference?.image || null;
+        const wheelIdx = wheelB64 ? imagesToUpload.length : -1;
+        if (wheelB64) imagesToUpload.push(wheelB64);
+
         if (imagesToUpload.length > 0) {
           console.log(`[Pipeline] Uploading ${imagesToUpload.length} images to Gemini File API (refs+showroom+plate+logos)...`);
           const { data: uploadData, error: uploadError } = await supabase.functions.invoke('upload-pipeline-images', {
@@ -430,6 +455,10 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             if (plateIdx >= 0 && fileUris[plateIdx]) cachedFileUrisRef.current.plate = fileUris[plateIdx];
             if (mfgLogoIdx >= 0 && fileUris[mfgLogoIdx]) cachedFileUrisRef.current.manufacturerLogo = fileUris[mfgLogoIdx];
             if (dealerLogoIdx >= 0 && fileUris[dealerLogoIdx]) cachedFileUrisRef.current.dealerLogo = fileUris[dealerLogoIdx];
+            if (wheelIdx >= 0 && fileUris[wheelIdx]) {
+              cachedFileUrisRef.current.wheel = fileUris[wheelIdx];
+              console.log('[Pipeline] Wheel reference cached via File API ✓');
+            }
           } else {
             console.warn('[Pipeline] File API upload failed, falling back to inline_data:', uploadError);
           }

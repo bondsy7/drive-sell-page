@@ -7,6 +7,7 @@ import { REMASTER_PROMPT_BLOCKS, SCENE_PROMPT_DEFAULTS, SCENE_LIGHTING_PROFILES 
 import type { VehicleClassContext } from '@/config/vehicle-class-types';
 import { resolveVehicleClass } from '@/config/vehicle-classes';
 import { buildTruckPromptBlocks, TRUCK_PERSPECTIVE_PROMPTS } from '@/prompts/remaster/truck';
+import { formatWheelAnalysisBlock } from '@/lib/wheel-reference';
 
 export interface RemasterConfig {
   scene: string;
@@ -26,7 +27,19 @@ export interface RemasterConfig {
   cleanupItems?: string[];
   /** Optional vision-pre-scan inventory of non-OEM branding on this specific image */
   detectedBranding?: import('./detect-branding').DetectedBrandingItem[];
+  /**
+   * Dedizierte Felgenreferenz (genau EIN Bild). Wenn gesetzt, wird der
+   * WHEEL_REFERENCE_LOCK aktiviert. NICHT identisch mit detailImages.
+   */
+  wheelReference?: import('@/types/wheel-reference').WheelReference | null;
 }
+
+/**
+ * Kurzregel, die an JEDEN Job-Prompt mit referenceNeeds:['wheel'] angehängt wird.
+ */
+export const WHEEL_VISIBILITY_RULE = `<WHEEL_VISIBILITY_RULE>
+If ANY wheel is visible in this shot, the rim MUST be an exact reproduction of the DEDICATED WHEEL REFERENCE image (spoke count, spoke geometry, finish, colours, concavity, centre cap). Never fall back to a generic OEM wheel or to a different wheel seen on other vehicle photos. All visible wheels show the SAME rim.
+</WHEEL_VISIBILITY_RULE>`;
 
 /** Bereinigungs-Optionen für Fahrzeug-Karosserie (z.B. LKW-Spedition entfernen) */
 export const CLEANUP_OPTIONS = [
@@ -203,6 +216,32 @@ function isInteriorSlot(slotKey?: string): boolean {
   return slotKey.startsWith('interior') || INTERIOR_SLOT_KEYS.has(slotKey);
 }
 
+/** Öffentliche Variante für Aufrufer außerhalb dieses Moduls (Pipeline-Routing). */
+export function isInteriorSlotKey(slotKey?: string): boolean {
+  return isInteriorSlot(slotKey);
+}
+
+/**
+ * WHEEL_REFERENCE_LOCK – wird NUR aktiviert, wenn eine dedizierte
+ * Felgenreferenz hochgeladen wurde.
+ */
+export function buildWheelReferenceLock(
+  wheelReference: import('@/types/wheel-reference').WheelReference,
+): string {
+  const analysisBlock = formatWheelAnalysisBlock(wheelReference);
+  return `<WHEEL_REFERENCE_LOCK>
+A DEDICATED WHEEL REFERENCE PHOTO is provided as a separate, clearly labelled image asset.
+
+1. AUTHORITATIVE SOURCE: This dedicated wheel reference is the ONLY authoritative source for ALL visible wheels/rims of this vehicle.
+2. OVERRIDES EVERYTHING ELSE: It overrides generic model knowledge, catalog/OEM defaults, and any differing wheel visible on the general vehicle photos. If the vehicle photos show another rim, the dedicated wheel reference WINS.
+3. REPRODUCE EXACTLY: spoke count, spoke geometry and thickness, split-/Y-/mesh structure, concavity/dish depth, finish (diamond-cut, gloss, matte, polished, bicolor), all colours, centre cap design, visible bolt/lug pattern as far as recognisable, tyre sidewall and tread as far as relevant, and the visible brake caliper/brake disc where clearly recognisable.
+4. FORBIDDEN: generic OEM wheels, simplified spoke patterns, a different equipment/trim line, invented centre caps, changed finish or colour, reduced or added spokes.
+5. CONSISTENCY: The SAME rim must appear on EVERY visible wheel of the vehicle and in EVERY generated image.
+6. CONFLICT RULE: The wheel reference IMAGE is the primary truth. Any textual analysis below is only a support hint.
+</WHEEL_REFERENCE_LOCK>${analysisBlock ? `\n\n${analysisBlock}` : ''}`;
+}
+
+
 const REFERENCE_TRUTH_PROTOCOL = `REFERENCE IMAGES ARE THE ONLY SOURCE OF TRUTH.
 - Use ONLY the provided vehicle photos, detail shots, and immutable assets. Do NOT rely on generic brand/model knowledge, training-memory defaults, catalog imagery, or any imagined external source.
 - Every visible attribute must match the reference images exactly: color, material, texture, stitching, perforation, trim finish, icons, labels, inscriptions, screen UI, geometry, seams, wear patterns, and proportions.
@@ -292,6 +331,11 @@ PAINT COLOR CHANGE – ABSOLUTE, NON-NEGOTIABLE, APPLIES TO EVERY IMAGE:
       subjectScope: classContext?.subjectScope ?? null,
       slotKey,
     }));
+  }
+
+  // ── WHEEL REFERENCE LOCK (nur bei dedizierter Felgenreferenz) ──
+  if (config.wheelReference?.image && !interior) {
+    parts.push(buildWheelReferenceLock(config.wheelReference));
   }
 
   // ── MIRROR & CAMERA SYSTEM LOCK (LKW / Nutzfahrzeuge: Glasspiegel vs. MirrorCam / OptiView / CMS) ──
