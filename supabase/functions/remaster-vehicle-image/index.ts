@@ -715,32 +715,53 @@ REPRODUCTION RULES (ZERO DEVIATION):
     // ─────────────────────────────────────────────────────────────
     if (engineConfig.engine === 'openai') {
       // Collect all text parts into one prompt + all image data parts as multipart files
-      const promptText = parts
+      let promptText = parts
         .filter((p: any) => typeof p.text === 'string')
         .map((p: any) => p.text)
         .join('\n\n');
-      const inlineImageParts = parts.filter((p: any) => p.inlineData?.data);
-      const fileUriParts = parts.filter((p: any) => p.file_data?.file_uri);
+
+      // Priorität beim 16-Bild-Limit: Fahrzeug → Felge → Kennzeichen → Logos → Rest.
+      const priorityOf = (label: string) => {
+        if (label.startsWith('VEHICLE BLUEPRINT')) return 0;
+        if (label.startsWith('WHEEL REFERENCE')) return 1;
+        if (label.startsWith('LICENSE PLATE')) return 2;
+        if (label.startsWith('SHOWROOM')) return 3;
+        if (/LOGO/i.test(label)) return 4;
+        return 5;
+      };
+      const ordered = [...imageManifest].sort((a, b) => priorityOf(a.label) - priorityOf(b.label) || a.index - b.index);
 
       // Materialize file_uri images by fetching them (OpenAI has no file_uri concept)
-      const allImages: { mime: string; data: string }[] = [];
-      for (const ip of inlineImageParts) {
-        allImages.push({ mime: ip.inlineData.mimeType || 'image/png', data: ip.inlineData.data });
-      }
-      for (const fp of fileUriParts) {
+      const allImages: { mime: string; data: string; label: string }[] = [];
+      for (const m of ordered) {
+        const p: any = m.part;
+        if (p.inlineData?.data) {
+          allImages.push({ mime: p.inlineData.mimeType || 'image/png', data: p.inlineData.data, label: m.label });
+          continue;
+        }
         try {
-          const r = await fetch(fp.file_data.file_uri);
+          const r = await fetch(p.file_data.file_uri);
           if (r.ok) {
             const buf = new Uint8Array(await r.arrayBuffer());
             let bin = ''; for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
-            allImages.push({ mime: fp.file_data.mime_type || 'image/png', data: btoa(bin) });
+            allImages.push({ mime: p.file_data.mime_type || 'image/png', data: btoa(bin), label: m.label });
           }
         } catch (e) { console.warn('[remaster][openai] file_uri fetch failed', e); }
       }
 
       // OpenAI /v1/images/edits accepts up to 16 image inputs
       const limited = allImages.slice(0, 16);
-      console.log(`[remaster][openai] model=${engineConfig.model}, images=${limited.length}, promptLen=${promptText.length}`);
+      const fileNameFor = (label: string, i: number, ext: string) =>
+        label.startsWith('WHEEL REFERENCE') ? `wheel_reference.${ext}`
+        : label.startsWith('VEHICLE BLUEPRINT') ? `vehicle.${ext}`
+        : `ref_${i}.${ext}`;
+      const openaiManifest = limited.map((im, i) => {
+        const ext = im.mime.includes('png') ? 'png' : im.mime.includes('webp') ? 'webp' : 'jpg';
+        return `image #${i + 1} (${fileNameFor(im.label, i, ext)}) = ${im.label}`;
+      }).join('\n');
+      promptText = `<IMAGE_ORDER>\nThe attached images arrive in this exact order. Use each strictly for its stated role:\n${openaiManifest}\n</IMAGE_ORDER>\n\n${promptText}`;
+      const wheelPos = limited.findIndex(im => im.label.startsWith('WHEEL REFERENCE'));
+      console.log(`[remaster][openai] model=${engineConfig.model}, images=${limited.length}, wheelRefPos=${wheelPos}, promptLen=${promptText.length}`);
 
       const form = new FormData();
       form.append('model', engineConfig.model);
@@ -757,8 +778,9 @@ REPRODUCTION RULES (ZERO DEVIATION):
         for (let j = 0; j < binStr.length; j++) bytes[j] = binStr.charCodeAt(j);
         const ext = im.mime.includes('png') ? 'png' : im.mime.includes('webp') ? 'webp' : 'jpg';
         const blob = new Blob([bytes], { type: im.mime });
-        form.append('image', blob, `ref_${i}.${ext}`);
+        form.append('image', blob, fileNameFor(im.label, i, ext));
       }
+
 
       const MAX_OPENAI_ATTEMPTS = 2;
       for (let attempt = 0; attempt < MAX_OPENAI_ATTEMPTS && !resultImage; attempt++) {
