@@ -148,36 +148,50 @@ export function useVehicles(options: { autoLoadAll?: boolean } = {}) {
  * Classic page-based vehicle list (one page at a time).
  * Used by the dashboard so only 24 vehicles are fetched per view.
  */
+async function fetchVehiclesPage(page: number, pageSize: number): Promise<VehiclesPage> {
+  const { data, error } = await supabase.rpc('get_vehicle_dashboard_page', {
+    _limit: pageSize,
+    _offset: Math.max(0, page - 1) * pageSize,
+  });
+  if (error) throw error;
+  const rows = (data || []) as VehicleDashboardPageRow[];
+  return {
+    total: rows[0]?.total_count ?? rows.length,
+    items: rows.map(mapDashboardRow),
+  };
+}
+
 export function useVehiclesPage(page: number, pageSize: number = VEHICLES_PAGE_SIZE) {
   const { user } = useAuth();
+  const qc = useQueryClient();
 
   const query = useQuery({
     queryKey: ['vehicles-page', user?.id, page, pageSize],
     enabled: !!user,
     staleTime: 60_000,
     placeholderData: keepPreviousData,
-    queryFn: async (): Promise<VehiclesPage> => {
-      if (!user) return { items: [], total: 0 };
-      const { data, error } = await supabase.rpc('get_vehicle_dashboard_page', {
-        _limit: pageSize,
-        _offset: Math.max(0, page - 1) * pageSize,
-      });
-      if (error) throw error;
-      const rows = (data || []) as VehicleDashboardPageRow[];
-      return {
-        total: rows[0]?.total_count ?? rows.length,
-        items: rows.map(mapDashboardRow),
-      };
-    },
+    queryFn: () => (user ? fetchVehiclesPage(page, pageSize) : Promise.resolve({ items: [], total: 0 })),
   });
 
   const total = query.data?.total ?? 0;
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
+
+  const prefetchPage = (target: number) => {
+    if (!user || target < 1 || target > pageCount) return;
+    qc.prefetchQuery({
+      queryKey: ['vehicles-page', user.id, target, pageSize],
+      staleTime: 60_000,
+      queryFn: () => fetchVehiclesPage(target, pageSize),
+    });
+  };
+
   return {
     ...query,
     items: query.data?.items ?? [],
     total,
-    pageCount: Math.max(1, Math.ceil(total / pageSize)),
+    pageCount,
     pageSize,
+    prefetchPage,
   };
 }
 
