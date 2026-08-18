@@ -651,6 +651,36 @@ REPRODUCTION RULES (ZERO DEVIATION):
       console.log('[remaster] DEKRA scene asset injected (dealer-lot-dekra)');
     }
 
+    // ── BILD-MANIFEST: jedes Bild bekommt eine feste Nummer + Label ──
+    // Dadurch hängt kein Prompt-Block mehr an "the NEXT image" (Reihenfolge kann
+    // je nach Engine variieren) und der OpenAI-Pfad kann dieselbe Reihenfolge
+    // benannt mitschicken.
+    const imageManifest: { index: number; label: string; part: any }[] = [];
+    {
+      const rebuilt: any[] = [];
+      for (const p of parts) {
+        if (p?.inlineData?.data || p?.file_data?.file_uri) {
+          const label = imageLabels.get(p) || 'Reference image (context asset)';
+          const index = imageManifest.length + 1;
+          imageManifest.push({ index, label, part: p });
+          rebuilt.push({ text: `[IMAGE ${index}] ${label}` });
+          rebuilt.push(p);
+        } else {
+          rebuilt.push(p);
+        }
+      }
+      if (imageManifest.length > 0) {
+        rebuilt.splice(1, 0, {
+          text: `<IMAGE_MANIFEST>\nThe attached images are labelled in order. Use each strictly for its stated role:\n${imageManifest.map(m => `IMAGE ${m.index} = ${m.label}`).join('\n')}\n</IMAGE_MANIFEST>`,
+        });
+      }
+      parts.length = 0;
+      parts.push(...rebuilt);
+    }
+    const wheelManifestIndex = imageManifest.find(m => m.label.startsWith('WHEEL REFERENCE'))?.index ?? null;
+    console.log(`[remaster][wheel] manifest images=${imageManifest.length} wheelRefAttached=${hasWheelReference} wheelImageIndex=${wheelManifestIndex} engine=${engineConfig.engine}`);
+
+
     // ── DEBUG: Log full payload summary ──
     const debugSummary = {
       totalParts: parts.length,
