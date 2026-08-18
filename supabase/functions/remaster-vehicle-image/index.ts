@@ -456,6 +456,10 @@ ${DEKRA_SHOWROOM_SCENE_JSON}
 
     // Build Gemini content parts
     const parts: any[] = [{ text: prompt }];
+    // Labels für Bildteile – nach dem Aufbau werden alle Bilder durchnummeriert
+    // und im Prompt namentlich referenziert (["IMAGE 2] = WHEEL REFERENCE" …).
+    const imageLabels = new WeakMap<object, string>();
+
 
     // For custom showroom generations, present the showroom BEFORE the vehicle.
     // This makes the room the target scene and reduces source-photo reflection carryover.
