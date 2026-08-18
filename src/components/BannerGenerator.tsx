@@ -492,10 +492,12 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
       // Befülle/überschreibe Felder mit Datenblatt-Werten (priorisiert ggü. Fahrzeugbild)
       if (ext.vehicleTitle) setVehicleTitle(prev => prev || ext.vehicleTitle);
       if (ext.price || ext.monthlyRate) {
-        setPriceText(prev => prev || (ext.monthlyRate ? `ab ${ext.monthlyRate}/mtl.` : ext.price || ''));
+        setPriceText(prev => isPristineText(prev, DEFAULT_PRICE_TEXT)
+          ? (ext.monthlyRate ? `ab ${ext.monthlyRate}/mtl.` : ext.price || prev)
+          : prev);
       }
-      if (ext.headline) setHeadline(prev => prev || ext.headline);
-      if (ext.subline) setSubline(prev => prev || ext.subline);
+      if (ext.headline) setHeadline(prev => isPristineText(prev, DEFAULT_HEADLINE) ? ext.headline : prev);
+      if (ext.subline) setSubline(prev => isPristineText(prev, DEFAULT_SUBLINE) ? ext.subline : prev);
       if (ext.priceType === 'lease') setOccasion('lease');
       else if (ext.priceType === 'finance') setOccasion('finance');
       else if (ext.priceType === 'abo') setOccasion('abo');
