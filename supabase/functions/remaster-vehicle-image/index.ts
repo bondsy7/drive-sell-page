@@ -926,7 +926,44 @@ REPRODUCTION RULES (ZERO DEVIATION):
       ? 'Das KI-Modell ist gerade überlastet. Bitte versuche es in einigen Sekunden erneut.'
       : (lastError || "Kein Bild generiert. Bitte versuche es erneut."));
 
-    return new Response(JSON.stringify({ imageBase64: resultImage }), {
+    // ── Leichtgewichtige Felgen-Verifikation ──
+    // Vergleicht Speichenzahl/Finish des Ergebnisses mit der Felgenreferenz.
+    let wheelCheck: { match: boolean; reason?: string } | null = null;
+    if (hasWheelReference && GEMINI_API_KEY) {
+      try {
+        const refPart = wheelReferenceFileUri?.uri
+          ? { file_data: { mime_type: wheelReferenceFileUri.mimeType || 'image/jpeg', file_uri: wheelReferenceFileUri.uri } }
+          : toInlineData(wheelReferenceBase64);
+        const checkRes = await fetch(
+          'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': GEMINI_API_KEY },
+            body: JSON.stringify({
+              contents: [{ role: 'user', parts: [
+                { text: 'IMAGE 1 = wheel reference. IMAGE 2 = generated vehicle image. Compare ONLY the wheels/rims: spoke count, spoke geometry, finish and colours. Answer strictly as JSON: {"match": true|false, "reason": "short"}' },
+                refPart,
+                toInlineData(resultImage),
+              ] }],
+              generationConfig: { responseMimeType: 'application/json', temperature: 0 },
+            }),
+          },
+        );
+        if (checkRes.ok) {
+          const cj = await checkRes.json();
+          const raw = cj?.candidates?.[0]?.content?.parts?.find((p: any) => p.text)?.text;
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            wheelCheck = { match: !!parsed.match, reason: parsed.reason };
+            console.log(`[remaster][wheel] verification match=${wheelCheck.match} reason=${wheelCheck.reason ?? ''}`);
+          }
+        }
+      } catch (verifyErr) {
+        console.warn('[remaster][wheel] verification skipped:', verifyErr);
+      }
+    }
+
+    return new Response(JSON.stringify({ imageBase64: resultImage, ...(wheelCheck ? { wheelCheck } : {}) }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
