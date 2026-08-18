@@ -1,13 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { useVehicles } from '@/hooks/useVehicles';
+import { useVehiclesPage } from '@/hooks/useVehicles';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Car, FileText, Image as ImageIcon, LayoutGrid, MessageSquare, Link2, Loader2, Trash2 } from 'lucide-react';
+import { Car, FileText, Image as ImageIcon, LayoutGrid, MessageSquare, Link2, Loader2, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { useDeleteVehicle } from '@/hooks/useVehicles';
 import {
@@ -32,13 +32,28 @@ function formatRelativeTime(iso: string): string {
 export default function VehiclesTab() {
   const { user } = useAuth();
   const qc = useQueryClient();
+  const [page, setPage] = useState(1);
   const {
-    data: vehicles = [],
+    items: vehicles,
+    total: totalVehicles,
+    pageCount,
+    pageSize,
     isLoading,
-    isFetchingNextPage,
-    loadedVehicles = 0,
-    totalVehicles = 0,
-  } = useVehicles();
+    isFetching,
+    refetch,
+    prefetchPage,
+  } = useVehiclesPage(page);
+  const prefetchNext = () => prefetchPage(page + 1);
+
+  // Wenn die aktuelle Seite (z. B. nach dem Löschen) leer ist, eine Seite zurück.
+  useEffect(() => {
+    if (!isFetching && page > 1 && vehicles.length === 0) setPage(p => Math.max(1, p - 1));
+  }, [isFetching, page, vehicles.length]);
+
+  const goToPage = (p: number) => {
+    setPage(Math.min(Math.max(1, p), pageCount));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
   const [reclaiming, setReclaiming] = useState(false);
   const deleteVehicle = useDeleteVehicle();
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -47,6 +62,7 @@ export default function VehiclesTab() {
     setDeletingId(id);
     try {
       await deleteVehicle.mutateAsync(id);
+      await refetch();
     } finally {
       setDeletingId(null);
     }
@@ -177,12 +193,12 @@ export default function VehiclesTab() {
     <div className="space-y-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-xs text-muted-foreground min-h-5">
-          {totalVehicles > loadedVehicles
-            ? `${loadedVehicles} von ${totalVehicles} Fahrzeugen geladen`
-            : `${vehicles.length} Fahrzeug${vehicles.length === 1 ? '' : 'e'} geladen`}
-          {isFetchingNextPage && (
+          {totalVehicles > 0
+            ? `Fahrzeuge ${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, totalVehicles)} von ${totalVehicles} · Seite ${page} von ${pageCount}`
+            : 'Keine Fahrzeuge'}
+          {isFetching && (
             <span className="inline-flex items-center gap-1.5 ml-2 text-accent">
-              <Loader2 className="w-3 h-3 animate-spin" /> weitere werden geladen…
+              <Loader2 className="w-3 h-3 animate-spin" /> lädt…
             </span>
           )}
         </div>
@@ -290,8 +306,53 @@ export default function VehiclesTab() {
         );
       })}
     </div>
+
+      {pageCount > 1 && (
+        <div className="flex flex-wrap items-center justify-center gap-1.5 pt-2">
+          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => goToPage(page - 1)}>
+            <ChevronLeft className="w-4 h-4 mr-1" /> Zurück
+          </Button>
+          {getPageItems(page, pageCount).map((item, i) =>
+            item === 'ellipsis' ? (
+              <span key={`e${i}`} className="px-1 text-muted-foreground">…</span>
+            ) : (
+              <Button
+                key={item}
+                size="sm"
+                variant={item === page ? 'default' : 'outline'}
+                className="min-w-9 px-2"
+                onClick={() => goToPage(item)}
+              >
+                {item}
+              </Button>
+            )
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page >= pageCount}
+            onClick={() => goToPage(page + 1)}
+            onMouseEnter={prefetchNext}
+            onFocus={prefetchNext}
+          >
+            Weiter <ChevronRight className="w-4 h-4 ml-1" />
+          </Button>
+        </div>
+      )}
     </div>
   );
+}
+
+function getPageItems(page: number, pageCount: number): (number | 'ellipsis')[] {
+  if (pageCount <= 7) return Array.from({ length: pageCount }, (_, i) => i + 1);
+  const items: (number | 'ellipsis')[] = [1];
+  const start = Math.max(2, page - 1);
+  const end = Math.min(pageCount - 1, page + 1);
+  if (start > 2) items.push('ellipsis');
+  for (let i = start; i <= end; i++) items.push(i);
+  if (end < pageCount - 1) items.push('ellipsis');
+  items.push(pageCount);
+  return items;
 }
 
 function CountBadge({

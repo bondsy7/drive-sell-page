@@ -46,6 +46,30 @@ type VehicleDashboardPageRow = Vehicle & {
   total_count: number | null;
 };
 
+function mapDashboardRow(row: VehicleDashboardPageRow): VehicleWithCounts {
+  return {
+    id: row.id,
+    user_id: row.user_id,
+    vin: row.vin,
+    brand: row.brand,
+    model: row.model,
+    year: row.year,
+    color: row.color,
+    title: row.title,
+    vehicle_data: row.vehicle_data,
+    cover_image_url: row.cover_image_url || row.cover_fallback || null,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    counts: {
+      projects: row.projects_count || 0,
+      images: row.images_count || 0,
+      spin360: row.spin360_count || 0,
+      banners: row.banners_count || 0,
+      leads: row.leads_count || 0,
+    },
+  };
+}
+
 /** List of vehicles with aggregated asset counts, loaded page-by-page for a fast first paint. */
 export function useVehicles(options: { autoLoadAll?: boolean } = {}) {
   const { user } = useAuth();
@@ -117,6 +141,57 @@ export function useVehicles(options: { autoLoadAll?: boolean } = {}) {
     data: vehicles,
     loadedVehicles: vehicles.length,
     totalVehicles,
+  };
+}
+
+/**
+ * Classic page-based vehicle list (one page at a time).
+ * Used by the dashboard so only 24 vehicles are fetched per view.
+ */
+async function fetchVehiclesPage(page: number, pageSize: number): Promise<VehiclesPage> {
+  const { data, error } = await supabase.rpc('get_vehicle_dashboard_page', {
+    _limit: pageSize,
+    _offset: Math.max(0, page - 1) * pageSize,
+  });
+  if (error) throw error;
+  const rows = (data || []) as VehicleDashboardPageRow[];
+  return {
+    total: rows[0]?.total_count ?? rows.length,
+    items: rows.map(mapDashboardRow),
+  };
+}
+
+export function useVehiclesPage(page: number, pageSize: number = VEHICLES_PAGE_SIZE) {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+
+  const query = useQuery({
+    queryKey: ['vehicles-page', user?.id, page, pageSize],
+    enabled: !!user,
+    staleTime: 60_000,
+    placeholderData: keepPreviousData,
+    queryFn: () => (user ? fetchVehiclesPage(page, pageSize) : Promise.resolve({ items: [], total: 0 })),
+  });
+
+  const total = query.data?.total ?? 0;
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
+
+  const prefetchPage = (target: number) => {
+    if (!user || target < 1 || target > pageCount) return;
+    qc.prefetchQuery({
+      queryKey: ['vehicles-page', user.id, target, pageSize],
+      staleTime: 60_000,
+      queryFn: () => fetchVehiclesPage(target, pageSize),
+    });
+  };
+
+  return {
+    ...query,
+    items: query.data?.items ?? [],
+    total,
+    pageCount,
+    pageSize,
+    prefetchPage,
   };
 }
 
