@@ -144,6 +144,7 @@ const PRICE_DISPLAYS = [
 const DEFAULT_PRICE_TEXT = 'ab 299€/mtl.';
 const DEFAULT_HEADLINE = 'Jetzt zuschlagen!';
 const DEFAULT_SUBLINE = 'Nur noch 3 verfügbar';
+const DEFAULT_LEGAL_TEXT = 'Rate: 299€/mtl., Laufzeit: 48 Mon., Eff. Jahreszins: 3,99%...';
 /** true, wenn das Feld leer ist oder noch den Default-Text enthält. */
 const isPristineText = (value: string, def: string) => !value.trim() || value.trim() === def;
 
