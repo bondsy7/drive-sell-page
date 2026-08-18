@@ -304,8 +304,53 @@ export default function VehiclesTab() {
         );
       })}
     </div>
+
+      {pageCount > 1 && (
+        <div className="flex flex-wrap items-center justify-center gap-1.5 pt-2">
+          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => goToPage(page - 1)}>
+            <ChevronLeft className="w-4 h-4 mr-1" /> Zurück
+          </Button>
+          {getPageItems(page, pageCount).map((item, i) =>
+            item === 'ellipsis' ? (
+              <span key={`e${i}`} className="px-1 text-muted-foreground">…</span>
+            ) : (
+              <Button
+                key={item}
+                size="sm"
+                variant={item === page ? 'default' : 'outline'}
+                className="min-w-9 px-2"
+                onClick={() => goToPage(item)}
+              >
+                {item}
+              </Button>
+            )
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page >= pageCount}
+            onClick={() => goToPage(page + 1)}
+            onMouseEnter={prefetchNext}
+            onFocus={prefetchNext}
+          >
+            Weiter <ChevronRight className="w-4 h-4 ml-1" />
+          </Button>
+        </div>
+      )}
     </div>
   );
+}
+
+function getPageItems(page: number, pageCount: number): (number | 'ellipsis')[] {
+  if (pageCount <= 7) return Array.from({ length: pageCount }, (_, i) => i + 1);
+  const items: (number | 'ellipsis')[] = [1];
+  const start = Math.max(2, page - 1);
+  const end = Math.min(pageCount - 1, page + 1);
+  if (start > 2) items.push('ellipsis');
+  for (let i = start; i <= end; i++) items.push(i);
+  if (end < pageCount - 1) items.push('ellipsis');
+  items.push(pageCount);
+  return items;
 }
 
 function CountBadge({
