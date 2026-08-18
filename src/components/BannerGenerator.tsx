@@ -385,7 +385,8 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
     if (f.effectiveInterest) legalParts.push(`Eff. Jahreszins: ${f.effectiveInterest}%`);
     if (f.totalAmount) legalParts.push(`Gesamtbetrag: ${f.totalAmount}€`);
     if (f.mileage) legalParts.push(`${f.mileage} km/Jahr`);
-    if (legalParts.length) setLegalText(legalParts.join(' | '));
+    if (legalParts.length && isPristineText(legalText, DEFAULT_LEGAL_TEXT)) setLegalText(legalParts.join(' | '));
+
 
     supabase.from('project_images').select('image_url')
       .eq('project_id', selectedProjectId).order('sort_order')
