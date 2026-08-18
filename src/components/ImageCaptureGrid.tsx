@@ -998,6 +998,63 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         })}
       </div>
 
+      {/* Dedizierte Felgenreferenz – genau EIN Bild, getrennt vom Multiupload */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-foreground">Felgen / Reifen</h3>
+        <p className="text-xs text-muted-foreground">
+          Für Sonderfelgen oder abweichende Bereifung empfohlen. Diese Aufnahme wird bei der
+          Bildgenerierung gezielt als verbindliche Referenz verwendet.
+        </p>
+
+        {wheelReference?.image ? (
+          <div className="relative w-full max-w-[220px] aspect-[4/3] rounded-xl overflow-hidden border border-border bg-card">
+            <img src={wheelReference.image} alt="Felgenreferenz" className="w-full h-full object-cover" />
+            {wheelAnalyzing && (
+              <div className="absolute inset-0 bg-background/60 flex items-center justify-center text-xs font-medium">
+                Analysiere…
+              </div>
+            )}
+            <div className="absolute bottom-0 inset-x-0 flex">
+              <button
+                type="button"
+                onClick={() => wheelFileRef.current?.click()}
+                className="flex-1 py-1.5 text-xs bg-background/85 hover:bg-background"
+              >
+                Ersetzen
+              </button>
+              <button
+                type="button"
+                onClick={() => setWheelReference(null)}
+                className="flex-1 py-1.5 text-xs bg-background/85 hover:bg-background text-destructive"
+              >
+                Löschen
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => wheelFileRef.current?.click()}
+            className="w-full max-w-[220px] aspect-[4/3] rounded-xl border-2 border-dashed border-border hover:border-accent bg-card hover:bg-muted/30 transition-colors flex flex-col items-center justify-center gap-1 text-xs text-muted-foreground"
+          >
+            <span className="text-2xl leading-none">＋</span>
+            Felgenfoto hinzufügen
+          </button>
+        )}
+
+        <input
+          ref={wheelFileRef}
+          type="file"
+          accept="image/*,.heic,.heif"
+          className="hidden"
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            e.target.value = '';
+            if (file) await handleWheelReferenceFile(file);
+          }}
+        />
+      </div>
+
       {/* Detail image upload – directly below main grid */}
       <div className="space-y-3">
         <h3 className="text-sm font-semibold text-foreground">Weitere Detailaufnahmen (Multiupload)</h3>
