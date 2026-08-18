@@ -232,8 +232,11 @@ export function buildWheelReferenceLock(
   wheelReference: import('@/types/wheel-reference').WheelReference,
 ): string {
   const analysisBlock = formatWheelAnalysisBlock(wheelReference);
+  const derivedNote = wheelReference.derived
+    ? '\nNOTE: This wheel reference was automatically cropped from a vehicle photo, so it may be lower in resolution. Its GEOMETRY, spoke count, structure and colours are nevertheless BINDING.'
+    : '';
   return `<WHEEL_REFERENCE_LOCK>
-A DEDICATED WHEEL REFERENCE PHOTO is provided as a separate, clearly labelled image asset.
+A DEDICATED WHEEL REFERENCE PHOTO is provided as a separate, clearly labelled image asset.${derivedNote}
 
 1. AUTHORITATIVE SOURCE: This dedicated wheel reference is the ONLY authoritative source for ALL visible wheels/rims of this vehicle.
 2. OVERRIDES EVERYTHING ELSE: It overrides generic model knowledge, catalog/OEM defaults, and any differing wheel visible on the general vehicle photos. If the vehicle photos show another rim, the dedicated wheel reference WINS.
