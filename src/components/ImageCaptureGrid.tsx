@@ -15,7 +15,7 @@ import { resolveCanonicalBrand, normalizeBrand } from '@/lib/brand-aliases';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 import { detectVehicleBranding } from '@/lib/detect-branding';
 import { uploadToGeminiFiles } from '@/lib/gemini-file-upload';
-import { analyzeWheelReference } from '@/lib/wheel-reference';
+import { analyzeWheelReference, deriveWheelReferenceFromPhoto } from '@/lib/wheel-reference';
 import type { WheelReference } from '@/types/wheel-reference';
 import { ensureLogoCachedAsPng } from '@/lib/image-base64-cache';
 import { ensureVehicleAuto } from '@/lib/vehicle-utils';
@@ -200,6 +200,10 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   const detailFileRef = useRef<HTMLInputElement | null>(null);
   /** Dedizierte Felgenreferenz – bewusst eigener State, NICHT detailImages. */
   const [wheelReference, setWheelReference] = useState<WheelReference | null>(null);
+  // Fallback: automatisch aus einem Fahrzeugfoto ausgeschnittene Felgenreferenz,
+  // wenn der Nutzer KEINE dedizierte Felgenaufnahme hochgeladen hat.
+  const derivedWheelRef = useRef<WheelReference | null>(null);
+  const derivedWheelSourceRef = useRef<string | null>(null);
   const [wheelAnalyzing, setWheelAnalyzing] = useState(false);
   const wheelFileRef = useRef<HTMLInputElement | null>(null);
   const vinLookup = useVinLookup();
@@ -632,6 +636,11 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     });
 
     const promptOverrides = await fetchPromptOverrides();
+    // Verbindliche Felgenquelle EINMAL bestimmen (Upload oder Auto-Crop).
+    const primaryExteriorPhoto = toProcess.find(s => !isInteriorSlotKey(s.key))
+      ? captures[toProcess.find(s => !isInteriorSlotKey(s.key))!.key]?.base64
+      : undefined;
+    const effectiveWheelRef = await resolveWheelReference(primaryExteriorPhoto);
     const processSlot = async (slot: typeof toProcess[0]) => {
       // Vision pre-scan for non-OEM branding when cleanup categories are selected.
       let detectedBranding: import('@/lib/detect-branding').DetectedBrandingItem[] | undefined;
@@ -644,8 +653,8 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         }
       }
       const slotIsInterior = isInteriorSlotKey(slot.key);
-      const slotWheelRef = !slotIsInterior && wheelReference?.image ? wheelReference : null;
-      console.log(`[Remaster][wheel] slot=${slot.key} wheelAssetAvailable=${!!wheelReference} routed=${!!slotWheelRef}`);
+      const slotWheelRef = !slotIsInterior && effectiveWheelRef?.image ? effectiveWheelRef : null;
+      console.log(`[Remaster][wheel] slot=${slot.key} wheelAssetAvailable=${!!effectiveWheelRef} derived=${!!effectiveWheelRef?.derived} routed=${!!slotWheelRef}`);
       const slotConfig = { ...remasterConfig, detectedBranding, wheelReference: slotWheelRef };
       // Build per-slot prompt with perspective-specific instructions
       let dynamicPrompt = buildMasterPrompt(slotConfig, vehicleDescription, slot.key, promptOverrides, classContext);
@@ -722,7 +731,8 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         try { detectedBranding = await detectVehicleBranding(captures[slotKey].base64); } catch { /* continue */ }
       }
       const slotIsInterior = isInteriorSlotKey(slotKey);
-      const slotWheelRef = !slotIsInterior && wheelReference?.image ? wheelReference : null;
+      const resolvedWheelRef = await resolveWheelReference(slotIsInterior ? null : captures[slotKey].base64);
+      const slotWheelRef = !slotIsInterior && resolvedWheelRef?.image ? resolvedWheelRef : null;
       let dynamicPrompt = buildMasterPrompt({ ...remasterConfig, detectedBranding, wheelReference: slotWheelRef }, vehicleDescription, slotKey, overrides, classContext);
       if (slotWheelRef) dynamicPrompt += `\n\n${WHEEL_VISIBILITY_RULE}`;
       const { data, error } = await invokeRemasterVehicleImage({
@@ -751,6 +761,21 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     } catch {
       setCaptures(prev => ({ ...prev, [slotKey]: { ...prev[slotKey], status: 'error', error: 'Netzwerkfehler' } }));
     }
+  };
+
+  /**
+   * Liefert die verbindliche Felgenreferenz: dedizierter Upload zuerst,
+   * sonst ein automatisch erkannter Crop aus dem Fahrzeugfoto.
+   */
+  const resolveWheelReference = async (fallbackPhoto?: string | null): Promise<WheelReference | null> => {
+    if (wheelReference?.image) return wheelReference;
+    if (!fallbackPhoto) return null;
+    if (derivedWheelSourceRef.current === fallbackPhoto) return derivedWheelRef.current;
+    const derived = await deriveWheelReferenceFromPhoto(fallbackPhoto);
+    derivedWheelSourceRef.current = fallbackPhoto;
+    derivedWheelRef.current = derived;
+    console.log(`[Remaster][wheel] Fallback-Crop ${derived ? 'erstellt' : 'nicht möglich'}`);
+    return derived;
   };
 
   const finishUp = () => {
