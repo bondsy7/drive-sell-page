@@ -527,7 +527,10 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
       // Kompakte Pflichtangabe. Lange Fülltexte (Richtlinie 1999/94/EG-Blöcke etc.) werden
       // ausgelassen. Leasing-/Finanzierungs-Rechtstexte kommen aus dem User-Profil / Bank.
       if (envkvLine) {
-        setLegalText(prev => prev ? `${prev}${prev.endsWith('|') ? '' : ' | '}${envkvLine}` : envkvLine);
+        setLegalText(prev => {
+          if (isPristineText(prev, DEFAULT_LEGAL_TEXT)) return envkvLine;
+          return prev ? `${prev}${prev.endsWith('|') ? '' : ' | '}${envkvLine}` : envkvLine;
+        });
       }
 
       if (ext.brand) {
