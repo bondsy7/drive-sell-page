@@ -32,13 +32,26 @@ function formatRelativeTime(iso: string): string {
 export default function VehiclesTab() {
   const { user } = useAuth();
   const qc = useQueryClient();
+  const [page, setPage] = useState(1);
   const {
-    data: vehicles = [],
+    items: vehicles,
+    total: totalVehicles,
+    pageCount,
+    pageSize,
     isLoading,
-    isFetchingNextPage,
-    loadedVehicles = 0,
-    totalVehicles = 0,
-  } = useVehicles();
+    isFetching,
+    refetch,
+  } = useVehiclesPage(page);
+
+  // Wenn die aktuelle Seite (z. B. nach dem Löschen) leer ist, eine Seite zurück.
+  useEffect(() => {
+    if (!isFetching && page > 1 && vehicles.length === 0) setPage(p => Math.max(1, p - 1));
+  }, [isFetching, page, vehicles.length]);
+
+  const goToPage = (p: number) => {
+    setPage(Math.min(Math.max(1, p), pageCount));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
   const [reclaiming, setReclaiming] = useState(false);
   const deleteVehicle = useDeleteVehicle();
   const [deletingId, setDeletingId] = useState<string | null>(null);
