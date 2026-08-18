@@ -958,9 +958,12 @@ export function jobNeedsWheelReference(job: PipelineJob | undefined): boolean {
   const signature = `${job.key} ${job.label} ${job.labelDe}`;
   if (/wheel|felge|rim/i.test(signature)) return true;
   if (INTERIOR_JOB_PATTERN.test(signature)) return false;
+  // Detail-Jobs (Scheinwerfer, Rückleuchte, Grill, …) bekommen die Felgen-
+  // referenz NUR, wenn sie explizit angefordert wurde oder es ein Felgen-Job
+  // ist – beides ist oben bereits geprüft.
+  if (job.category === 'detail') return false;
   return job.category === 'hero'
     || job.category === 'exterior'
     || job.category === 'composite'
-    || job.category === 'detail'
     || job.category === 'ci';
 }
