@@ -46,6 +46,30 @@ type VehicleDashboardPageRow = Vehicle & {
   total_count: number | null;
 };
 
+function mapDashboardRow(row: VehicleDashboardPageRow): VehicleWithCounts {
+  return {
+    id: row.id,
+    user_id: row.user_id,
+    vin: row.vin,
+    brand: row.brand,
+    model: row.model,
+    year: row.year,
+    color: row.color,
+    title: row.title,
+    vehicle_data: row.vehicle_data,
+    cover_image_url: row.cover_image_url || row.cover_fallback || null,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    counts: {
+      projects: row.projects_count || 0,
+      images: row.images_count || 0,
+      spin360: row.spin360_count || 0,
+      banners: row.banners_count || 0,
+      leads: row.leads_count || 0,
+    },
+  };
+}
+
 /** List of vehicles with aggregated asset counts, loaded page-by-page for a fast first paint. */
 export function useVehicles(options: { autoLoadAll?: boolean } = {}) {
   const { user } = useAuth();
