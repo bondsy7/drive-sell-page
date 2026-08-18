@@ -60,6 +60,7 @@ export default function VehiclesTab() {
     setDeletingId(id);
     try {
       await deleteVehicle.mutateAsync(id);
+      await refetch();
     } finally {
       setDeletingId(null);
     }
