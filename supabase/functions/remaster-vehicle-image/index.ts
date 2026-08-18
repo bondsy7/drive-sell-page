@@ -466,10 +466,10 @@ ${DEKRA_SHOWROOM_SCENE_JSON}
     if (hasCustomShowroom) {
       parts.push({ text: customShowroomInstructionText });
       if (customShowroomFileUri?.uri) {
-        parts.push({ file_data: { mime_type: customShowroomFileUri.mimeType, file_uri: customShowroomFileUri.uri } });
+        { const _p = { file_data: { mime_type: customShowroomFileUri.mimeType, file_uri: customShowroomFileUri.uri } }; imageLabels.set(_p, 'SHOWROOM / SCENE – target environment'); parts.push(_p); }
         console.log(`[remaster] Showroom via file_uri (target scene first)`);
       } else if (customShowroomBase64) {
-        parts.push(toInlineData(customShowroomBase64));
+        { const _p = toInlineData(customShowroomBase64); imageLabels.set(_p, 'SHOWROOM / SCENE – target environment'); parts.push(_p); }
       }
     }
 
@@ -552,10 +552,10 @@ It is the ONLY authoritative source for every visible wheel in the output.
     if (customPlateImageBase64 || customPlateImageFileUri?.uri) {
       parts.push({ text: "CRITICAL – CUSTOM LICENSE PLATE IMAGE: The following image is the EXACT license plate you MUST use. Replace the vehicle's existing plate with this plate PIXEL-FOR-PIXEL. Reproduce every character, color, seal, EU badge, and spacing exactly. Do NOT invent or modify any element. This is an IMMUTABLE ASSET:" });
       if (customPlateImageFileUri?.uri) {
-        parts.push({ file_data: { mime_type: customPlateImageFileUri.mimeType, file_uri: customPlateImageFileUri.uri } });
+        { const _p = { file_data: { mime_type: customPlateImageFileUri.mimeType, file_uri: customPlateImageFileUri.uri } }; imageLabels.set(_p, 'LICENSE PLATE – immutable asset'); parts.push(_p); }
         console.log(`[remaster] Plate via file_uri`);
       } else {
-        parts.push(toInlineData(customPlateImageBase64));
+        { const _p = toInlineData(customPlateImageBase64); imageLabels.set(_p, 'LICENSE PLATE – immutable asset'); parts.push(_p); }
       }
     }
 
@@ -647,7 +647,7 @@ REPRODUCTION RULES (ZERO DEVIATION):
 6. CONSISTENCY: The SAME logo in the SAME position on the SAME hall must appear in EVERY generated image / perspective for this vehicle.
 7. SOURCE OF TRUTH: This asset OVERRIDES any DEKRA-like logo, text or banner the model might otherwise invent. Use ONLY this image.
 </SCENE_ASSET_DEKRA_LOGO>` });
-      parts.push({ inlineData: { mimeType: DEKRA_LOGO_MIME, data: DEKRA_LOGO_BASE64 } });
+      { const _p = { inlineData: { mimeType: DEKRA_LOGO_MIME, data: DEKRA_LOGO_BASE64 } }; imageLabels.set(_p, 'DEKRA LOGO – immutable scene asset'); parts.push(_p); }
       console.log('[remaster] DEKRA scene asset injected (dealer-lot-dekra)');
     }
 
