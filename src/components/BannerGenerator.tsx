@@ -144,6 +144,7 @@ const PRICE_DISPLAYS = [
 const DEFAULT_PRICE_TEXT = 'ab 299€/mtl.';
 const DEFAULT_HEADLINE = 'Jetzt zuschlagen!';
 const DEFAULT_SUBLINE = 'Nur noch 3 verfügbar';
+const DEFAULT_LEGAL_TEXT = 'Rate: 299€/mtl., Laufzeit: 48 Mon., Eff. Jahreszins: 3,99%...';
 /** true, wenn das Feld leer ist oder noch den Default-Text enthält. */
 const isPristineText = (value: string, def: string) => !value.trim() || value.trim() === def;
 
@@ -262,7 +263,7 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
   const [accentColor, setAccentColor] = useState('#174f6b');
   const [secondaryColor, setSecondaryColor] = useState('#e2b04a');
   const [freePrompt, setFreePrompt] = useState('');
-  const [legalText, setLegalText] = useState('');
+  const [legalText, setLegalText] = useState(DEFAULT_LEGAL_TEXT);
 
   // Font selection
   const [headlineFont, setHeadlineFont] = useState<string>('modern-sans');
@@ -384,7 +385,8 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
     if (f.effectiveInterest) legalParts.push(`Eff. Jahreszins: ${f.effectiveInterest}%`);
     if (f.totalAmount) legalParts.push(`Gesamtbetrag: ${f.totalAmount}€`);
     if (f.mileage) legalParts.push(`${f.mileage} km/Jahr`);
-    if (legalParts.length) setLegalText(legalParts.join(' | '));
+    if (legalParts.length && isPristineText(legalText, DEFAULT_LEGAL_TEXT)) setLegalText(legalParts.join(' | '));
+
 
     supabase.from('project_images').select('image_url')
       .eq('project_id', selectedProjectId).order('sort_order')
@@ -421,7 +423,7 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
       if (ext.priceType === 'lease') setOccasion('lease');
       else if (ext.priceType === 'finance') setOccasion('finance');
       else if (ext.priceType === 'abo') setOccasion('abo');
-      if (!legalText) {
+      if (!legalText || isPristineText(legalText, DEFAULT_LEGAL_TEXT)) {
         // Kompakte Pflichtangabe: Zustand • kW (PS) • Kraftstoff Verbrauch • CO₂ • CO₂-Klasse.
         // Lange Füll-/Richtlinientexte werden bewusst weggelassen.
         // Leasing-/Finanzierungs-Rechtstexte kommen aus dem User-Profil (Dealer/Bank).
@@ -525,7 +527,10 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
       // Kompakte Pflichtangabe. Lange Fülltexte (Richtlinie 1999/94/EG-Blöcke etc.) werden
       // ausgelassen. Leasing-/Finanzierungs-Rechtstexte kommen aus dem User-Profil / Bank.
       if (envkvLine) {
-        setLegalText(prev => prev ? `${prev}${prev.endsWith('|') ? '' : ' | '}${envkvLine}` : envkvLine);
+        setLegalText(prev => {
+          if (isPristineText(prev, DEFAULT_LEGAL_TEXT)) return envkvLine;
+          return prev ? `${prev}${prev.endsWith('|') ? '' : ' | '}${envkvLine}` : envkvLine;
+        });
       }
 
       if (ext.brand) {
