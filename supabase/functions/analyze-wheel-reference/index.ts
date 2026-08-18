@@ -37,6 +37,32 @@ Return ONLY raw JSON, no markdown fences, matching exactly:
   "confidence": "high"|"medium"|"low"
 }`;
 
+const DETECT_PROMPT = `You are an automotive vision expert.
+The provided photo shows a complete vehicle (not a wheel close-up).
+TASK: locate the ONE wheel/rim that is most completely and most sharply visible (prefer a wheel seen close to head-on, not extremely foreshortened).
+
+Return ONLY raw JSON, no markdown fences:
+{
+  "box": { "x": number, "y": number, "w": number, "h": number },  // normalised 0..1 bounding box of that wheel INCLUDING the tyre
+  "found": boolean,
+  "spokeCount": number|null,
+  "spokeStyle": string|null,
+  "finish": string|null,
+  "secondaryColor": string|null,
+  "concavity": string|null,
+  "centerCap": string|null,
+  "tireVisible": boolean|null,
+  "brakeCaliperVisible": boolean|null,
+  "brakeCaliperColor": string|null,
+  "description": string|null,
+  "confidence": "high"|"medium"|"low"
+}
+
+HARD RULES:
+- NEVER guess attributes. Not clearly visible => null.
+- The box must tightly contain the whole wheel incl. tyre, nothing else.
+- If no wheel is visible, set found=false and box to zeros.`;
+
 function cleanBase64(b64: string): string {
   return b64.includes(",") ? b64.split(",")[1] : b64;
 }
@@ -80,7 +106,8 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { imageBase64, imageFileUri } = await req.json();
+    const { imageBase64, imageFileUri, mode } = await req.json();
+    const isDetect = mode === "detect";
     if (!imageBase64 && !imageFileUri?.uri) {
       return new Response(JSON.stringify({ error: "Kein Bild übermittelt" }), {
         status: 400,
@@ -91,7 +118,7 @@ serve(async (req) => {
     const apiKey = await getSecret("GEMINI_API_KEY");
     if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
 
-    const parts: unknown[] = [{ text: SYSTEM_PROMPT }];
+    const parts: unknown[] = [{ text: isDetect ? DETECT_PROMPT : SYSTEM_PROMPT }];
     if (imageFileUri?.uri) {
       parts.push({ file_data: { mime_type: imageFileUri.mimeType || "image/jpeg", file_uri: imageFileUri.uri } });
     } else {
@@ -143,12 +170,18 @@ serve(async (req) => {
       brakeCaliperColor: normStr(raw.brakeCaliperColor),
       description: normStr(raw.description),
     };
+    const rawBox = (raw.box || {}) as Record<string, unknown>;
+    const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
+    const bx = num(rawBox.x), by = num(rawBox.y), bw = num(rawBox.w), bh = num(rawBox.h);
+    const box = isDetect && raw.found !== false && bx !== null && by !== null && bw !== null && bh !== null && bw > 0.01 && bh > 0.01
+      ? { x: bx, y: by, w: bw, h: bh }
+      : null;
     const confRaw = normStr(raw.confidence);
     const confidence = confRaw === "high" || confRaw === "medium" || confRaw === "low" ? confRaw : "unknown";
 
     console.log(`[analyze-wheel-reference] ok spokes=${analysis.spokeCount} style=${analysis.spokeStyle} conf=${confidence}`);
 
-    return new Response(JSON.stringify({ analysis, confidence }), {
+    return new Response(JSON.stringify({ analysis, confidence, box }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

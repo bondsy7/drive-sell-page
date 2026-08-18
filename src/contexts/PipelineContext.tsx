@@ -7,6 +7,7 @@ import type { VehicleClassContext } from '@/config/vehicle-class-types';
 import { buildMasterPrompt, fetchPromptOverrides, type RemasterConfig } from '@/lib/remaster-prompt';
 import { type PipelineJob, injectLogoPlaceholder, jobNeedsWheelReference } from '@/lib/pipeline-jobs';
 import type { WheelReference } from '@/types/wheel-reference';
+import { deriveWheelReferenceFromPhoto } from '@/lib/wheel-reference';
 import { WHEEL_VISIBILITY_RULE } from '@/lib/remaster-prompt';
 import { ensureLogoCachedAsPng } from '@/lib/image-base64-cache';
 import { ensureVehicleAuto, uploadOriginalsToVehicle } from '@/lib/vehicle-utils';
@@ -161,6 +162,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Cached logo base64 – fetched ONCE before pipeline starts to ensure consistency
   const cachedManufacturerLogoBase64Ref = useRef<string | null>(null);
   const cachedDealerLogoBase64Ref = useRef<string | null>(null);
+  /** Fallback-Felgenreferenz (Auto-Crop), falls kein dedizierter Upload vorliegt. */
+  const derivedWheelReferenceRef = useRef<WheelReference | null>(null);
 
   // Cached Gemini File API URIs – uploaded ONCE, reused for all jobs (Phase 4)
   const cachedFileUrisRef = useRef<{
@@ -241,9 +244,11 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       ? (REAR_INTERIOR_PATTERNS.test(`${job?.key || ''} ${job?.label || ''} ${job?.labelDe || ''}`) ? 'interior-rear' : 'interior-front')
       : undefined;
     // ── Dedizierte Felgenreferenz: explizites Job-Routing ──
-    const wheelReference = cfg.wheelReference?.image ? cfg.wheelReference : null;
+    const wheelReference = cfg.wheelReference?.image
+      ? cfg.wheelReference
+      : (derivedWheelReferenceRef.current?.image ? derivedWheelReferenceRef.current : null);
     const needsWheel = !!wheelReference && !isInteriorJob && jobNeedsWheelReference(job);
-    console.log(`[Pipeline][wheel] job=${job?.key} wheelAssetAvailable=${!!wheelReference} routed=${needsWheel}`);
+    console.log(`[Pipeline][wheel] job=${job?.key} wheelAssetAvailable=${!!wheelReference} derived=${!!wheelReference?.derived} routed=${needsWheel}`);
 
     const baseContext = buildMasterPrompt(
       { ...cfg.remasterConfig, wheelReference: needsWheel ? wheelReference : null },
@@ -406,6 +411,17 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         console.log(`[Pipeline] Logo fingerprint: ${logoHash} (${Math.round(logoLen / 1024)}KB) – this MUST be identical for all images`);
       }
 
+      // ── Fallback-Felgenreferenz: ohne dedizierten Upload den Radbereich
+      // automatisch aus dem ersten Fahrzeugfoto ausschneiden. ──
+      derivedWheelReferenceRef.current = null;
+      if (!cfg.wheelReference?.image) {
+        const sourcePhoto = (cfg.originalImages?.[0] || cfg.inputImages?.[0]) || null;
+        if (sourcePhoto) {
+          derivedWheelReferenceRef.current = await deriveWheelReferenceFromPhoto(sourcePhoto);
+          console.log(`[Pipeline][wheel] Fallback-Crop ${derivedWheelReferenceRef.current ? 'erstellt' : 'nicht möglich'}`);
+        }
+      }
+
       // ── Phase 4: Upload images to Gemini File API ONCE ──
       // This avoids sending MB of base64 with every single job request
       cachedFileUrisRef.current = { references: [], showroom: null, plate: null, manufacturerLogo: null, dealerLogo: null, wheel: null };
@@ -434,7 +450,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (dealerLogoB64) imagesToUpload.push(dealerLogoB64);
 
         // Dedizierte Felgenreferenz – EINMAL hochladen, separat cachen
-        const wheelB64 = cfg.wheelReference?.image || null;
+        const wheelB64 = cfg.wheelReference?.image || derivedWheelReferenceRef.current?.image || null;
         const wheelIdx = wheelB64 ? imagesToUpload.length : -1;
         if (wheelB64) imagesToUpload.push(wheelB64);
 

@@ -38,7 +38,10 @@ export interface RemasterConfig {
  * Kurzregel, die an JEDEN Job-Prompt mit referenceNeeds:['wheel'] angehängt wird.
  */
 export const WHEEL_VISIBILITY_RULE = `<WHEEL_VISIBILITY_RULE>
-If ANY wheel is visible in this shot, the rim MUST be an exact reproduction of the DEDICATED WHEEL REFERENCE image (spoke count, spoke geometry, finish, colours, concavity, centre cap). Never fall back to a generic OEM wheel or to a different wheel seen on other vehicle photos. All visible wheels show the SAME rim.
+If ANY wheel is visible in this shot, the rim MUST be an exact reproduction of the DEDICATED WHEEL REFERENCE image (spoke count, spoke geometry, finish, colours, concavity, centre cap, brake caliper colour).
+COUNT the spokes in the wheel reference and render exactly that number – not one more, not one less.
+MODEL KNOWLEDGE IS LOCKED for wheels: the vehicle's brand, model or trim name must NEVER be used to infer a rim design. Never fall back to a generic/common OEM wheel of this model or to a different wheel seen on other vehicle photos. All visible wheels show the SAME rim.
+SELF-CHECK before output: spoke count identical? finish and colours identical? centre cap identical? If not, re-draw the wheels.
 </WHEEL_VISIBILITY_RULE>`;
 
 /** Bereinigungs-Optionen für Fahrzeug-Karosserie (z.B. LKW-Spedition entfernen) */
@@ -229,8 +232,11 @@ export function buildWheelReferenceLock(
   wheelReference: import('@/types/wheel-reference').WheelReference,
 ): string {
   const analysisBlock = formatWheelAnalysisBlock(wheelReference);
+  const derivedNote = wheelReference.derived
+    ? '\nNOTE: This wheel reference was automatically cropped from a vehicle photo, so it may be lower in resolution. Its GEOMETRY, spoke count, structure and colours are nevertheless BINDING.'
+    : '';
   return `<WHEEL_REFERENCE_LOCK>
-A DEDICATED WHEEL REFERENCE PHOTO is provided as a separate, clearly labelled image asset.
+A DEDICATED WHEEL REFERENCE PHOTO is provided as a separate, clearly labelled image asset.${derivedNote}
 
 1. AUTHORITATIVE SOURCE: This dedicated wheel reference is the ONLY authoritative source for ALL visible wheels/rims of this vehicle.
 2. OVERRIDES EVERYTHING ELSE: It overrides generic model knowledge, catalog/OEM defaults, and any differing wheel visible on the general vehicle photos. If the vehicle photos show another rim, the dedicated wheel reference WINS.
@@ -238,6 +244,9 @@ A DEDICATED WHEEL REFERENCE PHOTO is provided as a separate, clearly labelled im
 4. FORBIDDEN: generic OEM wheels, simplified spoke patterns, a different equipment/trim line, invented centre caps, changed finish or colour, reduced or added spokes.
 5. CONSISTENCY: The SAME rim must appear on EVERY visible wheel of the vehicle and in EVERY generated image.
 6. CONFLICT RULE: The wheel reference IMAGE is the primary truth. Any textual analysis below is only a support hint.
+7. MODEL KNOWLEDGE LOCK: The vehicle's brand, model, trim or description must NEVER influence the rim design. Rendering "the common/standard rim of this model" is a failure.
+8. MANDATORY COUNTING STEP: Count the spokes in the wheel reference, identify the spoke type (split / Y / mesh / turbine / multi), the finish and every colour, then reproduce exactly these values on every wheel.
+9. SELF-CHECK BEFORE OUTPUT: spoke count identical to the reference? spoke shape identical? finish/colours identical? centre cap identical? If any answer is no, re-draw the wheels before returning the image.
 </WHEEL_REFERENCE_LOCK>${analysisBlock ? `\n\n${analysisBlock}` : ''}`;
 }
 

@@ -456,16 +456,20 @@ ${DEKRA_SHOWROOM_SCENE_JSON}
 
     // Build Gemini content parts
     const parts: any[] = [{ text: prompt }];
+    // Labels für Bildteile – nach dem Aufbau werden alle Bilder durchnummeriert
+    // und im Prompt namentlich referenziert (["IMAGE 2] = WHEEL REFERENCE" …).
+    const imageLabels = new WeakMap<object, string>();
+
 
     // For custom showroom generations, present the showroom BEFORE the vehicle.
     // This makes the room the target scene and reduces source-photo reflection carryover.
     if (hasCustomShowroom) {
       parts.push({ text: customShowroomInstructionText });
       if (customShowroomFileUri?.uri) {
-        parts.push({ file_data: { mime_type: customShowroomFileUri.mimeType, file_uri: customShowroomFileUri.uri } });
+        { const _p = { file_data: { mime_type: customShowroomFileUri.mimeType, file_uri: customShowroomFileUri.uri } }; imageLabels.set(_p, 'SHOWROOM / SCENE – target environment'); parts.push(_p); }
         console.log(`[remaster] Showroom via file_uri (target scene first)`);
       } else if (customShowroomBase64) {
-        parts.push(toInlineData(customShowroomBase64));
+        { const _p = toInlineData(customShowroomBase64); imageLabels.set(_p, 'SHOWROOM / SCENE – target environment'); parts.push(_p); }
       }
     }
 
@@ -474,31 +478,18 @@ ${DEKRA_SHOWROOM_SCENE_JSON}
       parts.push({ text: "VEHICLE IDENTITY BLUEPRINT ONLY: The next image defines the exact vehicle geometry, trim, wheels, badges, paint color and equipment. It is NOT the output base image. Do NOT preserve its environment, lighting, reflections, window content, shadows, floor, background, banners, text, or any source-photo pixels." });
     }
     if (mainImageFileUri?.uri) {
-      parts.push({ file_data: { mime_type: mainImageFileUri.mimeType, file_uri: mainImageFileUri.uri } });
+      const p = { file_data: { mime_type: mainImageFileUri.mimeType, file_uri: mainImageFileUri.uri } };
+      imageLabels.set(p, 'VEHICLE BLUEPRINT – overall vehicle photo (geometry, trim, paint)');
+      parts.push(p);
       console.log(`[remaster] Main image via file_uri`);
     } else {
-      parts.push(toInlineData(imageBase64));
+      const p = toInlineData(imageBase64);
+      imageLabels.set(p, 'VEHICLE BLUEPRINT – overall vehicle photo (geometry, trim, paint)');
+      parts.push(p);
     }
 
-    // Additional reference images
-    if ((Array.isArray(additionalFileUris) && additionalFileUris.length > 0) || (Array.isArray(additionalImages) && additionalImages.length > 0)) {
-      parts.push({ text: "AUTHORITATIVE DETAIL REFERENCES: The following extra images are the highest-priority source material for exact reproduction of the vehicle. Match every visible color, material, trim, label, inscription, button, texture, and geometry exactly. Do NOT replace missing certainty with generic model-memory or guessed defaults." });
-    }
-
-    if (Array.isArray(additionalFileUris) && additionalFileUris.length > 0) {
-      for (const fu of additionalFileUris) {
-        parts.push({ file_data: { mime_type: fu.mimeType, file_uri: fu.uri } });
-      }
-      console.log(`[remaster] ${additionalFileUris.length} additional images via file_uri`);
-    }
-
-    if (Array.isArray(additionalImages) && additionalImages.length > 0) {
-      for (const img of additionalImages.slice(0, 10)) {
-        parts.push(toInlineData(img));
-      }
-    }
-
-    // ── DEDIZIERTE FELGENREFERENZ (nur wenn der Job sie braucht) ──
+    // ── DEDIZIERTE FELGENREFERENZ ── direkt nach dem Fahrzeugbild und VOR allen
+    // allgemeinen Detailreferenzen, damit sie im Kontext maximal stark gewichtet ist.
     const hasWheelReference = !!(wheelReferenceBase64 || wheelReferenceFileUri?.uri);
     if (hasWheelReference) {
       const analysisLines: string[] = [];
@@ -509,32 +500,62 @@ ${DEKRA_SHOWROOM_SCENE_JSON}
         }
       }
       parts.push({ text: `<CRITICAL_WHEEL_REFERENCE>
-AUTHORITATIVE WHEEL ASSET: The NEXT image is a dedicated close-up of THIS vehicle's actual wheel/rim.
+AUTHORITATIVE WHEEL ASSET: The image labelled "WHEEL REFERENCE" is a dedicated close-up of THIS vehicle's actual wheel/rim.
 It is the ONLY authoritative source for every visible wheel in the output.
-- It OVERRIDES generic OEM/catalog knowledge and any differing rim visible on the other vehicle photos.
+- It OVERRIDES generic OEM/catalog knowledge, the vehicle model name, and any differing rim visible on the other vehicle photos.
+- MODEL KNOWLEDGE IS LOCKED for wheels: never render "the usual/common rim of this model or trim line". Only what the WHEEL REFERENCE shows.
+- MANDATORY COUNTING STEP: count the spokes in the WHEEL REFERENCE, note their shape (split / Y / mesh / turbine), the finish (diamond-cut, gloss black, silver, bicolor, polished), any second colour, the concavity, the centre cap and the brake caliper colour. Reproduce exactly these values.
 - Reproduce EXACTLY: spoke count, spoke geometry/thickness, split-/Y-/mesh structure, concavity, finish, all colours, centre cap, visible bolt pattern, tyre sidewall/tread, and the visible brake caliper/disc where clearly recognisable.
 - FORBIDDEN: generic OEM wheels, simplified spokes, a different trim/equipment line, invented centre caps, altered finish or colour.
 - The SAME rim must appear on EVERY visible wheel.
+- SELF-CHECK BEFORE OUTPUT: Does the rendered rim have the SAME spoke count as the WHEEL REFERENCE? Is the finish and colour identical? Is the centre cap identical? If any answer is no, re-draw the wheels before returning the image.
 - If the textual analysis below conflicts with this IMAGE, the IMAGE wins.${analysisLines.length ? `\n\nWHEEL_ANALYSIS (support hint only):\n${analysisLines.join('\n')}` : ''}
 </CRITICAL_WHEEL_REFERENCE>` });
       if (wheelReferenceFileUri?.uri) {
-        parts.push({ file_data: { mime_type: wheelReferenceFileUri.mimeType || 'image/jpeg', file_uri: wheelReferenceFileUri.uri } });
+        const p = { file_data: { mime_type: wheelReferenceFileUri.mimeType || 'image/jpeg', file_uri: wheelReferenceFileUri.uri } };
+        imageLabels.set(p, 'WHEEL REFERENCE – authoritative source for ALL visible rims');
+        parts.push(p);
         console.log('[remaster][wheel] wheel reference attached via file_uri');
       } else {
-        parts.push(toInlineData(wheelReferenceBase64));
+        const p = toInlineData(wheelReferenceBase64);
+        imageLabels.set(p, 'WHEEL REFERENCE – authoritative source for ALL visible rims');
+        parts.push(p);
         console.log('[remaster][wheel] wheel reference attached via inline base64');
       }
     } else {
       console.log('[remaster][wheel] no wheel reference for this request');
     }
 
+    // Additional reference images
+    if ((Array.isArray(additionalFileUris) && additionalFileUris.length > 0) || (Array.isArray(additionalImages) && additionalImages.length > 0)) {
+      parts.push({ text: `AUTHORITATIVE DETAIL REFERENCES: The following extra images are the highest-priority source material for exact reproduction of the vehicle. Match every visible color, material, trim, label, inscription, button, texture, and geometry exactly. Do NOT replace missing certainty with generic model-memory or guessed defaults.${hasWheelReference ? ' EXCEPTION: for wheels/rims these images NEVER override the WHEEL REFERENCE image – the WHEEL REFERENCE always wins.' : ''}` });
+    }
+
+    if (Array.isArray(additionalFileUris) && additionalFileUris.length > 0) {
+      for (const fu of additionalFileUris) {
+        const p = { file_data: { mime_type: fu.mimeType, file_uri: fu.uri } };
+        imageLabels.set(p, 'Detail reference photo');
+        parts.push(p);
+      }
+      console.log(`[remaster] ${additionalFileUris.length} additional images via file_uri`);
+    }
+
+    if (Array.isArray(additionalImages) && additionalImages.length > 0) {
+      for (const img of additionalImages.slice(0, 10)) {
+        const p = toInlineData(img);
+        imageLabels.set(p, 'Detail reference photo');
+        parts.push(p);
+      }
+    }
+
+
     if (customPlateImageBase64 || customPlateImageFileUri?.uri) {
       parts.push({ text: "CRITICAL – CUSTOM LICENSE PLATE IMAGE: The following image is the EXACT license plate you MUST use. Replace the vehicle's existing plate with this plate PIXEL-FOR-PIXEL. Reproduce every character, color, seal, EU badge, and spacing exactly. Do NOT invent or modify any element. This is an IMMUTABLE ASSET:" });
       if (customPlateImageFileUri?.uri) {
-        parts.push({ file_data: { mime_type: customPlateImageFileUri.mimeType, file_uri: customPlateImageFileUri.uri } });
+        { const _p = { file_data: { mime_type: customPlateImageFileUri.mimeType, file_uri: customPlateImageFileUri.uri } }; imageLabels.set(_p, 'LICENSE PLATE – immutable asset'); parts.push(_p); }
         console.log(`[remaster] Plate via file_uri`);
       } else {
-        parts.push(toInlineData(customPlateImageBase64));
+        { const _p = toInlineData(customPlateImageBase64); imageLabels.set(_p, 'LICENSE PLATE – immutable asset'); parts.push(_p); }
       }
     }
 
@@ -626,9 +647,39 @@ REPRODUCTION RULES (ZERO DEVIATION):
 6. CONSISTENCY: The SAME logo in the SAME position on the SAME hall must appear in EVERY generated image / perspective for this vehicle.
 7. SOURCE OF TRUTH: This asset OVERRIDES any DEKRA-like logo, text or banner the model might otherwise invent. Use ONLY this image.
 </SCENE_ASSET_DEKRA_LOGO>` });
-      parts.push({ inlineData: { mimeType: DEKRA_LOGO_MIME, data: DEKRA_LOGO_BASE64 } });
+      { const _p = { inlineData: { mimeType: DEKRA_LOGO_MIME, data: DEKRA_LOGO_BASE64 } }; imageLabels.set(_p, 'DEKRA LOGO – immutable scene asset'); parts.push(_p); }
       console.log('[remaster] DEKRA scene asset injected (dealer-lot-dekra)');
     }
+
+    // ── BILD-MANIFEST: jedes Bild bekommt eine feste Nummer + Label ──
+    // Dadurch hängt kein Prompt-Block mehr an "the NEXT image" (Reihenfolge kann
+    // je nach Engine variieren) und der OpenAI-Pfad kann dieselbe Reihenfolge
+    // benannt mitschicken.
+    const imageManifest: { index: number; label: string; part: any }[] = [];
+    {
+      const rebuilt: any[] = [];
+      for (const p of parts) {
+        if (p?.inlineData?.data || p?.file_data?.file_uri) {
+          const label = imageLabels.get(p) || 'Reference image (context asset)';
+          const index = imageManifest.length + 1;
+          imageManifest.push({ index, label, part: p });
+          rebuilt.push({ text: `[IMAGE ${index}] ${label}` });
+          rebuilt.push(p);
+        } else {
+          rebuilt.push(p);
+        }
+      }
+      if (imageManifest.length > 0) {
+        rebuilt.splice(1, 0, {
+          text: `<IMAGE_MANIFEST>\nThe attached images are labelled in order. Use each strictly for its stated role:\n${imageManifest.map(m => `IMAGE ${m.index} = ${m.label}`).join('\n')}\n</IMAGE_MANIFEST>`,
+        });
+      }
+      parts.length = 0;
+      parts.push(...rebuilt);
+    }
+    const wheelManifestIndex = imageManifest.find(m => m.label.startsWith('WHEEL REFERENCE'))?.index ?? null;
+    console.log(`[remaster][wheel] manifest images=${imageManifest.length} wheelRefAttached=${hasWheelReference} wheelImageIndex=${wheelManifestIndex} engine=${engineConfig.engine}`);
+
 
     // ── DEBUG: Log full payload summary ──
     const debugSummary = {
@@ -664,32 +715,53 @@ REPRODUCTION RULES (ZERO DEVIATION):
     // ─────────────────────────────────────────────────────────────
     if (engineConfig.engine === 'openai') {
       // Collect all text parts into one prompt + all image data parts as multipart files
-      const promptText = parts
+      let promptText = parts
         .filter((p: any) => typeof p.text === 'string')
         .map((p: any) => p.text)
         .join('\n\n');
-      const inlineImageParts = parts.filter((p: any) => p.inlineData?.data);
-      const fileUriParts = parts.filter((p: any) => p.file_data?.file_uri);
+
+      // Priorität beim 16-Bild-Limit: Fahrzeug → Felge → Kennzeichen → Logos → Rest.
+      const priorityOf = (label: string) => {
+        if (label.startsWith('VEHICLE BLUEPRINT')) return 0;
+        if (label.startsWith('WHEEL REFERENCE')) return 1;
+        if (label.startsWith('LICENSE PLATE')) return 2;
+        if (label.startsWith('SHOWROOM')) return 3;
+        if (/LOGO/i.test(label)) return 4;
+        return 5;
+      };
+      const ordered = [...imageManifest].sort((a, b) => priorityOf(a.label) - priorityOf(b.label) || a.index - b.index);
 
       // Materialize file_uri images by fetching them (OpenAI has no file_uri concept)
-      const allImages: { mime: string; data: string }[] = [];
-      for (const ip of inlineImageParts) {
-        allImages.push({ mime: ip.inlineData.mimeType || 'image/png', data: ip.inlineData.data });
-      }
-      for (const fp of fileUriParts) {
+      const allImages: { mime: string; data: string; label: string }[] = [];
+      for (const m of ordered) {
+        const p: any = m.part;
+        if (p.inlineData?.data) {
+          allImages.push({ mime: p.inlineData.mimeType || 'image/png', data: p.inlineData.data, label: m.label });
+          continue;
+        }
         try {
-          const r = await fetch(fp.file_data.file_uri);
+          const r = await fetch(p.file_data.file_uri);
           if (r.ok) {
             const buf = new Uint8Array(await r.arrayBuffer());
             let bin = ''; for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
-            allImages.push({ mime: fp.file_data.mime_type || 'image/png', data: btoa(bin) });
+            allImages.push({ mime: p.file_data.mime_type || 'image/png', data: btoa(bin), label: m.label });
           }
         } catch (e) { console.warn('[remaster][openai] file_uri fetch failed', e); }
       }
 
       // OpenAI /v1/images/edits accepts up to 16 image inputs
       const limited = allImages.slice(0, 16);
-      console.log(`[remaster][openai] model=${engineConfig.model}, images=${limited.length}, promptLen=${promptText.length}`);
+      const fileNameFor = (label: string, i: number, ext: string) =>
+        label.startsWith('WHEEL REFERENCE') ? `wheel_reference.${ext}`
+        : label.startsWith('VEHICLE BLUEPRINT') ? `vehicle.${ext}`
+        : `ref_${i}.${ext}`;
+      const openaiManifest = limited.map((im, i) => {
+        const ext = im.mime.includes('png') ? 'png' : im.mime.includes('webp') ? 'webp' : 'jpg';
+        return `image #${i + 1} (${fileNameFor(im.label, i, ext)}) = ${im.label}`;
+      }).join('\n');
+      promptText = `<IMAGE_ORDER>\nThe attached images arrive in this exact order. Use each strictly for its stated role:\n${openaiManifest}\n</IMAGE_ORDER>\n\n${promptText}`;
+      const wheelPos = limited.findIndex(im => im.label.startsWith('WHEEL REFERENCE'));
+      console.log(`[remaster][openai] model=${engineConfig.model}, images=${limited.length}, wheelRefPos=${wheelPos}, promptLen=${promptText.length}`);
 
       const form = new FormData();
       form.append('model', engineConfig.model);
@@ -706,8 +778,9 @@ REPRODUCTION RULES (ZERO DEVIATION):
         for (let j = 0; j < binStr.length; j++) bytes[j] = binStr.charCodeAt(j);
         const ext = im.mime.includes('png') ? 'png' : im.mime.includes('webp') ? 'webp' : 'jpg';
         const blob = new Blob([bytes], { type: im.mime });
-        form.append('image', blob, `ref_${i}.${ext}`);
+        form.append('image', blob, fileNameFor(im.label, i, ext));
       }
+
 
       const MAX_OPENAI_ATTEMPTS = 2;
       for (let attempt = 0; attempt < MAX_OPENAI_ATTEMPTS && !resultImage; attempt++) {
@@ -853,7 +926,44 @@ REPRODUCTION RULES (ZERO DEVIATION):
       ? 'Das KI-Modell ist gerade überlastet. Bitte versuche es in einigen Sekunden erneut.'
       : (lastError || "Kein Bild generiert. Bitte versuche es erneut."));
 
-    return new Response(JSON.stringify({ imageBase64: resultImage }), {
+    // ── Leichtgewichtige Felgen-Verifikation ──
+    // Vergleicht Speichenzahl/Finish des Ergebnisses mit der Felgenreferenz.
+    let wheelCheck: { match: boolean; reason?: string } | null = null;
+    if (hasWheelReference && GEMINI_API_KEY) {
+      try {
+        const refPart = wheelReferenceFileUri?.uri
+          ? { file_data: { mime_type: wheelReferenceFileUri.mimeType || 'image/jpeg', file_uri: wheelReferenceFileUri.uri } }
+          : toInlineData(wheelReferenceBase64);
+        const checkRes = await fetch(
+          'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': GEMINI_API_KEY },
+            body: JSON.stringify({
+              contents: [{ role: 'user', parts: [
+                { text: 'IMAGE 1 = wheel reference. IMAGE 2 = generated vehicle image. Compare ONLY the wheels/rims: spoke count, spoke geometry, finish and colours. Answer strictly as JSON: {"match": true|false, "reason": "short"}' },
+                refPart,
+                toInlineData(resultImage),
+              ] }],
+              generationConfig: { responseMimeType: 'application/json', temperature: 0 },
+            }),
+          },
+        );
+        if (checkRes.ok) {
+          const cj = await checkRes.json();
+          const raw = cj?.candidates?.[0]?.content?.parts?.find((p: any) => p.text)?.text;
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            wheelCheck = { match: !!parsed.match, reason: parsed.reason };
+            console.log(`[remaster][wheel] verification match=${wheelCheck.match} reason=${wheelCheck.reason ?? ''}`);
+          }
+        }
+      } catch (verifyErr) {
+        console.warn('[remaster][wheel] verification skipped:', verifyErr);
+      }
+    }
+
+    return new Response(JSON.stringify({ imageBase64: resultImage, ...(wheelCheck ? { wheelCheck } : {}) }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

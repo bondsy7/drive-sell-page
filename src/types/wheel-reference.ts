@@ -35,6 +35,12 @@ export interface WheelReference {
   analysis: WheelAnalysis | null;
   /** Vertrauen der Analyse. */
   confidence: WheelConfidence;
+  /**
+   * true = die Referenz wurde automatisch aus einem Fahrzeugfoto ausgeschnitten
+   * (kein dedizierter Upload). Geometrisch weiterhin verbindlich, aber
+   * niedriger aufgelöst.
+   */
+  derived?: boolean;
 }
 
 export const EMPTY_WHEEL_ANALYSIS: WheelAnalysis = {
