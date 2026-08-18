@@ -140,6 +140,13 @@ const PRICE_DISPLAYS = [
   { id: 'stoerer', label: 'Störer', prompt: 'as a solid rectangular price callout (Störer) with sharp 90-degree corners (NO rounded corners), filled with the accent color, white bold sans-serif price text centered inside, perfectly straight and horizontally aligned, NOT tilted, NOT rotated, NOT angled, placed prominently in a top corner of the banner like a classic German dealership price sticker' },
 ];
 
+/** Vorbelegte Default-Texte – werden übernommen, falls der Nutzer nichts ändert. */
+const DEFAULT_PRICE_TEXT = 'ab 299€/mtl.';
+const DEFAULT_HEADLINE = 'Jetzt zuschlagen!';
+const DEFAULT_SUBLINE = 'Nur noch 3 verfügbar';
+/** true, wenn das Feld leer ist oder noch den Default-Text enthält. */
+const isPristineText = (value: string, def: string) => !value.trim() || value.trim() === def;
+
 const CTA_OPTIONS = [
   'Jetzt anfragen', 'Termin vereinbaren', 'Angebot sichern', 'Probefahrt buchen', 'Jetzt entdecken', 'Mehr erfahren',
 ];
