@@ -190,12 +190,12 @@ export default function VehiclesTab() {
     <div className="space-y-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-xs text-muted-foreground min-h-5">
-          {totalVehicles > loadedVehicles
-            ? `${loadedVehicles} von ${totalVehicles} Fahrzeugen geladen`
-            : `${vehicles.length} Fahrzeug${vehicles.length === 1 ? '' : 'e'} geladen`}
-          {isFetchingNextPage && (
+          {totalVehicles > 0
+            ? `Fahrzeuge ${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, totalVehicles)} von ${totalVehicles} · Seite ${page} von ${pageCount}`
+            : 'Keine Fahrzeuge'}
+          {isFetching && (
             <span className="inline-flex items-center gap-1.5 ml-2 text-accent">
-              <Loader2 className="w-3 h-3 animate-spin" /> weitere werden geladen…
+              <Loader2 className="w-3 h-3 animate-spin" /> lädt…
             </span>
           )}
         </div>
