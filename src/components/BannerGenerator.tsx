@@ -423,7 +423,7 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
       if (ext.priceType === 'lease') setOccasion('lease');
       else if (ext.priceType === 'finance') setOccasion('finance');
       else if (ext.priceType === 'abo') setOccasion('abo');
-      if (!legalText) {
+      if (!legalText || isPristineText(legalText, DEFAULT_LEGAL_TEXT)) {
         // Kompakte Pflichtangabe: Zustand • kW (PS) • Kraftstoff Verbrauch • CO₂ • CO₂-Klasse.
         // Lange Füll-/Richtlinientexte werden bewusst weggelassen.
         // Leasing-/Finanzierungs-Rechtstexte kommen aus dem User-Profil (Dealer/Bank).
