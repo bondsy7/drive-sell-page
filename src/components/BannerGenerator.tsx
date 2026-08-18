@@ -263,7 +263,7 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
   const [accentColor, setAccentColor] = useState('#174f6b');
   const [secondaryColor, setSecondaryColor] = useState('#e2b04a');
   const [freePrompt, setFreePrompt] = useState('');
-  const [legalText, setLegalText] = useState('');
+  const [legalText, setLegalText] = useState(DEFAULT_LEGAL_TEXT);
 
   // Font selection
   const [headlineFont, setHeadlineFont] = useState<string>('modern-sans');
