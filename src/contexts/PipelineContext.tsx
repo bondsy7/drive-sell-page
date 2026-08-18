@@ -563,7 +563,13 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           // when the bucket folder is still empty to avoid duplicates on re-runs.
           if (resolvedVehicleId) {
             try {
-              const originals = (cfg.originalImages?.length ? cfg.originalImages : cfg.inputImages) || [];
+              const normalOriginals = (cfg.originalImages?.length ? cfg.originalImages : cfg.inputImages) || [];
+              // Felgenreferenz NUR für die Persistenz anhängen – sie darf niemals
+              // Teil der indexbasierten Primary-Reference-Logik werden.
+              const originals = [
+                ...normalOriginals,
+                ...(cfg.wheelReference?.image ? [cfg.wheelReference.image] : []),
+              ];
               if (originals.length > 0) {
                 const { data: existing } = await supabase.storage
                   .from('originals')

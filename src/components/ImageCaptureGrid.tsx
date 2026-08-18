@@ -784,10 +784,12 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     .map(s => captures[s.key].remasteredBase64 || captures[s.key].base64);
 
   // Collect original (pre-remaster) images for AI reference
-  const allOriginalBase64 = [
-    ...vehicleSlots.filter(s => captures[s.key]).map(s => captures[s.key].base64),
-    ...(wheelReference?.image ? [wheelReference.image] : []),
-  ];
+  // WICHTIG: NUR normale Perspektiv-Slots – die Felgenreferenz wird separat
+  // via `wheelReference` durchgereicht, damit die indexbasierte
+  // Primary-Reference-Logik der Pipeline nicht verfälscht wird.
+  const allOriginalBase64 = vehicleSlots
+    .filter(s => captures[s.key])
+    .map(s => captures[s.key].base64);
 
   // ── Schritt 1.1: Fahrzeugart ──
   if (!vehicleClass) {
