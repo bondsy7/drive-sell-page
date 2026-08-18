@@ -140,6 +140,13 @@ const PRICE_DISPLAYS = [
   { id: 'stoerer', label: 'Störer', prompt: 'as a solid rectangular price callout (Störer) with sharp 90-degree corners (NO rounded corners), filled with the accent color, white bold sans-serif price text centered inside, perfectly straight and horizontally aligned, NOT tilted, NOT rotated, NOT angled, placed prominently in a top corner of the banner like a classic German dealership price sticker' },
 ];
 
+/** Vorbelegte Default-Texte – werden übernommen, falls der Nutzer nichts ändert. */
+const DEFAULT_PRICE_TEXT = 'ab 299€/mtl.';
+const DEFAULT_HEADLINE = 'Jetzt zuschlagen!';
+const DEFAULT_SUBLINE = 'Nur noch 3 verfügbar';
+/** true, wenn das Feld leer ist oder noch den Default-Text enthält. */
+const isPristineText = (value: string, def: string) => !value.trim() || value.trim() === def;
+
 const CTA_OPTIONS = [
   'Jetzt anfragen', 'Termin vereinbaren', 'Angebot sichern', 'Probefahrt buchen', 'Jetzt entdecken', 'Mehr erfahren',
 ];
@@ -248,9 +255,9 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
   const [style, setStyle] = useState<string>('bold');
   const [priceDisplay, setPriceDisplay] = useState<string>('stoerer');
   const [vehicleTitle, setVehicleTitle] = useState('');
-  const [priceText, setPriceText] = useState('');
-  const [headline, setHeadline] = useState('');
-  const [subline, setSubline] = useState('');
+  const [priceText, setPriceText] = useState(DEFAULT_PRICE_TEXT);
+  const [headline, setHeadline] = useState(DEFAULT_HEADLINE);
+  const [subline, setSubline] = useState(DEFAULT_SUBLINE);
   const [ctaText, setCtaText] = useState('Jetzt anfragen');
   const [accentColor, setAccentColor] = useState('#174f6b');
   const [secondaryColor, setSecondaryColor] = useState('#e2b04a');
@@ -406,11 +413,11 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
       if (!ext) return;
       setExtractedData(ext);
       if (!vehicleTitle && ext.vehicleTitle) setVehicleTitle(ext.vehicleTitle);
-      if (!priceText && (ext.price || ext.monthlyRate)) {
+      if (isPristineText(priceText, DEFAULT_PRICE_TEXT) && (ext.price || ext.monthlyRate)) {
         setPriceText(ext.monthlyRate ? `ab ${ext.monthlyRate}/mtl.` : ext.price || '');
       }
-      if (!headline && ext.headline) setHeadline(ext.headline);
-      if (!subline && ext.subline) setSubline(ext.subline);
+      if (isPristineText(headline, DEFAULT_HEADLINE) && ext.headline) setHeadline(ext.headline);
+      if (isPristineText(subline, DEFAULT_SUBLINE) && ext.subline) setSubline(ext.subline);
       if (ext.priceType === 'lease') setOccasion('lease');
       else if (ext.priceType === 'finance') setOccasion('finance');
       else if (ext.priceType === 'abo') setOccasion('abo');
@@ -485,10 +492,12 @@ const BannerGenerator: React.FC<BannerGeneratorProps> = ({ onBack, preloadedImag
       // Befülle/überschreibe Felder mit Datenblatt-Werten (priorisiert ggü. Fahrzeugbild)
       if (ext.vehicleTitle) setVehicleTitle(prev => prev || ext.vehicleTitle);
       if (ext.price || ext.monthlyRate) {
-        setPriceText(prev => prev || (ext.monthlyRate ? `ab ${ext.monthlyRate}/mtl.` : ext.price || ''));
+        setPriceText(prev => isPristineText(prev, DEFAULT_PRICE_TEXT)
+          ? (ext.monthlyRate ? `ab ${ext.monthlyRate}/mtl.` : ext.price || prev)
+          : prev);
       }
-      if (ext.headline) setHeadline(prev => prev || ext.headline);
-      if (ext.subline) setSubline(prev => prev || ext.subline);
+      if (ext.headline) setHeadline(prev => isPristineText(prev, DEFAULT_HEADLINE) ? ext.headline : prev);
+      if (ext.subline) setSubline(prev => isPristineText(prev, DEFAULT_SUBLINE) ? ext.subline : prev);
       if (ext.priceType === 'lease') setOccasion('lease');
       else if (ext.priceType === 'finance') setOccasion('finance');
       else if (ext.priceType === 'abo') setOccasion('abo');
