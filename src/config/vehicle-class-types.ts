@@ -5,16 +5,15 @@
  */
 
 /** Vehicle classes that are functionally implemented and visible in the UI. */
-export type ActiveVehicleClassKey = 'car' | 'truck';
+export type ActiveVehicleClassKey = 'car' | 'truck' | 'motorcycle';
 
 /**
  * All vehicle classes the architecture is prepared for.
- * Everything beyond `car` and `truck` is a typed extension point only —
+ * Everything beyond the active classes is a typed extension point only —
  * no UI, no slots, no prompts, no pipeline jobs, no credits.
  */
 export type VehicleClassKey =
   | ActiveVehicleClassKey
-  | 'motorcycle'
   | 'ebike'
   | 'motorhome'
   | 'campervan'
