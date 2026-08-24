@@ -20,14 +20,16 @@ import type {
 } from './vehicle-class-types';
 import { CAR_PROFILE } from './profiles/car-profile';
 import { TRUCK_PROFILE } from './profiles/truck-profile';
+import { MOTORCYCLE_PROFILE } from './profiles/motorcycle-profile';
 
 export * from './vehicle-class-types';
 
-export const ACTIVE_VEHICLE_CLASSES: ActiveVehicleClassKey[] = ['car', 'truck'];
+export const ACTIVE_VEHICLE_CLASSES: ActiveVehicleClassKey[] = ['car', 'truck', 'motorcycle'];
 
 const REGISTRY: Partial<Record<VehicleClassKey, VehicleClassProfile>> = {
   car: CAR_PROFILE,
   truck: TRUCK_PROFILE,
+  motorcycle: MOTORCYCLE_PROFILE,
 };
 
 export function isActiveVehicleClass(key: unknown): key is ActiveVehicleClassKey {

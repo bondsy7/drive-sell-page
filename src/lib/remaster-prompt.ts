@@ -7,6 +7,7 @@ import { REMASTER_PROMPT_BLOCKS, SCENE_PROMPT_DEFAULTS, SCENE_LIGHTING_PROFILES 
 import type { VehicleClassContext } from '@/config/vehicle-class-types';
 import { resolveVehicleClass } from '@/config/vehicle-classes';
 import { buildTruckPromptBlocks, TRUCK_PERSPECTIVE_PROMPTS } from '@/prompts/remaster/truck';
+import { buildMotorcyclePromptBlocks, MOTORCYCLE_PERSPECTIVE_PROMPTS } from '@/prompts/remaster/motorcycle';
 import { formatWheelAnalysisBlock } from '@/lib/wheel-reference';
 
 export interface RemasterConfig {
@@ -276,6 +277,7 @@ export function buildMasterPrompt(
   // Fehlender Kontext => 'car' (Rückwärtskompatibilität, Pkw-Prompt unverändert)
   const vehicleClass = resolveVehicleClass(classContext?.vehicleClass);
   const isTruck = vehicleClass === 'truck';
+  const isMotorcycle = vehicleClass === 'motorcycle';
   const interior = isInteriorSlot(slotKey);
 
   // ── Base instruction ──
@@ -340,6 +342,11 @@ PAINT COLOR CHANGE – ABSOLUTE, NON-NEGOTIABLE, APPLIES TO EVERY IMAGE:
       subjectScope: classContext?.subjectScope ?? null,
       slotKey,
     }));
+  }
+
+  // ── MOTORRAD-SPEZIFISCHE BLÖCKE (niemals im Pkw-/Lkw-Prompt) ──
+  if (isMotorcycle) {
+    parts.push(...buildMotorcyclePromptBlocks());
   }
 
   // ── WHEEL REFERENCE LOCK (nur bei dedizierter Felgenreferenz) ──
@@ -639,9 +646,14 @@ RECONSTRUCTION RULES:
 
   // ── Perspective-specific instructions (class-scoped) ──
   if (slotKey) {
-    const perspPrompt = isTruck
+    const classPersp = isTruck
       ? TRUCK_PERSPECTIVE_PROMPTS[slotKey]
-        ? `<CURRENT_PERSPECTIVE>\n${TRUCK_PERSPECTIVE_PROMPTS[slotKey]}\n</CURRENT_PERSPECTIVE>`
+      : isMotorcycle
+        ? MOTORCYCLE_PERSPECTIVE_PROMPTS[slotKey]
+        : null;
+    const perspPrompt = isTruck || isMotorcycle
+      ? classPersp
+        ? `<CURRENT_PERSPECTIVE>\n${classPersp}\n</CURRENT_PERSPECTIVE>`
         : ''
       : PERSPECTIVE_PROMPTS[slotKey];
     if (perspPrompt) {

@@ -4,6 +4,7 @@ import { getActiveProfiles } from '@/config/vehicle-classes';
 import type { ActiveVehicleClassKey } from '@/config/vehicle-class-types';
 import carLine from '@/assets/class-car-line.png';
 import truckLine from '@/assets/class-truck-line.png';
+import motorcycleLine from '@/assets/class-motorcycle-line.png';
 
 const CLASS_VISUAL: Record<string, { image: string; title: string; examples: string }> = {
   car: {
@@ -15,6 +16,11 @@ const CLASS_VISUAL: Record<string, { image: string; title: string; examples: str
     image: truckLine,
     title: 'LKW',
     examples: 'z. B. LKW über 7,5 t, Sattelzug',
+  },
+  motorcycle: {
+    image: motorcycleLine,
+    title: 'MOTORRAD',
+    examples: 'z. B. Naked Bike, Tourer, Chopper, Roller',
   },
 };
 
@@ -39,7 +45,7 @@ const VehicleClassPicker: React.FC<VehicleClassPickerProps> = ({ value, onChange
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         {profiles.map((p) => {
           const visual = CLASS_VISUAL[p.key] ?? {
             image: carLine,
