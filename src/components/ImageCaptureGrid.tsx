@@ -897,7 +897,9 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         <p className="text-sm text-muted-foreground">
           {activeClass === 'truck'
             ? 'Nimm die Pflichtperspektiven für die gewählte Lkw-Konfiguration auf. Fehlende Perspektiven werden nicht ersetzt.'
-            : 'Fotografiere das Fahrzeug aus den vorgegebenen Perspektiven. Die KI setzt es in einen professionellen Showroom.'}
+            : activeClass === 'motorcycle'
+              ? 'Fotografiere das Motorrad aus den vorgegebenen Perspektiven. Die KI setzt es in einen professionellen Showroom.'
+              : 'Fotografiere das Fahrzeug aus den vorgegebenen Perspektiven. Die KI setzt es in einen professionellen Showroom.'}
         </p>
         <div className="mt-2 flex flex-wrap items-center justify-center gap-2 text-xs">
           <span className="px-2 py-1 rounded-full bg-muted text-muted-foreground font-medium">
@@ -1086,17 +1088,19 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       <div className="space-y-3">
         <h3 className="text-sm font-semibold text-foreground">Weitere Detailaufnahmen (Multiupload)</h3>
 
-        {/* Guide image showing what details to capture */}
+        {/* Guide image showing what details to capture (nicht bei Motorrädern) */}
         <div
           onClick={() => detailFileRef.current?.click()}
           className="cursor-pointer rounded-xl border-2 border-dashed border-border hover:border-accent bg-card hover:bg-muted/30 transition-colors overflow-hidden"
         >
-          <img
-            src="/images/detail-upload-guide.png"
-            alt="Detailaufnahmen Guide – Mittelkonsole, Armaturenbrett, Infotainment, Lenkrad, Reifen, etc."
-            className="w-full h-auto opacity-60 hover:opacity-80 transition-opacity"
-          />
-          <div className="flex items-center justify-center gap-2 py-3 border-t border-border">
+          {activeClass !== 'motorcycle' && (
+            <img
+              src="/images/detail-upload-guide.png"
+              alt="Detailaufnahmen Guide – Mittelkonsole, Armaturenbrett, Infotainment, Lenkrad, Reifen, etc."
+              className="w-full h-auto opacity-60 hover:opacity-80 transition-opacity"
+            />
+          )}
+          <div className={`flex items-center justify-center gap-2 py-3 ${activeClass !== 'motorcycle' ? 'border-t border-border' : 'py-8'}`}>
             <Upload className="w-4 h-4 text-muted-foreground" />
             <span className="text-sm font-medium text-muted-foreground">Durchsuchen und Hinzufügen</span>
           </div>
@@ -1133,7 +1137,9 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
 
         <p className="text-sm font-semibold text-destructive bg-destructive/10 border border-destructive/30 rounded-lg px-3 py-2 flex items-start gap-2">
           <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-          Um ein optimales Ergebnis zu erzielen, laden Sie bitte bis zu zehn weitere Detailaufnahmen hoch – Innenraum (Mittelkonsole, Lenkrad, Infotainment), Exterieur (Felgen, Kofferraum), Schäden, Logos, Motorraum etc.
+          {activeClass === 'motorcycle'
+            ? 'Um ein optimales Ergebnis zu erzielen, laden Sie bitte bis zu zehn weitere Detailaufnahmen hoch.'
+            : 'Um ein optimales Ergebnis zu erzielen, laden Sie bitte bis zu zehn weitere Detailaufnahmen hoch – Innenraum (Mittelkonsole, Lenkrad, Infotainment), Exterieur (Felgen, Kofferraum), Schäden, Logos, Motorraum etc.'}
         </p>
 
         <input
