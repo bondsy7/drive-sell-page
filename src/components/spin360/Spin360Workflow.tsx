@@ -10,6 +10,7 @@ import Spin360Upload, { type SpinSlotData, type SpinMode } from './Spin360Upload
 import Spin360Progress, { type SpinStep } from './Spin360Progress';
 import Spin360Viewer from './Spin360Viewer';
 import Video2FramesProcessor from './Video2FramesProcessor';
+import SpinSourcePicker, { type SpinSourceSelection } from './SpinSourcePicker';
 import { uploadImageToStorage } from '@/lib/storage-utils';
 import { ensureVehicleAuto } from '@/lib/vehicle-utils';
 
