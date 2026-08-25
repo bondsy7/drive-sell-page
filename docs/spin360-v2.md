@@ -8,17 +8,35 @@ Frontend-Re-Export: `src/lib/spin360-v2.ts`), Orchestrierung in
 ## Pipeline-Reihenfolge (verbindlich)
 
 ```text
-analyze → profile → keyframes → validate_keyframes → frames → assemble
+analyze → profile → keyframes(0…7) → validate_keyframe(0…7) → generate_frame(sector, planPosition) → assemble
 ```
 
 - **analyze** — Quellwinkel plausibilisieren, Auswahl in `spin360_source_selection` schreiben,
   Radreferenz per Vision analysieren (`wheelSpec`). Bricht ab, wenn die Mindestabdeckung fehlt.
 - **profile** — unveränderliches Identitätsprofil **vor** jeder Generierung. Speichert
   `identity_profile`, `identity_hash` und `qa_summary.identitySourceTier`.
-- **keyframes** — 8 Keyframes (0/45/90/135/180/225/270/315), je Aufruf einer.
-- **validate_keyframes** — striktes QA-Gate mit Reparaturschleife. Ohne 8/8 keine Zwischenframes.
-- **frames** — Sektoren 0–7, bidirektionale Offsets.
+- **keyframes** — 8 Keyframes (0/45/90/135/180/225/270/315), je Aufruf einer. Persistenz wird
+  sofort verifiziert; ein fehlgeschlagener Schreibvorgang beendet den Job mit `[keyframes] …`.
+- **validate_keyframe** — **ein** Keyframe und **ein** QA-/Reparaturversuch pro Invocation.
+  Bestanden ⇒ nächster Keyframe, sonst nächster Versuch (max. `MAX_KEYFRAME_ATTEMPTS`).
+- **generate_frame** — **ein** Zwischenframe-Versuch pro Invocation (Sektor + Planposition +
+  Versuch). Bestanden ⇒ nächste Planposition, nach der letzten ⇒ nächster Sektor, nach Sektor 7 ⇒ assemble.
 - **assemble** — Manifest v2, Credits nach bestandener QA, Status `completed` oder `needs_review`.
+
+Jede Einheit ist **idempotent**: bereits bestandene Keyframes/Frames werden übersprungen, sodass
+ein Job nach einem Timeout einfach wieder aufgenommen werden kann. Der aktuelle Stand liegt in
+`qa_summary.pipeline_cursor`. Die alten Schritte `validate_keyframes` und `frames` bleiben als
+Alias erhalten.
+
+## Fehlerbehandlung und Abrechnung
+
+- Kritische DB-Schreibvorgänge (Quellauswahl, Keyframes, Frames, Job-Updates) werden geprüft;
+  bei Fehlern endet der Job sofort mit einer stufenspezifischen Meldung `[stage] …` statt mit
+  einer Folgemeldung wie „Nicht alle Keyframes vorhanden".
+- Credits werden idempotent über Marker in `qa_summary.billing` gebucht: `analysis`,
+  `keyframe:<winkel>` (erst nach erfolgreicher Persistenz) und `frames` (erst nach der QA).
+  Wiederholte oder wiederaufgenommene Invocations buchen nicht doppelt.
+
 
 ## Quellenpriorität
 
