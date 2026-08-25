@@ -1182,7 +1182,7 @@ Ein Unique-Index auf `(job_id, frame_index)` sichert die Reihenfolge-Integrität
 
 ### 12.5 QA & Repair
 
-Jeder Frame durchläuft ein Pflicht-QA-Gate (Farbe, Felgen, Karosserieform, Kameraachse, Hintergrund). Fällt ein Frame durch, wird er bis zu 3× mit verschärftem Prompt und dem Pro-Modell neu erzeugt; danach greift Interpolation oder der Job endet in `needs_review`.
+Jeder Frame durchläuft ein Pflicht-QA-Gate (Farbe, Felgen, Karosserieform, Kameraachse, Hintergrund). Fällt ein Frame durch, wird er bis zu 3× mit verschärftem Reparatur-Prompt (letzter Versuch Pro-Modell) neu erzeugt. Es gibt **keine** Interpolation und keinen Nachbar-Platzhalter: schlägt ein Pflicht-Frame nach der letzten Reparatur fehl, endet der Job in `needs_review`. Details siehe `docs/spin360-v2.md`.
 
 ### 12.6 Stale-Job-Erkennung
 
