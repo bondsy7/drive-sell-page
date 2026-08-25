@@ -606,3 +606,108 @@ describe('spin360 identity sources', () => {
     expect(generatedOnly.sources).toEqual([]);
   });
 });
+
+// ─── V2 Orchestrierung / Idempotenz / Guards ───────────────────────────
+import {
+  advanceFrame,
+  advanceKeyframe,
+  advanceValidation,
+  billingMarker,
+  hasBilled,
+  isRenderableSpin,
+  keyframeModelForAttempt,
+  sectorBoundaryLabel,
+  shouldSkipUnit,
+  withBilling,
+  SPIN_MODELS,
+  KEYFRAME_ANGLES as KF_ANGLES,
+  buildBidirectionalOffsets as offsets48,
+} from '../../supabase/functions/_shared/spin360-core';
+
+describe('spin360 orchestration cursor', () => {
+  it('läuft Keyframes einzeln durch und mündet in die Validierung', () => {
+    expect(advanceKeyframe(0)).toEqual({ kind: 'next', cursor: { step: 'keyframes', keyframeIndex: 1 } });
+    expect(advanceKeyframe(KF_ANGLES.length - 1)).toEqual({
+      kind: 'next',
+      cursor: { step: 'validate_keyframe', keyframeIndex: 0, attempt: 1 },
+    });
+  });
+
+  it('validiert Keyframes einzeln und startet danach die Zwischenframes', () => {
+    expect(advanceValidation(0, 1, true)).toEqual({
+      kind: 'next', cursor: { step: 'validate_keyframe', keyframeIndex: 1, attempt: 1 },
+    });
+    expect(advanceValidation(7, 2, true)).toEqual({
+      kind: 'next', cursor: { step: 'generate_frame', sector: 0, planPosition: 0, attempt: 1 },
+    });
+  });
+
+  it('wiederholt einen Keyframe bis zum Limit und wird dann terminal', () => {
+    expect(advanceValidation(3, 1, false, 4)).toEqual({
+      kind: 'next', cursor: { step: 'validate_keyframe', keyframeIndex: 3, attempt: 2 },
+    });
+    const terminal = advanceValidation(3, 4, false, 4);
+    expect(terminal.kind).toBe('terminal');
+  });
+
+  it('geht Zwischenframes Position für Position und Sektor für Sektor durch', () => {
+    const planLength = offsets48(48).length;
+    expect(advanceFrame(0, 0, 1, true, 48)).toEqual({
+      kind: 'next', cursor: { step: 'generate_frame', sector: 0, planPosition: 1, attempt: 1 },
+    });
+    expect(advanceFrame(0, planLength - 1, 1, true, 48)).toEqual({
+      kind: 'next', cursor: { step: 'generate_frame', sector: 1, planPosition: 0, attempt: 1 },
+    });
+    // Sektor 7 (Wrap 315° → 360°/0°) endet in assemble
+    expect(advanceFrame(7, planLength - 1, 1, true, 48)).toEqual({
+      kind: 'next', cursor: { step: 'assemble' },
+    });
+  });
+
+  it('wiederholt einen Frame-Versuch und wird nach dem Limit terminal', () => {
+    expect(advanceFrame(2, 1, 1, false, 48, 4)).toEqual({
+      kind: 'next', cursor: { step: 'generate_frame', sector: 2, planPosition: 1, attempt: 2 },
+    });
+    expect(advanceFrame(2, 1, 4, false, 48, 4).kind).toBe('terminal');
+  });
+
+  it('überspringt bereits bestandene Einheiten (idempotenter Resume)', () => {
+    expect(shouldSkipUnit([1, 5, 9], 5)).toBe(true);
+    expect(shouldSkipUnit([1, 5, 9], 4)).toBe(false);
+  });
+});
+
+describe('spin360 sector wrap + model routing', () => {
+  it('benennt die Sektor-7-Grenze eindeutig', () => {
+    expect(sectorBoundaryLabel(360)).toContain('0°');
+    expect(sectorBoundaryLabel(45)).toBe('45°');
+  });
+
+  it('nutzt Standardmodell bei direktem Foto, Pro ohne Foto', () => {
+    expect(keyframeModelForAttempt(1, true, 3)).toBe(SPIN_MODELS.image);
+    expect(keyframeModelForAttempt(3, true, 3)).toBe(SPIN_MODELS.imagePro);
+    expect(keyframeModelForAttempt(1, false, 3)).toBe(SPIN_MODELS.imagePro);
+  });
+});
+
+describe('spin360 billing idempotency', () => {
+  it('markiert Abrechnungen genau einmal', () => {
+    const marker = billingMarker('keyframe', 90);
+    expect(hasBilled({}, marker)).toBe(false);
+    const next = withBilling({}, marker);
+    expect(hasBilled(next, marker)).toBe(true);
+    expect((withBilling(next, marker).billing as string[]).length).toBe(1);
+  });
+});
+
+describe('spin360 viewer completion guard', () => {
+  const fullFrames = (n: number, status = 'passed') =>
+    Array.from({ length: n }, (_, i) => ({ frame_index: i, validation_status: status }));
+
+  it('rendert nur vollständige, bestandene Jobs', () => {
+    expect(isRenderableSpin({ status: 'completed', targetFrameCount: 48, frames: fullFrames(48) })).toBe(true);
+    expect(isRenderableSpin({ status: 'needs_review', targetFrameCount: 48, frames: fullFrames(48) })).toBe(false);
+    expect(isRenderableSpin({ status: 'completed', targetFrameCount: 48, frames: fullFrames(47) })).toBe(false);
+    expect(isRenderableSpin({ status: 'completed', targetFrameCount: 48, frames: fullFrames(48, 'failed') })).toBe(false);
+  });
+});
