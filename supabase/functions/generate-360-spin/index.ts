@@ -1,6 +1,6 @@
 // generate-360-spin (V2 — identitätsgesperrte Keyframe-Architektur)
 //
-// Schritte: analyze → keyframes → validate_keyframes → profile → frames (Sektoren, bidirektional) → assemble
+// Schritte: analyze → profile → keyframes → validate_keyframes → frames (Sektoren, bidirektional) → assemble
 //
 // Kernprinzipien:
 //  - 8 Keyframes (0/45/90/135/180/225/270/315), vorhandene Fotos belegen so viele wie möglich
@@ -27,6 +27,8 @@ import {
   buildManifest,
   buildQaPrompt,
   buildRepairPrompt,
+  evaluateSourceCoverage,
+  MIN_SOURCE_ANGLES,
   frameIndexForAngle,
   framesPerSector,
   isQaPassed,
@@ -414,8 +416,19 @@ serve(async (req) => {
     // ─────────── ANALYZE ───────────
     if (currentStep === "analyze") {
       const { sourceImages } = body;
-      if (!Array.isArray(sourceImages) || sourceImages.length < 2) {
-        throw new Error("Mindestens 2 Quellbilder erforderlich");
+      if (!Array.isArray(sourceImages)) throw new Error("Quellbilder fehlen");
+
+      // Produktionslauf: die vier Kardinalwinkel müssen als echtes Foto vorliegen (#H).
+      const declaredCoverage = evaluateSourceCoverage(
+        sourceImages.filter((s: any) => Number(s.angle) >= 0).map((s: any) => s.angle),
+      );
+      if (!declaredCoverage.ok) {
+        await markJobFailed(
+          sb, jobId,
+          `Zu wenig Quellmaterial: mindestens ${MIN_SOURCE_ANGLES} echte Perspektiven (0°, 90°, 180°, 270°) erforderlich. Fehlend: ${declaredCoverage.missingRequired.join("°, ")}°`,
+          "needs_review",
+        );
+        return json({ error: "insufficient_source_coverage", missing: declaredCoverage.missingRequired });
       }
 
       await updateJob(sb, jobId, { status: "analyzing", error_message: null, source_mode: body.sourceMode || "upload" });
@@ -467,9 +480,14 @@ serve(async (req) => {
       }
 
       const chosen = Object.values(selection);
-      if (chosen.length < 2) {
-        await markJobFailed(sb, jobId, "Zu wenige verwertbare Perspektiven erkannt", "needs_review");
-        return json({ error: "not_enough_perspectives" });
+      const coverage = evaluateSourceCoverage(chosen.map((c: any) => c.angle));
+      if (!coverage.ok) {
+        await markJobFailed(
+          sb, jobId,
+          `Zu wenige verwertbare Perspektiven erkannt (fehlend: ${coverage.missingRequired.join("°, ")}°)`,
+          "needs_review",
+        );
+        return json({ error: "not_enough_perspectives", missing: coverage.missingRequired });
       }
 
       await sb.from("spin360_source_selection").delete().eq("job_id", jobId);
@@ -669,14 +687,30 @@ serve(async (req) => {
         const frameIndex = frameIndexForAngle(angle, FRAME_COUNT);
         const own = all.find((s: any) => Number(s.angle_degrees) === angle);
 
-        // QA-Referenzen: Originale (Identität) + eigenes Foto + Radreferenz.
+        /**
+         * QA-Referenzen (#I): bis zu 4 unveränderliche Identitätsfotos rund ums
+         * Fahrzeug + das echte Foto des Zielwinkels + die nächstgelegenen echten
+         * Quellwinkel + Radreferenz. Keine doppelten URLs, keine generierten Frames.
+         */
         const references: LabeledRef[] = [];
-        if (own) references.push({ url: own.image_url, label: originalIdentityLabel(1, angle) });
-        for (const src of identityRefsFrom(identitySources, own ? 2 : 3)) {
-          if (references.some((r) => r.url === src.url)) continue;
-          references.push(src);
-        }
-        if (wheelRef) references.push({ url: wheelRef, label: wheelReferenceLabel() });
+        const seen = new Set<string>();
+        const pushRef = (url: string | undefined | null, label: string) => {
+          if (!url || seen.has(url)) return;
+          seen.add(url);
+          references.push({ url, label });
+        };
+
+        if (own) pushRef(own.image_url, originalIdentityLabel(1, angle));
+        for (const src of identityRefsFrom(identitySources, 4)) pushRef(src.url, src.label);
+
+        const qaDistance = (a: number) => Math.min(Math.abs(a - angle), 360 - Math.abs(a - angle));
+        const nearestReal = all
+          .filter((s: any) => Number(s.angle_degrees) !== angle)
+          .sort((a: any, b: any) => qaDistance(Number(a.angle_degrees)) - qaDistance(Number(b.angle_degrees)))
+          .slice(0, 2);
+        for (const n of nearestReal) pushRef(n.image_url, neighbourReferenceLabel(Number(n.angle_degrees)));
+
+        if (wheelRef) pushRef(wheelRef, wheelReferenceLabel());
 
         let candidateUrl: string = c.image_url;
         let accepted = false;
@@ -1070,8 +1104,17 @@ serve(async (req) => {
 
     // ─────────── Initialer Aufruf ───────────
     const { sourceImages } = body;
-    if (!Array.isArray(sourceImages) || sourceImages.length < 2) {
-      throw new Error("Mindestens 2 Quellbilder erforderlich");
+    if (!Array.isArray(sourceImages)) throw new Error("Quellbilder fehlen");
+    const startCoverage = evaluateSourceCoverage(
+      sourceImages.filter((s: any) => Number(s.angle) >= 0).map((s: any) => s.angle),
+    );
+    if (!startCoverage.ok) {
+      await markJobFailed(
+        sb, jobId,
+        `Mindestens ${MIN_SOURCE_ANGLES} echte Perspektiven (0°, 90°, 180°, 270°) erforderlich. Fehlend: ${startCoverage.missingRequired.join("°, ")}°`,
+        "needs_review",
+      );
+      return json({ error: "insufficient_source_coverage", missing: startCoverage.missingRequired }, 400);
     }
     invokeNextStep(authHeader, {
       jobId,
