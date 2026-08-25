@@ -626,6 +626,9 @@ export interface RepairPromptInput {
   hardFailures: string[];
   repairInstructions: string[];
   qaResult?: QaResult;
+  hasDirectSource?: boolean;
+  sourceAngles?: number[];
+  rebuildFromReferences?: boolean;
 }
 
 /**
@@ -636,6 +639,7 @@ export function buildRepairPrompt(input: RepairPromptInput): string {
   const {
     frameIndex, angle, frameCount, identity, referenceLabels,
     hasDedicatedWheelReference, wheelSpec, isKeyframe, attempt, hardFailures, repairInstructions, qaResult,
+    hasDirectSource = false, sourceAngles, rebuildFromReferences = false,
   } = input;
 
   const deterministic = qaResult ? deriveRepairInstructionsFromQa(qaResult) : [];
@@ -645,6 +649,25 @@ export function buildRepairPrompt(input: RepairPromptInput): string {
     : [
       "No below-threshold visual dimension was reported. Re-render the same frame conservatively for clearer QA confidence only; preserve all passed dimensions and do not alter wheels, paint, lights, body, trim, equipment, angle, camera, framing, background or lighting.",
     ];
+  const synthesisBlock = isKeyframe && !hasDirectSource ? missingKeyframeSynthesisBlock(angle, sourceAngles) : "";
+  const taskMode = rebuildFromReferences
+    ? `Automated quality control rejected the previous attempt because core vehicle identity was not reliable.
+Discard the rejected vehicle rendering as a bad draft and rebuild from the REAL ORIGINAL/SOURCE references and identity profile.
+Preserve only the requested target angle, centered studio framing, neutral background, ground contact and lighting continuity.`
+    : `Automated quality control REJECTED the previous attempt. Keep angle, camera, framing, background and
+lighting byte-for-byte comparable and repair ONLY the listed defects.`;
+  const preserveBlock = rebuildFromReferences
+    ? `<REBUILD_FROM_TRUTH>
+Do NOT preserve malformed lights, grille, wheels, body panels, trim or invented equipment from the rejected draft.
+Reconstruct those identity-critical areas from the ORIGINAL/SOURCE photographs only.
+For missing direct front/rear keyframes, use opposite-side symmetry only where the same physical component is hidden,
+and keep all confirmed visible asymmetries, badges, sensors and equipment from the identity profile.
+</REBUILD_FROM_TRUTH>`
+    : `<PRESERVE_EVERYTHING_ELSE>
+Preserve every other aspect of the rejected attempt unchanged: rotation angle, camera position, framing,
+focal length, vehicle centre, ground contact, background, lighting, shadow, paint tone, trim and equipment.
+Do not "improve", restyle or re-compose anything that was not explicitly listed above.
+</PRESERVE_EVERYTHING_ELSE>`;
 
   return `You are repairing frame ${frameIndex} (${angle}°) of a ${frameCount}-frame studio turntable sequence
 of ONE specific physical vehicle. This is repair attempt ${attempt}.
@@ -652,10 +675,11 @@ of ONE specific physical vehicle. This is repair attempt ${attempt}.
 <TASK>
 Re-render the ${isKeyframe ? "keyframe" : "intermediate frame"} at exactly ${angle} degrees.
 ${ANGLE_CONVENTION}
-Automated quality control REJECTED the previous attempt. Keep angle, camera, framing, background and
-lighting byte-for-byte comparable and repair ONLY the listed defects.
+${taskMode}
 Return exactly ONE image and no text.
 </TASK>
+
+${synthesisBlock}
 
 <REJECTED_FINDINGS>
 ${hardFailures.length ? hardFailures.map((f) => `- hard failure: ${f}`).join("\n") : "- (no hard failure reported)"}
@@ -665,11 +689,7 @@ ${hardFailures.length ? hardFailures.map((f) => `- hard failure: ${f}`).join("\n
 ${mustFix.map((r) => `- ${r}`).join("\n")}
 </MUST_FIX>
 
-<PRESERVE_EVERYTHING_ELSE>
-Preserve every other aspect of the rejected attempt unchanged: rotation angle, camera position, framing,
-focal length, vehicle centre, ground contact, background, lighting, shadow, paint tone, trim and equipment.
-Do not "improve", restyle or re-compose anything that was not explicitly listed above.
-</PRESERVE_EVERYTHING_ELSE>
+${preserveBlock}
 
 ${referencePriorityBlock(referenceLabels)}
 ${REFERENCE_TRUTH_PROTOCOL}
@@ -789,6 +809,25 @@ export function qaThresholdBreaches(
     breaches.push({ dimension: "confidence", score: Number.isFinite(result.confidence) ? result.confidence : null, threshold: confidenceThreshold, critical: false });
   }
   return breaches;
+}
+
+export function shouldRebuildMissingKeyframeRepair(
+  result: QaResult,
+  isKeyframe: boolean,
+  hasDirectSource: boolean,
+): boolean {
+  if (!isKeyframe || hasDirectSource) return false;
+  const criticalBreaches = qaThresholdBreaches(result).filter((b) => b.critical).length;
+  const hardFailureText = result.hard_failures.join(" ").toLowerCase();
+  const identityHardFailure = [
+    "changed_light_signature",
+    "malformed_component",
+    "changed_body_or_door_count",
+    "wrong_wheel_design",
+    "wrong_spoke_count",
+    "added_or_removed_equipment",
+  ].some((token) => hardFailureText.includes(token));
+  return identityHardFailure || criticalBreaches >= 2 || qaCompositeScore(result) < 85;
 }
 
 export function qaScoreBreakdown(result: QaResult): string {
