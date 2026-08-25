@@ -629,7 +629,14 @@ export function aggregateQuality(frames: FrameQualityInput[], targetFrameCount: 
     completeness: Math.round(completeness * 100) / 100,
     averageScore,
     qualityScore: Math.round(averageScore * completeness),
-    complete: passed.length === targetFrameCount && unique.size === targetFrameCount,
+    // 'complete' NUR wenn jeder geforderte Index genau einmal existiert
+    // UND jeder vorhandene Frame die QA bestanden hat.
+    complete:
+      unique.size === targetFrameCount &&
+      passed.length === targetFrameCount &&
+      list.every((f) => f.validation_status === "passed") &&
+      Array.from({ length: targetFrameCount }, (_, i) => i).every((i) => unique.has(i)),
+
   };
 }
 
