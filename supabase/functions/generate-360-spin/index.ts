@@ -132,15 +132,26 @@ async function failStage(
 
 }
 
-/** Wiederaufnahme-Cursor im qa_summary (rückwärtskompatibel, rein informativ). */
-async function setCursor(sb: any, jobId: string, cursor: Record<string, any>) {
+/**
+ * qa_summary IMMER frisch zusammenführen. Ein Merge auf Basis des zu Beginn der
+ * Invocation gelesenen Job-Rows würde zwischenzeitlich geschriebene Schlüssel
+ * (billing-Marker, pipeline_cursor) wieder überschreiben.
+ */
+async function mergeQaSummary(sb: any, jobId: string, patch: Record<string, any>) {
   const { data } = await sb.from("spin360_jobs").select("qa_summary").eq("id", jobId).maybeSingle();
   const summary = (data?.qa_summary && typeof data.qa_summary === "object" ? data.qa_summary : {}) as Record<string, any>;
-  await updateJobRaw(sb, jobId, {
-    qa_summary: { ...summary, pipeline_cursor: { ...cursor, at: new Date().toISOString() } },
+  return { ...summary, ...patch };
+}
+
+/** Wiederaufnahme-Cursor im qa_summary (rückwärtskompatibel, rein informativ). */
+async function setCursor(sb: any, jobId: string, cursor: Record<string, any>) {
+  const summary = await mergeQaSummary(sb, jobId, {
+    pipeline_cursor: { ...cursor, at: new Date().toISOString() },
   });
+  await updateJobRaw(sb, jobId, { qa_summary: summary });
 
 }
+
 
 /**
  * Idempotente Abrechnung: ein Marker im qa_summary verhindert Doppelbelastung,
@@ -619,11 +630,10 @@ serve(async (req) => {
         keyframe_count: KEYFRAME_ANGLES.length,
         target_frame_count: FRAME_COUNT,
         manifest_version: 2,
-        qa_summary: {
-          ...(jobRow?.qa_summary as Record<string, any> ?? {}),
+        qa_summary: await mergeQaSummary(sb, jobId, {
           wheelReference: wheelSpec,
           hasDedicatedWheelReference: !!wheelSource,
-        },
+        }),
       });
 
       // Identitätsprofil ZUERST — es ist Prompt-Anker für alle Keyframes.
@@ -977,11 +987,10 @@ serve(async (req) => {
       await updateJob(sb, jobId, {
         identity_profile: identity,
         identity_hash: identityHash,
-        qa_summary: {
-          ...(jobRow?.qa_summary as Record<string, any> ?? {}),
+        qa_summary: await mergeQaSummary(sb, jobId, {
           identitySourceTier: identityTier,
           identitySourceCount: identitySources.length,
-        },
+        }),
       });
 
       invokeNextStep(authHeader, { jobId, step: "keyframes", keyframeIndex: 0 });
@@ -1244,7 +1253,7 @@ serve(async (req) => {
       await updateJob(sb, jobId, {
         manifest,
         manifest_version: 2,
-        qa_summary: { ...(jobRow?.qa_summary as Record<string, any> ?? {}), aggregate: quality },
+        qa_summary: await mergeQaSummary(sb, jobId, { aggregate: quality }),
         status: quality.complete ? "completed" : "needs_review",
         error_message: quality.complete
           ? null

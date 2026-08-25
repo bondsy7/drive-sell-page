@@ -11,7 +11,7 @@ import Spin360Progress, { type SpinStep } from './Spin360Progress';
 import Spin360Viewer from './Spin360Viewer';
 import Video2FramesProcessor from './Video2FramesProcessor';
 import SpinSourcePicker, { type SpinSourceSelection } from './SpinSourcePicker';
-import { MIN_SOURCE_ANGLES, evaluateSourceCoverage, isRenderableSpin, normalizeFrameCount } from '@/lib/spin360-v2';
+import { KEYFRAME_ANGLES, MIN_SOURCE_ANGLES, evaluateSourceCoverage, isRenderableSpin, normalizeFrameCount } from '@/lib/spin360-v2';
 import { uploadImageToStorage } from '@/lib/storage-utils';
 import { ensureVehicleAuto } from '@/lib/vehicle-utils';
 
@@ -102,8 +102,11 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
   }, [vehicleId, autoVehicleId, user]);
 
   // Calculate total cost based on mode
+  // Backend-Abrechnung (Image2Spin): Analyse einmalig + 1 Credit je persistiertem
+  // Keyframe (8) + anteilige Credits für QA-bestandene Zwischenframes (max. 15).
+  // Bewusst als Obergrenze angezeigt, damit die Bestätigung nie zu niedrig ist.
   const imageCost = (getCost('spin360_analysis', 'standard') || 1) +
-    (getCost('spin360_normalize', 'standard') || 4) +
+    KEYFRAME_ANGLES.length +
     (getCost('spin360_generate', 'standard') || 15);
   const videoCost = getCost('spin360_video', 'standard') || 10;
   const totalCost = spinMode === 'video2frames' ? videoCost : imageCost;
@@ -539,7 +542,7 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
       {/* Credit info */}
       <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
         <Zap className="w-3 h-3 text-accent" />
-        <span>Geschätzte Kosten: <strong className="text-accent">{totalCost} Credits</strong> — Guthaben: <strong className="text-foreground">{balance} Credits</strong></span>
+        <span>Geschätzte Kosten: <strong className="text-accent">bis zu {totalCost} Credits</strong> — Guthaben: <strong className="text-foreground">{balance} Credits</strong></span>
       </div>
 
       {/* Phase: Quellenwahl aus bestehenden Fahrzeug-Assets */}
