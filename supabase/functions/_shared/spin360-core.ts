@@ -933,3 +933,163 @@ export function coverageScore(params: {
   const label = score >= 85 ? "exzellent" : score >= 65 ? "gut" : score >= 40 ? "ausreichend" : "gering";
   return { score, keyAngles, label };
 }
+
+// ─── Orchestrierung: reine, testbare Cursor-Logik ──────────────────────
+//
+// Jede Edge-Invocation bearbeitet GENAU EINE teure Einheit (ein Keyframe,
+// ein QA-/Reparaturversuch, ein Zwischenframe-Versuch) und ruft sich danach
+// mit dem nächsten Cursor selbst auf. Dadurch bleibt jede Invocation weit
+// unter dem Wall-Clock-Limit und ist nach einem Timeout wiederaufnehmbar.
+
+export type SpinPipelineStep =
+  | "analyze"
+  | "profile"
+  | "keyframes"
+  | "validate_keyframe"
+  | "generate_frame"
+  | "assemble";
+
+export interface SpinCursor {
+  step: SpinPipelineStep;
+  keyframeIndex?: number;
+  sector?: number;
+  planPosition?: number;
+  attempt?: number;
+}
+
+export type SpinAdvance =
+  | { kind: "next"; cursor: SpinCursor }
+  | { kind: "terminal"; reason: string };
+
+/** Nach einem persistierten Keyframe: nächster Winkel oder Validierungsphase. */
+export function advanceKeyframe(keyframeIndex: number): SpinAdvance {
+  if (keyframeIndex < KEYFRAME_ANGLES.length - 1) {
+    return { kind: "next", cursor: { step: "keyframes", keyframeIndex: keyframeIndex + 1 } };
+  }
+  return { kind: "next", cursor: { step: "validate_keyframe", keyframeIndex: 0, attempt: 1 } };
+}
+
+/**
+ * Validierung eines einzelnen Keyframes.
+ * passed → nächster Keyframe bzw. Start der Zwischenframes.
+ * sonst → nächster Reparaturversuch, bis MAX_KEYFRAME_ATTEMPTS erschöpft ist.
+ */
+export function advanceValidation(
+  keyframeIndex: number,
+  attempt: number,
+  passed: boolean,
+  maxAttempts: number = MAX_KEYFRAME_ATTEMPTS,
+): SpinAdvance {
+  if (passed) {
+    if (keyframeIndex < KEYFRAME_ANGLES.length - 1) {
+      return { kind: "next", cursor: { step: "validate_keyframe", keyframeIndex: keyframeIndex + 1, attempt: 1 } };
+    }
+    return { kind: "next", cursor: { step: "generate_frame", sector: 0, planPosition: 0, attempt: 1 } };
+  }
+  if (attempt < maxAttempts) {
+    return { kind: "next", cursor: { step: "validate_keyframe", keyframeIndex, attempt: attempt + 1 } };
+  }
+  return {
+    kind: "terminal",
+    reason: `Keyframe ${KEYFRAME_ANGLES[keyframeIndex]}° hat die QA nach ${maxAttempts} Versuchen nicht bestanden.`,
+  };
+}
+
+/**
+ * Zwischenframes: eine Planposition pro Invocation, mit begrenzten Versuchen.
+ * Nach der letzten Planposition folgt der nächste Sektor, nach Sektor 7 assemble.
+ */
+export function advanceFrame(
+  sector: number,
+  planPosition: number,
+  attempt: number,
+  passed: boolean,
+  frameCount: number,
+  maxAttempts: number = MAX_FRAME_ATTEMPTS,
+): SpinAdvance {
+  const planLength = buildBidirectionalOffsets(frameCount).length;
+  if (!passed) {
+    if (attempt < maxAttempts) {
+      return { kind: "next", cursor: { step: "generate_frame", sector, planPosition, attempt: attempt + 1 } };
+    }
+    return {
+      kind: "terminal",
+      reason: `Frame in Sektor ${sector} (Position ${planPosition}) hat die QA nach ${maxAttempts} Versuchen nicht bestanden.`,
+    };
+  }
+  if (planPosition < planLength - 1) {
+    return { kind: "next", cursor: { step: "generate_frame", sector, planPosition: planPosition + 1, attempt: 1 } };
+  }
+  if (sector < KEYFRAME_ANGLES.length - 1) {
+    return { kind: "next", cursor: { step: "generate_frame", sector: sector + 1, planPosition: 0, attempt: 1 } };
+  }
+  return { kind: "next", cursor: { step: "assemble" } };
+}
+
+/** Bereits bestandene Einheiten werden übersprungen (idempotenter Resume). */
+export function shouldSkipUnit(passedIndices: Iterable<number>, targetIndex: number): boolean {
+  for (const i of passedIndices) if (Number(i) === targetIndex) return true;
+  return false;
+}
+
+/**
+ * Sektorgrenzen eindeutig benennen: Sektor 7 endet bei 360°, also wieder bei 0°.
+ * Die Interpolationsmathematik bleibt unverändert (360 = 0 + 360).
+ */
+export function sectorBoundaryLabel(angle: number): string {
+  if (angle === 360) return "360° (= 0°, wrap-around start angle)";
+  return `${angle}°`;
+}
+
+/** Modellwahl für Keyframes: direktes Foto ⇒ Standard zuerst, sonst Pro. */
+export function keyframeModelForAttempt(
+  attempt: number,
+  hasDirectPhoto: boolean,
+  maxAttempts: number = MAX_NORMALIZE_ATTEMPTS,
+): string {
+  if (!hasDirectPhoto) return SPIN_MODELS.imagePro;
+  return attempt >= maxAttempts ? SPIN_MODELS.imagePro : SPIN_MODELS.image;
+}
+
+// ─── Abrechnungs-Idempotenz ────────────────────────────────────────────
+
+export function billingMarker(kind: string, id: string | number = ""): string {
+  return id === "" ? kind : `${kind}:${id}`;
+}
+
+export function hasBilled(qaSummary: unknown, marker: string): boolean {
+  const billing = (qaSummary as any)?.billing;
+  return Array.isArray(billing) && billing.includes(marker);
+}
+
+export function withBilling(qaSummary: unknown, marker: string): Record<string, unknown> {
+  const base = (qaSummary && typeof qaSummary === "object" ? { ...(qaSummary as any) } : {}) as Record<string, unknown>;
+  const billing = Array.isArray(base.billing) ? [...(base.billing as string[])] : [];
+  if (!billing.includes(marker)) billing.push(marker);
+  base.billing = billing;
+  return base;
+}
+
+// ─── Viewer-/Manifest-Guard ────────────────────────────────────────────
+
+/**
+ * Nur vollständige Jobs dürfen als Spin angezeigt werden: Status `completed`,
+ * exakt targetFrameCount bestandene Frames, eindeutige Indizes 0…n-1.
+ * Alles andere ist Diagnosematerial und darf nicht wie ein fertiger Spin wirken.
+ */
+export function isRenderableSpin(input: {
+  status?: string | null;
+  targetFrameCount: number;
+  frames: { frame_index: number; validation_status?: string | null }[];
+}): boolean {
+  if (input.status !== "completed") return false;
+  if (!isSupportedFrameCount(input.targetFrameCount)) return false;
+  const passed = new Set<number>();
+  for (const f of input.frames) {
+    if (f.validation_status !== "passed") continue;
+    passed.add(Number(f.frame_index));
+  }
+  if (passed.size !== input.targetFrameCount) return false;
+  for (let i = 0; i < input.targetFrameCount; i++) if (!passed.has(i)) return false;
+  return true;
+}
