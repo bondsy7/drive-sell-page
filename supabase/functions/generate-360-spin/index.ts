@@ -98,13 +98,24 @@ async function getCustomPrompt(sb: any, key: string, defaultPrompt: string): Pro
 }
 
 // ─── Job Helpers ───
+/** Job-Update ohne Fehlerprüfung — nur für terminale Fehlermeldungen. */
+async function updateJobRaw(sb: any, jobId: string, extra: Record<string, any>) {
+  const { error } = await sb.from("spin360_jobs")
+    .update({ updated_at: new Date().toISOString(), ...extra }).eq("id", jobId);
+  if (error) console.error(`[${jobId}] job update failed:`, error.message);
+  return error;
+}
+
+/** Kritisches Job-Update: schlägt es fehl, darf die Pipeline nicht weiterlaufen. */
 async function updateJob(sb: any, jobId: string, extra: Record<string, any>) {
-  await sb.from("spin360_jobs").update({ updated_at: new Date().toISOString(), ...extra }).eq("id", jobId);
+  const error = await updateJobRaw(sb, jobId, extra);
+  if (error) throw new Error(`Job-Update fehlgeschlagen: ${error.message}`);
 }
 
 async function markJobFailed(sb: any, jobId: string, errorMessage: string, status = "failed") {
-  await updateJob(sb, jobId, { status, error_message: errorMessage });
+  await updateJobRaw(sb, jobId, { status, error_message: errorMessage });
 }
+
 
 /**
  * Terminaler Abbruch mit exakter Stufenangabe. Persistenz-/Laufzeitfehler
