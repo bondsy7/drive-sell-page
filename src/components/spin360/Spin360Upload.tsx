@@ -72,7 +72,11 @@ const SpinModeToggle: React.FC<{ mode: SpinMode; onChange: (m: SpinMode) => void
         )}
       >
         <Film className="w-3.5 h-3.5" /> Video2Frames
+        <span className="ml-1 rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
+          experimentell
+        </span>
       </button>
+
     </div>
   </div>
 );
