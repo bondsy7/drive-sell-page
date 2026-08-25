@@ -11,7 +11,7 @@ import Spin360Progress, { type SpinStep } from './Spin360Progress';
 import Spin360Viewer from './Spin360Viewer';
 import Video2FramesProcessor from './Video2FramesProcessor';
 import SpinSourcePicker, { type SpinSourceSelection } from './SpinSourcePicker';
-import { MIN_SOURCE_ANGLES, evaluateSourceCoverage } from '@/lib/spin360-v2';
+import { MIN_SOURCE_ANGLES, evaluateSourceCoverage, isRenderableSpin, normalizeFrameCount } from '@/lib/spin360-v2';
 import { uploadImageToStorage } from '@/lib/storage-utils';
 import { ensureVehicleAuto } from '@/lib/vehicle-utils';
 
