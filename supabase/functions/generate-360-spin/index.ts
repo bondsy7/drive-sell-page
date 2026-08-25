@@ -526,11 +526,12 @@ serve(async (req) => {
       const { sourceImages } = body;
       if (!Array.isArray(sourceImages)) throw new Error("Quellbilder fehlen");
 
-      // Produktionslauf: 4+ echte, rund ums Fahrzeug verteilte Winkel reichen.
-      const declaredCoverage = evaluateSourceCoverage(
-        sourceImages.filter((s: any) => Number(s.angle) >= 0).map((s: any) => s.angle),
-      );
-      if (!declaredCoverage.ok) {
+      // Upload-Slots sind nur Winkel-Hinweise: vor der Vision-Analyse nur 4 echte Bilder verlangen.
+      // Bereits manuell gemappte Fahrzeug-Assets können dagegen vorab verteilt geprüft werden.
+      const sourceMode = body.sourceMode || "upload";
+      const declaredAngles = sourceImages.filter((s: any) => Number(s.angle) >= 0).map((s: any) => s.angle);
+      const declaredCoverage = evaluateSourceCoverage(declaredAngles);
+      if (sourceMode !== "upload" && !declaredCoverage.ok) {
         const reason = sourceCoverageFailureReason(declaredCoverage);
         await markJobFailed(
           sb, jobId,
@@ -539,8 +540,12 @@ serve(async (req) => {
         );
         return json({ error: "insufficient_source_coverage", coverage: declaredCoverage });
       }
+      if (sourceMode === "upload" && declaredAngles.length < 4) {
+        await markJobFailed(sb, jobId, "Mindestens 4 echte Fotos erforderlich.", "needs_review");
+        return json({ error: "insufficient_source_images", required: 4, received: declaredAngles.length });
+      }
 
-      await updateJob(sb, jobId, { status: "analyzing", error_message: null, source_mode: body.sourceMode || "upload" });
+      await updateJob(sb, jobId, { status: "analyzing", error_message: null, source_mode: sourceMode });
 
       const analysisCharge = await chargeOnce(
         sb, jobId, userId, billingMarker("analysis"), 1, "spin360_analysis",
@@ -567,7 +572,7 @@ serve(async (req) => {
 
       // Upload-Slotwinkel sind Hinweise; sichere Analyse-Winkel sind die Wahrheit.
       // Manuell gemappte Assets werden respektiert, außer eine sichere Analyse widerspricht >=45°.
-      const resolvedSources = resolveSourceAngleSelections(angleSources, analysis?.images, body.sourceMode || "upload");
+      const resolvedSources = resolveSourceAngleSelections(angleSources, analysis?.images, sourceMode);
 
       if (analysis?.images) {
         for (const img of analysis.images) {
@@ -917,6 +922,14 @@ serve(async (req) => {
           keyframeMode: own ? "direct_source" : "generated_from_neighbours",
           hardFailures: qa.result.hard_failures,
           repairInstructions: targetedRepairInstructions,
+          qaScores: qa.result.scores,
+          qaConfidence: qa.result.confidence,
+          qaVerdict: qa.result.verdict,
+          qaHardFailures: qa.result.hard_failures,
+          qaRepairInstructions: qa.result.repair_instructions,
+          qaDerivedRepairInstructions: targetedRepairInstructions,
+          qaThresholds: qa.telemetry.thresholds,
+          qaPolicy: qa.telemetry.policy,
           qaTelemetry: qa.telemetry,
         },
       }, { onConflict: "job_id,frame_index" });
@@ -1237,6 +1250,14 @@ serve(async (req) => {
           hasDedicatedWheelReference: !!wheelRef,
           hardFailures: qa.result.hard_failures,
           repairInstructions,
+          qaScores: qa.result.scores,
+          qaConfidence: qa.result.confidence,
+          qaVerdict: qa.result.verdict,
+          qaHardFailures: qa.result.hard_failures,
+          qaRepairInstructions: qa.result.repair_instructions,
+          qaDerivedRepairInstructions: repairInstructions,
+          qaThresholds: qa.telemetry.thresholds,
+          qaPolicy: qa.telemetry.policy,
           qaModel: SPIN_MODELS.analysis,
           qaTelemetry: qa.telemetry,
         },
@@ -1322,10 +1343,10 @@ serve(async (req) => {
     // ─────────── Initialer Aufruf ───────────
     const { sourceImages } = body;
     if (!Array.isArray(sourceImages)) throw new Error("Quellbilder fehlen");
-    const startCoverage = evaluateSourceCoverage(
-      sourceImages.filter((s: any) => Number(s.angle) >= 0).map((s: any) => s.angle),
-    );
-    if (!startCoverage.ok) {
+    const initialSourceMode = body.sourceMode || "upload";
+    const startAngles = sourceImages.filter((s: any) => Number(s.angle) >= 0).map((s: any) => s.angle);
+    const startCoverage = evaluateSourceCoverage(startAngles);
+    if (initialSourceMode !== "upload" && !startCoverage.ok) {
       const reason = sourceCoverageFailureReason(startCoverage);
       await markJobFailed(
         sb, jobId,
@@ -1334,11 +1355,15 @@ serve(async (req) => {
       );
       return json({ error: "insufficient_source_coverage", coverage: startCoverage }, 400);
     }
+    if (initialSourceMode === "upload" && startAngles.length < 4) {
+      await markJobFailed(sb, jobId, "Mindestens 4 echte Fotos erforderlich.", "needs_review");
+      return json({ error: "insufficient_source_images", required: 4, received: startAngles.length }, 400);
+    }
     invokeNextStep(authHeader, {
       jobId,
       step: "analyze",
       sourceImages,
-      sourceMode: body.sourceMode,
+      sourceMode: initialSourceMode,
       frameCount: FRAME_COUNT,
     });
     return json({ success: true, started: true, frameCount: FRAME_COUNT, perSector: PER_SECTOR });

@@ -6,6 +6,7 @@ import {
   QA_IDENTITY_THRESHOLD,
   QA_SECONDARY_THRESHOLD,
   QA_CONFIDENCE_THRESHOLD,
+  QA_THRESHOLD_POLICY,
   SPIN_MODELS,
   aggregateQuality,
   angleForIndex,
@@ -15,9 +16,12 @@ import {
   buildKeyframePrompt,
   buildManifest,
   buildQaPrompt,
+  buildQaTelemetry,
   coverageScore,
+  deriveRepairInstructionsFromQa,
   frameIndexForAngle,
   framesPerSector,
+  getDirectSourceForKeyframe,
   isQaPassed,
   keyframeIndices,
   modelForAttempt,
@@ -538,6 +542,33 @@ describe('spin360 calibrated QA thresholds', () => {
     expect(qa({ verdict: 'pass', scores: partial, confidence: 99 })).toBe(false);
     expect(qa({ verdict: 'pass', scores: scores() })).toBe(false);
   });
+
+  it('exposes the calibrated QA policy and telemetry payload', () => {
+    const result = parseQaResult({
+      verdict: 'regenerate',
+      scores: scores({ paint: QA_IDENTITY_THRESHOLD - 1 }),
+      confidence: 90,
+      hard_failures: [],
+      repair_instructions: [],
+    });
+    const telemetry = buildQaTelemetry(result, { raw: true }, false);
+    expect(QA_THRESHOLD_POLICY.identityCritical).toBe(90);
+    expect(QA_THRESHOLD_POLICY.secondary).toBe(85);
+    expect(QA_THRESHOLD_POLICY.confidence).toBe(85);
+    expect(QA_THRESHOLD_POLICY.hardFailuresAllowed).toBe(0);
+    expect(telemetry).toMatchObject({
+      scores: result.scores,
+      confidence: 90,
+      verdict: 'regenerate',
+      hardFailures: [],
+      thresholds: QA_THRESHOLD_POLICY,
+      policy: QA_THRESHOLD_POLICY,
+      passed: false,
+    });
+    expect(telemetry.derivedRepairInstructions).toEqual([
+      'match the original paint colour tone, finish and reflections uniformly without recolouring trim or lights',
+    ]);
+  });
 });
 
 describe('spin360 completion is exact', () => {
@@ -597,7 +628,20 @@ describe('spin360 source coverage', () => {
     const diagonalCoverage = v2.evaluateSourceCoverage([45, 90, 180, 270]);
     expect(diagonalCoverage.ok).toBe(true);
     expect(diagonalCoverage.missingRequired).toEqual([0]);
+    const provenJobCoverage = v2.evaluateSourceCoverage([45, 90, 225, 270]);
+    expect(provenJobCoverage.ok).toBe(true);
+    expect(provenJobCoverage.maxGap).toBe(135);
     expect(v2.MIN_SOURCE_ANGLES).toBe(4);
+  });
+
+  it('treats circular gap 135 as pass and greater than 135 as fail', () => {
+    const boundary = v2.evaluateSourceCoverage([45, 90, 225, 270]);
+    expect(boundary.ok).toBe(true);
+    expect(boundary.gaps.map((g) => g.size)).toEqual([45, 135, 45, 135]);
+    const overBoundary = v2.evaluateSourceCoverage([0, 45, 90, 180]);
+    expect(overBoundary.ok).toBe(false);
+    expect(overBoundary.maxGap).toBe(180);
+    expect(overBoundary.reason).toBe('clustered_angles');
   });
 
   it('rejects four angles when they are too clustered around one side', () => {
@@ -637,6 +681,43 @@ describe('spin360 source angle truth', () => {
     });
     expect(decision.selectedAngle).toBe(0);
     expect(decision.reason).toBe('declared_used_detection_uncertain');
+  });
+
+  it('falls back to the declared hint when left/right is explicitly uncertain', () => {
+    const decision = resolveSourceAngleTruth({
+      declaredAngle: 0,
+      detectedAngle: 45,
+      angleConfidence: 100,
+      leftRightCertain: false,
+      sourceMode: 'upload',
+    });
+    expect(decision.selectedAngle).toBe(0);
+    expect(decision.remapped).toBe(false);
+    expect(decision.reason).toBe('declared_used_detection_uncertain');
+  });
+
+  it('keeps vehicle asset manual mapping unless a high-confidence contradiction is at least 45 degrees', () => {
+    const kept = resolveSourceAngleTruth({
+      declaredAngle: 90,
+      detectedAngle: 90,
+      angleConfidence: 100,
+      leftRightCertain: true,
+      sourceMode: 'vehicle_assets',
+    });
+    expect(kept.selectedAngle).toBe(90);
+    expect(kept.reason).toBe('manual_mapping_kept');
+
+    const contradicted = resolveSourceAngleTruth({
+      declaredAngle: 180,
+      detectedAngle: 225,
+      angleConfidence: 100,
+      leftRightCertain: true,
+      sourceMode: 'vehicle_assets',
+    });
+    expect(contradicted.selectedAngle).toBe(225);
+    expect(contradicted.remapped).toBe(true);
+    expect(contradicted.conflictDegrees).toBe(45);
+    expect(contradicted.reason).toBe('manual_conflict_detected_used');
   });
 
   it('deduplicates remapped sources and keeps the higher-confidence photo', () => {
@@ -682,6 +763,67 @@ describe('spin360 identity sources', () => {
     ]);
     expect(generatedOnly.tier).toBe('none');
     expect(generatedOnly.sources).toEqual([]);
+  });
+});
+
+describe('spin360 exact source and targeted repair logic', () => {
+  it('detects a direct source only for the exact same keyframe angle', () => {
+    const sources = [
+      { angle_degrees: 45, image_url: 'front-diagonal' },
+      { angle_degrees: 90, image_url: 'side' },
+    ];
+    expect(getDirectSourceForKeyframe(sources, 0)).toBeUndefined();
+    expect(getDirectSourceForKeyframe(sources, 45)?.image_url).toBe('front-diagonal');
+  });
+
+  it('derives targeted repairs only from failed dimensions', () => {
+    const qa = parseQaResult({
+      verdict: 'regenerate',
+      scores: {
+        identity: 96, wheels: 96, lights: 96, paint: 96,
+        angle_continuity: QA_SECONDARY_THRESHOLD - 1,
+        camera_continuity: 95, environment: 95, artifact_free: 95,
+      },
+      confidence: 95,
+      hard_failures: [],
+      repair_instructions: [],
+    });
+    const repairs = deriveRepairInstructionsFromQa(qa);
+    expect(repairs).toEqual([
+      'correct only the rotation angle so it sits on the requested turntable angle and progresses in the correct direction; do not change identity details',
+    ]);
+    expect(repairs.join(' ')).not.toContain('wheel');
+    expect(repairs.join(' ')).not.toContain('paint');
+    expect(repairs.join(' ')).not.toContain('light');
+  });
+
+  it('repair prompt does not inject raw unrelated hard failures as random edit commands', () => {
+    const qa = parseQaResult({
+      verdict: 'regenerate',
+      scores: {
+        identity: 96, wheels: 96, lights: 96, paint: 96,
+        angle_continuity: 96, camera_continuity: 96, environment: 96, artifact_free: 96,
+      },
+      confidence: 95,
+      hard_failures: ['opaque_model_note_without_dimension'],
+      repair_instructions: [],
+    });
+    const prompt = buildRepairPrompt({
+      frameIndex: 0,
+      angle: 0,
+      frameCount: 48,
+      identity: {},
+      referenceLabels: ['ORIGINAL IDENTITY #1 at 45°'],
+      hasDedicatedWheelReference: false,
+      isKeyframe: true,
+      attempt: 2,
+      hardFailures: qa.hard_failures,
+      repairInstructions: [],
+      qaResult: qa,
+    });
+    expect(prompt).toContain('hard failure: opaque_model_note_without_dimension');
+    expect(prompt).toContain('No below-threshold visual dimension was reported');
+    expect(prompt).toContain('do not alter wheels, paint, lights');
   });
 });
 

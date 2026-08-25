@@ -105,9 +105,7 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
   // Backend-Abrechnung (Image2Spin): Analyse einmalig + 1 Credit je persistiertem
   // Keyframe (8) + anteilige Credits für QA-bestandene Zwischenframes (max. 15).
   // Bewusst als Obergrenze angezeigt, damit die Bestätigung nie zu niedrig ist.
-  const imageCost = (getCost('spin360_analysis', 'standard') || 1) +
-    KEYFRAME_ANGLES.length +
-    (getCost('spin360_generate', 'standard') || 15);
+  const imageCost = (getCost('spin360_analysis', 'standard') || 1) + KEYFRAME_ANGLES.length + 15;
   const videoCost = getCost('spin360_video', 'standard') || 10;
   const totalCost = spinMode === 'video2frames' ? videoCost : imageCost;
 
@@ -163,11 +161,16 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
         }
       }
 
-      // Nur echte Turntable-Winkel zählen als Abdeckung (Felgenreferenz ist Zusatz).
+      // Upload-Slots sind nur Winkel-Hinweise: hier nur 4 Bilder verlangen; die echte Verteilung prüft die Backend-Vision.
+      // Fahrzeug-Assets sind bewusst manuell gemappt und können vorab auf verteilte Coverage geprüft werden.
       const coverage = evaluateSourceCoverage(sourceUrls.map((s) => s.angle));
-      if (!coverage.ok) {
+      if (assetSelection && !coverage.ok) {
         toast.error(sourceCoverageFailureReason(coverage));
         setPhase(assetSelection ? 'source' : 'upload'); setIsProcessing(false); return;
+      }
+      if (!assetSelection && sourceUrls.length < 4) {
+        toast.error('Mindestens 4 echte Fotos erforderlich.');
+        setPhase('upload'); setIsProcessing(false); return;
       }
 
 
