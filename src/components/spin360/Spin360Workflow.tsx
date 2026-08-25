@@ -58,6 +58,9 @@ const createSpinReferenceComposite = async (frontBase64: string, rearBase64: str
   return canvas.toDataURL('image/jpeg', 0.98);
 };
 
+/** V2-Produktionsstufe: 48 Frames (7,5°). 32 bleibt als Diagnose-Stufe unterstützt. */
+const SPIN_FRAME_COUNT = 48;
+
 /** Perspektiven-Slots des klassischen Uploads → Turntable-Winkel. */
 const PERSPECTIVE_ANGLES: Record<string, number> = {
   front: 0,
@@ -68,6 +71,7 @@ const PERSPECTIVE_ANGLES: Record<string, number> = {
   right: 270,
   showroom: -1,
 };
+
 
 const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) => {
   const { user } = useAuth();
