@@ -37,9 +37,16 @@ export const SUPPORTED_FRAME_COUNTS: SpinFrameTier[] = [32, 48];
 export const QA_IDENTITY_THRESHOLD = 95;
 /** QA-Schwelle für sekundäre Dimensionen (Umgebung, Artefakte …). */
 export const QA_SECONDARY_THRESHOLD = 80;
+/** Mindest-Confidence der QA, darunter niemals "pass". */
+export const QA_CONFIDENCE_THRESHOLD = 70;
+/** Toleranz (Grad) beim Abgleich Frame-Winkel ↔ Winkelraster. */
+export const ANGLE_TOLERANCE_DEG = 0.51;
 /** 1 Erstversuch + 2 Standardreparaturen + 1 Pro-Reparatur. */
 export const MAX_FRAME_ATTEMPTS = 4;
 export const MAX_NORMALIZE_ATTEMPTS = 3;
+/** Keyframes: 1 Erstversuch + 2 Standardreparaturen + 1 Pro-Reparatur. */
+export const MAX_KEYFRAME_ATTEMPTS = 4;
+
 
 export const IDENTITY_CRITICAL_DIMENSIONS = ["identity", "wheels", "lights", "paint"] as const;
 export const SECONDARY_DIMENSIONS = [
@@ -221,18 +228,26 @@ No random reflections. No camera move, zoom, crop or focal length change. No mot
 Do not repair dents, scratches or wear, do not clean or restyle the vehicle.
 </FORBIDDEN>`;
 
-export function wheelLockBlock(hasDedicatedWheelReference: boolean): string {
+/**
+ * `wheelSpec` ist die strukturierte Vision-Analyse der Radreferenz
+ * (Speichenzahl, Finish, Caliper …) und wird wörtlich als Zwang eingebettet.
+ */
+export function wheelLockBlock(hasDedicatedWheelReference: boolean, wheelSpec?: unknown): string {
+  const specLine = wheelSpec
+    ? `\nBinding measured wheel specification (must match exactly):\n${JSON.stringify(wheelSpec)}\nAny attribute that is null in this specification must be taken from the reference image, never invented.`
+    : "";
   return `<WHEEL_LOCK>
 The wheels are identity-critical and binding.${
     hasDedicatedWheelReference
-      ? " A dedicated wheel reference image is supplied and is the single source of truth for the wheels."
+      ? " A dedicated wheel reference image is supplied and is the single source of truth for the wheels; it overrides every other image for rim design."
       : " Derive the wheels strictly from the original vehicle photographs."
-  }
+  }${specLine}
 Reproduce exactly: rim design, spoke count and spoke geometry, finish (polished / painted / two-tone / matte),
 centre cap emblem, bolt pattern, tyre sidewall lettering position, brake caliper colour and shape, disc visibility.
 Never substitute a similar-looking rim, never change the spoke count, never add aftermarket wheels.
 </WHEEL_LOCK>`;
 }
+
 
 export function identityLockBlock(identity: unknown): string {
   return `<IDENTITY_LOCK>
@@ -256,6 +271,38 @@ Supplied references in order:
 ${labels.map((l, i) => `Reference ${i + 1} = ${l}`).join("\n")}
 </REFERENCE_PRIORITY>`;
 }
+
+/**
+ * Verbindliche Rollen-Labels für Referenzbilder (#12).
+ * Die Reihenfolge im Request entspricht der Priorität im Prompt.
+ */
+export const REFERENCE_ROLES = {
+  ORIGINAL_IDENTITY: "ORIGINAL IDENTITY",
+  WHEEL_REFERENCE: "WHEEL REFERENCE",
+  LEFT_KEYFRAME: "LEFT VERIFIED KEYFRAME",
+  RIGHT_KEYFRAME: "RIGHT VERIFIED KEYFRAME",
+  NEIGHBOUR: "VERIFIED NEIGHBOUR",
+} as const;
+
+export function originalIdentityLabel(n: number, angle?: number | null): string {
+  return `${REFERENCE_ROLES.ORIGINAL_IDENTITY} #${n}${
+    angle === null || angle === undefined ? "" : ` at ${angle}°`
+  } (identity truth, overrides everything)`;
+}
+
+export function wheelReferenceLabel(): string {
+  return `${REFERENCE_ROLES.WHEEL_REFERENCE} (binding source of truth for rim design, spoke count, finish, centre cap, caliper)`;
+}
+
+export function keyframeReferenceLabel(side: "left" | "right", angle: number): string {
+  const role = side === "left" ? REFERENCE_ROLES.LEFT_KEYFRAME : REFERENCE_ROLES.RIGHT_KEYFRAME;
+  return `${role} at ${angle}° (geometry and continuity only, never identity)`;
+}
+
+export function neighbourReferenceLabel(angle: number): string {
+  return `${REFERENCE_ROLES.NEIGHBOUR} at ${angle}° (local continuity only, may never override originals)`;
+}
+
 
 // ─── Prompt-Builder ────────────────────────────────────────────────────
 
@@ -303,17 +350,27 @@ and lower "angle_confidence" instead of guessing.`;
 export function buildIdentityProfilePrompt(input?: {
   originalPhotoLabels?: string[];
   hasDedicatedWheelReference?: boolean;
+  identitySourceTier?: IdentitySourceTier;
 }): string {
   const labels = input?.originalPhotoLabels ?? [];
+  const tier = input?.identitySourceTier ?? "original";
   return `${IDENTITY_PROFILE_PROMPT}
 
 ${REFERENCE_TRUTH_PROTOCOL}
 ${labels.length ? referencePriorityBlock(labels) : ""}
+<IDENTITY_SOURCE_TIER>
+All supplied images are REAL photographs of the vehicle (tier: ${tier}).
+No generated or normalized turntable frame is supplied and none may be assumed.
+${tier === "original"
+      ? "These are the vehicle's original photographs — highest identity trust."
+      : "These are lower-trust real sources: be conservative and mark uncertain attributes PARTIAL or UNKNOWN."}
+</IDENTITY_SOURCE_TIER>
 ${input?.hasDedicatedWheelReference
-    ? "A dedicated wheel close-up is supplied: describe the wheels from that image only."
-    : "No dedicated wheel close-up is supplied: describe the wheels only as far as they are visible."}
+      ? "A dedicated wheel close-up is supplied: describe the wheels from that image only (exact spoke count, geometry, finish, centre cap, caliper)."
+      : "No dedicated wheel close-up is supplied: describe the wheels only as far as they are visible, otherwise UNKNOWN."}
 Do NOT generate an image. Return strict JSON only.`;
 }
+
 
 export interface KeyframePromptInput {
   angle: number;
@@ -321,6 +378,7 @@ export interface KeyframePromptInput {
   identity: unknown;
   referenceLabels: string[];
   hasDedicatedWheelReference: boolean;
+  wheelSpec?: unknown;
   hasDirectPhoto: boolean;
   strictRetry?: boolean;
   repairInstructions?: string[];
@@ -328,7 +386,7 @@ export interface KeyframePromptInput {
 
 export function buildKeyframePrompt(input: KeyframePromptInput): string {
   const {
-    angle, identity, referenceLabels, hasDedicatedWheelReference, hasDirectPhoto,
+    angle, identity, referenceLabels, hasDedicatedWheelReference, wheelSpec, hasDirectPhoto,
     strictRetry, repairInstructions,
   } = input;
 
@@ -349,7 +407,7 @@ ${identityLockBlock(identity)}
 ${CAMERA_LOCK}
 ${ROTATION_LOCK}
 ${SCENE_LOCK}
-${wheelLockBlock(hasDedicatedWheelReference)}
+${wheelLockBlock(hasDedicatedWheelReference, wheelSpec)}
 ${FORBIDDEN_BLOCK}${
     strictRetry
       ? `
@@ -371,12 +429,13 @@ export interface IntermediatePromptInput {
   identity: unknown;
   referenceLabels: string[];
   hasDedicatedWheelReference: boolean;
+  wheelSpec?: unknown;
   strictRetry?: boolean;
   repairInstructions?: string[];
 }
 
 export function buildIntermediatePrompt(input: IntermediatePromptInput): string {
-  const { frame, frameCount, identity, referenceLabels, hasDedicatedWheelReference, strictRetry, repairInstructions } =
+  const { frame, frameCount, identity, referenceLabels, hasDedicatedWheelReference, wheelSpec, strictRetry, repairInstructions } =
     input;
 
   return `You are producing frame ${frame.index} (${frame.angle}°) of a ${frameCount}-frame studio turntable
@@ -402,7 +461,7 @@ ${identityLockBlock(identity)}
 ${CAMERA_LOCK}
 ${ROTATION_LOCK}
 ${SCENE_LOCK}
-${wheelLockBlock(hasDedicatedWheelReference)}
+${wheelLockBlock(hasDedicatedWheelReference, wheelSpec)}
 ${FORBIDDEN_BLOCK}${
     strictRetry
       ? `
@@ -469,6 +528,7 @@ export interface RepairPromptInput {
   identity: unknown;
   referenceLabels: string[];
   hasDedicatedWheelReference: boolean;
+  wheelSpec?: unknown;
   isKeyframe: boolean;
   attempt: number;
   hardFailures: string[];
@@ -482,7 +542,7 @@ export interface RepairPromptInput {
 export function buildRepairPrompt(input: RepairPromptInput): string {
   const {
     frameIndex, angle, frameCount, identity, referenceLabels,
-    hasDedicatedWheelReference, isKeyframe, attempt, hardFailures, repairInstructions,
+    hasDedicatedWheelReference, wheelSpec, isKeyframe, attempt, hardFailures, repairInstructions,
   } = input;
 
   const fixes = repairInstructions.length
@@ -516,7 +576,7 @@ ${identityLockBlock(identity)}
 ${CAMERA_LOCK}
 ${ROTATION_LOCK}
 ${SCENE_LOCK}
-${wheelLockBlock(hasDedicatedWheelReference)}
+${wheelLockBlock(hasDedicatedWheelReference, wheelSpec)}
 ${FORBIDDEN_BLOCK}`;
 }
 
@@ -575,9 +635,11 @@ export function isQaPassed(
   result: QaResult,
   identityThreshold: number = QA_IDENTITY_THRESHOLD,
   secondaryThreshold: number = QA_SECONDARY_THRESHOLD,
+  confidenceThreshold: number = QA_CONFIDENCE_THRESHOLD,
 ): boolean {
   if (result.verdict !== "pass") return false;
   if (result.hard_failures.length > 0) return false;
+  if (!Number.isFinite(result.confidence) || result.confidence < confidenceThreshold) return false;
   for (const dim of IDENTITY_CRITICAL_DIMENSIONS) {
     const score = result.scores[dim];
     if (score === undefined || score < identityThreshold) return false;
@@ -589,10 +651,58 @@ export function isQaPassed(
   return true;
 }
 
+/**
+ * Fail-closed QA-Auswertung eines rohen Modell-Outputs.
+ * Wirft die Anfrage oder das Parsing einen Fehler, MUSS dieses Ergebnis
+ * verwendet werden — niemals ein Default-"pass".
+ */
+export function qaFailClosed(reason: string, terminal = false): QaResult {
+  return {
+    scores: {},
+    verdict: terminal ? "manual_review" : "regenerate",
+    hard_failures: [`qa_unavailable: ${reason}`],
+    repair_instructions: [],
+    confidence: 0,
+  };
+}
+
 /** Modell für den nächsten Versuch: 1–3 Standard, letzter Versuch Pro. */
 export function modelForAttempt(attempt: number, maxAttempts: number = MAX_FRAME_ATTEMPTS): string {
   return attempt >= maxAttempts ? SPIN_MODELS.imagePro : SPIN_MODELS.image;
 }
+
+// ─── Identitätsquellen-Priorisierung ───────────────────────────────────
+
+export type IdentitySourceTier = "original" | "upload" | "gallery" | "none";
+
+export interface SelectionRow {
+  angle_degrees: number | string | null;
+  image_url: string;
+  asset_kind?: string | null;
+}
+
+/**
+ * Identitätswahrheit NUR aus echten Quellbildern.
+ * Priorität: original → upload → gallery. Generierte Keyframes sind
+ * ausdrücklich niemals Identitätsquelle.
+ */
+export function resolveIdentitySources(rows: SelectionRow[]): {
+  tier: IdentitySourceTier;
+  sources: SelectionRow[];
+} {
+  const angled = rows.filter((r) => Number(r.angle_degrees) >= 0);
+  const notGenerated = angled.filter(
+    (r) => (r.asset_kind ?? "") !== "generated" && (r.asset_kind ?? "") !== "generated_keyframe",
+  );
+  for (const tier of ["original", "upload", "gallery"] as const) {
+    const sources = notGenerated.filter((r) => (r.asset_kind ?? "upload") === tier);
+    if (sources.length > 0) return { tier, sources };
+  }
+  return notGenerated.length > 0
+    ? { tier: "gallery", sources: notGenerated }
+    : { tier: "none", sources: [] };
+}
+
 
 // ─── Qualitäts-Aggregation ─────────────────────────────────────────────
 
@@ -600,6 +710,7 @@ export interface FrameQualityInput {
   frame_index: number;
   quality_score?: number | null;
   validation_status?: string | null;
+  angle_degrees?: number | null;
 }
 
 export interface QualityAggregate {
@@ -610,7 +721,23 @@ export interface QualityAggregate {
   averageScore: number;
   /** Gesamtscore = Durchschnitt × Vollständigkeit */
   qualityScore: number;
+  /** Alle Winkel liegen (in Toleranz) exakt auf dem Raster. */
+  gridConsistent: boolean;
   complete: boolean;
+}
+
+/** Prüft, ob jeder Frame-Winkel dem erwarteten Rasterwinkel entspricht. */
+export function framesMatchGrid(
+  frames: FrameQualityInput[],
+  targetFrameCount: number,
+  tolerance: number = ANGLE_TOLERANCE_DEG,
+): boolean {
+  return frames.every((f) => {
+    if (f.angle_degrees === null || f.angle_degrees === undefined) return false;
+    const expected = angleForIndex(f.frame_index, targetFrameCount);
+    const diff = Math.abs(Number(f.angle_degrees) - expected);
+    return Math.min(diff, 360 - diff) <= tolerance;
+  });
 }
 
 export function aggregateQuality(frames: FrameQualityInput[], targetFrameCount: number): QualityAggregate {
@@ -618,10 +745,14 @@ export function aggregateQuality(frames: FrameQualityInput[], targetFrameCount: 
   for (const f of frames) if (!unique.has(f.frame_index)) unique.set(f.frame_index, f);
   const list = [...unique.values()];
   const passed = list.filter((f) => f.validation_status === "passed");
+  // Qualität leitet sich aus den tatsächlichen QA-Scores ab, nicht aus der Dateizahl.
   const averageScore = passed.length
     ? Math.round(passed.reduce((s, f) => s + (f.quality_score ?? 0), 0) / passed.length)
     : 0;
   const completeness = targetFrameCount > 0 ? Math.min(1, passed.length / targetFrameCount) : 0;
+  // Raster-Konsistenz nur prüfen, wenn Winkel geliefert wurden (Legacy-Jobs ohne Winkel bleiben tolerant).
+  const hasAngles = list.some((f) => f.angle_degrees !== null && f.angle_degrees !== undefined);
+  const gridConsistent = hasAngles ? framesMatchGrid(list, targetFrameCount) : true;
   return {
     frameCount: list.length,
     passedCount: passed.length,
@@ -629,16 +760,18 @@ export function aggregateQuality(frames: FrameQualityInput[], targetFrameCount: 
     completeness: Math.round(completeness * 100) / 100,
     averageScore,
     qualityScore: Math.round(averageScore * completeness),
-    // 'complete' NUR wenn jeder geforderte Index genau einmal existiert
-    // UND jeder vorhandene Frame die QA bestanden hat.
+    gridConsistent,
+    // 'complete' NUR wenn jeder geforderte Index genau einmal existiert,
+    // jeder Frame die QA bestanden hat UND alle Winkel auf dem Raster liegen.
     complete:
       unique.size === targetFrameCount &&
       passed.length === targetFrameCount &&
       list.every((f) => f.validation_status === "passed") &&
-      Array.from({ length: targetFrameCount }, (_, i) => i).every((i) => unique.has(i)),
-
+      Array.from({ length: targetFrameCount }, (_, i) => i).every((i) => unique.has(i)) &&
+      gridConsistent,
   };
 }
+
 
 // ─── Manifest ──────────────────────────────────────────────────────────
 
@@ -659,19 +792,27 @@ export interface Auto3SpinManifest {
   jobId: string;
   vehicleId: string | null;
   vin: string | null;
+  /** Tatsächlich enthaltene Frames. */
   frameCount: number;
+  /** Vom Job gefordertes Raster (32 oder 48). */
+  targetFrameCount: number;
   angleStep: number;
-  direction: "cw";
+  direction: "clockwise";
   startAngle: number;
   keyframeAngles: number[];
   backgroundStyle: string;
   identityHash: string | null;
   qualityScore: number;
-  qa: QualityAggregate;
+  /** Aggregierte QA-Kennzahlen (keine internen Analyse-Rohdaten). */
+  qaSummary: QualityAggregate;
   createdAt: string;
   frames: { index: number; angle: number; src: string; status?: string; sourceKind?: string }[];
 }
 
+/**
+ * Öffentliches Verteil-Manifest. Enthält BEWUSST kein vollständiges
+ * Identitätsprofil — nur der Hash verlässt den Server.
+ */
 export function buildManifest(params: {
   jobId: string;
   vehicleId?: string | null;
@@ -690,24 +831,26 @@ export function buildManifest(params: {
     vehicleId: params.vehicleId ?? null,
     vin: params.vin ?? null,
     frameCount: sorted.length,
+    targetFrameCount: params.targetFrameCount,
     angleStep: angleStep(params.targetFrameCount),
-    direction: "cw",
+    direction: "clockwise",
     startAngle: 0,
     keyframeAngles: [...KEYFRAME_ANGLES],
     backgroundStyle: "studio_cyclorama_neutral_grey",
     identityHash: params.identityHash ?? null,
     qualityScore: quality.qualityScore,
-    qa: quality,
+    qaSummary: quality,
     createdAt: params.createdAt ?? new Date().toISOString(),
     frames: sorted.map((f) => ({
       index: f.frame_index,
-      angle: f.angle_degrees ?? 0,
+      angle: f.angle_degrees ?? angleForIndex(f.frame_index, params.targetFrameCount),
       src: f.image_url,
       status: f.validation_status ?? undefined,
       sourceKind: f.source_kind ?? undefined,
     })),
   };
 }
+
 
 /** Coverage-Score für die UI vor dem Start (0–100). */
 export function coverageScore(params: {
