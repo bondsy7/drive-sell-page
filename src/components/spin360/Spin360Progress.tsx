@@ -25,12 +25,10 @@ interface Spin360ProgressProps {
 }
 
 const IMAGE_STEPS: { key: SpinStep; label: string; description: string }[] = [
-  { key: 'analyzing', label: 'Analyse', description: 'Bilder werden geprüft' },
-  { key: 'normalizing', label: 'Normalisierung', description: 'Bilder werden optimiert' },
-  { key: 'profiling', label: 'Fahrzeugprofil', description: 'Identität wird erstellt' },
-  { key: 'generating_anchors', label: 'Ankerbilder', description: '4 Zwischenwinkel werden generiert' },
-  { key: 'generating_frames', label: 'Frames', description: 'Alle Einzelbilder werden generiert' },
-  { key: 'validating', label: 'Validierung', description: 'Konsistenz wird geprüft' },
+  { key: 'analyzing', label: 'Analyse', description: 'Quellbilder werden Winkeln zugeordnet' },
+  { key: 'normalizing', label: 'Keyframes', description: '8 Keyframes werden studio-normalisiert' },
+  { key: 'profiling', label: 'Fahrzeugprofil', description: 'Verbindliche Identität wird erstellt' },
+  { key: 'generating_frames', label: 'Frames', description: 'Zwischenframes werden sektorweise generiert & geprüft' },
   { key: 'assembling', label: 'Zusammenbau', description: '360° Spin wird erstellt' },
 ];
 
@@ -39,7 +37,7 @@ const VIDEO_STEPS: { key: SpinStep; label: string; description: string }[] = [
   { key: 'extracting_frames', label: 'Frame-Extraktion', description: '48 Frames werden aus dem Video extrahiert' },
 ];
 
-const IMAGE_STEP_ORDER: SpinStep[] = ['uploaded', 'analyzing', 'normalizing', 'profiling', 'generating_anchors', 'generating_frames', 'validating', 'assembling', 'completed'];
+const IMAGE_STEP_ORDER: SpinStep[] = ['uploaded', 'analyzing', 'normalizing', 'profiling', 'generating_frames', 'assembling', 'completed'];
 const VIDEO_STEP_ORDER: SpinStep[] = ['uploaded', 'generating_video', 'extracting_frames', 'completed'];
 
 function getStepIndex(step: SpinStep, order: SpinStep[]): number {
