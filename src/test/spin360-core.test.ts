@@ -23,8 +23,12 @@ import {
   parseQaResult,
   planAllSectors,
   planSector,
+  buildIdentityProfilePrompt,
+  buildRepairPrompt,
+  qaFailClosed,
   type QaResult,
 } from '../../supabase/functions/_shared/spin360-core';
+import * as v2 from '@/lib/spin360-v2';
 
 describe('spin360 angle grid', () => {
   it('defaults to 48 frames and accepts only 32/48', () => {
@@ -281,5 +285,204 @@ describe('spin360 coverage score', () => {
     expect(full.score).toBe(100);
     expect(full.label).toBe('exzellent');
     expect(minimal.score).toBeLessThan(full.score);
+  });
+});
+
+// ─── Phase-A-Korrekturen: reine V2-Module ───────────────────────────────
+describe('spin360 v2 module', () => {
+  it('exposes the exact bidirectional offsets per tier', () => {
+    expect(v2.buildBidirectionalOffsets(32)).toEqual([1, 3, 2]);
+    expect(v2.buildBidirectionalOffsets(48)).toEqual([1, 5, 2, 4, 3]);
+  });
+
+  it('plans every sector in bidirectional order', () => {
+    for (const count of [32, 48] as const) {
+      const offsets = v2.buildBidirectionalOffsets(count);
+      for (let sector = 0; sector < 8; sector++) {
+        const plan = v2.buildSectorPlan(sector, count);
+        const per = v2.framesPerSector(count);
+        expect(plan.map((f) => f.index - sector * per)).toEqual(offsets);
+      }
+    }
+  });
+
+  it('handles the wrap sector 315° → 0° without leaving the grid', () => {
+    const plan = v2.buildSectorPlan(7, 48);
+    expect(plan[0].sectorStartAngle).toBe(315);
+    expect(plan[0].sectorEndIndex).toBe(0);
+    expect(plan.every((f) => f.index > 0 && f.index < 48)).toBe(true);
+    expect(plan.every((f) => f.angle > 315 && f.angle < 360)).toBe(true);
+  });
+
+  it('produces a full plan without duplicates and without keyframe indices', () => {
+    for (const count of [32, 48] as const) {
+      const plan = v2.buildFullPlan(count);
+      const indices = plan.map((f) => f.index);
+      expect(new Set(indices).size).toBe(indices.length);
+      expect(indices.length).toBe(count - 8);
+      for (const kf of v2.keyframeIndices(count)) expect(indices).not.toContain(kf);
+    }
+  });
+
+  it('validates the frame count strictly', () => {
+    expect(v2.validateFrameCount(48)).toBe(48);
+    expect(v2.validateFrameCount(32)).toBe(32);
+    expect(() => v2.validateFrameCount(36)).toThrow();
+    expect(() => v2.validateFrameCount(undefined)).toThrow();
+    expect(v2.validateFrameCountOrDefault(36)).toBe(48);
+  });
+
+  it('maps angles back to indices, decimals included', () => {
+    expect(v2.indexForAngle(7.5, 48)).toBe(1);
+    expect(v2.angleForIndex(1, 48)).toBe(7.5);
+    expect(v2.indexForAngle(315, 48)).toBe(42);
+  });
+});
+
+describe('spin360 v2 completion (fail closed)', () => {
+  const grid = (count: number, mutate?: (f: any, i: number) => void) =>
+    Array.from({ length: count }, (_, i) => {
+      const frame = {
+        frame_index: i,
+        angle_degrees: v2.angleForIndex(i, count),
+        validation_status: 'passed',
+        quality_score: 97,
+      };
+      mutate?.(frame, i);
+      return frame;
+    });
+
+  it('completes only with a full, passed, grid-exact set', () => {
+    const result = v2.evaluateCompletion(grid(48), 48);
+    expect(result.status).toBe('completed');
+    expect(result.complete).toBe(true);
+    expect(result.qualityScore).toBe(97);
+  });
+
+  it('never completes when a frame is missing', () => {
+    const frames = grid(48).filter((f) => f.frame_index !== 17);
+    const result = v2.evaluateCompletion(frames, 48);
+    expect(result.status).toBe('needs_review');
+    expect(result.missingIndices).toEqual([17]);
+  });
+
+  it('never completes at 80% coverage', () => {
+    const frames = grid(48).slice(0, 39);
+    expect(v2.evaluateCompletion(frames, 48).complete).toBe(false);
+  });
+
+  it('never completes when one frame failed QA', () => {
+    const frames = grid(48, (f, i) => {
+      if (i === 3) f.validation_status = 'failed';
+    });
+    const result = v2.evaluateCompletion(frames, 48);
+    expect(result.status).toBe('needs_review');
+    expect(result.failedIndices).toEqual([3]);
+  });
+
+  it('never completes when an angle is off grid', () => {
+    const frames = grid(48, (f, i) => {
+      if (i === 5) f.angle_degrees = 37.6;
+    });
+    const result = v2.evaluateCompletion(frames, 48);
+    expect(result.offGridIndices).toEqual([5]);
+    expect(result.complete).toBe(false);
+  });
+});
+
+describe('spin360 QA fail-closed parsing', () => {
+  it('never passes without a verdict, scores or confidence', () => {
+    expect(isQaPassed(parseQaResult({}))).toBe(false);
+    expect(isQaPassed(parseQaResult({ verdict: 'pass' }))).toBe(false);
+    expect(isQaPassed(qaFailClosed('network error'))).toBe(false);
+    expect(qaFailClosed('network error').verdict).not.toBe('pass');
+  });
+
+  it('rejects a pass verdict with hard failures or low scores', () => {
+    const scores = {
+      identity: 99, wheels: 99, lights: 99, paint: 99,
+      angle_continuity: 99, camera_continuity: 99, environment: 99, artifact_free: 99,
+    };
+    expect(isQaPassed(parseQaResult({ verdict: 'pass', scores, confidence: 95 }))).toBe(true);
+    expect(isQaPassed(parseQaResult({
+      verdict: 'pass', scores, confidence: 95, hard_failures: ['wrong_spoke_count'],
+    }))).toBe(false);
+    expect(isQaPassed(parseQaResult({
+      verdict: 'pass', scores: { ...scores, wheels: 94 }, confidence: 95,
+    }))).toBe(false);
+    expect(isQaPassed(parseQaResult({ verdict: 'pass', scores, confidence: 0.8 }))).toBe(false);
+    expect(isQaPassed(parseQaResult({ verdict: 'pass', scores, confidence: 0.95 }))).toBe(true);
+  });
+});
+
+describe('spin360 prompt contracts', () => {
+  const TAGS = ['<REFERENCE_PRIORITY>', '<IDENTITY_LOCK>', '<CAMERA_LOCK>', '<ROTATION>',
+    '<SCENE_LOCK>', '<WHEEL_LOCK>', '<FORBIDDEN>', '<REFERENCE_TRUTH_PROTOCOL>'];
+
+  it('keyframe, intermediate and repair prompts carry every mandatory tag', () => {
+    const common = {
+      identity: { paint: { primary_colour: { value: 'grey', status: 'CONFIRMED' } } },
+      referenceLabels: ['ORIGINAL IDENTITY #1 at 0°', 'WHEEL REFERENCE'],
+      hasDedicatedWheelReference: true,
+    };
+    const prompts = [
+      buildKeyframePrompt({ ...common, angle: 90, hasDirectPhoto: true }),
+      buildIntermediatePrompt({ ...common, frame: planSector(0, 48)[0], frameCount: 48 }),
+      buildRepairPrompt({
+        ...common, angle: 97.5, frameIndex: 13, frameCount: 48, isKeyframe: false, attempt: 2,
+        hardFailures: ['wrong_spoke_count'], repairInstructions: ['restore the 5-spoke rim'],
+      }),
+    ];
+    for (const prompt of prompts) for (const tag of TAGS) expect(prompt).toContain(tag);
+  });
+
+  it('repair prompt embeds the exact QA feedback and preserves the rest', () => {
+    const prompt = buildRepairPrompt({
+      angle: 45, frameIndex: 6, frameCount: 48, identity: {},
+      referenceLabels: ['ORIGINAL IDENTITY #1 at 0°'], hasDedicatedWheelReference: false,
+      isKeyframe: true, attempt: 3,
+      hardFailures: ['changed_light_signature'],
+      repairInstructions: ['restore the original DRL signature'],
+    });
+    expect(prompt).toContain('changed_light_signature');
+    expect(prompt).toContain('restore the original DRL signature');
+    expect(prompt.toLowerCase()).toContain('preserve');
+  });
+
+  it('identity prompt forbids catalogue inference and demands CONFIRMED/PARTIAL/UNKNOWN', () => {
+    const prompt = buildIdentityProfilePrompt({
+      originalPhotoLabels: ['ORIGINAL IDENTITY #1 at 0°'],
+      hasDedicatedWheelReference: false,
+      identitySourceTier: 'original',
+    });
+    expect(prompt).toContain('CONFIRMED');
+    expect(prompt).toContain('PARTIAL');
+    expect(prompt).toContain('UNKNOWN');
+    expect(prompt).toMatch(/catalog|catalogue/i);
+    expect(prompt).toContain('Do NOT generate an image');
+  });
+
+  it('QA prompt forbids generation and requests every score dimension', () => {
+    const prompt = buildQaPrompt({
+      angle: 7.5, frameIndex: 1, frameCount: 48, isKeyframe: false,
+      referenceLabels: ['ORIGINAL IDENTITY #1 at 0°'],
+    });
+    expect(prompt).toContain('Do NOT generate an image');
+    for (const dim of ['identity', 'wheels', 'lights', 'paint', 'angle_continuity',
+      'camera_continuity', 'environment', 'artifact_free']) expect(prompt).toContain(dim);
+    expect(prompt).toContain('"verdict": "pass"|"regenerate"|"manual_review"');
+    expect(prompt).toContain('hard_failures');
+    expect(prompt).toContain('repair_instructions');
+    expect(prompt).toContain('confidence');
+  });
+});
+
+describe('spin360 v2 models', () => {
+  it('binds exactly the audited model ids', () => {
+    expect(SPIN_MODELS.analysis).toBe('gemini-3.7-flash');
+    expect(SPIN_MODELS.image).toBe('gemini-3.1-flash-image');
+    expect(SPIN_MODELS.imagePro).toBe('gemini-3-pro-image');
+    expect(JSON.stringify(SPIN_MODELS)).not.toContain('preview');
+    expect(JSON.stringify(SPIN_MODELS)).not.toContain('gemini-2.5');
   });
 });
