@@ -542,35 +542,30 @@ serve(async (req) => {
 
     // ─────────── KEYFRAMES (ein Winkel pro Aufruf) ───────────
     if (currentStep === "keyframes") {
-      const keyframeIndex = Number(body.keyframeIndex ?? 0);
+      const keyframeIndex = Math.min(
+        Math.max(0, Number(body.keyframeIndex ?? 0)),
+        KEYFRAME_ANGLES.length - 1,
+      );
       const angle = KEYFRAME_ANGLES[keyframeIndex];
 
-      if (keyframeIndex === 0) {
-        await updateJob(sb, jobId, { status: "preparing_keyframes" });
-        const { data: deduct } = await sb.rpc("deduct_credits", {
-          _user_id: userId,
-          _amount: 4,
-          _action_type: "spin360_normalize",
-          _description: "360° Spin – Keyframes normalisieren",
-        });
-        if (deduct && !deduct.success) {
-          await markJobFailed(sb, jobId, "Nicht genug Credits");
-          return json({ error: "insufficient_credits" });
-        }
-      } else {
-        await updateJob(sb, jobId, { status: "generating_keyframes" });
-      }
+      await updateJob(sb, jobId, {
+        status: keyframeIndex === 0 ? "preparing_keyframes" : "generating_keyframes",
+      });
+      await setCursor(sb, jobId, { step: "keyframes", keyframeIndex });
 
       const { wheelRef, all, identitySources } = await loadSelection();
       const wheelSpec = (jobRow?.qa_summary as any)?.wheelReference ?? null;
-      const { data: existingCanonicals } = await sb.from("spin360_canonical_images")
-        .select("angle_degrees, image_url, normalization_status").eq("job_id", jobId)
-        .not("angle_degrees", "is", null);
+      const { data: existingCanonical, error: existingCanonicalErr } = await sb
+        .from("spin360_canonical_images")
+        .select("angle_degrees, image_url, normalization_status")
+        .eq("job_id", jobId).eq("angle_degrees", angle).maybeSingle();
+      if (existingCanonicalErr) {
+        await failStage(sb, jobId, "keyframes", `Keyframe-Status konnte nicht gelesen werden: ${existingCanonicalErr.message}`);
+        return json({ error: "db_read_failed" });
+      }
 
       const own = all.find((s: any) => Number(s.angle_degrees) === angle);
-      const already = (existingCanonicals || []).find(
-        (c: any) => Number(c.angle_degrees) === angle && c.normalization_status === "normalized",
-      );
+      const already = existingCanonical?.normalization_status === "normalized" && existingCanonical?.image_url;
 
       if (!already) {
         // Referenzen nach Priorität: eigenes Foto → weitere Originale → nächstliegende Quellen → Radreferenz
@@ -579,7 +574,7 @@ serve(async (req) => {
 
         const usedUrls = new Set(references.map((r) => r.url));
         for (const src of identitySources) {
-          if (references.length >= (own ? 3 : 3)) break;
+          if (references.length >= 3) break;
           if (usedUrls.has(src.image_url)) continue;
           usedUrls.add(src.image_url);
           references.push({
@@ -601,9 +596,12 @@ serve(async (req) => {
 
         const identity = jobRow?.identity_profile ?? {};
         let stored: string | null = null;
-        let usedModel = SPIN_MODELS.imagePro;
+        let usedModel = keyframeModelForAttempt(1, !!own);
 
         for (let attempt = 1; attempt <= MAX_NORMALIZE_ATTEMPTS && !stored; attempt++) {
+          // Kostenrouting: direktes Foto ⇒ Standardmodell zuerst, Pro erst zuletzt.
+          // Ohne direktes Foto ⇒ sofort High-Fidelity.
+          const model = keyframeModelForAttempt(attempt, !!own);
           const prompt = buildKeyframePrompt({
             angle,
             identity,
@@ -614,7 +612,7 @@ serve(async (req) => {
             strictRetry: attempt > 1,
           });
           try {
-            const result = await callImageGeneration(prompt, references, SPIN_MODELS.imagePro);
+            const result = await callImageGeneration(prompt, references, model);
             if (result) {
               usedModel = result.model;
               stored = await uploadDataUrlToStorage(
@@ -634,15 +632,14 @@ serve(async (req) => {
             image_url: own?.image_url ?? "", sort_order: keyframeIndex, angle_degrees: angle,
             is_generated: !own, normalization_status: "failed",
           }, { onConflict: "job_id,angle_degrees" });
-          await markJobFailed(
-            sb, jobId,
+          await failStage(
+            sb, jobId, "keyframes",
             `Keyframe ${angle}° konnte nach ${MAX_NORMALIZE_ATTEMPTS} Versuchen nicht normalisiert werden.`,
-            "needs_review",
           );
           return json({ error: "normalize_failed", angle });
         }
 
-        const { error: upsertErr } = await sb.from("spin360_canonical_images").upsert({
+        const { data: persisted, error: upsertErr } = await sb.from("spin360_canonical_images").upsert({
           job_id: jobId,
           user_id: userId,
           perspective: `kf_${angle}`,
@@ -651,25 +648,35 @@ serve(async (req) => {
           angle_degrees: angle,
           is_generated: !own,
           normalization_status: "normalized",
-        }, { onConflict: "job_id,angle_degrees" });
+        }, { onConflict: "job_id,angle_degrees" }).select("id, angle_degrees").maybeSingle();
 
-        if (upsertErr) {
-          console.error(`[${jobId}] keyframe ${angle}° persist failed:`, upsertErr.message);
-          await markJobFailed(sb, jobId, `Keyframe ${angle}° konnte nicht gespeichert werden: ${upsertErr.message}`, "needs_review");
+        // Persistenz sofort verifizieren — validate darf NIE die erste Instanz sein,
+        // die einen fehlgeschlagenen Schreibvorgang bemerkt.
+        if (upsertErr || !persisted) {
+          const reason = upsertErr?.message ?? "kein Datensatz zurückgegeben";
+          console.error(`[${jobId}] keyframe ${angle}° persist failed:`, reason);
+          await failStage(sb, jobId, "keyframes", `Keyframe ${angle}° konnte nicht gespeichert werden: ${reason}`);
           return json({ error: "persist_failed", angle });
         }
 
+        // Abrechnung erst nach erfolgreicher Persistenz, idempotent pro Winkel.
+        const charged = await chargeOnce(
+          sb, jobId, userId, billingMarker("keyframe", angle), 1, "spin360_normalize",
+          `360° Spin – Keyframe ${angle}° normalisiert`,
+        );
+        if (!charged.ok) {
+          await failStage(sb, jobId, "keyframes", "Nicht genug Credits", "failed");
+          return json({ error: "insufficient_credits" });
+        }
+
         console.log(`[${jobId}] keyframe ${angle}° ready (model=${usedModel}, fromPhoto=${!!own})`);
-
       }
 
-      if (keyframeIndex < KEYFRAME_ANGLES.length - 1) {
-        invokeNextStep(authHeader, { jobId, step: "keyframes", keyframeIndex: keyframeIndex + 1 });
-      } else {
-        invokeNextStep(authHeader, { jobId, step: "validate_keyframes" });
-      }
+      const adv = advanceKeyframe(keyframeIndex);
+      if (adv.kind === "next") invokeNextStep(authHeader, { jobId, ...adv.cursor });
       return json({ success: true, step: "keyframes", angle });
     }
+
 
     // ───── VALIDATE_KEYFRAME (ein Keyframe, ein QA-/Reparaturversuch pro Aufruf) ─────
     // Legacy-Alias `validate_keyframes` startet bei Keyframe 0.
