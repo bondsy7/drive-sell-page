@@ -502,16 +502,15 @@ serve(async (req) => {
 
       await updateJob(sb, jobId, { status: "analyzing", error_message: null, source_mode: body.sourceMode || "upload" });
 
-      const { data: deduct } = await sb.rpc("deduct_credits", {
-        _user_id: userId,
-        _amount: 1,
-        _action_type: "spin360_analysis",
-        _description: "360° Spin – Bildanalyse",
-      });
-      if (deduct && !deduct.success) {
+      const analysisCharge = await chargeOnce(
+        sb, jobId, userId, billingMarker("analysis"), 1, "spin360_analysis",
+        "360° Spin – Bildanalyse",
+      );
+      if (!analysisCharge.ok) {
         await markJobFailed(sb, jobId, "Nicht genug Credits");
         return json({ error: "insufficient_credits" });
       }
+
 
       const angleSources = sourceImages.filter((s: any) => Number(s.angle) >= 0);
       const wheelSource = sourceImages.find(
