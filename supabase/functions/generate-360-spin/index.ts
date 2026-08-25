@@ -96,6 +96,58 @@ async function markJobFailed(sb: any, jobId: string, errorMessage: string, statu
   await updateJob(sb, jobId, { status, error_message: errorMessage });
 }
 
+/**
+ * Terminaler Abbruch mit exakter Stufenangabe. Persistenz-/Laufzeitfehler
+ * dürfen nie als generisches „Nicht alle Keyframes vorhanden" erscheinen.
+ */
+async function failStage(
+  sb: any, jobId: string, stage: string, message: string, status = "needs_review",
+) {
+  console.error(`[${jobId}] stage=${stage} terminal: ${message}`);
+  await updateJob(sb, jobId, {
+    status,
+    error_message: `[${stage}] ${message}`,
+  });
+}
+
+/** Wiederaufnahme-Cursor im qa_summary (rückwärtskompatibel, rein informativ). */
+async function setCursor(sb: any, jobId: string, cursor: Record<string, any>) {
+  const { data } = await sb.from("spin360_jobs").select("qa_summary").eq("id", jobId).maybeSingle();
+  const summary = (data?.qa_summary && typeof data.qa_summary === "object" ? data.qa_summary : {}) as Record<string, any>;
+  await updateJob(sb, jobId, {
+    qa_summary: { ...summary, pipeline_cursor: { ...cursor, at: new Date().toISOString() } },
+  });
+}
+
+/**
+ * Idempotente Abrechnung: ein Marker im qa_summary verhindert Doppelbelastung,
+ * wenn eine Invocation nach einem Timeout wiederholt wird.
+ */
+async function chargeOnce(
+  sb: any, jobId: string, userId: string, marker: string,
+  amount: number, actionType: string, description: string,
+): Promise<{ ok: boolean; skipped?: boolean }> {
+  const { data } = await sb.from("spin360_jobs").select("qa_summary").eq("id", jobId).maybeSingle();
+  const summary = data?.qa_summary ?? {};
+  if (hasBilled(summary, marker)) return { ok: true, skipped: true };
+
+  const { data: deduct, error } = await sb.rpc("deduct_credits", {
+    _user_id: userId,
+    _amount: amount,
+    _action_type: actionType,
+    _description: description,
+  });
+  if (error) {
+    console.error(`[${jobId}] credit deduction error (${marker}):`, error.message);
+    return { ok: false };
+  }
+  if (deduct && !deduct.success) return { ok: false };
+
+  await updateJob(sb, jobId, { qa_summary: withBilling(summary, marker) });
+  return { ok: true };
+}
+
+
 // ─── Bild-/Datei-Utilities ───
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
