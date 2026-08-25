@@ -473,9 +473,9 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
   }, [resultFrames, jobId]);
 
   const resetWorkflow = useCallback(() => {
-    setPhase('upload'); setResultFrames([]); setJobId(null);
-    setVideoUrl(null); setJobStatus('uploaded'); setJobError(null);
-  }, []);
+    setPhase(vehicleId ? 'source' : 'upload'); setResultFrames([]); setJobId(null);
+    setVideoUrl(null); setJobStatus('uploaded'); setJobError(null); setAssetSelection(null);
+  }, [vehicleId]);
 
   return (
     <div className="space-y-6">
@@ -489,7 +489,9 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
           <p className="text-sm text-muted-foreground">
             {spinMode === 'video2frames'
               ? '3 Bilder → KI-Video → komplette Drehung extrahieren'
-              : '4 Fotos hochladen – KI erstellt den Rest automatisch'}
+              : phase === 'source'
+                ? 'Vorhandene Fahrzeugbilder zuordnen – KI ergänzt fehlende Winkel'
+                : '4 Fotos hochladen – KI erstellt den Rest automatisch'}
           </p>
         </div>
       </div>
@@ -500,6 +502,16 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
         <span>Geschätzte Kosten: <strong className="text-accent">{totalCost} Credits</strong> — Guthaben: <strong className="text-foreground">{balance} Credits</strong></span>
       </div>
 
+      {/* Phase: Quellenwahl aus bestehenden Fahrzeug-Assets */}
+      {phase === 'source' && vehicleId && (
+        <SpinSourcePicker
+          vehicleId={vehicleId}
+          disabled={isProcessing}
+          onConfirm={handleAssetsReady}
+          onSwitchToUpload={() => setPhase('upload')}
+        />
+      )}
+
       {/* Phase: Upload */}
       {phase === 'upload' && (
         <Spin360Upload
@@ -508,6 +520,7 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
           spinMode={spinMode}
           onModeChange={setSpinMode}
         />
+
       )}
 
       {/* Phase: Processing */}
