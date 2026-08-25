@@ -36,7 +36,7 @@ export const SUPPORTED_FRAME_COUNTS: SpinFrameTier[] = [32, 48];
 /** QA-Schwelle für identitätskritische Dimensionen. */
 export const QA_IDENTITY_THRESHOLD = 95;
 /** QA-Schwelle für sekundäre Dimensionen (Umgebung, Artefakte …). */
-export const QA_SECONDARY_THRESHOLD = 80;
+export const QA_SECONDARY_THRESHOLD = 95;
 /** Mindest-Confidence der QA (0–100), darunter niemals "pass". */
 export const QA_CONFIDENCE_THRESHOLD = 90;
 /** Toleranz (Grad) beim Abgleich Frame-Winkel ↔ Winkelraster. */
@@ -696,6 +696,46 @@ export function qaFailClosed(reason: string, terminal = false): QaResult {
 /** Modell für den nächsten Versuch: 1–3 Standard, letzter Versuch Pro. */
 export function modelForAttempt(attempt: number, maxAttempts: number = MAX_FRAME_ATTEMPTS): string {
   return attempt >= maxAttempts ? SPIN_MODELS.imagePro : SPIN_MODELS.image;
+}
+
+// ─── Mindest-Quellabdeckung ────────────────────────────────────────────
+
+/** Kardinalwinkel, die für den Produktionslauf zwingend als echtes Foto vorliegen müssen. */
+export const REQUIRED_SOURCE_ANGLES = [0, 90, 180, 270] as const;
+/** Mindestanzahl eindeutiger echter Quellwinkel. */
+export const MIN_SOURCE_ANGLES = REQUIRED_SOURCE_ANGLES.length;
+
+export interface SourceCoverageResult {
+  ok: boolean;
+  uniqueAngles: number[];
+  missingRequired: number[];
+  /** Optionale Diagonalen (45/135/225/315), die die Qualität weiter erhöhen. */
+  missingOptional: number[];
+}
+
+/**
+ * Prüft die Quellabdeckung VOR dem Start. Es wird nie eine fehlende
+ * Perspektive durch eine andere ersetzt — zu wenig Material = kein Start.
+ */
+export function evaluateSourceCoverage(angles: Array<number | string | null | undefined>): SourceCoverageResult {
+  const unique = Array.from(
+    new Set(
+      angles
+        .map((a) => Number(a))
+        .filter((a) => Number.isFinite(a) && a >= 0 && (KEYFRAME_ANGLES as readonly number[]).includes(a)),
+    ),
+  ).sort((a, b) => a - b);
+
+  const missingRequired = REQUIRED_SOURCE_ANGLES.filter((a) => !unique.includes(a));
+  const missingOptional = (KEYFRAME_ANGLES as readonly number[])
+    .filter((a) => !(REQUIRED_SOURCE_ANGLES as readonly number[]).includes(a) && !unique.includes(a));
+
+  return {
+    ok: missingRequired.length === 0 && unique.length >= MIN_SOURCE_ANGLES,
+    uniqueAngles: unique,
+    missingRequired: [...missingRequired],
+    missingOptional,
+  };
 }
 
 // ─── Identitätsquellen-Priorisierung ───────────────────────────────────
