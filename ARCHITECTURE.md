@@ -1125,58 +1125,79 @@ Klasse G: >175 g/km
 
 ---
 
-## 12. 360° Spin-Modul
+## 12. 360° Spin-Modul (V2)
 
 ### 12.1 Übersicht
 
-Das 360°-Spin-Modul generiert aus **4 Quellfotos** (Front, Seite-Links, Hinten, Seite-Rechts) einen **36-Frame-Spin** für interaktive 360°-Ansichten.
+Spin360 **V2** erzeugt einen identitätsgesicherten 360°-Spin (Standard **48 Frames**, 7,5°/Frame; 32 Frames als Diagnose-Stufe) aus **vorhandenen VIN-/fahrzeuggebundenen Assets** oder aus frischen Uploads. Kernziel ist nicht die Frame-Anzahl, sondern die **Kontinuität exakt desselben physischen Fahrzeugs** über die gesamte Drehung.
+
+`Video2Frames` bleibt als **experimenteller Fallback-Modus** erhalten. Bestehende, bereits abgeschlossene Jobs (Legacy, 36 Frames, manifest_version 1) bleiben voll lauffähig.
 
 ### 12.2 Technische Architektur
 
 ```
-[Upload: 4 Perspektiv-Fotos]
+[Quellwahl: SpinSourcePicker (Galerie/Originale/Spins) ODER Upload]
+     │  + optionale bindende Felgenreferenz (angle = -1)
+     ▼
+[spin360_source_images / spin360_source_selection]
      │
      ▼
-[spin360_source_images] ← Quellbilder in Storage
+[generate-360-spin (step-basiert, self-invoking)]
      │
-     ▼
-[generate-360-spin Edge Function]
-     │
-     ├── Step 1: Bilder normalisieren → spin360_canonical_images
-     │
-     ├── Step 2-9: Frame-Batches generieren (4 pro Batch)
-     │   ├── Prompt: "Drehe Fahrzeug um X° basierend auf Referenzbild"
-     │   ├── KI-Modell: Gemini 2.5 Flash (responseModalities: IMAGE+TEXT)
-     │   ├── Upload → vehicle-images Bucket
-     │   ├── Insert → spin360_generated_frames
-     │   └── Self-Invocation für nächsten Batch
-     │
-     └── Step 10: Validierung + Status → "completed"
+     ├── analyze              → Assets werden dem 45°-Raster zugeordnet
+     ├── preparing_keyframes  → 8 Keyframes (0/45/…/315) studio-normalisiert
+     ├── validating_keyframes → multimodale QA je Keyframe gegen die Originale
+     ├── profiling            → unveränderliches Identitätsprofil (identity_hash)
+     ├── generating_frames    → Sektorweise, BIDIREKTIONAL von beiden Keyframes
+     │                          nach innen; Referenzen: linker + rechter Keyframe
+     │                          + vorheriger Nachbar + Felgenreferenz
+     ├── validating_frames    → QA-Gate je Frame, bis zu 3 Repair-Versuche
+     └── assembling           → Manifest v2 + Status completed / needs_review
 ```
 
-### 12.3 Datenbank-Tabellen
+Die gesamte reine Logik (Winkelraster, Sektorplanung, Prompt-Builder mit Identity-/Camera-/Wheel-Lock, QA-Scoring, Manifest) liegt in `supabase/functions/_shared/spin360-core.ts` und ist über `src/test/spin360-core.test.ts` getestet.
 
-| Tabelle | Zweck | Felder |
+### 12.3 Modell-Routing (Stand August 2026)
+
+| Zweck | Modell |
+|---|---|
+| Analyse & multimodale QA | `gemini-3.7-flash` |
+| Standard-Frame-Generierung | `gemini-3.1-flash-image` |
+| Keyframe-Normalisierung / Repair | `gemini-3-pro-image` |
+
+Die alten `-preview`-IDs wurden am 25.06.2026 abgeschaltet und dürfen nicht mehr verwendet werden.
+
+### 12.4 Datenbank-Tabellen
+
+| Tabelle | Zweck | Wichtige Felder |
 |---|---|---|
-| `spin360_jobs` | Job-Tracking | status, target_frame_count, retry_count, error_message |
-| `spin360_source_images` | Original-Uploads | perspective, image_url, analysis (KI-Analyse) |
-| `spin360_canonical_images` | Normalisierte Bilder | perspective, image_url, sort_order |
-| `spin360_generated_frames` | Generierte Frames | frame_index (0-35), angle_degrees, validation_status |
+| `spin360_jobs` | Job-Tracking | status, target_frame_count, keyframe_count, source_mode, manifest_version, qa_summary, identity_hash |
+| `spin360_source_images` | Quellbilder | perspective, image_url, analysis |
+| `spin360_source_selection` | Herkunft gewählter Assets | angle_degrees, asset_kind, asset_id, storage_path |
+| `spin360_canonical_images` | Normalisierte Keyframes | perspective, image_url, sort_order |
+| `spin360_generated_frames` | Frames | frame_index, angle_degrees, quality_score, attempt_count, source_kind, reference_metadata, validation_status |
+| `spin360_frame_reviews` | QA-Historie | frame_index, verdict, findings |
 
-### 12.4 Stale-Job-Erkennung
+Ein Unique-Index auf `(job_id, frame_index)` sichert die Reihenfolge-Integrität; Legacy-Duplikate wurden präferenzbasiert (Canonical > bestandene QA) dedupliziert.
 
-Das Dashboard erkennt "stale" Jobs automatisch:
-- Jobs mit Status `generating_frames` und `updated_at` > 5 Minuten → als "Abgebrochen" angezeigt
-- Fehlerhafte Jobs zeigen spezifische Fehlermeldungen
-- Retry-Logik: MAX_FRAME_BATCH_RETRIES = 3 bei 502-Fehlern
+### 12.5 QA & Repair
 
-### 12.5 Interaktiver Viewer
+Jeder Frame durchläuft ein Pflicht-QA-Gate (Farbe, Felgen, Karosserieform, Kameraachse, Hintergrund). Fällt ein Frame durch, wird er bis zu 3× mit verschärftem Prompt und dem Pro-Modell neu erzeugt; danach greift Interpolation oder der Job endet in `needs_review`.
 
-Der `Spin360Viewer` bietet:
-- **Autoplay**: Automatische Rotation beim Öffnen
-- **Drag-Interaktion**: Maus/Touch zum manuellen Drehen
-- **Frame-Interpolation**: 36 Frames für flüssige 360°-Drehung (10° pro Frame)
-- **Responsive**: Vollbild-Overlay mit Close-Button
+### 12.6 Stale-Job-Erkennung
+
+- Jobs mit generierendem Status und `updated_at` > 5 Minuten → im Dashboard als „Abgebrochen“
+- Retry-Logik bei Upstream-502/503 mit Backoff
+
+### 12.7 Viewer V2
+
+`Spin360Viewer` ist ein Flipbook-Player: ein einzelnes `<img>`, dessen `src` beim Ziehen **imperativ** getauscht wird (kein React-Re-Render pro Frame).
+
+- Drag/Touch mit Trägheit (Inertia), Pointer-Capture
+- Einmalige Demo-Rotation, Play/Pause, Vollbild
+- Tastatur: ←/→ Einzelframe, Leertaste Play/Pause
+- Preloading: Nachbarframes sofort, Rest über `requestIdleCallback`
+- KI-Kennzeichnung via `AiDisclosureBadge` (EU AI Act Art. 50)
 
 ---
 

@@ -4,6 +4,9 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useVehicleAssets, type VehicleAsset } from '@/hooks/useVehicleAssets';
 
+/** Sonderslot: bindende Felgenreferenz (kein Turntable-Winkel). */
+export const WHEEL_REFERENCE_ANGLE = -1;
+
 /** Winkelkonvention: 0 = Front, 90 = linke Seite, 180 = Heck, 270 = rechte Seite. */
 export const SPIN_ANGLE_SLOTS: { angle: number; label: string; hint: string; required?: boolean }[] = [
   { angle: 0, label: 'Front', hint: 'Direkte Frontansicht', required: true },
@@ -14,7 +17,23 @@ export const SPIN_ANGLE_SLOTS: { angle: number; label: string; hint: string; req
   { angle: 225, label: '3/4 hinten rechts', hint: 'Schräg von hinten rechts' },
   { angle: 270, label: 'Seite rechts', hint: 'Komplette rechte Seite' },
   { angle: 315, label: '3/4 vorne rechts', hint: 'Schräg von vorne rechts' },
+  { angle: WHEEL_REFERENCE_ANGLE, label: 'Felgenreferenz', hint: 'Nahaufnahme der Felge (bindend)' },
 ];
+
+/** Abdeckungsbewertung: wie identitätstreu wird der Spin voraussichtlich? */
+export function evaluateCoverage(angles: number[]): { score: number; label: string; tone: string } {
+  const real = angles.filter((a) => a >= 0);
+  const has = (a: number) => real.includes(a);
+  let score = Math.round((real.length / 8) * 100);
+  if (has(0) && has(180)) score += 5;
+  if (has(90) && has(270)) score += 5;
+  score = Math.min(100, score);
+  if (score >= 85) return { score, label: 'Sehr hohe Identitätstreue', tone: 'text-green-600' };
+  if (score >= 55) return { score, label: 'Gute Identitätstreue', tone: 'text-accent' };
+  if (score >= 30) return { score, label: 'Eingeschränkte Identitätstreue', tone: 'text-amber-600' };
+  return { score, label: 'Sehr wenig Quellmaterial', tone: 'text-destructive' };
+}
+
 
 export interface SpinSourceSelection {
   angle: number;
@@ -46,23 +65,27 @@ const SpinSourcePicker: React.FC<Props> = ({ vehicleId, onConfirm, onSwitchToUpl
     [selection],
   );
 
-  const chosenCount = Object.keys(selection).length;
+  const chosenAngles = Object.values(selection).map((s) => s.angle);
+  const chosenCount = chosenAngles.filter((a) => a >= 0).length;
   const hasRequired = SPIN_ANGLE_SLOTS.filter((s) => s.required).every((s) => !!selection[s.angle]);
+  const coverage = evaluateCoverage(chosenAngles);
 
   const pick = (asset: VehicleAsset) => {
+    const isWheel = activeAngle === WHEEL_REFERENCE_ANGLE;
     setSelection((prev) => ({
       ...prev,
       [activeAngle]: {
         angle: activeAngle,
         url: asset.url,
-        assetKind: asset.kind,
+        assetKind: isWheel ? 'wheel_reference' : asset.kind,
         assetId: asset.id,
         storagePath: asset.storagePath,
       },
     }));
-    const next = SPIN_ANGLE_SLOTS.find((s) => !selection[s.angle] && s.angle !== activeAngle);
+    const next = SPIN_ANGLE_SLOTS.find((s) => !selection[s.angle] && s.angle !== activeAngle && s.angle >= 0);
     if (next) setActiveAngle(next.angle);
   };
+
 
   const clear = (angle: number) => {
     setSelection((prev) => {
@@ -109,7 +132,10 @@ const SpinSourcePicker: React.FC<Props> = ({ vehicleId, onConfirm, onSwitchToUpl
                 {slot.label}
                 {slot.required && <span className="text-accent"> *</span>}
               </p>
-              <p className="text-[10px] text-muted-foreground leading-tight">{slot.angle}°</p>
+              <p className="text-[10px] text-muted-foreground leading-tight">
+                {slot.angle >= 0 ? `${slot.angle}°` : 'optional, bindend'}
+              </p>
+
               {chosen && (
                 <span
                   role="button"
@@ -173,6 +199,20 @@ const SpinSourcePicker: React.FC<Props> = ({ vehicleId, onConfirm, onSwitchToUpl
         )}
       </div>
 
+      {/* Abdeckungs-Score */}
+      <div className="rounded-xl border border-border bg-card p-3 space-y-1.5">
+        <div className="flex items-center justify-between text-[11px]">
+          <span className="font-medium text-foreground">Winkelabdeckung</span>
+          <span className={cn('font-semibold', coverage.tone)}>{coverage.score}% · {coverage.label}</span>
+        </div>
+        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+          <div className="h-full bg-accent transition-all" style={{ width: `${coverage.score}%` }} />
+        </div>
+        <p className="text-[10px] text-muted-foreground">
+          Je mehr der 8 Winkel belegt sind, desto weniger muss die KI erfinden.
+        </p>
+      </div>
+
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
         <Button variant="ghost" size="sm" onClick={onSwitchToUpload} disabled={disabled}>
           <Upload className="w-3.5 h-3.5 mr-1.5" /> Stattdessen neue Fotos hochladen
@@ -187,6 +227,7 @@ const SpinSourcePicker: React.FC<Props> = ({ vehicleId, onConfirm, onSwitchToUpl
       {!hasRequired && (
         <p className="text-center text-[11px] text-muted-foreground">Front (0°) und Heck (180°) sind erforderlich.</p>
       )}
+
     </div>
   );
 };

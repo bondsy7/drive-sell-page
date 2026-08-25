@@ -5,12 +5,19 @@ import { cn } from '@/lib/utils';
 
 export type SpinStep =
   | 'uploaded'
+  // Legacy-Status (bestehende Jobs)
   | 'analyzing'
   | 'normalizing'
-  | 'profiling'
   | 'generating_anchors'
-  | 'generating_frames'
   | 'validating'
+  // V2-Status
+  | 'selecting_sources'
+  | 'preparing_keyframes'
+  | 'generating_keyframes'
+  | 'validating_keyframes'
+  | 'profiling'
+  | 'generating_frames'
+  | 'validating_frames'
   | 'assembling'
   | 'completed'
   | 'failed'
@@ -26,9 +33,10 @@ interface Spin360ProgressProps {
 
 const IMAGE_STEPS: { key: SpinStep; label: string; description: string }[] = [
   { key: 'analyzing', label: 'Analyse', description: 'Quellbilder werden Winkeln zugeordnet' },
-  { key: 'normalizing', label: 'Keyframes', description: '8 Keyframes werden studio-normalisiert' },
+  { key: 'preparing_keyframes', label: 'Keyframes', description: '8 Keyframes (45°-Raster) werden studio-normalisiert' },
+  { key: 'validating_keyframes', label: 'Keyframe-QA', description: 'Jeder Keyframe wird gegen die Originale geprüft' },
   { key: 'profiling', label: 'Fahrzeugprofil', description: 'Verbindliche Identität wird erstellt' },
-  { key: 'generating_frames', label: 'Frames', description: 'Zwischenframes werden sektorweise generiert & geprüft' },
+  { key: 'generating_frames', label: 'Frames', description: 'Zwischenframes werden sektorweise bidirektional erzeugt & geprüft' },
   { key: 'assembling', label: 'Zusammenbau', description: '360° Spin wird erstellt' },
 ];
 
@@ -37,8 +45,19 @@ const VIDEO_STEPS: { key: SpinStep; label: string; description: string }[] = [
   { key: 'extracting_frames', label: 'Frame-Extraktion', description: '48 Frames werden aus dem Video extrahiert' },
 ];
 
-const IMAGE_STEP_ORDER: SpinStep[] = ['uploaded', 'analyzing', 'normalizing', 'profiling', 'generating_frames', 'assembling', 'completed'];
+/** Legacy-Status auf die V2-Anzeige abbilden, damit alte Jobs weiter dargestellt werden. */
+const STEP_ALIASES: Partial<Record<SpinStep, SpinStep>> = {
+  selecting_sources: 'analyzing',
+  normalizing: 'preparing_keyframes',
+  generating_keyframes: 'preparing_keyframes',
+  generating_anchors: 'preparing_keyframes',
+  validating: 'validating_keyframes',
+  validating_frames: 'generating_frames',
+};
+
+const IMAGE_STEP_ORDER: SpinStep[] = ['uploaded', 'analyzing', 'preparing_keyframes', 'validating_keyframes', 'profiling', 'generating_frames', 'assembling', 'completed'];
 const VIDEO_STEP_ORDER: SpinStep[] = ['uploaded', 'generating_video', 'extracting_frames', 'completed'];
+
 
 function getStepIndex(step: SpinStep, order: SpinStep[]): number {
   return order.indexOf(step);
@@ -48,10 +67,12 @@ const Spin360Progress: React.FC<Spin360ProgressProps> = ({ currentStep, error, m
   const isVideo = mode === 'video2frames';
   const steps = isVideo ? VIDEO_STEPS : IMAGE_STEPS;
   const stepOrder = isVideo ? VIDEO_STEP_ORDER : IMAGE_STEP_ORDER;
-  const currentIdx = getStepIndex(currentStep, stepOrder);
+  const effectiveStep = STEP_ALIASES[currentStep] ?? currentStep;
+  const currentIdx = getStepIndex(effectiveStep, stepOrder);
   const isFailed = currentStep === 'failed' || currentStep === 'needs_review';
   const isCompleted = currentStep === 'completed';
-  const progressPercent = isCompleted ? 100 : isFailed ? 0 : Math.round((currentIdx / (stepOrder.length - 1)) * 100);
+  const progressPercent = isCompleted ? 100 : isFailed ? 0 : Math.round((Math.max(0, currentIdx) / (stepOrder.length - 1)) * 100);
+
 
   return (
     <div className="space-y-6">

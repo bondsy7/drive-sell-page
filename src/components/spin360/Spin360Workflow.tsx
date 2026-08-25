@@ -58,6 +58,9 @@ const createSpinReferenceComposite = async (frontBase64: string, rearBase64: str
   return canvas.toDataURL('image/jpeg', 0.98);
 };
 
+/** V2-Produktionsstufe: 48 Frames (7,5°). 32 bleibt als Diagnose-Stufe unterstützt. */
+const SPIN_FRAME_COUNT = 48;
+
 /** Perspektiven-Slots des klassischen Uploads → Turntable-Winkel. */
 const PERSPECTIVE_ANGLES: Record<string, number> = {
   front: 0,
@@ -68,6 +71,7 @@ const PERSPECTIVE_ANGLES: Record<string, number> = {
   right: 270,
   showroom: -1,
 };
+
 
 const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) => {
   const { user } = useAuth();
@@ -132,10 +136,11 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
 
       if (assetSelection && assetSelection.length > 0) {
         for (const sel of assetSelection) {
+          const isWheelRef = sel.assetKind === 'wheel_reference' || sel.angle < 0;
           sourceUrls.push({
-            perspective: `angle_${sel.angle}`,
+            perspective: isWheelRef ? 'wheel_reference' : `angle_${sel.angle}`,
             url: sel.url,
-            angle: sel.angle,
+            angle: isWheelRef ? -1 : sel.angle,
             assetKind: sel.assetKind,
             assetId: sel.assetId,
             storagePath: sel.storagePath,
@@ -154,10 +159,12 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
         }
       }
 
-      if (sourceUrls.length < 2) {
+      // Nur echte Turntable-Winkel zählen als Abdeckung (Felgenreferenz ist Zusatz).
+      if (sourceUrls.filter((s) => s.angle >= 0).length < 2) {
         toast.error('Mindestens 2 verwertbare Perspektiven erforderlich');
         setPhase(assetSelection ? 'source' : 'upload'); setIsProcessing(false); return;
       }
+
 
       const effectiveVehicleId = await ensureSpinVehicleId();
       const { data: job, error: jobErr } = await supabase
@@ -166,7 +173,7 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
           user_id: user.id,
           vehicle_id: effectiveVehicleId,
           status: 'uploaded',
-          target_frame_count: 32,
+          target_frame_count: SPIN_FRAME_COUNT,
           keyframe_count: 8,
           manifest_version: 2,
           source_mode: assetSelection ? 'vehicle_assets' : 'upload',
@@ -187,8 +194,14 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
       await supabase.from('spin360_source_images' as any).insert(sourceRows as any);
 
       const { data: pipelineResult, error: pipelineError } = await supabase.functions.invoke('generate-360-spin', {
-        body: { jobId: newJobId, sourceImages: sourceUrls },
+        body: {
+          jobId: newJobId,
+          sourceImages: sourceUrls,
+          frameCount: SPIN_FRAME_COUNT,
+          sourceMode: assetSelection ? 'vehicle_assets' : 'upload',
+        },
       });
+
 
       if (pipelineError) {
         console.log('Edge function call failed but job was created. Will poll for updates.');

@@ -1,16 +1,40 @@
-// generate-360-spin (v2 — Keyframe/Doppel-Anker-Architektur)
-// Schritte: analyze → normalize (8 Keyframes) → profile → frames (Sektoren + QA) → assemble
+// generate-360-spin (V2 — identitätsgesperrte Keyframe-Architektur)
+//
+// Schritte: analyze → keyframes → validate_keyframes → profile → frames (Sektoren, bidirektional) → assemble
 //
 // Kernprinzipien:
 //  - 8 Keyframes (0/45/90/135/180/225/270/315), vorhandene Fotos belegen so viele wie möglich
-//  - Zwischenframes immer mit linkem + rechtem Keyframe + letztem akzeptierten Nachbarn als Referenz
-//  - Kein Fallback auf unnormalisierte Rohfotos
-//  - QA nach jedem Sektor, gezielte Regeneration, Credits erst nach QA
+//  - Zwischenframes bidirektional pro Sektor (Drift-Minimierung), immer mit mehreren Referenzen
+//  - Originalfotos sind Identitätswahrheit, Remaster/Generate dürfen sie nie überstimmen
+//  - Kein Fallback auf unnormalisierte Rohfotos, kein Auto-Pass: QA entscheidet
+//  - Job wird nur "completed", wenn jeder Frame existiert UND die QA bestanden hat
 //  - Alle Bildtransfers bevorzugt über die Gemini File API
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { getSecret } from "../_shared/get-secret.ts";
+import {
+  KEYFRAME_ANGLES,
+  MAX_FRAME_ATTEMPTS,
+  MAX_NORMALIZE_ATTEMPTS,
+  SPIN_MODELS,
+  aggregateQuality,
+  angleForIndex,
+  buildIntermediatePrompt,
+  buildKeyframePrompt,
+  buildManifest,
+  buildQaPrompt,
+  frameIndexForAngle,
+  framesPerSector,
+  isQaPassed,
+  modelForAttempt,
+  normalizeFrameCount,
+  parseQaResult,
+  planSector,
+  qaCompositeScore,
+  IDENTITY_PROFILE_PROMPT,
+  SOURCE_ANALYSIS_PROMPT,
+} from "../_shared/spin360-core.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -18,25 +42,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// ─── Konfiguration ───
-const TARGET_FRAME_COUNT = 32;              // 11,25° Schritte
-const KEYFRAME_ANGLES = [0, 45, 90, 135, 180, 225, 270, 315];
-const FRAMES_PER_SECTOR = TARGET_FRAME_COUNT / KEYFRAME_ANGLES.length; // 4
-const MAX_FRAME_ATTEMPTS = 3;               // 1 Versuch + 2 Regenerationen
-const MAX_NORMALIZE_ATTEMPTS = 3;
-const SECTOR_COUNT = KEYFRAME_ANGLES.length;
-
-// Tier → Engine bindend, kein Cross-Engine-Fallback.
-const TEXT_MODEL = "gemini-2.5-flash";
-const MODEL_NORMALIZE = "gemini-3-pro-image-preview";
-const MODEL_FRAME = "gemini-3.1-flash-image-preview";
-const MODEL_REGEN = "gemini-3-pro-image-preview";
-const IMAGE_FALLBACKS: Record<string, string[]> = {
-  "gemini-3-pro-image-preview": ["gemini-3-pro-image-preview", "gemini-3.1-flash-image-preview"],
-  "gemini-3.1-flash-image-preview": ["gemini-3.1-flash-image-preview", "gemini-2.5-flash-image"],
-};
-
 const BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
+const WHEEL_REFERENCE_ANGLE = -1; // Sonder-Slot in spin360_source_selection
 
 function createServiceClient() {
   return createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -66,14 +73,6 @@ async function updateJob(sb: any, jobId: string, extra: Record<string, any>) {
 
 async function markJobFailed(sb: any, jobId: string, errorMessage: string, status = "failed") {
   await updateJob(sb, jobId, { status, error_message: errorMessage });
-}
-
-function angleForIndex(index: number) {
-  return (index * 360) / TARGET_FRAME_COUNT;
-}
-
-function keyframeIndexForAngle(angle: number) {
-  return Math.round((angle / 360) * TARGET_FRAME_COUNT);
 }
 
 // ─── Bild-/Datei-Utilities ───
@@ -156,6 +155,12 @@ function refPartToGemini(part: RefPart) {
   return { inlineData: { mimeType: part.inline!.mimeType, data: part.inline!.data } };
 }
 
+/** Referenz mit Label — die Reihenfolge entspricht <REFERENCE_PRIORITY>. */
+interface LabeledRef {
+  url: string;
+  label: string;
+}
+
 // ─── Gemini Calls ───
 async function callGeminiJson(prompt: string, imageUrls: string[]): Promise<any> {
   const apiKey = await getSecret("GEMINI_API_KEY");
@@ -167,7 +172,8 @@ async function callGeminiJson(prompt: string, imageUrls: string[]): Promise<any>
     if (part) parts.push(refPartToGemini(part));
   }
 
-  const resp = await fetch(`${BASE_URL}/models/${TEXT_MODEL}:generateContent?key=${apiKey}`, {
+  console.log(`[spin] Engine=gemini Model=${SPIN_MODELS.analysis} Tier=analysis (binding)`);
+  const resp = await fetch(`${BASE_URL}/models/${SPIN_MODELS.analysis}:generateContent?key=${apiKey}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -191,61 +197,56 @@ async function callGeminiJson(prompt: string, imageUrls: string[]): Promise<any>
   }
 }
 
-/** Bildgenerierung mit mehreren Referenzbildern. Verweigerung = verwertbares Fehlersignal. */
+/** Bildgenerierung mit mehreren gelabelten Referenzen. Verweigerung = verwertbares Fehlersignal. */
 async function callImageGeneration(
   prompt: string,
-  referenceUrls: string[],
-  requestedModel: string,
+  references: LabeledRef[],
+  model: string,
 ): Promise<{ dataUrl: string; model: string } | null> {
   const apiKey = await getSecret("GEMINI_API_KEY");
   if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
 
   const refParts: any[] = [];
-  for (const url of referenceUrls) {
-    const part = await toReferencePart(apiKey, url);
-    if (part) refParts.push(refPartToGemini(part));
+  for (const ref of references) {
+    const part = await toReferencePart(apiKey, ref.url);
+    if (part) {
+      refParts.push({ text: `Reference: ${ref.label}` });
+      refParts.push(refPartToGemini(part));
+    }
   }
   if (refParts.length === 0) throw new Error("no_reference_images");
 
-  const chain = IMAGE_FALLBACKS[requestedModel] || [requestedModel];
-  let lastError: string | null = null;
+  console.log(`[spin] Engine=gemini Model=${model} Tier=image refs=${references.length} (binding, no cross-engine fallback)`);
+  try {
+    const resp = await fetch(`${BASE_URL}/models/${model}:generateContent?key=${apiKey}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }, ...refParts] }],
+        generationConfig: { responseModalities: ["IMAGE", "TEXT"], temperature: 0.15 },
+      }),
+    });
 
-  for (const model of chain) {
-    console.log(`[spin] Engine=gemini Model=${model} (requested=${requestedModel})`);
-    try {
-      const resp = await fetch(`${BASE_URL}/models/${model}:generateContent?key=${apiKey}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }, ...refParts] }],
-          generationConfig: { responseModalities: ["IMAGE", "TEXT"], temperature: 0.15 },
-        }),
-      });
-
-      if (!resp.ok) {
-        const t = await resp.text();
-        lastError = `${resp.status}`;
-        console.error(`[spin] image gen error (${model}): ${resp.status} ${t.slice(0, 300)}`);
-        if (resp.status === 429) throw new Error("rate_limited");
-        continue;
-      }
-
-      const data = await resp.json();
-      for (const part of data.candidates?.[0]?.content?.parts || []) {
-        if (part.inlineData) {
-          return { dataUrl: `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`, model };
-        }
-      }
-      lastError = "no_image_in_response";
-      console.warn(`[spin] ${model} returned no image (refusal signal)`);
-    } catch (e) {
-      if ((e as Error).message === "rate_limited") throw e;
-      lastError = (e as Error).message;
+    if (!resp.ok) {
+      const t = await resp.text();
+      console.error(`[spin] image gen error (${model}): ${resp.status} ${t.slice(0, 300)}`);
+      if (resp.status === 429) throw new Error("rate_limited");
+      return null;
     }
-  }
 
-  console.warn(`[spin] image generation failed: ${lastError}`);
-  return null;
+    const data = await resp.json();
+    for (const part of data.candidates?.[0]?.content?.parts || []) {
+      if (part.inlineData) {
+        return { dataUrl: `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`, model };
+      }
+    }
+    console.warn(`[spin] ${model} returned no image (refusal signal)`);
+    return null;
+  } catch (e) {
+    if ((e as Error).message === "rate_limited") throw e;
+    console.warn(`[spin] image generation failed: ${(e as Error).message}`);
+    return null;
+  }
 }
 
 async function uploadDataUrlToStorage(sb: any, userId: string, path: string, dataUrl: string): Promise<string> {
@@ -275,124 +276,39 @@ async function invokeNextStep(authHeader: string, body: Record<string, any>) {
   }
 }
 
-// ═══════════════ PROMPT-BAUSTEINE ═══════════════
-
-const REFERENCE_TRUTH = `<REFERENCE_TRUTH_PROTOCOL>
-Use ONLY the provided reference images as the source of truth.
-Do NOT invent colors, badges, wheels, rims, trim, stitching, lettering or UI elements.
-Every visible attribute MUST match the references exactly.
-Do NOT fall back on generic model knowledge about this make or model.
-</REFERENCE_TRUTH_PROTOCOL>`;
-
-const SCENE_LOCK = `<SCENE_LOCK>
-Background: seamless neutral studio cyclorama, light grey (#EDEDED) at the floor fading to white at the top.
-Lighting: large soft overhead key light plus even fill, no coloured light, no visible light sources.
-Ground contact: one soft elliptical contact shadow directly under the vehicle, always centered under the wheelbase.
-Camera: locked tripod, eye level at roughly 1/2 vehicle height, 50mm equivalent, no tilt, no roll.
-Framing: vehicle horizontally centered, occupying 82% of the image width, identical margins in every frame.
-Output: single photorealistic image, 3:2 landscape, no text, no watermark, no logo overlay.
-</SCENE_LOCK>`;
-
-const NEGATIVE_LIST = `<NEGATIVE_LIST>
-No second vehicle. No people. No animals. No readable license plate (keep the plate area blank).
-No reflections of foreign objects, no studio equipment, no tripods, no props.
-No text, captions, watermarks or borders. No motion blur, no lens flare, no vignette.
-No changes to body condition: do not repair dents, scratches or wear, do not add accessories.
-</NEGATIVE_LIST>`;
-
-function identityLockBlock(identity: unknown) {
-  return `<IDENTITY_LOCK>
-The following JSON describes the ONE vehicle that must appear. It is binding and must be reproduced literally:
-${JSON.stringify(identity ?? {}, null, 0)}
-Paint tone and finish, rim design and spoke count, headlight and taillight signatures, grille pattern,
-mirror type, roofline, glass shape, badges and door count must be identical in every frame.
-</IDENTITY_LOCK>`;
+// ─── QA ───
+interface QaContext {
+  frameIndex: number;
+  angle: number;
+  frameCount: number;
+  isKeyframe: boolean;
+  candidateUrl: string;
+  references: LabeledRef[];
 }
 
-const DEFAULT_ANALYSIS_PROMPT = `You are an automotive photo analyst preparing a 360° turntable spin.
-For each supplied image return JSON:
-{
-  "images": [{ "index": 0, "detected_angle": 0|45|90|135|180|225|270|315,
-    "quality_score": 0-100, "vehicle_fully_visible": true, "cropping_ok": true,
-    "brightness_ok": true, "warnings": [], "vehicle_type": "string", "color": "string" }],
-  "same_vehicle": true, "mismatch_warnings": [], "overall_quality": "good"|"acceptable"|"poor"
-}
-Angle convention: 0 = direct front, 90 = full left side (driver side), 180 = direct rear,
-270 = full right side, 45/135/225/315 = the corresponding three-quarter views.
-Pick the closest angle from the allowed set for every image.`;
-
-const DEFAULT_IDENTITY_PROMPT = `Analyse these vehicle images and return one binding identity profile as JSON:
-{ "body_type": "", "proportions": { "length_class": "", "height_class": "", "width_class": "" },
-  "paint_color": { "primary": "", "finish": "" }, "trim_color": "", "wheel_design": "",
-  "wheel_spoke_count": 0, "headlight_signature": "", "taillight_signature": "", "grille_signature": "",
-  "mirror_shape": "", "roofline": "", "window_shape": "", "visible_badges": [], "door_count": 4,
-  "visible_damage": [], "confidence_score": 0 }
-Describe only what is visible. Never guess from model knowledge.`;
-
-function buildNormalizePrompt(base: string, angle: number) {
-  return `${base}
-
-${REFERENCE_TRUTH}
-${SCENE_LOCK}
-${NEGATIVE_LIST}
-
-<TASK>
-Re-photograph the vehicle from the first reference image as a studio turntable keyframe at ${angle} degrees.
-Angle convention: 0 = direct front, 90 = full left side, 180 = direct rear, 270 = full right side.
-Keep the vehicle identical. Only background, lighting, framing and perspective correction may change.
-</TASK>`;
+async function runQa(ctx: QaContext) {
+  const prompt = buildQaPrompt({
+    angle: ctx.angle,
+    frameIndex: ctx.frameIndex,
+    frameCount: ctx.frameCount,
+    isKeyframe: ctx.isKeyframe,
+    referenceLabels: ctx.references.map((r) => r.label),
+  });
+  // Kandidat immer als LETZTES Bild (siehe Prompt).
+  const raw = await callGeminiJson(prompt, [...ctx.references.map((r) => r.url), ctx.candidateUrl]);
+  const result = parseQaResult(raw);
+  return { result, score: qaCompositeScore(result), passed: isQaPassed(result) };
 }
 
-const DEFAULT_NORMALIZE_PROMPT = `You are a professional automotive studio photographer producing a turntable keyframe.`;
-
-function buildFramePrompt(
-  identity: unknown,
-  angle: number,
-  prevAngle: number,
-  nextAngle: number,
-  hasNeighbour: boolean,
-  strict: boolean,
+async function recordReview(
+  sb: any, jobId: string, userId: string, frameIndex: number, attempt: number,
+  verdict: string, score: number, notes: string | null, model: string,
 ) {
-  return `You are producing frame ${angle}° of a 32-frame studio turntable sequence of ONE specific vehicle.
-
-${REFERENCE_TRUTH}
-${identityLockBlock(identity)}
-${SCENE_LOCK}
-${NEGATIVE_LIST}
-
-<REFERENCE_ROLES>
-Reference 1 = keyframe at ${prevAngle}° (rotation start of this sector).
-Reference 2 = keyframe at ${nextAngle}° (rotation end of this sector).${
-    hasNeighbour ? `\nReference 3 = the already accepted neighbouring frame, immediately before this one in the rotation.` : ""
-  }
-</REFERENCE_ROLES>
-
-<TASK>
-Render the SAME vehicle rotated to exactly ${angle} degrees, measured clockwise from the FIRST reference image
-(0 = direct front, 90 = full left side, 180 = direct rear, 270 = full right side).
-The result must sit visually exactly between reference 1 and reference 2 — never beyond either of them.
-Scene, lighting, camera and framing are frozen: only the vehicle's rotation changes.
-</TASK>${
-    strict
-      ? `
-
-<STRICT_RETRY>
-A previous attempt was rejected. Pay maximum attention to: rim design and spoke count, paint tone,
-light signatures, body proportions and the exact rotation angle. Do not drift towards a generic vehicle.
-</STRICT_RETRY>`
-      : ""
-  }`;
+  await sb.from("spin360_frame_reviews").insert({
+    job_id: jobId, user_id: userId, frame_index: frameIndex, attempt,
+    verdict, score, notes, model_used: model,
+  });
 }
-
-const QA_PROMPT = `You are the quality gate for a 360° vehicle turntable sequence.
-Reference image 1 is the binding keyframe. The following images are candidate frames.
-For every candidate return JSON:
-{ "frames": [{ "position": 1, "verdict": "pass"|"fail", "score": 0-100, "issues": [] }] }
-Fail a frame when any of these is true: different paint tone or finish, different rim design or spoke count,
-different light signature or grille, different body proportions or door count, added or removed parts,
-visible artefacts or deformations, background not the uniform studio cyclorama, vehicle not centered,
-or the rotation angle is implausible for the requested position.
-Be strict: when in doubt, fail.`;
 
 // ═══════════════ HANDLER ═══════════════
 
@@ -424,6 +340,29 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
 
+    // Konfiguration des Jobs (Frame-Tier)
+    const { data: jobRow } = await sb.from("spin360_jobs")
+      .select("id, vehicle_id, target_frame_count, identity_profile, identity_hash, qa_summary")
+      .eq("id", jobId).single();
+    const FRAME_COUNT = normalizeFrameCount(jobRow?.target_frame_count ?? body.frameCount);
+    const PER_SECTOR = framesPerSector(FRAME_COUNT);
+
+    /** Quellenauswahl inkl. Radreferenz laden. */
+    const loadSelection = async () => {
+      const { data } = await sb.from("spin360_source_selection")
+        .select("angle_degrees, image_url, asset_kind").eq("job_id", jobId);
+      const rows = data || [];
+      return {
+        wheelRef: rows.find((r: any) => Number(r.angle_degrees) === WHEEL_REFERENCE_ANGLE)?.image_url as
+          | string
+          | undefined,
+        originals: rows.filter(
+          (r: any) => Number(r.angle_degrees) >= 0 && (r.asset_kind === "original" || r.asset_kind === "upload"),
+        ),
+        all: rows.filter((r: any) => Number(r.angle_degrees) >= 0),
+      };
+    };
+
     // ─────────── ANALYZE ───────────
     if (currentStep === "analyze") {
       const { sourceImages } = body;
@@ -431,7 +370,7 @@ serve(async (req) => {
         throw new Error("Mindestens 2 Quellbilder erforderlich");
       }
 
-      await updateJob(sb, jobId, { status: "analyzing", error_message: null });
+      await updateJob(sb, jobId, { status: "analyzing", error_message: null, source_mode: body.sourceMode || "upload" });
 
       const { data: deduct } = await sb.rpc("deduct_credits", {
         _user_id: userId,
@@ -444,26 +383,32 @@ serve(async (req) => {
         return json({ error: "insufficient_credits" });
       }
 
-      const analysisPrompt = await getCustomPrompt(sb, "spin360_analysis", DEFAULT_ANALYSIS_PROMPT);
+      const angleSources = sourceImages.filter((s: any) => Number(s.angle) >= 0);
+      const wheelSource = sourceImages.find(
+        (s: any) => s.assetKind === "wheel_reference" || Number(s.angle) === WHEEL_REFERENCE_ANGLE,
+      );
+
+      const analysisPrompt = await getCustomPrompt(sb, "spin360_analysis", SOURCE_ANALYSIS_PROMPT);
       let analysis: any = null;
       try {
-        analysis = await callGeminiJson(analysisPrompt, sourceImages.map((s: any) => s.url));
+        analysis = await callGeminiJson(analysisPrompt, angleSources.map((s: any) => s.url));
       } catch (e) {
         console.warn(`[${jobId}] analysis failed, using declared angles:`, (e as Error).message);
       }
 
-      // Quellbilder auf Keyframe-Winkel abbilden (Analyse-Winkel vor deklariertem Winkel).
+      // Vom Nutzer bestätigter Winkel gewinnt; die Analyse ist nur Plausibilisierung.
       const selection: Record<number, any> = {};
-      sourceImages.forEach((src: any, i: number) => {
-        const detected = analysis?.images?.find((im: any) => Number(im.index) === i)?.detected_angle;
-        const angle = KEYFRAME_ANGLES.includes(Number(detected))
-          ? Number(detected)
-          : Number.isFinite(Number(src.angle))
-            ? Number(src.angle)
+      angleSources.forEach((src: any, i: number) => {
+        const detected = analysis?.images?.find((im: any) => Number(im.index) === i);
+        const declared = Number(src.angle);
+        const angle = (KEYFRAME_ANGLES as readonly number[]).includes(declared)
+          ? declared
+          : (KEYFRAME_ANGLES as readonly number[]).includes(Number(detected?.detected_angle)) &&
+              detected?.left_right_certain !== false
+            ? Number(detected.detected_angle)
             : null;
-        if (angle === null || !KEYFRAME_ANGLES.includes(angle)) return;
-        if (selection[angle]) return; // erster Treffer gewinnt
-        selection[angle] = { ...src, angle };
+        if (angle === null || selection[angle]) return;
+        selection[angle] = { ...src, angle, analysis: detected ?? null };
       });
 
       if (analysis?.images) {
@@ -480,35 +425,46 @@ serve(async (req) => {
       }
 
       await sb.from("spin360_source_selection").delete().eq("job_id", jobId);
-      await sb.from("spin360_source_selection").insert(
-        chosen.map((c: any) => ({
+      const rows = chosen.map((c: any) => ({
+        job_id: jobId,
+        user_id: userId,
+        angle_degrees: c.angle,
+        asset_kind: c.assetKind || "upload",
+        asset_id: c.assetId || null,
+        storage_path: c.storagePath || null,
+        image_url: c.url,
+      }));
+      if (wheelSource) {
+        rows.push({
           job_id: jobId,
           user_id: userId,
-          angle_degrees: c.angle,
-          asset_kind: c.assetKind || "upload",
-          asset_id: c.assetId || null,
-          storage_path: c.storagePath || null,
-          image_url: c.url,
-        })),
-      );
+          angle_degrees: WHEEL_REFERENCE_ANGLE,
+          asset_kind: "wheel_reference",
+          asset_id: wheelSource.assetId || null,
+          storage_path: wheelSource.storagePath || null,
+          image_url: wheelSource.url,
+        });
+      }
+      await sb.from("spin360_source_selection").insert(rows);
 
       await updateJob(sb, jobId, {
+        status: "selecting_sources",
         keyframe_count: KEYFRAME_ANGLES.length,
-        target_frame_count: TARGET_FRAME_COUNT,
+        target_frame_count: FRAME_COUNT,
         manifest_version: 2,
       });
 
-      invokeNextStep(authHeader, { jobId, step: "normalize", keyframeIndex: 0 });
-      return json({ success: true, step: "analyze", keyframes: chosen.length });
+      invokeNextStep(authHeader, { jobId, step: "keyframes", keyframeIndex: 0 });
+      return json({ success: true, step: "analyze", keyframes: chosen.length, frameCount: FRAME_COUNT });
     }
 
-    // ─────────── NORMALIZE (ein Keyframe pro Aufruf) ───────────
-    if (currentStep === "normalize") {
+    // ─────────── KEYFRAMES (ein Winkel pro Aufruf) ───────────
+    if (currentStep === "keyframes") {
       const keyframeIndex = Number(body.keyframeIndex ?? 0);
       const angle = KEYFRAME_ANGLES[keyframeIndex];
 
       if (keyframeIndex === 0) {
-        await updateJob(sb, jobId, { status: "normalizing" });
+        await updateJob(sb, jobId, { status: "preparing_keyframes" });
         const { data: deduct } = await sb.rpc("deduct_credits", {
           _user_id: userId,
           _amount: 4,
@@ -519,40 +475,53 @@ serve(async (req) => {
           await markJobFailed(sb, jobId, "Nicht genug Credits");
           return json({ error: "insufficient_credits" });
         }
+      } else {
+        await updateJob(sb, jobId, { status: "generating_keyframes" });
       }
 
-      const { data: selection } = await sb.from("spin360_source_selection")
-        .select("angle_degrees, image_url").eq("job_id", jobId);
+      const { wheelRef, all, originals } = await loadSelection();
       const { data: existingCanonicals } = await sb.from("spin360_canonical_images")
-        .select("angle_degrees, image_url").eq("job_id", jobId).not("angle_degrees", "is", null);
+        .select("angle_degrees, image_url, normalization_status").eq("job_id", jobId)
+        .not("angle_degrees", "is", null);
 
-      const own = (selection || []).find((s: any) => Number(s.angle_degrees) === angle);
-      const already = (existingCanonicals || []).find((c: any) => Number(c.angle_degrees) === angle);
+      const own = all.find((s: any) => Number(s.angle_degrees) === angle);
+      const already = (existingCanonicals || []).find(
+        (c: any) => Number(c.angle_degrees) === angle && c.normalization_status === "normalized",
+      );
 
       if (!already) {
-        // Referenzen: eigenes Foto zuerst, sonst nächstliegende Quellen als Basis.
-        const refUrls: string[] = [];
-        if (own) refUrls.push(own.image_url);
-        const sorted = (selection || [])
+        // Referenzen nach Priorität: eigenes Foto → Originale → nächstliegende Quellen → Radreferenz
+        const references: LabeledRef[] = [];
+        if (own) references.push({ url: own.image_url, label: `ORIGINAL photograph at ${angle}° (identity truth)` });
+
+        const distance = (a: number) => Math.min(Math.abs(a - angle), 360 - Math.abs(a - angle));
+        const neighbours = all
           .filter((s: any) => Number(s.angle_degrees) !== angle)
-          .sort((a: any, b: any) => {
-            const da = Math.abs(((Number(a.angle_degrees) - angle + 540) % 360) - 180);
-            const db = Math.abs(((Number(b.angle_degrees) - angle + 540) % 360) - 180);
-            return db - da; // näher = kleinerer Abstand zu 180 → invertiert sortieren
-          })
-          .reverse();
-        for (const s of sorted.slice(0, own ? 1 : 2)) refUrls.push(s.image_url);
+          .sort((a: any, b: any) => distance(Number(a.angle_degrees)) - distance(Number(b.angle_degrees)))
+          .slice(0, own ? 2 : 3);
+        for (const n of neighbours) {
+          references.push({
+            url: n.image_url,
+            label: `${n.asset_kind === "original" || n.asset_kind === "upload" ? "ORIGINAL" : "verified"} view at ${n.angle_degrees}°`,
+          });
+        }
+        if (wheelRef) references.push({ url: wheelRef, label: "dedicated WHEEL reference (binding for wheels)" });
 
-        const normalizeBase = await getCustomPrompt(sb, "spin360_normalize", DEFAULT_NORMALIZE_PROMPT);
-        const prompt = own
-          ? buildNormalizePrompt(normalizeBase, angle)
-          : `${buildNormalizePrompt(normalizeBase, angle)}\n\n<NOTE>No direct photo exists for this angle. Derive it strictly from the supplied reference angles without inventing new details.</NOTE>`;
-
+        const identity = jobRow?.identity_profile ?? {};
         let stored: string | null = null;
-        let usedModel = MODEL_NORMALIZE;
+        let usedModel = SPIN_MODELS.imagePro;
+
         for (let attempt = 1; attempt <= MAX_NORMALIZE_ATTEMPTS && !stored; attempt++) {
+          const prompt = buildKeyframePrompt({
+            angle,
+            identity,
+            referenceLabels: references.map((r) => r.label),
+            hasDedicatedWheelReference: !!wheelRef,
+            hasDirectPhoto: !!own,
+            strictRetry: attempt > 1,
+          });
           try {
-            const result = await callImageGeneration(prompt, refUrls, MODEL_NORMALIZE);
+            const result = await callImageGeneration(prompt, references, SPIN_MODELS.imagePro);
             if (result) {
               usedModel = result.model;
               stored = await uploadDataUrlToStorage(
@@ -561,12 +530,17 @@ serve(async (req) => {
             }
           } catch (e) {
             if ((e as Error).message === "rate_limited") await new Promise((r) => setTimeout(r, 8000));
-            console.error(`[${jobId}] normalize ${angle}° attempt ${attempt} failed:`, (e as Error).message);
+            console.error(`[${jobId}] keyframe ${angle}° attempt ${attempt} failed:`, (e as Error).message);
           }
         }
 
         if (!stored) {
-          // Kein Fallback auf Rohfotos — Job zur Prüfung markieren.
+          // KEIN Fallback auf ein unnormalisiertes Rohfoto (gemischte Hintergründe).
+          await sb.from("spin360_canonical_images").upsert({
+            job_id: jobId, user_id: userId, perspective: `kf_${angle}`,
+            image_url: own?.image_url ?? "", sort_order: keyframeIndex, angle_degrees: angle,
+            is_generated: !own, normalization_status: "failed",
+          }, { onConflict: "job_id,angle_degrees" });
           await markJobFailed(
             sb, jobId,
             `Keyframe ${angle}° konnte nach ${MAX_NORMALIZE_ATTEMPTS} Versuchen nicht normalisiert werden.`,
@@ -586,36 +560,107 @@ serve(async (req) => {
           normalization_status: "normalized",
         }, { onConflict: "job_id,angle_degrees" });
 
-        console.log(`[${jobId}] keyframe ${angle}° ready (model=${usedModel}, fromPhoto=${!!own})`);
+        console.log(`[${jobId}] keyframe ${angle}° ready (model=${usedModel}, fromPhoto=${!!own}, originals=${originals.length})`);
       }
 
       if (keyframeIndex < KEYFRAME_ANGLES.length - 1) {
-        invokeNextStep(authHeader, { jobId, step: "normalize", keyframeIndex: keyframeIndex + 1 });
+        invokeNextStep(authHeader, { jobId, step: "keyframes", keyframeIndex: keyframeIndex + 1 });
       } else {
-        invokeNextStep(authHeader, { jobId, step: "profile" });
+        invokeNextStep(authHeader, { jobId, step: "validate_keyframes" });
       }
-      return json({ success: true, step: "normalize", angle });
+      return json({ success: true, step: "keyframes", angle });
     }
 
-    // ─────────── PROFILE ───────────
-    if (currentStep === "profile") {
-      await updateJob(sb, jobId, { status: "profiling" });
+    // ─────────── VALIDATE KEYFRAMES (QA-Gate vor den Zwischenframes) ───────────
+    if (currentStep === "validate_keyframes") {
+      await updateJob(sb, jobId, { status: "validating_keyframes" });
 
+      const { wheelRef, all } = await loadSelection();
       const { data: canonicals } = await sb.from("spin360_canonical_images")
-        .select("angle_degrees, image_url").eq("job_id", jobId)
-        .not("angle_degrees", "is", null).order("angle_degrees");
+        .select("angle_degrees, image_url, is_generated, normalization_status")
+        .eq("job_id", jobId).not("angle_degrees", "is", null).order("angle_degrees");
 
-      if (!canonicals || canonicals.length < KEYFRAME_ANGLES.length) {
+      const ready = (canonicals || []).filter((c: any) => c.normalization_status === "normalized");
+      if (ready.length < KEYFRAME_ANGLES.length) {
         await markJobFailed(sb, jobId, "Nicht alle Keyframes vorhanden", "needs_review");
         return json({ error: "incomplete_keyframes" });
       }
 
+      const failures: number[] = [];
+      for (const c of ready) {
+        const angle = Number(c.angle_degrees);
+        const frameIndex = frameIndexForAngle(angle, FRAME_COUNT);
+        const own = all.find((s: any) => Number(s.angle_degrees) === angle);
+        const references: LabeledRef[] = [];
+        if (own) references.push({ url: own.image_url, label: `ORIGINAL photograph at ${angle}° (identity truth)` });
+        else if (all[0]) references.push({ url: all[0].image_url, label: `ORIGINAL photograph at ${all[0].angle_degrees}°` });
+        if (wheelRef) references.push({ url: wheelRef, label: "dedicated WHEEL reference" });
+
+        let score = 0;
+        let passed = false;
+        let notes = "QA nicht ausgeführt";
+        try {
+          const qa = await runQa({
+            frameIndex, angle, frameCount: FRAME_COUNT, isKeyframe: true,
+            candidateUrl: c.image_url, references,
+          });
+          score = qa.score;
+          passed = qa.passed;
+          notes = [...qa.result.hard_failures, ...qa.result.repair_instructions].join("; ") || null as any;
+        } catch (e) {
+          console.warn(`[${jobId}] keyframe QA failed for ${angle}°:`, (e as Error).message);
+        }
+
+        await recordReview(sb, jobId, userId, frameIndex, 1, passed ? "pass" : "manual_review", score, notes, SPIN_MODELS.analysis);
+
+        await sb.from("spin360_generated_frames").upsert({
+          job_id: jobId,
+          user_id: userId,
+          frame_index: frameIndex,
+          frame_type: "canonical",
+          image_url: c.image_url,
+          angle_degrees: angle,
+          model_used: SPIN_MODELS.imagePro,
+          validation_status: passed ? "passed" : "failed",
+          validation_notes: notes,
+          source_kind: c.is_generated ? "generated_keyframe" : "normalized_source",
+          quality_score: score,
+          attempt_count: 1,
+          reference_metadata: { references: references.map((r) => r.label), qaModel: SPIN_MODELS.analysis },
+        }, { onConflict: "job_id,frame_index" });
+
+        if (!passed) failures.push(angle);
+      }
+
+      if (failures.length > 0) {
+        await markJobFailed(
+          sb, jobId,
+          `Keyframe-QA nicht bestanden für: ${failures.join("°, ")}°. Bitte Quellbilder prüfen.`,
+          "needs_review",
+        );
+        return json({ error: "keyframe_qa_failed", failures });
+      }
+
+      invokeNextStep(authHeader, { jobId, step: "profile" });
+      return json({ success: true, step: "validate_keyframes" });
+    }
+
+    // ─────────── PROFILE (unveränderliches Identitätsprofil aus ORIGINALEN) ───────────
+    if (currentStep === "profile") {
+      await updateJob(sb, jobId, { status: "profiling" });
+
+      const { originals, all, wheelRef } = await loadSelection();
+      const identitySources = (originals.length > 0 ? originals : all).map((s: any) => s.image_url);
+      if (wheelRef) identitySources.push(wheelRef);
+
       let identity: any = {};
       try {
-        const profilePrompt = await getCustomPrompt(sb, "spin360_identity", DEFAULT_IDENTITY_PROMPT);
-        identity = await callGeminiJson(profilePrompt, canonicals.map((c: any) => c.image_url));
+        const profilePrompt = await getCustomPrompt(sb, "spin360_identity", IDENTITY_PROFILE_PROMPT);
+        identity = await callGeminiJson(profilePrompt, identitySources.slice(0, 9));
       } catch (e) {
         console.error(`[${jobId}] identity profiling failed:`, (e as Error).message);
+        await markJobFailed(sb, jobId, "Identitätsprofil konnte nicht erstellt werden", "needs_review");
+        return json({ error: "identity_profile_failed" });
       }
 
       const identityHash = Array.from(
@@ -626,40 +671,22 @@ serve(async (req) => {
 
       await updateJob(sb, jobId, { identity_profile: identity, identity_hash: identityHash });
 
-      for (const c of canonicals) {
-        const angle = Number(c.angle_degrees);
-        await sb.from("spin360_generated_frames").upsert({
-          job_id: jobId,
-          user_id: userId,
-          frame_index: keyframeIndexForAngle(angle),
-          frame_type: "canonical",
-          image_url: c.image_url,
-          angle_degrees: angle,
-          model_used: MODEL_NORMALIZE,
-          validation_status: "passed",
-          source_kind: "normalized",
-          quality_score: 100,
-          attempt_count: 1,
-        }, { onConflict: "job_id,frame_index" });
-      }
-
       invokeNextStep(authHeader, { jobId, step: "frames", sector: 0 });
-      return json({ success: true, step: "profile" });
+      return json({ success: true, step: "profile", identityHash });
     }
 
-    // ─────────── FRAMES (ein Sektor pro Aufruf, inkl. QA) ───────────
+    // ─────────── FRAMES (ein Sektor pro Aufruf, bidirektional, inkl. QA) ───────────
     if (currentStep === "frames") {
       const sector = Number(body.sector ?? 0);
       if (sector === 0) await updateJob(sb, jobId, { status: "generating_frames", error_message: null });
 
-      if (sector >= SECTOR_COUNT) {
+      if (sector >= KEYFRAME_ANGLES.length) {
         invokeNextStep(authHeader, { jobId, step: "assemble" });
         return json({ success: true, step: "frames", done: true });
       }
 
-      const { data: job } = await sb.from("spin360_jobs")
-        .select("identity_profile, qa_summary").eq("id", jobId).single();
-      const identity = job?.identity_profile ?? {};
+      const identity = jobRow?.identity_profile ?? {};
+      const { wheelRef, originals, all } = await loadSelection();
 
       const { data: canonicals } = await sb.from("spin360_canonical_images")
         .select("angle_degrees, image_url").eq("job_id", jobId).not("angle_degrees", "is", null);
@@ -667,144 +694,147 @@ serve(async (req) => {
         (canonicals || []).map((c: any) => [Number(c.angle_degrees), c.image_url as string]),
       );
 
-      const prevAngle = KEYFRAME_ANGLES[sector];
-      const nextAngle = KEYFRAME_ANGLES[(sector + 1) % KEYFRAME_ANGLES.length];
-      const prevUrl = canonicalByAngle.get(prevAngle);
-      const nextUrl = canonicalByAngle.get(nextAngle);
-      if (!prevUrl || !nextUrl) {
-        await markJobFailed(sb, jobId, `Keyframes für Sektor ${prevAngle}°–${nextAngle}° fehlen`, "needs_review");
+      const startAngle = KEYFRAME_ANGLES[sector];
+      const endAngle = KEYFRAME_ANGLES[(sector + 1) % KEYFRAME_ANGLES.length];
+      const startUrl = canonicalByAngle.get(startAngle);
+      const endUrl = canonicalByAngle.get(endAngle);
+      if (!startUrl || !endUrl) {
+        await markJobFailed(sb, jobId, `Keyframes für Sektor ${startAngle}°–${endAngle}° fehlen`, "needs_review");
         return json({ error: "sector_keyframes_missing" });
       }
 
       const { data: existing } = await sb.from("spin360_generated_frames")
-        .select("frame_index, image_url, validation_status")
-        .eq("job_id", jobId);
+        .select("frame_index, image_url, validation_status").eq("job_id", jobId);
       const passedByIndex = new Map<number, string>(
         (existing || []).filter((f: any) => f.validation_status === "passed")
           .map((f: any) => [Number(f.frame_index), f.image_url as string]),
       );
 
-      const startIndex = sector * FRAMES_PER_SECTOR;
-      let lastAccepted = passedByIndex.get(startIndex) || prevUrl;
+      const identityRefs: LabeledRef[] = (originals.length > 0 ? originals : all)
+        .slice(0, 2)
+        .map((s: any) => ({
+          url: s.image_url,
+          label: `ORIGINAL photograph at ${s.angle_degrees}° (identity truth, overrides everything)`,
+        }));
+
+      const plan = planSector(sector, FRAME_COUNT);
       const sectorResults: { index: number; verdict: string; score: number }[] = [];
 
-      for (let offset = 1; offset < FRAMES_PER_SECTOR; offset++) {
-        const frameIndex = startIndex + offset;
-        if (passedByIndex.has(frameIndex)) {
-          lastAccepted = passedByIndex.get(frameIndex)!;
-          continue;
+      for (const planned of plan) {
+        if (passedByIndex.has(planned.index)) continue;
+
+        const neighbourUrl = passedByIndex.get(
+          ((planned.neighborIndex % FRAME_COUNT) + FRAME_COUNT) % FRAME_COUNT,
+        );
+
+        const baseRefs: LabeledRef[] = [
+          ...identityRefs,
+          { url: startUrl, label: `verified keyframe A at ${planned.sectorStartAngle}°` },
+          { url: endUrl, label: `verified keyframe B at ${planned.sectorEndAngle}°` },
+        ];
+        if (wheelRef) baseRefs.push({ url: wheelRef, label: "dedicated WHEEL reference (binding for wheels)" });
+        if (neighbourUrl && planned.direction !== "midpoint") {
+          baseRefs.push({ url: neighbourUrl, label: "adjacent ACCEPTED frame (local continuity only)" });
         }
 
-        const angle = angleForIndex(frameIndex);
         let accepted = false;
         let attempt = 0;
-        let lastUrl: string | null = null;
         let lastScore = 0;
+        let lastNotes: string | null = null;
+        let repairInstructions: string[] = [];
 
         while (attempt < MAX_FRAME_ATTEMPTS && !accepted) {
           attempt++;
-          const strict = attempt > 1;
-          const model = strict ? MODEL_REGEN : MODEL_FRAME;
-          const refs = [prevUrl, nextUrl];
-          if (lastAccepted && lastAccepted !== prevUrl) refs.push(lastAccepted);
+          const model = modelForAttempt(attempt);
+          const prompt = buildIntermediatePrompt({
+            frame: planned,
+            frameCount: FRAME_COUNT,
+            identity,
+            referenceLabels: baseRefs.map((r) => r.label),
+            hasDedicatedWheelReference: !!wheelRef,
+            strictRetry: attempt > 1,
+            repairInstructions,
+          });
 
           let generated: { dataUrl: string; model: string } | null = null;
           try {
-            generated = await callImageGeneration(
-              buildFramePrompt(identity, Math.round(angle * 100) / 100, prevAngle, nextAngle, refs.length > 2, strict),
-              refs,
-              model,
-            );
+            generated = await callImageGeneration(prompt, baseRefs, model);
           } catch (e) {
             if ((e as Error).message === "rate_limited") await new Promise((r) => setTimeout(r, 8000));
-            console.error(`[${jobId}] frame ${frameIndex} attempt ${attempt} error:`, (e as Error).message);
+            console.error(`[${jobId}] frame ${planned.index} attempt ${attempt} error:`, (e as Error).message);
           }
           if (!generated) continue;
 
           const storedUrl = await uploadDataUrlToStorage(
             sb, userId,
-            `spin360/${jobId}/frames/frame_${String(frameIndex).padStart(3, "0")}_a${attempt}.png`,
+            `spin360/${jobId}/frames/frame_${String(planned.index).padStart(3, "0")}_a${attempt}.png`,
             generated.dataUrl,
           );
-          lastUrl = storedUrl;
 
-          // QA direkt gegen den linken Keyframe
-          let verdict = "pass";
-          let score = 80;
-          let issues: string[] = [];
+          // QA — niemals Auto-Pass.
+          let qaPassed = false;
+          let score = 0;
           try {
-            const qa = await callGeminiJson(
-              `${QA_PROMPT}\n\nCandidate 1 is the frame at ${Math.round(angle)}° in a rotation from ${prevAngle}° to ${nextAngle}°.`,
-              [prevUrl, storedUrl],
-            );
-            const entry = qa?.frames?.[0];
-            if (entry) {
-              verdict = entry.verdict === "fail" ? "fail" : "pass";
-              score = Number(entry.score ?? score);
-              issues = Array.isArray(entry.issues) ? entry.issues : [];
-            }
+            const qaRefs: LabeledRef[] = [...baseRefs];
+            const qa = await runQa({
+              frameIndex: planned.index,
+              angle: planned.angle,
+              frameCount: FRAME_COUNT,
+              isKeyframe: false,
+              candidateUrl: storedUrl,
+              references: qaRefs,
+            });
+            qaPassed = qa.passed;
+            score = qa.score;
+            repairInstructions = qa.result.repair_instructions;
+            lastNotes = [...qa.result.hard_failures, ...qa.result.repair_instructions].join("; ") || null;
           } catch (e) {
-            console.warn(`[${jobId}] QA call failed for frame ${frameIndex}:`, (e as Error).message);
+            console.warn(`[${jobId}] QA call failed for frame ${planned.index}:`, (e as Error).message);
+            lastNotes = `QA nicht auswertbar: ${(e as Error).message}`;
           }
           lastScore = score;
 
-          await sb.from("spin360_frame_reviews").insert({
-            job_id: jobId,
-            user_id: userId,
-            frame_index: frameIndex,
-            attempt,
-            verdict,
-            score,
-            notes: issues.join("; ") || null,
-            model_used: generated.model,
-          });
+          await recordReview(
+            sb, jobId, userId, planned.index, attempt,
+            qaPassed ? "pass" : attempt >= MAX_FRAME_ATTEMPTS ? "manual_review" : "regenerate",
+            score, lastNotes, generated.model,
+          );
 
-          if (verdict === "pass" && score >= 60) {
-            await sb.from("spin360_generated_frames").upsert({
-              job_id: jobId,
-              user_id: userId,
-              frame_index: frameIndex,
-              frame_type: "intermediate",
-              image_url: storedUrl,
-              angle_degrees: Math.round(angle),
-              model_used: generated.model,
-              validation_status: "passed",
-              validation_notes: issues.join("; ") || null,
-              source_kind: "generated",
-              quality_score: score,
-              attempt_count: attempt,
-            }, { onConflict: "job_id,frame_index" });
-            lastAccepted = storedUrl;
-            accepted = true;
-          }
-
-          await new Promise((r) => setTimeout(r, 800));
-        }
-
-        if (!accepted) {
-          // Interpolation: nächstgelegenen akzeptierten Nachbarn übernehmen, damit die Sequenz lückenlos bleibt.
-          const fallbackUrl = lastUrl || lastAccepted || prevUrl;
           await sb.from("spin360_generated_frames").upsert({
             job_id: jobId,
             user_id: userId,
-            frame_index: frameIndex,
+            frame_index: planned.index,
             frame_type: "intermediate",
-            image_url: fallbackUrl,
-            angle_degrees: Math.round(angle),
-            model_used: MODEL_REGEN,
-            validation_status: "failed",
-            validation_notes: "QA nicht bestanden – interpoliert",
-            source_kind: "interpolated",
-            quality_score: lastScore,
+            image_url: storedUrl,
+            angle_degrees: Math.round(planned.angle),
+            model_used: generated.model,
+            validation_status: qaPassed ? "passed" : "failed",
+            validation_notes: lastNotes,
+            source_kind: "generated",
+            quality_score: score,
             attempt_count: attempt,
+            reference_metadata: {
+              references: baseRefs.map((r) => r.label),
+              direction: planned.direction,
+              fraction: planned.fraction,
+              sector,
+              qaModel: SPIN_MODELS.analysis,
+            },
           }, { onConflict: "job_id,frame_index" });
+
+          if (qaPassed) {
+            passedByIndex.set(planned.index, storedUrl);
+            accepted = true;
+          }
+
+          await new Promise((r) => setTimeout(r, 600));
         }
 
-        sectorResults.push({ index: frameIndex, verdict: accepted ? "pass" : "fail", score: lastScore });
+        sectorResults.push({ index: planned.index, verdict: accepted ? "pass" : "needs_review", score: lastScore });
       }
 
-      const qaSummary = { ...(job?.qa_summary as Record<string, any> ?? {}), [`sector_${sector}`]: sectorResults };
-      await updateJob(sb, jobId, { qa_summary: qaSummary });
+      const qaSummary = { ...(jobRow?.qa_summary as Record<string, any> ?? {}), [`sector_${sector}`]: sectorResults };
+      await updateJob(sb, jobId, { qa_summary: qaSummary, status: "validating_frames" });
 
       invokeNextStep(authHeader, { jobId, step: "frames", sector: sector + 1 });
       return json({ success: true, step: "frames", sector, frames: sectorResults });
@@ -819,14 +849,17 @@ serve(async (req) => {
         .eq("job_id", jobId).order("frame_index");
 
       const all = frames || [];
-      const passed = all.filter((f: any) => f.validation_status === "passed");
-      const { data: job } = await sb.from("spin360_jobs")
-        .select("identity_profile, identity_hash, qa_summary").eq("id", jobId).single();
+      const quality = aggregateQuality(all as any, FRAME_COUNT);
 
-      // Credits erst jetzt verbuchen – nach bestandener QA, anteilig zur Ausbeute.
-      const generatedPassed = passed.filter((f: any) => f.source_kind === "generated").length;
+      // Credits erst jetzt – nach bestandener QA, anteilig zur tatsächlichen Ausbeute.
+      const generatedPassed = all.filter(
+        (f: any) => f.validation_status === "passed" && f.source_kind === "generated",
+      ).length;
       if (generatedPassed > 0) {
-        const amount = Math.max(1, Math.round((generatedPassed / (TARGET_FRAME_COUNT - KEYFRAME_ANGLES.length)) * 15));
+        const amount = Math.max(
+          1,
+          Math.round((generatedPassed / Math.max(1, FRAME_COUNT - KEYFRAME_ANGLES.length)) * 15),
+        );
         const { data: deduct } = await sb.rpc("deduct_credits", {
           _user_id: userId,
           _amount: amount,
@@ -839,42 +872,32 @@ serve(async (req) => {
         }
       }
 
-      const qualityScore = all.length
-        ? Math.round(all.reduce((sum: number, f: any) => sum + (f.quality_score ?? 0), 0) / all.length)
-        : 0;
+      let vin: string | null = null;
+      if (jobRow?.vehicle_id) {
+        const { data: vehicle } = await sb.from("vehicles").select("vin").eq("id", jobRow.vehicle_id).single();
+        vin = (vehicle as any)?.vin ?? null;
+      }
 
-      const manifest = {
-        version: 2,
+      const manifest = buildManifest({
         jobId,
-        frameCount: all.length,
-        targetFrameCount: TARGET_FRAME_COUNT,
-        keyframeAngles: KEYFRAME_ANGLES,
-        angleStep: 360 / TARGET_FRAME_COUNT,
-        createdAt: new Date().toISOString(),
-        backgroundStyle: "studio_cyclorama",
-        qualityScore,
-        identityHash: job?.identity_hash,
-        identityProfile: job?.identity_profile,
-        frames: all.map((f: any) => ({
-          index: f.frame_index,
-          angle: f.angle_degrees,
-          url: f.image_url,
-          status: f.validation_status,
-          sourceKind: f.source_kind,
-        })),
-      };
-
-      const incomplete = all.length < TARGET_FRAME_COUNT;
-      const weakSequence = passed.length < TARGET_FRAME_COUNT * 0.8;
+        vehicleId: jobRow?.vehicle_id ?? null,
+        vin,
+        frames: all as any,
+        targetFrameCount: FRAME_COUNT,
+        identityHash: jobRow?.identity_hash ?? null,
+      });
 
       await updateJob(sb, jobId, {
         manifest,
         manifest_version: 2,
-        status: incomplete || weakSequence ? "needs_review" : "completed",
-        error_message: weakSequence ? `Nur ${passed.length}/${TARGET_FRAME_COUNT} Frames haben die QA bestanden.` : null,
+        qa_summary: { ...(jobRow?.qa_summary as Record<string, any> ?? {}), aggregate: quality },
+        status: quality.complete ? "completed" : "needs_review",
+        error_message: quality.complete
+          ? null
+          : `Nur ${quality.passedCount}/${FRAME_COUNT} Frames haben die QA bestanden.`,
       });
 
-      console.log(`[${jobId}] assembled: ${passed.length}/${all.length} passed`);
+      console.log(`[${jobId}] assembled: ${quality.passedCount}/${FRAME_COUNT} passed (score ${quality.qualityScore})`);
       return json({ success: true, step: "assemble", manifest });
     }
 
@@ -883,8 +906,14 @@ serve(async (req) => {
     if (!Array.isArray(sourceImages) || sourceImages.length < 2) {
       throw new Error("Mindestens 2 Quellbilder erforderlich");
     }
-    invokeNextStep(authHeader, { jobId, step: "analyze", sourceImages });
-    return json({ success: true, started: true });
+    invokeNextStep(authHeader, {
+      jobId,
+      step: "analyze",
+      sourceImages,
+      sourceMode: body.sourceMode,
+      frameCount: FRAME_COUNT,
+    });
+    return json({ success: true, started: true, frameCount: FRAME_COUNT, perSector: PER_SECTOR });
   } catch (e) {
     console.error("generate-360-spin error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
