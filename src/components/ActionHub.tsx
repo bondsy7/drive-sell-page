@@ -80,7 +80,15 @@ const TILES: ActionTile[] = [
     badge: 'NEU',
   },
   {
+    id: 'spin360',
+    icon: <RotateCw className="w-7 h-7" />,
+    title: '360° Spin',
+    description: 'Aus 4+ Fahrzeugfotos einen interaktiven 360°-Rundumblick mit 48 Frames erzeugen.',
+    badge: 'BETA',
+  },
+  {
     id: 'damage-repair',
+
     icon: <Wrench className="w-7 h-7" />,
     title: 'Schadensreparatur',
     description: 'Bilder hochladen – KI repariert Dellen, Kratzer, Steinschläge & Co. Optional direkt in den Showroom stellen.',
