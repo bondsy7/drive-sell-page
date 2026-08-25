@@ -4,18 +4,21 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useVehicleAssets, type VehicleAsset } from '@/hooks/useVehicleAssets';
 
+/** Mindestanzahl echter Quellwinkel für den 48-Frame-Produktionslauf. */
+export const MIN_REQUIRED_ANGLES = 4;
+
 /** Sonderslot: bindende Felgenreferenz (kein Turntable-Winkel). */
 export const WHEEL_REFERENCE_ANGLE = -1;
 
 /** Winkelkonvention: 0 = Front, 90 = linke Seite, 180 = Heck, 270 = rechte Seite. */
 export const SPIN_ANGLE_SLOTS: { angle: number; label: string; hint: string; required?: boolean }[] = [
   { angle: 0, label: 'Front', hint: 'Direkte Frontansicht', required: true },
-  { angle: 45, label: '3/4 vorne links', hint: 'Schräg von vorne links' },
-  { angle: 90, label: 'Seite links', hint: 'Komplette linke Seite' },
-  { angle: 135, label: '3/4 hinten links', hint: 'Schräg von hinten links' },
+  { angle: 45, label: '3/4 vorne links', hint: 'Schräg von vorne links (optional, erhöht die Qualität)' },
+  { angle: 90, label: 'Seite links', hint: 'Komplette linke Seite', required: true },
+  { angle: 135, label: '3/4 hinten links', hint: 'Schräg von hinten links (optional, erhöht die Qualität)' },
   { angle: 180, label: 'Heck', hint: 'Direkte Heckansicht', required: true },
-  { angle: 225, label: '3/4 hinten rechts', hint: 'Schräg von hinten rechts' },
-  { angle: 270, label: 'Seite rechts', hint: 'Komplette rechte Seite' },
+  { angle: 225, label: '3/4 hinten rechts', hint: 'Schräg von hinten rechts (optional, erhöht die Qualität)' },
+  { angle: 270, label: 'Seite rechts', hint: 'Komplette rechte Seite', required: true },
   { angle: 315, label: '3/4 vorne rechts', hint: 'Schräg von vorne rechts' },
   { angle: WHEEL_REFERENCE_ANGLE, label: 'Felgenreferenz', hint: 'Nahaufnahme der Felge (bindend)' },
 ];
@@ -57,7 +60,9 @@ const SpinSourcePicker: React.FC<Props> = ({ vehicleId, onConfirm, onSwitchToUpl
 
   const assets: VehicleAsset[] = useMemo(() => {
     if (!bundle) return [];
-    return [...bundle.gallery, ...bundle.spin360, ...bundle.original];
+    // Identitätswahrheit: NUR echte Fotos. Bereits generierte Spin-Frames
+    // dürfen niemals als Quelle zurückgespielt werden (Drift-Verstärkung).
+    return [...bundle.original, ...bundle.gallery];
   }, [bundle]);
 
   const usedUrls = useMemo(
@@ -100,8 +105,10 @@ const SpinSourcePicker: React.FC<Props> = ({ vehicleId, onConfirm, onSwitchToUpl
       <div className="text-center space-y-1">
         <h3 className="font-display font-semibold text-foreground">Vorhandene Fahrzeugbilder verwenden</h3>
         <p className="text-xs text-muted-foreground max-w-lg mx-auto">
-          Ordne den Perspektiven deine bereits vorhandenen Bilder zu. Front und Heck sind Pflicht – je mehr
-          Winkel du belegst, desto identitätstreuer wird der Spin. Fehlende Winkel erzeugt die KI.
+          Ordne den Perspektiven deine bereits vorhandenen Fotos zu. Pflicht sind die vier Kardinalansichten
+          Front (0°), Seite links (90°), Heck (180°) und Seite rechts (270°). Die vier Diagonalen sind optional
+          und erhöhen die Identitätstreue. Es können nur Originale und Galeriebilder gewählt werden –
+          bereits generierte Spin-Frames sind als Quelle ausgeschlossen.
         </p>
       </div>
 
@@ -190,7 +197,7 @@ const SpinSourcePicker: React.FC<Props> = ({ vehicleId, onConfirm, onSwitchToUpl
                     </span>
                   )}
                   <span className="absolute bottom-0 inset-x-0 bg-foreground/60 text-[9px] text-background px-1 py-0.5 truncate">
-                    {asset.kind === 'gallery' ? 'Galerie' : asset.kind === 'original' ? 'Original' : 'Spin'}
+                    {asset.kind === 'original' ? 'Original' : 'Galerie'}
                   </span>
                 </button>
               );
@@ -209,7 +216,7 @@ const SpinSourcePicker: React.FC<Props> = ({ vehicleId, onConfirm, onSwitchToUpl
           <div className="h-full bg-accent transition-all" style={{ width: `${coverage.score}%` }} />
         </div>
         <p className="text-[10px] text-muted-foreground">
-          Je mehr der 8 Winkel belegt sind, desto weniger muss die KI erfinden.
+          Vier Kardinalwinkel sind Pflicht. Je mehr der 8 Winkel belegt sind, desto weniger muss die KI erfinden.
         </p>
       </div>
 
@@ -218,14 +225,16 @@ const SpinSourcePicker: React.FC<Props> = ({ vehicleId, onConfirm, onSwitchToUpl
           <Upload className="w-3.5 h-3.5 mr-1.5" /> Stattdessen neue Fotos hochladen
         </Button>
         <Button
-          disabled={disabled || !hasRequired || chosenCount < 2}
+          disabled={disabled || !hasRequired || chosenCount < MIN_REQUIRED_ANGLES}
           onClick={() => onConfirm(Object.values(selection).sort((a, b) => a.angle - b.angle))}
         >
           {chosenCount} Perspektive{chosenCount === 1 ? '' : 'n'} übernehmen
         </Button>
       </div>
-      {!hasRequired && (
-        <p className="text-center text-[11px] text-muted-foreground">Front (0°) und Heck (180°) sind erforderlich.</p>
+      {(!hasRequired || chosenCount < MIN_REQUIRED_ANGLES) && (
+        <p className="text-center text-[11px] text-muted-foreground">
+          Erforderlich sind die vier Kardinalansichten: Front (0°), Seite links (90°), Heck (180°) und Seite rechts (270°).
+        </p>
       )}
 
     </div>
