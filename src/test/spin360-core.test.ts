@@ -35,6 +35,7 @@ import {
   resolveSourceAngleSelections,
   resolveSourceAngleTruth,
   resolveIdentitySources,
+  shouldRebuildMissingKeyframeRepair,
   type QaResult,
 } from '../../supabase/functions/_shared/spin360-core';
 import * as v2 from '@/lib/spin360-v2';
@@ -824,6 +825,43 @@ describe('spin360 exact source and targeted repair logic', () => {
     expect(prompt).toContain('hard failure: opaque_model_note_without_dimension');
     expect(prompt).toContain('No below-threshold visual dimension was reported');
     expect(prompt).toContain('do not alter wheels, paint, lights');
+  });
+
+  it('rebuilds a missing generated keyframe from real references after broad identity QA failure', () => {
+    const qa = parseQaResult({
+      verdict: 'regenerate',
+      scores: {
+        identity: 74, wheels: 70, lights: 73, paint: 74,
+        angle_continuity: 75, camera_continuity: 72, environment: 91, artifact_free: 88,
+      },
+      confidence: 90,
+      hard_failures: ['changed_light_signature', 'malformed_component'],
+      repair_instructions: [],
+    });
+    expect(shouldRebuildMissingKeyframeRepair(qa, true, false)).toBe(true);
+    expect(shouldRebuildMissingKeyframeRepair(qa, true, true)).toBe(false);
+
+    const prompt = buildRepairPrompt({
+      frameIndex: 0,
+      angle: 0,
+      frameCount: 48,
+      identity: {},
+      referenceLabels: ['VERIFIED NEIGHBOUR at 45°', 'VERIFIED NEIGHBOUR at 270°'],
+      hasDedicatedWheelReference: false,
+      isKeyframe: true,
+      attempt: 2,
+      hardFailures: qa.hard_failures,
+      repairInstructions: deriveRepairInstructionsFromQa(qa),
+      qaResult: qa,
+      hasDirectSource: false,
+      sourceAngles: [45, 90, 225, 270],
+      rebuildFromReferences: true,
+    });
+
+    expect(prompt).toContain('<MISSING_KEYFRAME_SYNTHESIS>');
+    expect(prompt).toContain('<REBUILD_FROM_TRUTH>');
+    expect(prompt).toContain('Discard the rejected vehicle rendering as a bad draft');
+    expect(prompt).toContain('direct FRONT view');
   });
 });
 
