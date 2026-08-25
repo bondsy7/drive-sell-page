@@ -199,6 +199,20 @@ const SpinSourcePicker: React.FC<Props> = ({ vehicleId, onConfirm, onSwitchToUpl
         )}
       </div>
 
+      {/* Abdeckungs-Score */}
+      <div className="rounded-xl border border-border bg-card p-3 space-y-1.5">
+        <div className="flex items-center justify-between text-[11px]">
+          <span className="font-medium text-foreground">Winkelabdeckung</span>
+          <span className={cn('font-semibold', coverage.tone)}>{coverage.score}% · {coverage.label}</span>
+        </div>
+        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+          <div className="h-full bg-accent transition-all" style={{ width: `${coverage.score}%` }} />
+        </div>
+        <p className="text-[10px] text-muted-foreground">
+          Je mehr der 8 Winkel belegt sind, desto weniger muss die KI erfinden.
+        </p>
+      </div>
+
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
         <Button variant="ghost" size="sm" onClick={onSwitchToUpload} disabled={disabled}>
           <Upload className="w-3.5 h-3.5 mr-1.5" /> Stattdessen neue Fotos hochladen
@@ -213,6 +227,7 @@ const SpinSourcePicker: React.FC<Props> = ({ vehicleId, onConfirm, onSwitchToUpl
       {!hasRequired && (
         <p className="text-center text-[11px] text-muted-foreground">Front (0°) und Heck (180°) sind erforderlich.</p>
       )}
+
     </div>
   );
 };
