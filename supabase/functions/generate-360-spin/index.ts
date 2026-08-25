@@ -19,8 +19,12 @@ import {
   MAX_KEYFRAME_ATTEMPTS,
   MAX_NORMALIZE_ATTEMPTS,
   SPIN_MODELS,
+  advanceFrame,
+  advanceKeyframe,
+  advanceValidation,
   aggregateQuality,
   angleForIndex,
+  billingMarker,
   buildIdentityProfilePrompt,
   buildIntermediatePrompt,
   buildKeyframePrompt,
@@ -28,6 +32,8 @@ import {
   buildQaPrompt,
   buildRepairPrompt,
   evaluateSourceCoverage,
+  hasBilled,
+  keyframeModelForAttempt,
   MIN_SOURCE_ANGLES,
   frameIndexForAngle,
   framesPerSector,
@@ -42,10 +48,14 @@ import {
   qaCompositeScore,
   qaFailClosed,
   resolveIdentitySources,
+  sectorBoundaryLabel,
+  shouldSkipUnit,
   wheelReferenceLabel,
+  withBilling,
   type QaResult,
   SOURCE_ANALYSIS_PROMPT,
 } from "../_shared/spin360-core.ts";
+
 
 
 const corsHeaders = {
