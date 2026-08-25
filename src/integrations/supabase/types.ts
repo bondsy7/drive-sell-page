@@ -2140,6 +2140,7 @@ export type Database = {
           model_used: string | null
           quality_score: number | null
           reference_frame_ids: string[] | null
+          reference_metadata: Json | null
           source_kind: string
           user_id: string
           validation_notes: string | null
@@ -2157,6 +2158,7 @@ export type Database = {
           model_used?: string | null
           quality_score?: number | null
           reference_frame_ids?: string[] | null
+          reference_metadata?: Json | null
           source_kind?: string
           user_id: string
           validation_notes?: string | null
@@ -2174,6 +2176,7 @@ export type Database = {
           model_used?: string | null
           quality_score?: number | null
           reference_frame_ids?: string[] | null
+          reference_metadata?: Json | null
           source_kind?: string
           user_id?: string
           validation_notes?: string | null
