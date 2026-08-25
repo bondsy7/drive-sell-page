@@ -11,7 +11,7 @@ import Spin360Progress, { type SpinStep } from './Spin360Progress';
 import Spin360Viewer from './Spin360Viewer';
 import Video2FramesProcessor from './Video2FramesProcessor';
 import SpinSourcePicker, { type SpinSourceSelection } from './SpinSourcePicker';
-import { MIN_SOURCE_ANGLES, evaluateSourceCoverage } from '@/lib/spin360-v2';
+import { MIN_SOURCE_ANGLES, evaluateSourceCoverage, isRenderableSpin, normalizeFrameCount } from '@/lib/spin360-v2';
 import { uploadImageToStorage } from '@/lib/storage-utils';
 import { ensureVehicleAuto } from '@/lib/vehicle-utils';
 
@@ -451,18 +451,41 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
   }, [jobId, spinMode]);
 
   const loadResultFrames = useCallback(async (jId: string) => {
+    // Guard: nur vollständige Jobs (Status completed, alle Frames bestanden,
+    // Indizes lückenlos) dürfen als fertiger Spin angezeigt werden.
+    const { data: job } = await supabase
+      .from('spin360_jobs' as any)
+      .select('status, target_frame_count')
+      .eq('id', jId)
+      .maybeSingle();
+
     const { data } = await supabase
       .from('spin360_generated_frames' as any)
-      .select('image_url, frame_index')
+      .select('image_url, frame_index, validation_status')
       .eq('job_id', jId)
-      .eq('validation_status', 'passed')
       .order('frame_index', { ascending: true });
 
-    if (data && (data as any[]).length > 0) {
-      setResultFrames((data as any[]).map((f: any) => f.image_url));
-      setPhase('result');
+    const rows = (data as any[]) || [];
+    const renderable = isRenderableSpin({
+      status: (job as any)?.status ?? null,
+      targetFrameCount: normalizeFrameCount((job as any)?.target_frame_count),
+      frames: rows.map((f: any) => ({
+        frame_index: Number(f.frame_index),
+        validation_status: f.validation_status,
+      })),
+    });
+
+    if (!renderable) {
+      setJobError((prev) => prev ?? 'Spin unvollständig – Frames haben die Qualitätsprüfung nicht bestanden.');
+      return;
     }
+
+    setResultFrames(
+      rows.filter((f: any) => f.validation_status === 'passed').map((f: any) => f.image_url),
+    );
+    setPhase('result');
   }, []);
+
 
   const handleVideoFramesComplete = useCallback((frameUrls: string[]) => {
     setResultFrames(frameUrls);
