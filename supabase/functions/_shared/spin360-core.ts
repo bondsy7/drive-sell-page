@@ -315,8 +315,9 @@ ${input?.hasDedicatedWheelReference
 Do NOT generate an image. Return strict JSON only.`;
 }
 
-
+export interface KeyframePromptInput {
   angle: number;
+
   identity: unknown;
   referenceLabels: string[];
   hasDedicatedWheelReference: boolean;
