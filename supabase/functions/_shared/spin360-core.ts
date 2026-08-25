@@ -37,10 +37,10 @@ export const SUPPORTED_FRAME_COUNTS: SpinFrameTier[] = [32, 48];
 export const QA_IDENTITY_THRESHOLD = 95;
 /** QA-Schwelle für sekundäre Dimensionen (Umgebung, Artefakte …). */
 export const QA_SECONDARY_THRESHOLD = 80;
-/** Mindest-Confidence der QA, darunter niemals "pass". */
-export const QA_CONFIDENCE_THRESHOLD = 70;
+/** Mindest-Confidence der QA (0–100), darunter niemals "pass". */
+export const QA_CONFIDENCE_THRESHOLD = 90;
 /** Toleranz (Grad) beim Abgleich Frame-Winkel ↔ Winkelraster. */
-export const ANGLE_TOLERANCE_DEG = 0.51;
+export const ANGLE_TOLERANCE_DEG = 0.001;
 /** 1 Erstversuch + 2 Standardreparaturen + 1 Pro-Reparatur. */
 export const MAX_FRAME_ATTEMPTS = 4;
 export const MAX_NORMALIZE_ATTEMPTS = 3;
@@ -133,6 +133,29 @@ export interface PlannedFrame {
  * abwechselnd vom linken und rechten verifizierten Keyframe nach innen,
  * der Mittelpunkt zuletzt (mit beiden Seiten als Anker) → minimale Drift.
  */
+/**
+ * Reine Reihenfolge der Zwischen-Offsets innerhalb eines Sektors:
+ * abwechselnd vom linken und rechten Keyframe nach innen, Mittelpunkt zuletzt.
+ * 32 Frames → [1,3,2], 48 Frames → [1,5,2,4,3].
+ */
+export function buildBidirectionalOffsets(frameCount: number): number[] {
+  const per = framesPerSector(frameCount);
+  const inner: number[] = [];
+  for (let o = 1; o < per; o++) inner.push(o);
+
+  const order: number[] = [];
+  let left = 0;
+  let right = inner.length - 1;
+  let takeLeft = true;
+  while (left <= right) {
+    order.push(takeLeft ? inner[left] : inner[right]);
+    if (takeLeft) left++;
+    else right--;
+    if (left <= right) takeLeft = !takeLeft;
+  }
+  return order;
+}
+
 export function planSector(sector: number, frameCount: number): PlannedFrame[] {
   const per = framesPerSector(frameCount);
   const startIndex = sector * per;
@@ -140,43 +163,33 @@ export function planSector(sector: number, frameCount: number): PlannedFrame[] {
   const sectorStartAngle = angleForIndex(startIndex, frameCount);
   const sectorEndAngle = sectorStartAngle + 45;
 
-  const inner: number[] = [];
-  for (let i = startIndex + 1; i < endIndex; i++) inner.push(i);
-  if (inner.length === 0) return [];
+  const offsets = buildBidirectionalOffsets(frameCount);
+  if (offsets.length === 0) return [];
+  const midpointOffset = offsets.length % 2 === 1 ? offsets[offsets.length - 1] : null;
 
-  const plan: PlannedFrame[] = [];
-  let left = 0;
-  let right = inner.length - 1;
-  let takeLeft = true;
-
-  while (left <= right) {
-    const isLast = left === right;
-    const index = takeLeft ? inner[left] : inner[right];
-    const direction: PlannedFrame["direction"] = isLast && inner.length > 1 && left === right
+  return offsets.map((offset, position) => {
+    const index = startIndex + offset;
+    const isMidpoint = midpointOffset !== null && offset === midpointOffset && offsets.length > 1;
+    // Gerade Positionen kommen vom linken Keyframe, ungerade vom rechten.
+    const direction: PlannedFrame["direction"] = isMidpoint
       ? "midpoint"
-      : takeLeft
+      : position % 2 === 0
         ? "forward"
         : "backward";
 
-    plan.push({
+    return {
       index,
       angle: angleForIndex(index, frameCount),
       sector,
-      fraction: round2((index - startIndex) / per),
+      fraction: round2(offset / per),
       sectorStartAngle,
       sectorEndAngle,
       sectorStartIndex: startIndex,
       sectorEndIndex: endIndex % frameCount,
       direction,
       neighborIndex: direction === "backward" ? index + 1 : index - 1,
-    });
-
-    if (takeLeft) left++;
-    else right--;
-    if (left <= right) takeLeft = !takeLeft;
-  }
-
-  return plan;
+    };
+  });
 }
 
 export function planAllSectors(frameCount: number): PlannedFrame[] {
@@ -592,6 +605,14 @@ export interface QaResult {
   confidence: number;
 }
 
+/** Akzeptiert 0–1 und 0–100 Skalen; alles andere ist 0 (fail closed). */
+export function normalizeConfidence(value: unknown): number {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) return 0;
+  const scaled = n <= 1 ? n * 100 : n;
+  return Math.max(0, Math.min(100, Math.round(scaled)));
+}
+
 export function parseQaResult(raw: unknown): QaResult {
   const r = (raw ?? {}) as Record<string, any>;
   const scores: Partial<Record<QaDimension, number>> = {};
@@ -605,7 +626,7 @@ export function parseQaResult(raw: unknown): QaResult {
     verdict,
     hard_failures: Array.isArray(r.hard_failures) ? r.hard_failures.map(String) : [],
     repair_instructions: Array.isArray(r.repair_instructions) ? r.repair_instructions.map(String) : [],
-    confidence: Number.isFinite(Number(r.confidence)) ? Number(r.confidence) : 0,
+    confidence: normalizeConfidence(r.confidence),
   };
 }
 
