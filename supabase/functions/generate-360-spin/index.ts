@@ -431,8 +431,15 @@ serve(async (req) => {
     const { jobId } = body;
     if (!jobId) throw new Error("Missing jobId");
 
-    const currentStep = body.step || "analyze";
-    console.log(`[${jobId}] step=${currentStep}`);
+    // Legacy-Aliasse auf die neuen, kleinen Einheiten mappen (Resume alter Jobs).
+    const STEP_ALIASES: Record<string, string> = {
+      validate_keyframes: "validate_keyframe",
+      frames: "generate_frame",
+    };
+    const rawStep = body.step || "analyze";
+    const currentStep = STEP_ALIASES[rawStep] ?? rawStep;
+    console.log(`[${jobId}] step=${currentStep} kf=${body.keyframeIndex ?? "-"} sector=${body.sector ?? "-"} pos=${body.planPosition ?? "-"} attempt=${body.attempt ?? "-"}`);
+
 
     const json = (payload: Record<string, any>, status = 200) =>
       new Response(JSON.stringify(payload), {
