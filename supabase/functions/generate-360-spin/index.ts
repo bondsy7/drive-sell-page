@@ -579,7 +579,12 @@ serve(async (req) => {
           image_url: wheelSource.url,
         });
       }
-      await sb.from("spin360_source_selection").insert(rows);
+      const { error: selectionErr } = await sb.from("spin360_source_selection").insert(rows);
+      if (selectionErr) {
+        await failStage(sb, jobId, "analyze", `Quellauswahl konnte nicht gespeichert werden: ${selectionErr.message}`);
+        return json({ error: "persist_failed" });
+      }
+
 
       // Radreferenz: strukturierte Vision-Analyse als verbindliche Felgen-Wahrheit (#7).
       let wheelSpec: unknown = null;
