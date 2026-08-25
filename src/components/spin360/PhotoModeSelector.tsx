@@ -29,7 +29,7 @@ const MODES: { id: PhotoMode; moduleKey: ModuleKey; icon: React.ReactNode; title
     moduleKey: 'photos-spin360',
     icon: <RotateCw className="w-6 h-6" />,
     title: '360° Spin',
-    description: 'Nur 4 Fotos hochladen – KI erstellt einen interaktiven 360°-Rundgang mit bis zu 36 Bildern.',
+    description: 'Nur 4 Fotos hochladen – KI erstellt einen interaktiven 360°-Rundgang mit 48 Bildern.',
   },
 ];
 
