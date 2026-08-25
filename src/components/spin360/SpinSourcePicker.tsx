@@ -132,7 +132,10 @@ const SpinSourcePicker: React.FC<Props> = ({ vehicleId, onConfirm, onSwitchToUpl
                 {slot.label}
                 {slot.required && <span className="text-accent"> *</span>}
               </p>
-              <p className="text-[10px] text-muted-foreground leading-tight">{slot.angle}°</p>
+              <p className="text-[10px] text-muted-foreground leading-tight">
+                {slot.angle >= 0 ? `${slot.angle}°` : 'optional, bindend'}
+              </p>
+
               {chosen && (
                 <span
                   role="button"
