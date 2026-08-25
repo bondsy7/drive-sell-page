@@ -158,8 +158,10 @@ const Spin360Viewer: React.FC<Spin360ViewerProps> = ({
   return (
     <div
       ref={containerRef}
+      tabIndex={0}
+      aria-label="360-Grad-Ansicht, mit Pfeiltasten drehen"
       className={cn(
-        'relative select-none overflow-hidden rounded-xl bg-muted/30 border border-border group',
+        'relative select-none overflow-hidden rounded-xl bg-muted/30 border border-border group outline-none',
         isDragging ? 'cursor-grabbing' : 'cursor-grab',
         isFullscreen && 'bg-background',
         className
