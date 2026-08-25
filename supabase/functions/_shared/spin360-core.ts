@@ -295,7 +295,27 @@ For each supplied image return strict JSON:
 If you cannot reliably distinguish a LEFT from a RIGHT three-quarter view, set "left_right_certain": false
 and lower "angle_confidence" instead of guessing.`;
 
-export interface KeyframePromptInput {
+/**
+ * Prompt für das verbindliche Identitätsprofil. Optionale Kontexthinweise
+ * (z. B. Anzahl Originalfotos) werden angehängt, ohne die Reference-Truth-Regel
+ * aufzuweichen.
+ */
+export function buildIdentityProfilePrompt(input?: {
+  originalPhotoLabels?: string[];
+  hasDedicatedWheelReference?: boolean;
+}): string {
+  const labels = input?.originalPhotoLabels ?? [];
+  return `${IDENTITY_PROFILE_PROMPT}
+
+${REFERENCE_TRUTH_PROTOCOL}
+${labels.length ? referencePriorityBlock(labels) : ""}
+${input?.hasDedicatedWheelReference
+    ? "A dedicated wheel close-up is supplied: describe the wheels from that image only."
+    : "No dedicated wheel close-up is supplied: describe the wheels only as far as they are visible."}
+Do NOT generate an image. Return strict JSON only.`;
+}
+
+
   angle: number;
   identity: unknown;
   referenceLabels: string[];
