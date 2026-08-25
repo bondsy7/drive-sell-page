@@ -259,7 +259,7 @@ const Spin360Upload: React.FC<Spin360UploadProps> = ({ onAllFilled, disabled, sp
         <p className="text-sm text-muted-foreground max-w-md mx-auto">
           {isVideo
             ? 'Lade eine 3/4-Front- und 3/4-Heckansicht hoch. Das Showroom-Bild wird automatisch geladen oder manuell hochgeladen.'
-            : 'Lade je ein Foto von jeder Seite hoch (Front 0°, rechte Seite 90°, Heck 180°, linke Seite 270°). Die KI erstellt daraus einen interaktiven 360°-Spin mit 48 Einzelbildern (7,5°-Raster).'}
+            : 'Lade je ein Foto von jeder Seite hoch (Front 0°, linke Seite 90°, Heck 180°, rechte Seite 270°). Die KI erstellt daraus einen interaktiven 360°-Spin mit 48 Einzelbildern (7,5°-Raster).'}
         </p>
       </div>
 
