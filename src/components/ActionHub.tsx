@@ -1,5 +1,5 @@
 import React from 'react';
-import { Camera, FileText, Layout, Image, Video, Sparkles, Lock, Zap, Wrench, Search, Music } from 'lucide-react';
+import { Camera, FileText, Layout, Image, Video, Sparkles, Lock, Zap, Wrench, Search, Music, RotateCw } from 'lucide-react';
 import { useCredits } from '@/hooks/useCredits';
 import { useModuleAccess } from '@/hooks/useModuleAccess';
 
@@ -12,9 +12,11 @@ export type HubAction =
   | 'canvas-banner-studio' // Deterministischer Canvas-Banner-Editor
   | 'video'           // Video Erstellung
   | 'music-studio'    // Musik mit Lyria 3 generieren
+  | 'spin360'         // 360° Spin (Beta)
   | 'damage-repair'    // Schadensreparatur – KI repariert Schäden auf Fahrzeugbildern
   | 'damage-analysis'  // Schadensanalyse – KI bewertet Schäden + erstellt Bericht
   | 'sales-assistant'; // KI Verkaufsassistent
+
 
 interface ActionTile {
   id: HubAction;
@@ -78,7 +80,15 @@ const TILES: ActionTile[] = [
     badge: 'NEU',
   },
   {
+    id: 'spin360',
+    icon: <RotateCw className="w-7 h-7" />,
+    title: '360° Spin',
+    description: 'Aus 4+ Fahrzeugfotos einen interaktiven 360°-Rundumblick mit 48 Frames erzeugen.',
+    badge: 'BETA',
+  },
+  {
     id: 'damage-repair',
+
     icon: <Wrench className="w-7 h-7" />,
     title: 'Schadensreparatur',
     description: 'Bilder hochladen – KI repariert Dellen, Kratzer, Steinschläge & Co. Optional direkt in den Showroom stellen.',

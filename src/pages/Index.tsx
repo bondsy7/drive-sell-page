@@ -690,7 +690,11 @@ const Index = () => {
       case 'sales-assistant':
         navigate('/sales-assistant');
         break;
+      case 'spin360':
+        setAppState('spin360' as ExtendedAppState);
+        break;
       case 'damage-repair':
+
         setAppState('damage-repair' as ExtendedAppState);
         break;
       case 'damage-analysis':
