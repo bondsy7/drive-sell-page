@@ -19,6 +19,14 @@ export const SPIN_MODELS = {
   imagePro: "gemini-3-pro-image",
 } as const;
 
+/** Analyse, Identitätsprofil und multimodale QA (Stand August 2026). */
+export const ANALYSIS_QA_MODEL = SPIN_MODELS.analysis;
+/** Standard-Bildgenerierung für Zwischenframes. */
+export const STANDARD_IMAGE_MODEL = SPIN_MODELS.image;
+/** Hochwertige Keyframe-Normalisierung und finale Reparatur. */
+export const HIGH_FIDELITY_IMAGE_MODEL = SPIN_MODELS.imagePro;
+
+
 export type SpinFrameTier = 32 | 48;
 
 export const KEYFRAME_ANGLES = [0, 45, 90, 135, 180, 225, 270, 315] as const;
