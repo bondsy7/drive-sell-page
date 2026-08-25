@@ -105,9 +105,7 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
   // Backend-Abrechnung (Image2Spin): Analyse einmalig + 1 Credit je persistiertem
   // Keyframe (8) + anteilige Credits für QA-bestandene Zwischenframes (max. 15).
   // Bewusst als Obergrenze angezeigt, damit die Bestätigung nie zu niedrig ist.
-  const imageCost = (getCost('spin360_analysis', 'standard') || 1) +
-    KEYFRAME_ANGLES.length +
-    (getCost('spin360_generate', 'standard') || 15);
+  const imageCost = (getCost('spin360_analysis', 'standard') || 1) + KEYFRAME_ANGLES.length + 15;
   const videoCost = getCost('spin360_video', 'standard') || 10;
   const totalCost = spinMode === 'video2frames' ? videoCost : imageCost;
 

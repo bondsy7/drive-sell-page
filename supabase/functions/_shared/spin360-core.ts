@@ -811,7 +811,7 @@ const DIMENSION_REPAIR_INSTRUCTIONS: Record<QaDimension, string> = {
 
 export function deriveRepairInstructionsFromQa(result: QaResult): string[] {
   const explicit = result.repair_instructions.map((r) => r.trim()).filter(Boolean);
-  const fromHardFailures = result.hard_failures.map((failure) => {
+  const fromHardFailures = result.hard_failures.map((failure): string | null => {
     const f = failure.toLowerCase();
     if (f.includes("wheel") || f.includes("spoke")) return DIMENSION_REPAIR_INSTRUCTIONS.wheels;
     if (f.includes("light") || f.includes("drl") || f.includes("tail")) return DIMENSION_REPAIR_INSTRUCTIONS.lights;
@@ -821,8 +821,8 @@ export function deriveRepairInstructionsFromQa(result: QaResult): string[] {
     if (f.includes("environment") || f.includes("background") || f.includes("shadow")) return DIMENSION_REPAIR_INSTRUCTIONS.environment;
     if (f.includes("malformed") || f.includes("text") || f.includes("watermark") || f.includes("artifact")) return DIMENSION_REPAIR_INSTRUCTIONS.artifact_free;
     if (f.includes("body") || f.includes("door") || f.includes("equipment")) return DIMENSION_REPAIR_INSTRUCTIONS.identity;
-    return "repair only this QA hard failure without changing unrelated vehicle identity details: " + failure;
-  });
+    return null;
+  }).filter((instruction): instruction is string => Boolean(instruction));
   const fromScores = qaThresholdBreaches(result)
     .filter((b) => b.dimension !== "confidence")
     .map((b) => DIMENSION_REPAIR_INSTRUCTIONS[b.dimension as QaDimension]);
