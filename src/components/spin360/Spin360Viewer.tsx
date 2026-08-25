@@ -153,6 +153,8 @@ const Spin360Viewer: React.FC<Spin360ViewerProps> = ({
     return () => document.removeEventListener('fullscreenchange', handler);
   }, []);
 
+  if (totalFrames === 0) return null;
+
   return (
     <div
       ref={containerRef}
