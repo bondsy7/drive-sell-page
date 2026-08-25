@@ -462,6 +462,66 @@ Return exactly:
 Be strict: when in doubt, do not pass.`;
 }
 
+export interface RepairPromptInput {
+  frameIndex: number;
+  angle: number;
+  frameCount: number;
+  identity: unknown;
+  referenceLabels: string[];
+  hasDedicatedWheelReference: boolean;
+  isKeyframe: boolean;
+  attempt: number;
+  hardFailures: string[];
+  repairInstructions: string[];
+}
+
+/**
+ * Reparatur-Prompt nach einem QA-Fail: erzeugt den Frame neu, aber ändert
+ * ausschließlich die beanstandeten Details. Enthält alle Pflicht-Lock-Blöcke.
+ */
+export function buildRepairPrompt(input: RepairPromptInput): string {
+  const {
+    frameIndex, angle, frameCount, identity, referenceLabels,
+    hasDedicatedWheelReference, isKeyframe, attempt, hardFailures, repairInstructions,
+  } = input;
+
+  const fixes = repairInstructions.length
+    ? repairInstructions
+    : hardFailures.length
+      ? hardFailures
+      : ["rim design and spoke count", "paint tone", "light signatures", "body proportions"];
+
+  return `You are repairing frame ${frameIndex} (${angle}°) of a ${frameCount}-frame studio turntable sequence
+of ONE specific physical vehicle. This is repair attempt ${attempt}.
+
+<TASK>
+Re-render the ${isKeyframe ? "keyframe" : "intermediate frame"} at exactly ${angle} degrees.
+${ANGLE_CONVENTION}
+Automated quality control REJECTED the previous attempt. Keep angle, camera, framing, background and
+lighting byte-for-byte comparable and repair ONLY the listed defects.
+Return exactly ONE image and no text.
+</TASK>
+
+<REJECTED_FINDINGS>
+${hardFailures.length ? hardFailures.map((f) => `- hard failure: ${f}`).join("\n") : "- (no hard failure reported)"}
+</REJECTED_FINDINGS>
+
+<MUST_FIX>
+${fixes.map((r) => `- ${r}`).join("\n")}
+</MUST_FIX>
+
+${referencePriorityBlock(referenceLabels)}
+${REFERENCE_TRUTH_PROTOCOL}
+${identityLockBlock(identity)}
+${CAMERA_LOCK}
+${ROTATION_LOCK}
+${SCENE_LOCK}
+${wheelLockBlock(hasDedicatedWheelReference)}
+${FORBIDDEN_BLOCK}`;
+}
+
+
+
 // ─── QA-Auswertung ─────────────────────────────────────────────────────
 
 export interface QaResult {
