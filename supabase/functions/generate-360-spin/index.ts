@@ -30,11 +30,14 @@ import {
   buildKeyframePrompt,
   buildManifest,
   buildQaPrompt,
+  buildQaTelemetry,
   buildRepairPrompt,
+  deriveRepairInstructionsFromQa,
+  directSourceLabel,
   evaluateSourceCoverage,
+  getDirectSourceForKeyframe,
   hasBilled,
   keyframeModelForAttempt,
-  MIN_SOURCE_ANGLES,
   frameIndexForAngle,
   framesPerSector,
   isQaPassed,
@@ -47,9 +50,12 @@ import {
   planSector,
   qaCompositeScore,
   qaFailClosed,
+  qaScoreBreakdown,
   resolveIdentitySources,
+  resolveSourceAngleSelections,
   sectorBoundaryLabel,
   shouldSkipUnit,
+  sourceCoverageFailureReason,
   wheelReferenceLabel,
   withBilling,
   type QaResult,
@@ -391,36 +397,45 @@ interface QaContext {
   isKeyframe: boolean;
   candidateUrl: string;
   references: LabeledRef[];
+  hasDirectSource?: boolean;
+  sourceAngles?: number[];
+  keyframeMode?: "direct_source" | "generated_from_neighbours" | "intermediate";
 }
 
 /**
  * QA — FAIL CLOSED: Schlägt der Request oder das Parsing fehl, ist das
  * Ergebnis niemals "pass", sondern regenerate/manual_review mit Score 0.
  */
-async function runQa(ctx: QaContext): Promise<{ result: QaResult; score: number; passed: boolean }> {
+async function runQa(ctx: QaContext): Promise<{ result: QaResult; raw: unknown; telemetry: Record<string, unknown>; score: number; passed: boolean }> {
   const prompt = buildQaPrompt({
     angle: ctx.angle,
     frameIndex: ctx.frameIndex,
     frameCount: ctx.frameCount,
     isKeyframe: ctx.isKeyframe,
     referenceLabels: ctx.references.map((r) => r.label),
+    hasDirectSource: ctx.hasDirectSource,
+    sourceAngles: ctx.sourceAngles,
+    keyframeMode: ctx.keyframeMode,
   });
   let result: QaResult;
+  let raw: unknown = null;
   try {
     // Kandidat immer als LETZTES Bild (siehe Prompt).
-    const raw = await callGeminiJson(prompt, [...ctx.references.map((r) => r.url), ctx.candidateUrl]);
+    raw = await callGeminiJson(prompt, [...ctx.references.map((r) => r.url), ctx.candidateUrl]);
     result = parseQaResult(raw);
   } catch (e) {
     console.warn(`[spin] QA unavailable for frame ${ctx.frameIndex}: ${(e as Error).message}`);
     result = qaFailClosed((e as Error).message);
   }
   const passed = isQaPassed(result);
-  return { result, score: passed ? qaCompositeScore(result) : Math.min(qaCompositeScore(result), 94), passed };
+  const telemetry = buildQaTelemetry(result, raw, passed);
+  return { result, raw, telemetry, score: qaCompositeScore(result), passed };
 }
 
 function qaNotes(result: QaResult): string | null {
-  const notes = [...result.hard_failures, ...result.repair_instructions].join("; ");
-  return notes || null;
+  const findings = [...result.hard_failures, ...result.repair_instructions].join("; ");
+  const breakdown = qaScoreBreakdown(result);
+  return findings ? `${findings}; ${breakdown}` : breakdown;
 }
 
 
@@ -511,17 +526,18 @@ serve(async (req) => {
       const { sourceImages } = body;
       if (!Array.isArray(sourceImages)) throw new Error("Quellbilder fehlen");
 
-      // Produktionslauf: die vier Kardinalwinkel müssen als echtes Foto vorliegen (#H).
+      // Produktionslauf: 4+ echte, rund ums Fahrzeug verteilte Winkel reichen.
       const declaredCoverage = evaluateSourceCoverage(
         sourceImages.filter((s: any) => Number(s.angle) >= 0).map((s: any) => s.angle),
       );
       if (!declaredCoverage.ok) {
+        const reason = sourceCoverageFailureReason(declaredCoverage);
         await markJobFailed(
           sb, jobId,
-          `Zu wenig Quellmaterial: mindestens ${MIN_SOURCE_ANGLES} echte Perspektiven (0°, 90°, 180°, 270°) erforderlich. Fehlend: ${declaredCoverage.missingRequired.join("°, ")}°`,
+          `Zu wenig Quellmaterial: ${reason}`,
           "needs_review",
         );
-        return json({ error: "insufficient_source_coverage", missing: declaredCoverage.missingRequired });
+        return json({ error: "insufficient_source_coverage", coverage: declaredCoverage });
       }
 
       await updateJob(sb, jobId, { status: "analyzing", error_message: null, source_mode: body.sourceMode || "upload" });
@@ -549,37 +565,40 @@ serve(async (req) => {
         console.warn(`[${jobId}] analysis failed, using declared angles:`, (e as Error).message);
       }
 
-      // Vom Nutzer bestätigter Winkel gewinnt; die Analyse ist nur Plausibilisierung.
-      const selection: Record<number, any> = {};
-      angleSources.forEach((src: any, i: number) => {
-        const detected = analysis?.images?.find((im: any) => Number(im.index) === i);
-        const declared = Number(src.angle);
-        const angle = (KEYFRAME_ANGLES as readonly number[]).includes(declared)
-          ? declared
-          : (KEYFRAME_ANGLES as readonly number[]).includes(Number(detected?.detected_angle)) &&
-              detected?.left_right_certain !== false
-            ? Number(detected.detected_angle)
-            : null;
-        if (angle === null || selection[angle]) return;
-        selection[angle] = { ...src, angle, analysis: detected ?? null };
-      });
+      // Upload-Slotwinkel sind Hinweise; sichere Analyse-Winkel sind die Wahrheit.
+      // Manuell gemappte Assets werden respektiert, außer eine sichere Analyse widerspricht >=45°.
+      const resolvedSources = resolveSourceAngleSelections(angleSources, analysis?.images, body.sourceMode || "upload");
 
       if (analysis?.images) {
         for (const img of analysis.images) {
-          await sb.from("spin360_source_images").update({ analysis: img })
+          const diagnostic = resolvedSources.diagnostics.find((d) => d.sourceIndex === Number(img.index));
+          await sb.from("spin360_source_images").update({ analysis: { ...img, angleDecision: diagnostic?.decision, selected: diagnostic?.selected, discardedBecause: diagnostic?.discardedBecause } })
             .eq("job_id", jobId).eq("sort_order", img.index);
         }
       }
 
-      const chosen = Object.values(selection);
+      const chosen = resolvedSources.selected.map((entry) => ({
+        ...entry.source,
+        angle: entry.angle,
+        analysis: entry.analysis,
+        angleDecision: entry.decision,
+      }));
       const coverage = evaluateSourceCoverage(chosen.map((c: any) => c.angle));
       if (!coverage.ok) {
+        const reason = sourceCoverageFailureReason(coverage);
         await markJobFailed(
           sb, jobId,
-          `Zu wenige verwertbare Perspektiven erkannt (fehlend: ${coverage.missingRequired.join("°, ")}°)`,
+          `Zu wenige verwertbare Perspektiven erkannt: ${reason}`,
           "needs_review",
         );
-        return json({ error: "not_enough_perspectives", missing: coverage.missingRequired });
+        await updateJobRaw(sb, jobId, {
+          qa_summary: await mergeQaSummary(sb, jobId, {
+            sourceAngleDiagnostics: resolvedSources.diagnostics,
+            sourceAngleDuplicates: resolvedSources.duplicates,
+            sourceCoverage: coverage,
+          }),
+        });
+        return json({ error: "not_enough_perspectives", coverage });
       }
 
       const { error: clearErr } = await sb.from("spin360_source_selection").delete().eq("job_id", jobId);
@@ -633,6 +652,10 @@ serve(async (req) => {
         qa_summary: await mergeQaSummary(sb, jobId, {
           wheelReference: wheelSpec,
           hasDedicatedWheelReference: !!wheelSource,
+          sourceAngleDiagnostics: resolvedSources.diagnostics,
+          sourceAngleDuplicates: resolvedSources.duplicates,
+          sourceCoverage: coverage,
+          selectedSourceAngles: coverage.uniqueAngles,
         }),
       });
 
@@ -665,33 +688,31 @@ serve(async (req) => {
         return json({ error: "db_read_failed" });
       }
 
-      const own = all.find((s: any) => Number(s.angle_degrees) === angle);
+      const own = getDirectSourceForKeyframe(all, angle);
       const already = existingCanonical?.normalization_status === "normalized" && existingCanonical?.image_url;
 
       if (!already) {
-        // Referenzen nach Priorität: eigenes Foto → weitere Originale → nächstliegende Quellen → Radreferenz
+        // Referenzen nach Priorität: gleichwinkliges Foto → nächstliegende echte Winkel → Identitätsfotos → Radreferenz.
         const references: LabeledRef[] = [];
-        if (own) references.push({ url: own.image_url, label: originalIdentityLabel(1, angle) });
+        const usedUrls = new Set<string>();
+        const pushRef = (url: string | undefined | null, label: string) => {
+          if (!url || usedUrls.has(url)) return;
+          usedUrls.add(url);
+          references.push({ url, label });
+        };
 
-        const usedUrls = new Set(references.map((r) => r.url));
-        for (const src of identitySources) {
-          if (references.length >= 3) break;
-          if (usedUrls.has(src.image_url)) continue;
-          usedUrls.add(src.image_url);
-          references.push({
-            url: src.image_url,
-            label: originalIdentityLabel(references.length + (own ? 0 : 1), Number(src.angle_degrees)),
-          });
-        }
+        if (own) pushRef(own.image_url, directSourceLabel(angle));
 
         const distance = (a: number) => Math.min(Math.abs(a - angle), 360 - Math.abs(a - angle));
         const neighbours = all
-          .filter((s: any) => Number(s.angle_degrees) !== angle && !usedUrls.has(s.image_url))
+          .filter((s: any) => Number(s.angle_degrees) !== angle)
           .sort((a: any, b: any) => distance(Number(a.angle_degrees)) - distance(Number(b.angle_degrees)))
           .slice(0, 2);
-        for (const n of neighbours) {
-          usedUrls.add(n.image_url);
-          references.push({ url: n.image_url, label: neighbourReferenceLabel(Number(n.angle_degrees)) });
+        for (const n of neighbours) pushRef(n.image_url, neighbourReferenceLabel(Number(n.angle_degrees)));
+
+        for (const src of identitySources) {
+          if (references.length >= 3) break;
+          pushRef(src.image_url, originalIdentityLabel(references.length + 1, Number(src.angle_degrees)));
         }
         if (wheelRef) references.push({ url: wheelRef, label: wheelReferenceLabel() });
 
@@ -710,6 +731,7 @@ serve(async (req) => {
             hasDedicatedWheelReference: !!wheelRef,
             wheelSpec,
             hasDirectPhoto: !!own,
+            sourceAngles: all.map((s: any) => Number(s.angle_degrees)),
             strictRetry: attempt > 1,
           });
           try {
@@ -821,7 +843,8 @@ serve(async (req) => {
         return json({ success: true, step: "validate_keyframe", angle, skipped: true });
       }
 
-      const own = all.find((s: any) => Number(s.angle_degrees) === angle);
+      const own = getDirectSourceForKeyframe(all, angle);
+      const sourceAngles = all.map((s: any) => Number(s.angle_degrees)).filter((a: number) => Number.isFinite(a));
 
       /**
        * QA-Referenzen: bis zu 4 unveränderliche Identitätsfotos rund ums
@@ -836,15 +859,20 @@ serve(async (req) => {
         references.push({ url, label });
       };
 
-      if (own) pushRef(own.image_url, originalIdentityLabel(1, angle));
-      for (const src of identityRefsFrom(identitySources, 4)) pushRef(src.url, src.label);
-
       const qaDistance = (a: number) => Math.min(Math.abs(a - angle), 360 - Math.abs(a - angle));
       const nearestReal = all
         .filter((s: any) => Number(s.angle_degrees) !== angle)
         .sort((a: any, b: any) => qaDistance(Number(a.angle_degrees)) - qaDistance(Number(b.angle_degrees)))
         .slice(0, 2);
-      for (const n of nearestReal) pushRef(n.image_url, neighbourReferenceLabel(Number(n.angle_degrees)));
+
+      if (own) {
+        pushRef(own.image_url, directSourceLabel(angle));
+        for (const src of identityRefsFrom(identitySources, 4)) pushRef(src.url, src.label);
+        for (const n of nearestReal) pushRef(n.image_url, neighbourReferenceLabel(Number(n.angle_degrees)));
+      } else {
+        for (const n of nearestReal) pushRef(n.image_url, neighbourReferenceLabel(Number(n.angle_degrees)));
+        for (const src of identityRefsFrom(identitySources, 4)) pushRef(src.url, src.label);
+      }
 
       if (wheelRef) pushRef(wheelRef, wheelReferenceLabel());
 
@@ -852,7 +880,11 @@ serve(async (req) => {
       const qa = await runQa({
         frameIndex, angle, frameCount: FRAME_COUNT, isKeyframe: true,
         candidateUrl, references,
+        hasDirectSource: !!own,
+        sourceAngles,
+        keyframeMode: own ? "direct_source" : "generated_from_neighbours",
       });
+      const targetedRepairInstructions = deriveRepairInstructionsFromQa(qa.result);
       const notes = qaNotes(qa.result);
       const terminalAttempt = attempt >= MAX_KEYFRAME_ATTEMPTS;
 
@@ -880,8 +912,12 @@ serve(async (req) => {
           qaModel: SPIN_MODELS.analysis,
           hasDedicatedWheelReference: !!wheelRef,
           isKeyframe: true,
+          hasDirectSource: !!own,
+          sourceAngles,
+          keyframeMode: own ? "direct_source" : "generated_from_neighbours",
           hardFailures: qa.result.hard_failures,
-          repairInstructions: qa.result.repair_instructions,
+          repairInstructions: targetedRepairInstructions,
+          qaTelemetry: qa.telemetry,
         },
       }, { onConflict: "job_id,frame_index" });
 
@@ -916,7 +952,8 @@ serve(async (req) => {
         isKeyframe: true,
         attempt: attempt + 1,
         hardFailures: qa.result.hard_failures,
-        repairInstructions: qa.result.repair_instructions,
+        repairInstructions: targetedRepairInstructions,
+        qaResult: qa.result,
       });
       try {
         const repaired = await callImageGeneration(repairPrompt, references, modelForAttempt(attempt + 1));
@@ -1092,9 +1129,18 @@ serve(async (req) => {
       let repairInstructions: string[] = Array.isArray(prevMeta?.repairInstructions)
         ? prevMeta.repairInstructions
         : [];
+      const previousQaResult = prevMeta?.qaTelemetry && typeof prevMeta.qaTelemetry === "object"
+        ? {
+          scores: prevMeta.qaTelemetry.sanitizedScores ?? {},
+          verdict: prevMeta.qaTelemetry.verdict ?? "regenerate",
+          hard_failures: hardFailures,
+          repair_instructions: repairInstructions,
+          confidence: prevMeta.qaTelemetry.confidence ?? 0,
+        } as QaResult
+        : undefined;
 
       const model = modelForAttempt(attempt);
-      const prompt = attempt > 1 && (hardFailures.length > 0 || repairInstructions.length > 0)
+      const prompt = attempt > 1
         ? buildRepairPrompt({
           angle: planned.angle,
           frameIndex: planned.index,
@@ -1107,6 +1153,7 @@ serve(async (req) => {
           attempt,
           hardFailures,
           repairInstructions,
+          qaResult: previousQaResult,
         })
         : buildIntermediatePrompt({
           frame: planned,
@@ -1128,6 +1175,11 @@ serve(async (req) => {
       }
 
       if (!generated) {
+        await recordReview(
+          sb, jobId, userId, planned.index, attempt,
+          "generation_failed", 0, `Bildgenerierung fehlgeschlagen mit ${model}`,
+          model,
+        );
         const adv = advanceFrame(sector, planPosition, attempt, false, FRAME_COUNT);
         if (adv.kind === "next") invokeNextStep(authHeader, { jobId, ...adv.cursor });
         else await failStage(sb, jobId, "generate_frame", adv.reason);
@@ -1148,8 +1200,10 @@ serve(async (req) => {
         isKeyframe: false,
         candidateUrl: storedUrl,
         references: baseRefs,
+        sourceAngles: [planned.sectorStartAngle, planned.sectorEndAngle],
+        keyframeMode: "intermediate",
       });
-      repairInstructions = qa.result.repair_instructions;
+      repairInstructions = deriveRepairInstructionsFromQa(qa.result);
       const notes = qaNotes(qa.result);
 
       await recordReview(
@@ -1184,6 +1238,7 @@ serve(async (req) => {
           hardFailures: qa.result.hard_failures,
           repairInstructions,
           qaModel: SPIN_MODELS.analysis,
+          qaTelemetry: qa.telemetry,
         },
       }, { onConflict: "job_id,frame_index" });
 
@@ -1271,12 +1326,13 @@ serve(async (req) => {
       sourceImages.filter((s: any) => Number(s.angle) >= 0).map((s: any) => s.angle),
     );
     if (!startCoverage.ok) {
+      const reason = sourceCoverageFailureReason(startCoverage);
       await markJobFailed(
         sb, jobId,
-        `Mindestens ${MIN_SOURCE_ANGLES} echte Perspektiven (0°, 90°, 180°, 270°) erforderlich. Fehlend: ${startCoverage.missingRequired.join("°, ")}°`,
+        `Zu wenig Quellmaterial: ${reason}`,
         "needs_review",
       );
-      return json({ error: "insufficient_source_coverage", missing: startCoverage.missingRequired }, 400);
+      return json({ error: "insufficient_source_coverage", coverage: startCoverage }, 400);
     }
     invokeNextStep(authHeader, {
       jobId,

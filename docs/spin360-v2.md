@@ -50,12 +50,18 @@ Alias erhalten.
 Der `SpinSourcePicker` bietet ausschließlich Originale und Galeriebilder an; die Radreferenz
 folgt derselben Regel.
 
-## Mindestabdeckung
+## Winkelwahrheit und Mindestabdeckung
 
-Pflicht sind die vier Kardinalwinkel **0°, 90°, 180°, 270°** (`REQUIRED_SOURCE_ANGLES`,
-`MIN_SOURCE_ANGLES = 4`). Die vier Diagonalen (45/135/225/315) sind optional und erhöhen die
-Qualität. Client und Edge Function prüfen identisch über `evaluateSourceCoverage`; bei
-Unterdeckung startet kein Job.
+Upload-Slotwinkel sind nur Hinweise. Die Analyse (`SOURCE_ANALYSIS_PROMPT`) bestimmt für jedes
+Quellbild den echten 45°-Rasterwinkel; bei hoher Confidence (`SOURCE_ANGLE_CONFIDENCE_THRESHOLD = 85`)
+überschreibt der erkannte Winkel den deklarierten Slot. Damit wird z. B. ein als `0°` hochgeladenes,
+aber sicher als `45°` erkanntes Bild intern als `45°` verarbeitet.
+
+Produktionsfähig sind mindestens **4 eindeutige echte Quellwinkel** im 45°-Raster
+(`MIN_SOURCE_ANGLES = 4`) mit verteilter Abdeckung rund ums Fahrzeug: größte Kreis-Lücke
+≤ **135°** (`MAX_SOURCE_CIRCULAR_GAP_DEG`). Kardinalwinkel **0°, 90°, 180°, 270°** bleiben empfohlen,
+sind aber nicht mehr harte Pflicht. Client und Edge Function prüfen identisch über
+`evaluateSourceCoverage`; bei Unterdeckung startet kein Job.
 
 ## Modelle
 
@@ -73,9 +79,9 @@ Ein Frame besteht nur bei **allen** Bedingungen:
 
 - `verdict === 'pass'`
 - keine `hard_failures`
-- alle 8 Dimensionen vorhanden und **≥ 95** (identity, wheels, lights, paint,
-  angle_continuity, camera_continuity, environment, artifact_free)
-- `confidence ≥ 90` (0–1-Werte werden auf 0–100 normalisiert)
+- identitätskritische Dimensionen **identity, wheels, lights, paint ≥ 90**
+- sekundäre Dimensionen **angle_continuity, camera_continuity, environment, artifact_free ≥ 85**
+- `confidence ≥ 85` (0–1-Werte werden auf 0–100 normalisiert)
 
 Fehlende Werte, Parse-Fehler oder API-Ausfälle ⇒ `regenerate` / `manual_review`, nie `pass`.
 
@@ -83,8 +89,9 @@ Fehlende Werte, Parse-Fehler oder API-Ausfälle ⇒ `regenerate` / `manual_revie
 
 Keyframes und Zwischenframes: 1 Erstversuch + 2 Standard-Reparaturen + 1 Reparatur mit dem
 High-Fidelity-Modell. Der Reparatur-Prompt (`buildRepairPrompt`) enthält die exakten
-`hard_failures` **und** `repair_instructions` der QA sowie die Anweisung, alles Übrige
-(Winkel, Kamera, Karosseriegeometrie, Framing, Szene, Licht) unverändert zu lassen.
+`hard_failures`, `repair_instructions` und aus den unterschrittenen QA-Dimensionen abgeleitete,
+zielgerichtete Reparaturanweisungen sowie die Anweisung, alles Übrige (Winkel, Kamera,
+Karosseriegeometrie, Framing, Szene, Licht) unverändert zu lassen.
 **Kein** Nachbar-Duplikat, **keine** Interpolation als Füller: bleibt ein Pflicht-Frame nach der
 letzten Reparatur durchgefallen, endet der Job in `needs_review`.
 
