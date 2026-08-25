@@ -204,7 +204,7 @@ describe('spin360 manifest', () => {
     });
     expect(manifest.type).toBe('auto3-spin');
     expect(manifest.version).toBe(2);
-    expect(manifest.direction).toBe('cw');
+    expect(manifest.direction).toBe('clockwise');
     expect(manifest.startAngle).toBe(0);
     expect(manifest.angleStep).toBe(7.5);
     expect(manifest.identityHash).toBe('abc123');

@@ -16,25 +16,35 @@ import { getSecret } from "../_shared/get-secret.ts";
 import {
   KEYFRAME_ANGLES,
   MAX_FRAME_ATTEMPTS,
+  MAX_KEYFRAME_ATTEMPTS,
   MAX_NORMALIZE_ATTEMPTS,
   SPIN_MODELS,
   aggregateQuality,
   angleForIndex,
+  buildIdentityProfilePrompt,
   buildIntermediatePrompt,
   buildKeyframePrompt,
   buildManifest,
   buildQaPrompt,
+  buildRepairPrompt,
   frameIndexForAngle,
   framesPerSector,
   isQaPassed,
+  keyframeReferenceLabel,
   modelForAttempt,
+  neighbourReferenceLabel,
   normalizeFrameCount,
+  originalIdentityLabel,
   parseQaResult,
   planSector,
   qaCompositeScore,
-  IDENTITY_PROFILE_PROMPT,
+  qaFailClosed,
+  resolveIdentitySources,
+  wheelReferenceLabel,
+  type QaResult,
   SOURCE_ANALYSIS_PROMPT,
 } from "../_shared/spin360-core.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -44,6 +54,15 @@ const corsHeaders = {
 
 const BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
 const WHEEL_REFERENCE_ANGLE = -1; // Sonder-Slot in spin360_source_selection
+
+/** Vision-Analyse der Radreferenz — nichts raten, Unsicheres bleibt null. */
+const WHEEL_SPEC_PROMPT = `Analyse ONLY the supplied wheel/rim photograph of this vehicle.
+Never guess, never use catalogue knowledge. Unclear attributes must be null.
+Return strict JSON only:
+{ "spokeCount": number|null, "spokeStyle": string|null, "finish": string|null,
+  "secondaryColour": string|null, "concavity": string|null, "centreCap": string|null,
+  "brakeCaliperColour": string|null, "tyreSidewall": string|null,
+  "description": string|null, "confidence": "high"|"medium"|"low" }`;
 
 function createServiceClient() {
   return createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -286,7 +305,11 @@ interface QaContext {
   references: LabeledRef[];
 }
 
-async function runQa(ctx: QaContext) {
+/**
+ * QA — FAIL CLOSED: Schlägt der Request oder das Parsing fehl, ist das
+ * Ergebnis niemals "pass", sondern regenerate/manual_review mit Score 0.
+ */
+async function runQa(ctx: QaContext): Promise<{ result: QaResult; score: number; passed: boolean }> {
   const prompt = buildQaPrompt({
     angle: ctx.angle,
     frameIndex: ctx.frameIndex,
@@ -294,11 +317,24 @@ async function runQa(ctx: QaContext) {
     isKeyframe: ctx.isKeyframe,
     referenceLabels: ctx.references.map((r) => r.label),
   });
-  // Kandidat immer als LETZTES Bild (siehe Prompt).
-  const raw = await callGeminiJson(prompt, [...ctx.references.map((r) => r.url), ctx.candidateUrl]);
-  const result = parseQaResult(raw);
-  return { result, score: qaCompositeScore(result), passed: isQaPassed(result) };
+  let result: QaResult;
+  try {
+    // Kandidat immer als LETZTES Bild (siehe Prompt).
+    const raw = await callGeminiJson(prompt, [...ctx.references.map((r) => r.url), ctx.candidateUrl]);
+    result = parseQaResult(raw);
+  } catch (e) {
+    console.warn(`[spin] QA unavailable for frame ${ctx.frameIndex}: ${(e as Error).message}`);
+    result = qaFailClosed((e as Error).message);
+  }
+  const passed = isQaPassed(result);
+  return { result, score: passed ? qaCompositeScore(result) : Math.min(qaCompositeScore(result), 94), passed };
 }
+
+function qaNotes(result: QaResult): string | null {
+  const notes = [...result.hard_failures, ...result.repair_instructions].join("; ");
+  return notes || null;
+}
+
 
 async function recordReview(
   sb: any, jobId: string, userId: string, frameIndex: number, attempt: number,
@@ -347,21 +383,33 @@ serve(async (req) => {
     const FRAME_COUNT = normalizeFrameCount(jobRow?.target_frame_count ?? body.frameCount);
     const PER_SECTOR = framesPerSector(FRAME_COUNT);
 
-    /** Quellenauswahl inkl. Radreferenz laden. */
+    /**
+     * Quellenauswahl inkl. Radreferenz laden.
+     * `identitySources` sind AUSSCHLIESSLICH echte Fotos (original > upload > gallery);
+     * generierte/normalisierte Keyframes sind nie Identitätswahrheit.
+     */
     const loadSelection = async () => {
       const { data } = await sb.from("spin360_source_selection")
-        .select("angle_degrees, image_url, asset_kind").eq("job_id", jobId);
+        .select("angle_degrees, image_url, asset_kind, asset_id, storage_path").eq("job_id", jobId);
       const rows = data || [];
+      const wheelRow = rows.find((r: any) => Number(r.angle_degrees) === WHEEL_REFERENCE_ANGLE);
+      const identity = resolveIdentitySources(rows as any);
       return {
-        wheelRef: rows.find((r: any) => Number(r.angle_degrees) === WHEEL_REFERENCE_ANGLE)?.image_url as
-          | string
-          | undefined,
-        originals: rows.filter(
-          (r: any) => Number(r.angle_degrees) >= 0 && (r.asset_kind === "original" || r.asset_kind === "upload"),
-        ),
+        wheelRef: wheelRow?.image_url as string | undefined,
+        wheelRow,
+        identityTier: identity.tier,
+        identitySources: identity.sources as any[],
         all: rows.filter((r: any) => Number(r.angle_degrees) >= 0),
       };
     };
+
+    /** Gelabelte Identitätsreferenzen (ORIGINAL IDENTITY #n) für Generierung und QA. */
+    const identityRefsFrom = (sources: any[], limit = 3): LabeledRef[] =>
+      sources.slice(0, limit).map((s, i) => ({
+        url: s.image_url,
+        label: originalIdentityLabel(i + 1, Number(s.angle_degrees)),
+      }));
+
 
     // ─────────── ANALYZE ───────────
     if (currentStep === "analyze") {
@@ -447,14 +495,30 @@ serve(async (req) => {
       }
       await sb.from("spin360_source_selection").insert(rows);
 
+      // Radreferenz: strukturierte Vision-Analyse als verbindliche Felgen-Wahrheit (#7).
+      let wheelSpec: unknown = null;
+      if (wheelSource) {
+        try {
+          wheelSpec = await callGeminiJson(WHEEL_SPEC_PROMPT, [wheelSource.url]);
+        } catch (e) {
+          console.warn(`[${jobId}] wheel reference analysis failed:`, (e as Error).message);
+        }
+      }
+
       await updateJob(sb, jobId, {
         status: "selecting_sources",
         keyframe_count: KEYFRAME_ANGLES.length,
         target_frame_count: FRAME_COUNT,
         manifest_version: 2,
+        qa_summary: {
+          ...(jobRow?.qa_summary as Record<string, any> ?? {}),
+          wheelReference: wheelSpec,
+          hasDedicatedWheelReference: !!wheelSource,
+        },
       });
 
-      invokeNextStep(authHeader, { jobId, step: "keyframes", keyframeIndex: 0 });
+      // Identitätsprofil ZUERST — es ist Prompt-Anker für alle Keyframes.
+      invokeNextStep(authHeader, { jobId, step: "profile" });
       return json({ success: true, step: "analyze", keyframes: chosen.length, frameCount: FRAME_COUNT });
     }
 
@@ -479,7 +543,8 @@ serve(async (req) => {
         await updateJob(sb, jobId, { status: "generating_keyframes" });
       }
 
-      const { wheelRef, all, originals } = await loadSelection();
+      const { wheelRef, all, identitySources } = await loadSelection();
+      const wheelSpec = (jobRow?.qa_summary as any)?.wheelReference ?? null;
       const { data: existingCanonicals } = await sb.from("spin360_canonical_images")
         .select("angle_degrees, image_url, normalization_status").eq("job_id", jobId)
         .not("angle_degrees", "is", null);
@@ -490,22 +555,31 @@ serve(async (req) => {
       );
 
       if (!already) {
-        // Referenzen nach Priorität: eigenes Foto → Originale → nächstliegende Quellen → Radreferenz
+        // Referenzen nach Priorität: eigenes Foto → weitere Originale → nächstliegende Quellen → Radreferenz
         const references: LabeledRef[] = [];
-        if (own) references.push({ url: own.image_url, label: `ORIGINAL photograph at ${angle}° (identity truth)` });
+        if (own) references.push({ url: own.image_url, label: originalIdentityLabel(1, angle) });
+
+        const usedUrls = new Set(references.map((r) => r.url));
+        for (const src of identitySources) {
+          if (references.length >= (own ? 3 : 3)) break;
+          if (usedUrls.has(src.image_url)) continue;
+          usedUrls.add(src.image_url);
+          references.push({
+            url: src.image_url,
+            label: originalIdentityLabel(references.length + (own ? 0 : 1), Number(src.angle_degrees)),
+          });
+        }
 
         const distance = (a: number) => Math.min(Math.abs(a - angle), 360 - Math.abs(a - angle));
         const neighbours = all
-          .filter((s: any) => Number(s.angle_degrees) !== angle)
+          .filter((s: any) => Number(s.angle_degrees) !== angle && !usedUrls.has(s.image_url))
           .sort((a: any, b: any) => distance(Number(a.angle_degrees)) - distance(Number(b.angle_degrees)))
-          .slice(0, own ? 2 : 3);
+          .slice(0, 2);
         for (const n of neighbours) {
-          references.push({
-            url: n.image_url,
-            label: `${n.asset_kind === "original" || n.asset_kind === "upload" ? "ORIGINAL" : "verified"} view at ${n.angle_degrees}°`,
-          });
+          usedUrls.add(n.image_url);
+          references.push({ url: n.image_url, label: neighbourReferenceLabel(Number(n.angle_degrees)) });
         }
-        if (wheelRef) references.push({ url: wheelRef, label: "dedicated WHEEL reference (binding for wheels)" });
+        if (wheelRef) references.push({ url: wheelRef, label: wheelReferenceLabel() });
 
         const identity = jobRow?.identity_profile ?? {};
         let stored: string | null = null;
@@ -517,6 +591,7 @@ serve(async (req) => {
             identity,
             referenceLabels: references.map((r) => r.label),
             hasDedicatedWheelReference: !!wheelRef,
+            wheelSpec,
             hasDirectPhoto: !!own,
             strictRetry: attempt > 1,
           });
@@ -560,7 +635,7 @@ serve(async (req) => {
           normalization_status: "normalized",
         }, { onConflict: "job_id,angle_degrees" });
 
-        console.log(`[${jobId}] keyframe ${angle}° ready (model=${usedModel}, fromPhoto=${!!own}, originals=${originals.length})`);
+        console.log(`[${jobId}] keyframe ${angle}° ready (model=${usedModel}, fromPhoto=${!!own})`);
       }
 
       if (keyframeIndex < KEYFRAME_ANGLES.length - 1) {
@@ -571,11 +646,13 @@ serve(async (req) => {
       return json({ success: true, step: "keyframes", angle });
     }
 
-    // ─────────── VALIDATE KEYFRAMES (QA-Gate vor den Zwischenframes) ───────────
+    // ─────────── VALIDATE KEYFRAMES (striktes QA-Gate inkl. Reparatur) ───────────
     if (currentStep === "validate_keyframes") {
       await updateJob(sb, jobId, { status: "validating_keyframes" });
 
-      const { wheelRef, all } = await loadSelection();
+      const { wheelRef, all, identitySources } = await loadSelection();
+      const wheelSpec = (jobRow?.qa_summary as any)?.wheelReference ?? null;
+      const identity = jobRow?.identity_profile ?? {};
       const { data: canonicals } = await sb.from("spin360_canonical_images")
         .select("angle_degrees, image_url, is_generated, normalization_status")
         .eq("job_id", jobId).not("angle_degrees", "is", null).order("angle_degrees");
@@ -591,47 +668,99 @@ serve(async (req) => {
         const angle = Number(c.angle_degrees);
         const frameIndex = frameIndexForAngle(angle, FRAME_COUNT);
         const own = all.find((s: any) => Number(s.angle_degrees) === angle);
-        const references: LabeledRef[] = [];
-        if (own) references.push({ url: own.image_url, label: `ORIGINAL photograph at ${angle}° (identity truth)` });
-        else if (all[0]) references.push({ url: all[0].image_url, label: `ORIGINAL photograph at ${all[0].angle_degrees}°` });
-        if (wheelRef) references.push({ url: wheelRef, label: "dedicated WHEEL reference" });
 
+        // QA-Referenzen: Originale (Identität) + eigenes Foto + Radreferenz.
+        const references: LabeledRef[] = [];
+        if (own) references.push({ url: own.image_url, label: originalIdentityLabel(1, angle) });
+        for (const src of identityRefsFrom(identitySources, own ? 2 : 3)) {
+          if (references.some((r) => r.url === src.url)) continue;
+          references.push(src);
+        }
+        if (wheelRef) references.push({ url: wheelRef, label: wheelReferenceLabel() });
+
+        let candidateUrl: string = c.image_url;
+        let accepted = false;
+        let attempt = 0;
         let score = 0;
-        let passed = false;
-        let notes = "QA nicht ausgeführt";
-        try {
+        let notes: string | null = null;
+        let usedModel = SPIN_MODELS.imagePro;
+
+        // 1 Prüfung + bis zu (MAX_KEYFRAME_ATTEMPTS - 1) Reparaturen.
+        while (attempt < MAX_KEYFRAME_ATTEMPTS && !accepted) {
+          attempt++;
           const qa = await runQa({
             frameIndex, angle, frameCount: FRAME_COUNT, isKeyframe: true,
-            candidateUrl: c.image_url, references,
+            candidateUrl, references,
           });
           score = qa.score;
-          passed = qa.passed;
-          notes = [...qa.result.hard_failures, ...qa.result.repair_instructions].join("; ") || null as any;
-        } catch (e) {
-          console.warn(`[${jobId}] keyframe QA failed for ${angle}°:`, (e as Error).message);
-        }
+          accepted = qa.passed;
+          notes = qaNotes(qa.result);
 
-        await recordReview(sb, jobId, userId, frameIndex, 1, passed ? "pass" : "manual_review", score, notes, SPIN_MODELS.analysis);
+          await recordReview(
+            sb, jobId, userId, frameIndex, attempt,
+            accepted ? "pass" : attempt >= MAX_KEYFRAME_ATTEMPTS ? "manual_review" : "regenerate",
+            score, notes, SPIN_MODELS.analysis,
+          );
+          if (accepted || attempt >= MAX_KEYFRAME_ATTEMPTS) break;
+
+          // Reparatur mit exakten QA-Fehlern im Prompt.
+          const repairPrompt = buildRepairPrompt({
+            angle,
+            frameIndex,
+            frameCount: FRAME_COUNT,
+            identity,
+            referenceLabels: references.map((r) => r.label),
+            hasDedicatedWheelReference: !!wheelRef,
+            wheelSpec,
+            isKeyframe: true,
+            attempt: attempt + 1,
+            hardFailures: qa.result.hard_failures,
+            repairInstructions: qa.result.repair_instructions,
+          });
+          try {
+            const repaired = await callImageGeneration(repairPrompt, references, modelForAttempt(attempt + 1));
+            if (repaired) {
+              usedModel = repaired.model;
+              candidateUrl = await uploadDataUrlToStorage(
+                sb, userId, `spin360/${jobId}/canonical/kf_${angle}_r${attempt}.png`, repaired.dataUrl,
+              );
+              await sb.from("spin360_canonical_images").upsert({
+                job_id: jobId, user_id: userId, perspective: `kf_${angle}`,
+                image_url: candidateUrl, sort_order: KEYFRAME_ANGLES.indexOf(angle),
+                angle_degrees: angle, is_generated: true, normalization_status: "normalized",
+              }, { onConflict: "job_id,angle_degrees" });
+            }
+          } catch (e) {
+            console.error(`[${jobId}] keyframe repair ${angle}° failed:`, (e as Error).message);
+          }
+          await new Promise((r) => setTimeout(r, 600));
+        }
 
         await sb.from("spin360_generated_frames").upsert({
           job_id: jobId,
           user_id: userId,
           frame_index: frameIndex,
           frame_type: "canonical",
-          image_url: c.image_url,
+          image_url: candidateUrl,
           angle_degrees: angle,
-          model_used: SPIN_MODELS.imagePro,
-          validation_status: passed ? "passed" : "failed",
+          model_used: usedModel,
+          validation_status: accepted ? "passed" : "failed",
           validation_notes: notes,
           source_kind: c.is_generated ? "generated_keyframe" : "normalized_source",
           quality_score: score,
-          attempt_count: 1,
-          reference_metadata: { references: references.map((r) => r.label), qaModel: SPIN_MODELS.analysis },
+          attempt_count: attempt,
+          reference_metadata: {
+            references: references.map((r) => r.label),
+            qaModel: SPIN_MODELS.analysis,
+            hasDedicatedWheelReference: !!wheelRef,
+            isKeyframe: true,
+          },
         }, { onConflict: "job_id,frame_index" });
 
-        if (!passed) failures.push(angle);
+        if (!accepted) failures.push(angle);
       }
 
+      // Keyframes sind das Fundament: ohne 8/8 keine Zwischenframes.
       if (failures.length > 0) {
         await markJobFailed(
           sb, jobId,
@@ -641,22 +770,36 @@ serve(async (req) => {
         return json({ error: "keyframe_qa_failed", failures });
       }
 
-      invokeNextStep(authHeader, { jobId, step: "profile" });
+      invokeNextStep(authHeader, { jobId, step: "frames", sector: 0 });
       return json({ success: true, step: "validate_keyframes" });
     }
 
-    // ─────────── PROFILE (unveränderliches Identitätsprofil aus ORIGINALEN) ───────────
+    // ─────────── PROFILE (unveränderliches Identitätsprofil aus ECHTEN Fotos) ───────────
     if (currentStep === "profile") {
       await updateJob(sb, jobId, { status: "profiling" });
 
-      const { originals, all, wheelRef } = await loadSelection();
-      const identitySources = (originals.length > 0 ? originals : all).map((s: any) => s.image_url);
-      if (wheelRef) identitySources.push(wheelRef);
+      const { identitySources, identityTier, wheelRef } = await loadSelection();
+      if (identitySources.length === 0) {
+        await markJobFailed(sb, jobId, "Keine echten Fahrzeugfotos für das Identitätsprofil", "needs_review");
+        return json({ error: "no_identity_sources" });
+      }
+      const labels = identitySources.slice(0, 8).map((s: any, i: number) =>
+        originalIdentityLabel(i + 1, Number(s.angle_degrees)));
+      const images = identitySources.slice(0, 8).map((s: any) => s.image_url);
+      if (wheelRef) {
+        labels.push(wheelReferenceLabel());
+        images.push(wheelRef);
+      }
 
       let identity: any = {};
       try {
-        const profilePrompt = await getCustomPrompt(sb, "spin360_identity", IDENTITY_PROFILE_PROMPT);
-        identity = await callGeminiJson(profilePrompt, identitySources.slice(0, 9));
+        const base = buildIdentityProfilePrompt({
+          originalPhotoLabels: labels,
+          hasDedicatedWheelReference: !!wheelRef,
+          identitySourceTier: identityTier,
+        });
+        const profilePrompt = await getCustomPrompt(sb, "spin360_identity", base);
+        identity = await callGeminiJson(profilePrompt, images);
       } catch (e) {
         console.error(`[${jobId}] identity profiling failed:`, (e as Error).message);
         await markJobFailed(sb, jobId, "Identitätsprofil konnte nicht erstellt werden", "needs_review");
@@ -669,10 +812,18 @@ serve(async (req) => {
         ),
       ).map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
 
-      await updateJob(sb, jobId, { identity_profile: identity, identity_hash: identityHash });
+      await updateJob(sb, jobId, {
+        identity_profile: identity,
+        identity_hash: identityHash,
+        qa_summary: {
+          ...(jobRow?.qa_summary as Record<string, any> ?? {}),
+          identitySourceTier: identityTier,
+          identitySourceCount: identitySources.length,
+        },
+      });
 
-      invokeNextStep(authHeader, { jobId, step: "frames", sector: 0 });
-      return json({ success: true, step: "profile", identityHash });
+      invokeNextStep(authHeader, { jobId, step: "keyframes", keyframeIndex: 0 });
+      return json({ success: true, step: "profile", identityHash, identityTier });
     }
 
     // ─────────── FRAMES (ein Sektor pro Aufruf, bidirektional, inkl. QA) ───────────
@@ -686,7 +837,8 @@ serve(async (req) => {
       }
 
       const identity = jobRow?.identity_profile ?? {};
-      const { wheelRef, originals, all } = await loadSelection();
+      const { wheelRef, identitySources } = await loadSelection();
+      const wheelSpec = (jobRow?.qa_summary as any)?.wheelReference ?? null;
 
       const { data: canonicals } = await sb.from("spin360_canonical_images")
         .select("angle_degrees, image_url").eq("job_id", jobId).not("angle_degrees", "is", null);
@@ -710,12 +862,7 @@ serve(async (req) => {
           .map((f: any) => [Number(f.frame_index), f.image_url as string]),
       );
 
-      const identityRefs: LabeledRef[] = (originals.length > 0 ? originals : all)
-        .slice(0, 2)
-        .map((s: any) => ({
-          url: s.image_url,
-          label: `ORIGINAL photograph at ${s.angle_degrees}° (identity truth, overrides everything)`,
-        }));
+      const identityRefs: LabeledRef[] = identityRefsFrom(identitySources, 2);
 
       const plan = planSector(sector, FRAME_COUNT);
       const sectorResults: { index: number; verdict: string; score: number }[] = [];
@@ -729,12 +876,17 @@ serve(async (req) => {
 
         const baseRefs: LabeledRef[] = [
           ...identityRefs,
-          { url: startUrl, label: `verified keyframe A at ${planned.sectorStartAngle}°` },
-          { url: endUrl, label: `verified keyframe B at ${planned.sectorEndAngle}°` },
+          { url: startUrl, label: keyframeReferenceLabel("left", planned.sectorStartAngle) },
+          { url: endUrl, label: keyframeReferenceLabel("right", planned.sectorEndAngle) },
         ];
-        if (wheelRef) baseRefs.push({ url: wheelRef, label: "dedicated WHEEL reference (binding for wheels)" });
+        if (wheelRef) baseRefs.push({ url: wheelRef, label: wheelReferenceLabel() });
         if (neighbourUrl && planned.direction !== "midpoint") {
-          baseRefs.push({ url: neighbourUrl, label: "adjacent ACCEPTED frame (local continuity only)" });
+          baseRefs.push({
+            url: neighbourUrl,
+            label: neighbourReferenceLabel(angleForIndex(
+              ((planned.neighborIndex % FRAME_COUNT) + FRAME_COUNT) % FRAME_COUNT, FRAME_COUNT,
+            )),
+          });
         }
 
         let accepted = false;
@@ -742,19 +894,36 @@ serve(async (req) => {
         let lastScore = 0;
         let lastNotes: string | null = null;
         let repairInstructions: string[] = [];
+        let hardFailures: string[] = [];
 
         while (attempt < MAX_FRAME_ATTEMPTS && !accepted) {
           attempt++;
           const model = modelForAttempt(attempt);
-          const prompt = buildIntermediatePrompt({
-            frame: planned,
-            frameCount: FRAME_COUNT,
-            identity,
-            referenceLabels: baseRefs.map((r) => r.label),
-            hasDedicatedWheelReference: !!wheelRef,
-            strictRetry: attempt > 1,
-            repairInstructions,
-          });
+          // Ab dem 2. Versuch: Reparatur-Prompt mit den exakten QA-Fehlern (#9).
+          const prompt = attempt > 1 && (hardFailures.length > 0 || repairInstructions.length > 0)
+            ? buildRepairPrompt({
+              angle: planned.angle,
+              frameIndex: planned.index,
+              frameCount: FRAME_COUNT,
+              identity,
+              referenceLabels: baseRefs.map((r) => r.label),
+              hasDedicatedWheelReference: !!wheelRef,
+              wheelSpec,
+              isKeyframe: false,
+              attempt,
+              hardFailures,
+              repairInstructions,
+            })
+            : buildIntermediatePrompt({
+              frame: planned,
+              frameCount: FRAME_COUNT,
+              identity,
+              referenceLabels: baseRefs.map((r) => r.label),
+              hasDedicatedWheelReference: !!wheelRef,
+              wheelSpec,
+              strictRetry: attempt > 1,
+              repairInstructions,
+            });
 
           let generated: { dataUrl: string; model: string } | null = null;
           try {
@@ -771,27 +940,20 @@ serve(async (req) => {
             generated.dataUrl,
           );
 
-          // QA — niemals Auto-Pass.
-          let qaPassed = false;
-          let score = 0;
-          try {
-            const qaRefs: LabeledRef[] = [...baseRefs];
-            const qa = await runQa({
-              frameIndex: planned.index,
-              angle: planned.angle,
-              frameCount: FRAME_COUNT,
-              isKeyframe: false,
-              candidateUrl: storedUrl,
-              references: qaRefs,
-            });
-            qaPassed = qa.passed;
-            score = qa.score;
-            repairInstructions = qa.result.repair_instructions;
-            lastNotes = [...qa.result.hard_failures, ...qa.result.repair_instructions].join("; ") || null;
-          } catch (e) {
-            console.warn(`[${jobId}] QA call failed for frame ${planned.index}:`, (e as Error).message);
-            lastNotes = `QA nicht auswertbar: ${(e as Error).message}`;
-          }
+          // QA — fail closed, niemals Auto-Pass.
+          const qa = await runQa({
+            frameIndex: planned.index,
+            angle: planned.angle,
+            frameCount: FRAME_COUNT,
+            isKeyframe: false,
+            candidateUrl: storedUrl,
+            references: baseRefs,
+          });
+          const qaPassed = qa.passed;
+          const score = qa.score;
+          repairInstructions = qa.result.repair_instructions;
+          hardFailures = qa.result.hard_failures;
+          lastNotes = qaNotes(qa.result);
           lastScore = score;
 
           await recordReview(
@@ -806,7 +968,7 @@ serve(async (req) => {
             frame_index: planned.index,
             frame_type: "intermediate",
             image_url: storedUrl,
-            angle_degrees: Math.round(planned.angle),
+            angle_degrees: planned.angle,
             model_used: generated.model,
             validation_status: qaPassed ? "passed" : "failed",
             validation_notes: lastNotes,
@@ -818,6 +980,11 @@ serve(async (req) => {
               direction: planned.direction,
               fraction: planned.fraction,
               sector,
+              sectorStartAngle: planned.sectorStartAngle,
+              sectorEndAngle: planned.sectorEndAngle,
+              neighbourIndex: planned.direction === "midpoint" ? null : planned.neighborIndex,
+              hasDedicatedWheelReference: !!wheelRef,
+              hardFailures,
               qaModel: SPIN_MODELS.analysis,
             },
           }, { onConflict: "job_id,frame_index" });
