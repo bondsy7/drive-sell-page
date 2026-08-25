@@ -867,22 +867,42 @@ serve(async (req) => {
       return json({ success: true, step: "profile", identityHash, identityTier });
     }
 
-    // ─────────── FRAMES (ein Sektor pro Aufruf, bidirektional, inkl. QA) ───────────
-    if (currentStep === "frames") {
+    // ───── GENERATE_FRAME (genau EIN Zwischenframe-Versuch pro Aufruf) ─────
+    // Legacy-Alias `frames` (ganzer Sektor) wird auf die erste Planposition gemappt.
+    if (currentStep === "generate_frame") {
       const sector = Number(body.sector ?? 0);
-      if (sector === 0) await updateJob(sb, jobId, { status: "generating_frames", error_message: null });
+      const planPosition = Number(body.planPosition ?? 0);
+      const attempt = Math.max(1, Number(body.attempt ?? 1));
+
+      if (sector === 0 && planPosition === 0 && attempt === 1) {
+        await updateJob(sb, jobId, { status: "generating_frames", error_message: null });
+      }
+      await setCursor(sb, jobId, { step: "generate_frame", sector, planPosition, attempt });
 
       if (sector >= KEYFRAME_ANGLES.length) {
         invokeNextStep(authHeader, { jobId, step: "assemble" });
-        return json({ success: true, step: "frames", done: true });
+        return json({ success: true, step: "generate_frame", done: true });
+      }
+
+      const plan = planSector(sector, FRAME_COUNT);
+      const planned = plan[planPosition];
+      if (!planned) {
+        // Sektor abgearbeitet → nächster Sektor bzw. assemble.
+        const adv = advanceFrame(sector, Math.max(0, plan.length - 1), 1, true, FRAME_COUNT);
+        if (adv.kind === "next") invokeNextStep(authHeader, { jobId, ...adv.cursor });
+        return json({ success: true, step: "generate_frame", sectorDone: sector });
       }
 
       const identity = jobRow?.identity_profile ?? {};
       const { wheelRef, identitySources } = await loadSelection();
       const wheelSpec = (jobRow?.qa_summary as any)?.wheelReference ?? null;
 
-      const { data: canonicals } = await sb.from("spin360_canonical_images")
+      const { data: canonicals, error: canonicalsErr } = await sb.from("spin360_canonical_images")
         .select("angle_degrees, image_url").eq("job_id", jobId).not("angle_degrees", "is", null);
+      if (canonicalsErr) {
+        await failStage(sb, jobId, "generate_frame", `Keyframes konnten nicht geladen werden: ${canonicalsErr.message}`);
+        return json({ error: "db_read_failed" });
+      }
       const canonicalByAngle = new Map<number, string>(
         (canonicals || []).map((c: any) => [Number(c.angle_degrees), c.image_url as string]),
       );
@@ -892,161 +912,166 @@ serve(async (req) => {
       const startUrl = canonicalByAngle.get(startAngle);
       const endUrl = canonicalByAngle.get(endAngle);
       if (!startUrl || !endUrl) {
-        await markJobFailed(sb, jobId, `Keyframes für Sektor ${startAngle}°–${endAngle}° fehlen`, "needs_review");
+        await failStage(sb, jobId, "generate_frame", `Keyframes für Sektor ${startAngle}°–${endAngle}° fehlen`);
         return json({ error: "sector_keyframes_missing" });
       }
 
-      const { data: existing } = await sb.from("spin360_generated_frames")
-        .select("frame_index, image_url, validation_status").eq("job_id", jobId);
+      const { data: existing, error: existingErr } = await sb.from("spin360_generated_frames")
+        .select("frame_index, image_url, validation_status, reference_metadata").eq("job_id", jobId);
+      if (existingErr) {
+        await failStage(sb, jobId, "generate_frame", `Frames konnten nicht gelesen werden: ${existingErr.message}`);
+        return json({ error: "db_read_failed" });
+      }
       const passedByIndex = new Map<number, string>(
         (existing || []).filter((f: any) => f.validation_status === "passed")
           .map((f: any) => [Number(f.frame_index), f.image_url as string]),
       );
 
-      const identityRefs: LabeledRef[] = identityRefsFrom(identitySources, 2);
-
-      const plan = planSector(sector, FRAME_COUNT);
-      const sectorResults: { index: number; verdict: string; score: number }[] = [];
-
-      for (const planned of plan) {
-        if (passedByIndex.has(planned.index)) continue;
-
-        const neighbourUrl = passedByIndex.get(
-          ((planned.neighborIndex % FRAME_COUNT) + FRAME_COUNT) % FRAME_COUNT,
-        );
-
-        const baseRefs: LabeledRef[] = [
-          ...identityRefs,
-          { url: startUrl, label: keyframeReferenceLabel("left", planned.sectorStartAngle) },
-          { url: endUrl, label: keyframeReferenceLabel("right", planned.sectorEndAngle) },
-        ];
-        if (wheelRef) baseRefs.push({ url: wheelRef, label: wheelReferenceLabel() });
-        if (neighbourUrl && planned.direction !== "midpoint") {
-          baseRefs.push({
-            url: neighbourUrl,
-            label: neighbourReferenceLabel(angleForIndex(
-              ((planned.neighborIndex % FRAME_COUNT) + FRAME_COUNT) % FRAME_COUNT, FRAME_COUNT,
-            )),
-          });
-        }
-
-        let accepted = false;
-        let attempt = 0;
-        let lastScore = 0;
-        let lastNotes: string | null = null;
-        let repairInstructions: string[] = [];
-        let hardFailures: string[] = [];
-
-        while (attempt < MAX_FRAME_ATTEMPTS && !accepted) {
-          attempt++;
-          const model = modelForAttempt(attempt);
-          // Ab dem 2. Versuch: Reparatur-Prompt mit den exakten QA-Fehlern (#9).
-          const prompt = attempt > 1 && (hardFailures.length > 0 || repairInstructions.length > 0)
-            ? buildRepairPrompt({
-              angle: planned.angle,
-              frameIndex: planned.index,
-              frameCount: FRAME_COUNT,
-              identity,
-              referenceLabels: baseRefs.map((r) => r.label),
-              hasDedicatedWheelReference: !!wheelRef,
-              wheelSpec,
-              isKeyframe: false,
-              attempt,
-              hardFailures,
-              repairInstructions,
-            })
-            : buildIntermediatePrompt({
-              frame: planned,
-              frameCount: FRAME_COUNT,
-              identity,
-              referenceLabels: baseRefs.map((r) => r.label),
-              hasDedicatedWheelReference: !!wheelRef,
-              wheelSpec,
-              strictRetry: attempt > 1,
-              repairInstructions,
-            });
-
-          let generated: { dataUrl: string; model: string } | null = null;
-          try {
-            generated = await callImageGeneration(prompt, baseRefs, model);
-          } catch (e) {
-            if ((e as Error).message === "rate_limited") await new Promise((r) => setTimeout(r, 8000));
-            console.error(`[${jobId}] frame ${planned.index} attempt ${attempt} error:`, (e as Error).message);
-          }
-          if (!generated) continue;
-
-          const storedUrl = await uploadDataUrlToStorage(
-            sb, userId,
-            `spin360/${jobId}/frames/frame_${String(planned.index).padStart(3, "0")}_a${attempt}.png`,
-            generated.dataUrl,
-          );
-
-          // QA — fail closed, niemals Auto-Pass.
-          const qa = await runQa({
-            frameIndex: planned.index,
-            angle: planned.angle,
-            frameCount: FRAME_COUNT,
-            isKeyframe: false,
-            candidateUrl: storedUrl,
-            references: baseRefs,
-          });
-          const qaPassed = qa.passed;
-          const score = qa.score;
-          repairInstructions = qa.result.repair_instructions;
-          hardFailures = qa.result.hard_failures;
-          lastNotes = qaNotes(qa.result);
-          lastScore = score;
-
-          await recordReview(
-            sb, jobId, userId, planned.index, attempt,
-            qaPassed ? "pass" : attempt >= MAX_FRAME_ATTEMPTS ? "manual_review" : "regenerate",
-            score, lastNotes, generated.model,
-          );
-
-          await sb.from("spin360_generated_frames").upsert({
-            job_id: jobId,
-            user_id: userId,
-            frame_index: planned.index,
-            frame_type: "intermediate",
-            image_url: storedUrl,
-            angle_degrees: planned.angle,
-            model_used: generated.model,
-            validation_status: qaPassed ? "passed" : "failed",
-            validation_notes: lastNotes,
-            source_kind: "generated",
-            quality_score: score,
-            attempt_count: attempt,
-            reference_metadata: {
-              references: baseRefs.map((r) => r.label),
-              direction: planned.direction,
-              fraction: planned.fraction,
-              sector,
-              sectorStartAngle: planned.sectorStartAngle,
-              sectorEndAngle: planned.sectorEndAngle,
-              neighbourIndex: planned.direction === "midpoint" ? null : planned.neighborIndex,
-              hasDedicatedWheelReference: !!wheelRef,
-              hardFailures,
-              qaModel: SPIN_MODELS.analysis,
-            },
-          }, { onConflict: "job_id,frame_index" });
-
-          if (qaPassed) {
-            passedByIndex.set(planned.index, storedUrl);
-            accepted = true;
-          }
-
-          await new Promise((r) => setTimeout(r, 600));
-        }
-
-        sectorResults.push({ index: planned.index, verdict: accepted ? "pass" : "needs_review", score: lastScore });
+      // Idempotenz: bereits bestandene Frames werden übersprungen.
+      if (shouldSkipUnit(passedByIndex.keys(), planned.index)) {
+        const adv = advanceFrame(sector, planPosition, attempt, true, FRAME_COUNT);
+        if (adv.kind === "next") invokeNextStep(authHeader, { jobId, ...adv.cursor });
+        return json({ success: true, step: "generate_frame", skipped: planned.index });
       }
 
-      const qaSummary = { ...(jobRow?.qa_summary as Record<string, any> ?? {}), [`sector_${sector}`]: sectorResults };
-      await updateJob(sb, jobId, { qa_summary: qaSummary, status: "validating_frames" });
+      const identityRefs: LabeledRef[] = identityRefsFrom(identitySources, 2);
+      const neighbourIdx = ((planned.neighborIndex % FRAME_COUNT) + FRAME_COUNT) % FRAME_COUNT;
+      const neighbourUrl = passedByIndex.get(neighbourIdx);
 
-      invokeNextStep(authHeader, { jobId, step: "frames", sector: sector + 1 });
-      return json({ success: true, step: "frames", sector, frames: sectorResults });
+      const baseRefs: LabeledRef[] = [
+        ...identityRefs,
+        { url: startUrl, label: keyframeReferenceLabel("left", planned.sectorStartAngle) },
+        {
+          url: endUrl,
+          // Sektor 7 endet bei 360° == 0° — Label eindeutig, Mathematik unverändert.
+          label: `${keyframeReferenceLabel("right", planned.sectorEndAngle)} [${sectorBoundaryLabel(planned.sectorEndAngle)}]`,
+        },
+      ];
+      if (wheelRef) baseRefs.push({ url: wheelRef, label: wheelReferenceLabel() });
+      if (neighbourUrl && planned.direction !== "midpoint") {
+        baseRefs.push({
+          url: neighbourUrl,
+          label: neighbourReferenceLabel(angleForIndex(neighbourIdx, FRAME_COUNT)),
+        });
+      }
+
+      // QA-Feedback des vorherigen Versuchs (für den Reparatur-Prompt).
+      const prevMeta = (existing || []).find((f: any) => Number(f.frame_index) === planned.index)
+        ?.reference_metadata as any;
+      const hardFailures: string[] = Array.isArray(prevMeta?.hardFailures) ? prevMeta.hardFailures : [];
+      let repairInstructions: string[] = Array.isArray(prevMeta?.repairInstructions)
+        ? prevMeta.repairInstructions
+        : [];
+
+      const model = modelForAttempt(attempt);
+      const prompt = attempt > 1 && (hardFailures.length > 0 || repairInstructions.length > 0)
+        ? buildRepairPrompt({
+          angle: planned.angle,
+          frameIndex: planned.index,
+          frameCount: FRAME_COUNT,
+          identity,
+          referenceLabels: baseRefs.map((r) => r.label),
+          hasDedicatedWheelReference: !!wheelRef,
+          wheelSpec,
+          isKeyframe: false,
+          attempt,
+          hardFailures,
+          repairInstructions,
+        })
+        : buildIntermediatePrompt({
+          frame: planned,
+          frameCount: FRAME_COUNT,
+          identity,
+          referenceLabels: baseRefs.map((r) => r.label),
+          hasDedicatedWheelReference: !!wheelRef,
+          wheelSpec,
+          strictRetry: attempt > 1,
+          repairInstructions,
+        });
+
+      let generated: { dataUrl: string; model: string } | null = null;
+      try {
+        generated = await callImageGeneration(prompt, baseRefs, model);
+      } catch (e) {
+        if ((e as Error).message === "rate_limited") await new Promise((r) => setTimeout(r, 8000));
+        console.error(`[${jobId}] frame ${planned.index} attempt ${attempt} error:`, (e as Error).message);
+      }
+
+      if (!generated) {
+        const adv = advanceFrame(sector, planPosition, attempt, false, FRAME_COUNT);
+        if (adv.kind === "next") invokeNextStep(authHeader, { jobId, ...adv.cursor });
+        else await failStage(sb, jobId, "generate_frame", adv.reason);
+        return json({ success: true, step: "generate_frame", frame: planned.index, generated: false });
+      }
+
+      const storedUrl = await uploadDataUrlToStorage(
+        sb, userId,
+        `spin360/${jobId}/frames/frame_${String(planned.index).padStart(3, "0")}_a${attempt}.png`,
+        generated.dataUrl,
+      );
+
+      // QA — fail closed, niemals Auto-Pass.
+      const qa = await runQa({
+        frameIndex: planned.index,
+        angle: planned.angle,
+        frameCount: FRAME_COUNT,
+        isKeyframe: false,
+        candidateUrl: storedUrl,
+        references: baseRefs,
+      });
+      repairInstructions = qa.result.repair_instructions;
+      const notes = qaNotes(qa.result);
+
+      await recordReview(
+        sb, jobId, userId, planned.index, attempt,
+        qa.passed ? "pass" : attempt >= MAX_FRAME_ATTEMPTS ? "manual_review" : "regenerate",
+        qa.score, notes, generated.model,
+      );
+
+      const { error: frameErr } = await sb.from("spin360_generated_frames").upsert({
+        job_id: jobId,
+        user_id: userId,
+        frame_index: planned.index,
+        frame_type: "intermediate",
+        image_url: storedUrl,
+        angle_degrees: planned.angle,
+        model_used: generated.model,
+        validation_status: qa.passed ? "passed" : "failed",
+        validation_notes: notes,
+        source_kind: "generated",
+        quality_score: qa.score,
+        attempt_count: attempt,
+        reference_metadata: {
+          references: baseRefs.map((r) => r.label),
+          direction: planned.direction,
+          fraction: planned.fraction,
+          sector,
+          sectorStartAngle: planned.sectorStartAngle,
+          sectorEndAngle: planned.sectorEndAngle,
+          sectorEndLabel: sectorBoundaryLabel(planned.sectorEndAngle),
+          neighbourIndex: planned.direction === "midpoint" ? null : neighbourIdx,
+          hasDedicatedWheelReference: !!wheelRef,
+          hardFailures: qa.result.hard_failures,
+          repairInstructions,
+          qaModel: SPIN_MODELS.analysis,
+        },
+      }, { onConflict: "job_id,frame_index" });
+
+      if (frameErr) {
+        await failStage(sb, jobId, "generate_frame", `Frame ${planned.index} konnte nicht gespeichert werden: ${frameErr.message}`);
+        return json({ error: "persist_failed", frame: planned.index });
+      }
+
+      const adv = advanceFrame(sector, planPosition, attempt, qa.passed, FRAME_COUNT);
+      if (adv.kind === "next") invokeNextStep(authHeader, { jobId, ...adv.cursor });
+      else await failStage(sb, jobId, "generate_frame", adv.reason);
+
+      return json({
+        success: true, step: "generate_frame", frame: planned.index,
+        attempt, passed: qa.passed, score: qa.score,
+      });
     }
+
 
     // ─────────── ASSEMBLE ───────────
     if (currentStep === "assemble") {
