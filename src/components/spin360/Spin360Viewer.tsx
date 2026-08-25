@@ -7,145 +7,216 @@ import AiDisclosureBadge from "@/components/AiDisclosureBadge";
 interface Spin360ViewerProps {
   frames: string[];
   className?: string;
+  /** Einmalige Demo-Rotation nach kurzer Verzögerung (Standard: an). */
   autoplay?: boolean;
-  autoplaySpeed?: number; // ms per frame
+  /** ms pro Frame bei der Demo-Rotation. */
+  autoplaySpeed?: number;
   showControls?: boolean;
 }
 
+const NEAR_RANGE = 4;      // sofort vorgeladene Nachbarframes
+const DEMO_DELAY = 900;    // ms bis zur automatischen Demo-Drehung
+const FRICTION = 0.94;     // Trägheits-Abbremsung
+const MIN_VELOCITY = 0.02;
+
+/**
+ * Flipbook-Viewer V2: ein einziges <img>, dessen `src` während der Interaktion
+ * imperativ getauscht wird. React rendert dadurch NICHT pro Frame neu; der
+ * State wird nur für die Anzeige (Zähler, Buttons) nachgezogen.
+ */
 const Spin360Viewer: React.FC<Spin360ViewerProps> = ({
   frames,
   className,
-  autoplay = false,
-  autoplaySpeed = 80,
+  autoplay = true,
+  autoplaySpeed = 70,
   showControls = true,
 }) => {
-  const [currentFrame, setCurrentFrame] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const [isAutoPlaying, setIsAutoPlaying] = useState(autoplay);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [loadedFrames, setLoadedFrames] = useState<Set<number>>(new Set());
-  const containerRef = useRef<HTMLDivElement>(null);
-  const dragStartX = useRef(0);
-  const dragStartFrame = useRef(0);
-  const autoplayRef = useRef<NodeJS.Timeout | null>(null);
-
   const totalFrames = frames.length;
 
-  // Preload frames near current (Nachbarn zuerst, danach der Rest im Hintergrund)
-  useEffect(() => {
-    if (totalFrames === 0) return;
-    const preloadRange = 5;
-    for (let i = -preloadRange; i <= preloadRange; i++) {
-      const idx = ((currentFrame + i) % totalFrames + totalFrames) % totalFrames;
-      if (!loadedFrames.has(idx)) {
-        const img = new Image();
-        img.src = frames[idx];
-        img.onload = () => setLoadedFrames(prev => new Set(prev).add(idx));
-      }
-    }
-  }, [currentFrame, frames, totalFrames, loadedFrames]);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const frameRef = useRef(0);
+  const velocityRef = useRef(0);
+  const rafRef = useRef<number | null>(null);
+  const draggingRef = useRef(false);
+  const dragStartX = useRef(0);
+  const dragStartFrame = useRef(0);
+  const lastMoveX = useRef(0);
+  const demoDoneRef = useRef(false);
+  const playingRef = useRef(false);
+  const framesRef = useRef(frames);
+  framesRef.current = frames;
 
-  // Vollständiges Hintergrund-Preloading, damit das Ziehen ruckelfrei bleibt
+  const [displayFrame, setDisplayFrame] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  /** Imperativer Framewechsel — kein Re-Render pro Frame. */
+  const showFrame = useCallback((next: number) => {
+    const count = framesRef.current.length;
+    if (count === 0) return;
+    const idx = ((Math.round(next) % count) + count) % count;
+    if (idx === frameRef.current && imgRef.current?.src) return;
+    frameRef.current = idx;
+    if (imgRef.current) imgRef.current.src = framesRef.current[idx];
+  }, []);
+
+  /** Zähler nur gelegentlich synchronisieren (nicht in jedem Frame). */
+  const syncState = useCallback(() => setDisplayFrame(frameRef.current), []);
+
+  // ── Preloading: erst die Nachbarn, dann der Rest im Idle ──
   useEffect(() => {
     if (totalFrames === 0) return;
     let cancelled = false;
-    let i = 0;
-    const loadNext = () => {
-      if (cancelled || i >= totalFrames) return;
-      const idx = i++;
+
+    const preload = (idx: number) => {
       const img = new Image();
-      img.onload = img.onerror = () => {
-        if (!cancelled) setTimeout(loadNext, 30);
-      };
+      img.decoding = 'async';
       img.src = frames[idx];
     };
-    loadNext();
+
+    for (let i = -NEAR_RANGE; i <= NEAR_RANGE; i++) {
+      preload(((frameRef.current + i) % totalFrames + totalFrames) % totalFrames);
+    }
+
+    let i = 0;
+    const idle: (cb: () => void) => number =
+      (window as any).requestIdleCallback?.bind(window) ?? ((cb: () => void) => window.setTimeout(cb, 40));
+    const loadNext = () => {
+      if (cancelled || i >= totalFrames) return;
+      preload(i++);
+      idle(loadNext);
+    };
+    idle(loadNext);
+
     return () => { cancelled = true; };
+    // Bewusst nur von der Frame-Liste abhängig: kein Re-Run pro angezeigtem Frame.
   }, [frames, totalFrames]);
 
-  // Autoplay
+  // Erstes Bild setzen
   useEffect(() => {
-    if (isAutoPlaying && totalFrames > 1) {
-      autoplayRef.current = setInterval(() => {
-        setCurrentFrame(prev => (prev + 1) % totalFrames);
-      }, autoplaySpeed);
-    }
-    return () => {
-      if (autoplayRef.current) clearInterval(autoplayRef.current);
-    };
-  }, [isAutoPlaying, totalFrames, autoplaySpeed]);
+    if (totalFrames > 0 && imgRef.current) imgRef.current.src = frames[frameRef.current] ?? frames[0];
+  }, [frames, totalFrames]);
 
-  // Tastatursteuerung
+  // ── Animationsschleife: Autoplay + Trägheit ──
+  useEffect(() => {
+    if (totalFrames <= 1) return;
+    let last = performance.now();
+    let acc = 0;
+    let demoRemaining = 0;
+
+    const tick = (now: number) => {
+      const dt = now - last;
+      last = now;
+
+      if (Math.abs(velocityRef.current) > MIN_VELOCITY && !draggingRef.current) {
+        showFrame(frameRef.current + velocityRef.current);
+        velocityRef.current *= FRICTION;
+        syncState();
+      } else if (!draggingRef.current && (playingRef.current || demoRemaining > 0)) {
+        acc += dt;
+        if (acc >= autoplaySpeed) {
+          acc = 0;
+          showFrame(frameRef.current + 1);
+          syncState();
+          if (demoRemaining > 0 && --demoRemaining === 0) demoDoneRef.current = true;
+        }
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    };
+
+    const demoTimer = window.setTimeout(() => {
+      if (autoplay && !demoDoneRef.current && !draggingRef.current && !playingRef.current) {
+        demoRemaining = totalFrames; // genau eine volle Umdrehung
+      }
+    }, DEMO_DELAY);
+
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      window.clearTimeout(demoTimer);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [autoplay, autoplaySpeed, totalFrames, showFrame, syncState]);
+
+  const stopMotion = useCallback(() => {
+    demoDoneRef.current = true;
+    playingRef.current = false;
+    velocityRef.current = 0;
+    setIsPlaying(false);
+  }, []);
+
+  // ── Drag (Pointer + Touch) ──
+  const beginDrag = useCallback((clientX: number) => {
+    draggingRef.current = true;
+    setIsDragging(true);
+    stopMotion();
+    dragStartX.current = clientX;
+    lastMoveX.current = clientX;
+    dragStartFrame.current = frameRef.current;
+  }, [stopMotion]);
+
+  const moveDrag = useCallback((clientX: number) => {
+    if (!draggingRef.current || totalFrames <= 1) return;
+    const width = containerRef.current?.offsetWidth || 400;
+    const sensitivity = width / totalFrames;
+    const delta = (clientX - dragStartX.current) / sensitivity;
+    showFrame(dragStartFrame.current + delta);
+    velocityRef.current = (clientX - lastMoveX.current) / sensitivity;
+    lastMoveX.current = clientX;
+    syncState();
+  }, [totalFrames, showFrame, syncState]);
+
+  const endDrag = useCallback(() => {
+    draggingRef.current = false;
+    setIsDragging(false);
+  }, []);
+
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+    beginDrag(e.clientX);
+  }, [beginDrag]);
+
+  const handlePointerMove = useCallback((e: React.PointerEvent) => moveDrag(e.clientX), [moveDrag]);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => beginDrag(e.touches[0].clientX), [beginDrag]);
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (draggingRef.current) e.preventDefault();
+    moveDrag(e.touches[0].clientX);
+  }, [moveDrag]);
+
+  // ── Tastatur ──
   useEffect(() => {
     if (totalFrames <= 1) return;
     const onKey = (e: KeyboardEvent) => {
-      if (!containerRef.current?.matches(':hover') && document.activeElement !== containerRef.current) return;
-      if (e.key === 'ArrowLeft') {
-        setIsAutoPlaying(false);
-        setCurrentFrame(prev => (prev - 1 + totalFrames) % totalFrames);
-      } else if (e.key === 'ArrowRight') {
-        setIsAutoPlaying(false);
-        setCurrentFrame(prev => (prev + 1) % totalFrames);
-      } else if (e.key === ' ') {
+      const el = containerRef.current;
+      if (!el) return;
+      if (document.activeElement !== el && !el.matches(':hover')) return;
+      if (e.key === 'ArrowLeft') { stopMotion(); showFrame(frameRef.current - 1); syncState(); }
+      else if (e.key === 'ArrowRight') { stopMotion(); showFrame(frameRef.current + 1); syncState(); }
+      else if (e.key === ' ') {
         e.preventDefault();
-        setIsAutoPlaying(p => !p);
+        demoDoneRef.current = true;
+        playingRef.current = !playingRef.current;
+        setIsPlaying(playingRef.current);
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [totalFrames]);
+  }, [totalFrames, showFrame, syncState, stopMotion]);
 
-
-  const handlePointerDown = useCallback((e: React.PointerEvent) => {
-    setIsDragging(true);
-    setIsAutoPlaying(false);
-    dragStartX.current = e.clientX;
-    dragStartFrame.current = currentFrame;
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
-  }, [currentFrame]);
-
-  const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    if (!isDragging || totalFrames <= 1) return;
-    const containerWidth = containerRef.current?.offsetWidth || 400;
-    const dx = e.clientX - dragStartX.current;
-    const frameSensitivity = containerWidth / totalFrames;
-    const frameDelta = Math.round(dx / frameSensitivity);
-    const newFrame = ((dragStartFrame.current + frameDelta) % totalFrames + totalFrames) % totalFrames;
-    setCurrentFrame(newFrame);
-  }, [isDragging, totalFrames]);
-
-  const handlePointerUp = useCallback(() => {
-    setIsDragging(false);
+  const togglePlay = useCallback(() => {
+    demoDoneRef.current = true;
+    velocityRef.current = 0;
+    playingRef.current = !playingRef.current;
+    setIsPlaying(playingRef.current);
   }, []);
-
-  // Touch support
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    setIsAutoPlaying(false);
-    dragStartX.current = e.touches[0].clientX;
-    dragStartFrame.current = currentFrame;
-  }, [currentFrame]);
-
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (totalFrames <= 1) return;
-    e.preventDefault();
-    const containerWidth = containerRef.current?.offsetWidth || 400;
-    const dx = e.touches[0].clientX - dragStartX.current;
-    const frameSensitivity = containerWidth / totalFrames;
-    const frameDelta = Math.round(dx / frameSensitivity);
-    const newFrame = ((dragStartFrame.current + frameDelta) % totalFrames + totalFrames) % totalFrames;
-    setCurrentFrame(newFrame);
-  }, [totalFrames]);
 
   const toggleFullscreen = useCallback(() => {
     if (!containerRef.current) return;
-    if (!isFullscreen) {
-      containerRef.current.requestFullscreen?.();
-      setIsFullscreen(true);
-    } else {
-      document.exitFullscreen?.();
-      setIsFullscreen(false);
-    }
-  }, [isFullscreen]);
+    if (!document.fullscreenElement) containerRef.current.requestFullscreen?.();
+    else document.exitFullscreen?.();
+  }, []);
 
   useEffect(() => {
     const handler = () => setIsFullscreen(!!document.fullscreenElement);
@@ -164,27 +235,27 @@ const Spin360Viewer: React.FC<Spin360ViewerProps> = ({
         'relative select-none overflow-hidden rounded-xl bg-muted/30 border border-border group outline-none',
         isDragging ? 'cursor-grabbing' : 'cursor-grab',
         isFullscreen && 'bg-background',
-        className
+        className,
       )}
     >
-      {/* Main frame display */}
       <div
-        className="relative w-full aspect-[16/10] flex items-center justify-center"
+        className="relative w-full aspect-[16/10] flex items-center justify-center touch-none"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
+        onTouchEnd={endDrag}
       >
         <img
-          src={frames[currentFrame]}
-          alt={`360° Ansicht Frame ${currentFrame + 1}`}
+          ref={imgRef}
+          alt={`360° Ansicht Frame ${displayFrame + 1} von ${totalFrames}`}
           className="w-full h-full object-contain pointer-events-none"
           draggable={false}
         />
 
-        {/* Drag hint overlay */}
-        {!isDragging && !isAutoPlaying && (
+        {!isDragging && !isPlaying && (
           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
             <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-background/80 backdrop-blur-sm text-foreground text-sm font-medium shadow-lg">
               <RotateCw className="w-4 h-4" />
@@ -196,7 +267,6 @@ const Spin360Viewer: React.FC<Spin360ViewerProps> = ({
 
       <AiDisclosureBadge context="spin" overlay className="bottom-3 left-3" />
 
-      {/* Controls */}
       {showControls && (
         <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
           <div className="flex items-center gap-2">
@@ -204,12 +274,13 @@ const Spin360Viewer: React.FC<Spin360ViewerProps> = ({
               variant="secondary"
               size="icon"
               className="h-8 w-8 bg-background/80 backdrop-blur-sm"
-              onClick={() => setIsAutoPlaying(!isAutoPlaying)}
+              onClick={togglePlay}
+              aria-label={isPlaying ? 'Pause' : 'Abspielen'}
             >
-              {isAutoPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+              {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
             </Button>
             <span className="text-[11px] font-medium text-foreground bg-background/80 backdrop-blur-sm px-2 py-1 rounded">
-              {currentFrame + 1} / {totalFrames}
+              {displayFrame + 1} / {totalFrames}
             </span>
           </div>
           <Button
@@ -217,17 +288,17 @@ const Spin360Viewer: React.FC<Spin360ViewerProps> = ({
             size="icon"
             className="h-8 w-8 bg-background/80 backdrop-blur-sm"
             onClick={toggleFullscreen}
+            aria-label="Vollbild"
           >
             {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
           </Button>
         </div>
       )}
 
-      {/* Frame strip (thin progress bar) */}
       <div className="absolute bottom-0 left-0 right-0 h-1 bg-muted/50">
         <div
-          className="h-full bg-accent transition-all duration-75"
-          style={{ width: `${((currentFrame + 1) / totalFrames) * 100}%` }}
+          className="h-full bg-accent"
+          style={{ width: `${((displayFrame + 1) / totalFrames) * 100}%` }}
         />
       </div>
     </div>
