@@ -10,6 +10,7 @@ import Spin360Upload, { type SpinSlotData, type SpinMode } from './Spin360Upload
 import Spin360Progress, { type SpinStep } from './Spin360Progress';
 import Spin360Viewer from './Spin360Viewer';
 import Video2FramesProcessor from './Video2FramesProcessor';
+import SpinSourcePicker, { type SpinSourceSelection } from './SpinSourcePicker';
 import { uploadImageToStorage } from '@/lib/storage-utils';
 import { ensureVehicleAuto } from '@/lib/vehicle-utils';
 
@@ -57,16 +58,30 @@ const createSpinReferenceComposite = async (frontBase64: string, rearBase64: str
   return canvas.toDataURL('image/jpeg', 0.98);
 };
 
+/** Perspektiven-Slots des klassischen Uploads → Turntable-Winkel. */
+const PERSPECTIVE_ANGLES: Record<string, number> = {
+  front: 0,
+  front_34: 45,
+  left: 90,
+  rear: 180,
+  rear_34: 225,
+  right: 270,
+  showroom: -1,
+};
+
 const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) => {
   const { user } = useAuth();
   const { balance, getCost } = useCredits();
-  const [phase, setPhase] = useState<'upload' | 'confirm' | 'processing' | 'video_extracting' | 'result'>('upload');
+  const [phase, setPhase] = useState<'source' | 'upload' | 'confirm' | 'processing' | 'video_extracting' | 'result'>(
+    vehicleId ? 'source' : 'upload',
+  );
   const [spinMode, setSpinMode] = useState<SpinMode>('image2spin');
   const [jobId, setJobId] = useState<string | null>(null);
   const [jobStatus, setJobStatus] = useState<SpinStep>('uploaded');
   const [jobError, setJobError] = useState<string | null>(null);
   const [resultFrames, setResultFrames] = useState<string[]>([]);
   const [uploadedSlots, setUploadedSlots] = useState<SpinSlotData[]>([]);
+  const [assetSelection, setAssetSelection] = useState<SpinSourceSelection[] | null>(null);
   const [creditDialogOpen, setCreditDialogOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -89,9 +104,18 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
   const totalCost = spinMode === 'video2frames' ? videoCost : imageCost;
 
   const handleSlotsReady = useCallback((slots: SpinSlotData[]) => {
+    setAssetSelection(null);
     setUploadedSlots(slots);
     setCreditDialogOpen(true);
   }, []);
+
+  const handleAssetsReady = useCallback((selection: SpinSourceSelection[]) => {
+    setUploadedSlots([]);
+    setAssetSelection(selection);
+    setSpinMode('image2spin');
+    setCreditDialogOpen(true);
+  }, []);
+
 
   /* ─── Image2Spin Flow (existing) ─── */
   const startImage2Spin = useCallback(async () => {
@@ -103,30 +127,55 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
     setJobError(null);
 
     try {
-      const sourceUrls: { perspective: string; url: string }[] = [];
-      for (const slot of uploadedSlots) {
-        if (!slot.base64) continue;
-        const url = await uploadImageToStorage(
-          slot.base64, user.id,
-          `spin360/sources/${slot.perspective}_${Date.now()}.jpg`,
-        );
-        if (url) sourceUrls.push({ perspective: slot.perspective, url });
+      // Quellbilder: entweder bestehende Fahrzeug-Assets oder frische Uploads.
+      const sourceUrls: { perspective: string; url: string; angle: number; assetKind: string; assetId?: string; storagePath?: string }[] = [];
+
+      if (assetSelection && assetSelection.length > 0) {
+        for (const sel of assetSelection) {
+          sourceUrls.push({
+            perspective: `angle_${sel.angle}`,
+            url: sel.url,
+            angle: sel.angle,
+            assetKind: sel.assetKind,
+            assetId: sel.assetId,
+            storagePath: sel.storagePath,
+          });
+        }
+      } else {
+        for (const slot of uploadedSlots) {
+          if (!slot.base64) continue;
+          const angle = PERSPECTIVE_ANGLES[slot.perspective];
+          if (angle === undefined || angle < 0) continue;
+          const url = await uploadImageToStorage(
+            slot.base64, user.id,
+            `spin360/sources/${slot.perspective}_${Date.now()}.jpg`,
+          );
+          if (url) sourceUrls.push({ perspective: slot.perspective, url, angle, assetKind: 'upload' });
+        }
       }
 
-      if (sourceUrls.length < 4) {
-        toast.error('Fehler beim Hochladen der Bilder');
-        setPhase('upload'); setIsProcessing(false); return;
+      if (sourceUrls.length < 2) {
+        toast.error('Mindestens 2 verwertbare Perspektiven erforderlich');
+        setPhase(assetSelection ? 'source' : 'upload'); setIsProcessing(false); return;
       }
 
       const effectiveVehicleId = await ensureSpinVehicleId();
       const { data: job, error: jobErr } = await supabase
         .from('spin360_jobs' as any)
-        .insert({ user_id: user.id, vehicle_id: effectiveVehicleId, status: 'uploaded', target_frame_count: 36 } as any)
+        .insert({
+          user_id: user.id,
+          vehicle_id: effectiveVehicleId,
+          status: 'uploaded',
+          target_frame_count: 32,
+          keyframe_count: 8,
+          manifest_version: 2,
+          source_mode: assetSelection ? 'vehicle_assets' : 'upload',
+        } as any)
         .select('id').single();
 
       if (jobErr || !job) {
         toast.error('Fehler beim Erstellen des Auftrags');
-        setPhase('upload'); setIsProcessing(false); return;
+        setPhase(assetSelection ? 'source' : 'upload'); setIsProcessing(false); return;
       }
 
       const newJobId = (job as any).id;
@@ -152,7 +201,8 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
       console.error('Start processing error:', err);
       setJobStatus('failed'); setJobError('Unerwarteter Fehler'); setIsProcessing(false);
     }
-  }, [user, uploadedSlots, ensureSpinVehicleId]);
+  }, [user, uploadedSlots, assetSelection, ensureSpinVehicleId]);
+
 
   /* ─── Video2Frames Flow (refactored: 3 images) ─── */
   const pollVideoOperation = useCallback(async (operationName: string, currentJobId: string) => {
@@ -423,9 +473,9 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
   }, [resultFrames, jobId]);
 
   const resetWorkflow = useCallback(() => {
-    setPhase('upload'); setResultFrames([]); setJobId(null);
-    setVideoUrl(null); setJobStatus('uploaded'); setJobError(null);
-  }, []);
+    setPhase(vehicleId ? 'source' : 'upload'); setResultFrames([]); setJobId(null);
+    setVideoUrl(null); setJobStatus('uploaded'); setJobError(null); setAssetSelection(null);
+  }, [vehicleId]);
 
   return (
     <div className="space-y-6">
@@ -439,7 +489,9 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
           <p className="text-sm text-muted-foreground">
             {spinMode === 'video2frames'
               ? '3 Bilder → KI-Video → komplette Drehung extrahieren'
-              : '4 Fotos hochladen – KI erstellt den Rest automatisch'}
+              : phase === 'source'
+                ? 'Vorhandene Fahrzeugbilder zuordnen – KI ergänzt fehlende Winkel'
+                : '4 Fotos hochladen – KI erstellt den Rest automatisch'}
           </p>
         </div>
       </div>
@@ -450,6 +502,16 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
         <span>Geschätzte Kosten: <strong className="text-accent">{totalCost} Credits</strong> — Guthaben: <strong className="text-foreground">{balance} Credits</strong></span>
       </div>
 
+      {/* Phase: Quellenwahl aus bestehenden Fahrzeug-Assets */}
+      {phase === 'source' && vehicleId && (
+        <SpinSourcePicker
+          vehicleId={vehicleId}
+          disabled={isProcessing}
+          onConfirm={handleAssetsReady}
+          onSwitchToUpload={() => setPhase('upload')}
+        />
+      )}
+
       {/* Phase: Upload */}
       {phase === 'upload' && (
         <Spin360Upload
@@ -458,6 +520,7 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
           spinMode={spinMode}
           onModeChange={setSpinMode}
         />
+
       )}
 
       {/* Phase: Processing */}

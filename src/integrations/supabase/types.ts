@@ -2035,28 +2035,37 @@ export type Database = {
       }
       spin360_canonical_images: {
         Row: {
+          angle_degrees: number | null
           created_at: string
           id: string
           image_url: string
+          is_generated: boolean
           job_id: string
+          normalization_status: string
           perspective: string
           sort_order: number | null
           user_id: string
         }
         Insert: {
+          angle_degrees?: number | null
           created_at?: string
           id?: string
           image_url: string
+          is_generated?: boolean
           job_id: string
+          normalization_status?: string
           perspective: string
           sort_order?: number | null
           user_id: string
         }
         Update: {
+          angle_degrees?: number | null
           created_at?: string
           id?: string
           image_url?: string
+          is_generated?: boolean
           job_id?: string
+          normalization_status?: string
           perspective?: string
           sort_order?: number | null
           user_id?: string
@@ -2071,9 +2080,57 @@ export type Database = {
           },
         ]
       }
+      spin360_frame_reviews: {
+        Row: {
+          attempt: number
+          created_at: string
+          frame_index: number
+          id: string
+          job_id: string
+          model_used: string | null
+          notes: string | null
+          score: number | null
+          user_id: string
+          verdict: string
+        }
+        Insert: {
+          attempt?: number
+          created_at?: string
+          frame_index: number
+          id?: string
+          job_id: string
+          model_used?: string | null
+          notes?: string | null
+          score?: number | null
+          user_id: string
+          verdict: string
+        }
+        Update: {
+          attempt?: number
+          created_at?: string
+          frame_index?: number
+          id?: string
+          job_id?: string
+          model_used?: string | null
+          notes?: string | null
+          score?: number | null
+          user_id?: string
+          verdict?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spin360_frame_reviews_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "spin360_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       spin360_generated_frames: {
         Row: {
-          angle_degrees: number | null
+          angle_degrees: number
+          attempt_count: number
           created_at: string
           frame_index: number
           frame_type: string
@@ -2081,12 +2138,16 @@ export type Database = {
           image_url: string
           job_id: string
           model_used: string | null
+          quality_score: number | null
+          reference_frame_ids: string[] | null
+          source_kind: string
           user_id: string
           validation_notes: string | null
           validation_status: string | null
         }
         Insert: {
-          angle_degrees?: number | null
+          angle_degrees?: number
+          attempt_count?: number
           created_at?: string
           frame_index: number
           frame_type?: string
@@ -2094,12 +2155,16 @@ export type Database = {
           image_url: string
           job_id: string
           model_used?: string | null
+          quality_score?: number | null
+          reference_frame_ids?: string[] | null
+          source_kind?: string
           user_id: string
           validation_notes?: string | null
           validation_status?: string | null
         }
         Update: {
-          angle_degrees?: number | null
+          angle_degrees?: number
+          attempt_count?: number
           created_at?: string
           frame_index?: number
           frame_type?: string
@@ -2107,6 +2172,9 @@ export type Database = {
           image_url?: string
           job_id?: string
           model_used?: string | null
+          quality_score?: number | null
+          reference_frame_ids?: string[] | null
+          source_kind?: string
           user_id?: string
           validation_notes?: string | null
           validation_status?: string | null
@@ -2126,10 +2194,15 @@ export type Database = {
           created_at: string
           error_message: string | null
           id: string
+          identity_hash: string | null
           identity_profile: Json | null
+          keyframe_count: number
           manifest: Json | null
+          manifest_version: number
           project_id: string | null
+          qa_summary: Json | null
           retry_count: number | null
+          source_mode: string
           status: string
           target_frame_count: number
           updated_at: string
@@ -2140,10 +2213,15 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           id?: string
+          identity_hash?: string | null
           identity_profile?: Json | null
+          keyframe_count?: number
           manifest?: Json | null
+          manifest_version?: number
           project_id?: string | null
+          qa_summary?: Json | null
           retry_count?: number | null
+          source_mode?: string
           status?: string
           target_frame_count?: number
           updated_at?: string
@@ -2154,10 +2232,15 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           id?: string
+          identity_hash?: string | null
           identity_profile?: Json | null
+          keyframe_count?: number
           manifest?: Json | null
+          manifest_version?: number
           project_id?: string | null
+          qa_summary?: Json | null
           retry_count?: number | null
+          source_mode?: string
           status?: string
           target_frame_count?: number
           updated_at?: string
@@ -2215,6 +2298,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "spin360_source_images_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "spin360_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spin360_source_selection: {
+        Row: {
+          angle_degrees: number
+          asset_id: string | null
+          asset_kind: string
+          created_at: string
+          id: string
+          image_url: string
+          job_id: string
+          storage_path: string | null
+          user_id: string
+        }
+        Insert: {
+          angle_degrees: number
+          asset_id?: string | null
+          asset_kind: string
+          created_at?: string
+          id?: string
+          image_url: string
+          job_id: string
+          storage_path?: string | null
+          user_id: string
+        }
+        Update: {
+          angle_degrees?: number
+          asset_id?: string | null
+          asset_kind?: string
+          created_at?: string
+          id?: string
+          image_url?: string
+          job_id?: string
+          storage_path?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spin360_source_selection_job_id_fkey"
             columns: ["job_id"]
             isOneToOne: false
             referencedRelation: "spin360_jobs"

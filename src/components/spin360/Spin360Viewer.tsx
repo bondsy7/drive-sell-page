@@ -30,10 +30,10 @@ const Spin360Viewer: React.FC<Spin360ViewerProps> = ({
   const autoplayRef = useRef<NodeJS.Timeout | null>(null);
 
   const totalFrames = frames.length;
-  if (totalFrames === 0) return null;
 
-  // Preload frames near current
+  // Preload frames near current (Nachbarn zuerst, danach der Rest im Hintergrund)
   useEffect(() => {
+    if (totalFrames === 0) return;
     const preloadRange = 5;
     for (let i = -preloadRange; i <= preloadRange; i++) {
       const idx = ((currentFrame + i) % totalFrames + totalFrames) % totalFrames;
@@ -44,6 +44,24 @@ const Spin360Viewer: React.FC<Spin360ViewerProps> = ({
       }
     }
   }, [currentFrame, frames, totalFrames, loadedFrames]);
+
+  // Vollständiges Hintergrund-Preloading, damit das Ziehen ruckelfrei bleibt
+  useEffect(() => {
+    if (totalFrames === 0) return;
+    let cancelled = false;
+    let i = 0;
+    const loadNext = () => {
+      if (cancelled || i >= totalFrames) return;
+      const idx = i++;
+      const img = new Image();
+      img.onload = img.onerror = () => {
+        if (!cancelled) setTimeout(loadNext, 30);
+      };
+      img.src = frames[idx];
+    };
+    loadNext();
+    return () => { cancelled = true; };
+  }, [frames, totalFrames]);
 
   // Autoplay
   useEffect(() => {
@@ -56,6 +74,27 @@ const Spin360Viewer: React.FC<Spin360ViewerProps> = ({
       if (autoplayRef.current) clearInterval(autoplayRef.current);
     };
   }, [isAutoPlaying, totalFrames, autoplaySpeed]);
+
+  // Tastatursteuerung
+  useEffect(() => {
+    if (totalFrames <= 1) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (!containerRef.current?.matches(':hover') && document.activeElement !== containerRef.current) return;
+      if (e.key === 'ArrowLeft') {
+        setIsAutoPlaying(false);
+        setCurrentFrame(prev => (prev - 1 + totalFrames) % totalFrames);
+      } else if (e.key === 'ArrowRight') {
+        setIsAutoPlaying(false);
+        setCurrentFrame(prev => (prev + 1) % totalFrames);
+      } else if (e.key === ' ') {
+        e.preventDefault();
+        setIsAutoPlaying(p => !p);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [totalFrames]);
+
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     setIsDragging(true);
@@ -114,11 +153,15 @@ const Spin360Viewer: React.FC<Spin360ViewerProps> = ({
     return () => document.removeEventListener('fullscreenchange', handler);
   }, []);
 
+  if (totalFrames === 0) return null;
+
   return (
     <div
       ref={containerRef}
+      tabIndex={0}
+      aria-label="360-Grad-Ansicht, mit Pfeiltasten drehen"
       className={cn(
-        'relative select-none overflow-hidden rounded-xl bg-muted/30 border border-border group',
+        'relative select-none overflow-hidden rounded-xl bg-muted/30 border border-border group outline-none',
         isDragging ? 'cursor-grabbing' : 'cursor-grab',
         isFullscreen && 'bg-background',
         className
