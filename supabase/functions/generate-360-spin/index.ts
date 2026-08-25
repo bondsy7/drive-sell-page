@@ -558,7 +558,12 @@ serve(async (req) => {
         return json({ error: "not_enough_perspectives", missing: coverage.missingRequired });
       }
 
-      await sb.from("spin360_source_selection").delete().eq("job_id", jobId);
+      const { error: clearErr } = await sb.from("spin360_source_selection").delete().eq("job_id", jobId);
+      if (clearErr) {
+        await failStage(sb, jobId, "analyze", `Alte Quellauswahl konnte nicht entfernt werden: ${clearErr.message}`);
+        return json({ error: "persist_failed" });
+      }
+
       const rows = chosen.map((c: any) => ({
         job_id: jobId,
         user_id: userId,
