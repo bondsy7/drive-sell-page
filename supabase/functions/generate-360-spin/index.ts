@@ -1060,6 +1060,7 @@ serve(async (req) => {
       const quality = aggregateQuality(all as any, FRAME_COUNT);
 
       // Credits erst jetzt – nach bestandener QA, anteilig zur tatsächlichen Ausbeute.
+      // Idempotent: ein Marker im qa_summary verhindert Doppelbelastung bei Resume.
       const generatedPassed = all.filter(
         (f: any) => f.validation_status === "passed" && f.source_kind === "generated",
       ).length;
@@ -1068,17 +1069,16 @@ serve(async (req) => {
           1,
           Math.round((generatedPassed / Math.max(1, FRAME_COUNT - KEYFRAME_ANGLES.length)) * 15),
         );
-        const { data: deduct } = await sb.rpc("deduct_credits", {
-          _user_id: userId,
-          _amount: amount,
-          _action_type: "spin360_generate",
-          _description: `360° Spin – ${generatedPassed} geprüfte Frames`,
-        });
-        if (deduct && !deduct.success) {
+        const charged = await chargeOnce(
+          sb, jobId, userId, billingMarker("frames"), amount, "spin360_generate",
+          `360° Spin – ${generatedPassed} geprüfte Frames`,
+        );
+        if (!charged.ok) {
           await markJobFailed(sb, jobId, "Nicht genug Credits für die Abrechnung");
           return json({ error: "insufficient_credits" });
         }
       }
+
 
       let vin: string | null = null;
       if (jobRow?.vehicle_id) {
