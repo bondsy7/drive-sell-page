@@ -19,6 +19,14 @@ export const SPIN_MODELS = {
   imagePro: "gemini-3-pro-image",
 } as const;
 
+/** Analyse, Identitätsprofil und multimodale QA (Stand August 2026). */
+export const ANALYSIS_QA_MODEL = SPIN_MODELS.analysis;
+/** Standard-Bildgenerierung für Zwischenframes. */
+export const STANDARD_IMAGE_MODEL = SPIN_MODELS.image;
+/** Hochwertige Keyframe-Normalisierung und finale Reparatur. */
+export const HIGH_FIDELITY_IMAGE_MODEL = SPIN_MODELS.imagePro;
+
+
 export type SpinFrameTier = 32 | 48;
 
 export const KEYFRAME_ANGLES = [0, 45, 90, 135, 180, 225, 270, 315] as const;
@@ -64,10 +72,15 @@ export function angleForIndex(index: number, frameCount: number): number {
   return round2((((index % frameCount) + frameCount) % frameCount) * angleStep(frameCount));
 }
 
-/** Exakter Frame-Index eines Keyframe-Winkels (nur für 32/48 exakt ganzzahlig). */
+/** Exakter Frame-Index eines Winkels (für 32/48 bei den 45°-Keyframes ganzzahlig). */
 export function frameIndexForAngle(angle: number, frameCount: number): number {
-  return Math.round((angle / 360) * frameCount);
+  const norm = ((angle % 360) + 360) % 360;
+  return Math.round((norm / 360) * frameCount) % frameCount;
 }
+
+/** Alias mit Spec-Namensgebung. */
+export const indexForAngle = frameIndexForAngle;
+
 
 export function keyframeIndices(frameCount: number): number[] {
   return KEYFRAME_ANGLES.map((a) => frameIndexForAngle(a, frameCount));
@@ -282,8 +295,29 @@ For each supplied image return strict JSON:
 If you cannot reliably distinguish a LEFT from a RIGHT three-quarter view, set "left_right_certain": false
 and lower "angle_confidence" instead of guessing.`;
 
+/**
+ * Prompt für das verbindliche Identitätsprofil. Optionale Kontexthinweise
+ * (z. B. Anzahl Originalfotos) werden angehängt, ohne die Reference-Truth-Regel
+ * aufzuweichen.
+ */
+export function buildIdentityProfilePrompt(input?: {
+  originalPhotoLabels?: string[];
+  hasDedicatedWheelReference?: boolean;
+}): string {
+  const labels = input?.originalPhotoLabels ?? [];
+  return `${IDENTITY_PROFILE_PROMPT}
+
+${REFERENCE_TRUTH_PROTOCOL}
+${labels.length ? referencePriorityBlock(labels) : ""}
+${input?.hasDedicatedWheelReference
+    ? "A dedicated wheel close-up is supplied: describe the wheels from that image only."
+    : "No dedicated wheel close-up is supplied: describe the wheels only as far as they are visible."}
+Do NOT generate an image. Return strict JSON only.`;
+}
+
 export interface KeyframePromptInput {
   angle: number;
+
   identity: unknown;
   referenceLabels: string[];
   hasDedicatedWheelReference: boolean;
@@ -428,6 +462,66 @@ Return exactly:
 Be strict: when in doubt, do not pass.`;
 }
 
+export interface RepairPromptInput {
+  frameIndex: number;
+  angle: number;
+  frameCount: number;
+  identity: unknown;
+  referenceLabels: string[];
+  hasDedicatedWheelReference: boolean;
+  isKeyframe: boolean;
+  attempt: number;
+  hardFailures: string[];
+  repairInstructions: string[];
+}
+
+/**
+ * Reparatur-Prompt nach einem QA-Fail: erzeugt den Frame neu, aber ändert
+ * ausschließlich die beanstandeten Details. Enthält alle Pflicht-Lock-Blöcke.
+ */
+export function buildRepairPrompt(input: RepairPromptInput): string {
+  const {
+    frameIndex, angle, frameCount, identity, referenceLabels,
+    hasDedicatedWheelReference, isKeyframe, attempt, hardFailures, repairInstructions,
+  } = input;
+
+  const fixes = repairInstructions.length
+    ? repairInstructions
+    : hardFailures.length
+      ? hardFailures
+      : ["rim design and spoke count", "paint tone", "light signatures", "body proportions"];
+
+  return `You are repairing frame ${frameIndex} (${angle}°) of a ${frameCount}-frame studio turntable sequence
+of ONE specific physical vehicle. This is repair attempt ${attempt}.
+
+<TASK>
+Re-render the ${isKeyframe ? "keyframe" : "intermediate frame"} at exactly ${angle} degrees.
+${ANGLE_CONVENTION}
+Automated quality control REJECTED the previous attempt. Keep angle, camera, framing, background and
+lighting byte-for-byte comparable and repair ONLY the listed defects.
+Return exactly ONE image and no text.
+</TASK>
+
+<REJECTED_FINDINGS>
+${hardFailures.length ? hardFailures.map((f) => `- hard failure: ${f}`).join("\n") : "- (no hard failure reported)"}
+</REJECTED_FINDINGS>
+
+<MUST_FIX>
+${fixes.map((r) => `- ${r}`).join("\n")}
+</MUST_FIX>
+
+${referencePriorityBlock(referenceLabels)}
+${REFERENCE_TRUTH_PROTOCOL}
+${identityLockBlock(identity)}
+${CAMERA_LOCK}
+${ROTATION_LOCK}
+${SCENE_LOCK}
+${wheelLockBlock(hasDedicatedWheelReference)}
+${FORBIDDEN_BLOCK}`;
+}
+
+
+
 // ─── QA-Auswertung ─────────────────────────────────────────────────────
 
 export interface QaResult {
@@ -535,7 +629,14 @@ export function aggregateQuality(frames: FrameQualityInput[], targetFrameCount: 
     completeness: Math.round(completeness * 100) / 100,
     averageScore,
     qualityScore: Math.round(averageScore * completeness),
-    complete: passed.length === targetFrameCount && unique.size === targetFrameCount,
+    // 'complete' NUR wenn jeder geforderte Index genau einmal existiert
+    // UND jeder vorhandene Frame die QA bestanden hat.
+    complete:
+      unique.size === targetFrameCount &&
+      passed.length === targetFrameCount &&
+      list.every((f) => f.validation_status === "passed") &&
+      Array.from({ length: targetFrameCount }, (_, i) => i).every((i) => unique.has(i)),
+
   };
 }
 
