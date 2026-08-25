@@ -54,6 +54,7 @@ import {
   resolveIdentitySources,
   resolveSourceAngleSelections,
   sectorBoundaryLabel,
+  shouldRebuildMissingKeyframeRepair,
   shouldSkipUnit,
   sourceCoverageFailureReason,
   wheelReferenceLabel,
@@ -712,11 +713,11 @@ serve(async (req) => {
         const neighbours = all
           .filter((s: any) => Number(s.angle_degrees) !== angle)
           .sort((a: any, b: any) => distance(Number(a.angle_degrees)) - distance(Number(b.angle_degrees)))
-          .slice(0, 2);
+          .slice(0, 4);
         for (const n of neighbours) pushRef(n.image_url, neighbourReferenceLabel(Number(n.angle_degrees)));
 
         for (const src of identitySources) {
-          if (references.length >= 3) break;
+          if (references.length >= 6) break;
           pushRef(src.image_url, originalIdentityLabel(references.length + 1, Number(src.angle_degrees)));
         }
         if (wheelRef) references.push({ url: wheelRef, label: wheelReferenceLabel() });
@@ -868,7 +869,7 @@ serve(async (req) => {
       const nearestReal = all
         .filter((s: any) => Number(s.angle_degrees) !== angle)
         .sort((a: any, b: any) => qaDistance(Number(a.angle_degrees)) - qaDistance(Number(b.angle_degrees)))
-        .slice(0, 2);
+        .slice(0, own ? 3 : 4);
 
       if (own) {
         pushRef(own.image_url, directSourceLabel(angle));
@@ -876,7 +877,7 @@ serve(async (req) => {
         for (const n of nearestReal) pushRef(n.image_url, neighbourReferenceLabel(Number(n.angle_degrees)));
       } else {
         for (const n of nearestReal) pushRef(n.image_url, neighbourReferenceLabel(Number(n.angle_degrees)));
-        for (const src of identityRefsFrom(identitySources, 4)) pushRef(src.url, src.label);
+        for (const src of identityRefsFrom(identitySources, 8)) pushRef(src.url, src.label);
       }
 
       if (wheelRef) pushRef(wheelRef, wheelReferenceLabel());
@@ -890,6 +891,7 @@ serve(async (req) => {
         keyframeMode: own ? "direct_source" : "generated_from_neighbours",
       });
       const targetedRepairInstructions = deriveRepairInstructionsFromQa(qa.result);
+      const rebuildMissingKeyframe = shouldRebuildMissingKeyframeRepair(qa.result, true, !!own);
       const notes = qaNotes(qa.result);
       const terminalAttempt = attempt >= MAX_KEYFRAME_ATTEMPTS;
 
@@ -967,9 +969,16 @@ serve(async (req) => {
         hardFailures: qa.result.hard_failures,
         repairInstructions: targetedRepairInstructions,
         qaResult: qa.result,
+        hasDirectSource: !!own,
+        sourceAngles,
+        rebuildFromReferences: rebuildMissingKeyframe,
       });
       try {
-        const repaired = await callImageGeneration(repairPrompt, references, modelForAttempt(attempt + 1));
+        const repaired = await callImageGeneration(
+          repairPrompt,
+          references,
+          rebuildMissingKeyframe ? SPIN_MODELS.imagePro : modelForAttempt(attempt + 1),
+        );
         if (repaired) {
           const repairedUrl = await uploadDataUrlToStorage(
             sb, userId, `spin360/${jobId}/canonical/kf_${angle}_r${attempt}.png`, repaired.dataUrl,
