@@ -671,149 +671,172 @@ serve(async (req) => {
       return json({ success: true, step: "keyframes", angle });
     }
 
-    // ─────────── VALIDATE KEYFRAMES (striktes QA-Gate inkl. Reparatur) ───────────
-    if (currentStep === "validate_keyframes") {
+    // ───── VALIDATE_KEYFRAME (ein Keyframe, ein QA-/Reparaturversuch pro Aufruf) ─────
+    // Legacy-Alias `validate_keyframes` startet bei Keyframe 0.
+    if (currentStep === "validate_keyframe") {
+      const keyframeIndex = Math.min(
+        Math.max(0, Number(body.keyframeIndex ?? 0)),
+        KEYFRAME_ANGLES.length - 1,
+      );
+      const attempt = Math.max(1, Number(body.attempt ?? 1));
+      const angle = KEYFRAME_ANGLES[keyframeIndex];
+      const frameIndex = frameIndexForAngle(angle, FRAME_COUNT);
+
       await updateJob(sb, jobId, { status: "validating_keyframes" });
+      await setCursor(sb, jobId, { step: "validate_keyframe", keyframeIndex, attempt });
 
       const { wheelRef, all, identitySources } = await loadSelection();
       const wheelSpec = (jobRow?.qa_summary as any)?.wheelReference ?? null;
       const identity = jobRow?.identity_profile ?? {};
-      const { data: canonicals } = await sb.from("spin360_canonical_images")
+
+      const { data: canonicalRow, error: canonicalErr } = await sb.from("spin360_canonical_images")
         .select("angle_degrees, image_url, is_generated, normalization_status")
-        .eq("job_id", jobId).not("angle_degrees", "is", null).order("angle_degrees");
-
-      const ready = (canonicals || []).filter((c: any) => c.normalization_status === "normalized");
-      if (ready.length < KEYFRAME_ANGLES.length) {
-        await markJobFailed(sb, jobId, "Nicht alle Keyframes vorhanden", "needs_review");
-        return json({ error: "incomplete_keyframes" });
+        .eq("job_id", jobId).eq("angle_degrees", angle).maybeSingle();
+      if (canonicalErr) {
+        await failStage(sb, jobId, "validate_keyframe", `Keyframe ${angle}° konnte nicht gelesen werden: ${canonicalErr.message}`);
+        return json({ error: "db_read_failed" });
       }
-
-      const failures: number[] = [];
-      for (const c of ready) {
-        const angle = Number(c.angle_degrees);
-        const frameIndex = frameIndexForAngle(angle, FRAME_COUNT);
-        const own = all.find((s: any) => Number(s.angle_degrees) === angle);
-
-        /**
-         * QA-Referenzen (#I): bis zu 4 unveränderliche Identitätsfotos rund ums
-         * Fahrzeug + das echte Foto des Zielwinkels + die nächstgelegenen echten
-         * Quellwinkel + Radreferenz. Keine doppelten URLs, keine generierten Frames.
-         */
-        const references: LabeledRef[] = [];
-        const seen = new Set<string>();
-        const pushRef = (url: string | undefined | null, label: string) => {
-          if (!url || seen.has(url)) return;
-          seen.add(url);
-          references.push({ url, label });
-        };
-
-        if (own) pushRef(own.image_url, originalIdentityLabel(1, angle));
-        for (const src of identityRefsFrom(identitySources, 4)) pushRef(src.url, src.label);
-
-        const qaDistance = (a: number) => Math.min(Math.abs(a - angle), 360 - Math.abs(a - angle));
-        const nearestReal = all
-          .filter((s: any) => Number(s.angle_degrees) !== angle)
-          .sort((a: any, b: any) => qaDistance(Number(a.angle_degrees)) - qaDistance(Number(b.angle_degrees)))
-          .slice(0, 2);
-        for (const n of nearestReal) pushRef(n.image_url, neighbourReferenceLabel(Number(n.angle_degrees)));
-
-        if (wheelRef) pushRef(wheelRef, wheelReferenceLabel());
-
-        let candidateUrl: string = c.image_url;
-        let accepted = false;
-        let attempt = 0;
-        let score = 0;
-        let notes: string | null = null;
-        let usedModel = SPIN_MODELS.imagePro;
-
-        // 1 Prüfung + bis zu (MAX_KEYFRAME_ATTEMPTS - 1) Reparaturen.
-        while (attempt < MAX_KEYFRAME_ATTEMPTS && !accepted) {
-          attempt++;
-          const qa = await runQa({
-            frameIndex, angle, frameCount: FRAME_COUNT, isKeyframe: true,
-            candidateUrl, references,
-          });
-          score = qa.score;
-          accepted = qa.passed;
-          notes = qaNotes(qa.result);
-
-          await recordReview(
-            sb, jobId, userId, frameIndex, attempt,
-            accepted ? "pass" : attempt >= MAX_KEYFRAME_ATTEMPTS ? "manual_review" : "regenerate",
-            score, notes, SPIN_MODELS.analysis,
-          );
-          if (accepted || attempt >= MAX_KEYFRAME_ATTEMPTS) break;
-
-          // Reparatur mit exakten QA-Fehlern im Prompt.
-          const repairPrompt = buildRepairPrompt({
-            angle,
-            frameIndex,
-            frameCount: FRAME_COUNT,
-            identity,
-            referenceLabels: references.map((r) => r.label),
-            hasDedicatedWheelReference: !!wheelRef,
-            wheelSpec,
-            isKeyframe: true,
-            attempt: attempt + 1,
-            hardFailures: qa.result.hard_failures,
-            repairInstructions: qa.result.repair_instructions,
-          });
-          try {
-            const repaired = await callImageGeneration(repairPrompt, references, modelForAttempt(attempt + 1));
-            if (repaired) {
-              usedModel = repaired.model;
-              candidateUrl = await uploadDataUrlToStorage(
-                sb, userId, `spin360/${jobId}/canonical/kf_${angle}_r${attempt}.png`, repaired.dataUrl,
-              );
-              await sb.from("spin360_canonical_images").upsert({
-                job_id: jobId, user_id: userId, perspective: `kf_${angle}`,
-                image_url: candidateUrl, sort_order: KEYFRAME_ANGLES.indexOf(angle),
-                angle_degrees: angle, is_generated: true, normalization_status: "normalized",
-              }, { onConflict: "job_id,angle_degrees" });
-            }
-          } catch (e) {
-            console.error(`[${jobId}] keyframe repair ${angle}° failed:`, (e as Error).message);
-          }
-          await new Promise((r) => setTimeout(r, 600));
-        }
-
-        await sb.from("spin360_generated_frames").upsert({
-          job_id: jobId,
-          user_id: userId,
-          frame_index: frameIndex,
-          frame_type: "canonical",
-          image_url: candidateUrl,
-          angle_degrees: angle,
-          model_used: usedModel,
-          validation_status: accepted ? "passed" : "failed",
-          validation_notes: notes,
-          source_kind: c.is_generated ? "generated_keyframe" : "normalized_source",
-          quality_score: score,
-          attempt_count: attempt,
-          reference_metadata: {
-            references: references.map((r) => r.label),
-            qaModel: SPIN_MODELS.analysis,
-            hasDedicatedWheelReference: !!wheelRef,
-            isKeyframe: true,
-          },
-        }, { onConflict: "job_id,frame_index" });
-
-        if (!accepted) failures.push(angle);
-      }
-
-      // Keyframes sind das Fundament: ohne 8/8 keine Zwischenframes.
-      if (failures.length > 0) {
-        await markJobFailed(
-          sb, jobId,
-          `Keyframe-QA nicht bestanden für: ${failures.join("°, ")}°. Bitte Quellbilder prüfen.`,
-          "needs_review",
+      if (!canonicalRow || canonicalRow.normalization_status !== "normalized" || !canonicalRow.image_url) {
+        await failStage(
+          sb, jobId, "validate_keyframe",
+          `Keyframe ${angle}° wurde nicht persistiert (Datenbank-Schreibfehler in der Keyframe-Phase).`,
         );
-        return json({ error: "keyframe_qa_failed", failures });
+        return json({ error: "keyframe_missing", angle });
       }
 
-      invokeNextStep(authHeader, { jobId, step: "frames", sector: 0 });
-      return json({ success: true, step: "validate_keyframes" });
+      // Idempotenz: bereits bestandene Keyframes werden übersprungen.
+      const { data: existingFrame } = await sb.from("spin360_generated_frames")
+        .select("frame_index, validation_status").eq("job_id", jobId).eq("frame_index", frameIndex).maybeSingle();
+      if (existingFrame?.validation_status === "passed") {
+        const skipAdv = advanceValidation(keyframeIndex, attempt, true);
+        if (skipAdv.kind === "next") invokeNextStep(authHeader, { jobId, ...skipAdv.cursor });
+        return json({ success: true, step: "validate_keyframe", angle, skipped: true });
+      }
+
+      const own = all.find((s: any) => Number(s.angle_degrees) === angle);
+
+      /**
+       * QA-Referenzen: bis zu 4 unveränderliche Identitätsfotos rund ums
+       * Fahrzeug + das echte Foto des Zielwinkels + die nächstgelegenen echten
+       * Quellwinkel + Radreferenz. Keine doppelten URLs, keine generierten Frames.
+       */
+      const references: LabeledRef[] = [];
+      const seen = new Set<string>();
+      const pushRef = (url: string | undefined | null, label: string) => {
+        if (!url || seen.has(url)) return;
+        seen.add(url);
+        references.push({ url, label });
+      };
+
+      if (own) pushRef(own.image_url, originalIdentityLabel(1, angle));
+      for (const src of identityRefsFrom(identitySources, 4)) pushRef(src.url, src.label);
+
+      const qaDistance = (a: number) => Math.min(Math.abs(a - angle), 360 - Math.abs(a - angle));
+      const nearestReal = all
+        .filter((s: any) => Number(s.angle_degrees) !== angle)
+        .sort((a: any, b: any) => qaDistance(Number(a.angle_degrees)) - qaDistance(Number(b.angle_degrees)))
+        .slice(0, 2);
+      for (const n of nearestReal) pushRef(n.image_url, neighbourReferenceLabel(Number(n.angle_degrees)));
+
+      if (wheelRef) pushRef(wheelRef, wheelReferenceLabel());
+
+      const candidateUrl: string = canonicalRow.image_url;
+      const qa = await runQa({
+        frameIndex, angle, frameCount: FRAME_COUNT, isKeyframe: true,
+        candidateUrl, references,
+      });
+      const notes = qaNotes(qa.result);
+      const terminalAttempt = attempt >= MAX_KEYFRAME_ATTEMPTS;
+
+      await recordReview(
+        sb, jobId, userId, frameIndex, attempt,
+        qa.passed ? "pass" : terminalAttempt ? "manual_review" : "regenerate",
+        qa.score, notes, SPIN_MODELS.analysis,
+      );
+
+      const { error: kfFrameErr } = await sb.from("spin360_generated_frames").upsert({
+        job_id: jobId,
+        user_id: userId,
+        frame_index: frameIndex,
+        frame_type: "canonical",
+        image_url: candidateUrl,
+        angle_degrees: angle,
+        model_used: SPIN_MODELS.analysis,
+        validation_status: qa.passed ? "passed" : "failed",
+        validation_notes: notes,
+        source_kind: canonicalRow.is_generated ? "generated_keyframe" : "normalized_source",
+        quality_score: qa.score,
+        attempt_count: attempt,
+        reference_metadata: {
+          references: references.map((r) => r.label),
+          qaModel: SPIN_MODELS.analysis,
+          hasDedicatedWheelReference: !!wheelRef,
+          isKeyframe: true,
+          hardFailures: qa.result.hard_failures,
+          repairInstructions: qa.result.repair_instructions,
+        },
+      }, { onConflict: "job_id,frame_index" });
+
+      if (kfFrameErr) {
+        await failStage(sb, jobId, "validate_keyframe", `Keyframe-QA ${angle}° konnte nicht gespeichert werden: ${kfFrameErr.message}`);
+        return json({ error: "persist_failed", angle });
+      }
+
+      if (qa.passed) {
+        const adv = advanceValidation(keyframeIndex, attempt, true);
+        if (adv.kind === "next") invokeNextStep(authHeader, { jobId, ...adv.cursor });
+        return json({ success: true, step: "validate_keyframe", angle, passed: true, score: qa.score });
+      }
+
+      if (terminalAttempt) {
+        await failStage(
+          sb, jobId, "validate_keyframe",
+          `Keyframe-QA nicht bestanden für ${angle}° (${MAX_KEYFRAME_ATTEMPTS} Versuche). Bitte Quellbilder prüfen.`,
+        );
+        return json({ error: "keyframe_qa_failed", angle });
+      }
+
+      // Reparatur mit den exakten QA-Fehlern; Ergebnis ersetzt den Kandidaten.
+      const repairPrompt = buildRepairPrompt({
+        angle,
+        frameIndex,
+        frameCount: FRAME_COUNT,
+        identity,
+        referenceLabels: references.map((r) => r.label),
+        hasDedicatedWheelReference: !!wheelRef,
+        wheelSpec,
+        isKeyframe: true,
+        attempt: attempt + 1,
+        hardFailures: qa.result.hard_failures,
+        repairInstructions: qa.result.repair_instructions,
+      });
+      try {
+        const repaired = await callImageGeneration(repairPrompt, references, modelForAttempt(attempt + 1));
+        if (repaired) {
+          const repairedUrl = await uploadDataUrlToStorage(
+            sb, userId, `spin360/${jobId}/canonical/kf_${angle}_r${attempt}.png`, repaired.dataUrl,
+          );
+          const { error: repairErr } = await sb.from("spin360_canonical_images").upsert({
+            job_id: jobId, user_id: userId, perspective: `kf_${angle}`,
+            image_url: repairedUrl, sort_order: keyframeIndex,
+            angle_degrees: angle, is_generated: true, normalization_status: "normalized",
+          }, { onConflict: "job_id,angle_degrees" });
+          if (repairErr) {
+            await failStage(sb, jobId, "validate_keyframe", `Reparierter Keyframe ${angle}° konnte nicht gespeichert werden: ${repairErr.message}`);
+            return json({ error: "persist_failed", angle });
+          }
+        }
+      } catch (e) {
+        console.error(`[${jobId}] keyframe repair ${angle}° failed:`, (e as Error).message);
+      }
+
+      const adv = advanceValidation(keyframeIndex, attempt, false);
+      if (adv.kind === "next") invokeNextStep(authHeader, { jobId, ...adv.cursor });
+      else await failStage(sb, jobId, "validate_keyframe", adv.reason);
+
+      return json({ success: true, step: "validate_keyframe", angle, passed: false, attempt });
     }
+
 
     // ─────────── PROFILE (unveränderliches Identitätsprofil aus ECHTEN Fotos) ───────────
     if (currentStep === "profile") {
