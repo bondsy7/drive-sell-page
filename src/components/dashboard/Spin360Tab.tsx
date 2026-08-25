@@ -25,29 +25,47 @@ export default function Spin360Tab({ jobs, onOpen, onDelete }: Props) {
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {jobs.map((job) => (
         <div key={job.id} className="bg-card rounded-xl border border-border overflow-hidden group">
+          {(() => {
+            const isCompleted = job.displayStatus === 'completed';
+            const needsReview = job.displayStatus === 'needs_review';
+            const isFailed = job.displayStatus === 'failed' || needsReview;
+            const isUploaded = job.displayStatus === 'uploaded';
+            const statusLabel = isCompleted
+              ? 'Fertig'
+              : needsReview
+                ? 'Prüfung nötig'
+                : job.displayStatus === 'failed'
+                  ? 'Abgebrochen'
+                  : isUploaded
+                    ? 'Nicht gestartet'
+                    : 'In Bearbeitung';
+
+            return (
+              <>
           <div
-            className={`aspect-video bg-muted relative flex items-center justify-center ${job.displayStatus === 'completed' ? 'cursor-pointer' : ''}`}
-            onClick={() => job.displayStatus === 'completed' && onOpen(job.id)}
+            className={`aspect-video bg-muted relative flex items-center justify-center ${isCompleted ? 'cursor-pointer' : ''}`}
+            onClick={() => isCompleted && onOpen(job.id)}
           >
-            <RotateCw className={`w-10 h-10 text-muted-foreground/40 ${job.displayStatus !== 'completed' && job.displayStatus !== 'failed' ? 'animate-spin' : ''}`} />
-            {job.displayStatus === 'completed' && (
+            <RotateCw className={`w-10 h-10 text-muted-foreground/40 ${!isCompleted && !isFailed && !isUploaded ? 'animate-spin' : ''}`} />
+            {isCompleted && (
               <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-foreground/20">
                 <div className="bg-background/80 backdrop-blur rounded-full p-3"><RotateCw className="w-6 h-6 text-foreground" /></div>
               </div>
             )}
             <span className={`absolute top-2 right-2 text-[10px] font-medium px-2 py-0.5 rounded-full ${
-              job.displayStatus === 'completed' ? 'bg-green-500/10 text-green-600' :
-              job.displayStatus === 'failed' ? 'bg-destructive/10 text-destructive' :
+              isCompleted ? 'bg-green-500/10 text-green-600' :
+              isFailed ? 'bg-destructive/10 text-destructive' :
+              isUploaded ? 'bg-muted text-muted-foreground' :
               'bg-accent/10 text-accent'
             }`}>
-              {job.displayStatus === 'completed' ? 'Fertig' : job.displayStatus === 'failed' ? 'Abgebrochen' : 'In Bearbeitung'}
+              {statusLabel}
             </span>
           </div>
           <div className="p-3 flex items-center justify-between">
             <div className="text-xs text-muted-foreground space-y-0.5">
               <p>{new Date(job.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
               {job.manifest?.frameCount && <p>{job.manifest.frameCount} Frames</p>}
-              {job.displayStatus === 'failed' && job.displayError && <p className="text-destructive">{job.displayError}</p>}
+              {isFailed && job.displayError && <p className="text-destructive">{job.displayError}</p>}
             </div>
             <div className="flex gap-1.5">
               <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); onDelete(job.id); }}>
@@ -55,6 +73,9 @@ export default function Spin360Tab({ jobs, onOpen, onDelete }: Props) {
               </Button>
             </div>
           </div>
+              </>
+            );
+          })()}
         </div>
       ))}
     </div>
