@@ -583,6 +583,12 @@ ${hardFailures.length ? hardFailures.map((f) => `- hard failure: ${f}`).join("\n
 ${fixes.map((r) => `- ${r}`).join("\n")}
 </MUST_FIX>
 
+<PRESERVE_EVERYTHING_ELSE>
+Preserve every other aspect of the rejected attempt unchanged: rotation angle, camera position, framing,
+focal length, vehicle centre, ground contact, background, lighting, shadow, paint tone, trim and equipment.
+Do not "improve", restyle or re-compose anything that was not explicitly listed above.
+</PRESERVE_EVERYTHING_ELSE>
+
 ${referencePriorityBlock(referenceLabels)}
 ${REFERENCE_TRUTH_PROTOCOL}
 ${identityLockBlock(identity)}
