@@ -136,10 +136,11 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
 
       if (assetSelection && assetSelection.length > 0) {
         for (const sel of assetSelection) {
+          const isWheelRef = sel.assetKind === 'wheel_reference' || sel.angle < 0;
           sourceUrls.push({
-            perspective: `angle_${sel.angle}`,
+            perspective: isWheelRef ? 'wheel_reference' : `angle_${sel.angle}`,
             url: sel.url,
-            angle: sel.angle,
+            angle: isWheelRef ? -1 : sel.angle,
             assetKind: sel.assetKind,
             assetId: sel.assetId,
             storagePath: sel.storagePath,
@@ -158,10 +159,12 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
         }
       }
 
-      if (sourceUrls.length < 2) {
+      // Nur echte Turntable-Winkel zählen als Abdeckung (Felgenreferenz ist Zusatz).
+      if (sourceUrls.filter((s) => s.angle >= 0).length < 2) {
         toast.error('Mindestens 2 verwertbare Perspektiven erforderlich');
         setPhase(assetSelection ? 'source' : 'upload'); setIsProcessing(false); return;
       }
+
 
       const effectiveVehicleId = await ensureSpinVehicleId();
       const { data: job, error: jobErr } = await supabase
