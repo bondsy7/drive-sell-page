@@ -619,7 +619,7 @@ import {
   sectorBoundaryLabel,
   shouldSkipUnit,
   withBilling,
-  SPIN_MODELS,
+  SPIN_MODELS as V2_SPIN_MODELS,
   KEYFRAME_ANGLES as KF_ANGLES,
   buildBidirectionalOffsets as offsets48,
 } from '../../supabase/functions/_shared/spin360-core';
@@ -684,9 +684,9 @@ describe('spin360 sector wrap + model routing', () => {
   });
 
   it('nutzt Standardmodell bei direktem Foto, Pro ohne Foto', () => {
-    expect(keyframeModelForAttempt(1, true, 3)).toBe(SPIN_MODELS.image);
-    expect(keyframeModelForAttempt(3, true, 3)).toBe(SPIN_MODELS.imagePro);
-    expect(keyframeModelForAttempt(1, false, 3)).toBe(SPIN_MODELS.imagePro);
+    expect(keyframeModelForAttempt(1, true, 3)).toBe(V2_SPIN_MODELS.image);
+    expect(keyframeModelForAttempt(3, true, 3)).toBe(V2_SPIN_MODELS.imagePro);
+    expect(keyframeModelForAttempt(1, false, 3)).toBe(V2_SPIN_MODELS.imagePro);
   });
 });
 
