@@ -12,9 +12,11 @@ export type HubAction =
   | 'canvas-banner-studio' // Deterministischer Canvas-Banner-Editor
   | 'video'           // Video Erstellung
   | 'music-studio'    // Musik mit Lyria 3 generieren
+  | 'spin360'         // 360° Spin (Beta)
   | 'damage-repair'    // Schadensreparatur – KI repariert Schäden auf Fahrzeugbildern
   | 'damage-analysis'  // Schadensanalyse – KI bewertet Schäden + erstellt Bericht
   | 'sales-assistant'; // KI Verkaufsassistent
+
 
 interface ActionTile {
   id: HubAction;
