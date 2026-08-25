@@ -112,7 +112,7 @@ describe('spin360 QA evaluation', () => {
   const perfect = (): QaResult => ({
     scores: {
       identity: 98, wheels: 97, lights: 96, paint: 99,
-      angle_continuity: 92, camera_continuity: 90, environment: 95, artifact_free: 93,
+      angle_continuity: 96, camera_continuity: 95, environment: 95, artifact_free: 96,
     },
     verdict: 'pass',
     hard_failures: [],
