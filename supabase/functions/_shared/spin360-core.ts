@@ -72,10 +72,15 @@ export function angleForIndex(index: number, frameCount: number): number {
   return round2((((index % frameCount) + frameCount) % frameCount) * angleStep(frameCount));
 }
 
-/** Exakter Frame-Index eines Keyframe-Winkels (nur für 32/48 exakt ganzzahlig). */
+/** Exakter Frame-Index eines Winkels (für 32/48 bei den 45°-Keyframes ganzzahlig). */
 export function frameIndexForAngle(angle: number, frameCount: number): number {
-  return Math.round((angle / 360) * frameCount);
+  const norm = ((angle % 360) + 360) % 360;
+  return Math.round((norm / 360) * frameCount) % frameCount;
 }
+
+/** Alias mit Spec-Namensgebung. */
+export const indexForAngle = frameIndexForAngle;
+
 
 export function keyframeIndices(frameCount: number): number[] {
   return KEYFRAME_ANGLES.map((a) => frameIndexForAngle(a, frameCount));
