@@ -62,6 +62,8 @@ export type QaDimension =
 
 export const QA_THRESHOLD_POLICY = {
   verdict: "pass",
+  identityCriticalDimensions: IDENTITY_CRITICAL_DIMENSIONS,
+  secondaryDimensions: SECONDARY_DIMENSIONS,
   identityCritical: QA_IDENTITY_THRESHOLD,
   secondary: QA_SECONDARY_THRESHOLD,
   confidence: QA_CONFIDENCE_THRESHOLD,
@@ -637,11 +639,11 @@ export function buildRepairPrompt(input: RepairPromptInput): string {
   } = input;
 
   const deterministic = qaResult ? deriveRepairInstructionsFromQa(qaResult) : [];
-  const fixes = Array.from(new Set([...repairInstructions, ...deterministic, ...hardFailures])).filter((f) => f.trim().length > 0);
+  const fixes = Array.from(new Set([...repairInstructions, ...deterministic])).filter((f) => f.trim().length > 0);
   const mustFix = fixes.length > 0
     ? fixes
     : [
-      "No deterministic visual defect was reported. Reproduce the same frame with identical vehicle identity, angle, camera, framing, background and lighting; do not change wheels, paint, lights, body, trim or equipment.",
+      "No below-threshold visual dimension was reported. Re-render the same frame conservatively for clearer QA confidence only; preserve all passed dimensions and do not alter wheels, paint, lights, body, trim, equipment, angle, camera, framing, background or lighting.",
     ];
 
   return `You are repairing frame ${frameIndex} (${angle}°) of a ${frameCount}-frame studio turntable sequence
@@ -828,13 +830,18 @@ export function deriveRepairInstructionsFromQa(result: QaResult): string[] {
 }
 
 export function buildQaTelemetry(result: QaResult, rawResult: unknown, passed: boolean): Record<string, unknown> {
+  const derivedRepairInstructions = deriveRepairInstructionsFromQa(result);
   return {
     rawResult,
+    scores: result.scores,
     sanitizedScores: result.scores,
     confidence: result.confidence,
     verdict: result.verdict,
     hardFailures: result.hard_failures,
     repairInstructions: result.repair_instructions,
+    derivedRepairInstructions,
+    thresholds: QA_THRESHOLD_POLICY,
+    policy: QA_THRESHOLD_POLICY,
     thresholdPolicy: QA_THRESHOLD_POLICY,
     thresholdBreaches: qaThresholdBreaches(result),
     compositeScore: qaCompositeScore(result),

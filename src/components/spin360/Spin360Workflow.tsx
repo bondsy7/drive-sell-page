@@ -163,11 +163,16 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
         }
       }
 
-      // Nur echte Turntable-Winkel zählen als Abdeckung (Felgenreferenz ist Zusatz).
+      // Upload-Slots sind nur Winkel-Hinweise: hier nur 4 Bilder verlangen; die echte Verteilung prüft die Backend-Vision.
+      // Fahrzeug-Assets sind bewusst manuell gemappt und können vorab auf verteilte Coverage geprüft werden.
       const coverage = evaluateSourceCoverage(sourceUrls.map((s) => s.angle));
-      if (!coverage.ok) {
+      if (assetSelection && !coverage.ok) {
         toast.error(sourceCoverageFailureReason(coverage));
         setPhase(assetSelection ? 'source' : 'upload'); setIsProcessing(false); return;
+      }
+      if (!assetSelection && sourceUrls.length < 4) {
+        toast.error('Mindestens 4 echte Fotos erforderlich.');
+        setPhase('upload'); setIsProcessing(false); return;
       }
 
 
