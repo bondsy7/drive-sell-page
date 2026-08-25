@@ -166,7 +166,7 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
           user_id: user.id,
           vehicle_id: effectiveVehicleId,
           status: 'uploaded',
-          target_frame_count: 32,
+          target_frame_count: SPIN_FRAME_COUNT,
           keyframe_count: 8,
           manifest_version: 2,
           source_mode: assetSelection ? 'vehicle_assets' : 'upload',
@@ -187,8 +187,14 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
       await supabase.from('spin360_source_images' as any).insert(sourceRows as any);
 
       const { data: pipelineResult, error: pipelineError } = await supabase.functions.invoke('generate-360-spin', {
-        body: { jobId: newJobId, sourceImages: sourceUrls },
+        body: {
+          jobId: newJobId,
+          sourceImages: sourceUrls,
+          frameCount: SPIN_FRAME_COUNT,
+          sourceMode: assetSelection ? 'vehicle_assets' : 'upload',
+        },
       });
+
 
       if (pipelineError) {
         console.log('Edge function call failed but job was created. Will poll for updates.');
