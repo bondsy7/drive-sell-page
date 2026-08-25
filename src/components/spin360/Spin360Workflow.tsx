@@ -127,30 +127,55 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
     setJobError(null);
 
     try {
-      const sourceUrls: { perspective: string; url: string }[] = [];
-      for (const slot of uploadedSlots) {
-        if (!slot.base64) continue;
-        const url = await uploadImageToStorage(
-          slot.base64, user.id,
-          `spin360/sources/${slot.perspective}_${Date.now()}.jpg`,
-        );
-        if (url) sourceUrls.push({ perspective: slot.perspective, url });
+      // Quellbilder: entweder bestehende Fahrzeug-Assets oder frische Uploads.
+      const sourceUrls: { perspective: string; url: string; angle: number; assetKind: string; assetId?: string; storagePath?: string }[] = [];
+
+      if (assetSelection && assetSelection.length > 0) {
+        for (const sel of assetSelection) {
+          sourceUrls.push({
+            perspective: `angle_${sel.angle}`,
+            url: sel.url,
+            angle: sel.angle,
+            assetKind: sel.assetKind,
+            assetId: sel.assetId,
+            storagePath: sel.storagePath,
+          });
+        }
+      } else {
+        for (const slot of uploadedSlots) {
+          if (!slot.base64) continue;
+          const angle = PERSPECTIVE_ANGLES[slot.perspective];
+          if (angle === undefined || angle < 0) continue;
+          const url = await uploadImageToStorage(
+            slot.base64, user.id,
+            `spin360/sources/${slot.perspective}_${Date.now()}.jpg`,
+          );
+          if (url) sourceUrls.push({ perspective: slot.perspective, url, angle, assetKind: 'upload' });
+        }
       }
 
-      if (sourceUrls.length < 4) {
-        toast.error('Fehler beim Hochladen der Bilder');
-        setPhase('upload'); setIsProcessing(false); return;
+      if (sourceUrls.length < 2) {
+        toast.error('Mindestens 2 verwertbare Perspektiven erforderlich');
+        setPhase(assetSelection ? 'source' : 'upload'); setIsProcessing(false); return;
       }
 
       const effectiveVehicleId = await ensureSpinVehicleId();
       const { data: job, error: jobErr } = await supabase
         .from('spin360_jobs' as any)
-        .insert({ user_id: user.id, vehicle_id: effectiveVehicleId, status: 'uploaded', target_frame_count: 36 } as any)
+        .insert({
+          user_id: user.id,
+          vehicle_id: effectiveVehicleId,
+          status: 'uploaded',
+          target_frame_count: 32,
+          keyframe_count: 8,
+          manifest_version: 2,
+          source_mode: assetSelection ? 'vehicle_assets' : 'upload',
+        } as any)
         .select('id').single();
 
       if (jobErr || !job) {
         toast.error('Fehler beim Erstellen des Auftrags');
-        setPhase('upload'); setIsProcessing(false); return;
+        setPhase(assetSelection ? 'source' : 'upload'); setIsProcessing(false); return;
       }
 
       const newJobId = (job as any).id;
@@ -176,7 +201,8 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
       console.error('Start processing error:', err);
       setJobStatus('failed'); setJobError('Unerwarteter Fehler'); setIsProcessing(false);
     }
-  }, [user, uploadedSlots, ensureSpinVehicleId]);
+  }, [user, uploadedSlots, assetSelection, ensureSpinVehicleId]);
+
 
   /* ─── Video2Frames Flow (refactored: 3 images) ─── */
   const pollVideoOperation = useCallback(async (operationName: string, currentJobId: string) => {
