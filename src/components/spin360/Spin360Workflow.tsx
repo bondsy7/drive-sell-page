@@ -57,16 +57,30 @@ const createSpinReferenceComposite = async (frontBase64: string, rearBase64: str
   return canvas.toDataURL('image/jpeg', 0.98);
 };
 
+/** Perspektiven-Slots des klassischen Uploads → Turntable-Winkel. */
+const PERSPECTIVE_ANGLES: Record<string, number> = {
+  front: 0,
+  front_34: 45,
+  left: 90,
+  rear: 180,
+  rear_34: 225,
+  right: 270,
+  showroom: -1,
+};
+
 const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) => {
   const { user } = useAuth();
   const { balance, getCost } = useCredits();
-  const [phase, setPhase] = useState<'upload' | 'confirm' | 'processing' | 'video_extracting' | 'result'>('upload');
+  const [phase, setPhase] = useState<'source' | 'upload' | 'confirm' | 'processing' | 'video_extracting' | 'result'>(
+    vehicleId ? 'source' : 'upload',
+  );
   const [spinMode, setSpinMode] = useState<SpinMode>('image2spin');
   const [jobId, setJobId] = useState<string | null>(null);
   const [jobStatus, setJobStatus] = useState<SpinStep>('uploaded');
   const [jobError, setJobError] = useState<string | null>(null);
   const [resultFrames, setResultFrames] = useState<string[]>([]);
   const [uploadedSlots, setUploadedSlots] = useState<SpinSlotData[]>([]);
+  const [assetSelection, setAssetSelection] = useState<SpinSourceSelection[] | null>(null);
   const [creditDialogOpen, setCreditDialogOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -89,9 +103,18 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
   const totalCost = spinMode === 'video2frames' ? videoCost : imageCost;
 
   const handleSlotsReady = useCallback((slots: SpinSlotData[]) => {
+    setAssetSelection(null);
     setUploadedSlots(slots);
     setCreditDialogOpen(true);
   }, []);
+
+  const handleAssetsReady = useCallback((selection: SpinSourceSelection[]) => {
+    setUploadedSlots([]);
+    setAssetSelection(selection);
+    setSpinMode('image2spin');
+    setCreditDialogOpen(true);
+  }, []);
+
 
   /* ─── Image2Spin Flow (existing) ─── */
   const startImage2Spin = useCallback(async () => {
