@@ -4,6 +4,9 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useVehicleAssets, type VehicleAsset } from '@/hooks/useVehicleAssets';
 
+/** Sonderslot: bindende Felgenreferenz (kein Turntable-Winkel). */
+export const WHEEL_REFERENCE_ANGLE = -1;
+
 /** Winkelkonvention: 0 = Front, 90 = linke Seite, 180 = Heck, 270 = rechte Seite. */
 export const SPIN_ANGLE_SLOTS: { angle: number; label: string; hint: string; required?: boolean }[] = [
   { angle: 0, label: 'Front', hint: 'Direkte Frontansicht', required: true },
@@ -14,7 +17,23 @@ export const SPIN_ANGLE_SLOTS: { angle: number; label: string; hint: string; req
   { angle: 225, label: '3/4 hinten rechts', hint: 'Schräg von hinten rechts' },
   { angle: 270, label: 'Seite rechts', hint: 'Komplette rechte Seite' },
   { angle: 315, label: '3/4 vorne rechts', hint: 'Schräg von vorne rechts' },
+  { angle: WHEEL_REFERENCE_ANGLE, label: 'Felgenreferenz', hint: 'Nahaufnahme der Felge (bindend)' },
 ];
+
+/** Abdeckungsbewertung: wie identitätstreu wird der Spin voraussichtlich? */
+export function evaluateCoverage(angles: number[]): { score: number; label: string; tone: string } {
+  const real = angles.filter((a) => a >= 0);
+  const has = (a: number) => real.includes(a);
+  let score = Math.round((real.length / 8) * 100);
+  if (has(0) && has(180)) score += 5;
+  if (has(90) && has(270)) score += 5;
+  score = Math.min(100, score);
+  if (score >= 85) return { score, label: 'Sehr hohe Identitätstreue', tone: 'text-green-600' };
+  if (score >= 55) return { score, label: 'Gute Identitätstreue', tone: 'text-accent' };
+  if (score >= 30) return { score, label: 'Eingeschränkte Identitätstreue', tone: 'text-amber-600' };
+  return { score, label: 'Sehr wenig Quellmaterial', tone: 'text-destructive' };
+}
+
 
 export interface SpinSourceSelection {
   angle: number;
