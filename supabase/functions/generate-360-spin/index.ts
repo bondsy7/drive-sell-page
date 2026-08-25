@@ -132,15 +132,26 @@ async function failStage(
 
 }
 
-/** Wiederaufnahme-Cursor im qa_summary (rückwärtskompatibel, rein informativ). */
-async function setCursor(sb: any, jobId: string, cursor: Record<string, any>) {
+/**
+ * qa_summary IMMER frisch zusammenführen. Ein Merge auf Basis des zu Beginn der
+ * Invocation gelesenen Job-Rows würde zwischenzeitlich geschriebene Schlüssel
+ * (billing-Marker, pipeline_cursor) wieder überschreiben.
+ */
+async function mergeQaSummary(sb: any, jobId: string, patch: Record<string, any>) {
   const { data } = await sb.from("spin360_jobs").select("qa_summary").eq("id", jobId).maybeSingle();
   const summary = (data?.qa_summary && typeof data.qa_summary === "object" ? data.qa_summary : {}) as Record<string, any>;
-  await updateJobRaw(sb, jobId, {
-    qa_summary: { ...summary, pipeline_cursor: { ...cursor, at: new Date().toISOString() } },
+  return { ...summary, ...patch };
+}
+
+/** Wiederaufnahme-Cursor im qa_summary (rückwärtskompatibel, rein informativ). */
+async function setCursor(sb: any, jobId: string, cursor: Record<string, any>) {
+  const summary = await mergeQaSummary(sb, jobId, {
+    pipeline_cursor: { ...cursor, at: new Date().toISOString() },
   });
+  await updateJobRaw(sb, jobId, { qa_summary: summary });
 
 }
+
 
 /**
  * Idempotente Abrechnung: ein Marker im qa_summary verhindert Doppelbelastung,
