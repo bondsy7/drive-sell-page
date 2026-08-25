@@ -26,6 +26,7 @@ import {
   buildIdentityProfilePrompt,
   buildRepairPrompt,
   qaFailClosed,
+  resolveIdentitySources,
   type QaResult,
 } from '../../supabase/functions/_shared/spin360-core';
 import * as v2 from '@/lib/spin360-v2';
@@ -111,7 +112,7 @@ describe('spin360 QA evaluation', () => {
   const perfect = (): QaResult => ({
     scores: {
       identity: 98, wheels: 97, lights: 96, paint: 99,
-      angle_continuity: 92, camera_continuity: 90, environment: 95, artifact_free: 93,
+      angle_continuity: 96, camera_continuity: 95, environment: 95, artifact_free: 96,
     },
     verdict: 'pass',
     hard_failures: [],
@@ -484,5 +485,124 @@ describe('spin360 v2 models', () => {
     expect(SPIN_MODELS.imagePro).toBe('gemini-3-pro-image');
     expect(JSON.stringify(SPIN_MODELS)).not.toContain('preview');
     expect(JSON.stringify(SPIN_MODELS)).not.toContain('gemini-2.5');
+  });
+});
+
+// ─── Quality-Audit-Fix ──────────────────────────────────────────────────
+describe('spin360 strict QA thresholds (95 on every dimension)', () => {
+  const scores = (over: Partial<Record<string, number>> = {}) => ({
+    identity: 97, wheels: 97, lights: 97, paint: 97,
+    angle_continuity: 97, camera_continuity: 97, environment: 97, artifact_free: 97,
+    ...over,
+  });
+  const qa = (raw: Record<string, unknown>) => isQaPassed(parseQaResult(raw));
+
+  it('fails when camera or environment sit in the low 90s', () => {
+    expect(qa({ verdict: 'pass', scores: scores({ camera_continuity: 92 }), confidence: 95 })).toBe(false);
+    expect(qa({ verdict: 'pass', scores: scores({ environment: 93 }), confidence: 95 })).toBe(false);
+    expect(qa({ verdict: 'pass', scores: scores({ artifact_free: 94 }), confidence: 95 })).toBe(false);
+    expect(qa({ verdict: 'pass', scores: scores({ environment: 95 }), confidence: 95 })).toBe(true);
+  });
+
+  it('enforces confidence >= 90 and normalizes decimals', () => {
+    expect(qa({ verdict: 'pass', scores: scores(), confidence: 89 })).toBe(false);
+    expect(qa({ verdict: 'pass', scores: scores(), confidence: 95 })).toBe(true);
+    expect(qa({ verdict: 'pass', scores: scores(), confidence: 0.89 })).toBe(false);
+    expect(qa({ verdict: 'pass', scores: scores(), confidence: 0.95 })).toBe(true);
+  });
+
+  it('fails closed on missing dimensions or missing confidence', () => {
+    const partial = { ...scores() } as Record<string, number>;
+    delete partial.environment;
+    expect(qa({ verdict: 'pass', scores: partial, confidence: 99 })).toBe(false);
+    expect(qa({ verdict: 'pass', scores: scores() })).toBe(false);
+  });
+});
+
+describe('spin360 completion is exact', () => {
+  const passedFrames = (count: number) =>
+    Array.from({ length: count }, (_, i) => ({
+      frame_index: i,
+      angle_degrees: v2.angleForIndex(i, count),
+      validation_status: 'passed',
+      quality_score: 96,
+    }));
+
+  it('rejects a full set with one wrong angle', () => {
+    const frames = passedFrames(48);
+    frames[12].angle_degrees = 91; // statt 90
+    expect(aggregateQuality(frames, 48).complete).toBe(false);
+    expect(v2.evaluateCompletion(frames, 48).status).toBe('needs_review');
+  });
+
+  it('rejects an out-of-range index replacing a missing expected index', () => {
+    const frames = passedFrames(48);
+    frames[47] = { frame_index: 99, angle_degrees: 352.5, validation_status: 'passed', quality_score: 96 };
+    expect(aggregateQuality(frames, 48).complete).toBe(false);
+    const result = v2.evaluateCompletion(frames, 48);
+    expect(result.missingIndices).toEqual([47]);
+    expect(result.status).toBe('needs_review');
+  });
+
+  it('accepts only the exact decimal grid', () => {
+    expect(aggregateQuality(passedFrames(48), 48).complete).toBe(true);
+    expect(aggregateQuality(passedFrames(32), 32).complete).toBe(true);
+  });
+
+  it('manifest carries targetFrameCount and clockwise direction with exact angles', () => {
+    const manifest = buildManifest({
+      jobId: 'job-1',
+      vehicleId: 'veh-1',
+      vin: 'WAU123',
+      frames: passedFrames(48).map((f) => ({ ...f, image_url: `f${f.frame_index}.webp` })),
+      targetFrameCount: 48,
+      identityHash: 'abc',
+    });
+    expect(manifest.direction).toBe('clockwise');
+    expect(manifest.targetFrameCount).toBe(48);
+    expect(manifest.frames[1].angle).toBe(7.5);
+    expect(manifest.frames.map((f) => f.index)).toEqual(Array.from({ length: 48 }, (_, i) => i));
+    expect(JSON.stringify(manifest)).not.toContain('identityProfile');
+  });
+});
+
+describe('spin360 source coverage', () => {
+  it('requires the four cardinal angles', () => {
+    expect(v2.evaluateSourceCoverage([0, 180]).ok).toBe(false);
+    expect(v2.evaluateSourceCoverage([0, 90, 180]).missingRequired).toEqual([270]);
+    const full = v2.evaluateSourceCoverage([0, 90, 180, 270]);
+    expect(full.ok).toBe(true);
+    expect(full.missingOptional).toEqual([45, 135, 225, 315]);
+    expect(v2.MIN_SOURCE_ANGLES).toBe(4);
+  });
+
+  it('ignores wheel reference slot, duplicates and non-grid angles', () => {
+    expect(v2.evaluateSourceCoverage([-1, 0, 0, 90, 180, 270, 33]).uniqueAngles).toEqual([0, 90, 180, 270]);
+    expect(v2.evaluateSourceCoverage([-1, 0, 90, 180, 270]).ok).toBe(true);
+  });
+});
+
+describe('spin360 identity sources', () => {
+  it('prefers originals, then uploads, then gallery and never generated frames', () => {
+    const rows = [
+      { angle_degrees: 0, image_url: 'g0', asset_kind: 'gallery' },
+      { angle_degrees: 90, image_url: 'o90', asset_kind: 'original' },
+      { angle_degrees: 180, image_url: 'u180', asset_kind: 'upload' },
+      { angle_degrees: 270, image_url: 'gen270', asset_kind: 'generated' },
+      { angle_degrees: -1, image_url: 'wheel', asset_kind: 'wheel_reference' },
+    ];
+    const originals = resolveIdentitySources(rows);
+    expect(originals.tier).toBe('original');
+    expect(originals.sources.map((s) => s.image_url)).toEqual(['o90']);
+
+    const uploads = resolveIdentitySources(rows.filter((r) => r.asset_kind !== 'original'));
+    expect(uploads.tier).toBe('upload');
+    expect(uploads.sources.map((s) => s.image_url)).toEqual(['u180']);
+
+    const generatedOnly = resolveIdentitySources([
+      { angle_degrees: 0, image_url: 'gen0', asset_kind: 'generated_keyframe' },
+    ]);
+    expect(generatedOnly.tier).toBe('none');
+    expect(generatedOnly.sources).toEqual([]);
   });
 });
