@@ -136,9 +136,10 @@ async function failStage(
 async function setCursor(sb: any, jobId: string, cursor: Record<string, any>) {
   const { data } = await sb.from("spin360_jobs").select("qa_summary").eq("id", jobId).maybeSingle();
   const summary = (data?.qa_summary && typeof data.qa_summary === "object" ? data.qa_summary : {}) as Record<string, any>;
-  await updateJob(sb, jobId, {
+  await updateJobRaw(sb, jobId, {
     qa_summary: { ...summary, pipeline_cursor: { ...cursor, at: new Date().toISOString() } },
   });
+
 }
 
 /**
