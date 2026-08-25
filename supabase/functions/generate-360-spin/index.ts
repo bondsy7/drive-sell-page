@@ -125,10 +125,11 @@ async function failStage(
   sb: any, jobId: string, stage: string, message: string, status = "needs_review",
 ) {
   console.error(`[${jobId}] stage=${stage} terminal: ${message}`);
-  await updateJob(sb, jobId, {
+  await updateJobRaw(sb, jobId, {
     status,
     error_message: `[${stage}] ${message}`,
   });
+
 }
 
 /** Wiederaufnahme-Cursor im qa_summary (rückwärtskompatibel, rein informativ). */
