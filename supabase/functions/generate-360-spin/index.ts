@@ -642,7 +642,7 @@ serve(async (req) => {
           return json({ error: "normalize_failed", angle });
         }
 
-        await sb.from("spin360_canonical_images").upsert({
+        const { error: upsertErr } = await sb.from("spin360_canonical_images").upsert({
           job_id: jobId,
           user_id: userId,
           perspective: `kf_${angle}`,
@@ -653,7 +653,14 @@ serve(async (req) => {
           normalization_status: "normalized",
         }, { onConflict: "job_id,angle_degrees" });
 
+        if (upsertErr) {
+          console.error(`[${jobId}] keyframe ${angle}° persist failed:`, upsertErr.message);
+          await markJobFailed(sb, jobId, `Keyframe ${angle}° konnte nicht gespeichert werden: ${upsertErr.message}`, "needs_review");
+          return json({ error: "persist_failed", angle });
+        }
+
         console.log(`[${jobId}] keyframe ${angle}° ready (model=${usedModel}, fromPhoto=${!!own})`);
+
       }
 
       if (keyframeIndex < KEYFRAME_ANGLES.length - 1) {
