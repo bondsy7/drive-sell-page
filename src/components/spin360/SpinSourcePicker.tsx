@@ -65,23 +65,27 @@ const SpinSourcePicker: React.FC<Props> = ({ vehicleId, onConfirm, onSwitchToUpl
     [selection],
   );
 
-  const chosenCount = Object.keys(selection).length;
+  const chosenAngles = Object.values(selection).map((s) => s.angle);
+  const chosenCount = chosenAngles.filter((a) => a >= 0).length;
   const hasRequired = SPIN_ANGLE_SLOTS.filter((s) => s.required).every((s) => !!selection[s.angle]);
+  const coverage = evaluateCoverage(chosenAngles);
 
   const pick = (asset: VehicleAsset) => {
+    const isWheel = activeAngle === WHEEL_REFERENCE_ANGLE;
     setSelection((prev) => ({
       ...prev,
       [activeAngle]: {
         angle: activeAngle,
         url: asset.url,
-        assetKind: asset.kind,
+        assetKind: isWheel ? 'wheel_reference' : asset.kind,
         assetId: asset.id,
         storagePath: asset.storagePath,
       },
     }));
-    const next = SPIN_ANGLE_SLOTS.find((s) => !selection[s.angle] && s.angle !== activeAngle);
+    const next = SPIN_ANGLE_SLOTS.find((s) => !selection[s.angle] && s.angle !== activeAngle && s.angle >= 0);
     if (next) setActiveAngle(next.angle);
   };
+
 
   const clear = (angle: number) => {
     setSelection((prev) => {
