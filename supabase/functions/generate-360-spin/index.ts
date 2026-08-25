@@ -630,11 +630,10 @@ serve(async (req) => {
         keyframe_count: KEYFRAME_ANGLES.length,
         target_frame_count: FRAME_COUNT,
         manifest_version: 2,
-        qa_summary: {
-          ...(jobRow?.qa_summary as Record<string, any> ?? {}),
+        qa_summary: await mergeQaSummary(sb, jobId, {
           wheelReference: wheelSpec,
           hasDedicatedWheelReference: !!wheelSource,
-        },
+        }),
       });
 
       // Identitätsprofil ZUERST — es ist Prompt-Anker für alle Keyframes.
@@ -988,11 +987,10 @@ serve(async (req) => {
       await updateJob(sb, jobId, {
         identity_profile: identity,
         identity_hash: identityHash,
-        qa_summary: {
-          ...(jobRow?.qa_summary as Record<string, any> ?? {}),
+        qa_summary: await mergeQaSummary(sb, jobId, {
           identitySourceTier: identityTier,
           identitySourceCount: identitySources.length,
-        },
+        }),
       });
 
       invokeNextStep(authHeader, { jobId, step: "keyframes", keyframeIndex: 0 });
@@ -1255,7 +1253,7 @@ serve(async (req) => {
       await updateJob(sb, jobId, {
         manifest,
         manifest_version: 2,
-        qa_summary: { ...(jobRow?.qa_summary as Record<string, any> ?? {}), aggregate: quality },
+        qa_summary: await mergeQaSummary(sb, jobId, { aggregate: quality }),
         status: quality.complete ? "completed" : "needs_review",
         error_message: quality.complete
           ? null
