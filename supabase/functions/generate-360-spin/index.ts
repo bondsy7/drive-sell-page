@@ -1,25 +1,51 @@
+// generate-360-spin (v2 — Keyframe/Doppel-Anker-Architektur)
+// Schritte: analyze → normalize (8 Keyframes) → profile → frames (Sektoren + QA) → assemble
+//
+// Kernprinzipien:
+//  - 8 Keyframes (0/45/90/135/180/225/270/315), vorhandene Fotos belegen so viele wie möglich
+//  - Zwischenframes immer mit linkem + rechtem Keyframe + letztem akzeptierten Nachbarn als Referenz
+//  - Kein Fallback auf unnormalisierte Rohfotos
+//  - QA nach jedem Sektor, gezielte Regeneration, Credits erst nach QA
+//  - Alle Bildtransfers bevorzugt über die Gemini File API
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { getSecret } from "../_shared/get-secret.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// ─── Konfiguration ───
+const TARGET_FRAME_COUNT = 32;              // 11,25° Schritte
+const KEYFRAME_ANGLES = [0, 45, 90, 135, 180, 225, 270, 315];
+const FRAMES_PER_SECTOR = TARGET_FRAME_COUNT / KEYFRAME_ANGLES.length; // 4
+const MAX_FRAME_ATTEMPTS = 3;               // 1 Versuch + 2 Regenerationen
+const MAX_NORMALIZE_ATTEMPTS = 3;
+const SECTOR_COUNT = KEYFRAME_ANGLES.length;
+
+// Tier → Engine bindend, kein Cross-Engine-Fallback.
+const TEXT_MODEL = "gemini-2.5-flash";
+const MODEL_NORMALIZE = "gemini-3-pro-image-preview";
+const MODEL_FRAME = "gemini-3.1-flash-image-preview";
+const MODEL_REGEN = "gemini-3-pro-image-preview";
+const IMAGE_FALLBACKS: Record<string, string[]> = {
+  "gemini-3-pro-image-preview": ["gemini-3-pro-image-preview", "gemini-3.1-flash-image-preview"],
+  "gemini-3.1-flash-image-preview": ["gemini-3.1-flash-image-preview", "gemini-2.5-flash-image"],
+};
+
+const BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
+
 function createServiceClient() {
-  return createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-  );
+  return createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 }
 
 function createUserClient(authHeader: string) {
-  return createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_ANON_KEY")!,
-    { global: { headers: { Authorization: authHeader } } },
-  );
+  return createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
+    global: { headers: { Authorization: authHeader } },
+  });
 }
 
 async function getCustomPrompt(sb: any, key: string, defaultPrompt: string): Promise<string> {
@@ -27,262 +53,348 @@ async function getCustomPrompt(sb: any, key: string, defaultPrompt: string): Pro
     const { data } = await sb.from("admin_settings").select("value").eq("key", "ai_prompts").single();
     const override = (data?.value as Record<string, string>)?.[key];
     if (override && override.trim() !== "" && override.trim().toLowerCase() !== "default") return override;
-  } catch (e) { console.warn("Custom prompt load failed:", e); }
+  } catch (e) {
+    console.warn("Custom prompt load failed:", e);
+  }
   return defaultPrompt;
 }
 
-const TARGET_FRAME_COUNT = 36;
-const FRAME_BATCH_SIZE = 4;
-const MAX_FRAME_BATCH_RETRIES = 3;
-
-async function updateJobStatus(sb: any, jobId: string, status: string, extra: Record<string, any> = {}) {
-  await sb.from("spin360_jobs").update({ status, updated_at: new Date().toISOString(), ...extra }).eq("id", jobId);
-}
-
-async function touchJob(sb: any, jobId: string, extra: Record<string, any> = {}) {
+// ─── Job Helpers ───
+async function updateJob(sb: any, jobId: string, extra: Record<string, any>) {
   await sb.from("spin360_jobs").update({ updated_at: new Date().toISOString(), ...extra }).eq("id", jobId);
 }
 
-async function markJobFailed(sb: any, jobId: string, errorMessage: string) {
-  await sb.from("spin360_jobs").update({
-    status: "failed",
-    error_message: errorMessage,
-    updated_at: new Date().toISOString(),
-  }).eq("id", jobId);
+async function markJobFailed(sb: any, jobId: string, errorMessage: string, status = "failed") {
+  await updateJob(sb, jobId, { status, error_message: errorMessage });
 }
 
-async function getExistingFrameIndexes(sb: any, jobId: string): Promise<Set<number>> {
-  const { data } = await sb
-    .from("spin360_generated_frames")
-    .select("frame_index")
-    .eq("job_id", jobId)
-    .eq("validation_status", "passed");
-
-  return new Set(
-    (data || [])
-      .map((frame: any) => Number(frame.frame_index))
-      .filter((frameIndex: number) => Number.isFinite(frameIndex)),
-  );
+function angleForIndex(index: number) {
+  return (index * 360) / TARGET_FRAME_COUNT;
 }
 
-function buildMissingFramePlan(existingIndexes: Set<number>, targetFrameCount: number = TARGET_FRAME_COUNT) {
-  const frames: { index: number; angle: number }[] = [];
-  const angleStep = 360 / targetFrameCount;
-
-  for (let index = 0; index < targetFrameCount; index++) {
-    if (!existingIndexes.has(index)) {
-      frames.push({ index, angle: Math.round(index * angleStep) });
-    }
-  }
-
-  return frames;
+function keyframeIndexForAngle(angle: number) {
+  return Math.round((angle / 360) * TARGET_FRAME_COUNT);
 }
 
-async function insertFrameIfMissing(sb: any, frame: Record<string, any>): Promise<boolean> {
-  const { data: existing } = await sb
-    .from("spin360_generated_frames")
-    .select("id")
-    .eq("job_id", frame.job_id)
-    .eq("frame_index", frame.frame_index)
-    .limit(1);
-
-  if (existing && existing.length > 0) return false;
-
-  const { error } = await sb.from("spin360_generated_frames").insert(frame);
-  if (error) throw new Error(`Frame insert error: ${error.message}`);
-  return true;
-}
-
+// ─── Bild-/Datei-Utilities ───
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
   let binary = "";
   const chunkSize = 8192;
   for (let i = 0; i < bytes.length; i += chunkSize) {
-    const chunk = bytes.subarray(i, i + chunkSize);
-    binary += String.fromCharCode(...chunk);
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
   }
   return btoa(binary);
 }
 
-async function callGeminiFlash(prompt: string, imageUrls: string[], responseType: "json" | "text" = "json"): Promise<any> {
+interface RefPart {
+  fileUri?: { uri: string; mimeType: string };
+  inline?: { mimeType: string; data: string };
+}
+
+/** File API First: Bild einmal hochladen, URI wiederverwenden. Fallback: inline bytes. */
+const fileUriCache = new Map<string, { uri: string; mimeType: string }>();
+
+async function toReferencePart(apiKey: string, url: string): Promise<RefPart | null> {
+  const cached = fileUriCache.get(url);
+  if (cached) return { fileUri: cached };
+
+  let bytes: Uint8Array;
+  let mimeType = "image/jpeg";
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) return null;
+    mimeType = resp.headers.get("content-type") || "image/jpeg";
+    bytes = new Uint8Array(await resp.arrayBuffer());
+  } catch (e) {
+    console.warn("Reference download failed:", url, (e as Error).message);
+    return null;
+  }
+
+  try {
+    const start = await fetch(`https://generativelanguage.googleapis.com/upload/v1beta/files?key=${apiKey}`, {
+      method: "POST",
+      headers: {
+        "X-Goog-Upload-Protocol": "resumable",
+        "X-Goog-Upload-Command": "start",
+        "X-Goog-Upload-Header-Content-Length": String(bytes.byteLength),
+        "X-Goog-Upload-Header-Content-Type": mimeType,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ file: { display_name: `spin_${crypto.randomUUID()}` } }),
+    });
+    const uploadUrl = start.headers.get("x-goog-upload-url");
+    if (start.ok && uploadUrl) {
+      const finish = await fetch(uploadUrl, {
+        method: "POST",
+        headers: {
+          "Content-Length": String(bytes.byteLength),
+          "X-Goog-Upload-Offset": "0",
+          "X-Goog-Upload-Command": "upload, finalize",
+        },
+        body: bytes,
+      });
+      if (finish.ok) {
+        const info = await finish.json();
+        const uri = info?.file?.uri;
+        if (uri) {
+          const entry = { uri, mimeType: info?.file?.mimeType || mimeType };
+          fileUriCache.set(url, entry);
+          return { fileUri: entry };
+        }
+      }
+    }
+  } catch (e) {
+    console.warn("Gemini File API upload failed, falling back to inline:", (e as Error).message);
+  }
+
+  return { inline: { mimeType, data: arrayBufferToBase64(bytes.buffer as ArrayBuffer) } };
+}
+
+function refPartToGemini(part: RefPart) {
+  if (part.fileUri) return { fileData: { fileUri: part.fileUri.uri, mimeType: part.fileUri.mimeType } };
+  return { inlineData: { mimeType: part.inline!.mimeType, data: part.inline!.data } };
+}
+
+// ─── Gemini Calls ───
+async function callGeminiJson(prompt: string, imageUrls: string[]): Promise<any> {
   const apiKey = await getSecret("GEMINI_API_KEY");
   if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
 
   const parts: any[] = [{ text: prompt }];
   for (const url of imageUrls) {
-    const imgResp = await fetch(url);
-    const imgBuf = await imgResp.arrayBuffer();
-    const b64 = arrayBufferToBase64(imgBuf);
-    const mimeType = imgResp.headers.get("content-type") || "image/jpeg";
-    parts.push({ inlineData: { mimeType, data: b64 } });
+    const part = await toReferencePart(apiKey, url);
+    if (part) parts.push(refPartToGemini(part));
   }
 
-  const body: any = {
-    contents: [{ parts }],
-    generationConfig: { temperature: 0.2, maxOutputTokens: 4096 },
-  };
-  if (responseType === "json") body.generationConfig.responseMimeType = "application/json";
+  const resp = await fetch(`${BASE_URL}/models/${TEXT_MODEL}:generateContent?key=${apiKey}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ parts }],
+      generationConfig: { temperature: 0.1, maxOutputTokens: 4096, responseMimeType: "application/json" },
+    }),
+  });
 
-  const resp = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-    { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) },
-  );
-
-  if (!resp.ok) {
-    const text = await resp.text();
-    console.error("Gemini Flash error:", resp.status, text);
-    throw new Error(`Gemini API error: ${resp.status}`);
-  }
-
+  if (!resp.ok) throw new Error(`Gemini text API error: ${resp.status}`);
   const result = await resp.json();
-  const textContent = result.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!textContent) throw new Error("No response from Gemini");
-
-  if (responseType === "json") {
-    try { return JSON.parse(textContent); } catch { return textContent; }
+  const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error("Empty Gemini response");
+  try {
+    return JSON.parse(text);
+  } catch {
+    const match = text.match(/\{[\s\S]*\}/);
+    if (match) {
+      try { return JSON.parse(match[0]); } catch { /* ignore */ }
+    }
+    throw new Error("Gemini JSON parse failed");
   }
-  return textContent;
 }
 
-async function callImageGeneration(prompt: string, referenceImageUrl: string, model: string = "gemini-2.5-flash"): Promise<string | null> {
+/** Bildgenerierung mit mehreren Referenzbildern. Verweigerung = verwertbares Fehlersignal. */
+async function callImageGeneration(
+  prompt: string,
+  referenceUrls: string[],
+  requestedModel: string,
+): Promise<{ dataUrl: string; model: string } | null> {
   const apiKey = await getSecret("GEMINI_API_KEY");
   if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
 
-  // Download reference image and convert to base64
-  const imgResp = await fetch(referenceImageUrl);
-  const imgBuf = await imgResp.arrayBuffer();
-  const b64 = arrayBufferToBase64(imgBuf);
-  const mimeType = imgResp.headers.get("content-type") || "image/jpeg";
+  const refParts: any[] = [];
+  for (const url of referenceUrls) {
+    const part = await toReferencePart(apiKey, url);
+    if (part) refParts.push(refPartToGemini(part));
+  }
+  if (refParts.length === 0) throw new Error("no_reference_images");
 
-  // Try multiple models as fallback for geo-restrictions
-  const modelsToTry = [model, "gemini-2.0-flash-exp", "gemini-2.0-flash-preview-image-generation"];
-  const uniqueModels = [...new Set(modelsToTry)];
+  const chain = IMAGE_FALLBACKS[requestedModel] || [requestedModel];
+  let lastError: string | null = null;
 
-  for (const currentModel of uniqueModels) {
+  for (const model of chain) {
+    console.log(`[spin] Engine=gemini Model=${model} (requested=${requestedModel})`);
     try {
-      const resp = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent?key=${apiKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{
-              parts: [
-                { text: prompt },
-                { inlineData: { mimeType, data: b64 } },
-              ],
-            }],
-            generationConfig: {
-              responseModalities: ["IMAGE", "TEXT"],
-            },
-          }),
-        },
-      );
+      const resp = await fetch(`${BASE_URL}/models/${model}:generateContent?key=${apiKey}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }, ...refParts] }],
+          generationConfig: { responseModalities: ["IMAGE", "TEXT"], temperature: 0.15 },
+        }),
+      });
 
       if (!resp.ok) {
         const t = await resp.text();
-        console.error(`Image gen error (${currentModel}):`, resp.status, t);
+        lastError = `${resp.status}`;
+        console.error(`[spin] image gen error (${model}): ${resp.status} ${t.slice(0, 300)}`);
         if (resp.status === 429) throw new Error("rate_limited");
-        // If geo-blocked (400 FAILED_PRECONDITION), try next model
-        if (resp.status === 400 && t.includes("not available in your country")) {
-          console.warn(`Model ${currentModel} geo-blocked, trying next...`);
-          continue;
-        }
-        if (currentModel === uniqueModels[uniqueModels.length - 1]) {
-          throw new Error(`image_generation_${resp.status}`);
-        }
         continue;
       }
 
       const data = await resp.json();
-      const parts = data.candidates?.[0]?.content?.parts || [];
-      for (const part of parts) {
+      for (const part of data.candidates?.[0]?.content?.parts || []) {
         if (part.inlineData) {
-          console.log(`Image generated successfully with model: ${currentModel}`);
-          return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+          return { dataUrl: `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`, model };
         }
       }
+      lastError = "no_image_in_response";
+      console.warn(`[spin] ${model} returned no image (refusal signal)`);
     } catch (e) {
       if ((e as Error).message === "rate_limited") throw e;
-      if (currentModel === uniqueModels[uniqueModels.length - 1]) throw e;
-      console.warn(`Model ${currentModel} failed, trying next:`, (e as Error).message);
+      lastError = (e as Error).message;
     }
   }
+
+  console.warn(`[spin] image generation failed: ${lastError}`);
   return null;
 }
 
-async function uploadBase64ToStorage(sb: any, userId: string, path: string, base64Data: string): Promise<string> {
-  const isDataUrl = base64Data.startsWith("data:");
-  const mimeMatch = isDataUrl ? base64Data.match(/^data:(image\/\w+);base64,/) : null;
+async function uploadDataUrlToStorage(sb: any, userId: string, path: string, dataUrl: string): Promise<string> {
+  const mimeMatch = dataUrl.match(/^data:(image\/[\w.+-]+);base64,/);
   const contentType = mimeMatch ? mimeMatch[1] : "image/png";
-  const raw = isDataUrl ? base64Data.split(",")[1] : base64Data;
-  const bytes = Uint8Array.from(atob(raw), c => c.charCodeAt(0));
-
+  const raw = dataUrl.includes(",") ? dataUrl.split(",")[1] : dataUrl;
+  const bytes = Uint8Array.from(atob(raw), (c) => c.charCodeAt(0));
   const fullPath = `${userId}/${path}`;
   const { error } = await sb.storage.from("vehicle-images").upload(fullPath, bytes, { contentType, upsert: true });
   if (error) throw new Error(`Storage upload error: ${error.message}`);
-
-  const { data: urlData } = sb.storage.from("vehicle-images").getPublicUrl(fullPath);
-  return urlData.publicUrl;
+  const { data } = sb.storage.from("vehicle-images").getPublicUrl(fullPath);
+  return data.publicUrl;
 }
 
-// Self-invoke the next step (fire-and-forget)
 async function invokeNextStep(authHeader: string, body: Record<string, any>) {
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
   try {
     const resp = await fetch(`${supabaseUrl}/functions/v1/generate-360-spin`, {
       method: "POST",
-      headers: {
-        Authorization: authHeader,
-        apikey: anonKey,
-        "Content-Type": "application/json",
-      },
+      headers: { Authorization: authHeader, apikey: anonKey, "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
-
-    if (!resp.ok) {
-      const errorText = await resp.text();
-      console.error("Self-invoke failed:", resp.status, errorText);
-    }
+    if (!resp.ok) console.error("Self-invoke failed:", resp.status, await resp.text());
   } catch (e) {
     console.error("Self-invoke failed:", e);
   }
 }
 
-// ─── PROMPTS ───
-const ANALYSIS_PROMPT = `You are an expert automotive photographer analyzing 4 vehicle images for a 360° spin.
-Analyze each image and return JSON:
-{
-  "images": [
-    { "index": 0, "detected_perspective": "front"|"rear"|"left"|"right", "quality_score": 0-100,
-      "vehicle_fully_visible": true/false, "cropping_ok": true/false, "brightness_ok": true/false,
-      "warnings": [], "vehicle_type": "sedan"|"suv"|"hatchback"|"coupe"|"wagon"|"van"|"truck"|"convertible",
-      "color": "string" }
-  ],
-  "same_vehicle": true/false, "mismatch_warnings": [],
-  "suggested_reorder": [0,1,2,3] or null, "overall_quality": "good"|"acceptable"|"poor"
+// ═══════════════ PROMPT-BAUSTEINE ═══════════════
+
+const REFERENCE_TRUTH = `<REFERENCE_TRUTH_PROTOCOL>
+Use ONLY the provided reference images as the source of truth.
+Do NOT invent colors, badges, wheels, rims, trim, stitching, lettering or UI elements.
+Every visible attribute MUST match the references exactly.
+Do NOT fall back on generic model knowledge about this make or model.
+</REFERENCE_TRUTH_PROTOCOL>`;
+
+const SCENE_LOCK = `<SCENE_LOCK>
+Background: seamless neutral studio cyclorama, light grey (#EDEDED) at the floor fading to white at the top.
+Lighting: large soft overhead key light plus even fill, no coloured light, no visible light sources.
+Ground contact: one soft elliptical contact shadow directly under the vehicle, always centered under the wheelbase.
+Camera: locked tripod, eye level at roughly 1/2 vehicle height, 50mm equivalent, no tilt, no roll.
+Framing: vehicle horizontally centered, occupying 82% of the image width, identical margins in every frame.
+Output: single photorealistic image, 3:2 landscape, no text, no watermark, no logo overlay.
+</SCENE_LOCK>`;
+
+const NEGATIVE_LIST = `<NEGATIVE_LIST>
+No second vehicle. No people. No animals. No readable license plate (keep the plate area blank).
+No reflections of foreign objects, no studio equipment, no tripods, no props.
+No text, captions, watermarks or borders. No motion blur, no lens flare, no vignette.
+No changes to body condition: do not repair dents, scratches or wear, do not add accessories.
+</NEGATIVE_LIST>`;
+
+function identityLockBlock(identity: unknown) {
+  return `<IDENTITY_LOCK>
+The following JSON describes the ONE vehicle that must appear. It is binding and must be reproduced literally:
+${JSON.stringify(identity ?? {}, null, 0)}
+Paint tone and finish, rim design and spoke count, headlight and taillight signatures, grille pattern,
+mirror type, roofline, glass shape, badges and door count must be identical in every frame.
+</IDENTITY_LOCK>`;
 }
-The images should be in order: front, rear, left side, right side.`;
 
-const IDENTITY_PROMPT = `Analyze these 4 canonical vehicle images and create a detailed identity profile JSON.
-Return JSON:
-{ "body_type": "string", "proportions": { "length_class": "string", "height_class": "string", "width_class": "string" },
-  "paint_color": { "primary": "string", "finish": "string" }, "trim_color": "string",
-  "wheel_design": "string", "headlight_signature": "string", "taillight_signature": "string",
-  "grille_signature": "string", "mirror_shape": "string", "roofline": "string",
-  "window_shape": "string", "visible_badges": [], "door_count": 4, "confidence_score": 0-100 }`;
+const DEFAULT_ANALYSIS_PROMPT = `You are an automotive photo analyst preparing a 360° turntable spin.
+For each supplied image return JSON:
+{
+  "images": [{ "index": 0, "detected_angle": 0|45|90|135|180|225|270|315,
+    "quality_score": 0-100, "vehicle_fully_visible": true, "cropping_ok": true,
+    "brightness_ok": true, "warnings": [], "vehicle_type": "string", "color": "string" }],
+  "same_vehicle": true, "mismatch_warnings": [], "overall_quality": "good"|"acceptable"|"poor"
+}
+Angle convention: 0 = direct front, 90 = full left side (driver side), 180 = direct rear,
+270 = full right side, 45/135/225/315 = the corresponding three-quarter views.
+Pick the closest angle from the allowed set for every image.`;
 
-const NORMALIZE_PROMPT = `You are a professional automotive photographer. Take this vehicle photo and normalize it:
-- Remove the background completely and replace with a clean, neutral studio-white/light-grey gradient
-- Center the vehicle perfectly in frame
-- Correct any perspective tilt or distortion
-- Balance brightness and contrast for studio-quality lighting
-- Keep the EXACT same vehicle with ALL details: color, wheels, badges, trim, accessories
-- The result must look like a professional studio photo
-- DO NOT change or add any vehicle details
-- Maintain the exact perspective (front/rear/left/right) as the original
-- ALWAYS generate an image - never refuse`;
+const DEFAULT_IDENTITY_PROMPT = `Analyse these vehicle images and return one binding identity profile as JSON:
+{ "body_type": "", "proportions": { "length_class": "", "height_class": "", "width_class": "" },
+  "paint_color": { "primary": "", "finish": "" }, "trim_color": "", "wheel_design": "",
+  "wheel_spoke_count": 0, "headlight_signature": "", "taillight_signature": "", "grille_signature": "",
+  "mirror_shape": "", "roofline": "", "window_shape": "", "visible_badges": [], "door_count": 4,
+  "visible_damage": [], "confidence_score": 0 }
+Describe only what is visible. Never guess from model knowledge.`;
+
+function buildNormalizePrompt(base: string, angle: number) {
+  return `${base}
+
+${REFERENCE_TRUTH}
+${SCENE_LOCK}
+${NEGATIVE_LIST}
+
+<TASK>
+Re-photograph the vehicle from the first reference image as a studio turntable keyframe at ${angle} degrees.
+Angle convention: 0 = direct front, 90 = full left side, 180 = direct rear, 270 = full right side.
+Keep the vehicle identical. Only background, lighting, framing and perspective correction may change.
+</TASK>`;
+}
+
+const DEFAULT_NORMALIZE_PROMPT = `You are a professional automotive studio photographer producing a turntable keyframe.`;
+
+function buildFramePrompt(
+  identity: unknown,
+  angle: number,
+  prevAngle: number,
+  nextAngle: number,
+  hasNeighbour: boolean,
+  strict: boolean,
+) {
+  return `You are producing frame ${angle}° of a 32-frame studio turntable sequence of ONE specific vehicle.
+
+${REFERENCE_TRUTH}
+${identityLockBlock(identity)}
+${SCENE_LOCK}
+${NEGATIVE_LIST}
+
+<REFERENCE_ROLES>
+Reference 1 = keyframe at ${prevAngle}° (rotation start of this sector).
+Reference 2 = keyframe at ${nextAngle}° (rotation end of this sector).${
+    hasNeighbour ? `\nReference 3 = the already accepted neighbouring frame, immediately before this one in the rotation.` : ""
+  }
+</REFERENCE_ROLES>
+
+<TASK>
+Render the SAME vehicle rotated to exactly ${angle} degrees, measured clockwise from the FIRST reference image
+(0 = direct front, 90 = full left side, 180 = direct rear, 270 = full right side).
+The result must sit visually exactly between reference 1 and reference 2 — never beyond either of them.
+Scene, lighting, camera and framing are frozen: only the vehicle's rotation changes.
+</TASK>${
+    strict
+      ? `
+
+<STRICT_RETRY>
+A previous attempt was rejected. Pay maximum attention to: rim design and spoke count, paint tone,
+light signatures, body proportions and the exact rotation angle. Do not drift towards a generic vehicle.
+</STRICT_RETRY>`
+      : ""
+  }`;
+}
+
+const QA_PROMPT = `You are the quality gate for a 360° vehicle turntable sequence.
+Reference image 1 is the binding keyframe. The following images are candidate frames.
+For every candidate return JSON:
+{ "frames": [{ "position": 1, "verdict": "pass"|"fail", "score": 0-100, "issues": [] }] }
+Fail a frame when any of these is true: different paint tone or finish, different rim design or spoke count,
+different light signature or grille, different body proportions or door count, added or removed parts,
+visible artefacts or deformations, background not the uniform studio cyclorama, vehicle not centered,
+or the rotation angle is implausible for the requested position.
+Be strict: when in doubt, fail.`;
+
+// ═══════════════ HANDLER ═══════════════
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -292,523 +404,490 @@ serve(async (req) => {
     if (!authHeader) throw new Error("Not authenticated");
 
     const userSb = createUserClient(authHeader);
-    const { data: { user }, error: authError } = await userSb.auth.getUser();
-    if (authError || !user) throw new Error("Not authenticated");
+    const { data: claims, error: authError } = await userSb.auth.getClaims(
+      authHeader.replace("Bearer ", ""),
+    );
+    const userId = (claims as any)?.claims?.sub || (claims as any)?.sub;
+    if (authError || !userId) throw new Error("Not authenticated");
 
-    const serviceSb = createServiceClient();
+    const sb = createServiceClient();
     const body = await req.json();
-    const { jobId, step } = body;
-
+    const { jobId } = body;
     if (!jobId) throw new Error("Missing jobId");
 
-    // Determine which step to run
-    const currentStep = step || "analyze";
-    console.log(`[${jobId}] Running step: ${currentStep}`);
+    const currentStep = body.step || "analyze";
+    console.log(`[${jobId}] step=${currentStep}`);
 
-    // ════════════════════════════════════════
-    // STEP: ANALYZE
-    // ════════════════════════════════════════
+    const json = (payload: Record<string, any>, status = 200) =>
+      new Response(JSON.stringify(payload), {
+        status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+
+    // ─────────── ANALYZE ───────────
     if (currentStep === "analyze") {
       const { sourceImages } = body;
-      if (!sourceImages || sourceImages.length < 4) throw new Error("Missing sourceImages");
-
-      await updateJobStatus(serviceSb, jobId, "analyzing");
-
-      const { data: deductResult } = await serviceSb.rpc("deduct_credits", {
-        _user_id: user.id, _amount: 1, _action_type: "spin360_analysis",
-        _description: "360° Spin – Bildanalyse",
-      });
-      if (deductResult && !deductResult.success) {
-        await updateJobStatus(serviceSb, jobId, "failed", { error_message: "Nicht genug Credits" });
-        return new Response(JSON.stringify({ error: "insufficient_credits" }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+      if (!Array.isArray(sourceImages) || sourceImages.length < 2) {
+        throw new Error("Mindestens 2 Quellbilder erforderlich");
       }
 
-      const imageUrls = sourceImages.map((s: any) => s.url);
-      const analysisPrompt = await getCustomPrompt(serviceSb, "spin360_analysis", ANALYSIS_PROMPT);
-      const analysis = await callGeminiFlash(analysisPrompt, imageUrls);
-      console.log(`[${jobId}] Analysis complete`);
+      await updateJob(sb, jobId, { status: "analyzing", error_message: null });
+
+      const { data: deduct } = await sb.rpc("deduct_credits", {
+        _user_id: userId,
+        _amount: 1,
+        _action_type: "spin360_analysis",
+        _description: "360° Spin – Bildanalyse",
+      });
+      if (deduct && !deduct.success) {
+        await markJobFailed(sb, jobId, "Nicht genug Credits");
+        return json({ error: "insufficient_credits" });
+      }
+
+      const analysisPrompt = await getCustomPrompt(sb, "spin360_analysis", DEFAULT_ANALYSIS_PROMPT);
+      let analysis: any = null;
+      try {
+        analysis = await callGeminiJson(analysisPrompt, sourceImages.map((s: any) => s.url));
+      } catch (e) {
+        console.warn(`[${jobId}] analysis failed, using declared angles:`, (e as Error).message);
+      }
+
+      // Quellbilder auf Keyframe-Winkel abbilden (Analyse-Winkel vor deklariertem Winkel).
+      const selection: Record<number, any> = {};
+      sourceImages.forEach((src: any, i: number) => {
+        const detected = analysis?.images?.find((im: any) => Number(im.index) === i)?.detected_angle;
+        const angle = KEYFRAME_ANGLES.includes(Number(detected))
+          ? Number(detected)
+          : Number.isFinite(Number(src.angle))
+            ? Number(src.angle)
+            : null;
+        if (angle === null || !KEYFRAME_ANGLES.includes(angle)) return;
+        if (selection[angle]) return; // erster Treffer gewinnt
+        selection[angle] = { ...src, angle };
+      });
 
       if (analysis?.images) {
         for (const img of analysis.images) {
-          await serviceSb.from("spin360_source_images")
-            .update({ analysis: img })
-            .eq("job_id", jobId)
-            .eq("sort_order", img.index);
+          await sb.from("spin360_source_images").update({ analysis: img })
+            .eq("job_id", jobId).eq("sort_order", img.index);
         }
       }
 
-      // Chain next step
-      invokeNextStep(authHeader, { jobId, step: "normalize", sourceImages });
+      const chosen = Object.values(selection);
+      if (chosen.length < 2) {
+        await markJobFailed(sb, jobId, "Zu wenige verwertbare Perspektiven erkannt", "needs_review");
+        return json({ error: "not_enough_perspectives" });
+      }
 
-      return new Response(JSON.stringify({ success: true, step: "analyze" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      await sb.from("spin360_source_selection").delete().eq("job_id", jobId);
+      await sb.from("spin360_source_selection").insert(
+        chosen.map((c: any) => ({
+          job_id: jobId,
+          user_id: userId,
+          angle_degrees: c.angle,
+          asset_kind: c.assetKind || "upload",
+          asset_id: c.assetId || null,
+          storage_path: c.storagePath || null,
+          image_url: c.url,
+        })),
+      );
+
+      await updateJob(sb, jobId, {
+        keyframe_count: KEYFRAME_ANGLES.length,
+        target_frame_count: TARGET_FRAME_COUNT,
+        manifest_version: 2,
       });
+
+      invokeNextStep(authHeader, { jobId, step: "normalize", keyframeIndex: 0 });
+      return json({ success: true, step: "analyze", keyframes: chosen.length });
     }
 
-    // ════════════════════════════════════════
-    // STEP: NORMALIZE (one image at a time)
-    // ════════════════════════════════════════
+    // ─────────── NORMALIZE (ein Keyframe pro Aufruf) ───────────
     if (currentStep === "normalize") {
-      const { sourceImages, perspectiveIndex = 0 } = body;
-      const perspectives = ["front", "rear", "left", "right"];
-      const imageUrls = sourceImages.map((s: any) => s.url);
-      const perspective = perspectives[perspectiveIndex];
+      const keyframeIndex = Number(body.keyframeIndex ?? 0);
+      const angle = KEYFRAME_ANGLES[keyframeIndex];
 
-      if (perspectiveIndex === 0) {
-        await updateJobStatus(serviceSb, jobId, "normalizing");
-
-        const { data: normDeduct } = await serviceSb.rpc("deduct_credits", {
-          _user_id: user.id, _amount: 4, _action_type: "spin360_normalize",
-          _description: "360° Spin – 4 Bilder normalisieren",
+      if (keyframeIndex === 0) {
+        await updateJob(sb, jobId, { status: "normalizing" });
+        const { data: deduct } = await sb.rpc("deduct_credits", {
+          _user_id: userId,
+          _amount: 4,
+          _action_type: "spin360_normalize",
+          _description: "360° Spin – Keyframes normalisieren",
         });
-        if (normDeduct && !normDeduct.success) {
-          await updateJobStatus(serviceSb, jobId, "failed", { error_message: "Nicht genug Credits" });
-          return new Response(JSON.stringify({ error: "insufficient_credits" }), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+        if (deduct && !deduct.success) {
+          await markJobFailed(sb, jobId, "Nicht genug Credits");
+          return json({ error: "insufficient_credits" });
         }
       }
 
-      console.log(`[${jobId}] Normalizing ${perspective} (${perspectiveIndex + 1}/4)...`);
-      const normalizePrompt = await getCustomPrompt(serviceSb, "spin360_normalize", NORMALIZE_PROMPT);
+      const { data: selection } = await sb.from("spin360_source_selection")
+        .select("angle_degrees, image_url").eq("job_id", jobId);
+      const { data: existingCanonicals } = await sb.from("spin360_canonical_images")
+        .select("angle_degrees, image_url").eq("job_id", jobId).not("angle_degrees", "is", null);
 
-      let normalizedSuccessfully = false;
-      try {
-        const normalizedBase64 = await callImageGeneration(
-          `${normalizePrompt}\n\nThis is the ${perspective} view of the vehicle.`,
-          imageUrls[perspectiveIndex],
-          "gemini-2.5-flash",
-        );
+      const own = (selection || []).find((s: any) => Number(s.angle_degrees) === angle);
+      const already = (existingCanonicals || []).find((c: any) => Number(c.angle_degrees) === angle);
 
-        if (normalizedBase64) {
-          const storedUrl = await uploadBase64ToStorage(
-            serviceSb, user.id,
-            `spin360/${jobId}/canonical/${perspective}.png`,
-            normalizedBase64,
+      if (!already) {
+        // Referenzen: eigenes Foto zuerst, sonst nächstliegende Quellen als Basis.
+        const refUrls: string[] = [];
+        if (own) refUrls.push(own.image_url);
+        const sorted = (selection || [])
+          .filter((s: any) => Number(s.angle_degrees) !== angle)
+          .sort((a: any, b: any) => {
+            const da = Math.abs(((Number(a.angle_degrees) - angle + 540) % 360) - 180);
+            const db = Math.abs(((Number(b.angle_degrees) - angle + 540) % 360) - 180);
+            return db - da; // näher = kleinerer Abstand zu 180 → invertiert sortieren
+          })
+          .reverse();
+        for (const s of sorted.slice(0, own ? 1 : 2)) refUrls.push(s.image_url);
+
+        const normalizeBase = await getCustomPrompt(sb, "spin360_normalize", DEFAULT_NORMALIZE_PROMPT);
+        const prompt = own
+          ? buildNormalizePrompt(normalizeBase, angle)
+          : `${buildNormalizePrompt(normalizeBase, angle)}\n\n<NOTE>No direct photo exists for this angle. Derive it strictly from the supplied reference angles without inventing new details.</NOTE>`;
+
+        let stored: string | null = null;
+        let usedModel = MODEL_NORMALIZE;
+        for (let attempt = 1; attempt <= MAX_NORMALIZE_ATTEMPTS && !stored; attempt++) {
+          try {
+            const result = await callImageGeneration(prompt, refUrls, MODEL_NORMALIZE);
+            if (result) {
+              usedModel = result.model;
+              stored = await uploadDataUrlToStorage(
+                sb, userId, `spin360/${jobId}/canonical/kf_${angle}.png`, result.dataUrl,
+              );
+            }
+          } catch (e) {
+            if ((e as Error).message === "rate_limited") await new Promise((r) => setTimeout(r, 8000));
+            console.error(`[${jobId}] normalize ${angle}° attempt ${attempt} failed:`, (e as Error).message);
+          }
+        }
+
+        if (!stored) {
+          // Kein Fallback auf Rohfotos — Job zur Prüfung markieren.
+          await markJobFailed(
+            sb, jobId,
+            `Keyframe ${angle}° konnte nach ${MAX_NORMALIZE_ATTEMPTS} Versuchen nicht normalisiert werden.`,
+            "needs_review",
           );
-          await serviceSb.from("spin360_canonical_images").insert({
-            job_id: jobId, user_id: user.id, perspective, image_url: storedUrl, sort_order: perspectiveIndex,
-          });
-          console.log(`[${jobId}] Normalized ${perspective} saved`);
-          normalizedSuccessfully = true;
-        } else {
-          console.warn(`[${jobId}] Normalization returned null for ${perspective}`);
+          return json({ error: "normalize_failed", angle });
         }
-      } catch (e) {
-        console.error(`[${jobId}] Normalize ${perspective} failed:`, e);
+
+        await sb.from("spin360_canonical_images").upsert({
+          job_id: jobId,
+          user_id: userId,
+          perspective: `kf_${angle}`,
+          image_url: stored,
+          sort_order: keyframeIndex,
+          angle_degrees: angle,
+          is_generated: !own,
+          normalization_status: "normalized",
+        }, { onConflict: "job_id,angle_degrees" });
+
+        console.log(`[${jobId}] keyframe ${angle}° ready (model=${usedModel}, fromPhoto=${!!own})`);
       }
 
-      // Fallback: use original source image as canonical if normalization failed
-      if (!normalizedSuccessfully) {
-        console.log(`[${jobId}] Using original image as canonical fallback for ${perspective}`);
-        const originalUrl = imageUrls[perspectiveIndex];
-        await serviceSb.from("spin360_canonical_images").insert({
-          job_id: jobId, user_id: user.id, perspective, image_url: originalUrl, sort_order: perspectiveIndex,
-        });
-      }
-
-      // Next perspective or move to profiling
-      if (perspectiveIndex < 3) {
-        invokeNextStep(authHeader, { jobId, step: "normalize", sourceImages, perspectiveIndex: perspectiveIndex + 1 });
+      if (keyframeIndex < KEYFRAME_ANGLES.length - 1) {
+        invokeNextStep(authHeader, { jobId, step: "normalize", keyframeIndex: keyframeIndex + 1 });
       } else {
         invokeNextStep(authHeader, { jobId, step: "profile" });
       }
-
-      return new Response(JSON.stringify({ success: true, step: "normalize", perspective }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return json({ success: true, step: "normalize", angle });
     }
 
-    // ════════════════════════════════════════
-    // STEP: PROFILE
-    // ════════════════════════════════════════
+    // ─────────── PROFILE ───────────
     if (currentStep === "profile") {
-      await updateJobStatus(serviceSb, jobId, "profiling");
+      await updateJob(sb, jobId, { status: "profiling" });
 
-      const { data: canonicals } = await serviceSb.from("spin360_canonical_images")
-        .select("perspective, image_url")
-        .eq("job_id", jobId)
-        .order("sort_order");
+      const { data: canonicals } = await sb.from("spin360_canonical_images")
+        .select("angle_degrees, image_url").eq("job_id", jobId)
+        .not("angle_degrees", "is", null).order("angle_degrees");
 
-      if (!canonicals || canonicals.length < 2) {
-        await updateJobStatus(serviceSb, jobId, "failed", { error_message: "Zu wenige normalisierte Bilder" });
-        return new Response(JSON.stringify({ error: "Not enough canonical images" }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+      if (!canonicals || canonicals.length < KEYFRAME_ANGLES.length) {
+        await markJobFailed(sb, jobId, "Nicht alle Keyframes vorhanden", "needs_review");
+        return json({ error: "incomplete_keyframes" });
       }
 
-      let identityProfile = {};
+      let identity: any = {};
       try {
-        const profilePrompt = await getCustomPrompt(serviceSb, "spin360_identity", IDENTITY_PROMPT);
-        identityProfile = await callGeminiFlash(profilePrompt, canonicals.map((c: any) => c.image_url));
-        await serviceSb.from("spin360_jobs").update({ identity_profile: identityProfile }).eq("id", jobId);
-        console.log(`[${jobId}] Identity profile created`);
+        const profilePrompt = await getCustomPrompt(sb, "spin360_identity", DEFAULT_IDENTITY_PROMPT);
+        identity = await callGeminiJson(profilePrompt, canonicals.map((c: any) => c.image_url));
       } catch (e) {
-        console.error(`[${jobId}] Identity profiling failed:`, e);
+        console.error(`[${jobId}] identity profiling failed:`, (e as Error).message);
       }
 
-      // Insert canonical frames
-      const canonicalAngles = [
-        { perspective: "front", angle: 0, index: 0 },
-        { perspective: "rear", angle: 180, index: 18 },
-        { perspective: "left", angle: 90, index: 9 },
-        { perspective: "right", angle: 270, index: 27 },
-      ];
-      for (const ca of canonicalAngles) {
-        const canonical = canonicals.find((c: any) => c.perspective === ca.perspective);
-        if (canonical) {
-          await insertFrameIfMissing(serviceSb, {
-            job_id: jobId,
-            user_id: user.id,
-            frame_index: ca.index,
-            frame_type: "canonical",
-            image_url: canonical.image_url,
-            angle_degrees: ca.angle,
-            model_used: "canonical",
-            validation_status: "passed",
-          });
-        }
+      const identityHash = Array.from(
+        new Uint8Array(
+          await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(identity))),
+        ),
+      ).map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
+
+      await updateJob(sb, jobId, { identity_profile: identity, identity_hash: identityHash });
+
+      for (const c of canonicals) {
+        const angle = Number(c.angle_degrees);
+        await sb.from("spin360_generated_frames").upsert({
+          job_id: jobId,
+          user_id: userId,
+          frame_index: keyframeIndexForAngle(angle),
+          frame_type: "canonical",
+          image_url: c.image_url,
+          angle_degrees: angle,
+          model_used: MODEL_NORMALIZE,
+          validation_status: "passed",
+          source_kind: "normalized",
+          quality_score: 100,
+          attempt_count: 1,
+        }, { onConflict: "job_id,frame_index" });
       }
 
-      // Deduct credits for generation
-      const { data: genDeduct } = await serviceSb.rpc("deduct_credits", {
-        _user_id: user.id, _amount: 15, _action_type: "spin360_generate",
-        _description: "360° Spin – Frames generieren",
-      });
-      if (genDeduct && !genDeduct.success) {
-        await updateJobStatus(serviceSb, jobId, "failed", { error_message: "Nicht genug Credits" });
-        return new Response(JSON.stringify({ error: "insufficient_credits" }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      // Chain to anchors
-      invokeNextStep(authHeader, { jobId, step: "anchor", anchorIndex: 0 });
-
-      return new Response(JSON.stringify({ success: true, step: "profile" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      invokeNextStep(authHeader, { jobId, step: "frames", sector: 0 });
+      return json({ success: true, step: "profile" });
     }
 
-    // ════════════════════════════════════════
-    // STEP: ANCHOR (one at a time)
-    // ════════════════════════════════════════
-    if (currentStep === "anchor") {
-      const { anchorIndex = 0 } = body;
+    // ─────────── FRAMES (ein Sektor pro Aufruf, inkl. QA) ───────────
+    if (currentStep === "frames") {
+      const sector = Number(body.sector ?? 0);
+      if (sector === 0) await updateJob(sb, jobId, { status: "generating_frames", error_message: null });
 
-      if (anchorIndex === 0) {
-        await updateJobStatus(serviceSb, jobId, "generating_anchors");
+      if (sector >= SECTOR_COUNT) {
+        invokeNextStep(authHeader, { jobId, step: "assemble" });
+        return json({ success: true, step: "frames", done: true });
       }
 
-      const { data: canonicals } = await serviceSb.from("spin360_canonical_images")
-        .select("perspective, image_url")
-        .eq("job_id", jobId)
-        .order("sort_order");
+      const { data: job } = await sb.from("spin360_jobs")
+        .select("identity_profile, qa_summary").eq("id", jobId).single();
+      const identity = job?.identity_profile ?? {};
 
-      const { data: jobData } = await serviceSb.from("spin360_jobs")
-        .select("identity_profile")
-        .eq("id", jobId)
-        .single();
+      const { data: canonicals } = await sb.from("spin360_canonical_images")
+        .select("angle_degrees, image_url").eq("job_id", jobId).not("angle_degrees", "is", null);
+      const canonicalByAngle = new Map<number, string>(
+        (canonicals || []).map((c: any) => [Number(c.angle_degrees), c.image_url as string]),
+      );
 
-      const identityDesc = jobData?.identity_profile ? JSON.stringify(jobData.identity_profile) : "";
+      const prevAngle = KEYFRAME_ANGLES[sector];
+      const nextAngle = KEYFRAME_ANGLES[(sector + 1) % KEYFRAME_ANGLES.length];
+      const prevUrl = canonicalByAngle.get(prevAngle);
+      const nextUrl = canonicalByAngle.get(nextAngle);
+      if (!prevUrl || !nextUrl) {
+        await markJobFailed(sb, jobId, `Keyframes für Sektor ${prevAngle}°–${nextAngle}° fehlen`, "needs_review");
+        return json({ error: "sector_keyframes_missing" });
+      }
 
-      const anchorPromptBase = await getCustomPrompt(serviceSb, "spin360_anchor",
-        `Generate a photorealistic image of the EXACT same vehicle shown in the reference image.
-Vehicle identity profile: ${identityDesc}
-CRITICAL CONSISTENCY RULES:
-- Same body type, proportions, door count
-- Same paint color and finish
-- Same wheel design exactly
-- Same headlights, taillights, grille
-- Same mirrors, badges, trim
-- Same roofline and window shape
-- Clean studio background (white/light grey gradient)
-- Professional studio lighting
-- No other vehicles or objects
-- ALWAYS generate an image
-Generate the vehicle from this specific angle:`);
+      const { data: existing } = await sb.from("spin360_generated_frames")
+        .select("frame_index, image_url, validation_status")
+        .eq("job_id", jobId);
+      const passedByIndex = new Map<number, string>(
+        (existing || []).filter((f: any) => f.validation_status === "passed")
+          .map((f: any) => [Number(f.frame_index), f.image_url as string]),
+      );
 
-      const anchorAngles = [
-        { angle: 45, label: "front-left quarter (45°)", refPerspective: "front" },
-        { angle: 135, label: "rear-left quarter (135°)", refPerspective: "left" },
-        { angle: 225, label: "rear-right quarter (225°)", refPerspective: "rear" },
-        { angle: 315, label: "front-right quarter (315°)", refPerspective: "right" },
-      ];
+      const startIndex = sector * FRAMES_PER_SECTOR;
+      let lastAccepted = passedByIndex.get(startIndex) || prevUrl;
+      const sectorResults: { index: number; verdict: string; score: number }[] = [];
 
-      if (anchorIndex < anchorAngles.length) {
-        const anchor = anchorAngles[anchorIndex];
-        const ref = canonicals?.find((c: any) => c.perspective === anchor.refPerspective) || canonicals?.[0];
-        const refUrl = ref?.image_url;
+      for (let offset = 1; offset < FRAMES_PER_SECTOR; offset++) {
+        const frameIndex = startIndex + offset;
+        if (passedByIndex.has(frameIndex)) {
+          lastAccepted = passedByIndex.get(frameIndex)!;
+          continue;
+        }
 
-        if (refUrl) {
-          console.log(`[${jobId}] Generating anchor ${anchor.label}...`);
+        const angle = angleForIndex(frameIndex);
+        let accepted = false;
+        let attempt = 0;
+        let lastUrl: string | null = null;
+        let lastScore = 0;
+
+        while (attempt < MAX_FRAME_ATTEMPTS && !accepted) {
+          attempt++;
+          const strict = attempt > 1;
+          const model = strict ? MODEL_REGEN : MODEL_FRAME;
+          const refs = [prevUrl, nextUrl];
+          if (lastAccepted && lastAccepted !== prevUrl) refs.push(lastAccepted);
+
+          let generated: { dataUrl: string; model: string } | null = null;
           try {
-            const anchorBase64 = await callImageGeneration(
-              `${anchorPromptBase} ${anchor.label}`,
-              refUrl,
-              "gemini-2.5-flash",
+            generated = await callImageGeneration(
+              buildFramePrompt(identity, Math.round(angle * 100) / 100, prevAngle, nextAngle, refs.length > 2, strict),
+              refs,
+              model,
             );
+          } catch (e) {
+            if ((e as Error).message === "rate_limited") await new Promise((r) => setTimeout(r, 8000));
+            console.error(`[${jobId}] frame ${frameIndex} attempt ${attempt} error:`, (e as Error).message);
+          }
+          if (!generated) continue;
 
-            if (anchorBase64) {
-              const frameIndex = Math.round((anchor.angle / 360) * TARGET_FRAME_COUNT);
-              const storedUrl = await uploadBase64ToStorage(
-                serviceSb, user.id,
-                `spin360/${jobId}/anchors/anchor_${anchor.angle}.png`,
-                anchorBase64,
-              );
-              const inserted = await insertFrameIfMissing(serviceSb, {
-                job_id: jobId,
-                user_id: user.id,
-                frame_index: frameIndex,
-                frame_type: "anchor",
-                image_url: storedUrl,
-                angle_degrees: anchor.angle,
-                model_used: "gemini-2.5-flash",
-                validation_status: "passed",
-              });
-              console.log(inserted
-                ? `[${jobId}] Anchor ${anchor.angle}° saved`
-                : `[${jobId}] Anchor ${anchor.angle}° already exists, skipping insert`);
+          const storedUrl = await uploadDataUrlToStorage(
+            sb, userId,
+            `spin360/${jobId}/frames/frame_${String(frameIndex).padStart(3, "0")}_a${attempt}.png`,
+            generated.dataUrl,
+          );
+          lastUrl = storedUrl;
+
+          // QA direkt gegen den linken Keyframe
+          let verdict = "pass";
+          let score = 80;
+          let issues: string[] = [];
+          try {
+            const qa = await callGeminiJson(
+              `${QA_PROMPT}\n\nCandidate 1 is the frame at ${Math.round(angle)}° in a rotation from ${prevAngle}° to ${nextAngle}°.`,
+              [prevUrl, storedUrl],
+            );
+            const entry = qa?.frames?.[0];
+            if (entry) {
+              verdict = entry.verdict === "fail" ? "fail" : "pass";
+              score = Number(entry.score ?? score);
+              issues = Array.isArray(entry.issues) ? entry.issues : [];
             }
           } catch (e) {
-            console.error(`[${jobId}] Anchor ${anchor.label} failed:`, e);
+            console.warn(`[${jobId}] QA call failed for frame ${frameIndex}:`, (e as Error).message);
           }
-        }
+          lastScore = score;
 
-        // Next anchor or move to frames
-        if (anchorIndex < anchorAngles.length - 1) {
-          invokeNextStep(authHeader, { jobId, step: "anchor", anchorIndex: anchorIndex + 1 });
-        } else {
-          invokeNextStep(authHeader, { jobId, step: "frames", batchStart: 0 });
-        }
-      }
+          await sb.from("spin360_frame_reviews").insert({
+            job_id: jobId,
+            user_id: userId,
+            frame_index: frameIndex,
+            attempt,
+            verdict,
+            score,
+            notes: issues.join("; ") || null,
+            model_used: generated.model,
+          });
 
-      return new Response(JSON.stringify({ success: true, step: "anchor", anchorIndex }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // ════════════════════════════════════════
-    // STEP: FRAMES (batch of 4 at a time)
-    // ════════════════════════════════════════
-    if (currentStep === "frames") {
-      await touchJob(serviceSb, jobId, { status: "generating_frames", error_message: null });
-
-      const { data: canonicals } = await serviceSb.from("spin360_canonical_images")
-        .select("perspective, image_url")
-        .eq("job_id", jobId)
-        .order("sort_order");
-
-      if (!canonicals || canonicals.length < 2) {
-        await markJobFailed(serviceSb, jobId, "Zu wenige normalisierte Bilder für die Frame-Generierung");
-        return new Response(JSON.stringify({ error: "not_enough_canonical_images" }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      const { data: jobData } = await serviceSb.from("spin360_jobs")
-        .select("identity_profile, retry_count, target_frame_count")
-        .eq("id", jobId)
-        .single();
-
-      const targetFrameCount = jobData?.target_frame_count || TARGET_FRAME_COUNT;
-      const identityDesc = jobData?.identity_profile ? JSON.stringify(jobData.identity_profile) : "";
-
-      const framePromptBase = await getCustomPrompt(serviceSb, "spin360_anchor",
-        `Generate a photorealistic image of the EXACT same vehicle shown in the reference image.
-Vehicle identity profile: ${identityDesc}
-CRITICAL CONSISTENCY RULES:
-- Same body type, proportions, door count
-- Same paint color and finish
-- Same wheel design exactly
-- Same headlights, taillights, grille
-- Same mirrors, badges, trim
-- Same roofline and window shape
-- Clean studio background (white/light grey gradient)
-- Professional studio lighting
-- ALWAYS generate an image
-Generate the vehicle from this specific angle:`);
-
-      const existingIndexesBefore = await getExistingFrameIndexes(serviceSb, jobId);
-      const missingFramesBefore = buildMissingFramePlan(existingIndexesBefore, targetFrameCount);
-
-      if (missingFramesBefore.length === 0) {
-        console.log(`[${jobId}] No frames missing, assembling...`);
-        await touchJob(serviceSb, jobId, { retry_count: 0 });
-        invokeNextStep(authHeader, { jobId, step: "assemble" });
-        return new Response(JSON.stringify({ success: true, step: "frames", remaining: 0 }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      const batch = missingFramesBefore.slice(0, FRAME_BATCH_SIZE);
-      let generatedInBatch = 0;
-
-      const canonicalAngles = [
-        { perspective: "front", angle: 0 },
-        { perspective: "rear", angle: 180 },
-        { perspective: "left", angle: 90 },
-        { perspective: "right", angle: 270 },
-      ];
-
-      for (const frame of batch) {
-        const nearestCanonical = canonicalAngles.reduce((best, ca) => {
-          const diff = Math.abs(((frame.angle - ca.angle + 540) % 360) - 180);
-          const bestDiff = Math.abs(((frame.angle - best.angle + 540) % 360) - 180);
-          return diff < bestDiff ? ca : best;
-        });
-        const nearestCan = canonicals.find((c: any) => c.perspective === nearestCanonical.perspective);
-        const refUrl = nearestCan?.image_url || canonicals[0]?.image_url;
-
-        if (!refUrl) continue;
-
-        try {
-          console.log(`[${jobId}] Generating frame ${frame.angle}° (slot ${frame.index})...`);
-          const frameBase64 = await callImageGeneration(
-            `${framePromptBase} ${frame.angle} degrees from center front (0° = front, 90° = left side, 180° = rear, 270° = right side)`,
-            refUrl,
-            "gemini-2.5-flash",
-          );
-
-          if (frameBase64) {
-            const storedUrl = await uploadBase64ToStorage(
-              serviceSb,
-              user.id,
-              `spin360/${jobId}/frames/frame_${String(frame.index).padStart(3, "0")}.png`,
-              frameBase64,
-            );
-            const inserted = await insertFrameIfMissing(serviceSb, {
+          if (verdict === "pass" && score >= 60) {
+            await sb.from("spin360_generated_frames").upsert({
               job_id: jobId,
-              user_id: user.id,
-              frame_index: frame.index,
+              user_id: userId,
+              frame_index: frameIndex,
               frame_type: "intermediate",
               image_url: storedUrl,
-              angle_degrees: frame.angle,
-              model_used: "gemini-2.5-flash",
+              angle_degrees: Math.round(angle),
+              model_used: generated.model,
               validation_status: "passed",
-            });
-            if (inserted) generatedInBatch += 1;
+              validation_notes: issues.join("; ") || null,
+              source_kind: "generated",
+              quality_score: score,
+              attempt_count: attempt,
+            }, { onConflict: "job_id,frame_index" });
+            lastAccepted = storedUrl;
+            accepted = true;
           }
-        } catch (e) {
-          if ((e as Error).message === "rate_limited") {
-            console.warn(`[${jobId}] Rate limited, waiting 10s...`);
-            await new Promise(r => setTimeout(r, 10000));
-          }
-          console.error(`[${jobId}] Frame ${frame.angle}° failed:`, e);
+
+          await new Promise((r) => setTimeout(r, 800));
         }
 
-        await new Promise(r => setTimeout(r, 1500));
-      }
-
-      const existingIndexesAfter = await getExistingFrameIndexes(serviceSb, jobId);
-      const missingFramesAfter = buildMissingFramePlan(existingIndexesAfter, targetFrameCount);
-
-      if (missingFramesAfter.length === 0) {
-        console.log(`[${jobId}] All frames done, assembling...`);
-        await touchJob(serviceSb, jobId, { retry_count: 0 });
-        invokeNextStep(authHeader, { jobId, step: "assemble" });
-      } else {
-        const nextRetryCount = generatedInBatch === 0
-          ? Number(jobData?.retry_count ?? 0) + 1
-          : 0;
-
-        await touchJob(serviceSb, jobId, { retry_count: nextRetryCount });
-
-        if (nextRetryCount >= MAX_FRAME_BATCH_RETRIES) {
-          const errorMessage = `Pipeline abgebrochen: ${missingFramesAfter.length} Frames konnten nach ${MAX_FRAME_BATCH_RETRIES} weiteren Versuchen nicht generiert werden.`;
-          console.error(`[${jobId}] ${errorMessage}`);
-          await markJobFailed(serviceSb, jobId, errorMessage);
-          return new Response(JSON.stringify({
-            error: "frame_generation_incomplete",
-            missingFrames: missingFramesAfter.length,
-          }), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+        if (!accepted) {
+          // Interpolation: nächstgelegenen akzeptierten Nachbarn übernehmen, damit die Sequenz lückenlos bleibt.
+          const fallbackUrl = lastUrl || lastAccepted || prevUrl;
+          await sb.from("spin360_generated_frames").upsert({
+            job_id: jobId,
+            user_id: userId,
+            frame_index: frameIndex,
+            frame_type: "intermediate",
+            image_url: fallbackUrl,
+            angle_degrees: Math.round(angle),
+            model_used: MODEL_REGEN,
+            validation_status: "failed",
+            validation_notes: "QA nicht bestanden – interpoliert",
+            source_kind: "interpolated",
+            quality_score: lastScore,
+            attempt_count: attempt,
+          }, { onConflict: "job_id,frame_index" });
         }
 
-        console.log(
-          `[${jobId}] Frames batch finished. Remaining: ${missingFramesAfter.length}. Retry streak: ${nextRetryCount}/${MAX_FRAME_BATCH_RETRIES}`,
-        );
-        invokeNextStep(authHeader, { jobId, step: "frames" });
+        sectorResults.push({ index: frameIndex, verdict: accepted ? "pass" : "fail", score: lastScore });
       }
 
-      return new Response(JSON.stringify({
-        success: true,
-        step: "frames",
-        generatedInBatch,
-        remaining: missingFramesAfter.length,
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      const qaSummary = { ...(job?.qa_summary as Record<string, any> ?? {}), [`sector_${sector}`]: sectorResults };
+      await updateJob(sb, jobId, { qa_summary: qaSummary });
+
+      invokeNextStep(authHeader, { jobId, step: "frames", sector: sector + 1 });
+      return json({ success: true, step: "frames", sector, frames: sectorResults });
     }
 
-    // ════════════════════════════════════════
-    // STEP: ASSEMBLE
-    // ════════════════════════════════════════
+    // ─────────── ASSEMBLE ───────────
     if (currentStep === "assemble") {
-      await updateJobStatus(serviceSb, jobId, "validating");
+      await updateJob(sb, jobId, { status: "assembling" });
 
-      const { data: allFrames } = await serviceSb
-        .from("spin360_generated_frames")
-        .select("id")
-        .eq("job_id", jobId)
-        .eq("validation_status", "passed");
+      const { data: frames } = await sb.from("spin360_generated_frames")
+        .select("frame_index, angle_degrees, image_url, validation_status, quality_score, source_kind")
+        .eq("job_id", jobId).order("frame_index");
 
-      const frameCount = allFrames?.length || 0;
-      console.log(`[${jobId}] Total frames: ${frameCount}`);
+      const all = frames || [];
+      const passed = all.filter((f: any) => f.validation_status === "passed");
+      const { data: job } = await sb.from("spin360_jobs")
+        .select("identity_profile, identity_hash, qa_summary").eq("id", jobId).single();
 
-      await updateJobStatus(serviceSb, jobId, "assembling");
+      // Credits erst jetzt verbuchen – nach bestandener QA, anteilig zur Ausbeute.
+      const generatedPassed = passed.filter((f: any) => f.source_kind === "generated").length;
+      if (generatedPassed > 0) {
+        const amount = Math.max(1, Math.round((generatedPassed / (TARGET_FRAME_COUNT - KEYFRAME_ANGLES.length)) * 15));
+        const { data: deduct } = await sb.rpc("deduct_credits", {
+          _user_id: userId,
+          _amount: amount,
+          _action_type: "spin360_generate",
+          _description: `360° Spin – ${generatedPassed} geprüfte Frames`,
+        });
+        if (deduct && !deduct.success) {
+          await markJobFailed(sb, jobId, "Nicht genug Credits für die Abrechnung");
+          return json({ error: "insufficient_credits" });
+        }
+      }
 
-      const { data: jobData } = await serviceSb.from("spin360_jobs")
-        .select("identity_profile, target_frame_count")
-        .eq("id", jobId)
-        .single();
-
-      const targetFrameCount = jobData?.target_frame_count || 36;
+      const qualityScore = all.length
+        ? Math.round(all.reduce((sum: number, f: any) => sum + (f.quality_score ?? 0), 0) / all.length)
+        : 0;
 
       const manifest = {
+        version: 2,
         jobId,
-        frameCount,
-        targetFrameCount,
+        frameCount: all.length,
+        targetFrameCount: TARGET_FRAME_COUNT,
+        keyframeAngles: KEYFRAME_ANGLES,
+        angleStep: 360 / TARGET_FRAME_COUNT,
         createdAt: new Date().toISOString(),
-        backgroundStyle: "studio_white",
-        qualityScore: frameCount >= targetFrameCount ? 100 : Math.round((frameCount / targetFrameCount) * 100),
-        identityProfile: jobData?.identity_profile,
+        backgroundStyle: "studio_cyclorama",
+        qualityScore,
+        identityHash: job?.identity_hash,
+        identityProfile: job?.identity_profile,
+        frames: all.map((f: any) => ({
+          index: f.frame_index,
+          angle: f.angle_degrees,
+          url: f.image_url,
+          status: f.validation_status,
+          sourceKind: f.source_kind,
+        })),
       };
 
-      await serviceSb.from("spin360_jobs").update({
+      const incomplete = all.length < TARGET_FRAME_COUNT;
+      const weakSequence = passed.length < TARGET_FRAME_COUNT * 0.8;
+
+      await updateJob(sb, jobId, {
         manifest,
-        status: "completed",
-        updated_at: new Date().toISOString(),
-      }).eq("id", jobId);
-
-      console.log(`[${jobId}] Job completed with ${frameCount} frames`);
-
-      return new Response(JSON.stringify({ success: true, step: "assemble", manifest }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        manifest_version: 2,
+        status: incomplete || weakSequence ? "needs_review" : "completed",
+        error_message: weakSequence ? `Nur ${passed.length}/${TARGET_FRAME_COUNT} Frames haben die QA bestanden.` : null,
       });
+
+      console.log(`[${jobId}] assembled: ${passed.length}/${all.length} passed`);
+      return json({ success: true, step: "assemble", manifest });
     }
 
-    // ════════════════════════════════════════
-    // INITIAL CALL (legacy/default → analyze)
-    // ════════════════════════════════════════
+    // ─────────── Initialer Aufruf ───────────
     const { sourceImages } = body;
-    if (!sourceImages || sourceImages.length < 4) throw new Error("Missing sourceImages");
-
-    // Redirect to step-based flow
+    if (!Array.isArray(sourceImages) || sourceImages.length < 2) {
+      throw new Error("Mindestens 2 Quellbilder erforderlich");
+    }
     invokeNextStep(authHeader, { jobId, step: "analyze", sourceImages });
-
-    return new Response(JSON.stringify({ success: true, started: true }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-
+    return json({ success: true, started: true });
   } catch (e) {
     console.error("generate-360-spin error:", e);
-    return new Response(JSON.stringify({
-      error: e instanceof Error ? e.message : "Unknown error",
-    }), {
+    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
       status: e instanceof Error && e.message === "Not authenticated" ? 401 : 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
