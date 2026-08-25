@@ -4,6 +4,8 @@ import {
   KEYFRAME_ANGLES,
   MAX_FRAME_ATTEMPTS,
   QA_IDENTITY_THRESHOLD,
+  QA_SECONDARY_THRESHOLD,
+  QA_CONFIDENCE_THRESHOLD,
   SPIN_MODELS,
   aggregateQuality,
   angleForIndex,
@@ -26,6 +28,8 @@ import {
   buildIdentityProfilePrompt,
   buildRepairPrompt,
   qaFailClosed,
+  resolveSourceAngleSelections,
+  resolveSourceAngleTruth,
   resolveIdentitySources,
   type QaResult,
 } from '../../supabase/functions/_shared/spin360-core';
@@ -247,6 +251,21 @@ describe('spin360 prompt builders', () => {
     expect(prompt).toContain('fix spoke count');
   });
 
+  it('keyframe prompt gives explicit synthesis guidance when the exact angle has no source photo', () => {
+    const prompt = buildKeyframePrompt({
+      angle: 0,
+      identity,
+      referenceLabels: ['ORIGINAL IDENTITY #1 at 45°', 'ORIGINAL IDENTITY #2 at 270°'],
+      hasDedicatedWheelReference: false,
+      hasDirectPhoto: false,
+      sourceAngles: [45, 90, 135, 270],
+    });
+    expect(prompt).toContain('<MISSING_KEYFRAME_SYNTHESIS>');
+    expect(prompt).toContain('Available real source angles after vision remapping: 45°, 90°, 135°, 270°');
+    expect(prompt).toContain('direct FRONT view');
+    expect(prompt).toContain('a 45°/135°/225°/315° three-quarter look is a QA failure');
+  });
+
   it('intermediate prompt states sector, target angle and fraction', () => {
     const frame = planSector(1, 48)[0];
     const prompt = buildIntermediatePrompt({
@@ -409,7 +428,7 @@ describe('spin360 QA fail-closed parsing', () => {
       verdict: 'pass', scores, confidence: 95, hard_failures: ['wrong_spoke_count'],
     }))).toBe(false);
     expect(isQaPassed(parseQaResult({
-      verdict: 'pass', scores: { ...scores, wheels: 94 }, confidence: 95,
+      verdict: 'pass', scores: { ...scores, wheels: QA_IDENTITY_THRESHOLD - 1 }, confidence: 95,
     }))).toBe(false);
     expect(isQaPassed(parseQaResult({ verdict: 'pass', scores, confidence: 0.8 }))).toBe(false);
     expect(isQaPassed(parseQaResult({ verdict: 'pass', scores, confidence: 0.95 }))).toBe(true);
@@ -489,26 +508,28 @@ describe('spin360 v2 models', () => {
 });
 
 // ─── Quality-Audit-Fix ──────────────────────────────────────────────────
-describe('spin360 strict QA thresholds (95 on every dimension)', () => {
+describe('spin360 calibrated QA thresholds', () => {
   const scores = (over: Partial<Record<string, number>> = {}) => ({
-    identity: 97, wheels: 97, lights: 97, paint: 97,
-    angle_continuity: 97, camera_continuity: 97, environment: 97, artifact_free: 97,
+    identity: QA_IDENTITY_THRESHOLD, wheels: QA_IDENTITY_THRESHOLD,
+    lights: QA_IDENTITY_THRESHOLD, paint: QA_IDENTITY_THRESHOLD,
+    angle_continuity: QA_SECONDARY_THRESHOLD, camera_continuity: QA_SECONDARY_THRESHOLD,
+    environment: QA_SECONDARY_THRESHOLD, artifact_free: QA_SECONDARY_THRESHOLD,
     ...over,
   });
   const qa = (raw: Record<string, unknown>) => isQaPassed(parseQaResult(raw));
 
-  it('fails when camera or environment sit in the low 90s', () => {
-    expect(qa({ verdict: 'pass', scores: scores({ camera_continuity: 92 }), confidence: 95 })).toBe(false);
-    expect(qa({ verdict: 'pass', scores: scores({ environment: 93 }), confidence: 95 })).toBe(false);
-    expect(qa({ verdict: 'pass', scores: scores({ artifact_free: 94 }), confidence: 95 })).toBe(false);
-    expect(qa({ verdict: 'pass', scores: scores({ environment: 95 }), confidence: 95 })).toBe(true);
+  it('allows calibrated secondary scores but keeps identity-critical dimensions stricter', () => {
+    expect(qa({ verdict: 'pass', scores: scores({ camera_continuity: 86, environment: 85 }), confidence: 95 })).toBe(true);
+    expect(qa({ verdict: 'pass', scores: scores({ environment: QA_SECONDARY_THRESHOLD - 1 }), confidence: 95 })).toBe(false);
+    expect(qa({ verdict: 'pass', scores: scores({ wheels: QA_IDENTITY_THRESHOLD - 1 }), confidence: 95 })).toBe(false);
   });
 
-  it('enforces confidence >= 90 and normalizes decimals', () => {
-    expect(qa({ verdict: 'pass', scores: scores(), confidence: 89 })).toBe(false);
+  it('enforces confidence >= 85 and normalizes decimals', () => {
+    expect(qa({ verdict: 'pass', scores: scores(), confidence: QA_CONFIDENCE_THRESHOLD - 1 })).toBe(false);
+    expect(qa({ verdict: 'pass', scores: scores(), confidence: QA_CONFIDENCE_THRESHOLD })).toBe(true);
     expect(qa({ verdict: 'pass', scores: scores(), confidence: 95 })).toBe(true);
-    expect(qa({ verdict: 'pass', scores: scores(), confidence: 0.89 })).toBe(false);
-    expect(qa({ verdict: 'pass', scores: scores(), confidence: 0.95 })).toBe(true);
+    expect(qa({ verdict: 'pass', scores: scores(), confidence: 0.84 })).toBe(false);
+    expect(qa({ verdict: 'pass', scores: scores(), confidence: 0.85 })).toBe(true);
   });
 
   it('fails closed on missing dimensions or missing confidence', () => {
@@ -567,18 +588,75 @@ describe('spin360 completion is exact', () => {
 });
 
 describe('spin360 source coverage', () => {
-  it('requires the four cardinal angles', () => {
+  it('requires four unique distributed angles, not specifically the four cardinals', () => {
     expect(v2.evaluateSourceCoverage([0, 180]).ok).toBe(false);
     expect(v2.evaluateSourceCoverage([0, 90, 180]).missingRequired).toEqual([270]);
     const full = v2.evaluateSourceCoverage([0, 90, 180, 270]);
     expect(full.ok).toBe(true);
     expect(full.missingOptional).toEqual([45, 135, 225, 315]);
+    const diagonalCoverage = v2.evaluateSourceCoverage([45, 90, 180, 270]);
+    expect(diagonalCoverage.ok).toBe(true);
+    expect(diagonalCoverage.missingRequired).toEqual([0]);
     expect(v2.MIN_SOURCE_ANGLES).toBe(4);
+  });
+
+  it('rejects four angles when they are too clustered around one side', () => {
+    const clustered = v2.evaluateSourceCoverage([0, 45, 90, 135]);
+    expect(clustered.ok).toBe(false);
+    expect(clustered.reason).toBe('clustered_angles');
+    expect(clustered.maxGap).toBe(225);
   });
 
   it('ignores wheel reference slot, duplicates and non-grid angles', () => {
     expect(v2.evaluateSourceCoverage([-1, 0, 0, 90, 180, 270, 33]).uniqueAngles).toEqual([0, 90, 180, 270]);
     expect(v2.evaluateSourceCoverage([-1, 0, 90, 180, 270]).ok).toBe(true);
+  });
+});
+
+describe('spin360 source angle truth', () => {
+  it('uses high-confidence detected upload angles over wrong slot declarations', () => {
+    const decision = resolveSourceAngleTruth({
+      declaredAngle: 0,
+      detectedAngle: 45,
+      angleConfidence: 92,
+      leftRightCertain: true,
+      sourceMode: 'upload',
+    });
+    expect(decision.selectedAngle).toBe(45);
+    expect(decision.remapped).toBe(true);
+    expect(decision.reason).toBe('detected_truth_upload');
+  });
+
+  it('keeps declared mapping when detection is uncertain', () => {
+    const decision = resolveSourceAngleTruth({
+      declaredAngle: 0,
+      detectedAngle: 45,
+      angleConfidence: 70,
+      leftRightCertain: true,
+      sourceMode: 'upload',
+    });
+    expect(decision.selectedAngle).toBe(0);
+    expect(decision.reason).toBe('declared_used_detection_uncertain');
+  });
+
+  it('deduplicates remapped sources and keeps the higher-confidence photo', () => {
+    const result = resolveSourceAngleSelections(
+      [
+        { angle: 0, url: 'front-slot' },
+        { angle: 45, url: 'diagonal-slot' },
+        { angle: 90, url: 'left' },
+        { angle: 180, url: 'rear' },
+        { angle: 270, url: 'right' },
+      ],
+      [
+        { index: 0, detected_angle: 45, angle_confidence: 92, left_right_certain: true, quality_score: 80 },
+        { index: 1, detected_angle: 45, angle_confidence: 88, left_right_certain: true, quality_score: 70 },
+      ],
+      'upload',
+    );
+    expect(result.selected.map((s) => s.angle)).toEqual([45, 90, 180, 270]);
+    expect(result.selected.find((s) => s.angle === 45)?.source.url).toBe('front-slot');
+    expect(v2.evaluateSourceCoverage(result.selected.map((s) => s.angle)).ok).toBe(true);
   });
 });
 

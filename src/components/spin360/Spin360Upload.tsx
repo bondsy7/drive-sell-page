@@ -259,7 +259,7 @@ const Spin360Upload: React.FC<Spin360UploadProps> = ({ onAllFilled, disabled, sp
         <p className="text-sm text-muted-foreground max-w-md mx-auto">
           {isVideo
             ? 'Lade eine 3/4-Front- und 3/4-Heckansicht hoch. Das Showroom-Bild wird automatisch geladen oder manuell hochgeladen.'
-            : 'Lade je ein Foto von jeder Seite hoch (Front 0°, linke Seite 90°, Heck 180°, rechte Seite 270°). Die KI erstellt daraus einen interaktiven 360°-Spin mit 48 Einzelbildern (7,5°-Raster).'}
+            : 'Lade vier echte Perspektiven hoch. Die Winkel werden automatisch geprüft; sichere Analyse-Winkel überschreiben falsche Slot-Hinweise. Die KI erstellt daraus 48 Einzelbilder (7,5°-Raster).'}
         </p>
       </div>
 
@@ -269,7 +269,7 @@ const Spin360Upload: React.FC<Spin360UploadProps> = ({ onAllFilled, disabled, sp
         <p className="text-[11px] text-muted-foreground">
           {isVideo
             ? 'KI erstellt ein 360°-Drehteller-Video im Showroom, daraus werden 48 Frames extrahiert'
-            : 'KI generiert Einzelbilder zwischen den 4 Perspektiven (48 Frames, 7,5°-Schritte)'}
+            : 'KI generiert Einzelbilder aus mindestens 4 verteilten Perspektiven (48 Frames, 7,5°-Schritte)'}
         </p>
       </div>
 

@@ -3,8 +3,9 @@ import { Check, ImageIcon, Loader2, Upload, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useVehicleAssets, type VehicleAsset } from '@/hooks/useVehicleAssets';
+import { evaluateSourceCoverage, sourceCoverageFailureReason } from '@/lib/spin360-v2';
 
-/** Mindestanzahl echter Quellwinkel für den 48-Frame-Produktionslauf. */
+/** Mindestanzahl echter, verteilter Quellwinkel für den 48-Frame-Produktionslauf. */
 export const MIN_REQUIRED_ANGLES = 4;
 
 /** Sonderslot: bindende Felgenreferenz (kein Turntable-Winkel). */
@@ -12,27 +13,26 @@ export const WHEEL_REFERENCE_ANGLE = -1;
 
 /** Winkelkonvention: 0 = Front, 90 = linke Seite, 180 = Heck, 270 = rechte Seite. */
 export const SPIN_ANGLE_SLOTS: { angle: number; label: string; hint: string; required?: boolean }[] = [
-  { angle: 0, label: 'Front', hint: 'Direkte Frontansicht', required: true },
+  { angle: 0, label: 'Front', hint: 'Direkte Frontansicht' },
   { angle: 45, label: '3/4 vorne links', hint: 'Schräg von vorne links (optional, erhöht die Qualität)' },
-  { angle: 90, label: 'Seite links', hint: 'Komplette linke Seite', required: true },
+  { angle: 90, label: 'Seite links', hint: 'Komplette linke Seite' },
   { angle: 135, label: '3/4 hinten links', hint: 'Schräg von hinten links (optional, erhöht die Qualität)' },
-  { angle: 180, label: 'Heck', hint: 'Direkte Heckansicht', required: true },
+  { angle: 180, label: 'Heck', hint: 'Direkte Heckansicht' },
   { angle: 225, label: '3/4 hinten rechts', hint: 'Schräg von hinten rechts (optional, erhöht die Qualität)' },
-  { angle: 270, label: 'Seite rechts', hint: 'Komplette rechte Seite', required: true },
+  { angle: 270, label: 'Seite rechts', hint: 'Komplette rechte Seite' },
   { angle: 315, label: '3/4 vorne rechts', hint: 'Schräg von vorne rechts' },
   { angle: WHEEL_REFERENCE_ANGLE, label: 'Felgenreferenz', hint: 'Nahaufnahme der Felge (bindend)' },
 ];
 
 /** Abdeckungsbewertung: wie identitätstreu wird der Spin voraussichtlich? */
 export function evaluateCoverage(angles: number[]): { score: number; label: string; tone: string } {
-  const real = angles.filter((a) => a >= 0);
-  const has = (a: number) => real.includes(a);
-  let score = Math.round((real.length / 8) * 100);
-  if (has(0) && has(180)) score += 5;
-  if (has(90) && has(270)) score += 5;
+  const coverage = evaluateSourceCoverage(angles);
+  let score = Math.round((coverage.uniqueAngles.length / 8) * 100);
+  if (coverage.ok) score = Math.max(score, 65);
+  if (coverage.maxGap <= 90) score += 10;
   score = Math.min(100, score);
   if (score >= 85) return { score, label: 'Sehr hohe Identitätstreue', tone: 'text-green-600' };
-  if (score >= 55) return { score, label: 'Gute Identitätstreue', tone: 'text-accent' };
+  if (coverage.ok) return { score, label: 'Ausreichend verteilt', tone: 'text-accent' };
   if (score >= 30) return { score, label: 'Eingeschränkte Identitätstreue', tone: 'text-amber-600' };
   return { score, label: 'Sehr wenig Quellmaterial', tone: 'text-destructive' };
 }
@@ -72,7 +72,7 @@ const SpinSourcePicker: React.FC<Props> = ({ vehicleId, onConfirm, onSwitchToUpl
 
   const chosenAngles = Object.values(selection).map((s) => s.angle);
   const chosenCount = chosenAngles.filter((a) => a >= 0).length;
-  const hasRequired = SPIN_ANGLE_SLOTS.filter((s) => s.required).every((s) => !!selection[s.angle]);
+  const sourceCoverage = evaluateSourceCoverage(chosenAngles);
   const coverage = evaluateCoverage(chosenAngles);
 
   const pick = (asset: VehicleAsset) => {
@@ -105,9 +105,9 @@ const SpinSourcePicker: React.FC<Props> = ({ vehicleId, onConfirm, onSwitchToUpl
       <div className="text-center space-y-1">
         <h3 className="font-display font-semibold text-foreground">Vorhandene Fahrzeugbilder verwenden</h3>
         <p className="text-xs text-muted-foreground max-w-lg mx-auto">
-          Ordne den Perspektiven deine bereits vorhandenen Fotos zu. Pflicht sind die vier Kardinalansichten
-          Front (0°), Seite links (90°), Heck (180°) und Seite rechts (270°). Die vier Diagonalen sind optional
-          und erhöhen die Identitätstreue. Es können nur Originale und Galeriebilder gewählt werden –
+          Ordne den Perspektiven deine bereits vorhandenen Fotos zu. Nötig sind mindestens vier eindeutige,
+          rund ums Fahrzeug verteilte Winkel im 45°-Raster. Kardinalansichten sind empfohlen, Diagonalen
+          können fehlende Front-/Heckwinkel stützen. Es können nur Originale und Galeriebilder gewählt werden –
           bereits generierte Spin-Frames sind als Quelle ausgeschlossen.
         </p>
       </div>
@@ -137,7 +137,6 @@ const SpinSourcePicker: React.FC<Props> = ({ vehicleId, onConfirm, onSwitchToUpl
               </div>
               <p className="text-[11px] font-semibold text-foreground leading-tight">
                 {slot.label}
-                {slot.required && <span className="text-accent"> *</span>}
               </p>
               <p className="text-[10px] text-muted-foreground leading-tight">
                 {slot.angle >= 0 ? `${slot.angle}°` : 'optional, bindend'}
@@ -216,7 +215,7 @@ const SpinSourcePicker: React.FC<Props> = ({ vehicleId, onConfirm, onSwitchToUpl
           <div className="h-full bg-accent transition-all" style={{ width: `${coverage.score}%` }} />
         </div>
         <p className="text-[10px] text-muted-foreground">
-          Vier Kardinalwinkel sind Pflicht. Je mehr der 8 Winkel belegt sind, desto weniger muss die KI erfinden.
+          Mindestens vier eindeutige Winkel müssen rund ums Fahrzeug verteilt sein. Größte Lücke aktuell: {sourceCoverage.maxGap}°.
         </p>
       </div>
 
@@ -225,15 +224,15 @@ const SpinSourcePicker: React.FC<Props> = ({ vehicleId, onConfirm, onSwitchToUpl
           <Upload className="w-3.5 h-3.5 mr-1.5" /> Stattdessen neue Fotos hochladen
         </Button>
         <Button
-          disabled={disabled || !hasRequired || chosenCount < MIN_REQUIRED_ANGLES}
+          disabled={disabled || !sourceCoverage.ok || chosenCount < MIN_REQUIRED_ANGLES}
           onClick={() => onConfirm(Object.values(selection).sort((a, b) => a.angle - b.angle))}
         >
           {chosenCount} Perspektive{chosenCount === 1 ? '' : 'n'} übernehmen
         </Button>
       </div>
-      {(!hasRequired || chosenCount < MIN_REQUIRED_ANGLES) && (
+      {(!sourceCoverage.ok || chosenCount < MIN_REQUIRED_ANGLES) && (
         <p className="text-center text-[11px] text-muted-foreground">
-          Erforderlich sind die vier Kardinalansichten: Front (0°), Seite links (90°), Heck (180°) und Seite rechts (270°).
+          {sourceCoverageFailureReason(sourceCoverage)}
         </p>
       )}
 

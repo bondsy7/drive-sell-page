@@ -11,7 +11,7 @@ import Spin360Progress, { type SpinStep } from './Spin360Progress';
 import Spin360Viewer from './Spin360Viewer';
 import Video2FramesProcessor from './Video2FramesProcessor';
 import SpinSourcePicker, { type SpinSourceSelection } from './SpinSourcePicker';
-import { KEYFRAME_ANGLES, MIN_SOURCE_ANGLES, evaluateSourceCoverage, isRenderableSpin, normalizeFrameCount } from '@/lib/spin360-v2';
+import { KEYFRAME_ANGLES, evaluateSourceCoverage, isRenderableSpin, normalizeFrameCount, sourceCoverageFailureReason } from '@/lib/spin360-v2';
 import { uploadImageToStorage } from '@/lib/storage-utils';
 import { ensureVehicleAuto } from '@/lib/vehicle-utils';
 
@@ -166,9 +166,7 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
       // Nur echte Turntable-Winkel zählen als Abdeckung (Felgenreferenz ist Zusatz).
       const coverage = evaluateSourceCoverage(sourceUrls.map((s) => s.angle));
       if (!coverage.ok) {
-        toast.error(
-          `Mindestens ${MIN_SOURCE_ANGLES} echte Perspektiven erforderlich – es fehlen: ${coverage.missingRequired.join('°, ')}°`,
-        );
+        toast.error(sourceCoverageFailureReason(coverage));
         setPhase(assetSelection ? 'source' : 'upload'); setIsProcessing(false); return;
       }
 

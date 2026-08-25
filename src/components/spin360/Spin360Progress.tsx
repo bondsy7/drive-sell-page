@@ -31,11 +31,11 @@ interface Spin360ProgressProps {
   mode?: 'image2spin' | 'video2frames';
 }
 
-const IMAGE_STEPS: { key: SpinStep; label: string; description: string }[] = [
+export const IMAGE_STEPS: { key: SpinStep; label: string; description: string }[] = [
   { key: 'analyzing', label: 'Analyse', description: 'Quellbilder werden Winkeln zugeordnet' },
+  { key: 'profiling', label: 'Fahrzeugprofil', description: 'Verbindliche Fahrzeugidentität wird aus Originalfotos erstellt' },
   { key: 'preparing_keyframes', label: 'Keyframes', description: '8 Keyframes (45°-Raster) werden studio-normalisiert' },
   { key: 'validating_keyframes', label: 'Keyframe-QA', description: 'Jeder Keyframe wird gegen die Originale geprüft' },
-  { key: 'profiling', label: 'Fahrzeugprofil', description: 'Verbindliche Identität wird erstellt' },
   { key: 'generating_frames', label: 'Frames', description: 'Zwischenframes werden sektorweise bidirektional erzeugt & geprüft' },
   { key: 'assembling', label: 'Zusammenbau', description: '360° Spin wird erstellt' },
 ];
@@ -55,7 +55,7 @@ const STEP_ALIASES: Partial<Record<SpinStep, SpinStep>> = {
   validating_frames: 'generating_frames',
 };
 
-const IMAGE_STEP_ORDER: SpinStep[] = ['uploaded', 'analyzing', 'preparing_keyframes', 'validating_keyframes', 'profiling', 'generating_frames', 'assembling', 'completed'];
+export const IMAGE_STEP_ORDER: SpinStep[] = ['uploaded', 'analyzing', 'profiling', 'preparing_keyframes', 'validating_keyframes', 'generating_frames', 'assembling', 'completed'];
 const VIDEO_STEP_ORDER: SpinStep[] = ['uploaded', 'generating_video', 'extracting_frames', 'completed'];
 
 
@@ -97,7 +97,7 @@ const Spin360Progress: React.FC<Spin360ProgressProps> = ({ currentStep, error, m
       <div className="space-y-2">
         {steps.map((step) => {
           const stepIdx = getStepIndex(step.key, stepOrder);
-          const isActive = step.key === currentStep;
+          const isActive = step.key === effectiveStep;
           const isDone = currentIdx > stepIdx || isCompleted;
           const isPending = currentIdx < stepIdx && !isCompleted;
 
