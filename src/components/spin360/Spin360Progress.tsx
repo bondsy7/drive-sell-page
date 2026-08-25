@@ -67,10 +67,12 @@ const Spin360Progress: React.FC<Spin360ProgressProps> = ({ currentStep, error, m
   const isVideo = mode === 'video2frames';
   const steps = isVideo ? VIDEO_STEPS : IMAGE_STEPS;
   const stepOrder = isVideo ? VIDEO_STEP_ORDER : IMAGE_STEP_ORDER;
-  const currentIdx = getStepIndex(currentStep, stepOrder);
+  const effectiveStep = STEP_ALIASES[currentStep] ?? currentStep;
+  const currentIdx = getStepIndex(effectiveStep, stepOrder);
   const isFailed = currentStep === 'failed' || currentStep === 'needs_review';
   const isCompleted = currentStep === 'completed';
-  const progressPercent = isCompleted ? 100 : isFailed ? 0 : Math.round((currentIdx / (stepOrder.length - 1)) * 100);
+  const progressPercent = isCompleted ? 100 : isFailed ? 0 : Math.round((Math.max(0, currentIdx) / (stepOrder.length - 1)) * 100);
+
 
   return (
     <div className="space-y-6">
