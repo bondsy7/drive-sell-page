@@ -1,11 +1,12 @@
 import React from 'react';
-import { Camera, FileText, Layout, Image, Video, Sparkles, Lock, Zap, Wrench, Search, Music, RotateCw } from 'lucide-react';
+import { Camera, FileText, Layout, Image, Video, Sparkles, Lock, Zap, Wrench, Search, Music, RotateCw, Scissors } from 'lucide-react';
 import { useCredits } from '@/hooks/useCredits';
 import { useModuleAccess } from '@/hooks/useModuleAccess';
 
 export type HubAction = 
   | 'studio'          // 🚀 One-Shot Studio (Beta) — Bilder + Banner + Video in einem Rutsch
   | 'photos'          // Fotos aufnehmen & remastern
+  | 'background-swap' // Hintergrund freistellen & tauschen (remove.bg)
   | 'pdf-landing'     // PDF → Landing Page
   | 'manual-landing'  // Landing Page ohne PDF
   | 'banner'          // Banner Generator
@@ -16,6 +17,7 @@ export type HubAction =
   | 'damage-repair'    // Schadensreparatur – KI repariert Schäden auf Fahrzeugbildern
   | 'damage-analysis'  // Schadensanalyse – KI bewertet Schäden + erstellt Bericht
   | 'sales-assistant'; // KI Verkaufsassistent
+
 
 
 interface ActionTile {
@@ -41,6 +43,14 @@ const TILES: ActionTile[] = [
     title: 'Fotos & Remastering',
     description: 'Fahrzeugfotos aufnehmen oder hochladen – KI verwandelt sie in professionelle Showroom-Bilder.',
   },
+  {
+    id: 'background-swap',
+    icon: <Scissors className="w-7 h-7" />,
+    title: 'Hintergrund tauschen',
+    description: 'Fahrzeug pixelgenau freistellen und auf Showroom, eigenen Hintergrund, Farbe oder KI-Szene setzen.',
+    badge: 'NEU',
+  },
+
   {
     id: 'pdf-landing',
     icon: <FileText className="w-7 h-7" />,
