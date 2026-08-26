@@ -62,3 +62,6 @@ verify_jwt = false
 
 [functions.cleanup-orphaned-storage]
 verify_jwt = false
+
+[functions.remove-background]
+verify_jwt = false

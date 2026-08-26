@@ -20,6 +20,7 @@ import VideoGenerator from '@/components/VideoGenerator';
 import BannerGenerator from '@/components/BannerGenerator';
 import OneShotStudio from '@/components/OneShotStudio';
 import DamageRepairFlow from '@/components/DamageRepairFlow';
+import BackgroundSwapFlow from '@/components/BackgroundSwapFlow';
 import DamageAnalysisFlow from '@/components/DamageAnalysisFlow';
 import VehicleSelectBeforeGenerate from '@/components/VehicleSelectBeforeGenerate';
 import { PhotoModeSelector, Spin360Workflow } from '@/components/spin360';
@@ -37,7 +38,7 @@ import type { ModelTier } from '@/components/ModelSelector';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-type ExtendedAppState = AppState | 'capturing-images' | 'hub' | 'standalone-photo-choice' | 'standalone-photo-mode' | 'standalone-capture' | 'standalone-upload' | 'standalone-generate-select' | 'standalone-generating' | 'spin360' | 'video' | 'banner' | 'manual-landing' | 'manual-landing-preview' | 'preset-upload' | 'studio' | 'damage-repair' | 'damage-analysis';
+type ExtendedAppState = AppState | 'capturing-images' | 'hub' | 'standalone-photo-choice' | 'standalone-photo-mode' | 'standalone-capture' | 'standalone-upload' | 'standalone-generate-select' | 'standalone-generating' | 'spin360' | 'video' | 'banner' | 'manual-landing' | 'manual-landing-preview' | 'preset-upload' | 'studio' | 'damage-repair' | 'damage-analysis' | 'background-swap';
 
 const PERSPECTIVES = [
   { key: 'front', label: 'Frontansicht', prompt: 'Front view, straight on, symmetrical composition' },
@@ -63,6 +64,8 @@ const TOOL_TO_STATE: Record<string, ExtendedAppState> = {
   'reparatur': 'damage-repair',
   'damage-analysis': 'damage-analysis',
   'analyse': 'damage-analysis',
+  'background-swap': 'background-swap',
+  'hintergrund': 'background-swap',
 };
 
 const STATE_TO_TOOL: Partial<Record<ExtendedAppState, string>> = {
@@ -79,6 +82,7 @@ const STATE_TO_TOOL: Partial<Record<ExtendedAppState, string>> = {
   'studio': 'beta',
   'damage-repair': 'damage-repair',
   'damage-analysis': 'damage-analysis',
+  'background-swap': 'background-swap',
 };
 
 const Index = () => {
@@ -669,6 +673,9 @@ const Index = () => {
       case 'photos':
         setAppState('standalone-capture');
         break;
+      case 'background-swap':
+        setAppState('background-swap' as ExtendedAppState);
+        break;
       case 'pdf-landing':
         setAppState('idle');
         break;
@@ -975,6 +982,19 @@ const Index = () => {
                 setStandalonePhotoResults(imgs);
                 await saveStandaloneImages(imgs);
                 toast.success(`${imgs.length} reparierte Bilder in Galerie gespeichert!`);
+                navigate('/dashboard?tab=gallery');
+              }}
+            />
+          )}
+
+          {/* ─── Hintergrund tauschen ─── */}
+          {appState === 'background-swap' && (
+            <BackgroundSwapFlow
+              onBack={() => setAppState('hub')}
+              onComplete={async (imgs) => {
+                setStandalonePhotoResults(imgs);
+                await saveStandaloneImages(imgs);
+                toast.success(`${imgs.length} Bilder in Galerie gespeichert!`);
                 navigate('/dashboard?tab=gallery');
               }}
             />
