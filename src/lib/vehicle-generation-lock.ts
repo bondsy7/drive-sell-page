@@ -65,6 +65,7 @@ THIS PHOTOGRAPHED VEHICLE USES THE CURRENT FACELIFT FRONT SHOWN IN THE REFERENCE
 The make and model are intentionally not named because catalogue-memory retrieval is forbidden.
 - Copy the exact photographed closed, broad, dark front panel between the slim upper light elements: outline, width, gloss, sensors and transitions must come only from the reference pixels.
 - Preserve the photographed split-light arrangement, slim upper DRL elements, lower headlamp modules, hood edge, bumper openings and current wordmark/badge placement exactly.
+- SIDE IDENTITY: preserve the exact photographed window outline, roofline, shoulder crease, door skins, handles, sill/cladding geometry, wheel arches and the way the headlamp terminates at the front fender. Do not substitute side panels from an older body or facelift.
 - FORBIDDEN OLD FRONT: no tall radiator grille, no vertical chrome grille bars/slats, no narrow framed grille, and no alternative headlamp/grille combination.
 - Treat any output containing vertical grille bars or a tall central radiator-grille shape as the WRONG VEHICLE GENERATION. Replace that entire front with the reference-matching closed panel before returning the image.
 </KNOWN_FACELIFT_FRONT_GUARD>` : '';

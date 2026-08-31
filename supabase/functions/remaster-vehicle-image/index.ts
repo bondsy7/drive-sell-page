@@ -363,7 +363,7 @@ serve(async (req) => {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const { imageBase64, additionalImages, additionalFileUris, mainImageFileUri, customShowroomFileUri, customPlateImageFileUri, manufacturerLogoFileUri, dealerLogoFileUri, vehicleDescription, modelTier, dynamicPrompt, classContext, customShowroomBase64, customPlateImageBase64, dealerLogoUrl, dealerLogoBase64, manufacturerLogoUrl, manufacturerLogoBase64, wheelReferenceBase64, wheelReferenceFileUri, wheelReferenceAnalysis } = JSON.parse(bodyText);
+    const { imageBase64, mainImageRole, additionalImages, additionalFileUris, additionalImageRoles, mainImageFileUri, customShowroomFileUri, customPlateImageFileUri, manufacturerLogoFileUri, dealerLogoFileUri, vehicleDescription, modelTier, dynamicPrompt, classContext, customShowroomBase64, customPlateImageBase64, dealerLogoUrl, dealerLogoBase64, manufacturerLogoUrl, manufacturerLogoBase64, wheelReferenceBase64, wheelReferenceFileUri, wheelReferenceAnalysis } = JSON.parse(bodyText);
     
     // Read cost dynamically from admin_settings. Normalize legacy/unknown tiers so
     // "Qualität" always routes to Nano Banana 2, never to the Pro image model.
@@ -550,12 +550,12 @@ ${DEKRA_SHOWROOM_SCENE_JSON}
     }
     if (mainImageFileUri?.uri) {
       const p = { file_data: { mime_type: mainImageFileUri.mimeType, file_uri: mainImageFileUri.uri } };
-      imageLabels.set(p, 'VEHICLE BLUEPRINT – overall vehicle photo (geometry, trim, paint)');
+      imageLabels.set(p, `VEHICLE BLUEPRINT – ${mainImageRole || 'overall vehicle photo'} (generation-authoritative geometry, trim, paint)`);
       parts.push(p);
       console.log(`[remaster] Main image via file_uri`);
     } else {
       const p = toInlineData(imageBase64);
-      imageLabels.set(p, 'VEHICLE BLUEPRINT – overall vehicle photo (geometry, trim, paint)');
+      imageLabels.set(p, `VEHICLE BLUEPRINT – ${mainImageRole || 'overall vehicle photo'} (generation-authoritative geometry, trim, paint)`);
       parts.push(p);
     }
 
@@ -603,18 +603,19 @@ It is the ONLY authoritative source for every visible wheel in the output.
     }
 
     if (Array.isArray(additionalFileUris) && additionalFileUris.length > 0) {
-      for (const fu of additionalFileUris) {
+      for (let i = 0; i < additionalFileUris.length; i++) {
+        const fu = additionalFileUris[i];
         const p = { file_data: { mime_type: fu.mimeType, file_uri: fu.uri } };
-        imageLabels.set(p, 'Detail reference photo');
+        imageLabels.set(p, `Vehicle reference – ${additionalImageRoles?.[i] || 'supporting detail'}`);
         parts.push(p);
       }
       console.log(`[remaster] ${additionalFileUris.length} additional images via file_uri`);
     }
 
     if (Array.isArray(additionalImages) && additionalImages.length > 0) {
-      for (const img of additionalImages.slice(0, 10)) {
+      for (const [i, img] of additionalImages.slice(0, 10).entries()) {
         const p = toInlineData(img);
-        imageLabels.set(p, 'Detail reference photo');
+        imageLabels.set(p, `Vehicle reference – ${additionalImageRoles?.[i] || 'supporting detail'}`);
         parts.push(p);
       }
     }

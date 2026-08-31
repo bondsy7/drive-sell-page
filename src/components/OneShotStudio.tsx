@@ -947,7 +947,13 @@ This is the MARKETING MASTER (Hero) shot — push lighting one notch beyond the 
     );
     if (selectedJobs.length === 0) return;
 
-    const inputs = orderedInputImages.map((i) => i.base64);
+    // Keep the successful Hero remaster as a generation-safe identity anchor,
+    // while retaining each source image's explicit perspective role.
+    const inputs = [heroB64, ...orderedInputImages.map((i) => i.base64)].filter((image): image is string => !!image);
+    const referenceRoles = [
+      ...(heroB64 ? ['identity_anchor_exterior_34_front'] : []),
+      ...orderedInputImages.map((i) => i.category),
+    ];
     const totalImages = getTotalImageCount(new Set(selectedJobs.map((j) => j.key)));
     const generationYear = vinVehicle?.year || scanData?.year || '';
     const vehicleDescription = [form.brand, form.model, form.variant, generationYear ? `Modelljahr ${generationYear}` : '']
@@ -956,7 +962,8 @@ This is the MARKETING MASTER (Hero) shot — push lighting one notch beyond the 
 
     pipelineCtx.startPipeline({
       inputImages: inputs,
-      originalImages: inputs,
+      referenceRoles,
+      originalImages: orderedInputImages.map((i) => i.base64),
       additionalImages,
       vehicleDescription,
       remasterConfig,

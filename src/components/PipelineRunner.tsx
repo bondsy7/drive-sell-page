@@ -32,6 +32,7 @@ import { useQueryClient } from '@tanstack/react-query';
 /* ─── Types ─── */
 interface PipelineRunnerProps {
   inputImages: string[];
+  referenceRoles?: string[];
   originalImages?: string[];
   additionalImages?: string[];
   /** Dedizierte Felgenreferenz (getrennt vom allgemeinen Multiupload). */
@@ -55,6 +56,7 @@ const CREDIT_COST_PER_IMAGE = 2;
 /* ─── Component ─── */
 const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   inputImages,
+  referenceRoles,
   originalImages,
   additionalImages,
   wheelReference,
@@ -304,6 +306,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
 
     pipeline.startPipeline({
       inputImages,
+      referenceRoles,
       originalImages: originalImages || [],
       additionalImages: additionalImages || [],
       wheelReference: wheelReference || null,
@@ -321,7 +324,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       detectedBrand: detectedBrand || null,
       totalImages: getTotalImageCount(selectedKeys),
     });
-  }, [user, localSelectedJobs, localAvailableJobs, inputImages, originalImages, additionalImages, wheelReference, vehicleDescription, remasterConfig, classContext, modelTier, projectId, vehicleId, vin, resolvedManufacturerLogoUrl, detectedBrand, selectedKeys, pipeline, persistRemasteredInputs]);
+  }, [user, localSelectedJobs, localAvailableJobs, inputImages, referenceRoles, originalImages, additionalImages, wheelReference, vehicleDescription, remasterConfig, classContext, modelTier, projectId, vehicleId, vin, resolvedManufacturerLogoUrl, detectedBrand, selectedKeys, pipeline, persistRemasteredInputs]);
 
   /* ─── Credit pre-check ─── */
   const handleStartClick = () => {

@@ -4,6 +4,8 @@ import type { WheelAnalysis } from '@/types/wheel-reference';
 
 export interface RemasterInvokePayload {
   imageBase64: string;
+  /** Neutral perspective role of the primary vehicle reference (never brand/model text). */
+  mainImageRole?: string;
   vehicleDescription?: string;
   modelTier?: string;
   dynamicPrompt?: string;
@@ -13,6 +15,8 @@ export interface RemasterInvokePayload {
    */
   classContext?: VehicleClassContext | null;
   additionalImages?: string[];
+  /** Perspective roles aligned with additionalImages/additionalFileUris. */
+  additionalImageRoles?: string[];
   /** Pre-uploaded Gemini File API URIs – used INSTEAD of additionalImages when available */
   additionalFileUris?: { uri: string; mimeType: string }[];
   /** Pre-uploaded main image file URI */

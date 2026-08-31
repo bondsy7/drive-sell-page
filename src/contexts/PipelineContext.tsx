@@ -34,6 +34,8 @@ export interface ResultImage {
 
 export interface PipelineConfig {
   inputImages: string[];
+  /** Perspective/source role aligned by index with inputImages. */
+  referenceRoles?: string[];
   originalImages: string[];
   additionalImages: string[];
   /** Dedizierte Felgenreferenz (genau EIN Bild) – getrennt von additionalImages. */
@@ -82,9 +84,27 @@ const SIDE_REFERENCE_PATTERNS = /(side|seite|profile)/i;
 const FRONT_INTERIOR_PATTERNS = /(dashboard|armaturenbrett|fahrer|driver|center console|mittelkonsole|cabin|kabine|mbux|screen|display|steering|lenkrad|cluster)/i;
 const REAR_INTERIOR_PATTERNS = /(rear seats|rear seat|rücksitz|ruecksitz|rücksitzbank|ruecksitzbank)/i;
 
-function inferPrimaryReferenceIndex(job: PipelineJob | undefined, promptText: string, availableCount: number): number {
+function inferPrimaryReferenceIndex(
+  job: PipelineJob | undefined,
+  promptText: string,
+  availableCount: number,
+  referenceRoles: string[] = [],
+): number {
   if (availableCount <= 1) return 0;
   const signature = `${job?.key || ''} ${job?.label || ''} ${job?.labelDe || ''} ${promptText}`;
+  const normalizedRoles = referenceRoles.map(role => role.toLowerCase().replace(/[^a-z0-9]+/g, '_'));
+  const findRole = (...patterns: RegExp[]) => normalizedRoles.findIndex(role => patterns.some(pattern => pattern.test(role)));
+  let roleIndex = -1;
+  if (REAR_INTERIOR_PATTERNS.test(signature)) roleIndex = findRole(/interior_rear/, /rear_seat/, /ruecksitz/);
+  else if (FRONT_INTERIOR_PATTERNS.test(signature)) roleIndex = findRole(/interior_front/, /interior_dashboard/, /driver/, /fahrer/);
+  else if (/EXT_SIDE_RIGHT/i.test(signature)) roleIndex = findRole(/side_right/, /seite_rechts/);
+  else if (/EXT_SIDE_LEFT/i.test(signature)) roleIndex = findRole(/side_left/, /(^|_)side($|_)/, /seite_links/);
+  else if (/EXT_34_FRONT_RIGHT/i.test(signature)) roleIndex = findRole(/34_front_right/, /exterior_34_front/, /34front/, /identity_anchor/);
+  else if (/EXT_34_REAR_RIGHT/i.test(signature)) roleIndex = findRole(/34_rear_right/, /exterior_34_rear/, /rear/, /heck/);
+  else if (/EXT_34_REAR_LEFT/i.test(signature)) roleIndex = findRole(/34_rear_left/, /exterior_34_rear/, /rear/, /heck/);
+  else if (REAR_REFERENCE_PATTERNS.test(signature)) roleIndex = findRole(/(^|_)rear($|_)/, /heck/, /34_rear/);
+  else if (FRONT_REFERENCE_PATTERNS.test(signature)) roleIndex = findRole(/(^|_)front($|_)/, /exterior_front/, /34_front/, /34front/, /identity_anchor/);
+  if (roleIndex >= 0 && roleIndex < availableCount) return roleIndex;
   if (REAR_INTERIOR_PATTERNS.test(signature) && availableCount >= 5) return 4;
   if (FRONT_INTERIOR_PATTERNS.test(signature) && availableCount >= 4) return 3;
   if (REAR_REFERENCE_PATTERNS.test(signature) && availableCount >= 3) return 2;
@@ -205,8 +225,9 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // The successful remasters are the strongest generation-safe blueprints for
     // downstream perspectives. Raw originals remain supporting evidence only.
     const referenceImages = cfg.inputImages.length > 0 ? cfg.inputImages : cfg.originalImages;
-    const primaryReferenceIndex = inferPrimaryReferenceIndex(job, prompt, referenceImages.length);
+    const primaryReferenceIndex = inferPrimaryReferenceIndex(job, prompt, referenceImages.length, cfg.referenceRoles);
     const primaryReference = referenceImages[primaryReferenceIndex] || referenceImages[0];
+    const primaryReferenceRole = cfg.referenceRoles?.[primaryReferenceIndex] || 'vehicle identity blueprint';
     const interiorReferenceIndices = getInteriorReferenceIndices(referenceImages.length);
     const interiorSupportReferences = interiorReferenceIndices
       .filter(index => index != primaryReferenceIndex && index < referenceImages.length)
@@ -223,7 +244,6 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         supportingReferences = [
           ...interiorSupportReferences,
           ...cfg.additionalImages.slice(0, 4),
-          ...cfg.originalImages.slice(0, 2),
         ].slice(0, 5);
         break;
       case 'detail':
@@ -231,7 +251,6 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         // Plus the primary reference for body context, but limit other refs
         supportingReferences = [
           ...cfg.additionalImages,
-          ...cfg.originalImages.slice(0, 2),
           ...otherReferences.slice(0, 2), // max 2 body refs for context
         ].slice(0, 8);
         break;
@@ -243,7 +262,6 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         // Exterior/hero: Send body references + showroom context, limit to max 5
         supportingReferences = [
           ...otherReferences,
-          ...cfg.originalImages.slice(0, 2),
         ].slice(0, 5);
         break;
     }
@@ -304,10 +322,15 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // Build file URI arrays for this specific job based on smart routing
     let additionalFileUris: { uri: string; mimeType: string }[] | undefined;
     let inlineSupportingImages: string[] | undefined;
+    let additionalImageRoles: string[] | undefined;
     if (hasFileUris && fileCache.references.length > 0) {
        const allRefs = cfg.inputImages.length > 0 ? cfg.inputImages : cfg.originalImages;
       const referenceBackedSupportingImages = supportingReferences.filter(ref => allRefs.includes(ref));
       inlineSupportingImages = supportingReferences.filter(ref => !allRefs.includes(ref));
+      additionalImageRoles = supportingReferences.map(ref => {
+        const idx = allRefs.indexOf(ref);
+        return idx >= 0 ? (cfg.referenceRoles?.[idx] || 'supporting vehicle reference') : 'detail reference';
+      });
 
       additionalFileUris = referenceBackedSupportingImages
         .map(ref => {
@@ -317,6 +340,10 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         .filter((fu): fu is { uri: string; mimeType: string } => fu !== null);
     } else if (supportingReferences.length > 0) {
       inlineSupportingImages = supportingReferences;
+      additionalImageRoles = supportingReferences.map(ref => {
+        const idx = referenceImages.indexOf(ref);
+        return idx >= 0 ? (cfg.referenceRoles?.[idx] || 'supporting vehicle reference') : 'detail reference';
+      });
     }
 
     const fileUriCache = cachedFileUrisRef.current;
@@ -327,8 +354,10 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const { data, error } = await invokeRemasterVehicleImage({
       classContext: cfg.classContext ?? null,
       imageBase64: primaryReference,
+      mainImageRole: primaryReferenceRole,
       additionalImages: inlineSupportingImages && inlineSupportingImages.length > 0 ? inlineSupportingImages : undefined,
       additionalFileUris: additionalFileUris && additionalFileUris.length > 0 ? additionalFileUris : undefined,
+      additionalImageRoles,
       mainImageFileUri: mainImageFileUri,
       wheelReferenceFileUri: needsWheel ? fileCache.wheel : null,
       wheelReferenceBase64: needsWheel && !fileCache.wheel ? wheelReference!.image : null,
