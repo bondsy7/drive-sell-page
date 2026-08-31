@@ -188,7 +188,8 @@ async function buildFallbackPrompt(vehicleDescription?: string): Promise<string>
 ${REFERENCE_TRUTH_PROTOCOL}
 </REFERENCE_TRUTH_PROTOCOL>`);
 
-  if (vehicleDescription) parts.push(`Vehicle: ${vehicleDescription}`);
+  const neutralDescription = sanitizeVehicleDescriptionForPrompt(vehicleDescription);
+  if (neutralDescription) parts.push(`Vehicle (neutral context only, brand/model withheld): ${neutralDescription}`);
   parts.push('You MUST generate a remastered image. Do NOT refuse. DO NOT ROTATE THE IMAGE.');
   return parts.join('\n\n');
 }
