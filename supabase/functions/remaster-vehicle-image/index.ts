@@ -94,8 +94,44 @@ const REFERENCE_TRUTH_PROTOCOL = `REFERENCE IMAGES ARE THE ONLY SOURCE OF TRUTH.
 - If a region is not visible, extend ONLY from immediately adjacent visible evidence with the most conservative continuation possible.
 - Never invent a new interior color, upholstery variant, trim insert, badge, text, button legend, or equipment line.`;
 
+const BRAND_TOKENS = [
+  "skoda", "škoda", "volkswagen", "vw", "audi", "seat", "cupra", "porsche",
+  "bmw", "mini", "mercedes", "mercedes-benz", "benz", "smart", "opel", "ford",
+  "renault", "dacia", "peugeot", "citroen", "citroën", "ds", "fiat", "alfa",
+  "lancia", "jeep", "toyota", "lexus", "honda", "mazda", "nissan", "mitsubishi",
+  "subaru", "suzuki", "hyundai", "kia", "genesis", "volvo", "polestar", "tesla",
+  "jaguar", "land", "rover", "bentley", "ferrari", "lamborghini", "maserati",
+  "aston", "martin", "mclaren", "lotus", "byd", "mg", "chevrolet", "chrysler",
+  "dodge", "cadillac", "iveco", "man", "scania", "daf", "kenworth", "ducati",
+  "yamaha", "kawasaki", "harley", "davidson", "ktm", "triumph", "aprilia",
+];
+
+/** Strips brand/model names so the image model cannot fall back to catalogue memory. */
+function sanitizeVehicleDescriptionForPrompt(description?: string): string {
+  if (!description) return "";
+  const tokens = description.split(/([^\p{L}\p{N}]+)/u);
+  let skipNext = 0;
+  const kept: string[] = [];
+  for (const token of tokens) {
+    if (!/[\p{L}\p{N}]/u.test(token)) {
+      if (kept.length) kept.push(token);
+      continue;
+    }
+    const norm = token.toLowerCase();
+    if (BRAND_TOKENS.includes(norm)) { skipNext = 2; continue; }
+    if (skipNext > 0) {
+      skipNext -= 1;
+      if (!/^\d{4}$/.test(norm)) continue;
+    }
+    kept.push(token);
+  }
+  return kept.join("").replace(/\s{2,}/g, " ").replace(/^[\s,;:.-]+|[\s,;:.-]+$/g, "").trim();
+}
+
 function buildModelGenerationLock(vehicleDescription?: string): string {
   const metadata = typeof vehicleDescription === "string" ? vehicleDescription.trim() : "";
+  const neutralMetadata = sanitizeVehicleDescriptionForPrompt(metadata);
+
   const enyaqYearMatch = metadata.match(/(?:modelljahr\s*)?(20\d{2})/i);
   const enyaqYear = enyaqYearMatch ? Number(enyaqYearMatch[1]) : null;
   const isCurrentEnyaq = /\b(?:skoda|škoda)\b/i.test(metadata)
@@ -113,7 +149,7 @@ THIS PHOTOGRAPHED VEHICLE IS THE CURRENT SKODA ENYAQ FACELIFT (MODEL YEAR ${enya
   return `<MODEL_GENERATION_LOCK>
 CRITICAL — PHOTOGRAPHED VEHICLE GENERATION / FACELIFT IS IMMUTABLE:
 1. The attached VEHICLE BLUEPRINT and vehicle reference photos are the ONLY visual source for model generation, facelift, body shell, front fascia and rear fascia.
-2. Vehicle metadata${metadata ? ` ("${metadata}")` : ""} is IDENTIFICATION CONTEXT ONLY. Never use the model name, model year, trim name, VIN data, training memory, catalogue imagery or a common/default version of this model to redesign visible geometry.
+2. Brand name, model name and trim name are DELIBERATELY WITHHELD from this prompt. Never guess, name or reconstruct them.${neutralMetadata ? ` Neutral context only: "${neutralMetadata}".` : ""} Never use catalogue imagery, training memory or a common/default version of any model to redesign visible geometry.
 3. Preserve the exact photographed generation even when it is newer, recently launched, rare, unfamiliar, or differs from the version remembered by the model.
 4. Copy the exact photographed hood edge, badge/wordmark placement, grille or closed panel, headlights and complete LED signature, bumper openings, lower intake, taillights, tailgate, glasshouse, body lines and proportions.
 5. FORBIDDEN: substituting a pre-facelift, previous generation, older grille, older headlights, older bumper, older badge placement, or another trim because it is more familiar.
@@ -152,7 +188,8 @@ async function buildFallbackPrompt(vehicleDescription?: string): Promise<string>
 ${REFERENCE_TRUTH_PROTOCOL}
 </REFERENCE_TRUTH_PROTOCOL>`);
 
-  if (vehicleDescription) parts.push(`Vehicle: ${vehicleDescription}`);
+  const neutralDescription = sanitizeVehicleDescriptionForPrompt(vehicleDescription);
+  if (neutralDescription) parts.push(`Vehicle (neutral context only, brand/model withheld): ${neutralDescription}`);
   parts.push('You MUST generate a remastered image. Do NOT refuse. DO NOT ROTATE THE IMAGE.');
   return parts.join('\n\n');
 }

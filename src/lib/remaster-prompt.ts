@@ -9,7 +9,7 @@ import { resolveVehicleClass } from '@/config/vehicle-classes';
 import { buildTruckPromptBlocks, TRUCK_PERSPECTIVE_PROMPTS } from '@/prompts/remaster/truck';
 import { buildMotorcyclePromptBlocks, MOTORCYCLE_PERSPECTIVE_PROMPTS } from '@/prompts/remaster/motorcycle';
 import { formatWheelAnalysisBlock } from '@/lib/wheel-reference';
-import { buildVehicleGenerationLock } from '@/lib/vehicle-generation-lock';
+import { buildVehicleGenerationLock, sanitizeVehicleDescriptionForPrompt } from '@/lib/vehicle-generation-lock';
 
 export interface RemasterConfig {
   scene: string;
@@ -641,13 +641,15 @@ RECONSTRUCTION RULES:
   // ── STRICT NEGATIVE CONSTRAINTS ──
   parts.push(`<STRICT_NEGATIVE_CONSTRAINTS>\n${getBlock(overrides, 'negative_constraints')}\n</STRICT_NEGATIVE_CONSTRAINTS>`);
 
-  // ── Vehicle description ──
-  if (vehicleDescription) {
+  // ── Vehicle description (brand/model deliberately stripped) ──
+  const neutralVehicleDescription = sanitizeVehicleDescriptionForPrompt(vehicleDescription);
+  if (neutralVehicleDescription) {
     parts.push(`<VEHICLE_METADATA>
-Identification context only; it must never override the photographed vehicle generation or visible design:
-${vehicleDescription}
+Neutral context only (brand, model and trim are intentionally withheld). It must never override the photographed vehicle:
+${neutralVehicleDescription}
 </VEHICLE_METADATA>`);
   }
+
 
   // ── Perspective-specific instructions (class-scoped) ──
   if (slotKey) {

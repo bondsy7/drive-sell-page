@@ -1,15 +1,27 @@
 import { describe, expect, it } from 'vitest';
-import { buildVehicleGenerationLock } from '@/lib/vehicle-generation-lock';
+import { buildVehicleGenerationLock, sanitizeVehicleDescriptionForPrompt } from '@/lib/vehicle-generation-lock';
+
+describe('sanitizeVehicleDescriptionForPrompt', () => {
+  it('removes brand and model names but keeps neutral attributes', () => {
+    const neutral = sanitizeVehicleDescriptionForPrompt('Skoda Enyaq 85 Sportline, grau metallic, Modelljahr 2026');
+
+    expect(neutral.toLowerCase()).not.toContain('skoda');
+    expect(neutral.toLowerCase()).not.toContain('enyaq');
+    expect(neutral).toContain('grau metallic');
+    expect(neutral).toContain('2026');
+  });
+});
 
 describe('buildVehicleGenerationLock', () => {
-  it('makes reference pixels authoritative over model metadata and memory', () => {
+  it('makes reference pixels authoritative and never names the model', () => {
     const lock = buildVehicleGenerationLock('Skoda Enyaq, Modelljahr 2026');
 
-    expect(lock).toContain('Skoda Enyaq, Modelljahr 2026');
     expect(lock).toContain('PIXELS WIN');
     expect(lock).toContain('pre-facelift');
-    expect(lock).toContain('training memory');
+    expect(lock).toContain('DELIBERATELY WITHHELD');
+    expect(lock).not.toContain('Neutral context only: "Skoda');
   });
+
 
   it('still creates a complete lock without metadata', () => {
     const lock = buildVehicleGenerationLock();
