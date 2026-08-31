@@ -119,7 +119,12 @@ function inferPrimaryReferenceIndex(
   return 0;
 }
 
-function getInteriorReferenceIndices(availableCount: number): number[] {
+function getInteriorReferenceIndices(availableCount: number, referenceRoles: string[] = []): number[] {
+  const roleMatches = referenceRoles
+    .map((role, index) => ({ role: role.toLowerCase(), index }))
+    .filter(({ role, index }) => index < availableCount && /interior|dashboard|fahrer|rücksitz|ruecksitz/.test(role))
+    .map(({ index }) => index);
+  if (roleMatches.length > 0) return roleMatches;
   if (availableCount >= 5) return [3, 4];
   if (availableCount >= 4) return [3];
   return [];
@@ -234,7 +239,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const primaryReferenceIndex = inferPrimaryReferenceIndex(job, prompt, referenceImages.length, cfg.referenceRoles);
     const primaryReference = referenceImages[primaryReferenceIndex] || referenceImages[0];
     const primaryReferenceRole = cfg.referenceRoles?.[primaryReferenceIndex] || 'vehicle identity blueprint';
-    const interiorReferenceIndices = getInteriorReferenceIndices(referenceImages.length);
+    const interiorReferenceIndices = getInteriorReferenceIndices(referenceImages.length, cfg.referenceRoles);
     const interiorSupportReferences = interiorReferenceIndices
       .filter(index => index != primaryReferenceIndex && index < referenceImages.length)
       .map(index => referenceImages[index]);
