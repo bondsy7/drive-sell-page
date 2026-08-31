@@ -27,6 +27,7 @@ import {
 import { type RemasterConfig, fetchManufacturerLogos } from '@/lib/remaster-prompt';
 import { usePipeline, type ResultImage } from '@/contexts/PipelineContext';
 import type { WheelReference } from '@/types/wheel-reference';
+import { useQueryClient } from '@tanstack/react-query';
 
 /* ─── Types ─── */
 interface PipelineRunnerProps {
@@ -72,6 +73,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   const { user } = useAuth();
   const { balance, getCost } = useCredits();
   const pipeline = usePipeline();
+  const queryClient = useQueryClient();
 
   /* ─── Context-driven state ─── */
   const isContextActive = pipeline.status !== 'idle';
@@ -269,6 +271,8 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
         });
       }
       if (rows.length > 0) await supabase.from('project_images').insert(rows as any);
+      queryClient.invalidateQueries({ queryKey: ['gallery'] });
+      if (vehicleId) queryClient.invalidateQueries({ queryKey: ['vehicle-images', vehicleId] });
       if (projectId && rows[0]?.image_url) {
         await supabase.from('projects').update({ main_image_url: rows[0].image_url }).eq('id', projectId);
       }
@@ -277,7 +281,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       console.error('Error saving remastered images:', e);
       throw e;
     }
-  }, [user, inputImages, vin, projectId, vehicleId]);
+  }, [user, inputImages, vin, projectId, vehicleId, queryClient]);
 
   /* ─── Retry job (delegates to context) ─── */
   const retryJob = useCallback(async (jobKey: string) => {
