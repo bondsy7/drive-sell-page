@@ -3,14 +3,62 @@
  * catalogue generation/facelift. Text metadata may help identify the subject,
  * but the pixels in the supplied vehicle references remain authoritative.
  */
+
+/** Brand tokens that reliably trigger catalogue memory in image models. */
+const BRAND_TOKENS = [
+  'skoda', 'škoda', 'volkswagen', 'vw', 'audi', 'seat', 'cupra', 'porsche',
+  'bmw', 'mini', 'mercedes', 'mercedes-benz', 'benz', 'smart', 'opel', 'ford',
+  'renault', 'dacia', 'peugeot', 'citroen', 'citroën', 'ds', 'fiat', 'alfa',
+  'lancia', 'jeep', 'toyota', 'lexus', 'honda', 'mazda', 'nissan', 'mitsubishi',
+  'subaru', 'suzuki', 'hyundai', 'kia', 'genesis', 'volvo', 'polestar', 'tesla',
+  'jaguar', 'land', 'rover', 'bentley', 'ferrari', 'lamborghini', 'maserati',
+  'aston', 'martin', 'mclaren', 'lotus', 'byd', 'mg', 'chevrolet', 'chrysler',
+  'dodge', 'cadillac', 'iveco', 'man', 'scania', 'daf', 'kenworth', 'ducati',
+  'yamaha', 'kawasaki', 'harley', 'davidson', 'ktm', 'triumph', 'aprilia',
+];
+
+/**
+ * Removes brand and model names from vehicle metadata before it enters an
+ * image prompt. Naming brand/model makes the model fall back to catalogue
+ * memory and render the wrong (usually older) generation; neutral descriptors
+ * such as colour, body type or model year stay intact.
+ */
+export function sanitizeVehicleDescriptionForPrompt(description?: string): string {
+  if (!description) return '';
+  const tokens = description.split(/([^\p{L}\p{N}]+)/u);
+  let skipNext = 0;
+  const kept: string[] = [];
+  for (const token of tokens) {
+    if (!/[\p{L}\p{N}]/u.test(token)) {
+      if (kept.length) kept.push(token);
+      continue;
+    }
+    const norm = token.toLowerCase();
+    if (BRAND_TOKENS.includes(norm)) {
+      // Drop the brand plus the following model / variant token.
+      skipNext = 2;
+      continue;
+    }
+    if (skipNext > 0) {
+      skipNext -= 1;
+      // Keep pure numbers (e.g. model year) and known neutral words.
+      if (!/^\d{4}$/.test(norm)) continue;
+    }
+    kept.push(token);
+  }
+  return kept.join('').replace(/\s{2,}/g, ' ').replace(/^[\s,;:.-]+|[\s,;:.-]+$/g, '').trim();
+}
+
 export function buildVehicleGenerationLock(vehicleDescription?: string): string {
   const metadata = vehicleDescription?.trim();
+  const neutralMetadata = sanitizeVehicleDescriptionForPrompt(metadata);
   const enyaqYearMatch = metadata?.match(/(?:modelljahr\s*)?(20\d{2})/i);
   const enyaqYear = enyaqYearMatch ? Number(enyaqYearMatch[1]) : null;
   const isCurrentEnyaq = /\b(?:skoda|škoda)\b/i.test(metadata ?? '')
     && /\benyaq\b/i.test(metadata ?? '')
     && enyaqYear !== null
     && enyaqYear >= 2025;
+
   const knownFaceliftGuard = isCurrentEnyaq ? `
 <KNOWN_FACELIFT_FRONT_GUARD>
 THIS PHOTOGRAPHED VEHICLE IS THE CURRENT SKODA ENYAQ FACELIFT (MODEL YEAR ${enyaqYear}).
