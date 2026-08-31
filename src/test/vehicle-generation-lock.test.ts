@@ -36,6 +36,7 @@ describe('buildVehicleGenerationLock', () => {
     expect(lock).toContain('<KNOWN_FACELIFT_FRONT_GUARD>');
     expect(lock).toContain('closed, broad, dark front panel');
     expect(lock).toContain('no vertical chrome grille bars');
+    expect(lock).toContain('SIDE IDENTITY');
     expect(lock).toContain('WRONG VEHICLE GENERATION');
     expect(lock).not.toContain('SKODA ENYAQ');
     expect(lock).not.toContain('Tech-Deck');

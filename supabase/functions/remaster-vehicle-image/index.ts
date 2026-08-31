@@ -363,7 +363,7 @@ serve(async (req) => {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const { imageBase64, additionalImages, additionalFileUris, mainImageFileUri, customShowroomFileUri, customPlateImageFileUri, manufacturerLogoFileUri, dealerLogoFileUri, vehicleDescription, modelTier, dynamicPrompt, classContext, customShowroomBase64, customPlateImageBase64, dealerLogoUrl, dealerLogoBase64, manufacturerLogoUrl, manufacturerLogoBase64, wheelReferenceBase64, wheelReferenceFileUri, wheelReferenceAnalysis } = JSON.parse(bodyText);
+    const { imageBase64, mainImageRole, additionalImages, additionalFileUris, additionalImageRoles, additionalFileUriRoles, mainImageFileUri, customShowroomFileUri, customPlateImageFileUri, manufacturerLogoFileUri, dealerLogoFileUri, vehicleDescription, modelTier, dynamicPrompt, classContext, customShowroomBase64, customPlateImageBase64, dealerLogoUrl, dealerLogoBase64, manufacturerLogoUrl, manufacturerLogoBase64, wheelReferenceBase64, wheelReferenceFileUri, wheelReferenceAnalysis } = JSON.parse(bodyText);
     
     // Read cost dynamically from admin_settings. Normalize legacy/unknown tiers so
     // "Qualität" always routes to Nano Banana 2, never to the Pro image model.
@@ -550,12 +550,12 @@ ${DEKRA_SHOWROOM_SCENE_JSON}
     }
     if (mainImageFileUri?.uri) {
       const p = { file_data: { mime_type: mainImageFileUri.mimeType, file_uri: mainImageFileUri.uri } };
-      imageLabels.set(p, 'VEHICLE BLUEPRINT – overall vehicle photo (geometry, trim, paint)');
+      imageLabels.set(p, `VEHICLE BLUEPRINT – ${mainImageRole || 'overall vehicle photo'} (generation-authoritative geometry, trim, paint)`);
       parts.push(p);
       console.log(`[remaster] Main image via file_uri`);
     } else {
       const p = toInlineData(imageBase64);
-      imageLabels.set(p, 'VEHICLE BLUEPRINT – overall vehicle photo (geometry, trim, paint)');
+      imageLabels.set(p, `VEHICLE BLUEPRINT – ${mainImageRole || 'overall vehicle photo'} (generation-authoritative geometry, trim, paint)`);
       parts.push(p);
     }
 
@@ -603,26 +603,34 @@ It is the ONLY authoritative source for every visible wheel in the output.
     }
 
     if (Array.isArray(additionalFileUris) && additionalFileUris.length > 0) {
-      for (const fu of additionalFileUris) {
+      for (let i = 0; i < additionalFileUris.length; i++) {
+        const fu = additionalFileUris[i];
         const p = { file_data: { mime_type: fu.mimeType, file_uri: fu.uri } };
-        imageLabels.set(p, 'Detail reference photo');
+        imageLabels.set(p, `Vehicle reference – ${additionalFileUriRoles?.[i] || 'supporting detail'}`);
         parts.push(p);
       }
       console.log(`[remaster] ${additionalFileUris.length} additional images via file_uri`);
     }
 
     if (Array.isArray(additionalImages) && additionalImages.length > 0) {
-      for (const img of additionalImages.slice(0, 10)) {
+      for (const [i, img] of additionalImages.slice(0, 10).entries()) {
         const p = toInlineData(img);
-        imageLabels.set(p, 'Detail reference photo');
+        imageLabels.set(p, `Vehicle reference – ${additionalImageRoles?.[i] || 'supporting detail'}`);
         parts.push(p);
       }
     }
 
-    // Repeat a known high-risk facelift constraint immediately after all vehicle
-    // references. This recency placement prevents long scene/lighting prompts from
-    // diluting the visual generation lock for models prone to catalogue-memory drift.
+    // Reinforce visual identity immediately after all vehicle references. Placing
+    // this beside the pixels prevents long scene/lighting instructions from
+    // diluting generation, lamp, fascia, side-body and steering-wheel fidelity.
     const postReferenceGenerationGuard = buildModelGenerationLock(vehicleDescription);
+    parts.push({ text: `<POST_REFERENCE_IDENTITY_CHECK>
+The vehicle images immediately above are the final and only geometry authority.
+- Copy the photographed generation/facelift, grille or closed front panel, complete headlamp contours and light signatures exactly.
+- Copy roofline, windows, pillars, shoulder crease, doors, handles, sills/cladding, wheel arches and front-fender transitions exactly from the matching side references.
+- For interiors, copy the steering-wheel outline, spoke geometry, centre hub, controls and dashboard interfaces from the closest interior reference.
+- Never fill unseen details from catalogue or model memory. If the candidate differs from these pixels, correct it before returning.
+</POST_REFERENCE_IDENTITY_CHECK>` });
     if (postReferenceGenerationGuard.includes('<KNOWN_FACELIFT_FRONT_GUARD>')) {
       const focusedGuard = postReferenceGenerationGuard.match(/<KNOWN_FACELIFT_FRONT_GUARD>[\s\S]*?<\/KNOWN_FACELIFT_FRONT_GUARD>/)?.[0];
       if (focusedGuard) {

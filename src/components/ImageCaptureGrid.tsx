@@ -807,6 +807,9 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   const allCapturedBase64 = vehicleSlots
     .filter(s => captures[s.key])
     .map(s => captures[s.key].remasteredBase64 || captures[s.key].base64);
+  const allCapturedRoles = vehicleSlots
+    .filter(s => captures[s.key])
+    .map(s => s.key);
 
   // Collect original (pre-remaster) images for AI reference
   // WICHTIG: NUR normale Perspektiv-Slots – die Felgenreferenz wird separat
@@ -865,6 +868,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     return (
       <PipelineRunner
         inputImages={allCapturedBase64}
+        referenceRoles={allCapturedRoles}
         originalImages={allOriginalBase64}
         additionalImages={detailImages.length > 0 ? detailImages : undefined}
         wheelReference={wheelReference}

@@ -100,6 +100,7 @@ SHOT_TYPE: Exterior - Perfect LEFT Side Profile
 CAMERA_ANGLE: Exactly perpendicular (90°) to the vehicle's LEFT flank (driver side in LHD markets). The camera faces the LEFT side of the car. Ground-to-waist-level horizon.
 FRAMING: Both LEFT-side wheels COMPLETELY visible and perfectly round (zero distortion). Entire silhouette front to rear in frame.
 CRITICAL DIRECTION: The vehicle's FRONT (hood/headlights) MUST point to the RIGHT side of the image. The REAR (trunk/taillights) MUST point to the LEFT side of the image. This is the LEFT side view – the camera sees the driver's door. Do NOT show the passenger side. Do NOT mirror or flip.
+SIDE_IDENTITY_LOCK: Use the exact LEFT-side reference as primary authority. Copy roofline, glasshouse, pillars, shoulder crease, door cuts, handles, sill/cladding, wheel arches, front-fender shape and headlamp termination exactly. Never reconstruct the side from catalogue memory.
 ENVIRONMENT: PROVIDED SHOWROOM. ${LOGO_LINE}
 LIGHTING: Flat, even lighting to highlight body lines.
 </CURRENT_PIPELINE_SHOT>`,
@@ -115,6 +116,7 @@ SHOT_TYPE: Exterior - Perfect RIGHT Side Profile
 CAMERA_ANGLE: Exactly perpendicular (90°) to the vehicle's RIGHT flank (passenger side in LHD markets). The camera faces the RIGHT side of the car.
 FRAMING: Both RIGHT-side wheels fully visible and perfectly round. Entire silhouette front to rear in frame.
 CRITICAL DIRECTION: The vehicle's FRONT (hood/headlights) MUST point to the LEFT side of the image. The REAR (trunk/taillights) MUST point to the RIGHT side of the image. This is the RIGHT side view – the camera sees the passenger door. Do NOT show the driver's side. Do NOT mirror or flip. This MUST be the OPPOSITE direction of the left side profile.
+SIDE_IDENTITY_LOCK: Use the exact RIGHT-side reference as primary authority. Copy roofline, glasshouse, pillars, shoulder crease, door cuts, handles, sill/cladding, wheel arches, front-fender shape and headlamp termination exactly. Never reconstruct the side from catalogue memory.
 ENVIRONMENT: PROVIDED SHOWROOM. ${LOGO_LINE}
 LIGHTING: Clean studio lighting emphasizing body lines.
 </CURRENT_PIPELINE_SHOT>`,
