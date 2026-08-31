@@ -9,6 +9,7 @@ import { resolveVehicleClass } from '@/config/vehicle-classes';
 import { buildTruckPromptBlocks, TRUCK_PERSPECTIVE_PROMPTS } from '@/prompts/remaster/truck';
 import { buildMotorcyclePromptBlocks, MOTORCYCLE_PERSPECTIVE_PROMPTS } from '@/prompts/remaster/motorcycle';
 import { formatWheelAnalysisBlock } from '@/lib/wheel-reference';
+import { buildVehicleGenerationLock } from '@/lib/vehicle-generation-lock';
 
 export interface RemasterConfig {
   scene: string;
@@ -285,6 +286,7 @@ export function buildMasterPrompt(
   parts.push(`<REFERENCE_TRUTH_PROTOCOL>
 ${REFERENCE_TRUTH_PROTOCOL}
 </REFERENCE_TRUTH_PROTOCOL>`);
+  parts.push(buildVehicleGenerationLock(vehicleDescription));
 
   // ── CRITICAL ASSET INTEGRATION (logos FIRST – highest priority) ──
   const hasAnyLogo = (config.showManufacturerLogo && config.manufacturerLogoUrl) || (config.showDealerLogo && config.dealerLogoUrl);
@@ -641,7 +643,10 @@ RECONSTRUCTION RULES:
 
   // ── Vehicle description ──
   if (vehicleDescription) {
-    parts.push(`Vehicle: ${vehicleDescription}`);
+    parts.push(`<VEHICLE_METADATA>
+Identification context only; it must never override the photographed vehicle generation or visible design:
+${vehicleDescription}
+</VEHICLE_METADATA>`);
   }
 
   // ── Perspective-specific instructions (class-scoped) ──

@@ -94,6 +94,20 @@ const REFERENCE_TRUTH_PROTOCOL = `REFERENCE IMAGES ARE THE ONLY SOURCE OF TRUTH.
 - If a region is not visible, extend ONLY from immediately adjacent visible evidence with the most conservative continuation possible.
 - Never invent a new interior color, upholstery variant, trim insert, badge, text, button legend, or equipment line.`;
 
+function buildModelGenerationLock(vehicleDescription?: string): string {
+  const metadata = typeof vehicleDescription === "string" ? vehicleDescription.trim() : "";
+  return `<MODEL_GENERATION_LOCK>
+CRITICAL — PHOTOGRAPHED VEHICLE GENERATION / FACELIFT IS IMMUTABLE:
+1. The attached VEHICLE BLUEPRINT and vehicle reference photos are the ONLY visual source for model generation, facelift, body shell, front fascia and rear fascia.
+2. Vehicle metadata${metadata ? ` ("${metadata}")` : ""} is IDENTIFICATION CONTEXT ONLY. Never use the model name, model year, trim name, VIN data, training memory, catalogue imagery or a common/default version of this model to redesign visible geometry.
+3. Preserve the exact photographed generation even when it is newer, recently launched, rare, unfamiliar, or differs from the version remembered by the model.
+4. Copy the exact photographed hood edge, badge/wordmark placement, grille or closed panel, headlights and complete LED signature, bumper openings, lower intake, taillights, tailgate, glasshouse, body lines and proportions.
+5. FORBIDDEN: substituting a pre-facelift, previous generation, older grille, older headlights, older bumper, older badge placement, or another trim because it is more familiar.
+6. If text and pixels appear to conflict, the PIXELS WIN. If a detail is visible in any vehicle reference, copy it rather than infer it.
+7. Before output, compare the rendered front/rear lamps, grille or closed panel, hood, bumper and silhouette to the references. A different generation or facelift is a failed output and must be corrected before returning the image.
+</MODEL_GENERATION_LOCK>`;
+}
+
 function createServiceClient() {
   return createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -359,7 +373,11 @@ ABSOLUTE OUTPUT STANDARD: Render this as a professional automotive photograph ta
 6. FINAL CHECK: If any original reflection or old environment content is still visible anywhere on the vehicle or through the windows, regenerate those surfaces from scratch using only the new scene.
 </PROFESSIONAL_REFLECTION_LIGHTING_LOCK>`;
     const classGuard = buildClassGuardBlock(ctx);
-    const prompt = `${basePrompt}\n\n${PROFESSIONAL_REFLECTION_LIGHTING_LOCK}${classGuard ? `\n\n${classGuard}` : ''}`;
+    // Server-side invariant: append this even when an older client or an admin
+    // override supplies the dynamic prompt. This prevents catalogue-memory
+    // substitution of a newer photographed facelift with an older generation.
+    const modelGenerationLock = buildModelGenerationLock(vehicleDescription);
+    const prompt = `${basePrompt}\n\n${modelGenerationLock}\n\n${PROFESSIONAL_REFLECTION_LIGHTING_LOCK}${classGuard ? `\n\n${classGuard}` : ''}`;
     console.log(`[remaster] class=${ctx.vehicleClass} scope=${ctx.subjectScope ?? 'n/a'} config=${ctx.truckConfiguration ?? 'n/a'} body=${ctx.truckBodyType ?? 'n/a'} cargo=${ctx.cargoState ?? 'n/a'} slot=${ctx.sourcePerspectiveKey ?? 'n/a'}`);
     console.log(`[remaster] Using ${dynamicPrompt ? 'DYNAMIC' : 'FALLBACK (from admin blocks)'} prompt (${prompt.length} chars), model: ${geminiModel}, tier: ${tier}`);
     const hasLicensePlate = prompt.includes('LICENSE_PLATE');
@@ -414,7 +432,7 @@ The following showroom image is the TARGET SCENE and the physical room where the
 OUTPUT FORMAT: The result MUST be in 4:3 (landscape) aspect ratio.
 
 FULL VEHICLE RECONSTRUCTION (NON-NEGOTIABLE):
-Do NOT edit, paste, cut out, relight, or reuse pixels from the original vehicle photo. Build a NEW photorealistic vehicle render from the reference: same body shape, trim, wheels, badges, paint color and proportions, but with completely NEW lacquer, NEW glass, NEW chrome, NEW headlights, NEW rims, NEW shadows and NEW reflections created only from this showroom.
+Do NOT paste the original vehicle into the room. Rebuild only its scene-dependent surfaces (lighting, reflections, glass environment, shadows) while copying the photographed vehicle generation and geometry exactly. The body shell, facelift-specific front/rear design, trim, wheels, badges, paint color, headlights, taillights and proportions MUST remain a pixel-faithful match to the vehicle references. "New" means new scene lighting and reflections — NEVER a redesigned vehicle or another model generation.
 
 SOURCE PHOTO LIMITATION:
 - The vehicle photo is ONLY an identity blueprint for geometry and equipment.
@@ -475,7 +493,7 @@ ${DEKRA_SHOWROOM_SCENE_JSON}
 
     // Main image: prefer file_data URI if available
     if (hasCustomShowroom) {
-      parts.push({ text: "VEHICLE IDENTITY BLUEPRINT ONLY: The next image defines the exact vehicle geometry, trim, wheels, badges, paint color and equipment. It is NOT the output base image. Do NOT preserve its environment, lighting, reflections, window content, shadows, floor, background, banners, text, or any source-photo pixels." });
+      parts.push({ text: "VEHICLE IDENTITY BLUEPRINT — GENERATION-AUTHORITATIVE: The next image defines the exact photographed model generation/facelift, body geometry, front and rear design, trim, wheels, badges, paint color and equipment. Copy those vehicle attributes exactly; never substitute an older, newer, more familiar or catalogue-default version. It is NOT the output background: do not preserve its environment, lighting, reflections, window content, shadows, floor, banners or unrelated text." });
     }
     if (mainImageFileUri?.uri) {
       const p = { file_data: { mime_type: mainImageFileUri.mimeType, file_uri: mainImageFileUri.uri } };
