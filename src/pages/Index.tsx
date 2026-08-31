@@ -734,7 +734,7 @@ const Index = () => {
 
   const isProcessing = appState === 'uploading' || appState === 'analyzing' || appState === 'generating-image' || appState === 'standalone-generating';
   const vehicleDescription = vehicleData
-    ? `${vehicleData.vehicle.brand} ${vehicleData.vehicle.model} ${vehicleData.vehicle.variant || ''}, ${vehicleData.vehicle.color || ''}, ${vehicleData.vehicle.fuelType || ''}`.replace(/,\s*,/g, ',').replace(/,\s*$/, '').trim() : '';
+    ? `${vehicleData.vehicle.brand} ${vehicleData.vehicle.model} ${vehicleData.vehicle.variant || ''}, Modelljahr ${vehicleData.vehicle.year || 'unbekannt'}, ${vehicleData.vehicle.color || ''}, ${vehicleData.vehicle.fuelType || ''}`.replace(/,\s*,/g, ',').replace(/,\s*$/, '').trim() : '';
 
   // ─── Debounced auto-save of manual edits ───
   // Persists every change made in edit mode to the project row, so preview,
