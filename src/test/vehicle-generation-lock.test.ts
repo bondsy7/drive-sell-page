@@ -17,4 +17,19 @@ describe('buildVehicleGenerationLock', () => {
     expect(lock).toContain('<MODEL_GENERATION_LOCK>');
     expect(lock).not.toContain('undefined');
   });
+
+  it('blocks the previous Enyaq grille for current model years', () => {
+    const lock = buildVehicleGenerationLock('Skoda Enyaq Modelljahr 2026');
+
+    expect(lock).toContain('<KNOWN_FACELIFT_FRONT_GUARD>');
+    expect(lock).toContain('closed, broad, dark Tech-Deck');
+    expect(lock).toContain('no vertical chrome grille bars');
+    expect(lock).toContain('WRONG VEHICLE GENERATION');
+  });
+
+  it('does not force the current Enyaq front onto older model years', () => {
+    const lock = buildVehicleGenerationLock('Skoda Enyaq Modelljahr 2023');
+
+    expect(lock).not.toContain('<KNOWN_FACELIFT_FRONT_GUARD>');
+  });
 });
