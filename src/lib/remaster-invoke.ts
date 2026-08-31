@@ -15,10 +15,12 @@ export interface RemasterInvokePayload {
    */
   classContext?: VehicleClassContext | null;
   additionalImages?: string[];
-  /** Perspective roles aligned with additionalImages/additionalFileUris. */
+  /** Perspective roles aligned with additionalImages. */
   additionalImageRoles?: string[];
   /** Pre-uploaded Gemini File API URIs – used INSTEAD of additionalImages when available */
   additionalFileUris?: { uri: string; mimeType: string }[];
+  /** Perspective roles aligned with additionalFileUris. */
+  additionalFileUriRoles?: string[];
   /** Pre-uploaded main image file URI */
   mainImageFileUri?: { uri: string; mimeType: string } | null;
   /**

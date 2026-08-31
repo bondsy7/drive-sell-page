@@ -363,7 +363,7 @@ serve(async (req) => {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const { imageBase64, mainImageRole, additionalImages, additionalFileUris, additionalImageRoles, mainImageFileUri, customShowroomFileUri, customPlateImageFileUri, manufacturerLogoFileUri, dealerLogoFileUri, vehicleDescription, modelTier, dynamicPrompt, classContext, customShowroomBase64, customPlateImageBase64, dealerLogoUrl, dealerLogoBase64, manufacturerLogoUrl, manufacturerLogoBase64, wheelReferenceBase64, wheelReferenceFileUri, wheelReferenceAnalysis } = JSON.parse(bodyText);
+    const { imageBase64, mainImageRole, additionalImages, additionalFileUris, additionalImageRoles, additionalFileUriRoles, mainImageFileUri, customShowroomFileUri, customPlateImageFileUri, manufacturerLogoFileUri, dealerLogoFileUri, vehicleDescription, modelTier, dynamicPrompt, classContext, customShowroomBase64, customPlateImageBase64, dealerLogoUrl, dealerLogoBase64, manufacturerLogoUrl, manufacturerLogoBase64, wheelReferenceBase64, wheelReferenceFileUri, wheelReferenceAnalysis } = JSON.parse(bodyText);
     
     // Read cost dynamically from admin_settings. Normalize legacy/unknown tiers so
     // "Qualität" always routes to Nano Banana 2, never to the Pro image model.
@@ -606,7 +606,7 @@ It is the ONLY authoritative source for every visible wheel in the output.
       for (let i = 0; i < additionalFileUris.length; i++) {
         const fu = additionalFileUris[i];
         const p = { file_data: { mime_type: fu.mimeType, file_uri: fu.uri } };
-        imageLabels.set(p, `Vehicle reference – ${additionalImageRoles?.[i] || 'supporting detail'}`);
+        imageLabels.set(p, `Vehicle reference – ${additionalFileUriRoles?.[i] || 'supporting detail'}`);
         parts.push(p);
       }
       console.log(`[remaster] ${additionalFileUris.length} additional images via file_uri`);

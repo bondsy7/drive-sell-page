@@ -93,7 +93,13 @@ function inferPrimaryReferenceIndex(
   if (availableCount <= 1) return 0;
   const signature = `${job?.key || ''} ${job?.label || ''} ${job?.labelDe || ''} ${promptText}`;
   const normalizedRoles = referenceRoles.map(role => role.toLowerCase().replace(/[^a-z0-9]+/g, '_'));
-  const findRole = (...patterns: RegExp[]) => normalizedRoles.findIndex(role => patterns.some(pattern => pattern.test(role)));
+  const findRole = (...patterns: RegExp[]) => {
+    for (const pattern of patterns) {
+      const index = normalizedRoles.findIndex(role => pattern.test(role));
+      if (index >= 0) return index;
+    }
+    return -1;
+  };
   let roleIndex = -1;
   if (REAR_INTERIOR_PATTERNS.test(signature)) roleIndex = findRole(/interior_rear/, /rear_seat/, /ruecksitz/);
   else if (FRONT_INTERIOR_PATTERNS.test(signature)) roleIndex = findRole(/interior_front/, /interior_dashboard/, /driver/, /fahrer/);
@@ -323,14 +329,16 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     let additionalFileUris: { uri: string; mimeType: string }[] | undefined;
     let inlineSupportingImages: string[] | undefined;
     let additionalImageRoles: string[] | undefined;
+    let additionalFileUriRoles: string[] | undefined;
     if (hasFileUris && fileCache.references.length > 0) {
        const allRefs = cfg.inputImages.length > 0 ? cfg.inputImages : cfg.originalImages;
       const referenceBackedSupportingImages = supportingReferences.filter(ref => allRefs.includes(ref));
       inlineSupportingImages = supportingReferences.filter(ref => !allRefs.includes(ref));
-      additionalImageRoles = supportingReferences.map(ref => {
+      additionalFileUriRoles = referenceBackedSupportingImages.map(ref => {
         const idx = allRefs.indexOf(ref);
-        return idx >= 0 ? (cfg.referenceRoles?.[idx] || 'supporting vehicle reference') : 'detail reference';
+        return cfg.referenceRoles?.[idx] || 'supporting vehicle reference';
       });
+      additionalImageRoles = inlineSupportingImages.map(() => 'detail reference');
 
       additionalFileUris = referenceBackedSupportingImages
         .map(ref => {
@@ -358,6 +366,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       additionalImages: inlineSupportingImages && inlineSupportingImages.length > 0 ? inlineSupportingImages : undefined,
       additionalFileUris: additionalFileUris && additionalFileUris.length > 0 ? additionalFileUris : undefined,
       additionalImageRoles,
+      additionalFileUriRoles,
       mainImageFileUri: mainImageFileUri,
       wheelReferenceFileUri: needsWheel ? fileCache.wheel : null,
       wheelReferenceBase64: needsWheel && !fileCache.wheel ? wheelReference!.image : null,
