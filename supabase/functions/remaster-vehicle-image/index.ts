@@ -94,8 +94,44 @@ const REFERENCE_TRUTH_PROTOCOL = `REFERENCE IMAGES ARE THE ONLY SOURCE OF TRUTH.
 - If a region is not visible, extend ONLY from immediately adjacent visible evidence with the most conservative continuation possible.
 - Never invent a new interior color, upholstery variant, trim insert, badge, text, button legend, or equipment line.`;
 
+const BRAND_TOKENS = [
+  "skoda", "škoda", "volkswagen", "vw", "audi", "seat", "cupra", "porsche",
+  "bmw", "mini", "mercedes", "mercedes-benz", "benz", "smart", "opel", "ford",
+  "renault", "dacia", "peugeot", "citroen", "citroën", "ds", "fiat", "alfa",
+  "lancia", "jeep", "toyota", "lexus", "honda", "mazda", "nissan", "mitsubishi",
+  "subaru", "suzuki", "hyundai", "kia", "genesis", "volvo", "polestar", "tesla",
+  "jaguar", "land", "rover", "bentley", "ferrari", "lamborghini", "maserati",
+  "aston", "martin", "mclaren", "lotus", "byd", "mg", "chevrolet", "chrysler",
+  "dodge", "cadillac", "iveco", "man", "scania", "daf", "kenworth", "ducati",
+  "yamaha", "kawasaki", "harley", "davidson", "ktm", "triumph", "aprilia",
+];
+
+/** Strips brand/model names so the image model cannot fall back to catalogue memory. */
+function sanitizeVehicleDescriptionForPrompt(description?: string): string {
+  if (!description) return "";
+  const tokens = description.split(/([^\p{L}\p{N}]+)/u);
+  let skipNext = 0;
+  const kept: string[] = [];
+  for (const token of tokens) {
+    if (!/[\p{L}\p{N}]/u.test(token)) {
+      if (kept.length) kept.push(token);
+      continue;
+    }
+    const norm = token.toLowerCase();
+    if (BRAND_TOKENS.includes(norm)) { skipNext = 2; continue; }
+    if (skipNext > 0) {
+      skipNext -= 1;
+      if (!/^\d{4}$/.test(norm)) continue;
+    }
+    kept.push(token);
+  }
+  return kept.join("").replace(/\s{2,}/g, " ").replace(/^[\s,;:.-]+|[\s,;:.-]+$/g, "").trim();
+}
+
 function buildModelGenerationLock(vehicleDescription?: string): string {
   const metadata = typeof vehicleDescription === "string" ? vehicleDescription.trim() : "";
+  const neutralMetadata = sanitizeVehicleDescriptionForPrompt(metadata);
+
   const enyaqYearMatch = metadata.match(/(?:modelljahr\s*)?(20\d{2})/i);
   const enyaqYear = enyaqYearMatch ? Number(enyaqYearMatch[1]) : null;
   const isCurrentEnyaq = /\b(?:skoda|škoda)\b/i.test(metadata)
