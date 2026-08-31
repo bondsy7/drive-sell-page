@@ -195,7 +195,9 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const generateOneImage = useCallback(async (
     prompt: string, job: PipelineJob | undefined, cfg: PipelineConfig
   ): Promise<{ base64: string | null; error?: string }> => {
-    const referenceImages = cfg.originalImages.length > 0 ? cfg.originalImages : cfg.inputImages;
+    // The successful remasters are the strongest generation-safe blueprints for
+    // downstream perspectives. Raw originals remain supporting evidence only.
+    const referenceImages = cfg.inputImages.length > 0 ? cfg.inputImages : cfg.originalImages;
     const primaryReferenceIndex = inferPrimaryReferenceIndex(job, prompt, referenceImages.length);
     const primaryReference = referenceImages[primaryReferenceIndex] || referenceImages[0];
     const interiorReferenceIndices = getInteriorReferenceIndices(referenceImages.length);
@@ -214,6 +216,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         supportingReferences = [
           ...interiorSupportReferences,
           ...cfg.additionalImages.slice(0, 4),
+          ...cfg.originalImages.slice(0, 2),
         ].slice(0, 5);
         break;
       case 'detail':
@@ -221,8 +224,9 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         // Plus the primary reference for body context, but limit other refs
         supportingReferences = [
           ...cfg.additionalImages,
+          ...cfg.originalImages.slice(0, 2),
           ...otherReferences.slice(0, 2), // max 2 body refs for context
-        ];
+        ].slice(0, 8);
         break;
       case 'exterior':
       case 'hero':
@@ -230,7 +234,10 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       case 'ci':
       default:
         // Exterior/hero: Send body references + showroom context, limit to max 5
-        supportingReferences = otherReferences.slice(0, 5);
+        supportingReferences = [
+          ...otherReferences,
+          ...cfg.originalImages.slice(0, 2),
+        ].slice(0, 5);
         break;
     }
 
@@ -291,7 +298,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     let additionalFileUris: { uri: string; mimeType: string }[] | undefined;
     let inlineSupportingImages: string[] | undefined;
     if (hasFileUris && fileCache.references.length > 0) {
-      const allRefs = cfg.originalImages.length > 0 ? cfg.originalImages : cfg.inputImages;
+       const allRefs = cfg.inputImages.length > 0 ? cfg.inputImages : cfg.originalImages;
       const referenceBackedSupportingImages = supportingReferences.filter(ref => allRefs.includes(ref));
       inlineSupportingImages = supportingReferences.filter(ref => !allRefs.includes(ref));
 
@@ -426,7 +433,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       // This avoids sending MB of base64 with every single job request
       cachedFileUrisRef.current = { references: [], showroom: null, plate: null, manufacturerLogo: null, dealerLogo: null, wheel: null };
       try {
-        const referenceImages = cfg.originalImages.length > 0 ? cfg.originalImages : cfg.inputImages;
+        const referenceImages = cfg.inputImages.length > 0 ? cfg.inputImages : cfg.originalImages;
         const imagesToUpload: string[] = [...referenceImages];
 
         // Add showroom if present

@@ -61,11 +61,12 @@ export function buildVehicleGenerationLock(vehicleDescription?: string): string 
 
   const knownFaceliftGuard = isCurrentEnyaq ? `
 <KNOWN_FACELIFT_FRONT_GUARD>
-THIS PHOTOGRAPHED VEHICLE IS THE CURRENT SKODA ENYAQ FACELIFT (MODEL YEAR ${enyaqYear}).
-- The front shown in the references has the current closed, broad, dark Tech-Deck face between the slim upper light elements. Copy its exact outline, width, gloss, sensors and transitions from the reference pixels.
+THIS PHOTOGRAPHED VEHICLE USES THE CURRENT FACELIFT FRONT SHOWN IN THE REFERENCES (MODEL YEAR ${enyaqYear}).
+The make and model are intentionally not named because catalogue-memory retrieval is forbidden.
+- Copy the exact photographed closed, broad, dark front panel between the slim upper light elements: outline, width, gloss, sensors and transitions must come only from the reference pixels.
 - Preserve the photographed split-light arrangement, slim upper DRL elements, lower headlamp modules, hood edge, bumper openings and current wordmark/badge placement exactly.
-- FORBIDDEN OLD FRONT: no previous-generation tall radiator grille, no vertical chrome grille bars/slats, no narrow framed legacy grille, and no older headlamp/grille combination.
-- Treat any output containing vertical grille bars or the old central radiator-grille shape as the WRONG VEHICLE GENERATION. Replace that entire front with the reference-matching closed Tech-Deck front before returning the image.
+- FORBIDDEN OLD FRONT: no tall radiator grille, no vertical chrome grille bars/slats, no narrow framed grille, and no alternative headlamp/grille combination.
+- Treat any output containing vertical grille bars or a tall central radiator-grille shape as the WRONG VEHICLE GENERATION. Replace that entire front with the reference-matching closed panel before returning the image.
 </KNOWN_FACELIFT_FRONT_GUARD>` : '';
 
   return `<MODEL_GENERATION_LOCK>
@@ -78,6 +79,7 @@ CRITICAL — PHOTOGRAPHED VEHICLE GENERATION / FACELIFT IS IMMUTABLE:
 6. SIDE / BODY IDENTITY — preserve the exact roofline, glasshouse, pillars, doors, handles, wheel arches, shoulder lines, rocker panels and vehicle proportions.
 7. FORBIDDEN: substituting a pre-facelift, previous generation, older grille, older headlights, older bumper, older badge placement, or another trim because it is more familiar.
 8. If text and pixels appear to conflict, the PIXELS WIN. If a detail is visible in any vehicle reference, copy it rather than infer it.
-9. Before output, compare the rendered front/rear lamps, grille or closed panel, hood, bumper and silhouette to the references. If they indicate a different generation or facelift, correct them before returning the image.
+9. INTERIOR IDENTITY — copy the steering-wheel outline, spoke count, spoke geometry, button islands, centre hub, badge position, stalks, instrument binnacle and dashboard interfaces exactly from the closest interior reference. Never substitute a remembered steering wheel or dashboard from another generation.
+10. Before output, compare the rendered front/rear lamps, grille or closed panel, hood, bumper, silhouette and steering wheel to the references. If they indicate a different generation or facelift, correct them before returning the image.
 </MODEL_GENERATION_LOCK>${knownFaceliftGuard}`;
 }
