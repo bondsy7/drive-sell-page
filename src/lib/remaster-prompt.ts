@@ -9,7 +9,7 @@ import { resolveVehicleClass } from '@/config/vehicle-classes';
 import { buildTruckPromptBlocks, TRUCK_PERSPECTIVE_PROMPTS } from '@/prompts/remaster/truck';
 import { buildMotorcyclePromptBlocks, MOTORCYCLE_PERSPECTIVE_PROMPTS } from '@/prompts/remaster/motorcycle';
 import { formatWheelAnalysisBlock } from '@/lib/wheel-reference';
-import { buildVehicleGenerationLock } from '@/lib/vehicle-generation-lock';
+import { buildVehicleGenerationLock, sanitizeVehicleDescriptionForPrompt } from '@/lib/vehicle-generation-lock';
 
 export interface RemasterConfig {
   scene: string;
