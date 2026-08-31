@@ -149,7 +149,7 @@ THIS PHOTOGRAPHED VEHICLE IS THE CURRENT SKODA ENYAQ FACELIFT (MODEL YEAR ${enya
   return `<MODEL_GENERATION_LOCK>
 CRITICAL — PHOTOGRAPHED VEHICLE GENERATION / FACELIFT IS IMMUTABLE:
 1. The attached VEHICLE BLUEPRINT and vehicle reference photos are the ONLY visual source for model generation, facelift, body shell, front fascia and rear fascia.
-2. Vehicle metadata${metadata ? ` ("${metadata}")` : ""} is IDENTIFICATION CONTEXT ONLY. Never use the model name, model year, trim name, VIN data, training memory, catalogue imagery or a common/default version of this model to redesign visible geometry.
+2. Brand name, model name and trim name are DELIBERATELY WITHHELD from this prompt. Never guess, name or reconstruct them.${neutralMetadata ? ` Neutral context only: "${neutralMetadata}".` : ""} Never use catalogue imagery, training memory or a common/default version of any model to redesign visible geometry.
 3. Preserve the exact photographed generation even when it is newer, recently launched, rare, unfamiliar, or differs from the version remembered by the model.
 4. Copy the exact photographed hood edge, badge/wordmark placement, grille or closed panel, headlights and complete LED signature, bumper openings, lower intake, taillights, tailgate, glasshouse, body lines and proportions.
 5. FORBIDDEN: substituting a pre-facelift, previous generation, older grille, older headlights, older bumper, older badge placement, or another trim because it is more familiar.
