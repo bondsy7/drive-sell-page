@@ -587,7 +587,7 @@ It is the ONLY authoritative source for every visible wheel in the output.
     if (postReferenceGenerationGuard.includes('<KNOWN_FACELIFT_FRONT_GUARD>')) {
       const focusedGuard = postReferenceGenerationGuard.match(/<KNOWN_FACELIFT_FRONT_GUARD>[\s\S]*?<\/KNOWN_FACELIFT_FRONT_GUARD>/)?.[0];
       if (focusedGuard) {
-        parts.push({ text: `${focusedGuard}\nFINAL VISUAL FRONT CHECK: compare IMAGE 1 and every front-visible detail reference against the candidate output. If the candidate has the forbidden old grille, do not return it; correct the complete front first.` });
+        parts.push({ text: `${focusedGuard}\nFINAL VISUAL FRONT CHECK: compare the image labelled VEHICLE BLUEPRINT and every front-visible detail reference against the candidate output. If the candidate has the forbidden old grille, do not return it; correct the complete front first.` });
         console.log('[remaster] Applied post-reference current-Enyaq facelift guard');
       }
     }
