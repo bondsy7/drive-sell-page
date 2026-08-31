@@ -620,10 +620,17 @@ It is the ONLY authoritative source for every visible wheel in the output.
       }
     }
 
-    // Repeat a known high-risk facelift constraint immediately after all vehicle
-    // references. This recency placement prevents long scene/lighting prompts from
-    // diluting the visual generation lock for models prone to catalogue-memory drift.
+    // Reinforce visual identity immediately after all vehicle references. Placing
+    // this beside the pixels prevents long scene/lighting instructions from
+    // diluting generation, lamp, fascia, side-body and steering-wheel fidelity.
     const postReferenceGenerationGuard = buildModelGenerationLock(vehicleDescription);
+    parts.push({ text: `<POST_REFERENCE_IDENTITY_CHECK>
+The vehicle images immediately above are the final and only geometry authority.
+- Copy the photographed generation/facelift, grille or closed front panel, complete headlamp contours and light signatures exactly.
+- Copy roofline, windows, pillars, shoulder crease, doors, handles, sills/cladding, wheel arches and front-fender transitions exactly from the matching side references.
+- For interiors, copy the steering-wheel outline, spoke geometry, centre hub, controls and dashboard interfaces from the closest interior reference.
+- Never fill unseen details from catalogue or model memory. If the candidate differs from these pixels, correct it before returning.
+</POST_REFERENCE_IDENTITY_CHECK>` });
     if (postReferenceGenerationGuard.includes('<KNOWN_FACELIFT_FRONT_GUARD>')) {
       const focusedGuard = postReferenceGenerationGuard.match(/<KNOWN_FACELIFT_FRONT_GUARD>[\s\S]*?<\/KNOWN_FACELIFT_FRONT_GUARD>/)?.[0];
       if (focusedGuard) {
