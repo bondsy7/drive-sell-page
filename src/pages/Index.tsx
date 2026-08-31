@@ -412,7 +412,8 @@ const Index = () => {
     setAppState('generating-image');
     const total = PERSPECTIVES.length;
     setImageProgress({ current: 0, total });
-    const showroomBase = `Photorealistic image of a ${vehicleData.vehicle?.brand || ''} ${vehicleData.vehicle?.model || ''} ${vehicleData.vehicle?.variant || ''} in ${vehicleData.vehicle?.color || 'the original color'}. The car is in a modern, bright, luxurious car dealership showroom with polished floors and soft lighting. `;
+    const modelYear = vehicleData.vehicle?.year ? ` model year ${vehicleData.vehicle.year}` : '';
+    const showroomBase = `Photorealistic image of a ${vehicleData.vehicle?.brand || ''} ${vehicleData.vehicle?.model || ''} ${vehicleData.vehicle?.variant || ''}${modelYear} in ${vehicleData.vehicle?.color || 'the original color'}. Render the stated model year and its correct generation/facelift; never substitute an older or superseded model generation. The car is in a modern, bright, luxurious car dealership showroom with polished floors and soft lighting. `;
     const generatedImages: string[] = [];
     for (let i = 0; i < PERSPECTIVES.length; i++) {
       setImageProgress({ current: i + 1, total });
@@ -638,7 +639,8 @@ const Index = () => {
     setAppState('standalone-generating' as any);
     const total = PERSPECTIVES.length;
     setImageProgress({ current: 0, total });
-    const showroomBase = `Photorealistic image of a ${vData.vehicle?.brand || ''} ${vData.vehicle?.model || ''} ${vData.vehicle?.variant || ''} in ${vData.vehicle?.color || 'the original color'}. The car is in a modern, bright, luxurious car dealership showroom with polished floors and soft lighting. `;
+    const modelYear = vData.vehicle?.year ? ` model year ${vData.vehicle.year}` : '';
+    const showroomBase = `Photorealistic image of a ${vData.vehicle?.brand || ''} ${vData.vehicle?.model || ''} ${vData.vehicle?.variant || ''}${modelYear} in ${vData.vehicle?.color || 'the original color'}. Render the stated model year and its correct generation/facelift; never substitute an older or superseded model generation. The car is in a modern, bright, luxurious car dealership showroom with polished floors and soft lighting. `;
     const generatedImages: string[] = [];
     for (let i = 0; i < PERSPECTIVES.length; i++) {
       setImageProgress({ current: i + 1, total });

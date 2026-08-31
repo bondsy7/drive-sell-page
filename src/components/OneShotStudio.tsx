@@ -900,13 +900,17 @@ This is the MARKETING MASTER (Hero) shot — push lighting one notch beyond the 
       const manufacturerLogoUrl = remasterConfig.showManufacturerLogo && canonicalBrand
         ? (getLogoForMake(canonicalBrand) || null)
         : null;
+      const generationYear = vinVehicle?.year || scanData?.year || '';
+      const vehicleDescription = [form.brand, form.model, form.variant, generationYear ? `Modelljahr ${generationYear}` : '']
+        .filter(Boolean)
+        .join(' ');
 
       const { data, error } = await invokeWithRetry('remaster-vehicle-image', {
         imageBase64: heroSourceImage.base64,
         additionalImages: fileUris ? undefined : referenceImages.slice(1).map((i) => i.base64),
         mainImageFileUri: fileUris?.[0] || null,
         additionalFileUris: fileUris?.slice(1) || undefined,
-        vehicleDescription: `${form.brand} ${form.model} ${form.variant}`.trim(),
+        vehicleDescription,
         modelTier,
         dynamicPrompt: fullPrompt,
         customShowroomBase64: remasterConfig.customShowroomBase64 || null,
@@ -929,7 +933,7 @@ This is the MARKETING MASTER (Hero) shot — push lighting one notch beyond the 
     } finally {
       setHeroRunning(false);
     }
-  }, [heroSourceImage, orderedInputImages, form.brand, form.model, form.variant, modelTier, availableJobs, remasterConfig, canonicalBrand, getLogoForMake]);
+  }, [heroSourceImage, orderedInputImages, form.brand, form.model, form.variant, modelTier, availableJobs, remasterConfig, canonicalBrand, getLogoForMake, vinVehicle?.year, scanData?.year]);
 
   /** Kick off pipeline (rest of the jobs) via global PipelineContext. */
   const startPipelineRest = useCallback(async (heroB64: string | null) => {
@@ -945,12 +949,16 @@ This is the MARKETING MASTER (Hero) shot — push lighting one notch beyond the 
 
     const inputs = orderedInputImages.map((i) => i.base64);
     const totalImages = getTotalImageCount(new Set(selectedJobs.map((j) => j.key)));
+    const generationYear = vinVehicle?.year || scanData?.year || '';
+    const vehicleDescription = [form.brand, form.model, form.variant, generationYear ? `Modelljahr ${generationYear}` : '']
+      .filter(Boolean)
+      .join(' ');
 
     pipelineCtx.startPipeline({
       inputImages: inputs,
       originalImages: inputs,
       additionalImages,
-      vehicleDescription: `${form.brand} ${form.model} ${form.variant}`.trim(),
+      vehicleDescription,
       remasterConfig,
       modelTier,
       projectId: null,
@@ -966,7 +974,7 @@ This is the MARKETING MASTER (Hero) shot — push lighting one notch beyond the 
     setPipelineKicked(true);
   }, [
     pipelineCtx, user, availableJobs, selectedJobKeys, orderedInputImages, additionalImages,
-    form.brand, form.model, form.variant, remasterConfig, modelTier, vin,
+    form.brand, form.model, form.variant, remasterConfig, modelTier, vin, vinVehicle?.year, scanData?.year,
     canonicalBrand, getLogoForMake, savedVehicleId,
   ]);
 

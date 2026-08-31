@@ -130,8 +130,9 @@ serve(async (req) => {
 });
 
 async function generateImage(prompt: string, config: ModelConfig, retries = 2): Promise<{ imageBase64: string | null; error?: string }> {
+  const generationLock = `\n\nMODEL GENERATION LOCK: Render the exact model year, generation and facelift stated in the prompt. Never substitute an older, superseded or more familiar generation from training memory. Front fascia, grille or closed panel, headlights, LED signature, bumper, taillights and body shape must belong to the stated generation.`;
   const professionalPhotoLock = `\n\nPROFESSIONAL AUTOMOTIVE PHOTO LOCK: Render this as a premium dealership/editorial vehicle image with visible new-scene lighting. Show clear light-source logic (ceiling LEDs, window light, sun direction, streetlights or studio softboxes), natural highlights on paint, hood, roof, windshield, side glass, chrome and rims, soft tire contact shadows, ambient occlusion and subtle floor/ground reflection where appropriate. Reflections must belong only to the described new scene. No foreign reflections, no people, no other cars, no watermarks, no text artefacts, no old showroom/street content.`;
-  const lockedPrompt = `${prompt}${professionalPhotoLock}`;
+  const lockedPrompt = `${prompt}${generationLock}${professionalPhotoLock}`;
   if (config.engine === "openai") {
     return generateImageOpenAI(lockedPrompt, config.model, retries);
   }
