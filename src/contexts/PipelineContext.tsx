@@ -11,6 +11,7 @@ import { deriveWheelReferenceFromPhoto } from '@/lib/wheel-reference';
 import { WHEEL_VISIBILITY_RULE } from '@/lib/remaster-prompt';
 import { ensureLogoCachedAsPng } from '@/lib/image-base64-cache';
 import { ensureVehicleAuto, uploadOriginalsToVehicle } from '@/lib/vehicle-utils';
+import { useQueryClient } from '@tanstack/react-query';
 
 /* ─── Types ─── */
 export type JobStatus = 'pending' | 'running' | 'done' | 'error';
@@ -100,6 +101,11 @@ function getInteriorReferenceIndices(availableCount: number): number[] {
 
 function buildTaskOutputLock(job: PipelineJob | undefined): string {
   const jobName = job?.labelDe || job?.label || 'angeforderte Pipeline-Ansicht';
+  const signature = `${job?.key || ''} ${job?.label || ''} ${job?.labelDe || ''}`;
+  const frontIdentityLock = FRONT_REFERENCE_PATTERNS.test(signature) ? `
+- FRONT-PART LOCK: Use the closest front-visible remastered blueprint as the primary authority. Copy the grille or closed panel, hood edge, bumper openings, sensors, headlight housings and full LED signatures as one connected assembly. A familiar grille or lamp design from another generation is a failed output.` : '';
+  const steeringWheelLock = FRONT_INTERIOR_PATTERNS.test(signature) ? `
+- STEERING-WHEEL LOCK: Use the closest remastered front-interior blueprint as the primary authority. Copy the exact rim outline, spoke count and angles, centre hub, button islands, controls, stalks and badge position. Never construct a generic or remembered steering wheel.` : '';
   return `TASK OUTPUT LOCK (ABSOLUTE PRIORITY):
 - Generate ONLY the requested pipeline step: "${jobName}".
 - Follow the requested perspective exactly. Never replace it with a visually similar but different angle.
@@ -108,7 +114,7 @@ function buildTaskOutputLock(job: PipelineJob | undefined): string {
 - Do NOT add, remove, redesign, simplify, restyle, or reinterpret any logo, badge, emblem, lettering, wall logo, or brand mark.
 - If a logo asset is provided, treat it as IMMUTABLE SOURCE MATERIAL: preserve exact silhouette, border/frame, symbol, text, proportions, placement logic, and colors.
 - Reference images are the ONLY source of truth for visible vehicle details. Never replace uncertainty with generic OEM defaults, remembered catalog imagery, or guessed trim/material variants.
-- Do NOT invent any missing view information. Use the matching reference image and detail photos to reproduce exactly what was requested.`;
+- Do NOT invent any missing view information. Use the matching reference image and detail photos to reproduce exactly what was requested.${frontIdentityLock}${steeringWheelLock}`;
 }
 
 const CONCURRENCY = 6;
@@ -128,6 +134,7 @@ export const usePipelineSafe = (): PipelineContextValue | null => {
 };
 
 export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const queryClient = useQueryClient();
   const [status, setStatus] = useState<PipelineStatus>('idle');
   const [jobs, setJobs] = useState<Record<string, JobState>>({});
   const [startTime, setStartTime] = useState<number | null>(null);
@@ -195,7 +202,9 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const generateOneImage = useCallback(async (
     prompt: string, job: PipelineJob | undefined, cfg: PipelineConfig
   ): Promise<{ base64: string | null; error?: string }> => {
-    const referenceImages = cfg.originalImages.length > 0 ? cfg.originalImages : cfg.inputImages;
+    // The successful remasters are the strongest generation-safe blueprints for
+    // downstream perspectives. Raw originals remain supporting evidence only.
+    const referenceImages = cfg.inputImages.length > 0 ? cfg.inputImages : cfg.originalImages;
     const primaryReferenceIndex = inferPrimaryReferenceIndex(job, prompt, referenceImages.length);
     const primaryReference = referenceImages[primaryReferenceIndex] || referenceImages[0];
     const interiorReferenceIndices = getInteriorReferenceIndices(referenceImages.length);
@@ -214,6 +223,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         supportingReferences = [
           ...interiorSupportReferences,
           ...cfg.additionalImages.slice(0, 4),
+          ...cfg.originalImages.slice(0, 2),
         ].slice(0, 5);
         break;
       case 'detail':
@@ -221,8 +231,9 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         // Plus the primary reference for body context, but limit other refs
         supportingReferences = [
           ...cfg.additionalImages,
+          ...cfg.originalImages.slice(0, 2),
           ...otherReferences.slice(0, 2), // max 2 body refs for context
-        ];
+        ].slice(0, 8);
         break;
       case 'exterior':
       case 'hero':
@@ -230,7 +241,10 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       case 'ci':
       default:
         // Exterior/hero: Send body references + showroom context, limit to max 5
-        supportingReferences = otherReferences.slice(0, 5);
+        supportingReferences = [
+          ...otherReferences,
+          ...cfg.originalImages.slice(0, 2),
+        ].slice(0, 5);
         break;
     }
 
@@ -291,7 +305,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     let additionalFileUris: { uri: string; mimeType: string }[] | undefined;
     let inlineSupportingImages: string[] | undefined;
     if (hasFileUris && fileCache.references.length > 0) {
-      const allRefs = cfg.originalImages.length > 0 ? cfg.originalImages : cfg.inputImages;
+       const allRefs = cfg.inputImages.length > 0 ? cfg.inputImages : cfg.originalImages;
       const referenceBackedSupportingImages = supportingReferences.filter(ref => allRefs.includes(ref));
       inlineSupportingImages = supportingReferences.filter(ref => !allRefs.includes(ref));
 
@@ -426,7 +440,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       // This avoids sending MB of base64 with every single job request
       cachedFileUrisRef.current = { references: [], showroom: null, plate: null, manufacturerLogo: null, dealerLogo: null, wheel: null };
       try {
-        const referenceImages = cfg.originalImages.length > 0 ? cfg.originalImages : cfg.inputImages;
+        const referenceImages = cfg.inputImages.length > 0 ? cfg.inputImages : cfg.originalImages;
         const imagesToUpload: string[] = [...referenceImages];
 
         // Add showroom if present
@@ -622,6 +636,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               gallery_folder: folderName,
             }));
             await supabase.from('project_images').insert(imageRows as any);
+            queryClient.invalidateQueries({ queryKey: ['gallery'] });
+            if (resolvedVehicleId) queryClient.invalidateQueries({ queryKey: ['vehicle-images', resolvedVehicleId] });
 
             // Backfill any earlier rows in this gallery_folder that were saved with null vehicle_id
             if (resolvedVehicleId) {
@@ -693,7 +709,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         } catch { /* ignore */ }
       }
     })();
-  }, [generateOneImage]);
+  }, [generateOneImage, queryClient]);
 
   const retryJob = useCallback(async (jobKey: string) => {
     if (!config) return;

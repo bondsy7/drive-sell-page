@@ -27,6 +27,7 @@ import {
 import { type RemasterConfig, fetchManufacturerLogos } from '@/lib/remaster-prompt';
 import { usePipeline, type ResultImage } from '@/contexts/PipelineContext';
 import type { WheelReference } from '@/types/wheel-reference';
+import { useQueryClient } from '@tanstack/react-query';
 
 /* ─── Types ─── */
 interface PipelineRunnerProps {
@@ -72,6 +73,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   const { user } = useAuth();
   const { balance, getCost } = useCredits();
   const pipeline = usePipeline();
+  const queryClient = useQueryClient();
 
   /* ─── Context-driven state ─── */
   const isContextActive = pipeline.status !== 'idle';
@@ -234,55 +236,52 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
     });
   };
 
-  /* ─── Save remastered input images on mount ─── */
-  useEffect(() => {
-    if (!user || inputImages.length === 0 || inputImagesSavedRef.current || isContextActive) return;
+  /* ─── Persist remastered inputs before pipeline generation ─── */
+  const persistRemasteredInputs = useCallback(async () => {
+    if (!user || inputImages.length === 0 || inputImagesSavedRef.current) return;
     inputImagesSavedRef.current = true;
     const folderName = getGalleryFolderName(vin);
-
-    if (projectId) {
-      (async () => {
-        try {
-          const urls: string[] = [];
-          for (let i = 0; i < inputImages.length; i++) {
-            const url = await uploadImageToStorage(inputImages[i], user.id, `${projectId}/remaster_${i}.png`);
-            if (url) urls.push(url);
-          }
-          if (urls.length > 0) {
-            await supabase.from('projects').update({ main_image_url: urls[0] }).eq('id', projectId);
-            const perspectives = ['3/4 Front', 'Seite', 'Hinten', 'Interieur Fahrersitz', 'Interieur Rücksitz'];
-            const imageRows = urls.map((url, i) => ({
-              project_id: projectId, vehicle_id: vehicleId || null,
-              user_id: user.id, image_url: url,
-              image_base64: '', perspective: perspectives[i] || `Bild ${i + 1}`, sort_order: i,
-              gallery_folder: folderName,
-            }));
-            await supabase.from('project_images').insert(imageRows as any);
-          }
-        } catch (e) { console.error('Error saving remastered images:', e); }
-      })();
-      return;
+    try {
+      const perspectives = ['3/4 Front', 'Seite', 'Hinten', 'Interieur Fahrersitz', 'Interieur Rücksitz'];
+      const { data: existing } = await supabase
+        .from('project_images')
+        .select('perspective')
+        .eq('user_id', user.id)
+        .eq('gallery_folder', folderName)
+        .in('perspective', perspectives.slice(0, inputImages.length));
+      const existingPerspectives = new Set((existing || []).map(row => row.perspective));
+      const pending = inputImages
+        .map((image, index) => ({ image, index, perspective: perspectives[index] || `Bild ${index + 1}` }))
+        .filter(item => !existingPerspectives.has(item.perspective));
+      const rows = [];
+      for (const item of pending) {
+        const storageName = projectId
+          ? `${projectId}/remaster_${item.index}.png`
+          : `gallery/${folderName}/remaster_${item.index}.png`;
+        const url = await uploadImageToStorage(item.image, user.id, storageName);
+        if (url) rows.push({
+          project_id: projectId || null,
+          vehicle_id: vehicleId || null,
+          user_id: user.id,
+          image_url: url,
+          image_base64: '',
+          perspective: item.perspective,
+          sort_order: item.index,
+          gallery_folder: folderName,
+        });
+      }
+      if (rows.length > 0) await supabase.from('project_images').insert(rows as any);
+      queryClient.invalidateQueries({ queryKey: ['gallery'] });
+      if (vehicleId) queryClient.invalidateQueries({ queryKey: ['vehicle-images', vehicleId] });
+      if (projectId && rows[0]?.image_url) {
+        await supabase.from('projects').update({ main_image_url: rows[0].image_url }).eq('id', projectId);
+      }
+    } catch (e) {
+      inputImagesSavedRef.current = false;
+      console.error('Error saving remastered images:', e);
+      throw e;
     }
-    (async () => {
-      try {
-        const urls: string[] = [];
-        for (let i = 0; i < inputImages.length; i++) {
-          const url = await uploadImageToStorage(inputImages[i], user.id, `gallery/${folderName}/remaster_${i}.png`);
-          if (url) urls.push(url);
-        }
-        if (urls.length > 0) {
-          const perspectives = ['3/4 Front', 'Seite', 'Hinten', 'Interieur Fahrersitz', 'Interieur Rücksitz'];
-          const imageRows = urls.map((url, i) => ({
-            project_id: null, vehicle_id: vehicleId || null,
-            user_id: user.id, image_url: url,
-            image_base64: '', perspective: perspectives[i] || `Bild ${i + 1}`, sort_order: i,
-            gallery_folder: folderName,
-          }));
-          await supabase.from('project_images').insert(imageRows as any);
-        }
-      } catch (e) { console.error('Error saving remastered images:', e); }
-    })();
-  }, [user, inputImages, vehicleDescription, projectId, isContextActive]);
+  }, [user, inputImages, vin, projectId, vehicleId, queryClient]);
 
   /* ─── Retry job (delegates to context) ─── */
   const retryJob = useCallback(async (jobKey: string) => {
@@ -292,9 +291,16 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   }, [pipeline]);
 
   /* ─── Start pipeline (delegates to context) ─── */
-  const runPipeline = useCallback(() => {
+  const runPipeline = useCallback(async () => {
     if (!user) { toast.error('Bitte melde dich an.'); return; }
     if (localSelectedJobs.length === 0) { toast.error('Bitte wähle mindestens einen Job aus.'); return; }
+
+    try {
+      await persistRemasteredInputs();
+    } catch {
+      toast.error('Remaster-Bilder konnten nicht in der Galerie gespeichert werden.');
+      return;
+    }
 
     pipeline.startPipeline({
       inputImages,
@@ -315,7 +321,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       detectedBrand: detectedBrand || null,
       totalImages: getTotalImageCount(selectedKeys),
     });
-  }, [user, localSelectedJobs, localAvailableJobs, inputImages, originalImages, additionalImages, wheelReference, vehicleDescription, remasterConfig, classContext, modelTier, projectId, vehicleId, vin, resolvedManufacturerLogoUrl, detectedBrand, selectedKeys, pipeline]);
+  }, [user, localSelectedJobs, localAvailableJobs, inputImages, originalImages, additionalImages, wheelReference, vehicleDescription, remasterConfig, classContext, modelTier, projectId, vehicleId, vin, resolvedManufacturerLogoUrl, detectedBrand, selectedKeys, pipeline, persistRemasteredInputs]);
 
   /* ─── Credit pre-check ─── */
   const handleStartClick = () => {
