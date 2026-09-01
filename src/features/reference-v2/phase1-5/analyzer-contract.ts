@@ -271,7 +271,7 @@ export const AnalyzerVisionResponseSchema = z
       }
       for (const surface of spec.requiredVisibleSurfaces) {
         if (CORE_VISIBILITY_SURFACES.includes(surface)) continue;
-        if (r.visibility.surfaces[surface] === undefined) {
+        if (!Object.prototype.hasOwnProperty.call(r.visibility.surfaces, surface)) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             path: ["visibility", "surfaces", surface],
@@ -279,6 +279,7 @@ export const AnalyzerVisionResponseSchema = z
           });
         }
       }
+
     }
   });
 export type AnalyzerVisionResponse = z.infer<typeof AnalyzerVisionResponseSchema>;
