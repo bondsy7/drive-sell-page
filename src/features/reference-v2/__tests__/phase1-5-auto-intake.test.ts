@@ -542,9 +542,42 @@ describe("visibility.surfaces is a required, perspective-aware contract", () => 
     expect(validateAnalyzerResponse(payload).ok).toBe(true);
   });
 
+  it("accepts INT_DASH_CENTER with azimuthDeg = null (no global azimuth requirement)", () => {
+    const payload = validResponse({
+      canonicalPerspectiveId: "INT_DASH_CENTER",
+      azimuthDeg: null,
+      pitchDeg: null,
+      elevationProfile: "interior",
+      visibility: {
+        ...goodResponse.visibility,
+        surfaces: { dashboard: 0.9, infotainment: 0.8, center_console: 0.6 },
+      },
+    });
+    expect(parseAnalyzerResponse(payload).azimuthDeg).toBeNull();
+    expect(validateAnalyzerResponse(payload).ok).toBe(true);
+  });
+
+  it("accepts DET_HEADLIGHT_LEFT with azimuthDeg = null but rejects a missing surface", () => {
+    const detail = (surfaces: Record<string, number>) =>
+      validResponse({
+        canonicalPerspectiveId: "DET_HEADLIGHT_LEFT",
+        azimuthDeg: null,
+        pitchDeg: null,
+        elevationProfile: "close_detail",
+        visibility: { ...goodResponse.visibility, surfaces },
+      });
+    expect(() => parseAnalyzerResponse(detail({}))).toThrow(
+      /visibility\.surfaces\.headlight_left is required/,
+    );
+    const valid = detail({ headlight_left: 0 });
+    expect(parseAnalyzerResponse(valid).azimuthDeg).toBeNull();
+    expect(validateAnalyzerResponse(valid).ok).toBe(true);
+  });
+
   it("rejects a detected vehicle without a class on both sides", () => {
     const payload = validResponse({ vehicleClass: null });
     expect(() => parseAnalyzerResponse(payload)).toThrow();
     expect(validateAnalyzerResponse(payload).ok).toBe(false);
   });
 });
+
