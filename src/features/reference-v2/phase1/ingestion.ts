@@ -276,7 +276,8 @@ export function canBecomePrimary(asset: ReferenceAssetRecord): boolean {
   return (
     asset.blockers.length === 0 &&
     asset.hardFailures.length === 0 &&
-    (asset.role === "primary" || asset.role === "primary_candidate")
+    (asset.role === "primary" || asset.role === "primary_candidate") &&
+    asset.analysis !== undefined
   );
 }
 

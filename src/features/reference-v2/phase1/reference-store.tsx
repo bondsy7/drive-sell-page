@@ -69,6 +69,11 @@ export interface IngestAssetInput {
   readonly fileAvailable: boolean;
   /** Phase 1.5: Nachweis der automatischen Vision-Analyse (optional). */
   readonly analysis?: ReferenceAnalysisRecord;
+  /**
+   * true nur beim automatischen KI-Intake. Manuelle Diagnose-Assets sind
+   * strukturell von Primary/Primary-Candidate ausgeschlossen.
+   */
+  readonly isAutomatic?: boolean;
 }
 
 export class ProtectedAssetError extends Error {
@@ -161,6 +166,7 @@ export function ReferenceStoreProvider({ children }: { children: ReactNode }) {
         intake: input.intake,
         framing: input.framing,
         fileAvailable: input.fileAvailable,
+        isAutomatic: input.isAutomatic === true && input.analysis !== undefined,
       });
 
       const asset = ReferenceAssetRecordSchema.parse({
