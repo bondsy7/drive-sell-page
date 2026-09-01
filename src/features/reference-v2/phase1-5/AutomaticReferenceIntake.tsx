@@ -25,6 +25,7 @@ import {
   toAnchorFileReferences,
   type ReferenceV2FileReference,
 } from "./provider-adapter";
+import { useCurrentFramingEvidenceRuntime } from "../phase2/framing-evidence-runtime";
 
 
 /**
