@@ -175,7 +175,7 @@ export function parseCurrentFramingEvidenceSidecar(
 // --------------------------------------------------------------------------
 
 export function emptyCurrentFramingEvidenceSidecar(): CurrentFramingEvidenceSidecar {
-  return { byAssetId: {} };
+  return { byAssetId: recordFromEntries<CurrentFramingEvidence>([]) };
 }
 
 export function upsertCurrentFramingEvidence(
@@ -184,15 +184,18 @@ export function upsertCurrentFramingEvidence(
 ): CurrentFramingEvidenceSidecar {
   const sidecar = parseCurrentFramingEvidenceSidecar(sidecarRaw);
   const evidence = parseCurrentFramingEvidence(evidenceRaw);
-  const next: Record<string, CurrentFramingEvidence> = {};
-  for (const key of Object.keys(sidecar.byAssetId)) {
-    next[key] =
-      key === evidence.assetId ? { ...evidence } : { ...sidecar.byAssetId[key] };
+  const entries: [string, CurrentFramingEvidence][] = ownEntries(
+    sidecar.byAssetId,
+  ).map(([key, value]) => [
+    key,
+    key === evidence.assetId ? { ...evidence } : { ...value },
+  ]);
+  if (!hasOwn(sidecar.byAssetId, evidence.assetId)) {
+    entries.push([evidence.assetId, { ...evidence }]);
   }
-  if (!(evidence.assetId in next)) {
-    next[evidence.assetId] = { ...evidence };
-  }
-  return parseCurrentFramingEvidenceSidecar({ byAssetId: next });
+  return parseCurrentFramingEvidenceSidecar({
+    byAssetId: recordFromEntries(entries),
+  });
 }
 
 export function removeCurrentFramingEvidence(
@@ -200,13 +203,14 @@ export function removeCurrentFramingEvidence(
   assetId: string,
 ): CurrentFramingEvidenceSidecar {
   const sidecar = parseCurrentFramingEvidenceSidecar(sidecarRaw);
-  const next: Record<string, CurrentFramingEvidence> = {};
-  for (const key of Object.keys(sidecar.byAssetId)) {
-    if (key === assetId) continue;
-    next[key] = { ...sidecar.byAssetId[key] };
-  }
-  return parseCurrentFramingEvidenceSidecar({ byAssetId: next });
+  const entries = ownEntries(sidecar.byAssetId)
+    .filter(([key]) => key !== assetId)
+    .map(([key, value]): [string, CurrentFramingEvidence] => [key, { ...value }]);
+  return parseCurrentFramingEvidenceSidecar({
+    byAssetId: recordFromEntries(entries),
+  });
 }
+
 
 function parseKnownAssetIds(raw: unknown): string[] {
   const parsed = z.array(z.string().min(1)).safeParse(raw);
