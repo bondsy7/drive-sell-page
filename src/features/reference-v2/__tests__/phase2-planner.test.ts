@@ -683,23 +683,582 @@ describe("Phase 2.3 planner assembly", () => {
 });
 
 // --------------------------------------------------------------------------
+// K — Phase 2.3 hardening: interior multi-surface fixtures
+// --------------------------------------------------------------------------
+
+/**
+ * INT_WIDE_CABIN verlangt drei Pflicht-Flaechen (dashboard, front_seats,
+ * center_console) und KEINE Pflicht-Raeder. Das ist die einzige existierende
+ * Registry-Perspektive, bei der ein qualifizierter exakter Primary zugleich
+ * ZWEI unbelegte Pflicht-Flaechen haben kann. Die Registry wird nicht mutiert.
+ */
+const CABIN: PerspectiveId = "INT_WIDE_CABIN";
+const CABIN_TARGET = { perspectives: [CABIN] } as const;
+
+/**
+ * Exakter, qualifizierter Kabinen-Primary: dashboard belegt, front_seats und
+ * center_console knapp UNTER der Belegungsschwelle (0.49 < 0.5), sodass der
+ * gewichtete Score mit 94.9 weiterhin >= 92 bleibt.
+ */
+function cabinPrimary(id: string): ReferenceAssetRecord {
+  return asset({
+    id,
+    requestedPerspectiveId: CABIN,
+    intake: intake({
+      assetId: id,
+      perspectiveId: CABIN,
+      visibility: { front: 0, rear: 0, leftSide: 0, rightSide: 0, roof: 0 },
+      surfaces: { dashboard: 1, front_seats: 0.49, center_console: 0.49 },
+      wheels: [],
+    }),
+  });
+}
+
+interface CabinDonorOptions {
+  readonly surfaces: Record<string, number>;
+  readonly usableScore?: number;
+  readonly usable?: number;
+  readonly occlusion?: number;
+}
+
+function cabinDonor(
+  id: string,
+  o: CabinDonorOptions,
+): ReferenceAssetRecord {
+  return asset({
+    id,
+    requestedPerspectiveId: "INT_FRONT_SEATS",
+    intake: intake({
+      assetId: id,
+      perspectiveId: "INT_FRONT_SEATS",
+      visibility: { front: 0, rear: 0, leftSide: 0, rightSide: 0, roof: 0 },
+      surfaces: o.surfaces,
+      wheels: [],
+      ...(o.usable !== undefined ? { usable: o.usable } : {}),
+      ...(o.usableScore !== undefined ? { usableScore: o.usableScore } : {}),
+      ...(o.occlusion !== undefined ? { occlusion: o.occlusion } : {}),
+    }),
+  });
+}
+
+describe("Phase 2.3 greedy multi-surface secondary selection", () => {
+  it("proves two missing surfaces with exactly one scoped secondary", () => {
+    const out = plan(
+      [
+        cabinPrimary("asset_a"),
+        cabinDonor("asset_b", {
+          surfaces: { dashboard: 0, front_seats: 1, center_console: 1 },
+        }),
+      ],
+      CABIN_TARGET,
+    );
+    const secondaries = item(out).selection.secondaryReferences;
+    expect(secondaries).toHaveLength(1);
+    expect(secondaries[0]!.assetId).toBe("asset_b");
+    // Registry-Reihenfolge von INT_WIDE_CABIN: dashboard, front_seats, center_console
+    expect(secondaries[0]!.scopes).toEqual(["front_seats", "center_console"]);
+    expect(item(out).state).toBe("READY");
+    expect(item(out).fineGrainedReadiness).toBe("READY_MULTI_REFERENCE");
+  });
+
+  it("prefers the larger surface gain over the higher weighted score", () => {
+    // asset_b belegt ZWEI fehlende Flaechen bei sehr schlechter Qualitaet
+    // (weightedScore ~47.05), asset_c nur EINE bei perfekter Qualitaet
+    // (weightedScore ~49.95). Der groessere Gain gewinnt.
+    const out = plan(
+      [
+        cabinPrimary("asset_a"),
+        cabinDonor("asset_b", {
+          surfaces: { dashboard: 0, front_seats: 1, center_console: 1 },
+          usable: 0.2,
+          occlusion: 0.8,
+        }),
+        cabinDonor("asset_c", { surfaces: { front_seats: 1 } }),
+      ],
+      { ...CABIN_TARGET, maxSecondaryReferences: 1 },
+    );
+    const secondaries = item(out).selection.secondaryReferences;
+    expect(secondaries).toHaveLength(1);
+    expect(secondaries[0]!.assetId).toBe("asset_b");
+  });
+
+  it("breaks an equal-gain secondary tie by the higher weighted score", () => {
+    const out = plan(
+      [
+        cabinPrimary("asset_a"),
+        cabinDonor("asset_b", {
+          surfaces: { dashboard: 0, front_seats: 1, center_console: 1 },
+          usable: 0.2,
+          occlusion: 0.8,
+        }),
+        cabinDonor("asset_c", {
+          surfaces: { dashboard: 0, front_seats: 1, center_console: 1 },
+        }),
+      ],
+      { ...CABIN_TARGET, maxSecondaryReferences: 1 },
+    );
+    expect(item(out).selection.secondaryReferences[0]!.assetId).toBe("asset_c");
+  });
+
+  it("breaks an equal-gain, equal-score secondary tie by the higher quality", () => {
+    // asset_z: coverage 67, quality 100 -> 0.15*67 + 0.1*100 = 20.05
+    // asset_b: coverage 77, quality 85  -> 0.15*77 + 0.1*85  = 20.05
+    // Beide identisch in cameraAngle (0), Seite (25) und Framing (10).
+    const out = plan(
+      [
+        cabinPrimary("asset_a"),
+        cabinDonor("asset_z", {
+          surfaces: { dashboard: 0, front_seats: 1, center_console: 1 },
+        }),
+        cabinDonor("asset_b", {
+          surfaces: { dashboard: 0.3, front_seats: 1, center_console: 1 },
+          usableScore: 0.25,
+        }),
+      ],
+      { ...CABIN_TARGET, maxSecondaryReferences: 1 },
+    );
+    expect(item(out).selection.secondaryReferences[0]!.assetId).toBe("asset_z");
+  });
+
+  it("breaks a complete secondary tie by the lexicographically smaller assetId", () => {
+    const surfaces = { dashboard: 0, front_seats: 1, center_console: 1 };
+    const out = plan(
+      [
+        cabinPrimary("asset_a"),
+        cabinDonor("asset_c", { surfaces }),
+        cabinDonor("asset_b", { surfaces }),
+      ],
+      { ...CABIN_TARGET, maxSecondaryReferences: 1 },
+    );
+    expect(item(out).selection.secondaryReferences[0]!.assetId).toBe("asset_b");
+  });
+});
+
+describe("Phase 2.3 secondary budget", () => {
+  it("truncates at the budget and keeps the remaining surface unproven", () => {
+    const out = plan(
+      [
+        cabinPrimary("asset_a"),
+        cabinDonor("asset_b", { surfaces: { front_seats: 1 } }),
+        cabinDonor("asset_c", { surfaces: { center_console: 1 } }),
+      ],
+      { ...CABIN_TARGET, maxSecondaryReferences: 1 },
+    );
+    expect(item(out).selection.secondaryReferences).toHaveLength(1);
+    expect(item(out).state).toBe("BLOCKED");
+    expect(item(out).coverage.allMandatorySurfacesMet).toBe(false);
+    expect(codes(out)).toContain("SECONDARY_BUDGET_TRUNCATED");
+    expect(codes(out)).toContain("REQUIRED_SURFACE_UNPROVEN");
+  });
+
+  it("does not report budget truncation once full coverage is reached", () => {
+    const out = plan(
+      [
+        cabinPrimary("asset_a"),
+        cabinDonor("asset_b", {
+          surfaces: { dashboard: 0, front_seats: 1, center_console: 1 },
+        }),
+        cabinDonor("asset_c", {
+          surfaces: { dashboard: 0, front_seats: 1, center_console: 1 },
+        }),
+      ],
+      { ...CABIN_TARGET, maxSecondaryReferences: 1 },
+    );
+    expect(item(out).selection.secondaryReferences).toHaveLength(1);
+    expect(item(out).state).toBe("READY");
+    expect(codes(out)).not.toContain("SECONDARY_BUDGET_TRUNCATED");
+  });
+});
+
+// --------------------------------------------------------------------------
+// L — hardened no-qualified-primary diagnostic
+// --------------------------------------------------------------------------
+
+/**
+ * Exakter Kandidat, dessen gewichteter Score die Mindestanforderung erfuellt
+ * (99), dessen `usableScore` (0.5) aber unter minPrimaryQualityScore (0.55)
+ * liegt.
+ */
+function qualityFailingExact(id: string): ReferenceAssetRecord {
+  return asset({
+    id,
+    intake: intake({ assetId: id, usableScore: 0.5 }),
+  });
+}
+
+describe("Phase 2.3 no-qualified-primary diagnostic", () => {
+  it("reports a truthful SCORE_BELOW_MINIMUM when only the quality gate fails", () => {
+    const out = plan([qualityFailingExact("asset_a")]);
+    expect(item(out).state).toBe("BLOCKED");
+    const reason = item(out).reasons.find(
+      (r) => r.code === "SCORE_BELOW_MINIMUM",
+    );
+    expect(reason).toBeDefined();
+    expect(reason!.metadata?.minimumPerspectiveScoreMet).toBe(true);
+    expect(reason!.metadata?.primaryQualityThresholdMet).toBe(false);
+    expect(reason!.metadata?.minPrimaryQualityScore).toBe(0.55);
+    expect(reason!.metadata?.minimumPerspectiveScore).toBe(92);
+    expect(typeof reason!.metadata?.weightedScore).toBe("number");
+    expect(reason!.messageDe).not.toMatch(/erreicht die Mindestanforderungen/);
+    expect(codes(out)).toContain("NO_ELIGIBLE_PRIMARY");
+  });
+
+  it("keeps the metadata truthful when the weighted score itself is too low", () => {
+    const weak = asset({
+      id: "asset_a",
+      intake: intake({ assetId: "asset_a", azimuthDeg: -35, usable: 0.6 }),
+    });
+    const reason = item(plan([weak])).reasons.find(
+      (r) => r.code === "SCORE_BELOW_MINIMUM",
+    );
+    expect(reason!.metadata?.minimumPerspectiveScoreMet).toBe(false);
+    expect(reason!.metadata?.minPrimaryQualityScore).toBe(0.55);
+  });
+});
+
+describe("Phase 2.3 primary qualification hardening", () => {
+  it("skips a candidate that fails the primary quality threshold", () => {
+    const out = plan([
+      qualityFailingExact("asset_a"),
+      weakerPrimary("asset_b", 0.9),
+    ]);
+    expect(item(out).state).toBe("READY");
+    expect(item(out).selection.primary?.assetId).toBe("asset_b");
+  });
+
+  it("never selects a visually excellent asset with an intrinsic hard failure", () => {
+    const mirrored = asset({
+      id: "asset_a",
+      hardFailures: ["MIRRORED_REFERENCE"],
+    });
+    const out = plan([mirrored, weakerPrimary("asset_b", 0.9)]);
+    expect(item(out).selection.primary?.assetId).toBe("asset_b");
+  });
+
+  it("blocks when the only strong candidate carries an identity conflict", () => {
+    const foreign = asset({
+      id: "asset_a",
+      intake: intake({
+        assetId: "asset_a",
+        identityClusterId: "cluster_other",
+      }),
+    });
+    const out = plan([foreign]);
+    expect(item(out).state).toBe("BLOCKED");
+    expect(item(out).selection.primary).toBeUndefined();
+    expect(item(out).fineGrainedReadiness).toBe("BLOCKED_IDENTITY_CONFLICT");
+  });
+});
+
+// --------------------------------------------------------------------------
+// M — primary comparator tiers (real Phase-2.2 assessments)
+// --------------------------------------------------------------------------
+
+/**
+ * Alle Fixtures unten sind echte Phase-2.2-Bewertungen; Phase 2.2 wird NICHT
+ * gemockt. Die Ties werden ueber die reale gewichtete Formel konstruiert
+ * (cameraAngle 0.4, Seite 0.25, Coverage 0.15, Quality 0.1, Framing 0.1) und
+ * bleiben in EXT_34_FRONT_LEFT (maxAzimuthErrorDeg = 11).
+ */
+function exactCandidate(
+  id: string,
+  o: {
+    front: number;
+    leftSide: number;
+    azimuthDeg?: number;
+    occlusion?: number;
+  },
+): ReferenceAssetRecord {
+  return asset({
+    id,
+    intake: intake({
+      assetId: id,
+      azimuthDeg: o.azimuthDeg ?? -45,
+      visibility: {
+        front: o.front,
+        rear: 0,
+        leftSide: o.leftSide,
+        rightSide: 0,
+        roof: 0.5,
+      },
+      ...(o.occlusion !== undefined ? { occlusion: o.occlusion } : {}),
+    }),
+  });
+}
+
+describe("Phase 2.3 primary comparator tiers", () => {
+  it("prefers the higher quality on an equal weighted score", () => {
+    // asset_z: coverage 90, quality 100 -> 13.5 + 10 = 23.5
+    // asset_a: coverage 100, quality 85 -> 15   + 8.5 = 23.5
+    const out = plan([
+      exactCandidate("asset_z", { front: 0.8, leftSide: 1 }),
+      exactCandidate("asset_a", { front: 1, leftSide: 1, occlusion: 0.75 }),
+    ]);
+    expect(item(out).selection.primary?.assetId).toBe("asset_z");
+  });
+
+  it("prefers the higher required-surface coverage on equal score and quality", () => {
+    // asset_z: cameraAngle 97 (Azimutfehler 0.66°), coverage 100 -> 38.8 + 15
+    // asset_a: cameraAngle 100, coverage 92                      -> 40   + 13.8
+    const out = plan([
+      exactCandidate("asset_z", {
+        front: 1,
+        leftSide: 1,
+        azimuthDeg: -45.66,
+      }),
+      exactCandidate("asset_a", { front: 0.84, leftSide: 1 }),
+    ]);
+    expect(item(out).selection.primary?.assetId).toBe("asset_z");
+  });
+
+  it("prefers the higher camera angle on equal score, quality and coverage", () => {
+    // asset_z: cameraAngle 100, Seite 92, coverage 95 -> 40 + 23 + 14.25
+    // asset_a: cameraAngle 95,  Seite 100, coverage 95 -> 38 + 25 + 14.25
+    const out = plan([
+      exactCandidate("asset_z", { front: 0.98, leftSide: 0.92 }),
+      exactCandidate("asset_a", {
+        front: 0.9,
+        leftSide: 1,
+        azimuthDeg: -46.1,
+      }),
+    ]);
+    expect(item(out).selection.primary?.assetId).toBe("asset_z");
+  });
+
+  it("falls back to the ascending assetId on a complete tie", () => {
+    const out = plan([
+      exactCandidate("asset_z", { front: 1, leftSide: 1 }),
+      exactCandidate("asset_a", { front: 1, leftSide: 1 }),
+    ]);
+    expect(item(out).selection.primary?.assetId).toBe("asset_a");
+  });
+});
+
+// --------------------------------------------------------------------------
+// N — review propagation
+// --------------------------------------------------------------------------
+
+describe("Phase 2.3 review propagation", () => {
+  it("keeps the visually stronger unpromoted asset and reviews the promotion", () => {
+    const strongerUnpromoted = asset({
+      id: "asset_a",
+      role: "primary_candidate",
+    });
+    const weakerPromoted = weakerPrimary("asset_b", 0.9);
+    const out = plan([strongerUnpromoted, weakerPromoted]);
+    expect(item(out).selection.primary?.assetId).toBe("asset_a");
+    expect(item(out).state).toBe("REVIEW");
+    expect(item(out).fineGrainedReadiness).toBe("NEEDS_CONFIRMATION");
+    expect(codes(out)).toContain("PRIMARY_NOT_PROMOTED");
+    expect(item(out).generationAllowed).toBe(false);
+  });
+
+  it("reviews a selected primary whose file expiry is unknown", () => {
+    const unknownExpiry = asset({
+      id: "asset_a",
+      analysis: analysis({ fileExpiresAtIso: undefined }),
+    });
+    const out = plan([unknownExpiry]);
+    expect(item(out).state).toBe("REVIEW");
+    expect(item(out).selection.primary).toEqual({
+      assetId: "asset_a",
+      perspectiveId: P_34_FRONT_LEFT,
+      role: "primary",
+      exactPerspective: true,
+    });
+    expect(codes(out)).toContain("FILE_EXPIRY_UNKNOWN");
+    expect(item(out).generationAllowed).toBe(false);
+  });
+
+  it("propagates a REVIEW reason from a selected secondary reference", () => {
+    const donor = cabinDonor("asset_b", {
+      surfaces: { dashboard: 0, front_seats: 1, center_console: 1 },
+    });
+    const reviewDonor = {
+      ...donor,
+      analysis: analysis({ fileExpiresAtIso: undefined }),
+    } as ReferenceAssetRecord;
+    const out = plan([cabinPrimary("asset_a"), reviewDonor], CABIN_TARGET);
+    expect(item(out).state).toBe("REVIEW");
+    expect(item(out).fineGrainedReadiness).toBe("NEEDS_CONFIRMATION");
+    const secondaries = item(out).selection.secondaryReferences;
+    expect(secondaries).toHaveLength(1);
+    expect(secondaries[0]!.assetId).toBe("asset_b");
+    expect(secondaries[0]!.scopes).toEqual(["front_seats", "center_console"]);
+    expect(codes(out)).toContain("FILE_EXPIRY_UNKNOWN");
+    expect(item(out).generationAllowed).toBe(false);
+  });
+});
+
+// --------------------------------------------------------------------------
+// O — wheel strictness with an actually selected secondary
+// --------------------------------------------------------------------------
+
+describe("Phase 2.3 wheel strictness with a selected secondary", () => {
+  it("blocks even when a selected secondary visually contains the missing wheel", () => {
+    const primaryMissingWheel = asset({
+      id: "asset_a",
+      requestedPerspectiveId: P_HIGH_FRONT,
+      intake: intake({
+        assetId: "asset_a",
+        perspectiveId: P_HIGH_FRONT,
+        azimuthDeg: 0,
+        elevationProfile: "elevated",
+        visibility: {
+          front: 1,
+          rear: 0,
+          leftSide: 0.6,
+          rightSide: 0.6,
+          roof: 0.45,
+        },
+        wheels: ["front_left"],
+      }),
+    });
+    const out = plan([primaryMissingWheel, roofDonor("asset_b")], HIGH);
+    const secondaries = item(out).selection.secondaryReferences;
+    expect(secondaries).toHaveLength(1);
+    expect(secondaries[0]!.scopes).toEqual(["roof"]);
+    expect(item(out).coverage.allMandatorySurfacesMet).toBe(true);
+    expect(item(out).coverage.visibleWheelPositions).toEqual(["front_left"]);
+    expect(item(out).state).toBe("BLOCKED");
+    expect(item(out).generationAllowed).toBe(false);
+    const wheelReason = item(out).reasons.find(
+      (r) => r.metadata?.wheelPosition === "front_right",
+    );
+    expect(wheelReason?.code).toBe("REQUIRED_SURFACE_UNPROVEN");
+    expect(wheelReason?.severity).toBe("BLOCKING");
+  });
+});
+
+// --------------------------------------------------------------------------
+// P — adjacency policy flag has no effect in Phase 2.3
+// --------------------------------------------------------------------------
+
+describe("Phase 2.3 adjacency policy flag", () => {
+  it("never substitutes an adjacent-looking asset even when the policy allows it", () => {
+    const out = plan([leftSideAsset("asset_a")], {
+      allowAdjacentSubstitution: true,
+    });
+    expect(item(out).state).toBe("BLOCKED");
+    expect(item(out).selection.primary).toBeUndefined();
+    expect(item(out).substitution).toBeNull();
+    expect(item(out).generationAllowed).toBe(false);
+    expect(codes(out)).toContain("NO_ELIGIBLE_PRIMARY");
+  });
+});
+
+// --------------------------------------------------------------------------
+// Q — output format edge cases
+// --------------------------------------------------------------------------
+
+describe("Phase 2.3 output format edge cases", () => {
+  it("treats an empty requestedOutputFormats array like an absent one", () => {
+    const out = plan([perfectPrimary("asset_a")], { formats: [] });
+    expect(item(out).outputFormatReadiness).toEqual([]);
+    expect(codes(out)).not.toContain("OUTPUT_FORMAT_NOT_READY");
+    expect(item(out).state).toBe("READY");
+    expect(out.summary.generationAllowed).toBe(true);
+  });
+});
+
+// --------------------------------------------------------------------------
+// R — stored Phase-1 poison is completely inert
+// --------------------------------------------------------------------------
+
+describe("Phase 2.3 stored Phase-1 poison", () => {
+  it("produces a deep-equal planner output regardless of stored Phase-1 fields", () => {
+    const clean = [
+      asset({ id: "asset_a" }),
+      cabinDonor("asset_b", {
+        surfaces: { dashboard: 0, front_seats: 1, center_console: 1 },
+      }),
+    ];
+    const poisoned = clean.map(
+      (a) =>
+        ({
+          ...a,
+          requestedPerspectiveId: P_REAR,
+          scores: {
+            cameraAngle: 0,
+            sideAndSurfaceCorrectness: 0,
+            requiredSurfaceCoverage: 0,
+            quality: 0,
+            framing: 0,
+          },
+          weightedScore: 0,
+          outputReadyFormats: ["1.91:1", "4:5", "1:1"],
+        }) as ReferenceAssetRecord,
+    );
+    const options = { perspectives: [P_34_FRONT_LEFT, CABIN, P_REAR] } as const;
+    expect(plan(poisoned, options)).toEqual(plan(clean, options));
+  });
+});
+
+// --------------------------------------------------------------------------
+// S — mixed-state summary
+// --------------------------------------------------------------------------
+
+function rearPrimary(id: string): ReferenceAssetRecord {
+  return asset({
+    id,
+    requestedPerspectiveId: P_REAR,
+    intake: intake({
+      assetId: id,
+      perspectiveId: P_REAR,
+      azimuthDeg: 180,
+      visibility: { front: 0, rear: 1, leftSide: 0, rightSide: 0, roof: 0.5 },
+      wheels: ["rear_left", "rear_right"],
+    }),
+  });
+}
+
+describe("Phase 2.3 mixed-state summary", () => {
+  it("counts READY, REVIEW and BLOCKED items exactly", () => {
+    const out = plan(
+      [asset({ id: "asset_a", role: "primary_candidate" }), rearPrimary("asset_b")],
+      { perspectives: [P_34_FRONT_LEFT, P_REAR, INT_DASH] },
+    );
+    expect(out.items.map((i) => i.state)).toEqual([
+      "REVIEW",
+      "READY",
+      "BLOCKED",
+    ]);
+    expect(out.summary.readyCount).toBe(1);
+    expect(out.summary.reviewCount).toBe(1);
+    expect(out.summary.blockedCount).toBe(1);
+    expect(out.summary.generationAllowed).toBe(false);
+    expect(() => parsePlannerOutput(out)).not.toThrow();
+  });
+});
+
+// --------------------------------------------------------------------------
 // J — source purity guards
 // --------------------------------------------------------------------------
 
+/** Entfernt Block- und Zeilenkommentare, damit Guards nicht auf Prosa greifen. */
+function stripComments(code: string): string {
+  return code
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/(^|[^:])\/\/.*$/gm, "$1");
+}
+
 describe("Phase 2.3 source purity", () => {
-  const source = readFileSync(
-    resolve(__dirname, "../phase2/planner.ts"),
-    "utf8",
-  )
-    .split("\n")
-    .filter((line) => !line.trim().startsWith("*") && !line.trim().startsWith("/*") && !line.trim().startsWith("//"))
-    .join("\n");
+  const source = stripComments(
+    readFileSync(resolve(__dirname, "../phase2/planner.ts"), "utf8"),
+  );
 
   it("never reads stored Phase-1 evaluation fields", () => {
     expect(source).not.toMatch(/asset\.scores/);
     expect(source).not.toMatch(/asset\.weightedScore/);
     expect(source).not.toMatch(/outputReadyFormats/);
     expect(source).not.toMatch(/requestedPerspectiveId[^s]/);
+    expect(source).not.toMatch(/\.\s*scores\b(?!\s*\.)/);
+  });
+
+  it("never touches semantic vehicle business fields", () => {
+    for (const field of ["vin", "brand", "make", "model", "modelYear", "year"]) {
+      expect(source).not.toMatch(new RegExp(`\\.\\s*${field}\\b`));
+    }
   });
 
   it("contains no adjacency, substitution, mirroring or generation logic", () => {
@@ -712,3 +1271,4 @@ describe("Phase 2.3 source purity", () => {
     expect(source).not.toMatch(/Date\.now|new Date\(/);
   });
 });
+
