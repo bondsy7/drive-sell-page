@@ -211,7 +211,11 @@ describe("Phase 1.5 hardening", () => {
   it("never sends the expected vehicle class or a perspective list to the provider", async () => {
     const analyze = vi.fn(async () => ({ response: parseAnalyzerResponse(goodResponse) }));
     await analyzeSingleFile(makeFile(), asCtx(baseCtx), asDeps(baseDeps(analyze)));
-    const payload = analyze.mock.calls[0][0] as Record<string, unknown>;
+    const payload = (analyze.mock.calls as unknown as unknown[][])[0][0] as Record<
+      string,
+      unknown
+    >;
+
     expect(Object.keys(payload).sort()).toEqual(["anchorFiles", "file"]);
     expect(JSON.stringify(payload)).not.toContain("car");
   });
