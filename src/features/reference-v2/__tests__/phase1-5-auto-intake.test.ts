@@ -16,6 +16,8 @@ import {
   analyzeSingleFile,
 } from "@/features/reference-v2/phase1-5/analysis-coordinator";
 import { ReferenceAnalysisRecordSchema } from "@/features/reference-v2/phase1-5/analysis-record";
+// Pure server-side validator (no Deno runtime dependency) — tested directly.
+import { validateAnalyzerResponse } from "../../../../supabase/functions/_shared/reference-v2-analyzer-validation.ts";
 
 const goodResponse = {
   schemaVersion: ANALYZER_SCHEMA_VERSION,
@@ -26,7 +28,7 @@ const goodResponse = {
   azimuthDeg: -45,
   pitchDeg: 1,
   elevationProfile: "standard",
-  visibility: { front: 0.9, rear: 0, leftSide: 0.85, rightSide: 0, roof: 0.3 },
+  visibility: { front: 0.9, rear: 0, leftSide: 0.85, rightSide: 0, roof: 0.3, surfaces: {} },
   framing: {
     fullVehicleVisible: true,
     cropped: false,
@@ -225,6 +227,10 @@ describe("Phase 1.5 hardening", () => {
       response: parseAnalyzerResponse({
         ...goodResponse,
         canonicalPerspectiveId: "INT_DASH_CENTER",
+        visibility: {
+          ...goodResponse.visibility,
+          surfaces: { dashboard: 0.9, infotainment: 0.8, center_console: 0.7 },
+        },
       }),
     }));
     const out = await analyzeSingleFile(makeFile(), asCtx(baseCtx), asDeps(baseDeps(analyze)));
@@ -390,14 +396,40 @@ describe("in-batch identity anchor requires Phase-1 governance", () => {
 describe("persisted anchors never guess a MIME type", () => {
   it("skips analysis records without a known MIME and preserves png/webp", () => {
     const anchors = toAnchorFileReferences([
-      { fileId: "files/a", providerId: "gemini-file-api" },
-      { fileId: "files/b", providerId: "gemini-file-api", mimeType: "image/png" },
-      { fileId: "files/c", providerId: "gemini-file-api", mimeType: "image/webp" },
-      { fileId: "files/d", providerId: "gemini-file-api", mimeType: "image/gif" },
+      { fileId: "files/a", providerId: "gemini-file-api", status: "analyzed" },
+      {
+        fileId: "files/b",
+        providerId: "gemini-file-api",
+        mimeType: "image/png",
+        status: "analyzed",
+      },
+      {
+        fileId: "files/c",
+        providerId: "gemini-file-api",
+        mimeType: "image/webp",
+        status: "analyzed",
+      },
+      {
+        fileId: "files/d",
+        providerId: "gemini-file-api",
+        mimeType: "image/gif",
+        status: "analyzed",
+      },
     ]);
     expect(anchors.map((a) => a.fileId)).toEqual(["files/b", "files/c"]);
     expect(anchors.map((a) => a.mimeType)).toEqual(["image/png", "image/webp"]);
     expect(JSON.stringify(anchors)).not.toContain("image/jpeg");
+  });
+
+  it("only accepts analyzed records from the Reference V2 provider", () => {
+    const anchors = toAnchorFileReferences([
+      { fileId: "f/1", providerId: "gemini-file-api", mimeType: "image/jpeg", status: "failed" },
+      { fileId: "f/2", providerId: "gemini-file-api", mimeType: "image/jpeg", status: "pending" },
+      { fileId: "f/3", providerId: "gemini-file-api", mimeType: "image/jpeg" },
+      { fileId: "f/4", providerId: "other-provider", mimeType: "image/jpeg", status: "analyzed" },
+      { fileId: "f/5", providerId: "gemini-file-api", mimeType: "image/jpeg", status: "analyzed" },
+    ]);
+    expect(anchors.map((a) => a.fileId)).toEqual(["f/5"]);
   });
 });
 
@@ -461,5 +493,58 @@ describe("analyzer response cross-field consistency", () => {
         }),
       ),
     ).toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// visibility.surfaces contract: client Zod and pure server validator agree
+// ---------------------------------------------------------------------------
+
+describe("visibility.surfaces is a required, perspective-aware contract", () => {
+  const headlightLeft = (surfaces: Record<string, number>) =>
+    validResponse({
+      canonicalPerspectiveId: "DET_HEADLIGHT_LEFT",
+      visibility: { ...goodResponse.visibility, surfaces },
+    });
+
+  it("rejects a response without visibility.surfaces (client + server)", () => {
+    const visibility = { front: 0.9, rear: 0, leftSide: 0.85, rightSide: 0, roof: 0.3 };
+    expect(() => parseAnalyzerResponse(validResponse({ visibility }))).toThrow();
+    const server = validateAnalyzerResponse(validResponse({ visibility }));
+    expect(server.ok).toBe(false);
+    expect(server.ok === false && server.issues.join(" ")).toContain(
+      "visibility.surfaces must be an object",
+    );
+  });
+
+  it("rejects DET_HEADLIGHT_LEFT when headlight_left is missing (client + server)", () => {
+    expect(() => parseAnalyzerResponse(headlightLeft({}))).toThrow(
+      /visibility\.surfaces\.headlight_left is required/,
+    );
+    const server = validateAnalyzerResponse(headlightLeft({}));
+    expect(server.ok).toBe(false);
+    expect(server.ok === false && server.issues.join(" ")).toContain(
+      "visibility.surfaces.headlight_left is required for perspective DET_HEADLIGHT_LEFT",
+    );
+  });
+
+  it("accepts DET_HEADLIGHT_LEFT with headlight_left = 0 as structurally valid", () => {
+    const payload = headlightLeft({ headlight_left: 0 });
+    expect(parseAnalyzerResponse(payload).visibility.surfaces).toEqual({
+      headlight_left: 0,
+    });
+    expect(validateAnalyzerResponse(payload).ok).toBe(true);
+  });
+
+  it("accepts a standard exterior perspective with an empty surfaces map", () => {
+    const payload = validResponse({});
+    expect(parseAnalyzerResponse(payload).visibility.surfaces).toEqual({});
+    expect(validateAnalyzerResponse(payload).ok).toBe(true);
+  });
+
+  it("rejects a detected vehicle without a class on both sides", () => {
+    const payload = validResponse({ vehicleClass: null });
+    expect(() => parseAnalyzerResponse(payload)).toThrow();
+    expect(validateAnalyzerResponse(payload).ok).toBe(false);
   });
 });
