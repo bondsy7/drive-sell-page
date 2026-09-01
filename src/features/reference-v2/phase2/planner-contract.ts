@@ -3,6 +3,8 @@ import {
   PerspectiveIdSchema,
   type PerspectiveId,
 } from "../domain/perspectives/types";
+import { getPerspectiveSpec } from "../domain/perspectives/registry";
+
 import {
   VisualSurfaceSchema,
   WheelPositionSchema,
