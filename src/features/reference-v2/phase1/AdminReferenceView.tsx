@@ -407,6 +407,10 @@ function AdminReferenceViewInner() {
                   )}
                 </CardContent>
               </Card>
+              <OutputPlannerPanel
+                key={activeMaster.id}
+                vehicleMaster={activeMaster}
+              />
               <ReviewGrid />
             </div>
             <div className="space-y-4">
