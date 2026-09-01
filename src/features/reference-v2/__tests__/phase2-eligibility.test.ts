@@ -5,6 +5,7 @@ import {
   AssetEligibilityResultSchema,
   evaluateAssetEligibility,
   parseAssetEligibilityResult,
+  type AssetEligibilityResult,
 } from "../phase2/eligibility";
 import { MIN_SAME_VEHICLE_CONFIDENCE } from "../phase1-5/analyzer-contract";
 import { REFERENCE_V2_PROVIDER_ID } from "../phase1-5/provider-adapter";
@@ -164,14 +165,14 @@ function evalSecondary(
   });
 }
 
-function codes(result: { reasons: readonly { code: string }[] }): string[] {
+function codes(result: AssetEligibilityResult): string[] {
   return result.reasons.map((r) => r.code);
 }
 
-function blockingCodes(result: {
-  reasons: readonly { code: string; severity: string }[];
-}): string[] {
-  return result.reasons.filter((r) => r.severity === "BLOCKING").map((r) => r.code);
+function blockingCodes(result: AssetEligibilityResult): string[] {
+  return result.reasons
+    .filter((r) => r.severity === "BLOCKING")
+    .map((r) => r.code);
 }
 
 // --------------------------------------------------------------------------
