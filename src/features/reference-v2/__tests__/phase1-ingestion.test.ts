@@ -42,10 +42,10 @@ function intake(
       elevationProfile: entry.elevationProfile,
     },
     visibility: {
-      front: 0.95,
-      rear: 0.95,
-      leftSide: perspectiveId === "EXT_SIDE_LEFT" ? 0.95 : 0.2,
-      rightSide: perspectiveId === "EXT_SIDE_RIGHT" ? 0.95 : 0.2,
+      front: perspectiveId.includes("FRONT") ? 0.95 : 0.2,
+      rear: perspectiveId.includes("REAR") ? 0.95 : 0.2,
+      leftSide: perspectiveId.includes("LEFT") ? 0.95 : 0.2,
+      rightSide: perspectiveId.includes("RIGHT") ? 0.95 : 0.2,
       roof: 0.6,
     },
     framing: {
