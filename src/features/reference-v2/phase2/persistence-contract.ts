@@ -368,6 +368,7 @@ export interface ReferenceV2OriginalStoragePathInput {
   readonly extension: string;
 }
 
+// eslint-disable-next-line no-control-regex
 const CONTROL_CHARS = /[\u0000-\u001f\u007f]/;
 
 /**
