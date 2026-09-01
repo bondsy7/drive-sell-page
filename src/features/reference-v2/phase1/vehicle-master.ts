@@ -12,6 +12,7 @@ import {
 import { VisionIntakeResultSchema } from "../domain/vision-intake";
 import { ColorFamilySchema } from "./color-families";
 import { OutputFormatSchema } from "./output-format-policy";
+import { ReferenceAnalysisRecordSchema } from "../phase1-5/analysis-record";
 
 /**
  * Reference V2 — Phase 1: Vehicle Master Records.
@@ -99,6 +100,11 @@ export const ReferenceAssetRecordSchema = z
     previewUrl: z.string().min(1),
     createdAtIso: z.string().min(1),
     intake: VisionIntakeResultSchema,
+    /**
+     * Phase 1.5: Nachweis der automatischen Vision-Analyse. OPTIONAL, damit
+     * bestehende Phase-1-Records gueltig bleiben (backwards-safe).
+     */
+    analysis: ReferenceAnalysisRecordSchema.optional(),
     scores: MatchComponentScoresSchema,
     weightedScore: z.number().min(0).max(100),
     hardFailures: z.array(ReferenceHardFailCodeSchema),

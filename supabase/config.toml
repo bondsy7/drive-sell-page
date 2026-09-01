@@ -65,3 +65,9 @@ verify_jwt = false
 
 [functions.remove-background]
 verify_jwt = false
+
+[functions.reference-v2-upload-file]
+verify_jwt = true
+
+[functions.reference-v2-analyze-image]
+verify_jwt = true

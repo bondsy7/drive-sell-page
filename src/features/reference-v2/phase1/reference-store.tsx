@@ -11,6 +11,7 @@ import type { PerspectiveId } from "../domain/perspectives/types";
 import type { VisionIntakeResult } from "../domain/vision-intake";
 import type { ColorFamily } from "./color-families";
 import type { SourceFramingInput } from "./output-format-policy";
+import type { ReferenceAnalysisRecord } from "../phase1-5/analysis-record";
 import {
   canBecomePrimary,
   computeCompletenessWarnings,
@@ -66,6 +67,8 @@ export interface IngestAssetInput {
   readonly intake: VisionIntakeResult;
   readonly framing: SourceFramingInput;
   readonly fileAvailable: boolean;
+  /** Phase 1.5: Nachweis der automatischen Vision-Analyse (optional). */
+  readonly analysis?: ReferenceAnalysisRecord;
 }
 
 export class ProtectedAssetError extends Error {
@@ -168,6 +171,7 @@ export function ReferenceStoreProvider({ children }: { children: ReactNode }) {
         previewUrl: input.previewUrl,
         createdAtIso: new Date().toISOString(),
         intake: input.intake,
+        ...(input.analysis ? { analysis: input.analysis } : {}),
         scores: evaluation.scores,
         weightedScore: evaluation.weightedScore,
         hardFailures: [...evaluation.hardFailures],

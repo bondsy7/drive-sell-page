@@ -41,6 +41,7 @@ import {
   useReferenceStore,
 } from "./reference-store";
 import { ReferenceCaptureWorkflow } from "./ReferenceCaptureWorkflow";
+import { AutomaticReferenceIntake } from "../phase1-5/AutomaticReferenceIntake";
 
 /**
  * Reference V2 — Phase 1: AdminReferenceView.
@@ -400,7 +401,15 @@ function AdminReferenceViewInner() {
               <ReviewGrid />
             </div>
             <div className="space-y-4">
-              <ReferenceCaptureWorkflow master={activeMaster} />
+              <AutomaticReferenceIntake master={activeMaster} />
+              <details className="rounded-md border p-3">
+                <summary className="text-xs text-muted-foreground cursor-pointer">
+                  Manuelle Diagnose-Erfassung (kein Produktivpfad)
+                </summary>
+                <div className="pt-3">
+                  <ReferenceCaptureWorkflow master={activeMaster} />
+                </div>
+              </details>
             </div>
           </div>
         </>
