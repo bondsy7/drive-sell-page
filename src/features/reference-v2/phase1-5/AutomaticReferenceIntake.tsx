@@ -25,6 +25,7 @@ import {
   toAnchorFileReferences,
   type ReferenceV2FileReference,
 } from "./provider-adapter";
+import { useCurrentFramingEvidenceRuntime } from "../phase2/framing-evidence-runtime";
 
 
 /**
@@ -56,13 +57,32 @@ const STAGE_LABEL: Record<AutomaticIntakeProgress["stage"], string> = {
   failed: "Abgewiesen",
 };
 
+/**
+ * STRIKT: kein Ersatzwert. Schlaegt das Dekodieren fehl oder sind die
+ * natuerlichen Dimensionen ungueltig, wird abgelehnt. Die alte
+ * Phase-1-Governance bleibt unveraendert, weil der eingefrorene Coordinator
+ * diesen Fehler faengt und seinen historischen Ersatzwert anwendet.
+ */
 async function measureAspectRatio(file: File): Promise<number> {
   const url = URL.createObjectURL(file);
   try {
-    return await new Promise<number>((resolve) => {
+    return await new Promise<number>((resolve, reject) => {
       const img = new Image();
-      img.onload = () => resolve(img.naturalWidth / img.naturalHeight || 1.5);
-      img.onerror = () => resolve(1.5);
+      img.onload = () => {
+        const w = img.naturalWidth;
+        const h = img.naturalHeight;
+        if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) {
+          reject(new Error("invalid natural image dimensions"));
+          return;
+        }
+        const ratio = w / h;
+        if (!Number.isFinite(ratio) || ratio <= 0) {
+          reject(new Error("invalid aspect ratio"));
+          return;
+        }
+        resolve(ratio);
+      };
+      img.onerror = () => reject(new Error("image decode failed"));
       img.src = url;
     });
   } finally {
@@ -76,6 +96,7 @@ export function AutomaticReferenceIntake({
   master: VehicleMasterRecord;
 }) {
   const { ingestAsset } = useReferenceStore();
+  const { recordCurrentFramingEvidence } = useCurrentFramingEvidenceRuntime();
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [rows, setRows] = useState<Row[]>([]);
@@ -127,12 +148,12 @@ export function AutomaticReferenceIntake({
     setRows(list.map((f) => ({ fileName: f.name, stage: "queued" as const })));
     setBusy(true);
 
-    const previews = new Map<string, string>();
-    for (const f of list) {
+    // Index-basierte Paarung: Dateinamen sind NICHT eindeutig.
+    const previewByIndex: string[] = list.map((f) => {
       const url = URL.createObjectURL(f);
       objectUrlsRef.current.add(url);
-      previews.set(f.name, url);
-    }
+      return url;
+    });
 
     try {
       const outcomes = await analyzeFileBatch(
@@ -151,7 +172,10 @@ export function AutomaticReferenceIntake({
         },
       );
 
-      for (const outcome of outcomes) {
+      for (let index = 0; index < outcomes.length; index += 1) {
+        const outcome = outcomes[index];
+        const originalFile = list[index];
+        const previewUrl = previewByIndex[index];
         // Fail-closed: nur vollstaendig analysierte Aufnahmen erreichen
         // ueberhaupt die Phase-1-Governance.
         if (!outcome.ok || !outcome.intake || !outcome.framing || !outcome.perspectiveId) {
@@ -162,7 +186,7 @@ export function AutomaticReferenceIntake({
           });
           toast.error(`${outcome.fileName}: ${outcome.errorMessage ?? "abgewiesen"}`);
           // Abgewiesene Dateien werden nicht angezeigt — Preview sofort freigeben.
-          releaseUrl(previews.get(outcome.fileName));
+          releaseUrl(previewUrl);
           continue;
         }
         try {
@@ -170,7 +194,7 @@ export function AutomaticReferenceIntake({
             vehicleMasterId: master.id,
             requestedPerspectiveId: outcome.perspectiveId,
             fileName: outcome.fileName,
-            previewUrl: previews.get(outcome.fileName) ?? "",
+            previewUrl: previewUrl ?? "",
             intake: outcome.intake,
             framing: outcome.framing,
             fileAvailable: true,
@@ -183,6 +207,25 @@ export function AutomaticReferenceIntake({
             role: asset.role,
             blockers: asset.blockers.map((b) => BLOCKER_LABELS_DE[b]),
           });
+
+          // Phase 2.4D: aktuelle Framing-Evidenz AUSSCHLIESSLICH unter der
+          // persistierten Asset-ID, erst nach erfolgreicher Ingestion.
+          // Kein Ersatzwert: schlaegt die strikte Messung fehl, bleibt die
+          // Evidenz fehlend (fail-closed), das Asset bleibt ingestiert.
+          try {
+            const strictAspectRatio = await measureAspectRatio(originalFile);
+            recordCurrentFramingEvidence(master.id, asset.id, {
+              sourceAspectRatio: strictAspectRatio,
+              fullVehicleVisible: outcome.intake.framing.fullVehicleVisible,
+              cropped: outcome.intake.framing.cropped,
+              paddingPct: outcome.framing.paddingPct,
+            });
+          } catch {
+            toast.warning(
+              `${outcome.fileName}: aktuelle Format-Evidenz nicht messbar.`,
+            );
+          }
+
           if (asset.role === "rejected") {
             toast.error(
               `${outcome.fileName} abgewiesen: ${asset.blockers
@@ -197,7 +240,7 @@ export function AutomaticReferenceIntake({
             );
           }
         } catch (e) {
-          releaseUrl(previews.get(outcome.fileName));
+          releaseUrl(previewUrl);
           patchRow(outcome.fileName, {
             stage: "failed",
             message: e instanceof Error ? e.message : "Ingestion fehlgeschlagen",

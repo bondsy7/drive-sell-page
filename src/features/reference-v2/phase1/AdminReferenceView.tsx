@@ -42,6 +42,7 @@ import {
 } from "./reference-store";
 import { ReferenceCaptureWorkflow } from "./ReferenceCaptureWorkflow";
 import { AutomaticReferenceIntake } from "../phase1-5/AutomaticReferenceIntake";
+import { CurrentFramingEvidenceRuntimeProvider } from "../phase2/framing-evidence-runtime";
 
 /**
  * Reference V2 — Phase 1: AdminReferenceView.
@@ -421,7 +422,9 @@ function AdminReferenceViewInner() {
 export default function AdminReferenceView() {
   return (
     <ReferenceStoreProvider>
-      <AdminReferenceViewInner />
+      <CurrentFramingEvidenceRuntimeProvider>
+        <AdminReferenceViewInner />
+      </CurrentFramingEvidenceRuntimeProvider>
     </ReferenceStoreProvider>
   );
 }
