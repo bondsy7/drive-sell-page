@@ -9,14 +9,17 @@ import {
   ReferenceV2RepositoryProtectedAssetError,
   assetPersistenceToDbRow,
   createReferenceV2PersistenceRepository,
+  createReferenceV2SupabasePort,
   framingPersistenceToDbRow,
   mapAssetRowToPersistence,
   mapFramingRowToPersistence,
   mapWorkspaceRowToPersistence,
   workspacePersistenceToDbRow,
-  type ReferenceV2ClientPort,
+  type ReferenceV2AssetRow,
   type ReferenceV2DbError,
-  type ReferenceV2Row,
+  type ReferenceV2FramingRow,
+  type ReferenceV2SemanticPort,
+  type ReferenceV2WorkspaceRow,
 } from "../phase2/persistence-repository";
 import { ReferenceV2PersistenceError } from "../phase2/persistence-contract";
 
@@ -32,11 +35,13 @@ const ASSET_KEY = "ref_abc123";
 const PERSPECTIVE = "EXT_34_FRONT_LEFT";
 const STORAGE_PATH = `${USER_ID}/${VEHICLE_ID}/reference-v2/${WORKSPACE_ID}/${ASSET_KEY}/original.jpg`;
 
+type RawRow = Record<string, unknown>;
+
 // --------------------------------------------------------------------------
 // Fixtures (DB rows)
 // --------------------------------------------------------------------------
 
-function workspaceRow(overrides: ReferenceV2Row = {}): ReferenceV2Row {
+function workspaceRow(overrides: RawRow = {}): ReferenceV2WorkspaceRow {
   return {
     id: WORKSPACE_ID,
     user_id: USER_ID,
@@ -52,7 +57,7 @@ function workspaceRow(overrides: ReferenceV2Row = {}): ReferenceV2Row {
     created_at: DB_TS,
     updated_at: DB_TS,
     ...overrides,
-  };
+  } as ReferenceV2WorkspaceRow;
 }
 
 function intake(overrides: Record<string, unknown> = {}) {
@@ -83,7 +88,7 @@ function intake(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function assetRow(overrides: ReferenceV2Row = {}): ReferenceV2Row {
+function assetRow(overrides: RawRow = {}): ReferenceV2AssetRow {
   return {
     id: ROW_ID,
     workspace_id: WORKSPACE_ID,
@@ -118,10 +123,10 @@ function assetRow(overrides: ReferenceV2Row = {}): ReferenceV2Row {
     created_at: DB_TS,
     updated_at: DB_TS,
     ...overrides,
-  };
+  } as unknown as ReferenceV2AssetRow;
 }
 
-function framingRow(overrides: ReferenceV2Row = {}): ReferenceV2Row {
+function framingRow(overrides: RawRow = {}): ReferenceV2FramingRow {
   return {
     workspace_id: WORKSPACE_ID,
     asset_key: ASSET_KEY,
@@ -133,116 +138,84 @@ function framingRow(overrides: ReferenceV2Row = {}): ReferenceV2Row {
     padding_pct: 8,
     updated_at: DB_TS,
     ...overrides,
-  };
+  } as ReferenceV2FramingRow;
+}
+
+/** Entfernt eine Spalte vollstaendig (kein `undefined`-Wert, kein Key). */
+function withoutColumn<T extends object>(row: T, column: string): unknown {
+  const clone: RawRow = { ...(row as RawRow) };
+  delete clone[column];
+  return clone;
 }
 
 // --------------------------------------------------------------------------
-// Deterministic in-memory client fake (no network, no global module mock)
+// Deterministic in-memory semantic port fake (no network, no module mock)
 // --------------------------------------------------------------------------
 
+type PortMethod = keyof ReferenceV2SemanticPort;
+
 interface RecordedCall {
-  table: string;
-  op: "select" | "insert" | "update" | "upsert" | "delete";
-  values?: ReferenceV2Row;
-  options?: { onConflict: string };
-  filters: Array<[string, unknown]>;
-  order: Array<[string, boolean]>;
-  terminal: "list" | "single" | "maybeSingle" | "none";
+  method: PortMethod;
+  values?: RawRow;
+  keys?: RawRow;
+  args?: RawRow;
 }
 
 type Responder = (
   call: RecordedCall,
 ) => { data: unknown; error: ReferenceV2DbError | null };
 
-function createFakeClient(responder: Responder) {
+function createFakePort(responder: Responder) {
   const calls: RecordedCall[] = [];
 
-  function builder(call: RecordedCall) {
-    const settle = (terminal: RecordedCall["terminal"]) => {
-      call.terminal = terminal;
-      const res = responder(call);
-      return Promise.resolve(res);
-    };
-    const chain = {
-      eq(column: string, value: unknown) {
-        call.filters.push([column, value]);
-        return chain;
-      },
-      order(column: string, options: { ascending: boolean }) {
-        call.order.push([column, options.ascending]);
-        return chain;
-      },
-      select(columns: string) {
-        call.values = call.values ?? undefined;
-        void columns;
-        return chain;
-      },
-      single() {
-        return settle("single");
-      },
-      maybeSingle() {
-        return settle("maybeSingle");
-      },
-      then(onOk: (v: unknown) => unknown, onErr?: (e: unknown) => unknown) {
-        return settle(call.terminal === "none" ? "list" : call.terminal).then(
-          onOk,
-          onErr,
-        );
-      },
-    };
-    return chain;
-  }
-
-  function newCall(table: string, op: RecordedCall["op"]): RecordedCall {
-    const call: RecordedCall = {
-      table,
-      op,
-      filters: [],
-      order: [],
-      terminal: "none",
-    };
+  function settle(call: RecordedCall) {
     calls.push(call);
-    return call;
+    const res = responder(call);
+    return Promise.resolve(res) as never;
   }
 
-  const client = {
-    from(table: string) {
-      return {
-        select: () => builder(newCall(table, "select")),
-        insert: (values: ReferenceV2Row) => {
-          const call = newCall(table, "insert");
-          call.values = values;
-          return builder(call);
-        },
-        update: (values: ReferenceV2Row) => {
-          const call = newCall(table, "update");
-          call.values = values;
-          return builder(call);
-        },
-        upsert: (values: ReferenceV2Row, options: { onConflict: string }) => {
-          const call = newCall(table, "upsert");
-          call.values = values;
-          call.options = options;
-          return builder(call);
-        },
-        delete: () => builder(newCall(table, "delete")),
-      };
-    },
-  } as unknown as ReferenceV2ClientPort;
+  const port: ReferenceV2SemanticPort = {
+    findWorkspaceByVehicleId: (vehicleId) =>
+      settle({ method: "findWorkspaceByVehicleId", args: { vehicleId } }),
+    listAssets: (workspaceId) =>
+      settle({ method: "listAssets", args: { workspaceId } }),
+    listFraming: (workspaceId) =>
+      settle({ method: "listFraming", args: { workspaceId } }),
+    insertWorkspace: (values) =>
+      settle({ method: "insertWorkspace", values: values as RawRow }),
+    updateWorkspace: (patch, keys) =>
+      settle({
+        method: "updateWorkspace",
+        values: patch as RawRow,
+        keys: keys as unknown as RawRow,
+      }),
+    insertAsset: (values) =>
+      settle({ method: "insertAsset", values: values as RawRow }),
+    updateAsset: (patch, keys) =>
+      settle({
+        method: "updateAsset",
+        values: patch as RawRow,
+        keys: keys as unknown as RawRow,
+      }),
+    deleteAsset: (workspaceId, assetKey) =>
+      settle({ method: "deleteAsset", args: { workspaceId, assetKey } }),
+    upsertFraming: (values) =>
+      settle({ method: "upsertFraming", values: values as RawRow }),
+  };
 
-  return { client, calls };
+  return { port, calls };
 }
 
 function bundleResponder(options: {
-  workspace?: ReferenceV2Row | null;
-  assets?: ReferenceV2Row[];
-  framing?: ReferenceV2Row[];
+  workspace?: ReferenceV2WorkspaceRow | null;
+  assets?: unknown[];
+  framing?: unknown[];
 }): Responder {
   return (call) => {
-    if (call.table === REFERENCE_V2_TABLES.workspaces) {
+    if (call.method === "findWorkspaceByVehicleId") {
       return { data: options.workspace ?? null, error: null };
     }
-    if (call.table === REFERENCE_V2_TABLES.assets) {
+    if (call.method === "listAssets") {
       return { data: options.assets ?? [], error: null };
     }
     return { data: options.framing ?? [], error: null };
@@ -344,6 +317,71 @@ describe("2. malformed DB rows fail closed", () => {
     expect(() => mapFramingRowToPersistence(null)).toThrow(
       ReferenceV2RepositoryError,
     );
+  });
+});
+
+// --------------------------------------------------------------------------
+// 2b. GAP 3 — missing DB columns must never look like SQL NULL
+// --------------------------------------------------------------------------
+
+describe("2b. absent DB columns fail closed (missing != NULL)", () => {
+  it("rejects an absent nullable workspace column but accepts explicit null", () => {
+    expect(() =>
+      mapWorkspaceRowToPersistence(withoutColumn(workspaceRow(), "color_family")),
+    ).toThrow(/color_family/);
+    expect(
+      mapWorkspaceRowToPersistence(workspaceRow({ color_family: null }))
+        .colorFamily,
+    ).toBeNull();
+  });
+
+  it("rejects absent nullable asset columns but accepts explicit null", () => {
+    for (const column of ["analysis", "size_bytes"]) {
+      expect(() =>
+        mapAssetRowToPersistence(withoutColumn(assetRow(), column)),
+      ).toThrow(new RegExp(column));
+    }
+    const parsed = mapAssetRowToPersistence(
+      assetRow({ analysis: null, size_bytes: null }),
+    );
+    expect(parsed.analysis).toBeUndefined();
+    expect(parsed.sizeBytes).toBeUndefined();
+  });
+
+  it("rejects an absent required column in every table", () => {
+    expect(() =>
+      mapWorkspaceRowToPersistence(withoutColumn(workspaceRow(), "master_key")),
+    ).toThrow(ReferenceV2RepositoryError);
+    expect(() =>
+      mapAssetRowToPersistence(withoutColumn(assetRow(), "sha256")),
+    ).toThrow(/sha256/);
+    expect(() =>
+      mapFramingRowToPersistence(withoutColumn(framingRow(), "padding_pct")),
+    ).toThrow(/padding_pct/);
+  });
+
+  it("rejects an explicitly undefined column value", () => {
+    expect(() =>
+      mapAssetRowToPersistence(assetRow({ size_bytes: undefined })),
+    ).toThrow(/size_bytes/);
+    expect(() =>
+      mapAssetRowToPersistence(assetRow({ history: undefined })),
+    ).toThrow(/history/);
+  });
+
+  it("invents no defaults for arrays, json, version or timestamps", () => {
+    for (const column of [
+      "warnings",
+      "history",
+      "intake",
+      "schema_version",
+      "created_at",
+      "updated_at",
+    ]) {
+      expect(() =>
+        mapAssetRowToPersistence(withoutColumn(assetRow(), column)),
+      ).toThrow(ReferenceV2RepositoryError);
+    }
   });
 });
 
@@ -474,71 +512,58 @@ describe("3. reverse serializers contain only allowed columns", () => {
 
 describe("4-6. bundle read", () => {
   it("returns null and skips asset/framing queries when no workspace exists", async () => {
-    const { client, calls } = createFakeClient(bundleResponder({ workspace: null }));
-    const repo = createReferenceV2PersistenceRepository(client);
+    const { port, calls } = createFakePort(bundleResponder({ workspace: null }));
+    const repo = createReferenceV2PersistenceRepository(port);
     await expect(repo.loadBundleByVehicleId(VEHICLE_ID)).resolves.toBeNull();
     expect(calls).toHaveLength(1);
-    expect(calls[0].table).toBe(REFERENCE_V2_TABLES.workspaces);
-    expect(calls[0].terminal).toBe("maybeSingle");
+    expect(calls[0].method).toBe("findWorkspaceByVehicleId");
   });
 
   it("rejects a non-UUID vehicle id before any network call", async () => {
-    const { client, calls } = createFakeClient(bundleResponder({}));
-    const repo = createReferenceV2PersistenceRepository(client);
+    const { port, calls } = createFakePort(bundleResponder({}));
+    const repo = createReferenceV2PersistenceRepository(port);
     await expect(repo.loadBundleByVehicleId("nope")).rejects.toBeInstanceOf(
       ReferenceV2RepositoryError,
     );
     expect(calls).toHaveLength(0);
   });
 
-  it("queries only the three reference_v2 tables in deterministic order", async () => {
-    const { client, calls } = createFakeClient(
+  it("reads only the three reference_v2 anchors via read-only port methods", async () => {
+    const { port, calls } = createFakePort(
       bundleResponder({
         workspace: workspaceRow(),
         assets: [assetRow()],
         framing: [framingRow()],
       }),
     );
-    const repo = createReferenceV2PersistenceRepository(client);
+    const repo = createReferenceV2PersistenceRepository(port);
     const bundle = await repo.loadBundleByVehicleId(VEHICLE_ID);
     expect(bundle?.assets).toHaveLength(1);
     expect(bundle?.framingEvidence).toHaveLength(1);
-    expect(calls.map((c) => c.table).sort()).toEqual(
-      [
-        REFERENCE_V2_TABLES.assets,
-        REFERENCE_V2_TABLES.framingEvidence,
-        REFERENCE_V2_TABLES.workspaces,
-      ].sort(),
-    );
-    for (const c of calls) {
-      expect(c.table).toMatch(/^reference_v2_/);
-      expect(c.op).toBe("select");
-    }
-    const assetCall = calls.find((c) => c.table === REFERENCE_V2_TABLES.assets)!;
-    expect(assetCall.order).toEqual([
-      ["created_at", true],
-      ["asset_key", true],
+    expect(calls.map((c) => c.method).sort()).toEqual([
+      "findWorkspaceByVehicleId",
+      "listAssets",
+      "listFraming",
     ]);
-    expect(assetCall.filters).toEqual([["workspace_id", WORKSPACE_ID]]);
-    const framingCall = calls.find(
-      (c) => c.table === REFERENCE_V2_TABLES.framingEvidence,
-    )!;
-    expect(framingCall.order).toEqual([["asset_key", true]]);
+    expect(calls[0].args).toEqual({ vehicleId: VEHICLE_ID });
+    for (const call of calls.slice(1)) {
+      expect(call.args).toEqual({ workspaceId: WORKSPACE_ID });
+    }
   });
 
   it("fails closed on cross-record workspace/user mismatch", async () => {
-    const mismatched = createFakeClient(
+    const mismatched = createFakePort(
       bundleResponder({
         workspace: workspaceRow(),
         assets: [assetRow({ user_id: OTHER_ID })],
       }),
     );
     await expect(
-      createReferenceV2PersistenceRepository(mismatched.client)
+      createReferenceV2PersistenceRepository(mismatched.port)
         .loadBundleByVehicleId(VEHICLE_ID),
     ).rejects.toThrow(/does not belong/);
 
-    const orphanFraming = createFakeClient(
+    const orphanFraming = createFakePort(
       bundleResponder({
         workspace: workspaceRow(),
         assets: [assetRow()],
@@ -546,24 +571,24 @@ describe("4-6. bundle read", () => {
       }),
     );
     await expect(
-      createReferenceV2PersistenceRepository(orphanFraming.client)
+      createReferenceV2PersistenceRepository(orphanFraming.port)
         .loadBundleByVehicleId(VEHICLE_ID),
     ).rejects.toThrow(/unknown asset key/);
   });
 
   it("fails closed on duplicates instead of silently de-duplicating", async () => {
-    const dupAssets = createFakeClient(
+    const dupAssets = createFakePort(
       bundleResponder({
         workspace: workspaceRow(),
         assets: [assetRow(), assetRow({ id: OTHER_ID })],
       }),
     );
     await expect(
-      createReferenceV2PersistenceRepository(dupAssets.client)
+      createReferenceV2PersistenceRepository(dupAssets.port)
         .loadBundleByVehicleId(VEHICLE_ID),
     ).rejects.toThrow(/duplicate asset key/);
 
-    const dupFraming = createFakeClient(
+    const dupFraming = createFakePort(
       bundleResponder({
         workspace: workspaceRow(),
         assets: [assetRow()],
@@ -571,9 +596,23 @@ describe("4-6. bundle read", () => {
       }),
     );
     await expect(
-      createReferenceV2PersistenceRepository(dupFraming.client)
+      createReferenceV2PersistenceRepository(dupFraming.port)
         .loadBundleByVehicleId(VEHICLE_ID),
     ).rejects.toThrow(/duplicate framing/);
+  });
+
+  it("fails closed when a loaded row is missing a database column", async () => {
+    const { port } = createFakePort(
+      bundleResponder({
+        workspace: workspaceRow(),
+        assets: [withoutColumn(assetRow(), "analysis")],
+      }),
+    );
+    await expect(
+      createReferenceV2PersistenceRepository(port).loadBundleByVehicleId(
+        VEHICLE_ID,
+      ),
+    ).rejects.toThrow(/analysis/);
   });
 });
 
@@ -583,40 +622,39 @@ describe("4-6. bundle read", () => {
 
 describe("7-8. workspace writes", () => {
   it("creates via INSERT (never upsert) and parses the returned row", async () => {
-    const { client, calls } = createFakeClient(() => ({
+    const { port, calls } = createFakePort(() => ({
       data: workspaceRow(),
       error: null,
     }));
-    const repo = createReferenceV2PersistenceRepository(client);
+    const repo = createReferenceV2PersistenceRepository(port);
     const created = await repo.createWorkspace(workspaceCreateInput());
     expect(created.workspaceId).toBe(WORKSPACE_ID);
     expect(calls).toHaveLength(1);
-    expect(calls[0].op).toBe("insert");
-    expect(calls[0].terminal).toBe("single");
+    expect(calls[0].method).toBe("insertWorkspace");
     expect(calls[0].values?.user_id).toBeDefined();
   });
 
   it("translates a unique vehicle conflict into a conflict error", async () => {
-    const { client } = createFakeClient(() => ({
+    const { port } = createFakePort(() => ({
       data: null,
       error: { code: "23505", message: "duplicate key value" },
     }));
     await expect(
-      createReferenceV2PersistenceRepository(client).createWorkspace(
+      createReferenceV2PersistenceRepository(port).createWorkspace(
         workspaceCreateInput(),
       ),
     ).rejects.toBeInstanceOf(ReferenceV2RepositoryConflictError);
   });
 
   it("updates only mutable fields and filters by id + vehicle_id", async () => {
-    const { client, calls } = createFakeClient(() => ({
+    const { port, calls } = createFakePort(() => ({
       data: workspaceRow(),
       error: null,
     }));
-    const repo = createReferenceV2PersistenceRepository(client);
+    const repo = createReferenceV2PersistenceRepository(port);
     await repo.updateWorkspace(mapWorkspaceRowToPersistence(workspaceRow()));
     const call = calls[0];
-    expect(call.op).toBe("update");
+    expect(call.method).toBe("updateWorkspace");
     expect(Object.keys(call.values ?? {}).sort()).toEqual(
       [
         "label",
@@ -637,19 +675,61 @@ describe("7-8. workspace writes", () => {
     ]) {
       expect(call.values).not.toHaveProperty(forbidden);
     }
-    expect(call.filters).toEqual([
-      ["id", WORKSPACE_ID],
-      ["vehicle_id", VEHICLE_ID],
-    ]);
+    expect(call.keys).toEqual({
+      workspaceId: WORKSPACE_ID,
+      vehicleId: VEHICLE_ID,
+    });
   });
 
-  it("reports a missing update row as not found", async () => {
-    const { client } = createFakeClient(() => ({ data: null, error: null }));
+  it("reports a zero-row update (maybeSingle -> null) as not found", async () => {
+    const { port } = createFakePort(() => ({ data: null, error: null }));
     await expect(
-      createReferenceV2PersistenceRepository(client).updateWorkspace(
+      createReferenceV2PersistenceRepository(port).updateWorkspace(
         mapWorkspaceRowToPersistence(workspaceRow()),
       ),
     ).rejects.toBeInstanceOf(ReferenceV2RepositoryNotFoundError);
+  });
+
+  it("translates a real PGRST116 zero-row update error into not found", async () => {
+    const { port } = createFakePort(() => ({
+      data: null,
+      error: {
+        code: "PGRST116",
+        message: "JSON object requested, multiple (or no) rows returned",
+      },
+    }));
+    await expect(
+      createReferenceV2PersistenceRepository(port).updateWorkspace(
+        mapWorkspaceRowToPersistence(workspaceRow()),
+      ),
+    ).rejects.toBeInstanceOf(ReferenceV2RepositoryNotFoundError);
+  });
+
+  it("never classifies an RLS or DB failure as not found", async () => {
+    const { port } = createFakePort(() => ({
+      data: null,
+      error: {
+        code: "42501",
+        message: "new row violates row-level security policy",
+      },
+    }));
+    const error = await createReferenceV2PersistenceRepository(port)
+      .updateWorkspace(mapWorkspaceRowToPersistence(workspaceRow()))
+      .catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ReferenceV2RepositoryError);
+    expect(error).not.toBeInstanceOf(ReferenceV2RepositoryNotFoundError);
+  });
+
+  it("does not treat PGRST116 on a create as not found", async () => {
+    const { port } = createFakePort(() => ({
+      data: null,
+      error: { code: "PGRST116", message: "no rows returned" },
+    }));
+    const error = await createReferenceV2PersistenceRepository(port)
+      .createWorkspace(workspaceCreateInput())
+      .catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ReferenceV2RepositoryError);
+    expect(error).not.toBeInstanceOf(ReferenceV2RepositoryNotFoundError);
   });
 });
 
@@ -659,11 +739,11 @@ describe("7-8. workspace writes", () => {
 
 describe("9-11. asset writes", () => {
   it("pre-validates before any network call", async () => {
-    const { client, calls } = createFakeClient(() => ({
+    const { port, calls } = createFakePort(() => ({
       data: assetRow(),
       error: null,
     }));
-    const repo = createReferenceV2PersistenceRepository(client);
+    const repo = createReferenceV2PersistenceRepository(port);
     await expect(
       repo.createAsset(assetCreateInput({ sha256: "nope" })),
     ).rejects.toBeInstanceOf(ReferenceV2PersistenceError);
@@ -677,28 +757,28 @@ describe("9-11. asset writes", () => {
   });
 
   it("inserts a valid asset and parses the returned row", async () => {
-    const { client, calls } = createFakeClient(() => ({
+    const { port, calls } = createFakePort(() => ({
       data: assetRow(),
       error: null,
     }));
     const created = await createReferenceV2PersistenceRepository(
-      client,
+      port,
     ).createAsset(assetCreateInput());
     expect(created.assetKey).toBe(ASSET_KEY);
-    expect(calls[0].op).toBe("insert");
+    expect(calls[0].method).toBe("insertAsset");
     expect(calls[0].values?.storage_bucket).toBe("originals");
   });
 
   it("updates only mutable governance fields, never durable file identity", async () => {
-    const { client, calls } = createFakeClient(() => ({
+    const { port, calls } = createFakePort(() => ({
       data: assetRow(),
       error: null,
     }));
-    await createReferenceV2PersistenceRepository(client).updateAsset(
+    await createReferenceV2PersistenceRepository(port).updateAsset(
       mapAssetRowToPersistence(assetRow()),
     );
     const call = calls[0];
-    expect(call.op).toBe("update");
+    expect(call.method).toBe("updateAsset");
     expect(Object.keys(call.values ?? {}).sort()).toEqual(
       [
         "requested_perspective_id",
@@ -732,15 +812,24 @@ describe("9-11. asset writes", () => {
     ]) {
       expect(call.values).not.toHaveProperty(forbidden);
     }
-    expect(call.filters).toEqual([
-      ["id", ROW_ID],
-      ["workspace_id", WORKSPACE_ID],
-      ["asset_key", ASSET_KEY],
-    ]);
+    expect(call.keys).toEqual({
+      rowId: ROW_ID,
+      workspaceId: WORKSPACE_ID,
+      assetKey: ASSET_KEY,
+    });
+  });
+
+  it("reports a zero-row asset update as not found", async () => {
+    const { port } = createFakePort(() => ({ data: null, error: null }));
+    await expect(
+      createReferenceV2PersistenceRepository(port).updateAsset(
+        mapAssetRowToPersistence(assetRow()),
+      ),
+    ).rejects.toBeInstanceOf(ReferenceV2RepositoryNotFoundError);
   });
 
   it("translates the DB protected-delete guard without auto-unprotecting", async () => {
-    const { client, calls } = createFakeClient(() => ({
+    const { port, calls } = createFakePort(() => ({
       data: null,
       error: {
         code: "P0001",
@@ -749,26 +838,48 @@ describe("9-11. asset writes", () => {
       },
     }));
     await expect(
-      createReferenceV2PersistenceRepository(client).deleteAsset(
+      createReferenceV2PersistenceRepository(port).deleteAsset(
         WORKSPACE_ID,
         ASSET_KEY,
       ),
     ).rejects.toBeInstanceOf(ReferenceV2RepositoryProtectedAssetError);
     expect(calls).toHaveLength(1);
-    expect(calls[0].op).toBe("delete");
-    expect(calls.some((c) => c.op === "update")).toBe(false);
+    expect(calls[0].method).toBe("deleteAsset");
+    expect(calls.some((c) => c.method === "updateAsset")).toBe(false);
   });
 
-  it("deletes an unprotected asset with both anchors as filters", async () => {
-    const { client, calls } = createFakeClient(() => ({ data: [], error: null }));
-    await createReferenceV2PersistenceRepository(client).deleteAsset(
+  it("deletes an unprotected asset with both anchors", async () => {
+    const { port, calls } = createFakePort(() => ({ data: null, error: null }));
+    await createReferenceV2PersistenceRepository(port).deleteAsset(
       WORKSPACE_ID,
       ASSET_KEY,
     );
-    expect(calls[0].filters).toEqual([
-      ["workspace_id", WORKSPACE_ID],
-      ["asset_key", ASSET_KEY],
-    ]);
+    expect(calls[0].args).toEqual({
+      workspaceId: WORKSPACE_ID,
+      assetKey: ASSET_KEY,
+    });
+  });
+
+  it("rejects an unsafe asset key before any port call", async () => {
+    const { port, calls } = createFakePort(() => ({ data: null, error: null }));
+    const repo = createReferenceV2PersistenceRepository(port);
+    for (const unsafe of [
+      "",
+      "  ",
+      " ref_abc123",
+      "ref/abc",
+      "ref\\abc",
+      "../ref_abc123",
+      "ref\u0000abc",
+    ]) {
+      await expect(repo.deleteAsset(WORKSPACE_ID, unsafe)).rejects.toBeInstanceOf(
+        ReferenceV2RepositoryError,
+      );
+    }
+    await expect(repo.deleteAsset("not-a-uuid", ASSET_KEY)).rejects.toBeInstanceOf(
+      ReferenceV2RepositoryError,
+    );
+    expect(calls).toHaveLength(0);
   });
 });
 
@@ -777,23 +888,62 @@ describe("9-11. asset writes", () => {
 // --------------------------------------------------------------------------
 
 describe("12. framing evidence upsert", () => {
-  it("upserts on (workspace_id, asset_key) and returns the parsed row", async () => {
-    const { client, calls } = createFakeClient(() => ({
+  it("upserts and returns the parsed row", async () => {
+    const { port, calls } = createFakePort(() => ({
       data: framingRow(),
       error: null,
     }));
     const parsed = await createReferenceV2PersistenceRepository(
-      client,
+      port,
     ).upsertFramingEvidence(mapFramingRowToPersistence(framingRow()));
     expect(parsed.assetKey).toBe(ASSET_KEY);
-    expect(calls[0].op).toBe("upsert");
-    expect(calls[0].options).toEqual({ onConflict: "workspace_id,asset_key" });
+    expect(calls[0].method).toBe("upsertFraming");
     expect(calls[0].values).not.toHaveProperty("outputReadyFormats");
+  });
+
+  it("fails closed when the upsert returns no row", async () => {
+    const { port } = createFakePort(() => ({ data: null, error: null }));
+    await expect(
+      createReferenceV2PersistenceRepository(port).upsertFramingEvidence(
+        mapFramingRowToPersistence(framingRow()),
+      ),
+    ).rejects.toBeInstanceOf(ReferenceV2RepositoryError);
   });
 });
 
 // --------------------------------------------------------------------------
-// 13-14. Source guard
+// 12b. Production port shape (no network call is performed)
+// --------------------------------------------------------------------------
+
+describe("12b. production port", () => {
+  it("exposes exactly the semantic port surface over the existing client", () => {
+    const port = createReferenceV2SupabasePort();
+    expect(Object.keys(port).sort()).toEqual(
+      [
+        "findWorkspaceByVehicleId",
+        "listAssets",
+        "listFraming",
+        "insertWorkspace",
+        "updateWorkspace",
+        "insertAsset",
+        "updateAsset",
+        "deleteAsset",
+        "upsertFraming",
+      ].sort(),
+    );
+  });
+
+  it("keeps the three anchored table names", () => {
+    expect(Object.values(REFERENCE_V2_TABLES).sort()).toEqual([
+      "reference_v2_assets",
+      "reference_v2_framing_evidence",
+      "reference_v2_workspaces",
+    ]);
+  });
+});
+
+// --------------------------------------------------------------------------
+// 13-15. Source guard
 // --------------------------------------------------------------------------
 
 const REPO_SRC_RAW = readFileSync(
@@ -805,7 +955,7 @@ const REPO_SRC = REPO_SRC_RAW.replace(/\/\*[\s\S]*?\*\//g, "").replace(
   "",
 );
 
-describe("13-14. repository source guard", () => {
+describe("13-15. repository source guard", () => {
   it("never touches business tables or business metadata", () => {
     expect(REPO_SRC).not.toMatch(/from\(\s*["'`]vehicles["'`]\s*\)/);
     expect(REPO_SRC).not.toMatch(/["'`]vehicles["'`]/);
@@ -823,9 +973,7 @@ describe("13-14. repository source guard", () => {
   });
 
   it("uses the strict persistence contract parsers", () => {
-    expect(REPO_SRC).toMatch(
-      /from\s+["']\.\/persistence-contract["']/,
-    );
+    expect(REPO_SRC).toMatch(/from\s+["']\.\/persistence-contract["']/);
     for (const parser of [
       "parseReferenceV2WorkspacePersistence",
       "parseReferenceV2AssetPersistence",
@@ -833,6 +981,34 @@ describe("13-14. repository source guard", () => {
     ]) {
       expect(REPO_SRC).toContain(parser);
     }
+  });
+
+  it("binds against the generated Supabase schema and the existing client", () => {
+    expect(REPO_SRC).toMatch(
+      /import\s+type\s+\{[^}]*\bDatabase\b[^}]*\}\s+from\s+["']@\/integrations\/supabase\/types["']/,
+    );
+    expect(REPO_SRC).toMatch(
+      /import\s+\{\s*supabase\s*\}\s+from\s+["']@\/integrations\/supabase\/client["']/,
+    );
+    expect(REPO_SRC).toMatch(/Database\["public"\]\["Tables"\]/);
+    expect(REPO_SRC).toMatch(/\["Row"\]/);
+    expect(REPO_SRC).toMatch(/\["Insert"\]/);
+    expect(REPO_SRC).toMatch(/\["Update"\]/);
+  });
+
+  it("has no production client escape cast and no hand-written row interfaces", () => {
+    expect(REPO_SRC).not.toMatch(/as\s+unknown\s+as/);
+    expect(REPO_SRC).not.toMatch(/\bas\s+any\b/);
+    expect(REPO_SRC).not.toMatch(/ReferenceV2ClientPort/);
+    expect(REPO_SRC).not.toMatch(
+      /interface\s+ReferenceV2(Workspace|Asset|Framing)Row\b/,
+    );
+    expect(REPO_SRC).not.toMatch(/Record<string,\s*unknown>\s*;?\s*$/m);
+  });
+
+  it("guards row columns with own-property checks instead of nullish defaults", () => {
+    expect(REPO_SRC).toContain("hasOwnProperty");
+    expect(REPO_SRC).not.toMatch(/row\.\w+\s*\?\?/);
   });
 
   it("only reaches the three reference_v2 tables", () => {
