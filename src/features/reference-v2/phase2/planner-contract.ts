@@ -570,7 +570,7 @@ function walkIso(
   }
   if (value && typeof value === "object") {
     for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-      if (isIsoKey(k) && (typeof v !== "string" || !ISO_DATE_TIME_RE.test(v))) {
+      if (isIsoKey(k) && !IsoDateTimeSchema.safeParse(v).success) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: [...path, k],
