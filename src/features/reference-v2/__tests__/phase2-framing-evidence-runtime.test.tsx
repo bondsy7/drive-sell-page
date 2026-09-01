@@ -1,6 +1,6 @@
 import { act, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import type { ReactNode } from "react";
+import { Component, type ReactNode } from "react";
 import {
   CurrentFramingEvidenceRuntimeProvider,
   useCurrentFramingEvidenceRuntime,
@@ -9,6 +9,7 @@ import {
 import { CurrentFramingEvidenceSidecarError } from "../phase2/framing-evidence-sidecar";
 import { CURRENT_FRAMING_EVIDENCE_SCHEMA_VERSION } from "../phase2/framing-evidence";
 import {
+  ProtectedAssetError,
   ReferenceStoreProvider,
   useReferenceStore,
 } from "../phase1/reference-store";
