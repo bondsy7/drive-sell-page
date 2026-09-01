@@ -2,6 +2,7 @@ import type { VehicleClassV2 } from "../domain/vehicle-classes";
 import type { PerspectiveId } from "../domain/perspectives/types";
 import type { VisionIntakeResult } from "../domain/vision-intake";
 import type { SourceFramingInput } from "../phase1/output-format-policy";
+import { evaluateIngestion, type IngestionEvaluation } from "../phase1/ingestion";
 import {
   AUTOMATIC_GATE_LABELS_DE,
   ANALYZER_SCHEMA_VERSION,
@@ -17,6 +18,7 @@ import {
   type ReferenceV2FileReference,
 } from "./provider-adapter";
 import type { ReferenceAnalysisRecord } from "./analysis-record";
+
 
 /**
  * Reference V2 — Phase 1.5: Batch-Koordinator.
