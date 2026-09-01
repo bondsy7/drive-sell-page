@@ -27,12 +27,13 @@ keine Provider-Anbindung, keine UI, keine Datenbank.
 Draufsicht, fahrzeugrelativ, Wertebereich `(-180, 180]`:
 
 ```text
-        0째 Front
- -45째           +45째
- -90째 Left      +90째 Right
--135째          +135째
-       180째 Rear
+        0 Front
+ -45           +45
+ -90 Left      +90 Right
+-135          +135
+       180 Rear
 ```
+(Alle Werte in Grad.)
 
 - Links/Rechts sind **immer fahrzeugrelativ**, niemals Betrachterseite,
   niemals LHD/RHD-abhaengig.
