@@ -34,7 +34,7 @@ import {
   PERSPECTIVE_MASTER,
   getPerspectiveMasterEntry,
 } from "./perspective-master";
-import { assetIsFullyOutputReady, canBecomePrimary } from "./ingestion";
+import { canBecomePrimary } from "./ingestion";
 import { BLOCKER_LABELS_DE, type ReferenceAssetRecord } from "./vehicle-master";
 import {
   ReferenceStoreProvider,
@@ -43,6 +43,7 @@ import {
 import { ReferenceCaptureWorkflow } from "./ReferenceCaptureWorkflow";
 import { AutomaticReferenceIntake } from "../phase1-5/AutomaticReferenceIntake";
 import { CurrentFramingEvidenceRuntimeProvider } from "../phase2/framing-evidence-runtime";
+import { OutputPlannerPanel } from "../phase2/OutputPlannerPanel";
 
 /**
  * Reference V2 — Phase 1: AdminReferenceView.
