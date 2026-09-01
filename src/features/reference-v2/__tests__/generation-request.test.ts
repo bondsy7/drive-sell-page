@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
   FORBIDDEN_VEHICLE_METADATA_FIELDS,
+  MAX_SECONDARY_REFERENCES,
+  StrictReferenceCompositionRequestSchema,
   StrictReferenceGenerationRequestBaseSchema,
   StrictReferenceGenerationRequestSchema,
   parseStrictReferenceGenerationRequest,
@@ -27,9 +29,6 @@ describe("StrictReferenceGenerationRequest", () => {
     const parsed = parseStrictReferenceGenerationRequest({
       ...validRequest,
       secondaryReferenceAssetIds: ["asset-2", "asset-3"],
-      scenePackId: "pack-1",
-      scenePlateId: "plate-1",
-      logoAssetId: "logo-1",
       enabledModules: ["dirtRemoval", "minorDentRepair"],
       providerTier: "premium",
     });
@@ -142,4 +141,76 @@ describe("StrictReferenceJob context separation", () => {
     });
     expect(result.success).toBe(false);
   });
+});
+
+describe("reference budget and scene/logo separation", () => {
+  it("allows at most 3 secondary references", () => {
+    expect(MAX_SECONDARY_REFERENCES).toBe(3);
+    expect(
+      StrictReferenceGenerationRequestSchema.safeParse({
+        ...validRequest,
+        secondaryReferenceAssetIds: ["a", "b", "c"],
+      }).success,
+    ).toBe(true);
+    expect(
+      StrictReferenceGenerationRequestSchema.safeParse({
+        ...validRequest,
+        secondaryReferenceAssetIds: ["a", "b", "c", "d"],
+      }).success,
+    ).toBe(false);
+  });
+
+  it.each(["scenePackId", "scenePlateId", "logoAssetId"])(
+    "rejects '%s' in the vehicle generation request",
+    (field) => {
+      expect(
+        StrictReferenceGenerationRequestSchema.safeParse({
+          ...validRequest,
+          [field]: "x",
+        }).success,
+      ).toBe(false);
+    },
+  );
+
+  it("keeps scene/logo in a separate composition request", () => {
+    const parsed = StrictReferenceCompositionRequestSchema.parse({
+      jobId: "job-1",
+      outputRequestId: "out-1",
+      scenePackId: "pack-1",
+      scenePlateId: "plate-1",
+      logoAssetId: "logo-1",
+    });
+    expect(parsed.scenePlateId).toBe("plate-1");
+  });
+});
+
+describe("strict jobs reject transformation modules at job level", () => {
+  const job = {
+    jobId: "job-1",
+    mode: "strict_reference",
+    business: { vehicleId: "veh-1" },
+    visual: { referenceAssetIds: ["asset-1"], enabledModules: ["dirtRemoval"] },
+    outputRequests: [
+      {
+        outputRequestId: "out-1",
+        perspectiveSpecId: "EXT_FRONT",
+        perspectiveSpecVersion: 1,
+      },
+    ],
+  };
+
+  it("accepts non-transformative modules", () => {
+    expect(StrictReferenceJobSchema.safeParse(job).success).toBe(true);
+  });
+
+  it.each(["paintColorChange", "wheelReplacement", "wrapChange", "addPart", "removePart"])(
+    "rejects TRANSFORMATION module '%s' in visualReferenceContext",
+    (moduleId) => {
+      const result = StrictReferenceJobSchema.safeParse({
+        ...job,
+        visual: { referenceAssetIds: ["asset-1"], enabledModules: [moduleId] },
+      });
+      expect(result.success).toBe(false);
+    },
+  );
 });

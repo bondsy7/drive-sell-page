@@ -131,8 +131,12 @@ export const PerspectiveIdSchema = z.enum(PERSPECTIVE_IDS);
 export interface PerspectivePose {
   /** Fahrzeugrelativer Kamera-Azimut, (-180, 180]. Undefiniert bei Interior/Detail (semantische Constraints statt erfundener Praezision). */
   readonly azimuthDeg?: number;
+  /**
+   * GENERATIONSTOLERANZ: Spielraum, der dem Bildmodell im Prompt zugestanden
+   * wird. Strikt getrennt von der Validationstoleranz
+   * (validationRules.maxAzimuthErrorDeg), die immer >= dieser Toleranz ist.
+   */
   readonly azimuthToleranceDeg?: number;
-  readonly elevationProfile: ElevationProfile;
   /** Kamera-Pitch: positiv = nach oben geneigt, negativ = nach unten. */
   readonly pitchDeg?: number;
   readonly pitchToleranceDeg?: number;
@@ -155,8 +159,10 @@ export interface FramingSpec {
 
 export interface CameraGuidance {
   readonly projection: "rectilinear";
-  readonly focalLengthMinMm?: number;
-  readonly focalLengthMaxMm?: number;
+  /** Reproduzierbarer Zielwert (KB-Aequivalent). */
+  readonly targetFocalLengthMm: number;
+  readonly focalLengthMinMm: number;
+  readonly focalLengthMaxMm: number;
   /** Semantische Constraints — duerfen die visuelle Identitaet niemals veraendern. */
   readonly semanticConstraints: readonly string[];
 }
@@ -172,11 +178,17 @@ export interface ReferenceRequirements {
 
 export interface ValidationRules {
   readonly mirrorForbidden: true;
+  /**
+   * Nur fuer side-sensitive Perspektiven true. Bei Front/Rear/Interior/Detail
+   * ohne Seitenbezug ist die Seite fachlich N/A und darf nicht hart failen.
+   */
   readonly sideMustMatch: boolean;
+  /** VALIDATIONSTOLERANZ (post-generation QA), >= pose.azimuthToleranceDeg. */
   readonly maxAzimuthErrorDeg?: number;
   /** 0..100 */
   readonly minimumPerspectiveScore: number;
 }
+
 
 export interface PerspectiveSpec {
   readonly id: PerspectiveId;
@@ -234,18 +246,25 @@ export const FramingSpecSchema = z
 export const CameraGuidanceSchema = z
   .object({
     projection: z.literal("rectilinear"),
-    focalLengthMinMm: z.number().positive().optional(),
-    focalLengthMaxMm: z.number().positive().optional(),
+    targetFocalLengthMm: z.number().positive(),
+    focalLengthMinMm: z.number().positive(),
+    focalLengthMaxMm: z.number().positive(),
     semanticConstraints: z.array(z.string().min(1)),
   })
   .strict()
+  .refine((c) => c.focalLengthMinMm <= c.focalLengthMaxMm, {
+    message: "focalLengthMinMm must be <= focalLengthMaxMm",
+  })
   .refine(
     (c) =>
-      c.focalLengthMinMm === undefined ||
-      c.focalLengthMaxMm === undefined ||
-      c.focalLengthMinMm <= c.focalLengthMaxMm,
-    { message: "focalLengthMinMm must be <= focalLengthMaxMm" },
-  );
+      c.targetFocalLengthMm >= c.focalLengthMinMm &&
+      c.targetFocalLengthMm <= c.focalLengthMaxMm,
+    { message: "targetFocalLengthMm must lie inside the allowed range" },
+  )
+  .refine((c) => c.focalLengthMaxMm / c.focalLengthMinMm <= 2, {
+    message: "focal range must stay reproducible (max/min <= 2)",
+  });
+
 
 export const ReferenceRequirementsSchema = z
   .object({
@@ -301,4 +320,40 @@ export const PerspectiveSpecSchema = z
         message: "only hero perspectives may reference a basePerspectiveId",
       });
     }
+    const genTol = spec.pose.azimuthToleranceDeg;
+    const valTol = spec.validationRules.maxAzimuthErrorDeg;
+    if (spec.pose.azimuthDeg !== undefined) {
+      if (genTol === undefined || valTol === undefined) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["validationRules", "maxAzimuthErrorDeg"],
+          message:
+            "azimuth-based specs must define both generation and validation tolerance",
+        });
+      } else if (valTol < genTol) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["validationRules", "maxAzimuthErrorDeg"],
+          message:
+            "validation tolerance must be >= generation tolerance (explicitly separated, never contradictory)",
+        });
+      } else if (valTol > genTol + 5) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["validationRules", "maxAzimuthErrorDeg"],
+          message:
+            "validation tolerance must stay within generation tolerance + 5 degrees",
+        });
+      }
+    }
   });
+
+/**
+ * Side-Sensitivitaet ist perspektivabhaengig: Nur Specs, deren
+ * Validationsregeln die Fahrzeugseite fordern, duerfen bei falscher Seite hart
+ * scheitern. Front/Rear/Interior/Detail ohne Seitenbezug sind N/A.
+ */
+export function isSideSensitivePerspective(spec: PerspectiveSpec): boolean {
+  return spec.validationRules.sideMustMatch === true;
+}
+

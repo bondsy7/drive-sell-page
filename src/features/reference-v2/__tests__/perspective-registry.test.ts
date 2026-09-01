@@ -11,6 +11,7 @@ import {
 import {
   PERSPECTIVE_IDS,
   PerspectiveSpecSchema,
+  isSideSensitivePerspective,
 } from "@/features/reference-v2/domain/perspectives/types";
 import {
   AZIMUTH_CONVENTION,
@@ -247,6 +248,80 @@ describe("vehicle class capability model", () => {
   it("listPerspectivesForVehicleClass matches applicableVehicleClasses", () => {
     for (const spec of listPerspectivesForVehicleClass("car")) {
       expect(spec.applicableVehicleClasses).toContain("car");
+    }
+  });
+});
+
+describe("reproducible camera specifications", () => {
+  it("every spec has a target focal length inside its permitted range", () => {
+    for (const spec of ALL_PERSPECTIVE_SPECS) {
+      const cam = spec.cameraGuidance;
+      expect(cam.targetFocalLengthMm).toBeGreaterThanOrEqual(cam.focalLengthMinMm);
+      expect(cam.targetFocalLengthMm).toBeLessThanOrEqual(cam.focalLengthMaxMm);
+    }
+  });
+
+  it("uses the agreed focal targets per category", () => {
+    expect(getPerspectiveSpec("EXT_FRONT").cameraGuidance.targetFocalLengthMm).toBe(70);
+    expect(getPerspectiveSpec("EXT_REAR").cameraGuidance.targetFocalLengthMm).toBe(70);
+    expect(getPerspectiveSpec("EXT_SIDE_RIGHT").cameraGuidance.targetFocalLengthMm).toBe(70);
+    expect(getPerspectiveSpec("EXT_34_FRONT_LEFT").cameraGuidance.targetFocalLengthMm).toBe(55);
+    expect(getPerspectiveSpec("LOW_FRONT_LEFT").cameraGuidance.targetFocalLengthMm).toBe(35);
+    expect(getPerspectiveSpec("HIGH_FRONT_LEFT").cameraGuidance.targetFocalLengthMm).toBe(45);
+  });
+
+  it("keeps standard exterior azimuth tolerances tight", () => {
+    for (const spec of listPerspectivesByCategory("standard_exterior")) {
+      expect(spec.pose.azimuthToleranceDeg).toBeLessThanOrEqual(10);
+    }
+    expect(getPerspectiveSpec("EXT_SIDE_RIGHT").pose.azimuthToleranceDeg).toBe(7);
+    expect(getPerspectiveSpec("EXT_FRONT").pose.azimuthToleranceDeg).toBe(7);
+  });
+
+  it("separates generation tolerance from validation tolerance", () => {
+    for (const spec of ALL_PERSPECTIVE_SPECS) {
+      if (spec.pose.azimuthDeg === undefined) continue;
+      expect(spec.validationRules.maxAzimuthErrorDeg).toBeGreaterThanOrEqual(
+        spec.pose.azimuthToleranceDeg,
+      );
+    }
+  });
+
+  it("locks the side convention for exact side views", () => {
+    const right = getPerspectiveSpec("EXT_SIDE_RIGHT");
+    const left = getPerspectiveSpec("EXT_SIDE_LEFT");
+    expect(right.pose.azimuthDeg).toBe(90);
+    expect(left.pose.azimuthDeg).toBe(-90);
+    expect(right.validationRules.sideMustMatch).toBe(true);
+    expect(left.validationRules.sideMustMatch).toBe(true);
+    expect(isSideSensitivePerspective(right)).toBe(true);
+    expect(isSideSensitivePerspective(left)).toBe(true);
+  });
+
+  it("marks front/rear/interior/detail perspectives as not side sensitive", () => {
+    for (const id of ["EXT_FRONT", "EXT_REAR"] as const) {
+      expect(isSideSensitivePerspective(getPerspectiveSpec(id))).toBe(false);
+    }
+    for (const spec of [
+      ...listPerspectivesByCategory("interior"),
+      ...listPerspectivesByCategory("detail"),
+    ]) {
+      const idIsSideSpecific = /_(LEFT|RIGHT)$/.test(spec.id);
+      expect(isSideSensitivePerspective(spec)).toBe(idIsSideSpecific);
+    }
+  });
+
+  it("uses an unambiguous steering wheel label and forbids invented UI", () => {
+    const wheel = getPerspectiveSpec("DET_STEERING_WHEEL");
+    expect(wheel.labelEn).toBe("Steering Wheel");
+    const uiSpecs = ALL_PERSPECTIVE_SPECS.filter((s) =>
+      /cluster|infotainment|display/i.test(s.labelEn),
+    );
+    expect(uiSpecs.length).toBeGreaterThan(0);
+    for (const spec of uiSpecs) {
+      const constraints = spec.cameraGuidance.semanticConstraints.join(" ");
+      expect(/plausible/i.test(constraints)).toBe(false);
+      expect(constraints).toMatch(/invent nothing|never invent/i);
     }
   });
 });

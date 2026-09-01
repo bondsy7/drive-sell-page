@@ -123,6 +123,18 @@ export const OutputRequestMatchResultBaseSchema = z
   })
   .strict();
 
+/** Hard-Fail-Codes, die einen Identitaetskonflikt belegen. */
+export const IDENTITY_HARD_FAIL_CODES: readonly ReferenceHardFailCode[] = [
+  "IDENTITY_CLUSTER_CONFLICT",
+  "VEHICLE_CLASS_MISMATCH",
+  "NO_VEHICLE_DETECTED",
+];
+
+/** Hard-Fail-Codes, die eine nicht verfuegbare Datei belegen. */
+export const FILE_HARD_FAIL_CODES: readonly ReferenceHardFailCode[] = [
+  "FILE_UNAVAILABLE",
+];
+
 export const OutputRequestMatchResultSchema =
   OutputRequestMatchResultBaseSchema.superRefine((v, ctx) => {
     const isReady =
@@ -141,17 +153,53 @@ export const OutputRequestMatchResultSchema =
         message: "READY_* status must not carry hard failures",
       });
     }
-    const isBlocked =
-      v.status === "BLOCKED_IDENTITY_CONFLICT" ||
-      v.status === "BLOCKED_FILE_UNAVAILABLE";
-    if (isBlocked && v.hardFailures.length === 0) {
+    if (
+      v.status === "READY_MULTI_REFERENCE" &&
+      v.secondaryReferenceAssetIds.length < 1
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        path: ["hardFailures"],
-        message: "BLOCKED_* status requires at least one hard failure code",
+        path: ["secondaryReferenceAssetIds"],
+        message:
+          "READY_MULTI_REFERENCE requires a primary plus at least one secondary reference",
       });
     }
+    if (
+      v.primaryReferenceAssetId !== undefined &&
+      v.secondaryReferenceAssetIds.includes(v.primaryReferenceAssetId)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["secondaryReferenceAssetIds"],
+        message: "primary reference must not repeat in the secondaries",
+      });
+    }
+    if (v.status === "BLOCKED_IDENTITY_CONFLICT") {
+      const hasIdentityFailure = v.hardFailures.some((code) =>
+        IDENTITY_HARD_FAIL_CODES.includes(code),
+      );
+      if (!hasIdentityFailure) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["hardFailures"],
+          message: `BLOCKED_IDENTITY_CONFLICT requires one of: ${IDENTITY_HARD_FAIL_CODES.join(", ")}`,
+        });
+      }
+    }
+    if (v.status === "BLOCKED_FILE_UNAVAILABLE") {
+      const hasFileFailure = v.hardFailures.some((code) =>
+        FILE_HARD_FAIL_CODES.includes(code),
+      );
+      if (!hasFileFailure) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["hardFailures"],
+          message: `BLOCKED_FILE_UNAVAILABLE requires one of: ${FILE_HARD_FAIL_CODES.join(", ")}`,
+        });
+      }
+    }
   });
+
 export type OutputRequestMatchResult = z.infer<
   typeof OutputRequestMatchResultSchema
 >;

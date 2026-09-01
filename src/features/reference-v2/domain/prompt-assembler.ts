@@ -2,6 +2,7 @@ import { z } from "zod";
 import { VisualSurfaceSchema } from "./surfaces";
 import { PerspectiveIdSchema, type PerspectiveSpec } from "./perspectives/types";
 import { getPerspectiveSpec } from "./perspectives/registry";
+import { MAX_SECONDARY_REFERENCES } from "./generation-request";
 import {
   EDITING_MODULES,
   EDITING_MODULE_IDS,
@@ -44,21 +45,13 @@ export type ReferenceManifestEntry = z.infer<
 export const PromptAssemblyInputSchema = z
   .object({
     perspectiveSpecId: PerspectiveIdSchema,
+    /** Muss exakt zur Registry-Version der Spec passen (fail closed). */
+    perspectiveSpecVersion: z.number().int().min(1),
     enabledModuleIds: z.array(EditingModuleIdSchema).default([]),
-    references: z.array(ReferenceManifestEntrySchema).min(1),
-    scene: z
-      .object({
-        scenePackId: z.string().min(1),
-        scenePlateId: z.string().min(1),
-      })
-      .strict()
-      .optional(),
-    logo: z
-      .object({
-        logoAssetId: z.string().min(1),
-      })
-      .strict()
-      .optional(),
+    references: z
+      .array(ReferenceManifestEntrySchema)
+      .min(1)
+      .max(1 + MAX_SECONDARY_REFERENCES),
   })
   .strict();
 export type PromptAssemblyInput = z.input<typeof PromptAssemblyInputSchema>;
@@ -154,12 +147,9 @@ function renderPerspectiveSection(spec: PerspectiveSpec): string {
       `Wheels fully visible: ${spec.framing.requiredVisibleWheels.join(", ")}.`,
     );
   }
-  const focal =
-    spec.cameraGuidance.focalLengthMinMm !== undefined &&
-    spec.cameraGuidance.focalLengthMaxMm !== undefined
-      ? `, ${spec.cameraGuidance.focalLengthMinMm}-${spec.cameraGuidance.focalLengthMaxMm}mm equivalent focal range`
-      : "";
-  lines.push(`Camera: ${spec.cameraGuidance.projection} projection${focal}.`);
+  lines.push(
+    `Camera: ${spec.cameraGuidance.projection} projection, target focal length ${spec.cameraGuidance.targetFocalLengthMm}mm (35mm equivalent), permitted ${spec.cameraGuidance.focalLengthMinMm}-${spec.cameraGuidance.focalLengthMaxMm}mm.`,
+  );
   if (spec.cameraGuidance.semanticConstraints.length > 0) {
     lines.push(
       `Guidance: ${spec.cameraGuidance.semanticConstraints.join("; ")}.`,
@@ -190,8 +180,6 @@ function renderActiveModulesSection(
 
 function renderReferenceManifestSection(
   references: readonly ReferenceManifestEntry[],
-  scene: { scenePackId?: string; scenePlateId?: string } | undefined,
-  logo: { logoAssetId?: string } | undefined,
 ): string {
   const lines: string[] = ["[REFERENCE_MANIFEST]"];
   const primary = references.filter((r) => r.role === "primary");
@@ -212,24 +200,15 @@ function renderReferenceManifestSection(
       `R${index + 1} (${qualifiers.join(", ")}): asset ${ref.assetId}${coverage}`,
     );
   });
-  if (
-    scene !== undefined &&
-    scene.scenePlateId !== undefined &&
-    scene.scenePackId !== undefined
-  ) {
-    lines.push(
-      `Scene plate ${scene.scenePlateId} from pack ${scene.scenePackId}: environment only; it must never change the vehicle.`,
-    );
-  } else {
-    lines.push(
-      "No scene plate assigned: keep the environment neutral and photographically consistent with the references.",
-    );
-  }
-  if (logo !== undefined && logo.logoAssetId !== undefined) {
-    lines.push(
-      `Environment logo asset ${logo.logoAssetId}: wall/floor branding in the scene only; never on the vehicle. Vehicle emblems come exclusively from the reference images.`,
-    );
-  }
+  lines.push(
+    "These vehicle reference images are the only images provided; no other image asset is part of this generation.",
+  );
+  lines.push(
+    "Keep the environment neutral and photographically consistent with the references.",
+  );
+  lines.push(
+    "Vehicle emblems, badges and lettering come exclusively from the reference images; never add, remove or redraw them.",
+  );
   return lines.join("\n");
 }
 
@@ -261,16 +240,17 @@ export function assembleStrictReferencePrompt(
   assertModuleSelectionAllowed("strict_reference", parsed.enabledModuleIds);
 
   const spec = getPerspectiveSpec(parsed.perspectiveSpecId);
+  if (spec.version !== parsed.perspectiveSpecVersion) {
+    throw new Error(
+      `assembleStrictReferencePrompt: perspective spec version mismatch for ${spec.id} — requested v${parsed.perspectiveSpecVersion}, registry has v${spec.version}`,
+    );
+  }
 
   const sections: Record<PromptSectionKey, string> = {
     CORE: CORE_SECTION,
     PERSPECTIVE: renderPerspectiveSection(spec),
     ACTIVE_MODULES: renderActiveModulesSection(parsed.enabledModuleIds),
-    REFERENCE_MANIFEST: renderReferenceManifestSection(
-      parsed.references,
-      parsed.scene,
-      parsed.logo,
-    ),
+    REFERENCE_MANIFEST: renderReferenceManifestSection(parsed.references),
   };
 
   const text = PROMPT_SECTION_KEYS.map((key) => sections[key]).join("\n\n");

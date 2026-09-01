@@ -5,6 +5,11 @@ import { EDITING_MODULES, EditingModuleIdSchema } from "./editing-modules";
 /**
  * Reference V2 — Strict Reference Generation Request (Phase 0).
  *
+ * SZENE/LOGO GEHOEREN NICHT HIERHER: Der VEHICLE-Generation-Request kennt
+ * ausschliesslich Fahrzeugreferenzen. Szenen-/Logo-Assets wuerden die Marke
+ * verraten und den Katalog-Prior reaktivieren. Sie leben in der separaten
+ * Composition-Orchestrierung (StrictReferenceCompositionRequest).
+ *
  * PROVIDER-NEUTRAL und frei von Business-Kontext:
  * Der Request kennt AUSSCHLIESSLICH IDs (Job, OutputRequest, PerspectiveSpec,
  * Assets, ScenePack/Plate, Logo) sowie explizit aktivierte Module.
@@ -34,6 +39,12 @@ export const FORBIDDEN_VEHICLE_METADATA_FIELDS = [
 export type ForbiddenVehicleMetadataField =
   (typeof FORBIDDEN_VEHICLE_METADATA_FIELDS)[number];
 
+/**
+ * Referenzbudget: Primary + maximal 3 gezielte Secondary References.
+ * Mehr Referenzen verwaessern die Identitaet statt sie zu schaerfen.
+ */
+export const MAX_SECONDARY_REFERENCES = 3;
+
 export const PROVIDER_TIERS = ["economy", "standard", "premium"] as const;
 export type ProviderTier = (typeof PROVIDER_TIERS)[number];
 export const ProviderTierSchema = z.enum(PROVIDER_TIERS);
@@ -45,10 +56,10 @@ export const StrictReferenceGenerationRequestBaseSchema = z
     perspectiveSpecId: PerspectiveIdSchema,
     perspectiveSpecVersion: z.number().int().min(1),
     primaryReferenceAssetId: z.string().min(1),
-    secondaryReferenceAssetIds: z.array(z.string().min(1)).max(8).default([]),
-    scenePackId: z.string().min(1).optional(),
-    scenePlateId: z.string().min(1).optional(),
-    logoAssetId: z.string().min(1).optional(),
+    secondaryReferenceAssetIds: z
+      .array(z.string().min(1))
+      .max(MAX_SECONDARY_REFERENCES)
+      .default([]),
     enabledModules: z.array(EditingModuleIdSchema).default([]),
     providerTier: ProviderTierSchema.optional(),
   })
@@ -92,3 +103,21 @@ export function parseStrictReferenceGenerationRequest(
 ): StrictReferenceGenerationRequest {
   return StrictReferenceGenerationRequestSchema.parse(input);
 }
+
+/**
+ * Separate Orchestrierungs-Ebene fuer eine spaetere deterministische
+ * Composition (Szene/Logo). Diese IDs erreichen NIEMALS den Bildmodell-Prompt
+ * der Fahrzeuggenerierung.
+ */
+export const StrictReferenceCompositionRequestSchema = z
+  .object({
+    jobId: z.string().min(1),
+    outputRequestId: z.string().min(1),
+    scenePackId: z.string().min(1).optional(),
+    scenePlateId: z.string().min(1).optional(),
+    logoAssetId: z.string().min(1).optional(),
+  })
+  .strict();
+export type StrictReferenceCompositionRequest = z.infer<
+  typeof StrictReferenceCompositionRequestSchema
+>;

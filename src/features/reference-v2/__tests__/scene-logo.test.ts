@@ -16,6 +16,8 @@ describe("ScenePlate / ScenePack", () => {
     storagePath: "reference-v2/scenes/pack-1/plate-1.png",
     compatibleElevationProfiles: ["standard", "low"],
     compatibleCategories: ["standard_exterior", "hero"],
+    compatiblePerspectiveIds: ["EXT_SIDE_RIGHT", "EXT_34_FRONT_LEFT"],
+    cameraProfile: { cameraHeightM: 1.4, pitchDeg: 0, focalLengthMm: 70 },
     vehicleAnchor: {
       groundLineY: 0.82,
       centerX: 0.5,
@@ -48,6 +50,7 @@ describe("ScenePlate / ScenePack", () => {
       labelDe: "Showroom hell",
       labelEn: "Bright Showroom",
       plateIds: ["plate-1", "plate-2"],
+      sha256: sha,
       active: true,
       immutable: true,
     });
@@ -64,6 +67,7 @@ describe("LogoAsset — environment branding only", () => {
     sha256: sha,
     storagePath: "reference-v2/logos/dealer-brand/v3.svg",
     active: true,
+    immutable: true,
     usage: "environment_branding",
   } as const;
 
@@ -82,5 +86,75 @@ describe("LogoAsset — environment branding only", () => {
     expect(
       LogoAssetSchema.safeParse({ ...validLogo, format: "jpg" }).success,
     ).toBe(false);
+  });
+});
+
+describe("scene/logo immutability hardening", () => {
+  const plate = {
+    id: "plate-1",
+    scenePackId: "pack-1",
+    version: 1,
+    sha256: sha,
+    storagePath: "p.png",
+    compatibleElevationProfiles: ["standard"],
+    compatibleCategories: ["standard_exterior"],
+    compatiblePerspectiveIds: ["EXT_SIDE_RIGHT"],
+    cameraProfile: { cameraHeightM: 1.4, pitchDeg: 0, focalLengthMm: 70 },
+    vehicleAnchor: { groundLineY: 0.8, centerX: 0.5, maxVehicleWidthFraction: 0.6 },
+    immutable: true,
+  } as const;
+
+  it("requires explicit perspective compatibility (no implicit low/elevated reuse)", () => {
+    expect(ScenePlateSchema.safeParse(plate).success).toBe(true);
+    const { compatiblePerspectiveIds: _omitted, ...withoutIds } = plate;
+    expect(ScenePlateSchema.safeParse(withoutIds).success).toBe(false);
+    expect(
+      ScenePlateSchema.safeParse({ ...plate, compatiblePerspectiveIds: [] })
+        .success,
+    ).toBe(false);
+    const parsed = ScenePlateSchema.parse(plate);
+    expect(parsed.compatiblePerspectiveIds).not.toContain("LOW_FRONT_LEFT");
+    expect(parsed.compatiblePerspectiveIds).not.toContain("HIGH_FRONT_LEFT");
+  });
+
+  it("requires a camera profile on every plate", () => {
+    const { cameraProfile: _c, ...noCamera } = plate;
+    expect(ScenePlateSchema.safeParse(noCamera).success).toBe(false);
+  });
+
+  it("requires a sha256 on scene packs", () => {
+    const pack = {
+      id: "pack-1",
+      version: 1,
+      labelDe: "A",
+      labelEn: "A",
+      plateIds: ["plate-1"],
+      sha256: sha,
+      active: true,
+      immutable: true,
+    };
+    expect(ScenePackSchema.safeParse(pack).success).toBe(true);
+    const { sha256: _s, ...noHash } = pack;
+    expect(ScenePackSchema.safeParse(noHash).success).toBe(false);
+  });
+
+  it("requires logo assets to be immutable and versioned", () => {
+    const logo = {
+      id: "logo-1",
+      brandKey: "dealer",
+      version: 2,
+      format: "png",
+      sha256: sha,
+      storagePath: "l.png",
+      active: true,
+      immutable: true,
+      usage: "environment_branding",
+    };
+    expect(LogoAssetSchema.safeParse(logo).success).toBe(true);
+    expect(LogoAssetSchema.safeParse({ ...logo, immutable: false }).success).toBe(
+      false,
+    );
+    const { immutable: _i, ...mutable } = logo;
+    expect(LogoAssetSchema.safeParse(mutable).success).toBe(false);
   });
 });

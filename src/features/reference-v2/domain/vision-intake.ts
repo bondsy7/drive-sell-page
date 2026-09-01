@@ -14,8 +14,11 @@ import {
  * Modell sie erzeugt. Enthaelt bewusst KEINE Business-Metadaten (keine Marke,
  * kein Modell, kein Baujahr, keine VIN).
  *
- * Alle Quality-/Visibility-Scores sind 0..1, wobei 1 = ideal
- * (occlusion 1 = frei von Verdeckung, glare 1 = frei von Blendung).
+ * Visibility-Scores sind 0..1, hoch = gut sichtbar.
+ * Quality-Semantik ist EXPLIZIT gemischt und hier verbindlich definiert:
+ *   sharpness, resolutionAdequacy, usableScore: 0..1, HOCH = GUT.
+ *   occlusion, glare: SEVERITY 0..1 — 0 = keine Verdeckung / kein Glare,
+ *   1 = starke Verdeckung / starkes Glare (hoch = SCHLECHT).
  */
 
 const Score01Schema = z.number().min(0).max(1);
@@ -80,10 +83,15 @@ export type VisionIntakeFraming = z.infer<typeof VisionIntakeFramingSchema>;
 
 export const VisionIntakeQualitySchema = z
   .object({
+    /** hoch = gut */
     sharpness: Score01Schema,
+    /** SEVERITY: 0 = keine Verdeckung, 1 = stark verdeckt */
     occlusion: Score01Schema,
+    /** SEVERITY: 0 = kein Glare, 1 = starkes Glare */
     glare: Score01Schema,
+    /** hoch = gut */
     resolutionAdequacy: Score01Schema,
+    /** hoch = gut */
     usableScore: Score01Schema,
   })
   .strict();
