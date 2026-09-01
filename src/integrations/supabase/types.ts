@@ -1226,6 +1226,208 @@ export type Database = {
         }
         Relationships: []
       }
+      reference_v2_assets: {
+        Row: {
+          analysis: Json | null
+          asset_key: string
+          asset_version: number
+          blockers: string[]
+          canonical_perspective_id: string
+          created_at: string
+          file_name: string
+          hard_failures: string[]
+          history: Json
+          id: string
+          intake: Json
+          mime_type: string
+          protection: string
+          requested_perspective_id: string
+          role: string
+          schema_version: number
+          scores: Json
+          sha256: string
+          size_bytes: number | null
+          storage_bucket: string
+          storage_path: string
+          updated_at: string
+          user_id: string
+          warnings: string[]
+          weighted_score: number
+          workspace_id: string
+        }
+        Insert: {
+          analysis?: Json | null
+          asset_key: string
+          asset_version?: number
+          blockers?: string[]
+          canonical_perspective_id: string
+          created_at?: string
+          file_name: string
+          hard_failures?: string[]
+          history?: Json
+          id?: string
+          intake: Json
+          mime_type: string
+          protection: string
+          requested_perspective_id: string
+          role: string
+          schema_version?: number
+          scores: Json
+          sha256: string
+          size_bytes?: number | null
+          storage_bucket?: string
+          storage_path: string
+          updated_at?: string
+          user_id: string
+          warnings?: string[]
+          weighted_score: number
+          workspace_id: string
+        }
+        Update: {
+          analysis?: Json | null
+          asset_key?: string
+          asset_version?: number
+          blockers?: string[]
+          canonical_perspective_id?: string
+          created_at?: string
+          file_name?: string
+          hard_failures?: string[]
+          history?: Json
+          id?: string
+          intake?: Json
+          mime_type?: string
+          protection?: string
+          requested_perspective_id?: string
+          role?: string
+          schema_version?: number
+          scores?: Json
+          sha256?: string
+          size_bytes?: number | null
+          storage_bucket?: string
+          storage_path?: string
+          updated_at?: string
+          user_id?: string
+          warnings?: string[]
+          weighted_score?: number
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reference_v2_assets_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "reference_v2_workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reference_v2_framing_evidence: {
+        Row: {
+          asset_key: string
+          cropped: boolean
+          full_vehicle_visible: boolean
+          padding_pct: number
+          schema_version: number
+          source_aspect_ratio: number
+          updated_at: string
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          asset_key: string
+          cropped: boolean
+          full_vehicle_visible: boolean
+          padding_pct: number
+          schema_version?: number
+          source_aspect_ratio: number
+          updated_at?: string
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          asset_key?: string
+          cropped?: boolean
+          full_vehicle_visible?: boolean
+          padding_pct?: number
+          schema_version?: number
+          source_aspect_ratio?: number
+          updated_at?: string
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reference_v2_framing_evidence_asset_fk"
+            columns: ["workspace_id", "asset_key"]
+            isOneToOne: true
+            referencedRelation: "reference_v2_assets"
+            referencedColumns: ["workspace_id", "asset_key"]
+          },
+          {
+            foreignKeyName: "reference_v2_framing_evidence_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "reference_v2_workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reference_v2_workspaces: {
+        Row: {
+          color_family: string | null
+          created_at: string
+          id: string
+          identity_cluster_id: string
+          label: string
+          master_history: Json
+          master_key: string
+          master_version: number
+          schema_version: number
+          updated_at: string
+          user_id: string
+          vehicle_class: string
+          vehicle_id: string
+        }
+        Insert: {
+          color_family?: string | null
+          created_at?: string
+          id?: string
+          identity_cluster_id: string
+          label: string
+          master_history?: Json
+          master_key: string
+          master_version?: number
+          schema_version?: number
+          updated_at?: string
+          user_id: string
+          vehicle_class: string
+          vehicle_id: string
+        }
+        Update: {
+          color_family?: string | null
+          created_at?: string
+          id?: string
+          identity_cluster_id?: string
+          label?: string
+          master_history?: Json
+          master_key?: string
+          master_version?: number
+          schema_version?: number
+          updated_at?: string
+          user_id?: string
+          vehicle_class?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reference_v2_workspaces_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: true
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sales_assistant_conversations: {
         Row: {
           conversation_title: string | null
