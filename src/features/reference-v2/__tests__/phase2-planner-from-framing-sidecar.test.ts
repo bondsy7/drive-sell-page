@@ -18,6 +18,7 @@ import {
   CURRENT_FRAMING_EVIDENCE_SCHEMA_VERSION,
   type CurrentFramingEvidence,
 } from "../phase2/framing-evidence";
+import type { PlannerOutput } from "../phase2/planner-contract";
 import { REFERENCE_V2_PROVIDER_ID } from "../phase1-5/provider-adapter";
 import type { PerspectiveId } from "../domain/perspectives/types";
 import type { VisionIntakeResult } from "../domain/vision-intake";
@@ -173,11 +174,11 @@ describe("Phase 2.4D — buildReferencePlannerFromCurrentFramingSidecar", () => 
     const plannerInput = plannerInputOf(assets, BOTH_FORMATS);
     const framingSidecar = sidecarOf([evidence("ref_1")]);
 
-    const direct = buildReferencePlannerFromCurrentFramingSidecar({
+    const direct: PlannerOutput = buildReferencePlannerFromCurrentFramingSidecar({
       plannerInput,
       framingSidecar,
     });
-    const manual = buildReferencePlannerWithCurrentFraming({
+    const manual: PlannerOutput = buildReferencePlannerWithCurrentFraming({
       plannerInput,
       framingEvidence: currentFramingEvidenceForPlanner(
         framingSidecar,
@@ -209,11 +210,11 @@ describe("Phase 2.4D — buildReferencePlannerFromCurrentFramingSidecar", () => 
   });
 
   it("blocks requested formats when the selected primary evidence is missing", () => {
-    const out = buildReferencePlannerFromCurrentFramingSidecar({
+    const out: PlannerOutput = buildReferencePlannerFromCurrentFramingSidecar({
       plannerInput: plannerInputOf([asset("ref_1")], BOTH_FORMATS),
       framingSidecar: emptyCurrentFramingEvidenceSidecar(),
     });
-    const manual = buildReferencePlannerWithCurrentFraming({
+    const manual: PlannerOutput = buildReferencePlannerWithCurrentFraming({
       plannerInput: plannerInputOf([asset("ref_1")], BOTH_FORMATS),
       framingEvidence: [],
     });
@@ -223,11 +224,11 @@ describe("Phase 2.4D — buildReferencePlannerFromCurrentFramingSidecar", () => 
 
   it("ready evidence never changes reference selection/coverage vs 2.4B baseline", () => {
     const assets = [asset("ref_1")];
-    const withEvidence = buildReferencePlannerFromCurrentFramingSidecar({
+    const withEvidence: PlannerOutput = buildReferencePlannerFromCurrentFramingSidecar({
       plannerInput: plannerInputOf(assets, BOTH_FORMATS),
       framingSidecar: sidecarOf([evidence("ref_1")]),
     });
-    const baseline = buildReferencePlanner(plannerInputOf(assets));
+    const baseline: PlannerOutput = buildReferencePlanner(plannerInputOf(assets));
     expect(withEvidence.items[0]!.primary).toEqual(baseline.items[0]!.primary);
     expect(withEvidence.items[0]!.secondaries).toEqual(
       baseline.items[0]!.secondaries,
@@ -237,8 +238,8 @@ describe("Phase 2.4D — buildReferencePlannerFromCurrentFramingSidecar", () => 
 
   it("keeps baseline BLOCKED items BLOCKED despite ready format evidence", () => {
     const conflicting = asset("ref_1", { identityClusterId: "cluster_b" });
-    const baseline = buildReferencePlanner(plannerInputOf([conflicting]));
-    const out = buildReferencePlannerFromCurrentFramingSidecar({
+    const baseline: PlannerOutput = buildReferencePlanner(plannerInputOf([conflicting]));
+    const out: PlannerOutput = buildReferencePlannerFromCurrentFramingSidecar({
       plannerInput: plannerInputOf([conflicting], BOTH_FORMATS),
       framingSidecar: sidecarOf([evidence("ref_1")]),
     });
@@ -248,11 +249,11 @@ describe("Phase 2.4D — buildReferencePlannerFromCurrentFramingSidecar", () => 
 
   it("preserves frozen reference-only behaviour without requestedOutputFormats", () => {
     const assets = [asset("ref_1")];
-    const out = buildReferencePlannerFromCurrentFramingSidecar({
+    const out: PlannerOutput = buildReferencePlannerFromCurrentFramingSidecar({
       plannerInput: plannerInputOf(assets),
       framingSidecar: sidecarOf([evidence("ref_1")]),
     });
-    const baseline = buildReferencePlanner(plannerInputOf(assets));
+    const baseline: PlannerOutput = buildReferencePlanner(plannerInputOf(assets));
     expect(out.items[0]!.state).toEqual(baseline.items[0]!.state);
     expect(out.items[0]!.primary).toEqual(baseline.items[0]!.primary);
   });
