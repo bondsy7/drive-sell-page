@@ -333,14 +333,19 @@ export const PlannerItemSchema = z
             message: "READY requires an exact primary perspective",
           });
         }
-        if (primary.perspectiveId !== item.perspectiveSpecId) {
+        const geometryId = resolveReferenceGeometryPerspectiveId(
+          item.perspectiveSpecId,
+        );
+        if (primary.perspectiveId !== geometryId) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             path: ["selection", "primary", "perspectiveId"],
-            message: "READY primary perspective must equal perspectiveSpecId",
+            message:
+              "READY primary perspective must equal the reference geometry perspective",
           });
         }
       }
+
       if (!item.coverage.allMandatorySurfacesMet) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
