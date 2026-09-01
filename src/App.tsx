@@ -15,55 +15,73 @@ import BackgroundMusicIndicator from "@/components/BackgroundMusicIndicator";
 import { DownloadLimitProvider } from "@/hooks/useDownloadLimit";
 import DownloadGuardBridge from "@/components/DownloadGuardBridge";
 
-const Landing = lazy(() => import("./pages/Landing"));
-const Index = lazy(() => import("./pages/Index"));
-const Auth = lazy(() => import("./pages/Auth"));
-const Dashboard = lazy(() => import("./pages/Dashboard"));
-const Profile = lazy(() => import("./pages/Profile"));
-const ProjectView = lazy(() => import("./pages/ProjectView"));
-const VehicleView = lazy(() => import("./pages/VehicleView"));
-const DamageReportView = lazy(() => import("./pages/DamageReportView"));
-const LeasingCalculator = lazy(() => import("./pages/LeasingCalculator"));
-const FinancingCalculator = lazy(() => import("./pages/FinancingCalculator"));
-const KfzSteuerRechner = lazy(() => import("./pages/KfzSteuerRechner"));
-const Pricing = lazy(() => import("./pages/Pricing"));
-const CreditRechner = lazy(() => import("./pages/CreditRechner"));
-const Integrations = lazy(() => import("./pages/Integrations"));
-const ApiDocs = lazy(() => import("./pages/ApiDocs"));
-const NotFound = lazy(() => import("./pages/NotFound"));
-const ArchitectureDoc = lazy(() => import("./pages/ArchitectureDoc"));
-const SalesAssistant = lazy(() => import("./pages/SalesAssistant"));
-const QrLogin = lazy(() => import("./pages/QrLogin"));
-const CanvasBannerStudio = lazy(() => import("./pages/CanvasBannerStudio"));
-const MusicStudio = lazy(() => import("./pages/MusicStudio"));
+// Retry lazy chunk loads once after a hard reload (stale chunk after deploy)
+const RELOAD_KEY = "chunk-reload-ts";
+function lazyWithReload<T extends { default: React.ComponentType<any> }>(
+  factory: () => Promise<T>
+) {
+  return lazy(() =>
+    factory().catch((err) => {
+      const last = Number(sessionStorage.getItem(RELOAD_KEY) || 0);
+      if (Date.now() - last > 10000) {
+        sessionStorage.setItem(RELOAD_KEY, String(Date.now()));
+        window.location.reload();
+        return new Promise<T>(() => {});
+      }
+      throw err;
+    })
+  );
+}
+
+const Landing = lazyWithReload(() => import("./pages/Landing"));
+const Index = lazyWithReload(() => import("./pages/Index"));
+const Auth = lazyWithReload(() => import("./pages/Auth"));
+const Dashboard = lazyWithReload(() => import("./pages/Dashboard"));
+const Profile = lazyWithReload(() => import("./pages/Profile"));
+const ProjectView = lazyWithReload(() => import("./pages/ProjectView"));
+const VehicleView = lazyWithReload(() => import("./pages/VehicleView"));
+const DamageReportView = lazyWithReload(() => import("./pages/DamageReportView"));
+const LeasingCalculator = lazyWithReload(() => import("./pages/LeasingCalculator"));
+const FinancingCalculator = lazyWithReload(() => import("./pages/FinancingCalculator"));
+const KfzSteuerRechner = lazyWithReload(() => import("./pages/KfzSteuerRechner"));
+const Pricing = lazyWithReload(() => import("./pages/Pricing"));
+const CreditRechner = lazyWithReload(() => import("./pages/CreditRechner"));
+const Integrations = lazyWithReload(() => import("./pages/Integrations"));
+const ApiDocs = lazyWithReload(() => import("./pages/ApiDocs"));
+const NotFound = lazyWithReload(() => import("./pages/NotFound"));
+const ArchitectureDoc = lazyWithReload(() => import("./pages/ArchitectureDoc"));
+const SalesAssistant = lazyWithReload(() => import("./pages/SalesAssistant"));
+const QrLogin = lazyWithReload(() => import("./pages/QrLogin"));
+const CanvasBannerStudio = lazyWithReload(() => import("./pages/CanvasBannerStudio"));
+const MusicStudio = lazyWithReload(() => import("./pages/MusicStudio"));
 
 // Admin pages
-const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
-const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
-const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
-const AdminTransactions = lazy(() => import("./pages/admin/AdminTransactions"));
-const AdminLeads = lazy(() => import("./pages/admin/AdminLeads"));
-const AdminPdfGallery = lazy(() => import("./pages/admin/AdminPdfGallery"));
-const AdminPrompts = lazy(() => import("./pages/admin/AdminPrompts"));
-const AdminPricing = lazy(() => import("./pages/admin/AdminPricing"));
-const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
-const AdminLogos = lazy(() => import("./pages/admin/AdminLogos"));
-const AdminSalesAssistant = lazy(() => import("./pages/admin/AdminSalesAssistant"));
-const AdminWmiCodes = lazy(() => import("./pages/admin/AdminWmiCodes"));
-const AdminSecrets = lazy(() => import("./pages/admin/AdminSecrets"));
-const AdminPresets = lazy(() => import("./pages/admin/AdminPresets"));
-const AdminJobMonitor = lazy(() => import("./pages/admin/AdminJobMonitor"));
-const AdminEmailMonitor = lazy(() => import("./pages/admin/AdminEmailMonitor"));
-const AdminRevenue = lazy(() => import("./pages/admin/AdminRevenue"));
-const AdminStorage = lazy(() => import("./pages/admin/AdminStorage"));
-const AdminConversionFunnel = lazy(() => import("./pages/admin/AdminConversionFunnel"));
-const AdminTestDrives = lazy(() => import("./pages/admin/AdminTestDrives"));
-const AdminPipelineStats = lazy(() => import("./pages/admin/AdminPipelineStats"));
-const AdminQrLogin = lazy(() => import("./pages/admin/AdminQrLogin"));
-const AdminBannerTemplates = lazy(() => import("./pages/admin/AdminBannerTemplates"));
-const AdminCreditEconomics = lazy(() => import("./pages/admin/AdminCreditEconomics"));
-const AdminCostCalculator = lazy(() => import("./pages/admin/AdminCostCalculator"));
-const AdminReferenceView = lazy(() => import("./features/reference-v2/phase1/AdminReferenceView"));
+const AdminLayout = lazyWithReload(() => import("./pages/admin/AdminLayout"));
+const AdminDashboard = lazyWithReload(() => import("./pages/admin/AdminDashboard"));
+const AdminUsers = lazyWithReload(() => import("./pages/admin/AdminUsers"));
+const AdminTransactions = lazyWithReload(() => import("./pages/admin/AdminTransactions"));
+const AdminLeads = lazyWithReload(() => import("./pages/admin/AdminLeads"));
+const AdminPdfGallery = lazyWithReload(() => import("./pages/admin/AdminPdfGallery"));
+const AdminPrompts = lazyWithReload(() => import("./pages/admin/AdminPrompts"));
+const AdminPricing = lazyWithReload(() => import("./pages/admin/AdminPricing"));
+const AdminSettings = lazyWithReload(() => import("./pages/admin/AdminSettings"));
+const AdminLogos = lazyWithReload(() => import("./pages/admin/AdminLogos"));
+const AdminSalesAssistant = lazyWithReload(() => import("./pages/admin/AdminSalesAssistant"));
+const AdminWmiCodes = lazyWithReload(() => import("./pages/admin/AdminWmiCodes"));
+const AdminSecrets = lazyWithReload(() => import("./pages/admin/AdminSecrets"));
+const AdminPresets = lazyWithReload(() => import("./pages/admin/AdminPresets"));
+const AdminJobMonitor = lazyWithReload(() => import("./pages/admin/AdminJobMonitor"));
+const AdminEmailMonitor = lazyWithReload(() => import("./pages/admin/AdminEmailMonitor"));
+const AdminRevenue = lazyWithReload(() => import("./pages/admin/AdminRevenue"));
+const AdminStorage = lazyWithReload(() => import("./pages/admin/AdminStorage"));
+const AdminConversionFunnel = lazyWithReload(() => import("./pages/admin/AdminConversionFunnel"));
+const AdminTestDrives = lazyWithReload(() => import("./pages/admin/AdminTestDrives"));
+const AdminPipelineStats = lazyWithReload(() => import("./pages/admin/AdminPipelineStats"));
+const AdminQrLogin = lazyWithReload(() => import("./pages/admin/AdminQrLogin"));
+const AdminBannerTemplates = lazyWithReload(() => import("./pages/admin/AdminBannerTemplates"));
+const AdminCreditEconomics = lazyWithReload(() => import("./pages/admin/AdminCreditEconomics"));
+const AdminCostCalculator = lazyWithReload(() => import("./pages/admin/AdminCostCalculator"));
+const AdminReferenceView = lazyWithReload(() => import("./features/reference-v2/phase1/AdminReferenceView"));
 import AdminRoute from "./components/AdminRoute";
 import KiTransparenz from "./pages/KiTransparenz";
 
