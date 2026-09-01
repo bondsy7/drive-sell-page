@@ -1,6 +1,5 @@
 import { readFileSync } from "node:fs";
-import { act, render, screen, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { useEffect, type ReactNode } from "react";
 import {
@@ -143,11 +142,12 @@ describe("Phase 2.5 — OutputPlannerPanel", () => {
     }
   });
 
-  it("follows target selection when the user deselects and reselects", async () => {
-    const user = userEvent.setup();
+  it("follows target selection when the user deselects and reselects", () => {
     renderPanel();
     const first = CAR_STANDARD_EXTERIOR[0]!;
-    await user.click(chip(first.labelDe, first.id));
+    act(() => {
+      fireEvent.click(chip(first.labelDe, first.id));
+    });
     expect(chip(first.labelDe, first.id)).toHaveAttribute(
       "aria-pressed",
       "false",
@@ -155,16 +155,19 @@ describe("Phase 2.5 — OutputPlannerPanel", () => {
     expect(
       screen.getByText(`BLOCKED ${CAR_STANDARD_EXTERIOR.length - 1}`),
     ).toBeInTheDocument();
-    await user.click(chip(first.labelDe, first.id));
+    act(() => {
+      fireEvent.click(chip(first.labelDe, first.id));
+    });
     expect(
       screen.getByText(`BLOCKED ${CAR_STANDARD_EXTERIOR.length}`),
     ).toBeInTheDocument();
   });
 
-  it("shows a neutral message and no READY claim without any target", async () => {
-    const user = userEvent.setup();
+  it("shows a neutral message and no READY claim without any target", () => {
     renderPanel();
-    await user.click(screen.getByRole("button", { name: "Alle abwählen" }));
+    act(() => {
+      fireEvent.click(screen.getByRole("button", { name: "Alle abwählen" }));
+    });
     expect(
       screen.getByText(/Keine Zielperspektive ausgewählt/),
     ).toBeInTheDocument();
@@ -172,11 +175,14 @@ describe("Phase 2.5 — OutputPlannerPanel", () => {
     expect(screen.queryByText(/^READY \d+$/)).not.toBeInTheDocument();
   });
 
-  it("blocks locally when no output format is selected", async () => {
-    const user = userEvent.setup();
+  it("blocks locally when no output format is selected", () => {
     renderPanel();
-    await user.click(screen.getByRole("button", { name: "4:5" }));
-    await user.click(screen.getByRole("button", { name: "1.91:1" }));
+    act(() => {
+      fireEvent.click(screen.getByRole("button", { name: "4:5" }));
+    });
+    act(() => {
+      fireEvent.click(screen.getByRole("button", { name: "1.91:1" }));
+    });
     expect(
       screen.getByText(/mindestens ein Ausgabeformat/i),
     ).toBeInTheDocument();
@@ -244,11 +250,12 @@ describe("Phase 2.5 — OutputPlannerPanel", () => {
     );
   });
 
-  it("resets selections when switching master via the mount key", async () => {
-    const user = userEvent.setup();
+  it("resets selections when switching master via the mount key", () => {
     const { harness } = renderPanel();
     const first = CAR_STANDARD_EXTERIOR[0]!;
-    await user.click(chip(first.labelDe, first.id));
+    act(() => {
+      fireEvent.click(chip(first.labelDe, first.id));
+    });
     expect(chip(first.labelDe, first.id)).toHaveAttribute(
       "aria-pressed",
       "false",
