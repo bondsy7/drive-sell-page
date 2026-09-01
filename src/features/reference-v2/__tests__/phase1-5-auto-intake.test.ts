@@ -179,7 +179,7 @@ describe("analysis coordinator", () => {
       asCtx(baseCtx),
       asDeps(baseDeps(vi.fn(async () => {
         throw new Error("provider down");
-      })))),
+      }))),
     );
     expect(outcome.ok).toBe(false);
     expect(outcome.intake).toBeUndefined();
@@ -196,7 +196,7 @@ describe("analysis coordinator", () => {
     const outcomes = await analyzeFileBatch(
       [makeFile("a.jpg"), makeFile("b.jpg")],
       asCtx(baseCtx),
-      baseDeps(analyze)),
+      asDeps(baseDeps(analyze)),
     );
     expect(outcomes[0].ok).toBe(false);
     expect(outcomes[1].ok).toBe(true);
@@ -247,7 +247,7 @@ describe("Phase 1.5 hardening", () => {
     const outcomes = await analyzeFileBatch(
       [makeFile("a.jpg"), makeFile("b.jpg")],
       asCtx(baseCtx),
-      baseDeps(analyze, upload)),
+      asDeps(baseDeps(analyze, upload)),
     );
     expect(outcomes.every((o) => o.ok)).toBe(true);
     const anchors = anchorArgs(analyze.mock);
