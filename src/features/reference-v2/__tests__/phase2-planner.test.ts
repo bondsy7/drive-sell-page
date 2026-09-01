@@ -128,6 +128,7 @@ interface AssetOverrides {
   readonly scores?: Record<string, number>;
   readonly weightedScore?: number;
   readonly outputReadyFormats?: readonly string[];
+  readonly hardFailures?: readonly string[];
 }
 
 function asset(o: AssetOverrides = {}): ReferenceAssetRecord {
@@ -149,7 +150,7 @@ function asset(o: AssetOverrides = {}): ReferenceAssetRecord {
       framing: 1,
     },
     weightedScore: o.weightedScore ?? 1,
-    hardFailures: [],
+    hardFailures: [...(o.hardFailures ?? [])],
     blockers: [],
     warnings: [],
     role: o.role ?? "primary",
@@ -183,6 +184,7 @@ interface PlanOptions {
   readonly formats?: readonly string[];
   readonly maxSecondaryReferences?: number;
   readonly vehicleMaster?: VehicleMasterRecord;
+  readonly allowAdjacentSubstitution?: boolean;
 }
 
 function plan(
@@ -195,8 +197,9 @@ function plan(
     ...(options.formats ? { requestedOutputFormats: [...options.formats] } : {}),
     policy: {
       maxSecondaryReferences: options.maxSecondaryReferences ?? 2,
-      allowAdjacentSubstitution: false,
+      allowAdjacentSubstitution: options.allowAdjacentSubstitution ?? false,
     },
+
     nowIso: NOW_ISO,
   });
 }
