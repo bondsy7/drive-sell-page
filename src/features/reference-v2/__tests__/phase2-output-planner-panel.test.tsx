@@ -34,7 +34,7 @@ interface Harness {
   master: VehicleMasterRecord | null;
 }
 
-function renderPanel(options?: { ghostEvidence?: boolean }) {
+function renderPanel() {
   const harness: Harness = { master: null } as Harness;
 
   function Inner() {
@@ -52,22 +52,6 @@ function renderPanel(options?: { ghostEvidence?: boolean }) {
         });
       }
     }, [store]);
-
-    useEffect(() => {
-      if (options?.ghostEvidence && store.activeMaster) {
-        runtime.recordCurrentFramingEvidence(
-          store.activeMaster.id,
-          "ref_ghost",
-          {
-            sourceAspectRatio: 1.5,
-            fullVehicleVisible: true,
-            cropped: false,
-            paddingPct: 30,
-          },
-        );
-      }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [store.activeMaster?.id]);
 
     if (!store.activeMaster) return null;
     return <OutputPlannerPanel vehicleMaster={store.activeMaster} />;
@@ -127,9 +111,10 @@ describe("Phase 2.5 — OutputPlannerPanel", () => {
 
   it("renders frozen planner BLOCKED items and consistent summary counts for an empty master", () => {
     renderPanel();
-    const blocked = screen.getAllByText("BLOCKED");
-    // 1 summary badge + one badge per planned item
-    expect(blocked.length).toBe(CAR_STANDARD_EXTERIOR.length + 1);
+    // one state badge per planned item (summary badge carries its own count text)
+    expect(screen.getAllByText("BLOCKED").length).toBe(
+      CAR_STANDARD_EXTERIOR.length,
+    );
     expect(
       screen.getByText(`BLOCKED ${CAR_STANDARD_EXTERIOR.length}`),
     ).toBeInTheDocument();
@@ -191,7 +176,19 @@ describe("Phase 2.5 — OutputPlannerPanel", () => {
   });
 
   it("fails closed with a planner error card on stale/foreign framing evidence", () => {
-    renderPanel({ ghostEvidence: true });
+    const { harness } = renderPanel();
+    act(() => {
+      harness.runtime.recordCurrentFramingEvidence(
+        harness.master!.id,
+        "ref_ghost",
+        {
+          sourceAspectRatio: 1.5,
+          fullVehicleVisible: true,
+          cropped: false,
+          paddingPct: 30,
+        },
+      );
+    });
     expect(screen.getByText(/Preflight fehlgeschlagen/)).toBeInTheDocument();
     expect(screen.queryByText("Preflight bestanden")).not.toBeInTheDocument();
     expect(screen.queryByText(/^READY \d+$/)).not.toBeInTheDocument();
@@ -201,7 +198,7 @@ describe("Phase 2.5 — OutputPlannerPanel", () => {
     renderPanel();
     // frozen planner emits this German reason for masters without references
     expect(
-      screen.getAllByText(/Keine geeignete Primärreferenz/i).length,
+      screen.getAllByText(/Keine qualifizierte exakte Primary-Referenz/i).length,
     ).toBeGreaterThan(0);
   });
 
