@@ -9,6 +9,7 @@ import {
   parsePlannerInput,
   parsePlannerOutput,
   projectForSemanticFirewall,
+  resolveReferenceGeometryPerspectiveId,
   type PlannerItem,
 } from "../phase2/planner-contract";
 import { SemanticFirewallError } from "../phase1-5/analyzer-contract";
@@ -778,5 +779,134 @@ describe("Phase 2.0 planner output contract", () => {
         vehicleMaster: { ...vehicleMaster(), label: "Baujahr" },
       }),
     ).toThrow(SemanticFirewallError);
+  });
+});
+
+describe("Phase 2.0 hero reference geometry", () => {
+  const HERO: PerspectiveId = "HERO_FRONT_LEFT";
+  const HERO_BASE: PerspectiveId = "EXT_34_FRONT_LEFT";
+
+  it("resolves hero perspectives to their base perspective geometry", () => {
+    expect(resolveReferenceGeometryPerspectiveId(HERO)).toBe(HERO_BASE);
+  });
+
+  it("resolves non-hero perspectives to themselves", () => {
+    expect(resolveReferenceGeometryPerspectiveId(P_FRONT)).toBe(P_FRONT);
+    expect(resolveReferenceGeometryPerspectiveId(P_REAR)).toBe(P_REAR);
+  });
+
+  it("accepts READY hero item whose primary is the base perspective", () => {
+    const parsed = PlannerItemSchema.safeParse(
+      readyItem({
+        perspectiveSpecId: HERO,
+        selection: {
+          primary: {
+            assetId: "asset_1",
+            perspectiveId: HERO_BASE,
+            role: "primary",
+            exactPerspective: true,
+          },
+          secondaryReferences: [],
+        },
+      }),
+    );
+    expect(parsed.success).toBe(true);
+  });
+
+  it("rejects READY hero item whose primary is the hero output id itself", () => {
+    expect(
+      PlannerItemSchema.safeParse(
+        readyItem({
+          perspectiveSpecId: HERO,
+          selection: {
+            primary: {
+              assetId: "asset_1",
+              perspectiveId: HERO,
+              role: "primary",
+              exactPerspective: true,
+            },
+            secondaryReferences: [],
+          },
+        }),
+      ).success,
+    ).toBe(false);
+  });
+
+  it("still rejects READY hero item with exactPerspective=false", () => {
+    expect(
+      PlannerItemSchema.safeParse(
+        readyItem({
+          perspectiveSpecId: HERO,
+          selection: {
+            primary: {
+              assetId: "asset_1",
+              perspectiveId: HERO_BASE,
+              role: "primary",
+              exactPerspective: false,
+            },
+            secondaryReferences: [],
+          },
+        }),
+      ).success,
+    ).toBe(false);
+  });
+
+  it("keeps ordinary EXT_FRONT behaviour unchanged", () => {
+    expect(PlannerItemSchema.safeParse(readyItem()).success).toBe(true);
+    expect(
+      PlannerItemSchema.safeParse(
+        readyItem({
+          selection: {
+            primary: {
+              assetId: "asset_1",
+              perspectiveId: P_REAR,
+              role: "primary",
+              exactPerspective: true,
+            },
+            secondaryReferences: [],
+          },
+        }),
+      ).success,
+    ).toBe(false);
+  });
+
+  it("keeps substitution target as the hero output perspective", () => {
+    const base = readyItem({
+      perspectiveSpecId: HERO,
+      state: "REVIEW",
+      generationAllowed: false,
+      fineGrainedReadiness: "NEEDS_CONFIRMATION",
+      selection: {
+        primary: {
+          assetId: "asset_1",
+          perspectiveId: HERO_BASE,
+          role: "primary",
+          exactPerspective: false,
+        },
+        secondaryReferences: [],
+      },
+    });
+    expect(
+      PlannerItemSchema.safeParse({
+        ...base,
+        substitution: {
+          sourcePerspectiveId: HERO_BASE,
+          targetPerspectiveId: HERO,
+          azimuthDeltaDeg: 10,
+          rationale: "Hero-Praesentation aus Basisgeometrie",
+        },
+      }).success,
+    ).toBe(true);
+    expect(
+      PlannerItemSchema.safeParse({
+        ...base,
+        substitution: {
+          sourcePerspectiveId: HERO_BASE,
+          targetPerspectiveId: HERO_BASE,
+          azimuthDeltaDeg: 10,
+          rationale: "Falsches Ziel",
+        },
+      }).success,
+    ).toBe(false);
   });
 });

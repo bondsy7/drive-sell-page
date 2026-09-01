@@ -3,6 +3,8 @@ import {
   PerspectiveIdSchema,
   type PerspectiveId,
 } from "../domain/perspectives/types";
+import { getPerspectiveSpec } from "../domain/perspectives/registry";
+
 import {
   VisualSurfaceSchema,
   WheelPositionSchema,
@@ -27,6 +29,29 @@ export const PHASE2_PLANNER_VERSION = 1;
 
 /** Harte Obergrenze fuer sekundaere Referenzen (Schema-Cap, nicht Policy). */
 export const PHASE2_MAX_SECONDARY_REFERENCES = 2;
+
+/**
+ * Hero-Perspektiven sind Output-/Praesentations-Keys ohne eigene Geometrie.
+ * Die visuelle Referenzgeometrie ist die bestehende `basePerspectiveId` aus
+ * der Phase-0-Registry. Fuer alle anderen Kategorien ist die Output-ID
+ * zugleich die Referenzgeometrie.
+ */
+export function resolveReferenceGeometryPerspectiveId(
+  outputPerspectiveId: PerspectiveId,
+): PerspectiveId {
+  const spec = getPerspectiveSpec(outputPerspectiveId);
+  if (spec.category === "hero") {
+    if (!spec.basePerspectiveId) {
+      throw new Error(
+        `Hero perspective ${outputPerspectiveId} has no basePerspectiveId in the registry`,
+      );
+    }
+    return spec.basePerspectiveId;
+  }
+  return outputPerspectiveId;
+}
+
+
 
 // --------------------------------------------------------------------------
 // Planner state
@@ -333,14 +358,19 @@ export const PlannerItemSchema = z
             message: "READY requires an exact primary perspective",
           });
         }
-        if (primary.perspectiveId !== item.perspectiveSpecId) {
+        const geometryId = resolveReferenceGeometryPerspectiveId(
+          item.perspectiveSpecId,
+        );
+        if (primary.perspectiveId !== geometryId) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             path: ["selection", "primary", "perspectiveId"],
-            message: "READY primary perspective must equal perspectiveSpecId",
+            message:
+              "READY primary perspective must equal the reference geometry perspective",
           });
         }
       }
+
       if (!item.coverage.allMandatorySurfacesMet) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
