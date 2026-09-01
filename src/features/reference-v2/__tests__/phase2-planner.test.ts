@@ -56,6 +56,14 @@ function analysis(
   };
 }
 
+/** Analyse-Record OHNE Ablaufzeitpunkt (Schluessel fehlt vollstaendig). */
+function analysisWithoutExpiry(): ReferenceAnalysisRecord {
+  const base = analysis();
+  const rest = { ...base } as Record<string, unknown>;
+  delete rest.fileExpiresAtIso;
+  return rest as unknown as ReferenceAnalysisRecord;
+}
+
 interface IntakeOverrides {
   readonly assetId?: string;
   readonly perspectiveId?: PerspectiveId;
@@ -930,6 +938,9 @@ describe("Phase 2.3 primary qualification hardening", () => {
     const mirrored = asset({
       id: "asset_a",
       hardFailures: ["MIRRORED_REFERENCE"],
+      // Der Phase-1-Contract erzwingt fuer hart gescheiterte Assets die Rolle
+      // "rejected"; der Hard-Failure allein disqualifiziert bereits.
+      role: "rejected",
     });
     const out = plan([mirrored, weakerPrimary("asset_b", 0.9)]);
     expect(item(out).selection.primary?.assetId).toBe("asset_b");
@@ -1056,7 +1067,7 @@ describe("Phase 2.3 review propagation", () => {
   it("reviews a selected primary whose file expiry is unknown", () => {
     const unknownExpiry = asset({
       id: "asset_a",
-      analysis: analysis({ fileExpiresAtIso: undefined }),
+      analysis: analysisWithoutExpiry(),
     });
     const out = plan([unknownExpiry]);
     expect(item(out).state).toBe("REVIEW");
@@ -1076,7 +1087,7 @@ describe("Phase 2.3 review propagation", () => {
     });
     const reviewDonor = {
       ...donor,
-      analysis: analysis({ fileExpiresAtIso: undefined }),
+      analysis: analysisWithoutExpiry(),
     } as ReferenceAssetRecord;
     const out = plan([cabinPrimary("asset_a"), reviewDonor], CABIN_TARGET);
     expect(item(out).state).toBe("REVIEW");
@@ -1186,7 +1197,7 @@ describe("Phase 2.3 stored Phase-1 poison", () => {
             framing: 0,
           },
           weightedScore: 0,
-          outputReadyFormats: ["1.91:1", "4:5", "1:1"],
+          outputReadyFormats: ["1.91:1", "4:5"],
         }) as ReferenceAssetRecord,
     );
     const options = { perspectives: [P_34_FRONT_LEFT, CABIN, P_REAR] } as const;
