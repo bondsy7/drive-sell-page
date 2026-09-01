@@ -269,6 +269,9 @@ describe("Phase 1.5 hardening", () => {
     expect(rec.mimeType).toBe("image/png");
     expect(rec.sizeBytes).toBe(4242);
     expect(rec.fileExpiresAtIso).toBe("2030-01-01T00:00:00Z");
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Typed test helpers (no `any`) for the final Phase 1.5 correction tests
 // ---------------------------------------------------------------------------
@@ -279,12 +282,11 @@ const asCtx = (c: unknown) => c as BatchCtx;
 const asDeps = (d: unknown) => d as BatchDeps;
 const anchorArgs = (mock: { calls: unknown[][] }) =>
   mock.calls.map((c) => (c[0] as { anchorFiles: unknown[] }).anchorFiles);
-  });
-});
 
 // ---------------------------------------------------------------------------
 // FINAL Phase 1.5 correction: anchors only after Phase-1 governance accepts
 // ---------------------------------------------------------------------------
+
 
 describe("in-batch identity anchor requires Phase-1 governance", () => {
   it("A) grants NO anchor when Phase-1 rejects the first file (glare/crop)", async () => {
