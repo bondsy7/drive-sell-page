@@ -41,6 +41,7 @@ import {
   useReferenceStore,
 } from "./reference-store";
 import { ReferenceCaptureWorkflow } from "./ReferenceCaptureWorkflow";
+import { AutomaticReferenceIntake } from "../phase1-5/AutomaticReferenceIntake";
 
 /**
  * Reference V2 — Phase 1: AdminReferenceView.
