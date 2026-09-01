@@ -89,16 +89,44 @@ export function rebaseCurrentFramingEvidence(
 // 4) Sidecar contract
 // --------------------------------------------------------------------------
 
+/**
+ * Prototype-sichere Helfer: Sidecar-Keys sind vertraglich beliebige nicht-leere
+ * Strings, also auch `toString`, `constructor` oder `__proto__`. Records werden
+ * daher ausschliesslich aus geordneten Tupeln via `Object.fromEntries` gebaut
+ * und Mitgliedschaft nur ueber eigene Properties geprueft.
+ */
+function hasOwn(record: object, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(record, key);
+}
+
+function ownEntries<T>(record: Record<string, T>): [string, T][] {
+  return Object.keys(record).map((key) => [
+    key,
+    (Object.getOwnPropertyDescriptor(record, key)?.value ?? undefined) as T,
+  ]);
+}
+
+function recordFromEntries<T>(entries: readonly (readonly [string, T])[]): Record<
+  string,
+  T
+> {
+  return Object.fromEntries(entries) as Record<string, T>;
+}
+
 const SidecarShapeSchema = z
   .object({
-    byAssetId: z.record(z.string(), z.unknown()),
+    byAssetId: z.custom<Record<string, unknown>>(
+      (value) =>
+        typeof value === "object" && value !== null && !Array.isArray(value),
+      { message: "byAssetId must be a plain object" },
+    ),
   })
   .strict();
 
 export const CurrentFramingEvidenceSidecarSchema = SidecarShapeSchema.transform(
   (shape, ctx) => {
-    const out: Record<string, CurrentFramingEvidence> = {};
-    for (const key of Object.keys(shape.byAssetId)) {
+    const entries: [string, CurrentFramingEvidence][] = [];
+    for (const [key, rawValue] of ownEntries(shape.byAssetId)) {
       if (key.length === 0) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -107,7 +135,7 @@ export const CurrentFramingEvidenceSidecarSchema = SidecarShapeSchema.transform(
         });
         return z.NEVER;
       }
-      const value = parseCurrentFramingEvidence(shape.byAssetId[key]);
+      const value = parseCurrentFramingEvidence(rawValue);
       if (value.assetId !== key) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -116,11 +144,12 @@ export const CurrentFramingEvidenceSidecarSchema = SidecarShapeSchema.transform(
         });
         return z.NEVER;
       }
-      out[key] = value;
+      entries.push([key, value]);
     }
-    return { byAssetId: out };
+    return { byAssetId: recordFromEntries(entries) };
   },
 );
+
 
 export type CurrentFramingEvidenceSidecar = {
   byAssetId: Record<string, CurrentFramingEvidence>;
@@ -146,7 +175,7 @@ export function parseCurrentFramingEvidenceSidecar(
 // --------------------------------------------------------------------------
 
 export function emptyCurrentFramingEvidenceSidecar(): CurrentFramingEvidenceSidecar {
-  return { byAssetId: {} };
+  return { byAssetId: recordFromEntries<CurrentFramingEvidence>([]) };
 }
 
 export function upsertCurrentFramingEvidence(
@@ -155,15 +184,18 @@ export function upsertCurrentFramingEvidence(
 ): CurrentFramingEvidenceSidecar {
   const sidecar = parseCurrentFramingEvidenceSidecar(sidecarRaw);
   const evidence = parseCurrentFramingEvidence(evidenceRaw);
-  const next: Record<string, CurrentFramingEvidence> = {};
-  for (const key of Object.keys(sidecar.byAssetId)) {
-    next[key] =
-      key === evidence.assetId ? { ...evidence } : { ...sidecar.byAssetId[key] };
+  const entries: [string, CurrentFramingEvidence][] = ownEntries(
+    sidecar.byAssetId,
+  ).map(([key, value]) => [
+    key,
+    key === evidence.assetId ? { ...evidence } : { ...value },
+  ]);
+  if (!hasOwn(sidecar.byAssetId, evidence.assetId)) {
+    entries.push([evidence.assetId, { ...evidence }]);
   }
-  if (!(evidence.assetId in next)) {
-    next[evidence.assetId] = { ...evidence };
-  }
-  return parseCurrentFramingEvidenceSidecar({ byAssetId: next });
+  return parseCurrentFramingEvidenceSidecar({
+    byAssetId: recordFromEntries(entries),
+  });
 }
 
 export function removeCurrentFramingEvidence(
@@ -171,13 +203,14 @@ export function removeCurrentFramingEvidence(
   assetId: string,
 ): CurrentFramingEvidenceSidecar {
   const sidecar = parseCurrentFramingEvidenceSidecar(sidecarRaw);
-  const next: Record<string, CurrentFramingEvidence> = {};
-  for (const key of Object.keys(sidecar.byAssetId)) {
-    if (key === assetId) continue;
-    next[key] = { ...sidecar.byAssetId[key] };
-  }
-  return parseCurrentFramingEvidenceSidecar({ byAssetId: next });
+  const entries = ownEntries(sidecar.byAssetId)
+    .filter(([key]) => key !== assetId)
+    .map(([key, value]): [string, CurrentFramingEvidence] => [key, { ...value }]);
+  return parseCurrentFramingEvidenceSidecar({
+    byAssetId: recordFromEntries(entries),
+  });
 }
+
 
 function parseKnownAssetIds(raw: unknown): string[] {
   const parsed = z.array(z.string().min(1)).safeParse(raw);
@@ -207,12 +240,12 @@ export function pruneCurrentFramingEvidence(
 ): CurrentFramingEvidenceSidecar {
   const sidecar = parseCurrentFramingEvidenceSidecar(sidecarRaw);
   const known = new Set(parseKnownAssetIds(knownAssetIds));
-  const next: Record<string, CurrentFramingEvidence> = {};
-  for (const key of Object.keys(sidecar.byAssetId)) {
-    if (!known.has(key)) continue;
-    next[key] = { ...sidecar.byAssetId[key] };
-  }
-  return parseCurrentFramingEvidenceSidecar({ byAssetId: next });
+  const entries = ownEntries(sidecar.byAssetId)
+    .filter(([key]) => known.has(key))
+    .map(([key, value]): [string, CurrentFramingEvidence] => [key, { ...value }]);
+  return parseCurrentFramingEvidenceSidecar({
+    byAssetId: recordFromEntries(entries),
+  });
 }
 
 // --------------------------------------------------------------------------
@@ -235,9 +268,11 @@ export function currentFramingEvidenceForPlanner(
   }
   const out: CurrentFramingEvidence[] = [];
   for (const id of known) {
-    const evidence = sidecar.byAssetId[id];
-    if (evidence === undefined) continue;
+    if (!hasOwn(sidecar.byAssetId, id)) continue;
+    const evidence = Object.getOwnPropertyDescriptor(sidecar.byAssetId, id)
+      ?.value as CurrentFramingEvidence;
     out.push({ ...evidence });
   }
+
   return out;
 }
