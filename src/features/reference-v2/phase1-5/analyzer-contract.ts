@@ -6,6 +6,7 @@ import {
   PerspectiveIdSchema,
   type PerspectiveId,
 } from "../domain/perspectives/types";
+import { getPerspectiveSpec } from "../domain/perspectives/registry";
 import {
   INTAKE_ISSUE_SEVERITIES,
   type VisionIntakeResult,
@@ -165,6 +166,18 @@ export type VisualIdentityEvidence = z.infer<typeof VisualIdentityEvidenceSchema
 // Analyzer response
 // --------------------------------------------------------------------------
 
+/**
+ * Die fuenf globalen Sichtbarkeitsfelder — sie werden nicht in
+ * `visibility.surfaces` erwartet, sondern als eigene Felder gefuehrt.
+ */
+export const CORE_VISIBILITY_SURFACES: readonly string[] = [
+  "front",
+  "rear",
+  "left_side",
+  "right_side",
+  "roof",
+];
+
 export const AnalyzerIssueSchema = z
   .object({
     code: z.string().min(1).max(64),
@@ -191,7 +204,7 @@ export const AnalyzerVisionResponseSchema = z
         leftSide: Score01Schema,
         rightSide: Score01Schema,
         roof: Score01Schema,
-        surfaces: z.record(VisualSurfaceSchema, Score01Schema).optional(),
+        surfaces: z.record(VisualSurfaceSchema, Score01Schema),
       })
       .strict(),
     framing: z
@@ -240,7 +253,9 @@ export const AnalyzerVisionResponseSchema = z
       });
     }
     if (r.canonicalPerspectiveId !== null) {
-      if (r.azimuthDeg === null) {
+      // Single source of truth: Phase-0 Perspective Registry.
+      const spec = getPerspectiveSpec(r.canonicalPerspectiveId);
+      if (spec.pose.azimuthDeg !== undefined && r.azimuthDeg === null) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["azimuthDeg"],
@@ -253,6 +268,16 @@ export const AnalyzerVisionResponseSchema = z
           path: ["elevationProfile"],
           message: "elevationProfile is required when a canonical perspective is chosen",
         });
+      }
+      for (const surface of spec.requiredVisibleSurfaces) {
+        if (CORE_VISIBILITY_SURFACES.includes(surface)) continue;
+        if (r.visibility.surfaces[surface] === undefined) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["visibility", "surfaces", surface],
+            message: `visibility.surfaces.${surface} is required for perspective ${spec.id}`,
+          });
+        }
       }
     }
   });
@@ -338,9 +363,7 @@ export function normalizeToVisionIntake(
       leftSide: response.visibility.leftSide,
       rightSide: response.visibility.rightSide,
       roof: response.visibility.roof,
-      ...(response.visibility.surfaces
-        ? { surfaces: response.visibility.surfaces }
-        : {}),
+      surfaces: response.visibility.surfaces,
     },
     framing: {
       fullVehicleVisible: response.framing.fullVehicleVisible,
