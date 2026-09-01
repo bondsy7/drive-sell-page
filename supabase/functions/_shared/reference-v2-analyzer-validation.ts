@@ -375,6 +375,11 @@ export function validateAnalyzerResponse(
     }
   }
 
+  // a detected vehicle must always carry a detected class (no optimistic null)
+  if (r.vehicleDetected === true && r.vehicleClass === null) {
+    issues.push("a detected vehicle must carry a detected vehicleClass");
+  }
+
   // detected class must actually allow the chosen perspective
   if (entry && typeof r.vehicleClass === "string") {
     if (!entry.vehicleClasses.includes(r.vehicleClass)) {
@@ -383,9 +388,20 @@ export function validateAnalyzerResponse(
       );
     }
   }
-  if (entry && r.vehicleClass === null && r.vehicleDetected === true) {
-    issues.push("a detected vehicle must carry a detected vehicleClass");
+
+  // a chosen perspective must carry the fields needed to validate it
+  if (entry) {
+    if (entry.azimuthDeg !== null && typeof r.azimuthDeg !== "number") {
+      issues.push(`perspective ${entry.id} requires a numeric azimuthDeg`);
+    }
+    if (typeof r.elevationProfile !== "string") {
+      issues.push(`perspective ${entry.id} requires an elevationProfile`);
+    }
+    if (r.vehicleDetected !== true) {
+      issues.push("a canonical perspective requires vehicleDetected = true");
+    }
   }
+
 
   if (issues.length > 0) return fail();
   return { ok: true, response: r };
