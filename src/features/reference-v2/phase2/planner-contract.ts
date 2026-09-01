@@ -296,6 +296,26 @@ export const PlannerItemSchema = z
           message: "BLOCKED items require at least one BLOCKING reason",
         });
       }
+      if (
+        !(
+          [
+            "INSUFFICIENT_REFERENCE",
+            "BLOCKED_IDENTITY_CONFLICT",
+            "BLOCKED_FILE_UNAVAILABLE",
+          ] as const
+        ).includes(
+          item.fineGrainedReadiness as
+            | "INSUFFICIENT_REFERENCE"
+            | "BLOCKED_IDENTITY_CONFLICT"
+            | "BLOCKED_FILE_UNAVAILABLE",
+        )
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["fineGrainedReadiness"],
+          message: "BLOCKED requires a blocking/insufficient readiness status",
+        });
+      }
     }
     if (item.state === "READY") {
       if (!item.generationAllowed) {
@@ -305,11 +325,41 @@ export const PlannerItemSchema = z
           message: "READY items must allow generation",
         });
       }
-      if (!item.selection.primary) {
+      const primary = item.selection.primary;
+      if (!primary) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["selection", "primary"],
           message: "READY requires a primary reference",
+        });
+      } else {
+        if (!primary.exactPerspective) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["selection", "primary", "exactPerspective"],
+            message: "READY requires an exact primary perspective",
+          });
+        }
+        if (primary.perspectiveId !== item.perspectiveSpecId) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["selection", "primary", "perspectiveId"],
+            message: "READY primary perspective must equal perspectiveSpecId",
+          });
+        }
+      }
+      if (!item.coverage.allMandatorySurfacesMet) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["coverage", "allMandatorySurfacesMet"],
+          message: "READY requires all mandatory surfaces to be met",
+        });
+      }
+      if (!item.outputFormatReadiness.every((f) => f.ready)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["outputFormatReadiness"],
+          message: "READY requires every requested output format to be ready",
         });
       }
       if (hasBlocking) {
@@ -326,15 +376,65 @@ export const PlannerItemSchema = z
           message: "READY must not use a substitution",
         });
       }
+      if (
+        item.fineGrainedReadiness !== "READY_EXACT" &&
+        item.fineGrainedReadiness !== "READY_MULTI_REFERENCE"
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["fineGrainedReadiness"],
+          message: "READY requires READY_EXACT or READY_MULTI_REFERENCE",
+        });
+      }
+      if (
+        item.fineGrainedReadiness === "READY_MULTI_REFERENCE" &&
+        item.selection.secondaryReferences.length < 1
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["selection", "secondaryReferences"],
+          message: "READY_MULTI_REFERENCE requires at least one secondary",
+        });
+      }
     }
-    if (item.state === "REVIEW" && item.generationAllowed) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["generationAllowed"],
-        message: "REVIEW must not allow generation in Phase 2.0",
-      });
+    if (item.state === "REVIEW") {
+      if (item.generationAllowed) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["generationAllowed"],
+          message: "REVIEW must not allow generation in Phase 2.0",
+        });
+      }
+      if (item.fineGrainedReadiness !== "NEEDS_CONFIRMATION") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["fineGrainedReadiness"],
+          message: "REVIEW requires NEEDS_CONFIRMATION",
+        });
+      }
+    }
+    if (item.substitution) {
+      if (item.substitution.targetPerspectiveId !== item.perspectiveSpecId) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["substitution", "targetPerspectiveId"],
+          message: "substitution target must equal perspectiveSpecId",
+        });
+      }
+      const primary = item.selection.primary;
+      if (
+        primary &&
+        primary.perspectiveId !== item.substitution.sourcePerspectiveId
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["substitution", "sourcePerspectiveId"],
+          message: "substitution source must equal the primary perspective",
+        });
+      }
     }
   });
+
 export type PlannerItem = z.infer<typeof PlannerItemSchema>;
 
 // --------------------------------------------------------------------------
