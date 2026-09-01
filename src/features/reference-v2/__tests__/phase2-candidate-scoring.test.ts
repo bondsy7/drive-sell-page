@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   CandidateScoringError,
@@ -943,7 +944,10 @@ describe("Phase 2.2 registry authority in the result contract", () => {
 
 describe("Phase 2.2 source audit", () => {
   const source = readFileSync(
-    new URL("../phase2/candidate-scoring.ts", import.meta.url),
+    resolve(
+      process.cwd(),
+      "src/features/reference-v2/phase2/candidate-scoring.ts",
+    ),
     "utf8",
   );
   const code = source
