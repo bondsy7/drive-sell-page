@@ -57,7 +57,16 @@ export interface AutomaticIntakeOutcome {
   readonly analysis?: ReferenceAnalysisRecord;
   readonly file?: ReferenceV2FileReference;
   readonly framing?: SourceFramingInput;
+  /** Ergebnis der PURE Phase-1-Governance (identisch zur spaeteren Ingestion). */
+  readonly governance?: IngestionEvaluation;
+  /**
+   * true nur, wenn sowohl das automatische Vision-Gate ALS AUCH die
+   * Phase-1-Governance blockerfrei akzeptiert haben. Nur solche Dateien
+   * duerfen Identitaets-Anker fuer nachfolgende Dateien werden.
+   */
+  readonly anchorEligible?: boolean;
 }
+
 
 export interface AnalyzeFileContext {
   readonly vehicleClass: VehicleClassV2;
