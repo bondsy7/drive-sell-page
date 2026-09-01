@@ -225,6 +225,10 @@ describe("Phase 1.5 hardening", () => {
       response: parseAnalyzerResponse({
         ...goodResponse,
         canonicalPerspectiveId: "INT_DASH_CENTER",
+        visibility: {
+          ...goodResponse.visibility,
+          surfaces: { dashboard: 0.9, infotainment: 0.8, center_console: 0.7 },
+        },
       }),
     }));
     const out = await analyzeSingleFile(makeFile(), asCtx(baseCtx), asDeps(baseDeps(analyze)));
@@ -390,14 +394,40 @@ describe("in-batch identity anchor requires Phase-1 governance", () => {
 describe("persisted anchors never guess a MIME type", () => {
   it("skips analysis records without a known MIME and preserves png/webp", () => {
     const anchors = toAnchorFileReferences([
-      { fileId: "files/a", providerId: "gemini-file-api" },
-      { fileId: "files/b", providerId: "gemini-file-api", mimeType: "image/png" },
-      { fileId: "files/c", providerId: "gemini-file-api", mimeType: "image/webp" },
-      { fileId: "files/d", providerId: "gemini-file-api", mimeType: "image/gif" },
+      { fileId: "files/a", providerId: "gemini-file-api", status: "analyzed" },
+      {
+        fileId: "files/b",
+        providerId: "gemini-file-api",
+        mimeType: "image/png",
+        status: "analyzed",
+      },
+      {
+        fileId: "files/c",
+        providerId: "gemini-file-api",
+        mimeType: "image/webp",
+        status: "analyzed",
+      },
+      {
+        fileId: "files/d",
+        providerId: "gemini-file-api",
+        mimeType: "image/gif",
+        status: "analyzed",
+      },
     ]);
     expect(anchors.map((a) => a.fileId)).toEqual(["files/b", "files/c"]);
     expect(anchors.map((a) => a.mimeType)).toEqual(["image/png", "image/webp"]);
     expect(JSON.stringify(anchors)).not.toContain("image/jpeg");
+  });
+
+  it("only accepts analyzed records from the Reference V2 provider", () => {
+    const anchors = toAnchorFileReferences([
+      { fileId: "f/1", providerId: "gemini-file-api", mimeType: "image/jpeg", status: "failed" },
+      { fileId: "f/2", providerId: "gemini-file-api", mimeType: "image/jpeg", status: "pending" },
+      { fileId: "f/3", providerId: "gemini-file-api", mimeType: "image/jpeg" },
+      { fileId: "f/4", providerId: "other-provider", mimeType: "image/jpeg", status: "analyzed" },
+      { fileId: "f/5", providerId: "gemini-file-api", mimeType: "image/jpeg", status: "analyzed" },
+    ]);
+    expect(anchors.map((a) => a.fileId)).toEqual(["f/5"]);
   });
 });
 
