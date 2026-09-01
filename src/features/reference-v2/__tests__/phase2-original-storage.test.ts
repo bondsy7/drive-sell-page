@@ -32,8 +32,18 @@ function makeFile(
   type: string,
   name = "photo.bin",
 ): File {
-  const data = typeof bytes === "string" ? [bytes] : [bytes];
-  return new File(data as BlobPart[], name, { type });
+  const raw =
+    typeof bytes === "string" ? new TextEncoder().encode(bytes) : bytes;
+  const file = new File([raw as BlobPart], name, { type });
+  // jsdom's File lacks arrayBuffer(); provide the raw bytes deterministically.
+  if (typeof (file as Blob).arrayBuffer !== "function") {
+    Object.defineProperty(file, "arrayBuffer", {
+      configurable: true,
+      value: async () =>
+        raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength),
+    });
+  }
+  return file;
 }
 
 function makePort(overrides: {

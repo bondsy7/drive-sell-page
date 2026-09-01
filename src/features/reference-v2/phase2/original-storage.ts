@@ -222,7 +222,7 @@ function toStorageError(error: unknown): ReferenceV2OriginalStorageError {
   const status =
     typeof rawStatus === "number"
       ? rawStatus
-      : typeof rawStatus === "string" && rawStatus.trim() !== ""
+      : typeof rawStatus === "string" && rawStatus.length > 0
         ? Number(rawStatus)
         : undefined;
   const rawCode = readErrorField(error, "error");
@@ -340,12 +340,11 @@ export function createReferenceV2SupabaseStoragePort(): ReferenceV2OriginalStora
       return data?.user?.id ?? null;
     },
     async uploadOriginal(path, file, options) {
-      const { error } = await supabase.storage
-        .from(REFERENCE_V2_STORAGE_BUCKET)
-        .upload(path, file, {
-          contentType: options.contentType,
-          upsert: false,
-        });
+      const bucket = supabase.storage.from(REFERENCE_V2_STORAGE_BUCKET);
+      const { error } = await bucket.upload(path, file, {
+        contentType: options.contentType,
+        upsert: false,
+      });
       return { error: error ?? null };
     },
   };
