@@ -448,7 +448,16 @@ export function assessTargetRelativeCandidate(
       intake.pose.azimuthDeg,
       masterEntry.azimuthDeg,
     );
-    const maxError = masterEntry.maxAzimuthErrorDeg ?? 10;
+    const maxError = masterEntry.maxAzimuthErrorDeg;
+    if (
+      typeof maxError !== "number" ||
+      !Number.isFinite(maxError) ||
+      maxError <= 0
+    ) {
+      throw new CandidateScoringError(
+        `perspective master invariant broken: ${referenceGeometryPerspectiveId} declares azimuthDeg but has no finite positive maxAzimuthErrorDeg`,
+      );
+    }
     cameraAngle = Math.max(
       0,
       Math.round(100 - (azimuthDeltaDeg / maxError) * 50),
