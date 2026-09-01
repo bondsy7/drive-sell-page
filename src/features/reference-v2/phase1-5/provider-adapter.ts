@@ -27,6 +27,20 @@ import {
 export const REFERENCE_V2_PROVIDER_ID = "gemini-file-api" as const;
 /** Referenzbudget: hoechstens so viele Anker gehen in eine Analyse. */
 export const MAX_ANCHOR_FILES = 3;
+/** Einzig zulaessige Bildformate der Reference-V2-Dateireferenzen. */
+export const REFERENCE_V2_ALLOWED_IMAGE_MIME = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+] as const;
+
+export function isAllowedReferenceV2Mime(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    (REFERENCE_V2_ALLOWED_IMAGE_MIME as readonly string[]).includes(value)
+  );
+}
+
 
 export interface ReferenceV2FileReference {
   readonly fileId: string;
