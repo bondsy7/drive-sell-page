@@ -113,6 +113,7 @@ export const PlannerCoverageSchema = z
   .object({
     requiredSurfaces: z
       .array(VisualSurfaceSchema)
+      .nonempty()
       .refine(uniqueArray, { message: "requiredSurfaces must be unique" }),
     items: z.array(SurfaceCoverageItemSchema),
     allMandatorySurfacesMet: z.boolean(),
@@ -132,8 +133,37 @@ export const PlannerCoverageSchema = z
         path: ["items"],
         message: "coverage items must be unique by surface",
       });
+      return;
+    }
+    const required = new Set<string>(coverage.requiredSurfaces);
+    const present = new Set<string>(surfaces);
+    const missing = [...required].filter((s) => !present.has(s));
+    const extra = surfaces.filter((s) => !required.has(s));
+    if (missing.length > 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["items"],
+        message: `missing coverage item for required surface(s): ${missing.join(", ")}`,
+      });
+    }
+    if (extra.length > 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["items"],
+        message: `coverage item(s) outside requiredSurfaces: ${extra.join(", ")}`,
+      });
+    }
+    if (missing.length > 0 || extra.length > 0) return;
+    const allMet = coverage.items.every((i) => i.met);
+    if (coverage.allMandatorySurfacesMet !== allMet) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["allMandatorySurfacesMet"],
+        message: "allMandatorySurfacesMet must equal items.every(item => item.met)",
+      });
     }
   });
+
 export type PlannerCoverage = z.infer<typeof PlannerCoverageSchema>;
 
 // --------------------------------------------------------------------------
@@ -235,6 +265,11 @@ export type PlannerOutputFormatReadiness = z.infer<
 // Planner item
 // --------------------------------------------------------------------------
 
+/** Fine-grained Readiness-Status, die zu state=BLOCKED gehoeren. */
+const BLOCKED_READINESS_STATUSES = new Set<
+  z.infer<typeof ReferenceReadinessStatusSchema>
+>(["INSUFFICIENT_REFERENCE", "BLOCKED_IDENTITY_CONFLICT", "BLOCKED_FILE_UNAVAILABLE"]);
+
 export const PlannerItemSchema = z
   .object({
     perspectiveSpecId: PerspectiveIdSchema,
@@ -266,7 +301,15 @@ export const PlannerItemSchema = z
           message: "BLOCKED items require at least one BLOCKING reason",
         });
       }
+      if (!BLOCKED_READINESS_STATUSES.has(item.fineGrainedReadiness)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["fineGrainedReadiness"],
+          message: "BLOCKED requires a blocking/insufficient readiness status",
+        });
+      }
     }
+
     if (item.state === "READY") {
       if (!item.generationAllowed) {
         ctx.addIssue({
@@ -275,11 +318,41 @@ export const PlannerItemSchema = z
           message: "READY items must allow generation",
         });
       }
-      if (!item.selection.primary) {
+      const primary = item.selection.primary;
+      if (!primary) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["selection", "primary"],
           message: "READY requires a primary reference",
+        });
+      } else {
+        if (!primary.exactPerspective) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["selection", "primary", "exactPerspective"],
+            message: "READY requires an exact primary perspective",
+          });
+        }
+        if (primary.perspectiveId !== item.perspectiveSpecId) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["selection", "primary", "perspectiveId"],
+            message: "READY primary perspective must equal perspectiveSpecId",
+          });
+        }
+      }
+      if (!item.coverage.allMandatorySurfacesMet) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["coverage", "allMandatorySurfacesMet"],
+          message: "READY requires all mandatory surfaces to be met",
+        });
+      }
+      if (!item.outputFormatReadiness.every((f) => f.ready)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["outputFormatReadiness"],
+          message: "READY requires every requested output format to be ready",
         });
       }
       if (hasBlocking) {
@@ -296,15 +369,65 @@ export const PlannerItemSchema = z
           message: "READY must not use a substitution",
         });
       }
+      if (
+        item.fineGrainedReadiness !== "READY_EXACT" &&
+        item.fineGrainedReadiness !== "READY_MULTI_REFERENCE"
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["fineGrainedReadiness"],
+          message: "READY requires READY_EXACT or READY_MULTI_REFERENCE",
+        });
+      }
+      if (
+        item.fineGrainedReadiness === "READY_MULTI_REFERENCE" &&
+        item.selection.secondaryReferences.length < 1
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["selection", "secondaryReferences"],
+          message: "READY_MULTI_REFERENCE requires at least one secondary",
+        });
+      }
     }
-    if (item.state === "REVIEW" && item.generationAllowed) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["generationAllowed"],
-        message: "REVIEW must not allow generation in Phase 2.0",
-      });
+    if (item.state === "REVIEW") {
+      if (item.generationAllowed) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["generationAllowed"],
+          message: "REVIEW must not allow generation in Phase 2.0",
+        });
+      }
+      if (item.fineGrainedReadiness !== "NEEDS_CONFIRMATION") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["fineGrainedReadiness"],
+          message: "REVIEW requires NEEDS_CONFIRMATION",
+        });
+      }
+    }
+    if (item.substitution) {
+      if (item.substitution.targetPerspectiveId !== item.perspectiveSpecId) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["substitution", "targetPerspectiveId"],
+          message: "substitution target must equal perspectiveSpecId",
+        });
+      }
+      const primary = item.selection.primary;
+      if (
+        primary &&
+        primary.perspectiveId !== item.substitution.sourcePerspectiveId
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["substitution", "sourcePerspectiveId"],
+          message: "substitution source must equal the primary perspective",
+        });
+      }
     }
   });
+
 export type PlannerItem = z.infer<typeof PlannerItemSchema>;
 
 // --------------------------------------------------------------------------
@@ -335,7 +458,12 @@ export const PlannerInputSchema = z
       .refine(uniqueArray, {
         message: "requestedPerspectiveIds must be unique",
       }),
-    requestedOutputFormats: z.array(OutputFormatSchema).optional(),
+    requestedOutputFormats: z
+      .array(OutputFormatSchema)
+      .refine(uniqueArray, {
+        message: "requestedOutputFormats must be unique",
+      })
+      .optional(),
     policy: PlannerPolicySchema,
     nowIso: IsoDateTimeSchema,
   })
@@ -393,14 +521,14 @@ export const PlannerOutputSchema = z
       });
     }
     const allReady = output.items.every(
-      (i) => i.state === "READY" && i.generationAllowed,
+      (i) => i.state === "READY" && i.generationAllowed === true,
     );
-    if (output.summary.generationAllowed && !allReady) {
+    if (output.summary.generationAllowed !== allReady) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["summary", "generationAllowed"],
         message:
-          "summary.generationAllowed requires every item READY and generationAllowed",
+          "summary.generationAllowed must equal items.every(READY && generationAllowed)",
       });
     }
   })
@@ -418,8 +546,6 @@ function isIsoKey(key: string): boolean {
   return key.endsWith(ISO_KEY_SUFFIX);
 }
 
-const ISO_DATE_TIME_RE =
-  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
 
 /**
  * Rekursive Validierung: JEDES Feld, dessen Schluessel auf `Iso` endet — auch
@@ -444,7 +570,7 @@ function walkIso(
   }
   if (value && typeof value === "object") {
     for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-      if (isIsoKey(k) && (typeof v !== "string" || !ISO_DATE_TIME_RE.test(v))) {
+      if (isIsoKey(k) && !IsoDateTimeSchema.safeParse(v).success) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: [...path, k],

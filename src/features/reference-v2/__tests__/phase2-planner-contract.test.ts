@@ -497,7 +497,241 @@ describe("Phase 2.0 planner item invariants", () => {
   });
 });
 
+describe("Phase 2.0 hardened invariants", () => {
+  it("rejects an invalid calendar ISO value in a nested *Iso field", () => {
+    const bad = {
+      ...input(),
+      vehicleMaster: {
+        ...vehicleMaster(),
+        history: [
+          { version: 1, atIso: "2026-13-45T11:00:00.000Z", action: "created" },
+        ],
+      },
+    };
+    expect(() => parsePlannerInput(bad)).toThrow(PlannerContractError);
+  });
+
+  it("rejects duplicate requestedOutputFormats", () => {
+    expect(
+      PlannerInputSchema.safeParse(
+        input({ requestedOutputFormats: ["4:5", "4:5"] }),
+      ).success,
+    ).toBe(false);
+  });
+
+  it("rejects empty requiredSurfaces", () => {
+    expect(
+      PlannerItemSchema.safeParse(
+        readyItem({
+          coverage: { ...coverage(), requiredSurfaces: [], items: [] },
+        }),
+      ).success,
+    ).toBe(false);
+  });
+
+  it("rejects a missing coverage item for a required surface", () => {
+    expect(
+      PlannerItemSchema.safeParse(
+        readyItem({
+          coverage: {
+            ...coverage(),
+            requiredSurfaces: ["front", "grille"],
+          },
+        }),
+      ).success,
+    ).toBe(false);
+  });
+
+  it("rejects a coverage item outside requiredSurfaces", () => {
+    const cov = coverage();
+    expect(
+      PlannerItemSchema.safeParse(
+        readyItem({
+          coverage: {
+            ...cov,
+            items: [
+              ...cov.items,
+              {
+                surface: "grille",
+                visibilityScore: 0.5,
+                met: true,
+                sourceAssetIds: ["asset_1"],
+              },
+            ],
+          },
+        }),
+      ).success,
+    ).toBe(false);
+  });
+
+  it("rejects allMandatorySurfacesMet contradicting item.met", () => {
+    const cov = coverage();
+    expect(
+      PlannerItemSchema.safeParse(
+        readyItem({
+          coverage: {
+            ...cov,
+            items: [{ ...cov.items[0], met: false }],
+            allMandatorySurfacesMet: true,
+          },
+        }),
+      ).success,
+    ).toBe(false);
+  });
+
+  it("rejects READY with NEEDS_CONFIRMATION", () => {
+    expect(
+      PlannerItemSchema.safeParse(
+        readyItem({ fineGrainedReadiness: "NEEDS_CONFIRMATION" }),
+      ).success,
+    ).toBe(false);
+  });
+
+  it("rejects REVIEW with READY_EXACT", () => {
+    expect(
+      PlannerItemSchema.safeParse(
+        readyItem({
+          state: "REVIEW",
+          generationAllowed: false,
+          fineGrainedReadiness: "READY_EXACT",
+        }),
+      ).success,
+    ).toBe(false);
+  });
+
+  it("rejects BLOCKED with READY_EXACT", () => {
+    expect(
+      PlannerItemSchema.safeParse(
+        blockedItem({ fineGrainedReadiness: "READY_EXACT" }),
+      ).success,
+    ).toBe(false);
+  });
+
+  it("rejects READY with primary exactPerspective=false", () => {
+    expect(
+      PlannerItemSchema.safeParse(
+        readyItem({
+          selection: {
+            primary: {
+              assetId: "asset_1",
+              perspectiveId: P_FRONT,
+              role: "primary",
+              exactPerspective: false,
+            },
+            secondaryReferences: [],
+          },
+        }),
+      ).success,
+    ).toBe(false);
+  });
+
+  it("rejects READY with a primary perspective different from the target", () => {
+    expect(
+      PlannerItemSchema.safeParse(
+        readyItem({
+          selection: {
+            primary: {
+              assetId: "asset_1",
+              perspectiveId: P_REAR,
+              role: "primary",
+              exactPerspective: true,
+            },
+            secondaryReferences: [],
+          },
+        }),
+      ).success,
+    ).toBe(false);
+  });
+
+  it("rejects READY with unmet coverage", () => {
+    const cov = coverage();
+    expect(
+      PlannerItemSchema.safeParse(
+        readyItem({
+          coverage: {
+            ...cov,
+            items: [{ ...cov.items[0], met: false }],
+            allMandatorySurfacesMet: false,
+          },
+        }),
+      ).success,
+    ).toBe(false);
+  });
+
+  it("rejects READY with an output format that is not ready", () => {
+    expect(
+      PlannerItemSchema.safeParse(
+        readyItem({
+          outputFormatReadiness: [
+            { format: "4:5", ready: false, reason: "Rand zu klein" },
+          ],
+        }),
+      ).success,
+    ).toBe(false);
+  });
+
+  it("accepts READY with an empty outputFormatReadiness array", () => {
+    expect(
+      PlannerItemSchema.safeParse(readyItem({ outputFormatReadiness: [] }))
+        .success,
+    ).toBe(true);
+  });
+
+  it("rejects READY_MULTI_REFERENCE without a secondary", () => {
+    expect(
+      PlannerItemSchema.safeParse(
+        readyItem({ fineGrainedReadiness: "READY_MULTI_REFERENCE" }),
+      ).success,
+    ).toBe(false);
+  });
+
+  it("rejects a substitution target different from the item perspective", () => {
+    expect(
+      PlannerItemSchema.safeParse(
+        readyItem({
+          state: "REVIEW",
+          generationAllowed: false,
+          fineGrainedReadiness: "NEEDS_CONFIRMATION",
+          substitution: {
+            sourcePerspectiveId: P_FRONT,
+            targetPerspectiveId: P_REAR,
+            azimuthDeltaDeg: 45,
+            rationale: "Ersatzansicht",
+          },
+        }),
+      ).success,
+    ).toBe(false);
+  });
+
+  it("rejects a substitution source different from the primary perspective", () => {
+    expect(
+      PlannerItemSchema.safeParse(
+        readyItem({
+          state: "REVIEW",
+          generationAllowed: false,
+          fineGrainedReadiness: "NEEDS_CONFIRMATION",
+          substitution: {
+            sourcePerspectiveId: P_REAR,
+            targetPerspectiveId: P_FRONT,
+            azimuthDeltaDeg: 45,
+            rationale: "Ersatzansicht",
+          },
+        }),
+      ).success,
+    ).toBe(false);
+  });
+
+  it("rejects all-READY items with summary.generationAllowed=false", () => {
+    expect(
+      PlannerOutputSchema.safeParse(
+        output([readyItem()], { generationAllowed: false }),
+      ).success,
+    ).toBe(false);
+  });
+});
+
 describe("Phase 2.0 planner output contract", () => {
+
   it("parses a valid READY output", () => {
     const parsed = parsePlannerOutput(output([readyItem()]));
     expect(parsed.summary).toEqual({
