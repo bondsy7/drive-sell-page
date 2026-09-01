@@ -208,12 +208,25 @@ export function evaluateIngestion(input: IngestionInput): IngestionEvaluation {
       0,
     ) / spec.requiredVisibleSurfaces.length;
 
+  // Detail-/Interior-Pflichtflaechen muessen POSITIV beobachtet sein.
+  const unmetRequiredSurfaces = spec.requiredVisibleSurfaces.filter(
+    (s) =>
+      !CORE_SURFACE_SET.includes(s) &&
+      surfaceVisibility(intake, s) < MIN_REQUIRED_SURFACE_VISIBILITY,
+  );
+  if (unmetRequiredSurfaces.length > 0) {
+    warnings.push(
+      `${MISSING_SURFACE_WARNING_PREFIX}: ${unmetRequiredSurfaces.join(", ")}`,
+    );
+  }
+
   const missingWheels = spec.framing.requiredVisibleWheels.filter(
     (w) => !intake.framing.visibleWheelPositions.includes(w),
   );
   if (missingWheels.length > 0) {
     warnings.push(`Nicht sichtbare Pflichträder: ${missingWheels.join(", ")}`);
   }
+
 
   const scores: MatchComponentScores = {
     cameraAngle: angleScore,
