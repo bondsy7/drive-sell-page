@@ -113,6 +113,7 @@ export const PlannerCoverageSchema = z
   .object({
     requiredSurfaces: z
       .array(VisualSurfaceSchema)
+      .nonempty()
       .refine(uniqueArray, { message: "requiredSurfaces must be unique" }),
     items: z.array(SurfaceCoverageItemSchema),
     allMandatorySurfacesMet: z.boolean(),
@@ -132,8 +133,37 @@ export const PlannerCoverageSchema = z
         path: ["items"],
         message: "coverage items must be unique by surface",
       });
+      return;
+    }
+    const required = new Set<string>(coverage.requiredSurfaces);
+    const present = new Set<string>(surfaces);
+    const missing = [...required].filter((s) => !present.has(s));
+    const extra = surfaces.filter((s) => !required.has(s));
+    if (missing.length > 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["items"],
+        message: `missing coverage item for required surface(s): ${missing.join(", ")}`,
+      });
+    }
+    if (extra.length > 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["items"],
+        message: `coverage item(s) outside requiredSurfaces: ${extra.join(", ")}`,
+      });
+    }
+    if (missing.length > 0 || extra.length > 0) return;
+    const allMet = coverage.items.every((i) => i.met);
+    if (coverage.allMandatorySurfacesMet !== allMet) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["allMandatorySurfacesMet"],
+        message: "allMandatorySurfacesMet must equal items.every(item => item.met)",
+      });
     }
   });
+
 export type PlannerCoverage = z.infer<typeof PlannerCoverageSchema>;
 
 // --------------------------------------------------------------------------
