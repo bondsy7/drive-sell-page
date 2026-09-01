@@ -52,16 +52,25 @@ const baseCtx = {
   anchorFiles: [],
 };
 
-const baseDeps = (analyze: any, upload?: any) => ({
+type BatchCtx = Parameters<typeof analyzeFileBatch>[1];
+type BatchDeps = Parameters<typeof analyzeFileBatch>[2];
+type AnalyzeFn = BatchDeps["port"]["analyze"];
+type UploadFn = BatchDeps["port"]["uploadFile"];
+const asCtx = (c: unknown) => c as BatchCtx;
+const asDeps = (d: unknown) => d as BatchDeps;
+const anchorArgs = (mock: { calls: unknown[][] }) =>
+  mock.calls.map((c) => (c[0] as { anchorFiles: unknown[] }).anchorFiles);
+
+const baseDeps = (analyze: unknown, upload?: unknown) => ({
   port: {
     uploadFile:
-      upload ??
+      (upload as UploadFn | undefined) ??
       vi.fn(async () => ({
         fileId: "files/abc",
         providerId: "gemini-file-api",
         mimeType: "image/jpeg",
       })),
-    analyze,
+    analyze: analyze as AnalyzeFn,
   },
   measureAspectRatio: async () => 1.5,
 });
@@ -153,8 +162,8 @@ describe("analysis coordinator", () => {
   it("returns an analysis record and framing for an accepted file", async () => {
     const outcome = await analyzeSingleFile(
       makeFile(),
-      baseCtx as any,
-      baseDeps(vi.fn(async () => ({ response: parseAnalyzerResponse(goodResponse) }))) as any,
+      asCtx(baseCtx),
+      asDeps(baseDeps(vi.fn(async () => ({ response: parseAnalyzerResponse(goodResponse) })))),
     );
     expect(outcome.ok).toBe(true);
     expect(outcome.perspectiveId).toBe("EXT_34_FRONT_LEFT");
@@ -167,10 +176,10 @@ describe("analysis coordinator", () => {
   it("never accepts a file when the provider fails", async () => {
     const outcome = await analyzeSingleFile(
       makeFile(),
-      baseCtx as any,
-      baseDeps(vi.fn(async () => {
+      asCtx(baseCtx),
+      asDeps(baseDeps(vi.fn(async () => {
         throw new Error("provider down");
-      })) as any,
+      })))),
     );
     expect(outcome.ok).toBe(false);
     expect(outcome.intake).toBeUndefined();
@@ -186,8 +195,8 @@ describe("analysis coordinator", () => {
     });
     const outcomes = await analyzeFileBatch(
       [makeFile("a.jpg"), makeFile("b.jpg")],
-      baseCtx as any,
-      baseDeps(analyze) as any,
+      asCtx(baseCtx),
+      baseDeps(analyze)),
     );
     expect(outcomes[0].ok).toBe(false);
     expect(outcomes[1].ok).toBe(true);
@@ -201,8 +210,8 @@ describe("analysis coordinator", () => {
 describe("Phase 1.5 hardening", () => {
   it("never sends the expected vehicle class or a perspective list to the provider", async () => {
     const analyze = vi.fn(async () => ({ response: parseAnalyzerResponse(goodResponse) }));
-    await analyzeSingleFile(makeFile(), baseCtx as any, baseDeps(analyze) as any);
-    const payload = (analyze.mock.calls as any[])[0][0] as Record<string, unknown>;
+    await analyzeSingleFile(makeFile(), asCtx(baseCtx), asDeps(baseDeps(analyze)));
+    const payload = analyze.mock.calls[0][0] as Record<string, unknown>;
     expect(Object.keys(payload).sort()).toEqual(["anchorFiles", "file"]);
     expect(JSON.stringify(payload)).not.toContain("car");
   });
@@ -214,7 +223,7 @@ describe("Phase 1.5 hardening", () => {
         canonicalPerspectiveId: "INT_DASH_CENTER",
       }),
     }));
-    const out = await analyzeSingleFile(makeFile(), baseCtx as any, baseDeps(analyze) as any);
+    const out = await analyzeSingleFile(makeFile(), asCtx(baseCtx), asDeps(baseDeps(analyze)));
     expect(out.ok).toBe(false);
     expect(out.gateCodes).toContain("PERSPECTIVE_UNDETERMINED");
   });
@@ -237,13 +246,13 @@ describe("Phase 1.5 hardening", () => {
     }));
     const outcomes = await analyzeFileBatch(
       [makeFile("a.jpg"), makeFile("b.jpg")],
-      baseCtx as any,
-      baseDeps(analyze, upload) as any,
+      asCtx(baseCtx),
+      baseDeps(analyze, upload)),
     );
     expect(outcomes.every((o) => o.ok)).toBe(true);
-    const calls = analyze.mock.calls as any[];
-    expect(calls[0][0].anchorFiles).toHaveLength(0);
-    expect(calls[1][0].anchorFiles).toHaveLength(1);
+    const anchors = anchorArgs(analyze.mock);
+    expect(anchors[0]).toHaveLength(0);
+    expect(anchors[1]).toHaveLength(1);
   });
 
   it("blocks explicit identity vocabulary lexically", () => {
@@ -268,24 +277,13 @@ describe("Phase 1.5 hardening", () => {
       state: "ACTIVE",
       expiresAtIso: "2030-01-01T00:00:00Z",
     }));
-    const out = await analyzeSingleFile(makeFile(), baseCtx as any, baseDeps(analyze, upload) as any);
+    const out = await analyzeSingleFile(makeFile(), asCtx(baseCtx), asDeps(baseDeps(analyze, upload)));
     const rec = ReferenceAnalysisRecordSchema.parse(out.analysis);
     expect(rec.mimeType).toBe("image/png");
     expect(rec.sizeBytes).toBe(4242);
     expect(rec.fileExpiresAtIso).toBe("2030-01-01T00:00:00Z");
   });
 });
-
-// ---------------------------------------------------------------------------
-// Typed test helpers (no `any`) for the final Phase 1.5 correction tests
-// ---------------------------------------------------------------------------
-
-type BatchCtx = Parameters<typeof analyzeFileBatch>[1];
-type BatchDeps = Parameters<typeof analyzeFileBatch>[2];
-const asCtx = (c: unknown) => c as BatchCtx;
-const asDeps = (d: unknown) => d as BatchDeps;
-const anchorArgs = (mock: { calls: unknown[][] }) =>
-  mock.calls.map((c) => (c[0] as { anchorFiles: unknown[] }).anchorFiles);
 
 // ---------------------------------------------------------------------------
 // FINAL Phase 1.5 correction: anchors only after Phase-1 governance accepts
