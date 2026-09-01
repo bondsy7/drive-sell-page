@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { SemanticFirewallError } from "../phase1-5/analyzer-contract";
 import {
   CURRENT_FRAMING_EVIDENCE_SCHEMA_VERSION,
   CurrentFramingEvidenceError,
@@ -123,7 +124,7 @@ describe("A. createCurrentFramingEvidenceForAsset", () => {
   it("rejects semantic identity inside the asset id via the frozen firewall", () => {
     expect(() =>
       createCurrentFramingEvidenceForAsset("WVWZZZ1KZAW123456", FACTS),
-    ).toThrow(CurrentFramingEvidenceError);
+    ).toThrow(SemanticFirewallError);
   });
 });
 
@@ -151,13 +152,16 @@ describe("B. rebaseCurrentFramingEvidence", () => {
     ).toThrow(CurrentFramingEvidenceError);
   });
 
-  it("rejects an empty or semantic persisted id", () => {
+  it("rejects an empty persisted id", () => {
     expect(() => rebaseCurrentFramingEvidence(evidence("file_a"), "")).toThrow(
       CurrentFramingEvidenceError,
     );
+  });
+
+  it("rejects a semantic persisted id via the frozen firewall", () => {
     expect(() =>
       rebaseCurrentFramingEvidence(evidence("file_a"), "WVWZZZ1KZAW123456"),
-    ).toThrow(CurrentFramingEvidenceError);
+    ).toThrow(SemanticFirewallError);
   });
 });
 
@@ -213,7 +217,7 @@ describe("C. parseCurrentFramingEvidenceSidecar", () => {
       parseCurrentFramingEvidenceSidecar({
         byAssetId: { ref_1: { ...evidence("ref_1"), vin: "WVWZZZ1KZAW123456" } },
       }),
-    ).toThrow(CurrentFramingEvidenceError);
+    ).toThrow(SemanticFirewallError);
   });
 });
 
