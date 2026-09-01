@@ -137,6 +137,8 @@ export interface PerspectivePose {
    * (validationRules.maxAzimuthErrorDeg), die immer >= dieser Toleranz ist.
    */
   readonly azimuthToleranceDeg?: number;
+  /** Hoehenprofil der Kamera — bestimmt u. a. Scene-Plate-Kompatibilitaet. */
+  readonly elevationProfile: ElevationProfile;
   /** Kamera-Pitch: positiv = nach oben geneigt, negativ = nach unten. */
   readonly pitchDeg?: number;
   readonly pitchToleranceDeg?: number;
