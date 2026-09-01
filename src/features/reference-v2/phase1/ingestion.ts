@@ -54,6 +54,12 @@ export interface IngestionInput {
   readonly intake: VisionIntakeResult;
   readonly framing: SourceFramingInput;
   readonly fileAvailable: boolean;
+  /**
+   * true nur fuer den automatischen KI-Intake (Phase 1.5). Der manuelle
+   * Diagnosepfad ist per Konstruktion NIE Primary-faehig: fehlt dieses Flag,
+   * kann das Asset strukturell hoechstens `secondary_support` werden.
+   */
+  readonly isAutomatic?: boolean;
 }
 
 export interface IngestionEvaluation {
@@ -223,11 +229,17 @@ export function evaluateIngestion(input: IngestionInput): IngestionEvaluation {
   for (const r of formatReadiness) {
     if (!r.ready) warnings.push(`${r.format}: ${r.reason ?? "nicht ausgabefähig"}`);
   }
+  if (input.isAutomatic !== true) {
+    warnings.push(
+      "Manuelle Diagnose-Erfassung: kann niemals Primary-Referenz werden.",
+    );
+  }
 
   let role: IngestionEvaluation["role"];
   if (blockers.length > 0) {
     role = "rejected";
   } else if (
+    input.isAutomatic === true &&
     evaluation.eligible &&
     evaluation.weightedScore >= master.minimumPerspectiveScore &&
     warnings.every((w) => !w.startsWith("Perspektive weicht"))
@@ -264,7 +276,8 @@ export function canBecomePrimary(asset: ReferenceAssetRecord): boolean {
   return (
     asset.blockers.length === 0 &&
     asset.hardFailures.length === 0 &&
-    (asset.role === "primary" || asset.role === "primary_candidate")
+    (asset.role === "primary" || asset.role === "primary_candidate") &&
+    asset.analysis !== undefined
   );
 }
 

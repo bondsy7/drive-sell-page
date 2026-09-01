@@ -71,6 +71,7 @@ function ingest(
   overrides: Partial<VisionIntakeResult> = {},
   framing = { sourceAspectRatio: 3 / 2, fullVehicleVisible: true, paddingPct: 20 },
   fileAvailable = true,
+  isAutomatic = true,
 ) {
   return evaluateIngestion({
     vehicleClass: "car",
@@ -79,6 +80,7 @@ function ingest(
     intake: intake(perspectiveId, overrides),
     framing,
     fileAvailable,
+    isAutomatic,
   });
 }
 
@@ -106,6 +108,18 @@ describe("Phase 1 ingestion governance", () => {
     expect(result.blockers).toEqual([]);
     expect(result.role).toBe("primary_candidate");
     expect(result.weightedScore).toBeGreaterThan(70);
+  });
+
+  it("never lets the manual diagnostic path become a primary candidate", () => {
+    const manual = ingest(
+      "EXT_34_FRONT_RIGHT",
+      {},
+      { sourceAspectRatio: 3 / 2, fullVehicleVisible: true, paddingPct: 20 },
+      true,
+      false,
+    );
+    expect(manual.blockers).toEqual([]);
+    expect(manual.role).toBe("secondary_support");
   });
 
   it("hard-fails the wrong vehicle side and never allows primary", () => {

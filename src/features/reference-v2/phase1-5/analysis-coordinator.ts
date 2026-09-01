@@ -10,10 +10,11 @@ import {
   type AnalyzerVisionResponse,
   type AutomaticGateCode,
 } from "./analyzer-contract";
-import type {
-  AnalyzeResult,
-  ReferenceV2AnalyzerPort,
-  ReferenceV2FileReference,
+import {
+  MAX_ANCHOR_FILES,
+  type AnalyzeResult,
+  type ReferenceV2AnalyzerPort,
+  type ReferenceV2FileReference,
 } from "./provider-adapter";
 import type { ReferenceAnalysisRecord } from "./analysis-record";
 
@@ -101,9 +102,7 @@ export async function analyzeSingleFile(
     report({ stage: "analyzing" });
     result = await deps.port.analyze({
       file: fileRef,
-      vehicleClass: ctx.vehicleClass,
-      allowedPerspectiveIds: ctx.allowedPerspectiveIds,
-      anchorFiles: ctx.anchorFiles,
+      anchorFiles: ctx.anchorFiles.slice(0, MAX_ANCHOR_FILES),
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "KI-Analyse fehlgeschlagen";
@@ -113,15 +112,29 @@ export async function analyzeSingleFile(
 
   const response = result.response;
   const anchorsProvided = ctx.anchorFiles.length > 0;
-  const gateCodes = evaluateAutomaticGate({
-    response,
-    expectedVehicleClass: ctx.vehicleClass,
-    anchorsProvided,
-  });
+  const gateCodes = [
+    ...evaluateAutomaticGate({
+      response,
+      expectedVehicleClass: ctx.vehicleClass,
+      anchorsProvided,
+    }),
+  ];
+  // Lokaler Soll-Ist-Abgleich: die erkannte Perspektive muss fuer diesen
+  // Vehicle Master ueberhaupt zulaessig sein.
+  if (
+    response.canonicalPerspectiveId &&
+    !ctx.allowedPerspectiveIds.includes(response.canonicalPerspectiveId) &&
+    !gateCodes.includes("PERSPECTIVE_UNDETERMINED")
+  ) {
+    gateCodes.push("PERSPECTIVE_UNDETERMINED");
+  }
 
   const analysis: ReferenceAnalysisRecord = {
     fileId: fileRef.fileId,
     providerId: fileRef.providerId,
+    mimeType: fileRef.mimeType,
+    ...(typeof fileRef.sizeBytes === "number" ? { sizeBytes: fileRef.sizeBytes } : {}),
+    ...(fileRef.expiresAtIso ? { fileExpiresAtIso: fileRef.expiresAtIso } : {}),
     status: gateCodes.length > 0 ? "failed" : "analyzed",
     analyzerSchemaVersion: ANALYZER_SCHEMA_VERSION,
     analyzedAtIso: new Date().toISOString(),
@@ -183,20 +196,36 @@ export async function analyzeSingleFile(
   };
 }
 
-/** Verarbeitet mehrere Dateien unabhaengig; Teilfehler bleiben isoliert. */
+/**
+ * Verarbeitet mehrere Dateien STRENG SEQUENZIELL; Teilfehler bleiben isoliert.
+ *
+ * Das erste akzeptierte Bild eines Batches wird zum Identitaets-Anker fuer die
+ * folgenden Dateien desselben Batches — auch dann, wenn der Vehicle Master
+ * vorher noch gar keine Referenz besass. Abgelehnte Dateien werden niemals
+ * Anker.
+ */
 export async function analyzeFileBatch(
   files: readonly File[],
   ctx: AnalyzeFileContext,
   deps: AnalyzeFileDeps,
 ): Promise<readonly AutomaticIntakeOutcome[]> {
   const outcomes: AutomaticIntakeOutcome[] = [];
+  const anchors: ReferenceV2FileReference[] = [...ctx.anchorFiles];
+
   for (const file of files) {
+    const stepCtx: AnalyzeFileContext = {
+      ...ctx,
+      anchorFiles: anchors.slice(0, MAX_ANCHOR_FILES),
+    };
+    let outcome: AutomaticIntakeOutcome;
     try {
-      outcomes.push(await analyzeSingleFile(file, ctx, deps));
+      outcome = await analyzeSingleFile(file, stepCtx, deps);
     } catch (e) {
-      outcomes.push(
-        fail(file.name, e instanceof Error ? e.message : "Unbekannter Fehler"),
-      );
+      outcome = fail(file.name, e instanceof Error ? e.message : "Unbekannter Fehler");
+    }
+    outcomes.push(outcome);
+    if (outcome.ok && outcome.file && anchors.length < MAX_ANCHOR_FILES) {
+      anchors.push(outcome.file);
     }
   }
   return outcomes;

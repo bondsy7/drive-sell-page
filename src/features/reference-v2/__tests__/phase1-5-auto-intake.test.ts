@@ -186,3 +186,85 @@ describe("analysis coordinator", () => {
     expect(outcomes[1].ok).toBe(true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Phase 1.5 audit hardening
+// ---------------------------------------------------------------------------
+
+describe("Phase 1.5 hardening", () => {
+  it("never sends the expected vehicle class or a perspective list to the provider", async () => {
+    const analyze = vi.fn(async () => ({ response: parseAnalyzerResponse(goodResponse) }));
+    await analyzeSingleFile(makeFile(), baseCtx as any, baseDeps(analyze) as any);
+    const payload = (analyze.mock.calls as any[])[0][0] as Record<string, unknown>;
+    expect(Object.keys(payload).sort()).toEqual(["anchorFiles", "file"]);
+    expect(JSON.stringify(payload)).not.toContain("car");
+  });
+
+  it("rejects a perspective that is not allowed for this vehicle master", async () => {
+    const analyze = vi.fn(async () => ({
+      response: parseAnalyzerResponse({
+        ...goodResponse,
+        canonicalPerspectiveId: "INT_DASH_CENTER",
+      }),
+    }));
+    const out = await analyzeSingleFile(makeFile(), baseCtx as any, baseDeps(analyze) as any);
+    expect(out.ok).toBe(false);
+    expect(out.gateCodes).toContain("PERSPECTIVE_UNDETERMINED");
+  });
+
+  it("uses the first accepted file of a batch as identity anchor for the next files", async () => {
+    let call = 0;
+    const analyze = vi.fn(async () => {
+      call += 1;
+      return {
+        response: parseAnalyzerResponse({
+          ...goodResponse,
+          ...(call === 1 ? {} : { sameVehicleConfidence: 0.95 }),
+        }),
+      };
+    });
+    const upload = vi.fn(async () => ({
+      fileId: `files/f${call}`,
+      providerId: "gemini-file-api",
+      mimeType: "image/jpeg",
+    }));
+    const outcomes = await analyzeFileBatch(
+      [makeFile("a.jpg"), makeFile("b.jpg")],
+      baseCtx as any,
+      baseDeps(analyze, upload) as any,
+    );
+    expect(outcomes.every((o) => o.ok)).toBe(true);
+    const calls = analyze.mock.calls as any[];
+    expect(calls[0][0].anchorFiles).toHaveLength(0);
+    expect(calls[1][0].anchorFiles).toHaveLength(1);
+  });
+
+  it("blocks explicit identity vocabulary lexically", () => {
+    expect(() =>
+      assertNoSemanticIdentity({ note: "looks like a facelift generation" }),
+    ).toThrow(SemanticFirewallError);
+    expect(() =>
+      assertNoSemanticIdentity({ note: "Modellreihe unklar" }),
+    ).toThrow(SemanticFirewallError);
+    expect(() =>
+      assertNoSemanticIdentity({ note: "wide two-box body, round lamps" }),
+    ).not.toThrow();
+  });
+
+  it("keeps provider lifecycle metadata on the analysis record", async () => {
+    const analyze = vi.fn(async () => ({ response: parseAnalyzerResponse(goodResponse) }));
+    const upload = vi.fn(async () => ({
+      fileId: "files/abc",
+      providerId: "gemini-file-api",
+      mimeType: "image/png",
+      sizeBytes: 4242,
+      state: "ACTIVE",
+      expiresAtIso: "2030-01-01T00:00:00Z",
+    }));
+    const out = await analyzeSingleFile(makeFile(), baseCtx as any, baseDeps(analyze, upload) as any);
+    const rec = ReferenceAnalysisRecordSchema.parse(out.analysis);
+    expect(rec.mimeType).toBe("image/png");
+    expect(rec.sizeBytes).toBe(4242);
+    expect(rec.fileExpiresAtIso).toBe("2030-01-01T00:00:00Z");
+  });
+});

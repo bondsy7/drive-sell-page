@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -21,6 +21,7 @@ import {
   type AutomaticIntakeProgress,
 } from "./analysis-coordinator";
 import {
+  MAX_ANCHOR_FILES,
   supabaseAnalyzerPort,
   type ReferenceV2FileReference,
 } from "./provider-adapter";
@@ -64,7 +65,7 @@ async function measureAspectRatio(file: File): Promise<number> {
       img.src = url;
     });
   } finally {
-    /* preview url is revoked by the caller when it is no longer displayed */
+    URL.revokeObjectURL(url);
   }
 }
 
@@ -77,6 +78,21 @@ export function AutomaticReferenceIntake({
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [rows, setRows] = useState<Row[]>([]);
+  /** Alle noch nicht freigegebenen Object-URLs dieses Komponentenlebens. */
+  const objectUrlsRef = useRef<Set<string>>(new Set());
+
+  const releaseUrl = useCallback((url: string | undefined) => {
+    if (!url) return;
+    if (objectUrlsRef.current.delete(url)) URL.revokeObjectURL(url);
+  }, []);
+
+  useEffect(() => {
+    const urls = objectUrlsRef.current;
+    return () => {
+      urls.forEach((u) => URL.revokeObjectURL(u));
+      urls.clear();
+    };
+  }, []);
 
   const allowedPerspectiveIds = useMemo(
     () => listMasterPerspectivesForClass(master.vehicleClass).map((p) => p.id),
@@ -89,11 +105,11 @@ export function AutomaticReferenceIntake({
       .filter((a) => a.role === "primary" || a.protection === "protected")
       .map((a) => a.analysis)
       .filter((x): x is NonNullable<typeof x> => Boolean(x))
-      .slice(0, 3)
+      .slice(0, MAX_ANCHOR_FILES)
       .map((a) => ({
         fileId: a.fileId,
         providerId: a.providerId,
-        mimeType: "image/jpeg",
+        mimeType: a.mimeType ?? "image/jpeg",
       }));
   }, [master.assets]);
 
@@ -110,7 +126,11 @@ export function AutomaticReferenceIntake({
     setBusy(true);
 
     const previews = new Map<string, string>();
-    for (const f of list) previews.set(f.name, URL.createObjectURL(f));
+    for (const f of list) {
+      const url = URL.createObjectURL(f);
+      objectUrlsRef.current.add(url);
+      previews.set(f.name, url);
+    }
 
     try {
       const outcomes = await analyzeFileBatch(
@@ -139,6 +159,8 @@ export function AutomaticReferenceIntake({
             outcome,
           });
           toast.error(`${outcome.fileName}: ${outcome.errorMessage ?? "abgewiesen"}`);
+          // Abgewiesene Dateien werden nicht angezeigt — Preview sofort freigeben.
+          releaseUrl(previews.get(outcome.fileName));
           continue;
         }
         try {
@@ -151,6 +173,7 @@ export function AutomaticReferenceIntake({
             framing: outcome.framing,
             fileAvailable: true,
             analysis: outcome.analysis,
+            isAutomatic: true,
           });
           patchRow(outcome.fileName, {
             stage: "governed",
@@ -172,6 +195,7 @@ export function AutomaticReferenceIntake({
             );
           }
         } catch (e) {
+          releaseUrl(previews.get(outcome.fileName));
           patchRow(outcome.fileName, {
             stage: "failed",
             message: e instanceof Error ? e.message : "Ingestion fehlgeschlagen",

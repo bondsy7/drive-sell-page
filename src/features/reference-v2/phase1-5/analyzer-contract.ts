@@ -68,11 +68,18 @@ export const FORBIDDEN_SEMANTIC_KEYS = [
   "preis",
 ] as const;
 
-/** Inhaltliche Muster, die auf semantische Identitaet hindeuten. */
+/**
+ * Inhaltliche Muster, die auf semantische Identitaet hindeuten. Rein lexikalisch
+ * (keine Markenlisten): erkannt werden Jahreszahlen, VIN-Muster sowie explizite
+ * Identitaets-Vokabeln in EN/DE.
+ */
 const FORBIDDEN_VALUE_PATTERNS: readonly RegExp[] = [
   /\b(19|20)\d{2}\b/, // Baujahr / Modelljahr
   /\b[A-HJ-NPR-Z0-9]{17}\b/, // VIN
+  /\b(brand|make|manufacturer|marque|model|models|modelname|model\s?year|model\s?range|model\s?line|trim|trim\s?level|facelift|generation|badge\s?name|nameplate|vin)\b/i,
+  /\b(marke|hersteller|modell|modellname|modelljahr|modellreihe|baujahr|ausstattungslinie|typbezeichnung|fahrgestellnummer)\b/i,
 ];
+
 
 export class SemanticFirewallError extends Error {
   readonly violations: readonly string[];
