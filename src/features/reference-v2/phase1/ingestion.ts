@@ -274,6 +274,7 @@ export function evaluateIngestion(input: IngestionInput): IngestionEvaluation {
   } else if (
     input.isAutomatic === true &&
     evaluation.eligible &&
+    unmetRequiredSurfaces.length === 0 &&
     evaluation.weightedScore >= master.minimumPerspectiveScore &&
     warnings.every((w) => !w.startsWith("Perspektive weicht"))
   ) {
