@@ -100,9 +100,9 @@ function asset(o: AssetOverrides = {}): ReferenceAssetRecord {
     intake: o.intake ?? intake(),
     analysis: "analysis" in o ? o.analysis : analysis(),
     scores: {
-      perspective: 90,
-      identity: 90,
-      surfaceCoverage: 90,
+      cameraAngle: 90,
+      sideAndSurfaceCorrectness: 90,
+      requiredSurfaceCoverage: 90,
       quality: 90,
       framing: 90,
     },
