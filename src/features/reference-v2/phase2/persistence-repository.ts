@@ -1,3 +1,5 @@
+import { supabase } from "@/integrations/supabase/client";
+import type { Database, Json } from "@/integrations/supabase/types";
 import {
   REFERENCE_V2_PERSISTENCE_SCHEMA_VERSION,
   REFERENCE_V2_STORAGE_BUCKET,
@@ -12,22 +14,26 @@ import {
 import { CURRENT_FRAMING_EVIDENCE_SCHEMA_VERSION } from "./framing-evidence";
 
 /**
- * Reference V2 — Phase 2.6B: typed persistence repository + row mappers.
+ * Reference V2 — Phase 2.6B (hardened): typed persistence repository,
+ * generated-schema-bound row mappers and a narrow semantic port.
  *
  * Isolierte Persistenzgrenze fuer AUSSCHLIESSLICH die drei Reference-V2-
  * Tabellen. Keine Storage-Objekte, keine Signed URLs, keine Provider-Aufrufe,
  * keine Generierung, keine Store-/UI-Hydration.
  *
  * INVARIANTEN
- * - Jede DB-Zeile ist untrusted input und wird strikt durch den durablen
- *   Vertrag (`persistence-contract.ts`) geparst. Keine Defaults, die
- *   fehlerhafte DB-Daten verdecken.
+ * - Schema-Bindung: Spaltenlisten, Insert- und Update-Payloads sind an die
+ *   generierten Supabase-Typen gebunden. Schema-Drift bricht die Compile-Zeit,
+ *   nicht erst die Laufzeit.
+ * - Jede DB-Zeile ist untrusted input: erst Own-Property-Guard gegen die
+ *   erwarteten Spalten, dann striktes Parsen durch den durablen Vertrag
+ *   (`persistence-contract.ts`). Keine Defaults, die fehlerhafte oder
+ *   fehlende DB-Daten verdecken.
  * - Owner (`user_id`) ist AUSSCHLIESSLICH DB-Autoritaet: BEFORE-Trigger
  *   leiten ihn aus dem verankerten Datensatz ab und ueberschreiben jeden
  *   mitgeschickten Wert. Der in Insert-Payloads enthaltene `user_id` ist ein
  *   reiner Transport-Platzhalter, weil die generierten Insert-Typen die Spalte
- *   verlangen; er ist NIEMALS Owner-Autoritaet und wird nie aus Business-Daten
- *   abgeleitet.
+ *   verlangen; er ist NIEMALS Owner-Autoritaet.
  * - Anker (`vehicle_id`, `workspace_id`, `asset_key`, `storage_path`) sind
  *   unveraenderlich; zusaetzlich behandelt dieses Repository die durable
  *   Datei-Identitaet (bucket/mime/size/sha) als immutable.
@@ -41,17 +47,130 @@ import { CURRENT_FRAMING_EVIDENCE_SCHEMA_VERSION } from "./framing-evidence";
  */
 
 // --------------------------------------------------------------------------
-// Table names (only these three are reachable from this module)
+// Generated schema binding (single source of column truth)
 // --------------------------------------------------------------------------
+
+type PublicTables = Database["public"]["Tables"];
+type PublicTableName = keyof PublicTables;
 
 export const REFERENCE_V2_TABLES = {
   workspaces: "reference_v2_workspaces",
   assets: "reference_v2_assets",
   framingEvidence: "reference_v2_framing_evidence",
-} as const;
+} as const satisfies Record<string, PublicTableName>;
 
 export type ReferenceV2TableName =
   (typeof REFERENCE_V2_TABLES)[keyof typeof REFERENCE_V2_TABLES];
+
+export type ReferenceV2WorkspaceRow =
+  PublicTables["reference_v2_workspaces"]["Row"];
+export type ReferenceV2WorkspaceInsert =
+  PublicTables["reference_v2_workspaces"]["Insert"];
+export type ReferenceV2WorkspaceUpdate =
+  PublicTables["reference_v2_workspaces"]["Update"];
+
+export type ReferenceV2AssetRow = PublicTables["reference_v2_assets"]["Row"];
+export type ReferenceV2AssetInsert =
+  PublicTables["reference_v2_assets"]["Insert"];
+export type ReferenceV2AssetUpdate =
+  PublicTables["reference_v2_assets"]["Update"];
+
+export type ReferenceV2FramingRow =
+  PublicTables["reference_v2_framing_evidence"]["Row"];
+export type ReferenceV2FramingInsert =
+  PublicTables["reference_v2_framing_evidence"]["Insert"];
+
+/** Spaltenlisten sind an die generierten Row-Typen gebunden. */
+const WORKSPACE_ROW_COLUMNS = [
+  "id",
+  "user_id",
+  "vehicle_id",
+  "master_key",
+  "label",
+  "vehicle_class",
+  "color_family",
+  "identity_cluster_id",
+  "master_version",
+  "master_history",
+  "schema_version",
+  "created_at",
+  "updated_at",
+] as const satisfies readonly (keyof ReferenceV2WorkspaceRow)[];
+
+const ASSET_ROW_COLUMNS = [
+  "id",
+  "workspace_id",
+  "user_id",
+  "asset_key",
+  "requested_perspective_id",
+  "canonical_perspective_id",
+  "file_name",
+  "storage_bucket",
+  "storage_path",
+  "mime_type",
+  "size_bytes",
+  "sha256",
+  "intake",
+  "analysis",
+  "scores",
+  "weighted_score",
+  "hard_failures",
+  "blockers",
+  "warnings",
+  "role",
+  "protection",
+  "asset_version",
+  "history",
+  "schema_version",
+  "created_at",
+  "updated_at",
+] as const satisfies readonly (keyof ReferenceV2AssetRow)[];
+
+const FRAMING_ROW_COLUMNS = [
+  "workspace_id",
+  "asset_key",
+  "user_id",
+  "schema_version",
+  "source_aspect_ratio",
+  "full_vehicle_visible",
+  "cropped",
+  "padding_pct",
+  "updated_at",
+] as const satisfies readonly (keyof ReferenceV2FramingRow)[];
+
+/**
+ * Compile-Zeit-Vollstaendigkeit: eine neue Spalte im generierten Schema muss
+ * hier bewusst nachgezogen werden, sonst schlaegt der Typecheck fehl.
+ */
+type ColumnsExhaustive<
+  TRow,
+  TColumns extends readonly (keyof TRow)[],
+> = Exclude<keyof TRow, TColumns[number]> extends never ? true : never;
+
+const _workspaceColumnsExhaustive: ColumnsExhaustive<
+  ReferenceV2WorkspaceRow,
+  typeof WORKSPACE_ROW_COLUMNS
+> = true;
+const _assetColumnsExhaustive: ColumnsExhaustive<
+  ReferenceV2AssetRow,
+  typeof ASSET_ROW_COLUMNS
+> = true;
+const _framingColumnsExhaustive: ColumnsExhaustive<
+  ReferenceV2FramingRow,
+  typeof FRAMING_ROW_COLUMNS
+> = true;
+void _workspaceColumnsExhaustive;
+void _assetColumnsExhaustive;
+void _framingColumnsExhaustive;
+
+/**
+ * Lokalisierte JSON-Spaltengrenze: die vertraglich geparsten Werte sind per
+ * Schema JSON-serialisierbar, der generierte `Json`-Typ kann diese Strukturen
+ * aber nicht strukturell ausdruecken. Ausschliesslich hier erlaubt.
+ */
+function toJsonColumn(value: unknown): Json {
+  return value as Json;
+}
 
 // --------------------------------------------------------------------------
 // Errors
@@ -89,7 +208,7 @@ export class ReferenceV2RepositoryNotFoundError extends ReferenceV2RepositoryErr
 }
 
 // --------------------------------------------------------------------------
-// Narrow client port (structural subset of the generated Supabase client)
+// Narrow semantic port (no query-builder mimicry)
 // --------------------------------------------------------------------------
 
 export interface ReferenceV2DbError {
@@ -98,52 +217,92 @@ export interface ReferenceV2DbError {
   readonly details?: string | null;
 }
 
-export interface ReferenceV2Result<T> {
+export interface ReferenceV2PortResult<T> {
   readonly data: T;
   readonly error: ReferenceV2DbError | null;
 }
 
-export type ReferenceV2Row = Record<string, unknown>;
+/** Nur mutable Spalten; Anker und durable Datei-Identitaet fehlen bewusst. */
+export type ReferenceV2WorkspaceUpdatePatch = Required<
+  Pick<
+    ReferenceV2WorkspaceUpdate,
+    | "label"
+    | "vehicle_class"
+    | "color_family"
+    | "identity_cluster_id"
+    | "master_version"
+    | "master_history"
+    | "schema_version"
+  >
+>;
 
-export interface ReferenceV2SingleBuilder
-  extends PromiseLike<ReferenceV2Result<ReferenceV2Row | null>> {
-  single(): PromiseLike<ReferenceV2Result<ReferenceV2Row | null>>;
-  maybeSingle(): PromiseLike<ReferenceV2Result<ReferenceV2Row | null>>;
+export type ReferenceV2AssetUpdatePatch = Required<
+  Pick<
+    ReferenceV2AssetUpdate,
+    | "requested_perspective_id"
+    | "canonical_perspective_id"
+    | "file_name"
+    | "intake"
+    | "analysis"
+    | "scores"
+    | "weighted_score"
+    | "hard_failures"
+    | "blockers"
+    | "warnings"
+    | "role"
+    | "protection"
+    | "asset_version"
+    | "history"
+    | "schema_version"
+  >
+>;
+
+export interface ReferenceV2WorkspaceUpdateKeys {
+  readonly workspaceId: string;
+  readonly vehicleId: string;
 }
 
-export interface ReferenceV2SelectBuilder
-  extends PromiseLike<ReferenceV2Result<ReferenceV2Row[] | null>> {
-  eq(column: string, value: unknown): ReferenceV2SelectBuilder;
-  order(
-    column: string,
-    options: { ascending: boolean },
-  ): ReferenceV2SelectBuilder;
-  maybeSingle(): PromiseLike<ReferenceV2Result<ReferenceV2Row | null>>;
+export interface ReferenceV2AssetUpdateKeys {
+  readonly rowId: string;
+  readonly workspaceId: string;
+  readonly assetKey: string;
 }
 
-export interface ReferenceV2MutationBuilder {
-  eq(column: string, value: unknown): ReferenceV2MutationBuilder;
-  select(columns: string): ReferenceV2SingleBuilder;
-}
-
-export interface ReferenceV2DeleteBuilder
-  extends PromiseLike<ReferenceV2Result<ReferenceV2Row[] | null>> {
-  eq(column: string, value: unknown): ReferenceV2DeleteBuilder;
-}
-
-export interface ReferenceV2TablePort {
-  select(columns: string): ReferenceV2SelectBuilder;
-  insert(values: ReferenceV2Row): ReferenceV2MutationBuilder;
-  update(values: ReferenceV2Row): ReferenceV2MutationBuilder;
-  upsert(
-    values: ReferenceV2Row,
-    options: { onConflict: string },
-  ): ReferenceV2MutationBuilder;
-  delete(): ReferenceV2DeleteBuilder;
-}
-
-export interface ReferenceV2ClientPort {
-  from(table: ReferenceV2TableName): ReferenceV2TablePort;
+/**
+ * Semantischer Port: typisierte Zeilen statt nachgebautem Query-Builder.
+ * Rueckgabe-Zeilen bleiben zur Laufzeit untrusted und werden gemappt.
+ */
+export interface ReferenceV2SemanticPort {
+  findWorkspaceByVehicleId(
+    vehicleId: string,
+  ): Promise<ReferenceV2PortResult<ReferenceV2WorkspaceRow | null>>;
+  listAssets(
+    workspaceId: string,
+  ): Promise<ReferenceV2PortResult<ReferenceV2AssetRow[] | null>>;
+  listFraming(
+    workspaceId: string,
+  ): Promise<ReferenceV2PortResult<ReferenceV2FramingRow[] | null>>;
+  insertWorkspace(
+    values: ReferenceV2WorkspaceInsert,
+  ): Promise<ReferenceV2PortResult<ReferenceV2WorkspaceRow | null>>;
+  updateWorkspace(
+    patch: ReferenceV2WorkspaceUpdatePatch,
+    keys: ReferenceV2WorkspaceUpdateKeys,
+  ): Promise<ReferenceV2PortResult<ReferenceV2WorkspaceRow | null>>;
+  insertAsset(
+    values: ReferenceV2AssetInsert,
+  ): Promise<ReferenceV2PortResult<ReferenceV2AssetRow | null>>;
+  updateAsset(
+    patch: ReferenceV2AssetUpdatePatch,
+    keys: ReferenceV2AssetUpdateKeys,
+  ): Promise<ReferenceV2PortResult<ReferenceV2AssetRow | null>>;
+  deleteAsset(
+    workspaceId: string,
+    assetKey: string,
+  ): Promise<ReferenceV2PortResult<null>>;
+  upsertFraming(
+    values: ReferenceV2FramingInsert,
+  ): Promise<ReferenceV2PortResult<ReferenceV2FramingRow | null>>;
 }
 
 // --------------------------------------------------------------------------
@@ -152,6 +311,9 @@ export interface ReferenceV2ClientPort {
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// eslint-disable-next-line no-control-regex
+const CONTROL_CHARS = /[\u0000-\u001f\u007f]/;
 
 /** Struktureller Platzhalter fuer DB-autoritative Felder vor dem Insert. */
 const PLACEHOLDER_UUID = "00000000-0000-4000-8000-000000000000";
@@ -164,9 +326,23 @@ function assertUuid(value: unknown, field: string): string {
   return value;
 }
 
-function assertNonEmpty(value: unknown, field: string): string {
-  if (typeof value !== "string" || value.trim().length === 0) {
-    throw new ReferenceV2RepositoryError(`${field} must be a non-empty string`);
+/**
+ * Pfad-sicheres, durables Schluesselsegment — identische Semantik wie der
+ * Storage-Pfad-Helfer des Vertrags (kein neues Vokabular).
+ */
+function assertSafeKeySegment(value: unknown, field: string): string {
+  if (
+    typeof value !== "string" ||
+    value.length === 0 ||
+    value.trim() !== value ||
+    value.includes("/") ||
+    value.includes("\\") ||
+    value.includes("..") ||
+    CONTROL_CHARS.test(value)
+  ) {
+    throw new ReferenceV2RepositoryError(
+      `${field} must be a non-empty path-safe segment`,
+    );
   }
   return value;
 }
@@ -191,11 +367,34 @@ function toNumber(value: unknown, field: string): number {
   return n;
 }
 
-function requireRow(value: unknown, field: string): ReferenceV2Row {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    throw new ReferenceV2RepositoryError(`${field} must be a database row`);
+/**
+ * Own-Property-Guard: eine fehlende Spalte ist eine defekte Projektion und
+ * darf NIEMALS wie ein legitimes SQL NULL aussehen. Explizites `null` bleibt
+ * fuer nullable Spalten gueltig; `undefined` ist immer malformed.
+ */
+function requireRowColumns<TRow>(
+  input: unknown,
+  columns: readonly (keyof TRow)[],
+  label: string,
+): Record<string, unknown> {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    throw new ReferenceV2RepositoryError(`${label} must be a database row`);
   }
-  return value as ReferenceV2Row;
+  const row = input as Record<string, unknown>;
+  for (const column of columns) {
+    const key = String(column);
+    if (!Object.prototype.hasOwnProperty.call(row, key)) {
+      throw new ReferenceV2RepositoryError(
+        `${label}: missing database column "${key}" (fail-closed)`,
+      );
+    }
+    if (row[key] === undefined) {
+      throw new ReferenceV2RepositoryError(
+        `${label}: database column "${key}" is undefined (fail-closed)`,
+      );
+    }
+  }
+  return row;
 }
 
 // --------------------------------------------------------------------------
@@ -204,10 +403,13 @@ function requireRow(value: unknown, field: string): ReferenceV2Row {
 
 const UNIQUE_VIOLATION = "23505";
 const RAISED_EXCEPTION = "P0001";
+/** PostgREST: "JSON object requested, multiple (or no) rows returned". */
+const NO_SINGLE_ROW = "PGRST116";
 
 function translateDbError(
   error: ReferenceV2DbError,
   context: string,
+  options: { readonly zeroRowsIsNotFound?: boolean } = {},
 ): ReferenceV2RepositoryError {
   const code = error.code ?? null;
   const message = error.message ?? "unknown database error";
@@ -227,22 +429,38 @@ function translateDbError(
       code,
     );
   }
+  // Nur im UPDATE-Kontext ist PGRST116 eine Null-Treffer-Aussage; RLS- oder
+  // DB-Fehler werden NIEMALS zu NotFound umgedeutet.
+  if (options.zeroRowsIsNotFound && code === NO_SINGLE_ROW) {
+    return new ReferenceV2RepositoryNotFoundError(
+      `${context}: no matching row`,
+      code,
+    );
+  }
   return new ReferenceV2RepositoryError(`${context}: ${message}`, code);
 }
 
-function unwrap<T>(result: ReferenceV2Result<T>, context: string): T {
-  if (result.error) throw translateDbError(result.error, context);
+function unwrap<T>(
+  result: ReferenceV2PortResult<T>,
+  context: string,
+  options: { readonly zeroRowsIsNotFound?: boolean } = {},
+): T {
+  if (result.error) throw translateDbError(result.error, context, options);
   return result.data;
 }
 
 // --------------------------------------------------------------------------
-// Pure row mappers (DB row -> durable contract)
+// Pure row mappers (generated DB row -> durable contract)
 // --------------------------------------------------------------------------
 
 export function mapWorkspaceRowToPersistence(
-  input: unknown,
+  input: ReferenceV2WorkspaceRow | unknown,
 ): ReferenceV2WorkspacePersistence {
-  const row = requireRow(input, "workspace row");
+  const row = requireRowColumns<ReferenceV2WorkspaceRow>(
+    input,
+    WORKSPACE_ROW_COLUMNS,
+    "workspace row",
+  );
   return parseReferenceV2WorkspacePersistence({
     schemaVersion: row.schema_version,
     workspaceId: row.id,
@@ -251,7 +469,7 @@ export function mapWorkspaceRowToPersistence(
     masterKey: row.master_key,
     label: row.label,
     vehicleClass: row.vehicle_class,
-    colorFamily: row.color_family ?? null,
+    colorFamily: row.color_family,
     identityClusterId: row.identity_cluster_id,
     masterVersion: row.master_version,
     masterHistory: row.master_history,
@@ -261,9 +479,13 @@ export function mapWorkspaceRowToPersistence(
 }
 
 export function mapAssetRowToPersistence(
-  input: unknown,
+  input: ReferenceV2AssetRow | unknown,
 ): ReferenceV2AssetPersistence {
-  const row = requireRow(input, "asset row");
+  const row = requireRowColumns<ReferenceV2AssetRow>(
+    input,
+    ASSET_ROW_COLUMNS,
+    "asset row",
+  );
   const candidate: Record<string, unknown> = {
     schemaVersion: row.schema_version,
     rowId: row.id,
@@ -290,19 +512,25 @@ export function mapAssetRowToPersistence(
     assetVersion: row.asset_version,
     history: row.history,
   };
-  if (row.size_bytes !== null && row.size_bytes !== undefined) {
+  // SQL NULL bleibt gueltig und bedeutet "nicht gesetzt"; ein FEHLENDER
+  // Schluessel wurde bereits oben fail-closed abgewiesen.
+  if (row.size_bytes !== null) {
     candidate.sizeBytes = toNumber(row.size_bytes, "asset.size_bytes");
   }
-  if (row.analysis !== null && row.analysis !== undefined) {
+  if (row.analysis !== null) {
     candidate.analysis = row.analysis;
   }
   return parseReferenceV2AssetPersistence(candidate);
 }
 
 export function mapFramingRowToPersistence(
-  input: unknown,
+  input: ReferenceV2FramingRow | unknown,
 ): ReferenceV2FramingEvidencePersistence {
-  const row = requireRow(input, "framing row");
+  const row = requireRowColumns<ReferenceV2FramingRow>(
+    input,
+    FRAMING_ROW_COLUMNS,
+    "framing row",
+  );
   return parseReferenceV2FramingEvidencePersistence({
     schemaVersion: row.schema_version,
     workspaceId: row.workspace_id,
@@ -380,8 +608,19 @@ function validateAssetCreateInput(
 }
 
 // --------------------------------------------------------------------------
-// Pure reverse serializers (durable contract -> DB row)
+// Pure reverse serializers (durable contract -> generated Insert payloads)
 // --------------------------------------------------------------------------
+
+/** DB setzt `created_at`/`updated_at`; sie sind nie Teil des Payloads. */
+export type ReferenceV2WorkspaceInsertPayload = Omit<
+  ReferenceV2WorkspaceInsert,
+  "created_at" | "updated_at"
+>;
+
+export type ReferenceV2AssetInsertPayload = Omit<
+  ReferenceV2AssetInsert,
+  "created_at" | "updated_at"
+>;
 
 /**
  * `user_id` ist hier ausschliesslich ein Transport-Platzhalter fuer die
@@ -391,9 +630,9 @@ function validateAssetCreateInput(
 export function workspacePersistenceToDbRow(
   input: ReferenceV2WorkspaceCreateInput,
   transportUserId: string = PLACEHOLDER_UUID,
-): ReferenceV2Row {
+): ReferenceV2WorkspaceInsertPayload {
   const validated = validateWorkspaceCreateInput(input);
-  const row: ReferenceV2Row = {
+  const row: ReferenceV2WorkspaceInsertPayload = {
     user_id: assertUuid(transportUserId, "transportUserId"),
     vehicle_id: validated.vehicleId,
     master_key: validated.masterKey,
@@ -402,7 +641,7 @@ export function workspacePersistenceToDbRow(
     color_family: validated.colorFamily,
     identity_cluster_id: validated.identityClusterId,
     master_version: validated.masterVersion,
-    master_history: validated.masterHistory,
+    master_history: toJsonColumn(validated.masterHistory),
     schema_version: validated.schemaVersion,
   };
   if (input.workspaceId) row.id = assertUuid(input.workspaceId, "workspaceId");
@@ -413,9 +652,9 @@ export function workspacePersistenceToDbRow(
 export function assetPersistenceToDbRow(
   input: ReferenceV2AssetCreateInput,
   transportUserId: string = PLACEHOLDER_UUID,
-): ReferenceV2Row {
+): ReferenceV2AssetInsertPayload {
   const validated = validateAssetCreateInput(input);
-  const row: ReferenceV2Row = {
+  const row: ReferenceV2AssetInsertPayload = {
     workspace_id: validated.workspaceId,
     user_id: assertUuid(transportUserId, "transportUserId"),
     asset_key: validated.assetKey,
@@ -427,17 +666,19 @@ export function assetPersistenceToDbRow(
     mime_type: validated.mimeType,
     size_bytes: validated.sizeBytes ?? null,
     sha256: validated.sha256,
-    intake: validated.intake,
-    analysis: validated.analysis ?? null,
-    scores: validated.scores,
+    intake: toJsonColumn(validated.intake),
+    analysis: validated.analysis === undefined
+      ? null
+      : toJsonColumn(validated.analysis),
+    scores: toJsonColumn(validated.scores),
     weighted_score: validated.weightedScore,
-    hard_failures: validated.hardFailures,
-    blockers: validated.blockers,
-    warnings: validated.warnings,
+    hard_failures: [...validated.hardFailures],
+    blockers: [...validated.blockers],
+    warnings: [...validated.warnings],
     role: validated.role,
     protection: validated.protection,
     asset_version: validated.assetVersion,
-    history: validated.history,
+    history: toJsonColumn(validated.history),
     schema_version: validated.schemaVersion,
   };
   if (input.rowId) row.id = assertUuid(input.rowId, "rowId");
@@ -448,7 +689,7 @@ export function assetPersistenceToDbRow(
 export function framingPersistenceToDbRow(
   evidence: ReferenceV2FramingEvidencePersistence,
   transportUserId: string = PLACEHOLDER_UUID,
-): ReferenceV2Row {
+): ReferenceV2FramingInsert {
   const validated = parseReferenceV2FramingEvidencePersistence(evidence);
   return {
     workspace_id: validated.workspaceId,
@@ -463,6 +704,44 @@ export function framingPersistenceToDbRow(
   };
 }
 
+function workspaceUpdatePatch(
+  validated: ReferenceV2WorkspacePersistence,
+): ReferenceV2WorkspaceUpdatePatch {
+  return {
+    label: validated.label,
+    vehicle_class: validated.vehicleClass,
+    color_family: validated.colorFamily,
+    identity_cluster_id: validated.identityClusterId,
+    master_version: validated.masterVersion,
+    master_history: toJsonColumn(validated.masterHistory),
+    schema_version: validated.schemaVersion,
+  };
+}
+
+function assetUpdatePatch(
+  validated: ReferenceV2AssetPersistence,
+): ReferenceV2AssetUpdatePatch {
+  return {
+    requested_perspective_id: validated.requestedPerspectiveId,
+    canonical_perspective_id: validated.canonicalPerspectiveId,
+    file_name: validated.fileName,
+    intake: toJsonColumn(validated.intake),
+    analysis: validated.analysis === undefined
+      ? null
+      : toJsonColumn(validated.analysis),
+    scores: toJsonColumn(validated.scores),
+    weighted_score: validated.weightedScore,
+    hard_failures: [...validated.hardFailures],
+    blockers: [...validated.blockers],
+    warnings: [...validated.warnings],
+    role: validated.role,
+    protection: validated.protection,
+    asset_version: validated.assetVersion,
+    history: toJsonColumn(validated.history),
+    schema_version: validated.schemaVersion,
+  };
+}
+
 // --------------------------------------------------------------------------
 // Bundle
 // --------------------------------------------------------------------------
@@ -474,10 +753,96 @@ export interface ReferenceV2PersistenceBundle {
 }
 
 // --------------------------------------------------------------------------
-// Repository
+// Production port (real typed client, no escape casts)
 // --------------------------------------------------------------------------
 
 const ALL_COLUMNS = "*";
+
+/**
+ * Adapter auf den BESTEHENDEN App-Client (kein zweiter Client). UPDATEs nutzen
+ * `maybeSingle()`, damit null Treffer kein PostgREST-Fehler sind und explizit
+ * als NotFound gemeldet werden koennen.
+ */
+export function createReferenceV2SupabasePort(
+  client: typeof supabase = supabase,
+): ReferenceV2SemanticPort {
+  return {
+    async findWorkspaceByVehicleId(vehicleId) {
+      return await client
+        .from(REFERENCE_V2_TABLES.workspaces)
+        .select(ALL_COLUMNS)
+        .eq("vehicle_id", vehicleId)
+        .maybeSingle();
+    },
+    async listAssets(workspaceId) {
+      return await client
+        .from(REFERENCE_V2_TABLES.assets)
+        .select(ALL_COLUMNS)
+        .eq("workspace_id", workspaceId)
+        .order("created_at", { ascending: true })
+        .order("asset_key", { ascending: true });
+    },
+    async listFraming(workspaceId) {
+      return await client
+        .from(REFERENCE_V2_TABLES.framingEvidence)
+        .select(ALL_COLUMNS)
+        .eq("workspace_id", workspaceId)
+        .order("asset_key", { ascending: true });
+    },
+    async insertWorkspace(values) {
+      return await client
+        .from(REFERENCE_V2_TABLES.workspaces)
+        .insert(values)
+        .select(ALL_COLUMNS)
+        .single();
+    },
+    async updateWorkspace(patch, keys) {
+      return await client
+        .from(REFERENCE_V2_TABLES.workspaces)
+        .update(patch)
+        .eq("id", keys.workspaceId)
+        .eq("vehicle_id", keys.vehicleId)
+        .select(ALL_COLUMNS)
+        .maybeSingle();
+    },
+    async insertAsset(values) {
+      return await client
+        .from(REFERENCE_V2_TABLES.assets)
+        .insert(values)
+        .select(ALL_COLUMNS)
+        .single();
+    },
+    async updateAsset(patch, keys) {
+      return await client
+        .from(REFERENCE_V2_TABLES.assets)
+        .update(patch)
+        .eq("id", keys.rowId)
+        .eq("workspace_id", keys.workspaceId)
+        .eq("asset_key", keys.assetKey)
+        .select(ALL_COLUMNS)
+        .maybeSingle();
+    },
+    async deleteAsset(workspaceId, assetKey) {
+      const { error } = await client
+        .from(REFERENCE_V2_TABLES.assets)
+        .delete()
+        .eq("workspace_id", workspaceId)
+        .eq("asset_key", assetKey);
+      return { data: null, error };
+    },
+    async upsertFraming(values) {
+      return await client
+        .from(REFERENCE_V2_TABLES.framingEvidence)
+        .upsert(values, { onConflict: "workspace_id,asset_key" })
+        .select(ALL_COLUMNS)
+        .single();
+    },
+  };
+}
+
+// --------------------------------------------------------------------------
+// Repository
+// --------------------------------------------------------------------------
 
 export interface ReferenceV2PersistenceRepository {
   loadBundleByVehicleId(
@@ -502,35 +867,24 @@ export interface ReferenceV2PersistenceRepository {
 }
 
 export function createReferenceV2PersistenceRepository(
-  client: ReferenceV2ClientPort,
+  port: ReferenceV2SemanticPort,
 ): ReferenceV2PersistenceRepository {
   async function loadBundleByVehicleId(
     vehicleId: string,
   ): Promise<ReferenceV2PersistenceBundle | null> {
     assertUuid(vehicleId, "vehicleId");
 
-    const workspaceResult = await client
-      .from(REFERENCE_V2_TABLES.workspaces)
-      .select(ALL_COLUMNS)
-      .eq("vehicle_id", vehicleId)
-      .maybeSingle();
-    const workspaceRow = unwrap(workspaceResult, "load workspace");
+    const workspaceRow = unwrap(
+      await port.findWorkspaceByVehicleId(vehicleId),
+      "load workspace",
+    );
     if (!workspaceRow) return null;
 
     const workspace = mapWorkspaceRowToPersistence(workspaceRow);
 
     const [assetResult, framingResult] = await Promise.all([
-      client
-        .from(REFERENCE_V2_TABLES.assets)
-        .select(ALL_COLUMNS)
-        .eq("workspace_id", workspace.workspaceId)
-        .order("created_at", { ascending: true })
-        .order("asset_key", { ascending: true }),
-      client
-        .from(REFERENCE_V2_TABLES.framingEvidence)
-        .select(ALL_COLUMNS)
-        .eq("workspace_id", workspace.workspaceId)
-        .order("asset_key", { ascending: true }),
+      port.listAssets(workspace.workspaceId),
+      port.listFraming(workspace.workspaceId),
     ]);
 
     const assetRows = unwrap(assetResult, "load assets") ?? [];
@@ -586,13 +940,11 @@ export function createReferenceV2PersistenceRepository(
   async function createWorkspace(
     input: ReferenceV2WorkspaceCreateInput,
   ): Promise<ReferenceV2WorkspacePersistence> {
-    const row = workspacePersistenceToDbRow(input);
-    const result = await client
-      .from(REFERENCE_V2_TABLES.workspaces)
-      .insert(row)
-      .select(ALL_COLUMNS)
-      .single();
-    const inserted = unwrap(result, "create workspace");
+    const values = workspacePersistenceToDbRow(input);
+    const inserted = unwrap(
+      await port.insertWorkspace(values),
+      "create workspace",
+    );
     if (!inserted) {
       throw new ReferenceV2RepositoryError(
         "create workspace: database returned no row",
@@ -605,22 +957,14 @@ export function createReferenceV2PersistenceRepository(
     workspace: ReferenceV2WorkspacePersistence,
   ): Promise<ReferenceV2WorkspacePersistence> {
     const validated = parseReferenceV2WorkspacePersistence(workspace);
-    const result = await client
-      .from(REFERENCE_V2_TABLES.workspaces)
-      .update({
-        label: validated.label,
-        vehicle_class: validated.vehicleClass,
-        color_family: validated.colorFamily,
-        identity_cluster_id: validated.identityClusterId,
-        master_version: validated.masterVersion,
-        master_history: validated.masterHistory,
-        schema_version: validated.schemaVersion,
-      })
-      .eq("id", validated.workspaceId)
-      .eq("vehicle_id", validated.vehicleId)
-      .select(ALL_COLUMNS)
-      .single();
-    const updated = unwrap(result, "update workspace");
+    const updated = unwrap(
+      await port.updateWorkspace(workspaceUpdatePatch(validated), {
+        workspaceId: validated.workspaceId,
+        vehicleId: validated.vehicleId,
+      }),
+      "update workspace",
+      { zeroRowsIsNotFound: true },
+    );
     if (!updated) {
       throw new ReferenceV2RepositoryNotFoundError(
         "update workspace: no matching row",
@@ -632,13 +976,8 @@ export function createReferenceV2PersistenceRepository(
   async function createAsset(
     input: ReferenceV2AssetCreateInput,
   ): Promise<ReferenceV2AssetPersistence> {
-    const row = assetPersistenceToDbRow(input);
-    const result = await client
-      .from(REFERENCE_V2_TABLES.assets)
-      .insert(row)
-      .select(ALL_COLUMNS)
-      .single();
-    const inserted = unwrap(result, "create asset");
+    const values = assetPersistenceToDbRow(input);
+    const inserted = unwrap(await port.insertAsset(values), "create asset");
     if (!inserted) {
       throw new ReferenceV2RepositoryError(
         "create asset: database returned no row",
@@ -651,31 +990,15 @@ export function createReferenceV2PersistenceRepository(
     asset: ReferenceV2AssetPersistence,
   ): Promise<ReferenceV2AssetPersistence> {
     const validated = parseReferenceV2AssetPersistence(asset);
-    const result = await client
-      .from(REFERENCE_V2_TABLES.assets)
-      .update({
-        requested_perspective_id: validated.requestedPerspectiveId,
-        canonical_perspective_id: validated.canonicalPerspectiveId,
-        file_name: validated.fileName,
-        intake: validated.intake,
-        analysis: validated.analysis ?? null,
-        scores: validated.scores,
-        weighted_score: validated.weightedScore,
-        hard_failures: validated.hardFailures,
-        blockers: validated.blockers,
-        warnings: validated.warnings,
-        role: validated.role,
-        protection: validated.protection,
-        asset_version: validated.assetVersion,
-        history: validated.history,
-        schema_version: validated.schemaVersion,
-      })
-      .eq("id", validated.rowId)
-      .eq("workspace_id", validated.workspaceId)
-      .eq("asset_key", validated.assetKey)
-      .select(ALL_COLUMNS)
-      .single();
-    const updated = unwrap(result, "update asset");
+    const updated = unwrap(
+      await port.updateAsset(assetUpdatePatch(validated), {
+        rowId: validated.rowId,
+        workspaceId: validated.workspaceId,
+        assetKey: validated.assetKey,
+      }),
+      "update asset",
+      { zeroRowsIsNotFound: true },
+    );
     if (!updated) {
       throw new ReferenceV2RepositoryNotFoundError(
         "update asset: no matching row",
@@ -689,25 +1012,18 @@ export function createReferenceV2PersistenceRepository(
     assetKey: string,
   ): Promise<void> {
     assertUuid(workspaceId, "workspaceId");
-    assertNonEmpty(assetKey, "assetKey");
-    const result = await client
-      .from(REFERENCE_V2_TABLES.assets)
-      .delete()
-      .eq("workspace_id", workspaceId)
-      .eq("asset_key", assetKey);
-    unwrap(result, "delete asset");
+    assertSafeKeySegment(assetKey, "assetKey");
+    unwrap(await port.deleteAsset(workspaceId, assetKey), "delete asset");
   }
 
   async function upsertFramingEvidence(
     evidence: ReferenceV2FramingEvidencePersistence,
   ): Promise<ReferenceV2FramingEvidencePersistence> {
-    const row = framingPersistenceToDbRow(evidence);
-    const result = await client
-      .from(REFERENCE_V2_TABLES.framingEvidence)
-      .upsert(row, { onConflict: "workspace_id,asset_key" })
-      .select(ALL_COLUMNS)
-      .single();
-    const upserted = unwrap(result, "upsert framing evidence");
+    const values = framingPersistenceToDbRow(evidence);
+    const upserted = unwrap(
+      await port.upsertFraming(values),
+      "upsert framing evidence",
+    );
     if (!upserted) {
       throw new ReferenceV2RepositoryError(
         "upsert framing evidence: database returned no row",
@@ -728,20 +1044,15 @@ export function createReferenceV2PersistenceRepository(
 }
 
 // --------------------------------------------------------------------------
-// Default repository (lazy — keeps pure unit tests free of client/env coupling)
+// Default repository (production port over the existing app client)
 // --------------------------------------------------------------------------
 
 let defaultRepository: ReferenceV2PersistenceRepository | null = null;
 
-/**
- * Nutzt den bestehenden App-Client (kein zweiter Client). Der Import ist
- * bewusst dynamisch, damit reine Unit-Tests den Client nicht instanziieren.
- */
-export async function getDefaultReferenceV2PersistenceRepository(): Promise<ReferenceV2PersistenceRepository> {
+export function getDefaultReferenceV2PersistenceRepository(): ReferenceV2PersistenceRepository {
   if (!defaultRepository) {
-    const mod = await import("@/integrations/supabase/client");
     defaultRepository = createReferenceV2PersistenceRepository(
-      mod.supabase as unknown as ReferenceV2ClientPort,
+      createReferenceV2SupabasePort(),
     );
   }
   return defaultRepository;
@@ -750,51 +1061,53 @@ export async function getDefaultReferenceV2PersistenceRepository(): Promise<Refe
 export async function loadReferenceV2BundleByVehicleId(
   vehicleId: string,
 ): Promise<ReferenceV2PersistenceBundle | null> {
-  const repo = await getDefaultReferenceV2PersistenceRepository();
-  return repo.loadBundleByVehicleId(vehicleId);
+  return getDefaultReferenceV2PersistenceRepository().loadBundleByVehicleId(
+    vehicleId,
+  );
 }
 
 export async function createReferenceV2Workspace(
   input: ReferenceV2WorkspaceCreateInput,
 ): Promise<ReferenceV2WorkspacePersistence> {
-  const repo = await getDefaultReferenceV2PersistenceRepository();
-  return repo.createWorkspace(input);
+  return getDefaultReferenceV2PersistenceRepository().createWorkspace(input);
 }
 
 export async function updateReferenceV2Workspace(
   workspace: ReferenceV2WorkspacePersistence,
 ): Promise<ReferenceV2WorkspacePersistence> {
-  const repo = await getDefaultReferenceV2PersistenceRepository();
-  return repo.updateWorkspace(workspace);
+  return getDefaultReferenceV2PersistenceRepository().updateWorkspace(
+    workspace,
+  );
 }
 
 export async function createReferenceV2Asset(
   input: ReferenceV2AssetCreateInput,
 ): Promise<ReferenceV2AssetPersistence> {
-  const repo = await getDefaultReferenceV2PersistenceRepository();
-  return repo.createAsset(input);
+  return getDefaultReferenceV2PersistenceRepository().createAsset(input);
 }
 
 export async function updateReferenceV2Asset(
   asset: ReferenceV2AssetPersistence,
 ): Promise<ReferenceV2AssetPersistence> {
-  const repo = await getDefaultReferenceV2PersistenceRepository();
-  return repo.updateAsset(asset);
+  return getDefaultReferenceV2PersistenceRepository().updateAsset(asset);
 }
 
 export async function deleteReferenceV2Asset(
   workspaceId: string,
   assetKey: string,
 ): Promise<void> {
-  const repo = await getDefaultReferenceV2PersistenceRepository();
-  return repo.deleteAsset(workspaceId, assetKey);
+  return getDefaultReferenceV2PersistenceRepository().deleteAsset(
+    workspaceId,
+    assetKey,
+  );
 }
 
 export async function upsertReferenceV2FramingEvidence(
   evidence: ReferenceV2FramingEvidencePersistence,
 ): Promise<ReferenceV2FramingEvidencePersistence> {
-  const repo = await getDefaultReferenceV2PersistenceRepository();
-  return repo.upsertFramingEvidence(evidence);
+  return getDefaultReferenceV2PersistenceRepository().upsertFramingEvidence(
+    evidence,
+  );
 }
 
 export { ReferenceV2PersistenceError };
