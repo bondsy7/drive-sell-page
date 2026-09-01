@@ -25,8 +25,8 @@ import type {
 
 const CLUSTER = "cluster_a";
 const NOW_ISO = "2026-09-01T11:00:00.000Z";
-const P_FRONT: PerspectiveId = "EXT_FRONT_0";
-const P_REAR: PerspectiveId = "EXT_REAR_180";
+const P_FRONT: PerspectiveId = "EXT_FRONT";
+const P_REAR: PerspectiveId = "EXT_REAR";
 
 function intake(perspectiveId: PerspectiveId): VisionIntakeResult {
   const entry = getPerspectiveMasterEntry(perspectiveId);
