@@ -51,9 +51,17 @@ export function sanitizeVehicleDescriptionForPrompt(description?: string): strin
 
 export function buildVehicleGenerationLock(vehicleDescription?: string): string {
   const metadata = vehicleDescription?.trim();
-  const neutralMetadata = sanitizeVehicleDescriptionForPrompt(metadata);
+  // If a make is present, the remaining free-form tail often still contains
+  // catalogue-triggering trim names (for example "Sportline", "AMG Line" or
+  // "M Sport"). For image generation only the explicit model year is safe.
+  const containsKnownBrand = BRAND_TOKENS.some((brand) =>
+    new RegExp(`(^|[^\\p{L}\\p{N}])${brand.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^\\p{L}\\p{N}]|$)`, 'iu').test(metadata ?? ''),
+  );
   const enyaqYearMatch = metadata?.match(/(?:modelljahr\s*)?(20\d{2})/i);
   const enyaqYear = enyaqYearMatch ? Number(enyaqYearMatch[1]) : null;
+  const neutralMetadata = containsKnownBrand
+    ? (enyaqYear ? `Modelljahr ${enyaqYear}` : '')
+    : sanitizeVehicleDescriptionForPrompt(metadata);
   const isCurrentEnyaq = /\b(?:skoda|škoda)\b/i.test(metadata ?? '')
     && /\benyaq\b/i.test(metadata ?? '')
     && enyaqYear !== null

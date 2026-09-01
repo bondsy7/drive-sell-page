@@ -890,10 +890,10 @@ This is the MARKETING MASTER (Hero) shot — push lighting one notch beyond the 
         : '';
       const fullPrompt = `${baseContext}\n\n${perspective}\n\n${HERO_INTEGRATION_LOCK}\n\n${HERO_LIGHTING_BOOST}${refineBlock}`;
 
-      const referenceImages = [
-        heroSourceImage,
-        ...orderedInputImages.filter((i) => i.id !== heroSourceImage.id).slice(0, 4),
-      ];
+      // The Hero is a strict one-reference edit. Mixing other perspectives into
+      // this first pass encourages the image model to average incompatible
+      // geometry and fall back to a familiar catalogue generation.
+      const referenceImages = [heroSourceImage];
       const fileUris = await uploadGenerationRefs(referenceImages);
 
       // Resolve manufacturer logo URL for hero
@@ -907,9 +907,8 @@ This is the MARKETING MASTER (Hero) shot — push lighting one notch beyond the 
 
       const { data, error } = await invokeWithRetry('remaster-vehicle-image', {
         imageBase64: heroSourceImage.base64,
-        additionalImages: fileUris ? undefined : referenceImages.slice(1).map((i) => i.base64),
+        mainImageRole: `${heroSourceImage.labelDe} – exact same-angle identity source`,
         mainImageFileUri: fileUris?.[0] || null,
-        additionalFileUris: fileUris?.slice(1) || undefined,
         vehicleDescription,
         modelTier,
         dynamicPrompt: fullPrompt,
