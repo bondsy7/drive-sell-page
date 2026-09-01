@@ -12,6 +12,10 @@ import {
   parseReferenceV2WorkspacePersistence,
 } from "../phase2/persistence-contract";
 import { CURRENT_FRAMING_EVIDENCE_SCHEMA_VERSION } from "../phase2/framing-evidence";
+import {
+  ASSET_PROTECTION_STATES,
+  REFERENCE_ROLES,
+} from "../phase1/vehicle-master";
 
 const USER_ID = "11111111-1111-4111-8111-111111111111";
 const VEHICLE_ID = "22222222-2222-4222-8222-222222222222";
@@ -533,5 +537,102 @@ describe("I. reference_v2 migration", () => {
 
   it("has no business metadata columns", () => {
     expect(MIGRATION_SQL).not.toMatch(/^\s*(vin|brand|make|model|year|variant|trim)\s/im);
+  });
+});
+
+// --------------------------------------------------------------------------
+// J. Protection integrity hardening migration guard
+// --------------------------------------------------------------------------
+
+const HARDENING_SQL = readdirSync(MIGRATIONS_DIR)
+  .filter((f) => f.endsWith(".sql"))
+  .map((f) => readFileSync(path.join(MIGRATIONS_DIR, f), "utf8"))
+  .filter((sql) => /reference_v2_protection_integrity_hardening/i.test(sql))
+  .join("\n");
+
+function sqlLiteralList(values: readonly string[]): string[] {
+  return values.map((v) => `'${v}'`);
+}
+
+describe("J. protection integrity hardening", () => {
+  it("ships exactly one labelled hardening migration", () => {
+    expect(HARDENING_SQL).not.toBe("");
+    expect(
+      HARDENING_SQL.match(/reference_v2_protection_integrity_hardening/gi) ?? [],
+    ).toHaveLength(1);
+  });
+
+  it("blocks DELETE of protected assets via a BEFORE DELETE trigger", () => {
+    expect(HARDENING_SQL).toMatch(
+      /OLD\.protection\s*=\s*'protected'/i,
+    );
+    expect(HARDENING_SQL).toMatch(/RAISE EXCEPTION/i);
+    expect(HARDENING_SQL).toMatch(
+      /BEFORE DELETE ON public\.reference_v2_assets/i,
+    );
+    expect(HARDENING_SQL).toMatch(
+      /EXECUTE FUNCTION public\.reference_v2_assets_block_protected_delete\(\)/i,
+    );
+    expect(HARDENING_SQL).toMatch(/RETURN OLD;/i);
+  });
+
+  it("keeps the guard function SECURITY DEFINER with locked search_path and no direct EXECUTE", () => {
+    expect(HARDENING_SQL).toMatch(/SECURITY DEFINER/i);
+    expect(HARDENING_SQL).toMatch(/SET search_path = public/i);
+    for (const grantee of ["PUBLIC", "anon", "authenticated"]) {
+      expect(HARDENING_SQL).toMatch(
+        new RegExp(
+          `REVOKE ALL ON FUNCTION public\\.reference_v2_assets_block_protected_delete\\(\\) FROM ${grantee}`,
+          "i",
+        ),
+      );
+    }
+    expect(HARDENING_SQL).not.toMatch(/GRANT[^;]*block_protected_delete/i);
+  });
+
+  it("constrains role / protection to the frozen vocabularies", () => {
+    for (const literal of sqlLiteralList(REFERENCE_ROLES)) {
+      expect(HARDENING_SQL).toContain(literal);
+    }
+    for (const literal of sqlLiteralList(ASSET_PROTECTION_STATES)) {
+      expect(HARDENING_SQL).toContain(literal);
+    }
+    const roleCheck = HARDENING_SQL.match(
+      /reference_v2_assets_role_allowed\s+CHECK\s*\(role IN \(([^)]*)\)\)/i,
+    );
+    expect(roleCheck).not.toBeNull();
+    expect(
+      (roleCheck?.[1] ?? "").split(",").map((s) => s.trim()),
+    ).toEqual(sqlLiteralList(REFERENCE_ROLES));
+    const protectionCheck = HARDENING_SQL.match(
+      /reference_v2_assets_protection_allowed\s+CHECK\s*\(protection IN \(([^)]*)\)\)/i,
+    );
+    expect(protectionCheck).not.toBeNull();
+    expect(
+      (protectionCheck?.[1] ?? "").split(",").map((s) => s.trim()),
+    ).toEqual(sqlLiteralList(ASSET_PROTECTION_STATES));
+  });
+
+  it("forces blocked / hard-failed assets into role rejected", () => {
+    expect(HARDENING_SQL).toMatch(
+      /reference_v2_assets_blocked_must_be_rejected/i,
+    );
+    expect(HARDENING_SQL).toMatch(/COALESCE\(cardinality\(blockers\), 0\) = 0/i);
+    expect(HARDENING_SQL).toMatch(
+      /COALESCE\(cardinality\(hard_failures\), 0\) = 0/i,
+    );
+    expect(HARDENING_SQL).toMatch(/role = 'rejected'/i);
+  });
+
+  it("touches only reference_v2 tables, no storage, no data mutation", () => {
+    const alters = HARDENING_SQL.match(/ALTER TABLE\s+(?:public\.)?(\w+)/gi) ?? [];
+    expect(alters.length).toBeGreaterThan(0);
+    for (const a of alters) {
+      expect(a.toLowerCase()).toMatch(/reference_v2_(assets|workspaces)/);
+    }
+    expect(HARDENING_SQL).not.toMatch(/storage\.(buckets|objects)/i);
+    expect(HARDENING_SQL).not.toMatch(/\b(INSERT INTO|UPDATE\s+public\.|DELETE FROM)\b/i);
+    expect(HARDENING_SQL).not.toMatch(/ADD COLUMN|DROP COLUMN/i);
+    expect(HARDENING_SQL).not.toMatch(/\b(vin|brand|model)\b/i);
   });
 });
