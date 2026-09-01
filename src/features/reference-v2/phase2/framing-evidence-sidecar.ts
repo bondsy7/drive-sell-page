@@ -240,12 +240,12 @@ export function pruneCurrentFramingEvidence(
 ): CurrentFramingEvidenceSidecar {
   const sidecar = parseCurrentFramingEvidenceSidecar(sidecarRaw);
   const known = new Set(parseKnownAssetIds(knownAssetIds));
-  const next: Record<string, CurrentFramingEvidence> = {};
-  for (const key of Object.keys(sidecar.byAssetId)) {
-    if (!known.has(key)) continue;
-    next[key] = { ...sidecar.byAssetId[key] };
-  }
-  return parseCurrentFramingEvidenceSidecar({ byAssetId: next });
+  const entries = ownEntries(sidecar.byAssetId)
+    .filter(([key]) => known.has(key))
+    .map(([key, value]): [string, CurrentFramingEvidence] => [key, { ...value }]);
+  return parseCurrentFramingEvidenceSidecar({
+    byAssetId: recordFromEntries(entries),
+  });
 }
 
 // --------------------------------------------------------------------------
@@ -268,9 +268,11 @@ export function currentFramingEvidenceForPlanner(
   }
   const out: CurrentFramingEvidence[] = [];
   for (const id of known) {
-    const evidence = sidecar.byAssetId[id];
-    if (evidence === undefined) continue;
+    if (!hasOwn(sidecar.byAssetId, id)) continue;
+    const evidence = Object.getOwnPropertyDescriptor(sidecar.byAssetId, id)
+      ?.value as CurrentFramingEvidence;
     out.push({ ...evidence });
   }
+
   return out;
 }
