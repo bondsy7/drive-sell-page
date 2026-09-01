@@ -13,9 +13,17 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { handleCors, jsonResponse, errorResponse } from "../_shared/cors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { getSecret } from "../_shared/get-secret.ts";
+import {
+  ALLOWED_IMAGE_MIME,
+  isValidProviderFileUri,
+  MAX_UPLOAD_BYTES,
+  REFERENCE_V2_PROVIDER_ID,
+} from "../_shared/reference-v2-analyzer-validation.ts";
 
-const PROVIDER_ID = "gemini-file-api";
-const ALLOWED_MIME = ["image/jpeg", "image/png", "image/webp"];
+const PROVIDER_ID = REFERENCE_V2_PROVIDER_ID;
+const ALLOWED_MIME = ALLOWED_IMAGE_MIME;
+const READY_TIMEOUT_MS = 30_000;
+const READY_POLL_MS = 700;
 
 serve(async (req) => {
   const cors = handleCors(req);
@@ -34,6 +42,12 @@ serve(async (req) => {
 
     const bytes = new Uint8Array(await req.arrayBuffer());
     if (bytes.byteLength === 0) return errorResponse("Empty file body", 400);
+    if (bytes.byteLength > MAX_UPLOAD_BYTES) {
+      return errorResponse(
+        `File too large (${bytes.byteLength} bytes, max ${MAX_UPLOAD_BYTES}).`,
+        413,
+      );
+    }
 
     const apiKey = await getSecret("GEMINI_API_KEY");
     if (!apiKey) {
@@ -88,15 +102,52 @@ serve(async (req) => {
       );
     }
     const meta = await upRes.json();
-    const file = meta.file ?? meta;
-    if (!file?.uri) {
-      return errorResponse("FILE_REFERENCE_UNSUPPORTED: no file uri", 502);
+    let file = meta.file ?? meta;
+    if (!file?.uri || !isValidProviderFileUri(file.uri)) {
+      return errorResponse("FILE_REFERENCE_UNSUPPORTED: no usable file uri", 502);
     }
+
+    // The provider file must be ACTIVE before it can be referenced in a
+    // generateContent call — poll instead of optimistically returning.
+    const deadline = Date.now() + READY_TIMEOUT_MS;
+    while (file.state && file.state !== "ACTIVE") {
+      if (file.state === "FAILED") {
+        return errorResponse(
+          "FILE_REFERENCE_UNSUPPORTED: provider file processing failed",
+          502,
+        );
+      }
+      if (Date.now() > deadline) {
+        return errorResponse(
+          "FILE_REFERENCE_UNSUPPORTED: provider file did not become ACTIVE in time",
+          504,
+        );
+      }
+      await new Promise((r) => setTimeout(r, READY_POLL_MS));
+      const statusRes = await fetch(`${file.uri}?key=${apiKey}`);
+      if (!statusRes.ok) {
+        return errorResponse(
+          `FILE_REFERENCE_UNSUPPORTED: file status check failed (${statusRes.status})`,
+          502,
+        );
+      }
+      file = await statusRes.json();
+    }
+
+    // Preserve the provider's real MIME type and lifecycle metadata.
+    const providerMime =
+      typeof file.mimeType === "string" && ALLOWED_MIME.includes(file.mimeType)
+        ? file.mimeType
+        : mimeType;
 
     return jsonResponse({
       fileId: file.uri as string,
       providerId: PROVIDER_ID,
-      mimeType,
+      mimeType: providerMime,
+      sizeBytes: Number(file.sizeBytes ?? bytes.byteLength),
+      state: file.state ?? "ACTIVE",
+      createdAtIso: file.createTime ?? undefined,
+      updatedAtIso: file.updateTime ?? undefined,
       expiresAtIso: file.expirationTime ?? undefined,
     });
   } catch (e) {
