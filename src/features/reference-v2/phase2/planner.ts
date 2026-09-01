@@ -368,15 +368,18 @@ function planPerspective(
       reasons.push({
         code: "SCORE_BELOW_MINIMUM",
         severity: "BLOCKING",
-        messageDe: `Bester exakter Kandidat erreicht die Mindestanforderungen nicht (Score ${best.weightedScore} / benötigt ${spec.validationRules.minimumPerspectiveScore}).`,
+        messageDe: `Bester exakter Kandidat erfüllt eine oder mehrere Mindestanforderungen nicht (Score ${best.weightedScore} / mindestens ${spec.validationRules.minimumPerspectiveScore}, Bildqualität ${best.primaryQualityThresholdMet ? "erfüllt" : "nicht erfüllt"} / mindestens ${spec.referenceRequirements.minPrimaryQualityScore}).`,
         assetId: best.assetId,
         metadata: {
           weightedScore: best.weightedScore,
           minimumPerspectiveScore: spec.validationRules.minimumPerspectiveScore,
           minimumPerspectiveScoreMet: best.minimumPerspectiveScoreMet,
           primaryQualityThresholdMet: best.primaryQualityThresholdMet,
+          minPrimaryQualityScore:
+            spec.referenceRequirements.minPrimaryQualityScore,
         },
       });
+
       reasons.push({
         code: "NO_ELIGIBLE_PRIMARY",
         severity: "BLOCKING",
