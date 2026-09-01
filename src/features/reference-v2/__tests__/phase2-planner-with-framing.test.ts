@@ -215,6 +215,27 @@ function leftSideAsset(id: string): ReferenceAssetRecord {
   });
 }
 
+/** Intake widerspricht dem Identity-Cluster des VehicleMaster. */
+function identityConflictAsset(id: string): ReferenceAssetRecord {
+  const base = intake({ assetId: id });
+  return asset({
+    id,
+    intake: {
+      ...base,
+      identityClusterId: "cluster_b",
+    } as unknown as VisionIntakeResult,
+  });
+}
+
+/** Exakter Primary, dem eine Pflicht-Radposition (rear_left) fehlt. */
+function wheelGapPrimary(id: string): ReferenceAssetRecord {
+  return asset({
+    id,
+    intake: intake({ assetId: id, wheels: ["front_left", "front_right"] }),
+  });
+}
+
+
 // --------------------------------------------------------------------------
 // Evidence fixtures
 // --------------------------------------------------------------------------
@@ -831,6 +852,220 @@ describe("Phase 2.4B legacy field poisoning", () => {
 });
 
 // --------------------------------------------------------------------------
+// Q — vollstaendige Reference-Blocking-Matrix (Identity / Surface / Wheel)
+// --------------------------------------------------------------------------
+
+const NO_PRIMARY_REASON =
+  "Keine ausgewählte Primary-Referenz mit aktueller Framing-Evidenz vorhanden.";
+
+/** Alle Baseline-Reasons bleiben in identischer Reihenfolge vorne stehen. */
+function expectBaselinePrefixPreserved(
+  outItem: ReturnType<typeof item>,
+  baseItem: ReturnType<typeof item>,
+) {
+  const baseCodes = baseItem.reasons.map((r) => r.code);
+  expect(outItem.reasons.slice(0, baseCodes.length)).toEqual(baseItem.reasons);
+  expect(outItem.reasons.map((r) => r.code).slice(0, baseCodes.length)).toEqual(
+    baseCodes,
+  );
+}
+
+function expectBaselineAuthority(
+  outItem: ReturnType<typeof item>,
+  baseItem: ReturnType<typeof item>,
+) {
+  expect(outItem.selection).toEqual(baseItem.selection);
+  expect(outItem.coverage).toEqual(baseItem.coverage);
+  expect(outItem.substitution).toEqual(baseItem.substitution);
+  expect(outItem.perspectiveSpecId).toBe(baseItem.perspectiveSpecId);
+  expect(outItem.perspectiveSpecVersion).toBe(baseItem.perspectiveSpecVersion);
+  expect(outItem.fineGrainedReadiness).toBe(baseItem.fineGrainedReadiness);
+}
+
+describe("Phase 2.4B reference blocking matrix — identity conflict", () => {
+  const assets = [identityConflictAsset("asset_a")];
+
+  it("frozen reference-only baseline blocks on identity without a primary", () => {
+    const base = baselineOf(assets);
+    expect(base.items[0]!.state).toBe("BLOCKED");
+    expect(base.items[0]!.fineGrainedReadiness).toBe(
+      "BLOCKED_IDENTITY_CONFLICT",
+    );
+    expect(base.items[0]!.selection.primary).toBeUndefined();
+    expect(base.items[0]!.reasons.map((r) => r.code)).toEqual([
+      "NO_ELIGIBLE_PRIMARY",
+      "IDENTITY_CLUSTER_MIXED",
+    ]);
+  });
+
+  it("current framing evidence never rescues an identity-blocked asset", () => {
+    const base = baselineOf(assets);
+    const out = run(assets, {
+      formats: BOTH_FORMATS,
+      evidence: [evidence("asset_a")],
+    });
+    expect(item(out).state).toBe("BLOCKED");
+    expect(item(out).selection.primary).toBeUndefined();
+    expect(item(out).generationAllowed).toBe(false);
+    expect(item(out).outputFormatReadiness).toEqual([
+      { format: "4:5", ready: false, reason: NO_PRIMARY_REASON },
+      { format: "1.91:1", ready: false, reason: NO_PRIMARY_REASON },
+    ]);
+    expectBaselineAuthority(item(out), base.items[0]!);
+    expectBaselinePrefixPreserved(item(out), base.items[0]!);
+    expect(codes(out)).toContain("IDENTITY_CLUSTER_MIXED");
+    expect(out.summary.generationAllowed).toBe(false);
+  });
+
+  it("keeps planner-level metadata identical to the reference-only baseline", () => {
+    const base = baselineOf(assets);
+    const out = run(assets, {
+      formats: BOTH_FORMATS,
+      evidence: [evidence("asset_a")],
+    });
+    expect(out.plannedAtIso).toBe(base.plannedAtIso);
+    expect(out.plannerVersion).toBe(base.plannerVersion);
+    expect(out.registryVersion).toBe(base.registryVersion);
+    expect(out.perspectiveMasterVersion).toBe(base.perspectiveMasterVersion);
+  });
+});
+
+describe("Phase 2.4B reference blocking matrix — required surface with primary", () => {
+  const assets = [highFrontPrimary("asset_a")];
+  const HIGH = { perspectives: [P_HIGH_FRONT] } as const;
+
+  it("frozen baseline blocks the unproven roof surface with the primary selected", () => {
+    const base = baselineOf(assets, HIGH);
+    expect(base.items[0]!.state).toBe("BLOCKED");
+    expect(base.items[0]!.selection.primary?.assetId).toBe("asset_a");
+    expect(base.items[0]!.coverage.allMandatorySurfacesMet).toBe(false);
+    expect(base.items[0]!.reasons.map((r) => r.code)).toEqual([
+      "REQUIRED_SURFACE_UNPROVEN",
+    ]);
+    expect(base.items[0]!.reasons[0]!.surface).toBe("roof");
+  });
+
+  it("stays BLOCKED although current framing evidence is fully sufficient", () => {
+    const base = baselineOf(assets, HIGH);
+    const out = run(assets, {
+      ...HIGH,
+      formats: BOTH_FORMATS,
+      evidence: [evidence("asset_a")],
+    });
+    expect(item(out).state).toBe("BLOCKED");
+    expect(item(out).generationAllowed).toBe(false);
+    expect(item(out).outputFormatReadiness).toEqual([
+      { format: "4:5", ready: true },
+      { format: "1.91:1", ready: true },
+    ]);
+    expect(codes(out)).not.toContain("OUTPUT_FORMAT_NOT_READY");
+    expectBaselineAuthority(item(out), base.items[0]!);
+    expectBaselinePrefixPreserved(item(out), base.items[0]!);
+    expect(out.summary).toEqual({
+      readyCount: 0,
+      reviewCount: 0,
+      blockedCount: 1,
+      generationAllowed: false,
+    });
+  });
+
+  it("keeps planner-level metadata identical to the reference-only baseline", () => {
+    const base = baselineOf(assets, HIGH);
+    const out = run(assets, {
+      ...HIGH,
+      formats: BOTH_FORMATS,
+      evidence: [evidence("asset_a")],
+    });
+    expect(out.plannedAtIso).toBe(base.plannedAtIso);
+    expect(out.plannerVersion).toBe(base.plannerVersion);
+    expect(out.registryVersion).toBe(base.registryVersion);
+    expect(out.perspectiveMasterVersion).toBe(base.perspectiveMasterVersion);
+  });
+});
+
+describe("Phase 2.4B reference blocking matrix — required wheel with primary", () => {
+  const assets = [wheelGapPrimary("asset_a")];
+
+  it("frozen baseline blocks the missing wheel with the exact primary selected", () => {
+    const base = baselineOf(assets);
+    expect(base.items[0]!.state).toBe("BLOCKED");
+    expect(base.items[0]!.selection.primary?.assetId).toBe("asset_a");
+    expect(base.items[0]!.coverage.allMandatorySurfacesMet).toBe(true);
+    expect(base.items[0]!.coverage.visibleWheelPositions).toEqual([
+      "front_left",
+    ]);
+    expect(base.items[0]!.reasons.map((r) => r.code)).toEqual([
+      "REQUIRED_SURFACE_UNPROVEN",
+    ]);
+    expect(base.items[0]!.reasons[0]!.metadata).toEqual({
+      wheelPosition: "rear_left",
+    });
+  });
+
+  it("stays BLOCKED on the wheel blocker despite ready current formats", () => {
+    const base = baselineOf(assets);
+    const out = run(assets, {
+      formats: BOTH_FORMATS,
+      evidence: [evidence("asset_a")],
+    });
+    expect(item(out).state).toBe("BLOCKED");
+    expect(item(out).generationAllowed).toBe(false);
+    expect(item(out).outputFormatReadiness.every((f) => f.ready)).toBe(true);
+    expect(item(out).reasons[0]!.metadata).toEqual({
+      wheelPosition: "rear_left",
+    });
+    expectBaselineAuthority(item(out), base.items[0]!);
+    expectBaselinePrefixPreserved(item(out), base.items[0]!);
+    expect(out.summary.generationAllowed).toBe(false);
+  });
+
+  it("keeps planner-level metadata identical to the reference-only baseline", () => {
+    const base = baselineOf(assets);
+    const out = run(assets, {
+      formats: BOTH_FORMATS,
+      evidence: [evidence("asset_a")],
+    });
+    expect(out.plannedAtIso).toBe(base.plannedAtIso);
+    expect(out.plannerVersion).toBe(base.plannerVersion);
+    expect(out.registryVersion).toBe(base.registryVersion);
+    expect(out.perspectiveMasterVersion).toBe(base.perspectiveMasterVersion);
+  });
+});
+
+// --------------------------------------------------------------------------
+// R — Reihenfolge der angehaengten Format-Blocker
+// --------------------------------------------------------------------------
+
+describe("Phase 2.4B format blocker order", () => {
+  it("appends format blockers after the baseline reasons in requested order", () => {
+    const assets = [
+      asset({ id: "asset_a", role: "primary_candidate" }),
+      weakerPrimary("asset_b", 0.9),
+    ];
+    const base = baselineOf(assets);
+    expect(base.items[0]!.state).toBe("REVIEW");
+    expect(base.items[0]!.reasons.length).toBeGreaterThan(0);
+
+    const out = run(assets, {
+      formats: ["1.91:1", "4:5"],
+      evidence: [croppedEvidence("asset_a")],
+    });
+    expectBaselinePrefixPreserved(item(out), base.items[0]!);
+    const appended = item(out).reasons.slice(base.items[0]!.reasons.length);
+    expect(appended.map((r) => r.code)).toEqual([
+      "OUTPUT_FORMAT_NOT_READY",
+      "OUTPUT_FORMAT_NOT_READY",
+    ]);
+    expect(appended.map((r) => r.metadata)).toEqual([
+      { format: "1.91:1" },
+      { format: "4:5" },
+    ]);
+  });
+});
+
+
+
+// --------------------------------------------------------------------------
 // Source purity
 // --------------------------------------------------------------------------
 
@@ -855,6 +1090,13 @@ describe("Phase 2.4B source purity", () => {
   ])("uses the frozen module %s", (needle) => {
     expect(code).toContain(needle);
   });
+
+  it("calls the frozen baseline planner exactly once", () => {
+    const calls = code.match(/\bbuildReferencePlanner\s*\(/g) ?? [];
+    expect(calls).toHaveLength(1);
+  });
+
+
 
   it.each([
     "assessTargetRelativeCandidate",
