@@ -612,7 +612,9 @@ describe("Phase 2.2 wheel evidence", () => {
 
 describe("Phase 2.2 eligibility separation", () => {
   it("keeps a diagnostic score for an intrinsically blocked candidate but rankable=false", () => {
-    const r = assessPrimary(asset({ blockers: ["CROP_VIOLATION"] }));
+    const r = assessPrimary(
+      asset({ blockers: ["CROP_VIOLATION"], role: "rejected" }),
+    );
     expect(r.weightedScore).toBe(91.95);
     expect(r.rankable).toBe(false);
     expect(r.eligibility.selectable).toBe(false);
@@ -621,7 +623,7 @@ describe("Phase 2.2 eligibility separation", () => {
 
   it("a high score never creates eligibility", () => {
     const r = assessPrimary(
-      asset({ hardFailures: ["MIRRORED_REFERENCE"] }),
+      asset({ hardFailures: ["MIRRORED_REFERENCE"], role: "rejected" }),
     );
     expect(r.weightedScore).toBeGreaterThan(90);
     expect(r.rankable).toBe(false);
