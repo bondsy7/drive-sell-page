@@ -46,6 +46,7 @@ const NAV_GROUPS: NavGroupDef[] = [
       { to: '/admin/sales-assistant', icon: MessageSquare, label: 'Sales-Assistent' },
       { to: '/admin/prompts', icon: BookOpen, label: 'Prompts' },
       { to: '/admin/banner-templates', icon: LayoutTemplate, label: 'Banner-Templates' },
+      { to: '/admin/reference-v2', icon: Images, label: 'Referenzen V2' },
     ],
   },
   {
