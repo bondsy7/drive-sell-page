@@ -8,7 +8,7 @@ const mk=(vis:any,q=1)=>({schemaVersion:1,assetId:"a",vehicleDetected:true,vehic
  quality:{sharpness:q,occlusion:0,glare:0,resolutionAdequacy:q,usableScore:q},classificationConfidence:0.99,issues:[]});
 const asset=(intake:any)=>({id:"a",vehicleMasterId:"vm",requestedPerspectiveId:"EXT_34_FRONT_LEFT",fileName:"f.jpg",previewUrl:"blob:x",createdAtIso:NOW,intake,
  analysis:{fileId:"files/a",providerId:"gemini-file-api",mimeType:"image/jpeg",fileExpiresAtIso:FUT,status:"analyzed",analyzerSchemaVersion:"1",analyzedAtIso:NOW,perspectiveConfidence:0.98},
- scores:{},weightedScore:0,hardFailures:[],blockers:[],warnings:[],role:"primary",protection:"unprotected",outputReadyFormats:[],version:1,history:[{version:1,atIso:NOW,action:"created"}]});
+ scores:{cameraAngle:1,sideAndSurfaceCorrectness:1,requiredSurfaceCoverage:1,quality:1,framing:1},weightedScore:1,hardFailures:[],blockers:[],warnings:[],role:"primary",protection:"unprotected",outputReadyFormats:["4:5"],version:1,history:[{version:1,atIso:NOW,action:"created"}]});
 describe("probe",()=>{it("p",()=>{
  const a:any=asset(mk({front:1,rear:0,leftSide:1,rightSide:0,roof:0.5}));
  const r=assessTargetRelativeCandidate({vehicleMaster:{id:"vm",label:"L",vehicleClass:"car",colorFamily:"grey",identityClusterId:C,createdAtIso:NOW,version:1,history:[{version:1,atIso:NOW,action:"created"}],assets:[a]} as any,assetId:"a",targetPerspectiveId:"EXT_34_FRONT_LEFT",intendedRole:"primary",nowIso:NOW});
