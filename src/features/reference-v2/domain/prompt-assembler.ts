@@ -190,8 +190,8 @@ function renderActiveModulesSection(
 
 function renderReferenceManifestSection(
   references: readonly ReferenceManifestEntry[],
-  scene: { scenePackId: string; scenePlateId: string } | undefined,
-  logo: { logoAssetId: string } | undefined,
+  scene: { scenePackId?: string; scenePlateId?: string } | undefined,
+  logo: { logoAssetId?: string } | undefined,
 ): string {
   const lines: string[] = ["[REFERENCE_MANIFEST]"];
   const primary = references.filter((r) => r.role === "primary");
@@ -212,7 +212,11 @@ function renderReferenceManifestSection(
       `R${index + 1} (${qualifiers.join(", ")}): asset ${ref.assetId}${coverage}`,
     );
   });
-  if (scene !== undefined) {
+  if (
+    scene !== undefined &&
+    scene.scenePlateId !== undefined &&
+    scene.scenePackId !== undefined
+  ) {
     lines.push(
       `Scene plate ${scene.scenePlateId} from pack ${scene.scenePackId}: environment only; it must never change the vehicle.`,
     );
@@ -221,7 +225,7 @@ function renderReferenceManifestSection(
       "No scene plate assigned: keep the environment neutral and photographically consistent with the references.",
     );
   }
-  if (logo !== undefined) {
+  if (logo !== undefined && logo.logoAssetId !== undefined) {
     lines.push(
       `Environment logo asset ${logo.logoAssetId}: wall/floor branding in the scene only; never on the vehicle. Vehicle emblems come exclusively from the reference images.`,
     );
