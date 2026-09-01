@@ -212,23 +212,25 @@ export const supabaseAnalyzerPort: ReferenceV2AnalyzerPort = {
 
 /**
  * Baut Provider-Anker aus persistierten Analyse-Nachweisen. FAIL-CLOSED:
- * Datensaetze ohne bekannten, erlaubten MIME-Type werden NICHT als Anker
- * verwendet (es wird niemals ein Typ geraten). Ihr Referenzstatus bleibt davon
- * unberuehrt.
+ * Nur Datensaetze mit Status "analyzed", Reference-V2-Provider und bekanntem,
+ * erlaubtem MIME-Type duerfen Identitaet stiften (es wird niemals ein Typ
+ * geraten). Der Anzeige-/Referenzstatus alter Datensaetze bleibt unberuehrt.
  */
 export function toAnchorFileReferences(
   records: readonly {
     fileId?: string;
     providerId?: string;
     mimeType?: string;
+    status?: string;
   }[],
   limit: number = MAX_ANCHOR_FILES,
 ): readonly ReferenceV2FileReference[] {
   return records
     .filter(
-      (r): r is { fileId: string; providerId: string; mimeType: string } =>
+      (r): r is { fileId: string; providerId: string; mimeType: string; status: string } =>
+        r.status === "analyzed" &&
         Boolean(r.fileId) &&
-        Boolean(r.providerId) &&
+        r.providerId === REFERENCE_V2_PROVIDER_ID &&
         isAllowedReferenceV2Mime(r.mimeType),
     )
     .slice(0, limit)
@@ -238,4 +240,5 @@ export function toAnchorFileReferences(
       mimeType: r.mimeType,
     }));
 }
+
 
