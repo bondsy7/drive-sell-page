@@ -30,6 +30,29 @@ export const PHASE2_PLANNER_VERSION = 1;
 /** Harte Obergrenze fuer sekundaere Referenzen (Schema-Cap, nicht Policy). */
 export const PHASE2_MAX_SECONDARY_REFERENCES = 2;
 
+/**
+ * Hero-Perspektiven sind Output-/Praesentations-Keys ohne eigene Geometrie.
+ * Die visuelle Referenzgeometrie ist die bestehende `basePerspectiveId` aus
+ * der Phase-0-Registry. Fuer alle anderen Kategorien ist die Output-ID
+ * zugleich die Referenzgeometrie.
+ */
+export function resolveReferenceGeometryPerspectiveId(
+  outputPerspectiveId: PerspectiveId,
+): PerspectiveId {
+  const spec = getPerspectiveSpec(outputPerspectiveId);
+  if (spec.category === "hero") {
+    if (!spec.basePerspectiveId) {
+      throw new Error(
+        `Hero perspective ${outputPerspectiveId} has no basePerspectiveId in the registry`,
+      );
+    }
+    return spec.basePerspectiveId;
+  }
+  return outputPerspectiveId;
+}
+
+
+
 // --------------------------------------------------------------------------
 // Planner state
 // --------------------------------------------------------------------------
