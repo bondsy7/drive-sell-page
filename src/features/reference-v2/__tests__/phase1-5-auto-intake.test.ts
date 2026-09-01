@@ -122,7 +122,11 @@ describe("automatic gate (fail-closed)", () => {
     );
     expect(gate({ mirroredSuspected: true })).toContain("MIRRORED_SUSPECTED");
     expect(gate({ vehicleClass: "truck" })).toContain("VEHICLE_CLASS_MISMATCH");
-    expect(gate({ vehicleDetected: false })).toContain("NO_VEHICLE");
+    // Kein Fahrzeug => Klasse und Perspektive muessen konsistent null sein.
+    expect(
+      gate({ vehicleDetected: false, vehicleClass: null, canonicalPerspectiveId: null }),
+    ).toContain("NO_VEHICLE");
+
   });
 
   it("blocks identity mismatch only when anchors were provided", () => {
