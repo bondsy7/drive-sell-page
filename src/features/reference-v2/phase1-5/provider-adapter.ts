@@ -218,18 +218,24 @@ export const supabaseAnalyzerPort: ReferenceV2AnalyzerPort = {
  */
 export function toAnchorFileReferences(
   records: readonly {
-    fileId: string;
-    providerId: string;
+    fileId?: string;
+    providerId?: string;
     mimeType?: string;
   }[],
   limit: number = MAX_ANCHOR_FILES,
 ): readonly ReferenceV2FileReference[] {
   return records
-    .filter((r) => isAllowedReferenceV2Mime(r.mimeType))
+    .filter(
+      (r): r is { fileId: string; providerId: string; mimeType: string } =>
+        Boolean(r.fileId) &&
+        Boolean(r.providerId) &&
+        isAllowedReferenceV2Mime(r.mimeType),
+    )
     .slice(0, limit)
     .map((r) => ({
       fileId: r.fileId,
       providerId: r.providerId,
-      mimeType: r.mimeType as string,
+      mimeType: r.mimeType,
     }));
 }
+
