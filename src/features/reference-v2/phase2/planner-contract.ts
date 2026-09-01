@@ -521,14 +521,14 @@ export const PlannerOutputSchema = z
       });
     }
     const allReady = output.items.every(
-      (i) => i.state === "READY" && i.generationAllowed,
+      (i) => i.state === "READY" && i.generationAllowed === true,
     );
-    if (output.summary.generationAllowed && !allReady) {
+    if (output.summary.generationAllowed !== allReady) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["summary", "generationAllowed"],
         message:
-          "summary.generationAllowed requires every item READY and generationAllowed",
+          "summary.generationAllowed must equal items.every(READY && generationAllowed)",
       });
     }
   })
