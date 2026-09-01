@@ -399,6 +399,11 @@ describe("persisted anchors never guess a MIME type", () => {
 // Client/server response-shape consistency (fail closed, no optimistic defaults)
 // ---------------------------------------------------------------------------
 
+const validResponse = (patch: Record<string, unknown> = {}) => ({
+  ...goodResponse,
+  ...patch,
+});
+
 describe("analyzer response cross-field consistency", () => {
   it("rejects vehicleDetected=true without a vehicleClass", () => {
     expect(() =>
