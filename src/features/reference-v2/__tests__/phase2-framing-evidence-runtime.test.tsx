@@ -219,7 +219,7 @@ function intakeFor(clusterId: string): VisionIntakeResult {
     pose: {
       canonicalPerspectiveId: P_34_FRONT_LEFT,
       azimuthDeg: -45,
-      elevationProfile: "eye_level",
+      elevationProfile: "standard",
     },
     visibility: { front: 0.95, rear: 0.2, leftSide: 0.95, rightSide: 0.2, roof: 0.6 },
     framing: {
