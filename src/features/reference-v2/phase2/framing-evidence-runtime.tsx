@@ -190,14 +190,20 @@ export function CurrentFramingEvidenceRuntimeProvider({
   // WICHTIG: `sidecars` gehoert in die Abhaengigkeiten, damit der Context-Wert
   // bei jeder committeten Sidecar-Aenderung eine neue Identitaet bekommt und
   // Consumer, die waehrend des Renderns lesen, zuverlaessig neu rendern.
-  const value = useMemo<CurrentFramingEvidenceRuntimeValue>(
-    () => ({
+  const value = useMemo<CurrentFramingEvidenceRuntimeValue>(() => {
+    // Bewusste Kopplung an den committeten Sidecar-State: neue State-Identitaet
+    // => neuer Context-Wert => Consumer, die waehrend des Renderns lesen,
+    // rendern zuverlaessig neu. Der Map-State bleibt privat.
+    void sidecars;
+    return {
       recordCurrentFramingEvidence,
       removeCurrentFramingEvidenceForAsset,
       pruneCurrentFramingEvidenceForMaster,
       currentFramingEvidenceForMasterPlanner,
       getCurrentFramingEvidenceSidecar,
-    }),
+    };
+  },
+
     [
       sidecars,
       recordCurrentFramingEvidence,
