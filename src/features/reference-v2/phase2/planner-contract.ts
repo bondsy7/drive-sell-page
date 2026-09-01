@@ -458,7 +458,12 @@ export const PlannerInputSchema = z
       .refine(uniqueArray, {
         message: "requestedPerspectiveIds must be unique",
       }),
-    requestedOutputFormats: z.array(OutputFormatSchema).optional(),
+    requestedOutputFormats: z
+      .array(OutputFormatSchema)
+      .refine(uniqueArray, {
+        message: "requestedOutputFormats must be unique",
+      })
+      .optional(),
     policy: PlannerPolicySchema,
     nowIso: IsoDateTimeSchema,
   })
