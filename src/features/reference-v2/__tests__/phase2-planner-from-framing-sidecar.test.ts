@@ -277,7 +277,68 @@ describe("Phase 2.4D — buildReferencePlannerFromCurrentFramingSidecar", () => 
       }),
     ).toThrow(/framingSidecar: required/);
   });
+
+  it("rejects non plain-record roots", () => {
+    class LocalRoot {
+      plannerInput = plannerInputOf([asset("ref_1")]);
+      framingSidecar = emptyCurrentFramingEvidenceSidecar();
+    }
+    for (const bad of [
+      new Date(),
+      new Map(),
+      new Set(),
+      [],
+      new LocalRoot(),
+    ]) {
+      expect(() =>
+        buildReferencePlannerFromCurrentFramingSidecar(bad),
+      ).toThrow(PlannerFromCurrentFramingSidecarInputError);
+    }
+    expect(() => buildReferencePlannerFromCurrentFramingSidecar(new Date())).toThrow(
+      /root: expected a plain record object/,
+    );
+  });
+
+  it("rejects inherited required fields via Object.create", () => {
+    const proto = {
+      plannerInput: plannerInputOf([asset("ref_1")]),
+      framingSidecar: emptyCurrentFramingEvidenceSidecar(),
+    };
+    expect(() =>
+      buildReferencePlannerFromCurrentFramingSidecar(Object.create(proto)),
+    ).toThrow(PlannerFromCurrentFramingSidecarInputError);
+  });
+
+  it("accepts an ordinary object literal and a null-prototype root", () => {
+    const assets = [asset("ref_1")];
+    const plannerInput = plannerInputOf(assets, BOTH_FORMATS);
+    const framingSidecar = sidecarOf([evidence("ref_1")]);
+    const literal = buildReferencePlannerFromCurrentFramingSidecar({
+      plannerInput,
+      framingSidecar,
+    });
+    const nullProtoRoot = Object.create(null) as Record<string, unknown>;
+    nullProtoRoot.plannerInput = plannerInput;
+    nullProtoRoot.framingSidecar = framingSidecar;
+    expect(
+      buildReferencePlannerFromCurrentFramingSidecar(nullProtoRoot),
+    ).toEqual(literal);
+  });
+
+  it("keeps the frozen 2.4C error class for stale sidecars (not remapped)", () => {
+    try {
+      buildReferencePlannerFromCurrentFramingSidecar({
+        plannerInput: plannerInputOf([asset("ref_1")]),
+        framingSidecar: sidecarOf([evidence("ref_stale")]),
+      });
+      throw new Error("expected throw");
+    } catch (e) {
+      expect(e).toBeInstanceOf(CurrentFramingEvidenceSidecarError);
+      expect(e).not.toBeInstanceOf(PlannerFromCurrentFramingSidecarInputError);
+    }
+  });
 });
+
 
 // --------------------------------------------------------------------------
 // Purity / source guards

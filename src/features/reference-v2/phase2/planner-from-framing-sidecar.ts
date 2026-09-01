@@ -38,15 +38,27 @@ export class PlannerFromCurrentFramingSidecarInputError extends Error {
 
 const ALLOWED_TOP_LEVEL_KEYS = ["plannerInput", "framingSidecar"] as const;
 
+/** Nur echte Record-Container: Object.prototype oder null als Prototyp. */
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  if (typeof value !== "object" || value === null) return false;
+  if (Array.isArray(value)) return false;
+  const proto = Object.getPrototypeOf(value);
+  return proto === Object.prototype || proto === null;
+}
+
+function hasOwn(record: Record<string, unknown>, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(record, key);
+}
+
 export function buildReferencePlannerFromCurrentFramingSidecar(
   raw: unknown,
 ): PlannerOutput {
-  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
+  if (!isPlainRecord(raw)) {
     throw new PlannerFromCurrentFramingSidecarInputError([
-      "root: expected a plain object",
+      "root: expected a plain record object",
     ]);
   }
-  const record = raw as Record<string, unknown>;
+  const record = raw;
   const allowed = new Set<string>(ALLOWED_TOP_LEVEL_KEYS);
   const unknownKeys = Object.keys(record).filter((k) => !allowed.has(k));
   if (unknownKeys.length > 0) {
@@ -54,16 +66,17 @@ export function buildReferencePlannerFromCurrentFramingSidecar(
       `root: unrecognized key(s): ${unknownKeys.join(", ")}`,
     ]);
   }
-  if (!("plannerInput" in record)) {
+  if (!hasOwn(record, "plannerInput")) {
     throw new PlannerFromCurrentFramingSidecarInputError([
       "plannerInput: required",
     ]);
   }
-  if (!("framingSidecar" in record)) {
+  if (!hasOwn(record, "framingSidecar")) {
     throw new PlannerFromCurrentFramingSidecarInputError([
       "framingSidecar: required",
     ]);
   }
+
 
   const plannerInput = parsePlannerInput(record.plannerInput);
   const sidecar = parseCurrentFramingEvidenceSidecar(record.framingSidecar);
