@@ -296,20 +296,7 @@ export const PlannerItemSchema = z
           message: "BLOCKED items require at least one BLOCKING reason",
         });
       }
-      if (
-        !(
-          [
-            "INSUFFICIENT_REFERENCE",
-            "BLOCKED_IDENTITY_CONFLICT",
-            "BLOCKED_FILE_UNAVAILABLE",
-          ] as const
-        ).includes(
-          item.fineGrainedReadiness as
-            | "INSUFFICIENT_REFERENCE"
-            | "BLOCKED_IDENTITY_CONFLICT"
-            | "BLOCKED_FILE_UNAVAILABLE",
-        )
-      ) {
+      if (!BLOCKED_READINESS_STATUSES.has(item.fineGrainedReadiness)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["fineGrainedReadiness"],
@@ -317,6 +304,7 @@ export const PlannerItemSchema = z
         });
       }
     }
+
     if (item.state === "READY") {
       if (!item.generationAllowed) {
         ctx.addIssue({
