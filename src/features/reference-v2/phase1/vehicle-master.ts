@@ -12,6 +12,7 @@ import {
 import { VisionIntakeResultSchema } from "../domain/vision-intake";
 import { ColorFamilySchema } from "./color-families";
 import { OutputFormatSchema } from "./output-format-policy";
+import { ReferenceAnalysisRecordSchema } from "../phase1-5/analysis-record";
 
 /**
  * Reference V2 — Phase 1: Vehicle Master Records.
