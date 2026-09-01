@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   CandidateScoringError,
@@ -834,5 +836,134 @@ describe("Phase 2.2 determinism", () => {
     const b = assessPrimary(asset());
     expect(a).toEqual(b);
     expect(JSON.stringify(a)).toBe(JSON.stringify(b));
+  });
+});
+
+// --------------------------------------------------------------------------
+// L — registry authority hardening (Phase 2.2 hardening)
+// --------------------------------------------------------------------------
+
+describe("Phase 2.2 registry authority in the result contract", () => {
+  const valid = (): TargetRelativeCandidateAssessment =>
+    JSON.parse(JSON.stringify(assessPrimary(asset())));
+
+  it("rejects a coherently retargeted result whose referenceGeometryPerspectiveId stays on the old geometry", () => {
+    const base = valid();
+    const v = {
+      ...base,
+      targetPerspectiveId: P_FRONT,
+      eligibility: { ...base.eligibility, targetPerspectiveId: P_FRONT },
+    };
+    expect(
+      TargetRelativeCandidateAssessmentSchema.safeParse(v).success,
+    ).toBe(false);
+  });
+
+  it("rejects an internally consistent but registry-foreign surface set", () => {
+    const base = valid();
+    const v = {
+      ...base,
+      requiredSurfaceEvidence: [
+        { surface: "rear", visibility: 0.9, met: true },
+      ],
+      provenRequiredSurfaces: ["rear"],
+      unprovenRequiredSurfaces: [],
+      allRequiredSurfacesMet: true,
+    };
+    expect(
+      TargetRelativeCandidateAssessmentSchema.safeParse(v).success,
+    ).toBe(false);
+  });
+
+  it("rejects the correct surfaces in the wrong order", () => {
+    const base = valid();
+    const v = {
+      ...base,
+      requiredSurfaceEvidence: [...base.requiredSurfaceEvidence].reverse(),
+      provenRequiredSurfaces: [...base.provenRequiredSurfaces].reverse(),
+      unprovenRequiredSurfaces: [...base.unprovenRequiredSurfaces].reverse(),
+    };
+    expect(base.requiredSurfaceEvidence.length).toBeGreaterThan(1);
+    expect(
+      TargetRelativeCandidateAssessmentSchema.safeParse(v).success,
+    ).toBe(false);
+  });
+
+  it("rejects an internally valid wheel set that is not the target spec wheel list", () => {
+    const base = valid();
+    const v = {
+      ...base,
+      requiredWheelEvidence: [
+        { wheelPosition: "front_right", visible: true },
+        { wheelPosition: "rear_right", visible: true },
+      ],
+    };
+    expect(
+      TargetRelativeCandidateAssessmentSchema.safeParse(v).success,
+    ).toBe(false);
+  });
+
+  it("rejects the correct wheels in the wrong order", () => {
+    const base = valid();
+    expect(base.requiredWheelEvidence.length).toBeGreaterThanOrEqual(2);
+    const v = {
+      ...base,
+      requiredWheelEvidence: [...base.requiredWheelEvidence].reverse(),
+    };
+    expect(
+      TargetRelativeCandidateAssessmentSchema.safeParse(v).success,
+    ).toBe(false);
+  });
+
+  it("rejects a minimumPerspectiveScoreMet contradiction", () => {
+    const base = valid();
+    const v = {
+      ...base,
+      minimumPerspectiveScoreMet: !base.minimumPerspectiveScoreMet,
+    };
+    expect(
+      TargetRelativeCandidateAssessmentSchema.safeParse(v).success,
+    ).toBe(false);
+  });
+
+  it("accepts a hero result whose geometry resolves to EXT_34_FRONT_LEFT", () => {
+    const hero = assessPrimary(asset(), HERO);
+    expect(hero.targetPerspectiveId).toBe(HERO);
+    expect(hero.referenceGeometryPerspectiveId).toBe(P_34_FRONT_LEFT);
+    expect(() =>
+      parseTargetRelativeCandidateAssessment(
+        JSON.parse(JSON.stringify(hero)),
+      ),
+    ).not.toThrow();
+  });
+});
+
+// --------------------------------------------------------------------------
+// M — source-level audit regressions
+// --------------------------------------------------------------------------
+
+describe("Phase 2.2 source audit", () => {
+  const source = readFileSync(
+    resolve(
+      process.cwd(),
+      "src/features/reference-v2/phase2/candidate-scoring.ts",
+    ),
+    "utf8",
+  );
+  const code = source
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/^\s*\/\/.*$/gm, "");
+
+  it("contains no magic azimuth-error fallback", () => {
+    expect(code).not.toMatch(/maxAzimuthErrorDeg\s*\?\?/);
+    expect(code).not.toMatch(/maxAzimuthErrorDeg\s*\|\|/);
+    expect(code).toMatch(/masterEntry\.maxAzimuthErrorDeg;/);
+  });
+
+  it("never reads poisoned stored Phase-1 asset fields", () => {
+    expect(code).not.toMatch(/\.requestedPerspectiveId/);
+    expect(code).not.toMatch(/asset\.scores/);
+    expect(code).not.toMatch(/asset\.weightedScore/);
+    expect(code).not.toMatch(/\.outputReadyFormats/);
   });
 });

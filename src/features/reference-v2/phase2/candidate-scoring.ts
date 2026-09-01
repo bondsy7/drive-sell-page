@@ -111,6 +111,56 @@ export const TargetRelativeCandidateAssessmentSchema = z
       ctx.addIssue({ code: z.ZodIssueCode.custom, path, message });
     };
 
+    // --- Registry-Autoritaet -------------------------------------------
+    // Die Ziel-Perspektive bestimmt Referenzgeometrie, Pflicht-Flaechen und
+    // Pflicht-Raeder. Ein intern konsistentes, aber registry-fremdes Set
+    // darf NICHT akzeptiert werden.
+    const expectedGeometryId = resolveReferenceGeometryPerspectiveId(
+      v.targetPerspectiveId,
+    );
+    if (v.referenceGeometryPerspectiveId !== expectedGeometryId) {
+      fail(
+        ["referenceGeometryPerspectiveId"],
+        `referenceGeometryPerspectiveId must be the registry geometry of ${v.targetPerspectiveId} (${expectedGeometryId})`,
+      );
+    }
+    const expectedSpec = getPerspectiveSpec(expectedGeometryId);
+    const expectedCoverageSurfaces =
+      expectedSpec.referenceRequirements.requiredCoverageSurfaces;
+    if (
+      !sameOrder(
+        v.requiredSurfaceEvidence.map((e) => e.surface),
+        expectedCoverageSurfaces,
+      )
+    ) {
+      fail(
+        ["requiredSurfaceEvidence"],
+        `requiredSurfaceEvidence must be exactly the registry requiredCoverageSurfaces of ${expectedGeometryId} in registry order`,
+      );
+    }
+    const expectedWheels = expectedSpec.framing.requiredVisibleWheels;
+    if (
+      !sameOrder(
+        v.requiredWheelEvidence.map((w) => w.wheelPosition),
+        expectedWheels,
+      )
+    ) {
+      fail(
+        ["requiredWheelEvidence"],
+        `requiredWheelEvidence must be exactly the registry requiredVisibleWheels of ${expectedGeometryId} in registry order`,
+      );
+    }
+    if (
+      v.minimumPerspectiveScoreMet !==
+      (v.weightedScore >= expectedSpec.validationRules.minimumPerspectiveScore)
+    ) {
+      fail(
+        ["minimumPerspectiveScoreMet"],
+        "minimumPerspectiveScoreMet must equal weightedScore >= registry minimumPerspectiveScore",
+      );
+    }
+
+
     // Mirror-Invarianten gegenueber der Eligibility
     if (v.rankable !== v.eligibility.selectable) {
       fail(["rankable"], "rankable must exactly equal eligibility.selectable");
@@ -398,7 +448,16 @@ export function assessTargetRelativeCandidate(
       intake.pose.azimuthDeg,
       masterEntry.azimuthDeg,
     );
-    const maxError = masterEntry.maxAzimuthErrorDeg ?? 10;
+    const maxError = masterEntry.maxAzimuthErrorDeg;
+    if (
+      typeof maxError !== "number" ||
+      !Number.isFinite(maxError) ||
+      maxError <= 0
+    ) {
+      throw new CandidateScoringError(
+        `perspective master invariant broken: ${referenceGeometryPerspectiveId} declares azimuthDeg but has no finite positive maxAzimuthErrorDeg`,
+      );
+    }
     cameraAngle = Math.max(
       0,
       Math.round(100 - (azimuthDeltaDeg / maxError) * 50),
