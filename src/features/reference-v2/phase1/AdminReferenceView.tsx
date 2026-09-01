@@ -146,6 +146,12 @@ function AssetTile({ asset }: { asset: ReferenceAssetRecord }) {
         <Button
           size="sm"
           variant="ghost"
+          disabled={asset.protection === "protected"}
+          title={
+            asset.protection === "protected"
+              ? "Geschütztes Asset — Schutz zuerst aufheben"
+              : "Asset entfernen"
+          }
           onClick={() => run(() => removeAsset(activeMaster.id, asset.id))}
         >
           <Trash2 className="w-3 h-3" />
