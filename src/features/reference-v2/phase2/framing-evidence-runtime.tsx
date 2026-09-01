@@ -187,6 +187,9 @@ export function CurrentFramingEvidenceRuntimeProvider({
     }
   }, [masters]);
 
+  // WICHTIG: `sidecars` gehoert in die Abhaengigkeiten, damit der Context-Wert
+  // bei jeder committeten Sidecar-Aenderung eine neue Identitaet bekommt und
+  // Consumer, die waehrend des Renderns lesen, zuverlaessig neu rendern.
   const value = useMemo<CurrentFramingEvidenceRuntimeValue>(
     () => ({
       recordCurrentFramingEvidence,
@@ -196,6 +199,7 @@ export function CurrentFramingEvidenceRuntimeProvider({
       getCurrentFramingEvidenceSidecar,
     }),
     [
+      sidecars,
       recordCurrentFramingEvidence,
       removeCurrentFramingEvidenceForAsset,
       pruneCurrentFramingEvidenceForMaster,
@@ -203,6 +207,7 @@ export function CurrentFramingEvidenceRuntimeProvider({
       getCurrentFramingEvidenceSidecar,
     ],
   );
+
 
   return (
     <RuntimeContext.Provider value={value}>{children}</RuntimeContext.Provider>
