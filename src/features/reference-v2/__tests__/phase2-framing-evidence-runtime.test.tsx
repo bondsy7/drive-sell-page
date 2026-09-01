@@ -1,4 +1,4 @@
-import { act, render } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { ReactNode } from "react";
 import {
@@ -12,6 +12,9 @@ import {
   ReferenceStoreProvider,
   useReferenceStore,
 } from "../phase1/reference-store";
+import type { PerspectiveId } from "../domain/perspectives/types";
+import type { VisionIntakeResult } from "../domain/vision-intake";
+
 
 /**
  * Phase 2.4D — Runtime-Traeger fuer aktuelle Framing-Evidenz.
