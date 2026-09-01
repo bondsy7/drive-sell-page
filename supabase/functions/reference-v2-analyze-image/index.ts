@@ -92,7 +92,7 @@ Respond with JSON exactly of this shape (no extra keys):
   "azimuthDeg": number|null,
   "pitchDeg": number|null,
   "elevationProfile": "low"|"standard"|"elevated"|"interior"|"close_detail"|null,
-  "visibility": { "front": number, "rear": number, "leftSide": number, "rightSide": number, "roof": number },
+  "visibility": { "front": number, "rear": number, "leftSide": number, "rightSide": number, "roof": number, "surfaces": { "<surfaceKey>": number } },
   "framing": { "fullVehicleVisible": boolean, "cropped": boolean, "visibleWheelPositions": string[], "estimatedPaddingPct": number },
   "quality": { "sharpness": number, "occlusion": number, "glare": number, "resolutionAdequacy": number },
   "mirroredSuspected": boolean,
