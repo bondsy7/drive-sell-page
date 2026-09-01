@@ -61,15 +61,28 @@ interface IntakeOverrides {
   readonly perspectiveId?: PerspectiveId;
   readonly azimuthDeg?: number;
   readonly visibility?: VisionIntakeResult["visibility"];
+  readonly surfaces?: Record<string, number>;
   readonly wheels?: readonly string[];
   readonly usable?: number;
+  /** Feinsteuerung einzelner Qualitaetskomponenten (fuer Tie-Fixtures). */
+  readonly usableScore?: number;
+  readonly occlusion?: number;
+  readonly glare?: number;
   readonly identityClusterId?: string;
   readonly sameVehicleConfidence?: number;
   readonly elevationProfile?: "standard" | "elevated" | "low";
+  readonly issues?: readonly { code: string }[];
 }
 
 function intake(o: IntakeOverrides = {}): VisionIntakeResult {
   const usable = o.usable ?? 1;
+  const baseVisibility = o.visibility ?? {
+    front: 1,
+    rear: 0,
+    leftSide: 1,
+    rightSide: 0,
+    roof: 0.5,
+  };
   return {
     schemaVersion: 1,
     assetId: o.assetId ?? "asset_1",
@@ -82,12 +95,9 @@ function intake(o: IntakeOverrides = {}): VisionIntakeResult {
       azimuthDeg: o.azimuthDeg ?? -45,
       ...(o.elevationProfile ? { elevationProfile: o.elevationProfile } : {}),
     },
-    visibility: o.visibility ?? {
-      front: 1,
-      rear: 0,
-      leftSide: 1,
-      rightSide: 0,
-      roof: 0.5,
+    visibility: {
+      ...baseVisibility,
+      ...(o.surfaces ? { surfaces: { ...o.surfaces } } : {}),
     },
     framing: {
       fullVehicleVisible: true,
@@ -98,15 +108,16 @@ function intake(o: IntakeOverrides = {}): VisionIntakeResult {
     },
     quality: {
       sharpness: usable,
-      occlusion: 0,
-      glare: 0,
+      occlusion: o.occlusion ?? 0,
+      glare: o.glare ?? 0,
       resolutionAdequacy: usable,
-      usableScore: usable,
+      usableScore: o.usableScore ?? usable,
     },
     classificationConfidence: 0.99,
-    issues: [],
+    issues: [...(o.issues ?? [])],
   } as unknown as VisionIntakeResult;
 }
+
 
 interface AssetOverrides {
   readonly id?: string;
