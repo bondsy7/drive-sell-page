@@ -109,8 +109,7 @@ function AssetTile({ asset }: { asset: ReferenceAssetRecord }) {
         </Badge>
       </div>
       <div className="text-[11px] text-muted-foreground">
-        Score {asset.weightedScore.toFixed(1)} · v{asset.version} ·{" "}
-        {assetIsFullyOutputReady(asset) ? "4:5 + 1.91:1 ✓" : "Format eingeschränkt"}
+        Governance-Score {asset.weightedScore.toFixed(1)} · v{asset.version}
       </div>
       {asset.blockers.length > 0 && (
         <div className="flex flex-wrap gap-1">
