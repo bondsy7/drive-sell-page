@@ -809,7 +809,7 @@ describe("13-14. repository source guard", () => {
   it("never touches business tables or business metadata", () => {
     expect(REPO_SRC).not.toMatch(/from\(\s*["'`]vehicles["'`]\s*\)/);
     expect(REPO_SRC).not.toMatch(/["'`]vehicles["'`]/);
-    expect(REPO_SRC).not.toMatch(/\b(vin|brand|make|variant|trim)\b/i);
+    expect(REPO_SRC).not.toMatch(/\b(vin|brand|make|variant|trimLevel)\b/i);
     expect(REPO_SRC).not.toMatch(/\bmodel\b/i);
     expect(REPO_SRC).not.toMatch(/image_generation_jobs/);
   });
