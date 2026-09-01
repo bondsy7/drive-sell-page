@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
   ElevationProfileSchema,
   PerspectiveCategorySchema,
+  PerspectiveIdSchema,
 } from "./perspectives/types";
 
 /**
@@ -48,6 +49,20 @@ export const ScenePlateSchema = z
     /** Kompatible Kamera-Elevationsprofile dieser Plate. */
     compatibleElevationProfiles: z.array(ElevationProfileSchema).nonempty(),
     compatibleCategories: z.array(PerspectiveCategorySchema).nonempty(),
+    /**
+     * Echte Kamerakompatibilitaet: eine Plate ist nur fuer explizit gelistete
+     * Perspektiven zulaessig. Ein Standard-Plate ist NICHT automatisch fuer
+     * Low-/Elevated-Perspektiven verwendbar.
+     */
+    compatiblePerspectiveIds: z.array(PerspectiveIdSchema).nonempty(),
+    /** Kamerahoehe/-pitch, fuer die die Plate fotografiert wurde. */
+    cameraProfile: z
+      .object({
+        cameraHeightM: z.number().gt(0).max(10),
+        pitchDeg: z.number().min(-60).max(60),
+        focalLengthMm: z.number().positive(),
+      })
+      .strict(),
     vehicleAnchor: ScenePlateVehicleAnchorSchema,
     immutable: z.literal(true),
   })
@@ -61,6 +76,8 @@ export const ScenePackSchema = z
     labelDe: z.string().min(1),
     labelEn: z.string().min(1),
     plateIds: z.array(z.string().min(1)).nonempty(),
+    /** Inhaltlicher Hash des Packs — Aenderung = neue Version + neuer Hash. */
+    sha256: Sha256HexSchema,
     active: z.boolean(),
     immutable: z.literal(true),
   })
@@ -80,6 +97,8 @@ export const LogoAssetSchema = z
     sha256: Sha256HexSchema,
     storagePath: z.string().min(1),
     active: z.boolean(),
+    /** Logos sind wie Scene-Assets immutable und versioniert. */
+    immutable: z.literal(true),
     /**
      * Einziger zulaessiger Einsatzzweck: Umgebungs-Branding (Wand/Boden der
      * Szene). Fahrzeugembleme kommen NIEMALS aus einem LogoAsset.

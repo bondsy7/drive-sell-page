@@ -33,10 +33,8 @@ function hero(cfg: HeroConfig): PerspectiveSpec {
     labelEn: cfg.labelEn,
     applicableVehicleClasses: base.applicableVehicleClasses,
     basePerspectiveId: cfg.basePerspectiveId,
-    pose: {
-      ...base.pose,
-      azimuthToleranceDeg: 20,
-    },
+    // Identische Geometrie wie die Basisperspektive — inklusive Toleranzen.
+    pose: { ...base.pose },
     requiredVisibleSurfaces: base.requiredVisibleSurfaces,
     forbiddenDominantSurfaces: base.forbiddenDominantSurfaces,
     orientationRules: base.orientationRules,
@@ -48,8 +46,9 @@ function hero(cfg: HeroConfig): PerspectiveSpec {
     },
     cameraGuidance: {
       projection: "rectilinear",
-      focalLengthMinMm: 35,
-      focalLengthMaxMm: 105,
+      targetFocalLengthMm: base.cameraGuidance.targetFocalLengthMm,
+      focalLengthMinMm: base.cameraGuidance.focalLengthMinMm,
+      focalLengthMaxMm: base.cameraGuidance.focalLengthMaxMm,
       semanticConstraints: [
         "hero presentation: dramatic but physically plausible light and composition",
         "geometry identical to the base perspective; only presentation differs",

@@ -39,6 +39,7 @@ interface InteriorConfig {
   readonly forbiddenDominantSurfaces?: readonly VisualSurface[];
   readonly sideMustMatch: boolean;
   readonly semanticConstraints: readonly string[];
+  readonly targetFocalLengthMm?: number;
   readonly focalLengthMinMm?: number;
   readonly focalLengthMaxMm?: number;
   readonly riskLevel?: RiskLevel;
@@ -71,8 +72,9 @@ function interior(cfg: InteriorConfig): PerspectiveSpec {
     },
     cameraGuidance: {
       projection: "rectilinear",
-      focalLengthMinMm: cfg.focalLengthMinMm ?? 18,
-      focalLengthMaxMm: cfg.focalLengthMaxMm ?? 40,
+      targetFocalLengthMm: cfg.targetFocalLengthMm ?? 24,
+      focalLengthMinMm: cfg.focalLengthMinMm ?? 20,
+      focalLengthMaxMm: cfg.focalLengthMaxMm ?? 32,
       semanticConstraints: cfg.semanticConstraints,
     },
     referenceRequirements: {
@@ -122,8 +124,9 @@ export const INTERIOR_SPECS: readonly PerspectiveSpec[] = [
     labelEn: "Wide Cabin",
     requiredVisibleSurfaces: ["dashboard", "front_seats", "center_console"],
     sideMustMatch: false,
-    focalLengthMinMm: 14,
-    focalLengthMaxMm: 28,
+    targetFocalLengthMm: 20,
+    focalLengthMinMm: 16,
+    focalLengthMaxMm: 26,
     semanticConstraints: [
       "wide view capturing the front cabin as a whole",
       "wide-angle allowed but without heavy distortion",
@@ -202,7 +205,8 @@ export const INTERIOR_SPECS: readonly PerspectiveSpec[] = [
     labelEn: "Center Console",
     requiredVisibleSurfaces: ["center_console"],
     sideMustMatch: false,
-    focalLengthMinMm: 24,
+    targetFocalLengthMm: 35,
+    focalLengthMinMm: 28,
     focalLengthMaxMm: 50,
     semanticConstraints: [
       "top-down or angled close view of the center console",

@@ -1,12 +1,22 @@
 import { z } from "zod";
-import { PerspectiveIdSchema } from "./perspectives/types";
+import {
+  PerspectiveIdSchema,
+  isSideSensitivePerspective,
+  type PerspectiveSpec,
+} from "./perspectives/types";
+import { getPerspectiveSpec } from "./perspectives/registry";
 
 /**
  * Reference V2 — Post-Generation QA Schemas (Phase 0).
  *
- * Hard-Fail-Logik: Falsche Fahrzeugseite und Spiegelung sind IMMER Hard
- * Requirements — sie koennen durch keinen noch so hohen Score kompensiert
- * werden.
+ * Hard-Fail-Logik: Spiegelung ist IMMER ein Hard Requirement. Die
+ * Fahrzeugseite ist ein Hard Requirement AUSSCHLIESSLICH fuer side-sensitive
+ * Perspektiven (siehe PerspectiveSpec.validationRules.sideMustMatch). Fuer
+ * Front/Rear/Interior/Detail ohne Seitenbezug ist die Seite fachlich N/A
+ * (sideMatch = null) und darf nicht zum Fail fuehren.
+ *
+ * Das vom Modell gelieferte Verdict wird NIEMALS allein akzeptiert: Es wird
+ * deterministisch aus den Messwerten abgeleitet und schema-seitig erzwungen.
  */
 
 export const QA_VERDICTS = ["PASS", "REPAIR", "NEEDS_REVIEW"] as const;
@@ -34,7 +44,8 @@ export const QaPerspectiveCheckSchema = z
     detectedPerspectiveId: PerspectiveIdSchema.optional(),
     detectedAzimuthDeg: z.number().gt(-180).max(180).optional(),
     requestedPerspectiveId: PerspectiveIdSchema,
-    sideMatch: z.boolean(),
+    /** null = nicht anwendbar (Perspektive ohne Seitenbezug). */
+    sideMatch: z.boolean().nullable(),
     mirrorDetected: z.boolean(),
     score: Score100Schema,
   })
@@ -61,18 +72,6 @@ export const QaFindingSchema = z
   .strict();
 export type QaFinding = z.infer<typeof QaFindingSchema>;
 
-export const QaResultSchema = z
-  .object({
-    verdict: QaVerdictSchema,
-    perspective: QaPerspectiveCheckSchema,
-    identity: QaIdentityCheckSchema,
-    findings: z.array(QaFindingSchema),
-    confidence: Score100Schema,
-    attemptNumber: z.number().int().min(1),
-  })
-  .strict();
-export type QaResult = z.infer<typeof QaResultSchema>;
-
 /**
  * START-SCHWELLEN (Phase 0) — bewusst als PROVISORISCH markiert.
  * Diese Werte sind Startpunkte fuer die empirische Kalibrierung in spaeteren
@@ -81,7 +80,7 @@ export type QaResult = z.infer<typeof QaResultSchema>;
 export const QA_STRICT_REFERENCE_THRESHOLDS_V0 = {
   schemaVersion: 1,
   calibrationStatus: "provisional",
-  /** Hard requirement — nicht kompensierbar. */
+  /** Hard requirement — nur fuer side-sensitive Perspektiven anwendbar. */
   requireSideMatch: true,
   /** Hard requirement — nicht kompensierbar. */
   forbidMirror: true,
@@ -96,7 +95,8 @@ export const QA_STRICT_REFERENCE_THRESHOLDS_V0 = {
 export type QaThresholds = typeof QA_STRICT_REFERENCE_THRESHOLDS_V0;
 
 export interface QaMeasurements {
-  readonly sideMatch: boolean;
+  /** null = Seite fuer diese Perspektive nicht anwendbar. */
+  readonly sideMatch: boolean | null;
   readonly mirrorDetected: boolean;
   readonly perspectiveScore: number;
   readonly criticalIdentityScore: number;
@@ -109,12 +109,24 @@ export interface QaVerdictDerivation {
   readonly verdict: QaVerdict;
   readonly hardFailed: boolean;
   readonly failedChecks: readonly string[];
+  /** true, wenn die Seite fuer die angeforderte Perspektive geprueft wird. */
+  readonly sideEvaluated: boolean;
+}
+
+export interface DeriveQaVerdictOptions {
+  /**
+   * true, wenn die angeforderte Perspektive side-sensitive ist. Standard true
+   * (fail-closed), wenn keine Spec bekannt ist.
+   */
+  readonly sideRequired?: boolean;
 }
 
 /**
  * Leitet das Verdict deterministisch aus Messwerten ab.
- * - Hard Fails (falsche Seite, Spiegelung, Hard-Failure-Codes) fuehren NIE zu
+ * - Mirror und (bei side-sensitiven Perspektiven) falsche Seite fuehren NIE zu
  *   PASS — unabhaengig von allen Scores.
+ * - Bei side-sensitiver Perspektive ohne Seiten-Messung (null) wird
+ *   fail-closed entschieden.
  * - Bei Fehlern: REPAIR solange attemptNumber < maxAutomaticAttempts,
  *   danach NEEDS_REVIEW.
  */
@@ -122,17 +134,24 @@ export function deriveQaVerdict(
   measurements: QaMeasurements,
   attemptNumber: number,
   thresholds: QaThresholds = QA_STRICT_REFERENCE_THRESHOLDS_V0,
+  options: DeriveQaVerdictOptions = {},
 ): QaVerdictDerivation {
   if (!Number.isInteger(attemptNumber) || attemptNumber < 1) {
     throw new Error(`deriveQaVerdict: invalid attemptNumber ${attemptNumber}`);
   }
 
+  const sideRequired = options.sideRequired ?? true;
   const failedChecks: string[] = [];
   let hardFailed = false;
 
-  if (thresholds.requireSideMatch && !measurements.sideMatch) {
-    failedChecks.push("SIDE_MISMATCH");
-    hardFailed = true;
+  if (thresholds.requireSideMatch && sideRequired) {
+    if (measurements.sideMatch === null) {
+      failedChecks.push("SIDE_NOT_EVALUATED");
+      hardFailed = true;
+    } else if (!measurements.sideMatch) {
+      failedChecks.push("SIDE_MISMATCH");
+      hardFailed = true;
+    }
   }
   if (thresholds.forbidMirror && measurements.mirrorDetected) {
     failedChecks.push("MIRROR_DETECTED");
@@ -161,11 +180,125 @@ export function deriveQaVerdict(
     failedChecks.push("CONFIDENCE_BELOW_MIN");
   }
 
+  const sideEvaluated = thresholds.requireSideMatch && sideRequired;
+
   if (failedChecks.length === 0) {
-    return { verdict: "PASS", hardFailed: false, failedChecks };
+    return { verdict: "PASS", hardFailed: false, failedChecks, sideEvaluated };
   }
   if (attemptNumber < thresholds.maxAutomaticAttempts) {
-    return { verdict: "REPAIR", hardFailed, failedChecks };
+    return { verdict: "REPAIR", hardFailed, failedChecks, sideEvaluated };
   }
-  return { verdict: "NEEDS_REVIEW", hardFailed, failedChecks };
+  return { verdict: "NEEDS_REVIEW", hardFailed, failedChecks, sideEvaluated };
+}
+
+/**
+ * Perspektivabhaengiges QA-Gate: die Side-Pruefung wird ausschliesslich aus
+ * der PerspectiveSpec abgeleitet, niemals global erzwungen.
+ */
+export function evaluateQaGate(input: {
+  readonly perspectiveSpec: PerspectiveSpec;
+  readonly measurements: QaMeasurements;
+  readonly attemptNumber: number;
+  readonly thresholds?: QaThresholds;
+}): QaVerdictDerivation {
+  return deriveQaVerdict(
+    input.measurements,
+    input.attemptNumber,
+    input.thresholds ?? QA_STRICT_REFERENCE_THRESHOLDS_V0,
+    { sideRequired: isSideSensitivePerspective(input.perspectiveSpec) },
+  );
+}
+
+const QaResultBaseSchema = z
+  .object({
+    verdict: QaVerdictSchema,
+    perspective: QaPerspectiveCheckSchema,
+    identity: QaIdentityCheckSchema,
+    findings: z.array(QaFindingSchema),
+    confidence: Score100Schema,
+    attemptNumber: z.number().int().min(1),
+  })
+  .strict();
+
+function measurementsFromResult(
+  result: z.infer<typeof QaResultBaseSchema>,
+): QaMeasurements {
+  return {
+    sideMatch: result.perspective.sideMatch,
+    mirrorDetected: result.perspective.mirrorDetected,
+    perspectiveScore: result.perspective.score,
+    criticalIdentityScore: result.identity.criticalScore,
+    secondaryIdentityScore: result.identity.secondaryScore,
+    confidence: result.confidence,
+    hardFailures: result.identity.hardFailures,
+  };
+}
+
+/** Deterministische Ableitung fuer ein (roh geparstes) QA-Ergebnis. */
+export function deriveVerdictForResult(
+  result: z.infer<typeof QaResultBaseSchema>,
+): QaVerdictDerivation {
+  const spec = getPerspectiveSpec(result.perspective.requestedPerspectiveId);
+  return evaluateQaGate({
+    perspectiveSpec: spec,
+    measurements: measurementsFromResult(result),
+    attemptNumber: result.attemptNumber,
+  });
+}
+
+/**
+ * Das Schema akzeptiert kein logisch unmoegliches Verdict: Ein vom Modell
+ * geliefertes PASS wird abgelehnt, sobald Mirror, falsche erforderliche Seite,
+ * Hard Failures oder Scores unter Threshold vorliegen.
+ */
+export const QaResultSchema = QaResultBaseSchema.superRefine((result, ctx) => {
+  if (!Number.isInteger(result.attemptNumber) || result.attemptNumber < 1) {
+    return;
+  }
+  const spec = (() => {
+    try {
+      return getPerspectiveSpec(result.perspective.requestedPerspectiveId);
+    } catch {
+      return undefined;
+    }
+  })();
+  if (spec === undefined) return;
+
+  const sideRequired = isSideSensitivePerspective(spec);
+  if (!sideRequired && result.perspective.sideMatch !== null) {
+    // Seite ist N/A — eine Behauptung darueber wird nicht ausgewertet, aber
+    // auch nicht als Hard Requirement missbraucht.
+  }
+
+  const derived = evaluateQaGate({
+    perspectiveSpec: spec,
+    measurements: measurementsFromResult(result),
+    attemptNumber: result.attemptNumber,
+  });
+  if (derived.verdict === "PASS") return;
+  if (result.verdict === "PASS") {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["verdict"],
+      message: `verdict PASS is impossible: ${derived.failedChecks.join(", ")}`,
+    });
+  }
+});
+export type QaResult = z.infer<typeof QaResultSchema>;
+
+/**
+ * Nimmt ein Modell-Ergebnis entgegen und ERSETZT das gelieferte Verdict durch
+ * das deterministisch abgeleitete. Model-supplied verdicts werden nie
+ * uebernommen.
+ */
+export function normalizeQaResult(input: unknown): {
+  readonly result: QaResult;
+  readonly derivation: QaVerdictDerivation;
+} {
+  const parsed = QaResultBaseSchema.parse(input);
+  const derivation = deriveVerdictForResult(parsed);
+  return {
+    result: { ...parsed, verdict: derivation.verdict },
+    derivation,
+  };
 }

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { PerspectiveIdSchema } from "./perspectives/types";
-import { EditingModuleIdSchema } from "./editing-modules";
+import { EDITING_MODULES, EditingModuleIdSchema } from "./editing-modules";
 import { VisionIntakeResultSchema } from "./vision-intake";
 
 /**
@@ -49,7 +49,7 @@ export type StrictReferenceOutputRequest = z.infer<
   typeof StrictReferenceOutputRequestSchema
 >;
 
-export const StrictReferenceJobSchema = z
+const StrictReferenceJobBaseSchema = z
   .object({
     jobId: z.string().min(1),
     mode: z.literal("strict_reference"),
@@ -59,4 +59,23 @@ export const StrictReferenceJobSchema = z
     createdAtIso: z.string().min(1).optional(),
   })
   .strict();
+
+/**
+ * Im strict_reference Modus sind TRANSFORMATION-Module auf JEDER Ebene
+ * unzulaessig — auch im visuellen Kontext des Jobs, nicht nur im
+ * Generation-Request.
+ */
+export const StrictReferenceJobSchema =
+  StrictReferenceJobBaseSchema.superRefine((job, ctx) => {
+    if (job.mode !== "strict_reference") return;
+    for (const moduleId of job.visual.enabledModules) {
+      if (EDITING_MODULES[moduleId].riskClass === "TRANSFORMATION") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["visual", "enabledModules"],
+          message: `TRANSFORMATION module '${moduleId}' is not permitted in strict_reference jobs`,
+        });
+      }
+    }
+  });
 export type StrictReferenceJob = z.infer<typeof StrictReferenceJobSchema>;

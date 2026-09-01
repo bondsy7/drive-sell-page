@@ -36,8 +36,9 @@ const validIntake = {
   },
   quality: {
     sharpness: 0.9,
-    occlusion: 0.95,
-    glare: 0.85,
+    // severity semantics: 0 = none, 1 = strong
+    occlusion: 0.05,
+    glare: 0.15,
     resolutionAdequacy: 1,
     usableScore: 0.9,
   },
@@ -117,5 +118,46 @@ describe("VisionIntakeResultSchema", () => {
       schemaVersion: 2,
     });
     expect(result.success).toBe(false);
+  });
+});
+
+describe("vision quality semantics", () => {
+  it("treats occlusion and glare as severity (0 = none, 1 = strong)", () => {
+    const clean = parseVisionIntakeResult({
+      ...validIntake,
+      quality: {
+        sharpness: 1,
+        occlusion: 0,
+        glare: 0,
+        resolutionAdequacy: 1,
+        usableScore: 1,
+      },
+    });
+    expect(clean.quality.occlusion).toBe(0);
+    expect(clean.quality.glare).toBe(0);
+
+    const bad = parseVisionIntakeResult({
+      ...validIntake,
+      quality: {
+        sharpness: 0.2,
+        occlusion: 1,
+        glare: 1,
+        resolutionAdequacy: 0.2,
+        usableScore: 0.1,
+      },
+    });
+    expect(bad.quality.occlusion).toBeGreaterThan(clean.quality.occlusion);
+    expect(bad.quality.usableScore).toBeLessThan(clean.quality.usableScore);
+  });
+
+  it("keeps all quality scores inside 0..1", () => {
+    for (const field of ["occlusion", "glare", "sharpness", "resolutionAdequacy", "usableScore"]) {
+      expect(
+        VisionIntakeResultSchema.safeParse({
+          ...validIntake,
+          quality: { ...validIntake.quality, [field]: 1.5 },
+        }).success,
+      ).toBe(false);
+    }
   });
 });

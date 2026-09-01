@@ -65,8 +65,9 @@ function detail(cfg: DetailConfig): PerspectiveSpec {
     },
     cameraGuidance: {
       projection: "rectilinear",
-      focalLengthMinMm: 35,
-      focalLengthMaxMm: 90,
+      targetFocalLengthMm: 60,
+      focalLengthMinMm: 45,
+      focalLengthMaxMm: 85,
       semanticConstraints: cfg.semanticConstraints,
     },
     referenceRequirements: {
@@ -232,7 +233,7 @@ export const DETAIL_SPECS: readonly PerspectiveSpec[] = [
   detail({
     id: "DET_STEERING_WHEEL",
     labelDe: "Lenkrad",
-    labelEn: "Wheel Controls / Rim",
+    labelEn: "Steering Wheel",
     applicableVehicleClasses: CVMT,
     requiredVisibleSurfaces: ["steering_wheel"],
     sideMustMatch: true,
@@ -250,11 +251,11 @@ export const DETAIL_SPECS: readonly PerspectiveSpec[] = [
     labelEn: "Instrument Cluster",
     applicableVehicleClasses: CVMT,
     requiredVisibleSurfaces: ["instrument_cluster"],
-    sideMustMatch: true,
+    sideMustMatch: false,
     riskLevel: "medium",
     semanticConstraints: [
       "straight view of the instrument cluster",
-      "display content plausible and consistent with the references",
+      "reproduce the cluster content exactly as visible in the references; if unreadable, leave it dark or neutral and invent nothing",
     ],
   }),
   detail({
@@ -267,7 +268,7 @@ export const DETAIL_SPECS: readonly PerspectiveSpec[] = [
     riskLevel: "medium",
     semanticConstraints: [
       "close view of the central display",
-      "screen content plausible and consistent with the references",
+      "reproduce the screen content exactly as visible in the references; if unreadable, leave it dark or neutral and invent nothing",
     ],
   }),
   detail({

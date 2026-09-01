@@ -23,6 +23,8 @@ interface ElevatedConfig {
   readonly labelEn: string;
   readonly azimuthDeg: number;
   readonly azimuthToleranceDeg: number;
+  readonly azimuthValidationToleranceDeg: number;
+  readonly sideMustMatch: boolean;
   readonly requiredVisibleSurfaces: readonly VisualSurface[];
   readonly forbiddenDominantSurfaces: readonly VisualSurface[];
   readonly vehicleFrontImageDirection: VehicleFrontImageDirection;
@@ -58,8 +60,9 @@ function elevated(cfg: ElevatedConfig): PerspectiveSpec {
     },
     cameraGuidance: {
       projection: "rectilinear",
-      focalLengthMinMm: 24,
-      focalLengthMaxMm: 70,
+      targetFocalLengthMm: 45,
+      focalLengthMinMm: 35,
+      focalLengthMaxMm: 60,
       semanticConstraints: [
         "camera above the roofline (approx. 2.5-4 m)",
         "moderate downward tilt",
@@ -75,8 +78,8 @@ function elevated(cfg: ElevatedConfig): PerspectiveSpec {
     },
     validationRules: {
       mirrorForbidden: true,
-      sideMustMatch: true,
-      maxAzimuthErrorDeg: cfg.azimuthToleranceDeg,
+      sideMustMatch: cfg.sideMustMatch,
+      maxAzimuthErrorDeg: cfg.azimuthValidationToleranceDeg,
       minimumPerspectiveScore: 92,
     },
     riskLevel: "high",
@@ -90,6 +93,8 @@ export const ELEVATED_SPECS: readonly PerspectiveSpec[] = [
     labelEn: "High Front",
     azimuthDeg: 0,
     azimuthToleranceDeg: 10,
+    azimuthValidationToleranceDeg: 13,
+    sideMustMatch: false,
     requiredVisibleSurfaces: ["front", "roof"],
     forbiddenDominantSurfaces: ["rear"],
     vehicleFrontImageDirection: "toward_camera",
@@ -100,7 +105,9 @@ export const ELEVATED_SPECS: readonly PerspectiveSpec[] = [
     labelDe: "Vogelperspektive Front links",
     labelEn: "High Front-Left",
     azimuthDeg: -45,
-    azimuthToleranceDeg: 15,
+    azimuthToleranceDeg: 12,
+    azimuthValidationToleranceDeg: 15,
+    sideMustMatch: true,
     requiredVisibleSurfaces: ["front", "left_side", "roof"],
     forbiddenDominantSurfaces: ["rear", "right_side"],
     vehicleFrontImageDirection: "toward_camera",
@@ -111,7 +118,9 @@ export const ELEVATED_SPECS: readonly PerspectiveSpec[] = [
     labelDe: "Vogelperspektive Front rechts",
     labelEn: "High Front-Right",
     azimuthDeg: 45,
-    azimuthToleranceDeg: 15,
+    azimuthToleranceDeg: 12,
+    azimuthValidationToleranceDeg: 15,
+    sideMustMatch: true,
     requiredVisibleSurfaces: ["front", "right_side", "roof"],
     forbiddenDominantSurfaces: ["rear", "left_side"],
     vehicleFrontImageDirection: "toward_camera",
@@ -123,6 +132,8 @@ export const ELEVATED_SPECS: readonly PerspectiveSpec[] = [
     labelEn: "High Rear",
     azimuthDeg: 180,
     azimuthToleranceDeg: 10,
+    azimuthValidationToleranceDeg: 13,
+    sideMustMatch: false,
     requiredVisibleSurfaces: ["rear", "roof"],
     forbiddenDominantSurfaces: ["front"],
     vehicleFrontImageDirection: "away_from_camera",
@@ -133,7 +144,9 @@ export const ELEVATED_SPECS: readonly PerspectiveSpec[] = [
     labelDe: "Vogelperspektive Heck links",
     labelEn: "High Rear-Left",
     azimuthDeg: -135,
-    azimuthToleranceDeg: 15,
+    azimuthToleranceDeg: 12,
+    azimuthValidationToleranceDeg: 15,
+    sideMustMatch: true,
     requiredVisibleSurfaces: ["rear", "left_side", "roof"],
     forbiddenDominantSurfaces: ["front", "right_side"],
     vehicleFrontImageDirection: "away_from_camera",
@@ -144,7 +157,9 @@ export const ELEVATED_SPECS: readonly PerspectiveSpec[] = [
     labelDe: "Vogelperspektive Heck rechts",
     labelEn: "High Rear-Right",
     azimuthDeg: 135,
-    azimuthToleranceDeg: 15,
+    azimuthToleranceDeg: 12,
+    azimuthValidationToleranceDeg: 15,
+    sideMustMatch: true,
     requiredVisibleSurfaces: ["rear", "right_side", "roof"],
     forbiddenDominantSurfaces: ["front", "left_side"],
     vehicleFrontImageDirection: "away_from_camera",

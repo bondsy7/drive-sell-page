@@ -3,8 +3,11 @@ import {
   QA_STRICT_REFERENCE_THRESHOLDS_V0,
   QaResultSchema,
   deriveQaVerdict,
+  evaluateQaGate,
+  normalizeQaResult,
   type QaMeasurements,
 } from "@/features/reference-v2/domain/qa";
+import { getPerspectiveSpec } from "@/features/reference-v2/domain/perspectives/registry";
 
 const perfect: QaMeasurements = {
   sideMatch: true,
@@ -148,5 +151,119 @@ describe("QaResultSchema", () => {
     expect(
       QaResultSchema.safeParse({ ...validResult, confidence: 101 }).success,
     ).toBe(false);
+  });
+});
+
+describe("side check is perspective dependent, not global", () => {
+  it("hard-fails a wrong side only for side-sensitive perspectives", () => {
+    const sideSpec = getPerspectiveSpec("EXT_SIDE_RIGHT");
+    const sideResult = evaluateQaGate({
+      perspectiveSpec: sideSpec,
+      measurements: { ...perfect, sideMatch: false },
+      attemptNumber: 1,
+    });
+    expect(sideResult.verdict).toBe("REPAIR");
+    expect(sideResult.hardFailed).toBe(true);
+    expect(sideResult.sideEvaluated).toBe(true);
+  });
+
+  it.each(["EXT_FRONT", "EXT_REAR", "INT_DASH_CENTER", "DET_GRILLE"] as const)(
+    "treats sideMatch as N/A for %s",
+    (perspectiveId) => {
+      const spec = getPerspectiveSpec(perspectiveId);
+      const result = evaluateQaGate({
+        perspectiveSpec: spec,
+        measurements: { ...perfect, sideMatch: null },
+        attemptNumber: 1,
+      });
+      expect(result.sideEvaluated).toBe(false);
+      expect(result.verdict).toBe("PASS");
+      const wrongSide = evaluateQaGate({
+        perspectiveSpec: spec,
+        measurements: { ...perfect, sideMatch: false },
+        attemptNumber: 1,
+      });
+      expect(wrongSide.verdict).toBe("PASS");
+    },
+  );
+
+  it("fails closed when a side-sensitive perspective has no side measurement", () => {
+    const result = evaluateQaGate({
+      perspectiveSpec: getPerspectiveSpec("EXT_SIDE_LEFT"),
+      measurements: { ...perfect, sideMatch: null },
+      attemptNumber: 1,
+    });
+    expect(result.verdict).not.toBe("PASS");
+    expect(result.failedChecks).toContain("SIDE_NOT_EVALUATED");
+  });
+});
+
+describe("model-supplied verdicts are never trusted", () => {
+  const passing = {
+    verdict: "PASS",
+    perspective: {
+      requestedPerspectiveId: "EXT_SIDE_RIGHT",
+      sideMatch: true,
+      mirrorDetected: false,
+      score: 97,
+    },
+    identity: {
+      overallScore: 96,
+      criticalScore: 95,
+      secondaryScore: 92,
+      hardFailures: [],
+    },
+    findings: [],
+    confidence: 93,
+    attemptNumber: 1,
+  };
+
+  it("accepts a genuinely passing result", () => {
+    expect(QaResultSchema.safeParse(passing).success).toBe(true);
+  });
+
+  it("rejects PASS with mirrorDetected=true", () => {
+    const result = QaResultSchema.safeParse({
+      ...passing,
+      perspective: { ...passing.perspective, mirrorDetected: true },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects PASS with a wrong required side", () => {
+    const result = QaResultSchema.safeParse({
+      ...passing,
+      perspective: { ...passing.perspective, sideMatch: false },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects PASS with hard failures", () => {
+    const result = QaResultSchema.safeParse({
+      ...passing,
+      identity: { ...passing.identity, hardFailures: ["MIRRORED_OUTPUT"] },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects PASS with scores below threshold", () => {
+    const result = QaResultSchema.safeParse({ ...passing, confidence: 50 });
+    expect(result.success).toBe(false);
+  });
+
+  it("normalizes a claimed PASS into the derived verdict", () => {
+    const { result, derivation } = normalizeQaResult({
+      ...passing,
+      perspective: { ...passing.perspective, mirrorDetected: true },
+    });
+    expect(result.verdict).toBe("REPAIR");
+    expect(derivation.failedChecks).toContain("MIRROR_DETECTED");
+
+    const escalated = normalizeQaResult({
+      ...passing,
+      attemptNumber: 2,
+      perspective: { ...passing.perspective, sideMatch: false },
+    });
+    expect(escalated.result.verdict).toBe("NEEDS_REVIEW");
   });
 });

@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
+  FILE_HARD_FAIL_CODES,
+  IDENTITY_HARD_FAIL_CODES,
   MATCH_SCORE_WEIGHTS,
   REFERENCE_HARD_FAIL_CODES,
   REFERENCE_READINESS_STATUSES,
@@ -159,5 +161,109 @@ describe("OutputRequestMatchResultSchema", () => {
       vehicleDescription: "leak",
     });
     expect(result.success).toBe(false);
+  });
+});
+
+describe("hard fail code groups", () => {
+  it("separates identity and file hard failures", () => {
+    expect([...FILE_HARD_FAIL_CODES]).toEqual(["FILE_UNAVAILABLE"]);
+    expect(IDENTITY_HARD_FAIL_CODES).toContain("IDENTITY_CLUSTER_CONFLICT");
+  });
+});
+
+describe("readiness schema hardening", () => {
+  const base = {
+    outputRequestId: "out-1",
+    perspectiveSpecId: "EXT_SIDE_LEFT",
+    perspectiveSpecVersion: 1,
+  };
+
+  it("READY_MULTI_REFERENCE requires primary plus at least one secondary", () => {
+    expect(
+      OutputRequestMatchResultSchema.safeParse({
+        ...base,
+        status: "READY_MULTI_REFERENCE",
+        primaryReferenceAssetId: "asset-1",
+      }).success,
+    ).toBe(false);
+    expect(
+      OutputRequestMatchResultSchema.safeParse({
+        ...base,
+        status: "READY_MULTI_REFERENCE",
+        primaryReferenceAssetId: "asset-1",
+        secondaryReferenceAssetIds: ["asset-2"],
+      }).success,
+    ).toBe(true);
+  });
+
+  it("rejects the primary repeated as a secondary", () => {
+    expect(
+      OutputRequestMatchResultSchema.safeParse({
+        ...base,
+        status: "READY_MULTI_REFERENCE",
+        primaryReferenceAssetId: "asset-1",
+        secondaryReferenceAssetIds: ["asset-1"],
+      }).success,
+    ).toBe(false);
+  });
+
+  it("BLOCKED_IDENTITY_CONFLICT needs an identity hard failure", () => {
+    expect(
+      OutputRequestMatchResultSchema.safeParse({
+        ...base,
+        status: "BLOCKED_IDENTITY_CONFLICT",
+        hardFailures: ["FILE_UNAVAILABLE"],
+      }).success,
+    ).toBe(false);
+    for (const code of IDENTITY_HARD_FAIL_CODES) {
+      expect(
+        OutputRequestMatchResultSchema.safeParse({
+          ...base,
+          status: "BLOCKED_IDENTITY_CONFLICT",
+          hardFailures: [code],
+        }).success,
+      ).toBe(true);
+    }
+  });
+
+  it("BLOCKED_FILE_UNAVAILABLE needs a file hard failure", () => {
+    expect(
+      OutputRequestMatchResultSchema.safeParse({
+        ...base,
+        status: "BLOCKED_FILE_UNAVAILABLE",
+        hardFailures: ["IDENTITY_CLUSTER_CONFLICT"],
+      }).success,
+    ).toBe(false);
+    expect(
+      OutputRequestMatchResultSchema.safeParse({
+        ...base,
+        status: "BLOCKED_FILE_UNAVAILABLE",
+        hardFailures: ["FILE_UNAVAILABLE"],
+      }).success,
+    ).toBe(true);
+  });
+
+  it("a wrong vehicle side is never compensated, even at score 100", () => {
+    const evaluation = evaluateReferenceCandidate(
+      {
+        cameraAngle: 100,
+        sideAndSurfaceCorrectness: 100,
+        requiredSurfaceCoverage: 100,
+        quality: 100,
+        framing: 100,
+      },
+      ["WRONG_VEHICLE_SIDE"],
+    );
+    expect(evaluation.weightedScore).toBe(100);
+    expect(evaluation.eligible).toBe(false);
+    expect(
+      OutputRequestMatchResultSchema.safeParse({
+        ...base,
+        status: "READY_EXACT",
+        primaryReferenceAssetId: "asset-1",
+        weightedScore: 100,
+        hardFailures: ["WRONG_VEHICLE_SIDE"],
+      }).success,
+    ).toBe(false);
   });
 });

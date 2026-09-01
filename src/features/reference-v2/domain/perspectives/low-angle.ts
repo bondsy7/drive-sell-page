@@ -21,6 +21,8 @@ interface LowAngleConfig {
   readonly labelEn: string;
   readonly azimuthDeg: number;
   readonly azimuthToleranceDeg: number;
+  readonly azimuthValidationToleranceDeg: number;
+  readonly sideMustMatch: boolean;
   readonly requiredVisibleSurfaces: readonly VisualSurface[];
   readonly forbiddenDominantSurfaces: readonly VisualSurface[];
   readonly vehicleFrontImageDirection: VehicleFrontImageDirection;
@@ -56,8 +58,9 @@ function lowAngle(cfg: LowAngleConfig): PerspectiveSpec {
     },
     cameraGuidance: {
       projection: "rectilinear",
-      focalLengthMinMm: 24,
-      focalLengthMaxMm: 50,
+      targetFocalLengthMm: 35,
+      focalLengthMinMm: 28,
+      focalLengthMaxMm: 45,
       semanticConstraints: [
         "camera near ground level (approx. 0.3-0.6 m)",
         "moderate upward tilt",
@@ -73,8 +76,8 @@ function lowAngle(cfg: LowAngleConfig): PerspectiveSpec {
     },
     validationRules: {
       mirrorForbidden: true,
-      sideMustMatch: true,
-      maxAzimuthErrorDeg: cfg.azimuthToleranceDeg,
+      sideMustMatch: cfg.sideMustMatch,
+      maxAzimuthErrorDeg: cfg.azimuthValidationToleranceDeg,
       minimumPerspectiveScore: 92,
     },
     riskLevel: "medium",
@@ -88,6 +91,8 @@ export const LOW_ANGLE_SPECS: readonly PerspectiveSpec[] = [
     labelEn: "Low Front",
     azimuthDeg: 0,
     azimuthToleranceDeg: 10,
+    azimuthValidationToleranceDeg: 13,
+    sideMustMatch: false,
     requiredVisibleSurfaces: ["front"],
     forbiddenDominantSurfaces: ["rear"],
     vehicleFrontImageDirection: "toward_camera",
@@ -98,7 +103,9 @@ export const LOW_ANGLE_SPECS: readonly PerspectiveSpec[] = [
     labelDe: "Froschperspektive Front links",
     labelEn: "Low Front-Left",
     azimuthDeg: -45,
-    azimuthToleranceDeg: 15,
+    azimuthToleranceDeg: 12,
+    azimuthValidationToleranceDeg: 15,
+    sideMustMatch: true,
     requiredVisibleSurfaces: ["front", "left_side"],
     forbiddenDominantSurfaces: ["rear", "right_side"],
     vehicleFrontImageDirection: "toward_camera",
@@ -109,7 +116,9 @@ export const LOW_ANGLE_SPECS: readonly PerspectiveSpec[] = [
     labelDe: "Froschperspektive Front rechts",
     labelEn: "Low Front-Right",
     azimuthDeg: 45,
-    azimuthToleranceDeg: 15,
+    azimuthToleranceDeg: 12,
+    azimuthValidationToleranceDeg: 15,
+    sideMustMatch: true,
     requiredVisibleSurfaces: ["front", "right_side"],
     forbiddenDominantSurfaces: ["rear", "left_side"],
     vehicleFrontImageDirection: "toward_camera",
@@ -121,6 +130,8 @@ export const LOW_ANGLE_SPECS: readonly PerspectiveSpec[] = [
     labelEn: "Low Rear",
     azimuthDeg: 180,
     azimuthToleranceDeg: 10,
+    azimuthValidationToleranceDeg: 13,
+    sideMustMatch: false,
     requiredVisibleSurfaces: ["rear"],
     forbiddenDominantSurfaces: ["front"],
     vehicleFrontImageDirection: "away_from_camera",
@@ -131,7 +142,9 @@ export const LOW_ANGLE_SPECS: readonly PerspectiveSpec[] = [
     labelDe: "Froschperspektive Heck links",
     labelEn: "Low Rear-Left",
     azimuthDeg: -135,
-    azimuthToleranceDeg: 15,
+    azimuthToleranceDeg: 12,
+    azimuthValidationToleranceDeg: 15,
+    sideMustMatch: true,
     requiredVisibleSurfaces: ["rear", "left_side"],
     forbiddenDominantSurfaces: ["front", "right_side"],
     vehicleFrontImageDirection: "away_from_camera",
@@ -142,7 +155,9 @@ export const LOW_ANGLE_SPECS: readonly PerspectiveSpec[] = [
     labelDe: "Froschperspektive Heck rechts",
     labelEn: "Low Rear-Right",
     azimuthDeg: 135,
-    azimuthToleranceDeg: 15,
+    azimuthToleranceDeg: 12,
+    azimuthValidationToleranceDeg: 15,
+    sideMustMatch: true,
     requiredVisibleSurfaces: ["rear", "right_side"],
     forbiddenDominantSurfaces: ["front", "left_side"],
     vehicleFrontImageDirection: "away_from_camera",
