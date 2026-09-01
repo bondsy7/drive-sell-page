@@ -379,6 +379,8 @@ describe("Phase 2.3 primary qualification", () => {
 // C — minimal, scoped secondary selection
 // --------------------------------------------------------------------------
 
+const HIGH = { perspectives: [P_HIGH_FRONT] } as const;
+
 describe("Phase 2.3 secondary selection", () => {
   it("adds no secondary when the primary proves every required surface", () => {
     const out = plan([perfectPrimary("asset_a"), leftSideAsset("asset_b")]);
@@ -387,43 +389,46 @@ describe("Phase 2.3 secondary selection", () => {
   });
 
   it("adds exactly one scoped secondary for a missing required surface", () => {
-    const out = plan([
-      primaryWithoutLeftSide("asset_a"),
-      leftSideAsset("asset_b"),
-    ]);
+    const out = plan([highFrontPrimary("asset_a"), roofDonor("asset_b")], HIGH);
     const secondaries = item(out).selection.secondaryReferences;
     expect(secondaries).toHaveLength(1);
     expect(secondaries[0]!.assetId).toBe("asset_b");
-    expect(secondaries[0]!.scopes).toEqual(["left_side"]);
+    expect(secondaries[0]!.scopes).toEqual(["roof"]);
     expect(secondaries[0]!.role).toBe("secondary");
   });
 
   it("marks a multi-reference plan as READY_MULTI_REFERENCE", () => {
-    const out = plan([
-      primaryWithoutLeftSide("asset_a"),
-      leftSideAsset("asset_b"),
-    ]);
-    if (item(out).state === "READY") {
-      expect(item(out).fineGrainedReadiness).toBe("READY_MULTI_REFERENCE");
-    } else {
-      expect(item(out).selection.secondaryReferences).toHaveLength(1);
-    }
+    const out = plan([highFrontPrimary("asset_a"), roofDonor("asset_b")], HIGH);
+    expect(item(out).state).toBe("READY");
+    expect(item(out).fineGrainedReadiness).toBe("READY_MULTI_REFERENCE");
+    expect(item(out).generationAllowed).toBe(true);
   });
 
   it("never selects a secondary that adds no missing surface", () => {
-    const out = plan([
-      primaryWithoutLeftSide("asset_a"),
-      leftSideAsset("asset_b"),
-      leftSideAsset("asset_c"),
-    ]);
+    const out = plan(
+      [highFrontPrimary("asset_a"), roofDonor("asset_b"), roofDonor("asset_c")],
+      HIGH,
+    );
     expect(item(out).selection.secondaryReferences).toHaveLength(1);
   });
 
-  it("reports SECONDARY_BUDGET_TRUNCATED when the budget forbids a possible rescue", () => {
+  it("prefers the visually stronger donor on equal surface gain", () => {
     const out = plan(
-      [primaryWithoutLeftSide("asset_a"), leftSideAsset("asset_b")],
-      { maxSecondaryReferences: 0 },
+      [
+        highFrontPrimary("asset_a"),
+        roofDonor("asset_b", 0.6),
+        roofDonor("asset_c", 1),
+      ],
+      HIGH,
     );
+    expect(item(out).selection.secondaryReferences[0]!.assetId).toBe("asset_c");
+  });
+
+  it("reports SECONDARY_BUDGET_TRUNCATED when the budget forbids a possible rescue", () => {
+    const out = plan([highFrontPrimary("asset_a"), roofDonor("asset_b")], {
+      ...HIGH,
+      maxSecondaryReferences: 0,
+    });
     expect(item(out).state).toBe("BLOCKED");
     expect(item(out).selection.secondaryReferences).toEqual([]);
     expect(codes(out)).toContain("SECONDARY_BUDGET_TRUNCATED");
@@ -432,8 +437,8 @@ describe("Phase 2.3 secondary selection", () => {
 
   it("never exceeds the schema cap for secondary references", () => {
     const out = plan(
-      [primaryWithoutLeftSide("asset_a"), leftSideAsset("asset_b")],
-      { maxSecondaryReferences: 2 },
+      [highFrontPrimary("asset_a"), roofDonor("asset_b"), roofDonor("asset_c")],
+      { ...HIGH, maxSecondaryReferences: 2 },
     );
     expect(
       item(out).selection.secondaryReferences.length,
@@ -441,10 +446,7 @@ describe("Phase 2.3 secondary selection", () => {
   });
 
   it("never lists the primary asset as a secondary reference", () => {
-    const out = plan([
-      primaryWithoutLeftSide("asset_a"),
-      leftSideAsset("asset_b"),
-    ]);
+    const out = plan([highFrontPrimary("asset_a"), roofDonor("asset_b")], HIGH);
     const ids = item(out).selection.secondaryReferences.map((s) => s.assetId);
     expect(ids).not.toContain(item(out).selection.primary?.assetId);
   });
@@ -465,30 +467,26 @@ describe("Phase 2.3 coverage assembly", () => {
   });
 
   it("attributes every proven surface to its actual source asset", () => {
-    const out = plan([
-      primaryWithoutLeftSide("asset_a"),
-      leftSideAsset("asset_b"),
-    ]);
+    const out = plan([highFrontPrimary("asset_a"), roofDonor("asset_b")], HIGH);
     const front = item(out).coverage.items.find((i) => i.surface === "front")!;
-    const left = item(out).coverage.items.find(
-      (i) => i.surface === "left_side",
-    )!;
+    const roof = item(out).coverage.items.find((i) => i.surface === "roof")!;
     expect(front.sourceAssetIds).toEqual(["asset_a"]);
-    expect(left.sourceAssetIds).toEqual(["asset_b"]);
+    expect(roof.sourceAssetIds).toEqual(["asset_b"]);
     expect(item(out).coverage.allMandatorySurfacesMet).toBe(true);
   });
 
   it("blocks with REQUIRED_SURFACE_UNPROVEN when a surface stays unproven", () => {
-    const out = plan([primaryWithoutLeftSide("asset_a")]);
+    const out = plan([highFrontPrimary("asset_a")], HIGH);
     expect(item(out).state).toBe("BLOCKED");
     expect(item(out).coverage.allMandatorySurfacesMet).toBe(false);
     const reason = item(out).reasons.find(
       (r) => r.code === "REQUIRED_SURFACE_UNPROVEN",
     );
-    expect(reason?.surface).toBe("left_side");
+    expect(reason?.surface).toBe("roof");
     expect(item(out).generationAllowed).toBe(false);
   });
 });
+
 
 // --------------------------------------------------------------------------
 // E — wheel evidence (primary framing only)
