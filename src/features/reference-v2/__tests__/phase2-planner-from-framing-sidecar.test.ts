@@ -257,7 +257,7 @@ describe("Phase 2.4D — buildReferencePlannerFromCurrentFramingSidecar", () => 
     });
     const baseline: PlannerOutput = buildReferencePlanner(plannerInputOf(assets));
     expect(out.items[0]!.state).toEqual(baseline.items[0]!.state);
-    expect(out.items[0]!.primary).toEqual(baseline.items[0]!.primary);
+    expect(out.items[0]!.selection).toEqual(baseline.items[0]!.selection);
   });
 
   it("rejects unknown top-level keys and non-objects", () => {
