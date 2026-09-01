@@ -394,3 +394,61 @@ describe("persisted anchors never guess a MIME type", () => {
     expect(JSON.stringify(anchors)).not.toContain("image/jpeg");
   });
 });
+
+// ---------------------------------------------------------------------------
+// Client/server response-shape consistency (fail closed, no optimistic defaults)
+// ---------------------------------------------------------------------------
+
+describe("analyzer response cross-field consistency", () => {
+  it("rejects vehicleDetected=true without a vehicleClass", () => {
+    expect(() =>
+      parseAnalyzerResponse(validResponse({ vehicleClass: null })),
+    ).toThrow(/vehicleClass/);
+  });
+
+  it("rejects a canonical perspective without azimuth or elevation", () => {
+    expect(() => parseAnalyzerResponse(validResponse({ azimuthDeg: null }))).toThrow(
+      /azimuthDeg/,
+    );
+    expect(() =>
+      parseAnalyzerResponse(validResponse({ elevationProfile: null })),
+    ).toThrow(/elevationProfile/);
+  });
+
+  it("rejects a perspective when no vehicle was detected", () => {
+    expect(() =>
+      parseAnalyzerResponse(validResponse({ vehicleDetected: false })),
+    ).toThrow(/canonicalPerspectiveId|vehicleClass/);
+  });
+
+  it("preserves the visibility.surfaces map exactly and rejects unknown keys", () => {
+    const ok = parseAnalyzerResponse(
+      validResponse({
+        visibility: {
+          front: 0.9,
+          rear: 0.1,
+          leftSide: 0.6,
+          rightSide: 0.1,
+          roof: 0.3,
+          surfaces: { headlight_left: 0.87 },
+        },
+      }),
+    );
+    expect(ok.visibility.surfaces).toEqual({ headlight_left: 0.87 });
+
+    expect(() =>
+      parseAnalyzerResponse(
+        validResponse({
+          visibility: {
+            front: 0.9,
+            rear: 0.1,
+            leftSide: 0.6,
+            rightSide: 0.1,
+            roof: 0.3,
+            surfaces: { not_a_surface: 0.5 },
+          },
+        }),
+      ),
+    ).toThrow();
+  });
+});
