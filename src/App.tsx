@@ -63,6 +63,7 @@ const AdminQrLogin = lazy(() => import("./pages/admin/AdminQrLogin"));
 const AdminBannerTemplates = lazy(() => import("./pages/admin/AdminBannerTemplates"));
 const AdminCreditEconomics = lazy(() => import("./pages/admin/AdminCreditEconomics"));
 const AdminCostCalculator = lazy(() => import("./pages/admin/AdminCostCalculator"));
+const AdminReferenceView = lazy(() => import("./features/reference-v2/phase1/AdminReferenceView"));
 import AdminRoute from "./components/AdminRoute";
 import KiTransparenz from "./pages/KiTransparenz";
 
@@ -167,6 +168,7 @@ const App = () => (
                 <Route path="banner-templates" element={<AdminBannerTemplates />} />
                 <Route path="credit-economics" element={<AdminCreditEconomics />} />
                 <Route path="cost-calculator" element={<AdminCostCalculator />} />
+                <Route path="reference-v2" element={<AdminReferenceView />} />
               </Route>
               <Route path="/architecture" element={<ProtectedRoute><AdminRoute><ArchitectureDoc /></AdminRoute></ProtectedRoute>} />
               <Route path="/sales-assistant/chat" element={<ProtectedRoute><ErrorBoundary moduleName="Sales Assistant"><SalesAssistant /></ErrorBoundary></ProtectedRoute>} />

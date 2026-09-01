@@ -1,0 +1,1575 @@
+# PerspectiveMaster v1 — generated, do not edit by hand.
+# Source: src/features/reference-v2/domain/perspectives/registry.ts
+masterVersion: 1
+registryVersion: 1
+generatedFrom: src/features/reference-v2/domain/perspectives/registry.ts
+sideConvention: vehicle_relative
+perspectives:
+  - id: EXT_FRONT
+    version: 1
+    category: standard_exterior
+    labelDe: Frontansicht
+    labelEn: Front View
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+      - motorcycle
+      - trailer
+    basePerspectiveId: null
+    azimuthDeg: 0
+    azimuthToleranceDeg: 7
+    maxAzimuthErrorDeg: 9
+    elevationProfile: standard
+    targetFocalLengthMm: 70
+    focalLengthMinMm: 55
+    focalLengthMaxMm: 85
+    sideMustMatch: false
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - front
+    fullVehicle: true
+    paddingMinPct: 4
+    paddingMaxPct: 12
+    riskLevel: low
+  - id: EXT_34_FRONT_RIGHT
+    version: 1
+    category: standard_exterior
+    labelDe: Front-Rechts 3/4
+    labelEn: Front-Right 3/4
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+      - motorcycle
+      - trailer
+    basePerspectiveId: null
+    azimuthDeg: 45
+    azimuthToleranceDeg: 9
+    maxAzimuthErrorDeg: 11
+    elevationProfile: standard
+    targetFocalLengthMm: 55
+    focalLengthMinMm: 45
+    focalLengthMaxMm: 75
+    sideMustMatch: true
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - front
+      - right_side
+    fullVehicle: true
+    paddingMinPct: 4
+    paddingMaxPct: 12
+    riskLevel: low
+  - id: EXT_SIDE_RIGHT
+    version: 1
+    category: standard_exterior
+    labelDe: Seitenansicht rechts
+    labelEn: Right Side
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+      - motorcycle
+      - trailer
+    basePerspectiveId: null
+    azimuthDeg: 90
+    azimuthToleranceDeg: 7
+    maxAzimuthErrorDeg: 9
+    elevationProfile: standard
+    targetFocalLengthMm: 70
+    focalLengthMinMm: 55
+    focalLengthMaxMm: 85
+    sideMustMatch: true
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - right_side
+    fullVehicle: true
+    paddingMinPct: 4
+    paddingMaxPct: 12
+    riskLevel: low
+  - id: EXT_34_REAR_RIGHT
+    version: 1
+    category: standard_exterior
+    labelDe: Heck-Rechts 3/4
+    labelEn: Rear-Right 3/4
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+      - motorcycle
+      - trailer
+    basePerspectiveId: null
+    azimuthDeg: 135
+    azimuthToleranceDeg: 9
+    maxAzimuthErrorDeg: 11
+    elevationProfile: standard
+    targetFocalLengthMm: 55
+    focalLengthMinMm: 45
+    focalLengthMaxMm: 75
+    sideMustMatch: true
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - rear
+      - right_side
+    fullVehicle: true
+    paddingMinPct: 4
+    paddingMaxPct: 12
+    riskLevel: low
+  - id: EXT_REAR
+    version: 1
+    category: standard_exterior
+    labelDe: Heckansicht
+    labelEn: Rear View
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+      - motorcycle
+      - trailer
+    basePerspectiveId: null
+    azimuthDeg: 180
+    azimuthToleranceDeg: 7
+    maxAzimuthErrorDeg: 9
+    elevationProfile: standard
+    targetFocalLengthMm: 70
+    focalLengthMinMm: 55
+    focalLengthMaxMm: 85
+    sideMustMatch: false
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - rear
+    fullVehicle: true
+    paddingMinPct: 4
+    paddingMaxPct: 12
+    riskLevel: low
+  - id: EXT_34_REAR_LEFT
+    version: 1
+    category: standard_exterior
+    labelDe: Heck-Links 3/4
+    labelEn: Rear-Left 3/4
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+      - motorcycle
+      - trailer
+    basePerspectiveId: null
+    azimuthDeg: -135
+    azimuthToleranceDeg: 9
+    maxAzimuthErrorDeg: 11
+    elevationProfile: standard
+    targetFocalLengthMm: 55
+    focalLengthMinMm: 45
+    focalLengthMaxMm: 75
+    sideMustMatch: true
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - rear
+      - left_side
+    fullVehicle: true
+    paddingMinPct: 4
+    paddingMaxPct: 12
+    riskLevel: low
+  - id: EXT_SIDE_LEFT
+    version: 1
+    category: standard_exterior
+    labelDe: Seitenansicht links
+    labelEn: Left Side
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+      - motorcycle
+      - trailer
+    basePerspectiveId: null
+    azimuthDeg: -90
+    azimuthToleranceDeg: 7
+    maxAzimuthErrorDeg: 9
+    elevationProfile: standard
+    targetFocalLengthMm: 70
+    focalLengthMinMm: 55
+    focalLengthMaxMm: 85
+    sideMustMatch: true
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - left_side
+    fullVehicle: true
+    paddingMinPct: 4
+    paddingMaxPct: 12
+    riskLevel: low
+  - id: EXT_34_FRONT_LEFT
+    version: 1
+    category: standard_exterior
+    labelDe: Front-Links 3/4
+    labelEn: Front-Left 3/4
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+      - motorcycle
+      - trailer
+    basePerspectiveId: null
+    azimuthDeg: -45
+    azimuthToleranceDeg: 9
+    maxAzimuthErrorDeg: 11
+    elevationProfile: standard
+    targetFocalLengthMm: 55
+    focalLengthMinMm: 45
+    focalLengthMaxMm: 75
+    sideMustMatch: true
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - front
+      - left_side
+    fullVehicle: true
+    paddingMinPct: 4
+    paddingMaxPct: 12
+    riskLevel: low
+  - id: HERO_FRONT_LEFT
+    version: 1
+    category: hero
+    labelDe: Hero Front links
+    labelEn: Hero Front Left
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+      - motorcycle
+      - trailer
+    basePerspectiveId: EXT_34_FRONT_LEFT
+    azimuthDeg: -45
+    azimuthToleranceDeg: 9
+    maxAzimuthErrorDeg: 11
+    elevationProfile: standard
+    targetFocalLengthMm: 55
+    focalLengthMinMm: 45
+    focalLengthMaxMm: 75
+    sideMustMatch: true
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - front
+      - left_side
+    fullVehicle: true
+    paddingMinPct: 6
+    paddingMaxPct: 18
+    riskLevel: low
+  - id: HERO_FRONT_RIGHT
+    version: 1
+    category: hero
+    labelDe: Hero Front rechts
+    labelEn: Hero Front Right
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+      - motorcycle
+      - trailer
+    basePerspectiveId: EXT_34_FRONT_RIGHT
+    azimuthDeg: 45
+    azimuthToleranceDeg: 9
+    maxAzimuthErrorDeg: 11
+    elevationProfile: standard
+    targetFocalLengthMm: 55
+    focalLengthMinMm: 45
+    focalLengthMaxMm: 75
+    sideMustMatch: true
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - front
+      - right_side
+    fullVehicle: true
+    paddingMinPct: 6
+    paddingMaxPct: 18
+    riskLevel: low
+  - id: HERO_FRONT_CENTER
+    version: 1
+    category: hero
+    labelDe: Hero Front zentral
+    labelEn: Hero Front Center
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+      - motorcycle
+      - trailer
+    basePerspectiveId: EXT_FRONT
+    azimuthDeg: 0
+    azimuthToleranceDeg: 7
+    maxAzimuthErrorDeg: 9
+    elevationProfile: standard
+    targetFocalLengthMm: 70
+    focalLengthMinMm: 55
+    focalLengthMaxMm: 85
+    sideMustMatch: false
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - front
+    fullVehicle: true
+    paddingMinPct: 6
+    paddingMaxPct: 18
+    riskLevel: low
+  - id: HERO_REAR_LEFT
+    version: 1
+    category: hero
+    labelDe: Hero Heck links
+    labelEn: Hero Rear Left
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+      - motorcycle
+      - trailer
+    basePerspectiveId: EXT_34_REAR_LEFT
+    azimuthDeg: -135
+    azimuthToleranceDeg: 9
+    maxAzimuthErrorDeg: 11
+    elevationProfile: standard
+    targetFocalLengthMm: 55
+    focalLengthMinMm: 45
+    focalLengthMaxMm: 75
+    sideMustMatch: true
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - rear
+      - left_side
+    fullVehicle: true
+    paddingMinPct: 6
+    paddingMaxPct: 18
+    riskLevel: low
+  - id: HERO_REAR_RIGHT
+    version: 1
+    category: hero
+    labelDe: Hero Heck rechts
+    labelEn: Hero Rear Right
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+      - motorcycle
+      - trailer
+    basePerspectiveId: EXT_34_REAR_RIGHT
+    azimuthDeg: 135
+    azimuthToleranceDeg: 9
+    maxAzimuthErrorDeg: 11
+    elevationProfile: standard
+    targetFocalLengthMm: 55
+    focalLengthMinMm: 45
+    focalLengthMaxMm: 75
+    sideMustMatch: true
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - rear
+      - right_side
+    fullVehicle: true
+    paddingMinPct: 6
+    paddingMaxPct: 18
+    riskLevel: low
+  - id: LOW_FRONT
+    version: 1
+    category: low_angle
+    labelDe: Froschperspektive Front
+    labelEn: Low Front
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+      - motorcycle
+      - trailer
+    basePerspectiveId: null
+    azimuthDeg: 0
+    azimuthToleranceDeg: 10
+    maxAzimuthErrorDeg: 13
+    elevationProfile: low
+    targetFocalLengthMm: 35
+    focalLengthMinMm: 28
+    focalLengthMaxMm: 45
+    sideMustMatch: false
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - front
+    fullVehicle: true
+    paddingMinPct: 4
+    paddingMaxPct: 14
+    riskLevel: medium
+  - id: LOW_FRONT_LEFT
+    version: 1
+    category: low_angle
+    labelDe: Froschperspektive Front links
+    labelEn: Low Front-Left
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+      - motorcycle
+      - trailer
+    basePerspectiveId: null
+    azimuthDeg: -45
+    azimuthToleranceDeg: 12
+    maxAzimuthErrorDeg: 15
+    elevationProfile: low
+    targetFocalLengthMm: 35
+    focalLengthMinMm: 28
+    focalLengthMaxMm: 45
+    sideMustMatch: true
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - front
+      - left_side
+    fullVehicle: true
+    paddingMinPct: 4
+    paddingMaxPct: 14
+    riskLevel: medium
+  - id: LOW_FRONT_RIGHT
+    version: 1
+    category: low_angle
+    labelDe: Froschperspektive Front rechts
+    labelEn: Low Front-Right
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+      - motorcycle
+      - trailer
+    basePerspectiveId: null
+    azimuthDeg: 45
+    azimuthToleranceDeg: 12
+    maxAzimuthErrorDeg: 15
+    elevationProfile: low
+    targetFocalLengthMm: 35
+    focalLengthMinMm: 28
+    focalLengthMaxMm: 45
+    sideMustMatch: true
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - front
+      - right_side
+    fullVehicle: true
+    paddingMinPct: 4
+    paddingMaxPct: 14
+    riskLevel: medium
+  - id: LOW_REAR
+    version: 1
+    category: low_angle
+    labelDe: Froschperspektive Heck
+    labelEn: Low Rear
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+      - motorcycle
+      - trailer
+    basePerspectiveId: null
+    azimuthDeg: 180
+    azimuthToleranceDeg: 10
+    maxAzimuthErrorDeg: 13
+    elevationProfile: low
+    targetFocalLengthMm: 35
+    focalLengthMinMm: 28
+    focalLengthMaxMm: 45
+    sideMustMatch: false
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - rear
+    fullVehicle: true
+    paddingMinPct: 4
+    paddingMaxPct: 14
+    riskLevel: medium
+  - id: LOW_REAR_LEFT
+    version: 1
+    category: low_angle
+    labelDe: Froschperspektive Heck links
+    labelEn: Low Rear-Left
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+      - motorcycle
+      - trailer
+    basePerspectiveId: null
+    azimuthDeg: -135
+    azimuthToleranceDeg: 12
+    maxAzimuthErrorDeg: 15
+    elevationProfile: low
+    targetFocalLengthMm: 35
+    focalLengthMinMm: 28
+    focalLengthMaxMm: 45
+    sideMustMatch: true
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - rear
+      - left_side
+    fullVehicle: true
+    paddingMinPct: 4
+    paddingMaxPct: 14
+    riskLevel: medium
+  - id: LOW_REAR_RIGHT
+    version: 1
+    category: low_angle
+    labelDe: Froschperspektive Heck rechts
+    labelEn: Low Rear-Right
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+      - motorcycle
+      - trailer
+    basePerspectiveId: null
+    azimuthDeg: 135
+    azimuthToleranceDeg: 12
+    maxAzimuthErrorDeg: 15
+    elevationProfile: low
+    targetFocalLengthMm: 35
+    focalLengthMinMm: 28
+    focalLengthMaxMm: 45
+    sideMustMatch: true
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - rear
+      - right_side
+    fullVehicle: true
+    paddingMinPct: 4
+    paddingMaxPct: 14
+    riskLevel: medium
+  - id: HIGH_FRONT
+    version: 1
+    category: elevated
+    labelDe: Vogelperspektive Front
+    labelEn: High Front
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+      - motorcycle
+      - trailer
+    basePerspectiveId: null
+    azimuthDeg: 0
+    azimuthToleranceDeg: 10
+    maxAzimuthErrorDeg: 13
+    elevationProfile: elevated
+    targetFocalLengthMm: 45
+    focalLengthMinMm: 35
+    focalLengthMaxMm: 60
+    sideMustMatch: false
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - front
+      - roof
+    fullVehicle: true
+    paddingMinPct: 4
+    paddingMaxPct: 14
+    riskLevel: high
+  - id: HIGH_FRONT_LEFT
+    version: 1
+    category: elevated
+    labelDe: Vogelperspektive Front links
+    labelEn: High Front-Left
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+      - motorcycle
+      - trailer
+    basePerspectiveId: null
+    azimuthDeg: -45
+    azimuthToleranceDeg: 12
+    maxAzimuthErrorDeg: 15
+    elevationProfile: elevated
+    targetFocalLengthMm: 45
+    focalLengthMinMm: 35
+    focalLengthMaxMm: 60
+    sideMustMatch: true
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - front
+      - left_side
+      - roof
+    fullVehicle: true
+    paddingMinPct: 4
+    paddingMaxPct: 14
+    riskLevel: high
+  - id: HIGH_FRONT_RIGHT
+    version: 1
+    category: elevated
+    labelDe: Vogelperspektive Front rechts
+    labelEn: High Front-Right
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+      - motorcycle
+      - trailer
+    basePerspectiveId: null
+    azimuthDeg: 45
+    azimuthToleranceDeg: 12
+    maxAzimuthErrorDeg: 15
+    elevationProfile: elevated
+    targetFocalLengthMm: 45
+    focalLengthMinMm: 35
+    focalLengthMaxMm: 60
+    sideMustMatch: true
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - front
+      - right_side
+      - roof
+    fullVehicle: true
+    paddingMinPct: 4
+    paddingMaxPct: 14
+    riskLevel: high
+  - id: HIGH_REAR
+    version: 1
+    category: elevated
+    labelDe: Vogelperspektive Heck
+    labelEn: High Rear
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+      - motorcycle
+      - trailer
+    basePerspectiveId: null
+    azimuthDeg: 180
+    azimuthToleranceDeg: 10
+    maxAzimuthErrorDeg: 13
+    elevationProfile: elevated
+    targetFocalLengthMm: 45
+    focalLengthMinMm: 35
+    focalLengthMaxMm: 60
+    sideMustMatch: false
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - rear
+      - roof
+    fullVehicle: true
+    paddingMinPct: 4
+    paddingMaxPct: 14
+    riskLevel: high
+  - id: HIGH_REAR_LEFT
+    version: 1
+    category: elevated
+    labelDe: Vogelperspektive Heck links
+    labelEn: High Rear-Left
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+      - motorcycle
+      - trailer
+    basePerspectiveId: null
+    azimuthDeg: -135
+    azimuthToleranceDeg: 12
+    maxAzimuthErrorDeg: 15
+    elevationProfile: elevated
+    targetFocalLengthMm: 45
+    focalLengthMinMm: 35
+    focalLengthMaxMm: 60
+    sideMustMatch: true
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - rear
+      - left_side
+      - roof
+    fullVehicle: true
+    paddingMinPct: 4
+    paddingMaxPct: 14
+    riskLevel: high
+  - id: HIGH_REAR_RIGHT
+    version: 1
+    category: elevated
+    labelDe: Vogelperspektive Heck rechts
+    labelEn: High Rear-Right
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+      - motorcycle
+      - trailer
+    basePerspectiveId: null
+    azimuthDeg: 135
+    azimuthToleranceDeg: 12
+    maxAzimuthErrorDeg: 15
+    elevationProfile: elevated
+    targetFocalLengthMm: 45
+    focalLengthMinMm: 35
+    focalLengthMaxMm: 60
+    sideMustMatch: true
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - rear
+      - right_side
+      - roof
+    fullVehicle: true
+    paddingMinPct: 4
+    paddingMaxPct: 14
+    riskLevel: high
+  - id: INT_DRIVER_POV
+    version: 1
+    category: interior
+    labelDe: Cockpit (Fahrerposition)
+    labelEn: Cockpit From Seating Position
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+    basePerspectiveId: null
+    azimuthDeg: null
+    azimuthToleranceDeg: null
+    maxAzimuthErrorDeg: null
+    elevationProfile: interior
+    targetFocalLengthMm: 24
+    focalLengthMinMm: 20
+    focalLengthMaxMm: 32
+    sideMustMatch: true
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - steering_wheel
+      - dashboard
+      - instrument_cluster
+    fullVehicle: false
+    paddingMinPct: 0
+    paddingMaxPct: 10
+    riskLevel: low
+  - id: INT_DASH_CENTER
+    version: 1
+    category: interior
+    labelDe: Armaturenbrett zentral
+    labelEn: Dash Center
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+    basePerspectiveId: null
+    azimuthDeg: null
+    azimuthToleranceDeg: null
+    maxAzimuthErrorDeg: null
+    elevationProfile: interior
+    targetFocalLengthMm: 24
+    focalLengthMinMm: 20
+    focalLengthMaxMm: 32
+    sideMustMatch: false
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - dashboard
+      - infotainment
+      - center_console
+    fullVehicle: false
+    paddingMinPct: 0
+    paddingMaxPct: 10
+    riskLevel: low
+  - id: INT_WIDE_CABIN
+    version: 1
+    category: interior
+    labelDe: Kabine weit
+    labelEn: Wide Cabin
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+    basePerspectiveId: null
+    azimuthDeg: null
+    azimuthToleranceDeg: null
+    maxAzimuthErrorDeg: null
+    elevationProfile: interior
+    targetFocalLengthMm: 20
+    focalLengthMinMm: 16
+    focalLengthMaxMm: 26
+    sideMustMatch: false
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - dashboard
+      - front_seats
+      - center_console
+    fullVehicle: false
+    paddingMinPct: 0
+    paddingMaxPct: 10
+    riskLevel: low
+  - id: INT_PASSENGER_DASH
+    version: 1
+    category: interior
+    labelDe: Armaturenbrett von Beifahrerseite
+    labelEn: Dash From Passenger Side
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+    basePerspectiveId: null
+    azimuthDeg: null
+    azimuthToleranceDeg: null
+    maxAzimuthErrorDeg: null
+    elevationProfile: interior
+    targetFocalLengthMm: 24
+    focalLengthMinMm: 20
+    focalLengthMaxMm: 32
+    sideMustMatch: true
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - dashboard
+    fullVehicle: false
+    paddingMinPct: 0
+    paddingMaxPct: 10
+    riskLevel: low
+  - id: INT_FRONT_SEATS
+    version: 1
+    category: interior
+    labelDe: Vordersitze
+    labelEn: Front Seats
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+    basePerspectiveId: null
+    azimuthDeg: null
+    azimuthToleranceDeg: null
+    maxAzimuthErrorDeg: null
+    elevationProfile: interior
+    targetFocalLengthMm: 24
+    focalLengthMinMm: 20
+    focalLengthMaxMm: 32
+    sideMustMatch: false
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - front_seats
+    fullVehicle: false
+    paddingMinPct: 0
+    paddingMaxPct: 10
+    riskLevel: low
+  - id: INT_REAR_FROM_FRONT
+    version: 1
+    category: interior
+    labelDe: Ruecksitzbank von vorn
+    labelEn: Rear Bench From Front
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+    basePerspectiveId: null
+    azimuthDeg: null
+    azimuthToleranceDeg: null
+    maxAzimuthErrorDeg: null
+    elevationProfile: interior
+    targetFocalLengthMm: 24
+    focalLengthMinMm: 20
+    focalLengthMaxMm: 32
+    sideMustMatch: false
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - rear_seats
+    fullVehicle: false
+    paddingMinPct: 0
+    paddingMaxPct: 10
+    riskLevel: low
+  - id: INT_REAR_LEFT_DOOR
+    version: 1
+    category: interior
+    labelDe: Fond durch linke Tuer
+    labelEn: Rear Through Left Door
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+    basePerspectiveId: null
+    azimuthDeg: null
+    azimuthToleranceDeg: null
+    maxAzimuthErrorDeg: null
+    elevationProfile: interior
+    targetFocalLengthMm: 24
+    focalLengthMinMm: 20
+    focalLengthMaxMm: 32
+    sideMustMatch: true
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - rear_seats
+      - door_panel_left
+    fullVehicle: false
+    paddingMinPct: 0
+    paddingMaxPct: 10
+    riskLevel: low
+  - id: INT_REAR_RIGHT_DOOR
+    version: 1
+    category: interior
+    labelDe: Fond durch rechte Tuer
+    labelEn: Rear Through Right Door
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+    basePerspectiveId: null
+    azimuthDeg: null
+    azimuthToleranceDeg: null
+    maxAzimuthErrorDeg: null
+    elevationProfile: interior
+    targetFocalLengthMm: 24
+    focalLengthMinMm: 20
+    focalLengthMaxMm: 32
+    sideMustMatch: true
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - rear_seats
+      - door_panel_right
+    fullVehicle: false
+    paddingMinPct: 0
+    paddingMaxPct: 10
+    riskLevel: low
+  - id: INT_CARGO
+    version: 1
+    category: interior
+    labelDe: Laderaum
+    labelEn: Cargo Area
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+      - trailer
+    basePerspectiveId: null
+    azimuthDeg: null
+    azimuthToleranceDeg: null
+    maxAzimuthErrorDeg: null
+    elevationProfile: interior
+    targetFocalLengthMm: 24
+    focalLengthMinMm: 20
+    focalLengthMaxMm: 32
+    sideMustMatch: false
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - cargo_area
+    fullVehicle: false
+    paddingMinPct: 0
+    paddingMaxPct: 10
+    riskLevel: low
+  - id: INT_CARGO_34
+    version: 1
+    category: interior
+    labelDe: Laderaum schraeg
+    labelEn: Cargo Area Angled
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+      - trailer
+    basePerspectiveId: null
+    azimuthDeg: null
+    azimuthToleranceDeg: null
+    maxAzimuthErrorDeg: null
+    elevationProfile: interior
+    targetFocalLengthMm: 24
+    focalLengthMinMm: 20
+    focalLengthMaxMm: 32
+    sideMustMatch: false
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - cargo_area
+    fullVehicle: false
+    paddingMinPct: 0
+    paddingMaxPct: 10
+    riskLevel: low
+  - id: INT_CENTER_CONSOLE
+    version: 1
+    category: interior
+    labelDe: Mittelkonsole
+    labelEn: Center Console
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+    basePerspectiveId: null
+    azimuthDeg: null
+    azimuthToleranceDeg: null
+    maxAzimuthErrorDeg: null
+    elevationProfile: interior
+    targetFocalLengthMm: 35
+    focalLengthMinMm: 28
+    focalLengthMaxMm: 50
+    sideMustMatch: false
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - center_console
+    fullVehicle: false
+    paddingMinPct: 0
+    paddingMaxPct: 10
+    riskLevel: low
+  - id: INT_ROOF
+    version: 1
+    category: interior
+    labelDe: Dachhimmel
+    labelEn: Headliner / Roof
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+    basePerspectiveId: null
+    azimuthDeg: null
+    azimuthToleranceDeg: null
+    maxAzimuthErrorDeg: null
+    elevationProfile: interior
+    targetFocalLengthMm: 24
+    focalLengthMinMm: 20
+    focalLengthMaxMm: 32
+    sideMustMatch: false
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - headliner
+    fullVehicle: false
+    paddingMinPct: 0
+    paddingMaxPct: 10
+    riskLevel: medium
+  - id: DET_HEADLIGHT_LEFT
+    version: 1
+    category: detail
+    labelDe: Scheinwerfer links
+    labelEn: Headlamp Left
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+    basePerspectiveId: null
+    azimuthDeg: null
+    azimuthToleranceDeg: null
+    maxAzimuthErrorDeg: null
+    elevationProfile: close_detail
+    targetFocalLengthMm: 60
+    focalLengthMinMm: 45
+    focalLengthMaxMm: 85
+    sideMustMatch: true
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - headlight_left
+    fullVehicle: false
+    paddingMinPct: 2
+    paddingMaxPct: 15
+    riskLevel: medium
+  - id: DET_HEADLIGHT_RIGHT
+    version: 1
+    category: detail
+    labelDe: Scheinwerfer rechts
+    labelEn: Headlamp Right
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+    basePerspectiveId: null
+    azimuthDeg: null
+    azimuthToleranceDeg: null
+    maxAzimuthErrorDeg: null
+    elevationProfile: close_detail
+    targetFocalLengthMm: 60
+    focalLengthMinMm: 45
+    focalLengthMaxMm: 85
+    sideMustMatch: true
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - headlight_right
+    fullVehicle: false
+    paddingMinPct: 2
+    paddingMaxPct: 15
+    riskLevel: medium
+  - id: DET_TAILLIGHT_LEFT
+    version: 1
+    category: detail
+    labelDe: Ruecklicht links
+    labelEn: Taillamp Left
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+      - trailer
+    basePerspectiveId: null
+    azimuthDeg: null
+    azimuthToleranceDeg: null
+    maxAzimuthErrorDeg: null
+    elevationProfile: close_detail
+    targetFocalLengthMm: 60
+    focalLengthMinMm: 45
+    focalLengthMaxMm: 85
+    sideMustMatch: true
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - taillight_left
+    fullVehicle: false
+    paddingMinPct: 2
+    paddingMaxPct: 15
+    riskLevel: medium
+  - id: DET_TAILLIGHT_RIGHT
+    version: 1
+    category: detail
+    labelDe: Ruecklicht rechts
+    labelEn: Taillamp Right
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+      - trailer
+    basePerspectiveId: null
+    azimuthDeg: null
+    azimuthToleranceDeg: null
+    maxAzimuthErrorDeg: null
+    elevationProfile: close_detail
+    targetFocalLengthMm: 60
+    focalLengthMinMm: 45
+    focalLengthMaxMm: 85
+    sideMustMatch: true
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - taillight_right
+    fullVehicle: false
+    paddingMinPct: 2
+    paddingMaxPct: 15
+    riskLevel: medium
+  - id: DET_GRILLE
+    version: 1
+    category: detail
+    labelDe: Kuehlergrill
+    labelEn: Front Grille
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+    basePerspectiveId: null
+    azimuthDeg: null
+    azimuthToleranceDeg: null
+    maxAzimuthErrorDeg: null
+    elevationProfile: close_detail
+    targetFocalLengthMm: 60
+    focalLengthMinMm: 45
+    focalLengthMaxMm: 85
+    sideMustMatch: false
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - grille
+    fullVehicle: false
+    paddingMinPct: 2
+    paddingMaxPct: 15
+    riskLevel: high
+  - id: DET_FRONT_BADGE
+    version: 1
+    category: detail
+    labelDe: Emblem vorn
+    labelEn: Front Emblem
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+      - motorcycle
+    basePerspectiveId: null
+    azimuthDeg: null
+    azimuthToleranceDeg: null
+    maxAzimuthErrorDeg: null
+    elevationProfile: close_detail
+    targetFocalLengthMm: 60
+    focalLengthMinMm: 45
+    focalLengthMaxMm: 85
+    sideMustMatch: false
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - front_badge
+    fullVehicle: false
+    paddingMinPct: 2
+    paddingMaxPct: 15
+    riskLevel: high
+  - id: DET_REAR_BADGE
+    version: 1
+    category: detail
+    labelDe: Emblem/Schriftzug hinten
+    labelEn: Rear Emblem
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+      - motorcycle
+    basePerspectiveId: null
+    azimuthDeg: null
+    azimuthToleranceDeg: null
+    maxAzimuthErrorDeg: null
+    elevationProfile: close_detail
+    targetFocalLengthMm: 60
+    focalLengthMinMm: 45
+    focalLengthMaxMm: 85
+    sideMustMatch: false
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - rear_badge
+    fullVehicle: false
+    paddingMinPct: 2
+    paddingMaxPct: 15
+    riskLevel: high
+  - id: DET_WHEEL_FRONT_LEFT
+    version: 1
+    category: detail
+    labelDe: Rad vorn links
+    labelEn: Wheel Front-Left
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+    basePerspectiveId: null
+    azimuthDeg: null
+    azimuthToleranceDeg: null
+    maxAzimuthErrorDeg: null
+    elevationProfile: close_detail
+    targetFocalLengthMm: 60
+    focalLengthMinMm: 45
+    focalLengthMaxMm: 85
+    sideMustMatch: true
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - wheel_front_left
+    fullVehicle: false
+    paddingMinPct: 2
+    paddingMaxPct: 15
+    riskLevel: medium
+  - id: DET_WHEEL_FRONT_RIGHT
+    version: 1
+    category: detail
+    labelDe: Rad vorn rechts
+    labelEn: Wheel Front-Right
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+    basePerspectiveId: null
+    azimuthDeg: null
+    azimuthToleranceDeg: null
+    maxAzimuthErrorDeg: null
+    elevationProfile: close_detail
+    targetFocalLengthMm: 60
+    focalLengthMinMm: 45
+    focalLengthMaxMm: 85
+    sideMustMatch: true
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - wheel_front_right
+    fullVehicle: false
+    paddingMinPct: 2
+    paddingMaxPct: 15
+    riskLevel: medium
+  - id: DET_WHEEL_REAR_LEFT
+    version: 1
+    category: detail
+    labelDe: Rad hinten links
+    labelEn: Wheel Rear-Left
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+      - trailer
+    basePerspectiveId: null
+    azimuthDeg: null
+    azimuthToleranceDeg: null
+    maxAzimuthErrorDeg: null
+    elevationProfile: close_detail
+    targetFocalLengthMm: 60
+    focalLengthMinMm: 45
+    focalLengthMaxMm: 85
+    sideMustMatch: true
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - wheel_rear_left
+    fullVehicle: false
+    paddingMinPct: 2
+    paddingMaxPct: 15
+    riskLevel: medium
+  - id: DET_WHEEL_REAR_RIGHT
+    version: 1
+    category: detail
+    labelDe: Rad hinten rechts
+    labelEn: Wheel Rear-Right
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+      - trailer
+    basePerspectiveId: null
+    azimuthDeg: null
+    azimuthToleranceDeg: null
+    maxAzimuthErrorDeg: null
+    elevationProfile: close_detail
+    targetFocalLengthMm: 60
+    focalLengthMinMm: 45
+    focalLengthMaxMm: 85
+    sideMustMatch: true
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - wheel_rear_right
+    fullVehicle: false
+    paddingMinPct: 2
+    paddingMaxPct: 15
+    riskLevel: medium
+  - id: DET_STEERING_WHEEL
+    version: 1
+    category: detail
+    labelDe: Lenkrad
+    labelEn: Steering Wheel
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+    basePerspectiveId: null
+    azimuthDeg: null
+    azimuthToleranceDeg: null
+    maxAzimuthErrorDeg: null
+    elevationProfile: close_detail
+    targetFocalLengthMm: 60
+    focalLengthMinMm: 45
+    focalLengthMaxMm: 85
+    sideMustMatch: true
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - steering_wheel
+    fullVehicle: false
+    paddingMinPct: 2
+    paddingMaxPct: 15
+    riskLevel: medium
+  - id: DET_CLUSTER
+    version: 1
+    category: detail
+    labelDe: Kombiinstrument
+    labelEn: Instrument Cluster
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+    basePerspectiveId: null
+    azimuthDeg: null
+    azimuthToleranceDeg: null
+    maxAzimuthErrorDeg: null
+    elevationProfile: close_detail
+    targetFocalLengthMm: 60
+    focalLengthMinMm: 45
+    focalLengthMaxMm: 85
+    sideMustMatch: false
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - instrument_cluster
+    fullVehicle: false
+    paddingMinPct: 2
+    paddingMaxPct: 15
+    riskLevel: medium
+  - id: DET_INFOTAINMENT
+    version: 1
+    category: detail
+    labelDe: Infotainment-Display
+    labelEn: Infotainment Display
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+    basePerspectiveId: null
+    azimuthDeg: null
+    azimuthToleranceDeg: null
+    maxAzimuthErrorDeg: null
+    elevationProfile: close_detail
+    targetFocalLengthMm: 60
+    focalLengthMinMm: 45
+    focalLengthMaxMm: 85
+    sideMustMatch: false
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - infotainment
+    fullVehicle: false
+    paddingMinPct: 2
+    paddingMaxPct: 15
+    riskLevel: medium
+  - id: DET_CENTER_CONSOLE
+    version: 1
+    category: detail
+    labelDe: Mittelkonsole Detail
+    labelEn: Center Console Detail
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+    basePerspectiveId: null
+    azimuthDeg: null
+    azimuthToleranceDeg: null
+    maxAzimuthErrorDeg: null
+    elevationProfile: close_detail
+    targetFocalLengthMm: 60
+    focalLengthMinMm: 45
+    focalLengthMaxMm: 85
+    sideMustMatch: false
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - center_console
+    fullVehicle: false
+    paddingMinPct: 2
+    paddingMaxPct: 15
+    riskLevel: low
+  - id: DET_DOOR_LEFT
+    version: 1
+    category: detail
+    labelDe: Tuer links
+    labelEn: Door Left
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+    basePerspectiveId: null
+    azimuthDeg: null
+    azimuthToleranceDeg: null
+    maxAzimuthErrorDeg: null
+    elevationProfile: close_detail
+    targetFocalLengthMm: 60
+    focalLengthMinMm: 45
+    focalLengthMaxMm: 85
+    sideMustMatch: true
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - door_left
+    fullVehicle: false
+    paddingMinPct: 2
+    paddingMaxPct: 15
+    riskLevel: low
+  - id: DET_DOOR_RIGHT
+    version: 1
+    category: detail
+    labelDe: Tuer rechts
+    labelEn: Door Right
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+    basePerspectiveId: null
+    azimuthDeg: null
+    azimuthToleranceDeg: null
+    maxAzimuthErrorDeg: null
+    elevationProfile: close_detail
+    targetFocalLengthMm: 60
+    focalLengthMinMm: 45
+    focalLengthMaxMm: 85
+    sideMustMatch: true
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - door_right
+    fullVehicle: false
+    paddingMinPct: 2
+    paddingMaxPct: 15
+    riskLevel: low
+  - id: DET_CHARGE_PORT
+    version: 1
+    category: detail
+    labelDe: Ladeanschluss
+    labelEn: Charging Port
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+    basePerspectiveId: null
+    azimuthDeg: null
+    azimuthToleranceDeg: null
+    maxAzimuthErrorDeg: null
+    elevationProfile: close_detail
+    targetFocalLengthMm: 60
+    focalLengthMinMm: 45
+    focalLengthMaxMm: 85
+    sideMustMatch: true
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - charge_port
+    fullVehicle: false
+    paddingMinPct: 2
+    paddingMaxPct: 15
+    riskLevel: high
+  - id: DET_FUEL_FLAP
+    version: 1
+    category: detail
+    labelDe: Tankklappe
+    labelEn: Fuel Flap
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+    basePerspectiveId: null
+    azimuthDeg: null
+    azimuthToleranceDeg: null
+    maxAzimuthErrorDeg: null
+    elevationProfile: close_detail
+    targetFocalLengthMm: 60
+    focalLengthMinMm: 45
+    focalLengthMaxMm: 85
+    sideMustMatch: true
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - fuel_flap
+    fullVehicle: false
+    paddingMinPct: 2
+    paddingMaxPct: 15
+    riskLevel: high
+  - id: DET_ROOF
+    version: 1
+    category: detail
+    labelDe: Dach Detail
+    labelEn: Roof Detail
+    vehicleClasses:
+      - car
+      - van
+      - motorhome
+      - truck
+    basePerspectiveId: null
+    azimuthDeg: null
+    azimuthToleranceDeg: null
+    maxAzimuthErrorDeg: null
+    elevationProfile: close_detail
+    targetFocalLengthMm: 60
+    focalLengthMinMm: 45
+    focalLengthMaxMm: 85
+    sideMustMatch: false
+    minimumPerspectiveScore: 92
+    requiredVisibleSurfaces:
+      - roof
+    fullVehicle: false
+    paddingMinPct: 2
+    paddingMaxPct: 15
+    riskLevel: high
