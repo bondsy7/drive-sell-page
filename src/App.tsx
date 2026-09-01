@@ -15,7 +15,25 @@ import BackgroundMusicIndicator from "@/components/BackgroundMusicIndicator";
 import { DownloadLimitProvider } from "@/hooks/useDownloadLimit";
 import DownloadGuardBridge from "@/components/DownloadGuardBridge";
 
-const Landing = lazy(() => import("./pages/Landing"));
+// Retry lazy chunk loads once after a hard reload (stale chunk after deploy)
+const RELOAD_KEY = "chunk-reload-ts";
+function lazyWithReload<T extends { default: React.ComponentType<any> }>(
+  factory: () => Promise<T>
+) {
+  return lazy(() =>
+    factory().catch((err) => {
+      const last = Number(sessionStorage.getItem(RELOAD_KEY) || 0);
+      if (Date.now() - last > 10000) {
+        sessionStorage.setItem(RELOAD_KEY, String(Date.now()));
+        window.location.reload();
+        return new Promise<T>(() => {});
+      }
+      throw err;
+    })
+  );
+}
+
+const Landing = lazyWithReload(() => import("./pages/Landing"));
 const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
