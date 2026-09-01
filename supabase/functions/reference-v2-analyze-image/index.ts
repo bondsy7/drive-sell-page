@@ -108,12 +108,15 @@ Respond with JSON exactly of this shape (no extra keys):
 }
 
 visibleWheelPositions must use: front_left, front_right, rear_left, rear_right.
-visibility.surfaces is a map of canonical visual surface keys you ACTUALLY
+visibility.surfaces is a REQUIRED map (use {} when nothing beyond the five
+global fields was evaluated) of canonical visual surface keys you ACTUALLY
 evaluated (e.g. headlight_left, wheel_front_right, dashboard, steering_wheel,
 cargo_area) to a 0..1 visibility score. Include ONLY surfaces that are relevant
 for the perspective you chose and that you actually judged; never invent or pad
-entries, and never emit a key you did not evaluate. A required detail/interior
-surface that you cannot see must be reported with a LOW score, not omitted.
+entries, and never emit a key you did not evaluate. EVERY required visible
+surface of the chosen perspective (except front, rear, left_side, right_side,
+roof) MUST be present — a surface you cannot see is reported with a LOW score
+(0 is allowed), never omitted.
 identityEvidence entries are short purely descriptive phrases (max 240 chars)
 without any brand, model, trim, generation or year wording. Omit an evidence key
 entirely if that area is not visible.`;
