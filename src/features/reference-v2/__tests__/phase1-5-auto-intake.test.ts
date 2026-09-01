@@ -26,7 +26,7 @@ const goodResponse = {
   azimuthDeg: -45,
   pitchDeg: 1,
   elevationProfile: "standard",
-  visibility: { front: 0.9, rear: 0, leftSide: 0.85, rightSide: 0, roof: 0.3 },
+  visibility: { front: 0.9, rear: 0, leftSide: 0.85, rightSide: 0, roof: 0.3, surfaces: {} },
   framing: {
     fullVehicleVisible: true,
     cropped: false,
