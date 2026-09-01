@@ -96,6 +96,7 @@ export function AutomaticReferenceIntake({
   master: VehicleMasterRecord;
 }) {
   const { ingestAsset } = useReferenceStore();
+  const { recordCurrentFramingEvidence } = useCurrentFramingEvidenceRuntime();
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [rows, setRows] = useState<Row[]>([]);
