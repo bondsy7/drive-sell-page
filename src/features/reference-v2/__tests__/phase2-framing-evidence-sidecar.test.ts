@@ -535,6 +535,68 @@ describe("I. prototype-safe record semantics", () => {
 });
 
 // --------------------------------------------------------------------------
+// G2. Strict plain-record shape for byAssetId
+// --------------------------------------------------------------------------
+
+describe("G2. byAssetId strict plain-record shape", () => {
+  class LocalContainer {}
+
+  it.each([
+    ["a Date instance", new Date()],
+    ["a Map instance", new Map()],
+    ["a Set instance", new Set()],
+    ["a local class instance", new LocalContainer()],
+    ["an array", []],
+  ])("rejects %s as byAssetId", (_label, byAssetId) => {
+    expect(() => parseCurrentFramingEvidenceSidecar({ byAssetId })).toThrow(
+      CurrentFramingEvidenceSidecarError,
+    );
+    expect(() =>
+      parseCurrentFramingEvidenceSidecar({ byAssetId }),
+    ).toThrow(/plain record object/);
+  });
+
+  it("accepts an empty object literal", () => {
+    const parsed = parseCurrentFramingEvidenceSidecar({ byAssetId: {} });
+    expect(Object.keys(parsed.byAssetId)).toEqual([]);
+  });
+
+  it("accepts a null-prototype dictionary with a valid ref_* entry", () => {
+    const dict = Object.create(null) as Record<string, CurrentFramingEvidence>;
+    dict.ref_1 = evidence("ref_1");
+    const parsed = parseCurrentFramingEvidenceSidecar({ byAssetId: dict });
+    expect(Object.keys(parsed.byAssetId)).toEqual(["ref_1"]);
+    expect(parsed.byAssetId.ref_1.assetId).toBe("ref_1");
+  });
+
+  it("still accepts the __proto__ Object.fromEntries case unchanged", () => {
+    const raw = {
+      byAssetId: Object.fromEntries([["__proto__", evidence("__proto__")]]),
+    };
+    const parsed = parseCurrentFramingEvidenceSidecar(raw);
+    expect(Object.keys(parsed.byAssetId)).toEqual(["__proto__"]);
+    expect(Object.getPrototypeOf(parsed.byAssetId)).toBe(Object.prototype);
+  });
+
+  it("keeps the key/value mismatch error class", () => {
+    expect(() =>
+      parseCurrentFramingEvidenceSidecar({
+        byAssetId: { ref_1: evidence("ref_2") },
+      }),
+    ).toThrow(CurrentFramingEvidenceSidecarError);
+  });
+
+  it("keeps the frozen 2.4A evidence error class for invalid values", () => {
+    expect(() =>
+      parseCurrentFramingEvidenceSidecar({
+        byAssetId: { ref_1: { ...evidence("ref_1"), paddingPct: -5 } },
+      }),
+    ).toThrow(CurrentFramingEvidenceError);
+  });
+});
+
+
+// --------------------------------------------------------------------------
 // H. Source purity
 // --------------------------------------------------------------------------
 

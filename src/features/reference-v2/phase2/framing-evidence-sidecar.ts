@@ -113,15 +113,28 @@ function recordFromEntries<T>(entries: readonly (readonly [string, T])[]): Recor
   return Object.fromEntries(entries) as Record<string, T>;
 }
 
+/**
+ * Nur echte, serialisierbare Record-Container sind zulaessig: gewoehnliche
+ * Objektliterale oder Null-Prototyp-Dictionaries. Klasseninstanzen und
+ * eingebaute Container werden fail-closed abgelehnt, auch wenn sie keine
+ * eigenen enumerierbaren Keys besitzen. Es werden keine Getter ausgeloest.
+ */
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return false;
+  }
+  const proto = Object.getPrototypeOf(value);
+  return proto === Object.prototype || proto === null;
+}
+
 const SidecarShapeSchema = z
   .object({
-    byAssetId: z.custom<Record<string, unknown>>(
-      (value) =>
-        typeof value === "object" && value !== null && !Array.isArray(value),
-      { message: "byAssetId must be a plain object" },
-    ),
+    byAssetId: z.custom<Record<string, unknown>>(isPlainRecord, {
+      message: "byAssetId must be a plain record object",
+    }),
   })
   .strict();
+
 
 export const CurrentFramingEvidenceSidecarSchema = SidecarShapeSchema.transform(
   (shape, ctx) => {
