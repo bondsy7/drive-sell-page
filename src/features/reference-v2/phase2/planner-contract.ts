@@ -265,6 +265,11 @@ export type PlannerOutputFormatReadiness = z.infer<
 // Planner item
 // --------------------------------------------------------------------------
 
+/** Fine-grained Readiness-Status, die zu state=BLOCKED gehoeren. */
+const BLOCKED_READINESS_STATUSES = new Set<
+  z.infer<typeof ReferenceReadinessStatusSchema>
+>(["INSUFFICIENT_REFERENCE", "BLOCKED_IDENTITY_CONFLICT", "BLOCKED_FILE_UNAVAILABLE"]);
+
 export const PlannerItemSchema = z
   .object({
     perspectiveSpecId: PerspectiveIdSchema,
