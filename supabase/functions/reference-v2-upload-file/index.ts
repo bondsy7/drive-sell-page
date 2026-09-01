@@ -40,14 +40,25 @@ serve(async (req) => {
       );
     }
 
+    // Reject oversized uploads from the declared length BEFORE reading the body.
+    const declaredLength = Number(req.headers.get("content-length") ?? NaN);
+    if (Number.isFinite(declaredLength) && declaredLength > MAX_UPLOAD_BYTES) {
+      return errorResponse(
+        `File too large (${declaredLength} bytes declared, max ${MAX_UPLOAD_BYTES}).`,
+        413,
+      );
+    }
+
     const bytes = new Uint8Array(await req.arrayBuffer());
     if (bytes.byteLength === 0) return errorResponse("Empty file body", 400);
+    // Retained post-read check for absent or wrong Content-Length headers.
     if (bytes.byteLength > MAX_UPLOAD_BYTES) {
       return errorResponse(
         `File too large (${bytes.byteLength} bytes, max ${MAX_UPLOAD_BYTES}).`,
         413,
       );
     }
+
 
     const apiKey = await getSecret("GEMINI_API_KEY");
     if (!apiKey) {
