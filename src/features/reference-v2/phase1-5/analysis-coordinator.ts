@@ -2,6 +2,7 @@ import type { VehicleClassV2 } from "../domain/vehicle-classes";
 import type { PerspectiveId } from "../domain/perspectives/types";
 import type { VisionIntakeResult } from "../domain/vision-intake";
 import type { SourceFramingInput } from "../phase1/output-format-policy";
+import { evaluateIngestion, type IngestionEvaluation } from "../phase1/ingestion";
 import {
   AUTOMATIC_GATE_LABELS_DE,
   ANALYZER_SCHEMA_VERSION,
@@ -17,6 +18,7 @@ import {
   type ReferenceV2FileReference,
 } from "./provider-adapter";
 import type { ReferenceAnalysisRecord } from "./analysis-record";
+
 
 /**
  * Reference V2 — Phase 1.5: Batch-Koordinator.
@@ -55,7 +57,16 @@ export interface AutomaticIntakeOutcome {
   readonly analysis?: ReferenceAnalysisRecord;
   readonly file?: ReferenceV2FileReference;
   readonly framing?: SourceFramingInput;
+  /** Ergebnis der PURE Phase-1-Governance (identisch zur spaeteren Ingestion). */
+  readonly governance?: IngestionEvaluation;
+  /**
+   * true nur, wenn sowohl das automatische Vision-Gate ALS AUCH die
+   * Phase-1-Governance blockerfrei akzeptiert haben. Nur solche Dateien
+   * duerfen Identitaets-Anker fuer nachfolgende Dateien werden.
+   */
+  readonly anchorEligible?: boolean;
 }
+
 
 export interface AnalyzeFileContext {
   readonly vehicleClass: VehicleClassV2;
@@ -179,6 +190,31 @@ export async function analyzeSingleFile(
     aspectRatio = 1.5;
   }
 
+  const framing: SourceFramingInput = {
+    sourceAspectRatio: aspectRatio,
+    fullVehicleVisible: response.framing.fullVehicleVisible,
+    paddingPct: response.framing.estimatedPaddingPct,
+  };
+
+  // PURE Phase-1-Governance mit exakt denselben Eingaben, die spaeter auch
+  // persistiert werden. Keine zweite Qualitaetspolitik — nur diese eine.
+  const governance = evaluateIngestion({
+    vehicleClass: ctx.vehicleClass,
+    identityClusterId: ctx.identityClusterId,
+    requestedPerspectiveId: perspectiveId,
+    intake,
+    framing,
+    fileAvailable: true,
+    isAutomatic: true,
+  });
+
+  const anchorEligible =
+    governance.role !== "rejected" &&
+    governance.blockers.length === 0 &&
+    governance.hardFailures.length === 0;
+
+  report({ stage: "governed", perspectiveId });
+
   return {
     fileName: file.name,
     ok: true,
@@ -188,21 +224,19 @@ export async function analyzeSingleFile(
     intake,
     analysis,
     file: fileRef,
-    framing: {
-      sourceAspectRatio: aspectRatio,
-      fullVehicleVisible: response.framing.fullVehicleVisible,
-      paddingPct: response.framing.estimatedPaddingPct,
-    },
+    framing,
+    governance,
+    anchorEligible,
   };
 }
 
 /**
  * Verarbeitet mehrere Dateien STRENG SEQUENZIELL; Teilfehler bleiben isoliert.
  *
- * Das erste akzeptierte Bild eines Batches wird zum Identitaets-Anker fuer die
- * folgenden Dateien desselben Batches — auch dann, wenn der Vehicle Master
- * vorher noch gar keine Referenz besass. Abgelehnte Dateien werden niemals
- * Anker.
+ * Eine Datei wird NUR dann Identitaets-Anker fuer die folgenden Dateien, wenn
+ * sowohl das automatische Vision-Gate ALS AUCH die Phase-1-Governance
+ * (`evaluateIngestion`) sie blockerfrei akzeptiert haben. Abgewiesene oder
+ * blockierte Dateien werden niemals Anker (fail-closed).
  */
 export async function analyzeFileBatch(
   files: readonly File[],
@@ -224,9 +258,15 @@ export async function analyzeFileBatch(
       outcome = fail(file.name, e instanceof Error ? e.message : "Unbekannter Fehler");
     }
     outcomes.push(outcome);
-    if (outcome.ok && outcome.file && anchors.length < MAX_ANCHOR_FILES) {
+    if (
+      outcome.ok &&
+      outcome.anchorEligible === true &&
+      outcome.file &&
+      anchors.length < MAX_ANCHOR_FILES
+    ) {
       anchors.push(outcome.file);
     }
   }
+
   return outcomes;
 }

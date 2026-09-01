@@ -21,10 +21,11 @@ import {
   type AutomaticIntakeProgress,
 } from "./analysis-coordinator";
 import {
-  MAX_ANCHOR_FILES,
   supabaseAnalyzerPort,
+  toAnchorFileReferences,
   type ReferenceV2FileReference,
 } from "./provider-adapter";
+
 
 /**
  * Reference V2 — Phase 1.5: Automatischer Referenz-Intake (Produktivpfad).
@@ -99,19 +100,20 @@ export function AutomaticReferenceIntake({
     [master.vehicleClass],
   );
 
-  /** Wenige Anker (max. 3) — geschuetzte/primaere Referenzen zuerst. */
+  /**
+   * Wenige Anker (max. 3) — geschuetzte/primaere Referenzen zuerst.
+   * FAIL-CLOSED: Analysen ohne bekannten MIME-Type werden uebersprungen; ein
+   * MIME-Type wird niemals geraten.
+   */
   const anchorFiles: readonly ReferenceV2FileReference[] = useMemo(() => {
-    return master.assets
-      .filter((a) => a.role === "primary" || a.protection === "protected")
-      .map((a) => a.analysis)
-      .filter((x): x is NonNullable<typeof x> => Boolean(x))
-      .slice(0, MAX_ANCHOR_FILES)
-      .map((a) => ({
-        fileId: a.fileId,
-        providerId: a.providerId,
-        mimeType: a.mimeType ?? "image/jpeg",
-      }));
+    return toAnchorFileReferences(
+      master.assets
+        .filter((a) => a.role === "primary" || a.protection === "protected")
+        .map((a) => a.analysis)
+        .filter((x): x is NonNullable<typeof x> => Boolean(x)),
+    );
   }, [master.assets]);
+
 
   const patchRow = useCallback((fileName: string, patch: Partial<Row>) => {
     setRows((prev) =>

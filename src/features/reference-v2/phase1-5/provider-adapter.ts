@@ -27,6 +27,20 @@ import {
 export const REFERENCE_V2_PROVIDER_ID = "gemini-file-api" as const;
 /** Referenzbudget: hoechstens so viele Anker gehen in eine Analyse. */
 export const MAX_ANCHOR_FILES = 3;
+/** Einzig zulaessige Bildformate der Reference-V2-Dateireferenzen. */
+export const REFERENCE_V2_ALLOWED_IMAGE_MIME = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+] as const;
+
+export function isAllowedReferenceV2Mime(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    (REFERENCE_V2_ALLOWED_IMAGE_MIME as readonly string[]).includes(value)
+  );
+}
+
 
 export interface ReferenceV2FileReference {
   readonly fileId: string;
@@ -195,3 +209,33 @@ export const supabaseAnalyzerPort: ReferenceV2AnalyzerPort = {
     };
   },
 };
+
+/**
+ * Baut Provider-Anker aus persistierten Analyse-Nachweisen. FAIL-CLOSED:
+ * Datensaetze ohne bekannten, erlaubten MIME-Type werden NICHT als Anker
+ * verwendet (es wird niemals ein Typ geraten). Ihr Referenzstatus bleibt davon
+ * unberuehrt.
+ */
+export function toAnchorFileReferences(
+  records: readonly {
+    fileId?: string;
+    providerId?: string;
+    mimeType?: string;
+  }[],
+  limit: number = MAX_ANCHOR_FILES,
+): readonly ReferenceV2FileReference[] {
+  return records
+    .filter(
+      (r): r is { fileId: string; providerId: string; mimeType: string } =>
+        Boolean(r.fileId) &&
+        Boolean(r.providerId) &&
+        isAllowedReferenceV2Mime(r.mimeType),
+    )
+    .slice(0, limit)
+    .map((r) => ({
+      fileId: r.fileId,
+      providerId: r.providerId,
+      mimeType: r.mimeType,
+    }));
+}
+

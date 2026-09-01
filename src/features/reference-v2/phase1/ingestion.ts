@@ -73,6 +73,11 @@ export interface IngestionEvaluation {
   readonly azimuthErrorDeg: number | null;
 }
 
+/**
+ * Sichtbarkeit einer Pflichtflaeche. FAIL-CLOSED: fuer alles ausserhalb der
+ * fuenf Kern-Aussenflaechen gilt eine FEHLENDE Beobachtung als NICHT sichtbar
+ * (0) — niemals optimistisch als sichtbar (1).
+ */
 function surfaceVisibility(intake: VisionIntakeResult, surface: string): number {
   const v = intake.visibility;
   switch (surface) {
@@ -87,9 +92,24 @@ function surfaceVisibility(intake: VisionIntakeResult, surface: string): number 
     case "roof":
       return v.roof;
     default:
-      return v.surfaces?.[surface as keyof typeof v.surfaces] ?? 1;
+      return v.surfaces?.[surface as keyof typeof v.surfaces] ?? 0;
   }
 }
+
+/** Ab dieser Sichtbarkeit gilt eine Detail-/Interior-Pflichtflaeche als belegt. */
+export const MIN_REQUIRED_SURFACE_VISIBILITY = 0.5;
+
+const CORE_SURFACE_SET: readonly string[] = [
+  "front",
+  "rear",
+  "left_side",
+  "right_side",
+  "roof",
+];
+
+/** Prefix des Warnhinweises fuer unbelegte Detail-/Interior-Pflichtflaechen. */
+export const MISSING_SURFACE_WARNING_PREFIX = "Pflichtfläche nicht belegt";
+
 
 /** Erwartete Fahrzeugseite einer side-sensitiven Perspektive. */
 function requiredSide(perspectiveId: PerspectiveId): "left_side" | "right_side" | null {
@@ -188,12 +208,25 @@ export function evaluateIngestion(input: IngestionInput): IngestionEvaluation {
       0,
     ) / spec.requiredVisibleSurfaces.length;
 
+  // Detail-/Interior-Pflichtflaechen muessen POSITIV beobachtet sein.
+  const unmetRequiredSurfaces = spec.requiredVisibleSurfaces.filter(
+    (s) =>
+      !CORE_SURFACE_SET.includes(s) &&
+      surfaceVisibility(intake, s) < MIN_REQUIRED_SURFACE_VISIBILITY,
+  );
+  if (unmetRequiredSurfaces.length > 0) {
+    warnings.push(
+      `${MISSING_SURFACE_WARNING_PREFIX}: ${unmetRequiredSurfaces.join(", ")}`,
+    );
+  }
+
   const missingWheels = spec.framing.requiredVisibleWheels.filter(
     (w) => !intake.framing.visibleWheelPositions.includes(w),
   );
   if (missingWheels.length > 0) {
     warnings.push(`Nicht sichtbare Pflichträder: ${missingWheels.join(", ")}`);
   }
+
 
   const scores: MatchComponentScores = {
     cameraAngle: angleScore,
@@ -241,6 +274,7 @@ export function evaluateIngestion(input: IngestionInput): IngestionEvaluation {
   } else if (
     input.isAutomatic === true &&
     evaluation.eligible &&
+    unmetRequiredSurfaces.length === 0 &&
     evaluation.weightedScore >= master.minimumPerspectiveScore &&
     warnings.every((w) => !w.startsWith("Perspektive weicht"))
   ) {

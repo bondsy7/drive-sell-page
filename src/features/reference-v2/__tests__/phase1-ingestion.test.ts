@@ -291,3 +291,59 @@ describe("Vehicle Master completeness", () => {
     ).toBe(false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Detail/interior required surfaces must fail closed (no optimistic default)
+// ---------------------------------------------------------------------------
+
+describe("required detail/interior surface visibility fails closed", () => {
+  const required = (id: PerspectiveId) =>
+    getPerspectiveMasterEntry(id).requiredVisibleSurfaces;
+
+  it("DET_HEADLIGHT_LEFT without a headlight_left observation is not primary", () => {
+    expect(required("DET_HEADLIGHT_LEFT")).toContain("headlight_left");
+    const missing = ingest("DET_HEADLIGHT_LEFT");
+    expect(missing.role).not.toBe("primary_candidate");
+    expect(missing.scores.requiredSurfaceCoverage).toBeLessThan(50);
+    expect(
+      missing.warnings.some((w) => w.startsWith("Pflichtfläche nicht belegt")),
+    ).toBe(true);
+
+    const zero = ingest("DET_HEADLIGHT_LEFT", {
+      visibility: {
+        front: 0.9,
+        rear: 0.1,
+        leftSide: 0.6,
+        rightSide: 0.1,
+        roof: 0.2,
+        surfaces: { headlight_left: 0 },
+      },
+    });
+    expect(zero.role).not.toBe("primary_candidate");
+  });
+
+  it("DET_HEADLIGHT_LEFT with a high headlight_left visibility can proceed", () => {
+    const ok = ingest("DET_HEADLIGHT_LEFT", {
+      visibility: {
+        front: 0.9,
+        rear: 0.1,
+        leftSide: 0.7,
+        rightSide: 0.1,
+        roof: 0.2,
+        surfaces: Object.fromEntries(
+          required("DET_HEADLIGHT_LEFT").map((s) => [s, 0.95]),
+        ),
+      },
+    });
+    expect(
+      ok.warnings.some((w) => w.startsWith("Pflichtfläche nicht belegt")),
+    ).toBe(false);
+    expect(ok.role).toBe("primary_candidate");
+  });
+
+  it("interior perspectives get no optimistic surface defaults", () => {
+    const dash = ingest("INT_DASH_CENTER");
+    expect(dash.scores.requiredSurfaceCoverage).toBe(0);
+    expect(dash.role).not.toBe("primary_candidate");
+  });
+});

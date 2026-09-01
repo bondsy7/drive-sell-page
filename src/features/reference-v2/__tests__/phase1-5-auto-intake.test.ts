@@ -7,7 +7,10 @@ import {
   parseAnalyzerResponse,
   SemanticFirewallError,
 } from "@/features/reference-v2/phase1-5/analyzer-contract";
-import { assertNoInlineImageData } from "@/features/reference-v2/phase1-5/provider-adapter";
+import {
+  assertNoInlineImageData,
+  toAnchorFileReferences,
+} from "@/features/reference-v2/phase1-5/provider-adapter";
 import {
   analyzeFileBatch,
   analyzeSingleFile,
@@ -266,5 +269,128 @@ describe("Phase 1.5 hardening", () => {
     expect(rec.mimeType).toBe("image/png");
     expect(rec.sizeBytes).toBe(4242);
     expect(rec.fileExpiresAtIso).toBe("2030-01-01T00:00:00Z");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Typed test helpers (no `any`) for the final Phase 1.5 correction tests
+// ---------------------------------------------------------------------------
+
+type BatchCtx = Parameters<typeof analyzeFileBatch>[1];
+type BatchDeps = Parameters<typeof analyzeFileBatch>[2];
+const asCtx = (c: unknown) => c as BatchCtx;
+const asDeps = (d: unknown) => d as BatchDeps;
+const anchorArgs = (mock: { calls: unknown[][] }) =>
+  mock.calls.map((c) => (c[0] as { anchorFiles: unknown[] }).anchorFiles);
+
+// ---------------------------------------------------------------------------
+// FINAL Phase 1.5 correction: anchors only after Phase-1 governance accepts
+// ---------------------------------------------------------------------------
+
+
+describe("in-batch identity anchor requires Phase-1 governance", () => {
+  it("A) grants NO anchor when Phase-1 rejects the first file (glare/crop)", async () => {
+    let call = 0;
+    const analyze = vi.fn(async () => {
+      call += 1;
+      return {
+        response: parseAnalyzerResponse({
+          ...goodResponse,
+          ...(call === 1
+            ? {
+                // passes the automatic vision gate, but Phase-1 governance
+                // rejects it (heavy glare + cropped vehicle)
+                quality: {
+                  sharpness: 0.9,
+                  occlusion: 0.05,
+                  glare: 0.95,
+                  resolutionAdequacy: 0.95,
+                },
+                framing: {
+                  fullVehicleVisible: false,
+                  cropped: true,
+                  visibleWheelPositions: [],
+                  estimatedPaddingPct: 2,
+                },
+              }
+            : {}),
+        }),
+      };
+    });
+    const upload = vi.fn(async () => ({
+      fileId: `files/f${call}`,
+      providerId: "gemini-file-api",
+      mimeType: "image/jpeg",
+    }));
+    const outcomes = await analyzeFileBatch(
+      [makeFile("a.jpg"), makeFile("b.jpg")],
+      asCtx(baseCtx),
+      asDeps(baseDeps(analyze, upload)),
+    );
+    expect(outcomes[0].ok).toBe(true);
+    expect(outcomes[0].governance?.role).toBe("rejected");
+    expect(outcomes[0].anchorEligible).toBe(false);
+    expect(anchorArgs(analyze.mock)[1]).toHaveLength(0);
+  });
+
+  it("B) grants exactly one anchor when Vision AND Phase-1 accept the file", async () => {
+    let call = 0;
+    const analyze = vi.fn(async () => {
+      call += 1;
+      return {
+        response: parseAnalyzerResponse({
+          ...goodResponse,
+          ...(call === 1 ? {} : { sameVehicleConfidence: 0.95 }),
+        }),
+      };
+    });
+    const upload = vi.fn(async () => ({
+      fileId: `files/f${call}`,
+      providerId: "gemini-file-api",
+      mimeType: "image/jpeg",
+    }));
+    const outcomes = await analyzeFileBatch(
+      [makeFile("a.jpg"), makeFile("b.jpg")],
+      asCtx(baseCtx),
+      asDeps(baseDeps(analyze, upload)),
+    );
+    expect(outcomes[0].anchorEligible).toBe(true);
+    expect(outcomes[0].governance?.role).not.toBe("rejected");
+    expect(anchorArgs(analyze.mock)[1]).toHaveLength(1);
+  });
+
+  it("C) keeps an existing analyzed seed anchor usable", async () => {
+    const analyze = vi.fn(async () => ({
+      response: parseAnalyzerResponse({
+        ...goodResponse,
+        sameVehicleConfidence: 0.96,
+      }),
+    }));
+    const seed = {
+      fileId: "files/seed",
+      providerId: "gemini-file-api",
+      mimeType: "image/png",
+    };
+    const outcomes = await analyzeFileBatch(
+      [makeFile("a.jpg")],
+      asCtx({ ...baseCtx, anchorFiles: [seed] }),
+      asDeps(baseDeps(analyze)),
+    );
+    expect(outcomes[0].ok).toBe(true);
+    expect(anchorArgs(analyze.mock)[0]).toEqual([seed]);
+  });
+});
+
+describe("persisted anchors never guess a MIME type", () => {
+  it("skips analysis records without a known MIME and preserves png/webp", () => {
+    const anchors = toAnchorFileReferences([
+      { fileId: "files/a", providerId: "gemini-file-api" },
+      { fileId: "files/b", providerId: "gemini-file-api", mimeType: "image/png" },
+      { fileId: "files/c", providerId: "gemini-file-api", mimeType: "image/webp" },
+      { fileId: "files/d", providerId: "gemini-file-api", mimeType: "image/gif" },
+    ]);
+    expect(anchors.map((a) => a.fileId)).toEqual(["files/b", "files/c"]);
+    expect(anchors.map((a) => a.mimeType)).toEqual(["image/png", "image/webp"]);
+    expect(JSON.stringify(anchors)).not.toContain("image/jpeg");
   });
 });
