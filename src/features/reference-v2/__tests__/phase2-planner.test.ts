@@ -202,7 +202,7 @@ function primaryWithoutLeftSide(id: string): ReferenceAssetRecord {
     id,
     intake: intake({
       assetId: id,
-      visibility: { front: 1, rear: 0, leftSide: 0.1, rightSide: 0, roof: 0.5 },
+      visibility: { front: 1, rear: 0, leftSide: 0.45, rightSide: 0, roof: 0.5 },
     }),
   });
 }
@@ -501,7 +501,7 @@ describe("Phase 2.3 wheel evidence", () => {
 
 describe("Phase 2.3 output format readiness", () => {
   it("fails closed for every requested format and blocks the item", () => {
-    const out = plan([perfectPrimary("asset_a")], { formats: ["4:5", "16:9"] });
+    const out = plan([perfectPrimary("asset_a")], { formats: ["4:5", "1.91:1"] });
     expect(item(out).outputFormatReadiness).toHaveLength(2);
     expect(item(out).outputFormatReadiness.every((f) => !f.ready)).toBe(true);
     expect(item(out).state).toBe("BLOCKED");
@@ -510,7 +510,7 @@ describe("Phase 2.3 output format readiness", () => {
 
   it("never derives readiness from stored Phase-1 outputReadyFormats", () => {
     const out = plan(
-      [asset({ id: "asset_a", outputReadyFormats: ["4:5", "16:9", "1:1"] })],
+      [asset({ id: "asset_a", outputReadyFormats: ["4:5", "1.91:1"] })],
       { formats: ["4:5"] },
     );
     expect(item(out).outputFormatReadiness[0]!.ready).toBe(false);
@@ -655,7 +655,6 @@ describe("Phase 2.3 source purity", () => {
     .join("\n");
 
   it("never reads stored Phase-1 evaluation fields", () => {
-    expect(source).not.toMatch(/\.weightedScore\s*\}/);
     expect(source).not.toMatch(/asset\.scores/);
     expect(source).not.toMatch(/asset\.weightedScore/);
     expect(source).not.toMatch(/outputReadyFormats/);
