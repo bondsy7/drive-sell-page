@@ -89,16 +89,44 @@ export function rebaseCurrentFramingEvidence(
 // 4) Sidecar contract
 // --------------------------------------------------------------------------
 
+/**
+ * Prototype-sichere Helfer: Sidecar-Keys sind vertraglich beliebige nicht-leere
+ * Strings, also auch `toString`, `constructor` oder `__proto__`. Records werden
+ * daher ausschliesslich aus geordneten Tupeln via `Object.fromEntries` gebaut
+ * und Mitgliedschaft nur ueber eigene Properties geprueft.
+ */
+function hasOwn(record: object, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(record, key);
+}
+
+function ownEntries<T>(record: Record<string, T>): [string, T][] {
+  return Object.keys(record).map((key) => [
+    key,
+    (Object.getOwnPropertyDescriptor(record, key)?.value ?? undefined) as T,
+  ]);
+}
+
+function recordFromEntries<T>(entries: readonly (readonly [string, T])[]): Record<
+  string,
+  T
+> {
+  return Object.fromEntries(entries) as Record<string, T>;
+}
+
 const SidecarShapeSchema = z
   .object({
-    byAssetId: z.record(z.string(), z.unknown()),
+    byAssetId: z.custom<Record<string, unknown>>(
+      (value) =>
+        typeof value === "object" && value !== null && !Array.isArray(value),
+      { message: "byAssetId must be a plain object" },
+    ),
   })
   .strict();
 
 export const CurrentFramingEvidenceSidecarSchema = SidecarShapeSchema.transform(
   (shape, ctx) => {
-    const out: Record<string, CurrentFramingEvidence> = {};
-    for (const key of Object.keys(shape.byAssetId)) {
+    const entries: [string, CurrentFramingEvidence][] = [];
+    for (const [key, rawValue] of ownEntries(shape.byAssetId)) {
       if (key.length === 0) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -107,7 +135,7 @@ export const CurrentFramingEvidenceSidecarSchema = SidecarShapeSchema.transform(
         });
         return z.NEVER;
       }
-      const value = parseCurrentFramingEvidence(shape.byAssetId[key]);
+      const value = parseCurrentFramingEvidence(rawValue);
       if (value.assetId !== key) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -116,11 +144,12 @@ export const CurrentFramingEvidenceSidecarSchema = SidecarShapeSchema.transform(
         });
         return z.NEVER;
       }
-      out[key] = value;
+      entries.push([key, value]);
     }
-    return { byAssetId: out };
+    return { byAssetId: recordFromEntries(entries) };
   },
 );
+
 
 export type CurrentFramingEvidenceSidecar = {
   byAssetId: Record<string, CurrentFramingEvidence>;
