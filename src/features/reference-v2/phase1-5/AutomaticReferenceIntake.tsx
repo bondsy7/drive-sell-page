@@ -57,13 +57,32 @@ const STAGE_LABEL: Record<AutomaticIntakeProgress["stage"], string> = {
   failed: "Abgewiesen",
 };
 
+/**
+ * STRIKT: kein Ersatzwert. Schlaegt das Dekodieren fehl oder sind die
+ * natuerlichen Dimensionen ungueltig, wird abgelehnt. Die alte
+ * Phase-1-Governance bleibt unveraendert, weil der eingefrorene Coordinator
+ * diesen Fehler faengt und seinen historischen Ersatzwert anwendet.
+ */
 async function measureAspectRatio(file: File): Promise<number> {
   const url = URL.createObjectURL(file);
   try {
-    return await new Promise<number>((resolve) => {
+    return await new Promise<number>((resolve, reject) => {
       const img = new Image();
-      img.onload = () => resolve(img.naturalWidth / img.naturalHeight || 1.5);
-      img.onerror = () => resolve(1.5);
+      img.onload = () => {
+        const w = img.naturalWidth;
+        const h = img.naturalHeight;
+        if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) {
+          reject(new Error("invalid natural image dimensions"));
+          return;
+        }
+        const ratio = w / h;
+        if (!Number.isFinite(ratio) || ratio <= 0) {
+          reject(new Error("invalid aspect ratio"));
+          return;
+        }
+        resolve(ratio);
+      };
+      img.onerror = () => reject(new Error("image decode failed"));
       img.src = url;
     });
   } finally {
