@@ -21,10 +21,11 @@ import {
   type AutomaticIntakeProgress,
 } from "./analysis-coordinator";
 import {
-  MAX_ANCHOR_FILES,
   supabaseAnalyzerPort,
+  toAnchorFileReferences,
   type ReferenceV2FileReference,
 } from "./provider-adapter";
+
 
 /**
  * Reference V2 — Phase 1.5: Automatischer Referenz-Intake (Produktivpfad).
