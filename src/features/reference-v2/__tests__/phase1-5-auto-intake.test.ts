@@ -204,7 +204,7 @@ describe("Phase 1.5 hardening", () => {
     const analyze = vi.fn(async () => ({
       response: parseAnalyzerResponse({
         ...goodResponse,
-        canonicalPerspectiveId: "INT_DASHBOARD_CENTER",
+        canonicalPerspectiveId: "INT_DASH_CENTER",
       }),
     }));
     const out = await analyzeSingleFile(makeFile(), baseCtx as any, baseDeps(analyze) as any);
