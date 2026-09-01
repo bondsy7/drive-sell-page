@@ -99,6 +99,11 @@ export const ReferenceAssetRecordSchema = z
     previewUrl: z.string().min(1),
     createdAtIso: z.string().min(1),
     intake: VisionIntakeResultSchema,
+    /**
+     * Phase 1.5: Nachweis der automatischen Vision-Analyse. OPTIONAL, damit
+     * bestehende Phase-1-Records gueltig bleiben (backwards-safe).
+     */
+    analysis: ReferenceAnalysisRecordSchema.optional(),
     scores: MatchComponentScoresSchema,
     weightedScore: z.number().min(0).max(100),
     hardFailures: z.array(ReferenceHardFailCodeSchema),
