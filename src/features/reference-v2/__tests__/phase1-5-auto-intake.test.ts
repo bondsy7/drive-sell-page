@@ -16,6 +16,8 @@ import {
   analyzeSingleFile,
 } from "@/features/reference-v2/phase1-5/analysis-coordinator";
 import { ReferenceAnalysisRecordSchema } from "@/features/reference-v2/phase1-5/analysis-record";
+// Pure server-side validator (no Deno runtime dependency) — tested directly.
+import { validateAnalyzerResponse } from "../../../../supabase/functions/_shared/reference-v2-analyzer-validation.ts";
 
 const goodResponse = {
   schemaVersion: ANALYZER_SCHEMA_VERSION,
@@ -491,5 +493,58 @@ describe("analyzer response cross-field consistency", () => {
         }),
       ),
     ).toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// visibility.surfaces contract: client Zod and pure server validator agree
+// ---------------------------------------------------------------------------
+
+describe("visibility.surfaces is a required, perspective-aware contract", () => {
+  const headlightLeft = (surfaces: Record<string, number>) =>
+    validResponse({
+      canonicalPerspectiveId: "DET_HEADLIGHT_LEFT",
+      visibility: { ...goodResponse.visibility, surfaces },
+    });
+
+  it("rejects a response without visibility.surfaces (client + server)", () => {
+    const visibility = { front: 0.9, rear: 0, leftSide: 0.85, rightSide: 0, roof: 0.3 };
+    expect(() => parseAnalyzerResponse(validResponse({ visibility }))).toThrow();
+    const server = validateAnalyzerResponse(validResponse({ visibility }));
+    expect(server.ok).toBe(false);
+    expect(server.ok === false && server.issues.join(" ")).toContain(
+      "visibility.surfaces must be an object",
+    );
+  });
+
+  it("rejects DET_HEADLIGHT_LEFT when headlight_left is missing (client + server)", () => {
+    expect(() => parseAnalyzerResponse(headlightLeft({}))).toThrow(
+      /visibility\.surfaces\.headlight_left is required/,
+    );
+    const server = validateAnalyzerResponse(headlightLeft({}));
+    expect(server.ok).toBe(false);
+    expect(server.ok === false && server.issues.join(" ")).toContain(
+      "visibility.surfaces.headlight_left is required for perspective DET_HEADLIGHT_LEFT",
+    );
+  });
+
+  it("accepts DET_HEADLIGHT_LEFT with headlight_left = 0 as structurally valid", () => {
+    const payload = headlightLeft({ headlight_left: 0 });
+    expect(parseAnalyzerResponse(payload).visibility.surfaces).toEqual({
+      headlight_left: 0,
+    });
+    expect(validateAnalyzerResponse(payload).ok).toBe(true);
+  });
+
+  it("accepts a standard exterior perspective with an empty surfaces map", () => {
+    const payload = validResponse({});
+    expect(parseAnalyzerResponse(payload).visibility.surfaces).toEqual({});
+    expect(validateAnalyzerResponse(payload).ok).toBe(true);
+  });
+
+  it("rejects a detected vehicle without a class on both sides", () => {
+    const payload = validResponse({ vehicleClass: null });
+    expect(() => parseAnalyzerResponse(payload)).toThrow();
+    expect(validateAnalyzerResponse(payload).ok).toBe(false);
   });
 });
