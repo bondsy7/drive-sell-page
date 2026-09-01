@@ -229,11 +229,13 @@ describe("Phase 2.4D — buildReferencePlannerFromCurrentFramingSidecar", () => 
       framingSidecar: sidecarOf([evidence("ref_1")]),
     });
     const baseline: PlannerOutput = buildReferencePlanner(plannerInputOf(assets));
-    expect(withEvidence.items[0]!.primary).toEqual(baseline.items[0]!.primary);
-    expect(withEvidence.items[0]!.secondaries).toEqual(
-      baseline.items[0]!.secondaries,
+    expect(withEvidence.items[0]!.selection).toEqual(
+      baseline.items[0]!.selection,
     );
-    expect(withEvidence.coverage).toEqual(baseline.coverage);
+    expect(withEvidence.items[0]!.substitution).toEqual(
+      baseline.items[0]!.substitution,
+    );
+    expect(withEvidence.items[0]!.coverage).toEqual(baseline.items[0]!.coverage);
   });
 
   it("keeps baseline BLOCKED items BLOCKED despite ready format evidence", () => {
