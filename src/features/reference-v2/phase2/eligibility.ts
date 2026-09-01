@@ -373,8 +373,9 @@ export function evaluateAssetEligibility(
   // 3. Intrinsische visuelle Sicherheit (Neuberechnung, fail closed)
   const intake = asset.intake;
   if (intake.vehicleDetected !== true) {
+    // Kein passender Planner-Reason-Code vorhanden: der Hard-Failure allein
+    // disqualifiziert das Asset (fail closed).
     hardFailures.push("NO_VEHICLE_DETECTED");
-    add("NO_ANALYSIS_RECORD", "BLOCKING", "Kein Fahrzeug im Bild erkannt.");
   }
   if (
     intake.vehicleClass === undefined ||
