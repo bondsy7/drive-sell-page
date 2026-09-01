@@ -250,10 +250,12 @@ function AdminReferenceViewInner() {
       <header className="space-y-1">
         <h1 className="text-2xl font-bold">Vehicle Reference Engine V2 — Referenzen</h1>
         <p className="text-sm text-muted-foreground">
-          Phase 1: Vehicle-Master-Ingestion und Referenz-Review gegen
-          PerspectiveMaster v1 ({perspectiveCount} Perspektiven, Registry-Version{" "}
+          Vehicle-Master-Verwaltung, automatische Bildanalyse und
+          Planner-/Preflight-Vorprüfung gegen PerspectiveMaster v1 (
+          {perspectiveCount} Perspektiven, Registry-Version{" "}
           {PERSPECTIVE_MASTER.registryVersion}). Keine Marken-, Modell- oder
-          VIN-Daten — ausschließlich visuelle Wahrheit.
+          VIN-Daten — ausschließlich visuelle Wahrheit. Es wird hier nichts
+          generiert.
         </p>
       </header>
 
