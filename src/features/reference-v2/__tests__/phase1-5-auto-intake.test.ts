@@ -195,7 +195,7 @@ describe("Phase 1.5 hardening", () => {
   it("never sends the expected vehicle class or a perspective list to the provider", async () => {
     const analyze = vi.fn(async () => ({ response: parseAnalyzerResponse(goodResponse) }));
     await analyzeSingleFile(makeFile(), baseCtx as any, baseDeps(analyze) as any);
-    const payload = analyze.mock.calls[0][0] as Record<string, unknown>;
+    const payload = (analyze.mock.calls as any[])[0][0] as Record<string, unknown>;
     expect(Object.keys(payload).sort()).toEqual(["anchorFiles", "file"]);
     expect(JSON.stringify(payload)).not.toContain("car");
   });
@@ -234,8 +234,9 @@ describe("Phase 1.5 hardening", () => {
       baseDeps(analyze, upload) as any,
     );
     expect(outcomes.every((o) => o.ok)).toBe(true);
-    expect((analyze.mock.calls[0][0] as any).anchorFiles).toHaveLength(0);
-    expect((analyze.mock.calls[1][0] as any).anchorFiles).toHaveLength(1);
+    const calls = analyze.mock.calls as any[];
+    expect(calls[0][0].anchorFiles).toHaveLength(0);
+    expect(calls[1][0].anchorFiles).toHaveLength(1);
   });
 
   it("blocks explicit identity vocabulary lexically", () => {
