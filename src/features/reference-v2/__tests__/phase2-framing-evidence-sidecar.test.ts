@@ -410,6 +410,131 @@ describe("G. currentFramingEvidenceForPlanner", () => {
 });
 
 // --------------------------------------------------------------------------
+// I. Prototype-safe record semantics
+// --------------------------------------------------------------------------
+
+const SPECIAL_KEYS = ["toString", "constructor", "__proto__"] as const;
+
+function rawSidecar(ids: readonly string[]) {
+  return {
+    byAssetId: Object.fromEntries(ids.map((id) => [id, evidence(id)])),
+  };
+}
+
+describe("I. prototype-safe record semantics", () => {
+  it.each(SPECIAL_KEYS)("upserts %s as an own enumerable entry", (key) => {
+    const next = upsertCurrentFramingEvidence(
+      emptyCurrentFramingEvidenceSidecar(),
+      evidence(key),
+    );
+    expect(Object.prototype.hasOwnProperty.call(next.byAssetId, key)).toBe(true);
+    expect(Object.keys(next.byAssetId)).toEqual([key]);
+    expect(
+      (Object.getOwnPropertyDescriptor(next.byAssetId, key)?.value as
+        | CurrentFramingEvidence
+        | undefined)?.assetId,
+    ).toBe(key);
+  });
+
+  it("does not pollute prototypes when handling __proto__", () => {
+    const next = upsertCurrentFramingEvidence(
+      emptyCurrentFramingEvidenceSidecar(),
+      evidence("__proto__"),
+    );
+    expect(Object.getPrototypeOf(next.byAssetId)).toBe(Object.prototype);
+    expect(
+      Object.getOwnPropertyDescriptor(next.byAssetId, "__proto__")?.enumerable,
+    ).toBe(true);
+    expect(
+      (Object.prototype as unknown as Record<string, unknown>).assetId,
+    ).toBeUndefined();
+    expect(({} as Record<string, unknown>).sourceAspectRatio).toBeUndefined();
+  });
+
+  it.each(SPECIAL_KEYS)(
+    "replaces an existing %s entry without duplication",
+    (key) => {
+      const first = upsertCurrentFramingEvidence(
+        emptyCurrentFramingEvidenceSidecar(),
+        evidence(key),
+      );
+      const second = upsertCurrentFramingEvidence(
+        first,
+        evidence(key, { paddingPct: 42 }),
+      );
+      expect(Object.keys(second.byAssetId)).toEqual([key]);
+      expect(
+        (Object.getOwnPropertyDescriptor(second.byAssetId, key)?.value as
+          | CurrentFramingEvidence
+          | undefined)?.paddingPct,
+      ).toBe(42);
+    },
+  );
+
+  it("parses a raw sidecar with an own __proto__ key without altering prototypes", () => {
+    const raw = {
+      byAssetId: Object.fromEntries([["__proto__", evidence("__proto__")]]),
+    };
+    expect(
+      Object.prototype.hasOwnProperty.call(raw.byAssetId, "__proto__"),
+    ).toBe(true);
+    const parsed = parseCurrentFramingEvidenceSidecar(raw);
+    expect(
+      Object.prototype.hasOwnProperty.call(parsed.byAssetId, "__proto__"),
+    ).toBe(true);
+    expect(Object.getPrototypeOf(parsed.byAssetId)).toBe(Object.prototype);
+    expect(Object.keys(parsed.byAssetId)).toEqual(["__proto__"]);
+  });
+
+  it("removes a special-key entry and preserves the others", () => {
+    const base = rawSidecar(["ref_1", "toString", "ref_2"]);
+    const next = removeCurrentFramingEvidence(base, "toString");
+    expect(Object.keys(next.byAssetId)).toEqual(["ref_1", "ref_2"]);
+  });
+
+  it("prunes special-key entries by explicit known ids", () => {
+    const base = rawSidecar(["toString", "ref_1", "constructor"]);
+    const next = pruneCurrentFramingEvidence(base, ["toString", "ref_1"]);
+    expect(Object.keys(next.byAssetId)).toEqual(["toString", "ref_1"]);
+  });
+
+  it("projects special keys in knownAssetIds order", () => {
+    const base = rawSidecar(["toString", "ref_1", "__proto__"]);
+    const out = currentFramingEvidenceForPlanner(base, [
+      "ref_1",
+      "__proto__",
+      "toString",
+    ]);
+    expect(out.map((e) => e.assetId)).toEqual([
+      "ref_1",
+      "__proto__",
+      "toString",
+    ]);
+  });
+
+  it("never synthesizes inherited prototype members as evidence", () => {
+    const base = rawSidecar(["ref_1"]);
+    const out = currentFramingEvidenceForPlanner(base, [
+      "ref_1",
+      "toString",
+      "constructor",
+    ]);
+    expect(out.map((e) => e.assetId)).toEqual(["ref_1"]);
+  });
+
+  it("keeps ordinary ref_* behaviour and order unchanged", () => {
+    const base = rawSidecar(["ref_1", "ref_2"]);
+    const next = upsertCurrentFramingEvidence(base, evidence("ref_3"));
+    expect(Object.keys(next.byAssetId)).toEqual(["ref_1", "ref_2", "ref_3"]);
+    expect(
+      currentFramingEvidenceForPlanner(next, ["ref_3", "ref_1", "ref_2"]).map(
+        (e) => e.assetId,
+      ),
+    ).toEqual(["ref_3", "ref_1", "ref_2"]);
+  });
+});
+
+// --------------------------------------------------------------------------
 // H. Source purity
 // --------------------------------------------------------------------------
 
