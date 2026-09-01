@@ -34,7 +34,7 @@ import {
   PERSPECTIVE_MASTER,
   getPerspectiveMasterEntry,
 } from "./perspective-master";
-import { assetIsFullyOutputReady, canBecomePrimary } from "./ingestion";
+import { canBecomePrimary } from "./ingestion";
 import { BLOCKER_LABELS_DE, type ReferenceAssetRecord } from "./vehicle-master";
 import {
   ReferenceStoreProvider,
@@ -43,6 +43,7 @@ import {
 import { ReferenceCaptureWorkflow } from "./ReferenceCaptureWorkflow";
 import { AutomaticReferenceIntake } from "../phase1-5/AutomaticReferenceIntake";
 import { CurrentFramingEvidenceRuntimeProvider } from "../phase2/framing-evidence-runtime";
+import { OutputPlannerPanel } from "../phase2/OutputPlannerPanel";
 
 /**
  * Reference V2 — Phase 1: AdminReferenceView.
@@ -108,8 +109,7 @@ function AssetTile({ asset }: { asset: ReferenceAssetRecord }) {
         </Badge>
       </div>
       <div className="text-[11px] text-muted-foreground">
-        Score {asset.weightedScore.toFixed(1)} · v{asset.version} ·{" "}
-        {assetIsFullyOutputReady(asset) ? "4:5 + 1.91:1 ✓" : "Format eingeschränkt"}
+        Governance-Score {asset.weightedScore.toFixed(1)} · v{asset.version}
       </div>
       {asset.blockers.length > 0 && (
         <div className="flex flex-wrap gap-1">
@@ -146,6 +146,12 @@ function AssetTile({ asset }: { asset: ReferenceAssetRecord }) {
         <Button
           size="sm"
           variant="ghost"
+          disabled={asset.protection === "protected"}
+          title={
+            asset.protection === "protected"
+              ? "Geschütztes Asset — Schutz zuerst aufheben"
+              : "Asset entfernen"
+          }
           onClick={() => run(() => removeAsset(activeMaster.id, asset.id))}
         >
           <Trash2 className="w-3 h-3" />
@@ -244,10 +250,12 @@ function AdminReferenceViewInner() {
       <header className="space-y-1">
         <h1 className="text-2xl font-bold">Vehicle Reference Engine V2 — Referenzen</h1>
         <p className="text-sm text-muted-foreground">
-          Phase 1: Vehicle-Master-Ingestion und Referenz-Review gegen
-          PerspectiveMaster v1 ({perspectiveCount} Perspektiven, Registry-Version{" "}
+          Vehicle-Master-Verwaltung, automatische Bildanalyse und
+          Planner-/Preflight-Vorprüfung gegen PerspectiveMaster v1 (
+          {perspectiveCount} Perspektiven, Registry-Version{" "}
           {PERSPECTIVE_MASTER.registryVersion}). Keine Marken-, Modell- oder
-          VIN-Daten — ausschließlich visuelle Wahrheit.
+          VIN-Daten — ausschließlich visuelle Wahrheit. Es wird hier nichts
+          generiert.
         </p>
       </header>
 
@@ -399,6 +407,10 @@ function AdminReferenceViewInner() {
                   )}
                 </CardContent>
               </Card>
+              <OutputPlannerPanel
+                key={activeMaster.id}
+                vehicleMaster={activeMaster}
+              />
               <ReviewGrid />
             </div>
             <div className="space-y-4">
