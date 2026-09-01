@@ -269,6 +269,16 @@ describe("Phase 1.5 hardening", () => {
     expect(rec.mimeType).toBe("image/png");
     expect(rec.sizeBytes).toBe(4242);
     expect(rec.fileExpiresAtIso).toBe("2030-01-01T00:00:00Z");
+// ---------------------------------------------------------------------------
+// Typed test helpers (no `any`) for the final Phase 1.5 correction tests
+// ---------------------------------------------------------------------------
+
+type BatchCtx = Parameters<typeof analyzeFileBatch>[1];
+type BatchDeps = Parameters<typeof analyzeFileBatch>[2];
+const asCtx = (c: unknown) => c as BatchCtx;
+const asDeps = (d: unknown) => d as BatchDeps;
+const anchorArgs = (mock: { calls: unknown[][] }) =>
+  mock.calls.map((c) => (c[0] as { anchorFiles: unknown[] }).anchorFiles);
   });
 });
 
@@ -312,14 +322,13 @@ describe("in-batch identity anchor requires Phase-1 governance", () => {
     }));
     const outcomes = await analyzeFileBatch(
       [makeFile("a.jpg"), makeFile("b.jpg")],
-      baseCtx as any,
-      baseDeps(analyze, upload) as any,
+      asCtx(baseCtx),
+      asDeps(baseDeps(analyze, upload)),
     );
     expect(outcomes[0].ok).toBe(true);
     expect(outcomes[0].governance?.role).toBe("rejected");
     expect(outcomes[0].anchorEligible).toBe(false);
-    const calls = analyze.mock.calls as any[];
-    expect(calls[1][0].anchorFiles).toHaveLength(0);
+    expect(anchorArgs(analyze.mock)[1]).toHaveLength(0);
   });
 
   it("B) grants exactly one anchor when Vision AND Phase-1 accept the file", async () => {
@@ -340,13 +349,12 @@ describe("in-batch identity anchor requires Phase-1 governance", () => {
     }));
     const outcomes = await analyzeFileBatch(
       [makeFile("a.jpg"), makeFile("b.jpg")],
-      baseCtx as any,
-      baseDeps(analyze, upload) as any,
+      asCtx(baseCtx),
+      asDeps(baseDeps(analyze, upload)),
     );
     expect(outcomes[0].anchorEligible).toBe(true);
     expect(outcomes[0].governance?.role).not.toBe("rejected");
-    const calls = analyze.mock.calls as any[];
-    expect(calls[1][0].anchorFiles).toHaveLength(1);
+    expect(anchorArgs(analyze.mock)[1]).toHaveLength(1);
   });
 
   it("C) keeps an existing analyzed seed anchor usable", async () => {
@@ -363,11 +371,11 @@ describe("in-batch identity anchor requires Phase-1 governance", () => {
     };
     const outcomes = await analyzeFileBatch(
       [makeFile("a.jpg")],
-      { ...baseCtx, anchorFiles: [seed] } as any,
-      baseDeps(analyze) as any,
+      asCtx({ ...baseCtx, anchorFiles: [seed] }),
+      asDeps(baseDeps(analyze)),
     );
     expect(outcomes[0].ok).toBe(true);
-    expect((analyze.mock.calls as any[])[0][0].anchorFiles).toEqual([seed]);
+    expect(anchorArgs(analyze.mock)[0]).toEqual([seed]);
   });
 });
 
