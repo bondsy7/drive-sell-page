@@ -220,8 +220,44 @@ export const AnalyzerVisionResponseSchema = z
     identityEvidence: VisualIdentityEvidenceSchema,
     issues: z.array(AnalyzerIssueSchema).max(12),
   })
-  .strict();
+  .strict()
+  // Fail-closed Querbedingungen — identisch zur serverseitigen Validierung:
+  // ein erkanntes Fahrzeug MUSS eine Klasse haben, und eine gesetzte
+  // kanonische Perspektive MUSS durch Winkelangaben belegt sein.
+  .superRefine((r, ctx) => {
+    if (r.vehicleDetected && r.vehicleClass === null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["vehicleClass"],
+        message: "vehicleClass is required when vehicleDetected is true",
+      });
+    }
+    if (!r.vehicleDetected && r.canonicalPerspectiveId !== null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["canonicalPerspectiveId"],
+        message: "canonicalPerspectiveId must be null when no vehicle is detected",
+      });
+    }
+    if (r.canonicalPerspectiveId !== null) {
+      if (r.azimuthDeg === null) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["azimuthDeg"],
+          message: "azimuthDeg is required when a canonical perspective is chosen",
+        });
+      }
+      if (r.elevationProfile === null) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["elevationProfile"],
+          message: "elevationProfile is required when a canonical perspective is chosen",
+        });
+      }
+    }
+  });
 export type AnalyzerVisionResponse = z.infer<typeof AnalyzerVisionResponseSchema>;
+
 
 export class AnalyzerResponseError extends Error {
   readonly issues: readonly string[];
