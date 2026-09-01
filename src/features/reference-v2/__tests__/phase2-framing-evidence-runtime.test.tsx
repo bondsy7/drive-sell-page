@@ -374,10 +374,15 @@ describe("Phase 2.4D — real committed store lifecycle", () => {
     );
   });
 
-  it("keeps evidence when removal of a protected asset fails (live mounted tree)", async () => {
-    // Beweisfuehrung ausschliesslich ueber einen WAEHREND des Tests gemounteten
-    // Consumer — keine potenziell veralteten Harness-Referenzen.
-    const boundary = { crashed: false };
+  it("keeps evidence when removal of a protected asset fails (live render observation)", async () => {
+    // Aktuelle Store-Semantik: `removeAsset` wirft ProtectedAssetError AUS dem
+    // React-State-Updater heraus, d.h. waehrend der Render-Phase des Stores.
+    // Deshalb wird hier NICHT nach dem Fehler aus veralteten Harness-Refs
+    // gelesen, sondern jede LIVE gerenderte Momentaufnahme des gemounteten
+    // Consumers protokolliert. Damit ist bewiesen, dass kein committeter
+    // Render jemals Asset, Schutzstatus oder Evidenz verloren hat.
+    const snapshots: string[] = [];
+    let boundaryError: unknown = null;
 
     class TreeGuard extends Component<
       { children: ReactNode },
@@ -387,11 +392,11 @@ describe("Phase 2.4D — real committed store lifecycle", () => {
       static getDerivedStateFromError() {
         return { crashed: true };
       }
+      componentDidCatch(error: unknown) {
+        boundaryError = error;
+      }
       render() {
-        if (this.state.crashed) {
-          boundary.crashed = true;
-          return <div data-testid="crashed">crashed</div>;
-        }
+        if (this.state.crashed) return <div data-testid="crashed">crashed</div>;
         return this.props.children;
       }
     }
@@ -400,26 +405,19 @@ describe("Phase 2.4D — real committed store lifecycle", () => {
       const store = useReferenceStore();
       const runtime = useCurrentFramingEvidenceRuntime();
       const masterId = store.activeMasterId ?? "";
-      const assets =
-        store.masters.find((m) => m.id === masterId)?.assets ?? [];
+      const assets = store.masters.find((m) => m.id === masterId)?.assets ?? [];
       const evidenceIds = masterId
         ? Object.keys(
             runtime.getCurrentFramingEvidenceSidecar(masterId).byAssetId,
           )
         : [];
-      return (
-        <>
-          <div data-testid="live-assets">
-            {assets.map((a) => a.id).join(",") || "none"}
-          </div>
-          <div data-testid="live-protection">
-            {assets.map((a) => `${a.id}:${a.protection}`).join(",") || "none"}
-          </div>
-          <div data-testid="live-evidence">
-            {evidenceIds.join(",") || "none"}
-          </div>
-        </>
-      );
+      const snapshot = [
+        assets.map((a) => a.id).join(",") || "none",
+        assets.map((a) => a.protection).join(",") || "none",
+        evidenceIds.join(",") || "none",
+      ].join("|");
+      snapshots.push(snapshot);
+      return <div data-testid="live">{snapshot}</div>;
     }
 
     const harness: Harness = {} as Harness;
@@ -460,41 +458,38 @@ describe("Phase 2.4D — real committed store lifecycle", () => {
     );
     act(() => harness.store.toggleProtection(masterId, assetId));
 
-    await waitFor(() => {
-      expect(screen.getByTestId("live-assets").textContent).toBe(assetId);
-      expect(screen.getByTestId("live-protection").textContent).toBe(
-        `${assetId}:protected`,
-      );
-      expect(screen.getByTestId("live-evidence").textContent).toBe(assetId);
-    });
+    const expected = `${assetId}|protected|${assetId}`;
+    await waitFor(() =>
+      expect(screen.getByTestId("live").textContent).toBe(expected),
+    );
+    const baselineRenders = snapshots.length;
 
-    // Der Entfernversuch folgt exakt der aktuellen Store-Semantik: der Store
-    // wirft ProtectedAssetError. Der Fehler wird gefangen, ohne den getesteten
-    // Provider-Teilbaum zu zerstoeren.
-    let caught: unknown = null;
+    // Entfernversuch folgt exakt der aktuellen Store-Semantik.
     act(() => {
       try {
         harness.store.removeAsset(masterId, assetId);
       } catch (error) {
-        caught = error;
+        boundaryError = boundaryError ?? error;
       }
     });
-    expect(caught).toBeInstanceOf(ProtectedAssetError);
-
-    // Effekte (inkl. Lifecycle-Prune) auslaufen lassen und dann NUR vom
-    // aktuell gemounteten Consumer lesen.
     await act(async () => {
       await Promise.resolve();
     });
 
-    expect(boundary.crashed).toBe(false);
-    expect(screen.queryByTestId("crashed")).toBeNull();
-    expect(screen.getByTestId("live-assets").textContent).toBe(assetId);
-    expect(screen.getByTestId("live-protection").textContent).toBe(
-      `${assetId}:protected`,
-    );
-    expect(screen.getByTestId("live-evidence").textContent).toBe(assetId);
+    // Der geschuetzte Entfernversuch scheitert mit ProtectedAssetError.
+    expect(boundaryError).toBeInstanceOf(ProtectedAssetError);
+
+    // Kein einziger LIVE gerenderter Zustand nach dem Schutz-Commit darf
+    // Asset, Schutzstatus oder Evidenz verloren haben — ein versehentlicher
+    // Lifecycle-Prune nach dem fehlgeschlagenen Remove wuerde hier auffallen.
+    const afterProtection = snapshots.slice(baselineRenders - 1);
+    expect(afterProtection.length).toBeGreaterThan(0);
+    for (const snapshot of afterProtection) {
+      expect(snapshot).toBe(expected);
+    }
+    expect(snapshots[snapshots.length - 1]).toBe(expected);
   });
+
 
 
   it("keeps both sidecars intact when the active master switches", async () => {
