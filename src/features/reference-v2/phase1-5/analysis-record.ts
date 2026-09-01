@@ -24,6 +24,10 @@ export const ReferenceAnalysisRecordSchema = z
     /** Provider-Dateireferenz — niemals Base64. */
     fileId: z.string().min(1),
     providerId: z.string().min(1),
+    /** Echter MIME-Type der Provider-Datei (Lifecycle-Metadaten). */
+    mimeType: z.string().min(1).optional(),
+    sizeBytes: z.number().int().nonnegative().optional(),
+    fileExpiresAtIso: z.string().min(1).optional(),
     status: AnalysisStatusSchema,
     analyzerSchemaVersion: z.string().min(1),
     analyzedAtIso: z.string().min(1),

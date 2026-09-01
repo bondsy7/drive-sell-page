@@ -132,6 +132,9 @@ export async function analyzeSingleFile(
   const analysis: ReferenceAnalysisRecord = {
     fileId: fileRef.fileId,
     providerId: fileRef.providerId,
+    mimeType: fileRef.mimeType,
+    ...(typeof fileRef.sizeBytes === "number" ? { sizeBytes: fileRef.sizeBytes } : {}),
+    ...(fileRef.expiresAtIso ? { fileExpiresAtIso: fileRef.expiresAtIso } : {}),
     status: gateCodes.length > 0 ? "failed" : "analyzed",
     analyzerSchemaVersion: ANALYZER_SCHEMA_VERSION,
     analyzedAtIso: new Date().toISOString(),
