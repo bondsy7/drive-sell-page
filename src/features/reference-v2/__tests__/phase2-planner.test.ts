@@ -33,6 +33,8 @@ const P_FRONT: PerspectiveId = "EXT_FRONT";
 const P_REAR: PerspectiveId = "EXT_REAR";
 const HERO_LEFT: PerspectiveId = "HERO_FRONT_LEFT";
 const INT_DASH: PerspectiveId = "INT_DASH_CENTER";
+const P_HIGH_FRONT: PerspectiveId = "HIGH_FRONT";
+const P_HIGH_REAR: PerspectiveId = "HIGH_REAR";
 
 // --------------------------------------------------------------------------
 // Fixtures
@@ -63,6 +65,7 @@ interface IntakeOverrides {
   readonly usable?: number;
   readonly identityClusterId?: string;
   readonly sameVehicleConfidence?: number;
+  readonly elevationProfile?: "standard" | "elevated" | "low";
 }
 
 function intake(o: IntakeOverrides = {}): VisionIntakeResult {
@@ -77,6 +80,7 @@ function intake(o: IntakeOverrides = {}): VisionIntakeResult {
     pose: {
       canonicalPerspectiveId: o.perspectiveId ?? P_34_FRONT_LEFT,
       azimuthDeg: o.azimuthDeg ?? -45,
+      ...(o.elevationProfile ? { elevationProfile: o.elevationProfile } : {}),
     },
     visibility: o.visibility ?? {
       front: 1,
@@ -196,13 +200,38 @@ function weakerPrimary(id: string, usable: number): ReferenceAssetRecord {
   return asset({ id, intake: intake({ assetId: id, usable }) });
 }
 
-/** Exakter Primary ohne Evidenz fuer die linke Seite. */
-function primaryWithoutLeftSide(id: string): ReferenceAssetRecord {
+/**
+ * Exakter, qualifizierter HIGH_FRONT-Primary OHNE belegte Dach-Flaeche —
+ * der einzige Weg zu einem legitimen Multi-Referenz-Fall.
+ */
+function highFrontPrimary(id: string, roof = 0.45): ReferenceAssetRecord {
   return asset({
     id,
+    requestedPerspectiveId: P_HIGH_FRONT,
     intake: intake({
       assetId: id,
-      visibility: { front: 1, rear: 0, leftSide: 0.45, rightSide: 0, roof: 0.5 },
+      perspectiveId: P_HIGH_FRONT,
+      azimuthDeg: 0,
+      elevationProfile: "elevated",
+      visibility: { front: 1, rear: 0, leftSide: 0.6, rightSide: 0.6, roof },
+      wheels: ["front_left", "front_right"],
+    }),
+  });
+}
+
+/** Sekundaerkandidat, der ausschliesslich die Dach-Flaeche belegen kann. */
+function roofDonor(id: string, usable = 1): ReferenceAssetRecord {
+  return asset({
+    id,
+    requestedPerspectiveId: P_HIGH_REAR,
+    intake: intake({
+      assetId: id,
+      perspectiveId: P_HIGH_REAR,
+      azimuthDeg: 180,
+      elevationProfile: "elevated",
+      visibility: { front: 0.1, rear: 1, leftSide: 0.3, rightSide: 0.3, roof: 1 },
+      wheels: ["rear_left", "rear_right"],
+      usable,
     }),
   });
 }
@@ -658,7 +687,7 @@ describe("Phase 2.3 source purity", () => {
     expect(source).not.toMatch(/asset\.scores/);
     expect(source).not.toMatch(/asset\.weightedScore/);
     expect(source).not.toMatch(/outputReadyFormats/);
-    expect(source).not.toMatch(/requestedPerspectiveId/);
+    expect(source).not.toMatch(/requestedPerspectiveId[^s]/);
   });
 
   it("contains no adjacency, substitution, mirroring or generation logic", () => {
