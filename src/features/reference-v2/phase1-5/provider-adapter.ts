@@ -128,6 +128,12 @@ async function authHeaders(): Promise<Record<string, string>> {
 /** Produktions-Adapter: Upload als Rohbytes, Analyse nur per Dateireferenz. */
 export const supabaseAnalyzerPort: ReferenceV2AnalyzerPort = {
   async uploadFile(file: File): Promise<ReferenceV2FileReference> {
+    // Fail-closed: kein MIME-Raten. Nur explizit erlaubte Bildtypen.
+    if (!isAllowedReferenceV2Mime(file.type)) {
+      throw new FileReferenceUnsupportedError(
+        `MIME-Type "${file.type || "unbekannt"}" ist für Reference V2 nicht erlaubt.`,
+      );
+    }
     const headers = await authHeaders();
     const { data, error } = await supabase.functions.invoke(
       "reference-v2-upload-file",
@@ -135,7 +141,7 @@ export const supabaseAnalyzerPort: ReferenceV2AnalyzerPort = {
         body: file,
         headers: {
           ...headers,
-          "content-type": file.type || "image/jpeg",
+          "content-type": file.type,
           "x-reference-v2-filename": encodeURIComponent(file.name),
         },
       },
@@ -148,20 +154,20 @@ export const supabaseAnalyzerPort: ReferenceV2AnalyzerPort = {
       );
     }
     const meta = data as Record<string, unknown>;
-    const mimeType =
-      typeof meta.mimeType === "string" && meta.mimeType.length > 0
-        ? meta.mimeType
-        : file.type;
-    if (!mimeType) {
+    // Lifecycle-Metadaten muessen provider-bestaetigt sein: kein Rueckfall auf
+    // den Request-MIME, sonst waere die Referenz nicht verifiziert.
+    if (!isAllowedReferenceV2Mime(meta.mimeType)) {
       throw new FileReferenceUnsupportedError(
-        "Provider lieferte keinen MIME-Type für die Dateireferenz.",
+        "Provider lieferte keinen gültigen MIME-Type für die Dateireferenz.",
       );
     }
+    const mimeType = meta.mimeType as string;
     return {
       fileId,
       providerId:
         typeof meta.providerId === "string" ? meta.providerId : REFERENCE_V2_PROVIDER_ID,
       mimeType,
+
       ...(typeof meta.sizeBytes === "number" ? { sizeBytes: meta.sizeBytes } : {}),
       ...(typeof meta.state === "string" ? { state: meta.state } : {}),
       ...(typeof meta.createdAtIso === "string"
