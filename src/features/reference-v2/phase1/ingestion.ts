@@ -9,7 +9,7 @@ import type { VisionIntakeResult } from "../domain/vision-intake";
 import type { PerspectiveId } from "../domain/perspectives/types";
 import { getPerspectiveSpec } from "../domain/perspectives/registry";
 import { isSideSensitivePerspective } from "../domain/perspectives/types";
-import { signedAngleDifference } from "../domain/angles";
+import { circularAzimuthDeltaDeg } from "../domain/angles";
 import type { VehicleClassV2 } from "../domain/vehicle-classes";
 import { getPerspectiveMasterEntry, requiredPerspectivesForClass } from "./perspective-master";
 import {
@@ -139,8 +139,9 @@ export function evaluateIngestion(input: IngestionInput): IngestionEvaluation {
   let azimuthErrorDeg: number | null = null;
   let angleScore = 100;
   if (master.azimuthDeg !== null && intake.pose.azimuthDeg !== undefined) {
-    azimuthErrorDeg = Math.abs(
-      signedAngleDifference(intake.pose.azimuthDeg, master.azimuthDeg),
+    azimuthErrorDeg = circularAzimuthDeltaDeg(
+      intake.pose.azimuthDeg,
+      master.azimuthDeg,
     );
     const maxError = master.maxAzimuthErrorDeg ?? 10;
     angleScore = Math.max(0, Math.round(100 - (azimuthErrorDeg / maxError) * 50));
