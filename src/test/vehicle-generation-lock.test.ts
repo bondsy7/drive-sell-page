@@ -31,7 +31,7 @@ describe('buildVehicleGenerationLock', () => {
   });
 
   it('blocks the previous Enyaq grille for current model years', () => {
-    const lock = buildVehicleGenerationLock('Skoda Enyaq Modelljahr 2026');
+    const lock = buildVehicleGenerationLock('Skoda Enyaq 85 Sportline Modelljahr 2026');
 
     expect(lock).toContain('<KNOWN_FACELIFT_FRONT_GUARD>');
     expect(lock).toContain('closed, broad, dark front panel');
@@ -39,6 +39,8 @@ describe('buildVehicleGenerationLock', () => {
     expect(lock).toContain('SIDE IDENTITY');
     expect(lock).toContain('WRONG VEHICLE GENERATION');
     expect(lock).not.toContain('SKODA ENYAQ');
+    expect(lock).not.toContain('Sportline');
+    expect(lock).toContain('Neutral context only: "Modelljahr 2026"');
     expect(lock).not.toContain('Tech-Deck');
   });
 

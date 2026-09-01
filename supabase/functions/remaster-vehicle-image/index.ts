@@ -130,10 +130,17 @@ function sanitizeVehicleDescriptionForPrompt(description?: string): string {
 
 function buildModelGenerationLock(vehicleDescription?: string): string {
   const metadata = typeof vehicleDescription === "string" ? vehicleDescription.trim() : "";
-  const neutralMetadata = sanitizeVehicleDescriptionForPrompt(metadata);
-
   const enyaqYearMatch = metadata.match(/(?:modelljahr\s*)?(20\d{2})/i);
   const enyaqYear = enyaqYearMatch ? Number(enyaqYearMatch[1]) : null;
+  // A make/model string can leave catalogue-triggering trim names behind after
+  // token sanitization. In that case expose only the year to the image model.
+  const containsKnownBrand = BRAND_TOKENS.some((brand) => {
+    const escaped = brand.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`(^|[^\\p{L}\\p{N}])${escaped}([^\\p{L}\\p{N}]|$)`, "iu").test(metadata);
+  });
+  const neutralMetadata = containsKnownBrand
+    ? (enyaqYear ? `Modelljahr ${enyaqYear}` : "")
+    : sanitizeVehicleDescriptionForPrompt(metadata);
   const isCurrentEnyaq = /\b(?:skoda|škoda)\b/i.test(metadata)
     && /\benyaq\b/i.test(metadata)
     && enyaqYear !== null
@@ -558,6 +565,12 @@ ${DEKRA_SHOWROOM_SCENE_JSON}
       imageLabels.set(p, `VEHICLE BLUEPRINT – ${mainImageRole || 'overall vehicle photo'} (generation-authoritative geometry, trim, paint)`);
       parts.push(p);
     }
+    parts.push({ text: `<PRIMARY_BLUEPRINT_LOCK>
+The immediately preceding VEHICLE BLUEPRINT is the single highest-priority source for this output.
+- Preserve its exact visible model generation, front panel/grille, headlights and LED signatures, hood, bumper, side contour, glasshouse, trim and wheels.
+- Preserve the same camera-facing vehicle identity; change only the explicitly requested environment, lighting, cleanup or plate treatment.
+- Never average its geometry with another reference and never replace any visible feature with a catalogue-known alternative.
+</PRIMARY_BLUEPRINT_LOCK>` });
 
     // ── DEDIZIERTE FELGENREFERENZ ── direkt nach dem Fahrzeugbild und VOR allen
     // allgemeinen Detailreferenzen, damit sie im Kontext maximal stark gewichtet ist.
