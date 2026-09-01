@@ -188,6 +188,15 @@ const RESPONSE_KEYS = [
   "classificationConfidence", "sameVehicleConfidence", "identityEvidence",
   "issues",
 ];
+/** The five global visibility fields are never expected inside `surfaces`. */
+export const CORE_VISIBILITY_SURFACES: readonly string[] = [
+  "front",
+  "rear",
+  "left_side",
+  "right_side",
+  "roof",
+];
+
 const VISIBILITY_KEYS = ["front", "rear", "leftSide", "rightSide", "roof", "surfaces"];
 const FRAMING_KEYS = [
   "fullVehicleVisible", "cropped", "visibleWheelPositions", "estimatedPaddingPct",
@@ -279,16 +288,14 @@ export function validateAnalyzerResponse(
     for (const k of ["front", "rear", "leftSide", "rightSide", "roof"]) {
       if (!isScore01(v[k])) issues.push(`visibility.${k} out of range`);
     }
-    if (v.surfaces !== undefined) {
-      if (!v.surfaces || typeof v.surfaces !== "object" || Array.isArray(v.surfaces)) {
-        issues.push("visibility.surfaces must be an object");
-      } else {
-        for (const [k, val] of Object.entries(v.surfaces as Record<string, unknown>)) {
-          if (!(REFERENCE_V2_VISUAL_SURFACES as readonly string[]).includes(k)) {
-            issues.push(`visibility.surfaces unknown surface "${k}"`);
-          }
-          if (!isScore01(val)) issues.push(`visibility.surfaces.${k} out of range`);
+    if (!v.surfaces || typeof v.surfaces !== "object" || Array.isArray(v.surfaces)) {
+      issues.push("visibility.surfaces must be an object");
+    } else {
+      for (const [k, val] of Object.entries(v.surfaces as Record<string, unknown>)) {
+        if (!(REFERENCE_V2_VISUAL_SURFACES as readonly string[]).includes(k)) {
+          issues.push(`visibility.surfaces unknown surface "${k}"`);
         }
+        if (!isScore01(val)) issues.push(`visibility.surfaces.${k} out of range`);
       }
     }
   }
@@ -399,6 +406,24 @@ export function validateAnalyzerResponse(
     }
     if (r.vehicleDetected !== true) {
       issues.push("a canonical perspective requires vehicleDetected = true");
+    }
+    // Non-core required surfaces MUST be reported explicitly (value may be 0);
+    // omission is invalid analyzer JSON. Phase-1 governance judges usability.
+    const surfaces =
+      vis && typeof vis === "object" && !Array.isArray(vis)
+        ? (vis as Record<string, unknown>).surfaces
+        : undefined;
+    const surfaceMap =
+      surfaces && typeof surfaces === "object" && !Array.isArray(surfaces)
+        ? (surfaces as Record<string, unknown>)
+        : undefined;
+    for (const surface of entry.requiredVisibleSurfaces) {
+      if (CORE_VISIBILITY_SURFACES.includes(surface)) continue;
+      if (!surfaceMap || surfaceMap[surface] === undefined) {
+        issues.push(
+          `visibility.surfaces.${surface} is required for perspective ${entry.id}`,
+        );
+      }
     }
   }
 
