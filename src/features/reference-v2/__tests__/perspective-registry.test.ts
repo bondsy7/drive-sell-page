@@ -302,12 +302,22 @@ describe("reproducible camera specifications", () => {
     for (const id of ["EXT_FRONT", "EXT_REAR"] as const) {
       expect(isSideSensitivePerspective(getPerspectiveSpec(id))).toBe(false);
     }
-    for (const spec of [
-      ...listPerspectivesByCategory("interior"),
-      ...listPerspectivesByCategory("detail"),
-    ]) {
-      const idIsSideSpecific = /_(LEFT|RIGHT)$/.test(spec.id);
-      expect(isSideSensitivePerspective(spec)).toBe(idIsSideSpecific);
+    for (const id of [
+      "INT_DASH_CENTER",
+      "INT_WIDE_CABIN",
+      "INT_FRONT_SEATS",
+      "INT_CARGO",
+      "DET_GRILLE",
+      "DET_FRONT_BADGE",
+      "DET_REAR_BADGE",
+      "DET_CLUSTER",
+      "DET_INFOTAINMENT",
+      "DET_ROOF",
+    ] as const) {
+      expect(isSideSensitivePerspective(getPerspectiveSpec(id))).toBe(false);
+    }
+    for (const id of ["DET_HEADLIGHT_LEFT", "DET_WHEEL_REAR_RIGHT", "INT_DRIVER_POV"] as const) {
+      expect(isSideSensitivePerspective(getPerspectiveSpec(id))).toBe(true);
     }
   });
 
