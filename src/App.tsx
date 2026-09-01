@@ -15,7 +15,6 @@ import BackgroundMusicIndicator from "@/components/BackgroundMusicIndicator";
 import { DownloadLimitProvider } from "@/hooks/useDownloadLimit";
 import DownloadGuardBridge from "@/components/DownloadGuardBridge";
 
-// Retry lazy chunk loads once after a hard reload (stale chunk after deploy)
 const Landing = lazy(() => import("./pages/Landing"));
 const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
