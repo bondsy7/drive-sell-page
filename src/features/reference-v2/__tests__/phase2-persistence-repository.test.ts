@@ -1003,7 +1003,13 @@ describe("13-15. repository source guard", () => {
     expect(REPO_SRC).not.toMatch(
       /interface\s+ReferenceV2(Workspace|Asset|Framing)Row\b/,
     );
-    expect(REPO_SRC).not.toMatch(/Record<string,\s*unknown>\s*;?\s*$/m);
+    for (const alias of ["WorkspaceRow", "AssetRow", "FramingRow"]) {
+      expect(REPO_SRC).toMatch(
+        new RegExp(
+          `type ReferenceV2${alias} =\\s*\\n?\\s*PublicTables\\[`,
+        ),
+      );
+    }
   });
 
   it("guards row columns with own-property checks instead of nullish defaults", () => {
