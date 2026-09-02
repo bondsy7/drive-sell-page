@@ -709,6 +709,9 @@ const Index = () => {
       case 'damage-analysis':
         setAppState('damage-analysis' as ExtendedAppState);
         break;
+      case 'reference-v2':
+        navigate('/admin/reference-v2');
+        break;
       default:
         toast.info('Diese Funktion ist bald verfügbar!');
     }

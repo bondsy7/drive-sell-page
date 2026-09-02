@@ -1,5 +1,5 @@
 import React from 'react';
-import { Camera, FileText, Layout, Image, Video, Sparkles, Lock, Zap, Wrench, Search, Music, RotateCw, Scissors } from 'lucide-react';
+import { Camera, FileText, Layout, Image, Video, Sparkles, Lock, Zap, Wrench, Search, Music, RotateCw, Scissors, Database } from 'lucide-react';
 import { useCredits } from '@/hooks/useCredits';
 import { useModuleAccess } from '@/hooks/useModuleAccess';
 
@@ -16,7 +16,8 @@ export type HubAction =
   | 'spin360'         // 360° Spin (Beta)
   | 'damage-repair'    // Schadensreparatur – KI repariert Schäden auf Fahrzeugbildern
   | 'damage-analysis'  // Schadensanalyse – KI bewertet Schäden + erstellt Bericht
-  | 'sales-assistant'; // KI Verkaufsassistent
+  | 'sales-assistant' // KI Verkaufsassistent
+  | 'reference-v2';   // Referenz-Bibliothek V2 (Admin, im Aufbau)
 
 
 
@@ -108,6 +109,13 @@ const TILES: ActionTile[] = [
     icon: <Search className="w-7 h-7" />,
     title: 'Schadensanalyse',
     description: 'Bilder analysieren – KI markiert Schäden, schätzt Kosten und erstellt einen professionellen Sachverständigenbericht.',
+  },
+  {
+    id: 'reference-v2',
+    icon: <Database className="w-7 h-7" />,
+    title: 'Referenz-Bibliothek V2',
+    description: 'Neue Strict-Reference-Pipeline: Fahrzeug-Referenzen aufnehmen, Perspektiven planen und Abdeckung prüfen (im Aufbau).',
+    badge: 'NEU',
   },
   {
     id: 'sales-assistant',
