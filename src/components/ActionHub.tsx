@@ -1,5 +1,5 @@
 import React from 'react';
-import { Camera, FileText, Layout, Image, Video, Sparkles, Lock, Zap, Wrench, Search, Music, RotateCw, Scissors } from 'lucide-react';
+import { Camera, FileText, Layout, Image, Video, Sparkles, Lock, Zap, Wrench, Search, Music, RotateCw, Scissors, Database } from 'lucide-react';
 import { useCredits } from '@/hooks/useCredits';
 import { useModuleAccess } from '@/hooks/useModuleAccess';
 
