@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -44,6 +44,7 @@ import { ReferenceCaptureWorkflow } from "./ReferenceCaptureWorkflow";
 import { AutomaticReferenceIntake } from "../phase1-5/AutomaticReferenceIntake";
 import { CurrentFramingEvidenceRuntimeProvider } from "../phase2/framing-evidence-runtime";
 import { OutputPlannerPanel } from "../phase2/OutputPlannerPanel";
+import { useReferenceV2Persistence } from "../phase2/use-reference-v2-persistence";
 
 /**
  * Reference V2 — Phase 1: AdminReferenceView.
@@ -230,13 +231,22 @@ function AdminReferenceViewInner() {
     activeMasterId,
     setActiveMasterId,
     createMaster,
+    hydrateMaster,
     setColorFamily,
     warnings,
   } = useReferenceStore();
 
+  const persistence = useReferenceV2Persistence({ onHydrated: hydrateMaster });
+
+  useEffect(() => {
+    void persistence.loadVehicles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const [label, setLabel] = useState("");
   const [vehicleClass, setVehicleClass] = useState<VehicleClassV2>("car");
   const [colorFamily, setNewColorFamily] = useState<ColorFamily>("grey");
+
 
   const perspectiveCount = PERSPECTIVE_MASTER.perspectives.length;
 
@@ -310,20 +320,63 @@ function AdminReferenceViewInner() {
               </Select>
             </div>
           </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1">
+              <Label className="text-xs">
+                Fahrzeug-Anker (nur Zuordnung, nie Prompt-Input)
+              </Label>
+              <Select
+                value={persistence.vehicleId ?? undefined}
+                onValueChange={(v) => void persistence.selectVehicle(v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Fahrzeug wählen — ohne Anker nur lokal" />
+                </SelectTrigger>
+                <SelectContent>
+                  {persistence.vehicles.map((v) => (
+                    <SelectItem key={v.id} value={v.id}>
+                      {v.display}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-end">
+              <p className="text-xs text-muted-foreground">
+                {persistence.persistenceReady
+                  ? "Referenzen werden dauerhaft gespeichert (Original + Datensatz)."
+                  : persistence.vehicleId
+                    ? "Anker gewählt — Workspace wird beim Anlegen des Vehicle Masters erstellt."
+                    : "Ohne Fahrzeug-Anker bleiben Referenzen nur in dieser Sitzung."}
+                {persistence.error ? ` Fehler: ${persistence.error}` : ""}
+              </p>
+            </div>
+          </div>
           <Button
+            disabled={persistence.busy}
             onClick={() => {
               if (!label.trim()) {
                 toast.error("Bitte einen internen Label vergeben.");
                 return;
               }
-              createMaster({ label: label.trim(), vehicleClass, colorFamily });
+              const record = createMaster({
+                label: label.trim(),
+                vehicleClass,
+                colorFamily,
+              });
               setLabel("");
               toast.success("Vehicle Master angelegt.");
+              if (persistence.vehicleId) {
+                void persistence.bindMaster(record).then((ws) => {
+                  if (ws) toast.success("Dauerhafter Workspace verbunden.");
+                });
+              }
             }}
           >
             <Plus className="w-4 h-4 mr-2" />
             Vehicle Master anlegen
           </Button>
+
 
           {masters.length > 0 && (
             <div className="flex flex-wrap gap-2 pt-2">
@@ -414,7 +467,12 @@ function AdminReferenceViewInner() {
               <ReviewGrid />
             </div>
             <div className="space-y-4">
-              <AutomaticReferenceIntake master={activeMaster} />
+              <AutomaticReferenceIntake
+                master={activeMaster}
+                {...(persistence.persistenceReady
+                  ? { onPersistAsset: persistence.persistAsset }
+                  : {})}
+              />
               <details className="rounded-md border p-3">
                 <summary className="text-xs text-muted-foreground cursor-pointer">
                   Manuelle Diagnose-Erfassung (kein Produktivpfad)

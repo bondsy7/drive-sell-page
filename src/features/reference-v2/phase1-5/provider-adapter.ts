@@ -135,18 +135,38 @@ export const supabaseAnalyzerPort: ReferenceV2AnalyzerPort = {
       );
     }
     const headers = await authHeaders();
-    const { data, error } = await supabase.functions.invoke(
-      "reference-v2-upload-file",
-      {
-        body: file,
+    // Direkter fetch statt functions.invoke: Rohbytes muessen unveraendert
+    // uebertragen werden und der Dateiname geht als Query-Parameter, weil
+    // eigene Request-Header die CORS-Preflight-Allowlist verletzen wuerden.
+    const url =
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/reference-v2-upload-file` +
+      `?filename=${encodeURIComponent(file.name)}`;
+    let data: unknown;
+    try {
+      const res = await fetch(url, {
+        method: "POST",
         headers: {
           ...headers,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string,
           "content-type": file.type,
-          "x-reference-v2-filename": encodeURIComponent(file.name),
         },
-      },
-    );
-    if (error) throw new AnalyzerUnavailableError(error.message);
+        body: file,
+      });
+      const text = await res.text();
+      data = text ? JSON.parse(text) : null;
+      if (!res.ok) {
+        const message =
+          (data as { error?: string; message?: string } | null)?.error ??
+          (data as { message?: string } | null)?.message ??
+          `Upload fehlgeschlagen (HTTP ${res.status})`;
+        throw new AnalyzerUnavailableError(message);
+      }
+    } catch (e) {
+      if (e instanceof AnalyzerUnavailableError) throw e;
+      throw new AnalyzerUnavailableError(
+        e instanceof Error ? e.message : "Upload fehlgeschlagen",
+      );
+    }
     const fileId = (data as { fileId?: string } | null)?.fileId;
     if (!fileId) {
       throw new FileReferenceUnsupportedError(

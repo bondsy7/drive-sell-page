@@ -68,9 +68,15 @@ serve(async (req) => {
       );
     }
 
+    // Der Dateiname kommt als Query-Parameter: ein eigener Request-Header
+    // waere nicht in der CORS-Preflight-Allowlist der Plattform und wuerde
+    // den Upload im Browser blockieren.
     const displayName =
-      decodeURIComponent(req.headers.get("x-reference-v2-filename") || "") ||
-      `reference-v2-${Date.now()}`;
+      decodeURIComponent(
+        new URL(req.url).searchParams.get("filename") ||
+          req.headers.get("x-reference-v2-filename") ||
+          "",
+      ) || `reference-v2-${Date.now()}`;
 
     const startRes = await fetch(
       `https://generativelanguage.googleapis.com/upload/v1beta/files?key=${apiKey}`,
