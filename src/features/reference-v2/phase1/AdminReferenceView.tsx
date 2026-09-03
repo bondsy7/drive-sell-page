@@ -711,6 +711,40 @@ function AdminReferenceViewInner() {
                   ? { onPersistAsset: persistence.persistAsset }
                   : {})}
               />
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Master-Details</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-xs">
+                  {(
+                    [
+                      ["Interner Label", activeMaster.label],
+                      [
+                        "Fahrzeugklasse",
+                        VEHICLE_CLASS_LABELS[activeMaster.vehicleClass],
+                      ],
+                      [
+                        "Farbfamilie",
+                        activeMaster.colorFamily
+                          ? COLOR_FAMILY_LABELS_DE[activeMaster.colorFamily]
+                          : "Nicht zugewiesen",
+                      ],
+                      ["Identitäts-Cluster", activeMaster.identityClusterId],
+                      ["Master-Version", `v${activeMaster.version}`],
+                      [
+                        "Fahrzeug-Anker",
+                        persistence.vehicleId ? "Gebunden" : "Nicht gebunden",
+                      ],
+                    ] as const
+                  ).map(([k, v]) => (
+                    <div key={k} className="flex justify-between gap-3">
+                      <span className="text-muted-foreground">{k}</span>
+                      <span className="truncate text-right font-medium">{v}</span>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+              <IssuesCard master={activeMaster} />
               <details className="rounded-md border p-3">
                 <summary className="text-xs text-muted-foreground cursor-pointer">
                   Manuelle Diagnose-Erfassung (kein Produktivpfad)
