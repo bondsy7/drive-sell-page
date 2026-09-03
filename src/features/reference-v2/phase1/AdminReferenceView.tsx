@@ -242,6 +242,120 @@ function ReviewGrid({ filter }: { filter: ReviewFilter }) {
   );
 }
 
+type StepState = "done" | "active" | "todo";
+
+function StepIndicator({
+  steps,
+}: {
+  steps: readonly { label: string; state: StepState }[];
+}) {
+  return (
+    <ol className="flex flex-wrap items-center gap-x-3 gap-y-2">
+      {steps.map((s, i) => (
+        <li key={s.label} className="flex items-center gap-2">
+          <span
+            className={`flex h-6 w-6 items-center justify-center rounded-full border text-[11px] font-semibold ${
+              s.state === "done"
+                ? "border-accent bg-accent text-accent-foreground"
+                : s.state === "active"
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-muted text-muted-foreground"
+            }`}
+          >
+            {s.state === "done" ? <CheckCircle2 className="h-3.5 w-3.5" /> : i + 1}
+          </span>
+          <span
+            className={`text-xs ${
+              s.state === "todo" ? "text-muted-foreground" : "font-medium"
+            }`}
+          >
+            {s.label}
+          </span>
+          {i < steps.length - 1 && (
+            <span className="hidden h-px w-8 bg-border sm:block" />
+          )}
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  hint,
+  tone = "default",
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  tone?: "default" | "accent" | "warning";
+}) {
+  return (
+    <div className="rounded-lg border bg-card p-3">
+      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+        {label}
+      </p>
+      <p
+        className={`mt-1 text-xl font-semibold ${
+          tone === "accent"
+            ? "text-accent"
+            : tone === "warning"
+              ? "text-destructive"
+              : ""
+        }`}
+      >
+        {value}
+      </p>
+      {hint && <p className="text-[11px] text-muted-foreground">{hint}</p>}
+    </div>
+  );
+}
+
+function IssuesCard({ master }: { master: { assets: readonly ReferenceAssetRecord[] } }) {
+  const counted = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const a of master.assets) {
+      for (const b of a.blockers) {
+        map.set(BLOCKER_LABELS_DE[b], (map.get(BLOCKER_LABELS_DE[b]) ?? 0) + 1);
+      }
+    }
+    return [...map.entries()].sort((a, b) => b[1] - a[1]);
+  }, [master.assets]);
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">Erkannte Probleme</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {counted.length === 0 ? (
+          <p className="text-xs text-muted-foreground">
+            Keine Blocker in den erfassten Aufnahmen.
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {counted.map(([labelDe, count]) => (
+              <li
+                key={labelDe}
+                className="flex items-center justify-between gap-2 text-xs"
+              >
+                <span className="flex items-center gap-2">
+                  <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />
+                  {labelDe}
+                </span>
+                <Badge variant="secondary" className="text-[10px]">
+                  {count} {count === 1 ? "Bild" : "Bilder"}
+                </Badge>
+              </li>
+            ))}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function AdminReferenceViewInner() {
   const {
     masters,
