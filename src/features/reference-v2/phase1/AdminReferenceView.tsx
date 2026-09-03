@@ -162,13 +162,31 @@ function AssetTile({ asset }: { asset: ReferenceAssetRecord }) {
   );
 }
 
-function ReviewGrid() {
+type ReviewFilter = "all" | "covered" | "open";
+
+function ReviewGrid({ filter }: { filter: ReviewFilter }) {
   const { activeMaster, coverage } = useReferenceStore();
   if (!activeMaster) return null;
 
-  const ordered = [...coverage].sort(
-    (a, b) => Number(b.required) - Number(a.required),
-  );
+  const ordered = [...coverage]
+    .sort((a, b) => Number(b.required) - Number(a.required))
+    .filter((c) => {
+      const count =
+        (c.primary ? 1 : 0) + c.secondaries.length + c.rejected.length;
+      if (filter === "covered") return count > 0;
+      if (filter === "open") return count === 0 || !c.primary;
+      return true;
+    });
+
+  if (ordered.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center text-sm text-muted-foreground">
+          Keine Perspektiven in dieser Ansicht.
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-4">
