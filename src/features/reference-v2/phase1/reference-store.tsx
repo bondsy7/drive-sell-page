@@ -91,6 +91,12 @@ interface ReferenceStoreValue {
   readonly warnings: readonly CompletenessWarning[];
   setActiveMasterId(id: string | null): void;
   createMaster(input: CreateMasterInput): VehicleMasterRecord;
+  /**
+   * Phase 2.6D: Uebernimmt einen bereits validierten Master aus der durablen
+   * Persistenz. Keine Versionsanhebung, keine neue Historie — der Record ist
+   * genau das, was in der DB steht.
+   */
+  hydrateMaster(record: VehicleMasterRecord): void;
   setColorFamily(masterId: string, colorFamily: ColorFamily): void;
   ingestAsset(input: IngestAssetInput): ReferenceAssetRecord;
   promoteToPrimary(masterId: string, assetId: string): void;
@@ -143,6 +149,18 @@ export function ReferenceStoreProvider({ children }: { children: ReactNode }) {
     setActiveMasterId(record.id);
     return record;
   }, []);
+
+  const hydrateMaster = useCallback((record: VehicleMasterRecord) => {
+    const parsed = VehicleMasterRecordSchema.parse(record);
+    setMasters((prev) => {
+      const exists = prev.some((m) => m.id === parsed.id);
+      return exists
+        ? prev.map((m) => (m.id === parsed.id ? parsed : m))
+        : [...prev, parsed];
+    });
+    setActiveMasterId(parsed.id);
+  }, []);
+
 
   const setColorFamily = useCallback(
     (masterId: string, colorFamily: ColorFamily) => {
@@ -310,6 +328,7 @@ export function ReferenceStoreProvider({ children }: { children: ReactNode }) {
     warnings,
     setActiveMasterId,
     createMaster,
+    hydrateMaster,
     setColorFamily,
     ingestAsset,
     promoteToPrimary,

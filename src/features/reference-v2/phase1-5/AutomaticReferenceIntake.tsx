@@ -11,7 +11,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import type { VehicleMasterRecord } from "../phase1/vehicle-master";
+import type {
+  ReferenceAssetRecord,
+  VehicleMasterRecord,
+} from "../phase1/vehicle-master";
+import type { SourceFramingInput } from "../phase1/output-format-policy";
 import { BLOCKER_LABELS_DE } from "../phase1/vehicle-master";
 import { listMasterPerspectivesForClass } from "../phase1/perspective-master";
 import { useReferenceStore } from "../phase1/reference-store";
@@ -90,10 +94,22 @@ async function measureAspectRatio(file: File): Promise<number> {
   }
 }
 
+export interface ReferenceIntakePersistInput {
+  readonly asset: ReferenceAssetRecord;
+  readonly file: File;
+  readonly framing: SourceFramingInput;
+}
+
 export function AutomaticReferenceIntake({
   master,
+  onPersistAsset,
 }: {
   master: VehicleMasterRecord;
+  /**
+   * Phase 2.6D: optionale durable Persistenz. Fehlt der Handler, bleibt der
+   * Intake exakt wie bisher rein lokal.
+   */
+  onPersistAsset?: (input: ReferenceIntakePersistInput) => Promise<void>;
 }) {
   const { ingestAsset } = useReferenceStore();
   const { recordCurrentFramingEvidence } = useCurrentFramingEvidenceRuntime();
@@ -225,6 +241,26 @@ export function AutomaticReferenceIntake({
               `${outcome.fileName}: aktuelle Format-Evidenz nicht messbar.`,
             );
           }
+
+          // Phase 2.6D: durable Persistenz (Original + DB). Schlaegt sie fehl,
+          // bleibt das Asset lokal sichtbar, wird aber klar als nicht
+          // gespeichert gemeldet — kein stiller Datenverlust.
+          if (onPersistAsset) {
+            try {
+              await onPersistAsset({
+                asset,
+                file: originalFile,
+                framing: outcome.framing,
+              });
+            } catch (e) {
+              toast.error(
+                `${outcome.fileName}: nicht dauerhaft gespeichert — ${
+                  e instanceof Error ? e.message : "unbekannter Fehler"
+                }`,
+              );
+            }
+          }
+
 
           if (asset.role === "rejected") {
             toast.error(
