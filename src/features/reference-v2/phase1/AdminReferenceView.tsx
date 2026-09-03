@@ -381,6 +381,8 @@ function AdminReferenceViewInner() {
   const [colorFamily, setNewColorFamily] = useState<ColorFamily>("grey");
 
 
+  const [reviewFilter, setReviewFilter] = useState<ReviewFilter>("covered");
+
   const perspectiveCount = PERSPECTIVE_MASTER.perspectives.length;
 
   const blocking = useMemo(
@@ -388,19 +390,95 @@ function AdminReferenceViewInner() {
     [warnings],
   );
 
+  const stats = useMemo(() => {
+    const assets = activeMaster?.assets ?? [];
+    const usable = assets.filter((a) => a.role !== "rejected");
+    const classified = coverage.filter(
+      (c) => c.primary || c.secondaries.length > 0,
+    ).length;
+    const relevant = coverage.length;
+    const avgScore =
+      usable.length > 0
+        ? usable.reduce((sum, a) => sum + a.weightedScore, 0) / usable.length
+        : 0;
+    const primaries = coverage.filter((c) => c.primary).length;
+    return {
+      total: assets.length,
+      usable: usable.length,
+      classified,
+      relevant,
+      avgScore,
+      primaries,
+    };
+  }, [activeMaster, coverage]);
+
+  const steps = useMemo(() => {
+    const hasVehicle = Boolean(persistence.vehicleId);
+    const hasMaster = Boolean(activeMaster);
+    const hasAssets = stats.total > 0;
+    const reviewed = stats.primaries > 0;
+    const ready = hasMaster && blocking.length === 0 && reviewed;
+    const step = (done: boolean, active: boolean): StepState =>
+      done ? "done" : active ? "active" : "todo";
+    return [
+      { label: "Fahrzeug-Anker", state: step(hasVehicle, !hasVehicle) },
+      { label: "Vehicle Master", state: step(hasMaster, hasVehicle && !hasMaster) },
+      { label: "Upload & Analyse", state: step(hasAssets, hasMaster && !hasAssets) },
+      { label: "Review", state: step(reviewed, hasAssets && !reviewed) },
+      { label: "Preflight bereit", state: step(ready, reviewed && !ready) },
+    ] as const;
+  }, [persistence.vehicleId, activeMaster, stats, blocking.length]);
+
   return (
     <div className="space-y-6">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-bold">Vehicle Reference Engine V2 — Referenzen</h1>
-        <p className="text-sm text-muted-foreground">
-          Vehicle-Master-Verwaltung, automatische Bildanalyse und
-          Planner-/Preflight-Vorprüfung gegen PerspectiveMaster v1 (
-          {perspectiveCount} Perspektiven, Registry-Version{" "}
-          {PERSPECTIVE_MASTER.registryVersion}). Keine Marken-, Modell- oder
-          VIN-Daten — ausschließlich visuelle Wahrheit. Es wird hier nichts
-          generiert.
-        </p>
+      <header className="space-y-3">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold">
+            Vehicle Reference Engine V2 — Referenzen
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Vehicle-Master-Verwaltung, automatische Bildanalyse und
+            Planner-/Preflight-Vorprüfung gegen PerspectiveMaster v1 (
+            {perspectiveCount} Perspektiven, Registry-Version{" "}
+            {PERSPECTIVE_MASTER.registryVersion}). Keine Marken-, Modell- oder
+            VIN-Daten — ausschließlich visuelle Wahrheit. Es wird hier nichts
+            generiert.
+          </p>
+        </div>
+        <StepIndicator steps={steps} />
       </header>
+
+      {activeMaster && (
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard
+            label="Aufnahmen"
+            value={`${stats.total}`}
+            hint={`${stats.usable} referenztauglich`}
+          />
+          <StatCard
+            label="Klassifizierte Perspektiven"
+            value={`${stats.classified} / ${stats.relevant}`}
+            hint={`${stats.primaries} mit Primärreferenz`}
+          />
+          <StatCard
+            label="Ø Governance-Score"
+            value={stats.usable > 0 ? stats.avgScore.toFixed(1) : "—"}
+            hint="nur nicht abgewiesene Aufnahmen"
+            tone={stats.avgScore >= 70 ? "accent" : "default"}
+          />
+          <StatCard
+            label="Speicherung"
+            value={persistence.persistenceReady ? "Dauerhaft" : "Nur Sitzung"}
+            hint={
+              persistence.persistenceReady
+                ? "Original + Datensatz gesichert"
+                : "Fahrzeug-Anker wählen"
+            }
+            tone={persistence.persistenceReady ? "accent" : "warning"}
+          />
+        </div>
+      )}
+
 
       <Card>
         <CardHeader className="pb-3">
