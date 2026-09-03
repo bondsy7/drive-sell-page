@@ -366,6 +366,7 @@ function AdminReferenceViewInner() {
     hydrateMaster,
     setColorFamily,
     warnings,
+    coverage,
   } = useReferenceStore();
 
   const persistence = useReferenceV2Persistence({ onHydrated: hydrateMaster });
