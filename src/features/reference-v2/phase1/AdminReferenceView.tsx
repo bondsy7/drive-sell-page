@@ -35,7 +35,11 @@ import {
   getPerspectiveMasterEntry,
 } from "./perspective-master";
 import { canBecomePrimary } from "./ingestion";
-import { BLOCKER_LABELS_DE, type ReferenceAssetRecord } from "./vehicle-master";
+import {
+  BLOCKER_LABELS_DE,
+  type ReferenceAssetRecord,
+  type VehicleMasterRecord,
+} from "./vehicle-master";
 import {
   ReferenceStoreProvider,
   useReferenceStore,
@@ -162,13 +166,31 @@ function AssetTile({ asset }: { asset: ReferenceAssetRecord }) {
   );
 }
 
-function ReviewGrid() {
+type ReviewFilter = "all" | "covered" | "open";
+
+function ReviewGrid({ filter }: { filter: ReviewFilter }) {
   const { activeMaster, coverage } = useReferenceStore();
   if (!activeMaster) return null;
 
-  const ordered = [...coverage].sort(
-    (a, b) => Number(b.required) - Number(a.required),
-  );
+  const ordered = [...coverage]
+    .sort((a, b) => Number(b.required) - Number(a.required))
+    .filter((c) => {
+      const count =
+        (c.primary ? 1 : 0) + c.secondaries.length + c.rejected.length;
+      if (filter === "covered") return count > 0;
+      if (filter === "open") return count === 0 || !c.primary;
+      return true;
+    });
+
+  if (ordered.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center text-sm text-muted-foreground">
+          Keine Perspektiven in dieser Ansicht.
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -224,6 +246,120 @@ function ReviewGrid() {
   );
 }
 
+type StepState = "done" | "active" | "todo";
+
+function StepIndicator({
+  steps,
+}: {
+  steps: readonly { label: string; state: StepState }[];
+}) {
+  return (
+    <ol className="flex flex-wrap items-center gap-x-3 gap-y-2">
+      {steps.map((s, i) => (
+        <li key={s.label} className="flex items-center gap-2">
+          <span
+            className={`flex h-6 w-6 items-center justify-center rounded-full border text-[11px] font-semibold ${
+              s.state === "done"
+                ? "border-accent bg-accent text-accent-foreground"
+                : s.state === "active"
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-muted text-muted-foreground"
+            }`}
+          >
+            {s.state === "done" ? <CheckCircle2 className="h-3.5 w-3.5" /> : i + 1}
+          </span>
+          <span
+            className={`text-xs ${
+              s.state === "todo" ? "text-muted-foreground" : "font-medium"
+            }`}
+          >
+            {s.label}
+          </span>
+          {i < steps.length - 1 && (
+            <span className="hidden h-px w-8 bg-border sm:block" />
+          )}
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  hint,
+  tone = "default",
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  tone?: "default" | "accent" | "warning";
+}) {
+  return (
+    <div className="rounded-lg border bg-card p-3">
+      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+        {label}
+      </p>
+      <p
+        className={`mt-1 text-xl font-semibold ${
+          tone === "accent"
+            ? "text-accent"
+            : tone === "warning"
+              ? "text-destructive"
+              : ""
+        }`}
+      >
+        {value}
+      </p>
+      {hint && <p className="text-[11px] text-muted-foreground">{hint}</p>}
+    </div>
+  );
+}
+
+function IssuesCard({ master }: { master: VehicleMasterRecord }) {
+  const counted = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const a of master.assets) {
+      for (const b of a.blockers) {
+        map.set(BLOCKER_LABELS_DE[b], (map.get(BLOCKER_LABELS_DE[b]) ?? 0) + 1);
+      }
+    }
+    return [...map.entries()].sort((a, b) => b[1] - a[1]);
+  }, [master.assets]);
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">Erkannte Probleme</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {counted.length === 0 ? (
+          <p className="text-xs text-muted-foreground">
+            Keine Blocker in den erfassten Aufnahmen.
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {counted.map(([labelDe, count]) => (
+              <li
+                key={labelDe}
+                className="flex items-center justify-between gap-2 text-xs"
+              >
+                <span className="flex items-center gap-2">
+                  <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />
+                  {labelDe}
+                </span>
+                <Badge variant="secondary" className="text-[10px]">
+                  {count} {count === 1 ? "Bild" : "Bilder"}
+                </Badge>
+              </li>
+            ))}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function AdminReferenceViewInner() {
   const {
     masters,
@@ -234,6 +370,7 @@ function AdminReferenceViewInner() {
     hydrateMaster,
     setColorFamily,
     warnings,
+    coverage,
   } = useReferenceStore();
 
   const persistence = useReferenceV2Persistence({ onHydrated: hydrateMaster });
@@ -248,6 +385,8 @@ function AdminReferenceViewInner() {
   const [colorFamily, setNewColorFamily] = useState<ColorFamily>("grey");
 
 
+  const [reviewFilter, setReviewFilter] = useState<ReviewFilter>("covered");
+
   const perspectiveCount = PERSPECTIVE_MASTER.perspectives.length;
 
   const blocking = useMemo(
@@ -255,19 +394,95 @@ function AdminReferenceViewInner() {
     [warnings],
   );
 
+  const stats = useMemo(() => {
+    const assets = activeMaster?.assets ?? [];
+    const usable = assets.filter((a) => a.role !== "rejected");
+    const classified = coverage.filter(
+      (c) => c.primary || c.secondaries.length > 0,
+    ).length;
+    const relevant = coverage.length;
+    const avgScore =
+      usable.length > 0
+        ? usable.reduce((sum, a) => sum + a.weightedScore, 0) / usable.length
+        : 0;
+    const primaries = coverage.filter((c) => c.primary).length;
+    return {
+      total: assets.length,
+      usable: usable.length,
+      classified,
+      relevant,
+      avgScore,
+      primaries,
+    };
+  }, [activeMaster, coverage]);
+
+  const steps = useMemo(() => {
+    const hasVehicle = Boolean(persistence.vehicleId);
+    const hasMaster = Boolean(activeMaster);
+    const hasAssets = stats.total > 0;
+    const reviewed = stats.primaries > 0;
+    const ready = hasMaster && blocking.length === 0 && reviewed;
+    const step = (done: boolean, active: boolean): StepState =>
+      done ? "done" : active ? "active" : "todo";
+    return [
+      { label: "Fahrzeug-Anker", state: step(hasVehicle, !hasVehicle) },
+      { label: "Vehicle Master", state: step(hasMaster, hasVehicle && !hasMaster) },
+      { label: "Upload & Analyse", state: step(hasAssets, hasMaster && !hasAssets) },
+      { label: "Review", state: step(reviewed, hasAssets && !reviewed) },
+      { label: "Preflight bereit", state: step(ready, reviewed && !ready) },
+    ] as const;
+  }, [persistence.vehicleId, activeMaster, stats, blocking.length]);
+
   return (
     <div className="space-y-6">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-bold">Vehicle Reference Engine V2 — Referenzen</h1>
-        <p className="text-sm text-muted-foreground">
-          Vehicle-Master-Verwaltung, automatische Bildanalyse und
-          Planner-/Preflight-Vorprüfung gegen PerspectiveMaster v1 (
-          {perspectiveCount} Perspektiven, Registry-Version{" "}
-          {PERSPECTIVE_MASTER.registryVersion}). Keine Marken-, Modell- oder
-          VIN-Daten — ausschließlich visuelle Wahrheit. Es wird hier nichts
-          generiert.
-        </p>
+      <header className="space-y-3">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold">
+            Vehicle Reference Engine V2 — Referenzen
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Vehicle-Master-Verwaltung, automatische Bildanalyse und
+            Planner-/Preflight-Vorprüfung gegen PerspectiveMaster v1 (
+            {perspectiveCount} Perspektiven, Registry-Version{" "}
+            {PERSPECTIVE_MASTER.registryVersion}). Keine Marken-, Modell- oder
+            VIN-Daten — ausschließlich visuelle Wahrheit. Es wird hier nichts
+            generiert.
+          </p>
+        </div>
+        <StepIndicator steps={steps} />
       </header>
+
+      {activeMaster && (
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard
+            label="Aufnahmen"
+            value={`${stats.total}`}
+            hint={`${stats.usable} referenztauglich`}
+          />
+          <StatCard
+            label="Klassifizierte Perspektiven"
+            value={`${stats.classified} / ${stats.relevant}`}
+            hint={`${stats.primaries} mit Primärreferenz`}
+          />
+          <StatCard
+            label="Ø Governance-Score"
+            value={stats.usable > 0 ? stats.avgScore.toFixed(1) : "—"}
+            hint="nur nicht abgewiesene Aufnahmen"
+            tone={stats.avgScore >= 70 ? "accent" : "default"}
+          />
+          <StatCard
+            label="Speicherung"
+            value={persistence.persistenceReady ? "Dauerhaft" : "Nur Sitzung"}
+            hint={
+              persistence.persistenceReady
+                ? "Original + Datensatz gesichert"
+                : "Fahrzeug-Anker wählen"
+            }
+            tone={persistence.persistenceReady ? "accent" : "warning"}
+          />
+        </div>
+      )}
+
 
       <Card>
         <CardHeader className="pb-3">
@@ -464,7 +679,34 @@ function AdminReferenceViewInner() {
                 key={activeMaster.id}
                 vehicleMaster={activeMaster}
               />
-              <ReviewGrid />
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="text-sm font-semibold">
+                  Klassifizierte Perspektiven
+                </h2>
+                <div className="flex gap-1 rounded-md border p-0.5">
+                  {(
+                    [
+                      ["covered", "Mit Aufnahmen"],
+                      ["open", "Offen"],
+                      ["all", "Alle"],
+                    ] as const
+                  ).map(([value, text]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setReviewFilter(value)}
+                      className={`rounded px-2.5 py-1 text-xs transition ${
+                        reviewFilter === value
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:bg-muted"
+                      }`}
+                    >
+                      {text}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <ReviewGrid filter={reviewFilter} />
             </div>
             <div className="space-y-4">
               <AutomaticReferenceIntake
@@ -473,6 +715,40 @@ function AdminReferenceViewInner() {
                   ? { onPersistAsset: persistence.persistAsset }
                   : {})}
               />
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Master-Details</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-xs">
+                  {(
+                    [
+                      ["Interner Label", activeMaster.label],
+                      [
+                        "Fahrzeugklasse",
+                        VEHICLE_CLASS_LABELS[activeMaster.vehicleClass],
+                      ],
+                      [
+                        "Farbfamilie",
+                        activeMaster.colorFamily
+                          ? COLOR_FAMILY_LABELS_DE[activeMaster.colorFamily]
+                          : "Nicht zugewiesen",
+                      ],
+                      ["Identitäts-Cluster", activeMaster.identityClusterId],
+                      ["Master-Version", `v${activeMaster.version}`],
+                      [
+                        "Fahrzeug-Anker",
+                        persistence.vehicleId ? "Gebunden" : "Nicht gebunden",
+                      ],
+                    ] as const
+                  ).map(([k, v]) => (
+                    <div key={k} className="flex justify-between gap-3">
+                      <span className="text-muted-foreground">{k}</span>
+                      <span className="truncate text-right font-medium">{v}</span>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+              <IssuesCard master={activeMaster} />
               <details className="rounded-md border p-3">
                 <summary className="text-xs text-muted-foreground cursor-pointer">
                   Manuelle Diagnose-Erfassung (kein Produktivpfad)
