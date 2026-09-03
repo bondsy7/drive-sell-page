@@ -675,7 +675,34 @@ function AdminReferenceViewInner() {
                 key={activeMaster.id}
                 vehicleMaster={activeMaster}
               />
-              <ReviewGrid />
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="text-sm font-semibold">
+                  Klassifizierte Perspektiven
+                </h2>
+                <div className="flex gap-1 rounded-md border p-0.5">
+                  {(
+                    [
+                      ["covered", "Mit Aufnahmen"],
+                      ["open", "Offen"],
+                      ["all", "Alle"],
+                    ] as const
+                  ).map(([value, text]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setReviewFilter(value)}
+                      className={`rounded px-2.5 py-1 text-xs transition ${
+                        reviewFilter === value
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:bg-muted"
+                      }`}
+                    >
+                      {text}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <ReviewGrid filter={reviewFilter} />
             </div>
             <div className="space-y-4">
               <AutomaticReferenceIntake
