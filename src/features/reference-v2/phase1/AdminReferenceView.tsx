@@ -35,7 +35,11 @@ import {
   getPerspectiveMasterEntry,
 } from "./perspective-master";
 import { canBecomePrimary } from "./ingestion";
-import { BLOCKER_LABELS_DE, type ReferenceAssetRecord } from "./vehicle-master";
+import {
+  BLOCKER_LABELS_DE,
+  type ReferenceAssetRecord,
+  type VehicleMasterRecord,
+} from "./vehicle-master";
 import {
   ReferenceStoreProvider,
   useReferenceStore,
@@ -312,7 +316,7 @@ function StatCard({
   );
 }
 
-function IssuesCard({ master }: { master: { assets: readonly ReferenceAssetRecord[] } }) {
+function IssuesCard({ master }: { master: VehicleMasterRecord }) {
   const counted = useMemo(() => {
     const map = new Map<string, number>();
     for (const a of master.assets) {
