@@ -190,11 +190,11 @@ serve(async (req) => {
     }
 
     const data = await res.json();
-    const parts = data?.candidates?.[0]?.content?.parts as
+    const responseParts = data?.candidates?.[0]?.content?.parts as
       | ReadonlyArray<{ text?: string }>
       | undefined;
     const text: string | undefined =
-      parts?.map((p) => p.text ?? "").join("") || undefined;
+      responseParts?.map((p) => p.text ?? "").join("") || undefined;
 
     if (!text) {
       return errorResponse("ANALYSIS_UNAVAILABLE: empty provider response", 502);
