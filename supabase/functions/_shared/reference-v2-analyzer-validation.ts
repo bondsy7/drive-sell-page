@@ -52,9 +52,12 @@ const FORBIDDEN_VALUE_PATTERNS: RegExp[] = [
   /\b(19|20)\d{2}\b/, // model/production year
   /\b[A-HJ-NPR-Z0-9]{17}\b/, // VIN
   // explicit semantic identity wording (EN)
-  /\b(brand|make|manufacturer|marque|model(?:\s|-)?(?:name|year|range|line)?|trim|trim\s?level|facelift|generation|badge\s?name|nameplate|vin)\b/i,
+  // Note: bare "model"/"trim" are NOT forbidden — they are legitimate
+  // morphology words ("window trim", "scale proportions"). Only explicit
+  // identity wording like "trim level"/"model name" is blocked.
+  /\b(brand|make|manufacturer|marque|model(?:\s|-)?(?:name|year|range|line)|trim\s?(?:level|line)|facelift|generation|badge\s?name|nameplate|vin)\b/i,
   // explicit semantic identity wording (DE)
-  /\b(marke|hersteller|modell(?:name|jahr|reihe)?|baujahr|ausstattungslinie|typbezeichnung|fahrgestellnummer)\b/i,
+  /\b(marke|hersteller|modell(?:name|jahr|reihe)|baujahr|ausstattungslinie|typbezeichnung|fahrgestellnummer)\b/i,
 ];
 
 export function semanticViolations(value: unknown, path = "", depth = 0): string[] {

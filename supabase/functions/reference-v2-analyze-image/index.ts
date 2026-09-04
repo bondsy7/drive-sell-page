@@ -122,6 +122,44 @@ without any brand, model, trim, generation or year wording. Omit an evidence key
 entirely if that area is not visible.`;
 }
 
+/**
+ * Best-effort normalization of provider output BEFORE firewall/validation.
+ * The vision model occasionally returns slightly out-of-shape data; we repair
+ * only non-semantic, safe cases and drop unusable evidence entries instead of
+ * failing the whole analysis.
+ */
+function sanitizeAnalyzerPayload(raw: unknown): void {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return;
+  const a = raw as Record<string, unknown>;
+
+  // framing.estimatedPaddingPct: clamp numeric values into the allowed 0..60
+  const fr = a.framing;
+  if (fr && typeof fr === "object" && !Array.isArray(fr)) {
+    const f = fr as Record<string, unknown>;
+    const p = f.estimatedPaddingPct;
+    if (typeof p === "number" && Number.isFinite(p)) {
+      f.estimatedPaddingPct = Math.min(60, Math.max(0, p));
+    }
+  }
+
+  // identityEvidence: must be a plain object; drop unusable entries instead
+  // of rejecting the entire analysis.
+  const ev = a.identityEvidence;
+  if (ev !== undefined) {
+    if (!ev || typeof ev !== "object" || Array.isArray(ev)) {
+      a.identityEvidence = {};
+    } else {
+      const rec = ev as Record<string, unknown>;
+      for (const [k, v] of Object.entries(rec)) {
+        const badString = typeof v !== "string" || v.length < 1 || v.length > 240;
+        const semantic = typeof v === "string" &&
+          semanticViolations(v, `identityEvidence.${k}`).length > 0;
+        if (badString || semantic) delete rec[k];
+      }
+    }
+  }
+}
+
 serve(async (req) => {
   const cors = handleCors(req);
   if (cors) return cors;
@@ -206,6 +244,8 @@ serve(async (req) => {
     } catch {
       return errorResponse("INVALID_ANALYZER_JSON: response is not valid JSON", 502);
     }
+
+    sanitizeAnalyzerPayload(analysis);
 
     const outbound = semanticViolations(analysis);
     if (outbound.length > 0) {
