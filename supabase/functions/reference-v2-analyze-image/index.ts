@@ -207,6 +207,8 @@ serve(async (req) => {
       return errorResponse("INVALID_ANALYZER_JSON: response is not valid JSON", 502);
     }
 
+    sanitizeAnalyzerPayload(analysis);
+
     const outbound = semanticViolations(analysis);
     if (outbound.length > 0) {
       return errorResponse(
