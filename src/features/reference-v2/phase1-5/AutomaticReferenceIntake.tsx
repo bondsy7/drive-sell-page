@@ -29,6 +29,10 @@ import {
   toAnchorFileReferences,
   type ReferenceV2FileReference,
 } from "./provider-adapter";
+import {
+  normalizeReferenceFile,
+  ReferenceFileNormalizationError,
+} from "./normalize-reference-file";
 import { useCurrentFramingEvidenceRuntime } from "../phase2/framing-evidence-runtime";
 
 
@@ -160,9 +164,39 @@ export function AutomaticReferenceIntake({
 
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    const list = Array.from(files);
-    setRows(list.map((f) => ({ fileName: f.name, stage: "queued" as const })));
     setBusy(true);
+
+    // Normalisierung: AVIF & andere dekodierbare Formate werden vor Upload,
+    // Hash und Analyse verlustarm in PNG umgewandelt (Provider-Constraint).
+    const normalized: { original: File; file: File }[] = [];
+    const rejectedRows: Row[] = [];
+    for (const original of Array.from(files)) {
+      try {
+        normalized.push({
+          original,
+          file: await normalizeReferenceFile(original),
+        });
+      } catch (e) {
+        const message =
+          e instanceof ReferenceFileNormalizationError
+            ? e.message
+            : `"${original.name}" ist kein unterstuetztes Bildformat.`;
+        rejectedRows.push({ fileName: original.name, stage: "failed", message });
+      }
+    }
+
+    const list = normalized.map((n) => n.file);
+    setRows([
+      ...rejectedRows,
+      ...list.map((f) => ({ fileName: f.name, stage: "queued" as const })),
+    ]);
+    rejectedRows.forEach((r) =>
+      toast.error(`${r.fileName}: ${r.message ?? "abgewiesen"}`),
+    );
+    if (list.length === 0) {
+      setBusy(false);
+      return;
+    }
 
     // Index-basierte Paarung: Dateinamen sind NICHT eindeutig.
     const previewByIndex: string[] = list.map((f) => {
@@ -301,13 +335,14 @@ export function AutomaticReferenceIntake({
         <p className="text-xs text-muted-foreground">
           Perspektive, Seite, Azimut und Bildqualität werden ausschließlich aus
           dem Bild bestimmt. Es werden keine Fahrzeugdaten (Marke, Modell,
-          Baujahr, VIN) an die Analyse übergeben.
+          Baujahr, VIN) an die Analyse übergeben. Erlaubt: JPEG, PNG, WebP,
+          AVIF (AVIF wird automatisch verlustarm in PNG umgewandelt).
         </p>
 
         <input
           ref={inputRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp"
+          accept="image/jpeg,image/png,image/webp,image/avif"
           multiple
           className="hidden"
           onChange={(e) => handleFiles(e.target.files)}
