@@ -178,7 +178,25 @@ function sanitizeAnalyzerPayload(raw: unknown): void {
       }
     }
   }
+
+  // issues[].message: free-text field where the model sometimes slips in
+  // identity wording. Drop only the offending issue entries instead of
+  // failing the whole analysis.
+  if (Array.isArray(a.issues)) {
+    a.issues = (a.issues as unknown[]).filter((issue) => {
+      if (!issue || typeof issue !== "object" || Array.isArray(issue)) return false;
+      const rec = issue as Record<string, unknown>;
+      const msg = rec.message;
+      if (typeof msg !== "string") return false;
+      if (semanticViolations(msg, "issues.message").length > 0) return false;
+      if (typeof rec.code === "string" && semanticViolations(rec.code, "issues.code").length > 0) {
+        return false;
+      }
+      return true;
+    });
+  }
 }
+
 
 serve(async (req) => {
   const cors = handleCors(req);
