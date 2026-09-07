@@ -34,7 +34,9 @@ export const REFERENCE_V2_ALLOWED_IMAGE_MIME = [
   "image/webp",
 ] as const;
 
-export function isAllowedReferenceV2Mime(value: unknown): value is string {
+export function isAllowedReferenceV2Mime(
+  value: unknown,
+): value is (typeof REFERENCE_V2_ALLOWED_IMAGE_MIME)[number] {
   return (
     typeof value === "string" &&
     (REFERENCE_V2_ALLOWED_IMAGE_MIME as readonly string[]).includes(value)
