@@ -48,6 +48,7 @@ import { ReferenceCaptureWorkflow } from "./ReferenceCaptureWorkflow";
 import { AutomaticReferenceIntake } from "../phase1-5/AutomaticReferenceIntake";
 import { CurrentFramingEvidenceRuntimeProvider } from "../phase2/framing-evidence-runtime";
 import { OutputPlannerPanel } from "../phase2/OutputPlannerPanel";
+import { GenerationPanel } from "../phase3/GenerationPanel";
 import { useReferenceV2Persistence } from "../phase2/use-reference-v2-persistence";
 
 /**
@@ -677,6 +678,10 @@ function AdminReferenceViewInner() {
               </Card>
               <OutputPlannerPanel
                 key={activeMaster.id}
+                vehicleMaster={activeMaster}
+              />
+              <GenerationPanel
+                key={`gen-${activeMaster.id}`}
                 vehicleMaster={activeMaster}
               />
               <div className="flex flex-wrap items-center justify-between gap-2">
