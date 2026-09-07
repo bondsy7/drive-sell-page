@@ -22,6 +22,7 @@ import {
   REFERENCE_V2_MASTER_VERSION,
   REFERENCE_V2_SIDE_CONVENTION,
   REFERENCE_V2_VEHICLE_CLASSES,
+  REFERENCE_V2_VISUAL_SURFACES,
 } from "../_shared/reference-v2-perspective-master.generated.ts";
 import {
   ANALYZER_SCHEMA_VERSION,
@@ -117,6 +118,8 @@ entries, and never emit a key you did not evaluate. EVERY required visible
 surface of the chosen perspective (except front, rear, left_side, right_side,
 roof) MUST be present — a surface you cannot see is reported with a LOW score
 (0 is allowed), never omitted.
+The closed list of allowed visibility.surfaces keys is:
+${(REFERENCE_V2_VISUAL_SURFACES as readonly string[]).filter((surface) => !["front", "rear", "left_side", "right_side", "roof"].includes(surface)).join(", ")}.
 identityEvidence entries are short purely descriptive phrases (max 240 chars)
 without any brand, model, trim, generation or year wording. Omit an evidence key
 entirely if that area is not visible.`;
@@ -139,6 +142,23 @@ function sanitizeAnalyzerPayload(raw: unknown): void {
     const p = f.estimatedPaddingPct;
     if (typeof p === "number" && Number.isFinite(p)) {
       f.estimatedPaddingPct = Math.min(60, Math.max(0, p));
+    }
+  }
+
+  // Gemini occasionally emits sensible but non-canonical detail names such as
+  // "windshield" or "roof_rails". They are optional observations, not frozen
+  // PerspectiveMaster surfaces, so discard only those extra keys. Required
+  // canonical surfaces remain subject to the strict validator below.
+  const vis = a.visibility;
+  if (vis && typeof vis === "object" && !Array.isArray(vis)) {
+    const surfaces = (vis as Record<string, unknown>).surfaces;
+    if (surfaces && typeof surfaces === "object" && !Array.isArray(surfaces)) {
+      const rec = surfaces as Record<string, unknown>;
+      for (const key of Object.keys(rec)) {
+        if (!(REFERENCE_V2_VISUAL_SURFACES as readonly string[]).includes(key)) {
+          delete rec[key];
+        }
+      }
     }
   }
 

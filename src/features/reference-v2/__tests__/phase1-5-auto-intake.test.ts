@@ -90,6 +90,23 @@ describe("semantic firewall", () => {
 
   it("accepts purely visual payloads", () => {
     expect(() => assertNoSemanticIdentity(goodResponse)).not.toThrow();
+    expect(() =>
+      assertNoSemanticIdentity({
+        identityEvidence: {
+          windowAndRoofline: "Chrome window trim follows the rising roofline.",
+          trimPlacement: "Dark trim surrounds the lower air intake.",
+        },
+      }),
+    ).not.toThrow();
+  });
+
+  it("still rejects explicit model and trim identity wording", () => {
+    expect(() =>
+      assertNoSemanticIdentity({ identityEvidence: { bodySilhouette: "model name is visible" } }),
+    ).toThrow(SemanticFirewallError);
+    expect(() =>
+      assertNoSemanticIdentity({ identityEvidence: { bodySilhouette: "trim level is visible" } }),
+    ).toThrow(SemanticFirewallError);
   });
 
   it("forbids inline base64 image data in analyzer requests", () => {
