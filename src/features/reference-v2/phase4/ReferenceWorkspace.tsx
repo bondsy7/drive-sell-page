@@ -1097,9 +1097,11 @@ function ReferenceWorkspaceInner() {
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-xs text-muted-foreground">
-              Ergebnisse erscheinen hier sofort. Eine automatische Bildprüfung
-              ist noch nicht aktiv — bitte visuell prüfen und übernehmen.
+              Ergebnisse erscheinen sofort. Die Prüfung läuft danach im
+              Hintergrund und verdeckt das Bild nie — angezeigt werden nur
+              tatsächlich gemessene Werte.
             </p>
+
             {generatedEntries.length === 0 ? (
               <p className="text-xs text-muted-foreground">
                 Noch nichts generiert.
