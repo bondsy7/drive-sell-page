@@ -1117,13 +1117,21 @@ function ReferenceWorkspaceInner() {
                         ).labelDe}
                       </span>
                       <Badge variant="secondary" className="ml-auto text-[10px]">
-                        {result.status === "pending"
-                          ? "Prüfung läuft"
-                          : result.accepted
-                            ? "Übernommen"
-                            : "Sichtprüfung offen"}
+                        {result.accepted
+                          ? "Übernommen"
+                          : result.qaStatus
+                            ? QA_LABELS[result.qaStatus]
+                            : result.status === "pending"
+                              ? "Generierung läuft"
+                              : "Sichtprüfung offen"}
                       </Badge>
                     </div>
+                    {result.qaNote && (
+                      <p className="text-[10px] text-muted-foreground">
+                        {result.qaNote}
+                      </p>
+                    )}
+
                     <div className="flex aspect-video items-center justify-center overflow-hidden rounded-md border bg-muted/40">
                       {result.dataUrl ? (
                         <img
