@@ -26,6 +26,7 @@ import {
 } from "../_shared/reference-v2-perspective-master.generated.ts";
 import {
   ANALYZER_SCHEMA_VERSION,
+  EVIDENCE_KEYS,
   semanticViolations,
   validateAnalyzeRequest,
   validateAnalyzerResponse,
