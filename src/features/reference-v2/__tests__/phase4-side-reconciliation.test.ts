@@ -47,8 +47,8 @@ describe("side reconciliation", () => {
 
   it("never flags duplicate interior views", () => {
     const out = reconcileBatchSides([
-      base({ id: "1", perspectiveId: "INT_DASHBOARD_CENTER", confidence: 0.9 }),
-      base({ id: "2", perspectiveId: "INT_DASHBOARD_CENTER", confidence: 0.9 }),
+      base({ id: "1", perspectiveId: "INT_DASH_CENTER", confidence: 0.9 }),
+      base({ id: "2", perspectiveId: "INT_DASH_CENTER", confidence: 0.9 }),
     ]);
     expect(out.some((i) => i.conflict)).toBe(false);
   });
