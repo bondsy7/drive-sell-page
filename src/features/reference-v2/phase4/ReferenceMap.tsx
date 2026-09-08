@@ -11,6 +11,8 @@ import {
 } from "../phase1/perspective-master";
 import {
   ADVISORY_LABELS_DE,
+  BASIS_LABELS_DE,
+  chooseGenerationBasis,
   resolvePerspective,
   type AdvisoryStatus,
   type CaptureItem,
@@ -124,6 +126,23 @@ export function ReferenceMap({
 
   const resolutionFor = (id: PerspectiveId) =>
     resolvePerspective(id, items, assignments);
+
+  const azimuthDeps = useMemo(
+    () => ({
+      azimuthOf: (id: PerspectiveId) => {
+        try {
+          return getPerspectiveMasterEntry(id).azimuthDeg ?? null;
+        } catch {
+          return null;
+        }
+      },
+    }),
+    [],
+  );
+
+  /** Freundlicher Status: Direkt / Ersatz / Geschätzt / Fehlt. */
+  const basisFor = (id: PerspectiveId) =>
+    chooseGenerationBasis(id, items, assignments, azimuthDeps);
 
   const exteriorResolutions = byTab.exterior.map(resolutionFor);
   const covered = exteriorResolutions.filter(
@@ -295,6 +314,10 @@ export function ReferenceMap({
                 {selectedRes.warningText}
               </p>
             )}
+            <p className="text-xs">
+              Status:{" "}
+              <b>{BASIS_LABELS_DE[basisFor(selected).kind]}</b>
+            </p>
             <p className="text-xs text-muted-foreground">
               Wähle das Bild, das diese Ansicht zeigt. Deine Auswahl gilt immer
               vor der automatischen Erkennung.

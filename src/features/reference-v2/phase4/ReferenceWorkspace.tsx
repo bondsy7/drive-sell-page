@@ -48,19 +48,25 @@ import {
 } from "../phase1-5/normalize-reference-file";
 import { GENERATION_TIERS, type GenerationTier } from "../phase3/generation-client";
 import { generateFromAdvisoryReference } from "./advisory-generation";
+import { DEFAULT_GENERATION_CONCURRENCY, runBatch } from "./batch-generation";
 import { EXTERIOR_MAP_ORDER, ReferenceMap } from "./ReferenceMap";
 import {
-  ADVISORY_LABELS_DE,
   applyManualAssignment,
+  BASIS_LABELS_DE,
   CAPTURE_STATUS_LABELS_DE,
+  chooseGenerationBasis,
+  batchTransitionMessage,
+  isBatchTerminal,
   removeManualAssignment,
   resolveAll,
-  resolvePerspective,
   summarizeCapture,
+  type BasisKind,
   type CaptureItem,
+  type GenerationBasis,
   type ManualAssignment,
   type ManualRole,
 } from "./capture-state";
+
 
 /**
  * Reference V2 — Phase 4: Nutzeroberflaeche in vier Schritten.
@@ -97,13 +103,53 @@ const STEPS: readonly { id: StepId; label: string }[] = [
   { id: "qa", label: "QA & Ausgabe" },
 ];
 
+type QaStatus = "checking" | "checked" | "issues";
+
+const QA_LABELS: Record<QaStatus, string> = {
+  checking: "Prüfung läuft",
+  checked: "Geprüft",
+  issues: "Hinweise erkannt",
+};
+
 interface GenerationResult {
   readonly status: "pending" | "done" | "error";
   readonly dataUrl?: string;
   readonly model?: string;
   readonly error?: string;
   readonly accepted?: boolean;
+  readonly basisKind?: BasisKind;
+  readonly qaStatus?: QaStatus;
+  /** Nur echte, gemessene Werte — keine erfundenen Scores. */
+  readonly qaNote?: string;
 }
+
+/**
+ * Nachgelagerte, nicht blockierende Pruefung des erzeugten Bildes.
+ * Es werden ausschliesslich tatsaechlich messbare Eigenschaften geprueft
+ * (Dekodierbarkeit und Bildgroesse) — es werden keine Scores erfunden.
+ */
+async function inspectGeneratedImage(
+  dataUrl: string,
+): Promise<{ status: QaStatus; note: string }> {
+  return await new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const { naturalWidth: w, naturalHeight: h } = img;
+      if (w < 512 || h < 512) {
+        resolve({
+          status: "issues",
+          note: `Auflösung gering: ${w}×${h} px`,
+        });
+        return;
+      }
+      resolve({ status: "checked", note: `${w}×${h} px` });
+    };
+    img.onerror = () =>
+      resolve({ status: "issues", note: "Bild konnte nicht gelesen werden." });
+    img.src = dataUrl;
+  });
+}
+
 
 async function measureAspectRatio(file: File): Promise<number> {
   const url = URL.createObjectURL(file);
@@ -152,10 +198,19 @@ function ReferenceWorkspaceInner() {
   const [tier, setTier] = useState<GenerationTier>("standard");
   const [busy, setBusy] = useState(false);
   const [showTechnical, setShowTechnical] = useState(false);
+  const [deselectedTargets, setDeselectedTargets] = useState<readonly string[]>([]);
+  const [batchAck, setBatchAck] = useState(false);
+  const [batchProgress, setBatchProgress] = useState<{
+    done: number;
+    total: number;
+  } | null>(null);
+  /** Offene Analysecharge — loest genau EINEN automatischen Wechsel aus. */
+  const [pendingBatch, setPendingBatch] = useState<readonly string[] | null>(null);
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const filesRef = useRef<Map<string, File>>(new Map());
   const urlsRef = useRef<Set<string>>(new Set());
+
 
   useEffect(() => {
     void persistence.loadVehicles();
@@ -200,6 +255,65 @@ function ReferenceWorkspaceInner() {
     () => summarizeCapture(items, resolutions),
     [items, resolutions],
   );
+
+  const azimuthDeps = useMemo(
+    () => ({
+      azimuthOf: (id: PerspectiveId) => {
+        try {
+          return getPerspectiveMasterEntry(id).azimuthDeg ?? null;
+        } catch {
+          return null;
+        }
+      },
+    }),
+    [],
+  );
+
+  const bases = useMemo<readonly GenerationBasis[]>(
+    () =>
+      exteriorTargets.map((id) =>
+        chooseGenerationBasis(id, items, assignments, azimuthDeps),
+      ),
+    [exteriorTargets, items, assignments, azimuthDeps],
+  );
+
+  const basisFor = useCallback(
+    (perspectiveId: PerspectiveId) =>
+      chooseGenerationBasis(perspectiveId, items, assignments, azimuthDeps),
+    [items, assignments, azimuthDeps],
+  );
+
+  const selectedTargets = useMemo(
+    () => exteriorTargets.filter((id) => !deselectedTargets.includes(id)),
+    [exteriorTargets, deselectedTargets],
+  );
+
+  const selectedBases = useMemo(
+    () => bases.filter((b) => selectedTargets.includes(b.perspectiveId)),
+    [bases, selectedTargets],
+  );
+
+  const batchCounts = useMemo(
+    () => ({
+      selected: selectedBases.length,
+      optimal: selectedBases.filter((b) => b.kind === "direct").length,
+      warning: selectedBases.filter((b) => b.kind === "substitute").length,
+      estimated: selectedBases.filter((b) => b.kind === "estimated").length,
+      unusable: selectedBases.filter((b) => b.kind === "none").length,
+    }),
+    [selectedBases],
+  );
+
+  // Automatischer Wechsel zur Referenzmap — genau einmal je Upload-Charge.
+  useEffect(() => {
+    if (!pendingBatch) return;
+    if (!isBatchTerminal(items, pendingBatch)) return;
+    const message = batchTransitionMessage(items, pendingBatch);
+    setPendingBatch(null);
+    setStep("map");
+    toast.success(message);
+  }, [items, pendingBatch]);
+
 
   const patchItem = useCallback((id: string, patch: Partial<CaptureItem>) => {
     setItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...patch } : i)));
@@ -330,7 +444,9 @@ function ReferenceWorkspaceInner() {
         };
       });
       setItems((prev) => [...prev, ...created]);
+      setPendingBatch(created.map((c) => c.id));
       if (inputRef.current) inputRef.current.value = "";
+
 
       // 2) Normalisieren (AVIF → PNG) und danach nebenlaeufig analysieren.
       const targets: { item: CaptureItem; file: File }[] = [];
@@ -384,24 +500,29 @@ function ReferenceWorkspaceInner() {
     [],
   );
 
-  const runGeneration = useCallback(
+  const generateOne = useCallback(
     async (perspectiveId: PerspectiveId) => {
-      const res = resolvePerspective(perspectiveId, items, assignments);
-      const primary = items.find((i) => i.id === res.primaryItemId);
+      const basis = basisFor(perspectiveId);
+      const primary = items.find((i) => i.id === basis.primaryItemId);
       if (!primary) {
-        toast.error(
-          "Keine Referenz gewählt — bitte in der Referenzmap ein Bild zuordnen.",
+        throw new Error(
+          "Keine nutzbare Fahrzeugreferenz vorhanden — bitte zuerst ein Bild hochladen.",
         );
-        return;
       }
-      setStep("generate");
-      setResults((prev) => ({ ...prev, [perspectiveId]: { status: "pending" } }));
+      setResults((prev) => ({
+        ...prev,
+        [perspectiveId]: { status: "pending", basisKind: basis.kind },
+      }));
       try {
         const image = await generateFromAdvisoryReference({
           perspectiveId,
           primaryPreviewUrl: primary.previewUrl,
           primaryAssetId: primary.assetId ?? primary.id,
-          exactPerspective: res.status === "OPTIMAL",
+          exactPerspective: basis.kind === "direct" && !basis.warningText,
+          secondaryReferences: basis.secondaryItemIds
+            .map((id) => items.find((i) => i.id === id))
+            .filter((i): i is CaptureItem => Boolean(i))
+            .map((i) => ({ assetId: i.assetId ?? i.id, previewUrl: i.previewUrl })),
           tier,
         });
         setResults((prev) => ({
@@ -410,20 +531,102 @@ function ReferenceWorkspaceInner() {
             status: "done",
             dataUrl: image.dataUrl,
             model: image.model,
+            basisKind: basis.kind,
+            qaStatus: "checking",
           },
         }));
+        // QA laeuft im Hintergrund und verdeckt das Ergebnis nie.
+        void inspectGeneratedImage(image.dataUrl).then((qa) => {
+          setResults((prev) => {
+            const current = prev[perspectiveId];
+            if (!current || current.dataUrl !== image.dataUrl) return prev;
+            return {
+              ...prev,
+              [perspectiveId]: {
+                ...current,
+                qaStatus: qa.status,
+                qaNote: qa.note,
+              },
+            };
+          });
+        });
       } catch (e) {
         const message =
           e instanceof Error ? e.message : "Generierung fehlgeschlagen.";
         setResults((prev) => ({
           ...prev,
-          [perspectiveId]: { status: "error", error: message },
+          [perspectiveId]: { status: "error", error: message, basisKind: basis.kind },
         }));
-        toast.error(message);
+        throw new Error(message);
       }
     },
-    [assignments, items, tier],
+    [basisFor, items, tier],
   );
+
+  const runGeneration = useCallback(
+    async (perspectiveId: PerspectiveId) => {
+      const basis = basisFor(perspectiveId);
+      if (basis.kind === "none") {
+        toast.error(
+          "Keine nutzbare Fahrzeugreferenz vorhanden — bitte zuerst Bilder hochladen.",
+        );
+        return;
+      }
+      if (basis.requiresAcknowledgement && !batchAck) {
+        const ok = window.confirm(
+          `${basis.warningText}\n\nTrotzdem generieren?`,
+        );
+        if (!ok) return;
+      }
+      setStep("generate");
+      try {
+        await generateOne(perspectiveId);
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Generierung fehlgeschlagen.");
+      }
+    },
+    [basisFor, batchAck, generateOne],
+  );
+
+  const runAll = useCallback(async () => {
+    const targets = selectedBases.filter((b) => b.kind !== "none");
+    if (targets.length === 0) {
+      toast.error("Keine nutzbare Fahrzeugreferenz vorhanden.");
+      return;
+    }
+    const needsAck = targets.some((b) => b.requiresAcknowledgement);
+    if (needsAck && !batchAck) {
+      toast.error(
+        "Bitte die Hinweise zu geschätzten Referenzen bestätigen (Checkbox oben).",
+      );
+      return;
+    }
+    setStep("generate");
+    setBatchProgress({ done: 0, total: targets.length });
+    let failed = 0;
+    await runBatch(
+      targets.map((b) => b.perspectiveId),
+      async (key) => {
+        await generateOne(key as PerspectiveId);
+      },
+      {
+        concurrency: DEFAULT_GENERATION_CONCURRENCY,
+        onOutcome: (o) => {
+          if (!o.ok) failed += 1;
+        },
+        onProgress: (done, total) => setBatchProgress({ done, total }),
+      },
+    );
+    setBatchProgress(null);
+    if (failed === 0) {
+      toast.success(`${targets.length} Ansichten generiert.`);
+    } else {
+      toast.warning(
+        `${targets.length - failed} von ${targets.length} Ansichten generiert – ${failed} fehlgeschlagen.`,
+      );
+    }
+  }, [batchAck, generateOne, selectedBases]);
+
 
   const download = (perspectiveId: string, dataUrl: string) => {
     const link = document.createElement("a");
@@ -671,120 +874,218 @@ function ReferenceWorkspaceInner() {
       )}
 
       {step === "generate" && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="flex flex-wrap items-center gap-2 text-base">
-              <Sparkles className="h-4 w-4" />
-              Generierung
-              <div className="ml-auto flex items-center gap-1">
-                {GENERATION_TIERS.map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    aria-pressed={tier === t}
-                    onClick={() => setTier(t)}
-                    className={`rounded-full border px-3 py-1 text-xs transition ${
-                      tier === t
-                        ? "border-primary bg-primary/10"
-                        : "border-border text-muted-foreground hover:bg-muted"
-                    }`}
-                  >
-                    {TIER_LABELS[t]}
-                  </button>
-                ))}
-              </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {resolutions.map((res) => {
-                const entry = getPerspectiveMasterEntry(res.perspectiveId);
-                const result = results[res.perspectiveId];
-                const primary = items.find((i) => i.id === res.primaryItemId);
-                return (
-                  <div
-                    key={res.perspectiveId}
-                    className="space-y-2 rounded-lg border p-3"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`h-2 w-2 rounded-full ${
-                          res.status === "OPTIMAL"
-                            ? "bg-emerald-500"
-                            : res.status === "WARNING"
-                              ? "bg-amber-500"
-                              : res.status === "ANALYZING"
-                                ? "bg-sky-500"
-                                : "bg-muted-foreground/40"
+        <div className="space-y-4">
+          <Card>
+            <CardContent className="space-y-3 p-4">
+              <div className="flex flex-wrap items-center gap-3">
+                <Sparkles className="h-4 w-4" />
+                <span className="text-base font-semibold">Generierung</span>
+                <div className="ml-auto flex flex-wrap items-center gap-2">
+                  <div className="flex items-center gap-1">
+                    {GENERATION_TIERS.map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        aria-pressed={tier === t}
+                        onClick={() => setTier(t)}
+                        className={`rounded-full border px-3 py-1 text-xs transition ${
+                          tier === t
+                            ? "border-primary bg-primary/10"
+                            : "border-border text-muted-foreground hover:bg-muted"
                         }`}
-                      />
-                      <span className="truncate text-sm font-medium">
-                        {entry.labelDe}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-muted-foreground">
-                      {ADVISORY_LABELS_DE[res.status]}
-                    </p>
-                    <div className="flex aspect-video items-center justify-center overflow-hidden rounded-md border bg-muted/40">
-                      {result?.status === "done" && result.dataUrl ? (
-                        <img
-                          src={result.dataUrl}
-                          alt={`Generiert: ${entry.labelDe}`}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : result?.status === "pending" ? (
-                        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                      ) : result?.status === "error" ? (
-                        <span className="px-2 text-center text-[10px] text-destructive">
-                          {result.error}
-                        </span>
-                      ) : primary ? (
-                        <img
-                          src={primary.previewUrl}
-                          alt={entry.labelDe}
-                          className="h-full w-full object-cover opacity-60"
-                        />
-                      ) : (
-                        <span className="text-[10px] text-muted-foreground">
-                          keine Referenz gewählt
-                        </span>
-                      )}
-                    </div>
-                    {res.status === "WARNING" && res.warningText && (
-                      <p className="text-[10px] text-amber-700 dark:text-amber-400">
-                        {res.warningText}
-                      </p>
-                    )}
-                    <div className="flex gap-1">
-                      <Button
-                        size="sm"
-                        variant={res.status === "OPTIMAL" ? "default" : "outline"}
-                        className="h-7 flex-1 text-[11px]"
-                        disabled={!primary || result?.status === "pending"}
-                        onClick={() => void runGeneration(res.perspectiveId)}
                       >
-                        {result?.status === "done"
-                          ? "Neu generieren"
-                          : res.status === "OPTIMAL"
-                            ? "Generieren"
-                            : "Trotzdem generieren"}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-7 text-[11px]"
-                        onClick={() => setStep("map")}
-                      >
-                        Referenz ändern
-                      </Button>
-                    </div>
+                        {TIER_LABELS[t]}
+                      </button>
+                    ))}
                   </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
+                  <Badge variant="outline" className="text-[10px]">
+                    Showroom: Standard
+                  </Badge>
+                  <Badge variant="outline" className="text-[10px]">
+                    Logo: folgt als Overlay
+                  </Badge>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+                <span>
+                  <b className="text-foreground">{batchCounts.selected}</b> ausgewählt
+                </span>
+                <span>
+                  <b className="text-emerald-600">{batchCounts.optimal}</b> optimal
+                </span>
+                <span>
+                  <b className="text-amber-600">{batchCounts.warning}</b> Ersatzreferenz
+                </span>
+                <span>
+                  <b className="text-amber-700">{batchCounts.estimated}</b> geschätzt
+                </span>
+                {batchCounts.unusable > 0 && (
+                  <span>{batchCounts.unusable} ohne Referenz</span>
+                )}
+                {batchProgress && (
+                  <span className="font-medium text-foreground">
+                    {batchProgress.done} / {batchProgress.total} generiert
+                  </span>
+                )}
+              </div>
+
+              {batchCounts.estimated + batchCounts.warning > 0 && (
+                <label className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-[11px]">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5"
+                    checked={batchAck}
+                    onChange={(e) => setBatchAck(e.target.checked)}
+                  />
+                  <span>
+                    Ich habe verstanden: Für einzelne Ansichten fehlt eine direkte
+                    Referenz. Diese werden aus den vorhandenen Fahrzeugbildern
+                    rekonstruiert und können stärker vom Original abweichen.
+                  </span>
+                </label>
+              )}
+
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  className="h-9"
+                  disabled={
+                    batchProgress !== null || batchCounts.selected === 0
+                  }
+                  onClick={() => void runAll()}
+                >
+                  {batchProgress ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {batchProgress.done} / {batchProgress.total} generiert
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Alle generieren
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-9"
+                  onClick={() => setStep("map")}
+                >
+                  Referenzen anpassen
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {bases.map((basis) => {
+              const entry = getPerspectiveMasterEntry(basis.perspectiveId);
+              const result = results[basis.perspectiveId];
+              const primary = items.find((i) => i.id === basis.primaryItemId);
+              const isSelected = selectedTargets.includes(basis.perspectiveId);
+              const tone =
+                basis.kind === "direct"
+                  ? "bg-emerald-500"
+                  : basis.kind === "none"
+                    ? "bg-muted-foreground/40"
+                    : "bg-amber-500";
+              return (
+                <div
+                  key={basis.perspectiveId}
+                  className={`space-y-2 rounded-lg border p-3 ${
+                    isSelected ? "" : "opacity-50"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      aria-label={`${entry.labelDe} auswählen`}
+                      checked={isSelected}
+                      onChange={(e) =>
+                        setDeselectedTargets((prev) =>
+                          e.target.checked
+                            ? prev.filter((id) => id !== basis.perspectiveId)
+                            : [...prev, basis.perspectiveId],
+                        )
+                      }
+                    />
+                    <span className={`h-2 w-2 rounded-full ${tone}`} />
+                    <span className="truncate text-sm font-medium">
+                      {entry.labelDe}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    {BASIS_LABELS_DE[basis.kind]}
+                    {basis.sourcePerspectiveId &&
+                      basis.kind !== "direct" &&
+                      ` · aus ${getPerspectiveMasterEntry(basis.sourcePerspectiveId).labelDe}`}
+                  </p>
+                  <div className="flex aspect-video items-center justify-center overflow-hidden rounded-md border bg-muted/40">
+                    {result?.status === "done" && result.dataUrl ? (
+                      <img
+                        src={result.dataUrl}
+                        alt={`Generiert: ${entry.labelDe}`}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : result?.status === "pending" ? (
+                      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                    ) : result?.status === "error" ? (
+                      <span className="px-2 text-center text-[10px] text-destructive">
+                        {result.error}
+                      </span>
+                    ) : primary ? (
+                      <img
+                        src={primary.previewUrl}
+                        alt={entry.labelDe}
+                        className="h-full w-full object-cover opacity-60"
+                      />
+                    ) : (
+                      <span className="text-[10px] text-muted-foreground">
+                        keine Referenz vorhanden
+                      </span>
+                    )}
+                  </div>
+                  {result?.qaStatus && (
+                    <p className="text-[10px] text-muted-foreground">
+                      {QA_LABELS[result.qaStatus]}
+                      {result.qaNote ? ` · ${result.qaNote}` : ""}
+                    </p>
+                  )}
+                  {basis.warningText && (
+                    <p className="text-[10px] text-amber-700 dark:text-amber-400">
+                      {basis.warningText}
+                    </p>
+                  )}
+                  <div className="flex gap-1">
+                    <Button
+                      size="sm"
+                      variant={basis.kind === "direct" ? "default" : "outline"}
+                      className="h-7 flex-1 text-[11px]"
+                      disabled={basis.kind === "none" || result?.status === "pending"}
+                      onClick={() => void runGeneration(basis.perspectiveId)}
+                    >
+                      {result?.status === "done"
+                        ? "Neu generieren"
+                        : basis.kind === "direct"
+                          ? "Generieren"
+                          : "Trotzdem generieren"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 text-[11px]"
+                      onClick={() => setStep("map")}
+                    >
+                      Referenz wählen
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
+
 
       {step === "qa" && (
         <Card>
@@ -793,9 +1094,11 @@ function ReferenceWorkspaceInner() {
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-xs text-muted-foreground">
-              Ergebnisse erscheinen hier sofort. Eine automatische Bildprüfung
-              ist noch nicht aktiv — bitte visuell prüfen und übernehmen.
+              Ergebnisse erscheinen sofort. Die Prüfung läuft danach im
+              Hintergrund und verdeckt das Bild nie — angezeigt werden nur
+              tatsächlich gemessene Werte.
             </p>
+
             {generatedEntries.length === 0 ? (
               <p className="text-xs text-muted-foreground">
                 Noch nichts generiert.
@@ -811,13 +1114,21 @@ function ReferenceWorkspaceInner() {
                         ).labelDe}
                       </span>
                       <Badge variant="secondary" className="ml-auto text-[10px]">
-                        {result.status === "pending"
-                          ? "Prüfung läuft"
-                          : result.accepted
-                            ? "Übernommen"
-                            : "Sichtprüfung offen"}
+                        {result.accepted
+                          ? "Übernommen"
+                          : result.qaStatus
+                            ? QA_LABELS[result.qaStatus]
+                            : result.status === "pending"
+                              ? "Generierung läuft"
+                              : "Sichtprüfung offen"}
                       </Badge>
                     </div>
+                    {result.qaNote && (
+                      <p className="text-[10px] text-muted-foreground">
+                        {result.qaNote}
+                      </p>
+                    )}
+
                     <div className="flex aspect-video items-center justify-center overflow-hidden rounded-md border bg-muted/40">
                       {result.dataUrl ? (
                         <img
