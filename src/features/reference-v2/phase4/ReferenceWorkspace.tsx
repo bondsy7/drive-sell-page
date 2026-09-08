@@ -104,13 +104,53 @@ const STEPS: readonly { id: StepId; label: string }[] = [
   { id: "qa", label: "QA & Ausgabe" },
 ];
 
+type QaStatus = "checking" | "checked" | "issues";
+
+const QA_LABELS: Record<QaStatus, string> = {
+  checking: "Prüfung läuft",
+  checked: "Geprüft",
+  issues: "Hinweise erkannt",
+};
+
 interface GenerationResult {
   readonly status: "pending" | "done" | "error";
   readonly dataUrl?: string;
   readonly model?: string;
   readonly error?: string;
   readonly accepted?: boolean;
+  readonly basisKind?: BasisKind;
+  readonly qaStatus?: QaStatus;
+  /** Nur echte, gemessene Werte — keine erfundenen Scores. */
+  readonly qaNote?: string;
 }
+
+/**
+ * Nachgelagerte, nicht blockierende Pruefung des erzeugten Bildes.
+ * Es werden ausschliesslich tatsaechlich messbare Eigenschaften geprueft
+ * (Dekodierbarkeit und Bildgroesse) — es werden keine Scores erfunden.
+ */
+async function inspectGeneratedImage(
+  dataUrl: string,
+): Promise<{ status: QaStatus; note: string }> {
+  return await new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const { naturalWidth: w, naturalHeight: h } = img;
+      if (w < 512 || h < 512) {
+        resolve({
+          status: "issues",
+          note: `Auflösung gering: ${w}×${h} px`,
+        });
+        return;
+      }
+      resolve({ status: "checked", note: `${w}×${h} px` });
+    };
+    img.onerror = () =>
+      resolve({ status: "issues", note: "Bild konnte nicht gelesen werden." });
+    img.src = dataUrl;
+  });
+}
+
 
 async function measureAspectRatio(file: File): Promise<number> {
   const url = URL.createObjectURL(file);
