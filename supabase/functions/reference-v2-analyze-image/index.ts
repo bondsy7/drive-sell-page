@@ -151,10 +151,12 @@ function sanitizeAnalyzerPayload(raw: unknown): void {
   if (fr && typeof fr === "object" && !Array.isArray(fr)) {
     const f = fr as Record<string, unknown>;
     const p = f.estimatedPaddingPct;
-    if (typeof p === "number" && Number.isFinite(p)) {
-      f.estimatedPaddingPct = Math.min(60, Math.max(0, p));
-    }
+    const num = typeof p === "number" ? p : Number(p);
+    f.estimatedPaddingPct = Number.isFinite(num)
+      ? Math.min(60, Math.max(0, num))
+      : 0;
   }
+
 
   // Gemini occasionally emits sensible but non-canonical detail names such as
   // "windshield" or "roof_rails". They are optional observations, not frozen

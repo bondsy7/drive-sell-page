@@ -528,12 +528,13 @@ export function reconcileSide(
 
   const measured = sideEvidence(item);
   if (!measured || measured === "neutral") {
-    // Keine belastbare Gegenprobe: Ansicht bleibt, wird aber nicht als
-    // sichere Erkennung ausgewiesen.
-    return item.status === "analyzed"
+    // Keine belastbare Gegenprobe: die Zuordnung bleibt unveraendert. Nur wenn
+    // die Analyse selbst ein gespiegeltes Bild vermutet, wird geprueft.
+    return item.status === "analyzed" && item.mirroredSuspected === true
       ? { status: "warning", message: SIDE_UNCERTAIN_MESSAGE }
       : null;
   }
+
   if (measured === declared) return null;
 
   const opposite = oppositePerspectiveId(item.perspectiveId);
@@ -562,9 +563,13 @@ export function reconcileBatchSides(
     return patch ? { ...item, ...patch, conflict: false } : { ...item, conflict: false };
   });
 
+  // Doppelbelegung ist NUR bei Aussenansichten ein Problem: dort gibt es je
+  // Ansicht genau eine Zielperspektive. Innen- und Detailaufnahmen duerfen
+  // mehrfach vorkommen (z. B. mehrere Bilder des Armaturenbretts).
   const groups = new Map<string, CaptureItem[]>();
   for (const item of reconciled) {
     if (!item.perspectiveId) continue;
+    if (!item.perspectiveId.startsWith("EXT_")) continue;
     if (item.status !== "analyzed" && item.status !== "warning") continue;
     const list = groups.get(item.perspectiveId) ?? [];
     list.push(item);
@@ -574,7 +579,10 @@ export function reconcileBatchSides(
   const conflicted = new Set<string>();
   for (const list of groups.values()) {
     if (list.length < 2) continue;
-    for (const item of list) conflicted.add(item.id);
+    // Das staerkste Bild bleibt die saubere Belegung, alle weiteren muessen
+    // bestaetigt oder umgehaengt werden.
+    const sorted = [...list].sort((a, b) => (b.confidence ?? 0) - (a.confidence ?? 0));
+    for (const item of sorted.slice(1)) conflicted.add(item.id);
   }
 
   if (conflicted.size === 0) return reconciled;
@@ -589,3 +597,4 @@ export function reconcileBatchSides(
       : item,
   );
 }
+
