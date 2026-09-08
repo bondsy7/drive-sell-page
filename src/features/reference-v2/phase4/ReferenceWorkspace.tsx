@@ -503,24 +503,29 @@ function ReferenceWorkspaceInner() {
     [],
   );
 
-  const runGeneration = useCallback(
+  const generateOne = useCallback(
     async (perspectiveId: PerspectiveId) => {
-      const res = resolvePerspective(perspectiveId, items, assignments);
-      const primary = items.find((i) => i.id === res.primaryItemId);
+      const basis = basisFor(perspectiveId);
+      const primary = items.find((i) => i.id === basis.primaryItemId);
       if (!primary) {
-        toast.error(
-          "Keine Referenz gewählt — bitte in der Referenzmap ein Bild zuordnen.",
+        throw new Error(
+          "Keine nutzbare Fahrzeugreferenz vorhanden — bitte zuerst ein Bild hochladen.",
         );
-        return;
       }
-      setStep("generate");
-      setResults((prev) => ({ ...prev, [perspectiveId]: { status: "pending" } }));
+      setResults((prev) => ({
+        ...prev,
+        [perspectiveId]: { status: "pending", basisKind: basis.kind },
+      }));
       try {
         const image = await generateFromAdvisoryReference({
           perspectiveId,
           primaryPreviewUrl: primary.previewUrl,
           primaryAssetId: primary.assetId ?? primary.id,
-          exactPerspective: res.status === "OPTIMAL",
+          exactPerspective: basis.kind === "direct" && !basis.warningText,
+          secondaryReferences: basis.secondaryItemIds
+            .map((id) => items.find((i) => i.id === id))
+            .filter((i): i is CaptureItem => Boolean(i))
+            .map((i) => ({ assetId: i.assetId ?? i.id, previewUrl: i.previewUrl })),
           tier,
         });
         setResults((prev) => ({
@@ -529,20 +534,102 @@ function ReferenceWorkspaceInner() {
             status: "done",
             dataUrl: image.dataUrl,
             model: image.model,
+            basisKind: basis.kind,
+            qaStatus: "checking",
           },
         }));
+        // QA laeuft im Hintergrund und verdeckt das Ergebnis nie.
+        void inspectGeneratedImage(image.dataUrl).then((qa) => {
+          setResults((prev) => {
+            const current = prev[perspectiveId];
+            if (!current || current.dataUrl !== image.dataUrl) return prev;
+            return {
+              ...prev,
+              [perspectiveId]: {
+                ...current,
+                qaStatus: qa.status,
+                qaNote: qa.note,
+              },
+            };
+          });
+        });
       } catch (e) {
         const message =
           e instanceof Error ? e.message : "Generierung fehlgeschlagen.";
         setResults((prev) => ({
           ...prev,
-          [perspectiveId]: { status: "error", error: message },
+          [perspectiveId]: { status: "error", error: message, basisKind: basis.kind },
         }));
-        toast.error(message);
+        throw new Error(message);
       }
     },
-    [assignments, items, tier],
+    [basisFor, items, tier],
   );
+
+  const runGeneration = useCallback(
+    async (perspectiveId: PerspectiveId) => {
+      const basis = basisFor(perspectiveId);
+      if (basis.kind === "none") {
+        toast.error(
+          "Keine nutzbare Fahrzeugreferenz vorhanden — bitte zuerst Bilder hochladen.",
+        );
+        return;
+      }
+      if (basis.requiresAcknowledgement && !batchAck) {
+        const ok = window.confirm(
+          `${basis.warningText}\n\nTrotzdem generieren?`,
+        );
+        if (!ok) return;
+      }
+      setStep("generate");
+      try {
+        await generateOne(perspectiveId);
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Generierung fehlgeschlagen.");
+      }
+    },
+    [basisFor, batchAck, generateOne],
+  );
+
+  const runAll = useCallback(async () => {
+    const targets = selectedBases.filter((b) => b.kind !== "none");
+    if (targets.length === 0) {
+      toast.error("Keine nutzbare Fahrzeugreferenz vorhanden.");
+      return;
+    }
+    const needsAck = targets.some((b) => b.requiresAcknowledgement);
+    if (needsAck && !batchAck) {
+      toast.error(
+        "Bitte die Hinweise zu geschätzten Referenzen bestätigen (Checkbox oben).",
+      );
+      return;
+    }
+    setStep("generate");
+    setBatchProgress({ done: 0, total: targets.length });
+    let failed = 0;
+    await runBatch(
+      targets.map((b) => b.perspectiveId),
+      async (key) => {
+        await generateOne(key as PerspectiveId);
+      },
+      {
+        concurrency: DEFAULT_GENERATION_CONCURRENCY,
+        onOutcome: (o) => {
+          if (!o.ok) failed += 1;
+        },
+        onProgress: (done, total) => setBatchProgress({ done, total }),
+      },
+    );
+    setBatchProgress(null);
+    if (failed === 0) {
+      toast.success(`${targets.length} Ansichten generiert.`);
+    } else {
+      toast.warning(
+        `${targets.length - failed} von ${targets.length} Ansichten generiert – ${failed} fehlgeschlagen.`,
+      );
+    }
+  }, [batchAck, generateOne, selectedBases]);
+
 
   const download = (perspectiveId: string, dataUrl: string) => {
     const link = document.createElement("a");
