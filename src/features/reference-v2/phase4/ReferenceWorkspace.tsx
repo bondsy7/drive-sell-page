@@ -58,6 +58,8 @@ import {
   BASIS_LABELS_DE,
   CAPTURE_STATUS_LABELS_DE,
   chooseGenerationBasis,
+  batchTransitionMessage,
+  isBatchTerminal,
   removeManualAssignment,
   resolveAll,
   summarizeCapture,
