@@ -47,20 +47,27 @@ import {
   ReferenceFileNormalizationError,
 } from "../phase1-5/normalize-reference-file";
 import { GENERATION_TIERS, type GenerationTier } from "../phase3/generation-client";
-import { generateFromAdvisoryReference } from "./advisory-generation";
+import {
+  DEFAULT_SHOWROOM_ID,
+  generateFromAdvisoryReference,
+} from "./advisory-generation";
+import { DEFAULT_GENERATION_CONCURRENCY, runBatch } from "./batch-generation";
 import { EXTERIOR_MAP_ORDER, ReferenceMap } from "./ReferenceMap";
 import {
-  ADVISORY_LABELS_DE,
   applyManualAssignment,
+  BASIS_LABELS_DE,
   CAPTURE_STATUS_LABELS_DE,
+  chooseGenerationBasis,
   removeManualAssignment,
   resolveAll,
-  resolvePerspective,
   summarizeCapture,
+  type BasisKind,
   type CaptureItem,
+  type GenerationBasis,
   type ManualAssignment,
   type ManualRole,
 } from "./capture-state";
+
 
 /**
  * Reference V2 — Phase 4: Nutzeroberflaeche in vier Schritten.
