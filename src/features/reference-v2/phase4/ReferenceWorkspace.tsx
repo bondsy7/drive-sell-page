@@ -37,7 +37,9 @@ import {
   analyzeFilesConcurrently,
   DEFAULT_INTAKE_CONCURRENCY,
   friendlyIntakeError,
+  isTransientIntakeError,
 } from "../phase1-5/concurrent-intake";
+
 import {
   supabaseAnalyzerPort,
   toAnchorFileReferences,
@@ -57,6 +59,7 @@ import {
   chooseGenerationBasis,
   batchTransitionMessage,
   isBatchTerminal,
+  reconcileBatchSides,
   removeManualAssignment,
   resolveAll,
   summarizeCapture,
@@ -66,6 +69,11 @@ import {
   type ManualAssignment,
   type ManualRole,
 } from "./capture-state";
+
+/** Automatische Wiederholungen bei vorübergehenden Analysefehlern. */
+const MAX_AUTO_RETRY_ROUNDS = 2;
+const AUTO_RETRY_DELAY_MS = 1200;
+
 
 
 /**
