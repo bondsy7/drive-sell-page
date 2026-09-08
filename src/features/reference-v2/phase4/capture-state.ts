@@ -43,7 +43,20 @@ export interface CaptureItem {
   readonly assetId?: string;
   /** Strikte Diagnosecodes (nur "Technische Details"). */
   readonly diagnostics?: readonly string[];
+  /** Fahrzeugrelativer Kamerawinkel laut Analyse (-180..180). */
+  readonly azimuthDeg?: number | null;
+  /** Sichtbarkeit der linken Fahrzeugseite (0..1). */
+  readonly leftVisibility?: number;
+  /** Sichtbarkeit der rechten Fahrzeugseite (0..1). */
+  readonly rightVisibility?: number;
+  /** Analyse vermutet ein gespiegeltes Bild. */
+  readonly mirroredSuspected?: boolean;
+  /** Seite wurde durch die Gegenprobe korrigiert. */
+  readonly sideCorrected?: boolean;
+  /** Diese Ansicht ist doppelt belegt und muss bestätigt werden. */
+  readonly conflict?: boolean;
 }
+
 
 export type ManualRole = "primary" | "secondary";
 
@@ -433,4 +446,146 @@ export function batchTransitionMessage(
     return `${inBatch.length} Bilder verarbeitet – bitte Referenzen prüfen.`;
   }
   return `${inBatch.length} Bilder verarbeitet, ${review} bitte prüfen.`;
+}
+
+/* -------------------------------------------------------------------------
+ * Seiten-Gegenprobe (links/rechts) und Doppelbelegung.
+ *
+ * Die Bildanalyse liefert neben der Perspektive auch den fahrzeugrelativen
+ * Kamerawinkel und die Sichtbarkeit beider Fahrzeugseiten. Widersprechen
+ * diese Werte der vorgeschlagenen Perspektive eindeutig, wird die Ansicht auf
+ * die gegenueberliegende Perspektive korrigiert und sichtbar markiert.
+ * Es wird dabei NIEMALS ein Bild gespiegelt — nur die Zuordnung korrigiert.
+ * ---------------------------------------------------------------------- */
+
+/** Ab diesem Winkelbetrag gilt die Seite als eindeutig. */
+export const SIDE_AZIMUTH_MIN_DEG = 20;
+/** Ab diesem Sichtbarkeitsunterschied gilt die Seite als eindeutig. */
+export const SIDE_VISIBILITY_MIN_DELTA = 0.35;
+
+export const SIDE_CORRECTED_MESSAGE =
+  "Fahrzeugseite korrigiert — bitte kurz prüfen.";
+export const SIDE_UNCERTAIN_MESSAGE =
+  "Fahrzeugseite unklar — bitte in der Referenzmap bestätigen.";
+export const CONFLICT_MESSAGE =
+  "Diese Ansicht ist doppelt belegt — bitte die richtige Zuordnung wählen.";
+
+/** Seite laut Messwerten der Analyse, oder null wenn nicht eindeutig. */
+export function sideEvidence(item: CaptureItem): VehicleSide | null {
+  const az = typeof item.azimuthDeg === "number" ? item.azimuthDeg : null;
+  const byAzimuth: VehicleSide | null =
+    az === null || Math.abs(az) < SIDE_AZIMUTH_MIN_DEG || Math.abs(az) > 180 - SIDE_AZIMUTH_MIN_DEG
+      ? null
+      : az > 0
+        ? "right"
+        : "left";
+
+  const l = item.leftVisibility;
+  const r = item.rightVisibility;
+  const byVisibility: VehicleSide | null =
+    typeof l === "number" && typeof r === "number" && Math.abs(l - r) >= SIDE_VISIBILITY_MIN_DELTA
+      ? l > r
+        ? "left"
+        : "right"
+      : null;
+
+  if (byAzimuth && byVisibility) return byAzimuth === byVisibility ? byAzimuth : null;
+  return byAzimuth ?? byVisibility;
+}
+
+/** Gegenueberliegende Perspektive (LEFT <-> RIGHT), sonst null. */
+export function oppositePerspectiveId(
+  perspectiveId: string,
+): PerspectiveId | null {
+  if (/LEFT/.test(perspectiveId) && !/RIGHT/.test(perspectiveId)) {
+    return perspectiveId.replace(/LEFT/g, "RIGHT") as PerspectiveId;
+  }
+  if (/RIGHT/.test(perspectiveId) && !/LEFT/.test(perspectiveId)) {
+    return perspectiveId.replace(/RIGHT/g, "LEFT") as PerspectiveId;
+  }
+  return null;
+}
+
+export interface SideReconciliation {
+  readonly perspectiveId?: PerspectiveId;
+  readonly status?: CaptureStatus;
+  readonly message?: string;
+  readonly sideCorrected?: boolean;
+}
+
+/**
+ * Prueft eine einzelne Zuordnung gegen die Messwerte.
+ * `isKnownPerspective` verhindert, dass auf eine Ansicht korrigiert wird, die
+ * es fuer diese Fahrzeugklasse gar nicht gibt.
+ */
+export function reconcileSide(
+  item: CaptureItem,
+  isKnownPerspective: (id: PerspectiveId) => boolean = () => true,
+): SideReconciliation | null {
+  if (!item.perspectiveId) return null;
+  const declared = perspectiveSide(item.perspectiveId);
+  if (declared === "neutral") return null;
+
+  const measured = sideEvidence(item);
+  if (!measured || measured === "neutral") {
+    // Keine belastbare Gegenprobe: Ansicht bleibt, wird aber nicht als
+    // sichere Erkennung ausgewiesen.
+    return item.status === "analyzed"
+      ? { status: "warning", message: SIDE_UNCERTAIN_MESSAGE }
+      : null;
+  }
+  if (measured === declared) return null;
+
+  const opposite = oppositePerspectiveId(item.perspectiveId);
+  if (!opposite || !isKnownPerspective(opposite)) {
+    return { status: "warning", message: SIDE_UNCERTAIN_MESSAGE };
+  }
+  return {
+    perspectiveId: opposite,
+    status: "warning",
+    message: SIDE_CORRECTED_MESSAGE,
+    sideCorrected: true,
+  };
+}
+
+/**
+ * Wendet die Gegenprobe auf alle Bilder an und markiert danach doppelt
+ * belegte Aussenansichten. Das jeweils schwaechere Bild verliert nicht seine
+ * Perspektive, wird aber als Konflikt gekennzeichnet.
+ */
+export function reconcileBatchSides(
+  items: readonly CaptureItem[],
+  isKnownPerspective: (id: PerspectiveId) => boolean = () => true,
+): readonly CaptureItem[] {
+  const reconciled = items.map((item) => {
+    const patch = reconcileSide(item, isKnownPerspective);
+    return patch ? { ...item, ...patch, conflict: false } : { ...item, conflict: false };
+  });
+
+  const groups = new Map<string, CaptureItem[]>();
+  for (const item of reconciled) {
+    if (!item.perspectiveId) continue;
+    if (item.status !== "analyzed" && item.status !== "warning") continue;
+    const list = groups.get(item.perspectiveId) ?? [];
+    list.push(item);
+    groups.set(item.perspectiveId, list);
+  }
+
+  const conflicted = new Set<string>();
+  for (const list of groups.values()) {
+    if (list.length < 2) continue;
+    for (const item of list) conflicted.add(item.id);
+  }
+
+  if (conflicted.size === 0) return reconciled;
+  return reconciled.map((item) =>
+    conflicted.has(item.id)
+      ? {
+          ...item,
+          conflict: true,
+          status: "warning" as CaptureStatus,
+          message: item.message ?? CONFLICT_MESSAGE,
+        }
+      : item,
+  );
 }

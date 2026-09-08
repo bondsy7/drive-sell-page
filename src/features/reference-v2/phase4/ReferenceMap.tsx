@@ -13,12 +13,14 @@ import {
   ADVISORY_LABELS_DE,
   BASIS_LABELS_DE,
   chooseGenerationBasis,
+  oppositePerspectiveId,
   resolvePerspective,
   type AdvisoryStatus,
   type CaptureItem,
   type ManualAssignment,
   type ManualRole,
 } from "./capture-state";
+
 
 /**
  * Reference V2 — Phase 4: Referenzmap.
@@ -318,10 +320,39 @@ export function ReferenceMap({
               Status:{" "}
               <b>{BASIS_LABELS_DE[basisFor(selected).kind]}</b>
             </p>
+            {(() => {
+              const opposite = oppositePerspectiveId(selected);
+              const primaryId = selectedRes.primaryItemId;
+              if (!opposite || !primaryId) return null;
+              const primaryItem = itemById.get(primaryId);
+              const hint =
+                primaryItem?.sideCorrected || primaryItem?.conflict
+                  ? primaryItem.message
+                  : null;
+              return (
+                <div className="flex flex-wrap items-center gap-2">
+                  {hint && (
+                    <span className="text-[11px] text-amber-600">{hint}</span>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-[11px]"
+                    onClick={() => {
+                      onClear(selected, primaryId);
+                      onAssign(opposite, primaryId, "primary");
+                    }}
+                  >
+                    Auf andere Fahrzeugseite verschieben
+                  </Button>
+                </div>
+              );
+            })()}
             <p className="text-xs text-muted-foreground">
               Wähle das Bild, das diese Ansicht zeigt. Deine Auswahl gilt immer
               vor der automatischen Erkennung.
             </p>
+
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
               {items.length === 0 && (
                 <p className="col-span-full text-xs text-muted-foreground">

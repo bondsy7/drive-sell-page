@@ -63,6 +63,16 @@ the vehicle's own left/right, never the viewer's. Azimuth is the vehicle-relativ
 camera azimuth in degrees, (-180, 180], 0 = straight-on front, +90 = the vehicle's
 right side faces the camera, -90 = the vehicle's left side faces the camera.
 
+Determine left/right from the vehicle's own forward travel direction: the driver's
+left hand side of a forward-facing vehicle is the vehicle's LEFT side, regardless of
+where the steering wheel sits and regardless of which way the vehicle points in the
+frame. Never derive the side from the viewer's position. azimuthDeg, visibility.leftSide,
+visibility.rightSide and the chosen perspective MUST be mutually consistent: if
+visibility.leftSide clearly exceeds visibility.rightSide, azimuthDeg must be negative
+and the perspective must be a LEFT perspective, and vice versa. If they cannot be made
+consistent, set canonicalPerspectiveId to null and lower perspectiveConfidence.
+
+
 The visual vehicle class must be DETECTED from the image alone. You are never
 told what class to expect, and you must not assume one.`;
 

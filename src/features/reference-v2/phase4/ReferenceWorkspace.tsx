@@ -37,7 +37,9 @@ import {
   analyzeFilesConcurrently,
   DEFAULT_INTAKE_CONCURRENCY,
   friendlyIntakeError,
+  isTransientIntakeError,
 } from "../phase1-5/concurrent-intake";
+
 import {
   supabaseAnalyzerPort,
   toAnchorFileReferences,
@@ -57,6 +59,7 @@ import {
   chooseGenerationBasis,
   batchTransitionMessage,
   isBatchTerminal,
+  reconcileBatchSides,
   removeManualAssignment,
   resolveAll,
   summarizeCapture,
@@ -66,6 +69,11 @@ import {
   type ManualAssignment,
   type ManualRole,
 } from "./capture-state";
+
+/** Automatische Wiederholungen bei vorübergehenden Analysefehlern. */
+const MAX_AUTO_RETRY_ROUNDS = 2;
+const AUTO_RETRY_DELAY_MS = 1200;
+
 
 
 /**
@@ -306,23 +314,26 @@ function ReferenceWorkspaceInner() {
 
   // Automatischer Wechsel zur Referenzmap — genau einmal je Upload-Charge.
   useEffect(() => {
-    if (!pendingBatch) return;
+    if (!pendingBatch || busy) return;
     if (!isBatchTerminal(items, pendingBatch)) return;
     const message = batchTransitionMessage(items, pendingBatch);
     setPendingBatch(null);
     setStep("map");
     toast.success(message);
-  }, [items, pendingBatch]);
+  }, [items, pendingBatch, busy]);
+
 
 
   const patchItem = useCallback((id: string, patch: Partial<CaptureItem>) => {
     setItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...patch } : i)));
   }, []);
 
-  const analyzeItems = useCallback(
-    async (targets: readonly { item: CaptureItem; file: File }[]) => {
-      if (targets.length === 0 || !activeMaster) return;
-      setBusy(true);
+  const analyzeOnce = useCallback(
+    async (
+      targets: readonly { item: CaptureItem; file: File }[],
+    ): Promise<readonly { item: CaptureItem; file: File }[]> => {
+      const retryable: { item: CaptureItem; file: File }[] = [];
+      if (targets.length === 0 || !activeMaster) return retryable;
       const allowedPerspectiveIds = listMasterPerspectivesForClass(
         activeMaster.vehicleClass,
       ).map((p) => p.id);
@@ -335,95 +346,138 @@ function ReferenceWorkspaceInner() {
 
       targets.forEach((t) => patchItem(t.item.id, { status: "analyzing" }));
 
-      try {
-        await analyzeFilesConcurrently(
-          targets.map((t) => t.file),
-          {
-            vehicleClass: activeMaster.vehicleClass,
-            identityClusterId: activeMaster.identityClusterId,
-            allowedPerspectiveIds,
-            anchorFiles,
-          },
-          { port: supabaseAnalyzerPort, measureAspectRatio },
-          {
-            concurrency: DEFAULT_INTAKE_CONCURRENCY,
-            onOutcome: (outcome, index) => {
-              const target = targets[index];
-              if (!target) return;
-              const id = target.item.id;
-              const confidence = outcome.response?.perspectiveConfidence;
-
-              if (!outcome.ok || !outcome.intake || !outcome.framing || !outcome.perspectiveId) {
-                patchItem(id, {
-                  status: outcome.perspectiveId ? "warning" : "unavailable",
-                  message: friendlyIntakeError(outcome.errorMessage),
-                  ...(outcome.perspectiveId
-                    ? { perspectiveId: outcome.perspectiveId }
-                    : {}),
-                  ...(typeof confidence === "number" ? { confidence } : {}),
-                  diagnostics: [...outcome.gateCodes],
-                });
-                return;
-              }
-
-              // Strikte Governance bleibt erhalten — aber nur als Diagnose.
-              let assetId: string | undefined;
-              let diagnostics: string[] = [];
-              let role: string | undefined;
-              try {
-                const asset = ingestAsset({
-                  vehicleMasterId: activeMaster.id,
-                  requestedPerspectiveId: outcome.perspectiveId,
-                  fileName: outcome.fileName,
-                  previewUrl: target.item.previewUrl,
-                  intake: outcome.intake,
-                  framing: outcome.framing,
-                  fileAvailable: true,
-                  ...(outcome.analysis ? { analysis: outcome.analysis } : {}),
-                  isAutomatic: true,
-                });
-                assetId = asset.id;
-                role = asset.role;
-                diagnostics = [...asset.blockers];
-                if (persistence.persistenceReady) {
-                  void persistence
-                    .persistAsset({
-                      asset,
-                      file: target.file,
-                      framing: outcome.framing,
-                    })
-                    .catch(() => undefined);
+      await analyzeFilesConcurrently(
+        targets.map((t) => t.file),
+        {
+          vehicleClass: activeMaster.vehicleClass,
+          identityClusterId: activeMaster.identityClusterId,
+          allowedPerspectiveIds,
+          anchorFiles,
+        },
+        { port: supabaseAnalyzerPort, measureAspectRatio },
+        {
+          concurrency: DEFAULT_INTAKE_CONCURRENCY,
+          onOutcome: (outcome, index) => {
+            const target = targets[index];
+            if (!target) return;
+            const id = target.item.id;
+            const response = outcome.response;
+            const confidence = response?.perspectiveConfidence;
+            // Messwerte der Analyse fuer die Seiten-Gegenprobe sichern.
+            const sideEvidencePatch: Partial<CaptureItem> = response
+              ? {
+                  azimuthDeg: response.azimuthDeg ?? null,
+                  leftVisibility: response.visibility?.leftSide,
+                  rightVisibility: response.visibility?.rightSide,
+                  mirroredSuspected: response.mirroredSuspected,
                 }
-              } catch {
-                diagnostics = ["INGESTION_DIAGNOSTIC_FAILED"];
-              }
+              : {};
 
-              const weak =
-                role === "rejected" ||
-                diagnostics.length > 0 ||
-                (confidence ?? 0) < 0.7;
+            if (!outcome.ok || !outcome.intake || !outcome.framing || !outcome.perspectiveId) {
+              if (!outcome.perspectiveId && isTransientIntakeError(outcome.errorMessage)) {
+                retryable.push(target);
+              }
               patchItem(id, {
-                status: weak ? "warning" : "analyzed",
-                perspectiveId: outcome.perspectiveId,
+                status: outcome.perspectiveId ? "warning" : "unavailable",
+                message: friendlyIntakeError(outcome.errorMessage),
+                ...(outcome.perspectiveId
+                  ? { perspectiveId: outcome.perspectiveId }
+                  : {}),
                 ...(typeof confidence === "number" ? { confidence } : {}),
-                ...(assetId ? { assetId } : {}),
-                diagnostics,
-                ...(weak
-                  ? {
-                      message:
-                        "Erkennung unsicher — bitte in der Referenzmap bestätigen.",
-                    }
-                  : { message: undefined }),
+                ...sideEvidencePatch,
+                diagnostics: [...outcome.gateCodes],
               });
-            },
+              return;
+            }
+
+            // Strikte Governance bleibt erhalten — aber nur als Diagnose.
+            let assetId: string | undefined;
+            let diagnostics: string[] = [];
+            let role: string | undefined;
+            try {
+              const asset = ingestAsset({
+                vehicleMasterId: activeMaster.id,
+                requestedPerspectiveId: outcome.perspectiveId,
+                fileName: outcome.fileName,
+                previewUrl: target.item.previewUrl,
+                intake: outcome.intake,
+                framing: outcome.framing,
+                fileAvailable: true,
+                ...(outcome.analysis ? { analysis: outcome.analysis } : {}),
+                isAutomatic: true,
+              });
+              assetId = asset.id;
+              role = asset.role;
+              diagnostics = [...asset.blockers];
+              if (persistence.persistenceReady) {
+                void persistence
+                  .persistAsset({
+                    asset,
+                    file: target.file,
+                    framing: outcome.framing,
+                  })
+                  .catch(() => undefined);
+              }
+            } catch {
+              diagnostics = ["INGESTION_DIAGNOSTIC_FAILED"];
+            }
+
+            const weak =
+              role === "rejected" ||
+              diagnostics.length > 0 ||
+              (confidence ?? 0) < 0.7;
+            patchItem(id, {
+              status: weak ? "warning" : "analyzed",
+              perspectiveId: outcome.perspectiveId,
+              ...(typeof confidence === "number" ? { confidence } : {}),
+              ...(assetId ? { assetId } : {}),
+              ...sideEvidencePatch,
+              diagnostics,
+              ...(weak
+                ? {
+                    message:
+                      "Erkennung unsicher — bitte in der Referenzmap bestätigen.",
+                  }
+                : { message: undefined }),
+            });
           },
-        );
-      } finally {
-        setBusy(false);
-      }
+        },
+      );
+      return retryable;
     },
     [activeMaster, ingestAsset, patchItem, persistence],
   );
+
+  /** Perspektiven, die es fuer die aktive Fahrzeugklasse wirklich gibt. */
+  const isKnownPerspective = useCallback(
+    (id: PerspectiveId) =>
+      listMasterPerspectivesForClass(effectiveClass).some((p) => p.id === id),
+    [effectiveClass],
+  );
+
+  const analyzeItems = useCallback(
+    async (targets: readonly { item: CaptureItem; file: File }[]) => {
+      if (targets.length === 0) return;
+      setBusy(true);
+      try {
+        let pending = targets;
+        // Bis zu zwei automatische Wiederholungen — nur bei vorübergehenden
+        // Fehlern, damit der Nutzer nicht manuell nachstarten muss.
+        for (let round = 0; round <= MAX_AUTO_RETRY_ROUNDS && pending.length > 0; round++) {
+          if (round > 0) {
+            await new Promise((r) => setTimeout(r, AUTO_RETRY_DELAY_MS));
+          }
+          pending = await analyzeOnce(pending);
+        }
+      } finally {
+        // Seiten-Gegenprobe und Doppelbelegungen nach jeder Runde anwenden.
+        setItems((prev) => reconcileBatchSides(prev, isKnownPerspective));
+        setBusy(false);
+      }
+    },
+    [analyzeOnce, isKnownPerspective],
+  );
+
 
   const handleFiles = useCallback(
     async (fileList: FileList | null) => {
