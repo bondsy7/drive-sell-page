@@ -172,10 +172,11 @@ function sanitizeAnalyzerPayload(raw: unknown): void {
     } else {
       const rec = ev as Record<string, unknown>;
       for (const [k, v] of Object.entries(rec)) {
+        const unknownKey = !(EVIDENCE_KEYS as readonly string[]).includes(k);
         const badString = typeof v !== "string" || v.length < 1 || v.length > 240;
         const semantic = typeof v === "string" &&
           semanticViolations(v, `identityEvidence.${k}`).length > 0;
-        if (badString || semantic) delete rec[k];
+        if (unknownKey || badString || semantic) delete rec[k];
       }
     }
   }
