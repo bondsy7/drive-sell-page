@@ -43,7 +43,20 @@ export interface CaptureItem {
   readonly assetId?: string;
   /** Strikte Diagnosecodes (nur "Technische Details"). */
   readonly diagnostics?: readonly string[];
+  /** Fahrzeugrelativer Kamerawinkel laut Analyse (-180..180). */
+  readonly azimuthDeg?: number | null;
+  /** Sichtbarkeit der linken Fahrzeugseite (0..1). */
+  readonly leftVisibility?: number;
+  /** Sichtbarkeit der rechten Fahrzeugseite (0..1). */
+  readonly rightVisibility?: number;
+  /** Analyse vermutet ein gespiegeltes Bild. */
+  readonly mirroredSuspected?: boolean;
+  /** Seite wurde durch die Gegenprobe korrigiert. */
+  readonly sideCorrected?: boolean;
+  /** Diese Ansicht ist doppelt belegt und muss bestätigt werden. */
+  readonly conflict?: boolean;
 }
+
 
 export type ManualRole = "primary" | "secondary";
 
