@@ -205,7 +205,7 @@ const FRAMING_KEYS = [
   "fullVehicleVisible", "cropped", "visibleWheelPositions", "estimatedPaddingPct",
 ];
 const QUALITY_KEYS = ["sharpness", "occlusion", "glare", "resolutionAdequacy"];
-const EVIDENCE_KEYS = [
+export const EVIDENCE_KEYS = [
   "bodySilhouette", "proportions", "headlampGeometry", "taillampGeometry",
   "frontPanelGeometry", "bumperGeometry", "windowAndRoofline", "wheelDesign",
   "mirrorsAndHandles", "trimPlacement", "roofEquipment",
