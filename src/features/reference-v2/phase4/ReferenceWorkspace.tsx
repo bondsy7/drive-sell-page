@@ -199,10 +199,19 @@ function ReferenceWorkspaceInner() {
   const [tier, setTier] = useState<GenerationTier>("standard");
   const [busy, setBusy] = useState(false);
   const [showTechnical, setShowTechnical] = useState(false);
+  const [deselectedTargets, setDeselectedTargets] = useState<readonly string[]>([]);
+  const [batchAck, setBatchAck] = useState(false);
+  const [batchProgress, setBatchProgress] = useState<{
+    done: number;
+    total: number;
+  } | null>(null);
+  /** Offene Analysecharge — loest genau EINEN automatischen Wechsel aus. */
+  const [pendingBatch, setPendingBatch] = useState<readonly string[] | null>(null);
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const filesRef = useRef<Map<string, File>>(new Map());
   const urlsRef = useRef<Set<string>>(new Set());
+
 
   useEffect(() => {
     void persistence.loadVehicles();
