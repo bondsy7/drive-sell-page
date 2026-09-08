@@ -36,13 +36,23 @@ describe("side reconciliation", () => {
     expect(patch?.sideCorrected).toBe(true);
   });
 
-  it("flags duplicate perspective assignments", () => {
+  it("flags only the weaker duplicate of an exterior view", () => {
     const out = reconcileBatchSides([
-      base({ id: "1", perspectiveId: "EXT_SIDE_LEFT", azimuthDeg: -90, leftVisibility: 0.9, rightVisibility: 0.05 }),
-      base({ id: "2", perspectiveId: "EXT_SIDE_LEFT", azimuthDeg: -88, leftVisibility: 0.88, rightVisibility: 0.04 }),
+      base({ id: "1", perspectiveId: "EXT_SIDE_LEFT", confidence: 0.95, azimuthDeg: -90, leftVisibility: 0.9, rightVisibility: 0.05 }),
+      base({ id: "2", perspectiveId: "EXT_SIDE_LEFT", confidence: 0.6, azimuthDeg: -88, leftVisibility: 0.88, rightVisibility: 0.04 }),
     ]);
-    expect(out.every((i) => i.conflict)).toBe(true);
+    expect(out.find((i) => i.id === "1")?.conflict).toBe(false);
+    expect(out.find((i) => i.id === "2")?.conflict).toBe(true);
   });
+
+  it("never flags duplicate interior views", () => {
+    const out = reconcileBatchSides([
+      base({ id: "1", perspectiveId: "INT_DASHBOARD_CENTER", confidence: 0.9 }),
+      base({ id: "2", perspectiveId: "INT_DASHBOARD_CENTER", confidence: 0.9 }),
+    ]);
+    expect(out.some((i) => i.conflict)).toBe(false);
+  });
+
 
   it("splits a wrongly duplicated pair back to both sides", () => {
     const out = reconcileBatchSides([
