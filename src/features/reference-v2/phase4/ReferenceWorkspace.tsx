@@ -257,6 +257,65 @@ function ReferenceWorkspaceInner() {
     [items, resolutions],
   );
 
+  const azimuthDeps = useMemo(
+    () => ({
+      azimuthOf: (id: PerspectiveId) => {
+        try {
+          return getPerspectiveMasterEntry(id).azimuthDeg ?? null;
+        } catch {
+          return null;
+        }
+      },
+    }),
+    [],
+  );
+
+  const bases = useMemo<readonly GenerationBasis[]>(
+    () =>
+      exteriorTargets.map((id) =>
+        chooseGenerationBasis(id, items, assignments, azimuthDeps),
+      ),
+    [exteriorTargets, items, assignments, azimuthDeps],
+  );
+
+  const basisFor = useCallback(
+    (perspectiveId: PerspectiveId) =>
+      chooseGenerationBasis(perspectiveId, items, assignments, azimuthDeps),
+    [items, assignments, azimuthDeps],
+  );
+
+  const selectedTargets = useMemo(
+    () => exteriorTargets.filter((id) => !deselectedTargets.includes(id)),
+    [exteriorTargets, deselectedTargets],
+  );
+
+  const selectedBases = useMemo(
+    () => bases.filter((b) => selectedTargets.includes(b.perspectiveId)),
+    [bases, selectedTargets],
+  );
+
+  const batchCounts = useMemo(
+    () => ({
+      selected: selectedBases.length,
+      optimal: selectedBases.filter((b) => b.kind === "direct").length,
+      warning: selectedBases.filter((b) => b.kind === "substitute").length,
+      estimated: selectedBases.filter((b) => b.kind === "estimated").length,
+      unusable: selectedBases.filter((b) => b.kind === "none").length,
+    }),
+    [selectedBases],
+  );
+
+  // Automatischer Wechsel zur Referenzmap — genau einmal je Upload-Charge.
+  useEffect(() => {
+    if (!pendingBatch) return;
+    if (!isBatchTerminal(items, pendingBatch)) return;
+    const message = batchTransitionMessage(items, pendingBatch);
+    setPendingBatch(null);
+    setStep("map");
+    toast.success(message);
+  }, [items, pendingBatch]);
+
+
   const patchItem = useCallback((id: string, patch: Partial<CaptureItem>) => {
     setItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...patch } : i)));
   }, []);
