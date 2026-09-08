@@ -1,55 +1,40 @@
-# Referenz-Upload: Fehler "Failed to send a request to the Edge Function"
+# Referenzmap: automatische Wiederholung + zuverlässige Seiten-Erkennung
 
-## Was die Meldung bedeutet
+Zwei Probleme aus dem Test:
 
-Die Meldung stammt nicht aus unserer Prüf-Logik, sondern vom Netzwerk-Aufruf selbst:
-Die Anfrage an die KI-Analyse konnte **gar nicht beantwortet werden** — die Verbindung
-kam nicht zustande bzw. wurde vorher abgebrochen. Deshalb steht bei allen sechs Bildern
-derselbe Text und keine inhaltliche Begründung (anders als bei früheren Fehlern wie
-"Semantik-Firewall" oder "nicht-2xx", die echte Antworten waren).
+1. Einzelne Bilder blieben ohne Analyse liegen und mussten von Hand erneut gestartet werden.
+2. Die linke und rechte Fahrzeugseite werden verwechselt: zwei verschiedene Bilder landeten beide als „Seitenansicht links · 100 %“, obwohl eines die rechte Seite zeigt.
 
-Geprüft wurde bereits (heute, direkt gegen die Funktion):
-- Die Analyse-Funktion ist erreichbar, die Berechtigungs-Vorabprüfung (CORS) antwortet korrekt.
-- Ohne Anmeldung antwortet sie sauber mit "nicht angemeldet".
-- Es liegen aktuell **keine Protokolleinträge** der Analyse-Funktion vor, d. h. die Aufrufe
-  aus dem Browser sind dort offenbar nie angekommen oder wurden vorher abgebrochen.
+## 1. Automatische Wiederholung fehlgeschlagener Analysen
 
-Die drei realistischen Ursachen:
-1. **Abbruch durch Zeitüberschreitung** — jedes Bild wird einzeln analysiert, ohne Zeitlimit
-   und ohne Wiederholung. Dauert eine Analyse zu lange, bricht der Browser ab.
-2. **Abgelaufene Anmeldung** — das Zugangs-Token wird einmal geholt; läuft es während eines
-   längeren Stapels ab, scheitern die Folgeanfragen.
-3. **Verbindungsabbruch bei mehreren Bildern nacheinander** (Netz/Proxy), ohne dass ein
-   Wiederholungsversuch stattfindet.
+- Nach dem Durchlauf einer Hochlade-Charge werden alle Bilder eingesammelt, die als „Analyse nicht verfügbar“ endeten und deren Fehler vorübergehend war (Verbindung, Zeitlimit, Dienst überlastet).
+- Diese werden automatisch bis zu zweimal erneut analysiert, mit kurzer Wartezeit dazwischen und weiterhin höchstens vier gleichzeitig.
+- Während der Wiederholung zeigt die Karte „Erneuter Versuch …“; scheitert es endgültig, bleibt die Karte sichtbar und manuell zuordenbar wie bisher.
+- Der automatische Sprung zur Referenzmap erfolgt erst, wenn auch die Wiederholungen fertig sind — er wartet aber nie unbegrenzt, und Fehler blockieren ihn nicht.
+- Der manuelle „Erneut analysieren“-Knopf bleibt erhalten.
 
-## Was ich ändern will
+## 2. Links/Rechts zuverlässig bestimmen
 
-1. **Zeitlimit + Wiederholung**: Jede Bildanalyse bekommt ein klares Zeitlimit und bis zu
-   zwei automatische Wiederholungen mit Wartezeit. Nur wenn alle scheitern, gilt das Bild
-   als abgewiesen.
-2. **Anmeldung pro Anfrage frisch holen**: Das Token wird unmittelbar vor jedem Aufruf neu
-   gelesen statt einmal für den ganzen Stapel.
-3. **Verständliche Fehlertexte**: Statt "Failed to send a request to the Edge Function"
-   erscheint z. B. "Analyse hat zu lange gedauert — erneut versuchen" oder
-   "Sitzung abgelaufen — bitte neu anmelden".
-4. **"Erneut versuchen"-Knopf pro abgewiesenem Bild**, damit man nicht alles neu hochladen muss.
-5. **Server-Seite absichern**: In der Analyse-Funktion ein Zeitlimit für den KI-Aufruf und
-   eine Protokollzeile pro Anfrage, damit künftige Fehler nachvollziehbar sind.
+Die Bildanalyse liefert bereits mehr Hinweise, als heute genutzt werden: den Kamerawinkel, die Sichtbarkeit der linken und rechten Fahrzeugseite sowie einen Verdacht auf gespiegelte Bilder. Diese Angaben werden bisher verworfen.
 
-## Technische Details
+- Diese Werte werden pro Bild mitgeführt und dienen als Gegenprobe zur vorgeschlagenen Perspektive.
+- Widerspricht die Gegenprobe eindeutig (Winkelvorzeichen und Seitensichtbarkeit zeigen klar auf die andere Seite), wird die Perspektive auf die gegenüberliegende Ansicht korrigiert und das Bild als „Seite korrigiert — bitte prüfen“ markiert.
+- Ist die Lage uneindeutig, bleibt die Perspektive stehen, das Bild wird aber als unsicher gekennzeichnet statt mit 100 % angezeigt.
+- Landen zwei Bilder auf derselben Außenansicht, wird das als Konflikt erkannt: beide werden in der Referenzmap markiert, das schwächere Bild verliert die automatische Belegung und muss bestätigt werden.
+- Der Prompt der Bildanalyse wird um eine klare Seitenregel ergänzt (Fahrtrichtung bestimmt links/rechts, niemals die Betrachterseite) und um die Pflicht, Winkel und Seitensichtbarkeit widerspruchsfrei zu melden.
+- Es wird weiterhin niemals automatisch gespiegelt und es fließen keine Fahrzeugdaten in die Analyse.
 
-- `src/features/reference-v2/phase1-5/analysis-coordinator.ts`: Retry-/Timeout-Wrapper um den
-  Analyse-Aufruf, Fehlerklassifizierung (Netz/Timeout/Auth/Validierung) statt Rohtext.
-- `src/features/reference-v2/phase1-5/provider-adapter.ts`: `authHeaders()` je Aufruf,
-  `AbortController` für Upload und `functions.invoke`, Mapping auf sprechende Fehlercodes.
-- `src/features/reference-v2/phase1-5/AutomaticReferenceIntake.tsx`: Retry-Aktion je Karte,
-  neue Fehlertexte.
-- `supabase/functions/reference-v2-analyze-image/index.ts`: `AbortSignal.timeout` für den
-  Gemini-Aufruf, strukturiertes Logging (`[reference-v2-analyze] correlationId=… ms=…`),
-  Neu-Deploy.
-- Keine Änderungen an Firewall-/Validierungsregeln, Perspektivlogik oder Legacy-Remastering.
+## 3. Bedienung in der Referenzmap
 
-## Danach
+- Eine korrigierte oder unsichere Ansicht zeigt einen kurzen Hinweis samt Grund.
+- Bei einem Seitenkonflikt gibt es eine Ein-Klick-Aktion „auf die andere Seite verschieben“, damit die Korrektur nicht über die Kandidatenliste gesucht werden muss.
+- Manuelle Zuordnungen haben weiterhin immer Vorrang.
 
-Ich teste mit denselben Bildtypen erneut und melde, ob die Analyse durchläuft oder nun eine
-inhaltlich verständliche Ablehnung liefert.
+## Technische Umsetzung
+
+- `src/features/reference-v2/phase4/capture-state.ts`: `CaptureItem` um `azimuthDeg`, `leftVisibility`, `rightVisibility`, `mirroredSuspected` erweitern; reine Funktionen `sideEvidence()`, `reconcileSide()` und `detectPerspectiveConflicts()` ergänzen.
+- `src/features/reference-v2/phase4/ReferenceWorkspace.tsx`: Analyse-Ergebnis um die Seitenhinweise anreichern, Nachbearbeitung der Charge (Seitenabgleich + Konflikte), automatische Wiederholschleife (max. 2 Runden, nur vorübergehende Fehler über `isTransientIntakeError`), Auto-Sprung erst nach Abschluss der Wiederholungen.
+- `src/features/reference-v2/phase4/ReferenceMap.tsx`: Konflikt-/Korrekturhinweis und Aktion „andere Seite“.
+- `supabase/functions/reference-v2-analyze-image/index.ts`: Seitenregel im Prompt schärfen; Edge Function neu bereitstellen.
+- Tests unter `src/features/reference-v2/__tests__/`: Seitenkorrektur bei widersprüchlichem Winkel, kein Spiegeln, Konflikterkennung bei doppelter Belegung, Auto-Retry nur bei vorübergehenden Fehlern, kein Endlos-Retry.
+- Unverändert: strenger Planner, Persistenz, Original-Ablage, Semantik-Firewall, Legacy-Remastering.
