@@ -205,38 +205,103 @@ export const supabaseAnalyzerPort: ReferenceV2AnalyzerPort = {
   },
 
   async analyze(request: AnalyzeRequest): Promise<AnalyzeResult> {
-    // Kein erwarteter Fahrzeugtyp, keine Perspektivenliste, keine Metadaten:
-    // der Provider sieht ausschliesslich Dateireferenzen.
-    const body = {
-      schemaVersion: "reference-v2-vision-1",
-      fileId: request.file.fileId,
-      mimeType: request.file.mimeType,
-      providerId: request.file.providerId,
-      anchors: request.anchorFiles
-        .slice(0, MAX_ANCHOR_FILES)
-        .map((a) => ({ fileId: a.fileId, mimeType: a.mimeType })),
-    };
-
-    // Fail-closed: weder Bilddaten noch Business-Metadaten verlassen die App.
-    assertNoInlineImageData(body, "analyze request");
-    assertNoSemanticIdentity(body, "analyze request");
-
-    const headers = await authHeaders();
-    const { data, error } = await supabase.functions.invoke(
-      "reference-v2-analyze-image",
-      { body, headers },
-    );
-    if (error) throw new AnalyzerUnavailableError(error.message);
-    const payload = data as { analysis?: unknown; correlationId?: string } | null;
-    if (!payload?.analysis) {
-      throw new AnalyzerUnavailableError("Analyzer lieferte kein Ergebnis.");
-    }
-    return {
-      response: parseAnalyzerResponse(payload.analysis),
-      ...(payload.correlationId ? { correlationId: payload.correlationId } : {}),
-    };
+    return analyzeWithRetry(request);
   },
 };
+
+/** Zeitlimit je Analyse-Aufruf (grosszuegig, nur gegen haengende Verbindungen). */
+export const ANALYZE_TIMEOUT_MS = 120_000;
+export const ANALYZE_MAX_ATTEMPTS = 3;
+
+function isTransient(message: string): boolean {
+  return /failed to send|failed to fetch|networkerror|load failed|timeout|timed out|abort|http 50[234]|overloaded|unavailable/i.test(
+    message,
+  );
+}
+
+async function analyzeWithRetry(request: AnalyzeRequest): Promise<AnalyzeResult> {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= ANALYZE_MAX_ATTEMPTS; attempt += 1) {
+    try {
+      return await analyzeOnce(request);
+    } catch (e) {
+      lastError = e;
+      const message = e instanceof Error ? e.message : String(e);
+      if (attempt === ANALYZE_MAX_ATTEMPTS || !isTransient(message)) break;
+      await new Promise((r) => setTimeout(r, 600 * attempt));
+    }
+  }
+  throw lastError instanceof Error
+    ? lastError
+    : new AnalyzerUnavailableError("KI-Analyse fehlgeschlagen");
+}
+
+/**
+ * Ein einzelner Analyse-Aufruf. Das Zugangs-Token wird UNMITTELBAR vor dem
+ * Aufruf frisch geholt (laengere Stapel duerfen nicht an einem abgelaufenen
+ * Token scheitern) und ein haengender Request wird nach einem klaren
+ * Zeitlimit abgebrochen.
+ */
+async function analyzeOnce(request: AnalyzeRequest): Promise<AnalyzeResult> {
+  // Kein erwarteter Fahrzeugtyp, keine Perspektivenliste, keine Metadaten:
+  // der Provider sieht ausschliesslich Dateireferenzen.
+  const body = {
+    schemaVersion: "reference-v2-vision-1",
+    fileId: request.file.fileId,
+    mimeType: request.file.mimeType,
+    providerId: request.file.providerId,
+    anchors: request.anchorFiles
+      .slice(0, MAX_ANCHOR_FILES)
+      .map((a) => ({ fileId: a.fileId, mimeType: a.mimeType })),
+  };
+
+  // Fail-closed: weder Bilddaten noch Business-Metadaten verlassen die App.
+  assertNoInlineImageData(body, "analyze request");
+  assertNoSemanticIdentity(body, "analyze request");
+
+  const headers = await authHeaders();
+  const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/reference-v2-analyze-image`;
+
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      headers: {
+        ...headers,
+        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(ANALYZE_TIMEOUT_MS),
+    });
+  } catch (e) {
+    const name = e instanceof Error ? e.name : "";
+    throw new AnalyzerUnavailableError(
+      name === "TimeoutError" || name === "AbortError"
+        ? "Analyse-Zeitlimit überschritten (timeout)"
+        : e instanceof Error
+          ? e.message
+          : "Analyse-Anfrage fehlgeschlagen",
+    );
+  }
+
+  const text = await res.text();
+  const payload = (text ? JSON.parse(text) : null) as
+    | { analysis?: unknown; correlationId?: string; error?: string }
+    | null;
+  if (!res.ok) {
+    throw new AnalyzerUnavailableError(
+      payload?.error ?? `Analyse fehlgeschlagen (HTTP ${res.status})`,
+    );
+  }
+  if (!payload?.analysis) {
+    throw new AnalyzerUnavailableError("Analyzer lieferte kein Ergebnis.");
+  }
+  return {
+    response: parseAnalyzerResponse(payload.analysis),
+    ...(payload.correlationId ? { correlationId: payload.correlationId } : {}),
+  };
+}
 
 /**
  * Baut Provider-Anker aus persistierten Analyse-Nachweisen. FAIL-CLOSED:
