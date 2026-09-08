@@ -245,3 +245,154 @@ export function removeManualAssignment(
     (a) => !(a.perspectiveId === perspectiveId && a.itemId === itemId),
   );
 }
+
+/* -------------------------------------------------------------------------
+ * Beratende Referenzbasis fuer die Generierung (Phase 4).
+ *
+ * Fehlt eine Direktreferenz, blockiert das Produkt nicht mehr: es waehlt
+ * eine ERSATZ- oder GESCHAETZTE Basis in fester Reihenfolge
+ *   A manuelle Primaerzuordnung
+ *   B exakte automatische Direktreferenz
+ *   C naechstliegende Referenz auf DERSELBEN Fahrzeugseite
+ *   D Referenz der Gegenseite (nur als Struktur-/Merkmalsnachweis)
+ *   E beste verfuegbare Fahrzeugreferenz (auch ohne Analyse)
+ * und kennzeichnet das Ergebnis sichtbar. Es wird NIEMALS still gespiegelt.
+ * ---------------------------------------------------------------------- */
+
+export const BASIS_KINDS = ["direct", "substitute", "estimated", "none"] as const;
+export type BasisKind = (typeof BASIS_KINDS)[number];
+
+export const BASIS_LABELS_DE: Record<BasisKind, string> = {
+  direct: "Direkte Referenz",
+  substitute: "Gute Ersatzreferenz",
+  estimated: "Geschätzte Referenz",
+  none: "Fehlt",
+};
+
+export const ESTIMATED_REFERENCE_WARNING =
+  "Direkte Referenz fehlt. Die Zielansicht wird aus den verfügbaren Fahrzeugreferenzen rekonstruiert und kann stärker vom Original abweichen.";
+
+export type VehicleSide = "left" | "right" | "neutral";
+
+export function perspectiveSide(perspectiveId: string): VehicleSide {
+  if (/LEFT/.test(perspectiveId)) return "left";
+  if (/RIGHT/.test(perspectiveId)) return "right";
+  return "neutral";
+}
+
+/** Winkelabstand in Grad (0..180) auf dem Fahrzeugkreis. */
+export function azimuthDistance(a: number, b: number): number {
+  const d = Math.abs(((a - b) % 360 + 360) % 360);
+  return d > 180 ? 360 - d : d;
+}
+
+export interface GenerationBasis {
+  readonly perspectiveId: PerspectiveId;
+  readonly kind: BasisKind;
+  readonly primaryItemId?: string;
+  readonly primaryIsManual: boolean;
+  /** Perspektive, aus der die Ersatzreferenz stammt (nur Anzeige). */
+  readonly sourcePerspectiveId?: PerspectiveId;
+  readonly secondaryItemIds: readonly string[];
+  readonly warningText?: string;
+  /** true, wenn der Nutzer den Hinweis ausdruecklich bestaetigen muss. */
+  readonly requiresAcknowledgement: boolean;
+}
+
+export interface BasisDeps {
+  /** Azimut der Perspektive in Grad, oder null wenn unbekannt. */
+  readonly azimuthOf: (perspectiveId: PerspectiveId) => number | null;
+}
+
+const MAX_SECONDARY_BASIS = 3;
+/** Bis zu diesem Winkelabstand gilt eine Ersatzreferenz noch als gut. */
+export const GOOD_SUBSTITUTE_MAX_DEG = 60;
+
+export function chooseGenerationBasis(
+  perspectiveId: PerspectiveId,
+  items: readonly CaptureItem[],
+  assignments: readonly ManualAssignment[],
+  deps: BasisDeps,
+): GenerationBasis {
+  const resolution = resolvePerspective(perspectiveId, items, assignments);
+  const usable = items.filter((i) => Boolean(i.previewUrl));
+
+  const rankRest = (excludeId?: string) => {
+    const targetAzimuth = deps.azimuthOf(perspectiveId);
+    const targetSide = perspectiveSide(perspectiveId);
+    const scored = usable
+      .filter((i) => i.id !== excludeId)
+      .map((i) => {
+        const side = i.perspectiveId ? perspectiveSide(i.perspectiveId) : null;
+        const azimuth = i.perspectiveId ? deps.azimuthOf(i.perspectiveId) : null;
+        const distance =
+          targetAzimuth !== null && azimuth !== null
+            ? azimuthDistance(targetAzimuth, azimuth)
+            : 999;
+        // Gruppe 1: gleiche oder neutrale Seite, Gruppe 2: Gegenseite,
+        // Gruppe 3: ohne verwertbare Analyse.
+        const group =
+          side === null
+            ? 3
+            : targetSide === "neutral" || side === "neutral" || side === targetSide
+              ? 1
+              : 2;
+        return { item: i, group, distance };
+      });
+    scored.sort((a, b) => a.group - b.group || a.distance - b.distance);
+    return scored;
+  };
+
+  if (resolution.primaryItemId) {
+    const rest = rankRest(resolution.primaryItemId);
+    return {
+      perspectiveId,
+      kind: "direct",
+      primaryItemId: resolution.primaryItemId,
+      primaryIsManual: resolution.primaryIsManual,
+      sourcePerspectiveId: perspectiveId,
+      secondaryItemIds: [
+        ...new Set([
+          ...resolution.secondaryItemIds,
+          ...rest.slice(0, MAX_SECONDARY_BASIS).map((r) => r.item.id),
+        ]),
+      ].slice(0, MAX_SECONDARY_BASIS),
+      requiresAcknowledgement: false,
+      ...(resolution.status === "WARNING" && resolution.warningText
+        ? { warningText: resolution.warningText }
+        : {}),
+    };
+  }
+
+  const ranked = rankRest();
+  const best = ranked[0];
+  if (!best) {
+    return {
+      perspectiveId,
+      kind: "none",
+      primaryIsManual: false,
+      secondaryItemIds: [],
+      requiresAcknowledgement: false,
+    };
+  }
+
+  const kind: BasisKind =
+    best.group === 1 && best.distance <= GOOD_SUBSTITUTE_MAX_DEG
+      ? "substitute"
+      : "estimated";
+
+  return {
+    perspectiveId,
+    kind,
+    primaryItemId: best.item.id,
+    primaryIsManual: false,
+    ...(best.item.perspectiveId
+      ? { sourcePerspectiveId: best.item.perspectiveId }
+      : {}),
+    secondaryItemIds: ranked
+      .slice(1, 1 + MAX_SECONDARY_BASIS)
+      .map((r) => r.item.id),
+    warningText: ESTIMATED_REFERENCE_WARNING,
+    requiresAcknowledgement: true,
+  };
+}
