@@ -314,13 +314,14 @@ function ReferenceWorkspaceInner() {
 
   // Automatischer Wechsel zur Referenzmap — genau einmal je Upload-Charge.
   useEffect(() => {
-    if (!pendingBatch) return;
+    if (!pendingBatch || busy) return;
     if (!isBatchTerminal(items, pendingBatch)) return;
     const message = batchTransitionMessage(items, pendingBatch);
     setPendingBatch(null);
     setStep("map");
     toast.success(message);
-  }, [items, pendingBatch]);
+  }, [items, pendingBatch, busy]);
+
 
 
   const patchItem = useCallback((id: string, patch: Partial<CaptureItem>) => {
