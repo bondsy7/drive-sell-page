@@ -396,3 +396,41 @@ export function chooseGenerationBasis(
     requiresAcknowledgement: true,
   };
 }
+
+/** Endzustaende einer Analyse — Warnungen und Fehler zaehlen als fertig. */
+export const TERMINAL_CAPTURE_STATUSES: readonly CaptureStatus[] = [
+  "analyzed",
+  "warning",
+  "unavailable",
+];
+
+/**
+ * true, sobald JEDES Bild der Charge einen Endzustand erreicht hat.
+ * Warnungen und nicht verfuegbare Analysen blockieren nicht.
+ */
+export function isBatchTerminal(
+  items: readonly CaptureItem[],
+  batchItemIds: readonly string[],
+): boolean {
+  if (batchItemIds.length === 0) return false;
+  const lookup = byId(items);
+  return batchItemIds.every((id) => {
+    const item = lookup.get(id);
+    return item ? TERMINAL_CAPTURE_STATUSES.includes(item.status) : true;
+  });
+}
+
+/** Kurzer Hinweistext fuer den automatischen Wechsel zur Referenzmap. */
+export function batchTransitionMessage(
+  items: readonly CaptureItem[],
+  batchItemIds: readonly string[],
+): string {
+  const inBatch = items.filter((i) => batchItemIds.includes(i.id));
+  const review = inBatch.filter(
+    (i) => i.status === "warning" || i.status === "unavailable",
+  ).length;
+  if (review === 0) {
+    return `${inBatch.length} Bilder verarbeitet – bitte Referenzen prüfen.`;
+  }
+  return `${inBatch.length} Bilder verarbeitet, ${review} bitte prüfen.`;
+}
