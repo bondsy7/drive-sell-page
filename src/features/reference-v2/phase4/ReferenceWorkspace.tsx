@@ -447,7 +447,9 @@ function ReferenceWorkspaceInner() {
         };
       });
       setItems((prev) => [...prev, ...created]);
+      setPendingBatch(created.map((c) => c.id));
       if (inputRef.current) inputRef.current.value = "";
+
 
       // 2) Normalisieren (AVIF → PNG) und danach nebenlaeufig analysieren.
       const targets: { item: CaptureItem; file: File }[] = [];
