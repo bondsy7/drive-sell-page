@@ -13,12 +13,14 @@ import {
   ADVISORY_LABELS_DE,
   BASIS_LABELS_DE,
   chooseGenerationBasis,
+  oppositePerspectiveId,
   resolvePerspective,
   type AdvisoryStatus,
   type CaptureItem,
   type ManualAssignment,
   type ManualRole,
 } from "./capture-state";
+
 
 /**
  * Reference V2 — Phase 4: Referenzmap.
