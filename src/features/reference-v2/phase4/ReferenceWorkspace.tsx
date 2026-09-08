@@ -877,120 +877,218 @@ function ReferenceWorkspaceInner() {
       )}
 
       {step === "generate" && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="flex flex-wrap items-center gap-2 text-base">
-              <Sparkles className="h-4 w-4" />
-              Generierung
-              <div className="ml-auto flex items-center gap-1">
-                {GENERATION_TIERS.map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    aria-pressed={tier === t}
-                    onClick={() => setTier(t)}
-                    className={`rounded-full border px-3 py-1 text-xs transition ${
-                      tier === t
-                        ? "border-primary bg-primary/10"
-                        : "border-border text-muted-foreground hover:bg-muted"
-                    }`}
-                  >
-                    {TIER_LABELS[t]}
-                  </button>
-                ))}
-              </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {resolutions.map((res) => {
-                const entry = getPerspectiveMasterEntry(res.perspectiveId);
-                const result = results[res.perspectiveId];
-                const primary = items.find((i) => i.id === res.primaryItemId);
-                return (
-                  <div
-                    key={res.perspectiveId}
-                    className="space-y-2 rounded-lg border p-3"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`h-2 w-2 rounded-full ${
-                          res.status === "OPTIMAL"
-                            ? "bg-emerald-500"
-                            : res.status === "WARNING"
-                              ? "bg-amber-500"
-                              : res.status === "ANALYZING"
-                                ? "bg-sky-500"
-                                : "bg-muted-foreground/40"
+        <div className="space-y-4">
+          <Card>
+            <CardContent className="space-y-3 p-4">
+              <div className="flex flex-wrap items-center gap-3">
+                <Sparkles className="h-4 w-4" />
+                <span className="text-base font-semibold">Generierung</span>
+                <div className="ml-auto flex flex-wrap items-center gap-2">
+                  <div className="flex items-center gap-1">
+                    {GENERATION_TIERS.map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        aria-pressed={tier === t}
+                        onClick={() => setTier(t)}
+                        className={`rounded-full border px-3 py-1 text-xs transition ${
+                          tier === t
+                            ? "border-primary bg-primary/10"
+                            : "border-border text-muted-foreground hover:bg-muted"
                         }`}
-                      />
-                      <span className="truncate text-sm font-medium">
-                        {entry.labelDe}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-muted-foreground">
-                      {ADVISORY_LABELS_DE[res.status]}
-                    </p>
-                    <div className="flex aspect-video items-center justify-center overflow-hidden rounded-md border bg-muted/40">
-                      {result?.status === "done" && result.dataUrl ? (
-                        <img
-                          src={result.dataUrl}
-                          alt={`Generiert: ${entry.labelDe}`}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : result?.status === "pending" ? (
-                        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                      ) : result?.status === "error" ? (
-                        <span className="px-2 text-center text-[10px] text-destructive">
-                          {result.error}
-                        </span>
-                      ) : primary ? (
-                        <img
-                          src={primary.previewUrl}
-                          alt={entry.labelDe}
-                          className="h-full w-full object-cover opacity-60"
-                        />
-                      ) : (
-                        <span className="text-[10px] text-muted-foreground">
-                          keine Referenz gewählt
-                        </span>
-                      )}
-                    </div>
-                    {res.status === "WARNING" && res.warningText && (
-                      <p className="text-[10px] text-amber-700 dark:text-amber-400">
-                        {res.warningText}
-                      </p>
-                    )}
-                    <div className="flex gap-1">
-                      <Button
-                        size="sm"
-                        variant={res.status === "OPTIMAL" ? "default" : "outline"}
-                        className="h-7 flex-1 text-[11px]"
-                        disabled={!primary || result?.status === "pending"}
-                        onClick={() => void runGeneration(res.perspectiveId)}
                       >
-                        {result?.status === "done"
-                          ? "Neu generieren"
-                          : res.status === "OPTIMAL"
-                            ? "Generieren"
-                            : "Trotzdem generieren"}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-7 text-[11px]"
-                        onClick={() => setStep("map")}
-                      >
-                        Referenz ändern
-                      </Button>
-                    </div>
+                        {TIER_LABELS[t]}
+                      </button>
+                    ))}
                   </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
+                  <Badge variant="outline" className="text-[10px]">
+                    Showroom: Standard
+                  </Badge>
+                  <Badge variant="outline" className="text-[10px]">
+                    Logo: folgt als Overlay
+                  </Badge>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+                <span>
+                  <b className="text-foreground">{batchCounts.selected}</b> ausgewählt
+                </span>
+                <span>
+                  <b className="text-emerald-600">{batchCounts.optimal}</b> optimal
+                </span>
+                <span>
+                  <b className="text-amber-600">{batchCounts.warning}</b> Ersatzreferenz
+                </span>
+                <span>
+                  <b className="text-amber-700">{batchCounts.estimated}</b> geschätzt
+                </span>
+                {batchCounts.unusable > 0 && (
+                  <span>{batchCounts.unusable} ohne Referenz</span>
+                )}
+                {batchProgress && (
+                  <span className="font-medium text-foreground">
+                    {batchProgress.done} / {batchProgress.total} generiert
+                  </span>
+                )}
+              </div>
+
+              {batchCounts.estimated + batchCounts.warning > 0 && (
+                <label className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-[11px]">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5"
+                    checked={batchAck}
+                    onChange={(e) => setBatchAck(e.target.checked)}
+                  />
+                  <span>
+                    Ich habe verstanden: Für einzelne Ansichten fehlt eine direkte
+                    Referenz. Diese werden aus den vorhandenen Fahrzeugbildern
+                    rekonstruiert und können stärker vom Original abweichen.
+                  </span>
+                </label>
+              )}
+
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  className="h-9"
+                  disabled={
+                    batchProgress !== null || batchCounts.selected === 0
+                  }
+                  onClick={() => void runAll()}
+                >
+                  {batchProgress ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {batchProgress.done} / {batchProgress.total} generiert
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Alle generieren
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-9"
+                  onClick={() => setStep("map")}
+                >
+                  Referenzen anpassen
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {bases.map((basis) => {
+              const entry = getPerspectiveMasterEntry(basis.perspectiveId);
+              const result = results[basis.perspectiveId];
+              const primary = items.find((i) => i.id === basis.primaryItemId);
+              const isSelected = selectedTargets.includes(basis.perspectiveId);
+              const tone =
+                basis.kind === "direct"
+                  ? "bg-emerald-500"
+                  : basis.kind === "none"
+                    ? "bg-muted-foreground/40"
+                    : "bg-amber-500";
+              return (
+                <div
+                  key={basis.perspectiveId}
+                  className={`space-y-2 rounded-lg border p-3 ${
+                    isSelected ? "" : "opacity-50"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      aria-label={`${entry.labelDe} auswählen`}
+                      checked={isSelected}
+                      onChange={(e) =>
+                        setDeselectedTargets((prev) =>
+                          e.target.checked
+                            ? prev.filter((id) => id !== basis.perspectiveId)
+                            : [...prev, basis.perspectiveId],
+                        )
+                      }
+                    />
+                    <span className={`h-2 w-2 rounded-full ${tone}`} />
+                    <span className="truncate text-sm font-medium">
+                      {entry.labelDe}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    {BASIS_LABELS_DE[basis.kind]}
+                    {basis.sourcePerspectiveId &&
+                      basis.kind !== "direct" &&
+                      ` · aus ${getPerspectiveMasterEntry(basis.sourcePerspectiveId).labelDe}`}
+                  </p>
+                  <div className="flex aspect-video items-center justify-center overflow-hidden rounded-md border bg-muted/40">
+                    {result?.status === "done" && result.dataUrl ? (
+                      <img
+                        src={result.dataUrl}
+                        alt={`Generiert: ${entry.labelDe}`}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : result?.status === "pending" ? (
+                      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                    ) : result?.status === "error" ? (
+                      <span className="px-2 text-center text-[10px] text-destructive">
+                        {result.error}
+                      </span>
+                    ) : primary ? (
+                      <img
+                        src={primary.previewUrl}
+                        alt={entry.labelDe}
+                        className="h-full w-full object-cover opacity-60"
+                      />
+                    ) : (
+                      <span className="text-[10px] text-muted-foreground">
+                        keine Referenz vorhanden
+                      </span>
+                    )}
+                  </div>
+                  {result?.qaStatus && (
+                    <p className="text-[10px] text-muted-foreground">
+                      {QA_LABELS[result.qaStatus]}
+                      {result.qaNote ? ` · ${result.qaNote}` : ""}
+                    </p>
+                  )}
+                  {basis.warningText && (
+                    <p className="text-[10px] text-amber-700 dark:text-amber-400">
+                      {basis.warningText}
+                    </p>
+                  )}
+                  <div className="flex gap-1">
+                    <Button
+                      size="sm"
+                      variant={basis.kind === "direct" ? "default" : "outline"}
+                      className="h-7 flex-1 text-[11px]"
+                      disabled={basis.kind === "none" || result?.status === "pending"}
+                      onClick={() => void runGeneration(basis.perspectiveId)}
+                    >
+                      {result?.status === "done"
+                        ? "Neu generieren"
+                        : basis.kind === "direct"
+                          ? "Generieren"
+                          : "Trotzdem generieren"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 text-[11px]"
+                      onClick={() => setStep("map")}
+                    >
+                      Referenz wählen
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
+
 
       {step === "qa" && (
         <Card>
