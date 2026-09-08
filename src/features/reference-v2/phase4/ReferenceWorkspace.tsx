@@ -47,10 +47,7 @@ import {
   ReferenceFileNormalizationError,
 } from "../phase1-5/normalize-reference-file";
 import { GENERATION_TIERS, type GenerationTier } from "../phase3/generation-client";
-import {
-  DEFAULT_SHOWROOM_ID,
-  generateFromAdvisoryReference,
-} from "./advisory-generation";
+import { generateFromAdvisoryReference } from "./advisory-generation";
 import { DEFAULT_GENERATION_CONCURRENCY, runBatch } from "./batch-generation";
 import { EXTERIOR_MAP_ORDER, ReferenceMap } from "./ReferenceMap";
 import {
