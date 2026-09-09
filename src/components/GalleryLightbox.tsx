@@ -259,7 +259,7 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
             className="max-h-[80vh] max-w-[90vw] object-contain rounded-xl shadow-2xl"
             {...swipeHandlers}
           />
-          <AiDisclosureBadge overlay className="bottom-4 left-4" />
+          <AiDisclosureBadge context="banner" overlay className="right-4 top-4" />
 
           {regenerating && (
             <div className="absolute inset-0 bg-background/60 backdrop-blur-sm rounded-xl flex items-center justify-center">
