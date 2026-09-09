@@ -72,10 +72,10 @@ const CONTEXT_TEXT: Record<AiDisclosureContext, string> = {
   banner: "KI-generiert",
   landing: "Fahrzeugbilder mit KI erstellt oder verändert (EU AI Act Art. 50).",
   pdf: "Fahrzeugbilder mit KI aufbereitet gem. EU AI Act Art. 50.",
-  spin: "KI-optimierte Ansicht",
+  spin: "KI-veränderte Fahrzeugansicht",
   repair: "KI-VISUALISIERUNG – nicht bindend",
   music: "KI-generierte Musik",
-  video: "KI-generiertes Video",
+  video: "Mit KI verändertes Fahrzeugvideo",
   social: "Bild künstlich erstellt/verändert (EU AI Act)",
   text: "Mit KI-Unterstützung erstellt",
 };
