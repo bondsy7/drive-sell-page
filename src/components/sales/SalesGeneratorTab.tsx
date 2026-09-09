@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { Send, Copy, RotateCcw, Save, MessageSquare, Phone, Mail, FileText, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import AiDisclosureBadge from '@/components/AiDisclosureBadge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
