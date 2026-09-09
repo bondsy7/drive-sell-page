@@ -269,7 +269,7 @@ const DamageRepairFlow: React.FC<DamageRepairFlowProps> = ({ onBack, onComplete 
                 }}
               />
               {img.repairedBase64 && (
-                <AiDisclosureBadge context="repair" overlay className="bottom-1.5 left-1.5" />
+                <AiDisclosureBadge context="repair" overlay />
               )}
               {img.status === 'done' && !isProcessing && (
                 <button

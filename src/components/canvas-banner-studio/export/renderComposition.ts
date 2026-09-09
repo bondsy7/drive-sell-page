@@ -306,7 +306,7 @@ export async function renderCompositionToDataURL(
   }
 
   // Pflicht: sichtbare KI-Kennzeichnung (EU AI Act Art. 50) fest einbrennen.
-  drawAiDisclosureOnCanvas(ctx, format.width, format.height);
+  await drawAiDisclosureOnCanvas(ctx, format.width, format.height, "banner");
 
   const mime = type === "png" ? "image/png" : type === "jpg" ? "image/jpeg" : "image/webp";
   return canvas.toDataURL(mime, 0.95);

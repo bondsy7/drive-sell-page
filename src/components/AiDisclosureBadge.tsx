@@ -1,7 +1,12 @@
 import React from "react";
-import { Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getAiDisclosureText, type AiDisclosureContext } from "@/lib/ai-disclosure";
+import {
+  getAiDisclosureLabelAlt,
+  getAiDisclosureLabelAsset,
+  getAiDisclosureText,
+  getAiDisclosureKind,
+  type AiDisclosureContext,
+} from "@/lib/ai-disclosure";
 
 interface AiDisclosureBadgeProps {
   context?: AiDisclosureContext;
@@ -21,16 +26,22 @@ const AiDisclosureBadge: React.FC<AiDisclosureBadgeProps> = ({
 }) => (
   <span
     className={cn(
-      "inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold leading-none",
+      "inline-flex items-center",
       overlay
-        ? "absolute bottom-2 left-2 z-10 bg-black/60 text-white backdrop-blur-sm"
-        : "bg-muted text-muted-foreground",
+        ? "absolute right-2 top-2 z-10"
+        : "align-middle",
       className,
     )}
     title={getAiDisclosureText(context)}
   >
-    <Sparkles className="h-3 w-3" />
-    {getAiDisclosureText(context)}
+    <img
+      src={getAiDisclosureLabelAsset(context)}
+      alt={getAiDisclosureLabelAlt(context)}
+      className={cn(
+        "block w-auto object-contain",
+        getAiDisclosureKind(context) === "basic" ? "h-7" : "h-5 sm:h-6",
+      )}
+    />
   </span>
 );
 

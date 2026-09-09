@@ -19,7 +19,7 @@ export default function VideoPlayerModal({ video, onClose, onDownload }: Props) 
         </button>
         <div className="relative">
           <video src={video.url} controls autoPlay className="w-full rounded-xl shadow-2xl" />
-          <AiDisclosureBadge context="video" overlay className="bottom-14" />
+          <AiDisclosureBadge context="video" overlay />
         </div>
 
         <div className="flex items-center justify-between mt-3">

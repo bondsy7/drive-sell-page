@@ -8,7 +8,7 @@ import { resolveShortcodes } from "../ci/shortcodes";
 import type { CiContext } from "../ci/profileSources";
 import { recolorSvg } from "../ci/svgRecolor";
 import { ensureBrandFonts } from "../ci/fontLoader";
-import { AI_DISCLOSURE_LABEL_DE } from "@/lib/ai-disclosure";
+import AiDisclosureBadge from "@/components/AiDisclosureBadge";
 
 interface BannerCanvasProps {
   format: BannerFormat;
@@ -705,9 +705,7 @@ const BannerCanvas: React.FC<BannerCanvasProps> = ({
             </Layer>
           )}
         </Stage>
-        <div className="pointer-events-none absolute bottom-2 right-2 rounded-md bg-black/60 px-2 py-1 text-[10px] font-semibold text-white">
-          {AI_DISCLOSURE_LABEL_DE}
-        </div>
+        <AiDisclosureBadge context="banner" overlay />
       </div>
       {!bg && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">

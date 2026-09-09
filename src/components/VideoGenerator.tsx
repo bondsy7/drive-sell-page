@@ -389,7 +389,7 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onBack, preloadedImage,
               loop
               className="w-full max-h-[400px]"
             />
-            <AiDisclosureBadge context="video" overlay className="bottom-14" />
+            <AiDisclosureBadge context="video" overlay />
 
           </div>
           <div className="flex gap-2">

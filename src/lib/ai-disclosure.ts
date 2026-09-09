@@ -6,6 +6,10 @@
 // ist bewusst NICHT umgesetzt und bleibt offen — siehe
 // .lovable/ki-kennzeichnungspflicht-plan.md.
 
+import aiLabelAsset from "@/assets/ai-labels/ai-black.png.asset.json";
+import aiGeneratedLabelAsset from "@/assets/ai-labels/ai-generated-black.png.asset.json";
+import aiModifiedLabelAsset from "@/assets/ai-labels/ai-modified-black.png.asset.json";
+
 export const AI_DISCLOSURE_LABEL_DE = "KI-generiert";
 export const AI_DISCLOSURE_LABEL_EN = "AI-generated";
 export const AI_DISCLOSURE_LONG_DE =
@@ -21,6 +25,44 @@ export type AiDisclosureContext =
   | "video"
   | "social"
   | "text";
+
+export type AiDisclosureKind = "basic" | "generated" | "modified";
+
+const CONTEXT_KIND: Record<AiDisclosureContext, AiDisclosureKind> = {
+  banner: "modified",
+  landing: "modified",
+  pdf: "modified",
+  spin: "generated",
+  repair: "modified",
+  music: "generated",
+  video: "generated",
+  social: "modified",
+  text: "basic",
+};
+
+const LABEL_ASSETS: Record<AiDisclosureKind, string> = {
+  basic: aiLabelAsset.url,
+  generated: aiGeneratedLabelAsset.url,
+  modified: aiModifiedLabelAsset.url,
+};
+
+const LABEL_ALT: Record<AiDisclosureKind, string> = {
+  basic: "AI",
+  generated: "AI GENERATED",
+  modified: "AI MODIFIED",
+};
+
+export function getAiDisclosureKind(context: AiDisclosureContext): AiDisclosureKind {
+  return CONTEXT_KIND[context];
+}
+
+export function getAiDisclosureLabelAsset(context: AiDisclosureContext): string {
+  return LABEL_ASSETS[getAiDisclosureKind(context)];
+}
+
+export function getAiDisclosureLabelAlt(context: AiDisclosureContext): string {
+  return LABEL_ALT[getAiDisclosureKind(context)];
+}
 
 const CONTEXT_TEXT: Record<AiDisclosureContext, string> = {
   banner: "KI-generiert",
@@ -46,9 +88,9 @@ export function buildAiDisclosureFooterHTML(
   return `<p class="ai-disclosure" style="margin-top:10px;font-size:11px;line-height:1.6;color:${color}">${getAiDisclosureText(context)}</p>`;
 }
 
-/** Inline-Badge für HTML-Bilder. */
-export function buildAiDisclosureBadgeHTML(): string {
-  return `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:999px;background:rgba(0,0,0,0.6);color:#fff;font-size:10px;font-weight:600;letter-spacing:0.02em">${AI_DISCLOSURE_LABEL_DE}</span>`;
+/** Offizielles Inline-Label für HTML-Bilder. */
+export function buildAiDisclosureBadgeHTML(context: AiDisclosureContext = "banner"): string {
+  return `<img src="${getAiDisclosureLabelAsset(context)}" alt="${getAiDisclosureLabelAlt(context)}" style="display:block;width:auto;height:24px" />`;
 }
 
 /** Alt-Text erweitern (Barrierefreiheit + Transparenz). */
@@ -67,42 +109,26 @@ export function appendAiDisclosureToCaption(caption: string): string {
 }
 
 /**
- * Brennt das sichtbare KI-Label unten rechts in ein Canvas ein.
- * Mindesthöhe ~3 % der Bildhöhe, halbtransparenter Chip, hoher Kontrast.
+ * Brennt das passende offizielle KI-Label oben rechts in ein Canvas ein.
+ * So bleiben Preis- und Verbrauchsangaben im unteren Bannerbereich frei.
  */
-export function drawAiDisclosureOnCanvas(
+export async function drawAiDisclosureOnCanvas(
   ctx: CanvasRenderingContext2D,
   width: number,
   height: number,
-  text: string = AI_DISCLOSURE_LABEL_DE,
-) {
-  const fontSize = Math.max(10, Math.round(Math.min(width, height) * 0.03));
-  const padX = Math.round(fontSize * 0.7);
-  const padY = Math.round(fontSize * 0.4);
+  context: AiDisclosureContext = "banner",
+): Promise<void> {
   const margin = Math.round(Math.min(width, height) * 0.02);
-
-  ctx.save();
-  ctx.font = `600 ${fontSize}px system-ui, -apple-system, "Segoe UI", sans-serif`;
-  ctx.textBaseline = "top";
-  const textW = ctx.measureText(text).width;
-  const boxW = textW + padX * 2;
-  const boxH = fontSize * 1.25 + padY * 2;
-  const x = width - boxW - margin;
-  const y = height - boxH - margin;
-  const r = Math.min(boxH / 2, 8);
-
-  ctx.fillStyle = "rgba(0,0,0,0.62)";
-  if (typeof (ctx as unknown as { roundRect?: unknown }).roundRect === "function") {
-    ctx.beginPath();
-    (ctx as CanvasRenderingContext2D & { roundRect: (x: number, y: number, w: number, h: number, r: number) => void })
-      .roundRect(x, y, boxW, boxH, r);
-    ctx.fill();
-  } else {
-    ctx.fillRect(x, y, boxW, boxH);
-  }
-  ctx.fillStyle = "#ffffff";
-  ctx.fillText(text, x + padX, y + padY);
-  ctx.restore();
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const label = new Image();
+    label.crossOrigin = "anonymous";
+    label.onload = () => resolve(label);
+    label.onerror = () => reject(new Error("AI label load failed"));
+    label.src = getAiDisclosureLabelAsset(context);
+  });
+  const targetHeight = Math.max(22, Math.round(Math.min(width, height) * 0.045));
+  const targetWidth = targetHeight * (img.naturalWidth / img.naturalHeight);
+  ctx.drawImage(img, width - targetWidth - margin, margin, targetWidth, targetHeight);
 }
 
 /**
@@ -124,7 +150,7 @@ export async function stampAiDisclosureOnDataUrl(src: string): Promise<string> {
     const ctx = canvas.getContext("2d");
     if (!ctx) return src;
     ctx.drawImage(img, 0, 0);
-    drawAiDisclosureOnCanvas(ctx, canvas.width, canvas.height);
+    await drawAiDisclosureOnCanvas(ctx, canvas.width, canvas.height, "banner");
     return canvas.toDataURL("image/png");
   } catch {
     return src;

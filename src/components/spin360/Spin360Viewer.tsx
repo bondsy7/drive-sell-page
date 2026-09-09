@@ -265,7 +265,7 @@ const Spin360Viewer: React.FC<Spin360ViewerProps> = ({
         )}
       </div>
 
-      <AiDisclosureBadge context="spin" overlay className="bottom-3 left-3" />
+      <AiDisclosureBadge context="spin" overlay />
 
       {showControls && (
         <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
