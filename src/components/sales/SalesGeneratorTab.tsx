@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { Send, Copy, RotateCcw, Save, MessageSquare, Phone, Mail, FileText, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import AiDisclosureBadge from '@/components/AiDisclosureBadge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -273,7 +274,10 @@ export default function SalesGeneratorTab() {
       <div className="space-y-4">
         {/* Generated Text */}
         <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-          <h3 className="font-semibold text-foreground text-sm">Generierte Antwort</h3>
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="font-semibold text-foreground text-sm">Generierte Antwort</h3>
+            {outputText && <AiDisclosureBadge context="text" />}
+          </div>
           {outputText ? (
             <>
               <Textarea

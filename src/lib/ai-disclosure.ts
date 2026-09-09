@@ -28,14 +28,18 @@ export type AiDisclosureContext =
 
 export type AiDisclosureKind = "basic" | "generated" | "modified";
 
+// Zuordnung nach EU-Leitfaden: "AI GENERATED" nur für vollständig synthetische
+// Inhalte ohne menschliches Ausgangsmaterial (z. B. KI-Musik). Alles, was auf
+// echten Fahrzeugfotos basiert (Remastering, Video, 360°-Spin, Banner, Seiten),
+// ist teilweise KI-verändert → "AI MODIFIED".
 const CONTEXT_KIND: Record<AiDisclosureContext, AiDisclosureKind> = {
   banner: "modified",
   landing: "modified",
   pdf: "modified",
-  spin: "generated",
+  spin: "modified",
   repair: "modified",
   music: "generated",
-  video: "generated",
+  video: "modified",
   social: "modified",
   text: "basic",
 };
@@ -68,10 +72,10 @@ const CONTEXT_TEXT: Record<AiDisclosureContext, string> = {
   banner: "KI-generiert",
   landing: "Fahrzeugbilder mit KI erstellt oder verändert (EU AI Act Art. 50).",
   pdf: "Fahrzeugbilder mit KI aufbereitet gem. EU AI Act Art. 50.",
-  spin: "KI-optimierte Ansicht",
+  spin: "KI-veränderte Fahrzeugansicht",
   repair: "KI-VISUALISIERUNG – nicht bindend",
   music: "KI-generierte Musik",
-  video: "KI-generiertes Video",
+  video: "Mit KI verändertes Fahrzeugvideo",
   social: "Bild künstlich erstellt/verändert (EU AI Act)",
   text: "Mit KI-Unterstützung erstellt",
 };
@@ -91,6 +95,40 @@ export function buildAiDisclosureFooterHTML(
 /** Offizielles Inline-Label für HTML-Bilder. */
 export function buildAiDisclosureBadgeHTML(context: AiDisclosureContext = "banner"): string {
   return `<img src="${getAiDisclosureLabelAsset(context)}" alt="${getAiDisclosureLabelAlt(context)}" style="display:block;width:auto;height:24px" />`;
+}
+
+/**
+ * Eigenständiges (offline-taugliches) Label als SVG-DataURI.
+ * Wird in exportierten HTML-/PDF-Ausgaben verwendet, damit die Kennzeichnung
+ * auch nach Download/Weitergabe sichtbar bleibt.
+ */
+export function buildAiDisclosureLabelDataUri(context: AiDisclosureContext = "landing"): string {
+  const kind = getAiDisclosureKind(context);
+  const text = LABEL_ALT[kind];
+  const svg =
+    kind === "basic"
+      ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44" width="44" height="44"><circle cx="22" cy="22" r="22" fill="#000"/><text x="22" y="28" font-family="Helvetica,Arial,sans-serif" font-size="16" font-weight="700" fill="#fff" text-anchor="middle">AI</text></svg>`
+      : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${text.length * 9 + 34} 40" width="${text.length * 9 + 34}" height="40"><rect x="0" y="0" width="${text.length * 9 + 34}" height="40" rx="20" fill="#000"/><text x="${(text.length * 9 + 34) / 2}" y="26" font-family="Helvetica,Arial,sans-serif" font-size="15" font-weight="700" letter-spacing="0.5" fill="#fff" text-anchor="middle">${text}</text></svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+/**
+ * Nicht entfernbares Overlay-Label oben rechts auf einem Bild in HTML-Ausgaben.
+ * Muss innerhalb eines Elements mit position:relative liegen.
+ */
+export function buildAiDisclosureImageOverlayHTML(
+  context: AiDisclosureContext = "landing",
+): string {
+  return `<img class="ai-disclosure-badge" src="${buildAiDisclosureLabelDataUri(context)}" alt="${getAiDisclosureLabelAlt(context)}" title="${getAiDisclosureText(context)}" style="position:absolute;top:10px;right:10px;z-index:5;height:22px;width:auto;pointer-events:none" />`;
+}
+
+/** Bild + Overlay-Label als eigenständiger Wrapper. */
+export function wrapImageWithAiDisclosure(
+  imgHTML: string,
+  context: AiDisclosureContext = "landing",
+  wrapperStyle = "position:relative;display:block",
+): string {
+  return `<span style="${wrapperStyle}">${imgHTML}${buildAiDisclosureImageOverlayHTML(context)}</span>`;
 }
 
 /** Alt-Text erweitern (Barrierefreiheit + Transparenz). */
