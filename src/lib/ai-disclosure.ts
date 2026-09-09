@@ -28,14 +28,18 @@ export type AiDisclosureContext =
 
 export type AiDisclosureKind = "basic" | "generated" | "modified";
 
+// Zuordnung nach EU-Leitfaden: "AI GENERATED" nur für vollständig synthetische
+// Inhalte ohne menschliches Ausgangsmaterial (z. B. KI-Musik). Alles, was auf
+// echten Fahrzeugfotos basiert (Remastering, Video, 360°-Spin, Banner, Seiten),
+// ist teilweise KI-verändert → "AI MODIFIED".
 const CONTEXT_KIND: Record<AiDisclosureContext, AiDisclosureKind> = {
   banner: "modified",
   landing: "modified",
   pdf: "modified",
-  spin: "generated",
+  spin: "modified",
   repair: "modified",
   music: "generated",
-  video: "generated",
+  video: "modified",
   social: "modified",
   text: "basic",
 };
