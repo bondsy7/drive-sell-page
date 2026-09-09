@@ -273,7 +273,10 @@ export default function SalesGeneratorTab() {
       <div className="space-y-4">
         {/* Generated Text */}
         <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-          <h3 className="font-semibold text-foreground text-sm">Generierte Antwort</h3>
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="font-semibold text-foreground text-sm">Generierte Antwort</h3>
+            {outputText && <AiDisclosureBadge context="text" />}
+          </div>
           {outputText ? (
             <>
               <Textarea
