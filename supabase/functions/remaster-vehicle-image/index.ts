@@ -1010,21 +1010,45 @@ REPRODUCTION RULES (ZERO DEVIATION):
         tool_choice: { type: 'image_generation' },
       };
 
-      const resp = await fetchWithTimeout('https://api.openai.com/v1/responses', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${OPENAI_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
-      }, 135_000);
+      // Transient provider glitch: OpenAI sporadically fails to resolve an
+      // otherwise valid vision file_id ("Unknown error while validating file
+      // ownership."). Retry the identical request a few times before failing.
+      const isTransientFileRefError = (msg: string) =>
+        /validating file ownership/i.test(msg) || /error while validating file/i.test(msg);
 
-      if (!resp.ok) {
-        const errText = await resp.text();
-        console.error(`[remaster][sunburst] status=${resp.status}: ${errText.slice(0, 400)}`);
+      let resp: Response | null = null;
+      let lastError = '';
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        const r = await fetchWithTimeout('https://api.openai.com/v1/responses', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${OPENAI_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(body),
+        }, 135_000);
+
+        if (r.ok) { resp = r; break; }
+
+        const errText = await r.text();
         let providerMessage = '';
         try { providerMessage = JSON.parse(errText)?.error?.message || ''; } catch { /* keep status */ }
-        throw new Error(providerMessage || `OpenAI Sunburst error (${resp.status})`);
+        lastError = providerMessage || `OpenAI Sunburst error (${r.status})`;
+        console.error(`[remaster][sunburst] attempt=${attempt} status=${r.status}: ${errText.slice(0, 300)}`);
+
+        if (attempt < 3 && (isTransientFileRefError(lastError) || r.status === 429 || r.status >= 500)) {
+          await new Promise((res) => setTimeout(res, attempt * 2000));
+          continue;
+        }
+        break;
+      }
+
+      if (!resp) {
+        throw new Error(
+          isTransientFileRefError(lastError)
+            ? 'Referenzbild konnte beim Anbieter nicht geladen werden (temporärer Fehler). Bitte erneut versuchen.'
+            : lastError,
+        );
       }
 
       const data = await resp.json();
