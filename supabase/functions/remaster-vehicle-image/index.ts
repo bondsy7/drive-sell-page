@@ -932,7 +932,7 @@ REPRODUCTION RULES (ZERO DEVIATION):
         const ext = im.mime.includes('png') ? 'png' : im.mime.includes('webp') ? 'webp' : 'jpg';
         return `image #${i + 1} (${fileNameFor(im.label, i, ext)}) = ${im.label}`;
       }).join('\n');
-      promptText = `<IMAGE_ORDER>\nThe attached images arrive in this exact order. Use each strictly for its stated role:\n${openaiManifest}\n</IMAGE_ORDER>\n\n${promptText}`;
+      promptText = compactOpenAIEditPrompt(`<IMAGE_ORDER>\nThe attached images arrive in this exact order. IMAGE 1 is always the primary vehicle blueprint and has absolute authority over vehicle identity. Use every later image only for its labelled role:\n${openaiManifest}\n</IMAGE_ORDER>\n\n${promptText}`);
       const wheelPos = limited.findIndex(im => im.label.startsWith('WHEEL REFERENCE'));
       console.log(`[remaster][openai] model=${engineConfig.model}, images=${limited.length}, wheelRefPos=${wheelPos}, promptLen=${promptText.length}`);
 
@@ -968,7 +968,11 @@ REPRODUCTION RULES (ZERO DEVIATION):
           if (!resp.ok) {
             const errText = await resp.text();
             console.error(`[remaster][openai] attempt ${attempt + 1} status=${resp.status}: ${errText.slice(0, 300)}`);
-            lastError = `OpenAI ${engineConfig.model} error (${resp.status})`;
+            let providerMessage = '';
+            try {
+              providerMessage = JSON.parse(errText)?.error?.message || '';
+            } catch { /* retain status-based message */ }
+            lastError = providerMessage || `OpenAI ${engineConfig.model} error (${resp.status})`;
             if ([400, 401, 403].includes(resp.status) && /invalid_api_key|incorrect api key/i.test(errText)) {
               throw new Error('OPENAI_API_KEY ungültig oder nicht freigeschaltet');
             }
@@ -982,6 +986,9 @@ REPRODUCTION RULES (ZERO DEVIATION):
             if (resp.status === 403) {
               throw new Error(`OpenAI-Modell '${engineConfig.model}' nicht freigeschaltet. Organisation auf platform.openai.com verifizieren.`);
             }
+            // Validation/auth errors are terminal. Retrying the same multipart
+            // request can never succeed and only delays the visible error.
+            if ([400, 401, 402, 404, 422].includes(resp.status)) break;
             if (attempt < MAX_OPENAI_ATTEMPTS - 1) await sleep(2000 * (attempt + 1));
             continue;
           }
