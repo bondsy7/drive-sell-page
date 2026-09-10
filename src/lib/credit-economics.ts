@@ -9,7 +9,13 @@
 // alle echten Sub-EKs auf, damit nichts unbemerkt im Minus läuft.
 // ============================================================
 
-export const USD_TO_EUR = 0.92;
+// FX: EZB-Referenzkurs vom 09.09.2026 → 1 EUR = 1.1652 USD.
+// Quelle: ECB euro foreign exchange reference rates.
+// Kein Puffer eingerechnet – ein optionaler Kalkulationspuffer wird
+// ausschließlich separat über `fxBufferPct` ausgewiesen.
+export const FX_EUR_USD = 1.1652;
+export const FX_SOURCE = "EZB-Referenzkurs 09.09.2026 (1 EUR = 1,1652 USD)";
+export const USD_TO_EUR = 1 / FX_EUR_USD;
 
 // Overhead pro Kunden-Aktion (USD), gemittelt über alle Aktionen.
 // Enthält:
