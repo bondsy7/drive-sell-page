@@ -38,7 +38,7 @@ const MAX_SIZE_MB = 10;
 
 const DEFAULT_CONFIG: RemasterConfig = {
   scene: '',
-  licensePlate: 'keep',
+  licensePlate: 'remove',
   changeColor: false,
   showManufacturerLogo: false,
   showDealerLogo: false,
