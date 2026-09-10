@@ -94,6 +94,74 @@ const REFERENCE_TRUTH_PROTOCOL = `REFERENCE IMAGES ARE THE ONLY SOURCE OF TRUTH.
 - If a region is not visible, extend ONLY from immediately adjacent visible evidence with the most conservative continuation possible.
 - Never invent a new interior color, upholstery variant, trim insert, badge, text, button legend, or equipment line.`;
 
+const OPENAI_PROMPT_LIMIT = 31_000;
+
+/**
+ * OpenAI image edits currently rejects prompts above 32,000 characters. The
+ * client prompt can exceed that after admin blocks and server-side identity
+ * guards are combined. Keep complete high-value XML blocks and remove only
+ * repeated prose before the multipart request is sent.
+ */
+function compactOpenAIEditPrompt(source: string, maxLength = OPENAI_PROMPT_LIMIT): string {
+  const normalized = source.replace(/\r\n/g, "\n").replace(/\n{4,}/g, "\n\n\n").trim();
+  if (normalized.length <= maxLength) return normalized;
+
+  const priorityTags = [
+    "IMAGE_ORDER",
+    "REFERENCE_TRUTH_PROTOCOL",
+    "CURRENT_PERSPECTIVE",
+    "BINDING_SUBJECT_SCOPE_GUARD",
+    "SCENE_AND_LIGHTING",
+    "CUSTOM_SHOWROOM_INSTRUCTION",
+    "ENVIRONMENT_CONSISTENCY_LOCK",
+    "BODY_CLEANUP",
+    "BASE_PAINT_UNIFICATION",
+    "COLOR_CHANGE_MANDATE",
+    "DETECTED_BRANDING",
+    "LICENSE_PLATE",
+    "INTERIOR_RULES",
+    "IDENTITY_LOCK",
+    "MODEL_GENERATION_LOCK",
+    "KNOWN_FACELIFT_FRONT_GUARD",
+    "MIRROR_SYSTEM_LOCK",
+    "SIDE_SKIRT_LOCK",
+    "WHEEL_REFERENCE_LOCK",
+    "TRACTOR_TRAILER_SEPARATION",
+    "VEHICLE_SCALE_LOCK",
+    "ANTI_CROPPING",
+    "STRICT_NEGATIVE_CONSTRAINTS",
+    "PROFESSIONAL_REFLECTION_LIGHTING_LOCK",
+    "PRIMARY_BLUEPRINT_LOCK",
+    "CRITICAL_WHEEL_REFERENCE",
+    "POST_REFERENCE_IDENTITY_CHECK",
+    "CRITICAL_ASSET_INTEGRATION",
+    "LOGO_REFERENCE",
+    "NO_LOGO_INSTRUCTION",
+    "SCENE_ASSET_DEKRA_LOGO",
+  ];
+  const selected: string[] = [];
+  const seen = new Set<string>();
+  const suffix = "FINAL CHECK: compare the edited vehicle directly with IMAGE 1. If its generation, fascia, lamps, silhouette, paint, trim or equipment differs, correct it before returning the image.";
+  let selectedLength = 0;
+  const append = (value: string) => {
+    const trimmed = value.trim();
+    const fingerprint = trimmed.replace(/\s+/g, " ");
+    const separatorLength = selected.length > 0 ? 2 : 0;
+    if (!trimmed || seen.has(fingerprint) || selectedLength + separatorLength + trimmed.length + suffix.length + 2 > maxLength) return;
+    seen.add(fingerprint);
+    selected.push(trimmed);
+    selectedLength += separatorLength + trimmed.length;
+  };
+
+  append(`You are a professional automotive retoucher. Edit IMAGE 1; do not create a different vehicle.\n${REFERENCE_TRUTH_PROTOCOL}\nThe first attached image is the primary vehicle blueprint and outranks every other image. Preserve its camera angle, generation, body geometry, paint, lights, grille/front panel, glasshouse, trim and equipment exactly. Secondary images may clarify only their labelled detail and must never replace IMAGE 1. Never mirror or rotate the vehicle.`);
+  for (const tag of priorityTags) {
+    const expression = new RegExp(`<${tag}>[\\s\\S]*?<\\/${tag}>`, "g");
+    for (const match of normalized.matchAll(expression)) append(match[0]);
+  }
+
+  return `${selected.join("\n\n")}\n\n${suffix}`;
+}
+
 const BRAND_TOKENS = [
   "skoda", "škoda", "volkswagen", "vw", "audi", "seat", "cupra", "porsche",
   "bmw", "mini", "mercedes", "mercedes-benz", "benz", "smart", "opel", "ford",
@@ -864,7 +932,7 @@ REPRODUCTION RULES (ZERO DEVIATION):
         const ext = im.mime.includes('png') ? 'png' : im.mime.includes('webp') ? 'webp' : 'jpg';
         return `image #${i + 1} (${fileNameFor(im.label, i, ext)}) = ${im.label}`;
       }).join('\n');
-      promptText = `<IMAGE_ORDER>\nThe attached images arrive in this exact order. Use each strictly for its stated role:\n${openaiManifest}\n</IMAGE_ORDER>\n\n${promptText}`;
+      promptText = compactOpenAIEditPrompt(`<IMAGE_ORDER>\nThe attached images arrive in this exact order. IMAGE 1 is always the primary vehicle blueprint and has absolute authority over vehicle identity. Use every later image only for its labelled role:\n${openaiManifest}\n</IMAGE_ORDER>\n\n${promptText}`);
       const wheelPos = limited.findIndex(im => im.label.startsWith('WHEEL REFERENCE'));
       console.log(`[remaster][openai] model=${engineConfig.model}, images=${limited.length}, wheelRefPos=${wheelPos}, promptLen=${promptText.length}`);
 
@@ -900,7 +968,11 @@ REPRODUCTION RULES (ZERO DEVIATION):
           if (!resp.ok) {
             const errText = await resp.text();
             console.error(`[remaster][openai] attempt ${attempt + 1} status=${resp.status}: ${errText.slice(0, 300)}`);
-            lastError = `OpenAI ${engineConfig.model} error (${resp.status})`;
+            let providerMessage = '';
+            try {
+              providerMessage = JSON.parse(errText)?.error?.message || '';
+            } catch { /* retain status-based message */ }
+            lastError = providerMessage || `OpenAI ${engineConfig.model} error (${resp.status})`;
             if ([400, 401, 403].includes(resp.status) && /invalid_api_key|incorrect api key/i.test(errText)) {
               throw new Error('OPENAI_API_KEY ungültig oder nicht freigeschaltet');
             }
@@ -914,6 +986,9 @@ REPRODUCTION RULES (ZERO DEVIATION):
             if (resp.status === 403) {
               throw new Error(`OpenAI-Modell '${engineConfig.model}' nicht freigeschaltet. Organisation auf platform.openai.com verifizieren.`);
             }
+            // Validation/auth errors are terminal. Retrying the same multipart
+            // request can never succeed and only delays the visible error.
+            if ([400, 401, 402, 404, 422].includes(resp.status)) break;
             if (attempt < MAX_OPENAI_ATTEMPTS - 1) await sleep(2000 * (attempt + 1));
             continue;
           }
