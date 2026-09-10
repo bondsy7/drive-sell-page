@@ -883,7 +883,8 @@ REPRODUCTION RULES (ZERO DEVIATION):
         for (let j = 0; j < binStr.length; j++) bytes[j] = binStr.charCodeAt(j);
         const ext = im.mime.includes('png') ? 'png' : im.mime.includes('webp') ? 'webp' : 'jpg';
         const blob = new Blob([bytes], { type: im.mime });
-        form.append('image', blob, fileNameFor(im.label, i, ext));
+        // Multiple reference images must use the array field name
+        form.append(limited.length > 1 ? 'image[]' : 'image', blob, fileNameFor(im.label, i, ext));
       }
 
 
