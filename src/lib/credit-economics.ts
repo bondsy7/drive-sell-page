@@ -176,6 +176,8 @@ export interface OpenAi25CostResult {
   imageModelUsd: number;
   orchestratorUsd: number;
   referenceUploadUsd: number;
+  /** Modellabhängige Erklärung des Referenz-Transferpfads (interne Annahme) */
+  transferNote: string;
   overheadUsd: number;
   totalUsd: number;
   totalEur: number;
@@ -184,14 +186,31 @@ export interface OpenAi25CostResult {
   effectiveUsdToEur: number;
 }
 
+/** Modellabhängige Beschreibung des Referenz-Transferpfads (kein OpenAI-Tarif). */
+export const OPENAI_25_TRANSFER_NOTE: Record<OpenAi25Model, string> = {
+  sunburst: "file_id spart wiederholten Upload, nicht die Model-Verarbeitung.",
+  flare: "Legacy-Pfad materialisiert Referenzen je Edit-Request erneut; daher zusätzlicher Transfer je Output.",
+};
+
 /**
  * Tokenbasierte EK-Kalkulation für GPT-Image-2.5.
  *
- * Wichtig: `file_id` spart den wiederholten **Upload**, nicht die
- * Model-Verarbeitung. Referenzbilder werden bei JEDEM Generierungs-
- * Request erneut als Image-Input berechnet (referenceCount × outputCount).
- * Der interne Datei-Transfer fällt dagegen nur EINMAL je Workflow an.
+ * OpenAI-Image-Input wird bei BEIDEN Modellen je Generierung erneut
+ * berechnet (referenceCount × outputCount) – unabhängig vom Transport.
+ *
+ * Interner Transfer (KEIN OpenAI-Entgelt, nur eigener Schätzwert):
+ *  • Sunburst: Referenzen gehen einmal über `upload-to-openai-files`
+ *    (purpose=vision), danach werden `file_id`s wiederverwendet
+ *    → refs × INFRA_PER_IMAGE_USD, einmalig je Workflow.
+ *  • Flare: Legacy-Pfad `/v1/images/edits`; Referenzen liegen in Gemini
+ *    Files und werden je Request erneut materialisiert und als Multipart
+ *    gesendet → refs × INFRA_PER_IMAGE_USD × (1 + outs).
+ *
+ * Luna-Kosten sind hier eine Näherung (GPT-Image-Tokenisierung ist nicht
+ * garantiert identisch mit Luna/Vision) und werden nach echten Requests
+ * durch die gemessene `data.usage` ersetzt.
  */
+
 export function calcOpenAi25Cost(input: OpenAi25CostInput): OpenAi25CostResult {
   const refs = Math.max(0, input.referenceCount);
   const outs = Math.max(1, input.outputCount);
@@ -212,12 +231,16 @@ export function calcOpenAi25Cost(input: OpenAi25CostInput): OpenAi25CostResult {
        + per1M(OPENAI_25_ESTIMATES.lunaOutputTokens, OPENAI_LUNA_PRICING.output)) * outs
     : 0;
 
-  // Einmaliger interner Datei-Transfer je Referenz (kein OpenAI-Entgelt:
-  // der Files-Upload selbst wird von OpenAI nicht separat berechnet).
-  const referenceUploadUsd = refs * INFRA_PER_IMAGE_USD;
+  // Interner Datei-Transfer je Referenz (kein OpenAI-Entgelt) – Transportpfad
+  // ist modellabhängig, siehe Doc-Kommentar oben.
+  const referenceUploadUsd = input.model === "sunburst"
+    ? refs * INFRA_PER_IMAGE_USD
+    : refs * INFRA_PER_IMAGE_USD * (1 + outs);
 
   // Interner kalkulatorischer Overhead – KEINE OpenAI-API-Kosten.
-  const overheadUsd = OVERHEAD_USD;
+  // Je erzeugtem Bild läuft ein eigener Generierungs-Request / eine eigene
+  // Credit-Aktion → skaliert mit outs.
+  const overheadUsd = OVERHEAD_USD * outs;
 
   const totalUsd = imageModelUsd + orchestratorUsd + referenceUploadUsd + overheadUsd;
   const buffer = 1 + Math.max(0, input.fxBufferPct ?? 0) / 100;
@@ -231,7 +254,9 @@ export function calcOpenAi25Cost(input: OpenAi25CostInput): OpenAi25CostResult {
     imageModelUsd,
     orchestratorUsd,
     referenceUploadUsd,
+    transferNote: OPENAI_25_TRANSFER_NOTE[input.model],
     overheadUsd,
+
     totalUsd,
     totalEur,
     perOutputUsd: totalUsd / outs,

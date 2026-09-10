@@ -64,10 +64,21 @@ function OpenAi25Simulator({ costs }: { costs: Record<string, Record<string, num
   });
   const anyLoss = scenarios.some((s) => s.marge < 0);
 
-  const relevantMeasured = (measured || []).filter((m) => m.tier === model && typeof m.total_ek_usd === "number");
-  const measuredAvg = relevantMeasured.length
-    ? relevantMeasured.reduce((a, m) => a + (m.total_ek_usd || 0), 0) / relevantMeasured.length
+  const relevant = (measured || []).filter((m) => m.tier === model && typeof m.total_ek_usd === "number");
+  const byStatus = (s: string) => relevant.filter((m) => m.measurement_status === s);
+  const measuredRows = byStatus("measured");
+  const partialRows = byStatus("partial");
+  const estimatedRows = byStatus("estimated");
+  const avg = (rows: MeasuredRow[]) =>
+    rows.length ? rows.reduce((a, m) => a + (m.total_ek_usd || 0), 0) / rows.length : null;
+  const measuredAvg = avg(measuredRows);
+  const partialAvg = avg(partialRows);
+  const measuredP95 = measuredRows.length >= 5
+    ? [...measuredRows].map((m) => m.total_ek_usd || 0).sort((a, b) => a - b)[
+        Math.min(measuredRows.length - 1, Math.ceil(measuredRows.length * 0.95) - 1)
+      ]
     : null;
+
 
   const numField = (label: string, value: number, set: (n: number) => void, min: number, max: number, tag?: string) => (
     <div className="space-y-1">
@@ -90,9 +101,14 @@ function OpenAi25Simulator({ costs }: { costs: Record<string, Record<string, num
             Tokenmengen = <Badge variant="secondary" className="text-[9px]">Schätzung</Badge>, bis echte Usage vorliegt.
           </p>
           <p className="text-[11px] text-muted-foreground">
-            Hinweis: <strong>file_id spart den wiederholten Upload, nicht die Model-Verarbeitung der Referenzbilder.</strong>
-            {" "}Referenz-Image-Input fällt pro erzeugtem Bild erneut an, der Datei-Transfer nur einmal je Workflow.
+            Referenz-Bild-Input fällt bei beiden Modellen pro erzeugtem Bild erneut an.
+            {" "}Transferpfad: <strong>{r.transferNote}</strong>
           </p>
+          <p className="text-[11px] text-muted-foreground">
+            Luna-Kosten sind bis zur echten Responses-Usage eine Näherung und werden
+            nach echten Requests durch <code>data.usage</code> ersetzt.
+          </p>
+
         </div>
         <div className="flex gap-2">
           {(["flare", "sunburst"] as const).map((m) => (
@@ -121,8 +137,8 @@ function OpenAi25Simulator({ costs }: { costs: Record<string, Record<string, num
           <div className="flex justify-between"><span className="text-muted-foreground">Bild-Output</span><span className="tabular-nums">${r.imageOutputUsd.toFixed(4)}</span></div>
           <div className="flex justify-between font-medium"><span>OpenAI Image Modellkosten</span><span className="tabular-nums">${r.imageModelUsd.toFixed(4)}</span></div>
           <div className="flex justify-between"><span className="text-muted-foreground">Luna-Orchestrator {model === "flare" && "(nicht aktiv)"}</span><span className="tabular-nums">${r.orchestratorUsd.toFixed(4)}</span></div>
-          <div className="flex justify-between"><span className="text-muted-foreground">Datei-Transfer intern (einmalig)</span><span className="tabular-nums">${r.referenceUploadUsd.toFixed(4)}</span></div>
-          <div className="flex justify-between"><span className="text-muted-foreground">interner Overhead (kein OpenAI-Entgelt)</span><span className="tabular-nums">${r.overheadUsd.toFixed(4)}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Datei-Transfer intern ({model === "sunburst" ? "einmalig" : "je Output erneut"})</span><span className="tabular-nums">${r.referenceUploadUsd.toFixed(4)}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">interner Overhead (× {outs} Requests, kein OpenAI-Entgelt)</span><span className="tabular-nums">${r.overheadUsd.toFixed(4)}</span></div>
           <div className="border-t border-border/40 mt-2 pt-2 flex justify-between font-semibold">
             <span>Gesamt-EK</span><span className="tabular-nums">${r.totalUsd.toFixed(4)} · {formatEur(r.totalEur)}</span>
           </div>
@@ -130,11 +146,23 @@ function OpenAi25Simulator({ costs }: { costs: Record<string, Record<string, num
           <p className="text-[10px] text-muted-foreground pt-1">
             Kurs: {FX_SOURCE}{fxBufferPct > 0 ? ` + ${fxBufferPct}% Kalkulationspuffer (separat)` : ""}.
           </p>
-          <p className="text-[10px] text-muted-foreground">
-            {measured === null ? "Messdaten werden geladen…"
-              : measuredAvg === null ? "Noch keine Messdaten (letzte 30 Tage) – der Simulator bleibt die Kalkulationsbasis."
-              : `Gemessene Usage (30 Tage, n=${relevantMeasured.length}): Ø $${measuredAvg.toFixed(4)} EK/Bild.`}
-          </p>
+          <div className="text-[10px] text-muted-foreground space-y-0.5">
+            {measured === null ? <p>Messdaten werden geladen…</p> : (
+              <>
+                <p>
+                  {measuredAvg === null
+                    ? "Noch keine vollständig gemessenen 2.5-Kosten; Simulator/teilgemessene Daten verfügbar."
+                    : `Vollständig gemessen (30 Tage, n=${measuredRows.length}): Ø $${measuredAvg.toFixed(4)} EK/Bild${measuredP95 !== null ? ` · P95 $${measuredP95.toFixed(4)}` : ""}.`}
+                </p>
+                <p>
+                  Teilgemessen (nicht im Ø): n={partialRows.length}
+                  {partialAvg !== null ? ` · Ø $${partialAvg.toFixed(4)}` : ""} ·
+                  {" "}rein geschätzt: n={estimatedRows.length} (keine echte Usage).
+                </p>
+              </>
+            )}
+          </div>
+
         </div>
 
         <div className="rounded-lg border border-border/50 p-4 space-y-3 text-sm">
@@ -202,11 +230,14 @@ export default function AdminCreditEconomics() {
         <h1 className="text-3xl font-bold tracking-tight">Credit-Ökonomie</h1>
         <p className="text-muted-foreground text-sm mt-1">
           EK = echte API-Kosten (Gemini, OpenAI Image, Veo 3.1, Ideogram, OUTVIN) +
-          Overhead $0,014 (Stripe, Resend, Edge-Compute, Egress, Gemini-File-API-Quota)
-          + Bild-Transfer $0,0005 je Bild. VK = Preis pro Credit.
-          Worst-Case basiert auf dem Basis-Abo ({formatEur(VK_PER_CREDIT.basis)}/Cr).
+          interne Kalkulationsannahmen: Overhead $0,014 je Aktion (Stripe, Resend,
+          Edge-Compute, Egress, File-API-Quota) und Bild-Transfer $0,0005 je transportiertem Bild.
+          Beides sind <strong>eigene interne Annahmen, keine OpenAI-API-Gebühren</strong>;
+          der OpenAI-2.5-Simulator rechnet Requests und Referenztransfers modellabhängig hoch.
+          VK = Preis pro Credit. Worst-Case basiert auf dem Basis-Abo ({formatEur(VK_PER_CREDIT.basis)}/Cr).
           Kurs USD→EUR: {USD_TO_EUR.toFixed(5)} ({FX_SOURCE}).
         </p>
+
         <p className="text-[11px] text-muted-foreground/70 mt-2">
           <strong>Nur ZWEI Tarife</strong> – totale Transparenz:
           Basis-Abo 1000 Cr → 490 € (0,49 €/Cr) · Top-Up 200 Cr → 100 € (0,50 €/Cr).

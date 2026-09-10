@@ -1124,17 +1124,27 @@ REPRODUCTION RULES (ZERO DEVIATION):
       const promptTokensUsed = measuredPromptTokens ?? Math.round(finalPrompt.length / 4);
       const imageInputTokensUsed = measuredImageInput ?? refCount * EST_IMAGE_INPUT_TOKENS_PER_REF;
       const imageOutputTokensUsed = measuredImageOutput ?? EST_OUTPUT_IMAGE_TOKENS;
+      // Luna: OpenAI liefert `input_tokens` als GESAMT-Input, `cached_tokens`
+      // ist darin bereits enthalten. Deshalb den ungecachten Rest separat
+      // bepreisen – sonst wird der Cache-Anteil doppelt berechnet.
+      const lunaCachedTokens = lunaCached ?? 0;
+      const uncachedLunaIn = Math.max(0, (lunaIn ?? 0) - lunaCachedTokens);
       const providerUsd =
         (promptTokensUsed / 1e6) * OPENAI_25_PRICE.textInput +
         (imageInputTokensUsed / 1e6) * OPENAI_25_PRICE.imageInput +
         (imageOutputTokensUsed / 1e6) * OPENAI_25_PRICE.imageOutput +
-        ((lunaIn ?? 0) / 1e6) * LUNA_PRICE.input +
-        ((lunaCached ?? 0) / 1e6) * LUNA_PRICE.cachedInput +
+        (uncachedLunaIn / 1e6) * LUNA_PRICE.input +
+        (lunaCachedTokens / 1e6) * LUNA_PRICE.cachedInput +
         ((lunaOut ?? 0) / 1e6) * LUNA_PRICE.output;
+      // 'measured' nur, wenn der GRÖSSTE Kostenblock (GPT-Image-Tool) echt
+      // gemessen ist UND die Luna-Usage vorliegt. Sonst bleibt es 'partial'.
+      const imageToolMeasured = measuredImageInput !== null && measuredImageOutput !== null;
+      const lunaMeasured = lunaIn !== null && lunaOut !== null;
       const measurementStatus =
-        measuredImageOutput !== null && measuredImageInput !== null
+        imageToolMeasured && lunaMeasured
           ? 'measured'
-          : (lunaIn !== null ? 'partial' : 'estimated');
+          : (imageToolMeasured || lunaMeasured ? 'partial' : 'estimated');
+
       await logApiCostEvent({
         user_id: costUserId ?? null,
         action_type: 'image_remaster',
