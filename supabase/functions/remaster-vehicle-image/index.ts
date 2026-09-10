@@ -873,7 +873,7 @@ REPRODUCTION RULES (ZERO DEVIATION):
       // Output: 1536x1024 (landscape 3:2 ≈ 4:3) is closest supported size
       form.append('size', '1536x1024');
       form.append('n', '1');
-      form.append('quality', tier === 'ultra' || tier === 'neu' ? 'high' : 'medium');
+      form.append('quality', tier === 'ultra' || tier === 'neu' || tier === 'flare' ? 'high' : 'medium');
       form.append('prompt', promptText);
 
       for (let i = 0; i < limited.length; i++) {
