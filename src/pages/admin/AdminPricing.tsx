@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { Save, RotateCcw, Zap, Sparkles, Crown, Rocket, Diamond, BadgePlus, Flame } from 'lucide-react';
+import { Save, RotateCcw, Zap, Sparkles, Crown, Rocket, Diamond, BadgePlus, Flame, Sun } from 'lucide-react';
 
 const MODEL_TIERS = [
   { id: 'schnell', label: 'Schnell', icon: Zap },
@@ -13,6 +13,7 @@ const MODEL_TIERS = [
   { id: 'ultra', label: 'Ultra', icon: Diamond },
   { id: 'neu', label: 'Neu', icon: BadgePlus },
   { id: 'flare', label: 'Flare', icon: Flame },
+  { id: 'sunburst', label: 'Sunburst', icon: Sun },
 ] as const;
 
 type TierCosts = Record<string, number>;
@@ -21,8 +22,8 @@ interface CreditCosts { [action: string]: TierCosts }
 const ALL_ACTIONS: { key: string; label: string; category: string; defaults: Record<string, number> }[] = [
   { key: 'pdf_analysis', label: 'PDF-Analyse', category: 'PDF & Analyse', defaults: { schnell: 1, qualitaet: 1, premium: 2, turbo: 1, ultra: 2, neu: 2 } },
   { key: 'vin_ocr', label: 'VIN-OCR (Kennzeichen)', category: 'PDF & Analyse', defaults: { schnell: 1, qualitaet: 1, premium: 1, turbo: 1, ultra: 1, neu: 1 } },
-  { key: 'image_generate', label: 'Bildgenerierung (pro Bild)', category: 'Bildgenerierung', defaults: { schnell: 1, qualitaet: 1, premium: 2, turbo: 1, ultra: 2, neu: 3, flare: 12 } },
-  { key: 'image_remaster', label: 'Bild-Remastering', category: 'Bildgenerierung', defaults: { schnell: 1, qualitaet: 1, premium: 2, turbo: 1, ultra: 2, neu: 2, flare: 8 } },
+  { key: 'image_generate', label: 'Bildgenerierung (pro Bild)', category: 'Bildgenerierung', defaults: { schnell: 1, qualitaet: 1, premium: 2, turbo: 1, ultra: 2, neu: 3, flare: 12, sunburst: 12 } },
+  { key: 'image_remaster', label: 'Bild-Remastering', category: 'Bildgenerierung', defaults: { schnell: 1, qualitaet: 1, premium: 2, turbo: 1, ultra: 2, neu: 2, flare: 8, sunburst: 8 } },
   { key: 'banner_generate', label: 'Banner-Generierung', category: 'Bildgenerierung', defaults: { schnell: 1, qualitaet: 1, premium: 2, turbo: 1, ultra: 2, neu: 2 } },
   { key: 'video_generate', label: 'Video (Veo Fast)', category: 'Video', defaults: { schnell: 4, qualitaet: 4, premium: 5, turbo: 4, ultra: 5, neu: 5 } },
   { key: 'video_generate_standard', label: 'Video (Veo Standard)', category: 'Video', defaults: { schnell: 10, qualitaet: 10, premium: 12, turbo: 10, ultra: 12, neu: 12 } },

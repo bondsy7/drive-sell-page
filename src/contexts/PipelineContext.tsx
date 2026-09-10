@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useRef, useCallback, useEffect } from 'react';
+import { uploadToOpenAIFiles, tierUsesOpenAIFiles, type OpenAIFileRef } from '@/lib/openai-file-upload';
 import { supabase } from '@/integrations/supabase/client';
 import { uploadImageToStorage, getGalleryFolderName } from '@/lib/storage-utils';
 import { toast } from 'sonner';
@@ -214,6 +215,17 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     wheel: { uri: string; mimeType: string } | null;
   }>({ references: [], showroom: null, plate: null, manufacturerLogo: null, dealerLogo: null, wheel: null });
 
+  // Cached OpenAI Files API IDs – uploaded ONCE for OpenAI/Sunburst tiers and
+  // reused for ALL pipeline jobs (never re-sent as base64 per perspective).
+  const cachedOpenAIFilesRef = useRef<{
+    references: OpenAIFileRef[];
+    showroom: OpenAIFileRef | null;
+    plate: OpenAIFileRef | null;
+    manufacturerLogo: OpenAIFileRef | null;
+    dealerLogo: OpenAIFileRef | null;
+    wheel: OpenAIFileRef | null;
+  }>({ references: [], showroom: null, plate: null, manufacturerLogo: null, dealerLogo: null, wheel: null });
+
   // Helper to fetch a URL and convert to data URL (base64)
   const fetchUrlToBase64 = useCallback(async (url: string): Promise<string | null> => {
     try {
@@ -359,6 +371,17 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       });
     }
 
+    // OpenAI file IDs follow the SAME routing/order as the Gemini references
+    const openAICache = cachedOpenAIFilesRef.current;
+    const allRefsForOpenAI = cfg.inputImages.length > 0 ? cfg.inputImages : cfg.originalImages;
+    const openAISupporting = openAICache.references.length > 0
+      ? supportingReferences
+          .map(ref => ({ ref, idx: allRefsForOpenAI.indexOf(ref) }))
+          .filter(x => x.idx >= 0 && x.idx < openAICache.references.length && x.idx !== primaryReferenceIndex)
+      : [];
+    const additionalOpenAIFiles: OpenAIFileRef[] = openAISupporting.map(x => openAICache.references[x.idx]);
+    const additionalOpenAIFileRoles: string[] = openAISupporting.map(x => cfg.referenceRoles?.[x.idx] || 'supporting vehicle reference');
+
     const fileUriCache = cachedFileUrisRef.current;
     const plateFileUri = isInteriorJob ? null : fileUriCache.plate;
     const mfgLogoFileUri = cfg.remasterConfig.showManufacturerLogo ? fileUriCache.manufacturerLogo : null;
@@ -389,6 +412,15 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       manufacturerLogoUrl: (mfgLogoFileUri || manufacturerLogoBase64) ? null : (cfg.remasterConfig.showManufacturerLogo ? cfg.resolvedManufacturerLogoUrl : null),
       manufacturerLogoBase64: mfgLogoFileUri ? null : manufacturerLogoBase64,
       manufacturerLogoFileUri: mfgLogoFileUri,
+      // OpenAI/Sunburst: reuse the cached file IDs for every job
+      mainImageOpenAIFile: openAICache.references[primaryReferenceIndex] || null,
+      additionalOpenAIFiles: additionalOpenAIFiles.length > 0 ? additionalOpenAIFiles : undefined,
+      additionalOpenAIFileRoles: additionalOpenAIFiles.length > 0 ? additionalOpenAIFileRoles : undefined,
+      wheelReferenceOpenAIFile: needsWheel ? openAICache.wheel : null,
+      customShowroomOpenAIFile: openAICache.showroom,
+      customPlateOpenAIFile: isInteriorJob ? null : openAICache.plate,
+      manufacturerLogoOpenAIFile: cfg.remasterConfig.showManufacturerLogo ? openAICache.manufacturerLogo : null,
+      dealerLogoOpenAIFile: cfg.remasterConfig.showDealerLogo ? openAICache.dealerLogo : null,
     });
 
     if (error || !data?.imageBase64) {
@@ -482,6 +514,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       // ── Phase 4: Upload images to Gemini File API ONCE ──
       // This avoids sending MB of base64 with every single job request
       cachedFileUrisRef.current = { references: [], showroom: null, plate: null, manufacturerLogo: null, dealerLogo: null, wheel: null };
+      cachedOpenAIFilesRef.current = { references: [], showroom: null, plate: null, manufacturerLogo: null, dealerLogo: null, wheel: null };
       try {
         const referenceImages = cfg.inputImages.length > 0 ? cfg.inputImages : cfg.originalImages;
         const imagesToUpload: string[] = [...referenceImages];
@@ -511,7 +544,23 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const wheelIdx = wheelB64 ? imagesToUpload.length : -1;
         if (wheelB64) imagesToUpload.push(wheelB64);
 
-        if (imagesToUpload.length > 0) {
+        const useOpenAIFiles = tierUsesOpenAIFiles(cfg.modelTier);
+        if (imagesToUpload.length > 0 && useOpenAIFiles) {
+          console.log(`[Pipeline] Uploading ${imagesToUpload.length} images to OpenAI Files API (tier=${cfg.modelTier})...`);
+          const uploaded = await uploadToOpenAIFiles(imagesToUpload.map((b64, i) => ({ id: `p${i}`, imageBase64: b64 })));
+          if (uploaded && uploaded.length === imagesToUpload.length) {
+            const c = cachedOpenAIFilesRef.current;
+            c.references = uploaded.slice(0, referenceImages.length);
+            if (showroomIdx >= 0) c.showroom = uploaded[showroomIdx];
+            if (plateIdx >= 0) c.plate = uploaded[plateIdx];
+            if (mfgLogoIdx >= 0) c.manufacturerLogo = uploaded[mfgLogoIdx];
+            if (dealerLogoIdx >= 0) c.dealerLogo = uploaded[dealerLogoIdx];
+            if (wheelIdx >= 0) c.wheel = uploaded[wheelIdx];
+            console.log(`[Pipeline] ✓ ${uploaded.length} images uploaded to OpenAI Files API`);
+          } else {
+            console.warn('[Pipeline] OpenAI Files upload failed/partial – falling back to inline base64');
+          }
+        } else if (imagesToUpload.length > 0) {
           console.log(`[Pipeline] Uploading ${imagesToUpload.length} images to Gemini File API (refs+showroom+plate+logos)...`);
           const { data: uploadData, error: uploadError } = await supabase.functions.invoke('upload-pipeline-images', {
             body: { images: imagesToUpload },

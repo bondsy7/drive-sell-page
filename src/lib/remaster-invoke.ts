@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { VehicleClassContext } from '@/config/vehicle-class-types';
 import type { WheelAnalysis } from '@/types/wheel-reference';
+import type { OpenAIFileRef } from '@/lib/openai-file-upload';
 
 export interface RemasterInvokePayload {
   imageBase64: string;
@@ -40,6 +41,19 @@ export interface RemasterInvokePayload {
   manufacturerLogoUrl?: string | null;
   manufacturerLogoBase64?: string | null;
   manufacturerLogoFileUri?: { uri: string; mimeType: string } | null;
+
+  /**
+   * OpenAI Files API references (purpose=vision). Only used by OpenAI/Responses
+   * tiers (Sunburst). Gemini flows ignore these fields completely.
+   */
+  mainImageOpenAIFile?: OpenAIFileRef | null;
+  additionalOpenAIFiles?: OpenAIFileRef[];
+  additionalOpenAIFileRoles?: string[];
+  wheelReferenceOpenAIFile?: OpenAIFileRef | null;
+  customShowroomOpenAIFile?: OpenAIFileRef | null;
+  customPlateOpenAIFile?: OpenAIFileRef | null;
+  manufacturerLogoOpenAIFile?: OpenAIFileRef | null;
+  dealerLogoOpenAIFile?: OpenAIFileRef | null;
 }
 
 export async function invokeRemasterVehicleImage(body: RemasterInvokePayload) {

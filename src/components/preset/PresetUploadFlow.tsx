@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, lazy, Suspense } from 'react';
-import { Upload, X, Loader2, Check, AlertCircle, Image as ImageIcon, RotateCcw, ZoomIn, Sparkles, Zap, Crown, Rocket, Diamond, ArrowLeft, BadgePlus, Flame } from 'lucide-react';
+import { Upload, X, Loader2, Check, AlertCircle, Image as ImageIcon, RotateCcw, ZoomIn, Sparkles, Zap, Crown, Rocket, Diamond, ArrowLeft, BadgePlus, Flame, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -45,6 +45,7 @@ const TIERS: { id: ModelTier; label: string; sublabel: string; icon: React.React
   { id: 'ultra', label: 'Ultra', sublabel: 'höchste Qualität', icon: <Diamond className="w-3 h-3" /> },
   { id: 'neu', label: 'Neu', sublabel: 'GPT Image 2', icon: <BadgePlus className="w-3 h-3" /> },
   { id: 'flare', label: 'Flare', sublabel: 'GPT Image 2.5 Flare', icon: <Flame className="w-3 h-3" /> },
+  { id: 'sunburst', label: 'Sunburst (Test)', sublabel: 'OpenAI GPT Image 2.5 Sunburst', icon: <Sun className="w-3 h-3" /> },
 ];
 
 // fileToBase64 and compressImageForAI imported from '@/lib/image-compress'
