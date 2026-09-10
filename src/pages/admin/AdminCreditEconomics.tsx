@@ -230,11 +230,14 @@ export default function AdminCreditEconomics() {
         <h1 className="text-3xl font-bold tracking-tight">Credit-Ökonomie</h1>
         <p className="text-muted-foreground text-sm mt-1">
           EK = echte API-Kosten (Gemini, OpenAI Image, Veo 3.1, Ideogram, OUTVIN) +
-          Overhead $0,014 (Stripe, Resend, Edge-Compute, Egress, Gemini-File-API-Quota)
-          + Bild-Transfer $0,0005 je Bild. VK = Preis pro Credit.
-          Worst-Case basiert auf dem Basis-Abo ({formatEur(VK_PER_CREDIT.basis)}/Cr).
+          interne Kalkulationsannahmen: Overhead $0,014 je Aktion (Stripe, Resend,
+          Edge-Compute, Egress, File-API-Quota) und Bild-Transfer $0,0005 je transportiertem Bild.
+          Beides sind <strong>eigene interne Annahmen, keine OpenAI-API-Gebühren</strong>;
+          der OpenAI-2.5-Simulator rechnet Requests und Referenztransfers modellabhängig hoch.
+          VK = Preis pro Credit. Worst-Case basiert auf dem Basis-Abo ({formatEur(VK_PER_CREDIT.basis)}/Cr).
           Kurs USD→EUR: {USD_TO_EUR.toFixed(5)} ({FX_SOURCE}).
         </p>
+
         <p className="text-[11px] text-muted-foreground/70 mt-2">
           <strong>Nur ZWEI Tarife</strong> – totale Transparenz:
           Basis-Abo 1000 Cr → 490 € (0,49 €/Cr) · Top-Up 200 Cr → 100 € (0,50 €/Cr).
