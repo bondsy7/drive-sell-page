@@ -44,6 +44,7 @@ const TIERS: { id: ModelTier; label: string; sublabel: string; icon: React.React
   { id: 'turbo', label: 'Turbo', sublabel: 'schnell & kreativ', icon: <Rocket className="w-3 h-3" /> },
   { id: 'ultra', label: 'Ultra', sublabel: 'höchste Qualität', icon: <Diamond className="w-3 h-3" /> },
   { id: 'neu', label: 'Neu', sublabel: 'GPT Image 2', icon: <BadgePlus className="w-3 h-3" /> },
+  { id: 'flare', label: 'Flare', sublabel: 'GPT Image 2.5 Flare', icon: <Flame className="w-3 h-3" /> },
 ];
 
 // fileToBase64 and compressImageForAI imported from '@/lib/image-compress'
