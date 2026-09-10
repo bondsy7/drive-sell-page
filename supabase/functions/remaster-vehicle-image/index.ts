@@ -111,6 +111,15 @@ function compactOpenAIEditPrompt(source: string, maxLength = OPENAI_PROMPT_LIMIT
     "REFERENCE_TRUTH_PROTOCOL",
     "CURRENT_PERSPECTIVE",
     "BINDING_SUBJECT_SCOPE_GUARD",
+    "SCENE_AND_LIGHTING",
+    "CUSTOM_SHOWROOM_INSTRUCTION",
+    "ENVIRONMENT_CONSISTENCY_LOCK",
+    "BODY_CLEANUP",
+    "BASE_PAINT_UNIFICATION",
+    "COLOR_CHANGE_MANDATE",
+    "DETECTED_BRANDING",
+    "LICENSE_PLATE",
+    "INTERIOR_RULES",
     "IDENTITY_LOCK",
     "MODEL_GENERATION_LOCK",
     "KNOWN_FACELIFT_FRONT_GUARD",
@@ -118,15 +127,6 @@ function compactOpenAIEditPrompt(source: string, maxLength = OPENAI_PROMPT_LIMIT
     "SIDE_SKIRT_LOCK",
     "WHEEL_REFERENCE_LOCK",
     "TRACTOR_TRAILER_SEPARATION",
-    "BODY_CLEANUP",
-    "BASE_PAINT_UNIFICATION",
-    "COLOR_CHANGE_MANDATE",
-    "DETECTED_BRANDING",
-    "LICENSE_PLATE",
-    "INTERIOR_RULES",
-    "SCENE_AND_LIGHTING",
-    "CUSTOM_SHOWROOM_INSTRUCTION",
-    "ENVIRONMENT_CONSISTENCY_LOCK",
     "VEHICLE_SCALE_LOCK",
     "ANTI_CROPPING",
     "STRICT_NEGATIVE_CONSTRAINTS",
@@ -141,12 +141,16 @@ function compactOpenAIEditPrompt(source: string, maxLength = OPENAI_PROMPT_LIMIT
   ];
   const selected: string[] = [];
   const seen = new Set<string>();
+  const suffix = "FINAL CHECK: compare the edited vehicle directly with IMAGE 1. If its generation, fascia, lamps, silhouette, paint, trim or equipment differs, correct it before returning the image.";
+  let selectedLength = 0;
   const append = (value: string) => {
     const trimmed = value.trim();
     const fingerprint = trimmed.replace(/\s+/g, " ");
-    if (!trimmed || seen.has(fingerprint)) return;
+    const separatorLength = selected.length > 0 ? 2 : 0;
+    if (!trimmed || seen.has(fingerprint) || selectedLength + separatorLength + trimmed.length + suffix.length + 2 > maxLength) return;
     seen.add(fingerprint);
     selected.push(trimmed);
+    selectedLength += separatorLength + trimmed.length;
   };
 
   append(`You are a professional automotive retoucher. Edit IMAGE 1; do not create a different vehicle.\n${REFERENCE_TRUTH_PROTOCOL}\nThe first attached image is the primary vehicle blueprint and outranks every other image. Preserve its camera angle, generation, body geometry, paint, lights, grille/front panel, glasshouse, trim and equipment exactly. Secondary images may clarify only their labelled detail and must never replace IMAGE 1. Never mirror or rotate the vehicle.`);
@@ -155,12 +159,7 @@ function compactOpenAIEditPrompt(source: string, maxLength = OPENAI_PROMPT_LIMIT
     for (const match of normalized.matchAll(expression)) append(match[0]);
   }
 
-  const suffix = "FINAL CHECK: compare the edited vehicle directly with IMAGE 1. If its generation, fascia, lamps, silhouette, paint, trim or equipment differs, correct it before returning the image.";
-  let compacted = selected.join("\n\n");
-  if (compacted.length + suffix.length + 2 > maxLength) {
-    compacted = compacted.slice(0, Math.max(0, maxLength - suffix.length - 2));
-  }
-  return `${compacted}\n\n${suffix}`;
+  return `${selected.join("\n\n")}\n\n${suffix}`;
 }
 
 const BRAND_TOKENS = [
