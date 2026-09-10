@@ -107,6 +107,7 @@ function compactOpenAIEditPrompt(source: string, maxLength = OPENAI_PROMPT_LIMIT
   if (normalized.length <= maxLength) return normalized;
 
   const priorityTags = [
+    "IMAGE_ORDER",
     "REFERENCE_TRUTH_PROTOCOL",
     "CURRENT_PERSPECTIVE",
     "BINDING_SUBJECT_SCOPE_GUARD",
