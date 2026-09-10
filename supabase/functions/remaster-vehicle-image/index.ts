@@ -1013,7 +1013,7 @@ REPRODUCTION RULES (ZERO DEVIATION):
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(body),
-      }, 180_000);
+      }, 135_000);
 
       if (!resp.ok) {
         const errText = await resp.text();
