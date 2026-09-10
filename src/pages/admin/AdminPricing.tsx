@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { Save, RotateCcw, Zap, Sparkles, Crown, Rocket, Diamond, BadgePlus } from 'lucide-react';
+import { Save, RotateCcw, Zap, Sparkles, Crown, Rocket, Diamond, BadgePlus, Flame } from 'lucide-react';
 
 const MODEL_TIERS = [
   { id: 'schnell', label: 'Schnell', icon: Zap },
@@ -12,6 +12,7 @@ const MODEL_TIERS = [
   { id: 'turbo', label: 'Turbo', icon: Rocket },
   { id: 'ultra', label: 'Ultra', icon: Diamond },
   { id: 'neu', label: 'Neu', icon: BadgePlus },
+  { id: 'flare', label: 'Flare', icon: Flame },
 ] as const;
 
 type TierCosts = Record<string, number>;

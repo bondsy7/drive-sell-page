@@ -399,7 +399,7 @@ const Index = () => {
     setSelectedModelTier(modelTier);
     const costPerImage = getCost('image_generate', modelTier) || 2;
     const totalCost = costPerImage * PERSPECTIVES.length;
-    const tierLabels: Record<ModelTier, string> = { schnell: 'Schnell', qualitaet: 'Qualität', premium: 'Premium', turbo: 'Turbo', ultra: 'Ultra', neu: 'Neu' };
+    const tierLabels: Record<ModelTier, string> = { schnell: 'Schnell', qualitaet: 'Qualität', premium: 'Premium', turbo: 'Turbo', ultra: 'Ultra', neu: 'Neu', flare: 'Flare' };
     setCreditDialog({
       open: true, cost: totalCost,
       label: `${PERSPECTIVES.length} Bilder generieren (${tierLabels[modelTier]})`,
