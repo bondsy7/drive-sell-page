@@ -438,12 +438,12 @@ serve(async (req) => {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const { imageBase64, mainImageRole, additionalImages, additionalFileUris, additionalImageRoles, additionalFileUriRoles, mainImageFileUri, customShowroomFileUri, customPlateImageFileUri, manufacturerLogoFileUri, dealerLogoFileUri, vehicleDescription, modelTier, dynamicPrompt, classContext, customShowroomBase64, customPlateImageBase64, dealerLogoUrl, dealerLogoBase64, manufacturerLogoUrl, manufacturerLogoBase64, wheelReferenceBase64, wheelReferenceFileUri, wheelReferenceAnalysis } = JSON.parse(bodyText);
+    const { imageBase64, mainImageRole, additionalImages, additionalFileUris, additionalImageRoles, additionalFileUriRoles, mainImageFileUri, customShowroomFileUri, customPlateImageFileUri, manufacturerLogoFileUri, dealerLogoFileUri, vehicleDescription, modelTier, dynamicPrompt, classContext, customShowroomBase64, customPlateImageBase64, dealerLogoUrl, dealerLogoBase64, manufacturerLogoUrl, manufacturerLogoBase64, wheelReferenceBase64, wheelReferenceFileUri, wheelReferenceAnalysis, mainImageOpenAIFile, additionalOpenAIFiles, additionalOpenAIFileRoles, wheelReferenceOpenAIFile, customShowroomOpenAIFile, customPlateOpenAIFile, manufacturerLogoOpenAIFile, dealerLogoOpenAIFile } = JSON.parse(bodyText);
     
     // Read cost dynamically from admin_settings. Normalize legacy/unknown tiers so
     // "Qualität" always routes to Nano Banana 2, never to the Pro image model.
     const TIER_ALIASES: Record<string, string> = { standard: 'qualitaet', pro: 'premium' };
-    const REMASTER_DEFAULTS: Record<string, number> = { schnell: 2, qualitaet: 3, premium: 5, turbo: 4, ultra: 7, neu: 8, flare: 8 };
+    const REMASTER_DEFAULTS: Record<string, number> = { schnell: 2, qualitaet: 3, premium: 5, turbo: 4, ultra: 7, neu: 8, flare: 8, sunburst: 8 };
     const requestedTier = typeof modelTier === 'string' ? modelTier : 'schnell';
     const tier = TIER_ALIASES[requestedTier] || requestedTier;
     let cost = REMASTER_DEFAULTS[tier] ?? 2;
@@ -468,6 +468,7 @@ serve(async (req) => {
       ultra:     { engine: 'openai', model: 'gpt-image-1' },
       neu:       { engine: 'openai', model: 'gpt-image-2' },
       flare:     { engine: 'openai', model: 'gpt-image-2.5-flare' },
+      sunburst:  { engine: 'openai', model: 'gpt-image-2.5-sunburst' },
     };
     const engineConfig = ENGINE_MAP[tier] || ENGINE_MAP['qualitaet'];
     const geminiModel = engineConfig.model; // legacy var name kept for downstream Gemini path
@@ -764,6 +765,7 @@ REPRODUCTION RULES (ZERO DEVIATION ALLOWED):
 8. CONSISTENCY: Logo must look ABSOLUTELY IDENTICAL on ALL generated images – ZERO variation in color, shape, proportions, size, or position.
 9. SOURCE OF TRUTH: This logo asset OVERRIDES any logo, banner, slogan, or text visible in the reference vehicle photo. Ignore old dealer abbinder bars/slogans from the reference – use ONLY this logo.
 </LOGO_REFERENCE>` });
+        imageLabels.set(logoData, 'MANUFACTURER LOGO – immutable brand asset');
         parts.push(logoData);
       }
     }
@@ -786,6 +788,7 @@ The following image is the EXACT dealer logo. Reproduce PIXEL-FOR-PIXEL with all
 - Size: Smaller than manufacturer logo.
 - IMMUTABLE ASSET: No redesign, no recoloring, no simplification.
 </LOGO_REFERENCE>` });
+        imageLabels.set(logoData, 'DEALER LOGO – immutable brand asset');
         parts.push(logoData);
         console.log("Dealer logo injected", dealerLogoFileUri?.uri ? "(file_uri)" : dealerLogoBase64 ? "(cached b64)" : "(fetched)");
       }
