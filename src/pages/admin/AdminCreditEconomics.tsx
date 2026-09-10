@@ -126,8 +126,8 @@ function OpenAi25Simulator({ costs }: { costs: Record<string, Record<string, num
           <div className="flex justify-between"><span className="text-muted-foreground">Bild-Output</span><span className="tabular-nums">${r.imageOutputUsd.toFixed(4)}</span></div>
           <div className="flex justify-between font-medium"><span>OpenAI Image Modellkosten</span><span className="tabular-nums">${r.imageModelUsd.toFixed(4)}</span></div>
           <div className="flex justify-between"><span className="text-muted-foreground">Luna-Orchestrator {model === "flare" && "(nicht aktiv)"}</span><span className="tabular-nums">${r.orchestratorUsd.toFixed(4)}</span></div>
-          <div className="flex justify-between"><span className="text-muted-foreground">Datei-Transfer intern (einmalig)</span><span className="tabular-nums">${r.referenceUploadUsd.toFixed(4)}</span></div>
-          <div className="flex justify-between"><span className="text-muted-foreground">interner Overhead (kein OpenAI-Entgelt)</span><span className="tabular-nums">${r.overheadUsd.toFixed(4)}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Datei-Transfer intern ({model === "sunburst" ? "einmalig" : "je Output erneut"})</span><span className="tabular-nums">${r.referenceUploadUsd.toFixed(4)}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">interner Overhead (× {outs} Requests, kein OpenAI-Entgelt)</span><span className="tabular-nums">${r.overheadUsd.toFixed(4)}</span></div>
           <div className="border-t border-border/40 mt-2 pt-2 flex justify-between font-semibold">
             <span>Gesamt-EK</span><span className="tabular-nums">${r.totalUsd.toFixed(4)} · {formatEur(r.totalEur)}</span>
           </div>
@@ -135,11 +135,23 @@ function OpenAi25Simulator({ costs }: { costs: Record<string, Record<string, num
           <p className="text-[10px] text-muted-foreground pt-1">
             Kurs: {FX_SOURCE}{fxBufferPct > 0 ? ` + ${fxBufferPct}% Kalkulationspuffer (separat)` : ""}.
           </p>
-          <p className="text-[10px] text-muted-foreground">
-            {measured === null ? "Messdaten werden geladen…"
-              : measuredAvg === null ? "Noch keine Messdaten (letzte 30 Tage) – der Simulator bleibt die Kalkulationsbasis."
-              : `Gemessene Usage (30 Tage, n=${relevantMeasured.length}): Ø $${measuredAvg.toFixed(4)} EK/Bild.`}
-          </p>
+          <div className="text-[10px] text-muted-foreground space-y-0.5">
+            {measured === null ? <p>Messdaten werden geladen…</p> : (
+              <>
+                <p>
+                  {measuredAvg === null
+                    ? "Noch keine vollständig gemessenen 2.5-Kosten; Simulator/teilgemessene Daten verfügbar."
+                    : `Vollständig gemessen (30 Tage, n=${measuredRows.length}): Ø $${measuredAvg.toFixed(4)} EK/Bild${measuredP95 !== null ? ` · P95 $${measuredP95.toFixed(4)}` : ""}.`}
+                </p>
+                <p>
+                  Teilgemessen (nicht im Ø): n={partialRows.length}
+                  {partialAvg !== null ? ` · Ø $${partialAvg.toFixed(4)}` : ""} ·
+                  {" "}rein geschätzt: n={estimatedRows.length} (keine echte Usage).
+                </p>
+              </>
+            )}
+          </div>
+
         </div>
 
         <div className="rounded-lg border border-border/50 p-4 space-y-3 text-sm">
