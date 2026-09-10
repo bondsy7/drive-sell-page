@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { Save, RotateCcw, Zap, Sparkles, Crown, Rocket, Diamond, BadgePlus, Flame } from 'lucide-react';
+import { Save, RotateCcw, Zap, Sparkles, Crown, Rocket, Diamond, BadgePlus, Flame, Sun } from 'lucide-react';
 
 const MODEL_TIERS = [
   { id: 'schnell', label: 'Schnell', icon: Zap },
