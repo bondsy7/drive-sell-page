@@ -74,3 +74,10 @@ Logos via `<CRITICAL_ASSET_INTEGRATION>`-Block im Prompt fixieren.
 
 - Gemini Image API unterstützt **KEIN** `aspectRatio` in `generationConfig`.
 - Aspect-Ratio nur über Prompt + Post-Crop steuern.
+
+## Kosten: OpenAI GPT-Image-2.5 (Flare / Sunburst)
+
+- Abrechnung ist **tokenbasiert**, nicht pro Bild: Text-Input $5/1M, Image-Input $8/1M, Image-Output $30/1M (Stand 10.09.2026). Sunburst zusätzlich Orchestrator `gpt-5.6-luna` ($0,20 / $0,02 cached / $1,20 pro 1M).
+- `file_id` (OpenAI Files, `purpose=vision`) spart nur den **wiederholten Upload**. Die Referenzbilder werden bei **jedem** Generierungs-Request erneut als Image-Input verrechnet: Kosten skalieren mit `Referenzen × erzeugte Bilder`.
+- Beide Pfade erzeugen `1536x1024` @ `quality=high` (Sunburst setzt `size` explizit im `image_generation`-Tool).
+- Statische Tokenmengen sind Schätzwerte. **Echte Usage schlägt statische Schätzung**: erfolgreiche Responses schreiben defensiv nach `public.api_cost_events` (`measured` / `partial` / `estimated`) – ohne Prompts, Bilddaten oder Keys.
