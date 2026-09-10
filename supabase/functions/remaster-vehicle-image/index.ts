@@ -1029,6 +1029,9 @@ REPRODUCTION RULES (ZERO DEVIATION):
             model: 'gpt-image-2.5-sunburst',
             action: 'edit',
             quality: 'high',
+            // Deterministische Ausgabegröße – identisch zu Flare, damit die
+            // Credit-Ökonomie beide 2.5-Pfade gleich kalkulieren kann.
+            size: '1536x1024',
           },
         ],
         tool_choice: { type: 'image_generation' },
