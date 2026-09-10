@@ -956,6 +956,21 @@ REPRODUCTION RULES (ZERO DEVIATION):
         label.startsWith('VEHICLE BLUEPRINT') || label.startsWith('WHEEL REFERENCE') ||
         label.startsWith('LICENSE PLATE') || label.startsWith('SHOWROOM');
 
+      // OpenAI rejects the whole request when a single inline image is malformed
+      // or carries a mime that does not match its real bytes (webp logo declared
+      // as png, svg, truncated base64 …). Sniff the magic bytes and drop bad refs.
+      const sniffMime = (b64: string): string | null => {
+        try {
+          const head = atob(b64.slice(0, 64).replace(/\s/g, ''));
+          const b = (i: number) => head.charCodeAt(i);
+          if (b(0) === 0xff && b(1) === 0xd8) return 'image/jpeg';
+          if (b(0) === 0x89 && head.slice(1, 4) === 'PNG') return 'image/png';
+          if (head.slice(0, 4) === 'RIFF' && head.slice(8, 12) === 'WEBP') return 'image/webp';
+          if (head.slice(0, 3) === 'GIF') return 'image/gif';
+          return null;
+        } catch { return null; }
+      };
+
       const contentImages: any[] = [];
       const usedLabels: string[] = [];
       let fileIdCount = 0;
@@ -975,8 +990,16 @@ REPRODUCTION RULES (ZERO DEVIATION):
         }
         // Base64 fallback for this single request only – file IDs have priority.
         if (part?.inlineData?.data) {
-          const mime = part.inlineData.mimeType || 'image/png';
-          contentImages.push({ type: 'input_image', image_url: `data:${mime};base64,${part.inlineData.data}`, detail });
+          const raw = String(part.inlineData.data).replace(/\s/g, '');
+          const realMime = sniffMime(raw);
+          if (!realMime) {
+            console.warn(`[remaster][sunburst] dropped unreadable inline image: ${m.label} (declared ${part.inlineData.mimeType})`);
+            continue;
+          }
+          if (realMime !== part.inlineData.mimeType) {
+            console.warn(`[remaster][sunburst] mime corrected for ${m.label}: ${part.inlineData.mimeType} -> ${realMime}`);
+          }
+          contentImages.push({ type: 'input_image', image_url: `data:${realMime};base64,${raw}`, detail });
           usedLabels.push(m.label);
           if (part.serverStatic) serverStaticCount++; else base64Count++;
           continue;
@@ -984,6 +1007,7 @@ REPRODUCTION RULES (ZERO DEVIATION):
         // Gemini file_uri must never be re-materialized for OpenAI.
         console.warn(`[remaster][sunburst] skipped reference without OpenAI file id: ${m.label}`);
       }
+
 
       const manifestText = usedLabels.map((l, i) => `IMAGE ${i + 1} = ${l}`).join('\n');
       const finalPrompt = `<IMAGE_ORDER>\nThe attached images arrive in this exact order. IMAGE 1 is always the primary vehicle blueprint and has absolute authority over vehicle identity. Use every later image only for its labelled role:\n${manifestText}\n</IMAGE_ORDER>\n\n${promptText}`;
