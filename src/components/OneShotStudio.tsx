@@ -34,6 +34,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { createPipelineWorkflowKey } from '@/lib/pipeline-workflow';
 
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -960,6 +961,11 @@ This is the MARKETING MASTER (Hero) shot — push lighting one notch beyond the 
       .join(' ');
 
     pipelineCtx.startPipeline({
+      workflowKey: createPipelineWorkflowKey({
+        vehicleId: savedVehicleId,
+        vin,
+        inputImages: inputs,
+      }),
       inputImages: inputs,
       referenceRoles,
       originalImages: orderedInputImages.map((i) => i.base64),

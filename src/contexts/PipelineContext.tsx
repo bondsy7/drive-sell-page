@@ -34,6 +34,8 @@ export interface ResultImage {
 }
 
 export interface PipelineConfig {
+  /** Stable identity of the vehicle/photo batch that owns this run. */
+  workflowKey: string;
   inputImages: string[];
   /** Perspective/source role aligned by index with inputImages. */
   referenceRoles?: string[];
