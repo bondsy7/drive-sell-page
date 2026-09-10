@@ -928,12 +928,14 @@ REPRODUCTION RULES (ZERO DEVIATION):
     // Uses OpenAI Files API file_ids (no re-materialization of bytes).
     // No cross-engine fallback, no fallback to older image models.
     // ─────────────────────────────────────────────────────────────
-    if (engineConfig.engine === 'openai' && engineConfig.model === 'gpt-image-2.5-sunburst') {
+    if (isSunburst) {
       const promptText = parts
         .filter((p: any) => typeof p.text === 'string')
         .map((p: any) => p.text)
         .join('\n\n');
 
+      // IMAGE 1 must be the vehicle blueprint even when a custom showroom was
+      // placed first in the Gemini part order.
       const priorityOf = (label: string) => {
         if (label.startsWith('VEHICLE BLUEPRINT')) return 0;
         if (label.startsWith('WHEEL REFERENCE')) return 1;
@@ -946,24 +948,6 @@ REPRODUCTION RULES (ZERO DEVIATION):
         (a, b) => priorityOf(a.label) - priorityOf(b.label) || a.index - b.index,
       );
 
-      const asFileId = (ref: any): string | null =>
-        ref && typeof ref.fileId === 'string' && ref.fileId ? ref.fileId : null;
-      const additionalFiles: any[] = Array.isArray(additionalOpenAIFiles) ? additionalOpenAIFiles : [];
-      let additionalCursor = 0;
-      const fileIdForLabel = (label: string): string | null => {
-        if (label.startsWith('VEHICLE BLUEPRINT')) return asFileId(mainImageOpenAIFile);
-        if (label.startsWith('WHEEL REFERENCE')) return asFileId(wheelReferenceOpenAIFile);
-        if (label.startsWith('LICENSE PLATE')) return asFileId(customPlateOpenAIFile);
-        if (label.startsWith('SHOWROOM')) return asFileId(customShowroomOpenAIFile);
-        if (label.startsWith('MANUFACTURER LOGO')) return asFileId(manufacturerLogoOpenAIFile);
-        if (label.startsWith('DEALER LOGO')) return asFileId(dealerLogoOpenAIFile);
-        if (label.startsWith('Vehicle reference')) {
-          const ref = additionalFiles[additionalCursor];
-          additionalCursor++;
-          return asFileId(ref);
-        }
-        return null;
-      };
       const highDetail = (label: string) =>
         label.startsWith('VEHICLE BLUEPRINT') || label.startsWith('WHEEL REFERENCE') ||
         label.startsWith('LICENSE PLATE') || label.startsWith('SHOWROOM');
@@ -972,35 +956,37 @@ REPRODUCTION RULES (ZERO DEVIATION):
       const usedLabels: string[] = [];
       let fileIdCount = 0;
       let base64Count = 0;
+      let serverStaticCount = 0;
 
       for (const m of ordered) {
         if (contentImages.length >= 16) break;
         const detail = highDetail(m.label) ? 'high' : 'auto';
-        const fileId = fileIdForLabel(m.label);
-        if (fileId) {
-          contentImages.push({ type: 'input_image', file_id: fileId, detail });
+        const part: any = m.part;
+        // Deterministic: the labelled part itself carries the OpenAI file id.
+        if (part?.openaiFile?.fileId) {
+          contentImages.push({ type: 'input_image', file_id: part.openaiFile.fileId, detail });
           usedLabels.push(m.label);
           fileIdCount++;
           continue;
         }
         // Base64 fallback for this single request only – file IDs have priority.
-        const part: any = m.part;
         if (part?.inlineData?.data) {
           const mime = part.inlineData.mimeType || 'image/png';
           contentImages.push({ type: 'input_image', image_url: `data:${mime};base64,${part.inlineData.data}`, detail });
           usedLabels.push(m.label);
-          base64Count++;
+          if (part.serverStatic) serverStaticCount++; else base64Count++;
           continue;
         }
+        // Gemini file_uri must never be re-materialized for OpenAI.
         console.warn(`[remaster][sunburst] skipped reference without OpenAI file id: ${m.label}`);
       }
 
       const manifestText = usedLabels.map((l, i) => `image #${i + 1} = ${l}`).join('\n');
       const finalPrompt = `<IMAGE_ORDER>\nThe attached images arrive in this exact order. IMAGE 1 is always the primary vehicle blueprint and has absolute authority over vehicle identity. Use every later image only for its labelled role:\n${manifestText}\n</IMAGE_ORDER>\n\n${promptText}`;
 
-      console.log(`[remaster][sunburst] engine=openai tier=${tier} imageModel=${engineConfig.model} refs=${contentImages.length} viaFileId=${fileIdCount} viaBase64=${base64Count} promptLen=${finalPrompt.length}`);
+      console.log(`[remaster][sunburst] engine=openai tier=${tier} imageModel=${engineConfig.model} refs=${contentImages.length} viaFileId=${fileIdCount} viaBase64Fallback=${base64Count} serverStatic=${serverStaticCount} promptLen=${finalPrompt.length}`);
 
-      const orchestratorModel = (await getSecret('OPENAI_RESPONSES_MODEL')) || 'gpt-5.1-mini';
+      const orchestratorModel = (await getSecret('OPENAI_RESPONSES_MODEL')) || 'gpt-5.6-luna';
       const body = {
         model: orchestratorModel,
         input: [
