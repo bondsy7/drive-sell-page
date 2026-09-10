@@ -20,6 +20,7 @@ const MODEL_MAP: Record<string, ModelConfig> = {
   turbo:     { engine: "openai", model: "gpt-image-1", defaultCost: 6 },
   ultra:     { engine: "openai", model: "gpt-image-1", defaultCost: 10 },
   neu:       { engine: "openai", model: "gpt-image-2", defaultCost: 12 },
+  flare:     { engine: "openai", model: "gpt-image-2.5-flare", defaultCost: 12 },
   // Legacy fallbacks
   standard:  { engine: "gemini", model: "gemini-2.5-flash-image", defaultCost: 3 },
   pro:       { engine: "gemini", model: "gemini-3-pro-image-preview", defaultCost: 8 },

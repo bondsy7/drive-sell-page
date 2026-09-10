@@ -375,7 +375,7 @@ serve(async (req) => {
     // Read cost dynamically from admin_settings. Normalize legacy/unknown tiers so
     // "Qualität" always routes to Nano Banana 2, never to the Pro image model.
     const TIER_ALIASES: Record<string, string> = { standard: 'qualitaet', pro: 'premium' };
-    const REMASTER_DEFAULTS: Record<string, number> = { schnell: 2, qualitaet: 3, premium: 5, turbo: 4, ultra: 7, neu: 8 };
+    const REMASTER_DEFAULTS: Record<string, number> = { schnell: 2, qualitaet: 3, premium: 5, turbo: 4, ultra: 7, neu: 8, flare: 8 };
     const requestedTier = typeof modelTier === 'string' ? modelTier : 'schnell';
     const tier = TIER_ALIASES[requestedTier] || requestedTier;
     let cost = REMASTER_DEFAULTS[tier] ?? 2;
@@ -399,6 +399,7 @@ serve(async (req) => {
       turbo:     { engine: 'openai', model: 'gpt-image-1' },
       ultra:     { engine: 'openai', model: 'gpt-image-1' },
       neu:       { engine: 'openai', model: 'gpt-image-2' },
+      flare:     { engine: 'openai', model: 'gpt-image-2.5-flare' },
     };
     const engineConfig = ENGINE_MAP[tier] || ENGINE_MAP['qualitaet'];
     const geminiModel = engineConfig.model; // legacy var name kept for downstream Gemini path
