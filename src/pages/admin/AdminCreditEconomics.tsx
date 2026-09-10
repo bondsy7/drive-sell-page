@@ -90,9 +90,14 @@ function OpenAi25Simulator({ costs }: { costs: Record<string, Record<string, num
             Tokenmengen = <Badge variant="secondary" className="text-[9px]">Schätzung</Badge>, bis echte Usage vorliegt.
           </p>
           <p className="text-[11px] text-muted-foreground">
-            Hinweis: <strong>file_id spart den wiederholten Upload, nicht die Model-Verarbeitung der Referenzbilder.</strong>
-            {" "}Referenz-Image-Input fällt pro erzeugtem Bild erneut an, der Datei-Transfer nur einmal je Workflow.
+            Referenz-Bild-Input fällt bei beiden Modellen pro erzeugtem Bild erneut an.
+            {" "}Transferpfad: <strong>{r.transferNote}</strong>
           </p>
+          <p className="text-[11px] text-muted-foreground">
+            Luna-Kosten sind bis zur echten Responses-Usage eine Näherung und werden
+            nach echten Requests durch <code>data.usage</code> ersetzt.
+          </p>
+
         </div>
         <div className="flex gap-2">
           {(["flare", "sunburst"] as const).map((m) => (
