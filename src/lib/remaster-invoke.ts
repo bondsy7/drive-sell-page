@@ -69,13 +69,10 @@ export function stripRedundantBase64(body: RemasterInvokePayload): RemasterInvok
   if (out.manufacturerLogoOpenAIFile?.fileId) { out.manufacturerLogoBase64 = null; out.manufacturerLogoUrl = null; }
   if (out.dealerLogoOpenAIFile?.fileId) { out.dealerLogoBase64 = null; out.dealerLogoUrl = null; }
   if (out.wheelReferenceOpenAIFile?.fileId) out.wheelReferenceBase64 = null;
-  if (out.additionalOpenAIFiles && out.additionalOpenAIFiles.length > 0 && out.additionalImages) {
-    // Detail references carried by file id are not repeated inline.
-    out.additionalImages = out.additionalImages.length > out.additionalOpenAIFiles.length
-      ? out.additionalImages
-      : [];
-    if (out.additionalImages.length === 0) out.additionalImageRoles = undefined;
-  }
+  // Additional/supporting references are NOT touched here: PipelineContext filters
+  // them identity- and position-aware, so `additionalImages` only ever contains the
+  // assets whose OpenAI upload failed. This generic guard must not guess by length —
+  // a mixed case (3 file ids + 1 base64 fallback) is valid and must survive.
   return out;
 }
 

@@ -869,6 +869,10 @@ REPRODUCTION RULES (ZERO DEVIATION):
     // je nach Engine variieren) und der OpenAI-Pfad kann dieselbe Reihenfolge
     // benannt mitschicken.
     const imageManifest: { index: number; label: string; part: any }[] = [];
+    // Sunburst re-sorts the images by role priority afterwards and emits its OWN
+    // <IMAGE_ORDER>. Injecting the Gemini-order numbering here too would produce
+    // two contradictory numberings in the same prompt, so for Sunburst we only
+    // COLLECT the manifest (labels + original index) and inject nothing.
     {
       const rebuilt: any[] = [];
       for (const p of parts) {
@@ -876,13 +880,13 @@ REPRODUCTION RULES (ZERO DEVIATION):
           const label = imageLabels.get(p) || 'Reference image (context asset)';
           const index = imageManifest.length + 1;
           imageManifest.push({ index, label, part: p });
-          rebuilt.push({ text: `[IMAGE ${index}] ${label}` });
+          if (!isSunburst) rebuilt.push({ text: `[IMAGE ${index}] ${label}` });
           rebuilt.push(p);
         } else {
           rebuilt.push(p);
         }
       }
-      if (imageManifest.length > 0) {
+      if (!isSunburst && imageManifest.length > 0) {
         rebuilt.splice(1, 0, {
           text: `<IMAGE_MANIFEST>\nThe attached images are labelled in order. Use each strictly for its stated role:\n${imageManifest.map(m => `IMAGE ${m.index} = ${m.label}`).join('\n')}\n</IMAGE_MANIFEST>`,
         });
@@ -981,7 +985,7 @@ REPRODUCTION RULES (ZERO DEVIATION):
         console.warn(`[remaster][sunburst] skipped reference without OpenAI file id: ${m.label}`);
       }
 
-      const manifestText = usedLabels.map((l, i) => `image #${i + 1} = ${l}`).join('\n');
+      const manifestText = usedLabels.map((l, i) => `IMAGE ${i + 1} = ${l}`).join('\n');
       const finalPrompt = `<IMAGE_ORDER>\nThe attached images arrive in this exact order. IMAGE 1 is always the primary vehicle blueprint and has absolute authority over vehicle identity. Use every later image only for its labelled role:\n${manifestText}\n</IMAGE_ORDER>\n\n${promptText}`;
 
       console.log(`[remaster][sunburst] engine=openai tier=${tier} imageModel=${engineConfig.model} refs=${contentImages.length} viaFileId=${fileIdCount} viaBase64Fallback=${base64Count} serverStatic=${serverStaticCount} promptLen=${finalPrompt.length}`);

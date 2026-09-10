@@ -28,3 +28,22 @@ describe('file-id-first payload guard', () => {
     expect(out.customShowroomBase64).toBe(B64);
   });
 });
+
+describe('mixed additional references', () => {
+  it('keeps base64 fallbacks for additional refs whose upload failed', () => {
+    const out = stripRedundantBase64({
+      imageBase64: null,
+      mainImageOpenAIFile: { fileId: 'file_1', mimeType: 'image/png' },
+      additionalOpenAIFiles: [
+        { fileId: 'file_2', mimeType: 'image/png' },
+        { fileId: 'file_3', mimeType: 'image/png' },
+        { fileId: 'file_4', mimeType: 'image/png' },
+      ],
+      additionalImages: [B64],
+      additionalImageRoles: ['detail reference'],
+    });
+    expect(out.additionalImages).toEqual([B64]);
+    expect(out.additionalImageRoles).toEqual(['detail reference']);
+    expect(out.additionalOpenAIFiles).toHaveLength(3);
+  });
+});
