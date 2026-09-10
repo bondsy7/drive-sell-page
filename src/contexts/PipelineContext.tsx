@@ -219,12 +219,13 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // reused for ALL pipeline jobs (never re-sent as base64 per perspective).
   const cachedOpenAIFilesRef = useRef<{
     references: OpenAIFileRef[];
+    additional: OpenAIFileRef[];
     showroom: OpenAIFileRef | null;
     plate: OpenAIFileRef | null;
     manufacturerLogo: OpenAIFileRef | null;
     dealerLogo: OpenAIFileRef | null;
     wheel: OpenAIFileRef | null;
-  }>({ references: [], showroom: null, plate: null, manufacturerLogo: null, dealerLogo: null, wheel: null });
+  }>({ references: [], additional: [], showroom: null, plate: null, manufacturerLogo: null, dealerLogo: null, wheel: null });
 
   // Helper to fetch a URL and convert to data URL (base64)
   const fetchUrlToBase64 = useCallback(async (url: string): Promise<string | null> => {
@@ -371,16 +372,43 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       });
     }
 
-    // OpenAI file IDs follow the SAME routing/order as the Gemini references
+    // OpenAI file IDs follow the SAME smart routing as the Gemini references.
+    // A supporting image can come from `referenceImages` OR from `cfg.additionalImages`
+    // – both groups have their own cache, so map each to the right one.
     const openAICache = cachedOpenAIFilesRef.current;
-    const allRefsForOpenAI = cfg.inputImages.length > 0 ? cfg.inputImages : cfg.originalImages;
-    const openAISupporting = openAICache.references.length > 0
-      ? supportingReferences
-          .map(ref => ({ ref, idx: allRefsForOpenAI.indexOf(ref) }))
-          .filter(x => x.idx >= 0 && x.idx < openAICache.references.length && x.idx !== primaryReferenceIndex)
-      : [];
-    const additionalOpenAIFiles: OpenAIFileRef[] = openAISupporting.map(x => openAICache.references[x.idx]);
-    const additionalOpenAIFileRoles: string[] = openAISupporting.map(x => cfg.referenceRoles?.[x.idx] || 'supporting vehicle reference');
+    const hasOpenAIFiles = openAICache.references.length > 0 || openAICache.additional.length > 0;
+    const mainImageOpenAIFile = openAICache.references[primaryReferenceIndex] || null;
+    const additionalOpenAIFiles: OpenAIFileRef[] = [];
+    const additionalOpenAIFileRoles: string[] = [];
+    const openAICoveredSupporting = new Set<string>();
+    if (hasOpenAIFiles) {
+      for (const ref of supportingReferences) {
+        const refIdx = referenceImages.indexOf(ref);
+        if (refIdx >= 0 && refIdx !== primaryReferenceIndex && openAICache.references[refIdx]) {
+          additionalOpenAIFiles.push(openAICache.references[refIdx]);
+          additionalOpenAIFileRoles.push(cfg.referenceRoles?.[refIdx] || 'supporting vehicle reference');
+          openAICoveredSupporting.add(ref);
+          continue;
+        }
+        const addIdx = (cfg.additionalImages || []).indexOf(ref);
+        if (addIdx >= 0 && openAICache.additional[addIdx]) {
+          additionalOpenAIFiles.push(openAICache.additional[addIdx]);
+          additionalOpenAIFileRoles.push('detail reference');
+          openAICoveredSupporting.add(ref);
+        }
+      }
+      // Anything already covered by an OpenAI file id must NOT be re-sent as base64.
+      if (inlineSupportingImages && inlineSupportingImages.length > 0) {
+        const keptRoles: string[] = [];
+        const kept = inlineSupportingImages.filter((img, i) => {
+          const keep = !openAICoveredSupporting.has(img);
+          if (keep) keptRoles.push(additionalImageRoles?.[i] || 'detail reference');
+          return keep;
+        });
+        inlineSupportingImages = kept;
+        additionalImageRoles = keptRoles;
+      }
+    }
 
     const fileUriCache = cachedFileUrisRef.current;
     const plateFileUri = isInteriorJob ? null : fileUriCache.plate;
@@ -389,7 +417,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     const { data, error } = await invokeRemasterVehicleImage({
       classContext: cfg.classContext ?? null,
-      imageBase64: primaryReference,
+      imageBase64: mainImageOpenAIFile ? null : primaryReference,
       mainImageRole: primaryReferenceRole,
       additionalImages: inlineSupportingImages && inlineSupportingImages.length > 0 ? inlineSupportingImages : undefined,
       additionalFileUris: additionalFileUris && additionalFileUris.length > 0 ? additionalFileUris : undefined,
@@ -397,23 +425,23 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       additionalFileUriRoles,
       mainImageFileUri: mainImageFileUri,
       wheelReferenceFileUri: needsWheel ? fileCache.wheel : null,
-      wheelReferenceBase64: needsWheel && !fileCache.wheel ? wheelReference!.image : null,
+      wheelReferenceBase64: needsWheel && !fileCache.wheel && !openAICache.wheel ? wheelReference!.image : null,
       wheelReferenceAnalysis: needsWheel ? (wheelReference!.analysis ?? null) : null,
       vehicleDescription: cfg.vehicleDescription,
       modelTier: cfg.modelTier,
       dynamicPrompt: fullPrompt,
-      customShowroomBase64: hasFileUris ? null : showroomBase64ForRequest,
+      customShowroomBase64: (hasFileUris || openAICache.showroom) ? null : showroomBase64ForRequest,
       customShowroomFileUri: fileCache.showroom || null,
-      customPlateImageBase64: plateFileUri ? null : (isInteriorJob ? null : (cfg.remasterConfig.customPlateImageBase64 || null)),
+      customPlateImageBase64: (plateFileUri || (!isInteriorJob && openAICache.plate)) ? null : (isInteriorJob ? null : (cfg.remasterConfig.customPlateImageBase64 || null)),
       customPlateImageFileUri: plateFileUri,
-      dealerLogoUrl: (dealerLogoFileUri2 || dealerLogoBase64) ? null : (cfg.remasterConfig.showDealerLogo ? cfg.remasterConfig.dealerLogoUrl : null),
-      dealerLogoBase64: dealerLogoFileUri2 ? null : dealerLogoBase64,
+      dealerLogoUrl: (dealerLogoFileUri2 || openAICache.dealerLogo || dealerLogoBase64) ? null : (cfg.remasterConfig.showDealerLogo ? cfg.remasterConfig.dealerLogoUrl : null),
+      dealerLogoBase64: (dealerLogoFileUri2 || (cfg.remasterConfig.showDealerLogo && openAICache.dealerLogo)) ? null : dealerLogoBase64,
       dealerLogoFileUri: dealerLogoFileUri2,
-      manufacturerLogoUrl: (mfgLogoFileUri || manufacturerLogoBase64) ? null : (cfg.remasterConfig.showManufacturerLogo ? cfg.resolvedManufacturerLogoUrl : null),
-      manufacturerLogoBase64: mfgLogoFileUri ? null : manufacturerLogoBase64,
+      manufacturerLogoUrl: (mfgLogoFileUri || openAICache.manufacturerLogo || manufacturerLogoBase64) ? null : (cfg.remasterConfig.showManufacturerLogo ? cfg.resolvedManufacturerLogoUrl : null),
+      manufacturerLogoBase64: (mfgLogoFileUri || (cfg.remasterConfig.showManufacturerLogo && openAICache.manufacturerLogo)) ? null : manufacturerLogoBase64,
       manufacturerLogoFileUri: mfgLogoFileUri,
       // OpenAI/Sunburst: reuse the cached file IDs for every job
-      mainImageOpenAIFile: openAICache.references[primaryReferenceIndex] || null,
+      mainImageOpenAIFile,
       additionalOpenAIFiles: additionalOpenAIFiles.length > 0 ? additionalOpenAIFiles : undefined,
       additionalOpenAIFileRoles: additionalOpenAIFiles.length > 0 ? additionalOpenAIFileRoles : undefined,
       wheelReferenceOpenAIFile: needsWheel ? openAICache.wheel : null,
@@ -514,7 +542,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       // ── Phase 4: Upload images to Gemini File API ONCE ──
       // This avoids sending MB of base64 with every single job request
       cachedFileUrisRef.current = { references: [], showroom: null, plate: null, manufacturerLogo: null, dealerLogo: null, wheel: null };
-      cachedOpenAIFilesRef.current = { references: [], showroom: null, plate: null, manufacturerLogo: null, dealerLogo: null, wheel: null };
+      cachedOpenAIFilesRef.current = { references: [], additional: [], showroom: null, plate: null, manufacturerLogo: null, dealerLogo: null, wheel: null };
       try {
         const referenceImages = cfg.inputImages.length > 0 ? cfg.inputImages : cfg.originalImages;
         const imagesToUpload: string[] = [...referenceImages];
@@ -545,18 +573,25 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (wheelB64) imagesToUpload.push(wheelB64);
 
         const useOpenAIFiles = tierUsesOpenAIFiles(cfg.modelTier);
+        // OpenAI track additionally uploads the detail images ONCE so detail jobs
+        // never resend them as base64.
+        const additionalForOpenAI = useOpenAIFiles ? (cfg.additionalImages || []) : [];
+        const additionalStartIdx = additionalForOpenAI.length > 0 ? imagesToUpload.length : -1;
+        if (additionalForOpenAI.length > 0) imagesToUpload.push(...additionalForOpenAI);
+
         if (imagesToUpload.length > 0 && useOpenAIFiles) {
           console.log(`[Pipeline] Uploading ${imagesToUpload.length} images to OpenAI Files API (tier=${cfg.modelTier})...`);
           const uploaded = await uploadToOpenAIFiles(imagesToUpload.map((b64, i) => ({ id: `p${i}`, imageBase64: b64 })));
           if (uploaded && uploaded.length === imagesToUpload.length) {
             const c = cachedOpenAIFilesRef.current;
             c.references = uploaded.slice(0, referenceImages.length);
+            if (additionalStartIdx >= 0) c.additional = uploaded.slice(additionalStartIdx, additionalStartIdx + additionalForOpenAI.length);
             if (showroomIdx >= 0) c.showroom = uploaded[showroomIdx];
             if (plateIdx >= 0) c.plate = uploaded[plateIdx];
             if (mfgLogoIdx >= 0) c.manufacturerLogo = uploaded[mfgLogoIdx];
             if (dealerLogoIdx >= 0) c.dealerLogo = uploaded[dealerLogoIdx];
             if (wheelIdx >= 0) c.wheel = uploaded[wheelIdx];
-            console.log(`[Pipeline] ✓ ${uploaded.length} images uploaded to OpenAI Files API`);
+            console.log(`[Pipeline] ✓ OpenAI file ids cached: refs=${c.references.length} additional=${c.additional.length} showroom=${c.showroom ? 1 : 0} plate=${c.plate ? 1 : 0} logos=${(c.manufacturerLogo ? 1 : 0) + (c.dealerLogo ? 1 : 0)} wheel=${c.wheel ? 1 : 0}`);
           } else {
             console.warn('[Pipeline] OpenAI Files upload failed/partial – falling back to inline base64');
           }
