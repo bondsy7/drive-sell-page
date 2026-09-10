@@ -42,7 +42,7 @@ Immer loggen: `[function] Engine=X Model=Y Tier=Z (user-selected, binding)`.
 ## File API First (provider-abhängig)
 
 - **Gemini-Tiers:** ALLE Bild/PDF-Transfers via `uploadToGeminiFiles` → `fileUri`. Base64 nur Fallback.
-- **OpenAI Sunburst:** Referenzen EINMAL via `uploadToOpenAIFiles` (Edge Function `upload-to-openai-files`, `POST /v1/files`, `purpose=vision`) → `file_id`. Diese IDs werden für alle Pipeline-Jobs wiederverwendet. Gemini-`file_uri` NIE an OpenAI geben und NIE zu Bytes rematerialisieren. Base64 (`image_url: data:...`) nur Fallback pro Request.
+- **OpenAI Sunburst (file-id-first):** Sobald ein Asset eine `file_id` hat, darf dasselbe Asset NICHT zusätzlich als Base64 im Request stehen (`stripRedundantBase64` in `src/lib/remaster-invoke.ts` erzwingt das). Referenzen EINMAL via `uploadToOpenAIFiles` (Edge Function `upload-to-openai-files`, `POST /v1/files`, `purpose=vision`) → `file_id`. Diese IDs werden für alle Pipeline-Jobs wiederverwendet. Gemini-`file_uri` NIE an OpenAI geben und NIE zu Bytes rematerialisieren. Base64 (`image_url: data:...`) nur Fallback pro Request.
 - OpenAI-Key niemals im Browser — Upload immer serverseitig über Edge Function.
 
 **Ausnahme — Veo Video (`generate-video`, `spin360_start`):** `predictLongRunning` akzeptiert KEIN `fileUri`. Client sendet raw base64 direkt.
@@ -54,10 +54,12 @@ Immer loggen: `[function] Engine=X Model=Y Tier=Z (user-selected, binding)`.
 - Gemini File-URIs müssen vorher zu inline bytes materialisiert werden
 
 **Sunburst (Test-Track):**
-- Endpoint: `POST /v1/responses`, Top-Level ein günstiges aktuelles Mainline-Modell als Orchestrator (`OPENAI_RESPONSES_MODEL`, Default `gpt-5.1-mini`)
+- Endpoint: `POST /v1/responses`, Top-Level ein günstiges aktuelles Mainline-Modell als Orchestrator (`OPENAI_RESPONSES_MODEL`, Default `gpt-5.6-luna`)
 - Input: eine User-Message mit `input_text` + `input_image`-Einträgen (`file_id`, `detail: high` für Fahrzeug-Blueprint/Felge/Kennzeichen/Showroom)
 - Tool: `{ type: "image_generation", model: "gpt-image-2.5-sunburst", action: "edit", quality: "high" }`
 - Ergebnis aus `response.output` → `type === "image_generation_call"` → `.result`, Rückgabe als `data:image/png;base64,...`
+- Pipeline lädt Referenzen + `additionalImages` EINMAL hoch und nutzt die IDs für alle Jobs (auch Retry)
+- Request-Timeout 135s (innerhalb des Edge-Budgets)
 - Bild 1 bleibt immer die primäre Fahrzeugreferenz; kein Fallback auf `gpt-image-1`/`gpt-image-2`, kein Cross-Engine-Fallback
 - Max 16 Referenzbilder
 - Output: 1536x1024

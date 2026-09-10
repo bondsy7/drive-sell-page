@@ -4,7 +4,8 @@ import type { WheelAnalysis } from '@/types/wheel-reference';
 import type { OpenAIFileRef } from '@/lib/openai-file-upload';
 
 export interface RemasterInvokePayload {
-  imageBase64: string;
+  /** Optional: omitted whenever an OpenAI file id carries the same asset. */
+  imageBase64?: string | null;
   /** Neutral perspective role of the primary vehicle reference (never brand/model text). */
   mainImageRole?: string;
   vehicleDescription?: string;
@@ -56,7 +57,30 @@ export interface RemasterInvokePayload {
   dealerLogoOpenAIFile?: OpenAIFileRef | null;
 }
 
-export async function invokeRemasterVehicleImage(body: RemasterInvokePayload) {
+/**
+ * file-id-first guard: strips base64 for every asset that already has an OpenAI
+ * file id, so the same image is never transferred twice. Exported for tests.
+ */
+export function stripRedundantBase64(body: RemasterInvokePayload): RemasterInvokePayload {
+  const out = { ...body };
+  if (out.mainImageOpenAIFile?.fileId) out.imageBase64 = null;
+  if (out.customShowroomOpenAIFile?.fileId) out.customShowroomBase64 = null;
+  if (out.customPlateOpenAIFile?.fileId) out.customPlateImageBase64 = null;
+  if (out.manufacturerLogoOpenAIFile?.fileId) { out.manufacturerLogoBase64 = null; out.manufacturerLogoUrl = null; }
+  if (out.dealerLogoOpenAIFile?.fileId) { out.dealerLogoBase64 = null; out.dealerLogoUrl = null; }
+  if (out.wheelReferenceOpenAIFile?.fileId) out.wheelReferenceBase64 = null;
+  if (out.additionalOpenAIFiles && out.additionalOpenAIFiles.length > 0 && out.additionalImages) {
+    // Detail references carried by file id are not repeated inline.
+    out.additionalImages = out.additionalImages.length > out.additionalOpenAIFiles.length
+      ? out.additionalImages
+      : [];
+    if (out.additionalImages.length === 0) out.additionalImageRoles = undefined;
+  }
+  return out;
+}
+
+export async function invokeRemasterVehicleImage(rawBody: RemasterInvokePayload) {
+  const body = stripRedundantBase64(rawBody);
   const { data: { session } } = await supabase.auth.getSession();
 
   if (!session?.access_token) {

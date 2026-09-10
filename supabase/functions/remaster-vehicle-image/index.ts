@@ -471,6 +471,12 @@ serve(async (req) => {
       sunburst:  { engine: 'openai', model: 'gpt-image-2.5-sunburst' },
     };
     const engineConfig = ENGINE_MAP[tier] || ENGINE_MAP['qualitaet'];
+    // Sunburst = OpenAI Responses API track. Only this path consumes OpenAI file IDs.
+    const isSunburst = engineConfig.engine === 'openai' && engineConfig.model === 'gpt-image-2.5-sunburst';
+    const oaFileId = (ref: any): string | null =>
+      isSunburst && ref && typeof ref.fileId === 'string' && ref.fileId ? ref.fileId : null;
+    /** Internal-only image part carrying an OpenAI file id. NEVER sent to Gemini. */
+    const openaiPart = (ref: any) => ({ openaiFile: { fileId: ref.fileId as string, mimeType: ref.mimeType || 'image/jpeg' } });
     const geminiModel = engineConfig.model; // legacy var name kept for downstream Gemini path
     console.log(`[remaster] Engine=${engineConfig.engine} Model=${engineConfig.model} Tier=${tier} (user-selected, binding)`);
 
@@ -478,7 +484,7 @@ serve(async (req) => {
     const OPENAI_API_KEY = engineConfig.engine === 'openai' ? await getSecret("OPENAI_API_KEY") : null;
     if (engineConfig.engine === 'gemini' && !GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
     if (engineConfig.engine === 'openai' && !OPENAI_API_KEY) throw new Error("OPENAI_API_KEY not configured");
-    if (!imageBase64 && !mainImageFileUri?.uri) throw new Error("No image provided");
+    if (!imageBase64 && !mainImageFileUri?.uri && !oaFileId(mainImageOpenAIFile)) throw new Error("No image provided");
 
     // 2. Use dynamic prompt if provided, otherwise build fallback from admin blocks
     // Fahrzeugklassen-Kontext prüfen (verbindliche Promptübergabe)
@@ -555,7 +561,7 @@ ABSOLUTE OUTPUT STANDARD: Render this as a professional automotive photograph ta
       return null;
     }
 
-    const hasCustomShowroom = !!(customShowroomBase64 || customShowroomFileUri?.uri);
+    const hasCustomShowroom = !!(customShowroomBase64 || customShowroomFileUri?.uri || oaFileId(customShowroomOpenAIFile));
     const customShowroomInstructionText = hasCustomShowroom ? `<CUSTOM_SHOWROOM_INSTRUCTION>
 The following showroom image is the TARGET SCENE and the physical room where the final photograph must be created. This showroom is the IMMUTABLE BASE SCENE. The source vehicle photo is NOT the base image.
 
@@ -613,7 +619,9 @@ ${DEKRA_SHOWROOM_SCENE_JSON}
     // This makes the room the target scene and reduces source-photo reflection carryover.
     if (hasCustomShowroom) {
       parts.push({ text: customShowroomInstructionText });
-      if (customShowroomFileUri?.uri) {
+      if (oaFileId(customShowroomOpenAIFile)) {
+        { const _p = openaiPart(customShowroomOpenAIFile); imageLabels.set(_p, 'SHOWROOM / SCENE – target environment'); parts.push(_p); }
+      } else if (customShowroomFileUri?.uri) {
         { const _p = { file_data: { mime_type: customShowroomFileUri.mimeType, file_uri: customShowroomFileUri.uri } }; imageLabels.set(_p, 'SHOWROOM / SCENE – target environment'); parts.push(_p); }
         console.log(`[remaster] Showroom via file_uri (target scene first)`);
       } else if (customShowroomBase64) {
@@ -625,7 +633,12 @@ ${DEKRA_SHOWROOM_SCENE_JSON}
     if (hasCustomShowroom) {
       parts.push({ text: "VEHICLE IDENTITY BLUEPRINT — GENERATION-AUTHORITATIVE: The next image defines the exact photographed model generation/facelift, body geometry, front and rear design, trim, wheels, badges, paint color and equipment. Copy those vehicle attributes exactly; never substitute an older, newer, more familiar or catalogue-default version. It is NOT the output background: do not preserve its environment, lighting, reflections, window content, shadows, floor, banners or unrelated text." });
     }
-    if (mainImageFileUri?.uri) {
+    if (oaFileId(mainImageOpenAIFile)) {
+      const p = openaiPart(mainImageOpenAIFile);
+      imageLabels.set(p, `VEHICLE BLUEPRINT – ${mainImageRole || 'overall vehicle photo'} (generation-authoritative geometry, trim, paint)`);
+      parts.push(p);
+      console.log('[remaster] Main image via OpenAI file_id');
+    } else if (mainImageFileUri?.uri) {
       const p = { file_data: { mime_type: mainImageFileUri.mimeType, file_uri: mainImageFileUri.uri } };
       imageLabels.set(p, `VEHICLE BLUEPRINT – ${mainImageRole || 'overall vehicle photo'} (generation-authoritative geometry, trim, paint)`);
       parts.push(p);
@@ -644,7 +657,7 @@ The immediately preceding VEHICLE BLUEPRINT is the single highest-priority sourc
 
     // ── DEDIZIERTE FELGENREFERENZ ── direkt nach dem Fahrzeugbild und VOR allen
     // allgemeinen Detailreferenzen, damit sie im Kontext maximal stark gewichtet ist.
-    const hasWheelReference = !!(wheelReferenceBase64 || wheelReferenceFileUri?.uri);
+    const hasWheelReference = !!(wheelReferenceBase64 || wheelReferenceFileUri?.uri || oaFileId(wheelReferenceOpenAIFile));
     if (hasWheelReference) {
       const analysisLines: string[] = [];
       if (wheelReferenceAnalysis && typeof wheelReferenceAnalysis === 'object') {
@@ -665,7 +678,12 @@ It is the ONLY authoritative source for every visible wheel in the output.
 - SELF-CHECK BEFORE OUTPUT: Does the rendered rim have the SAME spoke count as the WHEEL REFERENCE? Is the finish and colour identical? Is the centre cap identical? If any answer is no, re-draw the wheels before returning the image.
 - If the textual analysis below conflicts with this IMAGE, the IMAGE wins.${analysisLines.length ? `\n\nWHEEL_ANALYSIS (support hint only):\n${analysisLines.join('\n')}` : ''}
 </CRITICAL_WHEEL_REFERENCE>` });
-      if (wheelReferenceFileUri?.uri) {
+      if (oaFileId(wheelReferenceOpenAIFile)) {
+        const p = openaiPart(wheelReferenceOpenAIFile);
+        imageLabels.set(p, 'WHEEL REFERENCE – authoritative source for ALL visible rims');
+        parts.push(p);
+        console.log('[remaster][wheel] wheel reference attached via OpenAI file_id');
+      } else if (wheelReferenceFileUri?.uri) {
         const p = { file_data: { mime_type: wheelReferenceFileUri.mimeType || 'image/jpeg', file_uri: wheelReferenceFileUri.uri } };
         imageLabels.set(p, 'WHEEL REFERENCE – authoritative source for ALL visible rims');
         parts.push(p);
@@ -681,8 +699,20 @@ It is the ONLY authoritative source for every visible wheel in the output.
     }
 
     // Additional reference images
-    if ((Array.isArray(additionalFileUris) && additionalFileUris.length > 0) || (Array.isArray(additionalImages) && additionalImages.length > 0)) {
+    const openAIAdditional: any[] = isSunburst && Array.isArray(additionalOpenAIFiles)
+      ? additionalOpenAIFiles.filter((r: any) => oaFileId(r))
+      : [];
+    if (openAIAdditional.length > 0 || (Array.isArray(additionalFileUris) && additionalFileUris.length > 0) || (Array.isArray(additionalImages) && additionalImages.length > 0)) {
       parts.push({ text: `AUTHORITATIVE DETAIL REFERENCES: The following extra images are the highest-priority source material for exact reproduction of the vehicle. Match every visible color, material, trim, label, inscription, button, texture, and geometry exactly. Do NOT replace missing certainty with generic model-memory or guessed defaults.${hasWheelReference ? ' EXCEPTION: for wheels/rims these images NEVER override the WHEEL REFERENCE image – the WHEEL REFERENCE always wins.' : ''}` });
+    }
+
+    if (openAIAdditional.length > 0) {
+      for (let i = 0; i < openAIAdditional.length; i++) {
+        const p = openaiPart(openAIAdditional[i]);
+        imageLabels.set(p, `Vehicle reference – ${additionalOpenAIFileRoles?.[i] || 'supporting detail'}`);
+        parts.push(p);
+      }
+      console.log(`[remaster] ${openAIAdditional.length} additional images via OpenAI file_id`);
     }
 
     if (Array.isArray(additionalFileUris) && additionalFileUris.length > 0) {
@@ -723,9 +753,11 @@ The vehicle images immediately above are the final and only geometry authority.
     }
 
 
-    if (customPlateImageBase64 || customPlateImageFileUri?.uri) {
+    if (customPlateImageBase64 || customPlateImageFileUri?.uri || oaFileId(customPlateOpenAIFile)) {
       parts.push({ text: "CRITICAL – CUSTOM LICENSE PLATE IMAGE: The following image is the EXACT license plate you MUST use. Replace the vehicle's existing plate with this plate PIXEL-FOR-PIXEL. Reproduce every character, color, seal, EU badge, and spacing exactly. Do NOT invent or modify any element. This is an IMMUTABLE ASSET:" });
-      if (customPlateImageFileUri?.uri) {
+      if (oaFileId(customPlateOpenAIFile)) {
+        { const _p = openaiPart(customPlateOpenAIFile); imageLabels.set(_p, 'LICENSE PLATE – immutable asset'); parts.push(_p); }
+      } else if (customPlateImageFileUri?.uri) {
         { const _p = { file_data: { mime_type: customPlateImageFileUri.mimeType, file_uri: customPlateImageFileUri.uri } }; imageLabels.set(_p, 'LICENSE PLATE – immutable asset'); parts.push(_p); }
         console.log(`[remaster] Plate via file_uri`);
       } else {
@@ -734,9 +766,12 @@ The vehicle images immediately above are the final and only geometry authority.
     }
 
     // Manufacturer logo
-    if (manufacturerLogoFileUri?.uri || manufacturerLogoBase64 || manufacturerLogoUrl) {
+    if (manufacturerLogoFileUri?.uri || manufacturerLogoBase64 || manufacturerLogoUrl || oaFileId(manufacturerLogoOpenAIFile)) {
       let logoData: any = null;
-      if (manufacturerLogoFileUri?.uri) {
+      if (oaFileId(manufacturerLogoOpenAIFile)) {
+        logoData = openaiPart(manufacturerLogoOpenAIFile);
+        console.log('Manufacturer logo: via OpenAI file_id');
+      } else if (manufacturerLogoFileUri?.uri) {
         logoData = { file_data: { mime_type: manufacturerLogoFileUri.mimeType, file_uri: manufacturerLogoFileUri.uri } };
         console.log(`Manufacturer logo: via file_uri`);
       } else if (manufacturerLogoBase64) {
@@ -771,9 +806,11 @@ REPRODUCTION RULES (ZERO DEVIATION ALLOWED):
     }
 
     // Dealer logo
-    if (dealerLogoFileUri?.uri || dealerLogoBase64 || dealerLogoUrl) {
+    if (dealerLogoFileUri?.uri || dealerLogoBase64 || dealerLogoUrl || oaFileId(dealerLogoOpenAIFile)) {
       let logoData: any = null;
-      if (dealerLogoFileUri?.uri) {
+      if (oaFileId(dealerLogoOpenAIFile)) {
+        logoData = openaiPart(dealerLogoOpenAIFile);
+      } else if (dealerLogoFileUri?.uri) {
         logoData = { file_data: { mime_type: dealerLogoFileUri.mimeType, file_uri: dealerLogoFileUri.uri } };
       } else if (dealerLogoBase64) {
         logoData = toInlineData(dealerLogoBase64);
@@ -795,7 +832,7 @@ The following image is the EXACT dealer logo. Reproduce PIXEL-FOR-PIXEL with all
     }
 
     // No logos → explicit instruction
-    const hasAnyLogo = !!(manufacturerLogoFileUri?.uri || manufacturerLogoBase64 || manufacturerLogoUrl || dealerLogoFileUri?.uri || dealerLogoBase64 || dealerLogoUrl);
+    const hasAnyLogo = !!(manufacturerLogoFileUri?.uri || manufacturerLogoBase64 || manufacturerLogoUrl || dealerLogoFileUri?.uri || dealerLogoBase64 || dealerLogoUrl || oaFileId(manufacturerLogoOpenAIFile) || oaFileId(dealerLogoOpenAIFile));
     if (!hasAnyLogo) {
       parts.push({ text: `<NO_LOGO_INSTRUCTION>
 Do NOT add ANY logo, brand mark, emblem, or wall decoration to the background.
@@ -823,7 +860,7 @@ REPRODUCTION RULES (ZERO DEVIATION):
 6. CONSISTENCY: The SAME logo in the SAME position on the SAME hall must appear in EVERY generated image / perspective for this vehicle.
 7. SOURCE OF TRUTH: This asset OVERRIDES any DEKRA-like logo, text or banner the model might otherwise invent. Use ONLY this image.
 </SCENE_ASSET_DEKRA_LOGO>` });
-      { const _p = { inlineData: { mimeType: DEKRA_LOGO_MIME, data: DEKRA_LOGO_BASE64 } }; imageLabels.set(_p, 'DEKRA LOGO – immutable scene asset'); parts.push(_p); }
+      { const _p: any = { inlineData: { mimeType: DEKRA_LOGO_MIME, data: DEKRA_LOGO_BASE64 }, serverStatic: true }; imageLabels.set(_p, 'DEKRA LOGO – immutable scene asset'); parts.push(_p); }
       console.log('[remaster] DEKRA scene asset injected (dealer-lot-dekra)');
     }
 
@@ -835,7 +872,7 @@ REPRODUCTION RULES (ZERO DEVIATION):
     {
       const rebuilt: any[] = [];
       for (const p of parts) {
-        if (p?.inlineData?.data || p?.file_data?.file_uri) {
+        if (p?.inlineData?.data || p?.file_data?.file_uri || p?.openaiFile?.fileId) {
           const label = imageLabels.get(p) || 'Reference image (context asset)';
           const index = imageManifest.length + 1;
           imageManifest.push({ index, label, part: p });
@@ -891,12 +928,14 @@ REPRODUCTION RULES (ZERO DEVIATION):
     // Uses OpenAI Files API file_ids (no re-materialization of bytes).
     // No cross-engine fallback, no fallback to older image models.
     // ─────────────────────────────────────────────────────────────
-    if (engineConfig.engine === 'openai' && engineConfig.model === 'gpt-image-2.5-sunburst') {
+    if (isSunburst) {
       const promptText = parts
         .filter((p: any) => typeof p.text === 'string')
         .map((p: any) => p.text)
         .join('\n\n');
 
+      // IMAGE 1 must be the vehicle blueprint even when a custom showroom was
+      // placed first in the Gemini part order.
       const priorityOf = (label: string) => {
         if (label.startsWith('VEHICLE BLUEPRINT')) return 0;
         if (label.startsWith('WHEEL REFERENCE')) return 1;
@@ -909,24 +948,6 @@ REPRODUCTION RULES (ZERO DEVIATION):
         (a, b) => priorityOf(a.label) - priorityOf(b.label) || a.index - b.index,
       );
 
-      const asFileId = (ref: any): string | null =>
-        ref && typeof ref.fileId === 'string' && ref.fileId ? ref.fileId : null;
-      const additionalFiles: any[] = Array.isArray(additionalOpenAIFiles) ? additionalOpenAIFiles : [];
-      let additionalCursor = 0;
-      const fileIdForLabel = (label: string): string | null => {
-        if (label.startsWith('VEHICLE BLUEPRINT')) return asFileId(mainImageOpenAIFile);
-        if (label.startsWith('WHEEL REFERENCE')) return asFileId(wheelReferenceOpenAIFile);
-        if (label.startsWith('LICENSE PLATE')) return asFileId(customPlateOpenAIFile);
-        if (label.startsWith('SHOWROOM')) return asFileId(customShowroomOpenAIFile);
-        if (label.startsWith('MANUFACTURER LOGO')) return asFileId(manufacturerLogoOpenAIFile);
-        if (label.startsWith('DEALER LOGO')) return asFileId(dealerLogoOpenAIFile);
-        if (label.startsWith('Vehicle reference')) {
-          const ref = additionalFiles[additionalCursor];
-          additionalCursor++;
-          return asFileId(ref);
-        }
-        return null;
-      };
       const highDetail = (label: string) =>
         label.startsWith('VEHICLE BLUEPRINT') || label.startsWith('WHEEL REFERENCE') ||
         label.startsWith('LICENSE PLATE') || label.startsWith('SHOWROOM');
@@ -935,35 +956,37 @@ REPRODUCTION RULES (ZERO DEVIATION):
       const usedLabels: string[] = [];
       let fileIdCount = 0;
       let base64Count = 0;
+      let serverStaticCount = 0;
 
       for (const m of ordered) {
         if (contentImages.length >= 16) break;
         const detail = highDetail(m.label) ? 'high' : 'auto';
-        const fileId = fileIdForLabel(m.label);
-        if (fileId) {
-          contentImages.push({ type: 'input_image', file_id: fileId, detail });
+        const part: any = m.part;
+        // Deterministic: the labelled part itself carries the OpenAI file id.
+        if (part?.openaiFile?.fileId) {
+          contentImages.push({ type: 'input_image', file_id: part.openaiFile.fileId, detail });
           usedLabels.push(m.label);
           fileIdCount++;
           continue;
         }
         // Base64 fallback for this single request only – file IDs have priority.
-        const part: any = m.part;
         if (part?.inlineData?.data) {
           const mime = part.inlineData.mimeType || 'image/png';
           contentImages.push({ type: 'input_image', image_url: `data:${mime};base64,${part.inlineData.data}`, detail });
           usedLabels.push(m.label);
-          base64Count++;
+          if (part.serverStatic) serverStaticCount++; else base64Count++;
           continue;
         }
+        // Gemini file_uri must never be re-materialized for OpenAI.
         console.warn(`[remaster][sunburst] skipped reference without OpenAI file id: ${m.label}`);
       }
 
       const manifestText = usedLabels.map((l, i) => `image #${i + 1} = ${l}`).join('\n');
       const finalPrompt = `<IMAGE_ORDER>\nThe attached images arrive in this exact order. IMAGE 1 is always the primary vehicle blueprint and has absolute authority over vehicle identity. Use every later image only for its labelled role:\n${manifestText}\n</IMAGE_ORDER>\n\n${promptText}`;
 
-      console.log(`[remaster][sunburst] engine=openai tier=${tier} imageModel=${engineConfig.model} refs=${contentImages.length} viaFileId=${fileIdCount} viaBase64=${base64Count} promptLen=${finalPrompt.length}`);
+      console.log(`[remaster][sunburst] engine=openai tier=${tier} imageModel=${engineConfig.model} refs=${contentImages.length} viaFileId=${fileIdCount} viaBase64Fallback=${base64Count} serverStatic=${serverStaticCount} promptLen=${finalPrompt.length}`);
 
-      const orchestratorModel = (await getSecret('OPENAI_RESPONSES_MODEL')) || 'gpt-5.1-mini';
+      const orchestratorModel = (await getSecret('OPENAI_RESPONSES_MODEL')) || 'gpt-5.6-luna';
       const body = {
         model: orchestratorModel,
         input: [
@@ -990,7 +1013,7 @@ REPRODUCTION RULES (ZERO DEVIATION):
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(body),
-      }, 180_000);
+      }, 135_000);
 
       if (!resp.ok) {
         const errText = await resp.text();
