@@ -887,6 +887,136 @@ REPRODUCTION RULES (ZERO DEVIATION):
     let lastError = "";
 
     // ─────────────────────────────────────────────────────────────
+    // OPENAI SUNBURST — Responses API + image_generation tool (edit)
+    // Uses OpenAI Files API file_ids (no re-materialization of bytes).
+    // No cross-engine fallback, no fallback to older image models.
+    // ─────────────────────────────────────────────────────────────
+    if (engineConfig.engine === 'openai' && engineConfig.model === 'gpt-image-2.5-sunburst') {
+      const promptText = parts
+        .filter((p: any) => typeof p.text === 'string')
+        .map((p: any) => p.text)
+        .join('\n\n');
+
+      const priorityOf = (label: string) => {
+        if (label.startsWith('VEHICLE BLUEPRINT')) return 0;
+        if (label.startsWith('WHEEL REFERENCE')) return 1;
+        if (label.startsWith('LICENSE PLATE')) return 2;
+        if (label.startsWith('SHOWROOM')) return 3;
+        if (/LOGO/i.test(label)) return 4;
+        return 5;
+      };
+      const ordered = [...imageManifest].sort(
+        (a, b) => priorityOf(a.label) - priorityOf(b.label) || a.index - b.index,
+      );
+
+      const asFileId = (ref: any): string | null =>
+        ref && typeof ref.fileId === 'string' && ref.fileId ? ref.fileId : null;
+      const additionalFiles: any[] = Array.isArray(additionalOpenAIFiles) ? additionalOpenAIFiles : [];
+      let additionalCursor = 0;
+      const fileIdForLabel = (label: string): string | null => {
+        if (label.startsWith('VEHICLE BLUEPRINT')) return asFileId(mainImageOpenAIFile);
+        if (label.startsWith('WHEEL REFERENCE')) return asFileId(wheelReferenceOpenAIFile);
+        if (label.startsWith('LICENSE PLATE')) return asFileId(customPlateOpenAIFile);
+        if (label.startsWith('SHOWROOM')) return asFileId(customShowroomOpenAIFile);
+        if (label.startsWith('MANUFACTURER LOGO')) return asFileId(manufacturerLogoOpenAIFile);
+        if (label.startsWith('DEALER LOGO')) return asFileId(dealerLogoOpenAIFile);
+        if (label.startsWith('Vehicle reference')) {
+          const ref = additionalFiles[additionalCursor];
+          additionalCursor++;
+          return asFileId(ref);
+        }
+        return null;
+      };
+      const highDetail = (label: string) =>
+        label.startsWith('VEHICLE BLUEPRINT') || label.startsWith('WHEEL REFERENCE') ||
+        label.startsWith('LICENSE PLATE') || label.startsWith('SHOWROOM');
+
+      const contentImages: any[] = [];
+      const usedLabels: string[] = [];
+      let fileIdCount = 0;
+      let base64Count = 0;
+
+      for (const m of ordered) {
+        if (contentImages.length >= 16) break;
+        const detail = highDetail(m.label) ? 'high' : 'auto';
+        const fileId = fileIdForLabel(m.label);
+        if (fileId) {
+          contentImages.push({ type: 'input_image', file_id: fileId, detail });
+          usedLabels.push(m.label);
+          fileIdCount++;
+          continue;
+        }
+        // Base64 fallback for this single request only – file IDs have priority.
+        const part: any = m.part;
+        if (part?.inlineData?.data) {
+          const mime = part.inlineData.mimeType || 'image/png';
+          contentImages.push({ type: 'input_image', image_url: `data:${mime};base64,${part.inlineData.data}`, detail });
+          usedLabels.push(m.label);
+          base64Count++;
+          continue;
+        }
+        console.warn(`[remaster][sunburst] skipped reference without OpenAI file id: ${m.label}`);
+      }
+
+      const manifestText = usedLabels.map((l, i) => `image #${i + 1} = ${l}`).join('\n');
+      const finalPrompt = `<IMAGE_ORDER>\nThe attached images arrive in this exact order. IMAGE 1 is always the primary vehicle blueprint and has absolute authority over vehicle identity. Use every later image only for its labelled role:\n${manifestText}\n</IMAGE_ORDER>\n\n${promptText}`;
+
+      console.log(`[remaster][sunburst] engine=openai tier=${tier} imageModel=${engineConfig.model} refs=${contentImages.length} viaFileId=${fileIdCount} viaBase64=${base64Count} promptLen=${finalPrompt.length}`);
+
+      const orchestratorModel = (await getSecret('OPENAI_RESPONSES_MODEL')) || 'gpt-5.1-mini';
+      const body = {
+        model: orchestratorModel,
+        input: [
+          {
+            role: 'user',
+            content: [{ type: 'input_text', text: finalPrompt }, ...contentImages],
+          },
+        ],
+        tools: [
+          {
+            type: 'image_generation',
+            model: 'gpt-image-2.5-sunburst',
+            action: 'edit',
+            quality: 'high',
+          },
+        ],
+        tool_choice: { type: 'image_generation' },
+      };
+
+      const resp = await fetchWithTimeout('https://api.openai.com/v1/responses', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${OPENAI_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      }, 180_000);
+
+      if (!resp.ok) {
+        const errText = await resp.text();
+        console.error(`[remaster][sunburst] status=${resp.status}: ${errText.slice(0, 400)}`);
+        let providerMessage = '';
+        try { providerMessage = JSON.parse(errText)?.error?.message || ''; } catch { /* keep status */ }
+        throw new Error(providerMessage || `OpenAI Sunburst error (${resp.status})`);
+      }
+
+      const data = await resp.json();
+      const output: any[] = Array.isArray(data?.output) ? data.output : [];
+      const imageCall = output.find((o: any) => o?.type === 'image_generation_call' && o?.result);
+      const b64 = imageCall?.result;
+      if (!b64) {
+        console.error('[remaster][sunburst] no image_generation_call result in response');
+        throw new Error('OpenAI Sunburst: kein Bild im Response');
+      }
+
+      console.log(`[remaster][sunburst] success model=${engineConfig.model} orchestrator=${orchestratorModel}`);
+      return new Response(
+        JSON.stringify({ imageBase64: `data:image/png;base64,${b64}`, engine: 'openai', model: engineConfig.model }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+
+    // ─────────────────────────────────────────────────────────────
     // OPENAI ENGINE (turbo / ultra / neu) — uses /v1/images/edits
     // ─────────────────────────────────────────────────────────────
     if (engineConfig.engine === 'openai') {
