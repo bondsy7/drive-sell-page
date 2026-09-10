@@ -11,6 +11,7 @@ import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 import { detectVehicleBranding } from '@/lib/detect-branding';
 import { compressImageForAI, fileToBase64 } from '@/lib/image-compress';
 import { uploadToGeminiFiles, type GeminiFileRef } from '@/lib/gemini-file-upload';
+import { uploadToOpenAIFiles, tierUsesOpenAIFiles, type OpenAIFileRef } from '@/lib/openai-file-upload';
 import ProcessTimer from '@/components/ProcessTimer';
 
 interface ImageUploadRemasterProps {
@@ -128,17 +129,34 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
     if (remasterConfig.showManufacturerLogo && remasterConfig.manufacturerLogoBase64) sharedAssets.push({ key: 'mfgLogo', b64: remasterConfig.manufacturerLogoBase64 });
     if (remasterConfig.showDealerLogo && remasterConfig.dealerLogoBase64) sharedAssets.push({ key: 'dealerLogo', b64: remasterConfig.dealerLogoBase64 });
 
-    let sharedRefs: Record<string, GeminiFileRef | null> = { showroom: null, plate: null, mfgLogo: null, dealerLogo: null };
+    // Provider-aware upload: OpenAI/Sunburst uses OpenAI Files, everything else Gemini File API.
+    const useOpenAIFiles = tierUsesOpenAIFiles(modelTier);
+    const sharedRefs: Record<string, GeminiFileRef | null> = { showroom: null, plate: null, mfgLogo: null, dealerLogo: null };
+    const sharedOpenAIRefs: Record<string, OpenAIFileRef | null> = { showroom: null, plate: null, mfgLogo: null, dealerLogo: null };
     if (sharedAssets.length > 0) {
-      const uploaded = await uploadToGeminiFiles(sharedAssets.map(a => ({ id: a.key, imageBase64: a.b64 })));
-      if (uploaded) {
-        sharedAssets.forEach((a, i) => { sharedRefs[a.key] = uploaded[i] || null; });
+      if (useOpenAIFiles) {
+        const uploaded = await uploadToOpenAIFiles(sharedAssets.map(a => ({ id: a.key, imageBase64: a.b64 })));
+        if (uploaded) sharedAssets.forEach((a, i) => { sharedOpenAIRefs[a.key] = uploaded[i] || null; });
+        else console.warn('[Remaster] OpenAI Files upload failed – falling back to base64');
+      } else {
+        const uploaded = await uploadToGeminiFiles(sharedAssets.map(a => ({ id: a.key, imageBase64: a.b64 })));
+        if (uploaded) sharedAssets.forEach((a, i) => { sharedRefs[a.key] = uploaded[i] || null; });
       }
     }
 
-    const buildBody = (mainBase64: string, mainFileUri: GeminiFileRef | null, dynamicPrompt: string) => ({
+    const buildBody = (
+      mainBase64: string,
+      mainFileUri: GeminiFileRef | null,
+      dynamicPrompt: string,
+      mainOpenAIFile: OpenAIFileRef | null = null,
+    ) => ({
       imageBase64: mainBase64,
       mainImageFileUri: mainFileUri,
+      mainImageOpenAIFile: mainOpenAIFile,
+      customShowroomOpenAIFile: sharedOpenAIRefs.showroom,
+      customPlateOpenAIFile: sharedOpenAIRefs.plate,
+      manufacturerLogoOpenAIFile: sharedOpenAIRefs.mfgLogo,
+      dealerLogoOpenAIFile: sharedOpenAIRefs.dealerLogo,
       vehicleDescription,
       modelTier: modelTier || 'standard',
       dynamicPrompt,
@@ -157,9 +175,16 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
 
     const processImage = async (img: UploadedImage) => {
       try {
-        // Upload main image via File API
-        const mainUploaded = await uploadToGeminiFiles([{ id: img.id, imageBase64: img.originalBase64 }]);
-        const mainRef = mainUploaded?.[0] || null;
+        // Upload main image via provider-specific File API
+        let mainRef: GeminiFileRef | null = null;
+        let mainOpenAIRef: OpenAIFileRef | null = null;
+        if (useOpenAIFiles) {
+          const uploaded = await uploadToOpenAIFiles([{ id: img.id, imageBase64: img.originalBase64 }]);
+          mainOpenAIRef = uploaded?.[0] || null;
+        } else {
+          const mainUploaded = await uploadToGeminiFiles([{ id: img.id, imageBase64: img.originalBase64 }]);
+          mainRef = mainUploaded?.[0] || null;
+        }
 
         // Per-image branding pre-scan when cleanup categories are selected.
         let dynamicPrompt = defaultPrompt;
@@ -173,7 +198,7 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
           }
         }
 
-        const { data, error } = await invokeRemasterVehicleImage(buildBody(img.originalBase64, mainRef, dynamicPrompt));
+        const { data, error } = await invokeRemasterVehicleImage(buildBody(img.originalBase64, mainRef, dynamicPrompt, mainOpenAIRef));
 
 
         if (error || !data?.imageBase64) {
@@ -222,13 +247,25 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
       if (remasterConfig.customPlateImageBase64) assets.push({ id: 'plate', b64: remasterConfig.customPlateImageBase64 });
       if (remasterConfig.showManufacturerLogo && remasterConfig.manufacturerLogoBase64) assets.push({ id: 'mfgLogo', b64: remasterConfig.manufacturerLogoBase64 });
       if (remasterConfig.showDealerLogo && remasterConfig.dealerLogoBase64) assets.push({ id: 'dealerLogo', b64: remasterConfig.dealerLogoBase64 });
-      const uploaded = await uploadToGeminiFiles(assets.map(a => ({ id: a.id, imageBase64: a.b64 })));
+      const useOpenAIFilesRetry = tierUsesOpenAIFiles(modelTier);
       const refMap: Record<string, GeminiFileRef | null> = {};
-      if (uploaded) assets.forEach((a, i) => { refMap[a.id] = uploaded[i] || null; });
+      const openAIMap: Record<string, OpenAIFileRef | null> = {};
+      if (useOpenAIFilesRetry) {
+        const uploaded = await uploadToOpenAIFiles(assets.map(a => ({ id: a.id, imageBase64: a.b64 })));
+        if (uploaded) assets.forEach((a, i) => { openAIMap[a.id] = uploaded[i] || null; });
+      } else {
+        const uploaded = await uploadToGeminiFiles(assets.map(a => ({ id: a.id, imageBase64: a.b64 })));
+        if (uploaded) assets.forEach((a, i) => { refMap[a.id] = uploaded[i] || null; });
+      }
 
       const { data, error } = await invokeRemasterVehicleImage({
         imageBase64: img.originalBase64,
         mainImageFileUri: refMap.main || null,
+        mainImageOpenAIFile: openAIMap.main || null,
+        customShowroomOpenAIFile: openAIMap.showroom || null,
+        customPlateOpenAIFile: openAIMap.plate || null,
+        manufacturerLogoOpenAIFile: openAIMap.mfgLogo || null,
+        dealerLogoOpenAIFile: openAIMap.dealerLogo || null,
         vehicleDescription,
         modelTier: modelTier || 'standard',
         dynamicPrompt,
