@@ -246,12 +246,34 @@ const PresetUploadFlow: React.FC<PresetUploadFlowProps> = ({ onComplete, onBack 
           </div>
         </div>
 
-        {/* Modell-Auswahl entfernt: Standard ist Nano Banana 2. Fallback im Hintergrund. */}
-        <Card className="p-4">
+        {/* Modell-Auswahl (Standard: Qualität = Nano Banana 2; Alternativen wie Flare vergleichbar) */}
+        <Card className="p-4 space-y-3">
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Zap className="w-3 h-3 text-accent" />
             <span>Guthaben: <strong className="text-foreground">{balance} Credits</strong></span>
             <span className="ml-2">• {costPerImage} Credit{costPerImage !== 1 ? 's' : ''}/Bild</span>
+          </div>
+          <div className="flex items-center gap-1 p-1 rounded-lg bg-muted flex-wrap">
+            {TIERS.map((tier) => {
+              const isActive = modelTier === tier.id;
+              const tierCost = getCost('image_remaster', tier.id) || 1;
+              return (
+                <button
+                  key={tier.id}
+                  type="button"
+                  onClick={() => setModelTier(tier.id)}
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                    isActive
+                      ? 'bg-accent text-accent-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {tier.icon}
+                  {tier.label}
+                  <span className="text-[10px] opacity-70">({tierCost} Cr.)</span>
+                </button>
+              );
+            })}
           </div>
         </Card>
 

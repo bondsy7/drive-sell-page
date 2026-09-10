@@ -47,7 +47,30 @@ const ImageSourceChoice: React.FC<ImageSourceChoiceProps> = ({ onChooseGenerate,
           <span>Dein Guthaben: <strong className="text-foreground">{balance} Credits</strong></span>
         </div>
 
-        {/* Modell-Auswahl entfernt: Standard ist Nano Banana 2 (qualitaet). Fallback im Hintergrund. */}
+        {/* Modell-Auswahl (Standard: Qualität = Nano Banana 2; Alternativen wie Flare vergleichbar) */}
+        <div className="flex items-center justify-center gap-1 mt-3 p-1 rounded-lg bg-muted flex-wrap max-w-xl mx-auto">
+          {TIERS.map((tier, i) => {
+            const isActive = modelTier === tier.id;
+            const showDivider = i > 0 && TIERS[i - 1].group !== tier.group;
+            return (
+              <React.Fragment key={tier.id}>
+                {showDivider && <div className="w-px h-5 bg-border mx-0.5" />}
+                <button
+                  type="button"
+                  onClick={() => setModelTier(tier.id)}
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                    isActive
+                      ? 'bg-accent text-accent-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {tier.icon}
+                  {tier.label}
+                </button>
+              </React.Fragment>
+            );
+          })}
+        </div>
       </div>
       {existingGalleryCount > 0 && onChooseExisting && (
         <div className="mb-4">
