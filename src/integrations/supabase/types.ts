@@ -65,6 +65,84 @@ export type Database = {
         }
         Relationships: []
       }
+      api_cost_events: {
+        Row: {
+          action_type: string
+          created_at: string
+          engine: string | null
+          id: string
+          input_image_tokens: number | null
+          internal_overhead_usd: number | null
+          measurement_status: string
+          model: string | null
+          orchestrator_cached_tokens: number | null
+          orchestrator_input_tokens: number | null
+          orchestrator_output_tokens: number | null
+          output_count: number | null
+          output_image_tokens: number | null
+          prompt_chars: number | null
+          prompt_tokens: number | null
+          provider_cost_usd: number | null
+          quality: string | null
+          reference_count: number | null
+          request_id: string | null
+          size: string | null
+          tier: string | null
+          total_ek_usd: number | null
+          user_id: string | null
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          engine?: string | null
+          id?: string
+          input_image_tokens?: number | null
+          internal_overhead_usd?: number | null
+          measurement_status?: string
+          model?: string | null
+          orchestrator_cached_tokens?: number | null
+          orchestrator_input_tokens?: number | null
+          orchestrator_output_tokens?: number | null
+          output_count?: number | null
+          output_image_tokens?: number | null
+          prompt_chars?: number | null
+          prompt_tokens?: number | null
+          provider_cost_usd?: number | null
+          quality?: string | null
+          reference_count?: number | null
+          request_id?: string | null
+          size?: string | null
+          tier?: string | null
+          total_ek_usd?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          engine?: string | null
+          id?: string
+          input_image_tokens?: number | null
+          internal_overhead_usd?: number | null
+          measurement_status?: string
+          model?: string | null
+          orchestrator_cached_tokens?: number | null
+          orchestrator_input_tokens?: number | null
+          orchestrator_output_tokens?: number | null
+          output_count?: number | null
+          output_image_tokens?: number | null
+          prompt_chars?: number | null
+          prompt_tokens?: number | null
+          provider_cost_usd?: number | null
+          quality?: string | null
+          reference_count?: number | null
+          request_id?: string | null
+          size?: string | null
+          tier?: string | null
+          total_ek_usd?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       banner_projects: {
         Row: {
           created_at: string
