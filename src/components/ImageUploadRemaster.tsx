@@ -150,7 +150,8 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
       dynamicPrompt: string,
       mainOpenAIFile: OpenAIFileRef | null = null,
     ) => ({
-      imageBase64: mainBase64,
+      // file-id-first: once an asset has an OpenAI file id, its base64 is NOT re-sent
+      imageBase64: mainOpenAIFile ? null : mainBase64,
       mainImageFileUri: mainFileUri,
       mainImageOpenAIFile: mainOpenAIFile,
       customShowroomOpenAIFile: sharedOpenAIRefs.showroom,
@@ -160,15 +161,15 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
       vehicleDescription,
       modelTier: modelTier || 'standard',
       dynamicPrompt,
-      customShowroomBase64: sharedRefs.showroom ? null : (remasterConfig.customShowroomBase64 || null),
+      customShowroomBase64: (sharedRefs.showroom || sharedOpenAIRefs.showroom) ? null : (remasterConfig.customShowroomBase64 || null),
       customShowroomFileUri: sharedRefs.showroom,
-      customPlateImageBase64: sharedRefs.plate ? null : (remasterConfig.customPlateImageBase64 || null),
+      customPlateImageBase64: (sharedRefs.plate || sharedOpenAIRefs.plate) ? null : (remasterConfig.customPlateImageBase64 || null),
       customPlateImageFileUri: sharedRefs.plate,
-      dealerLogoUrl: (sharedRefs.dealerLogo || remasterConfig.dealerLogoBase64) ? null : (remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null),
-      dealerLogoBase64: sharedRefs.dealerLogo ? null : (remasterConfig.showDealerLogo ? remasterConfig.dealerLogoBase64 : null),
+      dealerLogoUrl: (sharedRefs.dealerLogo || sharedOpenAIRefs.dealerLogo || remasterConfig.dealerLogoBase64) ? null : (remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null),
+      dealerLogoBase64: (sharedRefs.dealerLogo || sharedOpenAIRefs.dealerLogo) ? null : (remasterConfig.showDealerLogo ? remasterConfig.dealerLogoBase64 : null),
       dealerLogoFileUri: sharedRefs.dealerLogo,
-      manufacturerLogoUrl: (sharedRefs.mfgLogo || remasterConfig.manufacturerLogoBase64) ? null : (remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoUrl : null),
-      manufacturerLogoBase64: sharedRefs.mfgLogo ? null : (remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoBase64 : null),
+      manufacturerLogoUrl: (sharedRefs.mfgLogo || sharedOpenAIRefs.mfgLogo || remasterConfig.manufacturerLogoBase64) ? null : (remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoUrl : null),
+      manufacturerLogoBase64: (sharedRefs.mfgLogo || sharedOpenAIRefs.mfgLogo) ? null : (remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoBase64 : null),
       manufacturerLogoFileUri: sharedRefs.mfgLogo,
     });
 
@@ -181,6 +182,7 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
         if (useOpenAIFiles) {
           const uploaded = await uploadToOpenAIFiles([{ id: img.id, imageBase64: img.originalBase64 }]);
           mainOpenAIRef = uploaded?.[0] || null;
+          console.log(`[Remaster] OpenAI file id cached for main image: ${mainOpenAIRef ? 1 : 0}`);
         } else {
           const mainUploaded = await uploadToGeminiFiles([{ id: img.id, imageBase64: img.originalBase64 }]);
           mainRef = mainUploaded?.[0] || null;
@@ -259,7 +261,7 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
       }
 
       const { data, error } = await invokeRemasterVehicleImage({
-        imageBase64: img.originalBase64,
+        imageBase64: openAIMap.main ? null : img.originalBase64,
         mainImageFileUri: refMap.main || null,
         mainImageOpenAIFile: openAIMap.main || null,
         customShowroomOpenAIFile: openAIMap.showroom || null,
@@ -269,15 +271,15 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
         vehicleDescription,
         modelTier: modelTier || 'standard',
         dynamicPrompt,
-        customShowroomBase64: refMap.showroom ? null : (remasterConfig.customShowroomBase64 || null),
+        customShowroomBase64: (refMap.showroom || openAIMap.showroom) ? null : (remasterConfig.customShowroomBase64 || null),
         customShowroomFileUri: refMap.showroom || null,
-        customPlateImageBase64: refMap.plate ? null : (remasterConfig.customPlateImageBase64 || null),
+        customPlateImageBase64: (refMap.plate || openAIMap.plate) ? null : (remasterConfig.customPlateImageBase64 || null),
         customPlateImageFileUri: refMap.plate || null,
-        dealerLogoUrl: (refMap.dealerLogo || remasterConfig.dealerLogoBase64) ? null : (remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null),
-        dealerLogoBase64: refMap.dealerLogo ? null : (remasterConfig.showDealerLogo ? remasterConfig.dealerLogoBase64 : null),
+        dealerLogoUrl: (refMap.dealerLogo || openAIMap.dealerLogo || remasterConfig.dealerLogoBase64) ? null : (remasterConfig.showDealerLogo ? remasterConfig.dealerLogoUrl : null),
+        dealerLogoBase64: (refMap.dealerLogo || openAIMap.dealerLogo) ? null : (remasterConfig.showDealerLogo ? remasterConfig.dealerLogoBase64 : null),
         dealerLogoFileUri: refMap.dealerLogo || null,
-        manufacturerLogoUrl: (refMap.mfgLogo || remasterConfig.manufacturerLogoBase64) ? null : (remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoUrl : null),
-        manufacturerLogoBase64: refMap.mfgLogo ? null : (remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoBase64 : null),
+        manufacturerLogoUrl: (refMap.mfgLogo || openAIMap.mfgLogo || remasterConfig.manufacturerLogoBase64) ? null : (remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoUrl : null),
+        manufacturerLogoBase64: (refMap.mfgLogo || openAIMap.mfgLogo) ? null : (remasterConfig.showManufacturerLogo ? remasterConfig.manufacturerLogoBase64 : null),
         manufacturerLogoFileUri: refMap.mfgLogo || null,
       });
       if (error || !data?.imageBase64) {
