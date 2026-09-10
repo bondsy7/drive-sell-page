@@ -1,13 +1,176 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Slider } from "@/components/ui/slider";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  CATALOG, VK_PER_CREDIT, USD_TO_EUR, CATEGORY_META,
+  CATALOG, VK_PER_CREDIT, USD_TO_EUR, CATEGORY_META, FX_SOURCE,
+  OPENAI_25_ESTIMATES, OPENAI_25_OUTPUT_FORMAT,
+  calcOpenAi25Cost, breakEvenCredits, recommendedCredits,
   effectiveCredits, ekEur, vkEur, margeEur, formatEur,
-  type Category,
+  type Category, type OpenAi25Model,
 } from "@/lib/credit-economics";
 import { useCredits } from "@/hooks/useCredits";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { supabase } from "@/integrations/supabase/client";
+
+interface MeasuredRow { tier: string | null; total_ek_usd: number | null; measurement_status: string }
+
+
+function OpenAi25Simulator({ costs }: { costs: Record<string, Record<string, number>> }) {
+  const [model, setModel] = useState<OpenAi25Model>("sunburst");
+  const [refs, setRefs] = useState(4);
+  const [outs, setOuts] = useState(8);
+  const [promptTokens, setPromptTokens] = useState<number>(OPENAI_25_ESTIMATES.promptTokens);
+  const [refTokens, setRefTokens] = useState<number>(OPENAI_25_ESTIMATES.imageInputTokensPerReference);
+  const [outTokens, setOutTokens] = useState<number>(OPENAI_25_ESTIMATES.outputImageTokens);
+  const [fxBufferPct, setFxBufferPct] = useState(0);
+  const [measured, setMeasured] = useState<MeasuredRow[] | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    const since = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
+    supabase
+      .from("api_cost_events")
+      .select("tier, total_ek_usd, measurement_status")
+      .gte("created_at", since)
+      .in("tier", ["flare", "sunburst"])
+      .limit(2000)
+      .then(({ data }) => { if (active) setMeasured((data as MeasuredRow[]) || []); });
+    return () => { active = false; };
+  }, []);
+
+  const r = useMemo(() => calcOpenAi25Cost({
+    model, referenceCount: refs, outputCount: outs,
+    promptTokens, imageInputTokensPerReference: refTokens,
+    outputImageTokens: outTokens, fxBufferPct,
+  }), [model, refs, outs, promptTokens, refTokens, outTokens, fxBufferPct]);
+
+  const configuredCredits = costs?.["image_remaster"]?.[model] ?? (model === "flare" ? 8 : 8);
+  const ekPer = r.perOutputEur;
+
+  const scenarios = (["basis", "topup"] as const).map((tierKey) => {
+    const vk = vkEur(configuredCredits, tierKey);
+    return {
+      tierKey,
+      vk,
+      marge: vk - ekPer,
+      margePct: vk > 0 ? ((vk - ekPer) / vk) * 100 : 0,
+      breakEven: breakEvenCredits(ekPer, tierKey),
+      rec70: recommendedCredits(ekPer, 0.70, tierKey),
+      rec80: recommendedCredits(ekPer, 0.80, tierKey),
+      rec85: recommendedCredits(ekPer, 0.85, tierKey),
+    };
+  });
+  const anyLoss = scenarios.some((s) => s.marge < 0);
+
+  const relevantMeasured = (measured || []).filter((m) => m.tier === model && typeof m.total_ek_usd === "number");
+  const measuredAvg = relevantMeasured.length
+    ? relevantMeasured.reduce((a, m) => a + (m.total_ek_usd || 0), 0) / relevantMeasured.length
+    : null;
+
+  const numField = (label: string, value: number, set: (n: number) => void, min: number, max: number, tag?: string) => (
+    <div className="space-y-1">
+      <Label className="text-[11px] text-muted-foreground">
+        {label} {tag && <Badge variant="outline" className="text-[9px] ml-1">{tag}</Badge>}
+      </Label>
+      <Input type="number" min={min} max={max} value={value} className="h-8 text-xs"
+        onChange={(e) => set(Math.min(max, Math.max(min, parseInt(e.target.value) || min)))} />
+    </div>
+  );
+
+  return (
+    <Card className="p-6 space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="font-semibold">OpenAI 2.5 Kosten-Simulator (x Referenzen → y Bilder)</h2>
+          <p className="text-[11px] text-muted-foreground mt-1">
+            Ausgabe fix <strong>{OPENAI_25_OUTPUT_FORMAT.quality} / {OPENAI_25_OUTPUT_FORMAT.size}</strong>.
+            Tokenpreise = <Badge variant="outline" className="text-[9px]">offizieller Tarif</Badge> (10.09.2026).
+            Tokenmengen = <Badge variant="secondary" className="text-[9px]">Schätzung</Badge>, bis echte Usage vorliegt.
+          </p>
+          <p className="text-[11px] text-muted-foreground">
+            Hinweis: <strong>file_id spart den wiederholten Upload, nicht die Model-Verarbeitung der Referenzbilder.</strong>
+            {" "}Referenz-Image-Input fällt pro erzeugtem Bild erneut an, der Datei-Transfer nur einmal je Workflow.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          {(["flare", "sunburst"] as const).map((m) => (
+            <button key={m} onClick={() => setModel(m)}
+              className={`px-3 py-1.5 text-xs rounded-md border transition ${model === m ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-accent"}`}>
+              {m === "flare" ? "Flare" : "Sunburst"}
+              <span className="block text-[10px] opacity-70">{m === "flare" ? "/v1/images/edits" : "Responses + Luna"}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        {numField("Referenzbilder x", refs, setRefs, 1, 16)}
+        {numField("Erzeugte Bilder y", outs, setOuts, 1, 30)}
+        {numField("Prompt-Tokens", promptTokens, setPromptTokens, 100, 60000, "Annahme")}
+        {numField("Image-Input/Ref.", refTokens, setRefTokens, 100, 20000, "Schätzung")}
+        {numField("Output-Image-Tokens", outTokens, setOutTokens, 100, 20000, "Schätzung")}
+        {numField("FX-Puffer %", fxBufferPct, setFxBufferPct, 0, 10)}
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-4">
+        <div className="rounded-lg border border-border/50 p-4 space-y-1.5 text-sm">
+          <div className="flex justify-between"><span className="text-muted-foreground">GPT-Image Text-Input</span><span className="tabular-nums">${r.textInputUsd.toFixed(4)}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Referenz-Bild-Input (x·y)</span><span className="tabular-nums">${r.referenceImageInputUsd.toFixed(4)}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Bild-Output</span><span className="tabular-nums">${r.imageOutputUsd.toFixed(4)}</span></div>
+          <div className="flex justify-between font-medium"><span>OpenAI Image Modellkosten</span><span className="tabular-nums">${r.imageModelUsd.toFixed(4)}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Luna-Orchestrator {model === "flare" && "(nicht aktiv)"}</span><span className="tabular-nums">${r.orchestratorUsd.toFixed(4)}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Datei-Transfer intern (einmalig)</span><span className="tabular-nums">${r.referenceUploadUsd.toFixed(4)}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">interner Overhead (kein OpenAI-Entgelt)</span><span className="tabular-nums">${r.overheadUsd.toFixed(4)}</span></div>
+          <div className="border-t border-border/40 mt-2 pt-2 flex justify-between font-semibold">
+            <span>Gesamt-EK</span><span className="tabular-nums">${r.totalUsd.toFixed(4)} · {formatEur(r.totalEur)}</span>
+          </div>
+          <div className="flex justify-between"><span className="text-muted-foreground">EK pro erzeugtem Bild</span><span className="tabular-nums font-medium">{formatEur(ekPer)}</span></div>
+          <p className="text-[10px] text-muted-foreground pt-1">
+            Kurs: {FX_SOURCE}{fxBufferPct > 0 ? ` + ${fxBufferPct}% Kalkulationspuffer (separat)` : ""}.
+          </p>
+          <p className="text-[10px] text-muted-foreground">
+            {measured === null ? "Messdaten werden geladen…"
+              : measuredAvg === null ? "Noch keine Messdaten (letzte 30 Tage) – der Simulator bleibt die Kalkulationsbasis."
+              : `Gemessene Usage (30 Tage, n=${relevantMeasured.length}): Ø $${measuredAvg.toFixed(4)} EK/Bild.`}
+          </p>
+        </div>
+
+        <div className="rounded-lg border border-border/50 p-4 space-y-3 text-sm">
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Produktiv konfigurierte Credits (image_remaster · {model})</span>
+            <span className="font-semibold tabular-nums">{configuredCredits} Cr</span>
+          </div>
+          {scenarios.map((s) => (
+            <div key={s.tierKey} className="rounded-md bg-muted/40 p-3 space-y-1">
+              <div className="text-xs font-medium">
+                {s.tierKey === "basis" ? "Basis-Abo 0,49 €/Cr" : "Top-Up 0,50 €/Cr"}
+              </div>
+              <div className="flex justify-between text-xs"><span>VK je Bild</span><span className="tabular-nums">{formatEur(s.vk)}</span></div>
+              <div className={`flex justify-between text-xs font-medium ${s.marge >= 0 ? "text-emerald-600" : "text-destructive"}`}>
+                <span>Marge</span><span className="tabular-nums">{formatEur(s.marge)} · {s.margePct.toFixed(0)}%</span>
+              </div>
+              <div className="flex justify-between text-xs"><span>Break-even</span><span className="tabular-nums">{s.breakEven} Cr</span></div>
+              <div className="flex justify-between text-xs">
+                <span>Empfohlen 70 / 80 / 85 %</span>
+                <span className="tabular-nums">{s.rec70} / {s.rec80} / {s.rec85} Cr</span>
+              </div>
+            </div>
+          ))}
+          {anyLoss && (
+            <div className="text-xs font-semibold text-destructive">
+              ⚠️ Die konfigurierten {configuredCredits} Cr decken die Kosten in mindestens einem Szenario nicht.
+            </div>
+          )}
+          <p className="text-[10px] text-muted-foreground">
+            VK-Rechnung derzeit auf angegebenem Tarifpreis (490 € / 100 €); USt.-Behandlung nicht abgezogen.
+          </p>
+        </div>
+      </div>
+    </Card>
+  );
+}
 
 export default function AdminCreditEconomics() {
   const { costs } = useCredits();
@@ -42,7 +205,7 @@ export default function AdminCreditEconomics() {
           Overhead $0,014 (Stripe, Resend, Edge-Compute, Egress, Gemini-File-API-Quota)
           + Bild-Transfer $0,0005 je Bild. VK = Preis pro Credit.
           Worst-Case basiert auf dem Basis-Abo ({formatEur(VK_PER_CREDIT.basis)}/Cr).
-          Kurs USD→EUR: {USD_TO_EUR}.
+          Kurs USD→EUR: {USD_TO_EUR.toFixed(5)} ({FX_SOURCE}).
         </p>
         <p className="text-[11px] text-muted-foreground/70 mt-2">
           <strong>Nur ZWEI Tarife</strong> – totale Transparenz:
@@ -66,6 +229,8 @@ export default function AdminCreditEconomics() {
           </ul>
         </Card>
       )}
+
+      <OpenAi25Simulator costs={costs} />
 
       {/* Sim-Block */}
       <Card className="p-6">

@@ -9,7 +9,13 @@
 // alle echten Sub-EKs auf, damit nichts unbemerkt im Minus läuft.
 // ============================================================
 
-export const USD_TO_EUR = 0.92;
+// FX: EZB-Referenzkurs vom 09.09.2026 → 1 EUR = 1.1652 USD.
+// Quelle: ECB euro foreign exchange reference rates.
+// Kein Puffer eingerechnet – ein optionaler Kalkulationspuffer wird
+// ausschließlich separat über `fxBufferPct` ausgewiesen.
+export const FX_EUR_USD = 1.1652;
+export const FX_SOURCE = "EZB-Referenzkurs 09.09.2026 (1 EUR = 1,1652 USD)";
+export const USD_TO_EUR = 1 / FX_EUR_USD;
 
 // Overhead pro Kunden-Aktion (USD), gemittelt über alle Aktionen.
 // Enthält:
@@ -109,6 +115,153 @@ const API = {
   // Daten-APIs
   outvinLookup:            0.05,
 } as const;
+
+// ════════════════════════════════════════════════════════════
+// OpenAI GPT-Image-2.5 (Flare & Sunburst) – TOKENBASIERT
+// ════════════════════════════════════════════════════════════
+// OFFIZIELLER TARIF (openai.com/api/pricing, Stand 10.09.2026),
+// identisch für gpt-image-2.5-flare und gpt-image-2.5-sunburst,
+// Preise in USD je 1 Mio. Tokens:
+export const OPENAI_IMAGE_25_PRICING = {
+  textInput:        5.00,
+  cachedTextInput:  1.25,
+  imageInput:       8.00,
+  cachedImageInput: 2.00,
+  imageOutput:     30.00,
+} as const;
+
+// OFFIZIELLER TARIF – Sunburst-Orchestrator gpt-5.6-luna (USD / 1M Tokens)
+export const OPENAI_LUNA_PRICING = {
+  input:       0.20,
+  cachedInput: 0.02,
+  output:      1.20,
+} as const;
+
+// SCHÄTZWERTE (empirisch, bis echte Usage-Daten vorliegen).
+// OpenAI garantiert für 2.5 keine feste öffentliche Tokenzahl je
+// Referenzbild – diese Werte sind Kalkulationsannahmen, KEIN Tarif.
+export const OPENAI_25_ESTIMATES = {
+  /** Image-Input-Tokens je typischem Referenzbild (konservativ) */
+  imageInputTokensPerReference: 1505,
+  /** Output-Image-Tokens für 1536×1024 @ quality=high */
+  outputImageTokens: 1372,
+  /** Prompt-Tokens (Server-Prompt bis ~31.000 Zeichen) */
+  promptTokens: 7750,
+  /** Orchestrator-Output (Tool-Call-Overhead, sehr klein) */
+  lunaOutputTokens: 250,
+} as const;
+
+/** Produktive Ausgabegröße/Qualität beider 2.5-Pfade */
+export const OPENAI_25_OUTPUT_FORMAT = { size: "1536x1024", quality: "high" } as const;
+
+export type OpenAi25Model = "flare" | "sunburst";
+
+export interface OpenAi25CostInput {
+  model: OpenAi25Model;
+  /** Anzahl Referenzbilder je Generierungs-Request */
+  referenceCount: number;
+  /** Anzahl erzeugter Bilder im Workflow */
+  outputCount: number;
+  promptTokens?: number;
+  imageInputTokensPerReference?: number;
+  outputImageTokens?: number;
+  /** Optionaler Kalkulationspuffer auf den FX-Kurs (0–10 %) */
+  fxBufferPct?: number;
+}
+
+export interface OpenAi25CostResult {
+  textInputUsd: number;
+  referenceImageInputUsd: number;
+  imageOutputUsd: number;
+  imageModelUsd: number;
+  orchestratorUsd: number;
+  referenceUploadUsd: number;
+  overheadUsd: number;
+  totalUsd: number;
+  totalEur: number;
+  perOutputUsd: number;
+  perOutputEur: number;
+  effectiveUsdToEur: number;
+}
+
+/**
+ * Tokenbasierte EK-Kalkulation für GPT-Image-2.5.
+ *
+ * Wichtig: `file_id` spart den wiederholten **Upload**, nicht die
+ * Model-Verarbeitung. Referenzbilder werden bei JEDEM Generierungs-
+ * Request erneut als Image-Input berechnet (referenceCount × outputCount).
+ * Der interne Datei-Transfer fällt dagegen nur EINMAL je Workflow an.
+ */
+export function calcOpenAi25Cost(input: OpenAi25CostInput): OpenAi25CostResult {
+  const refs = Math.max(0, input.referenceCount);
+  const outs = Math.max(1, input.outputCount);
+  const promptTokens = input.promptTokens ?? OPENAI_25_ESTIMATES.promptTokens;
+  const refTokens = input.imageInputTokensPerReference ?? OPENAI_25_ESTIMATES.imageInputTokensPerReference;
+  const outTokens = input.outputImageTokens ?? OPENAI_25_ESTIMATES.outputImageTokens;
+  const per1M = (tokens: number, price: number) => (tokens / 1_000_000) * price;
+
+  // pro Generierung → × outs
+  const textInputUsd = per1M(promptTokens, OPENAI_IMAGE_25_PRICING.textInput) * outs;
+  const referenceImageInputUsd = per1M(refs * refTokens, OPENAI_IMAGE_25_PRICING.imageInput) * outs;
+  const imageOutputUsd = per1M(outTokens, OPENAI_IMAGE_25_PRICING.imageOutput) * outs;
+  const imageModelUsd = textInputUsd + referenceImageInputUsd + imageOutputUsd;
+
+  // Orchestrator nur bei Sunburst (Responses API, gpt-5.6-luna)
+  const orchestratorUsd = input.model === "sunburst"
+    ? (per1M(promptTokens + refs * refTokens, OPENAI_LUNA_PRICING.input)
+       + per1M(OPENAI_25_ESTIMATES.lunaOutputTokens, OPENAI_LUNA_PRICING.output)) * outs
+    : 0;
+
+  // Einmaliger interner Datei-Transfer je Referenz (kein OpenAI-Entgelt:
+  // der Files-Upload selbst wird von OpenAI nicht separat berechnet).
+  const referenceUploadUsd = refs * INFRA_PER_IMAGE_USD;
+
+  // Interner kalkulatorischer Overhead – KEINE OpenAI-API-Kosten.
+  const overheadUsd = OVERHEAD_USD;
+
+  const totalUsd = imageModelUsd + orchestratorUsd + referenceUploadUsd + overheadUsd;
+  const buffer = 1 + Math.max(0, input.fxBufferPct ?? 0) / 100;
+  const effectiveUsdToEur = USD_TO_EUR * buffer;
+  const totalEur = totalUsd * effectiveUsdToEur;
+
+  return {
+    textInputUsd,
+    referenceImageInputUsd,
+    imageOutputUsd,
+    imageModelUsd,
+    orchestratorUsd,
+    referenceUploadUsd,
+    overheadUsd,
+    totalUsd,
+    totalEur,
+    perOutputUsd: totalUsd / outs,
+    perOutputEur: totalEur / outs,
+    effectiveUsdToEur,
+  };
+}
+
+/** Break-even-Credits je Output (immer aufgerundet). */
+export function breakEvenCredits(ekEurPerOutput: number, vkTier: keyof typeof VK_PER_CREDIT = "basis"): number {
+  return Math.ceil(ekEurPerOutput / VK_PER_CREDIT[vkTier]);
+}
+
+/** Empfohlene Credits je Output für eine Zielmarge (0–1), aufgerundet. */
+export function recommendedCredits(
+  ekEurPerOutput: number,
+  targetMargin: number,
+  vkTier: keyof typeof VK_PER_CREDIT = "basis",
+): number {
+  const m = Math.min(0.99, Math.max(0, targetMargin));
+  return Math.ceil(ekEurPerOutput / (1 - m) / VK_PER_CREDIT[vkTier]);
+}
+
+/** Referenzfall für den Katalog: 4 Referenzen, 1 Output, 1536×1024 high. */
+const REF_CASE = { referenceCount: 4, outputCount: 1 } as const;
+const FLARE_REF = calcOpenAi25Cost({ model: "flare", ...REF_CASE });
+const SUNBURST_REF = calcOpenAi25Cost({ model: "sunburst", ...REF_CASE });
+/** ekUsd im Katalog versteht sich OHNE Overhead (wird in ekEur addiert). */
+const flareEkUsd = FLARE_REF.totalUsd - OVERHEAD_USD;
+const sunburstEkUsd = SUNBURST_REF.totalUsd - OVERHEAD_USD;
 
 // ─── Katalog – ALLE kostenverursachenden Aktionen ────────────
 export const CATALOG: ActionTier[] = [
@@ -251,6 +404,47 @@ export const CATALOG: ActionTier[] = [
     source: "Gemini 3 Pro Image",
     produces: "1 Premium-Aufbereitung, 2K",
     inMix: true,
+  },
+  {
+    id: "remaster-flare", category: "remaster",
+    action: "image_remaster", tier: "flare",
+    label: "Remaster · OpenAI Flare", icon: "🔥", defaultCredits: 8,
+    model: "gpt-image-2.5-flare (/v1/images/edits, 1536×1024, high)",
+    ekUsd: flareEkUsd,
+    ekBreakdown:
+      `Kalkulierter Referenzfall, tokenbasiert (4 Ref., 1 Output, 1536×1024 high, 7.750 Prompt-Tokens): ` +
+      `Text-Input $${FLARE_REF.textInputUsd.toFixed(4)} + Referenz-Bild-Input $${FLARE_REF.referenceImageInputUsd.toFixed(4)} ` +
+      `+ Bild-Output $${FLARE_REF.imageOutputUsd.toFixed(4)} + einmaliger Transfer $${FLARE_REF.referenceUploadUsd.toFixed(4)}`,
+    source: "OpenAI Tarif 10.09.2026 · Tokenmengen = Schätzung",
+    produces: "1 aufbereitetes Foto (OpenAI Flare)",
+    inMix: false,
+  },
+  {
+    id: "remaster-sunburst", category: "remaster",
+    action: "image_remaster", tier: "sunburst",
+    label: "Remaster · OpenAI Sunburst", icon: "🌅", defaultCredits: 8,
+    model: "gpt-5.6-luna + gpt-image-2.5-sunburst (Responses, 1536×1024, high)",
+    ekUsd: sunburstEkUsd,
+    ekBreakdown:
+      `Kalkulierter Referenzfall, tokenbasiert (4 Ref., 1 Output, 1536×1024 high, 7.750 Prompt-Tokens): ` +
+      `Text-Input $${SUNBURST_REF.textInputUsd.toFixed(4)} + Referenz-Bild-Input $${SUNBURST_REF.referenceImageInputUsd.toFixed(4)} ` +
+      `+ Bild-Output $${SUNBURST_REF.imageOutputUsd.toFixed(4)} + Luna-Orchestrator $${SUNBURST_REF.orchestratorUsd.toFixed(4)} ` +
+      `+ einmaliger Transfer $${SUNBURST_REF.referenceUploadUsd.toFixed(4)}`,
+    source: "OpenAI Tarif 10.09.2026 · Tokenmengen = Schätzung",
+    produces: "1 aufbereitetes Foto (OpenAI Sunburst)",
+    inMix: false,
+  },
+  {
+    id: "image-flare", category: "image",
+    action: "image_generate", tier: "flare",
+    label: "Bild · OpenAI Flare", icon: "🔥", defaultCredits: 12,
+    model: "gpt-image-2.5-flare (generate-vehicle-image)",
+    ekUsd: flareEkUsd,
+    ekBreakdown:
+      `Kalkulierter Referenzfall wie Remaster Flare (4 Ref., 1 Output, 1536×1024 high, 7.750 Prompt-Tokens)`,
+    source: "OpenAI Tarif 10.09.2026 · Tokenmengen = Schätzung",
+    produces: "1 KI-Bild via OpenAI Flare",
+    inMix: false,
   },
 
   // ════════════════════════════════════════════════════════

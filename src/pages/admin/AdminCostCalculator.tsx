@@ -4,10 +4,12 @@ import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { USD_TO_EUR } from "@/lib/credit-economics";
 import { Calculator, TrendingUp, TrendingDown, Users, Server, HardDrive } from "lucide-react";
 
 // ---------- Konstanten (EUR) ----------
-const USD_EUR = 0.92;
+// Gemeinsame FX-Konstante (EZB-Referenzkurs) aus der Credit-Ökonomie
+const USD_EUR = USD_TO_EUR;
 
 // Preis pro Aktion (EK in €) – aus kosten-skalierung-chef-report.md
 const ACTION_EK: Record<string, { label: string; ekEur: number; vkEur: number; storageMb: number }> = {

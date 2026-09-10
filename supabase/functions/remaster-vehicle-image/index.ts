@@ -235,6 +235,27 @@ CRITICAL — PHOTOGRAPHED VEHICLE GENERATION / FACELIFT IS IMMUTABLE:
 </MODEL_GENERATION_LOCK>${knownFaceliftGuard}`;
 }
 
+// ── API-Kosten-Telemetrie (keine Prompts, keine Bilddaten, keine Keys) ──
+const OPENAI_25_PRICE = { textInput: 5.0, imageInput: 8.0, imageOutput: 30.0 };
+const LUNA_PRICE = { input: 0.20, cachedInput: 0.02, output: 1.20 };
+const EST_IMAGE_INPUT_TOKENS_PER_REF = 1505;
+const EST_OUTPUT_IMAGE_TOKENS = 1372;
+const INTERNAL_OVERHEAD_USD = 0.014;
+
+async function logApiCostEvent(evt: Record<string, unknown>) {
+  try {
+    const sb = createServiceClient();
+    const { error } = await sb.from('api_cost_events').insert(evt);
+    if (error) console.warn('[cost-event] insert failed:', error.message);
+  } catch (e) {
+    console.warn('[cost-event] insert threw:', (e as Error)?.message);
+  }
+}
+
+function num(v: unknown): number | null {
+  return typeof v === 'number' && Number.isFinite(v) ? v : null;
+}
+
 function createServiceClient() {
   return createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -455,6 +476,7 @@ serve(async (req) => {
     } catch {}
     const authResult = await authenticateAndDeductCredits(req, "image_remaster", cost);
     if (authResult instanceof Response) return authResult;
+    const costUserId = (authResult as any).userId as string | undefined;
     const userEmail = (authResult as any).email as string | undefined;
     const isDekraShowroomUser = !!userEmail && DEKRA_SHOWROOM_USERS.has(userEmail.toLowerCase());
 
@@ -1029,6 +1051,9 @@ REPRODUCTION RULES (ZERO DEVIATION):
             model: 'gpt-image-2.5-sunburst',
             action: 'edit',
             quality: 'high',
+            // Deterministische Ausgabegröße – identisch zu Flare, damit die
+            // Credit-Ökonomie beide 2.5-Pfade gleich kalkulieren kann.
+            size: '1536x1024',
           },
         ],
         tool_choice: { type: 'image_generation' },
@@ -1085,6 +1110,54 @@ REPRODUCTION RULES (ZERO DEVIATION):
       }
 
       console.log(`[remaster][sunburst] success model=${engineConfig.model} orchestrator=${orchestratorModel}`);
+
+      // Kosten-Telemetrie: Luna-Usage defensiv auslesen, Image-Tool-Anteil bleibt
+      // geschätzt, solange OpenAI dafür keine Usage-Felder liefert.
+      const lunaIn = num(data?.usage?.input_tokens);
+      const lunaOut = num(data?.usage?.output_tokens);
+      const lunaCached = num(data?.usage?.input_tokens_details?.cached_tokens);
+      const toolUsage: any = imageCall?.usage ?? null;
+      const measuredPromptTokens = num(toolUsage?.input_tokens_details?.text_tokens);
+      const measuredImageInput = num(toolUsage?.input_tokens_details?.image_tokens);
+      const measuredImageOutput = num(toolUsage?.output_tokens);
+      const refCount = contentImages.length;
+      const promptTokensUsed = measuredPromptTokens ?? Math.round(finalPrompt.length / 4);
+      const imageInputTokensUsed = measuredImageInput ?? refCount * EST_IMAGE_INPUT_TOKENS_PER_REF;
+      const imageOutputTokensUsed = measuredImageOutput ?? EST_OUTPUT_IMAGE_TOKENS;
+      const providerUsd =
+        (promptTokensUsed / 1e6) * OPENAI_25_PRICE.textInput +
+        (imageInputTokensUsed / 1e6) * OPENAI_25_PRICE.imageInput +
+        (imageOutputTokensUsed / 1e6) * OPENAI_25_PRICE.imageOutput +
+        ((lunaIn ?? 0) / 1e6) * LUNA_PRICE.input +
+        ((lunaCached ?? 0) / 1e6) * LUNA_PRICE.cachedInput +
+        ((lunaOut ?? 0) / 1e6) * LUNA_PRICE.output;
+      const measurementStatus =
+        measuredImageOutput !== null && measuredImageInput !== null
+          ? 'measured'
+          : (lunaIn !== null ? 'partial' : 'estimated');
+      await logApiCostEvent({
+        user_id: costUserId ?? null,
+        action_type: 'image_remaster',
+        tier,
+        engine: 'openai',
+        model: engineConfig.model,
+        request_id: typeof data?.id === 'string' ? data.id : null,
+        reference_count: refCount,
+        output_count: 1,
+        size: '1536x1024',
+        quality: 'high',
+        prompt_chars: finalPrompt.length,
+        prompt_tokens: measuredPromptTokens,
+        input_image_tokens: measuredImageInput,
+        output_image_tokens: measuredImageOutput,
+        orchestrator_input_tokens: lunaIn,
+        orchestrator_cached_tokens: lunaCached,
+        orchestrator_output_tokens: lunaOut,
+        provider_cost_usd: Number(providerUsd.toFixed(6)),
+        internal_overhead_usd: INTERNAL_OVERHEAD_USD,
+        total_ek_usd: Number((providerUsd + INTERNAL_OVERHEAD_USD).toFixed(6)),
+        measurement_status: measurementStatus,
+      });
       return new Response(
         JSON.stringify({ imageBase64: `data:image/png;base64,${b64}`, engine: 'openai', model: engineConfig.model }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
@@ -1205,6 +1278,38 @@ REPRODUCTION RULES (ZERO DEVIATION):
           if (b64) {
             resultImage = `data:image/png;base64,${b64}`;
             console.log(`[remaster][openai] success with ${engineConfig.model}`);
+            if (tier === 'flare') {
+              const u: any = data?.usage ?? null;
+              const mPrompt = num(u?.input_tokens_details?.text_tokens);
+              const mImgIn = num(u?.input_tokens_details?.image_tokens);
+              const mImgOut = num(u?.output_tokens);
+              const pTok = mPrompt ?? Math.round(promptText.length / 4);
+              const iTok = mImgIn ?? limited.length * EST_IMAGE_INPUT_TOKENS_PER_REF;
+              const oTok = mImgOut ?? EST_OUTPUT_IMAGE_TOKENS;
+              const providerUsd =
+                (pTok / 1e6) * OPENAI_25_PRICE.textInput +
+                (iTok / 1e6) * OPENAI_25_PRICE.imageInput +
+                (oTok / 1e6) * OPENAI_25_PRICE.imageOutput;
+              await logApiCostEvent({
+                user_id: costUserId ?? null,
+                action_type: 'image_remaster',
+                tier,
+                engine: 'openai',
+                model: engineConfig.model,
+                reference_count: limited.length,
+                output_count: 1,
+                size: '1536x1024',
+                quality: 'high',
+                prompt_chars: promptText.length,
+                prompt_tokens: mPrompt,
+                input_image_tokens: mImgIn,
+                output_image_tokens: mImgOut,
+                provider_cost_usd: Number(providerUsd.toFixed(6)),
+                internal_overhead_usd: INTERNAL_OVERHEAD_USD,
+                total_ek_usd: Number((providerUsd + INTERNAL_OVERHEAD_USD).toFixed(6)),
+                measurement_status: (mImgOut !== null && mImgIn !== null) ? 'measured' : (mImgOut !== null || mImgIn !== null ? 'partial' : 'estimated'),
+              });
+            }
             break;
           }
           lastError = 'OpenAI: kein Bild im Response';
