@@ -94,6 +94,74 @@ const REFERENCE_TRUTH_PROTOCOL = `REFERENCE IMAGES ARE THE ONLY SOURCE OF TRUTH.
 - If a region is not visible, extend ONLY from immediately adjacent visible evidence with the most conservative continuation possible.
 - Never invent a new interior color, upholstery variant, trim insert, badge, text, button legend, or equipment line.`;
 
+const OPENAI_PROMPT_LIMIT = 31_000;
+
+/**
+ * OpenAI image edits currently rejects prompts above 32,000 characters. The
+ * client prompt can exceed that after admin blocks and server-side identity
+ * guards are combined. Keep complete high-value XML blocks and remove only
+ * repeated prose before the multipart request is sent.
+ */
+function compactOpenAIEditPrompt(source: string, maxLength = OPENAI_PROMPT_LIMIT): string {
+  const normalized = source.replace(/\r\n/g, "\n").replace(/\n{4,}/g, "\n\n\n").trim();
+  if (normalized.length <= maxLength) return normalized;
+
+  const priorityTags = [
+    "REFERENCE_TRUTH_PROTOCOL",
+    "CURRENT_PERSPECTIVE",
+    "BINDING_SUBJECT_SCOPE_GUARD",
+    "IDENTITY_LOCK",
+    "MODEL_GENERATION_LOCK",
+    "KNOWN_FACELIFT_FRONT_GUARD",
+    "MIRROR_SYSTEM_LOCK",
+    "SIDE_SKIRT_LOCK",
+    "WHEEL_REFERENCE_LOCK",
+    "TRACTOR_TRAILER_SEPARATION",
+    "BODY_CLEANUP",
+    "BASE_PAINT_UNIFICATION",
+    "COLOR_CHANGE_MANDATE",
+    "DETECTED_BRANDING",
+    "LICENSE_PLATE",
+    "INTERIOR_RULES",
+    "SCENE_AND_LIGHTING",
+    "CUSTOM_SHOWROOM_INSTRUCTION",
+    "ENVIRONMENT_CONSISTENCY_LOCK",
+    "VEHICLE_SCALE_LOCK",
+    "ANTI_CROPPING",
+    "STRICT_NEGATIVE_CONSTRAINTS",
+    "PROFESSIONAL_REFLECTION_LIGHTING_LOCK",
+    "PRIMARY_BLUEPRINT_LOCK",
+    "CRITICAL_WHEEL_REFERENCE",
+    "POST_REFERENCE_IDENTITY_CHECK",
+    "CRITICAL_ASSET_INTEGRATION",
+    "LOGO_REFERENCE",
+    "NO_LOGO_INSTRUCTION",
+    "SCENE_ASSET_DEKRA_LOGO",
+  ];
+  const selected: string[] = [];
+  const seen = new Set<string>();
+  const append = (value: string) => {
+    const trimmed = value.trim();
+    const fingerprint = trimmed.replace(/\s+/g, " ");
+    if (!trimmed || seen.has(fingerprint)) return;
+    seen.add(fingerprint);
+    selected.push(trimmed);
+  };
+
+  append(`You are a professional automotive retoucher. Edit IMAGE 1; do not create a different vehicle.\n${REFERENCE_TRUTH_PROTOCOL}\nThe first attached image is the primary vehicle blueprint and outranks every other image. Preserve its camera angle, generation, body geometry, paint, lights, grille/front panel, glasshouse, trim and equipment exactly. Secondary images may clarify only their labelled detail and must never replace IMAGE 1. Never mirror or rotate the vehicle.`);
+  for (const tag of priorityTags) {
+    const expression = new RegExp(`<${tag}>[\\s\\S]*?<\\/${tag}>`, "g");
+    for (const match of normalized.matchAll(expression)) append(match[0]);
+  }
+
+  const suffix = "FINAL CHECK: compare the edited vehicle directly with IMAGE 1. If its generation, fascia, lamps, silhouette, paint, trim or equipment differs, correct it before returning the image.";
+  let compacted = selected.join("\n\n");
+  if (compacted.length + suffix.length + 2 > maxLength) {
+    compacted = compacted.slice(0, Math.max(0, maxLength - suffix.length - 2));
+  }
+  return `${compacted}\n\n${suffix}`;
+}
+
 const BRAND_TOKENS = [
   "skoda", "škoda", "volkswagen", "vw", "audi", "seat", "cupra", "porsche",
   "bmw", "mini", "mercedes", "mercedes-benz", "benz", "smart", "opel", "ford",
