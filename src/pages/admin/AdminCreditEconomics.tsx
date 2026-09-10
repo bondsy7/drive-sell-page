@@ -21,9 +21,9 @@ function OpenAi25Simulator({ costs }: { costs: Record<string, Record<string, num
   const [model, setModel] = useState<OpenAi25Model>("sunburst");
   const [refs, setRefs] = useState(4);
   const [outs, setOuts] = useState(8);
-  const [promptTokens, setPromptTokens] = useState(OPENAI_25_ESTIMATES.promptTokens);
-  const [refTokens, setRefTokens] = useState(OPENAI_25_ESTIMATES.imageInputTokensPerReference);
-  const [outTokens, setOutTokens] = useState(OPENAI_25_ESTIMATES.outputImageTokens);
+  const [promptTokens, setPromptTokens] = useState<number>(OPENAI_25_ESTIMATES.promptTokens);
+  const [refTokens, setRefTokens] = useState<number>(OPENAI_25_ESTIMATES.imageInputTokensPerReference);
+  const [outTokens, setOutTokens] = useState<number>(OPENAI_25_ESTIMATES.outputImageTokens);
   const [fxBufferPct, setFxBufferPct] = useState(0);
   const [measured, setMeasured] = useState<MeasuredRow[] | null>(null);
 
