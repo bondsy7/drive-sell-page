@@ -405,6 +405,47 @@ export const CATALOG: ActionTier[] = [
     produces: "1 Premium-Aufbereitung, 2K",
     inMix: true,
   },
+  {
+    id: "remaster-flare", category: "remaster",
+    action: "image_remaster", tier: "flare",
+    label: "Remaster · OpenAI Flare", icon: "🔥", defaultCredits: 8,
+    model: "gpt-image-2.5-flare (/v1/images/edits, 1536×1024, high)",
+    ekUsd: flareEkUsd,
+    ekBreakdown:
+      `Kalkulierter Referenzfall, tokenbasiert (4 Ref., 1 Output, 1536×1024 high, 7.750 Prompt-Tokens): ` +
+      `Text-Input $${FLARE_REF.textInputUsd.toFixed(4)} + Referenz-Bild-Input $${FLARE_REF.referenceImageInputUsd.toFixed(4)} ` +
+      `+ Bild-Output $${FLARE_REF.imageOutputUsd.toFixed(4)} + einmaliger Transfer $${FLARE_REF.referenceUploadUsd.toFixed(4)}`,
+    source: "OpenAI Tarif 10.09.2026 · Tokenmengen = Schätzung",
+    produces: "1 aufbereitetes Foto (OpenAI Flare)",
+    inMix: false,
+  },
+  {
+    id: "remaster-sunburst", category: "remaster",
+    action: "image_remaster", tier: "sunburst",
+    label: "Remaster · OpenAI Sunburst", icon: "🌅", defaultCredits: 8,
+    model: "gpt-5.6-luna + gpt-image-2.5-sunburst (Responses, 1536×1024, high)",
+    ekUsd: sunburstEkUsd,
+    ekBreakdown:
+      `Kalkulierter Referenzfall, tokenbasiert (4 Ref., 1 Output, 1536×1024 high, 7.750 Prompt-Tokens): ` +
+      `Text-Input $${SUNBURST_REF.textInputUsd.toFixed(4)} + Referenz-Bild-Input $${SUNBURST_REF.referenceImageInputUsd.toFixed(4)} ` +
+      `+ Bild-Output $${SUNBURST_REF.imageOutputUsd.toFixed(4)} + Luna-Orchestrator $${SUNBURST_REF.orchestratorUsd.toFixed(4)} ` +
+      `+ einmaliger Transfer $${SUNBURST_REF.referenceUploadUsd.toFixed(4)}`,
+    source: "OpenAI Tarif 10.09.2026 · Tokenmengen = Schätzung",
+    produces: "1 aufbereitetes Foto (OpenAI Sunburst)",
+    inMix: false,
+  },
+  {
+    id: "image-flare", category: "image",
+    action: "image_generate", tier: "flare",
+    label: "Bild · OpenAI Flare", icon: "🔥", defaultCredits: 12,
+    model: "gpt-image-2.5-flare (generate-vehicle-image)",
+    ekUsd: flareEkUsd,
+    ekBreakdown:
+      `Kalkulierter Referenzfall wie Remaster Flare (4 Ref., 1 Output, 1536×1024 high, 7.750 Prompt-Tokens)`,
+    source: "OpenAI Tarif 10.09.2026 · Tokenmengen = Schätzung",
+    produces: "1 KI-Bild via OpenAI Flare",
+    inMix: false,
+  },
 
   // ════════════════════════════════════════════════════════
   // BANNER-STUDIO (klassisch, Gemini-Pipeline)
