@@ -64,10 +64,21 @@ function OpenAi25Simulator({ costs }: { costs: Record<string, Record<string, num
   });
   const anyLoss = scenarios.some((s) => s.marge < 0);
 
-  const relevantMeasured = (measured || []).filter((m) => m.tier === model && typeof m.total_ek_usd === "number");
-  const measuredAvg = relevantMeasured.length
-    ? relevantMeasured.reduce((a, m) => a + (m.total_ek_usd || 0), 0) / relevantMeasured.length
+  const relevant = (measured || []).filter((m) => m.tier === model && typeof m.total_ek_usd === "number");
+  const byStatus = (s: string) => relevant.filter((m) => m.measurement_status === s);
+  const measuredRows = byStatus("measured");
+  const partialRows = byStatus("partial");
+  const estimatedRows = byStatus("estimated");
+  const avg = (rows: MeasuredRow[]) =>
+    rows.length ? rows.reduce((a, m) => a + (m.total_ek_usd || 0), 0) / rows.length : null;
+  const measuredAvg = avg(measuredRows);
+  const partialAvg = avg(partialRows);
+  const measuredP95 = measuredRows.length >= 5
+    ? [...measuredRows].map((m) => m.total_ek_usd || 0).sort((a, b) => a - b)[
+        Math.min(measuredRows.length - 1, Math.ceil(measuredRows.length * 0.95) - 1)
+      ]
     : null;
+
 
   const numField = (label: string, value: number, set: (n: number) => void, min: number, max: number, tag?: string) => (
     <div className="space-y-1">
