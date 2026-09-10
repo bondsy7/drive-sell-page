@@ -238,31 +238,6 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   /** Coverage-Snapshot für Callbacks, die vor der Berechnung definiert sind. */
   const coverageRef = useRef<{ ok: boolean; missingLabels: string[] }>({ ok: true, missingLabels: [] });
 
-  const openPipeline = useCallback(async () => {
-    // Source-Coverage-Validierung: fehlende Pflichtperspektiven werden NIE
-    // aus anderen Winkeln hochgerechnet – der Start wird stattdessen blockiert.
-    if (!coverageRef.current.ok) {
-      toast.error(`Fehlende Pflichtaufnahmen: ${coverageRef.current.missingLabels.join(', ')}`);
-      return;
-    }
-    const currentVehicleId = await ensureVehicleForPipeline();
-    const workflowKey = createPipelineWorkflowKey({
-      projectId,
-      vehicleId: currentVehicleId || vehicleId,
-      vin: detectedVin,
-      inputImages: allCapturedBase64,
-    });
-    if (pipeline.isRunning && pipeline.config?.workflowKey !== workflowKey) {
-      toast.error('Eine andere Pipeline läuft noch. Bitte warte, bis sie abgeschlossen ist.');
-      return;
-    }
-    if (pipeline.isFinished && pipeline.config?.workflowKey !== workflowKey) {
-      pipeline.clearPipeline();
-    }
-    setShowPipeline(true);
-  }, [allCapturedBase64, detectedVin, ensureVehicleForPipeline, pipeline, projectId, vehicleId]);
-
-
   const makeKeys = useMemo(() => makes.map(m => m.key), [makes]);
 
   const resolveBrandFromSource = useCallback((source?: string | null) => {
@@ -834,6 +809,30 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   const allOriginalBase64 = vehicleSlots
     .filter(s => captures[s.key])
     .map(s => captures[s.key].base64);
+
+  const openPipeline = useCallback(async () => {
+    // Source-Coverage-Validierung: fehlende Pflichtperspektiven werden NIE
+    // aus anderen Winkeln hochgerechnet – der Start wird stattdessen blockiert.
+    if (!coverageRef.current.ok) {
+      toast.error(`Fehlende Pflichtaufnahmen: ${coverageRef.current.missingLabels.join(', ')}`);
+      return;
+    }
+    const currentVehicleId = await ensureVehicleForPipeline();
+    const workflowKey = createPipelineWorkflowKey({
+      projectId,
+      vehicleId: currentVehicleId || vehicleId,
+      vin: detectedVin,
+      inputImages: allCapturedBase64,
+    });
+    if (pipeline.isRunning && pipeline.config?.workflowKey !== workflowKey) {
+      toast.error('Eine andere Pipeline läuft noch. Bitte warte, bis sie abgeschlossen ist.');
+      return;
+    }
+    if (pipeline.isFinished && pipeline.config?.workflowKey !== workflowKey) {
+      pipeline.clearPipeline();
+    }
+    setShowPipeline(true);
+  }, [allCapturedBase64, detectedVin, ensureVehicleForPipeline, pipeline, projectId, vehicleId]);
 
   // ── Schritt 1.1: Fahrzeugart ──
   if (!vehicleClass) {
