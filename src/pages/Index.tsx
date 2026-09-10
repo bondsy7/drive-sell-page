@@ -35,6 +35,7 @@ import type { AppState, VehicleData } from '@/types/vehicle';
 import type { TemplateId } from '@/types/template';
 import { getAngebotsTitle } from '@/lib/templates/shared';
 import type { ModelTier } from '@/components/ModelSelector';
+import ModelSelector from '@/components/ModelSelector';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -909,7 +910,10 @@ const Index = () => {
 
           {/* ─── Standalone Capture ─── */}
           {appState === 'standalone-capture' && (
-            <div className="mt-4">
+            <div className="mt-4 space-y-3">
+              <div className="flex justify-center">
+                <ModelSelector actionType="image_remaster" value={selectedModelTier} onChange={setSelectedModelTier} />
+              </div>
               <ImageCaptureGrid
                 vehicleDescription=""
                 vehicleData={vehicleData || undefined}
@@ -925,7 +929,10 @@ const Index = () => {
 
           {/* ─── Standalone Upload ─── */}
           {appState === 'standalone-upload' && (
-            <div className="mt-4">
+            <div className="mt-4 space-y-3">
+              <div className="flex justify-center">
+                <ModelSelector actionType="image_remaster" value={selectedModelTier} onChange={setSelectedModelTier} />
+              </div>
               <ImageUploadRemaster
                 vehicleDescription=""
                 modelTier={selectedModelTier}
