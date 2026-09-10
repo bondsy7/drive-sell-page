@@ -342,7 +342,7 @@ const OneShotStudio: React.FC<OneShotStudioProps> = ({ onBack }) => {
 
   const [remasterConfig, setRemasterConfig] = useState<RemasterConfig>({
     scene: 'showroom-1',
-    licensePlate: 'keep',
+    licensePlate: 'remove',
     changeColor: false,
     showManufacturerLogo: false,
     showDealerLogo: false,
