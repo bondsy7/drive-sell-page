@@ -1,8 +1,8 @@
 import React from 'react';
 import { useCredits } from '@/hooks/useCredits';
-import { Sparkles, Zap, Crown, Rocket, Diamond, BadgePlus, Flame } from 'lucide-react';
+import { Sparkles, Zap, Crown, Rocket, Diamond, BadgePlus, Flame, Sun } from 'lucide-react';
 
-export type ModelTier = 'schnell' | 'qualitaet' | 'premium' | 'turbo' | 'ultra' | 'neu' | 'flare';
+export type ModelTier = 'schnell' | 'qualitaet' | 'premium' | 'turbo' | 'ultra' | 'neu' | 'flare' | 'sunburst';
 
 interface ModelSelectorProps {
   actionType: string;
@@ -18,6 +18,7 @@ const TIERS: { id: ModelTier; label: string; sublabel: string; icon?: React.Reac
   { id: 'ultra', label: 'Ultra', sublabel: 'höchste Qualität', icon: <Diamond className="w-3 h-3" />, group: 'B' },
   { id: 'neu', label: 'Neu', sublabel: 'GPT Image 2', icon: <BadgePlus className="w-3 h-3" />, group: 'B' },
   { id: 'flare', label: 'Flare', sublabel: 'GPT Image 2.5 Flare', icon: <Flame className="w-3 h-3" />, group: 'B' },
+  { id: 'sunburst', label: 'Sunburst (Test)', sublabel: 'OpenAI GPT Image 2.5 Sunburst', icon: <Sun className="w-3 h-3" />, group: 'B' },
 ];
 
 export default function ModelSelector({ actionType, value, onChange }: ModelSelectorProps) {
@@ -37,7 +38,7 @@ export default function ModelSelector({ actionType, value, onChange }: ModelSele
                 onClick={() => onChange(tier.id)}
                 className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
                   isActive
-                    ? tier.id === 'premium' || tier.id === 'ultra' || tier.id === 'neu' || tier.id === 'flare'
+                    ? tier.id === 'premium' || tier.id === 'ultra' || tier.id === 'neu' || tier.id === 'flare' || tier.id === 'sunburst'
                       ? 'bg-accent text-accent-foreground shadow-sm'
                       : 'bg-card text-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground'

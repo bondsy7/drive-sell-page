@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Wand2, Upload, Camera, Zap, Sparkles, Crown, Rocket, Diamond, BadgePlus, Flame, FolderCheck } from 'lucide-react';
+import { Wand2, Upload, Camera, Zap, Sparkles, Crown, Rocket, Diamond, BadgePlus, Flame, FolderCheck, Sun } from 'lucide-react';
 import { useCredits } from '@/hooks/useCredits';
 import type { ModelTier } from '@/components/ModelSelector';
 
@@ -19,6 +19,7 @@ const TIERS: { id: ModelTier; label: string; sublabel: string; icon: React.React
   { id: 'ultra', label: 'Ultra', sublabel: 'höchste Qualität', icon: <Diamond className="w-3 h-3" />, group: 'B' },
   { id: 'neu', label: 'Neu', sublabel: 'GPT Image 2', icon: <BadgePlus className="w-3 h-3" />, group: 'B' },
   { id: 'flare', label: 'Flare', sublabel: 'GPT Image 2.5 Flare', icon: <Flame className="w-3 h-3" />, group: 'B' },
+  { id: 'sunburst', label: 'Sunburst (Test)', sublabel: 'OpenAI GPT Image 2.5 Sunburst', icon: <Sun className="w-3 h-3" />, group: 'B' },
 ];
 
 const ImageSourceChoice: React.FC<ImageSourceChoiceProps> = ({ onChooseGenerate, onChooseUpload, onChooseCapture, existingGalleryCount = 0, onChooseExisting }) => {
