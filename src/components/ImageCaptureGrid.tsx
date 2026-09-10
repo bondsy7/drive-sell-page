@@ -34,6 +34,8 @@ import { checkSourceCoverage } from '@/lib/source-coverage';
 import VehicleClassPicker from '@/components/capture/VehicleClassPicker';
 import TruckWizard from '@/components/capture/TruckWizard';
 import { TruckSketch } from '@/components/capture/TruckSketch';
+import { usePipeline } from '@/contexts/PipelineContext';
+import { createPipelineWorkflowKey } from '@/lib/pipeline-workflow';
 
 interface ImageCaptureGridProps {
   vehicleDescription: string;
@@ -168,6 +170,7 @@ const EMPTY_CONSUMPTION: VehicleData['consumption'] = {
 
 const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription, vehicleData, modelTier, projectId, vehicleId, onComplete, onVehicleDataChange, onBack, onPipelineComplete }) => {
   const { user } = useAuth();
+  const pipeline = usePipeline();
   const [showPipeline, setShowPipeline] = useState(false);
 
   // ── Fahrzeugklassen-Workflow ──
@@ -242,9 +245,22 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       toast.error(`Fehlende Pflichtaufnahmen: ${coverageRef.current.missingLabels.join(', ')}`);
       return;
     }
-    await ensureVehicleForPipeline();
+    const currentVehicleId = await ensureVehicleForPipeline();
+    const workflowKey = createPipelineWorkflowKey({
+      projectId,
+      vehicleId: currentVehicleId || vehicleId,
+      vin: detectedVin,
+      inputImages: allCapturedBase64,
+    });
+    if (pipeline.isRunning && pipeline.config?.workflowKey !== workflowKey) {
+      toast.error('Eine andere Pipeline läuft noch. Bitte warte, bis sie abgeschlossen ist.');
+      return;
+    }
+    if (pipeline.isFinished && pipeline.config?.workflowKey !== workflowKey) {
+      pipeline.clearPipeline();
+    }
     setShowPipeline(true);
-  }, [ensureVehicleForPipeline]);
+  }, [allCapturedBase64, detectedVin, ensureVehicleForPipeline, pipeline, projectId, vehicleId]);
 
 
   const makeKeys = useMemo(() => makes.map(m => m.key), [makes]);

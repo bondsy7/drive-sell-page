@@ -28,6 +28,7 @@ import { type RemasterConfig, fetchManufacturerLogos } from '@/lib/remaster-prom
 import { usePipeline, type ResultImage } from '@/contexts/PipelineContext';
 import type { WheelReference } from '@/types/wheel-reference';
 import { useQueryClient } from '@tanstack/react-query';
+import { createPipelineWorkflowKey, pipelineRunMatchesWorkflow } from '@/lib/pipeline-workflow';
 
 /* ─── Types ─── */
 interface PipelineRunnerProps {
@@ -77,11 +78,19 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   const pipeline = usePipeline();
   const queryClient = useQueryClient();
 
+  const workflowKey = useMemo(() => createPipelineWorkflowKey({
+    projectId,
+    vehicleId,
+    vin,
+    inputImages,
+  }), [projectId, vehicleId, vin, inputImages]);
+
   /* ─── Context-driven state ─── */
-  const isContextActive = pipeline.status !== 'idle';
-  const running = pipeline.isRunning;
-  const finished = pipeline.isFinished;
-  const jobs = pipeline.jobs;
+  const isContextActive = pipeline.status !== 'idle'
+    && pipelineRunMatchesWorkflow(pipeline.config?.workflowKey, workflowKey);
+  const running = isContextActive && pipeline.isRunning;
+  const finished = isContextActive && pipeline.isFinished;
+  const jobs = isContextActive ? pipeline.jobs : {};
   const savedProjectId = isContextActive ? pipeline.savedProjectId : (projectId || null);
 
   // Timing from context
@@ -305,6 +314,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
     }
 
     pipeline.startPipeline({
+      workflowKey,
       inputImages,
       referenceRoles,
       originalImages: originalImages || [],
@@ -324,7 +334,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       detectedBrand: detectedBrand || null,
       totalImages: getTotalImageCount(selectedKeys),
     });
-  }, [user, localSelectedJobs, localAvailableJobs, inputImages, referenceRoles, originalImages, additionalImages, wheelReference, vehicleDescription, remasterConfig, classContext, modelTier, projectId, vehicleId, vin, resolvedManufacturerLogoUrl, detectedBrand, selectedKeys, pipeline, persistRemasteredInputs]);
+  }, [user, localSelectedJobs, localAvailableJobs, workflowKey, inputImages, referenceRoles, originalImages, additionalImages, wheelReference, vehicleDescription, remasterConfig, classContext, modelTier, projectId, vehicleId, vin, resolvedManufacturerLogoUrl, detectedBrand, selectedKeys, pipeline, persistRemasteredInputs]);
 
   /* ─── Credit pre-check ─── */
   const handleStartClick = () => {
