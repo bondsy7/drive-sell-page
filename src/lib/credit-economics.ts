@@ -130,7 +130,7 @@ export const OPENAI_IMAGE_25_PRICING = {
   imageOutput:     30.00,
 } as const;
 
-// OFFIZIELLER TARIF – Sunburst-Orchestrator gpt-5.6-luna (USD / 1M Tokens)
+// OFFIZIELLER TARIF – Responses-Orchestrator gpt-5.6-luna (USD / 1M Tokens)
 export const OPENAI_LUNA_PRICING = {
   input:       0.20,
   cachedInput: 0.02,
@@ -189,7 +189,7 @@ export interface OpenAi25CostResult {
 /** Modellabhängige Beschreibung des Referenz-Transferpfads (kein OpenAI-Tarif). */
 export const OPENAI_25_TRANSFER_NOTE: Record<OpenAi25Model, string> = {
   sunburst: "file_id spart wiederholten Upload, nicht die Model-Verarbeitung.",
-  flare: "Legacy-Pfad materialisiert Referenzen je Edit-Request erneut; daher zusätzlicher Transfer je Output.",
+  flare: "file_id spart wiederholten Upload, nicht die Model-Verarbeitung.",
 };
 
 /**
@@ -199,12 +199,10 @@ export const OPENAI_25_TRANSFER_NOTE: Record<OpenAi25Model, string> = {
  * berechnet (referenceCount × outputCount) – unabhängig vom Transport.
  *
  * Interner Transfer (KEIN OpenAI-Entgelt, nur eigener Schätzwert):
- *  • Sunburst: Referenzen gehen einmal über `upload-to-openai-files`
+ *  • Flare und Sunburst: Referenzen gehen einmal über `upload-to-openai-files`
  *    (purpose=vision), danach werden `file_id`s wiederverwendet
  *    → refs × INFRA_PER_IMAGE_USD, einmalig je Workflow.
- *  • Flare: Legacy-Pfad `/v1/images/edits`; Referenzen liegen in Gemini
- *    Files und werden je Request erneut materialisiert und als Multipart
- *    gesendet → refs × INFRA_PER_IMAGE_USD × (1 + outs).
+ *    Beide Modelle laufen anschließend über Responses `image_generation`.
  *
  * Luna-Kosten sind hier eine Näherung (GPT-Image-Tokenisierung ist nicht
  * garantiert identisch mit Luna/Vision) und werden nach echten Requests
@@ -225,17 +223,13 @@ export function calcOpenAi25Cost(input: OpenAi25CostInput): OpenAi25CostResult {
   const imageOutputUsd = per1M(outTokens, OPENAI_IMAGE_25_PRICING.imageOutput) * outs;
   const imageModelUsd = textInputUsd + referenceImageInputUsd + imageOutputUsd;
 
-  // Orchestrator nur bei Sunburst (Responses API, gpt-5.6-luna)
-  const orchestratorUsd = input.model === "sunburst"
-    ? (per1M(promptTokens + refs * refTokens, OPENAI_LUNA_PRICING.input)
-       + per1M(OPENAI_25_ESTIMATES.lunaOutputTokens, OPENAI_LUNA_PRICING.output)) * outs
-    : 0;
+  // Beide 2.5-Modelle laufen über Responses (gpt-5.6-luna-Orchestrator).
+  const orchestratorUsd = (per1M(promptTokens + refs * refTokens, OPENAI_LUNA_PRICING.input)
+    + per1M(OPENAI_25_ESTIMATES.lunaOutputTokens, OPENAI_LUNA_PRICING.output)) * outs;
 
   // Interner Datei-Transfer je Referenz (kein OpenAI-Entgelt) – Transportpfad
   // ist modellabhängig, siehe Doc-Kommentar oben.
-  const referenceUploadUsd = input.model === "sunburst"
-    ? refs * INFRA_PER_IMAGE_USD
-    : refs * INFRA_PER_IMAGE_USD * (1 + outs);
+  const referenceUploadUsd = refs * INFRA_PER_IMAGE_USD;
 
   // Interner kalkulatorischer Overhead – KEINE OpenAI-API-Kosten.
   // Je erzeugtem Bild läuft ein eigener Generierungs-Request / eine eigene
@@ -434,12 +428,13 @@ export const CATALOG: ActionTier[] = [
     id: "remaster-flare", category: "remaster",
     action: "image_remaster", tier: "flare",
     label: "Remaster · OpenAI Flare", icon: "🔥", defaultCredits: 8,
-    model: "gpt-image-2.5-flare (/v1/images/edits, 1536×1024, high)",
+    model: "gpt-5.6-luna + gpt-image-2.5-flare (Responses + file_id, 1536×1024, high)",
     ekUsd: flareEkUsd,
     ekBreakdown:
       `Kalkulierter Referenzfall, tokenbasiert (4 Ref., 1 Output, 1536×1024 high, 7.750 Prompt-Tokens): ` +
       `Text-Input $${FLARE_REF.textInputUsd.toFixed(4)} + Referenz-Bild-Input $${FLARE_REF.referenceImageInputUsd.toFixed(4)} ` +
-      `+ Bild-Output $${FLARE_REF.imageOutputUsd.toFixed(4)} + einmaliger Transfer $${FLARE_REF.referenceUploadUsd.toFixed(4)}`,
+      `+ Bild-Output $${FLARE_REF.imageOutputUsd.toFixed(4)} + Luna-Orchestrator $${FLARE_REF.orchestratorUsd.toFixed(4)} ` +
+      `+ einmaliger file_id-Transfer $${FLARE_REF.referenceUploadUsd.toFixed(4)}`,
     source: "OpenAI Tarif 10.09.2026 · Tokenmengen = Schätzung",
     produces: "1 aufbereitetes Foto (OpenAI Flare)",
     inMix: false,
@@ -454,7 +449,7 @@ export const CATALOG: ActionTier[] = [
       `Kalkulierter Referenzfall, tokenbasiert (4 Ref., 1 Output, 1536×1024 high, 7.750 Prompt-Tokens): ` +
       `Text-Input $${SUNBURST_REF.textInputUsd.toFixed(4)} + Referenz-Bild-Input $${SUNBURST_REF.referenceImageInputUsd.toFixed(4)} ` +
       `+ Bild-Output $${SUNBURST_REF.imageOutputUsd.toFixed(4)} + Luna-Orchestrator $${SUNBURST_REF.orchestratorUsd.toFixed(4)} ` +
-      `+ einmaliger Transfer $${SUNBURST_REF.referenceUploadUsd.toFixed(4)}`,
+      `+ einmaliger file_id-Transfer $${SUNBURST_REF.referenceUploadUsd.toFixed(4)}`,
     source: "OpenAI Tarif 10.09.2026 · Tokenmengen = Schätzung",
     produces: "1 aufbereitetes Foto (OpenAI Sunburst)",
     inMix: false,
@@ -463,12 +458,24 @@ export const CATALOG: ActionTier[] = [
     id: "image-flare", category: "image",
     action: "image_generate", tier: "flare",
     label: "Bild · OpenAI Flare", icon: "🔥", defaultCredits: 12,
-    model: "gpt-image-2.5-flare (generate-vehicle-image)",
+    model: "gpt-image-2.5-flare (Responses + file_id)",
     ekUsd: flareEkUsd,
     ekBreakdown:
       `Kalkulierter Referenzfall wie Remaster Flare (4 Ref., 1 Output, 1536×1024 high, 7.750 Prompt-Tokens)`,
     source: "OpenAI Tarif 10.09.2026 · Tokenmengen = Schätzung",
     produces: "1 KI-Bild via OpenAI Flare",
+    inMix: false,
+  },
+  {
+    id: "image-sunburst", category: "image",
+    action: "image_generate", tier: "sunburst",
+    label: "Bild · OpenAI Sunburst", icon: "🌅", defaultCredits: 12,
+    model: "gpt-5.6-luna + gpt-image-2.5-sunburst (Responses + file_id)",
+    ekUsd: sunburstEkUsd,
+    ekBreakdown:
+      `Kalkulierter Referenzfall wie Remaster Sunburst (4 Ref., 1 Output, 1536×1024 high, 7.750 Prompt-Tokens)`,
+    source: "OpenAI Tarif 10.09.2026 · Tokenmengen = Schätzung",
+    produces: "1 KI-Bild via OpenAI Sunburst",
     inMix: false,
   },
 

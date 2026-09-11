@@ -493,10 +493,11 @@ serve(async (req) => {
       sunburst:  { engine: 'openai', model: 'gpt-image-2.5-sunburst' },
     };
     const engineConfig = ENGINE_MAP[tier] || ENGINE_MAP['qualitaet'];
-    // Sunburst = OpenAI Responses API track. Only this path consumes OpenAI file IDs.
-    const isSunburst = engineConfig.engine === 'openai' && engineConfig.model === 'gpt-image-2.5-sunburst';
+    // Responses image tiers consume reusable OpenAI vision file IDs. The older
+    // gpt-image-1 tiers remain on multipart /v1/images/edits.
+    const isResponsesImageTier = engineConfig.engine === 'openai' && ['neu', 'flare', 'sunburst'].includes(tier);
     const oaFileId = (ref: any): string | null =>
-      isSunburst && ref && typeof ref.fileId === 'string' && ref.fileId ? ref.fileId : null;
+      isResponsesImageTier && ref && typeof ref.fileId === 'string' && ref.fileId ? ref.fileId : null;
     /** Internal-only image part carrying an OpenAI file id. NEVER sent to Gemini. */
     const openaiPart = (ref: any) => ({ openaiFile: { fileId: ref.fileId as string, mimeType: ref.mimeType || 'image/jpeg' } });
     const geminiModel = engineConfig.model; // legacy var name kept for downstream Gemini path
@@ -721,7 +722,7 @@ It is the ONLY authoritative source for every visible wheel in the output.
     }
 
     // Additional reference images
-    const openAIAdditional: any[] = isSunburst && Array.isArray(additionalOpenAIFiles)
+    const openAIAdditional: any[] = isResponsesImageTier && Array.isArray(additionalOpenAIFiles)
       ? additionalOpenAIFiles.filter((r: any) => oaFileId(r))
       : [];
     if (openAIAdditional.length > 0 || (Array.isArray(additionalFileUris) && additionalFileUris.length > 0) || (Array.isArray(additionalImages) && additionalImages.length > 0)) {
@@ -891,9 +892,9 @@ REPRODUCTION RULES (ZERO DEVIATION):
     // je nach Engine variieren) und der OpenAI-Pfad kann dieselbe Reihenfolge
     // benannt mitschicken.
     const imageManifest: { index: number; label: string; part: any }[] = [];
-    // Sunburst re-sorts the images by role priority afterwards and emits its OWN
+    // Responses re-sorts the images by role priority afterwards and emits its OWN
     // <IMAGE_ORDER>. Injecting the Gemini-order numbering here too would produce
-    // two contradictory numberings in the same prompt, so for Sunburst we only
+    // two contradictory numberings in the same prompt, so for Responses we only
     // COLLECT the manifest (labels + original index) and inject nothing.
     {
       const rebuilt: any[] = [];
@@ -902,13 +903,13 @@ REPRODUCTION RULES (ZERO DEVIATION):
           const label = imageLabels.get(p) || 'Reference image (context asset)';
           const index = imageManifest.length + 1;
           imageManifest.push({ index, label, part: p });
-          if (!isSunburst) rebuilt.push({ text: `[IMAGE ${index}] ${label}` });
+          if (!isResponsesImageTier) rebuilt.push({ text: `[IMAGE ${index}] ${label}` });
           rebuilt.push(p);
         } else {
           rebuilt.push(p);
         }
       }
-      if (!isSunburst && imageManifest.length > 0) {
+      if (!isResponsesImageTier && imageManifest.length > 0) {
         rebuilt.splice(1, 0, {
           text: `<IMAGE_MANIFEST>\nThe attached images are labelled in order. Use each strictly for its stated role:\n${imageManifest.map(m => `IMAGE ${m.index} = ${m.label}`).join('\n')}\n</IMAGE_MANIFEST>`,
         });
@@ -950,11 +951,11 @@ REPRODUCTION RULES (ZERO DEVIATION):
     let lastError = "";
 
     // ─────────────────────────────────────────────────────────────
-    // OPENAI SUNBURST — Responses API + image_generation tool (edit)
+    // OPENAI RESPONSES IMAGE EDIT — GPT-Image-2, Flare, Sunburst
     // Uses OpenAI Files API file_ids (no re-materialization of bytes).
     // No cross-engine fallback, no fallback to older image models.
     // ─────────────────────────────────────────────────────────────
-    if (isSunburst) {
+    if (isResponsesImageTier) {
       const promptText = parts
         .filter((p: any) => typeof p.text === 'string')
         .map((p: any) => p.text)
@@ -1015,11 +1016,11 @@ REPRODUCTION RULES (ZERO DEVIATION):
           const raw = String(part.inlineData.data).replace(/\s/g, '');
           const realMime = sniffMime(raw);
           if (!realMime) {
-            console.warn(`[remaster][sunburst] dropped unreadable inline image: ${m.label} (declared ${part.inlineData.mimeType})`);
+            console.warn(`[remaster][responses-image] dropped unreadable inline image: ${m.label} (declared ${part.inlineData.mimeType})`);
             continue;
           }
           if (realMime !== part.inlineData.mimeType) {
-            console.warn(`[remaster][sunburst] mime corrected for ${m.label}: ${part.inlineData.mimeType} -> ${realMime}`);
+            console.warn(`[remaster][responses-image] mime corrected for ${m.label}: ${part.inlineData.mimeType} -> ${realMime}`);
           }
           contentImages.push({ type: 'input_image', image_url: `data:${realMime};base64,${raw}`, detail });
           usedLabels.push(m.label);
@@ -1027,14 +1028,14 @@ REPRODUCTION RULES (ZERO DEVIATION):
           continue;
         }
         // Gemini file_uri must never be re-materialized for OpenAI.
-        console.warn(`[remaster][sunburst] skipped reference without OpenAI file id: ${m.label}`);
+        console.warn(`[remaster][responses-image] skipped reference without OpenAI file id: ${m.label}`);
       }
 
 
       const manifestText = usedLabels.map((l, i) => `IMAGE ${i + 1} = ${l}`).join('\n');
       const finalPrompt = `<IMAGE_ORDER>\nThe attached images arrive in this exact order. IMAGE 1 is always the primary vehicle blueprint and has absolute authority over vehicle identity. Use every later image only for its labelled role:\n${manifestText}\n</IMAGE_ORDER>\n\n${promptText}`;
 
-      console.log(`[remaster][sunburst] engine=openai tier=${tier} imageModel=${engineConfig.model} refs=${contentImages.length} viaFileId=${fileIdCount} viaBase64Fallback=${base64Count} serverStatic=${serverStaticCount} promptLen=${finalPrompt.length}`);
+      console.log(`[remaster][responses-image] engine=openai tier=${tier} imageModel=${engineConfig.model} refs=${contentImages.length} viaFileId=${fileIdCount} viaBase64Fallback=${base64Count} serverStatic=${serverStaticCount} promptLen=${finalPrompt.length}`);
 
       const orchestratorModel = (await getSecret('OPENAI_RESPONSES_MODEL')) || 'gpt-5.6-luna';
       const body = {
@@ -1048,7 +1049,7 @@ REPRODUCTION RULES (ZERO DEVIATION):
         tools: [
           {
             type: 'image_generation',
-            model: 'gpt-image-2.5-sunburst',
+            model: engineConfig.model,
             action: 'edit',
             quality: 'high',
             // Deterministische Ausgabegröße – identisch zu Flare, damit die
@@ -1082,8 +1083,8 @@ REPRODUCTION RULES (ZERO DEVIATION):
         const errText = await r.text();
         let providerMessage = '';
         try { providerMessage = JSON.parse(errText)?.error?.message || ''; } catch { /* keep status */ }
-        lastError = providerMessage || `OpenAI Sunburst error (${r.status})`;
-        console.error(`[remaster][sunburst] attempt=${attempt} status=${r.status}: ${errText.slice(0, 300)}`);
+        lastError = providerMessage || `OpenAI ${engineConfig.model} error (${r.status})`;
+        console.error(`[remaster][responses-image] model=${engineConfig.model} attempt=${attempt} status=${r.status}: ${errText.slice(0, 300)}`);
 
         if (attempt < 3 && (isTransientFileRefError(lastError) || r.status === 429 || r.status >= 500)) {
           await new Promise((res) => setTimeout(res, attempt * 2000));
@@ -1105,11 +1106,11 @@ REPRODUCTION RULES (ZERO DEVIATION):
       const imageCall = output.find((o: any) => o?.type === 'image_generation_call' && o?.result);
       const b64 = imageCall?.result;
       if (!b64) {
-        console.error('[remaster][sunburst] no image_generation_call result in response');
-        throw new Error('OpenAI Sunburst: kein Bild im Response');
+        console.error(`[remaster][responses-image] no image_generation_call result for ${engineConfig.model}`);
+        throw new Error(`OpenAI ${engineConfig.model}: kein Bild im Response`);
       }
 
-      console.log(`[remaster][sunburst] success model=${engineConfig.model} orchestrator=${orchestratorModel}`);
+      console.log(`[remaster][responses-image] success model=${engineConfig.model} orchestrator=${orchestratorModel}`);
 
       // Kosten-Telemetrie: Luna-Usage defensiv auslesen, Image-Tool-Anteil bleibt
       // geschätzt, solange OpenAI dafür keine Usage-Felder liefert.

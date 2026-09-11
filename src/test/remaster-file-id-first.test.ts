@@ -1,9 +1,17 @@
 import { describe, it, expect } from 'vitest';
 import { stripRedundantBase64 } from '@/lib/remaster-invoke';
+import { tierUsesOpenAIFiles } from '@/lib/openai-file-upload';
 
 const B64 = 'data:image/png;base64,AAAA';
 
 describe('file-id-first payload guard', () => {
+  it('routes GPT-Image-2, Flare and Sunburst through OpenAI Files only', () => {
+    expect(tierUsesOpenAIFiles('neu')).toBe(true);
+    expect(tierUsesOpenAIFiles('flare')).toBe(true);
+    expect(tierUsesOpenAIFiles('sunburst')).toBe(true);
+    expect(tierUsesOpenAIFiles('ultra')).toBe(false);
+    expect(tierUsesOpenAIFiles('premium')).toBe(false);
+  });
   it('removes base64 for every asset that has an OpenAI file id', () => {
     const out = stripRedundantBase64({
       imageBase64: B64,
