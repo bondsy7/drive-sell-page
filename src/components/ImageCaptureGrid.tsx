@@ -98,6 +98,51 @@ function compressImage(dataUrl: string, maxDim = 2048, quality = 0.85): Promise<
   });
 }
 
+/** Kompakter Seitenabschnitt – auf Mobil optional einklappbar. */
+const CaptureSection: React.FC<{
+  title: string;
+  subtitle?: string;
+  badge?: string;
+  badgeOk?: boolean;
+  collapsible?: boolean;
+  children: React.ReactNode;
+}> = ({ title, subtitle, badge, badgeOk, collapsible, children }) => {
+  const isMobile = useIsMobile();
+  const [open, setOpen] = useState(true);
+  const canCollapse = !!collapsible && isMobile;
+  const isOpen = canCollapse ? open : true;
+
+  return (
+    <section className="rounded-xl border border-border bg-card p-4">
+      <header
+        className={`flex items-start justify-between gap-3 ${canCollapse ? 'cursor-pointer' : ''}`}
+        onClick={canCollapse ? () => setOpen(o => !o) : undefined}
+      >
+        <div className="min-w-0">
+          <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+          {subtitle && <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">{subtitle}</p>}
+        </div>
+        <div className="flex shrink-0 items-center gap-1.5">
+          {badge && (
+            <span
+              className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                badgeOk ? 'bg-green-500/10 text-green-700' : 'bg-muted text-muted-foreground'
+              }`}
+            >
+              {badge}
+            </span>
+          )}
+          {canCollapse && (
+            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+          )}
+        </div>
+      </header>
+      {isOpen && <div className="mt-3">{children}</div>}
+    </section>
+  );
+};
+
+
 const DEFAULT_CONFIG: RemasterConfig = {
   scene: '',
   licensePlate: 'remove',
