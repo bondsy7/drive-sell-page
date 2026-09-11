@@ -288,39 +288,16 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
         Remaster-Optionen
       </h3>
 
-      {/* Scene Dropdown */}
+      {/* Szene – visuelle Auswahl */}
       <div className="space-y-2">
         <Label className="text-xs font-medium text-muted-foreground">Szene <span className="text-destructive">*</span></Label>
-        <p className="text-[11px] text-muted-foreground/70">Wähle eine spezielle Szene für den Hintergrund</p>
-        <Select value={config.scene || undefined} onValueChange={(v) => update({ scene: v })}>
-          <SelectTrigger className={`w-full ${!config.scene ? 'border-accent/50' : ''}`}>
-            <SelectValue placeholder="Bitte wählen *" />
-          </SelectTrigger>
-          <SelectContent>
-            {SCENE_OPTIONS.filter(o => (o as any).group === 'none').map(opt => (
-              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-            ))}
-            <SelectGroup>
-              <SelectLabel>Innen</SelectLabel>
-              {SCENE_OPTIONS.filter(o => (o as any).group === 'indoor').map(opt => (
-                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-              ))}
-            </SelectGroup>
-            <SelectSeparator />
-            <SelectGroup>
-              <SelectLabel>Außen</SelectLabel>
-              {SCENE_OPTIONS.filter(o => (o as any).group === 'outdoor').map(opt => (
-                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
+        <p className="text-[11px] text-muted-foreground/70">Wähle den Hintergrund für die generierten Bilder</p>
+        <SceneGallery
+          options={SCENE_OPTIONS as unknown as SceneTileOption[]}
+          value={config.scene}
+          onChange={(v) => update({ scene: v })}
+        />
 
-        {scenePreview && (
-          <div className="mt-2 rounded-lg overflow-hidden border border-border">
-            <img src={scenePreview} alt="Szene Vorschau" className="w-full object-cover" />
-          </div>
-        )}
 
         {config.scene === 'custom-showroom' && (
           <div className="mt-2 space-y-2">
