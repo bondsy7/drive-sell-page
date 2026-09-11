@@ -42,10 +42,10 @@ export default function ModelSelector({ actionType, value, onChange }: ModelSele
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-center gap-1 p-1 rounded-lg bg-muted flex-wrap">
-        {TIERS.map((tier, i) => {
+        {visibleTiers.map((tier, i) => {
           const cost = getCost(actionType, tier.id);
           const isActive = value === tier.id;
-          const showDivider = i > 0 && TIERS[i - 1].group !== tier.group;
+          const showDivider = i > 0 && visibleTiers[i - 1].group !== tier.group;
           return (
             <React.Fragment key={tier.id}>
               {showDivider && <div className="w-px h-5 bg-border mx-0.5" />}
