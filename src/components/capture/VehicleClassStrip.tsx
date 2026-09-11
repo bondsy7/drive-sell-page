@@ -19,14 +19,14 @@ interface VehicleClassStripProps {
 }
 
 /**
- * Kompakte, horizontale Fahrzeugart-Auswahl für die Ein-Seiten-Aufnahme.
+ * Kompakte Fahrzeugart-Auswahl für die Ein-Seiten-Aufnahme.
  * Datengetrieben aus der Fahrzeugklassen-Registry – keine neuen Klassen.
  */
 const VehicleClassStrip: React.FC<VehicleClassStripProps> = ({ value, onChange, disabled }) => {
   const profiles = getActiveProfiles();
 
   return (
-    <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1 sm:grid sm:grid-cols-3 sm:overflow-visible">
+    <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
       {profiles.map((p) => {
         const visual = CLASS_VISUAL[p.key] ?? { image: carLine, title: p.label, examples: p.description };
         const active = value === p.key;
@@ -36,19 +36,19 @@ const VehicleClassStrip: React.FC<VehicleClassStripProps> = ({ value, onChange, 
             type="button"
             disabled={disabled}
             onClick={() => onChange(p.key as ActiveVehicleClassKey)}
-            className={`relative flex min-w-[170px] flex-1 items-center gap-3 rounded-xl border bg-card px-3 py-2.5 text-left transition-colors ${
-              active ? 'border-accent bg-accent/5' : 'border-border hover:border-accent/50 hover:bg-muted/40'
-            } ${disabled ? 'opacity-60 pointer-events-none' : ''}`}
+            className={`relative flex w-full min-w-0 items-center gap-3 rounded-lg border bg-card p-2.5 text-left transition-colors sm:flex-col sm:items-start sm:gap-1.5 ${
+              active ? 'border-accent bg-accent/5' : 'border-border hover:border-accent/60 hover:bg-muted/40'
+            } ${disabled ? 'pointer-events-none opacity-60' : ''}`}
           >
             <img
               src={visual.image}
               alt={`${visual.title} Strichzeichnung`}
               loading="lazy"
-              className="h-10 w-16 shrink-0 object-contain opacity-80"
+              className="h-10 w-16 shrink-0 object-contain opacity-80 sm:h-14 sm:w-full"
             />
-            <span className="min-w-0">
-              <span className="block text-sm font-semibold text-foreground">{visual.title}</span>
-              <span className="block truncate text-[11px] text-muted-foreground">{visual.examples}</span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-semibold text-foreground">{visual.title}</span>
+              <span className="block truncate text-[10px] text-muted-foreground">{visual.examples}</span>
             </span>
             {active && (
               <span className="absolute right-2 top-2 flex h-4 w-4 items-center justify-center rounded-full bg-accent text-accent-foreground">

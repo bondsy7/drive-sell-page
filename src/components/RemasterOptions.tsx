@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel, SelectSeparator } from '@/components/ui/select';
+
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -20,6 +20,8 @@ import {
 import { ensureCachedBase64, prewarmCache, ensureLogoCachedAsPng } from '@/lib/image-base64-cache';
 import { compressImageForAI, fileToBase64 } from '@/lib/image-compress';
 import VehicleBrandModelPicker from '@/components/VehicleBrandModelPicker';
+import SceneGallery, { type SceneTileOption } from '@/components/capture/SceneGallery';
+import OptionCards, { type CardOption } from '@/components/capture/OptionCards';
 import { useModuleAccess } from '@/hooks/useModuleAccess';
 
 interface RemasterOptionsProps {
@@ -197,8 +199,6 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
     toast.success('Hersteller-Logo hochgeladen.');
   };
 
-  const selectedScene = SCENE_OPTIONS.find(s => s.value === config.scene);
-  const scenePreview = selectedScene && 'preview' in selectedScene ? (selectedScene as any).preview : null;
 
   const handleShowroomUpload = async (file: File) => {
     if (!file.type.startsWith('image/')) { toast.error('Bitte ein Bild auswählen.'); return; }
@@ -288,39 +288,16 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
         Remaster-Optionen
       </h3>
 
-      {/* Scene Dropdown */}
+      {/* Szene – visuelle Auswahl */}
       <div className="space-y-2">
         <Label className="text-xs font-medium text-muted-foreground">Szene <span className="text-destructive">*</span></Label>
-        <p className="text-[11px] text-muted-foreground/70">Wähle eine spezielle Szene für den Hintergrund</p>
-        <Select value={config.scene || undefined} onValueChange={(v) => update({ scene: v })}>
-          <SelectTrigger className={`w-full ${!config.scene ? 'border-accent/50' : ''}`}>
-            <SelectValue placeholder="Bitte wählen *" />
-          </SelectTrigger>
-          <SelectContent>
-            {SCENE_OPTIONS.filter(o => (o as any).group === 'none').map(opt => (
-              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-            ))}
-            <SelectGroup>
-              <SelectLabel>Innen</SelectLabel>
-              {SCENE_OPTIONS.filter(o => (o as any).group === 'indoor').map(opt => (
-                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-              ))}
-            </SelectGroup>
-            <SelectSeparator />
-            <SelectGroup>
-              <SelectLabel>Außen</SelectLabel>
-              {SCENE_OPTIONS.filter(o => (o as any).group === 'outdoor').map(opt => (
-                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
+        <p className="text-[11px] text-muted-foreground/70">Wähle den Hintergrund für die generierten Bilder</p>
+        <SceneGallery
+          options={SCENE_OPTIONS as unknown as SceneTileOption[]}
+          value={config.scene}
+          onChange={(v) => update({ scene: v })}
+        />
 
-        {scenePreview && (
-          <div className="mt-2 rounded-lg overflow-hidden border border-border">
-            <img src={scenePreview} alt="Szene Vorschau" className="w-full object-cover" />
-          </div>
-        )}
 
         {config.scene === 'custom-showroom' && (
           <div className="mt-2 space-y-2">
@@ -375,16 +352,11 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
           <Tag className="w-3.5 h-3.5" /> Nummernschild
         </Label>
         <p className="text-[11px] text-muted-foreground/70">Was soll mit dem Nummernschild passieren?</p>
-        <Select value={config.licensePlate || undefined} onValueChange={(v) => update({ licensePlate: v })}>
-          <SelectTrigger className={`w-full ${!config.licensePlate ? 'border-accent/50' : ''}`}>
-            <SelectValue placeholder="Bitte wählen" />
-          </SelectTrigger>
-          <SelectContent>
-            {LICENSE_PLATE_OPTIONS.map(opt => (
-              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <OptionCards
+          options={LICENSE_PLATE_OPTIONS as unknown as CardOption[]}
+          value={config.licensePlate}
+          onChange={(v) => update({ licensePlate: v })}
+        />
 
         {config.licensePlate === 'custom' && (
           <div className="mt-2 space-y-2">
