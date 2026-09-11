@@ -91,6 +91,30 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
+  // Built-in scenes that ship their own reference image (e.g. Showroom 4).
+  // The image is passed through the existing showroom reference channel so the
+  // model sees the exact environment; user uploads are never overwritten.
+  const autoSceneRefRef = useRef<string | null>(null);
+  useEffect(() => {
+    const scene = SCENE_OPTIONS.find(s => s.value === config.scene) as any;
+    const refUrl: string | undefined = scene?.reference;
+    if (refUrl) {
+      const current = configRef.current.customShowroomBase64;
+      if (current && current !== autoSceneRefRef.current) return; // user upload wins
+      ensureCachedBase64(refUrl).then(b64 => {
+        autoSceneRefRef.current = b64;
+        onChange({ ...configRef.current, customShowroomBase64: b64 });
+      }).catch(() => {});
+    } else if (autoSceneRefRef.current && configRef.current.customShowroomBase64 === autoSceneRefRef.current) {
+      const prev = autoSceneRefRef.current;
+      autoSceneRefRef.current = null;
+      if (configRef.current.customShowroomBase64 === prev) {
+        onChange({ ...configRef.current, customShowroomBase64: null });
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config.scene]);
+
   // Brand alias map for logo matching
   const BRAND_ALIASES: Record<string, string[]> = {
     'volkswagen': ['vw'],
