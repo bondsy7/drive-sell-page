@@ -91,6 +91,8 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
   const [isProcessing, setIsProcessing] = useState(false);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [autoVehicleId, setAutoVehicleId] = useState<string | null>(null);
+  /** Bild-Engine des Spins: Gemini bleibt Standard, Flare/Sunburst sind Vergleichs-Tests. */
+  const [imageEngine, setImageEngine] = useState<SpinImageEngineOption>('gemini');
 
   const ensureSpinVehicleId = useCallback(async (): Promise<string | null> => {
     if (vehicleId) return vehicleId;
