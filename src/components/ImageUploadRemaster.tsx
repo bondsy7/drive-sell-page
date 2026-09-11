@@ -129,7 +129,7 @@ const ImageUploadRemaster: React.FC<ImageUploadRemasterProps> = ({ vehicleDescri
     if (remasterConfig.showManufacturerLogo && remasterConfig.manufacturerLogoBase64) sharedAssets.push({ key: 'mfgLogo', b64: remasterConfig.manufacturerLogoBase64 });
     if (remasterConfig.showDealerLogo && remasterConfig.dealerLogoBase64) sharedAssets.push({ key: 'dealerLogo', b64: remasterConfig.dealerLogoBase64 });
 
-    // Provider-aware upload: OpenAI/Sunburst uses OpenAI Files, everything else Gemini File API.
+    // Provider-aware upload: OpenAI Responses image tiers use OpenAI Files; everything else uses Gemini Files.
     const useOpenAIFiles = tierUsesOpenAIFiles(modelTier);
     const sharedRefs: Record<string, GeminiFileRef | null> = { showroom: null, plate: null, mfgLogo: null, dealerLogo: null };
     const sharedOpenAIRefs: Record<string, OpenAIFileRef | null> = { showroom: null, plate: null, mfgLogo: null, dealerLogo: null };
