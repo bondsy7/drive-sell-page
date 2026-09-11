@@ -29,9 +29,9 @@ describe("Referenz-Transfer ist modellabhängig", () => {
     expect(ten.referenceUploadUsd).toBeCloseTo(REFS * INFRA_PER_IMAGE_USD, 10);
   });
 
-  it("Flare: einmaliger Upload + Materialisierung je Output", () => {
+  it("Flare: file_id-Upload bleibt unabhängig von y einmalig", () => {
     const ten = calcOpenAi25Cost({ model: "flare", referenceCount: REFS, outputCount: 10 });
-    expect(ten.referenceUploadUsd).toBeCloseTo(REFS * INFRA_PER_IMAGE_USD * 11, 10);
+    expect(ten.referenceUploadUsd).toBeCloseTo(REFS * INFRA_PER_IMAGE_USD, 10);
   });
 
   it("Image-Input-Tokenkosten skalieren bei beiden Modellen mit refs × outs", () => {
@@ -40,11 +40,18 @@ describe("Referenz-Transfer ist modellabhängig", () => {
     expect(f.referenceImageInputUsd).toBeCloseTo(s.referenceImageInputUsd, 10);
   });
 
+  it("rechnet den Responses-Orchestrator für Flare und Sunburst", () => {
+    const flare = calcOpenAi25Cost({ model: "flare", referenceCount: REFS, outputCount: 1 });
+    const sunburst = calcOpenAi25Cost({ model: "sunburst", referenceCount: REFS, outputCount: 1 });
+    expect(flare.orchestratorUsd).toBeGreaterThan(0);
+    expect(flare.orchestratorUsd).toBeCloseTo(sunburst.orchestratorUsd, 10);
+  });
+
   it("liefert eine modellabhängige Transfer-Erklärung", () => {
     expect(calcOpenAi25Cost({ model: "sunburst", referenceCount: 1, outputCount: 1 }).transferNote)
       .toMatch(/file_id/);
     expect(calcOpenAi25Cost({ model: "flare", referenceCount: 1, outputCount: 1 }).transferNote)
-      .toMatch(/Legacy-Pfad/);
+      .toMatch(/file_id/);
   });
 });
 

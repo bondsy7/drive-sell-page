@@ -45,7 +45,7 @@ export interface RemasterInvokePayload {
 
   /**
    * OpenAI Files API references (purpose=vision). Only used by OpenAI/Responses
-   * tiers (Sunburst). Gemini flows ignore these fields completely.
+   * tiers (GPT-Image-2, Flare, Sunburst). Gemini flows ignore these fields completely.
    */
   mainImageOpenAIFile?: OpenAIFileRef | null;
   additionalOpenAIFiles?: OpenAIFileRef[];

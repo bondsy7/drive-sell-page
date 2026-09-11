@@ -217,7 +217,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     wheel: { uri: string; mimeType: string } | null;
   }>({ references: [], showroom: null, plate: null, manufacturerLogo: null, dealerLogo: null, wheel: null });
 
-  // Cached OpenAI Files API IDs – uploaded ONCE for OpenAI/Sunburst tiers and
+  // Cached OpenAI Files API IDs – uploaded ONCE for Responses image tiers and
   // reused for ALL pipeline jobs (never re-sent as base64 per perspective).
   const cachedOpenAIFilesRef = useRef<{
     references: OpenAIFileRef[];
@@ -442,7 +442,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       manufacturerLogoUrl: (mfgLogoFileUri || openAICache.manufacturerLogo || manufacturerLogoBase64) ? null : (cfg.remasterConfig.showManufacturerLogo ? cfg.resolvedManufacturerLogoUrl : null),
       manufacturerLogoBase64: (mfgLogoFileUri || (cfg.remasterConfig.showManufacturerLogo && openAICache.manufacturerLogo)) ? null : manufacturerLogoBase64,
       manufacturerLogoFileUri: mfgLogoFileUri,
-      // OpenAI/Sunburst: reuse the cached file IDs for every job
+      // OpenAI Responses image tiers: reuse the cached file IDs for every job
       mainImageOpenAIFile,
       additionalOpenAIFiles: additionalOpenAIFiles.length > 0 ? additionalOpenAIFiles : undefined,
       additionalOpenAIFileRoles: additionalOpenAIFiles.length > 0 ? additionalOpenAIFileRoles : undefined,

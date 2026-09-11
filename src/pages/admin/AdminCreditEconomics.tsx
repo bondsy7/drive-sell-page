@@ -94,7 +94,7 @@ function OpenAi25Simulator({ costs }: { costs: Record<string, Record<string, num
     <Card className="p-6 space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="font-semibold">OpenAI 2.5 Kosten-Simulator (x Referenzen → y Bilder)</h2>
+          <h2 className="font-semibold">OpenAI Responses Kosten-Simulator (x Referenzen → y Bilder)</h2>
           <p className="text-[11px] text-muted-foreground mt-1">
             Ausgabe fix <strong>{OPENAI_25_OUTPUT_FORMAT.quality} / {OPENAI_25_OUTPUT_FORMAT.size}</strong>.
             Tokenpreise = <Badge variant="outline" className="text-[9px]">offizieller Tarif</Badge> (10.09.2026).
@@ -115,7 +115,7 @@ function OpenAi25Simulator({ costs }: { costs: Record<string, Record<string, num
             <button key={m} onClick={() => setModel(m)}
               className={`px-3 py-1.5 text-xs rounded-md border transition ${model === m ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-accent"}`}>
               {m === "flare" ? "Flare" : "Sunburst"}
-              <span className="block text-[10px] opacity-70">{m === "flare" ? "/v1/images/edits" : "Responses + Luna"}</span>
+              <span className="block text-[10px] opacity-70">Responses + Luna + file_id</span>
             </button>
           ))}
         </div>
@@ -136,8 +136,8 @@ function OpenAi25Simulator({ costs }: { costs: Record<string, Record<string, num
           <div className="flex justify-between"><span className="text-muted-foreground">Referenz-Bild-Input (x·y)</span><span className="tabular-nums">${r.referenceImageInputUsd.toFixed(4)}</span></div>
           <div className="flex justify-between"><span className="text-muted-foreground">Bild-Output</span><span className="tabular-nums">${r.imageOutputUsd.toFixed(4)}</span></div>
           <div className="flex justify-between font-medium"><span>OpenAI Image Modellkosten</span><span className="tabular-nums">${r.imageModelUsd.toFixed(4)}</span></div>
-          <div className="flex justify-between"><span className="text-muted-foreground">Luna-Orchestrator {model === "flare" && "(nicht aktiv)"}</span><span className="tabular-nums">${r.orchestratorUsd.toFixed(4)}</span></div>
-          <div className="flex justify-between"><span className="text-muted-foreground">Datei-Transfer intern ({model === "sunburst" ? "einmalig" : "je Output erneut"})</span><span className="tabular-nums">${r.referenceUploadUsd.toFixed(4)}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Luna-Orchestrator</span><span className="tabular-nums">${r.orchestratorUsd.toFixed(4)}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Datei-Transfer intern (einmaliger file_id-Upload)</span><span className="tabular-nums">${r.referenceUploadUsd.toFixed(4)}</span></div>
           <div className="flex justify-between"><span className="text-muted-foreground">interner Overhead (× {outs} Requests, kein OpenAI-Entgelt)</span><span className="tabular-nums">${r.overheadUsd.toFixed(4)}</span></div>
           <div className="border-t border-border/40 mt-2 pt-2 flex justify-between font-semibold">
             <span>Gesamt-EK</span><span className="tabular-nums">${r.totalUsd.toFixed(4)} · {formatEur(r.totalEur)}</span>

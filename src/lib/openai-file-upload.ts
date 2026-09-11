@@ -13,8 +13,8 @@ interface UploadInput {
   displayName?: string;
 }
 
-/** Tiers that route to the OpenAI Responses API image path (Sunburst test track). */
-export const OPENAI_FILE_TIERS = ['sunburst'] as const;
+/** Tiers that route to OpenAI Responses image editing and can reuse vision file IDs. */
+export const OPENAI_FILE_TIERS = ['neu', 'flare', 'sunburst'] as const;
 
 /** True when the selected model tier must use OpenAI Files instead of Gemini File API. */
 export function tierUsesOpenAIFiles(tier?: string | null): boolean {
