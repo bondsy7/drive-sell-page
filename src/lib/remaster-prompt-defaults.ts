@@ -376,6 +376,13 @@ SHADOW: A pronounced but SOFT directional shadow falls to the RIGHT of the vehic
 REFLECTIONS: Window-side panels mirror the bright glass facade and a hint of skyline silhouette; shadow-side panels mirror the dark charcoal wall. Dark stone floor shows a moderate reflection (≈30 % opacity).
 MOOD: Architectural, contemporary, gallery-cinematic – strong directional light, deep but controlled shadows, photorealistic, NEVER muddy, NEVER flat.`,
 
+  'showroom-4': `CINEMATIC LIGHTING – Minimalist Pastel High-Tech Showroom:
+KEY_LIGHT: Very soft, diffused cool-white gradient light (5800–6500 K) emitted from BEHIND the pastel background shapes, wrapping the vehicle evenly from the front-top. No hard spots, no visible lamps.
+FILL_LIGHT: Gentle bounce from the pastel panels (soft blue, sage green, warm sand) adds barely perceptible pastel tinting on the shadow side. Exposure stays clean and neutral – the vehicle colour must NOT shift.
+SHADOW: Soft elliptical contact shadow directly under the vehicle (opacity 35–45 %), edges feathered, plus a clean mirrored reflection on the dark polished resin floor.
+REFLECTIONS: The dark, highly reflective polished resin floor mirrors the lower body, wheels and pastel background gradient (≈45–60 % opacity, vertically fading). Body panels mirror the soft pastel shapes and the cool-white glow – never any outdoor scenery, people or other vehicles.
+MOOD: Minimalist, high-tech, infinite depth – calm, premium, photorealistic, NO HDR, NO harsh contrast, NO coloured light spill on the paint.`,
+
   'custom-showroom': `CINEMATIC LIGHTING – Custom Showroom Match:
 ANALYSE the provided custom-showroom reference image and EXTRACT its real lighting:
 - KEY_LIGHT direction, colour temperature and intensity (window light? ceiling spots? cove lighting?)
