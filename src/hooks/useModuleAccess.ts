@@ -7,6 +7,7 @@ export const MODULE_KEYS = [
   'photos-preset',
   'photos-multi',
   'photos-spin360',
+  'background-swap',
   'studio',
   'pdf-landing',
   'manual-landing',
@@ -16,6 +17,7 @@ export const MODULE_KEYS = [
   'music-studio',
   'damage-repair',
   'damage-analysis',
+  'reference-v2',
   'sales-assistant',
   'remaster-cleanup',
 ] as const;
@@ -27,6 +29,7 @@ export const MODULE_LABELS: Record<ModuleKey, string> = {
   'photos-preset': 'Bildergenerator',
   'photos-multi': 'Mehrfach-Perspektiven',
   'photos-spin360': '360° Spin',
+  'background-swap': 'Hintergrund tauschen',
   'studio': 'One-Shot Studio',
   'pdf-landing': 'PDF → Angebotsseite',
   'manual-landing': 'Landing Page manuell',
@@ -36,6 +39,7 @@ export const MODULE_LABELS: Record<ModuleKey, string> = {
   'music-studio': 'Musik Studio',
   'damage-repair': 'Schadensreparatur',
   'damage-analysis': 'Schadensanalyse',
+  'reference-v2': 'Referenz-Bibliothek V2',
   'sales-assistant': 'KI Verkaufsassistent',
   'remaster-cleanup': 'Spezifische Bereinigung (Remaster)',
 };
@@ -52,6 +56,7 @@ export const MODULE_CHILDREN: Partial<Record<ModuleKey, ModuleKey[]>> = {
 export const MODULE_DEFAULT_DISABLED: Set<ModuleKey> = new Set<ModuleKey>([
   'remaster-cleanup',
 ]);
+
 
 /**
  * Returns a set of disabled module keys for the current user.
