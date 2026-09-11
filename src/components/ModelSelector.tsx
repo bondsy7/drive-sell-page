@@ -23,7 +23,7 @@ const TIERS: { id: ModelTier; label: string; sublabel: string; icon?: React.Reac
 ];
 
 // OpenAI-Testmodelle: aktuell nur für Admins sichtbar/änderbar
-const ADMIN_ONLY_TIERS: ModelTier[] = ['neu', 'flare', 'sunburst'];
+export const ADMIN_ONLY_TIERS: ModelTier[] = ['neu', 'flare', 'sunburst'];
 
 export default function ModelSelector({ actionType, value, onChange }: ModelSelectorProps) {
   const { getCost } = useCredits();

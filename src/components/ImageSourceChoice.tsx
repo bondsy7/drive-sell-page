@@ -26,7 +26,9 @@ const TIERS: { id: ModelTier; label: string; sublabel: string; icon: React.React
 
 const ImageSourceChoice: React.FC<ImageSourceChoiceProps> = ({ onChooseGenerate, onChooseUpload, onChooseCapture, existingGalleryCount = 0, onChooseExisting }) => {
   const { getCost, balance } = useCredits();
+  const isAdmin = useIsAdmin();
   const [modelTier, setModelTier] = useState<ModelTier>('qualitaet');
+  const visibleTiers = isAdmin ? TIERS : TIERS.filter((t) => !ADMIN_ONLY_TIERS.includes(t.id));
 
   const generateCost = getCost('image_generate', modelTier) * 7;
   const remasterCost = getCost('image_remaster', modelTier);
