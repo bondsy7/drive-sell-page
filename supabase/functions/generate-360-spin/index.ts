@@ -875,7 +875,7 @@ serve(async (req) => {
             strictRetry: attempt > 1,
           });
           try {
-            const result = await callImageGeneration(prompt, references, model);
+            const result = await generateSpinImage(prompt, references, model, IMAGE_ENGINE);
             if (result) {
               usedModel = result.model;
               stored = await uploadDataUrlToStorage(
