@@ -568,7 +568,7 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
       </div>
 
       {/* Bild-Engine (nur Image2Spin) */}
-      {spinMode === 'image2spin' && (phase === 'source' || phase === 'upload') && (
+      {isAdmin && spinMode === 'image2spin' && (phase === 'source' || phase === 'upload') && (
         <div className="rounded-xl border border-border bg-card p-4 space-y-3">
           <div>
             <p className="text-sm font-semibold text-foreground">Bild-Engine</p>

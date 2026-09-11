@@ -52,7 +52,8 @@ const ImageSourceChoice: React.FC<ImageSourceChoiceProps> = ({ onChooseGenerate,
           <span>Dein Guthaben: <strong className="text-foreground">{balance} Credits</strong></span>
         </div>
 
-        {/* Modell-Auswahl (Standard: Qualität = Nano Banana 2; Alternativen wie Flare vergleichbar) */}
+        {/* Modell-Auswahl: aktuell nur für Admins sichtbar */}
+        {isAdmin && (
         <div className="flex items-center justify-center gap-1 mt-3 p-1 rounded-lg bg-muted flex-wrap max-w-xl mx-auto">
           {visibleTiers.map((tier, i) => {
             const isActive = modelTier === tier.id;
@@ -76,6 +77,7 @@ const ImageSourceChoice: React.FC<ImageSourceChoiceProps> = ({ onChooseGenerate,
             );
           })}
         </div>
+        )}
       </div>
       {existingGalleryCount > 0 && onChooseExisting && (
         <div className="mb-4">
