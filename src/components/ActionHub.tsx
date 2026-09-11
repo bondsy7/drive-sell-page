@@ -1,7 +1,13 @@
 import React from 'react';
 import { Camera, FileText, Layout, Image, Video, Sparkles, Lock, Zap, Wrench, Search, Music, RotateCw, Scissors, Database } from 'lucide-react';
 import { useCredits } from '@/hooks/useCredits';
-import { useModuleAccess } from '@/hooks/useModuleAccess';
+import { useModuleAccess, type ModuleKey } from '@/hooks/useModuleAccess';
+
+/** Kacheln des Generators auf Modul-Schlüssel abbilden (Admin-Verwaltung) */
+const TILE_MODULE_KEY: Partial<Record<HubAction, ModuleKey>> = {
+  'spin360': 'photos-spin360',
+};
+
 
 export type HubAction = 
   | 'studio'          // 🚀 One-Shot Studio (Beta) — Bilder + Banner + Video in einem Rutsch
@@ -159,7 +165,8 @@ const ActionHub: React.FC<ActionHubProps> = ({ onSelect }) => {
       {/* Tile Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {TILES.map((tile) => {
-          const isDisabledByAdmin = disabledModules.has(tile.id as any);
+          const moduleKey = TILE_MODULE_KEY[tile.id] ?? (tile.id as ModuleKey);
+          const isDisabledByAdmin = disabledModules.has(moduleKey);
           const isDisabled = tile.disabled || isDisabledByAdmin;
 
           return (
