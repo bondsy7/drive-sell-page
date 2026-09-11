@@ -20,6 +20,8 @@ import {
 import { ensureCachedBase64, prewarmCache, ensureLogoCachedAsPng } from '@/lib/image-base64-cache';
 import { compressImageForAI, fileToBase64 } from '@/lib/image-compress';
 import VehicleBrandModelPicker from '@/components/VehicleBrandModelPicker';
+import SceneGallery, { type SceneTileOption } from '@/components/capture/SceneGallery';
+import OptionCards, { type CardOption } from '@/components/capture/OptionCards';
 import { useModuleAccess } from '@/hooks/useModuleAccess';
 
 interface RemasterOptionsProps {
