@@ -1325,7 +1325,7 @@ serve(async (req) => {
 
       let generated: { dataUrl: string; model: string } | null = null;
       try {
-        generated = await callImageGeneration(prompt, baseRefs, model);
+        generated = await generateSpinImage(prompt, baseRefs, model, IMAGE_ENGINE);
       } catch (e) {
         if ((e as Error).message === "rate_limited") await new Promise((r) => setTimeout(r, 8000));
         console.error(`[${jobId}] frame ${planned.index} attempt ${attempt} error:`, (e as Error).message);
