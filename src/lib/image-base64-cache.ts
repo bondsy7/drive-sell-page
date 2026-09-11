@@ -136,6 +136,7 @@ export async function prewarmShowrooms(): Promise<void> {
     '/images/showrooms/showroom-1.webp',
     '/images/showrooms/showroom-2.webp',
     '/images/showrooms/showroom-3.webp',
+    '/images/showrooms/showroom-4.jpg',
   ];
   await prewarmCache(showroomUrls);
 }
