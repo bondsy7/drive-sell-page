@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useCredits } from '@/hooks/useCredits';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 import CreditConfirmDialog from '@/components/CreditConfirmDialog';
 import Spin360Upload, { type SpinSlotData, type SpinMode } from './Spin360Upload';
 import Spin360Progress, { type SpinStep } from './Spin360Progress';

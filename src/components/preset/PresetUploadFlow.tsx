@@ -259,7 +259,7 @@ const PresetUploadFlow: React.FC<PresetUploadFlowProps> = ({ onComplete, onBack 
             <span className="ml-2">• {costPerImage} Credit{costPerImage !== 1 ? 's' : ''}/Bild</span>
           </div>
           <div className="flex items-center gap-1 p-1 rounded-lg bg-muted flex-wrap">
-            {TIERS.map((tier) => {
+            {visibleTiers.map((tier) => {
               const isActive = modelTier === tier.id;
               const tierCost = getCost('image_remaster', tier.id) || 1;
               return (
