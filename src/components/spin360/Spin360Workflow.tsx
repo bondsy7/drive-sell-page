@@ -62,6 +62,15 @@ const createSpinReferenceComposite = async (frontBase64: string, rearBase64: str
 /** V2-Produktionsstufe: 48 Frames (7,5°). 32 bleibt als Diagnose-Stufe unterstützt. */
 const SPIN_FRAME_COUNT = 48;
 
+/** Bild-Engines für Image2Spin. Gemini = Standard, Flare/Sunburst = OpenAI-Testpfade. */
+type SpinImageEngineOption = 'gemini' | 'flare' | 'sunburst';
+
+const SPIN_IMAGE_ENGINES: { value: SpinImageEngineOption; label: string; hint: string }[] = [
+  { value: 'gemini', label: 'Standard', hint: 'Bewährte Engine' },
+  { value: 'flare', label: 'Flare (Test)', hint: 'GPT-Image-2.5 Flare' },
+  { value: 'sunburst', label: 'Sunburst (Test)', hint: 'GPT-Image-2.5 Sunburst' },
+];
+
 /** Perspektiven-Slots des klassischen Uploads → Turntable-Winkel. */
 const PERSPECTIVE_ANGLES: Record<string, number> = {
   front: 0,
@@ -91,6 +100,8 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
   const [isProcessing, setIsProcessing] = useState(false);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [autoVehicleId, setAutoVehicleId] = useState<string | null>(null);
+  /** Bild-Engine des Spins: Gemini bleibt Standard, Flare/Sunburst sind Vergleichs-Tests. */
+  const [imageEngine, setImageEngine] = useState<SpinImageEngineOption>('gemini');
 
   const ensureSpinVehicleId = useCallback(async (): Promise<string | null> => {
     if (vehicleId) return vehicleId;
@@ -185,6 +196,7 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
           keyframe_count: 8,
           manifest_version: 2,
           source_mode: assetSelection ? 'vehicle_assets' : 'upload',
+          image_engine: imageEngine,
         } as any)
         .select('id').single();
 
@@ -207,6 +219,7 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
           sourceImages: sourceUrls,
           frameCount: SPIN_FRAME_COUNT,
           sourceMode: assetSelection ? 'vehicle_assets' : 'upload',
+          imageEngine,
         },
       });
 
@@ -222,7 +235,7 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
       console.error('Start processing error:', err);
       setJobStatus('failed'); setJobError('Unerwarteter Fehler'); setIsProcessing(false);
     }
-  }, [user, uploadedSlots, assetSelection, ensureSpinVehicleId]);
+  }, [user, uploadedSlots, assetSelection, ensureSpinVehicleId, imageEngine]);
 
 
   /* ─── Video2Frames Flow (refactored: 3 images) ─── */
@@ -545,6 +558,36 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
         <Zap className="w-3 h-3 text-accent" />
         <span>Geschätzte Kosten: <strong className="text-accent">bis zu {totalCost} Credits</strong> — Guthaben: <strong className="text-foreground">{balance} Credits</strong></span>
       </div>
+
+      {/* Bild-Engine (nur Image2Spin) */}
+      {spinMode === 'image2spin' && (phase === 'source' || phase === 'upload') && (
+        <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+          <div>
+            <p className="text-sm font-semibold text-foreground">Bild-Engine</p>
+            <p className="text-xs text-muted-foreground">
+              Zum Vergleichen: gleiche Fotos, unterschiedliche Bild-KI. Die Test-Engines können langsamer und teurer sein.
+            </p>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-3">
+            {SPIN_IMAGE_ENGINES.map((engine) => (
+              <button
+                key={engine.value}
+                type="button"
+                disabled={isProcessing}
+                onClick={() => setImageEngine(engine.value)}
+                className={`rounded-lg border p-3 text-left transition-colors ${
+                  imageEngine === engine.value
+                    ? 'border-accent bg-accent/10'
+                    : 'border-border hover:border-accent/50'
+                } ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <span className="block text-sm font-medium text-foreground">{engine.label}</span>
+                <span className="block text-xs text-muted-foreground">{engine.hint}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Phase: Quellenwahl aus bestehenden Fahrzeug-Assets */}
       {phase === 'source' && vehicleId && (

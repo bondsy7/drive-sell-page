@@ -311,6 +311,133 @@ async function callGeminiJson(prompt: string, imageUrls: string[]): Promise<any>
   }
 }
 
+// ─── OpenAI Responses Image (Test-Engines: Flare / Sunburst) ───
+export type SpinImageEngine = "gemini" | "flare" | "sunburst";
+
+const OPENAI_SPIN_MODELS: Record<string, string> = {
+  flare: "gpt-image-2.5-flare",
+  sunburst: "gpt-image-2.5-sunburst",
+};
+
+/** File API First auch für OpenAI: Referenz einmal hochladen, file_id wiederverwenden. */
+const openaiFileCache = new Map<string, string>();
+
+async function toOpenAiFileId(apiKey: string, url: string): Promise<string | null> {
+  const cached = openaiFileCache.get(url);
+  if (cached) return cached;
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) return null;
+    const mimeType = resp.headers.get("content-type") || "image/jpeg";
+    const bytes = new Uint8Array(await resp.arrayBuffer());
+    const ext = mimeType.includes("png") ? "png" : mimeType.includes("webp") ? "webp" : "jpg";
+    const form = new FormData();
+    form.append("purpose", "vision");
+    form.append("file", new Blob([bytes], { type: mimeType }), `spin-ref.${ext}`);
+    const up = await fetch("https://api.openai.com/v1/files", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}` },
+      body: form,
+    });
+    if (!up.ok) {
+      console.warn(`[spin][openai] file upload failed: ${up.status} ${(await up.text()).slice(0, 200)}`);
+      return null;
+    }
+    const data = await up.json();
+    if (!data?.id) return null;
+    openaiFileCache.set(url, data.id);
+    return data.id as string;
+  } catch (e) {
+    console.warn("[spin][openai] reference upload failed:", url, (e as Error).message);
+    return null;
+  }
+}
+
+/**
+ * Bildgenerierung über OpenAI Responses `image_generation` (action: edit).
+ * Bindend an die gewählte Engine — kein Cross-Engine-Fallback auf Gemini.
+ */
+async function callOpenAiImageGeneration(
+  prompt: string,
+  references: LabeledRef[],
+  engine: "flare" | "sunburst",
+): Promise<{ dataUrl: string; model: string } | null> {
+  const apiKey = await getSecret("OPENAI_API_KEY");
+  if (!apiKey) throw new Error("OPENAI_API_KEY not configured");
+  const imageModel = OPENAI_SPIN_MODELS[engine];
+
+  const contentImages: any[] = [];
+  const usedLabels: string[] = [];
+  for (const ref of references) {
+    if (contentImages.length >= 16) break;
+    const fileId = await toOpenAiFileId(apiKey, ref.url);
+    if (!fileId) continue;
+    contentImages.push({ type: "input_image", file_id: fileId, detail: "high" });
+    usedLabels.push(ref.label);
+  }
+  if (contentImages.length === 0) throw new Error("no_reference_images");
+
+  const manifestText = usedLabels.map((l, i) => `IMAGE ${i + 1} = ${l}`).join("\n");
+  const finalPrompt = `<IMAGE_ORDER>\nThe attached images arrive in this exact order. IMAGE 1 has absolute authority over vehicle identity. Use every later image only for its labelled role:\n${manifestText}\n</IMAGE_ORDER>\n\n${prompt}`;
+
+  const orchestratorModel = (await getSecret("OPENAI_RESPONSES_MODEL")) || "gpt-5.6-luna";
+  const requestBody = {
+    model: orchestratorModel,
+    input: [{ role: "user", content: [{ type: "input_text", text: finalPrompt }, ...contentImages] }],
+    tools: [{ type: "image_generation", model: imageModel, action: "edit", quality: "high", size: "1536x1024" }],
+    tool_choice: { type: "image_generation" },
+  };
+
+  console.log(`[spin] Engine=openai Model=${imageModel} Tier=${engine} refs=${contentImages.length} viaFileId=${contentImages.length} (binding, no cross-engine fallback)`);
+
+  const isTransient = (msg: string) => /validating file ownership/i.test(msg) || /error while validating file/i.test(msg);
+  let ok: Response | null = null;
+  let lastError = "";
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const r = await fetch("https://api.openai.com/v1/responses", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify(requestBody),
+    });
+    if (r.ok) { ok = r; break; }
+    const errText = await r.text();
+    try { lastError = JSON.parse(errText)?.error?.message || errText; } catch { lastError = errText; }
+    console.error(`[spin][openai] ${imageModel} attempt=${attempt} status=${r.status}: ${errText.slice(0, 300)}`);
+    if (r.status === 429) throw new Error("rate_limited");
+    if (attempt < 3 && (isTransient(lastError) || r.status >= 500)) {
+      await new Promise((res) => setTimeout(res, attempt * 2000));
+      continue;
+    }
+    break;
+  }
+  if (!ok) {
+    console.warn(`[spin][openai] generation failed: ${lastError.slice(0, 200)}`);
+    return null;
+  }
+
+  const data = await ok.json();
+  const output: any[] = Array.isArray(data?.output) ? data.output : [];
+  const b64 = output.find((o: any) => o?.type === "image_generation_call" && o?.result)?.result;
+  if (!b64) {
+    console.warn(`[spin][openai] ${imageModel} returned no image (refusal signal)`);
+    return null;
+  }
+  return { dataUrl: `data:image/png;base64,${b64}`, model: imageModel };
+}
+
+/** Engine-Dispatcher: Gemini bleibt Standard, Flare/Sunburst sind Testpfade. */
+async function generateSpinImage(
+  prompt: string,
+  references: LabeledRef[],
+  geminiModel: string,
+  engine: SpinImageEngine,
+): Promise<{ dataUrl: string; model: string } | null> {
+  if (engine === "flare" || engine === "sunburst") {
+    return await callOpenAiImageGeneration(prompt, references, engine);
+  }
+  return await callImageGeneration(prompt, references, geminiModel);
+}
+
 /** Bildgenerierung mit mehreren gelabelten Referenzen. Verweigerung = verwertbares Fehlersignal. */
 async function callImageGeneration(
   prompt: string,
@@ -489,9 +616,16 @@ serve(async (req) => {
 
     // Konfiguration des Jobs (Frame-Tier)
     const { data: jobRow } = await sb.from("spin360_jobs")
-      .select("id, vehicle_id, target_frame_count, identity_profile, identity_hash, qa_summary")
+      .select("id, vehicle_id, target_frame_count, identity_profile, identity_hash, qa_summary, image_engine")
       .eq("id", jobId).single();
     const FRAME_COUNT = normalizeFrameCount(jobRow?.target_frame_count ?? body.frameCount);
+    // Bild-Engine ist pro Job fixiert (Gemini = Standard, Flare/Sunburst = OpenAI-Testpfade).
+    const requestedEngine = String(body.imageEngine ?? jobRow?.image_engine ?? "gemini");
+    const IMAGE_ENGINE: SpinImageEngine =
+      requestedEngine === "flare" || requestedEngine === "sunburst" ? requestedEngine : "gemini";
+    if (jobRow && (jobRow as any).image_engine !== IMAGE_ENGINE) {
+      await updateJobRaw(sb, jobId, { image_engine: IMAGE_ENGINE });
+    }
     const PER_SECTOR = framesPerSector(FRAME_COUNT);
 
     /**
@@ -741,7 +875,7 @@ serve(async (req) => {
             strictRetry: attempt > 1,
           });
           try {
-            const result = await callImageGeneration(prompt, references, model);
+            const result = await generateSpinImage(prompt, references, model, IMAGE_ENGINE);
             if (result) {
               usedModel = result.model;
               stored = await uploadDataUrlToStorage(
@@ -974,10 +1108,11 @@ serve(async (req) => {
         rebuildFromReferences: rebuildMissingKeyframe,
       });
       try {
-        const repaired = await callImageGeneration(
+        const repaired = await generateSpinImage(
           repairPrompt,
           references,
           rebuildMissingKeyframe ? SPIN_MODELS.imagePro : modelForAttempt(attempt + 1),
+          IMAGE_ENGINE,
         );
         if (repaired) {
           const repairedUrl = await uploadDataUrlToStorage(
@@ -1190,7 +1325,7 @@ serve(async (req) => {
 
       let generated: { dataUrl: string; model: string } | null = null;
       try {
-        generated = await callImageGeneration(prompt, baseRefs, model);
+        generated = await generateSpinImage(prompt, baseRefs, model, IMAGE_ENGINE);
       } catch (e) {
         if ((e as Error).message === "rate_limited") await new Promise((r) => setTimeout(r, 8000));
         console.error(`[${jobId}] frame ${planned.index} attempt ${attempt} error:`, (e as Error).message);

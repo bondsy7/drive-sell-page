@@ -2479,6 +2479,7 @@ export type Database = {
           id: string
           identity_hash: string | null
           identity_profile: Json | null
+          image_engine: string
           keyframe_count: number
           manifest: Json | null
           manifest_version: number
@@ -2498,6 +2499,7 @@ export type Database = {
           id?: string
           identity_hash?: string | null
           identity_profile?: Json | null
+          image_engine?: string
           keyframe_count?: number
           manifest?: Json | null
           manifest_version?: number
@@ -2517,6 +2519,7 @@ export type Database = {
           id?: string
           identity_hash?: string | null
           identity_profile?: Json | null
+          image_engine?: string
           keyframe_count?: number
           manifest?: Json | null
           manifest_version?: number
