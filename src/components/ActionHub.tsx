@@ -164,10 +164,14 @@ const ActionHub: React.FC<ActionHubProps> = ({ onSelect }) => {
 
       {/* Tile Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {TILES.map((tile) => {
+        {TILES.filter((tile) => {
+          const key = TILE_MODULE_KEY[tile.id] ?? (tile.id as ModuleKey);
+          return !disabledModules.has(key);
+        }).map((tile) => {
           const moduleKey = TILE_MODULE_KEY[tile.id] ?? (tile.id as ModuleKey);
           const isDisabledByAdmin = disabledModules.has(moduleKey);
           const isDisabled = tile.disabled || isDisabledByAdmin;
+
 
           return (
             <button
