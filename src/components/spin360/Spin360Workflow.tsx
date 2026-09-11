@@ -577,7 +577,7 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
             </p>
           </div>
           <div className="grid gap-2 sm:grid-cols-3">
-            {SPIN_IMAGE_ENGINES.map((engine) => (
+            {visibleSpinEngines.map((engine) => (
               <button
                 key={engine.value}
                 type="button"
