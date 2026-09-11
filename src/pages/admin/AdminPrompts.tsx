@@ -476,7 +476,8 @@ const PROMPT_META: Record<string, PromptMeta> = {
     Object.entries(SCENE_PROMPT_DEFAULTS).map(([k]) => {
       const sceneLabels: Record<string, string> = {
         'showroom-1': 'Showroom 1 – Modern Hell', 'showroom-2': 'Showroom 2 – Elegant',
-        'showroom-3': 'Showroom 3 – Glasfront', 'custom-showroom': 'Eigener Showroom',
+        'showroom-3': 'Showroom 3 – Glasfront', 'showroom-4': 'Showroom 4 – Pastell High-Tech',
+        'custom-showroom': 'Eigener Showroom',
         'forest': 'Wald', 'mountain': 'Berglandschaft', 'city': 'Stadtkulisse',
         'street': 'Straße', 'beach': 'Strand', 'desert': 'Wüste',
         'night-city': 'Stadt bei Nacht', 'parking-garage': 'Tiefgarage / Parkhaus',
