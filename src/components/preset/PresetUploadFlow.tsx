@@ -258,6 +258,7 @@ const PresetUploadFlow: React.FC<PresetUploadFlowProps> = ({ onComplete, onBack 
             <span>Guthaben: <strong className="text-foreground">{balance} Credits</strong></span>
             <span className="ml-2">• {costPerImage} Credit{costPerImage !== 1 ? 's' : ''}/Bild</span>
           </div>
+          {isAdmin && (
           <div className="flex items-center gap-1 p-1 rounded-lg bg-muted flex-wrap">
             {visibleTiers.map((tier) => {
               const isActive = modelTier === tier.id;
@@ -280,6 +281,7 @@ const PresetUploadFlow: React.FC<PresetUploadFlowProps> = ({ onComplete, onBack 
               );
             })}
           </div>
+          )}
         </Card>
 
         {/* Preset Selector */}
