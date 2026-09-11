@@ -62,6 +62,15 @@ const createSpinReferenceComposite = async (frontBase64: string, rearBase64: str
 /** V2-Produktionsstufe: 48 Frames (7,5°). 32 bleibt als Diagnose-Stufe unterstützt. */
 const SPIN_FRAME_COUNT = 48;
 
+/** Bild-Engines für Image2Spin. Gemini = Standard, Flare/Sunburst = OpenAI-Testpfade. */
+type SpinImageEngineOption = 'gemini' | 'flare' | 'sunburst';
+
+const SPIN_IMAGE_ENGINES: { value: SpinImageEngineOption; label: string; hint: string }[] = [
+  { value: 'gemini', label: 'Standard', hint: 'Bewährte Engine' },
+  { value: 'flare', label: 'Flare (Test)', hint: 'GPT-Image-2.5 Flare' },
+  { value: 'sunburst', label: 'Sunburst (Test)', hint: 'GPT-Image-2.5 Sunburst' },
+];
+
 /** Perspektiven-Slots des klassischen Uploads → Turntable-Winkel. */
 const PERSPECTIVE_ANGLES: Record<string, number> = {
   front: 0,
