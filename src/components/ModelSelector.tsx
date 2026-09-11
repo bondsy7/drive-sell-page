@@ -29,14 +29,19 @@ export default function ModelSelector({ actionType, value, onChange }: ModelSele
   const { getCost } = useCredits();
   const isAdmin = useIsAdmin();
 
-  const visibleTiers = isAdmin ? TIERS : TIERS.filter((t) => !ADMIN_ONLY_TIERS.includes(t.id));
+  const visibleTiers = TIERS;
 
-  // Falls ein Admin-only-Modell aktiv ist, aber der Nutzer kein Admin ist: auf Standard zurückfallen
+  // Nicht-Admins nutzen immer das Standardmodell
   useEffect(() => {
-    if (!isAdmin && ADMIN_ONLY_TIERS.includes(value)) {
+    if (!isAdmin && value !== 'qualitaet') {
       onChange('qualitaet');
     }
   }, [isAdmin, value, onChange]);
+
+  // Die Modellauswahl ist aktuell nur für Admins sichtbar
+  if (!isAdmin) return null;
+
+
 
 
   return (
