@@ -54,9 +54,9 @@ const ImageSourceChoice: React.FC<ImageSourceChoiceProps> = ({ onChooseGenerate,
 
         {/* Modell-Auswahl (Standard: Qualität = Nano Banana 2; Alternativen wie Flare vergleichbar) */}
         <div className="flex items-center justify-center gap-1 mt-3 p-1 rounded-lg bg-muted flex-wrap max-w-xl mx-auto">
-          {TIERS.map((tier, i) => {
+          {visibleTiers.map((tier, i) => {
             const isActive = modelTier === tier.id;
-            const showDivider = i > 0 && TIERS[i - 1].group !== tier.group;
+            const showDivider = i > 0 && visibleTiers[i - 1].group !== tier.group;
             return (
               <React.Fragment key={tier.id}>
                 {showDivider && <div className="w-px h-5 bg-border mx-0.5" />}
