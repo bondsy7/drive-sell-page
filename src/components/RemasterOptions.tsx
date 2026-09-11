@@ -352,16 +352,11 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
           <Tag className="w-3.5 h-3.5" /> Nummernschild
         </Label>
         <p className="text-[11px] text-muted-foreground/70">Was soll mit dem Nummernschild passieren?</p>
-        <Select value={config.licensePlate || undefined} onValueChange={(v) => update({ licensePlate: v })}>
-          <SelectTrigger className={`w-full ${!config.licensePlate ? 'border-accent/50' : ''}`}>
-            <SelectValue placeholder="Bitte wählen" />
-          </SelectTrigger>
-          <SelectContent>
-            {LICENSE_PLATE_OPTIONS.map(opt => (
-              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <OptionCards
+          options={LICENSE_PLATE_OPTIONS as unknown as CardOption[]}
+          value={config.licensePlate}
+          onChange={(v) => update({ licensePlate: v })}
+        />
 
         {config.licensePlate === 'custom' && (
           <div className="mt-2 space-y-2">
