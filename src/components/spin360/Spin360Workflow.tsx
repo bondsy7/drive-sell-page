@@ -219,6 +219,7 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
           sourceImages: sourceUrls,
           frameCount: SPIN_FRAME_COUNT,
           sourceMode: assetSelection ? 'vehicle_assets' : 'upload',
+          imageEngine,
         },
       });
 
