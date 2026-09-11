@@ -1108,10 +1108,11 @@ serve(async (req) => {
         rebuildFromReferences: rebuildMissingKeyframe,
       });
       try {
-        const repaired = await callImageGeneration(
+        const repaired = await generateSpinImage(
           repairPrompt,
           references,
           rebuildMissingKeyframe ? SPIN_MODELS.imagePro : modelForAttempt(attempt + 1),
+          IMAGE_ENGINE,
         );
         if (repaired) {
           const repairedUrl = await uploadDataUrlToStorage(
