@@ -31,7 +31,9 @@ import { getVehicleClassProfile, resolveVehicleClass } from '@/config/vehicle-cl
 import { resolveCaptureSlots } from '@/config/resolve-slots';
 import { isTruckSelectionComplete } from '@/config/truck-workflow';
 import { checkSourceCoverage } from '@/lib/source-coverage';
-import VehicleClassPicker from '@/components/capture/VehicleClassPicker';
+import VehicleClassStrip from '@/components/capture/VehicleClassStrip';
+import CaptureSummaryPanel, { type SummaryRow } from '@/components/capture/CaptureSummaryPanel';
+import { useIsMobile } from '@/hooks/use-mobile';
 import TruckWizard from '@/components/capture/TruckWizard';
 import { TruckSketch } from '@/components/capture/TruckSketch';
 import { usePipeline } from '@/contexts/PipelineContext';
