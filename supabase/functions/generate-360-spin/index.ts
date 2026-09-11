@@ -616,9 +616,16 @@ serve(async (req) => {
 
     // Konfiguration des Jobs (Frame-Tier)
     const { data: jobRow } = await sb.from("spin360_jobs")
-      .select("id, vehicle_id, target_frame_count, identity_profile, identity_hash, qa_summary")
+      .select("id, vehicle_id, target_frame_count, identity_profile, identity_hash, qa_summary, image_engine")
       .eq("id", jobId).single();
     const FRAME_COUNT = normalizeFrameCount(jobRow?.target_frame_count ?? body.frameCount);
+    // Bild-Engine ist pro Job fixiert (Gemini = Standard, Flare/Sunburst = OpenAI-Testpfade).
+    const requestedEngine = String(body.imageEngine ?? jobRow?.image_engine ?? "gemini");
+    const IMAGE_ENGINE: SpinImageEngine =
+      requestedEngine === "flare" || requestedEngine === "sunburst" ? requestedEngine : "gemini";
+    if (jobRow && (jobRow as any).image_engine !== IMAGE_ENGINE) {
+      await updateJobRaw(sb, jobId, { image_engine: IMAGE_ENGINE });
+    }
     const PER_SECTOR = framesPerSector(FRAME_COUNT);
 
     /**
