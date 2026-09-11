@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Wand2, Upload, Camera, Zap, Sparkles, Crown, Rocket, Diamond, BadgePlus, Flame, FolderCheck, Sun } from 'lucide-react';
 import { useCredits } from '@/hooks/useCredits';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 import type { ModelTier } from '@/components/ModelSelector';
+import { ADMIN_ONLY_TIERS } from '@/components/ModelSelector';
 
 interface ImageSourceChoiceProps {
   onChooseGenerate: (modelTier: ModelTier) => void;
