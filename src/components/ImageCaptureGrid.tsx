@@ -834,50 +834,16 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     setShowPipeline(true);
   }, [allCapturedBase64, detectedVin, ensureVehicleForPipeline, pipeline, projectId, vehicleId]);
 
-  // ── Schritt 1.1: Fahrzeugart ──
-  if (!vehicleClass) {
-    return (
-      <div className="w-full max-w-2xl mx-auto space-y-6">
-        <VehicleClassPicker
-          value={vehicleClass}
-          onChange={(cls) => {
-            setVehicleClass(cls);
-            setCaptures({});
-            setTruckWizardDone(cls !== 'truck');
-            const cur = latestVehicleDataRef.current;
-            if (cur) onVehicleDataChange?.({ ...cur, vehicleClass: cls });
-          }}
-        />
-        <Button variant="outlineGray" onClick={onBack} className="w-full">Zurück</Button>
-      </div>
-    );
-  }
+  // Fahrzeugart bleibt auf der Seite wählbar (kein eigener Schritt mehr).
+  const chooseVehicleClass = (cls: ActiveVehicleClassKey) => {
+    if (cls === vehicleClass) return;
+    setVehicleClass(cls);
+    setCaptures({});
+    setTruckWizardDone(cls !== 'truck');
+    const cur = latestVehicleDataRef.current;
+    if (cur) onVehicleDataChange?.({ ...cur, vehicleClass: cls });
+  };
 
-  // ── Schritt 1.2–1.4: Lkw-Konfiguration ──
-  if (activeClass === 'truck' && !truckWizardDone) {
-    return (
-      <div className="w-full max-w-2xl mx-auto">
-        <TruckWizard
-          selection={truckSelection}
-          onChange={setTruckSelection}
-          onComplete={(sel) => {
-            setTruckSelection(sel);
-            setTruckWizardDone(true);
-            const cur = latestVehicleDataRef.current;
-            if (cur) onVehicleDataChange?.({
-              ...cur,
-              vehicleClass: 'truck',
-              truckConfiguration: sel.truckConfiguration,
-              truckBodyType: sel.truckBodyType,
-              cargoState: sel.cargoState,
-              subjectScope: sel.subjectScope,
-            });
-          }}
-          onBack={() => setVehicleClass(null)}
-        />
-      </div>
-    );
-  }
 
   if (showPipeline) {
     return (
