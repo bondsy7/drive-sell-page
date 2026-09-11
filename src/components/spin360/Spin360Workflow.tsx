@@ -103,6 +103,13 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
   const [autoVehicleId, setAutoVehicleId] = useState<string | null>(null);
   /** Bild-Engine des Spins: Gemini bleibt Standard, Flare/Sunburst sind Vergleichs-Tests. */
   const [imageEngine, setImageEngine] = useState<SpinImageEngineOption>('gemini');
+  const isAdmin = useIsAdmin();
+  // OpenAI-Test-Engines (Flare/Sunburst) sind aktuell nur für Admins sichtbar
+  const visibleSpinEngines = isAdmin ? SPIN_IMAGE_ENGINES : SPIN_IMAGE_ENGINES.filter((e) => e.value === 'gemini');
+
+  useEffect(() => {
+    if (!isAdmin && imageEngine !== 'gemini') setImageEngine('gemini');
+  }, [isAdmin, imageEngine]);
 
   const ensureSpinVehicleId = useCallback(async (): Promise<string | null> => {
     if (vehicleId) return vehicleId;
