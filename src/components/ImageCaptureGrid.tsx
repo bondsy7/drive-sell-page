@@ -873,416 +873,452 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     );
   }
 
-  return (
-    <div className="w-full max-w-2xl mx-auto space-y-6">
-      <div className="text-center">
-        <h2 className="font-display text-xl font-bold text-foreground mb-2">
-          {classProfile.captureHeadline || 'Fahrzeugfotos aufnehmen'}
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          {activeClass === 'truck'
-            ? 'Nimm die Pflichtperspektiven für die gewählte Lkw-Konfiguration auf. Fehlende Perspektiven werden nicht ersetzt.'
-            : activeClass === 'motorcycle'
-              ? 'Fotografiere das Motorrad aus den vorgegebenen Perspektiven. Die KI setzt es in einen professionellen Showroom.'
-              : 'Fotografiere das Fahrzeug aus den vorgegebenen Perspektiven. Die KI setzt es in einen professionellen Showroom.'}
-        </p>
-        <div className="mt-2 flex flex-wrap items-center justify-center gap-2 text-xs">
-          <span className="px-2 py-1 rounded-full bg-muted text-muted-foreground font-medium">
-            {classProfile.label}
-          </span>
-          <button
-            onClick={() => { setVehicleClass(null); setTruckWizardDone(false); }}
-            className="underline text-muted-foreground hover:text-foreground"
-          >
-            Fahrzeugart ändern
-          </button>
-          {activeClass === 'truck' && (
-            <button
-              onClick={() => setTruckWizardDone(false)}
-              className="underline text-muted-foreground hover:text-foreground"
-            >
-              Konfiguration ändern
-            </button>
-          )}
-        </div>
-      </div>
+  const vinSlot = slots.find(s => s.isVin);
+  const requiredSlots = vehicleSlots.filter(s => s.required !== false);
+  const requiredDone = requiredSlots.filter(s => captures[s.key]).length;
+  const sceneLabel = SCENE_OPTIONS.find(o => o.value === remasterConfig.scene)?.label || 'Bitte wählen';
+  const plateLabel = LICENSE_PLATE_OPTIONS.find(o => o.value === remasterConfig.licensePlate)?.label || '—';
+  const brandModel = [vehicleData?.vehicle?.brand, vehicleData?.vehicle?.model].filter(Boolean).join(' ');
 
-      {!coverage.ok && (
-        <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
-          <span className="font-semibold text-foreground">Pflichtaufnahmen fehlen: </span>
-          {coverage.missingLabels.join(', ')}
-        </div>
+  const summaryRows: SummaryRow[] = [
+    { label: 'Fahrzeugart', value: classProfile.label },
+    { label: 'Marke / Modell', value: brandModel || 'Offen', ok: !!brandModel },
+    { label: 'VIN', value: detectedVin ? 'Erkannt' : 'Offen', ok: !!detectedVin },
+    { label: 'Pflichtaufnahmen', value: `${requiredDone} / ${requiredSlots.length}`, ok: coverage.ok },
+    { label: 'Felgen / Reifen', value: wheelReference?.image ? '1 Foto' : '—' },
+    { label: 'Detailaufnahmen', value: detailImages.length ? `${detailImages.length} Fotos` : '—' },
+    { label: 'Showroom', value: sceneLabel, ok: !!remasterConfig.scene },
+    { label: 'Nummernschild', value: plateLabel },
+    { label: 'Fahrzeugfarbe', value: remasterConfig.changeColor ? (remasterConfig.colorHex || 'Eigene') : 'Original' },
+    { label: 'Herstellerlogo', value: remasterConfig.showManufacturerLogo ? 'Aktiv' : 'Inaktiv' },
+    { label: 'Autohauslogo', value: remasterConfig.showDealerLogo ? 'Aktiv' : 'Inaktiv' },
+  ];
+
+  const primaryAction = !allVehicleDone ? (
+    <Button
+      onClick={startRemastering}
+      disabled={capturedVehicleImages.length === 0 || isProcessing || !isRemasterConfigValid}
+      className="w-full gap-2 gradient-accent text-accent-foreground font-semibold"
+    >
+      {isProcessing ? (
+        <><Loader2 className="w-4 h-4 animate-spin" /> Verarbeite…</>
+      ) : (
+        <><Camera className="w-4 h-4" /> Bilder remastern</>
       )}
+    </Button>
+  ) : (
+    <Button
+      onClick={openPipeline}
+      disabled={isEnsuringVehicle}
+      className="w-full gap-2 gradient-accent text-accent-foreground font-semibold"
+    >
+      {isEnsuringVehicle ? <><Loader2 className="w-4 h-4 animate-spin" /> Vorbereiten…</> : <><Zap className="w-4 h-4" /> Bilderset generieren</>}
+    </Button>
+  );
 
-
-      {/* Grid of perspective slots */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {slots.map((slot) => {
-          const cap = captures[slot.key];
-          return (
-            <div
-              key={slot.key}
-              className="relative group rounded-2xl border-2 border-dashed border-border hover:border-accent bg-card transition-all overflow-hidden"
-            >
-              {cap ? (
-                <div className="aspect-[4/3] relative">
-                  <img
-                    src={cap.remasteredBase64 || cap.base64}
-                    alt={slot.label}
-                    className="w-full h-full object-cover"
-                  />
-                  {cap.status === 'processing' && (
-                    <div className="absolute inset-0 bg-background/70 flex items-center justify-center">
-                      <Loader2 className="w-6 h-6 text-accent animate-spin" />
-                    </div>
-                  )}
-                  {cap.status === 'error' && (
-                    <div className="absolute inset-0 bg-destructive/20 flex flex-col items-center justify-center gap-2">
-                      <AlertCircle className="w-5 h-5 text-destructive" />
-                      <button
-                        onClick={() => retrySingleSlot(slot.key)}
-                        className="flex items-center gap-1 bg-background/90 hover:bg-background text-foreground text-[10px] font-semibold px-2.5 py-1.5 rounded-lg shadow transition-colors"
-                      >
-                        <RotateCcw className="w-3 h-3" /> Erneut versuchen
-                      </button>
-                    </div>
-                  )}
-                  {cap.status === 'done' && (
-                    <>
-                      <div className="absolute bottom-1.5 left-1.5 bg-accent text-accent-foreground text-[9px] font-semibold px-1.5 py-0.5 rounded-md">
-                        Remastered
-                      </div>
-                      {!isProcessing && (
-                        <button
-                          onClick={() => retrySingleSlot(slot.key)}
-                          className="absolute bottom-1.5 right-1.5 w-7 h-7 rounded-full bg-background/80 hover:bg-accent hover:text-accent-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                          title="Erneut generieren"
-                        >
-                          <RotateCcw className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </>
-                  )}
-                  {!isProcessing && (
-                    <button
-                      onClick={() => removeCapture(slot.key)}
-                      className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-background/80 hover:bg-destructive hover:text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <button
-                  onClick={() => fileRefs.current[slot.key]?.click()}
-                  className="w-full aspect-[4/3] flex flex-col items-center justify-center gap-1.5 p-3 hover:bg-muted/50 transition-colors"
-                >
-                  {slot.icon ? (
-                    <img
-                      src={slot.icon}
-                      alt={slot.label}
-                      className="w-16 h-12 object-contain opacity-40"
-                    />
-                  ) : (
-                    <TruckSketch id={slot.sketch} className="w-20 h-12 text-muted-foreground/50" />
-                  )}
-                  <span className="text-xs font-medium text-muted-foreground text-center leading-tight">
-                    {slot.label}
-                    {!slot.required && <span className="text-muted-foreground/60"> (optional)</span>}
-                  </span>
-                  {slot.hint && (
-                    <span className="text-[10px] text-muted-foreground/70 text-center leading-tight px-1">{slot.hint}</span>
-                  )}
-                  <Camera className="w-4 h-4 text-muted-foreground/50" />
-                </button>
-              )}
-              <input
-                ref={(el) => { fileRefs.current[slot.key] = el; }}
-                type="file"
-                accept="image/*,.heic,.heif"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleCapture(slot, file);
-                  e.target.value = '';
-                }}
-              />
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Dedizierte Felgenreferenz – genau EIN Bild, getrennt vom Multiupload */}
-      <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-foreground">Felgen / Reifen</h3>
-        <p className="text-xs text-muted-foreground">
-          Für Sonderfelgen oder abweichende Bereifung empfohlen. Diese Aufnahme wird bei der
-          Bildgenerierung gezielt als verbindliche Referenz verwendet.
-        </p>
-
-        {wheelReference?.image ? (
-          <div className="relative w-full max-w-[220px] aspect-[4/3] rounded-xl overflow-hidden border border-border bg-card">
-            <img src={wheelReference.image} alt="Felgenreferenz" className="w-full h-full object-cover" />
-            {wheelAnalyzing && (
-              <div className="absolute inset-0 bg-background/60 flex items-center justify-center text-xs font-medium">
-                Analysiere…
+  const renderSlotCard = (slot: PerspectiveSlot) => {
+    const cap = captures[slot.key];
+    return (
+      <div
+        key={slot.key}
+        className="relative group rounded-lg border border-border bg-card transition-colors hover:border-accent/50 overflow-hidden"
+      >
+        {cap ? (
+          <div className="aspect-[4/3] relative">
+            <img src={cap.remasteredBase64 || cap.base64} alt={slot.label} className="w-full h-full object-cover" />
+            {cap.status === 'processing' && (
+              <div className="absolute inset-0 bg-background/70 flex items-center justify-center">
+                <Loader2 className="w-6 h-6 text-accent animate-spin" />
               </div>
             )}
-            <div className="absolute bottom-0 inset-x-0 flex">
-              <button
-                type="button"
-                onClick={() => wheelFileRef.current?.click()}
-                className="flex-1 py-1.5 text-xs bg-background/85 hover:bg-background"
-              >
-                Ersetzen
-              </button>
-              <button
-                type="button"
-                onClick={() => setWheelReference(null)}
-                className="flex-1 py-1.5 text-xs bg-background/85 hover:bg-background text-destructive"
-              >
-                Löschen
-              </button>
-            </div>
+            {cap.status === 'error' && (
+              <div className="absolute inset-0 bg-destructive/20 flex flex-col items-center justify-center gap-2">
+                <AlertCircle className="w-5 h-5 text-destructive" />
+                <button
+                  onClick={() => retrySingleSlot(slot.key)}
+                  className="flex items-center gap-1 bg-background/90 hover:bg-background text-foreground text-[10px] font-semibold px-2.5 py-1.5 rounded-lg shadow transition-colors"
+                >
+                  <RotateCcw className="w-3 h-3" /> Erneut versuchen
+                </button>
+              </div>
+            )}
+            {cap.status === 'done' && (
+              <>
+                <div className="absolute bottom-1.5 left-1.5 bg-accent text-accent-foreground text-[9px] font-semibold px-1.5 py-0.5 rounded-md">
+                  Remastered
+                </div>
+                {!isProcessing && (
+                  <button
+                    onClick={() => retrySingleSlot(slot.key)}
+                    className="absolute bottom-1.5 right-1.5 w-7 h-7 rounded-full bg-background/80 hover:bg-accent hover:text-accent-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Erneut generieren"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </>
+            )}
+            <span className="absolute top-1.5 left-1.5 flex items-center gap-1 rounded-md bg-background/85 px-1.5 py-0.5 text-[10px] font-semibold text-foreground">
+              <Check className="w-3 h-3 text-green-600" /> {slot.label}
+            </span>
+            {!isProcessing && (
+              <div className="absolute top-1.5 right-1.5 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onClick={() => fileRefs.current[slot.key]?.click()}
+                  className="rounded-md bg-background/85 px-1.5 py-0.5 text-[10px] font-medium text-foreground hover:bg-background"
+                >
+                  Ersetzen
+                </button>
+                <button
+                  onClick={() => removeCapture(slot.key)}
+                  className="w-5 h-5 rounded-full bg-background/85 hover:bg-destructive hover:text-destructive-foreground flex items-center justify-center"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <button
-            type="button"
-            onClick={() => wheelFileRef.current?.click()}
-            className="w-full max-w-[220px] aspect-[4/3] rounded-xl border-2 border-dashed border-border hover:border-accent bg-card hover:bg-muted/30 transition-colors flex flex-col items-center justify-center gap-1 text-xs text-muted-foreground"
+            onClick={() => fileRefs.current[slot.key]?.click()}
+            className="w-full aspect-[4/3] flex flex-col items-center justify-center gap-1 p-3 hover:bg-muted/40 transition-colors"
           >
-            <span className="text-2xl leading-none">＋</span>
-            Felgenfoto hinzufügen
+            {slot.icon ? (
+              <img src={slot.icon} alt={slot.label} className="w-14 h-10 object-contain opacity-40" />
+            ) : (
+              <TruckSketch id={slot.sketch} className="w-16 h-10 text-muted-foreground/50" />
+            )}
+            <span className="text-[11px] font-medium text-foreground text-center leading-tight">
+              {slot.label}
+              {slot.required === false && <span className="text-muted-foreground"> (optional)</span>}
+            </span>
+            {slot.hint && (
+              <span className="text-[10px] text-muted-foreground/70 text-center leading-tight px-1">{slot.hint}</span>
+            )}
+            <Camera className="w-3.5 h-3.5 text-muted-foreground/60" />
           </button>
         )}
-
         <input
-          ref={wheelFileRef}
+          ref={(el) => { fileRefs.current[slot.key] = el; }}
           type="file"
           accept="image/*,.heic,.heif"
           className="hidden"
-          onChange={async (e) => {
+          onChange={(e) => {
             const file = e.target.files?.[0];
+            if (file) handleCapture(slot, file);
             e.target.value = '';
-            if (file) await handleWheelReferenceFile(file);
           }}
         />
       </div>
+    );
+  };
 
-      {/* Detail image upload – directly below main grid */}
-      <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-foreground">Weitere Detailaufnahmen (Multiupload)</h3>
-
-        {/* Guide image showing what details to capture (nicht bei Motorrädern) */}
-        <div
-          onClick={() => detailFileRef.current?.click()}
-          className="cursor-pointer rounded-xl border-2 border-dashed border-border hover:border-accent bg-card hover:bg-muted/30 transition-colors overflow-hidden"
-        >
-          {activeClass !== 'motorcycle' && (
-            <img
-              src="/images/detail-upload-guide.png"
-              alt="Detailaufnahmen Guide – Mittelkonsole, Armaturenbrett, Infotainment, Lenkrad, Reifen, etc."
-              className="w-full h-auto opacity-60 hover:opacity-80 transition-opacity"
-            />
-          )}
-          <div className={`flex items-center justify-center gap-2 py-3 ${activeClass !== 'motorcycle' ? 'border-t border-border' : 'py-8'}`}>
-            <Upload className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm font-medium text-muted-foreground">Durchsuchen und Hinzufügen</span>
-          </div>
+  return (
+    <div className="w-full max-w-[1320px] mx-auto pb-24 lg:pb-0">
+      {/* Kopfbereich */}
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="font-display text-xl font-bold text-foreground">
+            {classProfile.captureHeadline || 'Fahrzeug aufnehmen'}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Pflichtangaben vervollständigen. Optionale Angaben verbessern das Ergebnis.
+          </p>
         </div>
+        <Button variant="outlineGray" size="sm" onClick={onBack} disabled={isProcessing}>Zurück</Button>
+      </div>
 
-        {/* Uploaded detail images */}
-        {detailImages.length > 0 && (
-          <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
-            {detailImages.map((img, idx) => (
-              <div key={idx} className="relative group aspect-square rounded-xl overflow-hidden border border-border bg-card">
-                <img src={img} alt={`Detail ${idx + 1}`} className="w-full h-full object-cover" />
-                {!isProcessing && (
-                  <button
-                    onClick={() => setDetailImages(prev => prev.filter((_, i) => i !== idx))}
-                    className="absolute top-1 right-1 w-5 h-5 rounded-full bg-background/80 hover:bg-destructive hover:text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                )}
-              </div>
-            ))}
-            {detailImages.length < 10 && (
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
+        {/* Hauptbereich */}
+        <div className="space-y-4">
+          <CaptureSection title="Fahrzeugart" subtitle="Bestimmt Pflichtaufnahmen und Aufbereitungslogik.">
+            <VehicleClassStrip value={activeClass} onChange={chooseVehicleClass} disabled={isProcessing} />
+            {activeClass === 'truck' && truckWizardDone && (
               <button
-                onClick={() => detailFileRef.current?.click()}
-                className="aspect-square rounded-xl border-2 border-dashed border-border hover:border-accent bg-card flex flex-col items-center justify-center gap-1 transition-colors"
-                disabled={isProcessing}
+                onClick={() => setTruckWizardDone(false)}
+                className="mt-2 text-[11px] underline text-muted-foreground hover:text-foreground"
               >
-                <Upload className="w-4 h-4 text-muted-foreground" />
-                <span className="text-[10px] text-muted-foreground">Mehr</span>
+                Lkw-Konfiguration ändern
               </button>
             )}
-          </div>
-        )}
+          </CaptureSection>
 
-        <p className="text-sm font-semibold text-destructive bg-destructive/10 border border-destructive/30 rounded-lg px-3 py-2 flex items-start gap-2">
-          <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-          {activeClass === 'motorcycle'
-            ? 'Um ein optimales Ergebnis zu erzielen, laden Sie bitte bis zu zehn weitere Detailaufnahmen hoch.'
-            : 'Um ein optimales Ergebnis zu erzielen, laden Sie bitte bis zu zehn weitere Detailaufnahmen hoch – Innenraum (Mittelkonsole, Lenkrad, Infotainment), Exterieur (Felgen, Kofferraum), Schäden, Logos, Motorraum etc.'}
-        </p>
+          {activeClass === 'truck' && !truckWizardDone && (
+            <CaptureSection title="Lkw-Konfiguration" subtitle="Bestimmt die benötigten Aufnahmen.">
+              <TruckWizard
+                selection={truckSelection}
+                onChange={setTruckSelection}
+                onComplete={(sel) => {
+                  setTruckSelection(sel);
+                  setTruckWizardDone(true);
+                  const cur = latestVehicleDataRef.current;
+                  if (cur) onVehicleDataChange?.({
+                    ...cur,
+                    vehicleClass: 'truck',
+                    truckConfiguration: sel.truckConfiguration,
+                    truckBodyType: sel.truckBodyType,
+                    cargoState: sel.cargoState,
+                    subjectScope: sel.subjectScope,
+                  });
+                }}
+                onBack={onBack}
+              />
+            </CaptureSection>
+          )}
 
-        <input
-          ref={detailFileRef}
-          type="file"
-          accept="image/*"
-          multiple
-          className="hidden"
-          onChange={async (e) => {
-            const files = Array.from(e.target.files || []);
-            e.target.value = '';
-            const remaining = 10 - detailImages.length;
-            const toProcess = files.slice(0, remaining);
-            const newImages: string[] = [];
-            for (const file of toProcess) {
-              if (!file.type.startsWith('image/') || file.size > 10 * 1024 * 1024) continue;
-              try {
-                const raw = await fileToBase64(file);
-                const compressed = await compressImage(raw);
-                newImages.push(compressed);
-              } catch { /* skip */ }
-            }
-            if (newImages.length > 0) {
-              setDetailImages(prev => [...prev, ...newImages]);
-              toast.success(`${newImages.length} Detailbild${newImages.length > 1 ? 'er' : ''} hinzugefügt`);
-            }
-          }}
-        />
-      </div>
-
-      {/* Remaster Options */}
-      <RemasterOptions
-        config={remasterConfig}
-        onChange={setRemasterConfig}
-        vehicleBrand={vehicleData?.vehicle?.brand}
-        vehicleModel={vehicleData?.vehicle?.model}
-        brandDetectionStatus={brandDetectionStatus}
-        onBrandChange={(brand) => {
-          if (vehicleData && onVehicleDataChange) {
-            onVehicleDataChange({
-              ...vehicleData,
-              vehicle: { ...vehicleData.vehicle, brand },
-            });
-          }
-          if (brand) setBrandDetectionStatus('found');
-        }}
-        onModelChange={(model) => {
-          if (vehicleData && onVehicleDataChange) {
-            onVehicleDataChange({
-              ...vehicleData,
-              vehicle: { ...vehicleData.vehicle, model },
-            });
-          }
-        }}
-      />
-
-      {detectedVin && (
-        <div className="flex items-center gap-2 bg-accent/10 text-accent px-4 py-2.5 rounded-xl text-sm font-medium">
-          <Check className="w-4 h-4" />
-          VIN erkannt: <span className="font-mono font-bold">{detectedVin}</span>
-          {vinLookup.loading && <Loader2 className="w-4 h-4 animate-spin ml-auto" />}
-        </div>
-      )}
-
-      {/* Progress */}
-      {isProcessing && (
-        <div className="space-y-2">
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span>Remastering läuft…</span>
-            <span>Bild {progress.current} von {progress.total}</span>
-          </div>
-          <Progress value={(progress.current / progress.total) * 100} className="h-1.5" />
-        </div>
-      )}
-
-      {/* Actions */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <Button
-            variant="outlineGray"
-            size="sm"
-            onClick={() => {
-              if (activeClass === 'truck') {
-                // Zurück in den Lkw-Konfigurator (letzter beantworteter Schritt)
-                setTruckWizardDone(false);
-              } else {
-                onBack();
-              }
-            }}
-            disabled={isProcessing}
-          >
-            Zurück
-          </Button>
-          <div className="flex items-center gap-3">
-            {capturedVehicleImages.length > 0 && (
-              <span className="text-xs text-muted-foreground">
-                {capturedVehicleImages.length} von {vehicleSlots.length} Perspektiven
-              </span>
-            )}
-            {!allVehicleDone ? (
-              <Button
-                onClick={startRemastering}
-                disabled={capturedVehicleImages.length === 0 || isProcessing || !isRemasterConfigValid}
-                className="gap-2 gradient-accent text-accent-foreground font-semibold hidden sm:inline-flex"
+          {(activeClass !== 'truck' || truckWizardDone) && (
+            <>
+              <CaptureSection
+                title="Pflichtangaben"
+                subtitle="Diese Angaben werden für die Generierung benötigt."
+                badge={`${requiredDone} / ${requiredSlots.length} Pflichtaufnahmen`}
+                badgeOk={coverage.ok}
               >
-                {isProcessing ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> Verarbeite…</>
-                ) : (
-                  <><Camera className="w-4 h-4" /> Bilder remastern</>
+                {!coverage.ok && (
+                  <p className="mb-3 rounded-lg bg-muted px-3 py-2 text-[11px] text-muted-foreground">
+                    <span className="font-semibold text-foreground">Pflichtaufnahmen fehlen: </span>
+                    {coverage.missingLabels.join(', ')}
+                  </p>
                 )}
-              </Button>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={finishUp}
-                >
-                  {projectId ? (
-                    <><Check className="w-4 h-4 mr-1" /> Weiter zur Landing Page</>
-                  ) : (
-                    <><ImageIcon className="w-4 h-4 mr-1" /> Zur Galerie</>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+                  {vehicleSlots.map(renderSlotCard)}
+                </div>
+
+                {vinSlot && (
+                  <div className="mt-4 rounded-lg border border-border bg-muted/20 p-3">
+                    <p className="text-xs font-semibold text-foreground">Fahrzeug-Identifikationsnummer (VIN)</p>
+                    <p className="mb-3 text-[11px] text-muted-foreground">
+                      Das VIN-Foto wird automatisch ausgelesen und für den Fahrzeug-Lookup verwendet.
+                    </p>
+                    <div className="grid gap-3 sm:grid-cols-[160px_minmax(0,1fr)]">
+                      {renderSlotCard(vinSlot)}
+                      <div className="flex flex-col justify-center gap-1.5">
+                        {detectedVin ? (
+                          <>
+                            <span className="flex items-center gap-1.5 text-xs font-semibold text-green-700">
+                              <Check className="w-3.5 h-3.5" /> VIN erkannt
+                              {vinLookup.loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                            </span>
+                            <span className="font-mono text-sm font-bold text-foreground">{detectedVin}</span>
+                            {brandModel && <span className="text-[11px] text-muted-foreground">{brandModel}</span>}
+                          </>
+                        ) : (
+                          <span className="text-[11px] text-muted-foreground">
+                            Noch keine VIN erkannt – Foto aufnehmen oder Datei hochladen.
+                          </span>
+                        )}
+                        <button
+                          onClick={() => fileRefs.current[vinSlot.key]?.click()}
+                          className="self-start text-[11px] underline text-muted-foreground hover:text-foreground"
+                        >
+                          {detectedVin ? 'VIN-Foto ersetzen' : 'Datei hochladen'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CaptureSection>
+
+              <CaptureSection
+                title="Felgen / Reifen"
+                subtitle="Optional: Für Sonderfelgen oder abweichende Bereifung. Wird als verbindliche Referenz verwendet."
+                collapsible
+                badge={wheelReference?.image ? '1 Foto' : 'Optional'}
+              >
+                {wheelReference?.image ? (
+                  <div className="relative w-full max-w-[200px] aspect-[4/3] rounded-lg overflow-hidden border border-border bg-card">
+                    <img src={wheelReference.image} alt="Felgenreferenz" className="w-full h-full object-cover" />
+                    {wheelAnalyzing && (
+                      <div className="absolute inset-0 bg-background/60 flex items-center justify-center text-xs font-medium">
+                        Analysiere…
+                      </div>
+                    )}
+                    <div className="absolute bottom-0 inset-x-0 flex">
+                      <button type="button" onClick={() => wheelFileRef.current?.click()} className="flex-1 py-1.5 text-[11px] bg-background/85 hover:bg-background">
+                        Ersetzen
+                      </button>
+                      <button type="button" onClick={() => setWheelReference(null)} className="flex-1 py-1.5 text-[11px] bg-background/85 hover:bg-background text-destructive">
+                        Löschen
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => wheelFileRef.current?.click()}
+                    className="flex w-full max-w-[220px] items-center gap-3 rounded-lg border border-dashed border-border bg-card px-3 py-3 text-left transition-colors hover:border-accent hover:bg-muted/30"
+                  >
+                    <span className="flex h-9 w-9 items-center justify-center rounded-md bg-muted text-muted-foreground">＋</span>
+                    <span className="text-xs font-medium text-foreground">Felgenfoto hinzufügen</span>
+                  </button>
+                )}
+                <input
+                  ref={wheelFileRef}
+                  type="file"
+                  accept="image/*,.heic,.heif"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    e.target.value = '';
+                    if (file) await handleWheelReferenceFile(file);
+                  }}
+                />
+              </CaptureSection>
+
+              <CaptureSection
+                title="Weitere Detailaufnahmen"
+                subtitle="Zusätzliche Aufnahmen verbessern Details und Fahrzeugtreue (bis zu 10 Bilder)."
+                collapsible
+                badge={detailImages.length ? `${detailImages.length} Fotos` : 'Optional'}
+              >
+                <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                  {detailImages.map((img, idx) => (
+                    <div key={idx} className="relative group aspect-square rounded-lg overflow-hidden border border-border bg-card">
+                      <img src={img} alt={`Detail ${idx + 1}`} className="w-full h-full object-cover" />
+                      {!isProcessing && (
+                        <button
+                          onClick={() => setDetailImages(prev => prev.filter((_, i) => i !== idx))}
+                          className="absolute top-1 right-1 w-5 h-5 rounded-full bg-background/80 hover:bg-destructive hover:text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  {detailImages.length < 10 && (
+                    <button
+                      onClick={() => detailFileRef.current?.click()}
+                      className="aspect-square rounded-lg border border-dashed border-border hover:border-accent bg-card flex flex-col items-center justify-center gap-1 transition-colors"
+                      disabled={isProcessing}
+                    >
+                      <Upload className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-[10px] text-muted-foreground">Hinzufügen</span>
+                    </button>
                   )}
-                </Button>
-                <Button
-                  onClick={openPipeline}
-                  disabled={isEnsuringVehicle}
-                  className="gap-2 gradient-accent text-accent-foreground font-semibold hidden sm:inline-flex"
-                >
-                  {isEnsuringVehicle ? <><Loader2 className="w-4 h-4 animate-spin" /> Vorbereiten…</> : <><Zap className="w-4 h-4" /> Bilderset generieren</>}
-                </Button>
+                </div>
+
+                {activeClass !== 'motorcycle' && detailImages.length === 0 && (
+                  <img
+                    src="/images/detail-upload-guide.png"
+                    alt="Detailaufnahmen Guide – Mittelkonsole, Armaturenbrett, Infotainment, Lenkrad, Reifen"
+                    className="mt-3 w-full max-w-md rounded-lg border border-border opacity-70"
+                    loading="lazy"
+                  />
+                )}
+
+                <p className="mt-3 text-[11px] text-muted-foreground">
+                  {activeClass === 'motorcycle'
+                    ? 'Empfohlen: bis zu zehn weitere Detailaufnahmen für ein optimales Ergebnis.'
+                    : 'Empfohlen: Innenraum (Mittelkonsole, Lenkrad, Infotainment), Exterieur (Felgen, Kofferraum), Schäden, Logos, Motorraum.'}
+                </p>
+
+                <input
+                  ref={detailFileRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={async (e) => {
+                    const files = Array.from(e.target.files || []);
+                    e.target.value = '';
+                    const remaining = 10 - detailImages.length;
+                    const toProcess = files.slice(0, remaining);
+                    const newImages: string[] = [];
+                    for (const file of toProcess) {
+                      if (!file.type.startsWith('image/') || file.size > 10 * 1024 * 1024) continue;
+                      try {
+                        const raw = await fileToBase64(file);
+                        const compressed = await compressImage(raw);
+                        newImages.push(compressed);
+                      } catch { /* skip */ }
+                    }
+                    if (newImages.length > 0) {
+                      setDetailImages(prev => [...prev, ...newImages]);
+                      toast.success(`${newImages.length} Detailbild${newImages.length > 1 ? 'er' : ''} hinzugefügt`);
+                    }
+                  }}
+                />
+              </CaptureSection>
+
+              <CaptureSection
+                title="Showroom, Nummernschild & Branding"
+                subtitle="Diese Angaben bestimmen Hintergrund, Kennzeichen, Farbe und Logos der generierten Bilder."
+                collapsible
+                badge={sceneLabel}
+                badgeOk={!!remasterConfig.scene}
+              >
+                <RemasterOptions
+                  config={remasterConfig}
+                  onChange={setRemasterConfig}
+                  vehicleBrand={vehicleData?.vehicle?.brand}
+                  vehicleModel={vehicleData?.vehicle?.model}
+                  brandDetectionStatus={brandDetectionStatus}
+                  onBrandChange={(brand) => {
+                    if (vehicleData && onVehicleDataChange) {
+                      onVehicleDataChange({ ...vehicleData, vehicle: { ...vehicleData.vehicle, brand } });
+                    }
+                    if (brand) setBrandDetectionStatus('found');
+                  }}
+                  onModelChange={(model) => {
+                    if (vehicleData && onVehicleDataChange) {
+                      onVehicleDataChange({ ...vehicleData, vehicle: { ...vehicleData.vehicle, model } });
+                    }
+                  }}
+                />
+              </CaptureSection>
+            </>
+          )}
+        </div>
+
+        {/* Rechte Spalte: Zusammenfassung */}
+        <aside className="lg:sticky lg:top-4">
+          <CaptureSummaryPanel
+            complete={coverage.ok && !!remasterConfig.scene}
+            completeText={coverage.ok && remasterConfig.scene ? 'Pflichtfelder vollständig' : 'Pflichtfelder unvollständig'}
+            hintText={
+              !coverage.ok
+                ? `Es fehlen: ${coverage.missingLabels.join(', ')}`
+                : !remasterConfig.scene
+                  ? 'Bitte noch eine Szene auswählen.'
+                  : 'Alle erforderlichen Angaben wurden ergänzt.'
+            }
+            rows={summaryRows}
+          >
+            {isProcessing && (
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-[11px] text-muted-foreground">
+                  <span>Remastering läuft…</span>
+                  <span>Bild {progress.current} von {progress.total}</span>
+                </div>
+                <Progress value={(progress.current / progress.total) * 100} className="h-1.5" />
               </div>
             )}
-          </div>
-        </div>
-
-        {/* Mobile full-width buttons */}
-        {!allVehicleDone ? (
-          <Button
-            onClick={startRemastering}
-            disabled={capturedVehicleImages.length === 0 || isProcessing || !isRemasterConfigValid}
-            className="w-full gap-2 gradient-accent text-accent-foreground font-semibold sm:hidden"
-          >
-            {isProcessing ? (
-              <><Loader2 className="w-4 h-4 animate-spin" /> Verarbeite…</>
-            ) : (
-              <><Camera className="w-4 h-4" /> Bilder remastern</>
+            <div className="hidden lg:block">{primaryAction}</div>
+            {allVehicleDone && (
+              <Button variant="outline" size="sm" className="w-full" onClick={finishUp}>
+                {projectId ? (
+                  <><Check className="w-4 h-4 mr-1" /> Weiter zur Landing Page</>
+                ) : (
+                  <><ImageIcon className="w-4 h-4 mr-1" /> Zur Galerie</>
+                )}
+              </Button>
             )}
-          </Button>
-        ) : (
-          <Button
-            onClick={openPipeline}
-            disabled={isEnsuringVehicle}
-            className="w-full gap-2 gradient-accent text-accent-foreground font-semibold sm:hidden"
-          >
-            {isEnsuringVehicle ? <><Loader2 className="w-4 h-4 animate-spin" /> Vorbereiten…</> : <><Zap className="w-4 h-4" /> Bilderset generieren</>}
-          </Button>
-        )}
+            <p className="text-[10px] leading-snug text-muted-foreground">
+              Je nach Anzahl der Aufnahmen und gewählten Optionen kann der tatsächliche Verbrauch leicht abweichen.
+            </p>
+          </CaptureSummaryPanel>
+        </aside>
+      </div>
+
+      {/* Mobile Bottom Bar */}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 px-4 py-3 backdrop-blur lg:hidden">
+        <div className="mx-auto flex max-w-2xl items-center gap-3">
+          <div className="min-w-0">
+            <p className="text-[10px] text-muted-foreground">Pflichtaufnahmen</p>
+            <p className="text-xs font-semibold text-foreground">{requiredDone} / {requiredSlots.length}</p>
+          </div>
+          <div className="flex-1">{primaryAction}</div>
+        </div>
       </div>
 
       {/* VIN Data Dialog */}
@@ -1304,3 +1340,4 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
 };
 
 export default ImageCaptureGrid;
+
