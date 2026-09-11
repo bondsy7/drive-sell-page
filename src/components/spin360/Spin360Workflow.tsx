@@ -196,6 +196,7 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
           keyframe_count: 8,
           manifest_version: 2,
           source_mode: assetSelection ? 'vehicle_assets' : 'upload',
+          image_engine: imageEngine,
         } as any)
         .select('id').single();
 
