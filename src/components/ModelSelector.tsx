@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useCredits } from '@/hooks/useCredits';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { Sparkles, Zap, Crown, Rocket, Diamond, BadgePlus, Flame, Sun } from 'lucide-react';
 
 export type ModelTier = 'schnell' | 'qualitaet' | 'premium' | 'turbo' | 'ultra' | 'neu' | 'flare' | 'sunburst';
