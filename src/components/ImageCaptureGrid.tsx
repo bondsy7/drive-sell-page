@@ -1075,7 +1075,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         <Button variant="outlineGray" size="sm" onClick={onBack} disabled={isProcessing}>Zurück</Button>
       </div>
 
-      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_300px] xl:gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
         {/* Hauptbereich */}
         <div className="space-y-4">
           <CaptureSection title="Fahrzeugart" subtitle="Bestimmt Pflichtaufnahmen und Aufbereitungslogik.">
@@ -1318,7 +1318,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         </div>
 
         {/* Rechte Spalte: Zusammenfassung */}
-        <aside className="lg:sticky lg:top-4">
+        <aside className="min-w-0 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
           <CaptureSummaryPanel
             complete={coverage.ok && !!remasterConfig.scene}
             completeText={coverage.ok && remasterConfig.scene ? 'Pflichtfelder vollständig' : 'Pflichtfelder unvollständig'}
