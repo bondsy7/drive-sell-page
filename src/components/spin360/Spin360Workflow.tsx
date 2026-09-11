@@ -559,6 +559,36 @@ const Spin360Workflow: React.FC<Spin360WorkflowProps> = ({ onBack, vehicleId }) 
         <span>Geschätzte Kosten: <strong className="text-accent">bis zu {totalCost} Credits</strong> — Guthaben: <strong className="text-foreground">{balance} Credits</strong></span>
       </div>
 
+      {/* Bild-Engine (nur Image2Spin) */}
+      {spinMode === 'image2spin' && (phase === 'source' || phase === 'upload') && (
+        <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+          <div>
+            <p className="text-sm font-semibold text-foreground">Bild-Engine</p>
+            <p className="text-xs text-muted-foreground">
+              Zum Vergleichen: gleiche Fotos, unterschiedliche Bild-KI. Die Test-Engines können langsamer und teurer sein.
+            </p>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-3">
+            {SPIN_IMAGE_ENGINES.map((engine) => (
+              <button
+                key={engine.value}
+                type="button"
+                disabled={isProcessing}
+                onClick={() => setImageEngine(engine.value)}
+                className={`rounded-lg border p-3 text-left transition-colors ${
+                  imageEngine === engine.value
+                    ? 'border-accent bg-accent/10'
+                    : 'border-border hover:border-accent/50'
+                } ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <span className="block text-sm font-medium text-foreground">{engine.label}</span>
+                <span className="block text-xs text-muted-foreground">{engine.hint}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Phase: Quellenwahl aus bestehenden Fahrzeug-Assets */}
       {phase === 'source' && vehicleId && (
         <SpinSourcePicker
