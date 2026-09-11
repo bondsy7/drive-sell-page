@@ -22,8 +22,22 @@ const TIERS: { id: ModelTier; label: string; sublabel: string; icon?: React.Reac
   { id: 'sunburst', label: 'Sunburst (Test)', sublabel: 'OpenAI GPT Image 2.5 Sunburst', icon: <Sun className="w-3 h-3" />, group: 'B' },
 ];
 
+// OpenAI-Testmodelle: aktuell nur für Admins sichtbar/änderbar
+const ADMIN_ONLY_TIERS: ModelTier[] = ['neu', 'flare', 'sunburst'];
+
 export default function ModelSelector({ actionType, value, onChange }: ModelSelectorProps) {
   const { getCost } = useCredits();
+  const isAdmin = useIsAdmin();
+
+  const visibleTiers = isAdmin ? TIERS : TIERS.filter((t) => !ADMIN_ONLY_TIERS.includes(t.id));
+
+  // Falls ein Admin-only-Modell aktiv ist, aber der Nutzer kein Admin ist: auf Standard zurückfallen
+  useEffect(() => {
+    if (!isAdmin && ADMIN_ONLY_TIERS.includes(value)) {
+      onChange('qualitaet');
+    }
+  }, [isAdmin, value, onChange]);
+
 
   return (
     <div className="flex flex-col gap-1">
