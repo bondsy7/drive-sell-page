@@ -1,7 +1,13 @@
 import React from 'react';
 import { Camera, FileText, Layout, Image, Video, Sparkles, Lock, Zap, Wrench, Search, Music, RotateCw, Scissors, Database } from 'lucide-react';
 import { useCredits } from '@/hooks/useCredits';
-import { useModuleAccess } from '@/hooks/useModuleAccess';
+import { useModuleAccess, type ModuleKey } from '@/hooks/useModuleAccess';
+
+/** Kacheln des Generators auf Modul-Schlüssel abbilden (Admin-Verwaltung) */
+const TILE_MODULE_KEY: Partial<Record<HubAction, ModuleKey>> = {
+  'spin360': 'photos-spin360',
+};
+
 
 export type HubAction = 
   | 'studio'          // 🚀 One-Shot Studio (Beta) — Bilder + Banner + Video in einem Rutsch
