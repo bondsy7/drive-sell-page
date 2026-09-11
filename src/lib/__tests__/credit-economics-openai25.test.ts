@@ -40,6 +40,13 @@ describe("Referenz-Transfer ist modellabhängig", () => {
     expect(f.referenceImageInputUsd).toBeCloseTo(s.referenceImageInputUsd, 10);
   });
 
+  it("rechnet den Responses-Orchestrator für Flare und Sunburst", () => {
+    const flare = calcOpenAi25Cost({ model: "flare", referenceCount: REFS, outputCount: 1 });
+    const sunburst = calcOpenAi25Cost({ model: "sunburst", referenceCount: REFS, outputCount: 1 });
+    expect(flare.orchestratorUsd).toBeGreaterThan(0);
+    expect(flare.orchestratorUsd).toBeCloseTo(sunburst.orchestratorUsd, 10);
+  });
+
   it("liefert eine modellabhängige Transfer-Erklärung", () => {
     expect(calcOpenAi25Cost({ model: "sunburst", referenceCount: 1, outputCount: 1 }).transferNote)
       .toMatch(/file_id/);

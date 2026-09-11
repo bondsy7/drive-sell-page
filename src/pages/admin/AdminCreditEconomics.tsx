@@ -94,7 +94,7 @@ function OpenAi25Simulator({ costs }: { costs: Record<string, Record<string, num
     <Card className="p-6 space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="font-semibold">OpenAI 2.5 Kosten-Simulator (x Referenzen → y Bilder)</h2>
+          <h2 className="font-semibold">OpenAI Responses Kosten-Simulator (x Referenzen → y Bilder)</h2>
           <p className="text-[11px] text-muted-foreground mt-1">
             Ausgabe fix <strong>{OPENAI_25_OUTPUT_FORMAT.quality} / {OPENAI_25_OUTPUT_FORMAT.size}</strong>.
             Tokenpreise = <Badge variant="outline" className="text-[9px]">offizieller Tarif</Badge> (10.09.2026).

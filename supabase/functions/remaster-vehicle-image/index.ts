@@ -1176,7 +1176,7 @@ REPRODUCTION RULES (ZERO DEVIATION):
     }
 
     // ─────────────────────────────────────────────────────────────
-    // OPENAI ENGINE (turbo / ultra / neu) — uses /v1/images/edits
+    // OPENAI LEGACY ENGINE (turbo / ultra) — uses /v1/images/edits
     // ─────────────────────────────────────────────────────────────
     if (engineConfig.engine === 'openai') {
       // Collect all text parts into one prompt + all image data parts as multipart files
