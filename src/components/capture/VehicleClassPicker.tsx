@@ -2,23 +2,23 @@ import React from 'react';
 import { ArrowRight } from 'lucide-react';
 import { getActiveProfiles } from '@/config/vehicle-classes';
 import type { ActiveVehicleClassKey } from '@/config/vehicle-class-types';
-import carLine from '@/assets/class-car-line.png';
-import truckLine from '@/assets/class-truck-line.png';
-import motorcycleLine from '@/assets/class-motorcycle-line.png';
+import carAsset from '@/assets/vehicle-classes/car.png.asset.json';
+import truckAsset from '@/assets/vehicle-classes/truck.png.asset.json';
+import motorcycleAsset from '@/assets/vehicle-classes/motorcycle.png.asset.json';
 
 const CLASS_VISUAL: Record<string, { image: string; title: string; examples: string }> = {
   car: {
-    image: carLine,
+    image: carAsset.url,
     title: 'PKW',
     examples: 'z. B. Limousine, Kombi, SUV, Coupé, Cabrio',
   },
   truck: {
-    image: truckLine,
+    image: truckAsset.url,
     title: 'LKW',
     examples: 'z. B. LKW über 7,5 t, Sattelzug',
   },
   motorcycle: {
-    image: motorcycleLine,
+    image: motorcycleAsset.url,
     title: 'MOTORRAD',
     examples: 'z. B. Naked Bike, Tourer, Chopper, Roller',
   },
@@ -48,7 +48,7 @@ const VehicleClassPicker: React.FC<VehicleClassPickerProps> = ({ value, onChange
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         {profiles.map((p) => {
           const visual = CLASS_VISUAL[p.key] ?? {
-            image: carLine,
+            image: carAsset.url,
             title: p.label,
             examples: p.description,
           };
@@ -66,11 +66,11 @@ const VehicleClassPicker: React.FC<VehicleClassPickerProps> = ({ value, onChange
             >
               <img
                 src={visual.image}
-                alt={`${visual.title} Strichzeichnung`}
+                alt={visual.title}
                 loading="lazy"
                 width={1024}
                 height={640}
-                className="h-32 w-full max-w-[320px] object-contain opacity-80 transition-opacity group-hover:opacity-100 sm:h-40"
+                className="h-32 w-full max-w-[320px] object-contain p-2 transition-transform group-hover:scale-[1.03] sm:h-40"
               />
               <div className="mt-6 text-2xl font-semibold tracking-tight text-foreground">
                 {visual.title}
