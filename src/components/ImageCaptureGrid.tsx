@@ -1075,7 +1075,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         <Button variant="outlineGray" size="sm" onClick={onBack} disabled={isProcessing}>Zurück</Button>
       </div>
 
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_300px] xl:gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="grid items-start gap-4 lg:grid-cols-[1fr_1fr] xl:gap-5 xl:grid-cols-[minmax(0,1.1fr)_1fr]">
         {/* Hauptbereich */}
         <div className="space-y-4">
           <CaptureSection title="Fahrzeugart" subtitle="Bestimmt Pflichtaufnahmen und Aufbereitungslogik.">
