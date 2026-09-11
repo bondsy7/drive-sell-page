@@ -15,6 +15,8 @@ import { uploadToGeminiFiles, type GeminiFileRef } from '@/lib/gemini-file-uploa
 import ImagePreviewLightbox from '@/components/ImagePreviewLightbox';
 import type { PresetData } from './PresetSelectionModal';
 import type { ModelTier } from '@/components/ModelSelector';
+import { ADMIN_ONLY_TIERS } from '@/components/ModelSelector';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 
 const PresetSelectionModal = lazy(() => import('./PresetSelectionModal'));
 const PlaceholderRenderer = lazy(() => import('./PlaceholderRenderer'));
@@ -60,6 +62,8 @@ const DEFAULT_CONFIG: RemasterConfig = {
 
 const PresetUploadFlow: React.FC<PresetUploadFlowProps> = ({ onComplete, onBack }) => {
   const { getCost, balance } = useCredits();
+  const isAdmin = useIsAdmin();
+  const visibleTiers = isAdmin ? TIERS : TIERS.filter((t) => !ADMIN_ONLY_TIERS.includes(t.id));
   const [step, setStep] = useState<'preset' | 'config' | 'upload' | 'processing' | 'done'>('preset');
   const [selectedPreset, setSelectedPreset] = useState<PresetData | null>(null);
   const [presetModalOpen, setPresetModalOpen] = useState(false);
@@ -255,7 +259,7 @@ const PresetUploadFlow: React.FC<PresetUploadFlowProps> = ({ onComplete, onBack 
             <span className="ml-2">• {costPerImage} Credit{costPerImage !== 1 ? 's' : ''}/Bild</span>
           </div>
           <div className="flex items-center gap-1 p-1 rounded-lg bg-muted flex-wrap">
-            {TIERS.map((tier) => {
+            {visibleTiers.map((tier) => {
               const isActive = modelTier === tier.id;
               const tierCost = getCost('image_remaster', tier.id) || 1;
               return (

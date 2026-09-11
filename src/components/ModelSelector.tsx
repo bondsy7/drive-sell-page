@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useCredits } from '@/hooks/useCredits';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { Sparkles, Zap, Crown, Rocket, Diamond, BadgePlus, Flame, Sun } from 'lucide-react';
 
 export type ModelTier = 'schnell' | 'qualitaet' | 'premium' | 'turbo' | 'ultra' | 'neu' | 'flare' | 'sunburst';
@@ -21,16 +22,30 @@ const TIERS: { id: ModelTier; label: string; sublabel: string; icon?: React.Reac
   { id: 'sunburst', label: 'Sunburst (Test)', sublabel: 'OpenAI GPT Image 2.5 Sunburst', icon: <Sun className="w-3 h-3" />, group: 'B' },
 ];
 
+// OpenAI-Testmodelle: aktuell nur für Admins sichtbar/änderbar
+export const ADMIN_ONLY_TIERS: ModelTier[] = ['neu', 'flare', 'sunburst'];
+
 export default function ModelSelector({ actionType, value, onChange }: ModelSelectorProps) {
   const { getCost } = useCredits();
+  const isAdmin = useIsAdmin();
+
+  const visibleTiers = isAdmin ? TIERS : TIERS.filter((t) => !ADMIN_ONLY_TIERS.includes(t.id));
+
+  // Falls ein Admin-only-Modell aktiv ist, aber der Nutzer kein Admin ist: auf Standard zurückfallen
+  useEffect(() => {
+    if (!isAdmin && ADMIN_ONLY_TIERS.includes(value)) {
+      onChange('qualitaet');
+    }
+  }, [isAdmin, value, onChange]);
+
 
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-center gap-1 p-1 rounded-lg bg-muted flex-wrap">
-        {TIERS.map((tier, i) => {
+        {visibleTiers.map((tier, i) => {
           const cost = getCost(actionType, tier.id);
           const isActive = value === tier.id;
-          const showDivider = i > 0 && TIERS[i - 1].group !== tier.group;
+          const showDivider = i > 0 && visibleTiers[i - 1].group !== tier.group;
           return (
             <React.Fragment key={tier.id}>
               {showDivider && <div className="w-px h-5 bg-border mx-0.5" />}
