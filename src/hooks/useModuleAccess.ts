@@ -83,7 +83,14 @@ export function useModuleAccess() {
           if (row.enabled) disabled.delete(key);
           else disabled.add(key);
         }
+        // Parent aus => alle Kinder ebenfalls gesperrt
+        for (const [parent, children] of Object.entries(MODULE_CHILDREN)) {
+          if (disabled.has(parent as ModuleKey)) {
+            children?.forEach(c => disabled.add(c));
+          }
+        }
         setDisabledModules(disabled);
+
         setLoading(false);
       });
   }, [user]);
