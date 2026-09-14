@@ -1348,9 +1348,10 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                 )}
               </Button>
             )}
-            <p className="text-[10px] leading-snug text-muted-foreground">
-              Je nach Anzahl der Aufnahmen und gewählten Optionen kann der tatsächliche Verbrauch leicht abweichen.
-            </p>
+            <div className="flex items-center justify-between gap-3 text-[10px] leading-snug text-muted-foreground">
+              <span>Geschätzter Verbrauch: 1 Credit</span>
+              <span>Der tatsächliche Verbrauch kann abweichen.</span>
+            </div>
           </CaptureSummaryPanel>
         </div>
       </div>
