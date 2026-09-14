@@ -535,16 +535,26 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
                       </Button>
                     )}
                     {/* Thumbnails */}
-                    {state?.status === 'done' && state.results.length > 0 && (
-                      <div className="hidden sm:flex gap-1 shrink-0">
-                        {state.results.slice(0, 3).map((r, ri) => (
-                          <img
-                            key={ri}
-                            src={r.startsWith('data:') ? r : `data:image/png;base64,${r}`}
-                            alt={`${job.labelDe} ${ri + 1}`}
-                            className="w-10 h-7 rounded object-cover border border-border"
-                          />
-                        ))}
+                    {(state?.results?.length ?? 0) > 0 && (
+                      <div className="flex gap-1 shrink-0">
+                        {state.results.slice(0, 3).map((r, ri) => {
+                          const idx = allResultImages.findIndex(i => i.jobKey === job.key && i.promptIndex === ri);
+                          return (
+                            <button
+                              key={ri}
+                              type="button"
+                              onClick={() => { if (idx >= 0) { setLightboxIndex(idx); setLightboxOpen(true); } }}
+                              className="rounded border border-border overflow-hidden hover:border-accent transition-colors"
+                              title="Vorschau öffnen"
+                            >
+                              <img
+                                src={r.startsWith('data:') ? r : `data:image/png;base64,${r}`}
+                                alt={`${job.labelDe} ${ri + 1}`}
+                                className="w-10 h-7 object-cover"
+                              />
+                            </button>
+                          );
+                        })}
                         {state.results.length > 3 && (
                           <span className="text-[10px] text-muted-foreground self-center">+{state.results.length - 3}</span>
                         )}
