@@ -51,6 +51,14 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        vehicle: {
+          white: "hsl(var(--vehicle-white))",
+          black: "hsl(var(--vehicle-black))",
+          silver: "hsl(var(--vehicle-silver))",
+          blue: "hsl(var(--vehicle-blue))",
+          red: "hsl(var(--vehicle-red))",
+          green: "hsl(var(--vehicle-green))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
