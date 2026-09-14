@@ -66,7 +66,7 @@ const OptionCard: React.FC<OptionCardProps> = ({ active, sketch, label, descript
  * Lkw-Schritte 1–3: Konfiguration → Aufbau-/Anhängerart → Ladebereich.
  * Nicht zutreffende Schritte werden automatisch übersprungen.
  */
-const TruckWizard: React.FC<TruckWizardProps> = ({ selection, onChange, onComplete, onBack }) => {
+const TruckWizard: React.FC<TruckWizardProps> = ({ selection, onChange, onComplete }) => {
   const cfg = getTruckConfiguration(selection.truckConfiguration);
   const showBodyStep = needsBodyTypeStep(selection.truckConfiguration);
   const showCargoStep = needsCargoStep(selection);
