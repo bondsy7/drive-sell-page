@@ -992,7 +992,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
             )}
             {cap.status === 'done' && (
               <>
-                <div className="absolute bottom-1.5 left-1.5 bg-accent text-accent-foreground text-[9px] font-semibold px-1.5 py-0.5 rounded-md">
+                <div className="absolute top-1.5 left-1.5 bg-accent text-accent-foreground text-[9px] font-semibold px-1.5 py-0.5 rounded-md">
                   Remastered
                 </div>
                 {!isProcessing && (
@@ -1006,7 +1006,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                 )}
               </>
             )}
-            <span className="absolute top-1.5 left-1.5 flex items-center gap-1 rounded-md bg-background/85 px-1.5 py-0.5 text-[10px] font-semibold text-foreground">
+            <span className="absolute bottom-1.5 left-1.5 flex items-center gap-1 rounded-md bg-background/85 px-1.5 py-0.5 text-[10px] font-semibold text-foreground">
               <Check className="w-3 h-3 text-green-600" /> {slot.label}
             </span>
             {!isProcessing && (
