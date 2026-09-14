@@ -33,7 +33,6 @@ import { isTruckSelectionComplete } from '@/config/truck-workflow';
 import { checkSourceCoverage } from '@/lib/source-coverage';
 import VehicleClassStrip from '@/components/capture/VehicleClassStrip';
 import CaptureSummaryPanel, { type SummaryRow } from '@/components/capture/CaptureSummaryPanel';
-import { useIsMobile } from '@/hooks/use-mobile';
 import TruckWizard from '@/components/capture/TruckWizard';
 import { TruckSketch } from '@/components/capture/TruckSketch';
 import { usePipeline } from '@/contexts/PipelineContext';
@@ -107,38 +106,50 @@ const CaptureSection: React.FC<{
   badge?: string;
   badgeOk?: boolean;
   collapsible?: boolean;
+  defaultOpen?: boolean;
   children: React.ReactNode;
-}> = ({ title, subtitle, badge, badgeOk, collapsible, children }) => {
-  const isMobile = useIsMobile();
-  const [open, setOpen] = useState(true);
-  const canCollapse = !!collapsible && isMobile;
-  const isOpen = canCollapse ? open : true;
+}> = ({ title, subtitle, badge, badgeOk, collapsible, defaultOpen = true, children }) => {
+  const [open, setOpen] = useState(defaultOpen);
+  const isOpen = collapsible ? open : true;
+
+  const heading = (
+    <>
+      <div className="min-w-0 text-left">
+        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+        {subtitle && <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">{subtitle}</p>}
+      </div>
+      <div className="flex shrink-0 items-center gap-1.5">
+        {badge && (
+          <span
+            className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+              badgeOk ? 'bg-green-500/10 text-green-700' : 'bg-muted text-muted-foreground'
+            }`}
+          >
+            {badge}
+          </span>
+        )}
+        {collapsible && (
+          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        )}
+      </div>
+    </>
+  );
 
   return (
     <section className="rounded-xl border border-border bg-card p-3 sm:p-4 shadow-sm">
-      <header
-        className={`flex items-start justify-between gap-3 ${canCollapse ? 'cursor-pointer' : ''}`}
-        onClick={canCollapse ? () => setOpen(o => !o) : undefined}
-      >
-        <div className="min-w-0">
-          <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-          {subtitle && <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">{subtitle}</p>}
-        </div>
-        <div className="flex shrink-0 items-center gap-1.5">
-          {badge && (
-            <span
-              className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                badgeOk ? 'bg-green-500/10 text-green-700' : 'bg-muted text-muted-foreground'
-              }`}
-            >
-              {badge}
-            </span>
-          )}
-          {canCollapse && (
-            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-          )}
-        </div>
-      </header>
+      {collapsible ? (
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={() => setOpen((current) => !current)}
+          aria-expanded={isOpen}
+          className="h-auto w-full justify-between gap-3 p-0 hover:bg-transparent"
+        >
+          {heading}
+        </Button>
+      ) : (
+        <header className="flex items-start justify-between gap-3">{heading}</header>
+      )}
       {isOpen && <div className="mt-2.5">{children}</div>}
     </section>
   );
@@ -1086,7 +1097,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       </div>
 
       <div className="space-y-3">
-          <CaptureSection title="Fahrzeugart">
+          <CaptureSection title="Fahrzeugart" badge={classProfile.label} badgeOk={!!vehicleClass} collapsible>
             <VehicleClassStrip value={activeClass} onChange={chooseVehicleClass} disabled={isProcessing} />
             {activeClass === 'truck' && truckWizardDone && (
               <button
@@ -1099,7 +1110,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
           </CaptureSection>
 
           {activeClass === 'truck' && !truckWizardDone && (
-            <CaptureSection title="Lkw-Konfiguration" subtitle="Bestimmt die benötigten Aufnahmen.">
+            <CaptureSection title="Lkw-Konfiguration" subtitle="Bestimmt die benötigten Aufnahmen." collapsible>
               <TruckWizard
                 selection={truckSelection}
                 onChange={setTruckSelection}
@@ -1128,6 +1139,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                 subtitle="Diese Angaben werden für die Generierung benötigt."
                 badge={`${requiredDone} / ${requiredSlots.length} Pflichtaufnahmen`}
                 badgeOk={coverage.ok}
+                collapsible
               >
                 {!coverage.ok && (
                   <p className="mb-3 rounded-lg bg-muted px-3 py-2 text-[11px] text-muted-foreground">
@@ -1135,8 +1147,12 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                     {coverage.missingLabels.join(', ')}
                   </p>
                 )}
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
-                  {vehicleSlots.map(renderSlotCard)}
+                <div className="-mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:grid sm:grid-cols-5 sm:overflow-visible sm:px-0">
+                  {vehicleSlots.map((slot) => (
+                    <div key={slot.key} className="w-[132px] shrink-0 snap-start sm:w-auto">
+                      {renderSlotCard(slot)}
+                    </div>
+                  ))}
                 </div>
 
                 {vinSlot && (
@@ -1220,9 +1236,14 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
               </CaptureSection>
 
               <div className="grid gap-2 sm:grid-cols-[minmax(0,0.72fr)_minmax(0,1.55fr)]">
-              <section className="flex min-h-[104px] flex-col rounded-lg border border-border bg-card p-3 shadow-sm">
-                <h3 className="text-xs font-semibold text-foreground">Felgen / Reifen</h3>
-                <div className="mt-2 flex min-w-0 flex-1 items-center gap-2.5">
+              <CaptureSection
+                title="Felgen / Reifen"
+                badge={wheelReference?.image ? '1 Foto' : 'Optional'}
+                badgeOk={!!wheelReference?.image}
+                collapsible
+                defaultOpen={false}
+              >
+                <div className="flex min-w-0 items-center gap-2.5">
                   <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted/40">
                     <img
                       src={wheelReference?.image || tireReferenceAsset.url}
@@ -1268,16 +1289,16 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                     if (file) await handleWheelReferenceFile(file);
                   }}
                 />
-              </section>
+              </CaptureSection>
 
-              <section className="min-h-[104px] min-w-0 rounded-lg border border-border bg-card p-3 shadow-sm">
-                <div className="flex items-center justify-between gap-3">
-                  <h3 className="text-xs font-semibold text-foreground">Weitere Detailaufnahmen</h3>
-                  <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
-                    {detailImages.length} / 10
-                  </span>
-                </div>
-                <div className="mt-2 flex min-w-0 items-center gap-2 overflow-x-auto pb-0.5">
+              <CaptureSection
+                title="Weitere Detailaufnahmen"
+                badge={`${detailImages.length} / 10`}
+                badgeOk={detailImages.length > 0}
+                collapsible
+                defaultOpen={false}
+              >
+                <div className="flex min-w-0 items-center gap-2 overflow-x-auto pb-0.5">
                   {detailImages.map((img, idx) => (
                     <div key={idx} className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-md border border-border bg-card">
                       <img src={img} alt={`Detail ${idx + 1}`} className="w-full h-full object-cover" />
@@ -1342,12 +1363,13 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                     }
                   }}
                 />
-              </section>
+              </CaptureSection>
               </div>
 
               <CaptureSection
                 title="Optionale Bildgestaltung"
                 collapsible
+                defaultOpen={false}
                 badge={sceneLabel}
                 badgeOk={!!remasterConfig.scene}
               >
@@ -1384,6 +1406,8 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                   : 'Alle erforderlichen Angaben wurden ergänzt.'
             }
             rows={summaryRows}
+            collapsible
+            defaultOpen={false}
           >
             {isProcessing && (
               <div className="space-y-1.5">
