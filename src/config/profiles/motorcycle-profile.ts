@@ -8,17 +8,17 @@
  * - kein Icon-/Vorschlags-Guide beim Multiupload für Detailaufnahmen
  */
 import type { CaptureSlot, VehicleClassProfile } from '../vehicle-class-types';
-import moto34Front from '@/assets/moto/slot_34_front.png';
-import motoSide from '@/assets/moto/slot_side.png';
-import motoRear from '@/assets/moto/slot_rear.png';
-import motoSeatFront from '@/assets/moto/slot_seat_front.png';
-import motoSeatRear from '@/assets/moto/slot_seat_rear.png';
+import moto34Front from '@/assets/moto-perspectives/34front.png.asset.json';
+import motoSide from '@/assets/moto-perspectives/side.png.asset.json';
+import motoRear from '@/assets/moto-perspectives/rear.png.asset.json';
+import motoSeatFront from '@/assets/moto-perspectives/rider-seat.png.asset.json';
+import motoSeatRear from '@/assets/moto-perspectives/pillion-seat.png.asset.json';
 
 export const MOTORCYCLE_CAPTURE_SLOTS: CaptureSlot[] = [
   {
     key: '34front',
     label: '3/4 Front',
-    icon: moto34Front,
+    icon: moto34Front.url,
     capture: 'environment',
     required: true,
     aspect: '4/3',
@@ -27,7 +27,7 @@ export const MOTORCYCLE_CAPTURE_SLOTS: CaptureSlot[] = [
   {
     key: 'side',
     label: 'Seite',
-    icon: motoSide,
+    icon: motoSide.url,
     capture: 'environment',
     required: true,
     aspect: '4/3',
@@ -36,7 +36,7 @@ export const MOTORCYCLE_CAPTURE_SLOTS: CaptureSlot[] = [
   {
     key: 'rear',
     label: 'Hinten',
-    icon: motoRear,
+    icon: motoRear.url,
     capture: 'environment',
     required: true,
     aspect: '4/3',
@@ -45,7 +45,7 @@ export const MOTORCYCLE_CAPTURE_SLOTS: CaptureSlot[] = [
   {
     key: 'moto-seat-front',
     label: 'Fahrersitz',
-    icon: motoSeatFront,
+    icon: motoSeatFront.url,
     capture: 'environment',
     required: true,
     aspect: '4/3',
@@ -54,7 +54,7 @@ export const MOTORCYCLE_CAPTURE_SLOTS: CaptureSlot[] = [
   {
     key: 'moto-seat-rear',
     label: 'Rücksitz',
-    icon: motoSeatRear,
+    icon: motoSeatRear.url,
     capture: 'environment',
     required: true,
     aspect: '4/3',
