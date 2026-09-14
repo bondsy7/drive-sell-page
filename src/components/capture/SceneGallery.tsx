@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Check, ImageOff, MoreHorizontal, Upload } from 'lucide-react';
 
 export interface SceneTileOption {
@@ -20,14 +20,26 @@ const GROUP_TITLES: Record<string, string> = {
   outdoor: 'Außen',
 };
 
-const Tile: React.FC<{ opt: SceneTileOption; active: boolean; onSelect: () => void }> = ({ opt, active, onSelect }) => {
+const Tile: React.FC<{ opt: SceneTileOption; active: boolean; onSelect: () => void; onHover?: (opt: SceneTileOption | null, rect?: DOMRect) => void }> = ({
+  opt,
+  active,
+  onSelect,
+  onHover,
+}) => {
   const [fullShort, sub] = opt.label.split('–').map((s) => s.trim());
   const showroomNumber = opt.value.match(/^showroom-([1-4])$/)?.[1];
   const short = showroomNumber ? `Nr. ${showroomNumber}` : fullShort;
+  const ref = useRef<HTMLButtonElement>(null);
+
   return (
     <button
+      ref={ref}
       type="button"
       onClick={onSelect}
+      onMouseEnter={() => onHover?.(opt, ref.current?.getBoundingClientRect())}
+      onMouseLeave={() => onHover?.(null)}
+      onFocus={() => onHover?.(opt, ref.current?.getBoundingClientRect())}
+      onBlur={() => onHover?.(null)}
       title={opt.label}
       className={`group relative overflow-hidden rounded-lg border text-left transition-all ${
         active ? 'border-accent ring-2 ring-accent/30' : 'border-border hover:border-accent/60'
@@ -64,12 +76,40 @@ const SceneGallery: React.FC<SceneGalleryProps> = ({ options, value, onChange })
   const additionalOptions = options.filter((option) => !primaryOptions.some((primary) => primary.value === option.value));
   const hasAdditionalSelection = additionalOptions.some((option) => option.value === value);
   const [showMore, setShowMore] = useState(hasAdditionalSelection);
+  const [hovered, setHovered] = useState<{ opt: SceneTileOption; rect: DOMRect } | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleHover = (opt: SceneTileOption | null, rect?: DOMRect) => {
+    if (opt && rect) {
+      setHovered({ opt, rect });
+    } else {
+      setHovered(null);
+    }
+  };
+
+  const previewStyle: React.CSSProperties | undefined = hovered
+    ? {
+        position: 'fixed',
+        top: hovered.rect.bottom + 8,
+        left: Math.min(
+          hovered.rect.left,
+          (typeof window !== 'undefined' ? window.innerWidth : 0) - 240
+        ),
+        zIndex: 100,
+      }
+    : undefined;
 
   return (
-    <div className="space-y-2">
+    <div ref={containerRef} className="relative space-y-2">
       <div className="grid grid-cols-5 gap-1.5">
         {primaryOptions.map((opt) => (
-          <Tile key={opt.value} opt={opt} active={value === opt.value} onSelect={() => onChange(opt.value)} />
+          <Tile
+            key={opt.value}
+            opt={opt}
+            active={value === opt.value}
+            onSelect={() => onChange(opt.value)}
+            onHover={handleHover}
+          />
         ))}
         <button
           type="button"
@@ -89,8 +129,30 @@ const SceneGallery: React.FC<SceneGalleryProps> = ({ options, value, onChange })
       {showMore && (
         <div className="grid grid-cols-4 gap-1.5 border-t border-border pt-2 sm:grid-cols-5">
           {additionalOptions.map((opt) => (
-            <Tile key={opt.value} opt={opt} active={value === opt.value} onSelect={() => onChange(opt.value)} />
+            <Tile
+              key={opt.value}
+              opt={opt}
+              active={value === opt.value}
+              onSelect={() => onChange(opt.value)}
+              onHover={handleHover}
+            />
           ))}
+        </div>
+      )}
+
+      {hovered?.opt.preview && (
+        <div
+          style={previewStyle}
+          className="pointer-events-none hidden rounded-lg border border-border bg-card p-1.5 shadow-xl sm:block w-60"
+          role="img"
+          aria-label={hovered.opt.label}
+        >
+          <img
+            src={hovered.opt.preview}
+            alt={hovered.opt.label}
+            className="h-36 w-full rounded-md object-cover"
+          />
+          <span className="mt-1.5 block truncate px-0.5 text-xs font-medium text-foreground">{hovered.opt.label}</span>
         </div>
       )}
     </div>
