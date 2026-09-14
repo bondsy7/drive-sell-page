@@ -7,12 +7,17 @@
  * funktional, visuell und qualitativ identisch.
  */
 import type { CaptureSlot, VehicleClassProfile } from '../vehicle-class-types';
+import frontThreeQuarterIcon from '@/assets/capture-perspectives/34front.png.asset.json';
+import sideIcon from '@/assets/capture-perspectives/seite.png.asset.json';
+import rearIcon from '@/assets/capture-perspectives/back.png.asset.json';
+import cockpitIcon from '@/assets/capture-perspectives/cockpit.png.asset.json';
+import rearSeatIcon from '@/assets/capture-perspectives/rucksitz.png.asset.json';
 
 export const CAR_CAPTURE_SLOTS: CaptureSlot[] = [
   {
     key: '34front',
     label: '3/4 Front',
-    icon: '/images/perspectives/34_Vorne.png',
+    icon: frontThreeQuarterIcon.url,
     capture: 'environment',
     required: true,
     aspect: '4/3',
@@ -21,7 +26,7 @@ export const CAR_CAPTURE_SLOTS: CaptureSlot[] = [
   {
     key: 'side',
     label: 'Seite',
-    icon: '/images/perspectives/Seite.png',
+    icon: sideIcon.url,
     capture: 'environment',
     required: true,
     aspect: '4/3',
@@ -30,7 +35,7 @@ export const CAR_CAPTURE_SLOTS: CaptureSlot[] = [
   {
     key: 'rear',
     label: 'Hinten',
-    icon: '/images/perspectives/Hinten.png',
+    icon: rearIcon.url,
     capture: 'environment',
     required: true,
     aspect: '4/3',
@@ -39,7 +44,7 @@ export const CAR_CAPTURE_SLOTS: CaptureSlot[] = [
   {
     key: 'interior-front',
     label: 'Interieur Fahrersitz',
-    icon: '/images/perspectives/Interieur_Fahrersitz.png',
+    icon: cockpitIcon.url,
     capture: 'environment',
     required: true,
     aspect: '4/3',
@@ -48,7 +53,7 @@ export const CAR_CAPTURE_SLOTS: CaptureSlot[] = [
   {
     key: 'interior-rear',
     label: 'Interieur Rücksitz',
-    icon: '/images/perspectives/Interieur_Ruecksitz.png',
+    icon: rearSeatIcon.url,
     capture: 'environment',
     required: true,
     aspect: '4/3',
