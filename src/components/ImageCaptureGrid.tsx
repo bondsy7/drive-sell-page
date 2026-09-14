@@ -996,7 +996,14 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       >
         {cap ? (
           <>
-            <img src={cap.remasteredBase64 || cap.base64} alt={slot.label} className="block w-full h-full object-cover" />
+            <button
+              type="button"
+              onClick={() => setLightboxSlotKey(slot.key)}
+              className="block w-full h-full cursor-zoom-in"
+              title="Vorschau öffnen"
+            >
+              <img src={cap.remasteredBase64 || cap.base64} alt={slot.label} className="block w-full h-full object-cover" />
+            </button>
             {cap.status === 'processing' && (
               <div className="absolute inset-0 bg-background/70 flex items-center justify-center">
                 <Loader2 className="w-6 h-6 text-accent animate-spin" />
