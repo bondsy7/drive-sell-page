@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Check, ImageOff, MoreHorizontal, Upload } from 'lucide-react';
 
 export interface SceneTileOption {
