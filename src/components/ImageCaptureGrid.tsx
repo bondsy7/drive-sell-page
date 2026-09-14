@@ -113,7 +113,7 @@ const CaptureSection: React.FC<{
   const isOpen = canCollapse ? open : true;
 
   return (
-    <section className="rounded-xl border border-border bg-card p-4">
+    <section className="rounded-xl border border-border bg-card p-3 sm:p-4 shadow-sm">
       <header
         className={`flex items-start justify-between gap-3 ${canCollapse ? 'cursor-pointer' : ''}`}
         onClick={canCollapse ? () => setOpen(o => !o) : undefined}
@@ -137,7 +137,7 @@ const CaptureSection: React.FC<{
           )}
         </div>
       </header>
-      {isOpen && <div className="mt-3">{children}</div>}
+      {isOpen && <div className="mt-2.5">{children}</div>}
     </section>
   );
 };
@@ -1061,24 +1061,30 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   };
 
   return (
-    <div className="w-full max-w-[1320px] mx-auto pb-24 lg:pb-0">
+    <div className="mx-auto w-full max-w-[736px] pb-24 sm:pb-6">
       {/* Kopfbereich */}
-      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+      <div className="mb-3 flex items-start justify-between gap-3">
         <div>
-          <h2 className="font-display text-xl font-bold text-foreground">
-            {classProfile.captureHeadline || 'Fahrzeug aufnehmen'}
-          </h2>
-          <p className="text-sm text-muted-foreground">
+          <h1 className="font-display text-xl font-bold text-foreground sm:text-2xl">Fahrzeug aufnehmen</h1>
+          <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm">
             Pflichtangaben vervollständigen. Optionale Angaben verbessern das Ergebnis.
           </p>
         </div>
-        <Button variant="outlineGray" size="sm" onClick={onBack} disabled={isProcessing}>Zurück</Button>
+        <Button variant="ghost" size="sm" onClick={onBack} disabled={isProcessing}>Zurück</Button>
       </div>
 
-      <div className="grid items-start gap-4 lg:grid-cols-[2fr_1fr] xl:gap-5">
-        {/* Hauptbereich */}
-        <div className="space-y-4">
-          <CaptureSection title="Fahrzeugart" subtitle="Bestimmt Pflichtaufnahmen und Aufbereitungslogik.">
+      <div className={`mb-3 flex items-center gap-2 rounded-lg px-3 py-2.5 ${coverage.ok && remasterConfig.scene ? 'bg-green-500/10' : 'bg-muted'}`}>
+        {coverage.ok && remasterConfig.scene ? <Check className="h-4 w-4 shrink-0 text-green-600" /> : <AlertCircle className="h-4 w-4 shrink-0 text-muted-foreground" />}
+        <div className="min-w-0 flex-1">
+          <p className={`text-xs font-semibold ${coverage.ok && remasterConfig.scene ? 'text-green-700' : 'text-foreground'}`}>
+            {coverage.ok && remasterConfig.scene ? 'Pflichtangaben vollständig' : 'Pflichtangaben vervollständigen'}
+          </p>
+          <p className="truncate text-[10px] text-muted-foreground">{requiredDone} / {requiredSlots.length} Pflichtaufnahmen · {remasterConfig.scene ? sceneLabel : 'Szene noch wählen'}</p>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+          <CaptureSection title="Fahrzeugart">
             <VehicleClassStrip value={activeClass} onChange={chooseVehicleClass} disabled={isProcessing} />
             {activeClass === 'truck' && truckWizardDone && (
               <button
@@ -1127,7 +1133,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                     {coverage.missingLabels.join(', ')}
                   </p>
                 )}
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
                   {vehicleSlots.map(renderSlotCard)}
                 </div>
 
@@ -1166,14 +1172,10 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                 )}
               </CaptureSection>
 
-              <CaptureSection
-                title="Felgen / Reifen"
-                subtitle="Optional: Für Sonderfelgen oder abweichende Bereifung. Wird als verbindliche Referenz verwendet."
-                collapsible
-                badge={wheelReference?.image ? '1 Foto' : 'Optional'}
-              >
+              <div className="grid gap-3 sm:grid-cols-[0.8fr_1.6fr]">
+              <CaptureSection title="Felgen / Reifen" collapsible badge={wheelReference?.image ? '1 Foto' : 'Optional'}>
                 {wheelReference?.image ? (
-                  <div className="relative w-full max-w-[200px] aspect-[4/3] rounded-lg overflow-hidden border border-border bg-card">
+                  <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg border border-border bg-card">
                     <img src={wheelReference.image} alt="Felgenreferenz" className="w-full h-full object-cover" />
                     {wheelAnalyzing && (
                       <div className="absolute inset-0 bg-background/60 flex items-center justify-center text-xs font-medium">
@@ -1214,11 +1216,10 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
 
               <CaptureSection
                 title="Weitere Detailaufnahmen"
-                subtitle="Zusätzliche Aufnahmen verbessern Details und Fahrzeugtreue (bis zu 10 Bilder)."
                 collapsible
                 badge={detailImages.length ? `${detailImages.length} Fotos` : 'Optional'}
               >
-                <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                <div className="grid grid-cols-5 gap-2">
                   {detailImages.map((img, idx) => (
                     <div key={idx} className="relative group aspect-square rounded-lg overflow-hidden border border-border bg-card">
                       <img src={img} alt={`Detail ${idx + 1}`} className="w-full h-full object-cover" />
@@ -1286,10 +1287,10 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                   }}
                 />
               </CaptureSection>
+              </div>
 
               <CaptureSection
-                title="Showroom, Nummernschild & Branding"
-                subtitle="Diese Angaben bestimmen Hintergrund, Kennzeichen, Farbe und Logos der generierten Bilder."
+                title="Optionale Bildgestaltung"
                 collapsible
                 badge={sceneLabel}
                 badgeOk={!!remasterConfig.scene}
@@ -1315,10 +1316,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
               </CaptureSection>
             </>
           )}
-        </div>
-
-        {/* Rechte Spalte: Zusammenfassung */}
-        <aside className="min-w-0 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+        <div>
           <CaptureSummaryPanel
             complete={coverage.ok && !!remasterConfig.scene}
             completeText={coverage.ok && remasterConfig.scene ? 'Pflichtfelder vollständig' : 'Pflichtfelder unvollständig'}
@@ -1340,7 +1338,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                 <Progress value={(progress.current / progress.total) * 100} className="h-1.5" />
               </div>
             )}
-            <div className="hidden lg:block">{primaryAction}</div>
+            <div className="hidden sm:block">{primaryAction}</div>
             {allVehicleDone && (
               <Button variant="outline" size="sm" className="w-full" onClick={finishUp}>
                 {projectId ? (
@@ -1354,15 +1352,15 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
               Je nach Anzahl der Aufnahmen und gewählten Optionen kann der tatsächliche Verbrauch leicht abweichen.
             </p>
           </CaptureSummaryPanel>
-        </aside>
+        </div>
       </div>
 
       {/* Mobile Bottom Bar */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 px-4 py-3 backdrop-blur lg:hidden">
-        <div className="mx-auto flex max-w-2xl items-center gap-3">
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 px-3 py-2.5 backdrop-blur sm:hidden">
+        <div className="mx-auto flex max-w-[736px] items-center gap-3">
           <div className="min-w-0">
-            <p className="text-[10px] text-muted-foreground">Pflichtaufnahmen</p>
-            <p className="text-xs font-semibold text-foreground">{requiredDone} / {requiredSlots.length}</p>
+            <p className="text-[10px] text-muted-foreground">Qualität</p>
+            <p className="text-xs font-semibold text-foreground">{modelTier || 'Qualität'} · 1 Credit</p>
           </div>
           <div className="flex-1">{primaryAction}</div>
         </div>
