@@ -35,7 +35,7 @@ const Tile: React.FC<{ opt: SceneTileOption; active: boolean; onSelect: () => vo
     >
       <div className="relative h-11 w-full bg-muted sm:h-12">
         {opt.preview ? (
-          <img src={opt.preview} alt={opt.label} loading="lazy" className="h-full w-full object-cover" />
+          <img src={opt.preview} alt={opt.label} loading="lazy" width={480} height={512} className="h-full w-full object-cover" />
         ) : (
           <span className="flex h-full w-full items-center justify-center text-muted-foreground">
             {opt.value === 'custom-showroom' ? <Upload className="h-5 w-5" /> : opt.value === 'none' ? <ImageOff className="h-5 w-5" /> : null}
