@@ -10,3 +10,4 @@
 - [x] VIN-Bereich mit neuem Motiv als kompakte Foto-, Status- und Aktionszeile gestalten
 - [x] Smartphone-Aufnahmen als horizontale Reihe und alle Hauptbereiche als Accordions gestalten
 - [x] Lkw-Konfigurationsbilder durch die sechs neuen Motive ersetzen
+- [x] Showroom 1 vorauswählen, VIN und Innenraum optional machen und seitliches Scrollen entfernen

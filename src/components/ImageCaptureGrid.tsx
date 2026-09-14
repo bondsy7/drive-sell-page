@@ -158,7 +158,7 @@ const CaptureSection: React.FC<{
 
 
 const DEFAULT_CONFIG: RemasterConfig = {
-  scene: '',
+  scene: 'showroom-1',
   licensePlate: 'remove',
   changeColor: false,
   showManufacturerLogo: false,
@@ -886,7 +886,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     // Source-Coverage-Validierung: fehlende Pflichtperspektiven werden NIE
     // aus anderen Winkeln hochgerechnet – der Start wird stattdessen blockiert.
     if (!coverageRef.current.ok) {
-      toast.error(`Fehlende Pflichtaufnahmen: ${coverageRef.current.missingLabels.join(', ')}`);
+      toast.error(`Fehlende erforderliche Aufnahmen: ${coverageRef.current.missingLabels.join(', ')}`);
       return;
     }
     const currentVehicleId = await ensureVehicleForPipeline();
@@ -956,7 +956,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     { label: 'Fahrzeugart', value: classProfile.label },
     { label: 'Marke / Modell', value: brandModel || 'Offen', ok: !!brandModel },
     { label: 'VIN', value: detectedVin ? 'Erkannt' : 'Offen', ok: !!detectedVin },
-    { label: 'Pflichtaufnahmen', value: `${requiredDone} / ${requiredSlots.length}`, ok: coverage.ok },
+    { label: 'Erforderliche Aufnahmen', value: `${requiredDone} / ${requiredSlots.length}`, ok: coverage.ok },
     { label: 'Felgen / Reifen', value: wheelReference?.image ? '1 Foto' : '—' },
     { label: 'Detailaufnahmen', value: detailImages.length ? `${detailImages.length} Fotos` : '—' },
     { label: 'Showroom', value: sceneLabel, ok: !!remasterConfig.scene },
@@ -1093,13 +1093,13 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   };
 
   return (
-    <div className="mx-auto w-full max-w-[736px] pb-24 sm:pb-6">
+    <div className="mx-auto w-full min-w-0 max-w-[736px] overflow-x-hidden pb-24 sm:pb-6">
       {/* Kopfbereich */}
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
           <h1 className="font-display text-xl font-bold text-foreground sm:text-2xl">Fahrzeug aufnehmen</h1>
           <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm">
-            Pflichtangaben vervollständigen. Optionale Angaben verbessern das Ergebnis.
+            Aufnahmen ergänzen. Optionale Bilder verbessern das Ergebnis.
           </p>
         </div>
         <Button variant="ghost" size="sm" onClick={onBack} disabled={isProcessing}>Zurück</Button>
@@ -1109,9 +1109,9 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         {coverage.ok && remasterConfig.scene ? <Check className="h-4 w-4 shrink-0 text-green-600" /> : <AlertCircle className="h-4 w-4 shrink-0 text-muted-foreground" />}
         <div className="min-w-0 flex-1">
           <p className={`text-xs font-semibold ${coverage.ok && remasterConfig.scene ? 'text-green-700' : 'text-foreground'}`}>
-            {coverage.ok && remasterConfig.scene ? 'Pflichtangaben vollständig' : 'Pflichtangaben vervollständigen'}
+            {coverage.ok && remasterConfig.scene ? 'Erforderliche Aufnahmen vollständig' : 'Aufnahmen vervollständigen'}
           </p>
-          <p className="truncate text-[10px] text-muted-foreground">{requiredDone} / {requiredSlots.length} Pflichtaufnahmen · {remasterConfig.scene ? sceneLabel : 'Szene noch wählen'}</p>
+          <p className="truncate text-[10px] text-muted-foreground">{requiredDone} / {requiredSlots.length} erforderlich · {sceneLabel}</p>
         </div>
       </div>
 
@@ -1154,21 +1154,21 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
           {(activeClass !== 'truck' || truckWizardDone) && (
             <>
               <CaptureSection
-                title="Pflichtangaben"
-                subtitle="Diese Angaben werden für die Generierung benötigt."
-                badge={`${requiredDone} / ${requiredSlots.length} Pflichtaufnahmen`}
+                title="Aufnahmen"
+                subtitle="Außenaufnahmen sind erforderlich, Innenraum und VIN sind optional."
+                badge={`${requiredDone} / ${requiredSlots.length} erforderlich`}
                 badgeOk={coverage.ok}
                 collapsible
               >
                 {!coverage.ok && (
                   <p className="mb-3 rounded-lg bg-muted px-3 py-2 text-[11px] text-muted-foreground">
-                    <span className="font-semibold text-foreground">Pflichtaufnahmen fehlen: </span>
+                    <span className="font-semibold text-foreground">Erforderliche Aufnahmen fehlen: </span>
                     {coverage.missingLabels.join(', ')}
                   </p>
                 )}
-                <div className="-mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:grid sm:grid-cols-5 sm:overflow-visible sm:px-0">
+                <div className="grid min-w-0 grid-cols-2 gap-2 lg:grid-cols-5">
                   {vehicleSlots.map((slot) => (
-                    <div key={slot.key} className="w-[132px] shrink-0 snap-start sm:w-auto">
+                    <div key={slot.key} className="min-w-0">
                       {renderSlotCard(slot)}
                     </div>
                   ))}
@@ -1317,7 +1317,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                 collapsible
                 defaultOpen={false}
               >
-                <div className="flex min-w-0 items-center gap-2 overflow-x-auto pb-0.5">
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
                   {detailImages.map((img, idx) => (
                     <div key={idx} className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-md border border-border bg-card">
                       <img src={img} alt={`Detail ${idx + 1}`} className="w-full h-full object-cover" />
@@ -1416,7 +1416,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         <div>
           <CaptureSummaryPanel
             complete={coverage.ok && !!remasterConfig.scene}
-            completeText={coverage.ok && remasterConfig.scene ? 'Pflichtfelder vollständig' : 'Pflichtfelder unvollständig'}
+            completeText={coverage.ok && remasterConfig.scene ? 'Erforderliche Aufnahmen vollständig' : 'Aufnahmen unvollständig'}
             hintText={
               !coverage.ok
                 ? `Es fehlen: ${coverage.missingLabels.join(', ')}`
