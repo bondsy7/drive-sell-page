@@ -60,16 +60,18 @@ const Tile: React.FC<{ opt: SceneTileOption; active: boolean; onSelect: () => vo
 const SceneGallery: React.FC<SceneGalleryProps> = ({ options, value, onChange }) => {
   const groups: Array<'none' | 'indoor' | 'outdoor'> = ['none', 'indoor', 'outdoor'];
   return (
-    <div className="space-y-3">
+    <div className="flex gap-2 overflow-x-auto pb-1 sm:grid sm:grid-cols-5 sm:overflow-visible">
       {groups.map((g) => {
         const items = options.filter((o) => o.group === g);
         if (!items.length) return null;
         return (
-          <div key={g} className="space-y-1.5">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{GROUP_TITLES[g]}</p>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4">
+          <div key={g} className="contents">
+            <p className="sr-only">{GROUP_TITLES[g]}</p>
+            <div className="contents">
               {items.map((opt) => (
-                <Tile key={opt.value} opt={opt} active={value === opt.value} onSelect={() => onChange(opt.value)} />
+                <div key={opt.value} className="w-[88px] shrink-0 sm:w-auto">
+                  <Tile opt={opt} active={value === opt.value} onSelect={() => onChange(opt.value)} />
+                </div>
               ))}
             </div>
           </div>

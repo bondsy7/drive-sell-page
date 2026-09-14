@@ -26,7 +26,7 @@ const VehicleClassStrip: React.FC<VehicleClassStripProps> = ({ value, onChange, 
   const profiles = getActiveProfiles();
 
   return (
-    <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+    <div className="grid grid-cols-3 gap-2">
       {profiles.map((p) => {
         const visual = CLASS_VISUAL[p.key] ?? { image: carAsset.url, title: p.label, examples: p.description };
         const active = value === p.key;
@@ -36,21 +36,21 @@ const VehicleClassStrip: React.FC<VehicleClassStripProps> = ({ value, onChange, 
             type="button"
             disabled={disabled}
             onClick={() => onChange(p.key as ActiveVehicleClassKey)}
-            className={`relative flex w-full min-w-0 items-center gap-3 rounded-lg border bg-card p-2.5 text-left transition-colors sm:flex-col sm:items-start sm:gap-1.5 ${
+            className={`relative flex min-h-[108px] w-full min-w-0 flex-col items-center justify-end gap-1 rounded-lg border bg-card p-2 text-center transition-colors sm:min-h-[132px] ${
               active ? 'border-accent bg-accent/5' : 'border-border hover:border-accent/60 hover:bg-muted/40'
             } ${disabled ? 'pointer-events-none opacity-60' : ''}`}
           >
-            <span className="flex h-16 w-24 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted/40 sm:h-24 sm:w-full">
+            <span className="flex h-14 w-full min-w-0 items-center justify-center overflow-hidden rounded-md bg-muted/30 sm:h-20">
               <img
                 src={visual.image}
                 alt={visual.title}
                 loading="lazy"
-                className="h-full w-full object-contain p-1.5"
+                className="h-full w-full object-contain p-1"
               />
             </span>
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-semibold text-foreground">{visual.title}</span>
-              <span className="block truncate text-[10px] text-muted-foreground">{visual.examples}</span>
+            <span className="min-w-0 w-full">
+              <span className="block truncate text-xs font-semibold text-foreground sm:text-sm">{visual.title}</span>
+              <span className="hidden truncate text-[10px] text-muted-foreground sm:block">{visual.examples}</span>
             </span>
             {active && (
               <span className="absolute right-2 top-2 flex h-4 w-4 items-center justify-center rounded-full bg-accent text-accent-foreground">

@@ -282,16 +282,12 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
   };
 
   return (
-    <div className="space-y-5 bg-card border border-border rounded-xl p-5">
-      <h3 className="font-display font-semibold text-foreground text-sm flex items-center gap-2">
-        <Paintbrush className="w-4 h-4 text-muted-foreground" />
-        Remaster-Optionen
-      </h3>
+    <div className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-2">
 
       {/* Szene – visuelle Auswahl */}
-      <div className="space-y-2">
-        <Label className="text-xs font-medium text-muted-foreground">Szene <span className="text-destructive">*</span></Label>
-        <p className="text-[11px] text-muted-foreground/70">Wähle den Hintergrund für die generierten Bilder</p>
+      <div className="min-w-0 space-y-2 rounded-lg border border-border bg-card p-3">
+        <Label className="text-xs font-semibold text-foreground">Showroom / Setting <span className="text-destructive">*</span></Label>
         <SceneGallery
           options={SCENE_OPTIONS as unknown as SceneTileOption[]}
           value={config.scene}
@@ -347,11 +343,10 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
       </div>
 
       {/* License Plate */}
-      <div className="space-y-2">
+      <div className="min-w-0 space-y-2 rounded-lg border border-border bg-card p-3">
         <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
           <Tag className="w-3.5 h-3.5" /> Nummernschild
         </Label>
-        <p className="text-[11px] text-muted-foreground/70">Was soll mit dem Nummernschild passieren?</p>
         <OptionCards
           options={LICENSE_PLATE_OPTIONS as unknown as CardOption[]}
           value={config.licensePlate}
@@ -384,6 +379,7 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
             />
           </div>
         )}
+      </div>
       </div>
 
       {/* Spezifische Bereinigung – LKW/Flotten-Debranding */}
@@ -432,7 +428,8 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
 
 
       {/* Color Change */}
-      <div className="space-y-2">
+      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="space-y-2 rounded-lg border border-border bg-card p-3">
         <div className="flex items-center justify-between">
           <Label className="text-xs font-medium text-muted-foreground">Fahrzeugfarbe ändern</Label>
           <Switch checked={config.changeColor} onCheckedChange={(v) => update({ changeColor: v })} />
@@ -456,7 +453,7 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
       </div>
 
       {/* Logo Configuration */}
-      <div className="space-y-3">
+      <div className="space-y-3 rounded-lg border border-border bg-card p-3">
         <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
           <Building2 className="w-3.5 h-3.5" /> Logo-Konfiguration
         </Label>
@@ -509,6 +506,7 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
             disabled={!profileLogoUrl}
           />
         </div>
+      </div>
       </div>
 
       {/* Hidden file inputs */}
