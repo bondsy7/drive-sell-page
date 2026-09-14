@@ -1155,7 +1155,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
             <>
               <CaptureSection
                 title="Aufnahmen"
-                subtitle="Außenaufnahmen sind erforderlich, Innenraum und VIN sind optional."
+                
                 badge={`${requiredDone} / ${requiredSlots.length} erforderlich`}
                 badgeOk={coverage.ok}
                 collapsible
