@@ -1122,13 +1122,13 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                 onClick={() => setTruckWizardDone(false)}
                 className="mt-2 text-[11px] underline text-muted-foreground hover:text-foreground"
               >
-                Lkw-Konfiguration ändern
+                Konfiguration ändern
               </button>
             )}
           </CaptureSection>
 
           {activeClass === 'truck' && !truckWizardDone && (
-            <CaptureSection title="Lkw-Konfiguration" subtitle="Bestimmt die benötigten Aufnahmen." collapsible>
+            <CaptureSection title="Konfiguration auswählen" collapsible>
               <TruckWizard
                 selection={truckSelection}
                 onChange={setTruckSelection}
