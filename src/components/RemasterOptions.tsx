@@ -440,7 +440,7 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
 
 
       {/* Color Change */}
-      <div className="grid gap-2 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.35fr)]">
+      <div className="grid gap-4 sm:grid-cols-2">
       <div className="rounded-lg border border-border bg-card p-3">
         <div className="flex min-h-6 items-center justify-between gap-3">
           <Label className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
