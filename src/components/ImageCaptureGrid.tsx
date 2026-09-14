@@ -235,9 +235,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
 
   // ── Fahrzeugklassen-Workflow ──
   const initialClass = resolveVehicleClass(vehicleData?.vehicleClass);
-  const [vehicleClass, setVehicleClass] = useState<ActiveVehicleClassKey | null>(
-    vehicleData?.vehicleClass ? initialClass : null,
-  );
+  const [vehicleClass, setVehicleClass] = useState<ActiveVehicleClassKey | null>(initialClass);
   const [truckSelection, setTruckSelection] = useState<Partial<TruckWorkflowSelection>>({
     truckConfiguration: vehicleData?.truckConfiguration ?? null,
     truckBodyType: vehicleData?.truckBodyType ?? null,
@@ -1097,7 +1095,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       </div>
 
       <div className="space-y-3">
-          <CaptureSection title="Fahrzeugart" badge={classProfile.label} badgeOk={!!vehicleClass} collapsible>
+          <CaptureSection title="Fahrzeugart" badge={classProfile.label} badgeOk={!!vehicleClass} collapsible defaultOpen={false}>
             <VehicleClassStrip value={activeClass} onChange={chooseVehicleClass} disabled={isProcessing} />
             {activeClass === 'truck' && truckWizardDone && (
               <button
