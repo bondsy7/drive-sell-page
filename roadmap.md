@@ -11,3 +11,4 @@
 - [x] Smartphone-Aufnahmen als horizontale Reihe und alle Hauptbereiche als Accordions gestalten
 - [x] Lkw-Konfigurationsbilder durch die sechs neuen Motive ersetzen
 - [x] Showroom 1 vorauswählen, VIN und Innenraum optional machen und seitliches Scrollen entfernen
+- [x] Lkw-Aufnahmeicons ersetzen und Kacheltexte gegen Überlauf optimieren

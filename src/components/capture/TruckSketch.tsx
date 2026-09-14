@@ -15,15 +15,16 @@ import imgBodyUnknown from '@/assets/truck/body_unknown.png';
 import imgCargoEmpty from '@/assets/truck/cargo_empty.png';
 import imgCargoLoaded from '@/assets/truck/cargo_loaded.png';
 import imgCargoClosed from '@/assets/truck/cargo_closed.png';
-import imgSlotCab34FrontLeft from '@/assets/truck/slot_cab_34_front_left.png';
-import imgSlotCabSideLeft from '@/assets/truck/slot_cab_side_left.png';
-import imgSlotCabFront from '@/assets/truck/slot_cab_front.png';
-import imgSlotMirrorDetail from '@/assets/truck/slot_mirror_detail.png';
+import imgSlotCab34FrontLeftAsset from '@/assets/truck/slot_cab_34_front_left.png.asset.json';
+import imgSlotCabSideLeftAsset from '@/assets/truck/slot_cab_side_left.png.asset.json';
+import imgSlotCabSideRightAsset from '@/assets/truck/slot_cab_side_right.png.asset.json';
+import imgSlotCabFrontAsset from '@/assets/truck/slot_cab_front.png.asset.json';
+import imgSlotMirrorDetailAsset from '@/assets/truck/slot_mirror_detail.png.asset.json';
 import imgSlotCabInterior from '@/assets/truck/slot_cab_interior.png';
-import imgSlotDriverSeat from '@/assets/truck/slot_driver_seat.png';
-import imgSlotPassengerSeat from '@/assets/truck/slot_passenger_seat.png';
-import imgSlotSleeperCabin from '@/assets/truck/slot_sleeper_cabin.png';
-import imgSlotFifthWheel from '@/assets/truck/slot_fifth_wheel.png';
+import imgSlotDriverSeatAsset from '@/assets/truck/slot_driver_seat.png.asset.json';
+import imgSlotPassengerSeatAsset from '@/assets/truck/slot_passenger_seat.png.asset.json';
+import imgSlotSleeperCabinAsset from '@/assets/truck/slot_sleeper_cabin.png.asset.json';
+import imgSlotFifthWheelAsset from '@/assets/truck/slot_fifth_wheel.png.asset.json';
 import imgSlotBodySideLeft from '@/assets/truck/slot_body_side_left.png';
 import imgSlotBodyRear from '@/assets/truck/slot_body_rear.png';
 import imgSlotBody34RearRight from '@/assets/truck/slot_body_34_rear_right.png';
@@ -347,17 +348,16 @@ const CONFIG_IMAGES: Record<string, string> = {
   cargo_loaded_accessible: imgCargoLoaded,
   cargo_not_accessible: imgCargoClosed,
   // ── Aufnahme-Slots (gleicher Skizzenstil) ──
-  cab_34_front_left: imgSlotCab34FrontLeft,
-  cab_side_left: imgSlotCabSideLeft,
-  // Rechte Seite: gespiegelte Variante der linken Seitenskizze
-  cab_side_right: imgSlotCabSideLeft,
-  cab_front: imgSlotCabFront,
-  mirror_detail: imgSlotMirrorDetail,
+  cab_34_front_left: imgSlotCab34FrontLeftAsset.url,
+  cab_side_left: imgSlotCabSideLeftAsset.url,
+  cab_side_right: imgSlotCabSideRightAsset.url,
+  cab_front: imgSlotCabFrontAsset.url,
+  mirror_detail: imgSlotMirrorDetailAsset.url,
   cab_interior: imgSlotCabInterior,
-  driver_seat: imgSlotDriverSeat,
-  passenger_seat: imgSlotPassengerSeat,
-  sleeper_cabin: imgSlotSleeperCabin,
-  fifth_wheel: imgSlotFifthWheel,
+  driver_seat: imgSlotDriverSeatAsset.url,
+  passenger_seat: imgSlotPassengerSeatAsset.url,
+  sleeper_cabin: imgSlotSleeperCabinAsset.url,
+  fifth_wheel: imgSlotFifthWheelAsset.url,
   body_side_left: imgSlotBodySideLeft,
   body_rear: imgSlotBodyRear,
   body_34_rear_right: imgSlotBody34RearRight,
@@ -366,7 +366,7 @@ const CONFIG_IMAGES: Record<string, string> = {
 };
 
 /** Skizzen, die horizontal gespiegelt dargestellt werden (rechte Fahrzeugseite). */
-const MIRRORED_SKETCH_IDS = new Set<string>(['cab_side_right']);
+const MIRRORED_SKETCH_IDS = new Set<string>();
 
 export interface TruckSketchProps {
   id?: string | null;
