@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Check, ChevronLeft } from 'lucide-react';
+import { Check } from 'lucide-react';
 import {
   CARGO_STATES,
   TRUCK_BODY_TYPES,
@@ -23,7 +23,6 @@ interface TruckWizardProps {
   onChange: (selection: Partial<TruckWorkflowSelection>) => void;
   /** Wird aufgerufen, sobald alle nötigen Schritte beantwortet sind. */
   onComplete: (selection: TruckWorkflowSelection) => void;
-  onBack?: () => void;
 }
 
 interface OptionCardProps {
@@ -67,7 +66,7 @@ const OptionCard: React.FC<OptionCardProps> = ({ active, sketch, label, descript
  * Lkw-Schritte 1–3: Konfiguration → Aufbau-/Anhängerart → Ladebereich.
  * Nicht zutreffende Schritte werden automatisch übersprungen.
  */
-const TruckWizard: React.FC<TruckWizardProps> = ({ selection, onChange, onComplete, onBack }) => {
+const TruckWizard: React.FC<TruckWizardProps> = ({ selection, onChange, onComplete }) => {
   const cfg = getTruckConfiguration(selection.truckConfiguration);
   const showBodyStep = needsBodyTypeStep(selection.truckConfiguration);
   const showCargoStep = needsCargoStep(selection);
@@ -99,22 +98,7 @@ const TruckWizard: React.FC<TruckWizardProps> = ({ selection, onChange, onComple
 
   return (
     <div className="space-y-5">
-      {onBack && (
-        <Button variant="ghost" size="sm" onClick={onBack} className="-ml-2">
-          <ChevronLeft className="mr-1 h-4 w-4" />
-          Fahrzeugart ändern
-        </Button>
-      )}
-
-      {/* Schritt 1 */}
       <section className="space-y-3">
-        <div>
-          <span className="text-xs font-semibold uppercase tracking-wide text-accent">
-            Schritt 1
-          </span>
-          <h2 className="text-lg font-semibold text-foreground">Konfiguration auswählen</h2>
-          <p className="text-sm text-muted-foreground">Welche Einheiten gehören zum Fahrzeug?</p>
-        </div>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {TRUCK_CONFIGURATIONS.map((o) => (
             <OptionCard
