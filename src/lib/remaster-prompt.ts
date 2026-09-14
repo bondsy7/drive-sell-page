@@ -107,10 +107,10 @@ export const SCENE_OPTIONS = [
 ] as const;
 
 export const LICENSE_PLATE_OPTIONS = [
-  { value: 'keep', label: 'Original beibehalten' },
-  { value: 'blur', label: 'Blur / Unkenntlich machen' },
-  { value: 'remove', label: 'Komplett entfernen' },
-  { value: 'custom', label: 'Eigenes Nummernschild' },
+  { value: 'keep', label: 'Beibehalten' },
+  { value: 'remove', label: 'Entfernen' },
+  { value: 'blur', label: 'Neutralisieren' },
+  { value: 'custom', label: 'Eigenes' },
 ] as const;
 
 // ── Admin prompt overrides cache ──
