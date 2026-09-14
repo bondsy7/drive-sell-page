@@ -7,3 +7,4 @@
 - [x] Spezifische Bereinigung standardmäßig einklappen
 - [x] Vorschaubilder für zwölf zusätzliche Settings ergänzen
 - [x] Perspektiv-Icons der Pkw-Pflichtaufnahmen ersetzen und Bildlabel kollisionsfrei positionieren
+- [x] VIN-Bereich mit neuem Motiv als kompakte Foto-, Status- und Aktionszeile gestalten

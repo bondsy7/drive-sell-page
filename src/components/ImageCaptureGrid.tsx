@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { Camera, Upload, X, Loader2, Check, AlertCircle, Search, Zap, RotateCcw, ImageIcon, ChevronDown, ChevronRight, Plus } from 'lucide-react';
+import { Camera, Upload, X, Loader2, Check, AlertCircle, Search, Zap, RotateCcw, ImageIcon, ChevronDown, ChevronRight, Plus, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
@@ -39,6 +39,7 @@ import { TruckSketch } from '@/components/capture/TruckSketch';
 import { usePipeline } from '@/contexts/PipelineContext';
 import { createPipelineWorkflowKey } from '@/lib/pipeline-workflow';
 import tireReferenceAsset from '@/assets/tire-reference.png.asset.json';
+import vinReferenceAsset from '@/assets/capture-perspectives/vin.png.asset.json';
 
 interface ImageCaptureGridProps {
   vehicleDescription: string;
@@ -1139,35 +1140,80 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                 </div>
 
                 {vinSlot && (
-                  <div className="mt-4 rounded-lg border border-border bg-muted/20 p-3">
+                  <div className="mt-4 rounded-lg border border-border bg-card p-3 shadow-sm">
                     <p className="text-xs font-semibold text-foreground">Fahrzeug-Identifikationsnummer (VIN)</p>
-                    <p className="mb-3 text-[11px] text-muted-foreground">
-                      Das VIN-Foto wird automatisch ausgelesen und für den Fahrzeug-Lookup verwendet.
-                    </p>
-                    <div className="grid gap-3 sm:grid-cols-[160px_minmax(0,1fr)]">
-                      {renderSlotCard(vinSlot)}
-                      <div className="flex flex-col justify-center gap-1.5">
-                        {detectedVin ? (
-                          <>
-                            <span className="flex items-center gap-1.5 text-xs font-semibold text-green-700">
-                              <Check className="w-3.5 h-3.5" /> VIN erkannt
-                              {vinLookup.loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                            </span>
-                            <span className="font-mono text-sm font-bold text-foreground">{detectedVin}</span>
-                            {brandModel && <span className="text-[11px] text-muted-foreground">{brandModel}</span>}
-                          </>
-                        ) : (
-                          <span className="text-[11px] text-muted-foreground">
-                            Noch keine VIN erkannt – Foto aufnehmen oder Datei hochladen.
+                    <div className="mt-2 grid items-center gap-3 sm:grid-cols-[112px_minmax(0,1fr)_132px]">
+                      <button
+                        type="button"
+                        onClick={() => fileRefs.current[vinSlot.key]?.click()}
+                        disabled={isProcessing}
+                        className="group relative aspect-[16/7] w-full overflow-hidden rounded-md border border-border bg-muted/30 transition-colors hover:border-accent sm:aspect-auto sm:h-[58px]"
+                        aria-label={captures[vinSlot.key] ? 'VIN-Foto ersetzen' : 'VIN-Foto hochladen'}
+                      >
+                        <img
+                          src={captures[vinSlot.key]?.base64 || vinReferenceAsset.url}
+                          alt={captures[vinSlot.key] ? 'Aufgenommenes VIN-Schild' : 'Beispiel eines VIN-Schilds'}
+                          className={`h-full w-full ${captures[vinSlot.key] ? 'object-cover' : 'object-contain p-1'}`}
+                        />
+                        {captures[vinSlot.key]?.status === 'processing' && (
+                          <span className="absolute inset-0 flex items-center justify-center bg-background/70">
+                            <Loader2 className="h-5 w-5 animate-spin text-accent" />
                           </span>
                         )}
-                        <button
-                          onClick={() => fileRefs.current[vinSlot.key]?.click()}
-                          className="self-start text-[11px] underline text-muted-foreground hover:text-foreground"
-                        >
-                          {detectedVin ? 'VIN-Foto ersetzen' : 'Datei hochladen'}
-                        </button>
+                      </button>
+
+                      <div className="min-w-0 space-y-0.5">
+                        {detectedVin ? (
+                          <>
+                            <span className="flex items-center gap-1.5 text-[11px] font-semibold text-green-700">
+                              <Check className="h-3.5 w-3.5" /> VIN erkannt
+                              {vinLookup.loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                            </span>
+                            <p className="truncate font-mono text-xs font-bold text-foreground sm:text-sm">{detectedVin}</p>
+                            {brandModel && <p className="truncate text-[10px] text-muted-foreground">{brandModel}</p>}
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-[11px] font-semibold text-foreground">Noch keine VIN erkannt</p>
+                            <p className="text-[10px] text-muted-foreground">Foto aufnehmen oder hochladen</p>
+                          </>
+                        )}
                       </div>
+
+                      <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-1">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => fileRefs.current[vinSlot.key]?.click()}
+                          disabled={isProcessing}
+                          className="h-7 justify-start gap-1.5 px-2 text-[10px]"
+                        >
+                          <Upload className="h-3 w-3" /> Foto hochladen
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => vinLookup.setDialogOpen(true)}
+                          disabled={!detectedVin || vinLookup.loading}
+                          className="h-7 justify-start gap-1.5 px-2 text-[10px]"
+                        >
+                          <Pencil className="h-3 w-3" /> VIN bearbeiten
+                        </Button>
+                      </div>
+
+                      <input
+                        ref={(el) => { fileRefs.current[vinSlot.key] = el; }}
+                        type="file"
+                        accept="image/*,.heic,.heif"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleCapture(vinSlot, file);
+                          e.target.value = '';
+                        }}
+                      />
                     </div>
                   </div>
                 )}
