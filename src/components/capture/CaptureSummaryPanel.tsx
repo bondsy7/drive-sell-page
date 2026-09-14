@@ -16,12 +16,15 @@ interface CaptureSummaryPanelProps {
 }
 
 /**
- * Rechte, mitlaufende Zusammenfassung der Fahrzeugaufnahme.
+ * Kompakte Zusammenfassung der Fahrzeugaufnahme.
  * Rein darstellend – die Logik bleibt in ImageCaptureGrid.
  */
 const CaptureSummaryPanel: React.FC<CaptureSummaryPanelProps> = ({ complete, completeText, hintText, rows, children }) => (
-  <div className="rounded-xl border border-border bg-card p-4 space-y-4">
-    <h3 className="text-sm font-semibold text-foreground">Zusammenfassung</h3>
+  <div className="space-y-3 rounded-xl border border-border bg-card p-3 sm:p-4">
+    <div className="flex items-center justify-between gap-3">
+      <h3 className="text-sm font-semibold text-foreground">Zusammenfassung</h3>
+      <span className="text-[10px] font-medium text-accent">Bearbeiten</span>
+    </div>
 
     <div
       className={`flex items-start gap-2 rounded-lg px-3 py-2.5 ${
@@ -39,9 +42,9 @@ const CaptureSummaryPanel: React.FC<CaptureSummaryPanelProps> = ({ complete, com
       </div>
     </div>
 
-    <dl className="divide-y divide-border">
+    <dl className="grid grid-cols-1 gap-x-5 sm:grid-cols-2">
       {rows.map((row) => (
-        <div key={row.label} className="flex items-center justify-between gap-3 py-1.5">
+        <div key={row.label} className="flex items-center justify-between gap-3 border-b border-border py-2 last:border-b-0 sm:[&:nth-last-child(-n+2)]:border-b-0">
           <dt className="text-[11px] text-muted-foreground">{row.label}</dt>
           <dd
             className={`truncate text-right text-[11px] font-semibold ${
