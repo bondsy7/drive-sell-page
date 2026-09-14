@@ -450,14 +450,22 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
         </div>
         {config.changeColor && (
           <div className="mt-3 flex items-center gap-1.5 overflow-x-auto pb-0.5">
-            {['#FFFFFF', '#1F2933', '#C8CDD2', '#174F6B', '#A62A2A', '#2F7A4C'].map(color => (
-              <button
-                key={color}
+            {[
+              { value: '#FFFFFF', className: 'bg-vehicle-white' },
+              { value: '#1F2933', className: 'bg-vehicle-black' },
+              { value: '#C8CDD2', className: 'bg-vehicle-silver' },
+              { value: '#174F6B', className: 'bg-vehicle-blue' },
+              { value: '#A62A2A', className: 'bg-vehicle-red' },
+              { value: '#2F7A4C', className: 'bg-vehicle-green' },
+            ].map(color => (
+              <Button
+                key={color.value}
                 type="button"
-                onClick={() => update({ colorHex: color })}
-                className={`h-6 w-6 shrink-0 rounded-full border transition-shadow ${config.colorHex?.toUpperCase() === color ? 'border-accent ring-2 ring-accent/30' : 'border-border'}`}
-                style={{ backgroundColor: color }}
-                aria-label={`Farbe ${color} auswählen`}
+                variant="outline"
+                size="icon"
+                onClick={() => update({ colorHex: color.value })}
+                className={`h-6 w-6 shrink-0 rounded-full p-0 ${color.className} ${config.colorHex?.toUpperCase() === color.value ? 'border-accent ring-2 ring-accent/30' : 'border-border'}`}
+                aria-label={`Farbe ${color.value} auswählen`}
               />
             ))}
             <input
