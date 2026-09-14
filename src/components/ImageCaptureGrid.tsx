@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { Camera, Upload, X, Loader2, Check, AlertCircle, Search, Zap, RotateCcw, ImageIcon, ChevronDown } from 'lucide-react';
+import { Camera, Upload, X, Loader2, Check, AlertCircle, Search, Zap, RotateCcw, ImageIcon, ChevronDown, ChevronRight, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
@@ -38,6 +38,7 @@ import TruckWizard from '@/components/capture/TruckWizard';
 import { TruckSketch } from '@/components/capture/TruckSketch';
 import { usePipeline } from '@/contexts/PipelineContext';
 import { createPipelineWorkflowKey } from '@/lib/pipeline-workflow';
+import tireReferenceAsset from '@/assets/tire-reference.png.asset.json';
 
 interface ImageCaptureGridProps {
   vehicleDescription: string;
@@ -1172,35 +1173,44 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                 )}
               </CaptureSection>
 
-              <div className="grid gap-3 sm:grid-cols-[0.8fr_1.6fr]">
-              <CaptureSection title="Felgen / Reifen" collapsible badge={wheelReference?.image ? '1 Foto' : 'Optional'}>
-                {wheelReference?.image ? (
-                  <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg border border-border bg-card">
-                    <img src={wheelReference.image} alt="Felgenreferenz" className="w-full h-full object-cover" />
+              <div className="grid gap-2 sm:grid-cols-[minmax(0,0.72fr)_minmax(0,1.55fr)]">
+              <section className="flex min-h-[104px] flex-col rounded-lg border border-border bg-card p-3 shadow-sm">
+                <h3 className="text-xs font-semibold text-foreground">Felgen / Reifen</h3>
+                <div className="mt-2 flex min-w-0 flex-1 items-center gap-2.5">
+                  <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted/40">
+                    <img
+                      src={wheelReference?.image || tireReferenceAsset.url}
+                      alt={wheelReference?.image ? 'Felgenreferenz' : 'Reifen und Felge'}
+                      className={`h-full w-full ${wheelReference?.image ? 'object-cover' : 'object-contain p-1'}`}
+                    />
                     {wheelAnalyzing && (
-                      <div className="absolute inset-0 bg-background/60 flex items-center justify-center text-xs font-medium">
-                        Analysiere…
+                      <div className="absolute inset-0 flex items-center justify-center bg-background/70">
+                        <Loader2 className="h-4 w-4 animate-spin text-accent" />
                       </div>
                     )}
-                    <div className="absolute bottom-0 inset-x-0 flex">
-                      <button type="button" onClick={() => wheelFileRef.current?.click()} className="flex-1 py-1.5 text-[11px] bg-background/85 hover:bg-background">
-                        Ersetzen
-                      </button>
-                      <button type="button" onClick={() => setWheelReference(null)} className="flex-1 py-1.5 text-[11px] bg-background/85 hover:bg-background text-destructive">
-                        Löschen
-                      </button>
-                    </div>
                   </div>
-                ) : (
                   <button
                     type="button"
                     onClick={() => wheelFileRef.current?.click()}
-                    className="flex w-full max-w-[220px] items-center gap-3 rounded-lg border border-dashed border-border bg-card px-3 py-3 text-left transition-colors hover:border-accent hover:bg-muted/30"
+                    disabled={isProcessing}
+                    className="flex min-w-0 flex-1 items-center justify-between gap-2 text-left"
                   >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-md bg-muted text-muted-foreground">＋</span>
-                    <span className="text-xs font-medium text-foreground">Felgenfoto hinzufügen</span>
+                    <span className="text-[11px] font-medium text-muted-foreground">
+                      {wheelReference?.image ? '1 Foto' : 'Foto hinzufügen'}
+                    </span>
+                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                   </button>
-                )}
+                  {wheelReference?.image && !isProcessing && (
+                    <button
+                      type="button"
+                      aria-label="Felgenfoto löschen"
+                      onClick={() => setWheelReference(null)}
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
                 <input
                   ref={wheelFileRef}
                   type="file"
@@ -1212,21 +1222,25 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                     if (file) await handleWheelReferenceFile(file);
                   }}
                 />
-              </CaptureSection>
+              </section>
 
-              <CaptureSection
-                title="Weitere Detailaufnahmen"
-                collapsible
-                badge={detailImages.length ? `${detailImages.length} Fotos` : 'Optional'}
-              >
-                <div className="grid grid-cols-5 gap-2">
+              <section className="min-h-[104px] min-w-0 rounded-lg border border-border bg-card p-3 shadow-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-xs font-semibold text-foreground">Weitere Detailaufnahmen</h3>
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                    {detailImages.length} / 10
+                  </span>
+                </div>
+                <div className="mt-2 flex min-w-0 items-center gap-2 overflow-x-auto pb-0.5">
                   {detailImages.map((img, idx) => (
-                    <div key={idx} className="relative group aspect-square rounded-lg overflow-hidden border border-border bg-card">
+                    <div key={idx} className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-md border border-border bg-card">
                       <img src={img} alt={`Detail ${idx + 1}`} className="w-full h-full object-cover" />
                       {!isProcessing && (
                         <button
+                          type="button"
+                          aria-label={`Detailaufnahme ${idx + 1} löschen`}
                           onClick={() => setDetailImages(prev => prev.filter((_, i) => i !== idx))}
-                          className="absolute top-1 right-1 w-5 h-5 rounded-full bg-background/80 hover:bg-destructive hover:text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="absolute right-0.5 top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-background/90 text-muted-foreground opacity-100 shadow-sm transition-colors hover:bg-destructive hover:text-destructive-foreground sm:opacity-0 sm:group-hover:opacity-100"
                         >
                           <X className="w-3 h-3" />
                         </button>
@@ -1235,30 +1249,26 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                   ))}
                   {detailImages.length < 10 && (
                     <button
+                      type="button"
+                      aria-label="Detailaufnahmen hinzufügen"
                       onClick={() => detailFileRef.current?.click()}
-                      className="aspect-square rounded-lg border border-dashed border-border hover:border-accent bg-card flex flex-col items-center justify-center gap-1 transition-colors"
+                      className="flex h-14 w-14 shrink-0 items-center justify-center rounded-md border border-dashed border-border bg-card transition-colors hover:border-accent hover:bg-muted/30"
                       disabled={isProcessing}
                     >
-                      <Upload className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-[10px] text-muted-foreground">Hinzufügen</span>
+                      <Plus className="h-4 w-4 text-muted-foreground" />
+                    </button>
+                  )}
+                  {detailImages.length < 10 && (
+                    <button
+                      type="button"
+                      onClick={() => detailFileRef.current?.click()}
+                      disabled={isProcessing}
+                      className="shrink-0 px-0.5 text-[10px] font-medium text-muted-foreground hover:text-foreground"
+                    >
+                      Hinzufügen
                     </button>
                   )}
                 </div>
-
-                {activeClass !== 'motorcycle' && detailImages.length === 0 && (
-                  <img
-                    src="/images/detail-upload-guide.png"
-                    alt="Detailaufnahmen Guide – Mittelkonsole, Armaturenbrett, Infotainment, Lenkrad, Reifen"
-                    className="mt-3 w-full max-w-md rounded-lg border border-border opacity-70"
-                    loading="lazy"
-                  />
-                )}
-
-                <p className="mt-3 text-[11px] text-muted-foreground">
-                  {activeClass === 'motorcycle'
-                    ? 'Empfohlen: bis zu zehn weitere Detailaufnahmen für ein optimales Ergebnis.'
-                    : 'Empfohlen: Innenraum (Mittelkonsole, Lenkrad, Infotainment), Exterieur (Felgen, Kofferraum), Schäden, Logos, Motorraum.'}
-                </p>
 
                 <input
                   ref={detailFileRef}
@@ -1286,7 +1296,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                     }
                   }}
                 />
-              </CaptureSection>
+              </section>
               </div>
 
               <CaptureSection
