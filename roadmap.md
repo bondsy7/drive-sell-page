@@ -3,3 +3,5 @@
 - [x] Nur PKW, LKW und Motorrad zeigen; bestehende Logik vollständig erhalten
 - [x] Showroom-Auswahl auf 1–4 plus „Mehr …“ verdichten
 - [x] Kennzeichenmotive einzeilig und höhenoptimiert darstellen
+- [x] Fahrzeugfarbe und Branding kompakt und responsiv anordnen
+- [x] Spezifische Bereinigung standardmäßig einklappen
