@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, X, Paintbrush, Tag, Building2, Car, CheckCircle2, AlertCircle, Eraser } from 'lucide-react';
+import { Upload, X, Paintbrush, Tag, Building2, Car, CheckCircle2, AlertCircle, Eraser, ChevronDown } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -46,6 +47,7 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
   const [dynamicLogos, setDynamicLogos] = useState<DynamicLogo[]>([]);
   const [selectedBrand, setSelectedBrand] = useState(vehicleBrand || '');
   const [selectedModel, setSelectedModel] = useState(vehicleModel || '');
+  const [cleanupOpen, setCleanupOpen] = useState(false);
   const showroomInputRef = useRef<HTMLInputElement>(null);
   const plateImageRef = useRef<HTMLInputElement>(null);
   const manufacturerLogoRef = useRef<HTMLInputElement>(null);
@@ -382,7 +384,7 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
       </div>
       </div>
 
-      {/* Spezifische Bereinigung – LKW/Flotten-Debranding */}
+      {/* Spezifische Bereinigung – kompakt und standardmäßig eingeklappt */}
       {cleanupAllowed && (() => {
         const items = config.cleanupItems || [];
         const allValues = CLEANUP_OPTIONS.map(o => o.value);
@@ -395,75 +397,100 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
         };
         const toggleAll = (on: boolean) => update({ cleanupItems: on ? allValues : [] });
         return (
-          <div className="space-y-2 rounded-lg border border-dashed border-border bg-muted/20 p-3">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                <Eraser className="w-3.5 h-3.5" /> Spezifische Bereinigung
-              </Label>
-              <label className="flex items-center gap-1.5 cursor-pointer">
-                <Checkbox
-                  checked={allChecked}
-                  onCheckedChange={(v) => toggleAll(!!v)}
-                />
-                <span className="text-[10px] text-muted-foreground">Alle</span>
+          <Collapsible open={cleanupOpen} onOpenChange={setCleanupOpen} className="rounded-lg border border-border bg-card">
+            <div className="flex min-h-12 items-center gap-3 px-3">
+              <div className="flex min-w-0 flex-1 items-center gap-2">
+                <Eraser className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-foreground">Spezifische Bereinigung</p>
+                  <p className="truncate text-[10px] text-muted-foreground">
+                    {items.length > 0 ? `${items.length} Optionen ausgewählt` : 'Optional für LKW & Flottenfahrzeuge'}
+                  </p>
+                </div>
+              </div>
+              <label className="flex shrink-0 items-center gap-1.5 cursor-pointer">
+                <Switch checked={allChecked} onCheckedChange={toggleAll} aria-label="Alle Bereinigungen auswählen" />
+                <span className="hidden text-[10px] text-muted-foreground sm:inline">Alle</span>
               </label>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label={cleanupOpen ? 'Bereinigung einklappen' : 'Bereinigung aufklappen'}>
+                  <ChevronDown className={`h-4 w-4 transition-transform ${cleanupOpen ? 'rotate-180' : ''}`} />
+                </Button>
+              </CollapsibleTrigger>
             </div>
-            <p className="text-[11px] text-muted-foreground/70">
-              Entferne beim Remastern Spediteurs-/Firmenmerkmale (ideal für LKW & Flottenfahrzeuge).
-            </p>
-            <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
-              {CLEANUP_OPTIONS.map(opt => (
-                <label key={opt.value} className="flex items-center gap-2 cursor-pointer">
+            <CollapsibleContent className="border-t border-border px-3 pb-3 pt-2.5">
+              <p className="mb-2 text-[11px] text-muted-foreground">
+                Entfernt beim Remastern Spediteurs- und Firmenmerkmale.
+              </p>
+              <div className="grid gap-x-4 gap-y-2 sm:grid-cols-2">
+                {CLEANUP_OPTIONS.map(opt => (
+                <label key={opt.value} className="flex min-h-7 items-center gap-2 cursor-pointer">
                   <Checkbox
                     checked={items.includes(opt.value)}
                     onCheckedChange={(v) => toggle(opt.value, !!v)}
                   />
                   <span className="text-[11px] text-foreground">{opt.label}</span>
                 </label>
-              ))}
-            </div>
-          </div>
+                ))}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
         );
       })()}
 
 
       {/* Color Change */}
-      <div className="grid gap-4 sm:grid-cols-2">
-      <div className="space-y-2 rounded-lg border border-border bg-card p-3">
-        <div className="flex items-center justify-between">
-          <Label className="text-xs font-medium text-muted-foreground">Fahrzeugfarbe ändern</Label>
+      <div className="grid gap-2 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.35fr)]">
+      <div className="rounded-lg border border-border bg-card p-3">
+        <div className="flex min-h-6 items-center justify-between gap-3">
+          <Label className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+            <Paintbrush className="h-3.5 w-3.5 text-muted-foreground" /> Fahrzeugfarbe ändern
+          </Label>
           <Switch checked={config.changeColor} onCheckedChange={(v) => update({ changeColor: v })} />
         </div>
         {config.changeColor && (
-          <div className="flex items-center gap-3 mt-1">
+          <div className="mt-3 flex items-center gap-1.5 overflow-x-auto pb-0.5">
+            {['#FFFFFF', '#1F2933', '#C8CDD2', '#174F6B', '#A62A2A', '#2F7A4C'].map(color => (
+              <button
+                key={color}
+                type="button"
+                onClick={() => update({ colorHex: color })}
+                className={`h-6 w-6 shrink-0 rounded-full border transition-shadow ${config.colorHex?.toUpperCase() === color ? 'border-accent ring-2 ring-accent/30' : 'border-border'}`}
+                style={{ backgroundColor: color }}
+                aria-label={`Farbe ${color} auswählen`}
+              />
+            ))}
             <input
               type="color"
               value={config.colorHex || '#000000'}
               onChange={(e) => update({ colorHex: e.target.value })}
-              className="w-10 h-10 rounded-lg border border-border cursor-pointer bg-transparent p-0.5"
+              className="h-7 w-7 shrink-0 cursor-pointer rounded-full border border-border bg-transparent p-0.5"
+              aria-label="Eigene Fahrzeugfarbe auswählen"
             />
             <Input
               value={config.colorHex || '#000000'}
               onChange={(e) => update({ colorHex: e.target.value })}
               placeholder="#000000"
-              className="text-sm font-mono w-28"
+              className="h-8 min-w-[84px] flex-1 text-[11px] font-mono"
             />
           </div>
         )}
       </div>
 
       {/* Logo Configuration */}
-      <div className="space-y-3 rounded-lg border border-border bg-card p-3">
-        <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-          <Building2 className="w-3.5 h-3.5" /> Logo-Konfiguration
+      <div className="space-y-2.5 rounded-lg border border-border bg-card p-3">
+        <Label className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+          <Building2 className="w-3.5 h-3.5 text-muted-foreground" /> Branding
         </Label>
 
         {/* Manufacturer Logo Toggle – always enabled */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Car className="w-3.5 h-3.5 text-muted-foreground" />
-              <span className="text-xs text-foreground">Hersteller-Logo einblenden</span>
+          <div className="flex min-h-8 items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="text-[11px] text-foreground">Herstellerlogo</span>
+              {config.manufacturerLogoUrl && (
+                <img src={config.manufacturerLogoUrl} alt="Herstellerlogo" className="h-6 w-8 object-contain" />
+              )}
             </div>
             <Switch
               checked={config.showManufacturerLogo}
@@ -472,7 +499,7 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
           </div>
 
           {/* Brand status – always visible regardless of toggle */}
-          {renderBrandStatus()}
+          {config.showManufacturerLogo && renderBrandStatus()}
 
           {/* Brand & Model Picker – shown when toggle is ON */}
           {config.showManufacturerLogo && (
@@ -492,12 +519,12 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
         </div>
 
         {/* Dealer Logo */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Building2 className="w-3.5 h-3.5 text-muted-foreground" />
-            <span className="text-xs text-foreground">Autohaus-Logo einblenden</span>
+        <div className="flex min-h-8 items-center justify-between gap-2 border-t border-border pt-2">
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="text-[11px] text-foreground">Autohaus-Logo</span>
+            {profileLogoUrl && <img src={profileLogoUrl} alt="Autohaus-Logo" className="h-6 max-w-16 object-contain" />}
             {!profileLogoUrl && (
-              <span className="text-[10px] text-muted-foreground/60">(im Profil hinterlegen)</span>
+              <span className="truncate text-[9px] text-muted-foreground">Im Profil hinterlegen</span>
             )}
           </div>
           <Switch
