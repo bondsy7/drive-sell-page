@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { useVinLookup } from '@/hooks/useVinLookup';
 import { useVehicleMakes } from '@/hooks/useVehicleMakes';
 import VinDataDialog from '@/components/VinDataDialog';
+import ImagePreviewLightbox from '@/components/ImagePreviewLightbox';
 import RemasterOptions from '@/components/RemasterOptions';
 import { type RemasterConfig, buildMasterPrompt, fetchPromptOverrides, isInteriorSlotKey, WHEEL_VISIBILITY_RULE, SCENE_OPTIONS, LICENSE_PLATE_OPTIONS } from '@/lib/remaster-prompt';
 import PipelineRunner from '@/components/PipelineRunner';
@@ -1479,6 +1480,14 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
           }}
         />
       )}
+
+      <ImagePreviewLightbox
+        images={lightboxImages}
+        initialIndex={lightboxIndex}
+        open={!!lightboxSlotKey && lightboxImages.length > 0}
+        onClose={() => setLightboxSlotKey(null)}
+        onRegenerate={(id) => retrySingleSlot(id)}
+      />
     </div>
   );
 };
