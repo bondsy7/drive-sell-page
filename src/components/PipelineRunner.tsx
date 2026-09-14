@@ -594,7 +594,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       )}
 
       {/* Result Preview Grid */}
-      {finished && allResultImages.length > 0 && (
+      {allResultImages.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between px-1">
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
