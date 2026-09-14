@@ -1142,17 +1142,17 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                 {vinSlot && (
                   <div className="mt-4 rounded-lg border border-border bg-card p-3 shadow-sm">
                     <p className="text-xs font-semibold text-foreground">Fahrzeug-Identifikationsnummer (VIN)</p>
-                    <div className="mt-2 grid items-center gap-3 sm:grid-cols-[112px_minmax(0,1fr)_132px]">
+                    <div className="mt-2 grid grid-cols-[96px_minmax(0,1fr)] items-center gap-2.5 sm:grid-cols-[112px_minmax(0,1fr)_132px] sm:gap-3">
                       <button
                         type="button"
                         onClick={() => fileRefs.current[vinSlot.key]?.click()}
                         disabled={isProcessing}
-                        className="group relative aspect-[16/7] w-full overflow-hidden rounded-md border border-border bg-muted/30 transition-colors hover:border-accent sm:aspect-auto sm:h-[58px]"
+                        className="group relative h-[54px] w-full overflow-hidden rounded-md border border-border bg-muted/30 transition-colors hover:border-accent sm:h-[58px]"
                         aria-label={captures[vinSlot.key] ? 'VIN-Foto ersetzen' : 'VIN-Foto hochladen'}
                       >
                         <img
                           src={captures[vinSlot.key]?.base64 || vinReferenceAsset.url}
-                          alt={captures[vinSlot.key] ? 'Aufgenommenes VIN-Schild' : 'Beispiel eines VIN-Schilds'}
+                          alt=""
                           className={`h-full w-full ${captures[vinSlot.key] ? 'object-cover' : 'object-contain p-1'}`}
                         />
                         {captures[vinSlot.key]?.status === 'processing' && (
@@ -1180,7 +1180,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                         )}
                       </div>
 
-                      <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-1">
+                      <div className="col-span-2 grid grid-cols-2 gap-1.5 sm:col-span-1 sm:grid-cols-1">
                         <Button
                           type="button"
                           variant="outline"
