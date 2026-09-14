@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Check, ChevronLeft } from 'lucide-react';
+import { Check } from 'lucide-react';
 import {
   CARGO_STATES,
   TRUCK_BODY_TYPES,
@@ -23,7 +23,6 @@ interface TruckWizardProps {
   onChange: (selection: Partial<TruckWorkflowSelection>) => void;
   /** Wird aufgerufen, sobald alle nötigen Schritte beantwortet sind. */
   onComplete: (selection: TruckWorkflowSelection) => void;
-  onBack?: () => void;
 }
 
 interface OptionCardProps {
