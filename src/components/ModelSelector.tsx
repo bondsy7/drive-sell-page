@@ -46,7 +46,7 @@ export default function ModelSelector({ actionType, value, onChange }: ModelSele
 
   return (
     <div className="flex flex-col gap-1">
-      <div className="flex items-center gap-0.5 overflow-x-auto rounded-lg bg-muted p-1">
+      <div className="flex min-w-0 flex-wrap items-center gap-0.5 rounded-lg bg-muted p-1">
         {visibleTiers.map((tier, i) => {
           const cost = getCost(actionType, tier.id);
           const isActive = value === tier.id;
@@ -56,7 +56,7 @@ export default function ModelSelector({ actionType, value, onChange }: ModelSele
               {showDivider && <div className="h-5 w-px shrink-0 bg-border mx-0.5" />}
               <button
                 onClick={() => onChange(tier.id)}
-                className={`flex shrink-0 items-center gap-1 rounded-md px-2 py-1.5 text-[11px] font-medium transition-colors ${
+                className={`flex min-w-0 items-center gap-1 rounded-md px-2 py-1.5 text-[11px] font-medium transition-colors ${
                   isActive
                     ? tier.id === 'premium' || tier.id === 'ultra' || tier.id === 'neu' || tier.id === 'flare' || tier.id === 'sunburst'
                       ? 'bg-accent text-accent-foreground shadow-sm'

@@ -449,7 +449,7 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
           <Switch checked={config.changeColor} onCheckedChange={(v) => update({ changeColor: v })} />
         </div>
         {config.changeColor && (
-          <div className="mt-3 flex items-center gap-1.5 overflow-x-auto pb-0.5">
+          <div className="mt-3 flex min-w-0 flex-wrap items-center gap-1.5">
             {[
               { value: '#FFFFFF', className: 'bg-vehicle-white' },
               { value: '#1F2933', className: 'bg-vehicle-black' },
@@ -479,7 +479,7 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
               value={config.colorHex || '#000000'}
               onChange={(e) => update({ colorHex: e.target.value })}
               placeholder="#000000"
-              className="h-8 min-w-[84px] flex-1 text-[11px] font-mono"
+              className="h-8 min-w-0 flex-[1_1_84px] text-[11px] font-mono"
             />
           </div>
         )}
