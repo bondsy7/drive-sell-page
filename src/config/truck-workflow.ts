@@ -38,7 +38,7 @@ export const TRUCK_CONFIGURATIONS: TruckConfigurationOption[] = [
   {
     key: 'tractor_unit',
     label: 'Zugmaschine',
-    description: 'Ohne Auflieger oder Anhänger',
+    description: 'Ohne Anhänger',
     sketch: 'tractor_unit',
     subjectScope: 'tractor_unit_only',
     hasCab: true,
@@ -49,8 +49,8 @@ export const TRUCK_CONFIGURATIONS: TruckConfigurationOption[] = [
   },
   {
     key: 'rigid_truck',
-    label: 'LKW mit festem Aufbau',
-    description: 'Aufbau fest mit dem Fahrzeug verbunden',
+    label: 'Fester Aufbau',
+    description: 'Aufbau am Fahrzeug',
     sketch: 'rigid_truck',
     subjectScope: 'rigid_truck_complete',
     hasCab: true,
@@ -61,8 +61,8 @@ export const TRUCK_CONFIGURATIONS: TruckConfigurationOption[] = [
   },
   {
     key: 'rigid_truck_with_trailer',
-    label: 'LKW mit festem Aufbau und Anhänger',
-    description: 'Motorwagen mit zusätzlichem Anhänger',
+    label: 'Aufbau + Anhänger',
+    description: 'Motorwagen mit Anhänger',
     sketch: 'rigid_truck_with_trailer',
     subjectScope: 'rigid_truck_and_trailer_complete',
     hasCab: true,
@@ -73,8 +73,8 @@ export const TRUCK_CONFIGURATIONS: TruckConfigurationOption[] = [
   },
   {
     key: 'semi_truck',
-    label: 'Sattelzug mit Auflieger',
-    description: 'Zugmaschine mit Auflieger',
+    label: 'Sattelzug',
+    description: 'Mit Auflieger',
     sketch: 'semi_truck',
     subjectScope: 'tractor_and_semi_trailer_complete',
     hasCab: true,
@@ -85,8 +85,8 @@ export const TRUCK_CONFIGURATIONS: TruckConfigurationOption[] = [
   },
   {
     key: 'semi_truck_with_trailer',
-    label: 'Sattelzug mit Auflieger und Anhänger',
-    description: 'Sattelzug mit zusätzlichem Anhänger',
+    label: 'Sattelzug + Anhänger',
+    description: 'Auflieger und Anhänger',
     sketch: 'semi_truck_with_trailer',
     subjectScope: 'complete_multi_part_combination',
     hasCab: true,
@@ -97,8 +97,8 @@ export const TRUCK_CONFIGURATIONS: TruckConfigurationOption[] = [
   },
   {
     key: 'trailer_only',
-    label: 'Nur Anhänger / Auflieger',
-    description: 'Separat fotografieren',
+    label: 'Anhänger / Auflieger',
+    description: 'Ohne Zugfahrzeug',
     sketch: 'trailer_only',
     subjectScope: 'trailer_or_semi_trailer_only',
     hasCab: false,
