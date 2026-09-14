@@ -21,7 +21,9 @@ const GROUP_TITLES: Record<string, string> = {
 };
 
 const Tile: React.FC<{ opt: SceneTileOption; active: boolean; onSelect: () => void }> = ({ opt, active, onSelect }) => {
-  const [short, sub] = opt.label.split('–').map((s) => s.trim());
+  const [fullShort, sub] = opt.label.split('–').map((s) => s.trim());
+  const showroomNumber = opt.value.match(/^showroom-([1-4])$/)?.[1];
+  const short = showroomNumber ? `Nr. ${showroomNumber}` : fullShort;
   return (
     <button
       type="button"
@@ -31,7 +33,7 @@ const Tile: React.FC<{ opt: SceneTileOption; active: boolean; onSelect: () => vo
         active ? 'border-accent ring-2 ring-accent/30' : 'border-border hover:border-accent/60'
       }`}
     >
-      <div className="relative aspect-[4/3] w-full bg-muted">
+      <div className="relative h-11 w-full bg-muted sm:h-12">
         {opt.preview ? (
           <img src={opt.preview} alt={opt.label} loading="lazy" className="h-full w-full object-cover" />
         ) : (
@@ -47,7 +49,7 @@ const Tile: React.FC<{ opt: SceneTileOption; active: boolean; onSelect: () => vo
       </div>
       <div className="px-2 py-1.5">
         <span className="block truncate text-[11px] font-semibold text-foreground">{short}</span>
-        {sub && <span className="block truncate text-[10px] text-muted-foreground">{sub}</span>}
+        {sub && !showroomNumber && <span className="block truncate text-[10px] text-muted-foreground">{sub}</span>}
       </div>
     </button>
   );
@@ -77,7 +79,7 @@ const SceneGallery: React.FC<SceneGalleryProps> = ({ options, value, onChange })
             hasAdditionalSelection ? 'border-accent ring-2 ring-accent/30' : 'border-border hover:border-accent/60'
           }`}
         >
-          <span className="flex aspect-[4/3] w-full items-center justify-center bg-muted text-muted-foreground">
+          <span className="flex h-11 w-full items-center justify-center bg-muted text-muted-foreground sm:h-12">
             <MoreHorizontal className="h-5 w-5" />
           </span>
           <span className="block truncate px-1 py-1.5 text-[11px] font-semibold text-foreground">Mehr …</span>

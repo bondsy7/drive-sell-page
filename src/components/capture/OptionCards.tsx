@@ -41,7 +41,7 @@ const OptionCards: React.FC<OptionCardsProps> = ({ options, value, onChange, col
             active ? 'border-accent bg-accent/5' : 'border-border bg-card hover:border-accent/60 hover:bg-muted/40'
           }`}
         >
-          <span className="block truncate text-[9px] font-semibold leading-tight text-foreground sm:text-[10px]">{opt.label}</span>
+          <span className="block truncate text-[9px] font-semibold leading-tight text-foreground">{opt.label}</span>
           {PLATE_PREVIEWS[opt.value] && (
             <span className="mt-1 flex h-8 w-full items-center justify-center overflow-hidden rounded bg-muted/30">
               <img src={PLATE_PREVIEWS[opt.value]} alt="" className="h-full w-full object-contain" />

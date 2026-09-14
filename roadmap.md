@@ -1,5 +1,5 @@
 - [x] Fahrzeugaufnahme exakt als kompaktes 736-px Single-Column-/Hybrid-Layout ohne Sidebar umsetzen
 - [x] Smartphone-Ansicht nach Referenz mit echten mobilen Sektionen und sticky Bottom Bar umsetzen
 - [x] Nur PKW, LKW und Motorrad zeigen; bestehende Logik vollständig erhalten
-- [ ] Showroom-Auswahl auf 1–4 plus „Mehr …“ verdichten
-- [ ] Kennzeichenmotive einzeilig und höhenoptimiert darstellen
+- [x] Showroom-Auswahl auf 1–4 plus „Mehr …“ verdichten
+- [x] Kennzeichenmotive einzeilig und höhenoptimiert darstellen
