@@ -20,14 +20,26 @@ const GROUP_TITLES: Record<string, string> = {
   outdoor: 'Außen',
 };
 
-const Tile: React.FC<{ opt: SceneTileOption; active: boolean; onSelect: () => void }> = ({ opt, active, onSelect }) => {
+const Tile: React.FC<{ opt: SceneTileOption; active: boolean; onSelect: () => void; onHover?: (opt: SceneTileOption | null, rect?: DOMRect) => void }> = ({
+  opt,
+  active,
+  onSelect,
+  onHover,
+}) => {
   const [fullShort, sub] = opt.label.split('–').map((s) => s.trim());
   const showroomNumber = opt.value.match(/^showroom-([1-4])$/)?.[1];
   const short = showroomNumber ? `Nr. ${showroomNumber}` : fullShort;
+  const ref = useRef<HTMLButtonElement>(null);
+
   return (
     <button
+      ref={ref}
       type="button"
       onClick={onSelect}
+      onMouseEnter={() => onHover?.(opt, ref.current?.getBoundingClientRect())}
+      onMouseLeave={() => onHover?.(null)}
+      onFocus={() => onHover?.(opt, ref.current?.getBoundingClientRect())}
+      onBlur={() => onHover?.(null)}
       title={opt.label}
       className={`group relative overflow-hidden rounded-lg border text-left transition-all ${
         active ? 'border-accent ring-2 ring-accent/30' : 'border-border hover:border-accent/60'
