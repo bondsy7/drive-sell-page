@@ -1,5 +1,5 @@
-import React from 'react';
-import { Check, ImageOff, Upload } from 'lucide-react';
+import React, { useState } from 'react';
+import { Check, ImageOff, MoreHorizontal, Upload } from 'lucide-react';
 
 export interface SceneTileOption {
   value: string;
@@ -58,25 +58,39 @@ const Tile: React.FC<{ opt: SceneTileOption; active: boolean; onSelect: () => vo
  * Rein darstellend – Werte und Logik bleiben unverändert.
  */
 const SceneGallery: React.FC<SceneGalleryProps> = ({ options, value, onChange }) => {
-  const groups: Array<'none' | 'indoor' | 'outdoor'> = ['none', 'indoor', 'outdoor'];
+  const primaryOptions = options.filter((option) => /^showroom-[1-4]$/.test(option.value));
+  const additionalOptions = options.filter((option) => !primaryOptions.some((primary) => primary.value === option.value));
+  const hasAdditionalSelection = additionalOptions.some((option) => option.value === value);
+  const [showMore, setShowMore] = useState(hasAdditionalSelection);
+
   return (
-    <div className="flex gap-2 overflow-x-auto pb-1 sm:grid sm:grid-cols-5 sm:overflow-visible">
-      {groups.map((g) => {
-        const items = options.filter((o) => o.group === g);
-        if (!items.length) return null;
-        return (
-          <div key={g} className="contents">
-            <p className="sr-only">{GROUP_TITLES[g]}</p>
-            <div className="contents">
-              {items.map((opt) => (
-                <div key={opt.value} className="w-[88px] shrink-0 sm:w-auto">
-                  <Tile opt={opt} active={value === opt.value} onSelect={() => onChange(opt.value)} />
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      })}
+    <div className="space-y-2">
+      <div className="grid grid-cols-5 gap-1.5">
+        {primaryOptions.map((opt) => (
+          <Tile key={opt.value} opt={opt} active={value === opt.value} onSelect={() => onChange(opt.value)} />
+        ))}
+        <button
+          type="button"
+          onClick={() => setShowMore((current) => !current)}
+          aria-expanded={showMore}
+          className={`group relative overflow-hidden rounded-lg border text-center transition-all ${
+            hasAdditionalSelection ? 'border-accent ring-2 ring-accent/30' : 'border-border hover:border-accent/60'
+          }`}
+        >
+          <span className="flex aspect-[4/3] w-full items-center justify-center bg-muted text-muted-foreground">
+            <MoreHorizontal className="h-5 w-5" />
+          </span>
+          <span className="block truncate px-1 py-1.5 text-[11px] font-semibold text-foreground">Mehr …</span>
+        </button>
+      </div>
+
+      {showMore && (
+        <div className="grid grid-cols-4 gap-1.5 border-t border-border pt-2 sm:grid-cols-5">
+          {additionalOptions.map((opt) => (
+            <Tile key={opt.value} opt={opt} active={value === opt.value} onSelect={() => onChange(opt.value)} />
+          ))}
+        </div>
+      )}
     </div>
   );
 };
