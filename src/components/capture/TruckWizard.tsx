@@ -99,22 +99,7 @@ const TruckWizard: React.FC<TruckWizardProps> = ({ selection, onChange, onComple
 
   return (
     <div className="space-y-5">
-      {onBack && (
-        <Button variant="ghost" size="sm" onClick={onBack} className="-ml-2">
-          <ChevronLeft className="mr-1 h-4 w-4" />
-          Fahrzeugart ändern
-        </Button>
-      )}
-
-      {/* Schritt 1 */}
       <section className="space-y-3">
-        <div>
-          <span className="text-xs font-semibold uppercase tracking-wide text-accent">
-            Schritt 1
-          </span>
-          <h2 className="text-lg font-semibold text-foreground">Konfiguration auswählen</h2>
-          <p className="text-sm text-muted-foreground">Welche Einheiten gehören zum Fahrzeug?</p>
-        </div>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {TRUCK_CONFIGURATIONS.map((o) => (
             <OptionCard
