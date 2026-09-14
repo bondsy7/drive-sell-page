@@ -1,10 +1,10 @@
 import React from 'react';
-import imgTractorUnit from '@/assets/truck/tractor_unit.png';
-import imgRigidTruck from '@/assets/truck/rigid_truck.png';
-import imgRigidTruckTrailer from '@/assets/truck/rigid_truck_with_trailer.png';
-import imgSemiTruck from '@/assets/truck/semi_truck.png';
-import imgSemiTruckTrailer from '@/assets/truck/semi_truck_with_trailer.png';
-import imgTrailerOnly from '@/assets/truck/trailer_only.png';
+import imgTractorUnitAsset from '@/assets/truck/tractor_unit.png.asset.json';
+import imgRigidTruckAsset from '@/assets/truck/rigid_truck.png.asset.json';
+import imgRigidTruckTrailerAsset from '@/assets/truck/rigid_truck_with_trailer.png.asset.json';
+import imgSemiTruckAsset from '@/assets/truck/semi_truck.png.asset.json';
+import imgSemiTruckTrailerAsset from '@/assets/truck/semi_truck_with_trailer.png.asset.json';
+import imgTrailerOnlyAsset from '@/assets/truck/trailer_only.png.asset.json';
 import imgBodyBoxClosed from '@/assets/truck/body_box_closed.png';
 import imgBodyPlatformOpen from '@/assets/truck/body_platform_open.png';
 import imgBodyTipper from '@/assets/truck/body_tipper.png';
@@ -330,12 +330,12 @@ const VIEWBOXES: Record<string, string> = {
 
 /** Exakte Fahrzeugskizzen (aus der Gestaltungsvorlage) je Konfiguration. */
 const CONFIG_IMAGES: Record<string, string> = {
-  tractor_unit: imgTractorUnit,
-  rigid_truck: imgRigidTruck,
-  rigid_truck_with_trailer: imgRigidTruckTrailer,
-  semi_truck: imgSemiTruck,
-  semi_truck_with_trailer: imgSemiTruckTrailer,
-  trailer_only: imgTrailerOnly,
+  tractor_unit: imgTractorUnitAsset.url,
+  rigid_truck: imgRigidTruckAsset.url,
+  rigid_truck_with_trailer: imgRigidTruckTrailerAsset.url,
+  semi_truck: imgSemiTruckAsset.url,
+  semi_truck_with_trailer: imgSemiTruckTrailerAsset.url,
+  trailer_only: imgTrailerOnlyAsset.url,
   body_box_closed: imgBodyBoxClosed,
   body_platform_open: imgBodyPlatformOpen,
   body_tipper: imgBodyTipper,
