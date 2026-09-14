@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { useVinLookup } from '@/hooks/useVinLookup';
 import { useVehicleMakes } from '@/hooks/useVehicleMakes';
 import VinDataDialog from '@/components/VinDataDialog';
+import ImagePreviewLightbox from '@/components/ImagePreviewLightbox';
 import RemasterOptions from '@/components/RemasterOptions';
 import { type RemasterConfig, buildMasterPrompt, fetchPromptOverrides, isInteriorSlotKey, WHEEL_VISIBILITY_RULE, SCENE_OPTIONS, LICENSE_PLATE_OPTIONS } from '@/lib/remaster-prompt';
 import PipelineRunner from '@/components/PipelineRunner';
@@ -438,6 +439,19 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   const capturedCount = Object.keys(captures).length;
   const vehicleSlots = slots.filter(s => !s.isVin);
   const capturedVehicleImages = vehicleSlots.filter(s => captures[s.key]);
+  const [lightboxSlotKey, setLightboxSlotKey] = useState<string | null>(null);
+  const lightboxImages = useMemo(
+    () => vehicleSlots
+      .filter(s => captures[s.key])
+      .map(s => ({
+        id: s.key,
+        src: captures[s.key].remasteredBase64 || captures[s.key].base64,
+        label: s.label,
+        originalSrc: captures[s.key].remasteredBase64 ? captures[s.key].base64 : undefined,
+      })),
+    [vehicleSlots, captures],
+  );
+  const lightboxIndex = Math.max(0, lightboxImages.findIndex(i => i.id === lightboxSlotKey));
   const coverage = useMemo(
     () => checkSourceCoverage(slots, captures),
     [slots, captures],
@@ -983,7 +997,14 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       >
         {cap ? (
           <>
-            <img src={cap.remasteredBase64 || cap.base64} alt={slot.label} className="block w-full h-full object-cover" />
+            <button
+              type="button"
+              onClick={() => setLightboxSlotKey(slot.key)}
+              className="block w-full h-full cursor-zoom-in"
+              title="Vorschau öffnen"
+            >
+              <img src={cap.remasteredBase64 || cap.base64} alt={slot.label} className="block w-full h-full object-cover" />
+            </button>
             {cap.status === 'processing' && (
               <div className="absolute inset-0 bg-background/70 flex items-center justify-center">
                 <Loader2 className="w-6 h-6 text-accent animate-spin" />
@@ -1459,6 +1480,14 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
           }}
         />
       )}
+
+      <ImagePreviewLightbox
+        images={lightboxImages}
+        initialIndex={lightboxIndex}
+        open={!!lightboxSlotKey && lightboxImages.length > 0}
+        onClose={() => setLightboxSlotKey(null)}
+        onRegenerate={(id) => retrySingleSlot(id)}
+      />
     </div>
   );
 };
