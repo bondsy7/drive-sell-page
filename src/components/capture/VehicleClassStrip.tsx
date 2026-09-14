@@ -36,11 +36,11 @@ const VehicleClassStrip: React.FC<VehicleClassStripProps> = ({ value, onChange, 
             type="button"
             disabled={disabled}
             onClick={() => onChange(p.key as ActiveVehicleClassKey)}
-            className={`relative flex min-h-[108px] w-full min-w-0 flex-col items-center justify-end gap-1 rounded-lg border bg-card p-2 text-center transition-colors sm:min-h-[132px] ${
+            className={`relative flex min-h-[90px] w-full min-w-0 flex-col items-center justify-end gap-1 rounded-lg border bg-card p-2 text-center transition-colors sm:min-h-[132px] ${
               active ? 'border-accent bg-accent/5' : 'border-border hover:border-accent/60 hover:bg-muted/40'
             } ${disabled ? 'pointer-events-none opacity-60' : ''}`}
           >
-            <span className="flex h-14 w-full min-w-0 items-center justify-center overflow-hidden rounded-md bg-muted/30 sm:h-20">
+            <span className="flex h-11 w-full min-w-0 items-center justify-center overflow-hidden rounded-md bg-muted/30 sm:h-20">
               <img
                 src={visual.image}
                 alt={visual.title}
