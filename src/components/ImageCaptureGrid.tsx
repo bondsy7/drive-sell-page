@@ -1145,7 +1145,6 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                     subjectScope: sel.subjectScope,
                   });
                 }}
-                onBack={onBack}
               />
             </CaptureSection>
           )}
