@@ -1,5 +1,4 @@
 import React from 'react';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Check, ChevronLeft } from 'lucide-react';
 import {
@@ -36,31 +35,31 @@ interface OptionCardProps {
 }
 
 const OptionCard: React.FC<OptionCardProps> = ({ active, sketch, label, description, onSelect }) => (
-  <Card
-    role="button"
-    tabIndex={0}
+  <Button
+    type="button"
+    variant="outline"
     onClick={onSelect}
-    onKeyDown={(e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        onSelect();
-      }
-    }}
-    className={`relative cursor-pointer rounded-2xl border-2 border-dashed px-5 py-6 text-center shadow-none transition-all ${
+    className={`relative aspect-[4/3] h-auto min-w-0 whitespace-normal rounded-lg p-2 text-center shadow-none transition-colors ${
       active
-        ? 'border-accent border-solid bg-accent/5'
-        : 'border-border bg-muted/20 hover:border-accent/60 hover:bg-muted/40'
+        ? 'border-accent bg-accent/5 ring-1 ring-accent'
+        : 'border-border bg-card hover:border-accent/60 hover:bg-muted/30'
     }`}
   >
     {active && (
-      <span className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full bg-accent">
-        <Check className="h-3.5 w-3.5 text-accent-foreground" />
+      <span className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-accent">
+        <Check className="h-3 w-3 text-accent-foreground" />
       </span>
     )}
-    {sketch && <TruckSketch id={sketch} className="mx-auto mb-5 h-20 w-full max-w-[260px] text-foreground/70" />}
-    <div className="text-base font-semibold text-foreground">{label}</div>
-    <div className="mt-1 text-sm text-muted-foreground">{description}</div>
-  </Card>
+    <span className="flex min-w-0 flex-col items-center justify-center gap-1">
+      {sketch && <TruckSketch id={sketch} className="h-10 w-full max-w-24 shrink-0 text-foreground/70 sm:h-12" />}
+      <span className="line-clamp-2 w-full break-words text-[10px] font-semibold leading-tight text-foreground sm:text-[11px]">
+        {label}
+      </span>
+      <span className="line-clamp-2 w-full break-words text-[9px] font-normal leading-tight text-muted-foreground sm:text-[10px]">
+        {description}
+      </span>
+    </span>
+  </Button>
 );
 
 
@@ -99,7 +98,7 @@ const TruckWizard: React.FC<TruckWizardProps> = ({ selection, onChange, onComple
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       {onBack && (
         <Button variant="ghost" size="sm" onClick={onBack} className="-ml-2">
           <ChevronLeft className="mr-1 h-4 w-4" />
@@ -114,12 +113,9 @@ const TruckWizard: React.FC<TruckWizardProps> = ({ selection, onChange, onComple
             Schritt 1
           </span>
           <h2 className="text-lg font-semibold text-foreground">Konfiguration auswählen</h2>
-          <p className="text-sm text-muted-foreground">
-            Welche Einheiten gehören zum Fahrzeug? Diese Angabe legt verbindlich fest, was später
-            im Bild zu sehen sein muss.
-          </p>
+          <p className="text-sm text-muted-foreground">Welche Einheiten gehören zum Fahrzeug?</p>
         </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {TRUCK_CONFIGURATIONS.map((o) => (
             <OptionCard
               key={o.key}
@@ -152,7 +148,7 @@ const TruckWizard: React.FC<TruckWizardProps> = ({ selection, onChange, onComple
               dürfen.
             </p>
           </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {TRUCK_BODY_TYPES.map((o) => (
               <OptionCard
                 key={o.key}
@@ -185,7 +181,7 @@ const TruckWizard: React.FC<TruckWizardProps> = ({ selection, onChange, onComple
               Ein nicht einsehbarer Ladebereich wird niemals erfunden oder generiert.
             </p>
           </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {CARGO_STATES.map((o) => (
               <OptionCard
                 key={o.key}

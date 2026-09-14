@@ -12,3 +12,4 @@
 - [x] Lkw-Konfigurationsbilder durch die sechs neuen Motive ersetzen
 - [x] Showroom 1 vorauswählen, VIN und Innenraum optional machen und seitliches Scrollen entfernen
 - [x] Lkw-Aufnahmeicons ersetzen und Kacheltexte gegen Überlauf optimieren
+- [x] Lkw-Konfigurationskacheln an das kompakte 4:3-Aufnahmeraster angleichen
