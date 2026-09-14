@@ -1060,21 +1060,20 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         ) : (
           <button
             onClick={() => fileRefs.current[slot.key]?.click()}
-            className="w-full h-full flex flex-col items-center justify-center gap-1.5 p-3 hover:bg-muted/40 transition-colors"
+            className="w-full h-full min-w-0 flex flex-col items-center justify-center gap-1 p-2 hover:bg-muted/40 transition-colors"
           >
             {slot.icon ? (
-              <img src={slot.icon} alt={slot.label} className="w-20 h-14 object-contain" />
+              <img src={slot.icon} alt={slot.label} className="h-10 w-20 shrink-0 object-contain lg:h-8" />
             ) : (
-              <TruckSketch id={slot.sketch} className="w-20 h-14 text-muted-foreground" />
+              <TruckSketch id={slot.sketch} className="h-10 w-20 shrink-0 text-muted-foreground lg:h-8" />
             )}
-            <span className="text-[11px] font-medium text-foreground text-center leading-tight">
+            <span className="line-clamp-2 w-full break-words text-center text-[10px] font-semibold leading-tight text-foreground sm:text-[11px]">
               {slot.label}
               {slot.required === false && <span className="text-muted-foreground"> (optional)</span>}
             </span>
             {slot.hint && (
-              <span className="text-[10px] text-muted-foreground/70 text-center leading-tight px-1">{slot.hint}</span>
+              <span className="line-clamp-2 w-full break-words px-0.5 text-center text-[9px] leading-tight text-muted-foreground/70">{slot.hint}</span>
             )}
-            <Camera className="w-3.5 h-3.5 text-muted-foreground" />
           </button>
         )}
         <input
