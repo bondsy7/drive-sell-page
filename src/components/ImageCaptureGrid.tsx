@@ -438,6 +438,19 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   const capturedCount = Object.keys(captures).length;
   const vehicleSlots = slots.filter(s => !s.isVin);
   const capturedVehicleImages = vehicleSlots.filter(s => captures[s.key]);
+  const [lightboxSlotKey, setLightboxSlotKey] = useState<string | null>(null);
+  const lightboxImages = useMemo(
+    () => vehicleSlots
+      .filter(s => captures[s.key])
+      .map(s => ({
+        id: s.key,
+        src: captures[s.key].remasteredBase64 || captures[s.key].base64,
+        label: s.label,
+        originalSrc: captures[s.key].remasteredBase64 ? captures[s.key].base64 : undefined,
+      })),
+    [vehicleSlots, captures],
+  );
+  const lightboxIndex = Math.max(0, lightboxImages.findIndex(i => i.id === lightboxSlotKey));
   const coverage = useMemo(
     () => checkSourceCoverage(slots, captures),
     [slots, captures],
