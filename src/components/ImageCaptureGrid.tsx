@@ -969,11 +969,11 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     return (
       <div
         key={slot.key}
-        className="relative group rounded-lg border border-border bg-card transition-colors hover:border-accent/50 overflow-hidden"
+        className="relative group aspect-[4/3] rounded-lg border border-border bg-card transition-colors hover:border-accent/50 overflow-hidden"
       >
         {cap ? (
-          <div className="aspect-[4/3] relative">
-            <img src={cap.remasteredBase64 || cap.base64} alt={slot.label} className="w-full h-full object-cover" />
+          <>
+            <img src={cap.remasteredBase64 || cap.base64} alt={slot.label} className="block w-full h-full object-cover" />
             {cap.status === 'processing' && (
               <div className="absolute inset-0 bg-background/70 flex items-center justify-center">
                 <Loader2 className="w-6 h-6 text-accent animate-spin" />
@@ -1025,11 +1025,11 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                 </button>
               </div>
             )}
-          </div>
+          </>
         ) : (
           <button
             onClick={() => fileRefs.current[slot.key]?.click()}
-            className="w-full aspect-[4/3] flex flex-col items-center justify-center gap-1.5 p-3 hover:bg-muted/40 transition-colors"
+            className="w-full h-full flex flex-col items-center justify-center gap-1.5 p-3 hover:bg-muted/40 transition-colors"
           >
             {slot.icon ? (
               <img src={slot.icon} alt={slot.label} className="w-20 h-14 object-contain" />
