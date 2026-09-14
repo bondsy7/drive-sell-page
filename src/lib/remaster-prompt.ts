@@ -10,6 +10,18 @@ import { buildTruckPromptBlocks, TRUCK_PERSPECTIVE_PROMPTS } from '@/prompts/rem
 import { buildMotorcyclePromptBlocks, MOTORCYCLE_PERSPECTIVE_PROMPTS } from '@/prompts/remaster/motorcycle';
 import { formatWheelAnalysisBlock } from '@/lib/wheel-reference';
 import { buildVehicleGenerationLock, sanitizeVehicleDescriptionForPrompt } from '@/lib/vehicle-generation-lock';
+import parkingGaragePreview from '@/assets/scene-previews/parking-garage.webp.asset.json';
+import forestPreview from '@/assets/scene-previews/forest.webp.asset.json';
+import mountainPreview from '@/assets/scene-previews/mountain.webp.asset.json';
+import cityPreview from '@/assets/scene-previews/city.webp.asset.json';
+import streetPreview from '@/assets/scene-previews/street.webp.asset.json';
+import beachPreview from '@/assets/scene-previews/beach.webp.asset.json';
+import desertPreview from '@/assets/scene-previews/desert.webp.asset.json';
+import nightCityPreview from '@/assets/scene-previews/night-city.webp.asset.json';
+import racetrackPreview from '@/assets/scene-previews/racetrack.webp.asset.json';
+import mansionPreview from '@/assets/scene-previews/mansion.webp.asset.json';
+import dealerLotPreview from '@/assets/scene-previews/dealer-lot.webp.asset.json';
+import dealerLotDekraPreview from '@/assets/scene-previews/dealer-lot-dekra.webp.asset.json';
 
 export interface RemasterConfig {
   scene: string;
@@ -92,18 +104,18 @@ export const SCENE_OPTIONS = [
   { value: 'showroom-3', label: 'Showroom 3 – Glasfront', preview: '/images/showrooms/showroom-3.webp', group: 'indoor' as const },
   { value: 'showroom-4', label: 'Showroom 4 – Pastell High-Tech', preview: '/images/showrooms/showroom-4.jpg', reference: '/images/showrooms/showroom-4.jpg', group: 'indoor' as const },
   { value: 'custom-showroom', label: 'Eigener Showroom', group: 'indoor' as const },
-  { value: 'parking-garage', label: 'Tiefgarage / Parkhaus', group: 'indoor' as const },
-  { value: 'forest', label: 'Wald', group: 'outdoor' as const },
-  { value: 'mountain', label: 'Berglandschaft', group: 'outdoor' as const },
-  { value: 'city', label: 'Stadtkulisse', group: 'outdoor' as const },
-  { value: 'street', label: 'Straße', group: 'outdoor' as const },
-  { value: 'beach', label: 'Strand', group: 'outdoor' as const },
-  { value: 'desert', label: 'Wüste', group: 'outdoor' as const },
-  { value: 'night-city', label: 'Stadt bei Nacht', group: 'outdoor' as const },
-  { value: 'racetrack', label: 'Rennstrecke', group: 'outdoor' as const },
-  { value: 'mansion', label: 'Villa / Anwesen', group: 'outdoor' as const },
-  { value: 'dealer-lot', label: 'Fahrzeugplatz', group: 'outdoor' as const },
-  { value: 'dealer-lot-dekra', label: 'Fahrzeugplatz – DEKRA', group: 'outdoor' as const },
+  { value: 'parking-garage', label: 'Tiefgarage / Parkhaus', preview: parkingGaragePreview.url, group: 'indoor' as const },
+  { value: 'forest', label: 'Wald', preview: forestPreview.url, group: 'outdoor' as const },
+  { value: 'mountain', label: 'Berglandschaft', preview: mountainPreview.url, group: 'outdoor' as const },
+  { value: 'city', label: 'Stadt', preview: cityPreview.url, group: 'outdoor' as const },
+  { value: 'street', label: 'Straße', preview: streetPreview.url, group: 'outdoor' as const },
+  { value: 'beach', label: 'Strand', preview: beachPreview.url, group: 'outdoor' as const },
+  { value: 'desert', label: 'Wüste', preview: desertPreview.url, group: 'outdoor' as const },
+  { value: 'night-city', label: 'Stadt bei Nacht', preview: nightCityPreview.url, group: 'outdoor' as const },
+  { value: 'racetrack', label: 'Rennstrecke', preview: racetrackPreview.url, group: 'outdoor' as const },
+  { value: 'mansion', label: 'Villa / Anwesen', preview: mansionPreview.url, group: 'outdoor' as const },
+  { value: 'dealer-lot', label: 'Fahrzeugplatz', preview: dealerLotPreview.url, group: 'outdoor' as const },
+  { value: 'dealer-lot-dekra', label: 'Fahrzeugplatz – DEKRA', preview: dealerLotDekraPreview.url, group: 'outdoor' as const },
 ] as const;
 
 export const LICENSE_PLATE_OPTIONS = [

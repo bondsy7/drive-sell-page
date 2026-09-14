@@ -5,3 +5,4 @@
 - [x] Kennzeichenmotive einzeilig und höhenoptimiert darstellen
 - [x] Fahrzeugfarbe und Branding kompakt und responsiv anordnen
 - [x] Spezifische Bereinigung standardmäßig einklappen
+- [x] Vorschaubilder für zwölf zusätzliche Settings ergänzen
