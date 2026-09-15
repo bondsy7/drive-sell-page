@@ -117,6 +117,11 @@ interface PipelineContextValue {
   /** Startet einen Lauf. Gibt false zurück, wenn die Doppelstart-Sperre greift. */
   startPipeline: (config: PipelineConfig) => boolean;
   retryJob: (jobKey: string) => Promise<void>;
+  /** Wiederholt ausschließlich die fehlgeschlagenen Einzelbilder des Laufs. */
+  retryFailedImages: () => Promise<void>;
+  /** Anzahl der Bilder, die in diesem Lauf nicht erzeugt werden konnten. */
+  failedImageCount: number;
+  isRetryingFailed: boolean;
   retrySingleImage: (resultId: string, allResultImages: ResultImage[]) => Promise<void>;
   removeResult: (jobKey: string, resultIndex: number) => void;
   clearPipeline: () => void;
@@ -1105,6 +1110,135 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, [config, generateOneImage]);
 
+  /**
+   * Gezielte Wiederholung: erzeugt NUR die Bilder, die im Lauf fehlgeschlagen
+   * sind – bereits erfolgreiche Bilder werden weder neu erzeugt noch bezahlt.
+   */
+  const retryFailedImages = useCallback(async () => {
+    if (!config || isRetryingFailed) return;
+    const cfg = config;
+    const tasks: { job: PipelineJob; promptIndex: number; prompt: string }[] = [];
+    for (const job of cfg.selectedJobs) {
+      const prompts = [job.prompt, ...(job.extraPrompts || [])];
+      const state = jobs[job.key];
+      const failed = state?.failedPromptIndexes && state.failedPromptIndexes.length > 0
+        ? state.failedPromptIndexes
+        : prompts.map((_, i) => i).filter(i => !(state?.results || [])[i]);
+      for (const idx of failed) {
+        if ((state?.results || []).length >= prompts.length) continue;
+        tasks.push({ job, promptIndex: idx, prompt: prompts[idx] || prompts[0] });
+      }
+    }
+    if (tasks.length === 0) {
+      toast.info('Es gibt keine fehlgeschlagenen Bilder mehr.');
+      return;
+    }
+
+    setIsRetryingFailed(true);
+    const folderName = galleryFolder || getGalleryFolderName(cfg.vin);
+    const storagePath = cfg.projectId ? cfg.projectId : `gallery/${folderName}`;
+    let recovered = 0;
+    let stillFailing = 0;
+
+    for (const task of tasks) {
+      setJobs(prev => ({ ...prev, [task.job.key]: { ...prev[task.job.key], status: 'running' } }));
+      let outcome: GenerationOutcome;
+      try {
+        outcome = await generateOneImage(task.prompt, task.job, cfg);
+      } catch (e) {
+        const message = e instanceof Error ? e.message : 'Netzwerkfehler';
+        outcome = { base64: null, error: message, errorCode: classifyGenerationError(message) };
+      }
+
+      void logGenerationAttempt({
+        userId: cfg.userId,
+        workflowKey: cfg.workflowKey,
+        projectId: cfg.projectId || null,
+        vehicleId: cfg.vehicleId || null,
+        jobKey: task.job.key,
+        jobLabel: task.job.labelDe,
+        promptIndex: task.promptIndex,
+        stage: 'retry',
+        attempt: outcome.attempts || 1,
+        status: outcome.base64 ? 'success' : 'error',
+        modelTier: cfg.modelTier,
+        engine: outcome.engine,
+        model: outcome.model,
+        durationMs: outcome.durationMs ?? null,
+        errorCode: outcome.base64 ? null : (outcome.errorCode || 'unknown'),
+        errorMessage: outcome.base64 ? null : (outcome.error || null),
+        providerStatus: outcome.providerStatus ?? null,
+        providerResponse: outcome.base64 ? null : outcome.providerResponse,
+        retryable: outcome.retryable ?? null,
+      });
+
+      if (!outcome.base64) {
+        stillFailing++;
+        setJobs(prev => ({
+          ...prev,
+          [task.job.key]: {
+            ...prev[task.job.key],
+            status: (prev[task.job.key]?.results || []).length > 0 ? 'done' : 'error',
+            error: outcome.error,
+            errorCode: outcome.errorCode || 'unknown',
+          },
+        }));
+        continue;
+      }
+
+      recovered++;
+      setJobs(prev => {
+        const state = prev[task.job.key];
+        return {
+          ...prev,
+          [task.job.key]: {
+            ...state,
+            status: 'done',
+            results: [...(state?.results || []), outcome.base64!],
+            error: undefined,
+            errorCode: undefined,
+            failedPromptIndexes: (state?.failedPromptIndexes || []).filter(i => i !== task.promptIndex),
+          },
+        };
+      });
+
+      try {
+        const url = await uploadImageToStorage(
+          outcome.base64,
+          cfg.userId,
+          `${storagePath}/${task.job.key}_retry_${task.promptIndex}_${Date.now()}.png`,
+        );
+        if (!url) throw new Error('Upload fehlgeschlagen');
+        await insertGalleryRowsChecked([{
+          project_id: cfg.projectId || null,
+          vehicle_id: cfg.vehicleId || null,
+          user_id: cfg.userId,
+          image_url: url,
+          image_base64: '',
+          perspective: `Pipeline: ${task.job.labelDe} (Wiederholung)`,
+          sort_order: 900 + task.promptIndex,
+          gallery_folder: folderName,
+        }]);
+        queryClient.invalidateQueries({ queryKey: ['gallery'] });
+        if (cfg.vehicleId) queryClient.invalidateQueries({ queryKey: ['vehicle-images', cfg.vehicleId] });
+      } catch (e) {
+        const message = e instanceof Error ? e.message : String(e);
+        console.error('[pipeline] Speichern der Wiederholung fehlgeschlagen:', e);
+        void logGenerationAttempt({
+          userId: cfg.userId, workflowKey: cfg.workflowKey, projectId: cfg.projectId || null,
+          vehicleId: cfg.vehicleId || null, jobKey: task.job.key, jobLabel: task.job.labelDe,
+          promptIndex: task.promptIndex, stage: 'save', status: 'error', modelTier: cfg.modelTier,
+          errorCode: 'save_failed', errorMessage: message, retryable: true,
+        });
+      }
+    }
+
+    setIsRetryingFailed(false);
+    if (recovered > 0 && stillFailing === 0) toast.success(`${recovered} nachgeholte Bilder sind in der Galerie.`);
+    else if (recovered > 0) toast.warning(`${recovered} Bilder nachgeholt, ${stillFailing} weiterhin fehlgeschlagen.`);
+    else toast.error('Die Wiederholung ist erneut fehlgeschlagen. Details stehen im Fehlerprotokoll.');
+  }, [config, jobs, galleryFolder, generateOneImage, isRetryingFailed, queryClient]);
+
   const removeResult = useCallback((jobKey: string, resultIndex: number) => {
     setJobs(prev => {
       const job = prev[jobKey];
@@ -1131,7 +1265,15 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       status, isRunning: status === 'running', isFinished: status === 'finished',
       jobs, startTime, endTime, elapsedMs, config, savedProjectId, galleryFolder,
       totalImages: config?.totalImages ?? 0,
-      startPipeline, retryJob, retrySingleImage, removeResult, clearPipeline,
+      startPipeline, retryJob, retryFailedImages, removeResult, clearPipeline,
+      retrySingleImage, isRetryingFailed,
+      failedImageCount: config
+        ? config.selectedJobs.reduce((sum, job) => {
+            const total = 1 + (job.extraPrompts?.length || 0);
+            const done = jobs[job.key]?.results?.length || 0;
+            return sum + Math.max(0, total - done);
+          }, 0)
+        : 0,
     }}>
       {children}
     </PipelineContext.Provider>
