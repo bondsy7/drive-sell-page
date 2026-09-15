@@ -10,6 +10,7 @@ import { Mail, Lock, User, Chrome, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { STRIPE_PRICES } from '@/lib/stripe-plans';
 import auto3Logo from '@/assets/auto3-logo.png';
+import SiteFooter from '@/components/legal/SiteFooter';
 
 const Auth = () => {
   const { user, loading } = useAuth();
@@ -118,7 +119,8 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
+    <div className="min-h-screen bg-background flex flex-col">
+      <div className="flex-1 flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-4">
           <Link to="/">
@@ -197,6 +199,8 @@ const Auth = () => {
           )}
         </p>
       </div>
+      </div>
+      <SiteFooter compact />
     </div>
   );
 };

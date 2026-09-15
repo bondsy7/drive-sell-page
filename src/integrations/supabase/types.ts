@@ -947,6 +947,39 @@ export type Database = {
           },
         ]
       }
+      legal_acceptances: {
+        Row: {
+          accepted_at: string
+          company_name: string | null
+          confirms_business_and_age: boolean
+          created_at: string
+          document: string
+          id: string
+          user_id: string
+          version: string
+        }
+        Insert: {
+          accepted_at?: string
+          company_name?: string | null
+          confirms_business_and_age?: boolean
+          created_at?: string
+          document: string
+          id?: string
+          user_id: string
+          version: string
+        }
+        Update: {
+          accepted_at?: string
+          company_name?: string | null
+          confirms_business_and_age?: boolean
+          created_at?: string
+          document?: string
+          id?: string
+          user_id?: string
+          version?: string
+        }
+        Relationships: []
+      }
       pipeline_timing_logs: {
         Row: {
           completed_images: number

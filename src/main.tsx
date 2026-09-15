@@ -2,6 +2,10 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import { initImageCache, prewarmShowrooms } from "./lib/image-base64-cache";
+import { initConsentDefaults } from "./lib/consent";
+
+// Consent-Default (alles verweigert) setzen, bevor irgendein Tag geladen werden darf
+initConsentDefaults();
 
 // Load cached base64 images from localStorage into memory
 initImageCache();

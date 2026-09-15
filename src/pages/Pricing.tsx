@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Check, Zap, Loader2, Plus, Crown, Calendar, AlertTriangle, RefreshCw, CreditCard, ArrowUpDown, XCircle } from 'lucide-react';
 import CancelSubscriptionDialog from '@/components/CancelSubscriptionDialog';
 import AppHeader from '@/components/AppHeader';
+import SiteFooter from '@/components/legal/SiteFooter';
 import CreditSlider from '@/components/CreditSlider';
 import { STRIPE_PRICES, CREDIT_PACKS } from '@/lib/stripe-plans';
 
@@ -401,6 +402,7 @@ const Pricing = () => {
         </div>
 
       </main>
+      <SiteFooter />
     </div>
   );
 };

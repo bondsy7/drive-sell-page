@@ -42,7 +42,14 @@ const AutohausFahrzeugbilder = lazy(() => import("./pages/funnel/AutohausFahrzeu
 const AutohausMarketing = lazy(() => import("./pages/funnel/AutohausMarketing"));
 const FahrzeugTesten = lazy(() => import("./pages/funnel/FahrzeugTesten"));
 const FahrzeugTestenDanke = lazy(() => import("./pages/funnel/FahrzeugTestenDanke"));
-const DatenschutzPlatzhalter = lazy(() => import("./pages/funnel/DatenschutzPlatzhalter"));
+
+// Rechtsseiten (öffentlich)
+const Impressum = lazy(() => import("./pages/legal/Impressum"));
+const Datenschutz = lazy(() => import("./pages/legal/Datenschutz"));
+const Agb = lazy(() => import("./pages/legal/Agb"));
+const Avv = lazy(() => import("./pages/legal/Avv"));
+const Toms = lazy(() => import("./pages/legal/Toms"));
+const Unterauftragsverarbeiter = lazy(() => import("./pages/legal/Unterauftragsverarbeiter"));
 
 // Admin pages
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
@@ -75,6 +82,7 @@ const AdminReferenceView = lazy(() => import("./features/reference-v2/phase1/Adm
 const ReferenceWorkspace = lazy(() => import("./features/reference-v2/phase4/ReferenceWorkspace"));
 import AdminRoute from "./components/AdminRoute";
 import KiTransparenz from "./pages/KiTransparenz";
+import ConsentManager from "./components/consent/ConsentManager";
 
 const queryClient = new QueryClient();
 
@@ -128,6 +136,7 @@ const App = () => (
           <BackgroundPipelineIndicator />
           <BackgroundTasksIndicator />
           <BackgroundMusicIndicator />
+          <ConsentManager />
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/" element={<Landing />} />
@@ -138,7 +147,12 @@ const App = () => (
               <Route path="/autohaus-marketing" element={<AutohausMarketing />} />
               <Route path="/fahrzeug-testen" element={<FahrzeugTesten />} />
               <Route path="/fahrzeug-testen/danke" element={<FahrzeugTestenDanke />} />
-              <Route path="/datenschutz" element={<DatenschutzPlatzhalter />} />
+              <Route path="/impressum" element={<Impressum />} />
+              <Route path="/datenschutz" element={<Datenschutz />} />
+              <Route path="/agb" element={<Agb />} />
+              <Route path="/avv" element={<Avv />} />
+              <Route path="/toms" element={<Toms />} />
+              <Route path="/unterauftragsverarbeiter" element={<Unterauftragsverarbeiter />} />
               <Route path="/generator" element={<ProtectedRoute><ErrorBoundary moduleName="Generator"><Index /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/generator/canvas-banner-studio" element={<ProtectedRoute><ErrorBoundary moduleName="Banner Studio"><CanvasBannerStudio /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/generator/music-studio" element={<ProtectedRoute><ErrorBoundary moduleName="Music Studio"><MusicStudio /></ErrorBoundary></ProtectedRoute>} />
