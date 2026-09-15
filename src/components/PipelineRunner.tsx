@@ -425,6 +425,17 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
     .find((code): code is NonNullable<typeof code> => !!code) || 'unknown';
   const failureInfo = describeGenerationError(dominantErrorCode);
   const failureDetail = selectedJobs.map(j => jobs[j.key]?.error).find(Boolean);
+  /* Fehlerstatus pro Generierungsstufe: eigener Text + eigener Wiederholen-Knopf. */
+  const failedStages = selectedJobs
+    .map(job => {
+      const st = jobs[job.key];
+      const missing = st?.failedPromptIndexes?.length ?? (st?.status === 'error' ? job.prompts.length : 0);
+      if (!missing) return null;
+      const code = st?.errorCode || 'unknown';
+      return { job, missing, code, info: describeGenerationError(code), message: st?.error, running: st?.status === 'running' };
+    })
+    .filter((s): s is NonNullable<typeof s> => !!s);
+
 
   return (
     <div className="w-full max-w-2xl mx-auto space-y-4 sm:space-y-6 px-1">
