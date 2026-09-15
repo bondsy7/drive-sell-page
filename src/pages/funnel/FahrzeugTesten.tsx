@@ -58,7 +58,6 @@ export default function FahrzeugTesten() {
 
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [goals, setGoals] = useState<string[]>([]);
-  const [consent, setConsent] = useState(false);
   const [honeypot, setHoneypot] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -110,7 +109,6 @@ export default function FahrzeugTesten() {
     if (!form.location_count) next.location_count = 'Bitte Anzahl Standorte auswählen.';
     if (!form.role) next.role = 'Bitte Rolle auswählen.';
     if (!file) next.image = 'Bitte ein Fahrzeugbild hochladen.';
-    if (!consent) next.consent = 'Bitte der Datenschutzerklärung zustimmen.';
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -129,7 +127,6 @@ export default function FahrzeugTesten() {
       const body = new FormData();
       (Object.keys(form) as (keyof FormState)[]).forEach((key) => body.append(key, form[key].trim()));
       body.append('goals', JSON.stringify(goals));
-      body.append('privacy_consent', 'true');
       body.append('company_website_confirm', honeypot);
       body.append('image', file as File);
       for (const key of ATTRIBUTION_PARAMS) {
@@ -308,15 +305,13 @@ export default function FahrzeugTesten() {
           </fieldset>
 
           <div className="rounded-xl border border-border bg-card p-5">
-            <label htmlFor="consent" className="flex cursor-pointer items-start gap-3 text-sm text-muted-foreground">
-              <Checkbox id="consent" checked={consent} onCheckedChange={(c) => { setConsent(c === true); setErrors((p) => ({ ...p, consent: '' })); }} />
-              <span>
-                Ich habe die{' '}
-                <a href="/datenschutz" target="_blank" rel="noreferrer" className="font-medium text-accent underline underline-offset-2">Datenschutzerklärung</a>{' '}
-                zur Kenntnis genommen und willige in die Verarbeitung meiner Angaben zur Bearbeitung dieser Testanfrage ein. *
-              </span>
-            </label>
-            {fieldError('consent')}
+            <p className="text-sm text-muted-foreground">
+              Informationen zur Verarbeitung Ihrer Angaben zur Bearbeitung der Testanfrage finden Sie in unserer{' '}
+              <a href="/datenschutz" target="_blank" rel="noreferrer" className="font-medium text-accent underline underline-offset-2">
+                Datenschutzerklärung
+              </a>
+              .
+            </p>
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

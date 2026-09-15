@@ -95,12 +95,43 @@ export function createConsent(analytics: boolean, marketing: boolean): ConsentSt
 }
 
 export function saveConsent(state: ConsentState) {
+  const previous = readConsent();
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch {
     /* Speicher nicht verfügbar – Consent gilt dann nur für diese Sitzung */
   }
+
+  // Widerruf: bereits geladene Google-Scripts lassen sich nicht sauber entfernen.
+  // Deshalb Zustand speichern und die Seite neu laden – danach lädt kein Script mehr.
+  const revoked =
+    (previous?.analytics === true && state.analytics === false) ||
+    (previous?.marketing === true && state.marketing === false);
+
+  if (revoked && tagsLoaded) {
+    window.gtag?.('consent', 'update', {
+      analytics_storage: state.analytics ? 'granted' : 'denied',
+      ad_storage: state.marketing ? 'granted' : 'denied',
+      ad_user_data: state.marketing ? 'granted' : 'denied',
+      ad_personalization: state.marketing ? 'granted' : 'denied',
+    });
+    window.location.reload();
+    return;
+  }
+
   applyConsent(state);
+
+  if (!state.marketing) clearMarketingStorage();
+}
+
+/** Entfernt lokal gespeicherte Kampagnendaten, wenn die Marketing-Einwilligung fehlt. */
+function clearMarketingStorage() {
+  try {
+    window.localStorage.removeItem('auto3_b2b_attribution_v1');
+    window.sessionStorage.removeItem('auto3_b2b_attribution_v1');
+  } catch {
+    /* ignore */
+  }
 }
 
 /** Überträgt den Zustand an Google Consent Mode und lädt Tags erst bei Einwilligung. */

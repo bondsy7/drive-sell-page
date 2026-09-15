@@ -24,12 +24,15 @@ const PRODUCT_TO_PLAN: Record<string, string> = {
   'prod_U6xgJe3nEY2OOS': 'starter',
   'prod_U6yCFgnOHMFzqW': 'pro',
   'prod_U6yDWJrKKBCYF2': 'enterprise',
+  // Aktuelles Grundpaket (Basis)
+  'prod_Ukduqj0YRUxMYt': 'basis',
 };
 
 const PLAN_CREDITS: Record<string, number> = {
   starter: 50,
   pro: 200,
   enterprise: 600,
+  basis: 1000,
 };
 
 // Helper: find user by Stripe customer email

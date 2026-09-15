@@ -97,7 +97,10 @@ Deno.serve(async (req) => {
     const locations = clean(form.get("location_count"), 20);
     const role = clean(form.get("role"), 40);
     const note = clean(form.get("note"), 500);
-    const consent = clean(form.get("privacy_consent"), 10) === "true";
+    // Datenschutzhinweis ist Information, keine Einwilligung (Art. 6 Abs. 1 lit. b/f DSGVO).
+    // Der Wert wird nur noch als neutraler Audit-Hinweis übernommen, falls das Formular ihn sendet.
+    const privacyNoticeShown = clean(form.get("privacy_consent"), 10) === "true";
+    void privacyNoticeShown;
 
     let goals: string[] = [];
     try {
@@ -119,7 +122,6 @@ Deno.serve(async (req) => {
     if (!VOLUME_SCORE[volume]) errors.push("Fahrzeugvolumen ist ungültig.");
     if (!LOCATION_SCORE[locations]) errors.push("Anzahl Standorte ist ungültig.");
     if (!ROLE_SCORE[role]) errors.push("Rolle ist ungültig.");
-    if (!consent) errors.push("Zustimmung zur Datenschutzerklärung fehlt.");
 
     const website = normalizeWebsite(websiteRaw);
     if (!website.valid) errors.push("Website ist ungültig.");
