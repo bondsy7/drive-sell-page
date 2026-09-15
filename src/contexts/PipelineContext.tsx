@@ -1148,7 +1148,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     let recovered = 0;
     let stillFailing = 0;
 
-    for (const task of tasks) {
+    for (const [taskIndex, task] of tasks.entries()) {
+      setRetryProgress({ current: taskIndex + 1, total: tasks.length });
       setJobs(prev => ({ ...prev, [task.job.key]: { ...prev[task.job.key], status: 'running' } }));
       let outcome: GenerationOutcome;
       try {
