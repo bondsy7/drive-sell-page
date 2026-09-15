@@ -133,6 +133,12 @@ const App = () => (
               <Route path="/" element={<Landing />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/qr-login" element={<QrLogin />} />
+              {/* Öffentlicher B2B-Paid-Funnel */}
+              <Route path="/autohaus-fahrzeugbilder" element={<AutohausFahrzeugbilder />} />
+              <Route path="/autohaus-marketing" element={<AutohausMarketing />} />
+              <Route path="/fahrzeug-testen" element={<FahrzeugTesten />} />
+              <Route path="/fahrzeug-testen/danke" element={<FahrzeugTestenDanke />} />
+              <Route path="/datenschutz" element={<DatenschutzPlatzhalter />} />
               <Route path="/generator" element={<ProtectedRoute><ErrorBoundary moduleName="Generator"><Index /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/generator/canvas-banner-studio" element={<ProtectedRoute><ErrorBoundary moduleName="Banner Studio"><CanvasBannerStudio /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/generator/music-studio" element={<ProtectedRoute><ErrorBoundary moduleName="Music Studio"><MusicStudio /></ErrorBoundary></ProtectedRoute>} />
@@ -179,6 +185,7 @@ const App = () => (
                 <Route path="cost-calculator" element={<AdminCostCalculator />} />
                 <Route path="reference-v2" element={<ReferenceWorkspace />} />
                 <Route path="reference-v2/technik" element={<AdminReferenceView />} />
+                <Route path="b2b-leads" element={<AdminB2bLeads />} />
               </Route>
               <Route path="/architecture" element={<ProtectedRoute><AdminRoute><ArchitectureDoc /></AdminRoute></ProtectedRoute>} />
               <Route path="/sales-assistant/chat" element={<ProtectedRoute><ErrorBoundary moduleName="Sales Assistant"><SalesAssistant /></ErrorBoundary></ProtectedRoute>} />
