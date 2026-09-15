@@ -63,13 +63,15 @@ Läufe** plus ein doppelt bezahlter Lauf.
   Fahrzeugakte. (F6, teilweise)
 - **Datenkorrektur:** Die 13 fälschlich beim HONDA gelandeten Motorrad-Bilder liegen jetzt beim
   Motorrad; der HONDA zeigt wieder nur seine eigenen Bilder.
+- **Doppelstart gesperrt:** Der Start-Knopf ist ab dem ersten Klick blockiert („Wird gestartet…"),
+  ein zweiter Klick im selben Moment wird verworfen. Ein identischer Lauf für dasselbe Fahrzeug
+  bleibt gesperrt, solange er läuft, und nach erfolgreichem Abschluss weitere 3 Minuten. Ein
+  eindeutig fehlgeschlagener Lauf ist sofort wieder startbar. Die Sperre wirkt auch über mehrere
+  Tabs und über ein Neuladen der Seite hinweg. (F2)
 
 ## 4. Noch offen – empfohlene nächste Schritte
 
-1. **Doppelstart sperren (hoch).** Start-Knopf nach dem ersten Klick sperren und identische Läufe
-   für dasselbe Fahrzeug innerhalb weniger Minuten blockieren. Verhindert doppelte Kosten und
-   selbstverschuldete Verlangsamung. (F2)
-2. **Fehlerursachen dauerhaft protokollieren (hoch).** Pro fehlgeschlagenem Bild Fehlerart und
+1. **Fehlerursachen dauerhaft protokollieren (hoch).** Pro fehlgeschlagenem Bild Fehlerart und
    Anbieterantwort speichern und im Admin-Bereich sichtbar machen. Ohne das ist jede künftige
    Panne wieder nicht analysierbar. (F7, F1)
 3. **Sichtbarer Fehlerzustand für den Nutzer (hoch).** Wenn ein Lauf scheitert, klare Meldung
