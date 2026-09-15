@@ -50,6 +50,13 @@ function marketingAllowed(): boolean {
   return readConsent()?.marketing === true;
 }
 
+/** Nach erteilter Marketing-Einwilligung die im Speicher gehaltenen Daten sichern. */
+export function persistPendingAttribution() {
+  if (!marketingAllowed()) return;
+  if (Object.keys(memoryAttribution).length === 0) return;
+  persist(memoryAttribution);
+}
+
 function persist(data: FunnelAttribution) {
   memoryAttribution = data;
   if (!marketingAllowed()) return; // ohne Marketing-Einwilligung keine Speicherung
