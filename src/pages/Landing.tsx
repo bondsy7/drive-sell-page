@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import SiteFooter from '@/components/legal/SiteFooter';
 import { Button } from '@/components/ui/button';
 import {
   Camera, Sparkles, Image, Globe, ArrowRight, ChevronRight,
@@ -71,7 +72,7 @@ const TOOLS = [
 const AUDIENCES = [
   { icon: Car, title: 'Autohäuser', desc: 'Maximiere deine Marge durch minimale Standzeiten und professionelle CI-Pipelines.' },
   { icon: BarChart3, title: 'Freie Händler', desc: 'Nutze High-End-Technologie ohne teure Agenturkosten.' },
-  { icon: Users, title: 'Privatpersonen', desc: 'Verkaufe dein Auto wie ein Profi mit Bildern, die Käufer begeistern.' },
+  { icon: Users, title: 'Gebrauchtwagenzentren', desc: 'Standortübergreifend einheitliche Fahrzeugbilder und Marketingprozesse.' },
 ];
 
 const Landing = () => {
@@ -320,19 +321,7 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* ── Footer ── */}
-      <footer className="border-t border-border bg-card py-10">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <img src={auto3Logo} alt="AUTO3" className="h-7 opacity-60" />
-            <div className="flex items-center gap-6 text-sm text-muted-foreground">
-              <Link to="/pricing" className="hover:text-foreground transition-colors">Preise</Link>
-              <Link to="/auth" className="hover:text-foreground transition-colors">Anmelden</Link>
-            </div>
-            <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} AUTO3 · Alle Rechte vorbehalten</p>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 };
