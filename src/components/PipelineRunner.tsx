@@ -114,6 +114,12 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   const [regeneratingIds, setRegeneratingIds] = useState<Set<string>>(new Set());
   const [showCreditDialog, setShowCreditDialog] = useState(false);
   const inputImagesSavedRef = useRef(false);
+  /* Doppelstart-Sperre: blockt den Knopf ab dem ersten Klick. */
+  const [starting, setStarting] = useState(false);
+  const startingRef = useRef(false);
+  useEffect(() => {
+    if (running || finished) { startingRef.current = false; setStarting(false); }
+  }, [running, finished]);
 
   /* ─── Prompt overrides ─── */
   const [promptOverrides, setPromptOverrides] = useState<Record<string, string>>({});
