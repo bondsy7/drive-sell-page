@@ -30,3 +30,4 @@
 - [ ] Preise als Netto zzgl. USt., Abrechnung/Verlängerung/Kündigung ausweisen
 - [ ] Stripe: Basis-Produkt-Mapping ergänzen, create-checkout Preis-Allowlist
 - [ ] docs/LEGAL_GO_LIVE_CHECKLIST.md pflegen
+- [ ] Diese Runde ohne Stripe-/Auth-/DB-Änderungen: nur Rechtsseiten, Footer, Consent, Checkliste
