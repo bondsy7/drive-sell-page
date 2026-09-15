@@ -83,6 +83,7 @@ const ReferenceWorkspace = lazy(() => import("./features/reference-v2/phase4/Ref
 import AdminRoute from "./components/AdminRoute";
 import KiTransparenz from "./pages/KiTransparenz";
 import ConsentManager from "./components/consent/ConsentManager";
+import LegalOnboardingGate from "./components/legal/LegalOnboardingGate";
 
 const queryClient = new QueryClient();
 

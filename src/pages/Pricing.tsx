@@ -28,7 +28,8 @@ interface Plan {
 
 const Pricing = () => {
   const [plans, setPlans] = useState<Plan[]>([]);
-  const [yearly, setYearly] = useState(false);
+  // Aktuell existiert nur ein echtes Monatsprodukt – kein Jahrespreis vortäuschen.
+  const yearly = false;
   const [searchParams] = useSearchParams();
   const [loadingSlug, setLoadingSlug] = useState<string | null>(null);
   const { balance, costs } = useCredits();
@@ -156,7 +157,23 @@ const Pricing = () => {
             Einfach. Transparent. Komplett.
           </h1>
           <p className="text-muted-foreground max-w-xl mx-auto mb-4 text-sm sm:text-base">
-            <strong className="text-foreground">Ein Grundpaket</strong> – 1000 Credits pro Monat für 490 €. Alle Portal-Gebühren und API-Kosten sind enthalten. Brauchst du mehr? Lade nach Bedarf <strong className="text-foreground">200 Credits für 100 €</strong> nach.
+            <strong className="text-foreground">Ein Grundpaket</strong> – 1.000 Credits pro Monat für{' '}
+            <strong className="text-foreground">490 € netto/Monat zzgl. gesetzlicher USt.</strong> Alle Portal-Gebühren und
+            API-Kosten sind enthalten. Brauchst du mehr? Lade nach Bedarf{' '}
+            <strong className="text-foreground">200 Credits – 100 € netto zzgl. gesetzlicher USt.</strong> nach.
+          </p>
+          <p className="mx-auto max-w-xl text-xs leading-relaxed text-muted-foreground">
+            Alle Preise verstehen sich netto zzgl. der gesetzlichen Umsatzsteuer. Das Angebot richtet sich ausschließlich
+            an Unternehmer im Sinne des § 14 BGB. Abrechnungszeitraum ist ein Monat; das Abonnement verlängert sich
+            automatisch um jeweils einen weiteren Monat und kann zum Ende des laufenden Abrechnungszeitraums gekündigt
+            werden. Die monatlichen Credits werden zu Beginn des Abrechnungszeitraums gutgeschrieben; Top-up-Credits
+            werden separat abgerechnet.
+          </p>
+          <p className="mx-auto max-w-xl text-xs text-muted-foreground">
+            Es gelten unsere{' '}
+            <Link to="/agb" className="underline underline-offset-2">AGB</Link>,{' '}
+            die <Link to="/datenschutz" className="underline underline-offset-2">Datenschutzerklärung</Link>{' '}
+            und der <Link to="/avv" className="underline underline-offset-2">Auftragsverarbeitungsvertrag</Link>.
           </p>
         </div>
 
@@ -195,7 +212,7 @@ const Pricing = () => {
                   <span className="text-3xl font-bold text-foreground">
                     {price === 0 ? '0' : (price / 100).toFixed(0)}€
                   </span>
-                  {price > 0 && <span className="text-sm text-muted-foreground">/Mo</span>}
+                  {price > 0 && <span className="text-sm text-muted-foreground">/Monat netto zzgl. USt.</span>}
                 </div>
                 <div className="flex items-center gap-1.5 mb-4 text-sm text-accent font-semibold">
                   <Zap className="w-4 h-4" />
