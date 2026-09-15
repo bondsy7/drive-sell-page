@@ -813,6 +813,78 @@ export type Database = {
         }
         Relationships: []
       }
+      generation_attempt_logs: {
+        Row: {
+          attempt: number
+          created_at: string
+          duration_ms: number | null
+          engine: string | null
+          error_code: string | null
+          error_message: string | null
+          id: string
+          job_key: string | null
+          job_label: string | null
+          model: string | null
+          model_tier: string | null
+          project_id: string | null
+          prompt_index: number
+          provider_response: Json | null
+          provider_status: number | null
+          retryable: boolean | null
+          stage: string
+          status: string
+          user_id: string
+          vehicle_id: string | null
+          workflow_key: string | null
+        }
+        Insert: {
+          attempt?: number
+          created_at?: string
+          duration_ms?: number | null
+          engine?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          job_key?: string | null
+          job_label?: string | null
+          model?: string | null
+          model_tier?: string | null
+          project_id?: string | null
+          prompt_index?: number
+          provider_response?: Json | null
+          provider_status?: number | null
+          retryable?: boolean | null
+          stage?: string
+          status?: string
+          user_id: string
+          vehicle_id?: string | null
+          workflow_key?: string | null
+        }
+        Update: {
+          attempt?: number
+          created_at?: string
+          duration_ms?: number | null
+          engine?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          job_key?: string | null
+          job_label?: string | null
+          model?: string | null
+          model_tier?: string | null
+          project_id?: string | null
+          prompt_index?: number
+          provider_response?: Json | null
+          provider_status?: number | null
+          retryable?: boolean | null
+          stage?: string
+          status?: string
+          user_id?: string
+          vehicle_id?: string | null
+          workflow_key?: string | null
+        }
+        Relationships: []
+      }
       image_generation_jobs: {
         Row: {
           completed_tasks: number
