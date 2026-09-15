@@ -448,6 +448,21 @@ const DEKRA_SHOWROOM_SCENE_JSON = `{
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  /**
+   * Diagnose-Kontext dieses Requests. Wird bei Erfolg UND Fehler an den Client
+   * zurückgegeben, damit dort jede Stufe mit Anbieter-Status, Fehlerklasse,
+   * Versuchszahl und Dauer dauerhaft protokolliert werden kann.
+   */
+  const startedAt = Date.now();
+  const diag: {
+    engine?: string;
+    model?: string;
+    tier?: string;
+    attempts: number;
+    providerStatus?: number | null;
+    providerMessage?: string | null;
+  } = { attempts: 0 };
+
   try {
     // 1. Auth & credits
     let bodyText: string;
