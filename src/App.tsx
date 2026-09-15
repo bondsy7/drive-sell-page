@@ -37,6 +37,13 @@ const QrLogin = lazy(() => import("./pages/QrLogin"));
 const CanvasBannerStudio = lazy(() => import("./pages/CanvasBannerStudio"));
 const MusicStudio = lazy(() => import("./pages/MusicStudio"));
 
+// B2B Paid-Funnel (öffentlich)
+const AutohausFahrzeugbilder = lazy(() => import("./pages/funnel/AutohausFahrzeugbilder"));
+const AutohausMarketing = lazy(() => import("./pages/funnel/AutohausMarketing"));
+const FahrzeugTesten = lazy(() => import("./pages/funnel/FahrzeugTesten"));
+const FahrzeugTestenDanke = lazy(() => import("./pages/funnel/FahrzeugTestenDanke"));
+const DatenschutzPlatzhalter = lazy(() => import("./pages/funnel/DatenschutzPlatzhalter"));
+
 // Admin pages
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
@@ -62,6 +69,7 @@ const AdminPipelineStats = lazy(() => import("./pages/admin/AdminPipelineStats")
 const AdminQrLogin = lazy(() => import("./pages/admin/AdminQrLogin"));
 const AdminBannerTemplates = lazy(() => import("./pages/admin/AdminBannerTemplates"));
 const AdminCreditEconomics = lazy(() => import("./pages/admin/AdminCreditEconomics"));
+const AdminB2bLeads = lazy(() => import("./pages/admin/AdminB2bLeads"));
 const AdminCostCalculator = lazy(() => import("./pages/admin/AdminCostCalculator"));
 const AdminReferenceView = lazy(() => import("./features/reference-v2/phase1/AdminReferenceView"));
 const ReferenceWorkspace = lazy(() => import("./features/reference-v2/phase4/ReferenceWorkspace"));
