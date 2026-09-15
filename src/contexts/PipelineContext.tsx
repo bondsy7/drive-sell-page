@@ -224,6 +224,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [config, setConfig] = useState<PipelineConfig | null>(null);
   const [savedProjectId, setSavedProjectId] = useState<string | null>(null);
   const [galleryFolder, setGalleryFolder] = useState<string | null>(null);
+  const [isRetryingFailed, setIsRetryingFailed] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Live timer
