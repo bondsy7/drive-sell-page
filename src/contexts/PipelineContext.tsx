@@ -14,6 +14,27 @@ import { ensureLogoCachedAsPng } from '@/lib/image-base64-cache';
 import { ensureVehicleAuto, uploadOriginalsToVehicle } from '@/lib/vehicle-utils';
 import { useQueryClient } from '@tanstack/react-query';
 
+/**
+ * Gallery rows MUST be written with an explicit error check: a silently failed
+ * insert used to leave generated files in storage while the gallery stayed
+ * empty (and the UI still reported success). Retries once with a refreshed
+ * session, then throws so the caller surfaces a real failure.
+ */
+async function insertGalleryRowsChecked(rows: Record<string, unknown>[]): Promise<void> {
+  const attempt = async () => await supabase.from('project_images').insert(rows as any);
+  let { error } = await attempt();
+  if (error) {
+    console.error('[pipeline] gallery insert failed, retrying after session refresh:', error);
+    try { await supabase.auth.refreshSession(); } catch { /* ignore */ }
+    ({ error } = await attempt());
+  }
+  if (error) {
+    console.error('[pipeline] gallery insert failed permanently:', error);
+    throw new Error(error.message || 'Galerie-Eintrag fehlgeschlagen');
+  }
+}
+
+
 /* ─── Types ─── */
 export type JobStatus = 'pending' | 'running' | 'done' | 'error';
 
@@ -764,7 +785,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               perspective: `Pipeline: ${allResults[i]?.label || `Bild ${i + 1}`}`, sort_order: startOrder + i,
               gallery_folder: folderName,
             }));
-            await supabase.from('project_images').insert(imageRows as any);
+            await insertGalleryRowsChecked(imageRows);
             queryClient.invalidateQueries({ queryKey: ['gallery'] });
             if (resolvedVehicleId) queryClient.invalidateQueries({ queryKey: ['vehicle-images', resolvedVehicleId] });
 
