@@ -1287,6 +1287,8 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                 badgeOk={!!wheelReference?.image}
                 collapsible
                 defaultOpen={false}
+                open={isMobile ? undefined : detailsOpen}
+                onOpenChange={isMobile ? undefined : setDetailsOpen}
               >
                 <div className="flex min-w-0 items-center gap-2.5">
                   <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted/40">
