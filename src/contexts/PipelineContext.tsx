@@ -228,6 +228,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [savedProjectId, setSavedProjectId] = useState<string | null>(null);
   const [galleryFolder, setGalleryFolder] = useState<string | null>(null);
   const [isRetryingFailed, setIsRetryingFailed] = useState(false);
+  const [retryProgress, setRetryProgress] = useState<{ current: number; total: number } | null>(null);
+
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Live timer
