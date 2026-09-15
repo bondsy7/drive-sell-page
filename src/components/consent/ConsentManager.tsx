@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { persistPendingAttribution } from '@/lib/funnel-attribution';
+
 import { Switch } from '@/components/ui/switch';
 import {
   Dialog,
