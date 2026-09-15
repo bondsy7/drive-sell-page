@@ -1141,6 +1141,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
 
     setIsRetryingFailed(true);
+    setRetryProgress({ current: 0, total: tasks.length });
+
     const folderName = galleryFolder || getGalleryFolderName(cfg.vin);
     const storagePath = cfg.projectId ? cfg.projectId : `gallery/${folderName}`;
     let recovered = 0;
