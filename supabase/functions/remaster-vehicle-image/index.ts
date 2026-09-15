@@ -448,6 +448,21 @@ const DEKRA_SHOWROOM_SCENE_JSON = `{
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  /**
+   * Diagnose-Kontext dieses Requests. Wird bei Erfolg UND Fehler an den Client
+   * zurückgegeben, damit dort jede Stufe mit Anbieter-Status, Fehlerklasse,
+   * Versuchszahl und Dauer dauerhaft protokolliert werden kann.
+   */
+  const startedAt = Date.now();
+  const diag: {
+    engine?: string;
+    model?: string;
+    tier?: string;
+    attempts: number;
+    providerStatus?: number | null;
+    providerMessage?: string | null;
+  } = { attempts: 0 };
+
   try {
     // 1. Auth & credits
     let bodyText: string;
@@ -493,6 +508,9 @@ serve(async (req) => {
       sunburst:  { engine: 'openai', model: 'gpt-image-2.5-sunburst' },
     };
     const engineConfig = ENGINE_MAP[tier] || ENGINE_MAP['qualitaet'];
+    diag.engine = engineConfig.engine;
+    diag.model = engineConfig.model;
+    diag.tier = tier;
     // Responses image tiers consume reusable OpenAI vision file IDs. The older
     // gpt-image-1 tiers remain on multipart /v1/images/edits.
     const isResponsesImageTier = engineConfig.engine === 'openai' && ['neu', 'flare', 'sunburst'].includes(tier);
@@ -1084,6 +1102,9 @@ REPRODUCTION RULES (ZERO DEVIATION):
         let providerMessage = '';
         try { providerMessage = JSON.parse(errText)?.error?.message || ''; } catch { /* keep status */ }
         lastError = providerMessage || `OpenAI ${engineConfig.model} error (${r.status})`;
+        diag.attempts = attempt;
+        diag.providerStatus = r.status;
+        diag.providerMessage = (providerMessage || errText).slice(0, 500);
         console.error(`[remaster][responses-image] model=${engineConfig.model} attempt=${attempt} status=${r.status}: ${errText.slice(0, 300)}`);
 
         if (attempt < 3 && (isTransientFileRefError(lastError) || r.status === 429 || r.status >= 500)) {
@@ -1170,7 +1191,7 @@ REPRODUCTION RULES (ZERO DEVIATION):
         measurement_status: measurementStatus,
       });
       return new Response(
-        JSON.stringify({ imageBase64: `data:image/png;base64,${b64}`, engine: 'openai', model: engineConfig.model }),
+        JSON.stringify({ imageBase64: `data:image/png;base64,${b64}`, engine: 'openai', model: engineConfig.model, diagnostics: { ...diag, durationMs: Date.now() - startedAt } }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
@@ -1265,6 +1286,9 @@ REPRODUCTION RULES (ZERO DEVIATION):
               providerMessage = JSON.parse(errText)?.error?.message || '';
             } catch { /* retain status-based message */ }
             lastError = providerMessage || `OpenAI ${engineConfig.model} error (${resp.status})`;
+            diag.attempts = attempt + 1;
+            diag.providerStatus = resp.status;
+            diag.providerMessage = (providerMessage || errText).slice(0, 500);
             if ([400, 401, 403].includes(resp.status) && /invalid_api_key|incorrect api key/i.test(errText)) {
               throw new Error('OPENAI_API_KEY ungültig oder nicht freigeschaltet');
             }
@@ -1327,6 +1351,8 @@ REPRODUCTION RULES (ZERO DEVIATION):
         } catch (e: any) {
           const isAbort = e?.name === 'AbortError';
           lastError = isAbort ? 'OpenAI Zeitüberschreitung (90s)' : (e?.message || 'OpenAI error');
+          diag.attempts = attempt + 1;
+          diag.providerMessage = lastError;
           console.error(`[remaster][openai] attempt ${attempt + 1} threw:`, lastError);
           if (attempt < MAX_OPENAI_ATTEMPTS - 1) await sleep(2000 * (attempt + 1));
         }
@@ -1334,7 +1360,7 @@ REPRODUCTION RULES (ZERO DEVIATION):
 
       if (!resultImage) throw new Error(lastError || 'OpenAI: Kein Bild generiert.');
 
-      return new Response(JSON.stringify({ imageBase64: resultImage, engine: 'openai', model: engineConfig.model }), {
+      return new Response(JSON.stringify({ imageBase64: resultImage, engine: 'openai', model: engineConfig.model, diagnostics: { ...diag, durationMs: Date.now() - startedAt } }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -1385,6 +1411,10 @@ REPRODUCTION RULES (ZERO DEVIATION):
             console.error("Remaster error:", response.status, errText);
             const isRetryable = response.status === 500 || response.status === 503 || response.status === 429;
             lastError = `Model ${currentModel} error (${response.status})`;
+            diag.attempts = attempt + 1;
+            diag.model = currentModel;
+            diag.providerStatus = response.status;
+            diag.providerMessage = errText.slice(0, 500);
             if (isRetryable && attempt < maxRetries - 1) {
               const delay = 3000 * (attempt + 1);
               console.warn(`Retryable ${response.status}, waiting ${delay}ms...`);
@@ -1468,7 +1498,7 @@ REPRODUCTION RULES (ZERO DEVIATION):
       }
     }
 
-    return new Response(JSON.stringify({ imageBase64: resultImage, ...(wheelCheck ? { wheelCheck } : {}) }), {
+    return new Response(JSON.stringify({ imageBase64: resultImage, ...(wheelCheck ? { wheelCheck } : {}), engine: diag.engine, model: diag.model, diagnostics: { ...diag, durationMs: Date.now() - startedAt } }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
@@ -1477,6 +1507,22 @@ REPRODUCTION RULES (ZERO DEVIATION):
     const overloaded = /überlastet|503|UNAVAILABLE|Zeitüberschreitung|budget exhausted|overload/i.test(msg);
     // Return 200 with structured error so supabase.functions.invoke doesn't throw
     // and the frontend can show a friendly toast instead of crashing.
+    const providerStatus = diag.providerStatus ?? null;
+    const errorCode = /insufficient_credits|Credit/i.test(msg)
+      ? 'insufficient_credits'
+      : providerStatus === 429 || /rate limit|quota/i.test(msg)
+        ? 'rate_limited'
+        : overloaded && /Zeitüberschreitung|timeout/i.test(msg)
+          ? 'timeout'
+          : overloaded
+            ? 'provider_overloaded'
+            : /validating file|Referenzbild konnte/i.test(msg)
+              ? 'reference_upload_failed'
+              : /kein Bild|no image/i.test(msg)
+                ? 'no_image_returned'
+                : providerStatus && providerStatus >= 400
+                  ? 'provider_rejected'
+                  : 'unknown';
     return new Response(
       JSON.stringify({
         error: overloaded
@@ -1484,6 +1530,9 @@ REPRODUCTION RULES (ZERO DEVIATION):
           : msg,
         overloaded,
         fallback: overloaded,
+        errorCode,
+        retryable: overloaded || errorCode === 'rate_limited' || errorCode === 'reference_upload_failed' || errorCode === 'timeout',
+        diagnostics: { ...diag, durationMs: Date.now() - startedAt, errorCode, errorMessage: msg.slice(0, 500) },
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );

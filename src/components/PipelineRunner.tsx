@@ -25,6 +25,7 @@ import {
   applyPromptOverrides,
 } from '@/lib/pipeline-jobs';
 import { type RemasterConfig, fetchManufacturerLogos } from '@/lib/remaster-prompt';
+import { describeGenerationError } from '@/lib/generation-log';
 import { usePipeline, type ResultImage } from '@/contexts/PipelineContext';
 import type { WheelReference } from '@/types/wheel-reference';
 import { useQueryClient } from '@tanstack/react-query';
@@ -416,9 +417,49 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   );
 
   const failedJobs = selectedJobs.filter(j => jobs[j.key]?.status === 'error');
+  /* Sichtbarer Fehlerzustand: fehlende Bilder eindeutig benennen statt endlos warten zu lassen. */
+  const missingImages = isContextActive ? pipeline.failedImageCount : 0;
+  const showFailurePanel = finished && !running && missingImages > 0;
+  const dominantErrorCode = selectedJobs
+    .map(j => jobs[j.key]?.errorCode)
+    .find((code): code is NonNullable<typeof code> => !!code) || 'unknown';
+  const failureInfo = describeGenerationError(dominantErrorCode);
+  const failureDetail = selectedJobs.map(j => jobs[j.key]?.error).find(Boolean);
 
   return (
     <div className="w-full max-w-2xl mx-auto space-y-4 sm:space-y-6 px-1">
+      {showFailurePanel && (
+        <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 sm:p-4 space-y-2">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-destructive">
+                {missingImages} von {totalImages} Bildern konnten nicht erzeugt werden – {failureInfo.title}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">{failureInfo.hint}</p>
+              {failureDetail && (
+                <p className="text-[10px] text-muted-foreground/80 mt-1 break-words">Meldung: {failureDetail}</p>
+              )}
+              <p className="text-[10px] text-muted-foreground/70 mt-1">
+                Fehlercode {dominantErrorCode} – dauerhaft im Fehlerprotokoll gespeichert.
+              </p>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="w-full sm:w-auto"
+            disabled={pipeline.isRetryingFailed || pipeline.isRunning}
+            onClick={() => pipeline.retryFailedImages()}
+          >
+            {pipeline.isRetryingFailed ? (
+              <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Wiederholung läuft…</>
+            ) : (
+              <><RotateCcw className="w-3.5 h-3.5 mr-1.5" /> Nur fehlgeschlagene Bilder erneut versuchen ({missingImages})</>
+            )}
+          </Button>
+        </div>
+      )}
       {/* Header */}
       <div className="text-center px-2">
         <h2 className="font-display text-lg sm:text-xl font-bold text-foreground mb-1.5">
