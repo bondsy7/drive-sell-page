@@ -94,7 +94,8 @@ interface PipelineContextValue {
   savedProjectId: string | null;
   galleryFolder: string | null;
   totalImages: number;
-  startPipeline: (config: PipelineConfig) => void;
+  /** Startet einen Lauf. Gibt false zurück, wenn die Doppelstart-Sperre greift. */
+  startPipeline: (config: PipelineConfig) => boolean;
   retryJob: (jobKey: string) => Promise<void>;
   retrySingleImage: (resultId: string, allResultImages: ResultImage[]) => Promise<void>;
   removeResult: (jobKey: string, resultIndex: number) => void;
