@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import auto3Logo from '@/assets/auto3-logo.png';
+import SiteFooter from '@/components/legal/SiteFooter';
 
 interface FunnelNavAnchor {
   href: string;
@@ -54,14 +55,7 @@ export default function FunnelLayout({
 
       <main className={showMobileCta ? 'pb-20 sm:pb-0' : undefined}>{children}</main>
 
-      <footer className="border-t border-border/70 bg-card/40">
-        <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-8 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <p>© {new Date().getFullYear()} Autohaus.ai · Angebot ausschließlich für gewerbliche Fahrzeughändler.</p>
-          <Link to="/datenschutz" className="rounded-md underline underline-offset-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
-            Datenschutzerklärung
-          </Link>
-        </div>
-      </footer>
+      <SiteFooter />
 
       {showMobileCta && (
         <div className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/95 p-3 backdrop-blur sm:hidden">
