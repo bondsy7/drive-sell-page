@@ -71,3 +71,10 @@ verify_jwt = true
 
 [functions.reference-v2-analyze-image]
 verify_jwt = true
+
+[functions.submit-b2b-lead]
+verify_jwt = false
+
+[functions.request-b2b-demo]
+verify_jwt = false
+
