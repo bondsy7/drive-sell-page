@@ -1243,6 +1243,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
 
     setIsRetryingFailed(false);
+    setRetryProgress(null);
+
     if (recovered > 0 && stillFailing === 0) toast.success(`${recovered} nachgeholte Bilder sind in der Galerie.`);
     else if (recovered > 0) toast.warning(`${recovered} Bilder nachgeholt, ${stillFailing} weiterhin fehlgeschlagen.`);
     else toast.error('Die Wiederholung ist erneut fehlgeschlagen. Details stehen im Fehlerprotokoll.');
