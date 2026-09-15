@@ -429,7 +429,7 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   const failedStages = selectedJobs
     .map(job => {
       const st = jobs[job.key];
-      const missing = st?.failedPromptIndexes?.length ?? (st?.status === 'error' ? job.prompts.length : 0);
+      const missing = st?.failedPromptIndexes?.length ?? (st?.status === 'error' ? (job.outputCount ?? 1) : 0);
       if (!missing) return null;
       const code = st?.errorCode || 'unknown';
       return { job, missing, code, info: describeGenerationError(code), message: st?.error, running: st?.status === 'running' };
