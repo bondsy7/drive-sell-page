@@ -143,6 +143,117 @@ export type Database = {
         }
         Relationships: []
       }
+      b2b_marketing_leads: {
+        Row: {
+          admin_note: string | null
+          business_email: string
+          client_fingerprint: string | null
+          company_name: string
+          created_at: string
+          demo_requested: boolean
+          fbclid: string | null
+          first_name: string
+          first_referrer: string | null
+          gclid: string | null
+          goals: Json
+          id: string
+          landing_page: string | null
+          last_name: string
+          lead_class: string
+          lead_score: number
+          li_fat_id: string | null
+          location_count: string
+          monthly_vehicle_volume: string
+          msclkid: string | null
+          note: string | null
+          phone: string | null
+          role: string
+          source_label: string
+          status: string
+          submitted_at: string
+          updated_at: string
+          uploaded_image_path: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+          website: string | null
+        }
+        Insert: {
+          admin_note?: string | null
+          business_email: string
+          client_fingerprint?: string | null
+          company_name: string
+          created_at?: string
+          demo_requested?: boolean
+          fbclid?: string | null
+          first_name: string
+          first_referrer?: string | null
+          gclid?: string | null
+          goals?: Json
+          id?: string
+          landing_page?: string | null
+          last_name: string
+          lead_class?: string
+          lead_score?: number
+          li_fat_id?: string | null
+          location_count: string
+          monthly_vehicle_volume: string
+          msclkid?: string | null
+          note?: string | null
+          phone?: string | null
+          role: string
+          source_label?: string
+          status?: string
+          submitted_at?: string
+          updated_at?: string
+          uploaded_image_path?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          website?: string | null
+        }
+        Update: {
+          admin_note?: string | null
+          business_email?: string
+          client_fingerprint?: string | null
+          company_name?: string
+          created_at?: string
+          demo_requested?: boolean
+          fbclid?: string | null
+          first_name?: string
+          first_referrer?: string | null
+          gclid?: string | null
+          goals?: Json
+          id?: string
+          landing_page?: string | null
+          last_name?: string
+          lead_class?: string
+          lead_score?: number
+          li_fat_id?: string | null
+          location_count?: string
+          monthly_vehicle_volume?: string
+          msclkid?: string | null
+          note?: string | null
+          phone?: string | null
+          role?: string
+          source_label?: string
+          status?: string
+          submitted_at?: string
+          updated_at?: string
+          uploaded_image_path?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
       banner_projects: {
         Row: {
           created_at: string
