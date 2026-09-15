@@ -469,7 +469,47 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
               <><RotateCcw className="w-3.5 h-3.5 mr-1.5" /> Nur fehlgeschlagene Bilder erneut versuchen ({missingImages})</>
             )}
           </Button>
+
+          {failedStages.length > 0 && (
+            <div className="space-y-2 pt-1">
+              <p className="text-[11px] font-medium text-muted-foreground">Status je Generierungsschritt</p>
+              {failedStages.map(stage => (
+                <div
+                  key={stage.job.key}
+                  className="rounded-md border border-border bg-background/70 p-2.5 flex flex-col sm:flex-row sm:items-center gap-2"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium text-foreground truncate">
+                      {stage.job.labelDe} – {stage.missing} Bild{stage.missing === 1 ? '' : 'er'} offen
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {stage.info.title}: {stage.info.hint}
+                    </p>
+                    {stage.message && (
+                      <p className="text-[10px] text-muted-foreground/80 break-words mt-0.5">
+                        Meldung: {stage.message} (Code {stage.code})
+                      </p>
+                    )}
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-xs shrink-0"
+                    disabled={stage.running || pipeline.isRetryingFailed || pipeline.isRunning || regeneratingIds.has(stage.job.key)}
+                    onClick={() => retryJob(stage.job.key)}
+                  >
+                    {stage.running || regeneratingIds.has(stage.job.key) ? (
+                      <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Läuft…</>
+                    ) : (
+                      <><RotateCcw className="w-3.5 h-3.5 mr-1.5" /> Diesen Schritt erneut</>
+                    )}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
+
       )}
       {/* Header */}
       <div className="text-center px-2">
