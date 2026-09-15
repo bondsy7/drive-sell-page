@@ -6,9 +6,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Mail, Lock, User, Chrome, ShieldCheck } from 'lucide-react';
+import { Mail, Lock, User, Chrome, ShieldCheck, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { STRIPE_PRICES } from '@/lib/stripe-plans';
+import { Checkbox } from '@/components/ui/checkbox';
+import { LEGAL_VERSIONS, TERMS_DOCUMENT } from '@/lib/legal-config';
 import auto3Logo from '@/assets/auto3-logo.png';
 import SiteFooter from '@/components/legal/SiteFooter';
 
@@ -23,44 +24,14 @@ const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [company, setCompany] = useState('');
+  const [termsConfirmed, setTermsConfirmed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-background"><div className="animate-spin w-8 h-8 border-2 border-accent border-t-transparent rounded-full" /></div>;
   
   // If already logged in, redirect
   if (user) return <Navigate to="/generator" replace />;
-
-  const startCheckoutWithEmail = async (userEmail: string, userId?: string) => {
-    if (!plan || plan === 'free') {
-      // Free plan: no Stripe needed, just tell user to confirm email
-      return;
-    }
-    const prices = STRIPE_PRICES[plan];
-    if (!prices) return;
-
-    const priceId = cycle === 'yearly' ? prices.yearly : prices.monthly;
-    try {
-      // Call create-checkout WITHOUT auth, passing email directly
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: JSON.stringify({ priceId, email: userEmail, userId }),
-        }
-      );
-      const data = await response.json();
-      if (data?.url) {
-        window.location.href = data.url;
-        return;
-      }
-    } catch {
-      // Fallback: user can pay later from pricing page
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,22 +42,43 @@ const Auth = () => {
         if (error) throw error;
         toast.success('Erfolgreich angemeldet!');
       } else {
+        if (!termsConfirmed) {
+          toast.error('Bitte bestätige die AGB und deine Unternehmereigenschaft.');
+          return;
+        }
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: { data: { full_name: name, selected_plan: plan, selected_cycle: cycle }, emailRedirectTo: window.location.origin },
+          options: {
+            data: {
+              full_name: name,
+              company_name: company.trim(),
+              selected_plan: plan,
+              selected_cycle: cycle,
+              terms_document: TERMS_DOCUMENT,
+              terms_version: LEGAL_VERSIONS.agb,
+              terms_confirmed: true,
+              confirms_business_and_age: true,
+            },
+            emailRedirectTo: window.location.origin,
+          },
         });
         if (error) throw error;
 
-        // Signup succeeded — user needs to confirm email
-        // But first redirect to Stripe checkout if paid plan
+        // Falls bereits eine Session besteht, die Annahme sofort unveränderlich dokumentieren.
+        if (data.session?.user) {
+          await supabase.from('legal_acceptances').insert({
+            user_id: data.session.user.id,
+            document: TERMS_DOCUMENT,
+            version: LEGAL_VERSIONS.agb,
+            company_name: company.trim() || null,
+            confirms_business_and_age: true,
+          });
+        }
+
+        toast.success('Registrierung erfolgreich! Bitte bestätige deine E-Mail-Adresse über den Link in deinem Postfach.');
         if (plan && plan !== 'free') {
-          toast.success('Registrierung erfolgreich! Du wirst zum Checkout weitergeleitet…');
-          await startCheckoutWithEmail(email, data.user?.id);
-          // If we get here, checkout redirect didn't work
-          toast.info('Bitte bestätige deine E-Mail-Adresse und melde dich an, um den Checkout abzuschließen.');
-        } else {
-          toast.success('Registrierung erfolgreich! Bitte bestätige deine E-Mail-Adresse über den Link in deinem Postfach.');
+          toast.info('Nach der Bestätigung kannst du das Paket unter "Preise" buchen.');
         }
       }
     } catch (err: any) {
@@ -147,8 +139,17 @@ const Auth = () => {
               </div>
             </div>
           )}
+          {!isLogin && (
+            <div className="space-y-1.5">
+              <Label htmlFor="company">Firmenname</Label>
+              <div className="relative">
+                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input id="company" placeholder="Autohaus Mustermann GmbH" value={company} onChange={e => setCompany(e.target.value)} className="pl-9" autoComplete="organization" required />
+              </div>
+            </div>
+          )}
           <div className="space-y-1.5">
-            <Label htmlFor="email">E-Mail</Label>
+            <Label htmlFor="email">{isLogin ? 'E-Mail' : 'Geschäftliche E-Mail'}</Label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input id="email" type="email" placeholder="name@firma.de" value={email} onChange={e => setEmail(e.target.value)} className="pl-9" required />
@@ -161,8 +162,25 @@ const Auth = () => {
               <Input id="password" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} className="pl-9" minLength={6} required />
             </div>
           </div>
-          <Button type="submit" className="w-full" disabled={submitting}>
-            {submitting ? 'Laden...' : isLogin ? 'Anmelden' : plan && plan !== 'free' ? 'Registrieren & zum Checkout' : 'Kostenlos registrieren'}
+          {!isLogin && (
+            <div className="space-y-2">
+              <label htmlFor="terms" className="flex cursor-pointer items-start gap-3 text-xs leading-relaxed text-muted-foreground">
+                <Checkbox id="terms" checked={termsConfirmed} onCheckedChange={(c) => setTermsConfirmed(c === true)} />
+                <span>
+                  Ich bestätige, dass ich mindestens 18 Jahre alt bin und als Unternehmer im Sinne des § 14 BGB handle.
+                  Ich akzeptiere die{' '}
+                  <Link to="/agb" target="_blank" className="font-medium text-accent underline underline-offset-2">AGB</Link>{' '}
+                  von AUTO3. *
+                </span>
+              </label>
+              <p className="text-xs text-muted-foreground">
+                Informationen zur Verarbeitung deiner Daten findest du in der{' '}
+                <Link to="/datenschutz" target="_blank" className="underline underline-offset-2">Datenschutzerklärung</Link>.
+              </p>
+            </div>
+          )}
+          <Button type="submit" className="w-full" disabled={submitting || (!isLogin && !termsConfirmed)}>
+            {submitting ? 'Laden...' : isLogin ? 'Anmelden' : 'Registrieren'}
           </Button>
         </form>
 
