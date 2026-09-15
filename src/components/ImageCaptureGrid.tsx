@@ -37,6 +37,7 @@ import CaptureSummaryPanel, { type SummaryRow } from '@/components/capture/Captu
 import TruckWizard from '@/components/capture/TruckWizard';
 import { TruckSketch } from '@/components/capture/TruckSketch';
 import { usePipeline } from '@/contexts/PipelineContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { createPipelineWorkflowKey } from '@/lib/pipeline-workflow';
 import tireReferenceAsset from '@/assets/tire-reference.png.asset.json';
 import vinReferenceAsset from '@/assets/capture-perspectives/vin.png.asset.json';
@@ -100,7 +101,10 @@ function compressImage(dataUrl: string, maxDim = 2048, quality = 0.85): Promise<
   });
 }
 
-/** Kompakter Seitenabschnitt – auf Mobil optional einklappbar. */
+/** Kompakter Seitenabschnitt – auf Mobil optional einklappbar.
+ *  Mit `open`/`onOpenChange` lässt sich mehreren Sektionen ein gemeinsamer
+ *  Zustand geben (z.B. Felgen + Detailaufnahmen auf Desktop).
+ */
 const CaptureSection: React.FC<{
   title: string;
   subtitle?: string;
@@ -108,10 +112,32 @@ const CaptureSection: React.FC<{
   badgeOk?: boolean;
   collapsible?: boolean;
   defaultOpen?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   children: React.ReactNode;
-}> = ({ title, subtitle, badge, badgeOk, collapsible, defaultOpen = true, children }) => {
-  const [open, setOpen] = useState(defaultOpen);
-  const isOpen = collapsible ? open : true;
+}> = ({
+  title,
+  subtitle,
+  badge,
+  badgeOk,
+  collapsible,
+  defaultOpen = true,
+  open: openProp,
+  onOpenChange,
+  children,
+}) => {
+  const [internalOpen, setInternalOpen] = useState(defaultOpen);
+  const controlled = openProp !== undefined;
+  const isOpen = collapsible ? (controlled ? openProp : internalOpen) : true;
+
+  const toggle = () => {
+    const next = !isOpen;
+    if (controlled && onOpenChange) {
+      onOpenChange(next);
+    } else {
+      setInternalOpen(next);
+    }
+  };
 
   const heading = (
     <>
@@ -142,7 +168,7 @@ const CaptureSection: React.FC<{
         <Button
           type="button"
           variant="ghost"
-          onClick={() => setOpen((current) => !current)}
+          onClick={toggle}
           aria-expanded={isOpen}
           className="h-auto w-full justify-between gap-3 p-0 hover:bg-transparent"
         >
@@ -268,6 +294,8 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   const derivedWheelSourceRef = useRef<string | null>(null);
   const [wheelAnalyzing, setWheelAnalyzing] = useState(false);
   const wheelFileRef = useRef<HTMLInputElement | null>(null);
+  const isMobile = useIsMobile();
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const vinLookup = useVinLookup();
   const { makes } = useVehicleMakes();
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -1259,6 +1287,8 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                 badgeOk={!!wheelReference?.image}
                 collapsible
                 defaultOpen={false}
+                open={isMobile ? undefined : detailsOpen}
+                onOpenChange={isMobile ? undefined : setDetailsOpen}
               >
                 <div className="flex min-w-0 items-center gap-2.5">
                   <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted/40">
@@ -1314,6 +1344,8 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                 badgeOk={detailImages.length > 0}
                 collapsible
                 defaultOpen={false}
+                open={isMobile ? undefined : detailsOpen}
+                onOpenChange={isMobile ? undefined : setDetailsOpen}
               >
                 <div className="flex min-w-0 flex-wrap items-center gap-2">
                   {detailImages.map((img, idx) => (
