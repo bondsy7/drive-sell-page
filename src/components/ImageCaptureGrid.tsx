@@ -48,7 +48,7 @@ interface ImageCaptureGridProps {
   modelTier?: string;
   projectId?: string | null;
   vehicleId?: string | null;
-  onComplete: (mainImage: string, galleryImages: string[], vin?: string, originals?: string[]) => void;
+  onComplete: (mainImage: string, galleryImages: string[], vin?: string, originals?: string[], vehicleId?: string | null) => void;
   onVehicleDataChange?: (data: VehicleData) => void;
   onBack: () => void;
   onPipelineComplete?: () => void;
@@ -869,7 +869,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     return derived;
   };
 
-  const finishUp = () => {
+  const finishUp = async () => {
     const doneSlots = vehicleSlots.filter(s => captures[s.key]?.status === 'done' && captures[s.key]?.remasteredBase64);
     if (doneSlots.length === 0) {
       toast.error('Keine Bilder erfolgreich verarbeitet.');
@@ -886,8 +886,15 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       ...detailImages,
       ...(wheelReference?.image ? [wheelReference.image] : []),
     ];
+    // Immer dasselbe Fahrzeug verwenden wie ein evtl. bereits gestarteter
+    // Pipeline-Lauf – sonst entstehen zwei getrennte Fahrzeugakten.
+    let targetVehicleId: string | null = ensuredVehicleId || vehicleId || null;
+    if (!targetVehicleId) {
+      try { targetVehicleId = await ensureVehicleForPipeline(); }
+      catch (e) { console.warn('[capture] ensureVehicle failed:', e); }
+    }
     toast.success(`${doneSlots.length} Bilder erfolgreich remastered.`);
-    onComplete(main, gallery, detectedVin || undefined, originals);
+    onComplete(main, gallery, detectedVin || undefined, originals, targetVehicleId);
   };
 
   const allVehicleDone = capturedVehicleImages.length > 0 &&

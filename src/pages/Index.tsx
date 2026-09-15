@@ -501,7 +501,7 @@ const Index = () => {
   }, [vehicleData, savedProjectId, savedVehicleId, deepLinkVehicleId, user, selectedTemplate, saveProject]);
 
 
-  const handleCaptureComplete = useCallback(async (mainImage: string, gallery: string[], vin?: string) => {
+  const handleCaptureComplete = useCallback(async (mainImage: string, gallery: string[], vin?: string, originals?: string[], captureVehicleId?: string | null) => {
     setImageBase64(mainImage);
     setGalleryImages(gallery);
     if (vehicleData) {
@@ -510,11 +510,19 @@ const Index = () => {
       const allImgs = [mainImage, ...gallery];
       const folderName = getGalleryFolderName(vin || (updatedData.vehicle as any)?.vin);
 
-      // Re-ensure vehicle in case VIN was just captured
-      let vehicleId = savedVehicleId;
+      // Re-ensure vehicle in case VIN was just captured – aber immer das Fahrzeug
+      // bevorzugen, das der Aufnahme-Flow bereits angelegt hat.
+      let vehicleId = captureVehicleId || savedVehicleId;
       if (user && !vehicleId) {
         vehicleId = await ensureVehicleAuto(user.id, vin, updatedData);
-        setSavedVehicleId(vehicleId);
+      }
+      if (vehicleId && vehicleId !== savedVehicleId) setSavedVehicleId(vehicleId);
+
+      // Rohfotos sichern, damit sie im Dashboard unter "Originale" erscheinen –
+      // auch dann, wenn danach keine Pipeline mehr läuft.
+      if (user && vehicleId && originals && originals.length > 0) {
+        try { await uploadOriginalsToVehicle(user.id, vehicleId, originals); }
+        catch (e) { console.warn('[capture] originals upload failed:', e); }
       }
 
       if (savedProjectId) {
@@ -588,12 +596,14 @@ const Index = () => {
     allImages: string[],
     vin?: string,
     originals?: string[],
+    preferVehicleId?: string | null,
   ) => {
     if (!user || allImages.length === 0) return;
     try {
       const folderName = getGalleryFolderName(vin);
-      // Prefer the currently selected/deep-linked vehicle; only create a placeholder when none exists.
-      const vehicleId = savedVehicleId || deepLinkVehicleId || await ensureVehicleAuto(user.id, vin, vehicleData);
+      // Prefer the vehicle the capture flow already created, then the selected/deep-linked one;
+      // only create a placeholder when none exists.
+      const vehicleId = preferVehicleId || savedVehicleId || deepLinkVehicleId || await ensureVehicleAuto(user.id, vin, vehicleData);
       if (vehicleId && !savedVehicleId) setSavedVehicleId(vehicleId);
       const uploadedUrls = await saveImagesToGallery(
         allImages,
@@ -618,10 +628,11 @@ const Index = () => {
   }, [user, savedVehicleId, deepLinkVehicleId, vehicleData]);
 
   // ─── Standalone Photo Flow ───
-  const handleStandaloneCaptureComplete = useCallback((mainImage: string, gallery: string[], vin?: string, originals?: string[]) => {
+  const handleStandaloneCaptureComplete = useCallback((mainImage: string, gallery: string[], vin?: string, originals?: string[], captureVehicleId?: string | null) => {
     const allImages = [mainImage, ...gallery];
     setStandalonePhotoResults(allImages);
-    saveStandaloneImages(allImages, vin, originals);
+    if (captureVehicleId) setSavedVehicleId(captureVehicleId);
+    saveStandaloneImages(allImages, vin, originals, captureVehicleId || null);
     toast.success(`${allImages.length} Showroom-Bilder in Galerie gespeichert!`);
     navigate('/dashboard?tab=gallery');
   }, [saveStandaloneImages, navigate]);
