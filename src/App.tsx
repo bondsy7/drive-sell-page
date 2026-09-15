@@ -197,6 +197,8 @@ const App = () => (
                 <Route path="conversion" element={<AdminConversionFunnel />} />
                 <Route path="test-drives" element={<AdminTestDrives />} />
                 <Route path="pipeline-stats" element={<AdminPipelineStats />} />
+                <Route path="generation-logs" element={<AdminGenerationLogs />} />
+
                 <Route path="qr-login" element={<AdminQrLogin />} />
                 <Route path="banner-templates" element={<AdminBannerTemplates />} />
                 <Route path="credit-economics" element={<AdminCreditEconomics />} />
