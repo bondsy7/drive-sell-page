@@ -73,6 +73,8 @@ const AdminStorage = lazy(() => import("./pages/admin/AdminStorage"));
 const AdminConversionFunnel = lazy(() => import("./pages/admin/AdminConversionFunnel"));
 const AdminTestDrives = lazy(() => import("./pages/admin/AdminTestDrives"));
 const AdminPipelineStats = lazy(() => import("./pages/admin/AdminPipelineStats"));
+const AdminGenerationLogs = lazy(() => import("./pages/admin/AdminGenerationLogs"));
+
 const AdminQrLogin = lazy(() => import("./pages/admin/AdminQrLogin"));
 const AdminBannerTemplates = lazy(() => import("./pages/admin/AdminBannerTemplates"));
 const AdminCreditEconomics = lazy(() => import("./pages/admin/AdminCreditEconomics"));
