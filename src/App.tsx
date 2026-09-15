@@ -118,8 +118,9 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
   
-  return <>{children}</>;
+  return <LegalOnboardingGate>{children}</LegalOnboardingGate>;
 };
+
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
