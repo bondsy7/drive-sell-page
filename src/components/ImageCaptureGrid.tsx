@@ -37,6 +37,7 @@ import CaptureSummaryPanel, { type SummaryRow } from '@/components/capture/Captu
 import TruckWizard from '@/components/capture/TruckWizard';
 import { TruckSketch } from '@/components/capture/TruckSketch';
 import { usePipeline } from '@/contexts/PipelineContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { createPipelineWorkflowKey } from '@/lib/pipeline-workflow';
 import tireReferenceAsset from '@/assets/tire-reference.png.asset.json';
 import vinReferenceAsset from '@/assets/capture-perspectives/vin.png.asset.json';
