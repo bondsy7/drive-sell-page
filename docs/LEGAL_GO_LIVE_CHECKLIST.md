@@ -25,6 +25,23 @@ Entwürfe – sie sind keine Garantie für Rechtskonformität.
 - [x] Optionale Konfigurations-Hooks `VITE_GA_MEASUREMENT_ID` / `VITE_GOOGLE_ADS_ID`; ohne Wert passiert nichts.
       Es sind derzeit bewusst KEINE Google-IDs im Projekt hinterlegt.
 - [x] Öffentliche Zielgruppenansprache B2B-only; „Privatpersonen“ entfernt.
+- [x] Registrierung mit Firmenname, geschäftlicher E-Mail und verpflichtender, nicht vorausgewählter
+      Bestätigung (18+, Unternehmer § 14 BGB, AGB) inkl. separatem Datenschutz-Hinweislink.
+- [x] Versionierte Vertragsannahme in `legal_acceptances` (ohne IP); Onboarding-Gate vor allen geschützten
+      Bereichen für Bestandskonten und neue Google-Konten; keine erneute Abfrage bei aktueller Version.
+- [x] Registrierung führt nicht mehr vor der E-Mail-Bestätigung zu Stripe; Reihenfolge Registrieren →
+      Bestätigen → ggf. Onboarding → Preise/Checkout.
+- [x] Preistransparenz: „490 € netto/Monat zzgl. gesetzlicher USt.“, „200 Credits – 100 € netto zzgl. USt.“,
+      monatlicher Abrechnungszeitraum, automatische Verlängerung, Kündigung zum Periodenende,
+      AGB-/Datenschutz-/AVV-Links; irreführende Jahresoption entfernt (kein echtes Jahresprodukt).
+- [x] Stripe: aktuelles Basis-Produkt (`basis`, 1.000 Credits) im Webhook ergänzt, Legacy-Zuordnungen erhalten;
+      Checkout akzeptiert nur noch den bekannten Abo-Preis und lehnt andere Preis-IDs mit 400 ab.
+- [x] Testformular `/fahrzeug-testen`: Zwangs-Einwilligung entfernt, stattdessen Datenschutzhinweis;
+      Verarbeitung der Testanfrage wird nicht mehr als Einwilligung dargestellt.
+- [x] Kampagnendaten (utm, gclid, fbclid, msclkid, li_fat_id) werden nur bei Marketing-Einwilligung gespeichert;
+      ohne Einwilligung nur flüchtig im Arbeitsspeicher der laufenden Seite.
+- [x] Widerruf einer zuvor erteilten Einwilligung führt zu Neuladen der Seite; danach wird kein Google-Script geladen.
+- [x] Externe Google-Fonts-Einbindung entfernt; UI nutzt einen lokalen System-Font-Stack (keine anderen CDNs).
 
 ## OPTIONALE HÄRTUNG (bewusst offen)
 
