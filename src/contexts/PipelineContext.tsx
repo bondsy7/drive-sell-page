@@ -482,7 +482,23 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return { base64: data.imageBase64 };
   }, [fetchUrlToBase64]);
 
-  const startPipeline = useCallback((cfg: PipelineConfig) => {
+  const startPipeline = useCallback((cfg: PipelineConfig): boolean => {
+    /* ─── Doppelstart-Sperre ───
+     * 1) Ref-Guard: fängt zwei Klicks im selben Tick ab (State ist async).
+     * 2) Persistenter Guard: blockiert identische Läufe über Tabs/Reloads,
+     *    bis der vorherige Lauf fertig (Cooldown) oder fehlgeschlagen ist. */
+    if (activeRunKeyRef.current) {
+      toast.error('Es läuft bereits eine Generierung. Bitte warte, bis sie abgeschlossen ist.');
+      return false;
+    }
+    const check = checkPipelineStart(cfg.workflowKey);
+    if (!check.allowed) {
+      toast.error(check.reason || 'Dieser Lauf wurde bereits gestartet.');
+      return false;
+    }
+    activeRunKeyRef.current = cfg.workflowKey;
+    markPipelineStarted(cfg.workflowKey);
+
     setConfig(cfg);
     setSavedProjectId(cfg.projectId);
     const startTs = Date.now();
