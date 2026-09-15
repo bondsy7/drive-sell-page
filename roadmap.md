@@ -20,3 +20,13 @@
 - [x] Backend: Tabelle b2b_marketing_leads, Bucket b2b-test-uploads, Edge Functions submit-b2b-lead / request-b2b-demo
 - [x] Adminseite /admin/b2b-leads inkl. CSV-Export
 - [ ] TODO: rechtsverbindliche Datenschutzerklärung unter /datenschutz ergänzen
+
+## Rechts-/B2B-Launch-Paket (15.09.2026)
+- [ ] Rechtsseiten /impressum /datenschutz /agb /avv /toms /unterauftragsverarbeiter
+- [ ] Wiederverwendbarer SiteFooter inkl. Cookie-Einstellungen
+- [ ] Consent-Layer mit Basic Google Consent Mode V2 (Notwendig/Analyse/Marketing)
+- [ ] B2B-Registrierung: Firmenname, §14-BGB-/AGB-Bestätigung, Onboarding-Gate für OAuth
+- [ ] legal_acceptances-Tabelle (additiv, RLS)
+- [ ] Preise als Netto zzgl. USt., Abrechnung/Verlängerung/Kündigung ausweisen
+- [ ] Stripe: Basis-Produkt-Mapping ergänzen, create-checkout Preis-Allowlist
+- [ ] docs/LEGAL_GO_LIVE_CHECKLIST.md pflegen
