@@ -508,6 +508,9 @@ serve(async (req) => {
       sunburst:  { engine: 'openai', model: 'gpt-image-2.5-sunburst' },
     };
     const engineConfig = ENGINE_MAP[tier] || ENGINE_MAP['qualitaet'];
+    diag.engine = engineConfig.engine;
+    diag.model = engineConfig.model;
+    diag.tier = tier;
     // Responses image tiers consume reusable OpenAI vision file IDs. The older
     // gpt-image-1 tiers remain on multipart /v1/images/edits.
     const isResponsesImageTier = engineConfig.engine === 'openai' && ['neu', 'flare', 'sunburst'].includes(tier);
