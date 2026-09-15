@@ -501,7 +501,7 @@ const Index = () => {
   }, [vehicleData, savedProjectId, savedVehicleId, deepLinkVehicleId, user, selectedTemplate, saveProject]);
 
 
-  const handleCaptureComplete = useCallback(async (mainImage: string, gallery: string[], vin?: string) => {
+  const handleCaptureComplete = useCallback(async (mainImage: string, gallery: string[], vin?: string, originals?: string[], captureVehicleId?: string | null) => {
     setImageBase64(mainImage);
     setGalleryImages(gallery);
     if (vehicleData) {
@@ -510,11 +510,19 @@ const Index = () => {
       const allImgs = [mainImage, ...gallery];
       const folderName = getGalleryFolderName(vin || (updatedData.vehicle as any)?.vin);
 
-      // Re-ensure vehicle in case VIN was just captured
-      let vehicleId = savedVehicleId;
+      // Re-ensure vehicle in case VIN was just captured – aber immer das Fahrzeug
+      // bevorzugen, das der Aufnahme-Flow bereits angelegt hat.
+      let vehicleId = captureVehicleId || savedVehicleId;
       if (user && !vehicleId) {
         vehicleId = await ensureVehicleAuto(user.id, vin, updatedData);
-        setSavedVehicleId(vehicleId);
+      }
+      if (vehicleId && vehicleId !== savedVehicleId) setSavedVehicleId(vehicleId);
+
+      // Rohfotos sichern, damit sie im Dashboard unter "Originale" erscheinen –
+      // auch dann, wenn danach keine Pipeline mehr läuft.
+      if (user && vehicleId && originals && originals.length > 0) {
+        try { await uploadOriginalsToVehicle(user.id, vehicleId, originals); }
+        catch (e) { console.warn('[capture] originals upload failed:', e); }
       }
 
       if (savedProjectId) {
