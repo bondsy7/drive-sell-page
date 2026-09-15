@@ -48,10 +48,12 @@ export default function ConsentManager() {
   const persist = useCallback((a: boolean, m: boolean) => {
     const state = createConsent(a, m);
     saveConsent(state);
+    if (m) persistPendingAttribution();
     setCurrent(state);
     setBannerOpen(false);
     setSettingsOpen(false);
   }, []);
+
 
   return (
     <>
