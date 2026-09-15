@@ -14,6 +14,7 @@ import { ensureLogoCachedAsPng } from '@/lib/image-base64-cache';
 import { ensureVehicleAuto, uploadOriginalsToVehicle } from '@/lib/vehicle-utils';
 import { useQueryClient } from '@tanstack/react-query';
 import { checkPipelineStart, markPipelineStarted, markPipelineFinished } from '@/lib/pipeline-start-guard';
+import { logGenerationAttempt, classifyGenerationError, type GenerationErrorCode, type GenerationStage } from '@/lib/generation-log';
 
 /**
  * Gallery rows MUST be written with an explicit error check: a silently failed
@@ -36,6 +37,20 @@ async function insertGalleryRowsChecked(rows: Record<string, unknown>[]): Promis
 }
 
 
+/** Ergebnis eines einzelnen Generierungsversuchs inkl. Diagnose für das Protokoll. */
+export interface GenerationOutcome {
+  base64: string | null;
+  error?: string;
+  errorCode?: GenerationErrorCode;
+  providerStatus?: number | null;
+  providerResponse?: unknown;
+  engine?: string | null;
+  model?: string | null;
+  attempts?: number;
+  retryable?: boolean | null;
+  durationMs?: number;
+}
+
 /* ─── Types ─── */
 export type JobStatus = 'pending' | 'running' | 'done' | 'error';
 
@@ -43,8 +58,12 @@ export interface JobState {
   status: JobStatus;
   results: string[];
   error?: string;
+  /** Maschinenlesbare Fehlerklasse des letzten Fehlversuchs. */
+  errorCode?: GenerationErrorCode;
   startTime?: number;
   endTime?: number;
+  /** Prompt-Indizes, die (noch) kein Bild geliefert haben – Basis für gezielte Wiederholung. */
+  failedPromptIndexes?: number[];
 }
 
 export interface ResultImage {
@@ -272,7 +291,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Generate a single image using stored config
   const generateOneImage = useCallback(async (
     prompt: string, job: PipelineJob | undefined, cfg: PipelineConfig
-  ): Promise<{ base64: string | null; error?: string }> => {
+  ): Promise<GenerationOutcome> => {
+    const attemptStartedAt = Date.now();
     // The successful remasters are the strongest generation-safe blueprints for
     // downstream perspectives. Raw originals remain supporting evidence only.
     const referenceImages = cfg.inputImages.length > 0 ? cfg.inputImages : cfg.originalImages;
@@ -478,10 +498,30 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       dealerLogoOpenAIFile: cfg.remasterConfig.showDealerLogo ? openAICache.dealerLogo : null,
     });
 
+    const diagnostics = (data as any)?.diagnostics || {};
     if (error || !data?.imageBase64) {
-      return { base64: null, error: data?.error || error?.message || 'Generierung fehlgeschlagen' };
+      const message = data?.error || error?.message || 'Generierung fehlgeschlagen';
+      const providerStatus = diagnostics.providerStatus ?? null;
+      return {
+        base64: null,
+        error: message,
+        errorCode: (data as any)?.errorCode || classifyGenerationError(message, providerStatus),
+        providerStatus,
+        providerResponse: diagnostics,
+        engine: diagnostics.engine ?? null,
+        model: diagnostics.model ?? null,
+        attempts: diagnostics.attempts || 1,
+        retryable: (data as any)?.retryable ?? null,
+        durationMs: Date.now() - attemptStartedAt,
+      };
     }
-    return { base64: data.imageBase64 };
+    return {
+      base64: data.imageBase64,
+      engine: diagnostics.engine ?? (data as any)?.engine ?? null,
+      model: diagnostics.model ?? (data as any)?.model ?? null,
+      attempts: diagnostics.attempts || 1,
+      durationMs: Date.now() - attemptStartedAt,
+    };
   }, [fetchUrlToBase64]);
 
   const startPipeline = useCallback((cfg: PipelineConfig): boolean => {
