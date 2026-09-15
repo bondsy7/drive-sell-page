@@ -889,6 +889,9 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
 
       setStatus('finished');
+      // Lauf eindeutig beendet: erfolgreich => Cooldown, komplett gescheitert => sofort erneut startbar.
+      activeRunKeyRef.current = null;
+      markPipelineFinished(cfg.workflowKey, allResults.length > 0);
 
       // Browser notification
       if ('Notification' in window && Notification.permission === 'granted') {
@@ -899,7 +902,15 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           });
         } catch { /* ignore */ }
       }
-    })();
+    })().catch(err => {
+      console.error('[pipeline] run crashed:', err);
+      activeRunKeyRef.current = null;
+      markPipelineFinished(cfg.workflowKey, false);
+      setStatus('finished');
+      toast.error('Die Generierung wurde unerwartet abgebrochen. Du kannst den Lauf erneut starten.');
+    });
+
+    return true;
   }, [generateOneImage, queryClient]);
 
   const retryJob = useCallback(async (jobKey: string) => {
