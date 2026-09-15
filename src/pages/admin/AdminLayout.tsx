@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Outlet, Link } from 'react-router-dom';
-import { LayoutDashboard, Users, Receipt, MessageSquare, Settings, CreditCard, ArrowLeft, FileText, Mail, Menu, X, Car, Hash, ShieldCheck, BookOpen, Activity, Send, TrendingUp, HardDrive, Filter, CalendarDays, Building2, ChevronDown, Timer, LayoutTemplate, Calculator, Images } from 'lucide-react';
+import { LayoutDashboard, Users, Receipt, MessageSquare, Settings, CreditCard, ArrowLeft, FileText, Mail, Menu, X, Car, Hash, ShieldCheck, BookOpen, Activity, Send, TrendingUp, HardDrive, Filter, CalendarDays, Building2, ChevronDown, Timer, LayoutTemplate, Calculator, Images, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import logoLight from '@/assets/logo-light.png';
@@ -59,6 +59,8 @@ const NAV_GROUPS: NavGroupDef[] = [
       { to: '/admin/conversion', icon: Filter, label: 'Conversion-Funnel' },
       { to: '/admin/test-drives', icon: CalendarDays, label: 'Probefahrten' },
       { to: '/admin/pipeline-stats', icon: Timer, label: 'Pipeline-Stats' },
+      { to: '/admin/generation-logs', icon: AlertCircle, label: 'Generierungs-Protokoll' },
+
     ],
   },
   {

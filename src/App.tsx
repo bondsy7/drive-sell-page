@@ -73,6 +73,8 @@ const AdminStorage = lazy(() => import("./pages/admin/AdminStorage"));
 const AdminConversionFunnel = lazy(() => import("./pages/admin/AdminConversionFunnel"));
 const AdminTestDrives = lazy(() => import("./pages/admin/AdminTestDrives"));
 const AdminPipelineStats = lazy(() => import("./pages/admin/AdminPipelineStats"));
+const AdminGenerationLogs = lazy(() => import("./pages/admin/AdminGenerationLogs"));
+
 const AdminQrLogin = lazy(() => import("./pages/admin/AdminQrLogin"));
 const AdminBannerTemplates = lazy(() => import("./pages/admin/AdminBannerTemplates"));
 const AdminCreditEconomics = lazy(() => import("./pages/admin/AdminCreditEconomics"));
@@ -195,6 +197,8 @@ const App = () => (
                 <Route path="conversion" element={<AdminConversionFunnel />} />
                 <Route path="test-drives" element={<AdminTestDrives />} />
                 <Route path="pipeline-stats" element={<AdminPipelineStats />} />
+                <Route path="generation-logs" element={<AdminGenerationLogs />} />
+
                 <Route path="qr-login" element={<AdminQrLogin />} />
                 <Route path="banner-templates" element={<AdminBannerTemplates />} />
                 <Route path="credit-economics" element={<AdminCreditEconomics />} />

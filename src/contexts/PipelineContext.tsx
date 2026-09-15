@@ -122,6 +122,9 @@ interface PipelineContextValue {
   /** Anzahl der Bilder, die in diesem Lauf nicht erzeugt werden konnten. */
   failedImageCount: number;
   isRetryingFailed: boolean;
+  /** Fortschritt der laufenden Wiederholung (nur fehlgeschlagene Bilder). */
+  retryProgress: { current: number; total: number } | null;
+
   retrySingleImage: (resultId: string, allResultImages: ResultImage[]) => Promise<void>;
   removeResult: (jobKey: string, resultIndex: number) => void;
   clearPipeline: () => void;
@@ -225,6 +228,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [savedProjectId, setSavedProjectId] = useState<string | null>(null);
   const [galleryFolder, setGalleryFolder] = useState<string | null>(null);
   const [isRetryingFailed, setIsRetryingFailed] = useState(false);
+  const [retryProgress, setRetryProgress] = useState<{ current: number; total: number } | null>(null);
+
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Live timer
@@ -1136,12 +1141,15 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
 
     setIsRetryingFailed(true);
+    setRetryProgress({ current: 0, total: tasks.length });
+
     const folderName = galleryFolder || getGalleryFolderName(cfg.vin);
     const storagePath = cfg.projectId ? cfg.projectId : `gallery/${folderName}`;
     let recovered = 0;
     let stillFailing = 0;
 
-    for (const task of tasks) {
+    for (const [taskIndex, task] of tasks.entries()) {
+      setRetryProgress({ current: taskIndex + 1, total: tasks.length });
       setJobs(prev => ({ ...prev, [task.job.key]: { ...prev[task.job.key], status: 'running' } }));
       let outcome: GenerationOutcome;
       try {
@@ -1235,6 +1243,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
 
     setIsRetryingFailed(false);
+    setRetryProgress(null);
+
     if (recovered > 0 && stillFailing === 0) toast.success(`${recovered} nachgeholte Bilder sind in der Galerie.`);
     else if (recovered > 0) toast.warning(`${recovered} Bilder nachgeholt, ${stillFailing} weiterhin fehlgeschlagen.`);
     else toast.error('Die Wiederholung ist erneut fehlgeschlagen. Details stehen im Fehlerprotokoll.');
@@ -1267,7 +1277,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       jobs, startTime, endTime, elapsedMs, config, savedProjectId, galleryFolder,
       totalImages: config?.totalImages ?? 0,
       startPipeline, retryJob, retryFailedImages, removeResult, clearPipeline,
-      retrySingleImage, isRetryingFailed,
+      retrySingleImage, isRetryingFailed, retryProgress,
       failedImageCount: config
         ? config.selectedJobs.reduce((sum, job) => {
             const total = 1 + (job.extraPrompts?.length || 0);
