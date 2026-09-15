@@ -40,6 +40,7 @@ const NAV_GROUPS: NavGroupDef[] = [
     label: 'Inhalte & Daten',
     items: [
       { to: '/admin/leads', icon: Mail, label: 'Leads' },
+      { to: '/admin/b2b-leads', icon: Building2, label: 'B2B Leads' },
       { to: '/admin/pdf-gallery', icon: FileText, label: 'PDF-Galerie' },
       { to: '/admin/logos', icon: Car, label: 'Hersteller-Logos' },
       { to: '/admin/wmi-codes', icon: Hash, label: 'WMI-Codes & Aliase' },
