@@ -13,6 +13,7 @@ import { WHEEL_VISIBILITY_RULE } from '@/lib/remaster-prompt';
 import { ensureLogoCachedAsPng } from '@/lib/image-base64-cache';
 import { ensureVehicleAuto, uploadOriginalsToVehicle } from '@/lib/vehicle-utils';
 import { useQueryClient } from '@tanstack/react-query';
+import { checkPipelineStart, markPipelineStarted, markPipelineFinished } from '@/lib/pipeline-start-guard';
 
 /**
  * Gallery rows MUST be written with an explicit error check: a silently failed
@@ -94,7 +95,8 @@ interface PipelineContextValue {
   savedProjectId: string | null;
   galleryFolder: string | null;
   totalImages: number;
-  startPipeline: (config: PipelineConfig) => void;
+  /** Startet einen Lauf. Gibt false zurück, wenn die Doppelstart-Sperre greift. */
+  startPipeline: (config: PipelineConfig) => boolean;
   retryJob: (jobKey: string) => Promise<void>;
   retrySingleImage: (resultId: string, allResultImages: ResultImage[]) => Promise<void>;
   removeResult: (jobKey: string, resultIndex: number) => void;
@@ -222,6 +224,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [status]);
 
   // Cached logo base64 – fetched ONCE before pipeline starts to ensure consistency
+  /** Aktuell laufender workflowKey – blockt Doppelklicks im selben Tick. */
+  const activeRunKeyRef = useRef<string | null>(null);
   const cachedManufacturerLogoBase64Ref = useRef<string | null>(null);
   const cachedDealerLogoBase64Ref = useRef<string | null>(null);
   /** Fallback-Felgenreferenz (Auto-Crop), falls kein dedizierter Upload vorliegt. */
@@ -480,7 +484,23 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return { base64: data.imageBase64 };
   }, [fetchUrlToBase64]);
 
-  const startPipeline = useCallback((cfg: PipelineConfig) => {
+  const startPipeline = useCallback((cfg: PipelineConfig): boolean => {
+    /* ─── Doppelstart-Sperre ───
+     * 1) Ref-Guard: fängt zwei Klicks im selben Tick ab (State ist async).
+     * 2) Persistenter Guard: blockiert identische Läufe über Tabs/Reloads,
+     *    bis der vorherige Lauf fertig (Cooldown) oder fehlgeschlagen ist. */
+    if (activeRunKeyRef.current) {
+      toast.error('Es läuft bereits eine Generierung. Bitte warte, bis sie abgeschlossen ist.');
+      return false;
+    }
+    const check = checkPipelineStart(cfg.workflowKey);
+    if (!check.allowed) {
+      toast.error(check.reason || 'Dieser Lauf wurde bereits gestartet.');
+      return false;
+    }
+    activeRunKeyRef.current = cfg.workflowKey;
+    markPipelineStarted(cfg.workflowKey);
+
     setConfig(cfg);
     setSavedProjectId(cfg.projectId);
     const startTs = Date.now();
@@ -871,6 +891,9 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
 
       setStatus('finished');
+      // Lauf eindeutig beendet: erfolgreich => Cooldown, komplett gescheitert => sofort erneut startbar.
+      activeRunKeyRef.current = null;
+      markPipelineFinished(cfg.workflowKey, allResults.length > 0);
 
       // Browser notification
       if ('Notification' in window && Notification.permission === 'granted') {
@@ -881,7 +904,15 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           });
         } catch { /* ignore */ }
       }
-    })();
+    })().catch(err => {
+      console.error('[pipeline] run crashed:', err);
+      activeRunKeyRef.current = null;
+      markPipelineFinished(cfg.workflowKey, false);
+      setStatus('finished');
+      toast.error('Die Generierung wurde unerwartet abgebrochen. Du kannst den Lauf erneut starten.');
+    });
+
+    return true;
   }, [generateOneImage, queryClient]);
 
   const retryJob = useCallback(async (jobKey: string) => {

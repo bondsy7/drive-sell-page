@@ -29,6 +29,7 @@ import { usePipeline, type ResultImage } from '@/contexts/PipelineContext';
 import type { WheelReference } from '@/types/wheel-reference';
 import { useQueryClient } from '@tanstack/react-query';
 import { createPipelineWorkflowKey, pipelineRunMatchesWorkflow } from '@/lib/pipeline-workflow';
+import { checkPipelineStart } from '@/lib/pipeline-start-guard';
 
 /* ─── Types ─── */
 interface PipelineRunnerProps {
@@ -114,6 +115,12 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   const [regeneratingIds, setRegeneratingIds] = useState<Set<string>>(new Set());
   const [showCreditDialog, setShowCreditDialog] = useState(false);
   const inputImagesSavedRef = useRef(false);
+  /* Doppelstart-Sperre: blockt den Knopf ab dem ersten Klick. */
+  const [starting, setStarting] = useState(false);
+  const startingRef = useRef(false);
+  useEffect(() => {
+    if (running || finished) { startingRef.current = false; setStarting(false); }
+  }, [running, finished]);
 
   /* ─── Prompt overrides ─── */
   const [promptOverrides, setPromptOverrides] = useState<Record<string, string>>({});
@@ -305,15 +312,26 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   const runPipeline = useCallback(async () => {
     if (!user) { toast.error('Bitte melde dich an.'); return; }
     if (localSelectedJobs.length === 0) { toast.error('Bitte wähle mindestens einen Job aus.'); return; }
+    // Doppelstart-Sperre: zweiter Klick wird ignoriert, solange der erste läuft.
+    if (startingRef.current || pipeline.isRunning) return;
+    const precheck = checkPipelineStart(workflowKey);
+    if (!precheck.allowed) {
+      toast.error(precheck.reason || 'Dieser Lauf wurde bereits gestartet.');
+      return;
+    }
+    startingRef.current = true;
+    setStarting(true);
 
     try {
       await persistRemasteredInputs();
     } catch {
       toast.error('Remaster-Bilder konnten nicht in der Galerie gespeichert werden.');
+      startingRef.current = false;
+      setStarting(false);
       return;
     }
 
-    pipeline.startPipeline({
+    const started = pipeline.startPipeline({
       workflowKey,
       inputImages,
       referenceRoles,
@@ -334,6 +352,10 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       detectedBrand: detectedBrand || null,
       totalImages: getTotalImageCount(selectedKeys),
     });
+    if (!started) {
+      startingRef.current = false;
+      setStarting(false);
+    }
   }, [user, localSelectedJobs, localAvailableJobs, workflowKey, inputImages, referenceRoles, originalImages, additionalImages, wheelReference, vehicleDescription, remasterConfig, classContext, modelTier, projectId, vehicleId, vin, resolvedManufacturerLogoUrl, detectedBrand, selectedKeys, pipeline, persistRemasteredInputs]);
 
   /* ─── Credit pre-check ─── */
@@ -672,11 +694,11 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
         {!finished ? (
           <Button
             onClick={handleStartClick}
-            disabled={running || selectedJobs.length === 0 || inputImages.length === 0}
+            disabled={running || starting || pipeline.isRunning || selectedJobs.length === 0 || inputImages.length === 0}
             className="gap-1.5 sm:gap-2 gradient-accent text-accent-foreground font-semibold text-xs sm:text-sm"
           >
-            {running ? (
-              <><Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" /> Generiere…</>
+            {running || starting ? (
+              <><Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" /> {starting && !running ? 'Wird gestartet…' : 'Generiere…'}</>
             ) : (
               <><Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> {totalImages} Bilder generieren</>
             )}

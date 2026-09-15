@@ -63,29 +63,31 @@ Läufe** plus ein doppelt bezahlter Lauf.
   Fahrzeugakte. (F6, teilweise)
 - **Datenkorrektur:** Die 13 fälschlich beim HONDA gelandeten Motorrad-Bilder liegen jetzt beim
   Motorrad; der HONDA zeigt wieder nur seine eigenen Bilder.
+- **Doppelstart gesperrt:** Der Start-Knopf ist ab dem ersten Klick blockiert („Wird gestartet…"),
+  ein zweiter Klick im selben Moment wird verworfen. Ein identischer Lauf für dasselbe Fahrzeug
+  bleibt gesperrt, solange er läuft, und nach erfolgreichem Abschluss weitere 3 Minuten. Ein
+  eindeutig fehlgeschlagener Lauf ist sofort wieder startbar. Die Sperre wirkt auch über mehrere
+  Tabs und über ein Neuladen der Seite hinweg. (F2)
 
 ## 4. Noch offen – empfohlene nächste Schritte
 
-1. **Doppelstart sperren (hoch).** Start-Knopf nach dem ersten Klick sperren und identische Läufe
-   für dasselbe Fahrzeug innerhalb weniger Minuten blockieren. Verhindert doppelte Kosten und
-   selbstverschuldete Verlangsamung. (F2)
-2. **Fehlerursachen dauerhaft protokollieren (hoch).** Pro fehlgeschlagenem Bild Fehlerart und
+1. **Fehlerursachen dauerhaft protokollieren (hoch).** Pro fehlgeschlagenem Bild Fehlerart und
    Anbieterantwort speichern und im Admin-Bereich sichtbar machen. Ohne das ist jede künftige
    Panne wieder nicht analysierbar. (F7, F1)
-3. **Sichtbarer Fehlerzustand für den Nutzer (hoch).** Wenn ein Lauf scheitert, klare Meldung
+2. **Sichtbarer Fehlerzustand für den Nutzer (hoch).** Wenn ein Lauf scheitert, klare Meldung
    statt endloser Wartezeit – inklusive „erneut versuchen" nur für die fehlgeschlagenen Bilder.
-4. **Automatischer Wiederholversuch mit Wartezeit (mittel).** Bei Anbieter-Limits gestaffelt
+3. **Automatischer Wiederholversuch mit Wartezeit (mittel).** Bei Anbieter-Limits gestaffelt
    erneut versuchen, statt alle 13 Bilder gleichzeitig scheitern zu lassen.
-5. **Fahrzeugakte immer vorab wählen (mittel).** Beim Start aus dem Hub eine bestehende Akte
+4. **Fahrzeugakte immer vorab wählen (mittel).** Beim Start aus dem Hub eine bestehende Akte
    anbieten, statt jedes Mal eine neue anzulegen. (F6 vollständig)
-6. **Präsentationsmodus / Vorab-Check (mittel).** Vor Kundenterminen ein kurzer Selbsttest
+5. **Präsentationsmodus / Vorab-Check (mittel).** Vor Kundenterminen ein kurzer Selbsttest
    (1 Testbild) und ein vorbereitetes Fahrzeug als Fallback.
-7. **Fortschritt mit Restzeit (niedrig).** Sichtbarer Zähler „7 von 13 fertig" plus geschätzte
+6. **Fortschritt mit Restzeit (niedrig).** Sichtbarer Zähler „7 von 13 fertig" plus geschätzte
    Restzeit; erfolgreiche Läufe dauern 60–120 s, das lässt sich klar kommunizieren.
 
 ## 5. Kurzfazit für die Geschäftsleitung
 
 Es gab **kein Datenverlust-Problem im Kern der KI**, sondern drei organisatorische Schwächen:
 die Bilder wurden zu spät gespeichert, Fehler wurden nicht ehrlich angezeigt, und ein
-Doppelstart war möglich. Punkt 1 und 2 sind behoben, Punkt 3 sowie die fehlende
-Fehlerprotokollierung sind die nächsten Schritte.
+Doppelstart war möglich. Alle drei Punkte sind behoben; die dauerhafte Fehlerprotokollierung
+ist der nächste Schritt.
