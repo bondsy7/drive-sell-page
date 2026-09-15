@@ -425,6 +425,17 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
     .find((code): code is NonNullable<typeof code> => !!code) || 'unknown';
   const failureInfo = describeGenerationError(dominantErrorCode);
   const failureDetail = selectedJobs.map(j => jobs[j.key]?.error).find(Boolean);
+  /* Fehlerstatus pro Generierungsstufe: eigener Text + eigener Wiederholen-Knopf. */
+  const failedStages = selectedJobs
+    .map(job => {
+      const st = jobs[job.key];
+      const missing = st?.failedPromptIndexes?.length ?? (st?.status === 'error' ? (job.outputCount ?? 1) : 0);
+      if (!missing) return null;
+      const code = st?.errorCode || 'unknown';
+      return { job, missing, code, info: describeGenerationError(code), message: st?.error, running: st?.status === 'running' };
+    })
+    .filter((s): s is NonNullable<typeof s> => !!s);
+
 
   return (
     <div className="w-full max-w-2xl mx-auto space-y-4 sm:space-y-6 px-1">
@@ -458,7 +469,47 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
               <><RotateCcw className="w-3.5 h-3.5 mr-1.5" /> Nur fehlgeschlagene Bilder erneut versuchen ({missingImages})</>
             )}
           </Button>
+
+          {failedStages.length > 0 && (
+            <div className="space-y-2 pt-1">
+              <p className="text-[11px] font-medium text-muted-foreground">Status je Generierungsschritt</p>
+              {failedStages.map(stage => (
+                <div
+                  key={stage.job.key}
+                  className="rounded-md border border-border bg-background/70 p-2.5 flex flex-col sm:flex-row sm:items-center gap-2"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium text-foreground truncate">
+                      {stage.job.labelDe} – {stage.missing} Bild{stage.missing === 1 ? '' : 'er'} offen
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {stage.info.title}: {stage.info.hint}
+                    </p>
+                    {stage.message && (
+                      <p className="text-[10px] text-muted-foreground/80 break-words mt-0.5">
+                        Meldung: {stage.message} (Code {stage.code})
+                      </p>
+                    )}
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-xs shrink-0"
+                    disabled={stage.running || pipeline.isRetryingFailed || pipeline.isRunning || regeneratingIds.has(stage.job.key)}
+                    onClick={() => retryJob(stage.job.key)}
+                  >
+                    {stage.running || regeneratingIds.has(stage.job.key) ? (
+                      <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Läuft…</>
+                    ) : (
+                      <><RotateCcw className="w-3.5 h-3.5 mr-1.5" /> Diesen Schritt erneut</>
+                    )}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
+
       )}
       {/* Header */}
       <div className="text-center px-2">
