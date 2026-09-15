@@ -588,12 +588,14 @@ const Index = () => {
     allImages: string[],
     vin?: string,
     originals?: string[],
+    preferVehicleId?: string | null,
   ) => {
     if (!user || allImages.length === 0) return;
     try {
       const folderName = getGalleryFolderName(vin);
-      // Prefer the currently selected/deep-linked vehicle; only create a placeholder when none exists.
-      const vehicleId = savedVehicleId || deepLinkVehicleId || await ensureVehicleAuto(user.id, vin, vehicleData);
+      // Prefer the vehicle the capture flow already created, then the selected/deep-linked one;
+      // only create a placeholder when none exists.
+      const vehicleId = preferVehicleId || savedVehicleId || deepLinkVehicleId || await ensureVehicleAuto(user.id, vin, vehicleData);
       if (vehicleId && !savedVehicleId) setSavedVehicleId(vehicleId);
       const uploadedUrls = await saveImagesToGallery(
         allImages,
