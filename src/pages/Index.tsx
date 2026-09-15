@@ -620,10 +620,11 @@ const Index = () => {
   }, [user, savedVehicleId, deepLinkVehicleId, vehicleData]);
 
   // ─── Standalone Photo Flow ───
-  const handleStandaloneCaptureComplete = useCallback((mainImage: string, gallery: string[], vin?: string, originals?: string[]) => {
+  const handleStandaloneCaptureComplete = useCallback((mainImage: string, gallery: string[], vin?: string, originals?: string[], captureVehicleId?: string | null) => {
     const allImages = [mainImage, ...gallery];
     setStandalonePhotoResults(allImages);
-    saveStandaloneImages(allImages, vin, originals);
+    if (captureVehicleId) setSavedVehicleId(captureVehicleId);
+    saveStandaloneImages(allImages, vin, originals, captureVehicleId || null);
     toast.success(`${allImages.length} Showroom-Bilder in Galerie gespeichert!`);
     navigate('/dashboard?tab=gallery');
   }, [saveStandaloneImages, navigate]);
