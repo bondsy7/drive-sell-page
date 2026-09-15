@@ -803,6 +803,27 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
           try {
             const result = await generateOneImage(task.prompt, task.job, cfg);
+            void logGenerationAttempt({
+              userId: cfg.userId,
+              workflowKey: cfg.workflowKey,
+              projectId: cfg.projectId || null,
+              vehicleId: resolvedVehicleId || cfg.vehicleId || null,
+              jobKey: task.job.key,
+              jobLabel: task.job.labelDe,
+              promptIndex: task.promptIndex,
+              stage: 'generate',
+              attempt: result.attempts || 1,
+              status: result.base64 ? 'success' : 'error',
+              modelTier: cfg.modelTier,
+              engine: result.engine,
+              model: result.model,
+              durationMs: result.durationMs ?? null,
+              errorCode: result.base64 ? null : (result.errorCode || 'unknown'),
+              errorMessage: result.base64 ? null : (result.error || null),
+              providerStatus: result.providerStatus ?? null,
+              providerResponse: result.base64 ? null : result.providerResponse,
+              retryable: result.retryable ?? null,
+            });
             if (result.base64) {
               const prompts = [task.job.prompt, ...(task.job.extraPrompts || [])];
               allResults.push({
@@ -820,15 +841,58 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               } catch (e) {
                 console.error('[pipeline] Sofort-Speichern fehlgeschlagen, wird am Ende erneut versucht:', e);
                 pendingSaves.push(justCreated);
+                void logGenerationAttempt({
+                  userId: cfg.userId,
+                  workflowKey: cfg.workflowKey,
+                  projectId: cfg.projectId || null,
+                  vehicleId: resolvedVehicleId || cfg.vehicleId || null,
+                  jobKey: task.job.key,
+                  jobLabel: task.job.labelDe,
+                  promptIndex: task.promptIndex,
+                  stage: 'save',
+                  status: 'error',
+                  modelTier: cfg.modelTier,
+                  errorCode: 'save_failed',
+                  errorMessage: e instanceof Error ? e.message : String(e),
+                  retryable: true,
+                });
               }
             } else {
               setJobs(prev => ({
-                ...prev, [task.job.key]: { ...prev[task.job.key], error: result.error },
+                ...prev,
+                [task.job.key]: {
+                  ...prev[task.job.key],
+                  error: result.error,
+                  errorCode: result.errorCode || 'unknown',
+                  failedPromptIndexes: [...(prev[task.job.key]?.failedPromptIndexes || []), task.promptIndex],
+                },
               }));
             }
-          } catch {
+          } catch (e) {
+            const message = e instanceof Error ? e.message : 'Netzwerkfehler';
+            void logGenerationAttempt({
+              userId: cfg.userId,
+              workflowKey: cfg.workflowKey,
+              projectId: cfg.projectId || null,
+              vehicleId: resolvedVehicleId || cfg.vehicleId || null,
+              jobKey: task.job.key,
+              jobLabel: task.job.labelDe,
+              promptIndex: task.promptIndex,
+              stage: 'generate',
+              status: 'error',
+              modelTier: cfg.modelTier,
+              errorCode: classifyGenerationError(message),
+              errorMessage: message,
+              retryable: true,
+            });
             setJobs(prev => ({
-              ...prev, [task.job.key]: { ...prev[task.job.key], error: 'Netzwerkfehler' },
+              ...prev,
+              [task.job.key]: {
+                ...prev[task.job.key],
+                error: 'Netzwerkfehler',
+                errorCode: classifyGenerationError(message),
+                failedPromptIndexes: [...(prev[task.job.key]?.failedPromptIndexes || []), task.promptIndex],
+              },
             }));
           }
 
