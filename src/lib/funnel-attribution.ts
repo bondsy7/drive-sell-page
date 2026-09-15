@@ -1,8 +1,13 @@
 /**
  * First-touch Attribution für den B2B-Paid-Funnel.
- * Erfasst Kampagnenparameter auf der Landingpage und hält sie bis zum Formular.
- * Kein Tracking-Pixel, keine Drittanbieter – rein lokale Speicherung.
+ * Kein Tracking-Pixel, keine Drittanbieter.
+ *
+ * WICHTIG: Kampagnenparameter und Klick-IDs (gclid, fbclid, msclkid, li_fat_id)
+ * werden NUR bei erteilter Marketing-Einwilligung dauerhaft gespeichert.
+ * Ohne Einwilligung bleiben sie ausschließlich im Arbeitsspeicher dieser Seite
+ * und werden nur mit dem vom Nutzer abgeschickten Formular übertragen.
  */
+import { readConsent } from './consent';
 
 const STORAGE_KEY = 'auto3_b2b_attribution_v1';
 
@@ -28,6 +33,7 @@ export interface FunnelAttribution extends Partial<Record<AttributionParam, stri
 }
 
 function readStored(): FunnelAttribution {
+  if (!marketingAllowed()) return memoryAttribution;
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY) ?? window.sessionStorage.getItem(STORAGE_KEY);
     if (!raw) return {};
@@ -38,7 +44,15 @@ function readStored(): FunnelAttribution {
   }
 }
 
+let memoryAttribution: FunnelAttribution = {};
+
+function marketingAllowed(): boolean {
+  return readConsent()?.marketing === true;
+}
+
 function persist(data: FunnelAttribution) {
+  memoryAttribution = data;
+  if (!marketingAllowed()) return; // ohne Marketing-Einwilligung keine Speicherung
   const raw = JSON.stringify(data);
   try {
     window.localStorage.setItem(STORAGE_KEY, raw);
