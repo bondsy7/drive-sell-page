@@ -305,15 +305,26 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   const runPipeline = useCallback(async () => {
     if (!user) { toast.error('Bitte melde dich an.'); return; }
     if (localSelectedJobs.length === 0) { toast.error('Bitte wähle mindestens einen Job aus.'); return; }
+    // Doppelstart-Sperre: zweiter Klick wird ignoriert, solange der erste läuft.
+    if (startingRef.current || pipeline.isRunning) return;
+    const precheck = checkPipelineStart(workflowKey);
+    if (!precheck.allowed) {
+      toast.error(precheck.reason || 'Dieser Lauf wurde bereits gestartet.');
+      return;
+    }
+    startingRef.current = true;
+    setStarting(true);
 
     try {
       await persistRemasteredInputs();
     } catch {
       toast.error('Remaster-Bilder konnten nicht in der Galerie gespeichert werden.');
+      startingRef.current = false;
+      setStarting(false);
       return;
     }
 
-    pipeline.startPipeline({
+    const started = pipeline.startPipeline({
       workflowKey,
       inputImages,
       referenceRoles,
