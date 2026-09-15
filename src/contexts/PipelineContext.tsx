@@ -650,6 +650,79 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const allResults: { key: string; base64: string; label: string; subIndex: number }[] = [];
       const jobTimings: Record<string, { start: number; end?: number }> = {};
 
+      /* ─── Sofort-Persistenz: Fahrzeug + Originale VOR der Generierung ───
+       * Jedes fertige Bild wird direkt gespeichert (Storage + Galerie-Zeile),
+       * damit nichts verloren geht, wenn der Lauf abbricht oder der Tab
+       * geschlossen wird. */
+      const folderName = getGalleryFolderName(cfg.vin);
+      setGalleryFolder(folderName);
+      const storagePath = cfg.projectId ? cfg.projectId : `gallery/${folderName}`;
+
+      let resolvedVehicleId = cfg.vehicleId || null;
+      if (!resolvedVehicleId) {
+        try {
+          resolvedVehicleId = await ensureVehicleAuto(cfg.userId, cfg.vin, null);
+        } catch (e) {
+          console.warn('[pipeline] ensureVehicleAuto failed:', e);
+        }
+      }
+
+      if (resolvedVehicleId) {
+        try {
+          const normalOriginals = (cfg.originalImages?.length ? cfg.originalImages : cfg.inputImages) || [];
+          // Felgenreferenz NUR für die Persistenz anhängen – sie darf niemals
+          // Teil der indexbasierten Primary-Reference-Logik werden.
+          const originals = [
+            ...normalOriginals,
+            ...(cfg.wheelReference?.image ? [cfg.wheelReference.image] : []),
+          ];
+          if (originals.length > 0) {
+            const { data: existing } = await supabase.storage
+              .from('originals')
+              .list(`${cfg.userId}/${resolvedVehicleId}`, { limit: 1 });
+            const hasAny = (existing || []).some(f => f.name && !f.name.startsWith('.'));
+            if (!hasAny) {
+              const uploaded = await uploadOriginalsToVehicle(cfg.userId, resolvedVehicleId, originals);
+              console.log(`[pipeline] originals persisted: ${uploaded}/${originals.length}`);
+              if (uploaded > 0) {
+                queryClient.invalidateQueries({ queryKey: ['vehicle-originals', resolvedVehicleId] });
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('[pipeline] originals upload skipped:', e);
+        }
+      }
+
+      const { data: existingImages } = cfg.projectId
+        ? await supabase.from('project_images').select('sort_order').eq('project_id', cfg.projectId)
+            .order('sort_order', { ascending: false }).limit(1)
+        : { data: null };
+      let orderCounter = (existingImages?.[0]?.sort_order ?? -1) + 1;
+
+      const savedUrls: string[] = [];
+      const pendingSaves: { key: string; base64: string; label: string; subIndex: number }[] = [];
+
+      /** Speichert ein einzelnes Ergebnis sofort in Storage + Galerie. */
+      const persistResult = async (r: { key: string; base64: string; label: string; subIndex: number }) => {
+        const sortOrder = orderCounter++;
+        const url = await uploadImageToStorage(r.base64, cfg.userId, `${storagePath}/${r.key}_${r.subIndex}.png`);
+        if (!url) throw new Error('Upload fehlgeschlagen');
+        await insertGalleryRowsChecked([{
+          project_id: cfg.projectId || null,
+          vehicle_id: resolvedVehicleId || null,
+          user_id: cfg.userId,
+          image_url: url,
+          image_base64: '',
+          perspective: `Pipeline: ${r.label}`,
+          sort_order: sortOrder,
+          gallery_folder: folderName,
+        }]);
+        savedUrls.push(url);
+        queryClient.invalidateQueries({ queryKey: ['gallery'] });
+        if (resolvedVehicleId) queryClient.invalidateQueries({ queryKey: ['vehicle-images', resolvedVehicleId] });
+      };
+
       const taskQueue: { job: PipelineJob; promptIndex: number; prompt: string }[] = [];
       for (const job of cfg.selectedJobs) {
         const prompts = [job.prompt, ...(job.extraPrompts || [])];
