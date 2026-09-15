@@ -224,6 +224,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [status]);
 
   // Cached logo base64 – fetched ONCE before pipeline starts to ensure consistency
+  /** Aktuell laufender workflowKey – blockt Doppelklicks im selben Tick. */
+  const activeRunKeyRef = useRef<string | null>(null);
   const cachedManufacturerLogoBase64Ref = useRef<string | null>(null);
   const cachedDealerLogoBase64Ref = useRef<string | null>(null);
   /** Fallback-Felgenreferenz (Auto-Crop), falls kein dedizierter Upload vorliegt. */
