@@ -29,6 +29,7 @@ import { usePipeline, type ResultImage } from '@/contexts/PipelineContext';
 import type { WheelReference } from '@/types/wheel-reference';
 import { useQueryClient } from '@tanstack/react-query';
 import { createPipelineWorkflowKey, pipelineRunMatchesWorkflow } from '@/lib/pipeline-workflow';
+import { checkPipelineStart } from '@/lib/pipeline-start-guard';
 
 /* ─── Types ─── */
 interface PipelineRunnerProps {
