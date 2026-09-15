@@ -694,11 +694,11 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
         {!finished ? (
           <Button
             onClick={handleStartClick}
-            disabled={running || selectedJobs.length === 0 || inputImages.length === 0}
+            disabled={running || starting || pipeline.isRunning || selectedJobs.length === 0 || inputImages.length === 0}
             className="gap-1.5 sm:gap-2 gradient-accent text-accent-foreground font-semibold text-xs sm:text-sm"
           >
-            {running ? (
-              <><Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" /> Generiere…</>
+            {running || starting ? (
+              <><Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" /> {starting && !running ? 'Wird gestartet…' : 'Generiere…'}</>
             ) : (
               <><Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> {totalImages} Bilder generieren</>
             )}
