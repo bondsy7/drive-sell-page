@@ -1344,6 +1344,8 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                 badgeOk={detailImages.length > 0}
                 collapsible
                 defaultOpen={false}
+                open={isMobile ? undefined : detailsOpen}
+                onOpenChange={isMobile ? undefined : setDetailsOpen}
               >
                 <div className="flex min-w-0 flex-wrap items-center gap-2">
                   {detailImages.map((img, idx) => (
