@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Outlet, Link } from 'react-router-dom';
-import { LayoutDashboard, Users, Receipt, MessageSquare, Settings, CreditCard, ArrowLeft, FileText, Mail, Menu, X, Car, Hash, ShieldCheck, BookOpen, Activity, Send, TrendingUp, HardDrive, Filter, CalendarDays, ChevronDown, Timer, LayoutTemplate, Calculator, Images } from 'lucide-react';
+import { LayoutDashboard, Users, Receipt, MessageSquare, Settings, CreditCard, ArrowLeft, FileText, Mail, Menu, X, Car, Hash, ShieldCheck, BookOpen, Activity, Send, TrendingUp, HardDrive, Filter, CalendarDays, Building2, ChevronDown, Timer, LayoutTemplate, Calculator, Images } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import logoLight from '@/assets/logo-light.png';
@@ -40,6 +40,7 @@ const NAV_GROUPS: NavGroupDef[] = [
     label: 'Inhalte & Daten',
     items: [
       { to: '/admin/leads', icon: Mail, label: 'Leads' },
+      { to: '/admin/b2b-leads', icon: Building2, label: 'B2B Leads' },
       { to: '/admin/pdf-gallery', icon: FileText, label: 'PDF-Galerie' },
       { to: '/admin/logos', icon: Car, label: 'Hersteller-Logos' },
       { to: '/admin/wmi-codes', icon: Hash, label: 'WMI-Codes & Aliase' },

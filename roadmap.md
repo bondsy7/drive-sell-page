@@ -13,3 +13,10 @@
 - [x] Showroom 1 vorauswählen, VIN und Innenraum optional machen und seitliches Scrollen entfernen
 - [x] Lkw-Aufnahmeicons ersetzen und Kacheltexte gegen Überlauf optimieren
 - [x] Lkw-Konfigurationskacheln an das kompakte 4:3-Aufnahmeraster angleichen
+
+## B2B-Paid-Funnel (Phase 1)
+- [x] Öffentliche Routen /autohaus-fahrzeugbilder, /autohaus-marketing, /fahrzeug-testen, /fahrzeug-testen/danke
+- [x] Attribution-Utility (First Touch, UTM/Click-IDs)
+- [x] Backend: Tabelle b2b_marketing_leads, Bucket b2b-test-uploads, Edge Functions submit-b2b-lead / request-b2b-demo
+- [x] Adminseite /admin/b2b-leads inkl. CSV-Export
+- [ ] TODO: rechtsverbindliche Datenschutzerklärung unter /datenschutz ergänzen

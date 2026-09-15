@@ -37,6 +37,13 @@ const QrLogin = lazy(() => import("./pages/QrLogin"));
 const CanvasBannerStudio = lazy(() => import("./pages/CanvasBannerStudio"));
 const MusicStudio = lazy(() => import("./pages/MusicStudio"));
 
+// B2B Paid-Funnel (öffentlich)
+const AutohausFahrzeugbilder = lazy(() => import("./pages/funnel/AutohausFahrzeugbilder"));
+const AutohausMarketing = lazy(() => import("./pages/funnel/AutohausMarketing"));
+const FahrzeugTesten = lazy(() => import("./pages/funnel/FahrzeugTesten"));
+const FahrzeugTestenDanke = lazy(() => import("./pages/funnel/FahrzeugTestenDanke"));
+const DatenschutzPlatzhalter = lazy(() => import("./pages/funnel/DatenschutzPlatzhalter"));
+
 // Admin pages
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
@@ -62,6 +69,7 @@ const AdminPipelineStats = lazy(() => import("./pages/admin/AdminPipelineStats")
 const AdminQrLogin = lazy(() => import("./pages/admin/AdminQrLogin"));
 const AdminBannerTemplates = lazy(() => import("./pages/admin/AdminBannerTemplates"));
 const AdminCreditEconomics = lazy(() => import("./pages/admin/AdminCreditEconomics"));
+const AdminB2bLeads = lazy(() => import("./pages/admin/AdminB2bLeads"));
 const AdminCostCalculator = lazy(() => import("./pages/admin/AdminCostCalculator"));
 const AdminReferenceView = lazy(() => import("./features/reference-v2/phase1/AdminReferenceView"));
 const ReferenceWorkspace = lazy(() => import("./features/reference-v2/phase4/ReferenceWorkspace"));
@@ -125,6 +133,12 @@ const App = () => (
               <Route path="/" element={<Landing />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/qr-login" element={<QrLogin />} />
+              {/* Öffentlicher B2B-Paid-Funnel */}
+              <Route path="/autohaus-fahrzeugbilder" element={<AutohausFahrzeugbilder />} />
+              <Route path="/autohaus-marketing" element={<AutohausMarketing />} />
+              <Route path="/fahrzeug-testen" element={<FahrzeugTesten />} />
+              <Route path="/fahrzeug-testen/danke" element={<FahrzeugTestenDanke />} />
+              <Route path="/datenschutz" element={<DatenschutzPlatzhalter />} />
               <Route path="/generator" element={<ProtectedRoute><ErrorBoundary moduleName="Generator"><Index /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/generator/canvas-banner-studio" element={<ProtectedRoute><ErrorBoundary moduleName="Banner Studio"><CanvasBannerStudio /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/generator/music-studio" element={<ProtectedRoute><ErrorBoundary moduleName="Music Studio"><MusicStudio /></ErrorBoundary></ProtectedRoute>} />
@@ -171,6 +185,7 @@ const App = () => (
                 <Route path="cost-calculator" element={<AdminCostCalculator />} />
                 <Route path="reference-v2" element={<ReferenceWorkspace />} />
                 <Route path="reference-v2/technik" element={<AdminReferenceView />} />
+                <Route path="b2b-leads" element={<AdminB2bLeads />} />
               </Route>
               <Route path="/architecture" element={<ProtectedRoute><AdminRoute><ArchitectureDoc /></AdminRoute></ProtectedRoute>} />
               <Route path="/sales-assistant/chat" element={<ProtectedRoute><ErrorBoundary moduleName="Sales Assistant"><SalesAssistant /></ErrorBoundary></ProtectedRoute>} />
