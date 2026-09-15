@@ -1277,7 +1277,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       jobs, startTime, endTime, elapsedMs, config, savedProjectId, galleryFolder,
       totalImages: config?.totalImages ?? 0,
       startPipeline, retryJob, retryFailedImages, removeResult, clearPipeline,
-      retrySingleImage, isRetryingFailed,
+      retrySingleImage, isRetryingFailed, retryProgress,
       failedImageCount: config
         ? config.selectedJobs.reduce((sum, job) => {
             const total = 1 + (job.extraPrompts?.length || 0);
