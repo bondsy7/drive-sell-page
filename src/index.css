@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+/* Keine externen Schriftdienste: datenschutzfreundlicher System-Font-Stack (siehe tailwind.config.ts). */
 
 @font-face {
   font-family: 'VW Headline';
@@ -219,7 +219,7 @@
 
 @layer utilities {
   .font-display {
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: var(--font-display, ui-sans-serif), system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   }
   .gradient-hero {
     background: var(--gradient-hero);

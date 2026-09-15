@@ -8,6 +8,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Nur bekannte Abo-Preise akzeptieren – keine beliebigen Client-Preis-IDs.
+const ALLOWED_SUBSCRIPTION_PRICE_IDS = new Set<string>([
+  "price_1Tl8cuP3eWRHEALNPuSwqIZe", // Basis (aktuelles Grundpaket)
+]);
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -21,6 +26,12 @@ serve(async (req) => {
   try {
     const { priceId, email: bodyEmail, userId: bodyUserId } = await req.json();
     if (!priceId) throw new Error("priceId fehlt");
+    if (!ALLOWED_SUBSCRIPTION_PRICE_IDS.has(priceId)) {
+      return new Response(JSON.stringify({ error: "Ungültige Preis-ID" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
+    }
 
     let userEmail: string | undefined;
     let userId: string | undefined;
