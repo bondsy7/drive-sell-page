@@ -122,6 +122,9 @@ interface PipelineContextValue {
   /** Anzahl der Bilder, die in diesem Lauf nicht erzeugt werden konnten. */
   failedImageCount: number;
   isRetryingFailed: boolean;
+  /** Fortschritt der laufenden Wiederholung (nur fehlgeschlagene Bilder). */
+  retryProgress: { current: number; total: number } | null;
+
   retrySingleImage: (resultId: string, allResultImages: ResultImage[]) => Promise<void>;
   removeResult: (jobKey: string, resultIndex: number) => void;
   clearPipeline: () => void;
