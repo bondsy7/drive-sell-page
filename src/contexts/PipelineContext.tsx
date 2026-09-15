@@ -753,6 +753,14 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               setJobs(prev => ({
                 ...prev, [task.job.key]: { ...prev[task.job.key], status: 'running', results: [...(prev[task.job.key]?.results || []), result.base64!] },
               }));
+              // Sofort speichern – nicht erst am Ende des Laufs.
+              const justCreated = allResults[allResults.length - 1];
+              try {
+                await persistResult(justCreated);
+              } catch (e) {
+                console.error('[pipeline] Sofort-Speichern fehlgeschlagen, wird am Ende erneut versucht:', e);
+                pendingSaves.push(justCreated);
+              }
             } else {
               setJobs(prev => ({
                 ...prev, [task.job.key]: { ...prev[task.job.key], error: result.error },
