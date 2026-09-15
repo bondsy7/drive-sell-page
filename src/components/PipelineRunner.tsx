@@ -345,6 +345,10 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       detectedBrand: detectedBrand || null,
       totalImages: getTotalImageCount(selectedKeys),
     });
+    if (!started) {
+      startingRef.current = false;
+      setStarting(false);
+    }
   }, [user, localSelectedJobs, localAvailableJobs, workflowKey, inputImages, referenceRoles, originalImages, additionalImages, wheelReference, vehicleDescription, remasterConfig, classContext, modelTier, projectId, vehicleId, vin, resolvedManufacturerLogoUrl, detectedBrand, selectedKeys, pipeline, persistRemasteredInputs]);
 
   /* ─── Credit pre-check ─── */
