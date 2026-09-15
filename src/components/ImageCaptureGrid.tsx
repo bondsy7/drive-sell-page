@@ -100,7 +100,10 @@ function compressImage(dataUrl: string, maxDim = 2048, quality = 0.85): Promise<
   });
 }
 
-/** Kompakter Seitenabschnitt – auf Mobil optional einklappbar. */
+/** Kompakter Seitenabschnitt – auf Mobil optional einklappbar.
+ *  Mit `open`/`onOpenChange` lässt sich mehreren Sektionen ein gemeinsamer
+ *  Zustand geben (z.B. Felgen + Detailaufnahmen auf Desktop).
+ */
 const CaptureSection: React.FC<{
   title: string;
   subtitle?: string;
@@ -108,10 +111,32 @@ const CaptureSection: React.FC<{
   badgeOk?: boolean;
   collapsible?: boolean;
   defaultOpen?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   children: React.ReactNode;
-}> = ({ title, subtitle, badge, badgeOk, collapsible, defaultOpen = true, children }) => {
-  const [open, setOpen] = useState(defaultOpen);
-  const isOpen = collapsible ? open : true;
+}> = ({
+  title,
+  subtitle,
+  badge,
+  badgeOk,
+  collapsible,
+  defaultOpen = true,
+  open: openProp,
+  onOpenChange,
+  children,
+}) => {
+  const [internalOpen, setInternalOpen] = useState(defaultOpen);
+  const controlled = openProp !== undefined;
+  const isOpen = collapsible ? (controlled ? openProp : internalOpen) : true;
+
+  const toggle = () => {
+    const next = !isOpen;
+    if (controlled && onOpenChange) {
+      onOpenChange(next);
+    } else {
+      setInternalOpen(next);
+    }
+  };
 
   const heading = (
     <>
@@ -142,7 +167,7 @@ const CaptureSection: React.FC<{
         <Button
           type="button"
           variant="ghost"
-          onClick={() => setOpen((current) => !current)}
+          onClick={toggle}
           aria-expanded={isOpen}
           className="h-auto w-full justify-between gap-3 p-0 hover:bg-transparent"
         >
