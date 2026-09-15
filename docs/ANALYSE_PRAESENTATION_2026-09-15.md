@@ -69,20 +69,27 @@ Läufe** plus ein doppelt bezahlter Lauf.
   eindeutig fehlgeschlagener Lauf ist sofort wieder startbar. Die Sperre wirkt auch über mehrere
   Tabs und über ein Neuladen der Seite hinweg. (F2)
 
+- **Dauerhaftes Fehlerprotokoll:** Jeder einzelne Bildversuch wird gespeichert – Job und
+  Perspektive, Qualitätsstufe, KI-Modell, Dauer, Versuchszahl, Erfolg oder Fehler, Fehlerklasse
+  (z. B. Anbieter-Limit, Überlastung, Zeitüberschreitung, Guthaben), Anbieter-Statuscode und
+  gekürzte Anbieter-Antwort. Auch fehlgeschlagene Speicherungen werden protokolliert. Damit ist
+  eine Panne auch Wochen später noch nachvollziehbar, unabhängig von den kurzlebigen Serverlogs.
+  (F7, F1)
+- **Sichtbarer Fehlerzustand:** Scheitert ein Lauf ganz oder teilweise, erscheint sofort eine
+  klare Meldung („X von Y Bildern konnten nicht erzeugt werden – Anbieter-Limit erreicht") samt
+  Handlungsempfehlung, Fehlercode und Anbieter-Meldung – statt endloser Wartezeit. Ein Knopf
+  wiederholt **nur die fehlgeschlagenen Bilder**; bereits erzeugte Bilder werden nicht erneut
+  bezahlt. (F1, F7)
+
 ## 4. Noch offen – empfohlene nächste Schritte
 
-1. **Fehlerursachen dauerhaft protokollieren (hoch).** Pro fehlgeschlagenem Bild Fehlerart und
-   Anbieterantwort speichern und im Admin-Bereich sichtbar machen. Ohne das ist jede künftige
-   Panne wieder nicht analysierbar. (F7, F1)
-2. **Sichtbarer Fehlerzustand für den Nutzer (hoch).** Wenn ein Lauf scheitert, klare Meldung
-   statt endloser Wartezeit – inklusive „erneut versuchen" nur für die fehlgeschlagenen Bilder.
-3. **Automatischer Wiederholversuch mit Wartezeit (mittel).** Bei Anbieter-Limits gestaffelt
+1. **Automatischer Wiederholversuch mit Wartezeit (mittel).** Bei Anbieter-Limits gestaffelt
    erneut versuchen, statt alle 13 Bilder gleichzeitig scheitern zu lassen.
-4. **Fahrzeugakte immer vorab wählen (mittel).** Beim Start aus dem Hub eine bestehende Akte
+2. **Fahrzeugakte immer vorab wählen (mittel).** Beim Start aus dem Hub eine bestehende Akte
    anbieten, statt jedes Mal eine neue anzulegen. (F6 vollständig)
-5. **Präsentationsmodus / Vorab-Check (mittel).** Vor Kundenterminen ein kurzer Selbsttest
+3. **Präsentationsmodus / Vorab-Check (mittel).** Vor Kundenterminen ein kurzer Selbsttest
    (1 Testbild) und ein vorbereitetes Fahrzeug als Fallback.
-6. **Fortschritt mit Restzeit (niedrig).** Sichtbarer Zähler „7 von 13 fertig" plus geschätzte
+4. **Fortschritt mit Restzeit (niedrig).** Sichtbarer Zähler „7 von 13 fertig" plus geschätzte
    Restzeit; erfolgreiche Läufe dauern 60–120 s, das lässt sich klar kommunizieren.
 
 ## 5. Kurzfazit für die Geschäftsleitung
