@@ -27,7 +27,6 @@ export const MOTORCYCLE_CAPTURE_SLOTS: CaptureSlot[] = [
   {
     key: 'side-left',
     label: 'Seitenansicht links',
-    hint: 'Linke Fahrzeugseite (Seitenständer-Seite)',
     icon: motoSideLeft.url,
     capture: 'environment',
     required: true,
@@ -37,7 +36,6 @@ export const MOTORCYCLE_CAPTURE_SLOTS: CaptureSlot[] = [
   {
     key: 'side-right',
     label: 'Seitenansicht rechts',
-    hint: 'Rechte Fahrzeugseite (Auspuff-/Bremshebel-Seite)',
     icon: motoSideRight.url,
     capture: 'environment',
     required: true,
@@ -56,7 +54,6 @@ export const MOTORCYCLE_CAPTURE_SLOTS: CaptureSlot[] = [
   {
     key: 'cockpit',
     label: 'Sitz / Cockpit',
-    hint: 'Sattel, Lenker und Display',
     icon: motoCockpit.url,
     capture: 'environment',
     required: false,
