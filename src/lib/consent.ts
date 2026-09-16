@@ -109,13 +109,15 @@ export function saveConsent(state: ConsentState) {
     (previous?.analytics === true && state.analytics === false) ||
     (previous?.marketing === true && state.marketing === false);
 
-  if (revoked && tagsLoaded) {
+  if (revoked) {
     window.gtag?.('consent', 'update', {
       analytics_storage: state.analytics ? 'granted' : 'denied',
       ad_storage: state.marketing ? 'granted' : 'denied',
       ad_user_data: state.marketing ? 'granted' : 'denied',
       ad_personalization: state.marketing ? 'granted' : 'denied',
     });
+    clearGoogleCookies();
+    if (!state.marketing) clearMarketingStorage();
     window.location.reload();
     return;
   }
