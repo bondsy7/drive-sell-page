@@ -35,6 +35,9 @@ import { checkSourceCoverage } from '@/lib/source-coverage';
 import VehicleClassStrip from '@/components/capture/VehicleClassStrip';
 import CaptureSummaryPanel, { type SummaryRow } from '@/components/capture/CaptureSummaryPanel';
 import TruckWizard from '@/components/capture/TruckWizard';
+import MotorhomeWizard from '@/components/capture/MotorhomeWizard';
+import { isMotorhomeSelectionComplete } from '@/config/motorhome-workflow';
+import type { MotorhomeBodyTypeKey } from '@/config/vehicle-class-types';
 import { TruckSketch } from '@/components/capture/TruckSketch';
 import { usePipeline } from '@/contexts/PipelineContext';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -275,6 +278,12 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       truckBodyType: vehicleData?.truckBodyType ?? null,
       cargoState: vehicleData?.cargoState ?? null,
     }),
+  );
+  const [motorhomeBodyType, setMotorhomeBodyType] = useState<MotorhomeBodyTypeKey | null>(
+    vehicleData?.motorhomeBodyType ?? null,
+  );
+  const [motorhomeWizardDone, setMotorhomeWizardDone] = useState(
+    () => isMotorhomeSelectionComplete(vehicleData?.motorhomeBodyType ?? null),
   );
   const [ensuredVehicleId, setEnsuredVehicleId] = useState<string | null>(vehicleId || null);
   const [isEnsuringVehicle, setIsEnsuringVehicle] = useState(false);
