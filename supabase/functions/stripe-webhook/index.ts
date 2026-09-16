@@ -17,21 +17,14 @@ const toISO = (val: any): string => {
 };
 
 // Plan slug mapping by Stripe product ID (monthly + yearly products)
+// Aktuell gültige Produktstruktur: ein Grundpaket "basis" (1000 Credits / Monat).
+// Alte starter/pro/enterprise-Produkte werden nicht mehr vertrieben und daher
+// bewusst nicht mehr gemappt.
 const PRODUCT_TO_PLAN: Record<string, string> = {
-  'prod_U6vMgZiKJOuEph': 'starter',
-  'prod_U6vMFLF7W8nh43': 'pro',
-  'prod_U6vQHQJucwwipk': 'enterprise',
-  'prod_U6xgJe3nEY2OOS': 'starter',
-  'prod_U6yCFgnOHMFzqW': 'pro',
-  'prod_U6yDWJrKKBCYF2': 'enterprise',
-  // Aktuelles Grundpaket (Basis)
   'prod_Ukduqj0YRUxMYt': 'basis',
 };
 
 const PLAN_CREDITS: Record<string, number> = {
-  starter: 50,
-  pro: 200,
-  enterprise: 600,
   basis: 1000,
 };
 

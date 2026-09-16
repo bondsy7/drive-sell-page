@@ -18,6 +18,7 @@
  */
 
 import { LEGAL_VERSIONS } from './legal-config';
+import { supabase } from '@/integrations/supabase/client';
 
 export type ConsentCategory = 'necessary' | 'analytics' | 'marketing';
 
@@ -151,7 +152,10 @@ export function applyConsent(state: ConsentState) {
 let tagsLoaded = false;
 
 function loadGoogleTagsIfConfigured(state: ConsentState) {
-  const gaId = (import.meta.env.VITE_GA_MEASUREMENT_ID as string | undefined)?.trim();
+  const gaId = (
+    (import.meta.env.VITE_GA4_MEASUREMENT_ID as string | undefined) ??
+    (import.meta.env.VITE_GA_MEASUREMENT_ID as string | undefined)
+  )?.trim();
   const adsId = (import.meta.env.VITE_GOOGLE_ADS_ID as string | undefined)?.trim();
 
   // Aktuell sind im Projekt bewusst KEINE IDs hinterlegt -> es wird nichts geladen.
@@ -167,6 +171,26 @@ function loadGoogleTagsIfConfigured(state: ConsentState) {
   window.gtag?.('js', new Date());
   if (state.analytics && gaId) window.gtag?.('config', gaId);
   if (state.marketing && adsId) window.gtag?.('config', adsId);
+}
+
+/**
+ * Dokumentiert die Entscheidung zusätzlich serverseitig (append-only).
+ * Bewusst ohne IP-Adresse; Nutzerkennung nur, wenn bereits angemeldet.
+ */
+export async function recordConsentServerSide(state: ConsentState) {
+  try {
+    const { data } = await supabase.auth.getUser();
+    await supabase.from('consent_records').insert({
+      consent_id: state.consentId,
+      version: state.version,
+      analytics: state.analytics,
+      marketing: state.marketing,
+      user_id: data.user?.id ?? null,
+      user_agent: typeof navigator !== 'undefined' ? navigator.userAgent.slice(0, 300) : null,
+    });
+  } catch {
+    /* Protokollierung darf die Auswahl nie blockieren */
+  }
 }
 
 /** Event-Bus, damit Footer/Banner denselben Dialog öffnen können. */

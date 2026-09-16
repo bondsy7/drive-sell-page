@@ -16,6 +16,7 @@ import {
   CONSENT_OPEN_EVENT,
   createConsent,
   readConsent,
+  recordConsentServerSide,
   saveConsent,
   type ConsentState,
 } from '@/lib/consent';
@@ -47,8 +48,9 @@ export default function ConsentManager() {
     return () => window.removeEventListener(CONSENT_OPEN_EVENT, openHandler);
   }, []);
 
-  const persist = useCallback((a: boolean, m: boolean) => {
+  const persist = useCallback(async (a: boolean, m: boolean) => {
     const state = createConsent(a, m);
+    await recordConsentServerSide(state);
     saveConsent(state);
     if (m) persistPendingAttribution();
     setCurrent(state);

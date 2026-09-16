@@ -427,6 +427,39 @@ export type Database = {
         }
         Relationships: []
       }
+      consent_records: {
+        Row: {
+          analytics: boolean
+          consent_id: string
+          created_at: string
+          id: string
+          marketing: boolean
+          user_agent: string | null
+          user_id: string | null
+          version: string
+        }
+        Insert: {
+          analytics?: boolean
+          consent_id: string
+          created_at?: string
+          id?: string
+          marketing?: boolean
+          user_agent?: string | null
+          user_id?: string | null
+          version: string
+        }
+        Update: {
+          analytics?: boolean
+          consent_id?: string
+          created_at?: string
+          id?: string
+          marketing?: boolean
+          user_agent?: string | null
+          user_id?: string | null
+          version?: string
+        }
+        Relationships: []
+      }
       conversation_stage_log: {
         Row: {
           changed_by: string

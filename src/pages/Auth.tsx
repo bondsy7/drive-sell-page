@@ -89,6 +89,11 @@ const Auth = () => {
   };
 
   const handleGoogle = async () => {
+    // Google-Registrierung darf die B2B-/AGB-Bestätigung nicht umgehen.
+    if (!isLogin && !termsConfirmed) {
+      toast.error('Bitte bestätige zuerst die AGB und deine Unternehmereigenschaft.');
+      return;
+    }
     try {
       const result = await lovable.auth.signInWithOAuth('google', {
         redirect_uri: plan
@@ -189,9 +194,21 @@ const Auth = () => {
           <div className="relative flex justify-center text-xs"><span className="bg-background px-2 text-muted-foreground">oder</span></div>
         </div>
 
-        <Button variant="outline" className="w-full" onClick={handleGoogle}>
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={handleGoogle}
+          disabled={!isLogin && !termsConfirmed}
+        >
           <Chrome className="w-4 h-4 mr-2" /> Mit Google {isLogin ? 'anmelden' : 'registrieren'}
         </Button>
+
+        {!isLogin && (
+          <p className="text-center text-xs text-muted-foreground">
+            Nur für Unternehmer im Sinne des § 14 BGB. Alle Preise netto zzgl. gesetzlicher
+            Umsatzsteuer. Mindestalter 18 Jahre.
+          </p>
+        )}
 
         <p className="text-center text-sm text-muted-foreground">
           {isLogin ? (

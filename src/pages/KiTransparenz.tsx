@@ -74,6 +74,25 @@ const KiTransparenz: React.FC = () => {
           </p>
         </Section>
 
+        <Section title="Prüfpflicht der Nutzerinnen und Nutzer">
+          <p>
+            KI-Ergebnisse sind probabilistisch und können fehlerhaft sein. Inhalte – insbesondere Fahrzeug-,
+            Preis-, Finanzierungs- sowie WLTP-/Pkw-EnVKV-relevante Angaben – müssen vor der Veröffentlichung
+            auf Richtigkeit und Vollständigkeit geprüft werden. Die Verantwortung für veröffentlichte Inhalte
+            liegt beim jeweiligen Unternehmen.
+          </p>
+        </Section>
+
+        <Section title="Maschinenlesbare Kennzeichnung">
+          <p>
+            Soweit gesetzlich erforderlich und technisch möglich, kennzeichnen wir KI-generierte und erheblich
+            KI-bearbeitete Inhalte zusätzlich maschinenlesbar – etwa über von den Modellanbietern gesetzte
+            Wasserzeichen und Metadaten. Wir können jedoch nicht zusichern, dass jedes Ausgabeformat dauerhaft
+            maschinenlesbar markiert bleibt: Metadaten können bei Weiterverarbeitung, Konvertierung oder beim
+            Upload auf Drittplattformen verloren gehen. Die sichtbare Kennzeichnung bleibt daher maßgeblich.
+          </p>
+        </Section>
+
         <Section title="Noch offen">
           <p className="flex gap-2">
             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
