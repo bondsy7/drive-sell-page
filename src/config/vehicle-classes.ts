@@ -27,7 +27,7 @@ import { MACHINERY_PROFILE } from './profiles/machinery-profile';
 
 export * from './vehicle-class-types';
 
-export const ACTIVE_VEHICLE_CLASSES: ActiveVehicleClassKey[] = ['car', 'truck', 'motorcycle', 'van', 'motorhome', 'machinery'];
+export const ACTIVE_VEHICLE_CLASSES: ActiveVehicleClassKey[] = ['car', 'motorcycle', 'motorhome', 'van', 'truck', 'machinery'];
 
 const REGISTRY: Partial<Record<VehicleClassKey, VehicleClassProfile>> = {
   car: CAR_PROFILE,
