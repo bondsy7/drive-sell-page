@@ -142,6 +142,14 @@ export default function Unterauftragsverarbeiter() {
           über diesen Weg verarbeitet werden.
         </p>
       </LegalSection>
+
+      <LegalSection title="4. Änderungen">
+        <p>
+          Wesentliche neue oder ersetzte Unterauftragsverarbeiter teilen wir unseren
+          Geschäftskunden, soweit eine Kontaktmöglichkeit besteht, vor deren Einsatz in Textform
+          oder über einen vertraglich vereinbarten Benachrichtigungskanal mit angemessener
+          Vorlaufzeit mit. Diese Seite dient zusätzlich als jeweils aktuelle Übersicht, ersetzt die
+          Mitteilung aber nicht. Kunden können aus datenschutzrechtlichen Gründen
           innerhalb einer angemessenen Frist Einspruch erheben. Eine automatisierte
           E-Mail-Benachrichtigung ist derzeit nicht eingerichtet.
         </p>
