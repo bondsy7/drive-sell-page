@@ -109,13 +109,15 @@ export function saveConsent(state: ConsentState) {
     (previous?.analytics === true && state.analytics === false) ||
     (previous?.marketing === true && state.marketing === false);
 
-  if (revoked && tagsLoaded) {
+  if (revoked) {
     window.gtag?.('consent', 'update', {
       analytics_storage: state.analytics ? 'granted' : 'denied',
       ad_storage: state.marketing ? 'granted' : 'denied',
       ad_user_data: state.marketing ? 'granted' : 'denied',
       ad_personalization: state.marketing ? 'granted' : 'denied',
     });
+    clearGoogleCookies();
+    if (!state.marketing) clearMarketingStorage();
     window.location.reload();
     return;
   }
@@ -130,6 +132,39 @@ function clearMarketingStorage() {
   try {
     window.localStorage.removeItem('auto3_b2b_attribution_v1');
     window.sessionStorage.removeItem('auto3_b2b_attribution_v1');
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Bekannte Google-Cookie-Namen bzw. -Präfixe. Fremde Cookies bleiben unangetastet. */
+const GOOGLE_COOKIE_PREFIXES = ['_ga', '_gid', '_gat', '_gcl_', '__gads', '__gpi', 'FPAU', 'FPGCLAW', 'FPGCLDC'];
+
+function deleteCookie(name: string) {
+  const paths = ['/', window.location.pathname];
+  const host = window.location.hostname;
+  const domains = [undefined, host, `.${host}`];
+  const parts = host.split('.');
+  if (parts.length > 2) domains.push(`.${parts.slice(-2).join('.')}`);
+
+  for (const path of paths) {
+    for (const domain of domains) {
+      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=${path}${
+        domain ? `; domain=${domain}` : ''
+      }`;
+    }
+  }
+}
+
+/** Löscht bestmöglich die typischen Google-Analyse-/Werbe-Cookies dieser Domain. */
+export function clearGoogleCookies() {
+  if (typeof document === 'undefined') return;
+  try {
+    const names = document.cookie
+      .split(';')
+      .map((c) => c.split('=')[0]?.trim())
+      .filter((n): n is string => !!n && GOOGLE_COOKIE_PREFIXES.some((p) => n.startsWith(p)));
+    for (const name of new Set(names)) deleteCookie(name);
   } catch {
     /* ignore */
   }
@@ -150,27 +185,79 @@ export function applyConsent(state: ConsentState) {
 }
 
 let tagsLoaded = false;
+let gaConfigured = false;
+let adsConfigured = false;
 
-function loadGoogleTagsIfConfigured(state: ConsentState) {
-  const gaId = (
+/** GA4-Mess-ID aus der Konfiguration, sonst leer. */
+function getGaId() {
+  return (
     (import.meta.env.VITE_GA4_MEASUREMENT_ID as string | undefined) ??
     (import.meta.env.VITE_GA_MEASUREMENT_ID as string | undefined)
   )?.trim();
-  const adsId = (import.meta.env.VITE_GOOGLE_ADS_ID as string | undefined)?.trim();
+}
 
-  // Aktuell sind im Projekt bewusst KEINE IDs hinterlegt -> es wird nichts geladen.
+/** Google-Ads-Konto-ID aus der Konfiguration, sonst leer. */
+function getAdsId() {
+  return (import.meta.env.VITE_GOOGLE_ADS_ID as string | undefined)?.trim();
+}
+
+function loadGoogleTagsIfConfigured(state: ConsentState) {
+  const gaId = getGaId();
+  const adsId = getAdsId();
+
+  // Sind bewusst keine IDs hinterlegt, passiert hier nichts.
   const primaryId = (state.analytics && gaId) || (state.marketing && adsId) || '';
-  if (!primaryId || tagsLoaded) return;
-  tagsLoaded = true;
+  if (!primaryId) return;
 
-  const script = document.createElement('script');
-  script.async = true;
-  script.src = `https://www.googletagmanager.com/gtag/js?id=${primaryId}`;
-  document.head.appendChild(script);
+  // Script nur einmal laden, Konfiguration aber bei erweiterter Einwilligung nachziehen.
+  if (!tagsLoaded) {
+    tagsLoaded = true;
+    const script = document.createElement('script');
+    script.async = true;
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${primaryId}`;
+    document.head.appendChild(script);
+    window.gtag?.('js', new Date());
+  }
 
-  window.gtag?.('js', new Date());
-  if (state.analytics && gaId) window.gtag?.('config', gaId);
-  if (state.marketing && adsId) window.gtag?.('config', adsId);
+  if (state.analytics && gaId && !gaConfigured) {
+    gaConfigured = true;
+    window.gtag?.('config', gaId);
+  }
+  if (state.marketing && adsId && !adsConfigured) {
+    adsConfigured = true;
+    window.gtag?.('config', adsId);
+  }
+}
+
+/**
+ * Analyse-Event – wird nur gesendet, wenn aktuell eine Analyse-Einwilligung
+ * vorliegt und eine GA4-Mess-ID konfiguriert ist. Es werden keine
+ * personenbezogenen Parameter automatisch ergänzt.
+ */
+export function trackAnalyticsEvent(name: string, params?: Record<string, unknown>) {
+  if (typeof window === 'undefined') return;
+  const consent = readConsent();
+  if (!consent?.analytics || !getGaId() || !tagsLoaded) return;
+  window.gtag?.('event', name, params ?? {});
+}
+
+/**
+ * Google-Ads-Conversion – nur mit aktueller Marketing-Einwilligung und
+ * konfigurierter Konto-ID. `sendTo` kann weggelassen werden, dann wird
+ * `VITE_GOOGLE_ADS_ID` mit `VITE_GOOGLE_ADS_CONVERSION_LABEL` kombiniert.
+ * Ohne Konfiguration passiert bewusst nichts.
+ */
+export function trackGoogleAdsConversion(sendTo?: string, params?: Record<string, unknown>) {
+  if (typeof window === 'undefined') return;
+  const consent = readConsent();
+  const adsId = getAdsId();
+  if (!consent?.marketing || !adsId || !tagsLoaded) return;
+
+  const label = (import.meta.env.VITE_GOOGLE_ADS_CONVERSION_LABEL as string | undefined)?.trim();
+  const target = sendTo?.trim() || (label ? `${adsId}/${label}` : '');
+  if (!target) return;
+
+  window.gtag?.('event', 'conversion', { ...(params ?? {}), send_to: target });
 }
 
 /**
@@ -186,7 +273,6 @@ export async function recordConsentServerSide(state: ConsentState) {
       analytics: state.analytics,
       marketing: state.marketing,
       user_id: data.user?.id ?? null,
-      user_agent: typeof navigator !== 'undefined' ? navigator.userAgent.slice(0, 300) : null,
     });
   } catch {
     /* Protokollierung darf die Auswahl nie blockieren */

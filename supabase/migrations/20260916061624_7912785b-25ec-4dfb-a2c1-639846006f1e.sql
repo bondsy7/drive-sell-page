@@ -1,0 +1,1 @@
+ALTER TABLE public.consent_records DROP COLUMN IF EXISTS user_agent;
