@@ -294,7 +294,7 @@ ${REFERENCE_TRUTH_PROTOCOL}
 
 // ── Fahrzeugklassen-Kontext (serverseitige Absicherung) ─────────────────────
 
-const ACTIVE_CLASSES = new Set(["car", "truck", "motorcycle", "motorhome"]);
+const ACTIVE_CLASSES = new Set(["car", "truck", "motorcycle", "motorhome", "van"]);
 
 const MOTORHOME_BODY_TYPES = new Set([
   "semi_integrated",
@@ -369,6 +369,15 @@ ${isCaravan
         ? "This is a TOWED CARAVAN: it has NO cab, NO engine and NO driving controls. The drawbar with coupling head, jockey wheel and corner steadies must be present. Never add a cab, a tow car or a tow bar of another vehicle."
         : "This is a MOTORISED motorhome or camper van: keep the donor cab, windscreen, mirrors and number plate exactly as photographed. Never convert it into a towed caravan."}
 Never add camping scenery, people, chairs, tables, bicycles or pets. Never extend or retract awnings, steps, jacks or pop-top roofs against the reference state.
+FINAL CHECK: If the output violates this scope, regenerate before returning.
+</BINDING_SUBJECT_SCOPE_GUARD>`;
+  }
+  if (ctx.vehicleClass === "van") {
+    return `<BINDING_SUBJECT_SCOPE_GUARD>
+VEHICLE CLASS: light commercial vehicle (transporter up to 3.5 t).
+The output must show the complete van exactly as photographed: roof height, wheelbase, body length, window and door concept, sliding door side, rear door type (barn doors or tailgate) and rim type stay unchanged. Never re-classify it as a passenger car, an MPV, a motorhome or a heavy truck.
+Keep all doors, flaps and the bonnet in the open/closed state of the reference. The cab and the load space are empty and clean: no people, no cargo, no pallets, no tools, no racking that is absent in the reference.
+Never invent company signwriting, advertising films, fleet numbers or licence-plate content, and never replace steel wheels with alloy wheels.
 FINAL CHECK: If the output violates this scope, regenerate before returning.
 </BINDING_SUBJECT_SCOPE_GUARD>`;
   }
