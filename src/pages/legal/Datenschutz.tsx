@@ -9,6 +9,7 @@ export default function Datenschutz() {
       metaTitle="Datenschutzerklärung – AUTO3"
       metaDescription="Wie AUTO3 (Breadcrumb Marketing GmbH) personenbezogene Daten verarbeitet: Konten, Zahlungen, KI-Verarbeitung, Einwilligungen, Rechte der Betroffenen."
       canonicalPath="/datenschutz"
+      toc
       intro={
         <p>
           Diese Erklärung informiert über die Verarbeitung personenbezogener Daten bei der Nutzung

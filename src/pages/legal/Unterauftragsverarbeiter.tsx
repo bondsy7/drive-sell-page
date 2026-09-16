@@ -102,6 +102,7 @@ export default function Unterauftragsverarbeiter() {
       metaTitle="Unterauftragsverarbeiter – AUTO3"
       metaDescription="Anlage 1 zum Auftragsverarbeitungsvertrag: eingesetzte Unterauftragsverarbeiter, weitere Empfänger und offene Punkte für AUTO3."
       canonicalPath="/unterauftragsverarbeiter"
+      toc
       intro={
         <p>
           Anlage 1 zum{' '}

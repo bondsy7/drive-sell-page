@@ -8,6 +8,7 @@ export default function Toms() {
       metaTitle="TOMs – Sicherheitsmaßnahmen AUTO3"
       metaDescription="Anlage 2 zum Auftragsverarbeitungsvertrag: technische und organisatorische Maßnahmen nach Art. 32 DSGVO für die Plattform AUTO3."
       canonicalPath="/toms"
+      toc
       intro={
         <p>
           Anlage 2 zum{' '}

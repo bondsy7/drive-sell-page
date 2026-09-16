@@ -8,6 +8,7 @@ export default function Avv() {
       metaTitle="AVV – Auftragsverarbeitung AUTO3 | Breadcrumb Marketing GmbH"
       metaDescription="Rahmenvertrag zur Auftragsverarbeitung nach Art. 28 DSGVO zwischen AUTO3-Geschäftskunden als Verantwortlichem und der Breadcrumb Marketing GmbH als Auftragsverarbeiter."
       canonicalPath="/avv"
+      toc
       intro={
         <p>
           Dieser Rahmenvertrag gilt zwischen dem jeweiligen AUTO3-Geschäftskunden

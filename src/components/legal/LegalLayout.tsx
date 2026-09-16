@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import SiteFooter from '@/components/legal/SiteFooter';
@@ -14,6 +14,16 @@ interface LegalLayoutProps {
   children: ReactNode;
   /** Abweichendes Standdatum, sonst Release-Datum. */
   versionDate?: string;
+  /** Inhaltsverzeichnis aus den Abschnittsüberschriften erzeugen (lange Texte). */
+  toc?: boolean;
+}
+
+function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[äöüß]/g, (c) => ({ ä: 'ae', ö: 'oe', ü: 'ue', ß: 'ss' })[c] ?? c)
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 }
 
 export function LegalSection({ title, children }: { title: string; children: ReactNode }) {
@@ -45,8 +55,24 @@ export default function LegalLayout({
   intro,
   children,
   versionDate,
+  toc = false,
 }: LegalLayoutProps) {
   usePageMeta({ title: metaTitle, description: metaDescription, canonicalPath });
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [entries, setEntries] = useState<{ id: string; label: string }[]>([]);
+
+  useEffect(() => {
+    if (!toc || !contentRef.current) return;
+    const headings = Array.from(contentRef.current.querySelectorAll('h2'));
+    const next = headings.map((h) => {
+      const label = h.textContent?.trim() ?? '';
+      const id = h.id || slugify(label);
+      h.id = id;
+      h.style.scrollMarginTop = '5rem';
+      return { id, label };
+    });
+    setEntries(next);
+  }, [toc, children]);
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -68,7 +94,30 @@ export default function LegalLayout({
 
           {intro && <div className="text-sm leading-relaxed text-muted-foreground">{intro}</div>}
 
-          <div className="space-y-8">{children}</div>
+          {toc && entries.length > 2 && (
+            <nav
+              aria-label="Inhaltsverzeichnis"
+              className="rounded-lg border border-border bg-card/40 p-4"
+            >
+              <p className="mb-2 text-sm font-semibold text-foreground">Inhalt</p>
+              <ol className="grid gap-1 text-sm text-muted-foreground sm:grid-cols-2">
+                {entries.map((e) => (
+                  <li key={e.id}>
+                    <a
+                      href={`#${e.id}`}
+                      className="rounded-md underline-offset-2 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                    >
+                      {e.label}
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            </nav>
+          )}
+
+          <div ref={contentRef} className="space-y-8">
+            {children}
+          </div>
         </div>
       </main>
       <SiteFooter />
