@@ -434,7 +434,6 @@ export type Database = {
           created_at: string
           id: string
           marketing: boolean
-          user_agent: string | null
           user_id: string | null
           version: string
         }
@@ -444,7 +443,6 @@ export type Database = {
           created_at?: string
           id?: string
           marketing?: boolean
-          user_agent?: string | null
           user_id?: string | null
           version: string
         }
@@ -454,7 +452,6 @@ export type Database = {
           created_at?: string
           id?: string
           marketing?: boolean
-          user_agent?: string | null
           user_id?: string | null
           version?: string
         }
