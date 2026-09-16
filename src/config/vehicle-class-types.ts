@@ -5,7 +5,7 @@
  */
 
 /** Vehicle classes that are functionally implemented and visible in the UI. */
-export type ActiveVehicleClassKey = 'car' | 'truck' | 'motorcycle' | 'motorhome';
+export type ActiveVehicleClassKey = 'car' | 'truck' | 'motorcycle' | 'motorhome' | 'van';
 
 /**
  * All vehicle classes the architecture is prepared for.
