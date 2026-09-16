@@ -5,11 +5,13 @@ import type { ActiveVehicleClassKey } from '@/config/vehicle-class-types';
 import carAsset from '@/assets/vehicle-classes/car.png.asset.json';
 import truckAsset from '@/assets/vehicle-classes/truck.png.asset.json';
 import motorcycleAsset from '@/assets/vehicle-classes/motorcycle.png.asset.json';
+import motorhomeAsset from '@/assets/vehicle-classes/motorhome.png.asset.json';
 
 const CLASS_VISUAL: Record<string, { image: string; title: string; examples: string }> = {
   car: { image: carAsset.url, title: 'PKW', examples: 'Limousine, Kombi, SUV, Coupé' },
   truck: { image: truckAsset.url, title: 'LKW', examples: 'über 7,5 t, Sattelzug' },
   motorcycle: { image: motorcycleAsset.url, title: 'Motorrad', examples: 'Naked Bike, Tourer, Chopper' },
+  motorhome: { image: motorhomeAsset.url, title: 'Reisemobil', examples: 'Wohnmobil, Kastenwagen, Wohnwagen' },
 };
 
 interface VehicleClassStripProps {
@@ -26,7 +28,7 @@ const VehicleClassStrip: React.FC<VehicleClassStripProps> = ({ value, onChange, 
   const profiles = getActiveProfiles();
 
   return (
-    <div className="grid grid-cols-3 gap-2">
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
       {profiles.map((p) => {
         const visual = CLASS_VISUAL[p.key] ?? { image: carAsset.url, title: p.label, examples: p.description };
         const active = value === p.key;

@@ -35,6 +35,9 @@ import { checkSourceCoverage } from '@/lib/source-coverage';
 import VehicleClassStrip from '@/components/capture/VehicleClassStrip';
 import CaptureSummaryPanel, { type SummaryRow } from '@/components/capture/CaptureSummaryPanel';
 import TruckWizard from '@/components/capture/TruckWizard';
+import MotorhomeWizard from '@/components/capture/MotorhomeWizard';
+import { isMotorhomeSelectionComplete } from '@/config/motorhome-workflow';
+import type { MotorhomeBodyTypeKey } from '@/config/vehicle-class-types';
 import { TruckSketch } from '@/components/capture/TruckSketch';
 import { usePipeline } from '@/contexts/PipelineContext';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -276,6 +279,12 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       cargoState: vehicleData?.cargoState ?? null,
     }),
   );
+  const [motorhomeBodyType, setMotorhomeBodyType] = useState<MotorhomeBodyTypeKey | null>(
+    vehicleData?.motorhomeBodyType ?? null,
+  );
+  const [motorhomeWizardDone, setMotorhomeWizardDone] = useState(
+    () => isMotorhomeSelectionComplete(vehicleData?.motorhomeBodyType ?? null),
+  );
   const [ensuredVehicleId, setEnsuredVehicleId] = useState<string | null>(vehicleId || null);
   const [isEnsuringVehicle, setIsEnsuringVehicle] = useState(false);
   const [captures, setCaptures] = useState<Record<string, CapturedImage>>({});
@@ -457,11 +466,12 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     truckBodyType: truckSelection.truckBodyType ?? null,
     cargoState: truckSelection.cargoState ?? null,
     subjectScope: truckSelection.subjectScope ?? null,
-  }), [activeClass, truckSelection]);
+    motorhomeBodyType: activeClass === 'motorhome' ? motorhomeBodyType : null,
+  }), [activeClass, truckSelection, motorhomeBodyType]);
 
   const slots: PerspectiveSlot[] = useMemo(
-    () => resolveCaptureSlots(classProfile, truckSelection),
-    [classProfile, truckSelection],
+    () => resolveCaptureSlots(classProfile, { ...truckSelection, motorhomeBodyType }),
+    [classProfile, truckSelection, motorhomeBodyType],
   );
 
   const capturedCount = Object.keys(captures).length;
@@ -947,8 +957,14 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     setVehicleClass(cls);
     setCaptures({});
     setTruckWizardDone(cls !== 'truck');
+    setMotorhomeWizardDone(cls !== 'motorhome');
+    if (cls !== 'motorhome') setMotorhomeBodyType(null);
     const cur = latestVehicleDataRef.current;
-    if (cur) onVehicleDataChange?.({ ...cur, vehicleClass: cls });
+    if (cur) onVehicleDataChange?.({
+      ...cur,
+      vehicleClass: cls,
+      motorhomeBodyType: cls === 'motorhome' ? cur.motorhomeBodyType ?? null : null,
+    });
   };
 
 
@@ -1160,7 +1176,34 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                 Konfiguration ändern
               </button>
             )}
+            {activeClass === 'motorhome' && motorhomeWizardDone && (
+              <button
+                onClick={() => setMotorhomeWizardDone(false)}
+                className="mt-2 text-[11px] underline text-muted-foreground hover:text-foreground"
+              >
+                Aufbautyp ändern
+              </button>
+            )}
           </CaptureSection>
+
+          {activeClass === 'motorhome' && !motorhomeWizardDone && (
+            <CaptureSection title="Aufbautyp auswählen" collapsible>
+              <MotorhomeWizard
+                value={motorhomeBodyType}
+                onSelect={(bodyType) => {
+                  setMotorhomeBodyType(bodyType);
+                  setMotorhomeWizardDone(true);
+                  setCaptures({});
+                  const cur = latestVehicleDataRef.current;
+                  if (cur) onVehicleDataChange?.({
+                    ...cur,
+                    vehicleClass: 'motorhome',
+                    motorhomeBodyType: bodyType,
+                  });
+                }}
+              />
+            </CaptureSection>
+          )}
 
           {activeClass === 'truck' && !truckWizardDone && (
             <CaptureSection title="Konfiguration auswählen" collapsible>
@@ -1184,7 +1227,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
             </CaptureSection>
           )}
 
-          {(activeClass !== 'truck' || truckWizardDone) && (
+          {(activeClass === 'truck' ? truckWizardDone : activeClass === 'motorhome' ? motorhomeWizardDone : true) && (
             <>
               <CaptureSection
                 title="Aufnahmen"

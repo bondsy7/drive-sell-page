@@ -8,6 +8,7 @@ import type { VehicleClassContext } from '@/config/vehicle-class-types';
 import { resolveVehicleClass } from '@/config/vehicle-classes';
 import { buildTruckPromptBlocks, TRUCK_PERSPECTIVE_PROMPTS } from '@/prompts/remaster/truck';
 import { buildMotorcyclePromptBlocks, MOTORCYCLE_PERSPECTIVE_PROMPTS } from '@/prompts/remaster/motorcycle';
+import { buildMotorhomePromptBlocks, MOTORHOME_PERSPECTIVE_PROMPTS } from '@/prompts/remaster/motorhome';
 import { formatWheelAnalysisBlock } from '@/lib/wheel-reference';
 import { buildVehicleGenerationLock, sanitizeVehicleDescriptionForPrompt } from '@/lib/vehicle-generation-lock';
 import parkingGaragePreview from '@/assets/scene-previews/parking-garage.webp.asset.json';
@@ -227,7 +228,16 @@ export function getPerspectivePrompt(slotKey: string): string {
 
 /** Helper: is this an interior slot? */
 /** Interior slots across all vehicle classes (car: `interior-*`, truck: `truck_cab_interior`, `truck_cargo_area`). */
-const INTERIOR_SLOT_KEYS = new Set(['truck_cab_interior', 'truck_cargo_area']);
+const INTERIOR_SLOT_KEYS = new Set([
+  'truck_cab_interior',
+  'truck_cargo_area',
+  // Reisemobil-Wohnraum
+  'living',
+  'kitchen',
+  'bath',
+  'bed',
+  'garage',
+]);
 
 function isInteriorSlot(slotKey?: string): boolean {
   if (!slotKey) return false;
@@ -292,6 +302,7 @@ export function buildMasterPrompt(
   const vehicleClass = resolveVehicleClass(classContext?.vehicleClass);
   const isTruck = vehicleClass === 'truck';
   const isMotorcycle = vehicleClass === 'motorcycle';
+  const isMotorhome = vehicleClass === 'motorhome';
   const interior = isInteriorSlot(slotKey);
 
   // ── Base instruction ──
@@ -362,6 +373,11 @@ PAINT COLOR CHANGE – ABSOLUTE, NON-NEGOTIABLE, APPLIES TO EVERY IMAGE:
   // ── MOTORRAD-SPEZIFISCHE BLÖCKE (niemals im Pkw-/Lkw-Prompt) ──
   if (isMotorcycle) {
     parts.push(...buildMotorcyclePromptBlocks());
+  }
+
+  // ── REISEMOBIL-SPEZIFISCHE BLÖCKE (niemals im Pkw-/Lkw-/Zweirad-Prompt) ──
+  if (isMotorhome) {
+    parts.push(...buildMotorhomePromptBlocks(classContext?.motorhomeBodyType ?? null, interior));
   }
 
   // ── WHEEL REFERENCE LOCK (nur bei dedizierter Felgenreferenz) ──
@@ -670,8 +686,10 @@ ${neutralVehicleDescription}
       ? TRUCK_PERSPECTIVE_PROMPTS[slotKey]
       : isMotorcycle
         ? MOTORCYCLE_PERSPECTIVE_PROMPTS[slotKey]
-        : null;
-    const perspPrompt = isTruck || isMotorcycle
+        : isMotorhome
+          ? MOTORHOME_PERSPECTIVE_PROMPTS[slotKey]
+          : null;
+    const perspPrompt = isTruck || isMotorcycle || isMotorhome
       ? classPersp
         ? `<CURRENT_PERSPECTIVE>\n${classPersp}\n</CURRENT_PERSPECTIVE>`
         : ''

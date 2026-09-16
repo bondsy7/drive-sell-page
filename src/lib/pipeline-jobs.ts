@@ -40,6 +40,11 @@ export interface PipelineJob {
 // ═══════════════════════════════════════════════════════════════════
 
 import { MOTORCYCLE_PIPELINE_JOBS } from './pipeline-jobs-motorcycle';
+import {
+  MOTORHOME_PIPELINE_JOBS,
+  getMotorhomeJobsForBodyType,
+} from './pipeline-jobs-motorhome';
+import type { MotorhomeBodyTypeKey } from '@/config/vehicle-class-types';
 
 const LOGO_LINE = '{{LOGO_LINE}}';
 
@@ -893,7 +898,7 @@ export function detectBrandFromDescription(description: string, vehicleBrand?: s
 
 /** Get the total image count a set of selected jobs will produce */
 export function getTotalImageCount(selectedKeys: Set<string>): number {
-  return [...PIPELINE_JOBS, ...MOTORCYCLE_PIPELINE_JOBS]
+  return [...PIPELINE_JOBS, ...MOTORCYCLE_PIPELINE_JOBS, ...MOTORHOME_PIPELINE_JOBS]
     .filter(j => selectedKeys.has(j.key))
     .reduce((sum, j) => sum + (j.outputCount ?? 1), 0);
 }
@@ -982,9 +987,18 @@ export function jobNeedsWheelReference(job: PipelineJob | undefined): boolean {
 // ═══════════════════════════════════════════════════════════════════
 
 /** Liefert die Jobliste der jeweiligen Fahrzeugklasse (Pkw bleibt Default). */
-export function getPipelineJobsForVehicleClass(vehicleClass?: string | null): PipelineJob[] {
-  return vehicleClass === 'motorcycle' ? MOTORCYCLE_PIPELINE_JOBS : PIPELINE_JOBS;
+export function getPipelineJobsForVehicleClass(
+  vehicleClass?: string | null,
+  motorhomeBodyType?: MotorhomeBodyTypeKey | null,
+): PipelineJob[] {
+  if (vehicleClass === 'motorcycle') return MOTORCYCLE_PIPELINE_JOBS;
+  if (vehicleClass === 'motorhome') return getMotorhomeJobsForBodyType(motorhomeBodyType);
+  return PIPELINE_JOBS;
 }
 
 /** Alle bekannten Jobs aller Klassen – nur für Label-Lookups (Galerie). */
-export const ALL_PIPELINE_JOBS: PipelineJob[] = [...PIPELINE_JOBS, ...MOTORCYCLE_PIPELINE_JOBS];
+export const ALL_PIPELINE_JOBS: PipelineJob[] = [
+  ...PIPELINE_JOBS,
+  ...MOTORCYCLE_PIPELINE_JOBS,
+  ...MOTORHOME_PIPELINE_JOBS,
+];
