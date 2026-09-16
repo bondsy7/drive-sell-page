@@ -322,6 +322,7 @@ const SERVER_SUBJECT_SCOPE_RULES: Record<string, string> = {
 
 interface ClassContext {
   vehicleClass: string;
+  motorhomeBodyType?: string | null;
   truckConfiguration?: string | null;
   truckBodyType?: string | null;
   cargoState?: string | null;
