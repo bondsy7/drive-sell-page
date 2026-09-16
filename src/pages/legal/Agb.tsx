@@ -86,6 +86,12 @@ export default function Agb() {
           Auszahlung, Rückzahlung in Geld oder Übertragung an Dritte ist ausgeschlossen.
         </p>
         <p>
+          Während eines aktiven Kundenkontos gutgeschriebene Credits bleiben nutzbar, soweit der
+          Tarif oder die Bestellseite nicht ausdrücklich eine abweichende Gültigkeit ausweist. Bei
+          endgültiger Löschung des Kundenkontos verfallen ungenutzte Credits, soweit dem keine
+          zwingenden gesetzlichen oder vertraglichen Ansprüche entgegenstehen.
+        </p>
+        <p>
           Die Credit-Kosten einer Aktion werden vor deren Auslösung angezeigt. Schlägt eine
           kostenpflichtige Aktion aus einem vom Anbieter zu vertretenden technischen Grund
           eindeutig fehl, werden die dafür verbrauchten Credits auf Anforderung gutgeschrieben. Kein

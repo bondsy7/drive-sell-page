@@ -303,11 +303,26 @@ export default function Datenschutz() {
       <LegalSection title="23. Speicherdauer und Löschung">
         <p>
           Konto- und Vertragsdaten speichern wir für die Dauer des Vertragsverhältnisses und
-          anschließend, soweit handels- und steuerrechtliche Aufbewahrungsfristen bestehen (in der
-          Regel 6 bzw. 10 Jahre). Projekt-, Medien- und CRM-Daten speichern wir, solange sie für
-          Konto und Projekte benötigt werden oder bis Sie eine Löschung veranlassen; Kopien in
-          Sicherungen können vorübergehend fortbestehen. Feste Fristen für einzelne Mediendateien
-          sagen wir nicht zu.
+          anschließend so lange, wie handels- und steuerrechtliche Aufbewahrungspflichten bestehen.
+          Diese Fristen sind unterschiedlich lang: Sie betragen – soweit im Einzelfall einschlägig –
+          unter anderem zehn Jahre für bestimmte Bücher, Aufzeichnungen und Jahresabschlüsse, acht
+          Jahre für Buchungsbelege einschließlich Rechnungen und sechs Jahre für bestimmte
+          empfangene und abgesandte Handels- und Geschäftsbriefe. Welche Frist konkret gilt, hängt
+          von der jeweiligen Unterlage ab; eine darüber hinausgehende Detailzusage machen wir nicht.
+        </p>
+        <p>
+          Projekt-, Medien- und CRM-Daten speichern wir, solange sie für Konto und Projekte benötigt
+          werden oder bis Sie eine Löschung veranlassen; Kopien in Sicherungen können vorübergehend
+          fortbestehen. Feste Fristen für einzelne Mediendateien sagen wir nicht zu.
+        </p>
+        <p>
+          Hinweis zur Speicherarchitektur: Originalaufnahmen, Dokumente und interne Uploads liegen
+          in nicht öffentlichen Speicherbereichen und werden nur über zeitlich begrenzte, signierte
+          Links ausgeliefert. Für Veröffentlichung und Weitergabe bestimmte Medien – insbesondere
+          aufbereitete und generierte Fahrzeugbilder im Speicherbereich „vehicle-images“ sowie
+          Banner und Logos – sind demgegenüber über öffentlich abrufbare, nicht ohne Weiteres
+          erratbare Adressen erreichbar. Das ist für Landingpages, Exporte und die von Ihnen
+          beauftragte Veröffentlichung in sozialen Netzwerken technisch erforderlich.
         </p>
       </LegalSection>
 
