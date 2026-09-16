@@ -294,7 +294,15 @@ ${REFERENCE_TRUTH_PROTOCOL}
 
 // ── Fahrzeugklassen-Kontext (serverseitige Absicherung) ─────────────────────
 
-const ACTIVE_CLASSES = new Set(["car", "truck", "motorcycle"]);
+const ACTIVE_CLASSES = new Set(["car", "truck", "motorcycle", "motorhome"]);
+
+const MOTORHOME_BODY_TYPES = new Set([
+  "semi_integrated",
+  "alcove",
+  "fully_integrated",
+  "campervan",
+  "caravan",
+]);
 
 const SERVER_SUBJECT_SCOPE_RULES: Record<string, string> = {
   tractor_unit_only:
