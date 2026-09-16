@@ -401,6 +401,11 @@ PAINT COLOR CHANGE – ABSOLUTE, NON-NEGOTIABLE, APPLIES TO EVERY IMAGE:
     parts.push(...buildVanPromptBlocks(interior));
   }
 
+  // ── BAUMASCHINEN-SPEZIFISCHE BLÖCKE (niemals in einer anderen Klasse) ──
+  if (isMachinery) {
+    parts.push(...buildMachineryPromptBlocks(interior, config.machineryTidyUp === true));
+  }
+
   // ── WHEEL REFERENCE LOCK (nur bei dedizierter Felgenreferenz) ──
   if (config.wheelReference?.image && !interior) {
     parts.push(buildWheelReferenceLock(config.wheelReference));
@@ -711,8 +716,10 @@ ${neutralVehicleDescription}
           ? MOTORHOME_PERSPECTIVE_PROMPTS[slotKey]
           : isVan
             ? VAN_PERSPECTIVE_PROMPTS[slotKey]
-            : null;
-    const perspPrompt = isTruck || isMotorcycle || isMotorhome || isVan
+            : isMachinery
+              ? MACHINERY_PERSPECTIVE_PROMPTS[slotKey]
+              : null;
+    const perspPrompt = isTruck || isMotorcycle || isMotorhome || isVan || isMachinery
       ? classPersp
         ? `<CURRENT_PERSPECTIVE>\n${classPersp}\n</CURRENT_PERSPECTIVE>`
         : ''
