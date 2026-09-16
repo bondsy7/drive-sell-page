@@ -402,7 +402,15 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       WOMO_DET_GARAGE: 'garage',
     };
     const womoSlotKey = WOMO_SLOT_KEYS[(job?.key || '').toUpperCase()];
+    // Transporter: eigene Kabinen-/Laderaum-Slots statt der Pkw-Innenraumperspektiven.
+    const VAN_SLOT_KEYS: Record<string, string> = {
+      VAN_INT_COCKPIT: 'cockpit',
+      VAN_INT_CARGO: 'cargo',
+      VAN_INT_SLIDING_DOOR: 'sliding-door',
+    };
+    const vanSlotKey = VAN_SLOT_KEYS[(job?.key || '').toUpperCase()];
     const interiorSlotKey = womoSlotKey
+      ?? vanSlotKey
       ?? (isInteriorJob
         ? (REAR_INTERIOR_PATTERNS.test(`${job?.key || ''} ${job?.label || ''} ${job?.labelDe || ''}`) ? 'interior-rear' : 'interior-front')
         : undefined);
