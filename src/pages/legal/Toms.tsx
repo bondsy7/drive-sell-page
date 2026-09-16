@@ -52,11 +52,16 @@ export default function Toms() {
           ]}
         />
         <p>
-          Hinweis zur Transparenz: Nicht alle Speicherbereiche sind privat. Für Veröffentlichung und
-          Export (z. B. Social-Media-Beiträge, ausgelieferte Landingpages, Bannerdateien,
-          Herstellerlogos) sind Medien über öffentlich abrufbare, nicht ohne Weiteres erratbare
-          Adressen erreichbar. Dies ist für die vom Kunden beauftragte Veröffentlichung technisch
-          erforderlich und Teil der Weisung.
+          Hinweis zur Transparenz: Nicht alle Speicherbereiche sind privat. Originalaufnahmen
+          („originals“), Vertriebsdokumente, Audiodateien und interne Test-Uploads liegen in
+          privaten Bereichen und werden nur über signierte, zeitlich begrenzte Links ausgeliefert.
+          Demgegenüber sind die Bereiche „vehicle-images“ (aufbereitete und generierte
+          Fahrzeugbilder der Galerie), „banners“, „logos“, „manufacturer-logos“ und „sample-pdfs“
+          aktuell öffentlich abrufbar – über nicht ohne Weiteres erratbare Adressen. Dies ist für
+          Veröffentlichung und Export (Social-Media-Beiträge, ausgelieferte Landingpages,
+          Bannerdateien) technisch erforderlich und Teil der Weisung. Eine spätere Trennung in
+          private Arbeitsstände und ausdrücklich veröffentlichte Medien ist als Verbesserung
+          vorgesehen.
         </p>
       </LegalSection>
 

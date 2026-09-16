@@ -133,21 +133,15 @@ export default function Unterauftragsverarbeiter() {
         <Table rows={RECIPIENTS} />
       </LegalSection>
 
-      <LegalSection title="3. OutVin (Fahrzeugdaten / VIN) – OFFEN">
+      <LegalSection title="3. OutVin (Fahrzeugdaten / VIN) – Rolle zu verifizieren">
         <p>
           Für die Ermittlung von Fahrzeugdaten kann eine Fahrzeugidentifikationsnummer an OutVin
-          übermittelt werden. Rolle, Nutzungsbedingungen und ein etwaiger
-          Auftragsverarbeitungsvertrag sind noch zu verifizieren. Bis zur Klärung sollten keine
-          VIN-Daten mit Personenbezug produktiv über diesen Weg verarbeitet werden. Dieser Punkt ist
-          ausdrücklich OFFEN.
+          übermittelt werden. Betreiber ist nach den OutVin-Nutzungsbedingungen SIA „Social Minds“.
+          Die datenschutzrechtliche Rolle und ein etwaiger Auftragsverarbeitungsvertrag sind
+          vertraglich zu prüfen. Bis zur Klärung sollten keine VIN-Daten mit Personenbezug produktiv
+          über diesen Weg verarbeitet werden.
         </p>
       </LegalSection>
-
-      <LegalSection title="4. Änderungen">
-        <p>
-          Über die Hinzuziehung wesentlicher neuer oder den Austausch bestehender
-          Unterauftragsverarbeiter informieren wir unsere Geschäftskunden vorab in Textform oder
-          durch Aktualisierung dieser Seite. Kunden können aus datenschutzrechtlichen Gründen
           innerhalb einer angemessenen Frist Einspruch erheben. Eine automatisierte
           E-Mail-Benachrichtigung ist derzeit nicht eingerichtet.
         </p>
