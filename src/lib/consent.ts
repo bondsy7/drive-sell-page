@@ -135,6 +135,39 @@ function clearMarketingStorage() {
   }
 }
 
+/** Bekannte Google-Cookie-Namen bzw. -Präfixe. Fremde Cookies bleiben unangetastet. */
+const GOOGLE_COOKIE_PREFIXES = ['_ga', '_gid', '_gat', '_gcl_', '__gads', '__gpi', 'FPAU', 'FPGCLAW', 'FPGCLDC'];
+
+function deleteCookie(name: string) {
+  const paths = ['/', window.location.pathname];
+  const host = window.location.hostname;
+  const domains = [undefined, host, `.${host}`];
+  const parts = host.split('.');
+  if (parts.length > 2) domains.push(`.${parts.slice(-2).join('.')}`);
+
+  for (const path of paths) {
+    for (const domain of domains) {
+      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=${path}${
+        domain ? `; domain=${domain}` : ''
+      }`;
+    }
+  }
+}
+
+/** Löscht bestmöglich die typischen Google-Analyse-/Werbe-Cookies dieser Domain. */
+export function clearGoogleCookies() {
+  if (typeof document === 'undefined') return;
+  try {
+    const names = document.cookie
+      .split(';')
+      .map((c) => c.split('=')[0]?.trim())
+      .filter((n): n is string => !!n && GOOGLE_COOKIE_PREFIXES.some((p) => n.startsWith(p)));
+    for (const name of new Set(names)) deleteCookie(name);
+  } catch {
+    /* ignore */
+  }
+}
+
 /** Überträgt den Zustand an Google Consent Mode und lädt Tags erst bei Einwilligung. */
 export function applyConsent(state: ConsentState) {
   if (typeof window === 'undefined') return;
