@@ -1,18 +1,18 @@
 /**
- * Motorrad-Profil.
+ * Motorrad-/Zweirad-Profil.
  *
- * Der Prozess entspricht funktional exakt dem Pkw-Prozess (gleiche Pipeline,
- * gleiche Optionen). Unterschiede sind ausschließlich:
- * - Motorrad-Icons in den Upload-Feldern
- * - „Fahrersitz" / „Rücksitz" statt „Interieur Fahrersitz" / „Interieur Rücksitz"
- * - kein Icon-/Vorschlags-Guide beim Multiupload für Detailaufnahmen
+ * Eigenständige Zweirad-Konfiguration: eigene Aufnahmeperspektiven
+ * (linke und rechte Fahrzeugseite getrennt), eigene Pipeline-Jobs
+ * (`MOTORCYCLE_PIPELINE_JOBS`) und eigene Prompt-Blöcke
+ * (`src/prompts/remaster/motorcycle.ts`). Die Pkw-Konfiguration wird
+ * dadurch nicht verändert.
  */
 import type { CaptureSlot, VehicleClassProfile } from '../vehicle-class-types';
 import moto34Front from '@/assets/moto-perspectives/34front.png.asset.json';
-import motoSide from '@/assets/moto-perspectives/side.png.asset.json';
+import motoSideLeft from '@/assets/moto-perspectives/side-left.png.asset.json';
+import motoSideRight from '@/assets/moto-perspectives/side-right.png.asset.json';
 import motoRear from '@/assets/moto-perspectives/rear.png.asset.json';
-import motoSeatFront from '@/assets/moto-perspectives/rider-seat.png.asset.json';
-import motoSeatRear from '@/assets/moto-perspectives/pillion-seat.png.asset.json';
+import motoCockpit from '@/assets/moto-perspectives/rider-seat.png.asset.json';
 
 export const MOTORCYCLE_CAPTURE_SLOTS: CaptureSlot[] = [
   {
@@ -25,13 +25,24 @@ export const MOTORCYCLE_CAPTURE_SLOTS: CaptureSlot[] = [
     coverageTags: ['ext_front', '34_front_left'],
   },
   {
-    key: 'side',
-    label: 'Seite',
-    icon: motoSide.url,
+    key: 'side-left',
+    label: 'Seitenansicht links',
+    hint: 'Linke Fahrzeugseite (Seitenständer-Seite)',
+    icon: motoSideLeft.url,
     capture: 'environment',
     required: true,
     aspect: '4/3',
     coverageTags: ['ext_side_left', 'side_left'],
+  },
+  {
+    key: 'side-right',
+    label: 'Seitenansicht rechts',
+    hint: 'Rechte Fahrzeugseite (Auspuff-/Bremshebel-Seite)',
+    icon: motoSideRight.url,
+    capture: 'environment',
+    required: true,
+    aspect: '4/3',
+    coverageTags: ['ext_side_right', 'side_right'],
   },
   {
     key: 'rear',
@@ -43,22 +54,14 @@ export const MOTORCYCLE_CAPTURE_SLOTS: CaptureSlot[] = [
     coverageTags: ['ext_rear', 'rear'],
   },
   {
-    key: 'moto-seat-front',
-    label: 'Fahrersitz',
-    icon: motoSeatFront.url,
+    key: 'cockpit',
+    label: 'Sitz / Cockpit',
+    hint: 'Sattel, Lenker und Display',
+    icon: motoCockpit.url,
     capture: 'environment',
     required: false,
     aspect: '4/3',
-    coverageTags: ['moto_seat_front'],
-  },
-  {
-    key: 'moto-seat-rear',
-    label: 'Rücksitz',
-    icon: motoSeatRear.url,
-    capture: 'environment',
-    required: false,
-    aspect: '4/3',
-    coverageTags: ['moto_seat_rear'],
+    coverageTags: ['moto_cockpit', 'moto_seat_front'],
   },
   {
     key: 'vin',

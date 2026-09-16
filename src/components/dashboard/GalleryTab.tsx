@@ -1,19 +1,20 @@
 import { useMemo, useState, useEffect, useRef } from 'react';
 import { Image, FolderOpen, ChevronDown, ChevronRight, Trash2 } from 'lucide-react';
 import { type ProjectImage, getImageSrc } from './types';
-import { PIPELINE_JOBS } from '@/lib/pipeline-jobs';
+import { ALL_PIPELINE_JOBS } from '@/lib/pipeline-jobs';
 import AiDisclosureBadge from '@/components/AiDisclosureBadge';
 import { withAiDisclosureAlt } from '@/lib/ai-disclosure';
 
 
 /* ── Fixed sort order for images within a gallery folder ── */
 const REMASTER_ORDER: string[] = [
-  '3/4 Front', 'Seite', 'Hinten', 'Interieur Fahrersitz', 'Interieur Rücksitz',
+  '3/4 Front', 'Seite', 'Seitenansicht links', 'Seitenansicht rechts', 'Hinten',
+  'Sitz / Cockpit', 'Interieur Fahrersitz', 'Interieur Rücksitz',
 ];
 
 // Build pipeline label → sort index from the canonical PIPELINE_JOBS array
 const PIPELINE_LABEL_ORDER = new Map<string, number>();
-PIPELINE_JOBS.forEach((j, i) => {
+ALL_PIPELINE_JOBS.forEach((j, i) => {
   PIPELINE_LABEL_ORDER.set(j.labelDe, i);
   PIPELINE_LABEL_ORDER.set(j.label, i);
 });
