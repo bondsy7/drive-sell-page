@@ -39,6 +39,8 @@ export interface PipelineJob {
 // This eliminates the previous triple-redundancy problem.
 // ═══════════════════════════════════════════════════════════════════
 
+import { MOTORCYCLE_PIPELINE_JOBS } from './pipeline-jobs-motorcycle';
+
 const LOGO_LINE = '{{LOGO_LINE}}';
 
 export const PIPELINE_JOBS: PipelineJob[] = [
@@ -972,3 +974,17 @@ export function jobNeedsWheelReference(job: PipelineJob | undefined): boolean {
     || job.category === 'composite'
     || job.category === 'ci';
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// Fahrzeugklassen-Routing der Job-Listen.
+// Pkw/Lkw nutzen unverändert PIPELINE_JOBS. Motorräder/Zweiräder nutzen
+// eine vollständig eigene Job- und Prompt-Konfiguration.
+// ═══════════════════════════════════════════════════════════════════
+
+/** Liefert die Jobliste der jeweiligen Fahrzeugklasse (Pkw bleibt Default). */
+export function getPipelineJobsForVehicleClass(vehicleClass?: string | null): PipelineJob[] {
+  return vehicleClass === 'motorcycle' ? MOTORCYCLE_PIPELINE_JOBS : PIPELINE_JOBS;
+}
+
+/** Alle bekannten Jobs aller Klassen – nur für Label-Lookups (Galerie). */
+export const ALL_PIPELINE_JOBS: PipelineJob[] = [...PIPELINE_JOBS, ...MOTORCYCLE_PIPELINE_JOBS];
