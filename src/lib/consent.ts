@@ -185,27 +185,79 @@ export function applyConsent(state: ConsentState) {
 }
 
 let tagsLoaded = false;
+let gaConfigured = false;
+let adsConfigured = false;
 
-function loadGoogleTagsIfConfigured(state: ConsentState) {
-  const gaId = (
+/** GA4-Mess-ID aus der Konfiguration, sonst leer. */
+function getGaId() {
+  return (
     (import.meta.env.VITE_GA4_MEASUREMENT_ID as string | undefined) ??
     (import.meta.env.VITE_GA_MEASUREMENT_ID as string | undefined)
   )?.trim();
-  const adsId = (import.meta.env.VITE_GOOGLE_ADS_ID as string | undefined)?.trim();
+}
 
-  // Aktuell sind im Projekt bewusst KEINE IDs hinterlegt -> es wird nichts geladen.
+/** Google-Ads-Konto-ID aus der Konfiguration, sonst leer. */
+function getAdsId() {
+  return (import.meta.env.VITE_GOOGLE_ADS_ID as string | undefined)?.trim();
+}
+
+function loadGoogleTagsIfConfigured(state: ConsentState) {
+  const gaId = getGaId();
+  const adsId = getAdsId();
+
+  // Sind bewusst keine IDs hinterlegt, passiert hier nichts.
   const primaryId = (state.analytics && gaId) || (state.marketing && adsId) || '';
-  if (!primaryId || tagsLoaded) return;
-  tagsLoaded = true;
+  if (!primaryId) return;
 
-  const script = document.createElement('script');
-  script.async = true;
-  script.src = `https://www.googletagmanager.com/gtag/js?id=${primaryId}`;
-  document.head.appendChild(script);
+  // Script nur einmal laden, Konfiguration aber bei erweiterter Einwilligung nachziehen.
+  if (!tagsLoaded) {
+    tagsLoaded = true;
+    const script = document.createElement('script');
+    script.async = true;
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${primaryId}`;
+    document.head.appendChild(script);
+    window.gtag?.('js', new Date());
+  }
 
-  window.gtag?.('js', new Date());
-  if (state.analytics && gaId) window.gtag?.('config', gaId);
-  if (state.marketing && adsId) window.gtag?.('config', adsId);
+  if (state.analytics && gaId && !gaConfigured) {
+    gaConfigured = true;
+    window.gtag?.('config', gaId);
+  }
+  if (state.marketing && adsId && !adsConfigured) {
+    adsConfigured = true;
+    window.gtag?.('config', adsId);
+  }
+}
+
+/**
+ * Analyse-Event – wird nur gesendet, wenn aktuell eine Analyse-Einwilligung
+ * vorliegt und eine GA4-Mess-ID konfiguriert ist. Es werden keine
+ * personenbezogenen Parameter automatisch ergänzt.
+ */
+export function trackAnalyticsEvent(name: string, params?: Record<string, unknown>) {
+  if (typeof window === 'undefined') return;
+  const consent = readConsent();
+  if (!consent?.analytics || !getGaId() || !tagsLoaded) return;
+  window.gtag?.('event', name, params ?? {});
+}
+
+/**
+ * Google-Ads-Conversion – nur mit aktueller Marketing-Einwilligung und
+ * konfigurierter Konto-ID. `sendTo` kann weggelassen werden, dann wird
+ * `VITE_GOOGLE_ADS_ID` mit `VITE_GOOGLE_ADS_CONVERSION_LABEL` kombiniert.
+ * Ohne Konfiguration passiert bewusst nichts.
+ */
+export function trackGoogleAdsConversion(sendTo?: string, params?: Record<string, unknown>) {
+  if (typeof window === 'undefined') return;
+  const consent = readConsent();
+  const adsId = getAdsId();
+  if (!consent?.marketing || !adsId || !tagsLoaded) return;
+
+  const label = (import.meta.env.VITE_GOOGLE_ADS_CONVERSION_LABEL as string | undefined)?.trim();
+  const target = sendTo?.trim() || (label ? `${adsId}/${label}` : '');
+  if (!target) return;
+
+  window.gtag?.('event', 'conversion', { ...(params ?? {}), send_to: target });
 }
 
 /**
