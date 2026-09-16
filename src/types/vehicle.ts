@@ -72,6 +72,8 @@ export interface VehicleData {
    * Fehlt der Wert (Altdaten), wird überall 'car' angenommen.
    */
   vehicleClass?: import('@/config/vehicle-class-types').ActiveVehicleClassKey;
+  /** Nur Reisemobile: gewählter Aufbautyp (inkl. Wohnwagen). */
+  motorhomeBodyType?: import('@/config/vehicle-class-types').MotorhomeBodyTypeKey | null;
   /** Nur Lkw: gewählte Zug-/Aufbaukonfiguration. */
   truckConfiguration?: import('@/config/vehicle-class-types').TruckConfigurationKey | null;
   /** Nur Lkw: Aufbau- oder Anhängerart. */
