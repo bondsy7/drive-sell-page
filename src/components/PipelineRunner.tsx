@@ -16,7 +16,7 @@ import { getVehicleClassProfile } from '@/config/vehicle-classes';
 import { toast } from 'sonner';
 import CreditConfirmDialog from '@/components/CreditConfirmDialog';
 import {
-  PIPELINE_JOBS,
+  getPipelineJobsForVehicleClass,
   getJobsForProfile,
   PIPELINE_CATEGORIES,
   type PipelineJob,
@@ -142,15 +142,21 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
     [vehicleDescription, vehicleBrand],
   );
 
+  /* Fahrzeugklassen-eigene Jobliste: Motorrad/Zweirad nutzt eine eigene Konfiguration. */
+  const classPipelineJobs = useMemo(
+    () => getPipelineJobsForVehicleClass(classContext?.vehicleClass),
+    [classContext?.vehicleClass],
+  );
+
   const localAvailableJobs = useMemo(() =>
     getJobsForProfile(
-      applyPromptOverrides(PIPELINE_JOBS, promptOverrides),
+      applyPromptOverrides(classPipelineJobs, promptOverrides),
       getVehicleClassProfile(classContext?.vehicleClass),
     ).filter(j => {
       if (j.category !== 'ci') return true;
       return j.brand === detectedBrand;
     }),
-    [detectedBrand, promptOverrides, classContext?.vehicleClass],
+    [detectedBrand, promptOverrides, classContext?.vehicleClass, classPipelineJobs],
   );
 
   // Use context's jobs when pipeline is active, else local
@@ -179,12 +185,12 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
       localAvailableJobs.forEach(j => {
         if (j.category === 'ci' && j.defaultSelected && !next.has(j.key)) next.add(j.key);
       });
-      PIPELINE_JOBS.forEach(j => {
+      classPipelineJobs.forEach(j => {
         if (j.category === 'ci' && j.brand !== detectedBrand) next.delete(j.key);
       });
       return next;
     });
-  }, [detectedBrand, localAvailableJobs, isContextActive]);
+  }, [detectedBrand, localAvailableJobs, isContextActive, classPipelineJobs]);
 
   /* ─── Manufacturer logo resolution ─── */
   const [resolvedManufacturerLogoUrl, setResolvedManufacturerLogoUrl] = useState<string | null>(null);

@@ -18,7 +18,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 import { useDeleteGalleryImage } from '@/hooks/useDashboardData';
-import { PIPELINE_JOBS } from '@/lib/pipeline-jobs';
+import { ALL_PIPELINE_JOBS } from '@/lib/pipeline-jobs';
 
 interface LightboxImage {
   id: string;
@@ -127,7 +127,7 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
     const match = persp.match(/Pipeline:\s*([^()]+?)(?:\s*\(.*\))?$/i);
     const label = match?.[1]?.trim();
     if (!label) return null;
-    return PIPELINE_JOBS.find(j => j.labelDe.toLowerCase() === label.toLowerCase()) || null;
+    return ALL_PIPELINE_JOBS.find(j => j.labelDe.toLowerCase() === label.toLowerCase()) || null;
   })();
 
   const fetchAsBase64 = async (url: string): Promise<string> => {
