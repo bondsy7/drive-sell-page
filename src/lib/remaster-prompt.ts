@@ -383,6 +383,11 @@ PAINT COLOR CHANGE – ABSOLUTE, NON-NEGOTIABLE, APPLIES TO EVERY IMAGE:
     parts.push(...buildMotorhomePromptBlocks(classContext?.motorhomeBodyType ?? null, interior));
   }
 
+  // ── TRANSPORTER-SPEZIFISCHE BLÖCKE (niemals im Pkw-/Lkw-/Zweirad-/Reisemobil-Prompt) ──
+  if (isVan) {
+    parts.push(...buildVanPromptBlocks(interior));
+  }
+
   // ── WHEEL REFERENCE LOCK (nur bei dedizierter Felgenreferenz) ──
   if (config.wheelReference?.image && !interior) {
     parts.push(buildWheelReferenceLock(config.wheelReference));
@@ -691,8 +696,10 @@ ${neutralVehicleDescription}
         ? MOTORCYCLE_PERSPECTIVE_PROMPTS[slotKey]
         : isMotorhome
           ? MOTORHOME_PERSPECTIVE_PROMPTS[slotKey]
-          : null;
-    const perspPrompt = isTruck || isMotorcycle || isMotorhome
+          : isVan
+            ? VAN_PERSPECTIVE_PROMPTS[slotKey]
+            : null;
+    const perspPrompt = isTruck || isMotorcycle || isMotorhome || isVan
       ? classPersp
         ? `<CURRENT_PERSPECTIVE>\n${classPersp}\n</CURRENT_PERSPECTIVE>`
         : ''
