@@ -1176,7 +1176,34 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                 Konfiguration ändern
               </button>
             )}
+            {activeClass === 'motorhome' && motorhomeWizardDone && (
+              <button
+                onClick={() => setMotorhomeWizardDone(false)}
+                className="mt-2 text-[11px] underline text-muted-foreground hover:text-foreground"
+              >
+                Aufbautyp ändern
+              </button>
+            )}
           </CaptureSection>
+
+          {activeClass === 'motorhome' && !motorhomeWizardDone && (
+            <CaptureSection title="Aufbautyp auswählen" collapsible>
+              <MotorhomeWizard
+                value={motorhomeBodyType}
+                onSelect={(bodyType) => {
+                  setMotorhomeBodyType(bodyType);
+                  setMotorhomeWizardDone(true);
+                  setCaptures({});
+                  const cur = latestVehicleDataRef.current;
+                  if (cur) onVehicleDataChange?.({
+                    ...cur,
+                    vehicleClass: 'motorhome',
+                    motorhomeBodyType: bodyType,
+                  });
+                }}
+              />
+            </CaptureSection>
+          )}
 
           {activeClass === 'truck' && !truckWizardDone && (
             <CaptureSection title="Konfiguration auswählen" collapsible>
