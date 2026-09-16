@@ -55,8 +55,24 @@ export default function LegalLayout({
   intro,
   children,
   versionDate,
+  toc = false,
 }: LegalLayoutProps) {
   usePageMeta({ title: metaTitle, description: metaDescription, canonicalPath });
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [entries, setEntries] = useState<{ id: string; label: string }[]>([]);
+
+  useEffect(() => {
+    if (!toc || !contentRef.current) return;
+    const headings = Array.from(contentRef.current.querySelectorAll('h2'));
+    const next = headings.map((h) => {
+      const label = h.textContent?.trim() ?? '';
+      const id = h.id || slugify(label);
+      h.id = id;
+      h.style.scrollMarginTop = '5rem';
+      return { id, label };
+    });
+    setEntries(next);
+  }, [toc, children]);
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
