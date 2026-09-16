@@ -273,7 +273,6 @@ export async function recordConsentServerSide(state: ConsentState) {
       analytics: state.analytics,
       marketing: state.marketing,
       user_id: data.user?.id ?? null,
-      user_agent: typeof navigator !== 'undefined' ? navigator.userAgent.slice(0, 300) : null,
     });
   } catch {
     /* Protokollierung darf die Auswahl nie blockieren */
