@@ -94,7 +94,30 @@ export default function LegalLayout({
 
           {intro && <div className="text-sm leading-relaxed text-muted-foreground">{intro}</div>}
 
-          <div className="space-y-8">{children}</div>
+          {toc && entries.length > 2 && (
+            <nav
+              aria-label="Inhaltsverzeichnis"
+              className="rounded-lg border border-border bg-card/40 p-4"
+            >
+              <p className="mb-2 text-sm font-semibold text-foreground">Inhalt</p>
+              <ol className="grid gap-1 text-sm text-muted-foreground sm:grid-cols-2">
+                {entries.map((e) => (
+                  <li key={e.id}>
+                    <a
+                      href={`#${e.id}`}
+                      className="rounded-md underline-offset-2 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                    >
+                      {e.label}
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            </nav>
+          )}
+
+          <div ref={contentRef} className="space-y-8">
+            {children}
+          </div>
         </div>
       </main>
       <SiteFooter />
