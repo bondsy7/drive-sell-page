@@ -893,7 +893,7 @@ export function detectBrandFromDescription(description: string, vehicleBrand?: s
 
 /** Get the total image count a set of selected jobs will produce */
 export function getTotalImageCount(selectedKeys: Set<string>): number {
-  return PIPELINE_JOBS
+  return [...PIPELINE_JOBS, ...MOTORCYCLE_PIPELINE_JOBS]
     .filter(j => selectedKeys.has(j.key))
     .reduce((sum, j) => sum + (j.outputCount ?? 1), 0);
 }
