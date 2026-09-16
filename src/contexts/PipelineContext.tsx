@@ -158,6 +158,23 @@ function inferPrimaryReferenceIndex(
     const cockpitIndex = findRole(/cockpit/, /moto_seat/, /(^|_)seat($|_)/, /sattel/, /34front/);
     return cockpitIndex >= 0 && cockpitIndex < availableCount ? cockpitIndex : 0;
   }
+  // Reisemobil-Wohnraum: immer die passende Raumaufnahme als Primärreferenz.
+  if (/^WOMO_/i.test(job?.key || '')) {
+    const key = (job?.key || '').toUpperCase();
+    const womoRoom: Record<string, RegExp[]> = {
+      WOMO_INT_LIVING: [/living/, /wohn/, /sitzgruppe/],
+      WOMO_INT_KITCHEN: [/kitchen/, /kueche/, /k_che/],
+      WOMO_INT_BATH: [/bath/, /bad/, /nasszelle/],
+      WOMO_INT_BED: [/(^|_)bed($|_)/, /schlaf/, /bett/],
+      WOMO_INT_COCKPIT: [/cockpit/, /fahrerhaus/, /interior_front/],
+      WOMO_DET_GARAGE: [/garage/, /stauraum/, /kofferraum/],
+    };
+    const patterns = womoRoom[key];
+    if (patterns) {
+      const idx = findRole(...patterns);
+      return idx >= 0 && idx < availableCount ? idx : 0;
+    }
+  }
   let roleIndex = -1;
   if (REAR_INTERIOR_PATTERNS.test(signature)) roleIndex = findRole(/interior_rear/, /rear_seat/, /ruecksitz/);
   else if (FRONT_INTERIOR_PATTERNS.test(signature)) roleIndex = findRole(/interior_front/, /interior_dashboard/, /driver/, /fahrer/);
@@ -180,7 +197,7 @@ function inferPrimaryReferenceIndex(
 function getInteriorReferenceIndices(availableCount: number, referenceRoles: string[] = []): number[] {
   const roleMatches = referenceRoles
     .map((role, index) => ({ role: role.toLowerCase(), index }))
-    .filter(({ role, index }) => index < availableCount && /interior|dashboard|fahrer|rücksitz|ruecksitz/.test(role))
+    .filter(({ role, index }) => index < availableCount && /interior|dashboard|fahrer|rücksitz|ruecksitz|living|wohn|kitchen|küche|kueche|bath|bad|bed|schlaf|bett|garage/.test(role))
     .map(({ index }) => index);
   if (roleMatches.length > 0) return roleMatches;
   if (availableCount >= 5) return [3, 4];
