@@ -196,21 +196,21 @@ export default function Datenschutz() {
 
       <LegalSection title="15. Google Analytics 4">
         <p>
-          Eine Webanalyse mit Google Analytics 4 wird ausschließlich nach Ihrer Einwilligung
-          (Art. 6 Abs. 1 lit. a DSGVO) und nur dann eingesetzt, wenn eine entsprechende Mess-ID
-          konfiguriert ist. Derzeit ist keine Mess-ID hinterlegt; ohne Einwilligung und ohne
-          Konfiguration werden keine Analyse-Skripte geladen und keine Daten übertragen. Wird die
-          Analyse später aktiviert, werden die Aufbewahrungsfristen für Nutzer- und Ereignisdaten
-          im Konto auf höchstens 14 Monate eingestellt.
+          Eine Webanalyse mit Google Analytics 4 wird ausschließlich dann eingesetzt, wenn eine
+          gültige Mess-ID konfiguriert ist UND Sie in die Kategorie „Analyse“ eingewilligt haben
+          (Art. 6 Abs. 1 lit. a DSGVO). Fehlt eines von beidem, werden keine Analyse-Skripte geladen
+          und keine Daten an Google übertragen. Bei aktiver Analyse werden die Aufbewahrungsfristen
+          für Nutzer- und Ereignisdaten im Konto auf höchstens 14 Monate eingestellt.
         </p>
       </LegalSection>
 
       <LegalSection title="16. Google Ads, Conversion-Messung und Remarketing">
         <p>
-          Marketing-Dienste von Google (Conversion-Messung, Remarketing) werden ebenfalls nur nach
-          Einwilligung und nur bei konfigurierter Kennung geladen. Erweiterte Conversions werden
-          nur eingesetzt, sofern sie später ausdrücklich aktiviert und hier ergänzt werden. Ohne
-          Einwilligung erfolgt keine Übertragung an Google.
+          Marketing-Dienste von Google (Conversion-Messung, Remarketing) werden ausschließlich dann
+          geladen, wenn eine gültige Kennung konfiguriert ist UND Sie in die Kategorie „Marketing“
+          eingewilligt haben. Erweiterte Conversions werden nur eingesetzt, sofern sie später
+          ausdrücklich aktiviert und hier ergänzt werden. Ohne Einwilligung erfolgt keine
+          Übertragung an Google.
         </p>
       </LegalSection>
 
@@ -221,10 +221,20 @@ export default function Datenschutz() {
           Einwilligung werden keine Google-Skripte geladen und es erfolgen keine – auch keine
           cookielosen – Übertragungen („Basic Consent Mode“). Die Einwilligungssignale
           analytics_storage, ad_storage, ad_user_data und ad_personalization stehen standardmäßig
-          auf „denied“ und werden erst bei Zustimmung aktualisiert. Ihre Auswahl wird zusammen mit
-          Version, Zeitpunkt und einer zufälligen Kennung lokal in Ihrem Browser gespeichert; ein
-          serverseitiges Einwilligungsprotokoll führen wir derzeit nicht. Sie können Ihre
-          Entscheidung jederzeit ändern oder widerrufen:{' '}
+          auf „denied“ und werden erst bei Zustimmung aktualisiert; personalization_storage bleibt
+          auf „denied“, funktionale und sicherheitsbezogene Grundfunktionen
+          (functionality_storage, security_storage) sind als technisch notwendig gesetzt.
+        </p>
+        <p>
+          Ihre Auswahl wird zusammen mit Version, Zeitpunkt und einer zufällig erzeugten
+          Consent-ID lokal in Ihrem Browser gespeichert. Nach Ihrer Interaktion mit dem
+          Einwilligungsbanner dokumentieren wir die Auswahl zusätzlich serverseitig als
+          Compliance-Nachweis: zufällige Consent-ID, Version der Einwilligungsrichtlinie,
+          gewählte Kategorien, serverseitiger Zeitpunkt der Speicherung und – nur bei
+          angemeldeten Nutzern – die Nutzer-ID. Eine IP-Adresse wird hierfür nicht erfasst.
+          Rechtsgrundlage ist Art. 6 Abs. 1 lit. c DSGVO in Verbindung mit der
+          Nachweispflicht aus Art. 7 Abs. 1 DSGVO. Sie können Ihre Entscheidung jederzeit
+          ändern oder widerrufen:{' '}
           <button
             type="button"
             onClick={openConsentSettings}

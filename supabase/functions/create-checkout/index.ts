@@ -24,7 +24,7 @@ serve(async (req) => {
   );
 
   try {
-    const { priceId, email: bodyEmail, userId: bodyUserId } = await req.json();
+    const { priceId } = await req.json();
     if (!priceId) throw new Error("priceId fehlt");
     if (!ALLOWED_SUBSCRIPTION_PRICE_IDS.has(priceId)) {
       return new Response(JSON.stringify({ error: "Ungültige Preis-ID" }), {
