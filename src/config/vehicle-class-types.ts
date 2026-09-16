@@ -5,7 +5,7 @@
  */
 
 /** Vehicle classes that are functionally implemented and visible in the UI. */
-export type ActiveVehicleClassKey = 'car' | 'truck' | 'motorcycle';
+export type ActiveVehicleClassKey = 'car' | 'truck' | 'motorcycle' | 'motorhome';
 
 /**
  * All vehicle classes the architecture is prepared for.
@@ -15,7 +15,6 @@ export type ActiveVehicleClassKey = 'car' | 'truck' | 'motorcycle';
 export type VehicleClassKey =
   | ActiveVehicleClassKey
   | 'ebike'
-  | 'motorhome'
   | 'campervan'
   | 'caravan'
   | 'bus'
@@ -109,8 +108,29 @@ export interface TruckWorkflowSelection {
   subjectScope?: SubjectScopeKey | null;
 }
 
+/**
+ * Aufbautyp für Reisemobile/Freizeitfahrzeuge.
+ * 'caravan' = Wohnwagen (Anhänger, kein Fahrerhaus).
+ */
+export type MotorhomeBodyTypeKey =
+  | 'semi_integrated'
+  | 'alcove'
+  | 'fully_integrated'
+  | 'campervan'
+  | 'caravan';
+
+export interface MotorhomeWorkflowSelection {
+  motorhomeBodyType: MotorhomeBodyTypeKey;
+}
+
+/** Vereinigte Auswahl aller Klassen-Workflows (Lkw, Reisemobil). */
+export type CaptureWorkflowSelection =
+  Partial<TruckWorkflowSelection> & Partial<MotorhomeWorkflowSelection>;
+
 export interface VehicleClassContext {
   vehicleClass: ActiveVehicleClassKey;
+  /** Nur Reisemobile: gewählter Aufbautyp. */
+  motorhomeBodyType?: MotorhomeBodyTypeKey | null;
   truckConfiguration?: TruckConfigurationKey | null;
   truckBodyType?: TruckBodyTypeKey | null;
   cargoState?: CargoStateKey | null;
