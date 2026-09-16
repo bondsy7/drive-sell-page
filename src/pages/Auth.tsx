@@ -89,6 +89,11 @@ const Auth = () => {
   };
 
   const handleGoogle = async () => {
+    // Google-Registrierung darf die B2B-/AGB-Bestätigung nicht umgehen.
+    if (!isLogin && !termsConfirmed) {
+      toast.error('Bitte bestätige zuerst die AGB und deine Unternehmereigenschaft.');
+      return;
+    }
     try {
       const result = await lovable.auth.signInWithOAuth('google', {
         redirect_uri: plan
