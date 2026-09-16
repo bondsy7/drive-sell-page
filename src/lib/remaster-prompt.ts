@@ -53,6 +53,11 @@ export interface RemasterConfig {
    * WHEEL_REFERENCE_LOCK aktiviert. NICHT identisch mit detailImages.
    */
   wheelReference?: import('@/types/wheel-reference').WheelReference | null;
+  /**
+   * NUR Land- & Baumaschinen: "Aufräumen/Reinigen" ein- oder ausschalten.
+   * false (Standard) = Zustand exakt wie fotografiert dokumentieren.
+   */
+  machineryTidyUp?: boolean;
 }
 
 /**
@@ -310,8 +315,11 @@ export function buildMasterPrompt(
   const isMotorcycle = vehicleClass === 'motorcycle';
   const isMotorhome = vehicleClass === 'motorhome';
   const isVan = vehicleClass === 'van';
-  // Transporter-Innenraumslots gelten klassenlokal (verändert keine andere Klasse).
-  const interior = isInteriorSlot(slotKey) || (isVan && isVanInteriorSlot(slotKey));
+  const isMachinery = vehicleClass === 'machinery';
+  // Transporter-/Maschinen-Innenraumslots gelten klassenlokal (verändert keine andere Klasse).
+  const interior = isInteriorSlot(slotKey)
+    || (isVan && isVanInteriorSlot(slotKey))
+    || (isMachinery && isMachineryInteriorSlot(slotKey));
 
   // ── Base instruction ──
   parts.push(getBlock(overrides, 'base_instruction'));
