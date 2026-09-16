@@ -6,6 +6,7 @@ const LINKS = [
   { to: '/impressum', label: 'Impressum' },
   { to: '/datenschutz', label: 'Datenschutz' },
   { to: '/agb', label: 'AGB' },
+  { to: '/cookies', label: 'Cookies' },
   { to: '/avv', label: 'AVV' },
   { to: '/toms', label: 'TOMs' },
   { to: '/unterauftragsverarbeiter', label: 'Unterauftragsverarbeiter' },
@@ -49,7 +50,7 @@ export default function SiteFooter({ compact = false }: SiteFooterProps) {
             öffentlich-rechtliche Sondervermögen.
           </p>
         )}
-        <p>© {new Date().getFullYear()} {LEGAL.company}</p>
+        <p>© {new Date().getFullYear()} AUTO3 · ein Produkt der {LEGAL.company}</p>
       </div>
     </footer>
   );
