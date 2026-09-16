@@ -304,7 +304,9 @@ export function buildMasterPrompt(
   const isTruck = vehicleClass === 'truck';
   const isMotorcycle = vehicleClass === 'motorcycle';
   const isMotorhome = vehicleClass === 'motorhome';
-  const interior = isInteriorSlot(slotKey);
+  const isVan = vehicleClass === 'van';
+  // Transporter-Innenraumslots gelten klassenlokal (verändert keine andere Klasse).
+  const interior = isInteriorSlot(slotKey) || (isVan && isVanInteriorSlot(slotKey));
 
   // ── Base instruction ──
   parts.push(getBlock(overrides, 'base_instruction'));
