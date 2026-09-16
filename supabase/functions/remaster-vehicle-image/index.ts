@@ -360,6 +360,18 @@ function validateClassContext(ctx: ClassContext): string | null {
 
 /** Serverseitiger Guard-Block – wird IMMER an den Prompt angehängt. */
 function buildClassGuardBlock(ctx: ClassContext): string {
+  if (ctx.vehicleClass === "motorhome") {
+    const isCaravan = ctx.motorhomeBodyType === "caravan";
+    return `<BINDING_SUBJECT_SCOPE_GUARD>
+VEHICLE CLASS: recreational vehicle (bodyType=${ctx.motorhomeBodyType ?? "unspecified"}).
+The output must show the complete leisure vehicle with its habitation body, exactly as photographed: habitation door, windows, service flaps, roof equipment and wheels. Never re-classify it as a passenger car, a box truck or a different recreational body type.
+${isCaravan
+        ? "This is a TOWED CARAVAN: it has NO cab, NO engine and NO driving controls. The drawbar with coupling head, jockey wheel and corner steadies must be present. Never add a cab, a tow car or a tow bar of another vehicle."
+        : "This is a MOTORISED motorhome or camper van: keep the donor cab, windscreen, mirrors and number plate exactly as photographed. Never convert it into a towed caravan."}
+Never add camping scenery, people, awateness props, chairs, tables, bicycles or pets. Never extend or retract awnings, steps, jacks or pop-top roofs against the reference state.
+FINAL CHECK: If the output violates this scope, regenerate before returning.
+</BINDING_SUBJECT_SCOPE_GUARD>`;
+  }
   const scopeRule = ctx.subjectScope ? SERVER_SUBJECT_SCOPE_RULES[ctx.subjectScope] : null;
   if (ctx.vehicleClass !== "truck" || !scopeRule) return "";
   const meta = [
