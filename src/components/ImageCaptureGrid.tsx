@@ -466,11 +466,12 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     truckBodyType: truckSelection.truckBodyType ?? null,
     cargoState: truckSelection.cargoState ?? null,
     subjectScope: truckSelection.subjectScope ?? null,
-  }), [activeClass, truckSelection]);
+    motorhomeBodyType: activeClass === 'motorhome' ? motorhomeBodyType : null,
+  }), [activeClass, truckSelection, motorhomeBodyType]);
 
   const slots: PerspectiveSlot[] = useMemo(
-    () => resolveCaptureSlots(classProfile, truckSelection),
-    [classProfile, truckSelection],
+    () => resolveCaptureSlots(classProfile, { ...truckSelection, motorhomeBodyType }),
+    [classProfile, truckSelection, motorhomeBodyType],
   );
 
   const capturedCount = Object.keys(captures).length;
