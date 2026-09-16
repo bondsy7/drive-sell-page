@@ -427,8 +427,17 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       VAN_INT_SLIDING_DOOR: 'sliding-door',
     };
     const vanSlotKey = VAN_SLOT_KEYS[(job?.key || '').toUpperCase()];
+    // Baumaschinen: eigene Kabinen-/Bedienstand-Slots statt der Pkw-Innenraumperspektiven.
+    const MACHINERY_SLOT_KEYS: Record<string, string> = {
+      MACH_INT_CABIN: 'cabin',
+      MACH_DET_CONTROLS: 'controls',
+      MACH_DET_UNDERCARRIAGE: 'undercarriage',
+      MACH_DET_ATTACHMENT: 'attachment',
+    };
+    const machinerySlotKey = MACHINERY_SLOT_KEYS[(job?.key || '').toUpperCase()];
     const interiorSlotKey = womoSlotKey
       ?? vanSlotKey
+      ?? machinerySlotKey
       ?? (isInteriorJob
         ? (REAR_INTERIOR_PATTERNS.test(`${job?.key || ''} ${job?.label || ''} ${job?.labelDe || ''}`) ? 'interior-rear' : 'interior-front')
         : undefined);
