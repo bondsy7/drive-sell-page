@@ -9,7 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Mail, Lock, User, Chrome, ShieldCheck, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Checkbox } from '@/components/ui/checkbox';
-import { LEGAL_VERSIONS, TERMS_DOCUMENT } from '@/lib/legal-config';
+import { LEGAL_VERSIONS, TERMS_DOCUMENT, B2B_CONFIRM_TEXT } from '@/lib/legal-config';
+import { recordTermsAcceptance } from '@/lib/legal-acceptance';
 import auto3Logo from '@/assets/auto3-logo.png';
 import SiteFooter from '@/components/legal/SiteFooter';
 
@@ -26,7 +27,10 @@ const Auth = () => {
   const [name, setName] = useState('');
   const [company, setCompany] = useState('');
   const [termsConfirmed, setTermsConfirmed] = useState(false);
+  const [b2bConfirmed, setB2bConfirmed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  const signupReady = company.trim().length > 0 && termsConfirmed && b2bConfirmed;
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-background"><div className="animate-spin w-8 h-8 border-2 border-accent border-t-transparent rounded-full" /></div>;
   
@@ -42,8 +46,8 @@ const Auth = () => {
         if (error) throw error;
         toast.success('Erfolgreich angemeldet!');
       } else {
-        if (!termsConfirmed) {
-          toast.error('Bitte bestätige die AGB und deine Unternehmereigenschaft.');
+        if (!signupReady) {
+          toast.error('Bitte bestätige deine Unternehmereigenschaft und die AGB.');
           return;
         }
         const { data, error } = await supabase.auth.signUp({
@@ -65,21 +69,15 @@ const Auth = () => {
         });
         if (error) throw error;
 
-        // Falls bereits eine Session besteht, die Annahme sofort unveränderlich dokumentieren.
+        // Falls bereits eine Session besteht, beide Nachweise sofort dokumentieren.
+        // Ohne Session (E-Mail-Bestätigung ausstehend) holt der LegalOnboardingGate das nach.
         if (data.session?.user) {
-          await supabase.from('legal_acceptances').insert({
-            user_id: data.session.user.id,
-            document: TERMS_DOCUMENT,
-            version: LEGAL_VERSIONS.agb,
-            company_name: company.trim() || null,
-            confirms_business_and_age: true,
-            evidence: {
-              company_name: company.trim() || null,
-              auth_method: 'password',
-              notice_version_shown: LEGAL_VERSIONS.privacy,
-              ui_version: LEGAL_VERSIONS.agb,
-            },
-          });
+          const { error: acceptErr } = await recordTermsAcceptance(
+            data.session.user.id,
+            company,
+            'password',
+          );
+          if (acceptErr) console.warn('[auth] Nachweis konnte nicht gespeichert werden:', acceptErr.message);
         }
 
         toast.success('Registrierung erfolgreich! Bitte bestätige deine E-Mail-Adresse über den Link in deinem Postfach.');
@@ -96,8 +94,8 @@ const Auth = () => {
 
   const handleGoogle = async () => {
     // Google-Registrierung darf die B2B-/AGB-Bestätigung nicht umgehen.
-    if (!isLogin && !termsConfirmed) {
-      toast.error('Bitte bestätige zuerst die AGB und deine Unternehmereigenschaft.');
+    if (!isLogin && !signupReady) {
+      toast.error('Bitte bestätige zuerst deine Unternehmereigenschaft und die AGB.');
       return;
     }
     try {
@@ -174,14 +172,17 @@ const Auth = () => {
             </div>
           </div>
           {!isLogin && (
-            <div className="space-y-2">
+            <div className="space-y-3">
+              <label htmlFor="b2b" className="flex cursor-pointer items-start gap-3 text-xs leading-relaxed text-muted-foreground">
+                <Checkbox id="b2b" checked={b2bConfirmed} onCheckedChange={(c) => setB2bConfirmed(c === true)} />
+                <span>{B2B_CONFIRM_TEXT} *</span>
+              </label>
               <label htmlFor="terms" className="flex cursor-pointer items-start gap-3 text-xs leading-relaxed text-muted-foreground">
                 <Checkbox id="terms" checked={termsConfirmed} onCheckedChange={(c) => setTermsConfirmed(c === true)} />
                 <span>
-                  Ich bestätige, dass ich mindestens 18 Jahre alt bin und als Unternehmer im Sinne des § 14 BGB handle.
-                  Ich akzeptiere die{' '}
+                  Ich habe die{' '}
                   <Link to="/agb" target="_blank" className="font-medium text-accent underline underline-offset-2">AGB</Link>{' '}
-                  von AUTO3. *
+                  für AUTO3 gelesen und akzeptiere sie. *
                 </span>
               </label>
               <p className="text-xs text-muted-foreground">
@@ -190,7 +191,7 @@ const Auth = () => {
               </p>
             </div>
           )}
-          <Button type="submit" className="w-full" disabled={submitting || (!isLogin && !termsConfirmed)}>
+          <Button type="submit" className="w-full" disabled={submitting || (!isLogin && !signupReady)}>
             {submitting ? 'Laden...' : isLogin ? 'Anmelden' : 'Registrieren'}
           </Button>
         </form>
@@ -204,7 +205,7 @@ const Auth = () => {
           variant="outline"
           className="w-full"
           onClick={handleGoogle}
-          disabled={!isLogin && !termsConfirmed}
+          disabled={!isLogin && !signupReady}
         >
           <Chrome className="w-4 h-4 mr-2" /> Mit Google {isLogin ? 'anmelden' : 'registrieren'}
         </Button>
