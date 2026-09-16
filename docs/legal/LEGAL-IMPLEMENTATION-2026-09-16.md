@@ -50,7 +50,7 @@ Quelle: `src/lib/legal-config.ts`.
   (alternativ `VITE_GA_MEASUREMENT_ID`) und `VITE_GOOGLE_ADS_ID`. Ohne gesetzte Werte
   wird bewusst nichts geladen. Enhanced Conversions sind nicht implementiert.
 - Protokoll: append-only Tabelle `consent_records` (consent_id, version, analytics,
-  marketing, user_id falls angemeldet, user_agent gekürzt, created_at). Keine IP.
+  marketing, user_id falls angemeldet, created_at). Keine IP, keine Browserkennung (user_agent wurde am 16.09.2026 per Migration entfernt).
   RLS: Insert für alle, Lesen nur eigene Datensätze bzw. Admin. Kein Update/Delete.
 - Attribution (`src/lib/funnel-attribution.ts`) wird erst bei Marketing-Einwilligung
   dauerhaft gespeichert.
