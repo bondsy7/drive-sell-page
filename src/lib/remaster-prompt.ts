@@ -10,6 +10,11 @@ import { buildTruckPromptBlocks, TRUCK_PERSPECTIVE_PROMPTS } from '@/prompts/rem
 import { buildMotorcyclePromptBlocks, MOTORCYCLE_PERSPECTIVE_PROMPTS } from '@/prompts/remaster/motorcycle';
 import { buildMotorhomePromptBlocks, MOTORHOME_PERSPECTIVE_PROMPTS } from '@/prompts/remaster/motorhome';
 import { buildVanPromptBlocks, VAN_PERSPECTIVE_PROMPTS, isVanInteriorSlot } from '@/prompts/remaster/van';
+import {
+  buildMachineryPromptBlocks,
+  MACHINERY_PERSPECTIVE_PROMPTS,
+  isMachineryInteriorSlot,
+} from '@/prompts/remaster/machinery';
 import { formatWheelAnalysisBlock } from '@/lib/wheel-reference';
 import { buildVehicleGenerationLock, sanitizeVehicleDescriptionForPrompt } from '@/lib/vehicle-generation-lock';
 import parkingGaragePreview from '@/assets/scene-previews/parking-garage.webp.asset.json';
@@ -48,6 +53,11 @@ export interface RemasterConfig {
    * WHEEL_REFERENCE_LOCK aktiviert. NICHT identisch mit detailImages.
    */
   wheelReference?: import('@/types/wheel-reference').WheelReference | null;
+  /**
+   * NUR Land- & Baumaschinen: "Aufräumen/Reinigen" ein- oder ausschalten.
+   * false (Standard) = Zustand exakt wie fotografiert dokumentieren.
+   */
+  machineryTidyUp?: boolean;
 }
 
 /**
@@ -305,8 +315,11 @@ export function buildMasterPrompt(
   const isMotorcycle = vehicleClass === 'motorcycle';
   const isMotorhome = vehicleClass === 'motorhome';
   const isVan = vehicleClass === 'van';
-  // Transporter-Innenraumslots gelten klassenlokal (verändert keine andere Klasse).
-  const interior = isInteriorSlot(slotKey) || (isVan && isVanInteriorSlot(slotKey));
+  const isMachinery = vehicleClass === 'machinery';
+  // Transporter-/Maschinen-Innenraumslots gelten klassenlokal (verändert keine andere Klasse).
+  const interior = isInteriorSlot(slotKey)
+    || (isVan && isVanInteriorSlot(slotKey))
+    || (isMachinery && isMachineryInteriorSlot(slotKey));
 
   // ── Base instruction ──
   parts.push(getBlock(overrides, 'base_instruction'));
@@ -386,6 +399,11 @@ PAINT COLOR CHANGE – ABSOLUTE, NON-NEGOTIABLE, APPLIES TO EVERY IMAGE:
   // ── TRANSPORTER-SPEZIFISCHE BLÖCKE (niemals im Pkw-/Lkw-/Zweirad-/Reisemobil-Prompt) ──
   if (isVan) {
     parts.push(...buildVanPromptBlocks(interior));
+  }
+
+  // ── BAUMASCHINEN-SPEZIFISCHE BLÖCKE (niemals in einer anderen Klasse) ──
+  if (isMachinery) {
+    parts.push(...buildMachineryPromptBlocks(interior, config.machineryTidyUp === true));
   }
 
   // ── WHEEL REFERENCE LOCK (nur bei dedizierter Felgenreferenz) ──
@@ -698,8 +716,10 @@ ${neutralVehicleDescription}
           ? MOTORHOME_PERSPECTIVE_PROMPTS[slotKey]
           : isVan
             ? VAN_PERSPECTIVE_PROMPTS[slotKey]
-            : null;
-    const perspPrompt = isTruck || isMotorcycle || isMotorhome || isVan
+            : isMachinery
+              ? MACHINERY_PERSPECTIVE_PROMPTS[slotKey]
+              : null;
+    const perspPrompt = isTruck || isMotorcycle || isMotorhome || isVan || isMachinery
       ? classPersp
         ? `<CURRENT_PERSPECTIVE>\n${classPersp}\n</CURRENT_PERSPECTIVE>`
         : ''

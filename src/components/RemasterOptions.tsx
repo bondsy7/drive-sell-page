@@ -28,6 +28,8 @@ import { useModuleAccess } from '@/hooks/useModuleAccess';
 interface RemasterOptionsProps {
   config: RemasterConfig;
   onChange: (config: RemasterConfig) => void;
+  /** Aktive Fahrzeugklasse – steuert klassenspezifische Optionen (z. B. Baumaschinen). */
+  vehicleClass?: string;
   vehicleBrand?: string;
   onBrandChange?: (brand: string) => void;
   onModelChange?: (model: string) => void;
@@ -38,7 +40,7 @@ interface RemasterOptionsProps {
 
 // fileToBase64 imported from '@/lib/image-compress'
 
-const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, vehicleBrand, onBrandChange, onModelChange, vehicleModel, brandDetectionStatus = 'idle' }) => {
+const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, vehicleClass, vehicleBrand, onBrandChange, onModelChange, vehicleModel, brandDetectionStatus = 'idle' }) => {
   const { user } = useAuth();
   const { disabledModules } = useModuleAccess();
   const cleanupAllowed = !disabledModules.has('remaster-cleanup');
@@ -383,6 +385,28 @@ const RemasterOptions: React.FC<RemasterOptionsProps> = ({ config, onChange, veh
         )}
       </div>
       </div>
+
+      {/* Baumaschinen: Aufräumen/Reinigen bewusst ein- und ausschaltbar */}
+      {vehicleClass === 'machinery' && (
+        <div className="rounded-lg border border-border bg-card p-3">
+          <div className="flex min-h-6 items-start justify-between gap-3">
+            <Label className="flex items-start gap-1.5 text-xs font-semibold text-foreground">
+              <Eraser className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <span>
+                Maschine aufräumen und reinigen
+                <span className="mt-1 block text-[11px] font-normal text-muted-foreground">
+                  Aus: Zustand exakt wie fotografiert (Schmutz, Staub, Erde bleiben). Ein: gewaschen und verkaufsfertig – Kratzer, Rost und Verschleiß bleiben trotzdem sichtbar.
+                </span>
+              </span>
+            </Label>
+            <Switch
+              checked={config.machineryTidyUp === true}
+              onCheckedChange={(v) => update({ machineryTidyUp: v })}
+              aria-label="Maschine aufräumen und reinigen"
+            />
+          </div>
+        </div>
+      )}
 
       {/* Spezifische Bereinigung – kompakt und standardmäßig eingeklappt */}
       {cleanupAllowed && (() => {

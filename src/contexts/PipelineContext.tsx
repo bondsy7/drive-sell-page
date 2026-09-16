@@ -191,6 +191,24 @@ function inferPrimaryReferenceIndex(
       if (idx >= 0 && idx < availableCount) return idx;
     }
   }
+  // Baumaschinen: Kabine, Bedienstand, Fahrwerk und Anbaugerät immer auf die passende Aufnahme.
+  if (/^MACH_/i.test(job?.key || '')) {
+    const key = (job?.key || '').toUpperCase();
+    const machRoom: Record<string, RegExp[]> = {
+      MACH_INT_CABIN: [/cabin/, /kabine/, /cockpit/, /interior_front/],
+      MACH_DET_CONTROLS: [/controls/, /bedienstand/, /joystick/, /cabin/, /cockpit/],
+      MACH_DET_UNDERCARRIAGE: [/undercarriage/, /fahrwerk/, /kette/, /track/, /wheel/, /felge/],
+      MACH_DET_ATTACHMENT: [/attachment/, /anbau/, /loeffel/, /l_ffel/, /bucket/, /34front/],
+      MACH_DET_BOOM_HYDRAULICS: [/side_left/, /seite_links/, /(^|_)side($|_)/, /34front/],
+      MACH_DET_ENGINE_BAY: [/side_right/, /seite_rechts/, /(^|_)rear($|_)/, /heck/],
+      MACH_DET_TYPE_PLATE: [/vin/, /serien/, /type_plate/, /typenschild/],
+    };
+    const patterns = machRoom[key];
+    if (patterns) {
+      const idx = findRole(...patterns);
+      if (idx >= 0 && idx < availableCount) return idx;
+    }
+  }
   let roleIndex = -1;
   if (REAR_INTERIOR_PATTERNS.test(signature)) roleIndex = findRole(/interior_rear/, /rear_seat/, /ruecksitz/);
   else if (FRONT_INTERIOR_PATTERNS.test(signature)) roleIndex = findRole(/interior_front/, /interior_dashboard/, /driver/, /fahrer/);
@@ -409,8 +427,17 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       VAN_INT_SLIDING_DOOR: 'sliding-door',
     };
     const vanSlotKey = VAN_SLOT_KEYS[(job?.key || '').toUpperCase()];
+    // Baumaschinen: eigene Kabinen-/Bedienstand-Slots statt der Pkw-Innenraumperspektiven.
+    const MACHINERY_SLOT_KEYS: Record<string, string> = {
+      MACH_INT_CABIN: 'cabin',
+      MACH_DET_CONTROLS: 'controls',
+      MACH_DET_UNDERCARRIAGE: 'undercarriage',
+      MACH_DET_ATTACHMENT: 'attachment',
+    };
+    const machinerySlotKey = MACHINERY_SLOT_KEYS[(job?.key || '').toUpperCase()];
     const interiorSlotKey = womoSlotKey
       ?? vanSlotKey
+      ?? machinerySlotKey
       ?? (isInteriorJob
         ? (REAR_INTERIOR_PATTERNS.test(`${job?.key || ''} ${job?.label || ''} ${job?.labelDe || ''}`) ? 'interior-rear' : 'interior-front')
         : undefined);

@@ -7,6 +7,7 @@ import truckAsset from '@/assets/vehicle-classes/truck.png.asset.json';
 import motorcycleAsset from '@/assets/vehicle-classes/motorcycle.png.asset.json';
 import motorhomeAsset from '@/assets/vehicle-classes/motorhome.png.asset.json';
 import vanAsset from '@/assets/vehicle-classes/van.png.asset.json';
+import machineryAsset from '@/assets/vehicle-classes/machinery.png.asset.json';
 
 const CLASS_VISUAL: Record<string, { image: string; title: string; examples: string }> = {
   car: { image: carAsset.url, title: 'PKW', examples: 'Limousine, Kombi, SUV, Coupé' },
@@ -14,6 +15,7 @@ const CLASS_VISUAL: Record<string, { image: string; title: string; examples: str
   motorcycle: { image: motorcycleAsset.url, title: 'Motorrad', examples: 'Naked Bike, Tourer, Chopper' },
   motorhome: { image: motorhomeAsset.url, title: 'Reisemobil', examples: 'Wohnmobil, Kastenwagen, Wohnwagen' },
   van: { image: vanAsset.url, title: 'Transporter', examples: 'Kastenwagen, Pritsche, bis 3,5 t' },
+  machinery: { image: machineryAsset.url, title: 'Baumaschinen', examples: 'Traktor, Bagger, Radlader' },
 };
 
 interface VehicleClassStripProps {
@@ -30,7 +32,7 @@ const VehicleClassStrip: React.FC<VehicleClassStripProps> = ({ value, onChange, 
   const profiles = getActiveProfiles();
 
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
       {profiles.map((p) => {
         const visual = CLASS_VISUAL[p.key] ?? { image: carAsset.url, title: p.label, examples: p.description };
         const active = value === p.key;

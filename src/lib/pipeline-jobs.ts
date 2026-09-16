@@ -45,6 +45,7 @@ import {
   getMotorhomeJobsForBodyType,
 } from './pipeline-jobs-motorhome';
 import { VAN_PIPELINE_JOBS } from './pipeline-jobs-van';
+import { MACHINERY_PIPELINE_JOBS } from './pipeline-jobs-machinery';
 import type { MotorhomeBodyTypeKey } from '@/config/vehicle-class-types';
 
 const LOGO_LINE = '{{LOGO_LINE}}';
@@ -899,7 +900,7 @@ export function detectBrandFromDescription(description: string, vehicleBrand?: s
 
 /** Get the total image count a set of selected jobs will produce */
 export function getTotalImageCount(selectedKeys: Set<string>): number {
-  return [...PIPELINE_JOBS, ...MOTORCYCLE_PIPELINE_JOBS, ...MOTORHOME_PIPELINE_JOBS, ...VAN_PIPELINE_JOBS]
+  return [...PIPELINE_JOBS, ...MOTORCYCLE_PIPELINE_JOBS, ...MOTORHOME_PIPELINE_JOBS, ...VAN_PIPELINE_JOBS, ...MACHINERY_PIPELINE_JOBS]
     .filter(j => selectedKeys.has(j.key))
     .reduce((sum, j) => sum + (j.outputCount ?? 1), 0);
 }
@@ -995,6 +996,7 @@ export function getPipelineJobsForVehicleClass(
   if (vehicleClass === 'motorcycle') return MOTORCYCLE_PIPELINE_JOBS;
   if (vehicleClass === 'motorhome') return getMotorhomeJobsForBodyType(motorhomeBodyType);
   if (vehicleClass === 'van') return VAN_PIPELINE_JOBS;
+  if (vehicleClass === 'machinery') return MACHINERY_PIPELINE_JOBS;
   return PIPELINE_JOBS;
 }
 
@@ -1004,4 +1006,5 @@ export const ALL_PIPELINE_JOBS: PipelineJob[] = [
   ...MOTORCYCLE_PIPELINE_JOBS,
   ...MOTORHOME_PIPELINE_JOBS,
   ...VAN_PIPELINE_JOBS,
+  ...MACHINERY_PIPELINE_JOBS,
 ];
