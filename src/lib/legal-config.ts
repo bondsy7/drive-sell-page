@@ -19,13 +19,13 @@ export const LEGAL = {
     name: 'Der Hessische Beauftragte für Datenschutz und Informationsfreiheit',
     address: 'Gustav-Stresemann-Ring 1, 65189 Wiesbaden',
   },
-  versionDate: '15.09.2026',
+  versionDate: '16.09.2026',
 } as const;
 
 export const LEGAL_VERSIONS = {
-  agb: 'auto3-agb-2026-09-15',
-  privacy: 'auto3-datenschutz-2026-09-15',
-  consent: 'auto3-consent-2026-09-15',
+  agb: '2026-09-16',
+  privacy: '2026-09-16',
+  consent: '2026-09-16',
 } as const;
 
 /** Dokument-Key für die serverseitig dokumentierte Vertragsannahme. */
