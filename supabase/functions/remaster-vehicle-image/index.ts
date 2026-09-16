@@ -368,7 +368,7 @@ The output must show the complete leisure vehicle with its habitation body, exac
 ${isCaravan
         ? "This is a TOWED CARAVAN: it has NO cab, NO engine and NO driving controls. The drawbar with coupling head, jockey wheel and corner steadies must be present. Never add a cab, a tow car or a tow bar of another vehicle."
         : "This is a MOTORISED motorhome or camper van: keep the donor cab, windscreen, mirrors and number plate exactly as photographed. Never convert it into a towed caravan."}
-Never add camping scenery, people, awateness props, chairs, tables, bicycles or pets. Never extend or retract awnings, steps, jacks or pop-top roofs against the reference state.
+Never add camping scenery, people, chairs, tables, bicycles or pets. Never extend or retract awnings, steps, jacks or pop-top roofs against the reference state.
 FINAL CHECK: If the output violates this scope, regenerate before returning.
 </BINDING_SUBJECT_SCOPE_GUARD>`;
   }
