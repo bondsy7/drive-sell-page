@@ -144,8 +144,8 @@ const PipelineRunner: React.FC<PipelineRunnerProps> = ({
 
   /* Fahrzeugklassen-eigene Jobliste: Motorrad/Zweirad nutzt eine eigene Konfiguration. */
   const classPipelineJobs = useMemo(
-    () => getPipelineJobsForVehicleClass(classContext?.vehicleClass),
-    [classContext?.vehicleClass],
+    () => getPipelineJobsForVehicleClass(classContext?.vehicleClass, classContext?.motorhomeBodyType ?? null),
+    [classContext?.vehicleClass, classContext?.motorhomeBodyType],
   );
 
   const localAvailableJobs = useMemo(() =>
