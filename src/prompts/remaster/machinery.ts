@@ -123,18 +123,15 @@ export function isMachineryInteriorSlot(slotKey?: string | null): boolean {
  * @param interior  true für Kabinen-/Bedienstand-Slots
  * @param tidyUp    true = Maschine wird gereinigt dargestellt, false = Zustand exakt wie fotografiert
  */
-export function buildMachineryPromptBlocks(interior: boolean, tidyUp: boolean): {
-  subjectLock: string;
-  identityLock: string;
-  interiorRules: string | null;
-  tidyRules: string;
-  negativeConstraints: string;
-} {
-  return {
-    subjectLock: MACHINERY_SUBJECT_LOCK,
-    identityLock: MACHINERY_IDENTITY_LOCK,
-    interiorRules: interior ? MACHINERY_INTERIOR_LOCK : null,
-    tidyRules: tidyUp ? MACHINERY_TIDY_ON : MACHINERY_TIDY_OFF,
-    negativeConstraints: MACHINERY_NEGATIVE_CONSTRAINTS,
-  };
+export function buildMachineryPromptBlocks(interior = false, tidyUp = false): string[] {
+  const blocks = [
+    `<MACHINERY_SUBJECT_LOCK>\n${MACHINERY_SUBJECT_LOCK}\n</MACHINERY_SUBJECT_LOCK>`,
+    `<MACHINERY_IDENTITY_LOCK>\n${MACHINERY_IDENTITY_LOCK}\n</MACHINERY_IDENTITY_LOCK>`,
+    `<MACHINERY_CONDITION_MODE>\n${tidyUp ? MACHINERY_TIDY_ON : MACHINERY_TIDY_OFF}\n</MACHINERY_CONDITION_MODE>`,
+  ];
+  if (interior) {
+    blocks.push(`<MACHINERY_INTERIOR_LOCK>\n${MACHINERY_INTERIOR_LOCK}\n</MACHINERY_INTERIOR_LOCK>`);
+  }
+  blocks.push(`<MACHINERY_NEGATIVE_CONSTRAINTS>\n${MACHINERY_NEGATIVE_CONSTRAINTS}\n</MACHINERY_NEGATIVE_CONSTRAINTS>`);
+  return blocks;
 }

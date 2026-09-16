@@ -10,6 +10,11 @@ import { buildTruckPromptBlocks, TRUCK_PERSPECTIVE_PROMPTS } from '@/prompts/rem
 import { buildMotorcyclePromptBlocks, MOTORCYCLE_PERSPECTIVE_PROMPTS } from '@/prompts/remaster/motorcycle';
 import { buildMotorhomePromptBlocks, MOTORHOME_PERSPECTIVE_PROMPTS } from '@/prompts/remaster/motorhome';
 import { buildVanPromptBlocks, VAN_PERSPECTIVE_PROMPTS, isVanInteriorSlot } from '@/prompts/remaster/van';
+import {
+  buildMachineryPromptBlocks,
+  MACHINERY_PERSPECTIVE_PROMPTS,
+  isMachineryInteriorSlot,
+} from '@/prompts/remaster/machinery';
 import { formatWheelAnalysisBlock } from '@/lib/wheel-reference';
 import { buildVehicleGenerationLock, sanitizeVehicleDescriptionForPrompt } from '@/lib/vehicle-generation-lock';
 import parkingGaragePreview from '@/assets/scene-previews/parking-garage.webp.asset.json';
