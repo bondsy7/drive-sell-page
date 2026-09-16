@@ -28,7 +28,7 @@ const VehicleClassStrip: React.FC<VehicleClassStripProps> = ({ value, onChange, 
   const profiles = getActiveProfiles();
 
   return (
-    <div className="grid grid-cols-3 gap-2">
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
       {profiles.map((p) => {
         const visual = CLASS_VISUAL[p.key] ?? { image: carAsset.url, title: p.label, examples: p.description };
         const active = value === p.key;
