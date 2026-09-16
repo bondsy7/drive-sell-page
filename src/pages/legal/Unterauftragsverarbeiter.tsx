@@ -10,31 +10,31 @@ interface Row {
 
 const PROCESSORS: Row[] = [
   {
-    provider: 'Lovable',
-    purpose: 'Bereitstellung, Build und Hosting der Web-Anwendung',
+    provider: 'Lovable Labs',
+    purpose: 'Bereitstellung, Build, Deployment und Hosting der Web-Anwendung',
     regions: 'EU/USA möglich',
-    status: 'AVV/DPA je nach Plan – vertraglich zu verifizieren',
+    status: 'Konkrete Rolle je nach genutztem Plan/Deployment und AVV/DPA vertraglich zu verifizieren',
   },
   {
-    provider: 'Supabase',
+    provider: 'Supabase, Inc.',
     purpose: 'Datenbank, Authentifizierung, Datei-Speicher, serverseitige Funktionen',
     regions: 'Abhängig von der gewählten Projektregion – zu verifizieren',
     status: 'AVV/DPA und Region vertraglich zu verifizieren',
   },
   {
-    provider: 'Google (Gemini, Veo, Lyria über die Google-KI-Schnittstellen)',
+    provider: 'Google Ireland Limited (Gemini, Veo, Lyria über die Google-KI-Schnittstellen)',
     purpose: 'KI-gestützte Bild-, Video-, Audio- und Textverarbeitung, temporäre Dateiablage',
     regions: 'Global, Drittlandverarbeitung möglich',
     status: 'Kostenpflichtige Nutzung und DPA vertraglich zu verifizieren',
   },
   {
-    provider: 'OpenAI',
+    provider: 'OpenAI Ireland Ltd. (OpenAI API, für Kunden im EWR)',
     purpose: 'KI-gestützte Bild-, Text- und Dokumentenverarbeitung, Files-API',
     regions: 'Global, Drittlandverarbeitung möglich',
     status: 'DPA und Datennutzungseinstellungen vertraglich zu verifizieren',
   },
   {
-    provider: 'Resend',
+    provider: 'Resend (Rechtsträger vertraglich zu verifizieren)',
     purpose: 'Versand operativer und vertriebsbezogener E-Mails',
     regions: 'EU/USA möglich',
     status: 'AVV/DPA vertraglich zu verifizieren',
@@ -43,28 +43,34 @@ const PROCESSORS: Row[] = [
 
 const RECIPIENTS: Row[] = [
   {
-    provider: 'Stripe',
+    provider: 'Stripe Payments Europe, Limited (SPEL) / Stripe-Konzern',
     purpose: 'Zahlungsabwicklung, Abonnementverwaltung, Rechnungsstellung',
     regions: 'EU/USA',
-    status: 'Teilweise eigenständig verantwortlich (Zahlungsverkehr, Betrugsprävention); DPA zu verifizieren',
+    status: 'Rolle je Leistung unterschiedlich; teilweise eigenständig verantwortlich (Zahlungsverkehr, Betrugsprävention); DPA zu verifizieren',
   },
   {
-    provider: 'Google Analytics / Google Ads',
-    purpose: 'Reichweitenmessung und Werbemessung – nur nach Einwilligung und nur bei konfigurierter Kennung',
+    provider: 'Google Ireland Limited (Google Analytics / Google Ads)',
+    purpose: 'Reichweitenmessung und Werbemessung – nur bei konfigurierter Kennung und nach entsprechender Einwilligung',
     regions: 'EU/USA',
-    status: 'Derzeit keine Kennung hinterlegt; Rolle und Verträge vor Aktivierung zu klären',
+    status: 'Rollenverteilung je Dienst unterschiedlich (teilweise gemeinsame bzw. eigene Verantwortlichkeit); Verträge vor Aktivierung zu klären',
   },
   {
-    provider: 'Meta (Instagram, Facebook)',
+    provider: 'Meta Platforms Ireland Limited (Instagram, Facebook)',
     purpose: 'Veröffentlichung von Inhalten auf Veranlassung des Kunden',
     regions: 'EU/USA',
-    status: 'Eigenständig verantwortlich für die veröffentlichten Inhalte',
+    status: 'Für die veröffentlichten Inhalte je Dienst eigene bzw. eigenständige Verantwortlichkeit',
   },
   {
-    provider: 'X',
+    provider: 'X Internet Unlimited Company',
     purpose: 'Veröffentlichung von Inhalten auf Veranlassung des Kunden',
     regions: 'EU/USA',
-    status: 'Eigenständig verantwortlich für die veröffentlichten Inhalte',
+    status: 'Für die veröffentlichten Inhalte je Dienst eigene bzw. eigenständige Verantwortlichkeit',
+  },
+  {
+    provider: 'SIA „Social Minds“ (Betreiber von OutVin)',
+    purpose: 'Abruf von Fahrzeugdaten anhand der Fahrzeugidentifikationsnummer',
+    regions: 'EU, Drittlandverarbeitung nicht ausgeschlossen',
+    status: 'Betreiber laut OutVin-Nutzungsbedingungen; Rolle und DPA vertraglich zu prüfen',
   },
 ];
 
@@ -127,21 +133,23 @@ export default function Unterauftragsverarbeiter() {
         <Table rows={RECIPIENTS} />
       </LegalSection>
 
-      <LegalSection title="3. OutVin (Fahrzeugdaten / VIN) – OFFEN">
+      <LegalSection title="3. OutVin (Fahrzeugdaten / VIN) – Rolle zu verifizieren">
         <p>
           Für die Ermittlung von Fahrzeugdaten kann eine Fahrzeugidentifikationsnummer an OutVin
-          übermittelt werden. Rolle, Nutzungsbedingungen und ein etwaiger
-          Auftragsverarbeitungsvertrag sind noch zu verifizieren. Bis zur Klärung sollten keine
-          VIN-Daten mit Personenbezug produktiv über diesen Weg verarbeitet werden. Dieser Punkt ist
-          ausdrücklich OFFEN.
+          übermittelt werden. Betreiber ist nach den OutVin-Nutzungsbedingungen SIA „Social Minds“.
+          Die datenschutzrechtliche Rolle und ein etwaiger Auftragsverarbeitungsvertrag sind
+          vertraglich zu prüfen. Bis zur Klärung sollten keine VIN-Daten mit Personenbezug produktiv
+          über diesen Weg verarbeitet werden.
         </p>
       </LegalSection>
 
       <LegalSection title="4. Änderungen">
         <p>
-          Über die Hinzuziehung wesentlicher neuer oder den Austausch bestehender
-          Unterauftragsverarbeiter informieren wir unsere Geschäftskunden vorab in Textform oder
-          durch Aktualisierung dieser Seite. Kunden können aus datenschutzrechtlichen Gründen
+          Wesentliche neue oder ersetzte Unterauftragsverarbeiter teilen wir unseren
+          Geschäftskunden, soweit eine Kontaktmöglichkeit besteht, vor deren Einsatz in Textform
+          oder über einen vertraglich vereinbarten Benachrichtigungskanal mit angemessener
+          Vorlaufzeit mit. Diese Seite dient zusätzlich als jeweils aktuelle Übersicht, ersetzt die
+          Mitteilung aber nicht. Kunden können aus datenschutzrechtlichen Gründen
           innerhalb einer angemessenen Frist Einspruch erheben. Eine automatisierte
           E-Mail-Benachrichtigung ist derzeit nicht eingerichtet.
         </p>

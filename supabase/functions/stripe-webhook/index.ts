@@ -20,12 +20,26 @@ const toISO = (val: any): string => {
 // Aktuell gültige Produktstruktur: ein Grundpaket "basis" (1000 Credits / Monat).
 // Alte starter/pro/enterprise-Produkte werden nicht mehr vertrieben und daher
 // bewusst nicht mehr gemappt.
+// Aktuelles Angebot: ausschließlich "basis". Die Legacy-Einträge werden NUR hier im
+// Webhook beibehalten, damit bestehende Alt-Abos (starter/pro/enterprise) weiterhin
+// korrekt verbucht werden. Sie sind bewusst NICHT in Pricing oder Checkout-Allowlist.
 const PRODUCT_TO_PLAN: Record<string, string> = {
   'prod_Ukduqj0YRUxMYt': 'basis',
+  // --- Legacy (nicht mehr verkäuflich) ---
+  'prod_U6vMgZiKJOuEph': 'starter',
+  'prod_U6vMFLF7W8nh43': 'pro',
+  'prod_U6vQHQJucwwipk': 'enterprise',
+  'prod_U6xgJe3nEY2OOS': 'starter',
+  'prod_U6yCFgnOHMFzqW': 'pro',
+  'prod_U6yDWJrKKBCYF2': 'enterprise',
 };
 
 const PLAN_CREDITS: Record<string, number> = {
   basis: 1000,
+  // --- Legacy (nicht mehr verkäuflich) ---
+  starter: 50,
+  pro: 200,
+  enterprise: 600,
 };
 
 // Helper: find user by Stripe customer email

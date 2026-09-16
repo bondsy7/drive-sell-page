@@ -86,6 +86,12 @@ export default function Agb() {
           Auszahlung, Rückzahlung in Geld oder Übertragung an Dritte ist ausgeschlossen.
         </p>
         <p>
+          Während eines aktiven Kundenkontos gutgeschriebene Credits bleiben nutzbar, soweit der
+          Tarif oder die Bestellseite nicht ausdrücklich eine abweichende Gültigkeit ausweist. Bei
+          endgültiger Löschung des Kundenkontos verfallen ungenutzte Credits, soweit dem keine
+          zwingenden gesetzlichen oder vertraglichen Ansprüche entgegenstehen.
+        </p>
+        <p>
           Die Credit-Kosten einer Aktion werden vor deren Auslösung angezeigt. Schlägt eine
           kostenpflichtige Aktion aus einem vom Anbieter zu vertretenden technischen Grund
           eindeutig fehl, werden die dafür verbrauchten Credits auf Anforderung gutgeschrieben. Kein
@@ -147,9 +153,19 @@ export default function Agb() {
 
       <LegalSection title="§ 12 Kennzeichnung von KI-Inhalten">
         <p>
-          Der Anbieter kennzeichnet KI-erzeugte oder KI-veränderte Inhalte. Der Kunde darf
-          vorhandene Kennzeichnungen, Wasserzeichen oder Metadaten nicht entfernen und ist für die
-          Einhaltung der ihn treffenden Transparenzpflichten selbst verantwortlich.
+          AUTO3 stellt für KI-erzeugte und KI-veränderte Inhalte sichtbare Kennzeichnungen sowie,
+          soweit technisch verfügbar und gesetzlich erforderlich, maschinenlesbare Kennzeichnungen
+          bereit.
+        </p>
+        <p>
+          Der Anbieter kann nicht zusichern, dass jedes Ausgabeformat dauerhaft maschinenlesbar
+          markiert bleibt; Metadaten und Wasserzeichen können insbesondere bei Konvertierung,
+          Weiterverarbeitung oder beim Upload auf Drittplattformen verloren gehen.
+        </p>
+        <p>
+          Der Kunde darf gesetzlich erforderliche Kennzeichnungen, Wasserzeichen oder Metadaten
+          nicht gezielt entfernen oder umgehen und hat die ihn treffenden kontextspezifischen
+          Transparenzpflichten eigenständig zu prüfen und einzuhalten.
         </p>
       </LegalSection>
 

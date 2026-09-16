@@ -63,6 +63,10 @@ export function initConsentDefaults() {
     ad_user_data: 'denied' as GtagConsentValue,
     ad_personalization: 'denied' as GtagConsentValue,
     analytics_storage: 'denied' as GtagConsentValue,
+    // Nur technisch notwendige Grundfunktionen sind ohne Einwilligung erlaubt.
+    functionality_storage: 'granted' as GtagConsentValue,
+    security_storage: 'granted' as GtagConsentValue,
+    personalization_storage: 'denied' as GtagConsentValue,
     wait_for_update: 500,
   });
 
@@ -115,6 +119,9 @@ export function saveConsent(state: ConsentState) {
       ad_storage: state.marketing ? 'granted' : 'denied',
       ad_user_data: state.marketing ? 'granted' : 'denied',
       ad_personalization: state.marketing ? 'granted' : 'denied',
+      functionality_storage: 'granted',
+      security_storage: 'granted',
+      personalization_storage: 'denied',
     });
     clearGoogleCookies();
     if (!state.marketing) clearMarketingStorage();
@@ -179,6 +186,9 @@ export function applyConsent(state: ConsentState) {
     ad_storage: state.marketing ? 'granted' : 'denied',
     ad_user_data: state.marketing ? 'granted' : 'denied',
     ad_personalization: state.marketing ? 'granted' : 'denied',
+    functionality_storage: 'granted',
+    security_storage: 'granted',
+    personalization_storage: 'denied',
   });
 
   if (state.analytics || state.marketing) loadGoogleTagsIfConfigured(state);

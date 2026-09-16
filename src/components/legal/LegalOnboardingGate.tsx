@@ -7,7 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { TERMS_CONFIRM_TEXT } from '@/lib/legal-config';
+import { TERMS_CONFIRM_TEXT, B2B_CONFIRM_TEXT } from '@/lib/legal-config';
 import { hasCurrentTermsAcceptance, recordTermsAcceptance } from '@/lib/legal-acceptance';
 
 /**
@@ -19,6 +19,7 @@ export default function LegalOnboardingGate({ children }: { children: React.Reac
   const [checked, setChecked] = useState<boolean | null>(null);
   const [company, setCompany] = useState('');
   const [confirm, setConfirm] = useState(false);
+  const [b2b, setB2b] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -45,10 +46,12 @@ export default function LegalOnboardingGate({ children }: { children: React.Reac
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!company.trim() || !confirm) return;
+    if (!company.trim() || !confirm || !b2b) return;
     setSaving(true);
     try {
-      const { error } = await recordTermsAcceptance(user.id, company);
+      const authMethod =
+        user.app_metadata?.provider === 'google' ? ('google' as const) : ('onboarding' as const);
+      const { error } = await recordTermsAcceptance(user.id, company, authMethod);
       if (error) throw error;
 
       await supabase.auth.updateUser({
@@ -88,15 +91,19 @@ export default function LegalOnboardingGate({ children }: { children: React.Reac
           />
         </div>
 
+        <label htmlFor="gate-b2b" className="flex cursor-pointer items-start gap-3 text-sm text-muted-foreground">
+          <Checkbox id="gate-b2b" checked={b2b} onCheckedChange={(c) => setB2b(c === true)} />
+          <span>{B2B_CONFIRM_TEXT}</span>
+        </label>
+
         <label htmlFor="gate-confirm" className="flex cursor-pointer items-start gap-3 text-sm text-muted-foreground">
           <Checkbox id="gate-confirm" checked={confirm} onCheckedChange={(c) => setConfirm(c === true)} />
           <span>
-            Ich bestätige, dass ich mindestens 18 Jahre alt bin und als Unternehmer im Sinne des § 14
-            BGB handle. Ich akzeptiere die{' '}
+            Ich habe die{' '}
             <Link to="/agb" target="_blank" className="font-medium text-accent underline underline-offset-2">
               AGB
             </Link>{' '}
-            von AUTO3.
+            für AUTO3 gelesen und akzeptiere sie.
           </span>
         </label>
 
@@ -108,7 +115,7 @@ export default function LegalOnboardingGate({ children }: { children: React.Reac
           .
         </p>
 
-        <Button type="submit" className="w-full" disabled={saving || !confirm || !company.trim()}>
+        <Button type="submit" className="w-full" disabled={saving || !confirm || !b2b || !company.trim()}>
           {saving ? 'Speichern…' : 'Bestätigen und fortfahren'}
         </Button>
         <p className="sr-only">{TERMS_CONFIRM_TEXT}</p>

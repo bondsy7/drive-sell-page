@@ -108,9 +108,12 @@ export default function Avv() {
           <a className="underline underline-offset-2" href="/unterauftragsverarbeiter">
             Anlage 1
           </a>{' '}
-          aufgeführt. Über die Hinzuziehung neuer oder den Austausch bestehender
-          Unterauftragsverarbeiter informiert der Auftragsverarbeiter vorab in Textform oder über
-          die Aktualisierung der Anlage. Der Verantwortliche kann aus datenschutzrechtlichen Gründen
+          aufgeführt. Wesentliche neue oder ersetzte Unterauftragsverarbeiter teilt der
+          Auftragsverarbeiter dem Verantwortlichen, soweit eine Kontaktmöglichkeit besteht, vor
+          deren Einsatz in Textform oder über einen vertraglich vereinbarten Benachrichtigungskanal
+          mit angemessener Vorlaufzeit mit; die öffentliche Anlage 1 dient zusätzlich als jeweils
+          aktuelle Übersicht, ersetzt diese Mitteilung aber nicht.
+          Der Verantwortliche kann aus datenschutzrechtlichen Gründen
           innerhalb einer angemessenen Frist Einspruch erheben; kann keine Einigung erzielt werden,
           steht dem Verantwortlichen ein Sonderkündigungsrecht zu. Der Auftragsverarbeiter erlegt
           Unterauftragsverarbeitern gleichwertige Pflichten auf und bleibt dem Verantwortlichen

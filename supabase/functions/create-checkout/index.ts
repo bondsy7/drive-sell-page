@@ -24,7 +24,7 @@ serve(async (req) => {
   );
 
   try {
-    const { priceId, email: bodyEmail, userId: bodyUserId } = await req.json();
+    const { priceId } = await req.json();
     if (!priceId) throw new Error("priceId fehlt");
     if (!ALLOWED_SUBSCRIPTION_PRICE_IDS.has(priceId)) {
       return new Response(JSON.stringify({ error: "Ungültige Preis-ID" }), {
@@ -33,27 +33,26 @@ serve(async (req) => {
       });
     }
 
-    let userEmail: string | undefined;
-    let userId: string | undefined;
-
-    // Try auth header first (logged-in users upgrading)
+    // Abo-Checkout ausschließlich für authentifizierte Nutzer.
+    // User-ID und E-Mail stammen immer aus dem verifizierten Token, nie aus dem Body.
     const authHeader = req.headers.get("Authorization");
-    if (authHeader && authHeader !== "Bearer ") {
-      const token = authHeader.replace("Bearer ", "");
-      const { data } = await supabaseClient.auth.getUser(token);
-      if (data.user?.email) {
-        userEmail = data.user.email;
-        userId = data.user.id;
-      }
+    const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
+    if (!token) {
+      return new Response(JSON.stringify({ error: "Nicht authentifiziert" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
     }
 
-    // Fallback: accept email from body (registration flow, no session yet)
-    if (!userEmail && bodyEmail) {
-      userEmail = bodyEmail;
-      userId = bodyUserId;
+    const { data: authData, error: authError } = await supabaseClient.auth.getUser(token);
+    const userEmail = authData?.user?.email;
+    const userId = authData?.user?.id;
+    if (authError || !userEmail || !userId) {
+      return new Response(JSON.stringify({ error: "Nicht authentifiziert" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
     }
-
-    if (!userEmail) throw new Error("Nicht authentifiziert und keine E-Mail angegeben");
 
     const stripe = new Stripe((await getSecret("STRIPE_SECRET_KEY")) || "", {
       apiVersion: "2025-08-27.basil",
