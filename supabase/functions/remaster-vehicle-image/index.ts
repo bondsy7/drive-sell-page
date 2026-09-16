@@ -334,8 +334,12 @@ interface ClassContext {
 function normalizeClassContext(raw: unknown): ClassContext {
   const c = (raw ?? {}) as Partial<ClassContext>;
   const vehicleClass = ACTIVE_CLASSES.has(String(c.vehicleClass)) ? String(c.vehicleClass) : "car";
+  const motorhomeBodyType = MOTORHOME_BODY_TYPES.has(String(c.motorhomeBodyType))
+    ? String(c.motorhomeBodyType)
+    : null;
   return {
     vehicleClass,
+    motorhomeBodyType: vehicleClass === "motorhome" ? motorhomeBodyType : null,
     truckConfiguration: c.truckConfiguration ?? null,
     truckBodyType: c.truckBodyType ?? null,
     cargoState: c.cargoState ?? null,
