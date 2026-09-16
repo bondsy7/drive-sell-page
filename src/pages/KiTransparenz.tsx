@@ -41,9 +41,17 @@ const KiTransparenz: React.FC = () => {
 
         <Section title="Warum diese Seite?">
           <p>
-            Seit dem 2. August 2026 gelten die Transparenzpflichten aus Artikel 50 der Verordnung (EU) 2024/1689
-            (EU AI Act). Inhalte, die mit KI erzeugt oder verändert wurden und reale Fahrzeuge, Orte oder Personen
-            realistisch abbilden, müssen klar und deutlich als künstlich erzeugt oder verändert erkennbar sein.
+            Artikel 50 der Verordnung (EU) 2024/1689 (EU AI Act) regelt Transparenzpflichten für
+            KI-Systeme und gilt grundsätzlich seit dem 2. August 2026. Die Pflichten sind dabei
+            getrennt ausgestaltet: Art. 50 Abs. 2 richtet sich an Anbieter generativer Systeme und
+            verlangt eine maschinenlesbare Markierung synthetischer Ausgaben; Art. 50 Abs. 4
+            betrifft Betreiber und die Offenlegung bestimmter Deepfake-Inhalte. Nicht jedes
+            KI-bearbeitete Fahrzeugbild löst damit automatisch dieselbe Kennzeichnungspflicht aus.
+          </p>
+          <p>
+            Für Systeme, die vor dem 2. August 2026 in Verkehr gebracht wurden, sieht die aktuelle
+            Übergangsregelung für Art. 50 Abs. 2 eine Frist bis zum 2. Dezember 2026 vor. Unabhängig
+            davon setzt AUTO3 zusätzliche sichtbare Transparenzlabels ein.
           </p>
         </Section>
 

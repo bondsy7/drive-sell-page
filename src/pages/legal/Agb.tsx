@@ -153,9 +153,19 @@ export default function Agb() {
 
       <LegalSection title="§ 12 Kennzeichnung von KI-Inhalten">
         <p>
-          Der Anbieter kennzeichnet KI-erzeugte oder KI-veränderte Inhalte. Der Kunde darf
-          vorhandene Kennzeichnungen, Wasserzeichen oder Metadaten nicht entfernen und ist für die
-          Einhaltung der ihn treffenden Transparenzpflichten selbst verantwortlich.
+          AUTO3 stellt für KI-erzeugte und KI-veränderte Inhalte sichtbare Kennzeichnungen sowie,
+          soweit technisch verfügbar und gesetzlich erforderlich, maschinenlesbare Kennzeichnungen
+          bereit.
+        </p>
+        <p>
+          Der Anbieter kann nicht zusichern, dass jedes Ausgabeformat dauerhaft maschinenlesbar
+          markiert bleibt; Metadaten und Wasserzeichen können insbesondere bei Konvertierung,
+          Weiterverarbeitung oder beim Upload auf Drittplattformen verloren gehen.
+        </p>
+        <p>
+          Der Kunde darf gesetzlich erforderliche Kennzeichnungen, Wasserzeichen oder Metadaten
+          nicht gezielt entfernen oder umgehen und hat die ihn treffenden kontextspezifischen
+          Transparenzpflichten eigenständig zu prüfen und einzuhalten.
         </p>
       </LegalSection>
 
