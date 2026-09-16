@@ -14,6 +14,16 @@ interface LegalLayoutProps {
   children: ReactNode;
   /** Abweichendes Standdatum, sonst Release-Datum. */
   versionDate?: string;
+  /** Inhaltsverzeichnis aus den Abschnittsüberschriften erzeugen (lange Texte). */
+  toc?: boolean;
+}
+
+function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[äöüß]/g, (c) => ({ ä: 'ae', ö: 'oe', ü: 'ue', ß: 'ss' })[c] ?? c)
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 }
 
 export function LegalSection({ title, children }: { title: string; children: ReactNode }) {
