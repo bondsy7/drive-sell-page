@@ -8,7 +8,8 @@ import { withAiDisclosureAlt } from '@/lib/ai-disclosure';
 
 /* ── Fixed sort order for images within a gallery folder ── */
 const REMASTER_ORDER: string[] = [
-  '3/4 Front', 'Seite', 'Hinten', 'Interieur Fahrersitz', 'Interieur Rücksitz',
+  '3/4 Front', 'Seite', 'Seitenansicht links', 'Seitenansicht rechts', 'Hinten',
+  'Sitz / Cockpit', 'Interieur Fahrersitz', 'Interieur Rücksitz',
 ];
 
 // Build pipeline label → sort index from the canonical PIPELINE_JOBS array
