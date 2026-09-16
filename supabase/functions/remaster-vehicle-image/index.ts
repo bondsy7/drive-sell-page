@@ -294,7 +294,7 @@ ${REFERENCE_TRUTH_PROTOCOL}
 
 // ── Fahrzeugklassen-Kontext (serverseitige Absicherung) ─────────────────────
 
-const ACTIVE_CLASSES = new Set(["car", "truck", "motorcycle", "motorhome", "van"]);
+const ACTIVE_CLASSES = new Set(["car", "truck", "motorcycle", "motorhome", "van", "machinery"]);
 
 const MOTORHOME_BODY_TYPES = new Set([
   "semi_integrated",
@@ -378,6 +378,16 @@ VEHICLE CLASS: light commercial vehicle (transporter up to 3.5 t).
 The output must show the complete van exactly as photographed: roof height, wheelbase, body length, window and door concept, sliding door side, rear door type (barn doors or tailgate) and rim type stay unchanged. Never re-classify it as a passenger car, an MPV, a motorhome or a heavy truck.
 Keep all doors, flaps and the bonnet in the open/closed state of the reference. The cab and the load space are empty and clean: no people, no cargo, no pallets, no tools, no racking that is absent in the reference.
 Never invent company signwriting, advertising films, fleet numbers or licence-plate content, and never replace steel wheels with alloy wheels.
+FINAL CHECK: If the output violates this scope, regenerate before returning.
+</BINDING_SUBJECT_SCOPE_GUARD>`;
+  }
+  if (ctx.vehicleClass === "machinery") {
+    return `<BINDING_SUBJECT_SCOPE_GUARD>
+VEHICLE CLASS: agricultural or construction machine.
+The output must show the complete machine exactly as photographed: machine type, attachment (bucket, fork, blade, boom, three-point linkage), working pose, boom and cylinder position, running gear (steel tracks or tyres), counterweight, cab, exhaust, handrails, steps, work lights, hoses and hydraulics stay unchanged. Never re-classify it as a truck, van, passenger car or a different machine type, and never convert tracks into wheels or wheels into tracks.
+Never add, remove or exchange attachments, ballast weights or implements, and never change the open/closed state of doors, covers or service flaps.
+Safety decals, warning stickers, load charts, type, PIN and serial plates stay in place, legible and unchanged in wording and position. Never invent brand names, model designations, operating hours or serial numbers.
+Used condition stays truthful: scratches, paint chips, rust, weld seams, repairs, worn bucket teeth and worn tracks or tyres remain visible. Never add operators, workers, site activity, soil heaps, crops or scenery that are absent in the reference.
 FINAL CHECK: If the output violates this scope, regenerate before returning.
 </BINDING_SUBJECT_SCOPE_GUARD>`;
   }
