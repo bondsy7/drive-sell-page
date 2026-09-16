@@ -14,10 +14,10 @@ export const LEGAL = {
   registerCourt: 'Amtsgericht Hanau',
   registerNumber: 'HRB 91223',
   vatId: 'DE 237 914 287',
-  /** Zuständige Datenschutzaufsicht (Sitz Hessen). */
+  /** Zuständige Datenschutzaufsicht (Sitz Hessen), Anschrift seit 16.03.2026. */
   authority: {
     name: 'Der Hessische Beauftragte für Datenschutz und Informationsfreiheit',
-    address: 'Gustav-Stresemann-Ring 1, 65189 Wiesbaden',
+    address: 'Wilhelmstraße 7, 65185 Wiesbaden',
   },
   versionDate: '16.09.2026',
 } as const;
@@ -28,11 +28,15 @@ export const LEGAL_VERSIONS = {
   consent: '2026-09-16',
 } as const;
 
-/** Dokument-Key für die serverseitig dokumentierte Vertragsannahme. */
+/** Dokument-Keys für die serverseitig dokumentierten Bestätigungen. */
 export const TERMS_DOCUMENT = 'agb';
+export const B2B_DOCUMENT = 'b2b_confirmation';
 
 export const TERMS_CONFIRM_TEXT =
-  'Ich bestätige, dass ich mindestens 18 Jahre alt bin und als Unternehmer im Sinne des § 14 BGB handle. Ich akzeptiere die AGB von AUTO3.';
+  'Ich habe die AGB für AUTO3 gelesen und akzeptiere sie.';
+
+export const B2B_CONFIRM_TEXT =
+  'Ich bestätige, dass ich mindestens 18 Jahre alt bin, als Unternehmer im Sinne des § 14 BGB und nicht als Verbraucher handle und zur Vertretung des angegebenen Unternehmens berechtigt bin.';
 
 export const PRIVACY_NOTICE_TEXT =
   'Informationen zur Verarbeitung personenbezogener Daten findest du in der Datenschutzerklärung.';
