@@ -8,6 +8,7 @@ export default function Agb() {
       metaTitle="AGB – AUTO3 | Breadcrumb Marketing GmbH"
       metaDescription="Allgemeine Geschäftsbedingungen für die Nutzung der SaaS-Plattform AUTO3 durch Unternehmer – Leistungen, Credits, Laufzeit, Haftung."
       canonicalPath="/agb"
+      toc
       intro={
         <p>
           Diese Bedingungen gelten für die Nutzung der SaaS-Plattform AUTO3 der {LEGAL.company}.
