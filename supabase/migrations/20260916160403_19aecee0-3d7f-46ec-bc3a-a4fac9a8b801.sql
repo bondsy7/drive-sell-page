@@ -1,0 +1,1 @@
+ALTER TABLE public.legal_acceptances ADD COLUMN IF NOT EXISTS evidence jsonb NOT NULL DEFAULT '{}'::jsonb;

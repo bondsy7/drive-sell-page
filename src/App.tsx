@@ -50,6 +50,7 @@ const Agb = lazy(() => import("./pages/legal/Agb"));
 const Avv = lazy(() => import("./pages/legal/Avv"));
 const Toms = lazy(() => import("./pages/legal/Toms"));
 const Unterauftragsverarbeiter = lazy(() => import("./pages/legal/Unterauftragsverarbeiter"));
+const Cookies = lazy(() => import("./pages/legal/Cookies"));
 
 // Admin pages
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
@@ -157,6 +158,8 @@ const App = () => (
               <Route path="/avv" element={<Avv />} />
               <Route path="/toms" element={<Toms />} />
               <Route path="/unterauftragsverarbeiter" element={<Unterauftragsverarbeiter />} />
+              <Route path="/auftragsverarbeitung" element={<Avv />} />
+              <Route path="/cookies" element={<Cookies />} />
               <Route path="/generator" element={<ProtectedRoute><ErrorBoundary moduleName="Generator"><Index /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/generator/canvas-banner-studio" element={<ProtectedRoute><ErrorBoundary moduleName="Banner Studio"><CanvasBannerStudio /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/generator/music-studio" element={<ProtectedRoute><ErrorBoundary moduleName="Music Studio"><MusicStudio /></ErrorBoundary></ProtectedRoute>} />

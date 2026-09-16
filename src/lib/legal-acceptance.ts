@@ -19,12 +19,25 @@ export async function hasCurrentTermsAcceptance(userId: string): Promise<boolean
   return (data?.length ?? 0) > 0;
 }
 
-export async function recordTermsAcceptance(userId: string, companyName: string) {
+export async function recordTermsAcceptance(
+  userId: string,
+  companyName: string,
+  authMethod: 'password' | 'google' | 'onboarding' = 'onboarding',
+) {
   return supabase.from('legal_acceptances').insert({
     user_id: userId,
     document: TERMS_DOCUMENT,
     version: LEGAL_VERSIONS.agb,
     company_name: companyName.trim() || null,
     confirms_business_and_age: true,
+    // Beweisbegleitdaten – bewusst ohne IP-Adresse, ohne Passwörter, ohne
+    // sonstige sensible Merkmale. Die Datenschutzerklärung wird nur als
+    // "angezeigt" dokumentiert, NICHT als Einwilligung.
+    evidence: {
+      company_name: companyName.trim() || null,
+      auth_method: authMethod,
+      notice_version_shown: LEGAL_VERSIONS.privacy,
+      ui_version: LEGAL_VERSIONS.agb,
+    },
   });
 }

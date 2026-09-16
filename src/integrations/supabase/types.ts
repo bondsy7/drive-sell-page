@@ -1056,6 +1056,7 @@ export type Database = {
           confirms_business_and_age: boolean
           created_at: string
           document: string
+          evidence: Json
           id: string
           user_id: string
           version: string
@@ -1066,6 +1067,7 @@ export type Database = {
           confirms_business_and_age?: boolean
           created_at?: string
           document: string
+          evidence?: Json
           id?: string
           user_id: string
           version: string
@@ -1076,6 +1078,7 @@ export type Database = {
           confirms_business_and_age?: boolean
           created_at?: string
           document?: string
+          evidence?: Json
           id?: string
           user_id?: string
           version?: string

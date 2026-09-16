@@ -73,6 +73,12 @@ const Auth = () => {
             version: LEGAL_VERSIONS.agb,
             company_name: company.trim() || null,
             confirms_business_and_age: true,
+            evidence: {
+              company_name: company.trim() || null,
+              auth_method: 'password',
+              notice_version_shown: LEGAL_VERSIONS.privacy,
+              ui_version: LEGAL_VERSIONS.agb,
+            },
           });
         }
 
