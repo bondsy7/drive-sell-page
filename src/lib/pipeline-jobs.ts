@@ -45,6 +45,7 @@ import {
   getMotorhomeJobsForBodyType,
 } from './pipeline-jobs-motorhome';
 import { VAN_PIPELINE_JOBS } from './pipeline-jobs-van';
+import { MACHINERY_PIPELINE_JOBS } from './pipeline-jobs-machinery';
 import type { MotorhomeBodyTypeKey } from '@/config/vehicle-class-types';
 
 const LOGO_LINE = '{{LOGO_LINE}}';
