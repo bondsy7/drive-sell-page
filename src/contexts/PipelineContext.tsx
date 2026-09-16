@@ -153,6 +153,11 @@ function inferPrimaryReferenceIndex(
     }
     return -1;
   };
+  // Zweirad-Cockpit/Sitz: nie auf Pkw-Innenraumreferenzen ausweichen.
+  if (/MOTO_DET_COCKPIT|MOTO_DET_SEAT/i.test(signature)) {
+    const cockpitIndex = findRole(/cockpit/, /moto_seat/, /(^|_)seat($|_)/, /sattel/, /34front/);
+    return cockpitIndex >= 0 && cockpitIndex < availableCount ? cockpitIndex : 0;
+  }
   let roleIndex = -1;
   if (REAR_INTERIOR_PATTERNS.test(signature)) roleIndex = findRole(/interior_rear/, /rear_seat/, /ruecksitz/);
   else if (FRONT_INTERIOR_PATTERNS.test(signature)) roleIndex = findRole(/interior_front/, /interior_dashboard/, /driver/, /fahrer/);
