@@ -9,6 +9,7 @@ import { resolveVehicleClass } from '@/config/vehicle-classes';
 import { buildTruckPromptBlocks, TRUCK_PERSPECTIVE_PROMPTS } from '@/prompts/remaster/truck';
 import { buildMotorcyclePromptBlocks, MOTORCYCLE_PERSPECTIVE_PROMPTS } from '@/prompts/remaster/motorcycle';
 import { buildMotorhomePromptBlocks, MOTORHOME_PERSPECTIVE_PROMPTS } from '@/prompts/remaster/motorhome';
+import { buildVanPromptBlocks, VAN_PERSPECTIVE_PROMPTS, isVanInteriorSlot } from '@/prompts/remaster/van';
 import { formatWheelAnalysisBlock } from '@/lib/wheel-reference';
 import { buildVehicleGenerationLock, sanitizeVehicleDescriptionForPrompt } from '@/lib/vehicle-generation-lock';
 import parkingGaragePreview from '@/assets/scene-previews/parking-garage.webp.asset.json';
@@ -303,7 +304,9 @@ export function buildMasterPrompt(
   const isTruck = vehicleClass === 'truck';
   const isMotorcycle = vehicleClass === 'motorcycle';
   const isMotorhome = vehicleClass === 'motorhome';
-  const interior = isInteriorSlot(slotKey);
+  const isVan = vehicleClass === 'van';
+  // Transporter-Innenraumslots gelten klassenlokal (verändert keine andere Klasse).
+  const interior = isInteriorSlot(slotKey) || (isVan && isVanInteriorSlot(slotKey));
 
   // ── Base instruction ──
   parts.push(getBlock(overrides, 'base_instruction'));
@@ -378,6 +381,11 @@ PAINT COLOR CHANGE – ABSOLUTE, NON-NEGOTIABLE, APPLIES TO EVERY IMAGE:
   // ── REISEMOBIL-SPEZIFISCHE BLÖCKE (niemals im Pkw-/Lkw-/Zweirad-Prompt) ──
   if (isMotorhome) {
     parts.push(...buildMotorhomePromptBlocks(classContext?.motorhomeBodyType ?? null, interior));
+  }
+
+  // ── TRANSPORTER-SPEZIFISCHE BLÖCKE (niemals im Pkw-/Lkw-/Zweirad-/Reisemobil-Prompt) ──
+  if (isVan) {
+    parts.push(...buildVanPromptBlocks(interior));
   }
 
   // ── WHEEL REFERENCE LOCK (nur bei dedizierter Felgenreferenz) ──
@@ -688,8 +696,10 @@ ${neutralVehicleDescription}
         ? MOTORCYCLE_PERSPECTIVE_PROMPTS[slotKey]
         : isMotorhome
           ? MOTORHOME_PERSPECTIVE_PROMPTS[slotKey]
-          : null;
-    const perspPrompt = isTruck || isMotorcycle || isMotorhome
+          : isVan
+            ? VAN_PERSPECTIVE_PROMPTS[slotKey]
+            : null;
+    const perspPrompt = isTruck || isMotorcycle || isMotorhome || isVan
       ? classPersp
         ? `<CURRENT_PERSPECTIVE>\n${classPersp}\n</CURRENT_PERSPECTIVE>`
         : ''

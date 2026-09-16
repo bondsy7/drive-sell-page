@@ -175,6 +175,22 @@ function inferPrimaryReferenceIndex(
       return idx >= 0 && idx < availableCount ? idx : 0;
     }
   }
+  // Transporter: Kabine, Laderaum und Schiebetür immer auf die passende Aufnahme.
+  if (/^VAN_/i.test(job?.key || '')) {
+    const key = (job?.key || '').toUpperCase();
+    const vanRoom: Record<string, RegExp[]> = {
+      VAN_INT_COCKPIT: [/cockpit/, /fahrerkabine/, /fahrerhaus/, /interior_front/],
+      VAN_INT_CARGO: [/cargo/, /laderaum/, /kofferraum/],
+      VAN_INT_SLIDING_DOOR: [/sliding/, /schiebet/, /cargo/, /laderaum/],
+      VAN_DET_SLIDING_DOOR: [/sliding/, /schiebet/, /side_right/, /seite_rechts/],
+      VAN_DET_REAR_DOORS: [/cargo/, /laderaum/, /(^|_)rear($|_)/, /heck/],
+    };
+    const patterns = vanRoom[key];
+    if (patterns) {
+      const idx = findRole(...patterns);
+      if (idx >= 0 && idx < availableCount) return idx;
+    }
+  }
   let roleIndex = -1;
   if (REAR_INTERIOR_PATTERNS.test(signature)) roleIndex = findRole(/interior_rear/, /rear_seat/, /ruecksitz/);
   else if (FRONT_INTERIOR_PATTERNS.test(signature)) roleIndex = findRole(/interior_front/, /interior_dashboard/, /driver/, /fahrer/);
@@ -197,7 +213,7 @@ function inferPrimaryReferenceIndex(
 function getInteriorReferenceIndices(availableCount: number, referenceRoles: string[] = []): number[] {
   const roleMatches = referenceRoles
     .map((role, index) => ({ role: role.toLowerCase(), index }))
-    .filter(({ role, index }) => index < availableCount && /interior|dashboard|fahrer|rücksitz|ruecksitz|living|wohn|kitchen|küche|kueche|bath|bad|bed|schlaf|bett|garage/.test(role))
+    .filter(({ role, index }) => index < availableCount && /interior|dashboard|fahrer|rücksitz|ruecksitz|living|wohn|kitchen|küche|kueche|bath|bad|bed|schlaf|bett|garage|cockpit|cargo|laderaum|sliding|schiebet/.test(role))
     .map(({ index }) => index);
   if (roleMatches.length > 0) return roleMatches;
   if (availableCount >= 5) return [3, 4];
@@ -386,7 +402,15 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       WOMO_DET_GARAGE: 'garage',
     };
     const womoSlotKey = WOMO_SLOT_KEYS[(job?.key || '').toUpperCase()];
+    // Transporter: eigene Kabinen-/Laderaum-Slots statt der Pkw-Innenraumperspektiven.
+    const VAN_SLOT_KEYS: Record<string, string> = {
+      VAN_INT_COCKPIT: 'cockpit',
+      VAN_INT_CARGO: 'cargo',
+      VAN_INT_SLIDING_DOOR: 'sliding-door',
+    };
+    const vanSlotKey = VAN_SLOT_KEYS[(job?.key || '').toUpperCase()];
     const interiorSlotKey = womoSlotKey
+      ?? vanSlotKey
       ?? (isInteriorJob
         ? (REAR_INTERIOR_PATTERNS.test(`${job?.key || ''} ${job?.label || ''} ${job?.labelDe || ''}`) ? 'interior-rear' : 'interior-front')
         : undefined);
