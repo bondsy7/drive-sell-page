@@ -1227,7 +1227,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
             </CaptureSection>
           )}
 
-          {(activeClass !== 'truck' || truckWizardDone) && (
+          {(activeClass === 'truck' ? truckWizardDone : activeClass === 'motorhome' ? motorhomeWizardDone : true) && (
             <>
               <CaptureSection
                 title="Aufnahmen"
