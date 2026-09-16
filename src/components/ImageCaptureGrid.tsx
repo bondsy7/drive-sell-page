@@ -957,8 +957,14 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     setVehicleClass(cls);
     setCaptures({});
     setTruckWizardDone(cls !== 'truck');
+    setMotorhomeWizardDone(cls !== 'motorhome');
+    if (cls !== 'motorhome') setMotorhomeBodyType(null);
     const cur = latestVehicleDataRef.current;
-    if (cur) onVehicleDataChange?.({ ...cur, vehicleClass: cls });
+    if (cur) onVehicleDataChange?.({
+      ...cur,
+      vehicleClass: cls,
+      motorhomeBodyType: cls === 'motorhome' ? cur.motorhomeBodyType ?? null : null,
+    });
   };
 
 
