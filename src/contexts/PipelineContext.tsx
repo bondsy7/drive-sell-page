@@ -376,9 +376,20 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const isInteriorJob = job?.category === 'interior';
 
     // Pass the matching interior slotKey so front/rear cabin prompts stay aligned with the actual requested shot
-    const interiorSlotKey = isInteriorJob
-      ? (REAR_INTERIOR_PATTERNS.test(`${job?.key || ''} ${job?.label || ''} ${job?.labelDe || ''}`) ? 'interior-rear' : 'interior-front')
-      : undefined;
+    // Reisemobil: eigene Raum-Slots statt der Pkw-Innenraumperspektiven.
+    const WOMO_SLOT_KEYS: Record<string, string> = {
+      WOMO_INT_LIVING: 'living',
+      WOMO_INT_KITCHEN: 'kitchen',
+      WOMO_INT_BATH: 'bath',
+      WOMO_INT_BED: 'bed',
+      WOMO_INT_COCKPIT: 'cockpit',
+      WOMO_DET_GARAGE: 'garage',
+    };
+    const womoSlotKey = WOMO_SLOT_KEYS[(job?.key || '').toUpperCase()];
+    const interiorSlotKey = womoSlotKey
+      ?? (isInteriorJob
+        ? (REAR_INTERIOR_PATTERNS.test(`${job?.key || ''} ${job?.label || ''} ${job?.labelDe || ''}`) ? 'interior-rear' : 'interior-front')
+        : undefined);
     // ── Dedizierte Felgenreferenz: explizites Job-Routing ──
     const wheelReference = cfg.wheelReference?.image
       ? cfg.wheelReference
