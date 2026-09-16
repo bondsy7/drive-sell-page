@@ -302,6 +302,7 @@ export function buildMasterPrompt(
   const vehicleClass = resolveVehicleClass(classContext?.vehicleClass);
   const isTruck = vehicleClass === 'truck';
   const isMotorcycle = vehicleClass === 'motorcycle';
+  const isMotorhome = vehicleClass === 'motorhome';
   const interior = isInteriorSlot(slotKey);
 
   // ── Base instruction ──
@@ -685,8 +686,10 @@ ${neutralVehicleDescription}
       ? TRUCK_PERSPECTIVE_PROMPTS[slotKey]
       : isMotorcycle
         ? MOTORCYCLE_PERSPECTIVE_PROMPTS[slotKey]
-        : null;
-    const perspPrompt = isTruck || isMotorcycle
+        : isMotorhome
+          ? MOTORHOME_PERSPECTIVE_PROMPTS[slotKey]
+          : null;
+    const perspPrompt = isTruck || isMotorcycle || isMotorhome
       ? classPersp
         ? `<CURRENT_PERSPECTIVE>\n${classPersp}\n</CURRENT_PERSPECTIVE>`
         : ''
