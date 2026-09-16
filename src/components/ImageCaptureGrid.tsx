@@ -1475,6 +1475,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                 <RemasterOptions
                   config={remasterConfig}
                   onChange={setRemasterConfig}
+                  vehicleClass={activeClass}
                   vehicleBrand={vehicleData?.vehicle?.brand}
                   vehicleModel={vehicleData?.vehicle?.model}
                   brandDetectionStatus={brandDetectionStatus}

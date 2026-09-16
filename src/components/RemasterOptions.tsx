@@ -28,6 +28,8 @@ import { useModuleAccess } from '@/hooks/useModuleAccess';
 interface RemasterOptionsProps {
   config: RemasterConfig;
   onChange: (config: RemasterConfig) => void;
+  /** Aktive Fahrzeugklasse – steuert klassenspezifische Optionen (z. B. Baumaschinen). */
+  vehicleClass?: string;
   vehicleBrand?: string;
   onBrandChange?: (brand: string) => void;
   onModelChange?: (model: string) => void;
