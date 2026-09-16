@@ -50,6 +50,20 @@ export default function Impressum() {
         <p>USt-IdNr. gemäß § 27a UStG: {LEGAL.vatId}</p>
       </LegalSection>
 
+      <LegalSection title="Verantwortlich nach § 18 Abs. 2 MStV">
+        <p>
+          Vorsorglich für journalistisch-redaktionell gestaltete Inhalte:
+          <br />
+          {LEGAL.managingDirector}
+          <br />
+          {LEGAL.street}
+          <br />
+          {LEGAL.city}
+          <br />
+          {LEGAL.country}
+        </p>
+      </LegalSection>
+
       <LegalSection title="Zielgruppe">
         <p>
           AUTO3 richtet sich ausschließlich an Unternehmer im Sinne des § 14 BGB, juristische
