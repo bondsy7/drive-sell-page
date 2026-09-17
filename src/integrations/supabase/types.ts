@@ -1322,6 +1322,7 @@ export type Database = {
           instagram_url: string | null
           leasing_bank: string | null
           leasing_legal_text: string | null
+          legal_confirmed_at: string | null
           logo_url: string | null
           phone: string | null
           postal_code: string | null
@@ -1357,6 +1358,7 @@ export type Database = {
           instagram_url?: string | null
           leasing_bank?: string | null
           leasing_legal_text?: string | null
+          legal_confirmed_at?: string | null
           logo_url?: string | null
           phone?: string | null
           postal_code?: string | null
@@ -1392,6 +1394,7 @@ export type Database = {
           instagram_url?: string | null
           leasing_bank?: string | null
           leasing_legal_text?: string | null
+          legal_confirmed_at?: string | null
           logo_url?: string | null
           phone?: string | null
           postal_code?: string | null
