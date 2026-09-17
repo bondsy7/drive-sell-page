@@ -20,6 +20,14 @@ function buildEvidence(companyName: string, authMethod: LegalAuthMethod) {
  * Es wird bewusst KEINE IP-Adresse gespeichert.
  */
 export async function hasCurrentTermsAcceptance(userId: string): Promise<boolean> {
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('legal_confirmed_at')
+    .eq('id', userId)
+    .maybeSingle();
+
+  if (profile?.legal_confirmed_at) return true;
+
   const { data, error } = await supabase
     .from('legal_acceptances')
     .select('document')
@@ -30,7 +38,18 @@ export async function hasCurrentTermsAcceptance(userId: string): Promise<boolean
 
   if (error) return false;
   const docs = new Set((data ?? []).map((r) => r.document));
-  return docs.has(TERMS_DOCUMENT) && docs.has(B2B_DOCUMENT);
+  const accepted = docs.has(TERMS_DOCUMENT) && docs.has(B2B_DOCUMENT);
+
+  // Bestehende Nachweise einmalig ins Profil übernehmen. Danach genügt der
+  // dauerhafte Profilmarker und die Bestätigung wird nicht erneut abgefragt.
+  if (accepted) {
+    await supabase
+      .from('profiles')
+      .update({ legal_confirmed_at: new Date().toISOString() })
+      .eq('id', userId);
+  }
+
+  return accepted;
 }
 
 export async function recordTermsAcceptance(
@@ -48,8 +67,20 @@ export async function recordTermsAcceptance(
   };
 
   // accepted_at wird serverseitig per Default gesetzt.
-  return supabase.from('legal_acceptances').insert([
+  const acceptanceResult = await supabase.from('legal_acceptances').insert([
     { ...base, document: TERMS_DOCUMENT },
     { ...base, document: B2B_DOCUMENT },
   ]);
+
+  if (acceptanceResult.error) return acceptanceResult;
+
+  const profileResult = await supabase
+    .from('profiles')
+    .update({
+      company_name: companyName.trim(),
+      legal_confirmed_at: new Date().toISOString(),
+    })
+    .eq('id', userId);
+
+  return { data: acceptanceResult.data, error: profileResult.error };
 }

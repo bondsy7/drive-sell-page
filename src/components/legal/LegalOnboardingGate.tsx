@@ -25,10 +25,27 @@ export default function LegalOnboardingGate({ children }: { children: React.Reac
   useEffect(() => {
     let active = true;
     if (!user) return;
-    setCompany((user.user_metadata?.company_name as string) || '');
-    hasCurrentTermsAcceptance(user.id).then((ok) => {
-      if (active) setChecked(ok);
-    });
+
+    const checkProfile = async () => {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_name, legal_confirmed_at')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (!active) return;
+      setCompany(profile?.company_name || (user.user_metadata?.company_name as string) || '');
+
+      if (profile?.legal_confirmed_at) {
+        setChecked(true);
+        return;
+      }
+
+      const accepted = await hasCurrentTermsAcceptance(user.id);
+      if (active) setChecked(accepted);
+    };
+
+    void checkProfile();
     return () => {
       active = false;
     };
@@ -57,8 +74,6 @@ export default function LegalOnboardingGate({ children }: { children: React.Reac
       await supabase.auth.updateUser({
         data: { company_name: company.trim(), terms_confirmed: true },
       });
-      await supabase.from('profiles').update({ company_name: company.trim() }).eq('id', user.id);
-
       setChecked(true);
       toast.success('Danke – Bestätigung gespeichert.');
     } catch (err) {
