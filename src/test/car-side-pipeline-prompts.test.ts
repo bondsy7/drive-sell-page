@@ -22,6 +22,8 @@ describe('PKW side pipeline prompt contract', () => {
     expect(prompt).toContain('RIGHT flank');
     expect(prompt).toContain('FRONT (hood/headlights) MUST point to the RIGHT side of the image');
     expect(prompt).toContain('REAR (trunk/taillights) MUST point to the LEFT side of the image');
+    expect(prompt).toContain('If no dedicated right-side photo exists');
+    expect(prompt).not.toContain('Use the exact RIGHT-side reference as primary authority');
     expect(prompt).toContain('Use ONLY the PROVIDED SHOWROOM for this run');
     expect(prompt).toContain('complete uncropped vehicle is more important than any logo');
   });
