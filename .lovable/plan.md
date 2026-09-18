@@ -1,23 +1,30 @@
-# Doppelte Bilder im Dashboard beseitigen
+# Doppelte Bilder und vermischte Fahrzeugakten verhindern
 
-## Bestätigte Ursache
-Beim gezeigten BMW X7 liegen tatsächlich doppelte Galeriezeilen mit derselben Bildadresse und Perspektive vor. Beispielsweise wurden „Master-Bild“, „Low-Angle Hero“, „Exterieur-Grid“ und weitere Ergebnisse zuerst am 10.09. und nochmals am 14.09. gespeichert. Die Bilddatei wurde dabei überschrieben bzw. wiederverwendet, aber der zugehörige Galerieeintrag erneut angelegt.
+## Bestätigte Ursache am genannten Fahrzeug
+Das Fahrzeug `f4905765-185d-49bc-ad44-21e9a73c9a77` gehört zum anderen genannten Konto und ist der BMW X7 mit VIN `5UXCW2C01L9B43107`. Es enthält 44 Galeriezeilen, aber nur 32 unterschiedliche Bildadressen. Zwölf Pipeline-Ergebnisse wurden am 27.05. angelegt und am 18.09. unter derselben Bildadresse und Perspektive nochmals als neue Zeile gespeichert. Das erklärt exakt die zwölf sichtbaren Paare im Screenshot.
 
-Der aktuelle Ablauf begünstigt dies an zwei Stellen:
-- Ein Pipeline-Lauf speichert jedes fertige Bild sofort und übergibt am Ende denselben Ergebnissatz nochmals an den Seitenabschluss, der ihn erneut speichern kann.
-- Wiederholte Läufe verwenden stabile Bildadressen, legen dafür jedoch ohne Dublettenprüfung neue Galeriezeilen an.
+Wiederholte Pipeline-Läufe verwenden für dasselbe Fahrzeug stabile Bildadressen, legen dafür bislang aber ohne Dublettenprüfung neue Galeriezeilen an. Das Dashboard zeigt jede gespeicherte Zeile einzeln.
 
-Das Dashboard zeigt jede gespeicherte Zeile einzeln und macht diese Dubletten deshalb sichtbar.
+Die Fahrzeugzuordnung verwendet bei vorhandener VIN bereits eine eindeutige Kombination aus Konto und VIN. Ohne VIN wird dagegen ein Ersatzwert nur aus Fahrzeugdaten und der aktuellen Minute erzeugt. Zwei neue Vorgänge für ein gleiches Fahrzeug innerhalb derselben Minute können deshalb unbeabsichtigt dieselbe Akte wiederverwenden und Inhalte vermischen.
 
 ## Umsetzung
-- Die Pipeline-Sofortspeicherung als einzige Speicherung für Pipeline-Ergebnisse beibehalten; der Abschluss übernimmt nur noch Status, Fahrzeugzuordnung und Navigation.
-- Direkte Remastering-Abläufe ohne Pipeline weiterhin regulär speichern, damit bestehende Upload- und Generatorfunktionen nicht beeinträchtigt werden.
-- Speichervorgänge idempotent machen: dieselbe Bildadresse und Perspektive innerhalb derselben Galerie darf nur einmal vorkommen.
-- Eine Datenbankabsicherung ergänzen, damit parallele oder wiederholte Aufrufe keine neue Dublette erzeugen können.
-- Bestehende exakte Dubletten bereinigen: jeweils den ältesten gültigen Galerieeintrag behalten und nur spätere Zeilen mit identischer Fahrzeug-/Ordner-/Perspektiven-/Bildadress-Kombination entfernen; Bilddateien selbst bleiben bestehen.
-- Die Galerie zusätzlich beim Anzeigen defensiv nach Bildadresse filtern, damit historische Sonderfälle nicht doppelt erscheinen.
+### Bilder eines vorhandenen Fahrzeugs
+- Pipeline-Ergebnisse idempotent speichern: dieselbe Bildadresse und Perspektive darf innerhalb derselben Fahrzeugakte nur einmal als Galeriezeile vorkommen.
+- Eine Datenbankabsicherung ergänzen, damit parallele oder wiederholte Aufrufe keine identische Galeriezeile erzeugen können.
+- Bestehende exakte Dubletten bereinigen: den ältesten gültigen Eintrag behalten und nur spätere Zeilen mit identischem Konto, Fahrzeug, Ordner, Perspektive und Bildadresse entfernen. Die Bilddateien selbst bleiben bestehen.
+- Die Galerie zusätzlich beim Anzeigen nach Bildadresse filtern, damit historische Sonderfälle nicht doppelt erscheinen.
+
+### Klare Fahrzeugtrennung
+- Mit echter VIN gilt innerhalb eines Kontos: dieselbe VIN führt immer in dieselbe Fahrzeugakte; die vorhandene eindeutige Absicherung bleibt bestehen.
+- Ohne VIN gilt: Jeder neu begonnene Upload-/Generatorvorgang legt ausnahmslos eine neue Fahrzeugakte mit einer zufällig eindeutigen internen Kennung an – auch bei identischen Bildern, Marke, Modell oder gleichzeitig gestarteten Vorgängen.
+- Innerhalb desselben laufenden Vorgangs wird die einmal erzeugte Fahrzeug-ID durch alle Schritte weitergereicht, damit Originale, remasterte Bilder, Pipeline-Ergebnisse und Projekte zusammenbleiben.
+- Ein ausdrücklich aus einer bestehenden Fahrzeugseite gestarteter Vorgang bleibt an genau diese ausgewählte Akte gebunden; es wird weder eine zweite Akte angelegt noch mit einer anderen Akte vermischt.
+- Alle Zuordnungen bleiben auf das angemeldete Konto begrenzt; übergebene fremde Fahrzeug-IDs dürfen keine Zuordnung oder Änderung bewirken.
 
 ## Prüfung
-- Einen normalen Lauf und einen erneuten Lauf mit derselben Auswahl prüfen.
-- Sicherstellen, dass pro Ergebnis genau eine Galeriezeile existiert und Direkt-Remastering weiterhin gespeichert wird.
+- Das genannte BMW-Fahrzeug nach Bereinigung auf 32 statt 44 Galeriezeilen prüfen; die zwölf sichtbaren Paare müssen verschwinden.
+- Einen erneuten Pipeline-Lauf für ein Fahrzeug mit VIN prüfen: keine zweite Fahrzeugakte und keine identische Galeriezeile.
+- Zwei neue Vorgänge ohne VIN mit denselben Bildern direkt nacheinander prüfen: zwei getrennte Fahrzeugakten, keine vermischten Bilder.
+- Einen Vorgang aus einer bestehenden Fahrzeugseite prüfen: sämtliche Ergebnisse bleiben ausschließlich in dieser Akte.
+- Angemeldete Zuordnung und Versuch mit einer fremden Fahrzeug-ID getrennt prüfen; eine fremde ID darf nicht wirksam werden.
 - TypeScript, relevante Tests und automatischen Build prüfen.
