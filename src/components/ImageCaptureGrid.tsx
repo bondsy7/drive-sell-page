@@ -286,6 +286,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
     () => isMotorhomeSelectionComplete(vehicleData?.motorhomeBodyType ?? null),
   );
   const [ensuredVehicleId, setEnsuredVehicleId] = useState<string | null>(null);
+  const ensureVehiclePromiseRef = useRef<Promise<string | null> | null>(null);
   const [isEnsuringVehicle, setIsEnsuringVehicle] = useState(false);
   const [captures, setCaptures] = useState<Record<string, CapturedImage>>({});
   const [isProcessing, setIsProcessing] = useState(false);
@@ -320,8 +321,9 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   const ensureVehicleForPipeline = useCallback(async (): Promise<string | null> => {
     if (ensuredVehicleId) return ensuredVehicleId;
     if (!user) return null;
-    setIsEnsuringVehicle(true);
-    try {
+    if (ensureVehiclePromiseRef.current) return ensureVehiclePromiseRef.current;
+    const ensurePromise = (async () => {
+      setIsEnsuringVehicle(true);
       if (vehicleId) {
         const ownedVehicleId = await getOwnedVehicleId(user.id, vehicleId);
         if (ownedVehicleId) {
@@ -333,9 +335,9 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       const vid = await ensureVehicleAuto(user.id, detectedVin || (vehicleData as any)?.vehicle?.vin || null, vehicleData);
       if (vid) setEnsuredVehicleId(vid);
       return vid;
-    } finally {
-      setIsEnsuringVehicle(false);
-    }
+    })().finally(() => setIsEnsuringVehicle(false));
+    ensureVehiclePromiseRef.current = ensurePromise;
+    return ensurePromise;
   }, [ensuredVehicleId, vehicleId, user, vehicleData, detectedVin]);
 
   /** Coverage-Snapshot für Callbacks, die vor der Berechnung definiert sind. */

@@ -25,6 +25,7 @@ import { logGenerationAttempt, classifyGenerationError, type GenerationErrorCode
 async function insertGalleryRowsChecked(rows: Record<string, unknown>[]): Promise<void> {
   const attempt = async () => await supabase.from('project_images').insert(rows as any);
   let { error } = await attempt();
+  if (error?.code === '23505') return;
   if (error) {
     console.error('[pipeline] gallery insert failed, retrying after session refresh:', error);
     try { await supabase.auth.refreshSession(); } catch { /* ignore */ }
