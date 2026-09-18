@@ -1507,7 +1507,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
             }
             rows={summaryRows}
             collapsible
-            defaultOpen={false}
+            defaultOpen={true}
           >
             {isProcessing && (
               <div className="space-y-1.5">
