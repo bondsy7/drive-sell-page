@@ -215,7 +215,7 @@ function inferPrimaryReferenceIndex(
   if (REAR_INTERIOR_PATTERNS.test(signature)) roleIndex = findRole(/interior_rear/, /rear_seat/, /ruecksitz/);
   else if (FRONT_INTERIOR_PATTERNS.test(signature)) roleIndex = findRole(/interior_front/, /interior_dashboard/, /driver/, /fahrer/);
   else if (/EXT_SIDE_RIGHT/i.test(signature)) roleIndex = findRole(/side_right/, /seite_rechts/);
-  else if (/EXT_SIDE_LEFT/i.test(signature)) roleIndex = findRole(/side_left/, /(^|_)side($|_)/, /seite_links/);
+  else if (/EXT_SIDE_LEFT/i.test(signature)) roleIndex = findRole(/side_left/, /seite_links/);
   else if (/EXT_34_FRONT_RIGHT/i.test(signature)) roleIndex = findRole(/34_front_right/, /exterior_34_front/, /34front/, /identity_anchor/);
   else if (/EXT_34_REAR_RIGHT/i.test(signature)) roleIndex = findRole(/34_rear_right/, /exterior_34_rear/, /rear/, /heck/);
   else if (/EXT_34_REAR_LEFT/i.test(signature)) roleIndex = findRole(/34_rear_left/, /exterior_34_rear/, /rear/, /heck/);
@@ -248,6 +248,9 @@ function buildTaskOutputLock(job: PipelineJob | undefined): string {
 - FRONT-PART LOCK: Use the closest front-visible remastered blueprint as the primary authority. Copy the grille or closed panel, hood edge, bumper openings, sensors, headlight housings and full LED signatures as one connected assembly. A familiar grille or lamp design from another generation is a failed output.` : '';
   const steeringWheelLock = FRONT_INTERIOR_PATTERNS.test(signature) ? `
 - STEERING-WHEEL LOCK: Use the closest remastered front-interior blueprint as the primary authority. Copy the exact rim outline, spoke count and angles, centre hub, button islands, controls, stalks and badge position. Never construct a generic or remembered steering wheel.` : '';
+  const carSideDirectionLock = job?.key === 'EXT_SIDE_LEFT' ? `
+- PKW LEFT-SIDE DIRECTION LOCK: Show the physical LEFT flank. The vehicle front/hood/headlights point to IMAGE LEFT; rear/trunk/taillights point to IMAGE RIGHT. Never mirror or flip.` : job?.key === 'EXT_SIDE_RIGHT' ? `
+- PKW RIGHT-SIDE DIRECTION LOCK: Show the physical RIGHT flank. The vehicle front/hood/headlights point to IMAGE RIGHT; rear/trunk/taillights point to IMAGE LEFT. Never mirror or flip.` : '';
   return `TASK OUTPUT LOCK (ABSOLUTE PRIORITY):
 - Generate ONLY the requested pipeline step: "${jobName}".
 - Follow the requested perspective exactly. Never replace it with a visually similar but different angle.
@@ -255,8 +258,10 @@ function buildTaskOutputLock(job: PipelineJob | undefined): string {
 - Interior means interior only. Detail means detail only. Do NOT switch between exterior, interior, and detail shots.
 - Do NOT add, remove, redesign, simplify, restyle, or reinterpret any logo, badge, emblem, lettering, wall logo, or brand mark.
 - If a logo asset is provided, treat it as IMMUTABLE SOURCE MATERIAL: preserve exact silhouette, border/frame, symbol, text, proportions, placement logic, and colors.
+- VEHICLE-FIRST FRAMING: The entire requested vehicle view must remain visible and uncropped. A logo is secondary and must never enlarge, shift, cover, or crop the vehicle.
+- SCENE LOCK: Use only the showroom selected for this run. Never substitute another showroom and never reuse the source photo's environment.
 - Reference images are the ONLY source of truth for visible vehicle details. Never replace uncertainty with generic OEM defaults, remembered catalog imagery, or guessed trim/material variants.
-- Do NOT invent any missing view information. Use the matching reference image and detail photos to reproduce exactly what was requested.${frontIdentityLock}${steeringWheelLock}`;
+- Do NOT invent any missing view information. Use the matching reference image and detail photos to reproduce exactly what was requested.${frontIdentityLock}${steeringWheelLock}${carSideDirectionLock}`;
 }
 
 const CONCURRENCY = 6;
