@@ -11,7 +11,7 @@ import type { WheelReference } from '@/types/wheel-reference';
 import { deriveWheelReferenceFromPhoto } from '@/lib/wheel-reference';
 import { WHEEL_VISIBILITY_RULE } from '@/lib/remaster-prompt';
 import { ensureLogoCachedAsPng } from '@/lib/image-base64-cache';
-import { ensureVehicleAuto, uploadOriginalsToVehicle } from '@/lib/vehicle-utils';
+import { ensureVehicleAuto, getOwnedVehicleId, uploadOriginalsToVehicle } from '@/lib/vehicle-utils';
 import { useQueryClient } from '@tanstack/react-query';
 import { checkPipelineStart, markPipelineStarted, markPipelineFinished } from '@/lib/pipeline-start-guard';
 import { logGenerationAttempt, classifyGenerationError, type GenerationErrorCode, type GenerationStage } from '@/lib/generation-log';
@@ -25,12 +25,14 @@ import { logGenerationAttempt, classifyGenerationError, type GenerationErrorCode
 async function insertGalleryRowsChecked(rows: Record<string, unknown>[]): Promise<void> {
   const attempt = async () => await supabase.from('project_images').insert(rows as any);
   let { error } = await attempt();
+  if (error?.code === '23505') return;
   if (error) {
     console.error('[pipeline] gallery insert failed, retrying after session refresh:', error);
     try { await supabase.auth.refreshSession(); } catch { /* ignore */ }
     ({ error } = await attempt());
   }
   if (error) {
+    if (error.code === '23505') return;
     console.error('[pipeline] gallery insert failed permanently:', error);
     throw new Error(error.message || 'Galerie-Eintrag fehlgeschlagen');
   }
@@ -813,7 +815,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setGalleryFolder(folderName);
       const storagePath = cfg.projectId ? cfg.projectId : `gallery/${folderName}`;
 
-      let resolvedVehicleId = cfg.vehicleId || null;
+      let resolvedVehicleId = await getOwnedVehicleId(cfg.userId, cfg.vehicleId);
       if (!resolvedVehicleId) {
         try {
           resolvedVehicleId = await ensureVehicleAuto(cfg.userId, cfg.vin, null);
@@ -1145,12 +1147,12 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         for (let i = 0; i < jobResults.length; i++) {
           const url = await uploadImageToStorage(jobResults[i], config.userId, `${storagePath}/${jobKey}_retry_${i}.png`);
           if (url) {
-            await supabase.from('project_images').insert({
+            await insertGalleryRowsChecked([{
               project_id: config.projectId || null, vehicle_id: config.vehicleId || null,
               user_id: config.userId, image_url: url,
               image_base64: '', perspective: `Pipeline: ${job.labelDe} (Retry)`, sort_order: 999 + i,
               gallery_folder: folderName,
-            } as any);
+            }]);
           }
         }
       } catch (e) { console.error('Retry save error:', e); }
@@ -1184,12 +1186,12 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           const storagePath = config.projectId ? config.projectId : `gallery/${folderName}`;
           const url = await uploadImageToStorage(result.base64, config.userId, `${storagePath}/${resultImg.jobKey}_regen_${resultImg.promptIndex}.png`);
           if (url) {
-            await supabase.from('project_images').insert({
+            await insertGalleryRowsChecked([{
               project_id: config.projectId || null, vehicle_id: config.vehicleId || null,
               user_id: config.userId, image_url: url,
               image_base64: '', perspective: `Pipeline: ${resultImg.label} (Regen)`, sort_order: 999,
               gallery_folder: folderName,
-            } as any);
+            }]);
           }
         } catch (e) { console.error('Regen save error:', e); }
       } else {

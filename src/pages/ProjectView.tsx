@@ -40,7 +40,7 @@ const ProjectView = () => {
         });
         setSelectedTemplate((p.template_id || 'modern') as TemplateId);
       }
-      if (imgs) setImages(imgs.map((i: any) => i.image_url || i.image_base64));
+      if (imgs) setImages(Array.from(new Set(imgs.map((i: any) => i.image_url || i.image_base64).filter(Boolean))));
       setLoading(false);
     });
   }, [id]);
