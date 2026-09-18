@@ -108,9 +108,11 @@ LIGHTING: Shadows consistent with showroom lighting.
 SHOT_TYPE: Exterior - Perfect LEFT Side Profile
 CAMERA_ANGLE: Exactly perpendicular (90°) to the vehicle's LEFT flank (driver side in LHD markets). The camera faces the LEFT side of the car. Ground-to-waist-level horizon.
 FRAMING: Both LEFT-side wheels COMPLETELY visible and perfectly round (zero distortion). Entire silhouette front to rear in frame.
-CRITICAL DIRECTION: The vehicle's FRONT (hood/headlights) MUST point to the RIGHT side of the image. The REAR (trunk/taillights) MUST point to the LEFT side of the image. This is the LEFT side view – the camera sees the driver's door. Do NOT show the passenger side. Do NOT mirror or flip.
+CRITICAL DIRECTION: The vehicle's FRONT (hood/headlights) MUST point to the LEFT side of the image. The REAR (trunk/taillights) MUST point to the RIGHT side of the image. This is the LEFT side view – the camera sees the driver's door. Do NOT show the passenger side. Do NOT mirror or flip.
 SIDE_IDENTITY_LOCK: Use the exact LEFT-side reference as primary authority. Copy roofline, glasshouse, pillars, shoulder crease, door cuts, handles, sill/cladding, wheel arches, front-fender shape and headlamp termination exactly. Never reconstruct the side from catalogue memory.
-ENVIRONMENT: PROVIDED SHOWROOM. ${LOGO_LINE}
+FINAL_SIDE_CHECK: Before returning the image, verify all three conditions: LEFT flank visible, hood/headlights at IMAGE LEFT, trunk/taillights at IMAGE RIGHT. If any condition fails, correct the image.
+ENVIRONMENT: Use ONLY the PROVIDED SHOWROOM for this run. Never substitute another showroom or retain the source-photo environment. ${LOGO_LINE}
+PRIORITY: The complete uncropped vehicle is more important than any logo. A logo must never enlarge, shift or crop the vehicle.
 LIGHTING: Flat, even lighting to highlight body lines.
 </CURRENT_PIPELINE_SHOT>`,
   },
@@ -124,9 +126,11 @@ LIGHTING: Flat, even lighting to highlight body lines.
 SHOT_TYPE: Exterior - Perfect RIGHT Side Profile
 CAMERA_ANGLE: Exactly perpendicular (90°) to the vehicle's RIGHT flank (passenger side in LHD markets). The camera faces the RIGHT side of the car.
 FRAMING: Both RIGHT-side wheels fully visible and perfectly round. Entire silhouette front to rear in frame.
-CRITICAL DIRECTION: The vehicle's FRONT (hood/headlights) MUST point to the LEFT side of the image. The REAR (trunk/taillights) MUST point to the RIGHT side of the image. This is the RIGHT side view – the camera sees the passenger door. Do NOT show the driver's side. Do NOT mirror or flip. This MUST be the OPPOSITE direction of the left side profile.
-SIDE_IDENTITY_LOCK: Use the exact RIGHT-side reference as primary authority. Copy roofline, glasshouse, pillars, shoulder crease, door cuts, handles, sill/cladding, wheel arches, front-fender shape and headlamp termination exactly. Never reconstruct the side from catalogue memory.
-ENVIRONMENT: PROVIDED SHOWROOM. ${LOGO_LINE}
+CRITICAL DIRECTION: The vehicle's FRONT (hood/headlights) MUST point to the RIGHT side of the image. The REAR (trunk/taillights) MUST point to the LEFT side of the image. This is the RIGHT side view – the camera sees the passenger door. Do NOT show the driver's side. Do NOT mirror or flip. This MUST be the OPPOSITE direction of the left side profile.
+SIDE_IDENTITY_LOCK: Build the physical RIGHT flank only from the supplied vehicle references. If no dedicated right-side photo exists, combine the side-profile geometry with front and rear reference evidence; do not claim that the left-side image is a right-side reference and do not pixel-mirror it. Preserve roofline, glasshouse, pillars, shoulder crease, door cuts, handles, sill/cladding, wheel arches, front-fender shape and lamp terminations exactly. Never reconstruct the side from catalogue memory.
+FINAL_SIDE_CHECK: Before returning the image, verify all three conditions: RIGHT flank visible, hood/headlights at IMAGE RIGHT, trunk/taillights at IMAGE LEFT. If any condition fails, correct the image.
+ENVIRONMENT: Use ONLY the PROVIDED SHOWROOM for this run. Never substitute another showroom or retain the source-photo environment. ${LOGO_LINE}
+PRIORITY: The complete uncropped vehicle is more important than any logo. A logo must never enlarge, shift or crop the vehicle.
 LIGHTING: Clean studio lighting emphasizing body lines.
 </CURRENT_PIPELINE_SHOT>`,
   },
