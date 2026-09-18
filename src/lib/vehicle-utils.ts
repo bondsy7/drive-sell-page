@@ -187,6 +187,22 @@ export async function ensureVehicleAuto(
   return ensureVehicle(userId, placeholder, vehicleData, coverImageUrl);
 }
 
+/** Accept a preselected vehicle only when it belongs to the signed-in user. */
+export async function getOwnedVehicleId(
+  userId: string,
+  vehicleId: string | null | undefined,
+): Promise<string | null> {
+  if (!vehicleId) return null;
+  const { data, error } = await supabase
+    .from('vehicles')
+    .select('id')
+    .eq('id', vehicleId)
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error) console.warn('[getOwnedVehicleId] ownership check failed:', error);
+  return data?.id || null;
+}
+
 /**
  * Set the vehicle cover_image_url only when it is currently empty.
  * Returns true if a change was applied.

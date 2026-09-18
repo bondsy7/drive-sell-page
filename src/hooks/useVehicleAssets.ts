@@ -82,7 +82,10 @@ export function useVehicleAssets(vehicleId: string | null | undefined) {
         .eq('user_id', user.id)
         .eq('vehicle_id', vehicleId)
         .order('created_at', { ascending: false })
-        .then(({ data }) => (data || []).map<VehicleAsset>(r => ({
+        .then(({ data }) => Array.from(new Map((data || []).map(r => [
+          r.image_url || `${r.perspective || ''}:${r.image_base64 || ''}`,
+          r,
+        ])).values()).map<VehicleAsset>(r => ({
           id: `gal:${r.id}`,
           kind: 'gallery',
           url: r.image_url || (r.image_base64 ? `data:image/png;base64,${r.image_base64}` : ''),

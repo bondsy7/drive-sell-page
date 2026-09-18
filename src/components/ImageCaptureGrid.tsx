@@ -19,7 +19,7 @@ import { uploadToGeminiFiles } from '@/lib/gemini-file-upload';
 import { analyzeWheelReference, deriveWheelReferenceFromPhoto } from '@/lib/wheel-reference';
 import type { WheelReference } from '@/types/wheel-reference';
 import { ensureLogoCachedAsPng } from '@/lib/image-base64-cache';
-import { ensureVehicleAuto } from '@/lib/vehicle-utils';
+import { ensureVehicleAuto, getOwnedVehicleId } from '@/lib/vehicle-utils';
 import { useAuth } from '@/hooks/useAuth';
 import type { VehicleData } from '@/types/vehicle';
 import type {
@@ -319,10 +319,17 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
    */
   const ensureVehicleForPipeline = useCallback(async (): Promise<string | null> => {
     if (ensuredVehicleId) return ensuredVehicleId;
-    if (vehicleId) { setEnsuredVehicleId(vehicleId); return vehicleId; }
     if (!user) return null;
     setIsEnsuringVehicle(true);
     try {
+      if (vehicleId) {
+        const ownedVehicleId = await getOwnedVehicleId(user.id, vehicleId);
+        if (ownedVehicleId) {
+          setEnsuredVehicleId(ownedVehicleId);
+          return ownedVehicleId;
+        }
+        console.warn('[capture] Ignoring vehicle id not owned by current user');
+      }
       const vid = await ensureVehicleAuto(user.id, detectedVin || (vehicleData as any)?.vehicle?.vin || null, vehicleData);
       if (vid) setEnsuredVehicleId(vid);
       return vid;

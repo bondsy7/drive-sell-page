@@ -89,7 +89,12 @@ export default function VehicleView() {
         .select('id, project_id, image_base64, image_url, perspective, gallery_folder, created_at')
         .eq('vehicle_id', id!)
         .order('created_at', { ascending: false });
-      return (data as ProjectImage[]) || [];
+      const unique = new Map<string, ProjectImage>();
+      for (const image of (data as ProjectImage[]) || []) {
+        const key = image.image_url || `${image.perspective || ''}:${image.image_base64 || ''}`;
+        if (!unique.has(key)) unique.set(key, image);
+      }
+      return Array.from(unique.values());
     },
   });
 

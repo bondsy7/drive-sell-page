@@ -26,7 +26,7 @@ function slug(s: string): string {
 
 /**
  * Build a stable placeholder identifier for vehicles without a known VIN.
- * Format: NOVIN-<brand-model>-<YYYYMMDD-HHmm>
+ * Format: NOVIN-<brand-model>-<YYYYMMDD-HHmmss>-<random>
  * Always 17+ chars but starts with `NOVIN-` so it can be filtered out and
  * later replaced via real VIN lookup.
  */
@@ -38,9 +38,10 @@ export function generatePlaceholderVin(input: {
 }): string {
   const d = input.date ?? new Date();
   const pad = (n: number) => String(n).padStart(2, '0');
-  const stamp = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
+  const stamp = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
   const name = slug([input.brand, input.model, input.title].filter(Boolean).join(' ')) || 'fahrzeug';
-  return `NOVIN-${name}-${stamp}`;
+  const random = crypto.randomUUID().replace(/-/g, '').slice(0, 10).toUpperCase();
+  return `NOVIN-${name}-${stamp}-${random}`;
 }
 
 export function isPlaceholderVin(v: string | null | undefined): boolean {
