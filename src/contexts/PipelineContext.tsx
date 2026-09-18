@@ -11,7 +11,7 @@ import type { WheelReference } from '@/types/wheel-reference';
 import { deriveWheelReferenceFromPhoto } from '@/lib/wheel-reference';
 import { WHEEL_VISIBILITY_RULE } from '@/lib/remaster-prompt';
 import { ensureLogoCachedAsPng } from '@/lib/image-base64-cache';
-import { ensureVehicleAuto, uploadOriginalsToVehicle } from '@/lib/vehicle-utils';
+import { ensureVehicleAuto, getOwnedVehicleId, uploadOriginalsToVehicle } from '@/lib/vehicle-utils';
 import { useQueryClient } from '@tanstack/react-query';
 import { checkPipelineStart, markPipelineStarted, markPipelineFinished } from '@/lib/pipeline-start-guard';
 import { logGenerationAttempt, classifyGenerationError, type GenerationErrorCode, type GenerationStage } from '@/lib/generation-log';
@@ -814,7 +814,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setGalleryFolder(folderName);
       const storagePath = cfg.projectId ? cfg.projectId : `gallery/${folderName}`;
 
-      let resolvedVehicleId = cfg.vehicleId || null;
+      let resolvedVehicleId = await getOwnedVehicleId(cfg.userId, cfg.vehicleId);
       if (!resolvedVehicleId) {
         try {
           resolvedVehicleId = await ensureVehicleAuto(cfg.userId, cfg.vin, null);

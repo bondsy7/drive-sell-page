@@ -285,7 +285,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   const [motorhomeWizardDone, setMotorhomeWizardDone] = useState(
     () => isMotorhomeSelectionComplete(vehicleData?.motorhomeBodyType ?? null),
   );
-  const [ensuredVehicleId, setEnsuredVehicleId] = useState<string | null>(vehicleId || null);
+  const [ensuredVehicleId, setEnsuredVehicleId] = useState<string | null>(null);
   const [isEnsuringVehicle, setIsEnsuringVehicle] = useState(false);
   const [captures, setCaptures] = useState<Record<string, CapturedImage>>({});
   const [isProcessing, setIsProcessing] = useState(false);
