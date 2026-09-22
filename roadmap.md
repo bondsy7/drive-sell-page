@@ -47,3 +47,11 @@
 - [x] Öffentliche Seiten nach gelieferter Designreferenz neu gestalten
 - [x] Desktop- und Mobilansicht sowie PDF-Download prüfen
 - [x] Startseite eng an die neue Referenz mit Bildplatzhaltern, Kennzahlen, vier Schritten und Kundenstimme angleichen
+
+## Rechtliche Informationsarchitektur (22.09.2026)
+- [ ] Footer auf fünf primäre Rechtszugänge reduzieren
+- [ ] Öffentliche Übersicht /rechtliches mit zentralen Dokumentständen erstellen
+- [ ] LegalLayout-Navigation und Rückweg vereinheitlichen
+- [ ] KI-Transparenz in das gemeinsame LegalLayout überführen
+- [ ] Unverifizierte DSB-Aussage in der Datenschutzerklärung neutralisieren
+- [ ] TypeScript, Build und responsive Preview prüfen
