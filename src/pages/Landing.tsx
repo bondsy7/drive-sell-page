@@ -148,7 +148,7 @@ export default function Landing() {
             <div className="relative min-h-[400px] lg:-mr-20 lg:min-h-[520px]">
               <div className="absolute inset-0 overflow-hidden rounded-l-lg bg-card">
                 <img
-                  src={heroImage}
+                  src={heroImage.url}
                   alt="Professionell aufbereitetes Fahrzeug mit Produktübersicht"
                   width={1600}
                   height={1000}
