@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useCredits } from '@/hooks/useCredits';
 import { useAuth } from '@/hooks/useAuth';
@@ -45,6 +45,7 @@ const Pricing = () => {
   // Es gibt ausschließlich Monatsprodukte – kein Jahrespreis vortäuschen.
   const yearly = false;
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [loadingSlug, setLoadingSlug] = useState<string | null>(null);
   const { balance, costs } = useCredits();
   const { user } = useAuth();
@@ -61,29 +62,10 @@ const Pricing = () => {
     }
   }, [searchParams]);
 
+  // Führt in den geführten Checkout (/checkout) statt direkt zu Stripe.
   const handleCheckout = async (slug: string) => {
-    if (!user) {
-      toast.error('Bitte melde dich zuerst an.');
-      return;
-    }
-    const prices = STRIPE_PRICES[slug];
-    if (!prices) return;
-
-    setLoadingSlug(slug);
-    try {
-      const priceId = yearly ? prices.yearly : prices.monthly;
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { priceId },
-      });
-      if (error) throw error;
-      if (data?.url) {
-        window.open(data.url, '_blank');
-      }
-    } catch (err: any) {
-      toast.error('Fehler beim Checkout: ' + (err.message || 'Unbekannter Fehler'));
-    } finally {
-      setLoadingSlug(null);
-    }
+    if (!STRIPE_PRICES[slug]) return;
+    navigate(`/checkout?plan=${slug}`);
   };
 
   const handleManage = async () => {
