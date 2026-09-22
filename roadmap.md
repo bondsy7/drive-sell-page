@@ -43,6 +43,6 @@
 - [x] Mindestlaufzeit 12 Monate (AGB § 7 + Preisseite); Whitelabel/Flipping nur auf Anfrage
 
 ## Markenwechsel und öffentliche Seiten (22.09.2026)
-- [ ] Marke von AUTO3 auf autohaus.ai umstellen, inklusive Logo, E-Mails und Angebots-PDF
-- [ ] Öffentliche Seiten nach gelieferter Designreferenz neu gestalten
-- [ ] Desktop- und Mobilansicht sowie PDF-Download prüfen
+- [x] Marke von AUTO3 auf autohaus.ai umstellen, inklusive Logo, E-Mails und Angebots-PDF
+- [x] Öffentliche Seiten nach gelieferter Designreferenz neu gestalten
+- [x] Desktop- und Mobilansicht sowie PDF-Download prüfen

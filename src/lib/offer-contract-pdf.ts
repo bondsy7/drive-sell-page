@@ -1,5 +1,6 @@
 import { jsPDF } from 'jspdf';
 import { LEGAL, LEGAL_VERSIONS } from '@/lib/legal-config';
+import brandLogo from '@/assets/brand/autohaus-ai-logo.png';
 import {
   ALL_INCL_PACKAGES,
   FOTO_PACKAGES,
@@ -59,7 +60,7 @@ export function fotoContractInput(slug: string): OfferContractInput | null {
   };
 }
 
-export function buildOfferContractDoc(input: OfferContractInput) {
+export function buildOfferContractDoc(input: OfferContractInput, logoDataUrl?: string) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const M = 18;
   const W = 210 - M * 2;
@@ -125,12 +126,11 @@ export function buildOfferContractDoc(input: OfferContractInput) {
   };
 
   // Kopf
+  if (logoDataUrl) {
+    doc.addImage(logoDataUrl, 'PNG', M, y, 47, 9);
+    y += 14;
+  }
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(33, 91, 230);
-  doc.setFontSize(20);
-  doc.text('autohaus.ai', M, y);
-  doc.setTextColor(0);
-  y += 8;
   doc.setFontSize(16);
   doc.text('Auftrag und Vertrag über die Nutzung von autohaus.ai', M, y);
   y += 7;
@@ -242,6 +242,18 @@ export function buildOfferContractDoc(input: OfferContractInput) {
   return doc;
 }
 
-export function generateOfferContractPdf(input: OfferContractInput) {
-  buildOfferContractDoc(input).save(`autohaus.ai-Vertrag-${input.slug}.pdf`);
+export async function generateOfferContractPdf(input: OfferContractInput) {
+  let logoDataUrl: string | undefined;
+  try {
+    const blob = await fetch(brandLogo).then((response) => response.blob());
+    logoDataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    // Der Vertrag bleibt auch bei einem fehlgeschlagenen Logo-Abruf vollständig nutzbar.
+  }
+  buildOfferContractDoc(input, logoDataUrl).save(`autohaus.ai-Vertrag-${input.slug}.pdf`);
 }
