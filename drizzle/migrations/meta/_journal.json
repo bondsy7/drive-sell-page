@@ -36,6 +36,13 @@
       "when": 1790075183807,
       "tag": "0004_add_video_generate_action_type",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790076393067,
+      "tag": "0005_credit_monthly_expiry",
+      "breakpoints": true
     }
   ]
 }

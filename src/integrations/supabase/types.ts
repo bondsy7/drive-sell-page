@@ -505,6 +505,7 @@ export type Database = {
           id: string
           last_reset_at: string | null
           lifetime_used: number
+          purchased_balance: number
           user_id: string
         }
         Insert: {
@@ -513,6 +514,7 @@ export type Database = {
           id?: string
           last_reset_at?: string | null
           lifetime_used?: number
+          purchased_balance?: number
           user_id: string
         }
         Update: {
@@ -521,6 +523,7 @@ export type Database = {
           id?: string
           last_reset_at?: string | null
           lifetime_used?: number
+          purchased_balance?: number
           user_id?: string
         }
         Relationships: []
@@ -3506,6 +3509,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      reset_monthly_credits: {
+        Args: { _description?: string; _plan_credits: number; _user_id: string }
+        Returns: Json
       }
       set_ftp_password: { Args: { _password: string }; Returns: undefined }
       set_social_credentials: {
