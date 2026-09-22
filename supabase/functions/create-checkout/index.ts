@@ -10,8 +10,22 @@ const corsHeaders = {
 
 // Nur bekannte Abo-Preise akzeptieren – keine beliebigen Client-Preis-IDs.
 const ALLOWED_SUBSCRIPTION_PRICE_IDS = new Set<string>([
-  "price_1Tl8cuP3eWRHEALNPuSwqIZe", // Basis (aktuelles Grundpaket)
+  "price_1Tl8cuP3eWRHEALNPuSwqIZe", // Basis (Legacy-Grundpaket)
+  // All-Incl-Marketing
+  "price_1UINXLP3eWRHEALNd9tA3iGO", // Basic
+  "price_1UINXNP3eWRHEALN7RYf2qNH", // Advanced
+  "price_1UINXOP3eWRHEALNuZ9k9ZJD", // Premium
+  "price_1UINXQP3eWRHEALNMoIszMxo", // Ultra
+  // Fotoservice
+  "price_1UINXUP3eWRHEALNEKwVan7t", // 1 Fahrzeug
+  "price_1UINXWP3eWRHEALNnycuH46I", // 25 Fahrzeuge
+  "price_1UINXYP3eWRHEALNnVc7lPwS", // 50 Fahrzeuge
+  "price_1UINXZP3eWRHEALNxbIQuvkO", // 100 Fahrzeuge
+  "price_1UINXaP3eWRHEALNHnFqWkJs", // 200 Fahrzeuge
 ]);
+
+// Einmalige Implementierungskosten (990 € netto) – nur bei der allerersten Buchung.
+const SETUP_FEE_PRICE_ID = "price_1UINXcP3eWRHEALNRW9nMcih";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
