@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useCredits } from '@/hooks/useCredits';
 import { useAuth } from '@/hooks/useAuth';
