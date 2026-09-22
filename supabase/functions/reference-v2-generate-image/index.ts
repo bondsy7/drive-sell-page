@@ -246,5 +246,7 @@ serve(async (req) => {
     }
   }
 
+  // Kein Ergebnis geliefert → Credits zurückbuchen.
+  await charge.refund(lastError || "keine Antwort vom Anbieter");
   return errorResponse(`GENERATION_UNAVAILABLE: ${lastError}`, 502);
 });
