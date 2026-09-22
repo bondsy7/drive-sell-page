@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecret } from "../_shared/get-secret.ts";
+import { chargeCredits, creditErrorResponse } from "../_shared/credit-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -89,6 +90,8 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    await chargeCredits(req, "image_analysis", { description: "Marken-Erkennung" });
 
     const { imageBase64, imageFileUri } = await req.json();
     if (!imageBase64 && !imageFileUri?.uri) {
@@ -193,6 +196,8 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
+    const ce = creditErrorResponse(e, corsHeaders);
+    if (ce) return ce;
     console.error("detect-vehicle-brand error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
       status: 500,

@@ -3,6 +3,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { getSecret } from "../_shared/get-secret.ts";
+import { chargeCredits, creditErrorResponse } from "../_shared/credit-guard.ts";
 
 type Platform = "instagram" | "facebook" | "x";
 type Format = "image" | "video" | "reel" | "carousel";
@@ -171,6 +172,11 @@ REGELN:
     const geminiKey = await getSecret("GEMINI_API_KEY", admin);
     if (!geminiKey) return json({ error: "gemini_key_missing" }, 500);
 
+    // Credits vor dem Anbieteraufruf abziehen.
+    const charge = await chargeCredits(req, "text_generate", {
+      description: "Social-Media-Text",
+    });
+
     const geminiRes = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
       {
@@ -185,14 +191,20 @@ REGELN:
     const gj = await geminiRes.json().catch(() => ({}));
     if (!geminiRes.ok) {
       console.error("[generate-social-caption] gemini error", gj);
+      await charge.refund("Anbieterfehler");
       return json({ error: "gemini_failed", detail: gj?.error?.message ?? "unknown" }, 502);
     }
 
     const caption: string = gj?.candidates?.[0]?.content?.parts?.map((p: any) => p.text ?? "").join("").trim() ?? "";
-    if (!caption) return json({ error: "empty_response" }, 502);
+    if (!caption) {
+      await charge.refund("leere Antwort");
+      return json({ error: "empty_response" }, 502);
+    }
 
     return json({ caption, platform, format, tone });
   } catch (e) {
+    const ce = creditErrorResponse(e, corsHeaders);
+    if (ce) return ce;
     console.error("[generate-social-caption]", e);
     return json({ error: "internal_error", detail: String((e as Error)?.message ?? e) }, 500);
   }

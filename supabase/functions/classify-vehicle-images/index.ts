@@ -7,6 +7,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { handleCors, jsonResponse, errorResponse } from "../_shared/cors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { getSecret } from "../_shared/get-secret.ts";
+import { chargeCredits, creditErrorResponse } from "../_shared/credit-guard.ts";
+import { corsHeaders } from "../_shared/cors.ts";
 
 interface InImage {
   /** Caller-provided id so client can match results back to its files */
@@ -114,6 +116,7 @@ serve(async (req) => {
 
   try {
     await authenticateRequest(req);
+    await chargeCredits(req, "image_analysis", { description: "Bilder-Klassifizierung" });
 
     const { images }: { images: InImage[] } = await req.json();
     if (!Array.isArray(images) || images.length === 0) {
@@ -204,6 +207,8 @@ serve(async (req) => {
 
     return jsonResponse({ items });
   } catch (e) {
+    const ce = creditErrorResponse(e, corsHeaders);
+    if (ce) return ce;
     console.error("classify-vehicle-images error:", e);
     return errorResponse(e instanceof Error ? e.message : "Unknown error", 500);
   }

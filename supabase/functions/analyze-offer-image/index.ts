@@ -3,6 +3,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders, handleCors, jsonResponse, errorResponse } from "../_shared/cors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { getSecret } from "../_shared/get-secret.ts";
+import { chargeCredits, creditErrorResponse } from "../_shared/credit-guard.ts";
 
 serve(async (req) => {
   const cors = handleCors(req);
@@ -10,6 +11,7 @@ serve(async (req) => {
 
   try {
     const { user } = await authenticateRequest(req);
+    await chargeCredits(req, "image_analysis", { description: "Angebotsbild-Analyse" });
     const body0 = await req.json();
     const analysisMode = String(body0?.analysisMode || "full");
     const isBannerQuick = analysisMode === "banner_quick";
@@ -387,6 +389,8 @@ Wenn ein Feld nicht erkennbar ist, setze es auf null. Extrahiere so viel wie mö
 
     return jsonResponse({ extracted: parsed });
   } catch (e) {
+    const ce = creditErrorResponse(e, corsHeaders);
+    if (ce) return ce;
     console.error("analyze-offer-image error:", e);
     return errorResponse(e instanceof Error ? e.message : "Unknown error", 500);
   }

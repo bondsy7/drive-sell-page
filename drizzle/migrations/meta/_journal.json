@@ -15,6 +15,27 @@
       "when": 1790059892868,
       "tag": "0001_autohaus_pricing_packages",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790074908739,
+      "tag": "0002_add_credit_action_types",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790074943915,
+      "tag": "0003_credit_costs_margin_safe",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790075183807,
+      "tag": "0004_add_video_generate_action_type",
+      "breakpoints": true
     }
   ]
 }

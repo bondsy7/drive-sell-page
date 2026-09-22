@@ -5,6 +5,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { getSecret } from "../_shared/get-secret.ts";
+import { chargeCredits, creditErrorResponse } from "../_shared/credit-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -118,6 +119,8 @@ serve(async (req) => {
     const apiKey = await getSecret("GEMINI_API_KEY");
     if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
 
+    await chargeCredits(req, "image_analysis", { description: "Felgen-Referenzanalyse" });
+
     const parts: unknown[] = [{ text: isDetect ? DETECT_PROMPT : SYSTEM_PROMPT }];
     if (imageFileUri?.uri) {
       parts.push({ file_data: { mime_type: imageFileUri.mimeType || "image/jpeg", file_uri: imageFileUri.uri } });
@@ -185,6 +188,8 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
+    const ce = creditErrorResponse(e, corsHeaders);
+    if (ce) return ce;
     console.error("[analyze-wheel-reference] error:", e);
     // Fehler nicht blockierend nach außen geben.
     return new Response(JSON.stringify({ analysis: null, confidence: "unknown" }), {

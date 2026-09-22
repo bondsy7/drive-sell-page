@@ -3539,6 +3539,12 @@ export type Database = {
         | "spin360_generate"
         | "spin360_export"
         | "music_generate"
+        | "image_analysis"
+        | "text_generate"
+        | "chat_message"
+        | "banner_reframe"
+        | "credit_refund"
+        | "video_generate"
       subscription_status: "active" | "cancelled" | "past_due" | "trialing"
     }
     CompositeTypes: {
@@ -3683,6 +3689,12 @@ export const Constants = {
         "spin360_generate",
         "spin360_export",
         "music_generate",
+        "image_analysis",
+        "text_generate",
+        "chat_message",
+        "banner_reframe",
+        "credit_refund",
+        "video_generate",
       ],
       subscription_status: ["active", "cancelled", "past_due", "trialing"],
     },

@@ -5,6 +5,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, handleCors, jsonResponse, errorResponse } from "../_shared/cors.ts";
 import { getSecret } from "../_shared/get-secret.ts";
+import { chargeCredits, creditErrorResponse } from "../_shared/credit-guard.ts";
 
 // Officially supported Ideogram v3 reframe resolutions.
 const V3_RESOLUTIONS: Array<[number, number]> = [
@@ -68,6 +69,12 @@ Deno.serve(async (req) => {
     const apiKey = await getSecret("IDEOGRAM_API_KEY");
     if (!apiKey) return errorResponse("IDEOGRAM_API_KEY missing", 500);
 
+    // Credits vor dem Anbieteraufruf abziehen.
+    const charge = await chargeCredits(req, "banner_reframe", {
+      description: "Banner-Neuzuschnitt",
+    });
+
+
     const m = imageDataUrl.match(/^data:([^;]+);base64,(.+)$/);
     if (!m) return errorResponse("invalid imageDataUrl", 400);
     const inMime = m[1];
@@ -116,6 +123,7 @@ Deno.serve(async (req) => {
         lastErr = (await resp.text()).slice(0, 200);
         console.warn(`ideogram v3 attempt ${attempt} failed ${resp.status}: ${lastErr}`);
         if (![502, 503, 504, 524, 408, 429].includes(resp.status)) {
+          await charge.refund(`Ideogram-Fehler ${resp.status}`);
           return errorResponse(`ideogram error ${resp.status}: ${lastErr}`, 502);
         }
       } catch (e) {
@@ -128,6 +136,7 @@ Deno.serve(async (req) => {
       }
     }
     if (!r) {
+      await charge.refund("Ideogram nicht erreichbar");
       return new Response(
         JSON.stringify({
           error: `Ideogram-Dienst aktuell nicht erreichbar (${lastStatus || "timeout"}). Bitte gleich nochmal versuchen oder „Manuell" nutzen.`,
@@ -138,7 +147,11 @@ Deno.serve(async (req) => {
     }
     const json = await r.json();
     const url: string | undefined = json?.data?.[0]?.url;
-    if (!url) return errorResponse("ideogram returned no url", 502);
+    if (!url) {
+      await charge.refund("kein Ergebnis von Ideogram");
+      return errorResponse("ideogram returned no url", 502);
+    }
+
 
     let imgRes: Response | null = null;
     let imgErr: unknown = null;
@@ -154,6 +167,7 @@ Deno.serve(async (req) => {
       await new Promise((r) => setTimeout(r, 400 * attempt));
     }
     if (!imgRes || !imgRes.ok) {
+      await charge.refund("Ergebnis nicht abrufbar");
       return new Response(
         JSON.stringify({
           error: `Ideogram-Ergebnis nicht abrufbar (${imgErr instanceof Error ? imgErr.message : String(imgErr)}). Bitte gleich nochmal versuchen.`,
@@ -178,6 +192,8 @@ Deno.serve(async (req) => {
       durationMs: Date.now() - startedAt,
     });
   } catch (e) {
+    const ce = creditErrorResponse(e, corsHeaders);
+    if (ce) return ce;
     console.error("reframe-banner-image error", e);
     return errorResponse(e instanceof Error ? e.message : "unknown error", 500);
   }

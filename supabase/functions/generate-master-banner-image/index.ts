@@ -4,7 +4,8 @@
 // ISOLATION: dedicated to Canvas Banner Studio. No interaction with other generators.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { handleCors, jsonResponse, errorResponse } from "../_shared/cors.ts";
+import { handleCors, jsonResponse, errorResponse, corsHeaders } from "../_shared/cors.ts";
+import { chargeCredits, creditErrorResponse } from "../_shared/credit-guard.ts";
 import { getSecret } from "../_shared/get-secret.ts";
 
 const SYSTEM_GUARDRAIL = `You re-stage an EXISTING vehicle photo into a new ad-worthy scene.
@@ -40,6 +41,12 @@ Deno.serve(async (req) => {
     const extraInstruction: string | undefined = body?.extraInstruction;
     if (!sourceImageUrl) return errorResponse("sourceImageUrl required", 400);
     if (!promptText) return errorResponse("promptText required", 400);
+
+    // Credits vor dem Anbieteraufruf abziehen.
+    const charge = await chargeCredits(req, "image_generate", {
+      description: "Banner-Masterbild",
+    });
+
 
     const apiKey = await getSecret("GEMINI_API_KEY");
     if (!apiKey) return errorResponse("GEMINI_API_KEY missing", 500);
@@ -98,6 +105,7 @@ Deno.serve(async (req) => {
     }
     if (!r) {
       console.error("gemini master-image exhausted", lastStatus, lastBody.slice(0, 400));
+      await charge.refund("Anbieter nicht erreichbar");
       return jsonResponse({
         fallback: true,
         error: lastStatus >= 500 || lastStatus === 429 ? "GEMINI_UNAVAILABLE" : `gemini_${lastStatus}`,
@@ -111,11 +119,14 @@ Deno.serve(async (req) => {
     const mime = imgPart?.inline_data?.mime_type || imgPart?.inlineData?.mimeType || "image/png";
     if (!data) {
       console.error("gemini returned no image", JSON.stringify(json).slice(0, 500));
+      await charge.refund("kein Bild geliefert");
       return errorResponse("no image returned", 502);
     }
 
     return jsonResponse({ imageDataUrl: `data:${mime};base64,${data}` });
   } catch (e) {
+    const ce = creditErrorResponse(e, corsHeaders);
+    if (ce) return ce;
     console.error("generate-master-banner-image error", e);
     return errorResponse(e instanceof Error ? e.message : "unknown error", 500);
   }
