@@ -19,7 +19,7 @@ interface ReauthenticationEmailProps {
 export const ReauthenticationEmail = ({ token }: ReauthenticationEmailProps) => (
   <Html lang="de" dir="ltr">
     <Head />
-    <Preview>Ihr Bestätigungscode für AUTO3</Preview>
+    <Preview>Ihr Bestätigungscode für autohaus.ai</Preview>
     <Body style={emailStyles.body}>
       <EmailFrame>
         <Heading style={emailStyles.heading}>Identität bestätigen</Heading>

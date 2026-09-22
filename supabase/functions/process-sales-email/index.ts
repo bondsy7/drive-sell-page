@@ -27,7 +27,7 @@ const escapeHtml = (value: string) => value
   .replace(/"/g, "&quot;")
   .replace(/'/g, "&#039;");
 
-const AUTO3_LOGO_URL = "https://autohaus.ai/__l5e/assets-v1/3137117d-1dd6-43fa-a9a5-9485d749913b/auto3-logo.png";
+const BRAND_LOGO_URL = "https://autohaus.ai/__l5e/assets-v1/306dd9e9-9fe2-4e93-8315-a56e09d4ecd9/autohaus-ai-logo.png";
 
 function renderBrandedEmail(email: OutboxEmail): string {
   const readableBody = (email.body_text || toPlainText(email.body_html) || "").trim();
@@ -36,15 +36,15 @@ function renderBrandedEmail(email: OutboxEmail): string {
   return `<!doctype html>
 <html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:32px 12px;background:#ffffff;color:#212121;font-family:Arial,Helvetica,sans-serif">
-  <div style="max-width:600px;margin:0 auto;border:1px solid #e3e0dc;border-radius:12px;overflow:hidden;background:#f8f7f5">
+  <div style="max-width:600px;margin:0 auto;border:1px solid #dfe5ee;border-radius:8px;overflow:hidden;background:#ffffff">
     <div style="padding:25px 42px;background:#ffffff">
-      <img src="${AUTO3_LOGO_URL}" width="145" height="45" alt="AUTO3" style="display:block;border:0;max-width:100%;height:auto">
+      <img src="${BRAND_LOGO_URL}" width="180" alt="autohaus.ai" style="display:block;border:0;max-width:100%;height:auto">
     </div>
     <div style="padding:38px 42px 34px;font-size:15px;line-height:1.65;color:#444444">${content}</div>
     <div style="padding:0 42px 30px">
       <div style="border-top:1px solid #dedbd7;margin-bottom:22px"></div>
-      <p style="margin:0 0 10px;color:#737373;font-size:11px;line-height:1.6">AUTO3 ist ein Produkt der Breadcrumb Marketing GmbH, Corniceliusstraße 8, 63450 Hanau.<br>Geschäftsführung: Leonhard Paul · Amtsgericht Hanau, HRB 91223 · USt-IdNr. DE 237 914 287</p>
-      <p style="margin:0;color:#737373;font-size:11px;line-height:1.8"><a href="https://autohaus.ai/impressum" style="color:#174f6b">Impressum</a> · <a href="https://autohaus.ai/datenschutz" style="color:#174f6b">Datenschutz</a> · <a href="https://autohaus.ai/agb" style="color:#174f6b">AGB</a></p>
+      <p style="margin:0 0 10px;color:#737373;font-size:11px;line-height:1.6">autohaus.ai ist ein Produkt der Breadcrumb Marketing GmbH, Corniceliusstraße 8, 63450 Hanau.<br>Geschäftsführung: Leonhard Paul · Amtsgericht Hanau, HRB 91223 · USt-IdNr. DE 237 914 287</p>
+      <p style="margin:0;color:#737373;font-size:11px;line-height:1.8"><a href="https://autohaus.ai/impressum" style="color:#215be6">Impressum</a> · <a href="https://autohaus.ai/datenschutz" style="color:#215be6">Datenschutz</a> · <a href="https://autohaus.ai/agb" style="color:#215be6">AGB</a></p>
     </div>
   </div>
 </body></html>`;
