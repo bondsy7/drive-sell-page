@@ -27,7 +27,7 @@ const escapeHtml = (value: string) => value
   .replace(/"/g, "&quot;")
   .replace(/'/g, "&#039;");
 
-const BRAND_LOGO_URL = "https://autohaus.ai/__l5e/assets-v1/306dd9e9-9fe2-4e93-8315-a56e09d4ecd9/autohaus-ai-logo.png";
+const BRAND_LOGO_URL = "https://autohaus.ai/autohaus-ai-logo.png";
 
 function renderBrandedEmail(email: OutboxEmail): string {
   const readableBody = (email.body_text || toPlainText(email.body_html) || "").trim();

@@ -10,7 +10,7 @@ import {
   Text,
 } from 'npm:@react-email/components@0.0.22'
 
-const LOGO_URL = 'https://autohaus.ai/__l5e/assets-v1/306dd9e9-9fe2-4e93-8315-a56e09d4ecd9/autohaus-ai-logo.png'
+const LOGO_URL = 'https://autohaus.ai/autohaus-ai-logo.png'
 const LEGAL_BASE_URL = 'https://autohaus.ai'
 
 export const emailStyles = {

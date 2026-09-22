@@ -1,4 +1,4 @@
-import brandLogo from '@/assets/brand/autohaus-ai-logo.png.asset.json';
+import brandLogo from '@/assets/brand/autohaus-ai-logo.png';
 import { cn } from '@/lib/utils';
 
 interface BrandLogoProps {
@@ -8,7 +8,7 @@ interface BrandLogoProps {
 export default function BrandLogo({ className }: BrandLogoProps) {
   return (
     <img
-      src={brandLogo.url}
+      src={brandLogo}
       alt="autohaus.ai"
       className={cn('h-7 w-auto object-contain', className)}
     />
