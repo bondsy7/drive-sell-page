@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
     const title = (body.title || prompt.split("\n")[0]).slice(0, 60) || "Neuer Song";
 
     // Deduct upfront so the user sees the cost even if they navigate away.
-    const cost = 1;
+    const cost = 5;
     await deductCredits(
       supabaseAdmin,
       userId,
@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
       await supabaseAdmin.rpc("add_credits", {
         _user_id: userId,
         _amount: cost,
-        _action_type: "admin_adjustment",
+        _action_type: "credit_refund",
         _description: "Refund: missing GEMINI_API_KEY",
       });
       return new Response(JSON.stringify({ error: "GEMINI_API_KEY fehlt" }), {
@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
           await supabaseAdmin.rpc("add_credits", {
             _user_id: userId,
             _amount: cost,
-            _action_type: "admin_adjustment",
+            _action_type: "credit_refund",
             _description: `Refund: Lyria ${resp.status}`,
           });
           return;
@@ -133,7 +133,7 @@ Deno.serve(async (req) => {
           await supabaseAdmin.rpc("add_credits", {
             _user_id: userId,
             _amount: cost,
-            _action_type: "admin_adjustment",
+            _action_type: "credit_refund",
             _description: "Refund: kein Audio",
           });
           return;
@@ -155,7 +155,7 @@ Deno.serve(async (req) => {
           await supabaseAdmin.rpc("add_credits", {
             _user_id: userId,
             _amount: cost,
-            _action_type: "admin_adjustment",
+            _action_type: "credit_refund",
             _description: "Refund: Upload fehlgeschlagen",
           });
           return;
@@ -181,7 +181,7 @@ Deno.serve(async (req) => {
         await supabaseAdmin.rpc("add_credits", {
           _user_id: userId,
           _amount: cost,
-          _action_type: "admin_adjustment",
+          _action_type: "credit_refund",
           _description: "Refund: Background error",
         });
       }
