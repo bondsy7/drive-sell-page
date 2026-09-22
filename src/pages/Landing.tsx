@@ -19,7 +19,7 @@ import SiteFooter from '@/components/legal/SiteFooter';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import heroImage from '@/assets/hero-autohaus-ai.png.asset.json';
-import stepPlaceholderImage from '@/assets/autohaus-ai-hero.jpg';
+import stepPlaceholderImage from '@/assets/fahrzeug-perspektiven.webp.asset.json';
 import stepFotoAufnehmen from '@/assets/foto-aufnehmen.webp.asset.json';
 
 const BENEFITS = [
@@ -83,7 +83,7 @@ function StepVisual({ kind }: { kind: (typeof STEPS)[number]['kind'] }) {
   if (kind === 'single') {
     return (
       <div className="mt-6 h-36 overflow-hidden rounded-md bg-secondary">
-        <img src={stepPlaceholderImage} alt="Platzhalter für ein KI-veredeltes Fahrzeugbild" className="h-full w-full object-cover" />
+        <img src={stepPlaceholderImage.url} alt="KI-veredeltes Fahrzeugbild in verschiedenen Perspektiven" className="h-full w-full object-cover" />
       </div>
     );
   }
@@ -92,7 +92,7 @@ function StepVisual({ kind }: { kind: (typeof STEPS)[number]['kind'] }) {
     return (
       <div className="mt-6 grid h-36 grid-cols-2 gap-1.5 overflow-hidden rounded-md bg-secondary p-1.5">
         {[0, 1, 2, 3].map((item) => (
-          <img key={item} src={stepPlaceholderImage} alt="" className="h-full min-h-0 w-full rounded-sm object-cover" />
+          <img key={item} src={stepPlaceholderImage.url} alt="" className="h-full min-h-0 w-full rounded-sm object-cover" />
         ))}
       </div>
     );
