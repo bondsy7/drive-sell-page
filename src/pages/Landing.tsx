@@ -83,7 +83,7 @@ function StepVisual({ kind }: { kind: (typeof STEPS)[number]['kind'] }) {
   if (kind === 'single') {
     return (
       <div className="mt-6 h-36 overflow-hidden rounded-md bg-secondary">
-        <img src={stepPlaceholderImage} alt="Platzhalter für ein KI-veredeltes Fahrzeugbild" className="h-full w-full object-cover" />
+        <img src={stepPlaceholderImage.url} alt="KI-veredeltes Fahrzeugbild in verschiedenen Perspektiven" className="h-full w-full object-cover" />
       </div>
     );
   }
