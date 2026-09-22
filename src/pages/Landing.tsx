@@ -134,7 +134,7 @@ export default function Landing() {
                   <Link to={destination}>Jetzt starten <ArrowRight className="h-4 w-4" /></Link>
                 </Button>
                 <Button asChild size="lg" variant="outline" className="h-12 px-6">
-                  <a href="#produkte"><CirclePlay className="h-4 w-4" /> Produkte ansehen</a>
+                  <Link to="/produkte"><CirclePlay className="h-4 w-4" /> Produkte ansehen</Link>
                 </Button>
               </div>
               <div className="mt-7 grid gap-2 text-sm text-muted-foreground">
