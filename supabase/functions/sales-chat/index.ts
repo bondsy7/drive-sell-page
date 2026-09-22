@@ -460,6 +460,8 @@ ${profile?.assistant_name ? `Du heißt "${profile.assistant_name}".` : ''}`;
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
+    const ce = creditErrorResponse(e, corsHeaders);
+    if (ce) return ce;
     console.error("sales-chat error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
