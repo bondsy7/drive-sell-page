@@ -59,7 +59,7 @@ export function fotoContractInput(slug: string): OfferContractInput | null {
   };
 }
 
-export function generateOfferContractPdf(input: OfferContractInput) {
+export function buildOfferContractDoc(input: OfferContractInput) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const M = 18;
   const W = 210 - M * 2;
@@ -234,5 +234,9 @@ export function generateOfferContractPdf(input: OfferContractInput) {
     y += 3.4;
   });
 
-  doc.save(`AUTO3-Vertrag-${input.slug}.pdf`);
+  return doc;
+}
+
+export function generateOfferContractPdf(input: OfferContractInput) {
+  buildOfferContractDoc(input).save(`AUTO3-Vertrag-${input.slug}.pdf`);
 }
