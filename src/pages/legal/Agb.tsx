@@ -102,11 +102,13 @@ export default function Agb() {
 
       <LegalSection title="§ 7 Laufzeit, Verlängerung, Kündigung">
         <p>
-          Abonnements laufen über den jeweils gebuchten Abrechnungszeitraum und verlängern sich
-          automatisch um denselben Zeitraum, sofern sie nicht bis zum Ende des laufenden
-          Abrechnungszeitraums gekündigt werden. Die Kündigung ist über die Kontoverwaltung oder in
-          Textform möglich und wirkt zum Ende des laufenden Abrechnungszeitraums. Das Recht zur
-          außerordentlichen Kündigung aus wichtigem Grund bleibt unberührt.
+          Abonnements haben eine Mindestvertragslaufzeit von zwölf (12) Monaten ab Bereitstellung des
+          Zugangs. Die Abrechnung erfolgt monatlich im Voraus. Der Vertrag verlängert sich jeweils um
+          weitere zwölf (12) Monate, wenn er nicht mit einer Frist von einem (1) Monat zum Ende der
+          jeweiligen Laufzeit gekündigt wird. Die Kündigung ist über die Kontoverwaltung oder in
+          Textform möglich. Das Recht zur außerordentlichen Kündigung aus wichtigem Grund bleibt
+          unberührt. Einmalige Implementierungskosten werden mit der Erstbuchung fällig und sind
+          laufzeitunabhängig.
         </p>
       </LegalSection>
 

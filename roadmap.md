@@ -40,4 +40,4 @@
 - [x] Einmalige Implementierung 990 € netto bei Erstbuchung
 - [x] Preisseite mit Umschalter Fotoservice / All-Incl-Marketing, Zusatzapplikationen, Zusatzpakete
 - [x] Credit-Verbrauch vereinheitlicht (Banner/Post 5, Video 17, Landingpage 19)
-- [ ] Offen: Entscheidung zu Mindestlaufzeit (monatlich vs. 12 Monate) und Selbstbuchung von Whitelabel/Flipping
+- [x] Mindestlaufzeit 12 Monate (AGB § 7 + Preisseite); Whitelabel/Flipping nur auf Anfrage

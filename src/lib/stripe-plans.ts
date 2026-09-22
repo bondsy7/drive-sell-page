@@ -127,10 +127,13 @@ export const FOTO_ADDONS = [
   { label: 'Landingpage', hint: 'Inklusive Fahrzeugdaten und Pflichtangaben', price: '+ 9,50 €', unit: 'pro Landingpage' },
 ];
 
-export const EXTRA_PACKAGES = [
+export const EXTRA_PACKAGES: Array<{ label: string; price: string; unit: string; onRequest?: boolean }> = [
   { label: 'Marketing-Set (einzeln)', price: 'ab 19,90 €', unit: '' },
   { label: 'Landingpage-Paket', price: '14,90 €', unit: 'pro Landingpage' },
-  { label: 'Whitelabel-Automarkt', price: '299,– €', unit: 'pro Monat' },
-  { label: 'Flipping-Plugin', price: '199,– €', unit: 'pro Monat' },
+  { label: 'Whitelabel-Automarkt', price: '299,– €', unit: 'pro Monat', onRequest: true },
+  { label: 'Flipping-Plugin', price: '199,– €', unit: 'pro Monat', onRequest: true },
   { label: 'Video-Paket', price: 'ab 8,50 €', unit: 'pro Video' },
 ];
+
+// Mindestvertragslaufzeit in Monaten (siehe AGB § 7)
+export const MIN_TERM_MONTHS = 12;
