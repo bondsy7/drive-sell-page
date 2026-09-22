@@ -22,6 +22,13 @@
       "when": 1790074908739,
       "tag": "0002_add_credit_action_types",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790074943915,
+      "tag": "0003_credit_costs_margin_safe",
+      "breakpoints": true
     }
   ]
 }
