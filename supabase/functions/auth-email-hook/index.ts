@@ -17,12 +17,12 @@ const corsHeaders = {
 }
 
 const EMAIL_SUBJECTS: Record<string, string> = {
-  signup: 'Confirm your email',
-  invite: "You've been invited",
-  magiclink: 'Your login link',
-  recovery: 'Reset your password',
-  email_change: 'Confirm your new email',
-  reauthentication: 'Your verification code',
+  signup: 'E-Mail-Adresse bestätigen | AUTO3',
+  invite: 'Ihre Einladung zu AUTO3',
+  magiclink: 'Ihr Anmeldelink für AUTO3',
+  recovery: 'Passwort für AUTO3 zurücksetzen',
+  email_change: 'Neue E-Mail-Adresse bestätigen | AUTO3',
+  reauthentication: 'Ihr Bestätigungscode für AUTO3',
 }
 
 // Template mapping
@@ -36,7 +36,7 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 }
 
 // Configuration
-const SITE_NAME = "MarketingHUB"
+const SITE_NAME = "AUTO3"
 const SENDER_DOMAIN = "notify.autohaus.ai"
 const ROOT_DOMAIN = "autohaus.ai"
 const FROM_DOMAIN = "autohaus.ai" // Domain shown in From address (may be root or sender subdomain)
@@ -267,7 +267,7 @@ async function handleWebhook(req: Request): Promise<Response> {
       to: payload.data.email,
       from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
       sender_domain: SENDER_DOMAIN,
-      subject: EMAIL_SUBJECTS[emailType] || 'Notification',
+      subject: EMAIL_SUBJECTS[emailType] || 'Mitteilung von AUTO3',
       html,
       text,
       purpose: 'transactional',
