@@ -587,7 +587,7 @@ const Pricing = () => {
               </div>
 
               <ul className="grid gap-2 sm:grid-cols-2 text-sm text-muted-foreground">
-                {['Sofort verfügbar', 'Für alle Tarife', 'Keine Vertragsbindung', 'Einfach & sicher'].map((t) => (
+                {['Sofort verfügbar', 'Für alle Tarife', 'Verfallen nicht zum Monatsende', 'Einfach & sicher'].map((t) => (
                   <li key={t} className="flex items-center gap-2">
                     <Check className="h-4 w-4 text-primary shrink-0" />
                     {t}
