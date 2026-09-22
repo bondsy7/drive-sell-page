@@ -627,6 +627,10 @@ const Pricing = () => {
               Paketgrößen: Basic 600 · Advanced 1.000 · Premium 2.000 · Ultra 4.000 Credits pro Monat. Ein komplettes
               Fahrzeug mit 16 Perspektiven kostet 16 Credits.
             </p>
+            <p className="text-xs text-muted-foreground mt-2">
+              Nicht verbrauchte Paket-Credits verfallen zum Ende des jeweiligen Abrechnungsmonats. Separat
+              nachgekaufte Credits bleiben erhalten.
+            </p>
           </div>
           <div className="max-w-3xl mx-auto">
             <CreditSlider defaultCredits={1000} min={100} max={4000} />
