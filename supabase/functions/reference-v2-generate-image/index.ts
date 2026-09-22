@@ -11,6 +11,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { handleCors, jsonResponse, errorResponse } from "../_shared/cors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
+import { chargeCredits, creditErrorResponse, type CreditCharge } from "../_shared/credit-guard.ts";
+import { corsHeaders } from "../_shared/cors.ts";
 import { getSecret } from "../_shared/get-secret.ts";
 
 const REQUIRED_PROMPT_SECTIONS = [
@@ -151,6 +153,20 @@ serve(async (req) => {
 
   const apiKey = await getSecret("GEMINI_API_KEY");
   if (!apiKey) return errorResponse("GEMINI_API_KEY not configured", 500);
+
+  // Credits vor dem Anbieteraufruf abziehen – keine kostenlose Generierung.
+  let charge: CreditCharge;
+  try {
+    charge = await chargeCredits(req, "image_generate", {
+      tier: tier === "premium" ? "premium" : tier === "economy" ? "schnell" : "qualitaet",
+      description: "Referenz-V2 Bildgenerierung",
+    });
+  } catch (e) {
+    const ce = creditErrorResponse(e, corsHeaders);
+    if (ce) return ce;
+    return errorResponse("Credit-Prüfung fehlgeschlagen", 500);
+  }
+
 
   // Primary first — reference order is part of the deterministic contract.
   const ordered = [
