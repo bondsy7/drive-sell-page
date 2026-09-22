@@ -88,8 +88,7 @@ const Checkout = () => {
 
   const saveProfile = async () => {
     if (!user) return;
-    await supabase
-      .from('profiles')
+    await (supabase.from('profiles') as any)
       .update({ company_name: company.trim(), contact_name: contact.trim(), phone: phone.trim(), email: email.trim() })
       .eq('user_id', user.id);
   };
