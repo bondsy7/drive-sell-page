@@ -76,7 +76,7 @@ function StepVisual({ kind }: { kind: (typeof STEPS)[number]['kind'] }) {
       <div className="relative mx-auto mt-6 h-36 w-full overflow-hidden rounded-md bg-secondary">
         <img src={stepPlaceholderImage} alt="Platzhalter für eine Fahrzeugaufnahme mit dem Smartphone" className="h-full w-full object-cover" />
         <div className="absolute inset-y-3 left-1/2 w-16 -translate-x-1/2 rounded-lg border-[3px] border-foreground bg-card p-1 shadow-elevated">
-          <img src={heroImage} alt="" className="h-full w-full rounded-sm object-cover" />
+          <img src={stepPlaceholderImage} alt="" className="h-full w-full rounded-sm object-cover" />
         </div>
       </div>
     );
