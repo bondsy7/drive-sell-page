@@ -1,5 +1,5 @@
 import LegalLayout, { LegalList, LegalSection } from '@/components/legal/LegalLayout';
-import { LEGAL, LEGAL_VERSIONS } from '@/lib/legal-config';
+import { LEGAL, LEGAL_DOCUMENT_DATES, LEGAL_VERSIONS } from '@/lib/legal-config';
 
 export default function Agb() {
   return (
@@ -8,6 +8,7 @@ export default function Agb() {
       metaTitle="AGB – autohaus.ai | Breadcrumb Marketing GmbH"
       metaDescription="Allgemeine Geschäftsbedingungen für die Nutzung der SaaS-Plattform autohaus.ai durch Unternehmer – Leistungen, Credits, Laufzeit, Haftung."
       canonicalPath="/agb"
+      versionDate={LEGAL_DOCUMENT_DATES.agb}
       toc
       intro={
         <p>
@@ -342,7 +343,7 @@ export default function Agb() {
           treten die gesetzlichen Vorschriften. Änderungen und Ergänzungen bedürfen der Textform.
         </p>
         <p className="text-xs">
-          Stand: {LEGAL.versionDate} · Version {LEGAL_VERSIONS.agb}. Compliance-orientierte Fassung;
+          Stand: {LEGAL_DOCUMENT_DATES.agb} · Version {LEGAL_VERSIONS.agb}. Compliance-orientierte Fassung;
           eine abschließende anwaltliche Prüfung steht aus.
         </p>
       </LegalSection>

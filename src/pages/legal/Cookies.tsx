@@ -1,5 +1,6 @@
 import LegalLayout, { LegalSection } from '@/components/legal/LegalLayout';
 import { openConsentSettings } from '@/lib/consent';
+import { LEGAL_DOCUMENT_DATES, LEGAL_VERSIONS } from '@/lib/legal-config';
 
 interface Entry {
   name: string;
@@ -48,12 +49,13 @@ export default function Cookies() {
       metaTitle="Cookies und Einwilligungen – autohaus.ai"
       metaDescription="Übersicht über technisch notwendige Speicherung, Analyse- und Marketing-Technologien in autohaus.ai sowie Verwaltung der Einwilligung."
       canonicalPath="/cookies"
+      versionDate={LEGAL_DOCUMENT_DATES.consent}
       intro={
         <p>
           autohaus.ai setzt Analyse- und Marketing-Technologien ausschließlich nach deiner Einwilligung
           ein. Vor einer Einwilligung wird kein Google-Dienst geladen und es wird kein Request an
           Google ausgelöst. Technisch notwendige Speicherung (z. B. Anmeldesitzung) ist für den
-          Betrieb erforderlich und nicht abwählbar.
+          Betrieb erforderlich und nicht abwählbar. Version: {LEGAL_VERSIONS.consent}.
         </p>
       }
     >

@@ -1,5 +1,5 @@
 import LegalLayout, { LegalSection } from '@/components/legal/LegalLayout';
-import { LEGAL } from '@/lib/legal-config';
+import { LEGAL, LEGAL_DOCUMENT_DATES, LEGAL_VERSIONS } from '@/lib/legal-config';
 
 interface Row {
   provider: string;
@@ -108,6 +108,7 @@ export default function Unterauftragsverarbeiter() {
       metaTitle="Unterauftragsverarbeiter – autohaus.ai"
       metaDescription="Anlage 1 zum Auftragsverarbeitungsvertrag: eingesetzte Unterauftragsverarbeiter, weitere Empfänger und offene Punkte für autohaus.ai."
       canonicalPath="/unterauftragsverarbeiter"
+      versionDate={LEGAL_DOCUMENT_DATES.subprocessors}
       toc
       intro={
         <p>
@@ -154,7 +155,7 @@ export default function Unterauftragsverarbeiter() {
           E-Mail-Benachrichtigung ist derzeit nicht eingerichtet.
         </p>
         <p className="text-xs">
-          Stand: {LEGAL.versionDate} · {LEGAL.company}
+          Stand: {LEGAL_DOCUMENT_DATES.subprocessors} · Version {LEGAL_VERSIONS.subprocessors} · {LEGAL.company}
         </p>
       </LegalSection>
     </LegalLayout>
