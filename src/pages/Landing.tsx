@@ -75,7 +75,7 @@ const PRODUCTS = [
 function StepVisual({ kind }: { kind: (typeof STEPS)[number]['kind'] }) {
   if (kind === 'phone') {
     return (
-      <div className="relative mx-auto mt-6 h-36 w-full overflow-hidden rounded-md bg-secondary">
+      <div className="relative mx-auto mt-6 h-44 w-full overflow-hidden rounded-md bg-secondary">
         <img src={stepFotoAufnehmen.url} alt="Fahrzeugaufnahme mit dem Smartphone auf dem Hof" className="h-full w-full object-cover" />
       </div>
     );
@@ -83,7 +83,7 @@ function StepVisual({ kind }: { kind: (typeof STEPS)[number]['kind'] }) {
 
   if (kind === 'single') {
     return (
-      <div className="mt-6 h-36 overflow-hidden rounded-md bg-secondary">
+<div className="mt-6 h-44 overflow-hidden rounded-md bg-secondary">
         <img src={stepPlaceholderImage.url} alt="KI-veredeltes Fahrzeugbild in verschiedenen Perspektiven" className="h-full w-full object-cover" />
       </div>
     );
@@ -91,14 +91,14 @@ function StepVisual({ kind }: { kind: (typeof STEPS)[number]['kind'] }) {
 
   if (kind === 'grid') {
     return (
-      <div className="mt-6 h-36 overflow-hidden rounded-md bg-secondary">
+      <div className="mt-6 h-44 overflow-hidden rounded-md bg-secondary">
         <img src={stepFormateImage.url} alt="Erstellte Marketing-Formate: Fahrzeugbilder, Social Post, Verkaufsanzeige und Video" className="h-full w-full object-cover" />
       </div>
     );
   }
 
   return (
-    <div className="relative mt-6 flex h-36 flex-col justify-end overflow-hidden rounded-md bg-primary/5 px-5 pb-4">
+    <div className="relative mt-6 flex h-44 flex-col justify-end overflow-hidden rounded-md bg-primary/5 px-5 pb-4">
       <svg viewBox="0 0 180 72" className="h-16 w-full text-primary" aria-hidden="true">
         <polyline points="4,58 40,32 74,43 110,18 142,26 176,5" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
         <path d="M164 5h12v12" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
