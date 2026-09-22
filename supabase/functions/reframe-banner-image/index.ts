@@ -136,6 +136,7 @@ Deno.serve(async (req) => {
       }
     }
     if (!r) {
+      await charge.refund("Ideogram nicht erreichbar");
       return new Response(
         JSON.stringify({
           error: `Ideogram-Dienst aktuell nicht erreichbar (${lastStatus || "timeout"}). Bitte gleich nochmal versuchen oder „Manuell" nutzen.`,
@@ -146,7 +147,11 @@ Deno.serve(async (req) => {
     }
     const json = await r.json();
     const url: string | undefined = json?.data?.[0]?.url;
-    if (!url) return errorResponse("ideogram returned no url", 502);
+    if (!url) {
+      await charge.refund("kein Ergebnis von Ideogram");
+      return errorResponse("ideogram returned no url", 502);
+    }
+
 
     let imgRes: Response | null = null;
     let imgErr: unknown = null;
