@@ -54,4 +54,4 @@
 - [x] LegalLayout-Navigation und Rückweg vereinheitlichen
 - [x] KI-Transparenz in das gemeinsame LegalLayout überführen
 - [x] Unverifizierte DSB-Aussage in der Datenschutzerklärung neutralisieren
-- [ ] TypeScript, Build und responsive Preview prüfen
+- [x] TypeScript, Build und responsive Preview prüfen
