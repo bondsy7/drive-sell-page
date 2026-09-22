@@ -14,7 +14,7 @@ export default function PublicHeader() {
           <BrandLogo className="h-7 sm:h-8" />
         </Link>
         <nav className="hidden items-center gap-7 md:flex" aria-label="Hauptnavigation">
-          <a href="/#produkte" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Produkte</a>
+          <Link to="/produkte" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Produkte</Link>
           <Link to="/pricing" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Preise</Link>
           <a href="/#referenzen" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Referenzen</a>
           <a href="/#unternehmen" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Unternehmen</a>

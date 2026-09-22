@@ -16,6 +16,7 @@ import { DownloadLimitProvider } from "@/hooks/useDownloadLimit";
 import DownloadGuardBridge from "@/components/DownloadGuardBridge";
 
 const Landing = lazy(() => import("./pages/Landing"));
+const Produkte = lazy(() => import("./pages/Produkte"));
 const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -145,6 +146,7 @@ const App = () => (
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/" element={<Landing />} />
+              <Route path="/produkte" element={<Produkte />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/qr-login" element={<QrLogin />} />
               {/* Öffentlicher B2B-Paid-Funnel */}
