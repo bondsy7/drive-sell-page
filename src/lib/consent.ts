@@ -1,5 +1,5 @@
 /**
- * Consent-Verwaltung für AUTO3 mit Basic Google Consent Mode V2.
+ * Consent-Verwaltung für autohaus.ai mit Basic Google Consent Mode V2.
  *
  * Grundregeln:
  * - Ohne Einwilligung wird KEIN Google-Script geladen und es werden keine

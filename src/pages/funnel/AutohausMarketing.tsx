@@ -50,15 +50,15 @@ const INTEGRATIONS = [
 
 const FAQ = [
   { q: 'Lässt sich der Prozess über mehrere Betriebe ausrollen?', a: 'Ja. Der Ablauf ist für jeden Standort identisch, sodass die Ergebnisse vergleichbar bleiben.' },
-  { q: 'Können bestehende Systeme angebunden werden?', a: 'Autohaus.ai bietet eine API sowie Übergabewege per WordPress, FTP/SFTP und Embed. Welche Variante sinnvoll ist, klären wir anhand Ihres Setups.' },
-  { q: 'Wer erstellt die Inhalte im Betrieb?', a: 'Die Aufnahmen entstehen im Betrieb, die Verarbeitung übernimmt Autohaus.ai. Zusätzliche Fotografie- oder Bildbearbeitungskenntnisse sind nicht erforderlich.' },
+  { q: 'Können bestehende Systeme angebunden werden?', a: 'autohaus.ai bietet eine API sowie Übergabewege per WordPress, FTP/SFTP und Embed. Welche Variante sinnvoll ist, klären wir anhand Ihres Setups.' },
+  { q: 'Wer erstellt die Inhalte im Betrieb?', a: 'Die Aufnahmen entstehen im Betrieb, die Verarbeitung übernimmt autohaus.ai. Zusätzliche Fotografie- oder Bildbearbeitungskenntnisse sind nicht erforderlich.' },
   { q: 'Wie starten wir am besten?', a: 'Mit einem echten Fahrzeug aus Ihrem Bestand. Daran lässt sich der Nutzen für Ihren konkreten Prozess am schnellsten beurteilen.' },
   { q: 'Gibt es feste Bearbeitungszeiten?', a: 'Wir nennen bewusst keine pauschalen Zeitangaben. Im Testlauf besprechen wir realistische Durchlaufzeiten für Ihren Bestand.' },
 ];
 
 export default function AutohausMarketing() {
   usePageMeta({
-    title: 'Fahrzeugmarketing für Autohäuser | Autohaus.ai',
+    title: 'Fahrzeugmarketing für Autohäuser | autohaus.ai',
     description: 'Ein Prozess von der Fahrzeugankunft bis zum fertigen Online-Auftritt: Bilder, 360°, Banner, Video und Angebotsseiten für Autohäuser und Händlergruppen.',
     canonicalPath: '/autohaus-marketing',
   });
@@ -78,7 +78,7 @@ export default function AutohausMarketing() {
             Ein Fahrzeug. Ein Prozess. Alle Marketingkanäle.
           </h1>
           <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-            Autohaus.ai verbindet Fahrzeugbilder, Content und digitale Vermarktung in einem skalierbaren
+            autohaus.ai verbindet Fahrzeugbilder, Content und digitale Vermarktung in einem skalierbaren
             Workflow – vom eintreffenden Fahrzeug bis zum fertigen Online-Auftritt.
           </p>
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">

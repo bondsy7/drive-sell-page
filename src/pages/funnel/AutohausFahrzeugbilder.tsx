@@ -15,7 +15,7 @@ const TEST_URL = '/fahrzeug-testen?source=fahrzeugbilder';
 
 const STEPS = [
   { icon: Camera, title: 'Fahrzeug fotografieren', desc: 'Aufnahmen mit dem Smartphone direkt auf dem Hof – ohne Studio, ohne Stativ.' },
-  { icon: Sparkles, title: 'Autohaus.ai verarbeitet', desc: 'Die Aufnahmen werden zu einheitlichen Fahrzeugbildern in einer festen Bildsprache verarbeitet.' },
+  { icon: Sparkles, title: 'autohaus.ai verarbeitet', desc: 'Die Aufnahmen werden zu einheitlichen Fahrzeugbildern in einer festen Bildsprache verarbeitet.' },
   { icon: Megaphone, title: 'Bilder für die Vermarktung nutzen', desc: 'Fertige Bilder für Portale, Website und Social Media – im gleichen Look über den gesamten Bestand.' },
 ];
 
@@ -52,7 +52,7 @@ const FAQ = [
 
 export default function AutohausFahrzeugbilder() {
   usePageMeta({
-    title: 'KI-Fahrzeugbilder für Autohäuser | Autohaus.ai',
+    title: 'KI-Fahrzeugbilder für Autohäuser | autohaus.ai',
     description: 'Aus Smartphone-Fotos werden einheitliche Fahrzeugbilder für Autohäuser und Fahrzeughändler. Jetzt mit einem Fahrzeug aus Ihrem Bestand testen.',
     canonicalPath: '/autohaus-fahrzeugbilder',
   });
@@ -74,7 +74,7 @@ export default function AutohausFahrzeugbilder() {
               Vom Smartphone-Foto zum professionellen Fahrzeugbild.
             </h1>
             <p className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-              Autohaus.ai verwandelt echte Fahrzeugfotos aus Ihrem Bestand in einheitliche, professionelle
+              autohaus.ai verwandelt echte Fahrzeugfotos aus Ihrem Bestand in einheitliche, professionelle
               Showroom-Aufnahmen – ohne Fotostudio und ohne aufwendige Nachbearbeitung.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -211,7 +211,7 @@ export default function AutohausFahrzeugbilder() {
 
       {/* Zielgruppe */}
       <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
-        <h2 className="text-2xl font-bold text-foreground sm:text-3xl">Für wen ist Autohaus.ai gedacht?</h2>
+        <h2 className="text-2xl font-bold text-foreground sm:text-3xl">Für wen ist autohaus.ai gedacht?</h2>
         <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {AUDIENCE.map((a) => (
             <div key={a} className="flex items-center gap-3 rounded-lg border border-border bg-card p-4 text-sm font-medium text-foreground">
@@ -241,7 +241,7 @@ export default function AutohausFahrzeugbilder() {
       {/* Schluss-CTA */}
       <section className="mx-auto max-w-4xl px-4 py-16 text-center sm:px-6">
         <h2 className="text-2xl font-bold text-foreground sm:text-3xl">
-          Testen Sie Autohaus.ai mit einem Fahrzeug aus Ihrem Bestand.
+          Testen Sie autohaus.ai mit einem Fahrzeug aus Ihrem Bestand.
         </h2>
         <p className="mx-auto mt-4 max-w-2xl text-sm text-muted-foreground sm:text-base">
           Ein Fahrzeugfoto, wenige Angaben zu Ihrem Betrieb – und wir prüfen den Einsatz passend zu Ihrem Prozess.
