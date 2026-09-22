@@ -167,6 +167,7 @@ Deno.serve(async (req) => {
       await new Promise((r) => setTimeout(r, 400 * attempt));
     }
     if (!imgRes || !imgRes.ok) {
+      await charge.refund("Ergebnis nicht abrufbar");
       return new Response(
         JSON.stringify({
           error: `Ideogram-Ergebnis nicht abrufbar (${imgErr instanceof Error ? imgErr.message : String(imgErr)}). Bitte gleich nochmal versuchen.`,
@@ -191,6 +192,8 @@ Deno.serve(async (req) => {
       durationMs: Date.now() - startedAt,
     });
   } catch (e) {
+    const ce = creditErrorResponse(e, corsHeaders);
+    if (ce) return ce;
     console.error("reframe-banner-image error", e);
     return errorResponse(e instanceof Error ? e.message : "unknown error", 500);
   }
