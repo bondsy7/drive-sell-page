@@ -78,11 +78,25 @@ serve(async (req) => {
       customerId = customers.data[0].id;
     }
 
+    // Einrichtungsgebühr nur, wenn der Kunde noch nie ein Abo hatte.
+    let chargeSetupFee = true;
+    if (customerId) {
+      const existingSubs = await stripe.subscriptions.list({
+        customer: customerId,
+        status: "all",
+        limit: 1,
+      });
+      chargeSetupFee = existingSubs.data.length === 0;
+    }
+
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : userEmail,
       line_items: [{ price: priceId, quantity: 1 }],
       mode: "subscription",
+      ...(chargeSetupFee
+        ? { subscription_data: { add_invoice_items: [{ price: SETUP_FEE_PRICE_ID, quantity: 1 }] } }
+        : {}),
       success_url: `${req.headers.get("origin")}/pricing?success=true`,
       cancel_url: `${req.headers.get("origin")}/pricing?canceled=true`,
       metadata: { user_id: userId || "" },
