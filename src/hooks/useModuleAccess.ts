@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { planBlockedModules } from '@/lib/plan-modules';
 
 export const MODULE_KEYS = [
   'photos',
@@ -72,16 +73,40 @@ export function useModuleAccess() {
   useEffect(() => {
     if (!user) { setLoading(false); return; }
 
-    supabase
-      .from('user_module_access')
-      .select('module_key, enabled')
-      .eq('user_id', user.id)
-      .then(({ data }) => {
+    const load = async () => {
+      // Tarif ermitteln (Fotoservice = nur Fahrzeugbilder/Perspektiven)
+      let planSlug: string | null = null;
+      const { data: sub } = await supabase
+        .from('user_subscriptions')
+        .select('plan_id, status')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (sub && sub.status !== 'cancelled') {
+        const { data: plan } = await supabase
+          .from('subscription_plans')
+          .select('slug')
+          .eq('id', sub.plan_id)
+          .maybeSingle();
+        planSlug = (plan?.slug as string) ?? null;
+      }
+
+      const { data } = await supabase
+        .from('user_module_access')
+        .select('module_key, enabled')
+        .eq('user_id', user.id);
+
+      {
         const disabled = new Set<ModuleKey>(MODULE_DEFAULT_DISABLED);
         for (const row of data || []) {
           const key = row.module_key as ModuleKey;
           if (row.enabled) disabled.delete(key);
           else disabled.add(key);
+        }
+        // Tarifgrenze überschreibt individuelle Freigaben
+        for (const key of planBlockedModules(planSlug, MODULE_KEYS)) {
+          disabled.add(key);
         }
         // Parent aus => alle Kinder ebenfalls gesperrt
         for (const [parent, children] of Object.entries(MODULE_CHILDREN)) {
@@ -90,9 +115,11 @@ export function useModuleAccess() {
           }
         }
         setDisabledModules(disabled);
-
         setLoading(false);
-      });
+      }
+    };
+
+    load();
   }, [user]);
 
   return { disabledModules, loading };

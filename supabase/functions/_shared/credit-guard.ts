@@ -1,6 +1,7 @@
 // Einheitliche Credit-Absicherung für Edge Functions.
 // Regel: Keine KI-Generierung ohne vorherigen Credit-Abzug.
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getPlanSlug, planAllowsAction } from "./plan-scope.ts";
 
 /**
  * Mindestpreise je Aktionsart (in Credits, 1 Credit = 0,50 € Verkaufserlös).
@@ -93,6 +94,17 @@ export async function chargeCredits(
   if (authError || !userId) throw new CreditError("Nicht authentifiziert", 401, "unauthorized");
 
   const admin = adminClient();
+
+  // Paketgrenze: Fotoservice-Pakete decken nur Fahrzeugbilder/Perspektiven ab.
+  const planSlug = await getPlanSlug(admin, userId);
+  if (!planAllowsAction(planSlug, actionType)) {
+    throw new CreditError(
+      "Diese Funktion ist im gebuchten Fotoservice-Paket nicht enthalten. Sie ist in den All-Incl-Marketing-Paketen verfügbar.",
+      403,
+      "not_in_plan",
+    );
+  }
+
   const tier = options.tier || "schnell";
   const cost = options.amount ?? await resolveCost(admin, actionType, tier);
 
