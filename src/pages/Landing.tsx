@@ -92,7 +92,7 @@ function StepVisual({ kind }: { kind: (typeof STEPS)[number]['kind'] }) {
     return (
       <div className="mt-6 grid h-36 grid-cols-2 gap-1.5 overflow-hidden rounded-md bg-secondary p-1.5">
         {[0, 1, 2, 3].map((item) => (
-          <img key={item} src={stepPlaceholderImage} alt="" className="h-full min-h-0 w-full rounded-sm object-cover" />
+          <img key={item} src={stepPlaceholderImage.url} alt="" className="h-full min-h-0 w-full rounded-sm object-cover" />
         ))}
       </div>
     );
