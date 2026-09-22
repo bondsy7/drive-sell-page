@@ -105,6 +105,7 @@ Deno.serve(async (req) => {
     }
     if (!r) {
       console.error("gemini master-image exhausted", lastStatus, lastBody.slice(0, 400));
+      await charge.refund("Anbieter nicht erreichbar");
       return jsonResponse({
         fallback: true,
         error: lastStatus >= 500 || lastStatus === 429 ? "GEMINI_UNAVAILABLE" : `gemini_${lastStatus}`,
@@ -118,11 +119,14 @@ Deno.serve(async (req) => {
     const mime = imgPart?.inline_data?.mime_type || imgPart?.inlineData?.mimeType || "image/png";
     if (!data) {
       console.error("gemini returned no image", JSON.stringify(json).slice(0, 500));
+      await charge.refund("kein Bild geliefert");
       return errorResponse("no image returned", 502);
     }
 
     return jsonResponse({ imageDataUrl: `data:${mime};base64,${data}` });
   } catch (e) {
+    const ce = creditErrorResponse(e, corsHeaders);
+    if (ce) return ce;
     console.error("generate-master-banner-image error", e);
     return errorResponse(e instanceof Error ? e.message : "unknown error", 500);
   }
