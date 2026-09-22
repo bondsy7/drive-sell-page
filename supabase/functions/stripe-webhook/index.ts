@@ -24,6 +24,16 @@ const toISO = (val: any): string => {
 // Webhook beibehalten, damit bestehende Alt-Abos (starter/pro/enterprise) weiterhin
 // korrekt verbucht werden. Sie sind bewusst NICHT in Pricing oder Checkout-Allowlist.
 const PRODUCT_TO_PLAN: Record<string, string> = {
+  // --- Aktuelle Paketstruktur (autohaus.ai) ---
+  'prod_VIzWhtI4tovQvD': 'basic',
+  'prod_VIzWSancK2oQHS': 'advanced',
+  'prod_VIzWTzES3Zmp7u': 'premium',
+  'prod_VIzWdSX9BrJ4VA': 'ultra',
+  'prod_VIzW4Bw3j7AzxU': 'foto1',
+  'prod_VIzWzAqnrdFdhl': 'foto25',
+  'prod_VIzW3v7GewIwzP': 'foto50',
+  'prod_VIzWgCX30TFWYQ': 'foto100',
+  'prod_VIzW4O0kUsuT6Q': 'foto200',
   'prod_Ukduqj0YRUxMYt': 'basis',
   // --- Legacy (nicht mehr verkäuflich) ---
   'prod_U6vMgZiKJOuEph': 'starter',
@@ -35,6 +45,15 @@ const PRODUCT_TO_PLAN: Record<string, string> = {
 };
 
 const PLAN_CREDITS: Record<string, number> = {
+  basic: 600,
+  advanced: 1000,
+  premium: 2000,
+  ultra: 4000,
+  foto1: 16,
+  foto25: 400,
+  foto50: 800,
+  foto100: 1600,
+  foto200: 3200,
   basis: 1000,
   // --- Legacy (nicht mehr verkäuflich) ---
   starter: 50,
