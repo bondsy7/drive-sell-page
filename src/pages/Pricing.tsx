@@ -149,10 +149,11 @@ const Pricing = () => {
           </p>
           <p className="mx-auto max-w-2xl text-xs leading-relaxed text-muted-foreground">
             Alle Preise verstehen sich netto zzgl. der gesetzlichen Umsatzsteuer. Das Angebot richtet sich ausschließlich
-            an Unternehmer im Sinne des § 14 BGB. Abrechnungszeitraum ist ein Monat; das Abonnement verlängert sich
-            automatisch um jeweils einen weiteren Monat und kann zum Ende des laufenden Abrechnungszeitraums gekündigt
-            werden. Bei der Erstbuchung fallen einmalig 990 € netto Implementierungskosten an. Die monatlichen Credits
-            werden zu Beginn des Abrechnungszeitraums gutgeschrieben; Top-up-Credits werden separat abgerechnet.
+            an Unternehmer im Sinne des § 14 BGB. Die Mindestvertragslaufzeit beträgt 12 Monate, die Abrechnung erfolgt
+            monatlich im Voraus. Der Vertrag verlängert sich um jeweils weitere 12 Monate, wenn er nicht mit einer Frist
+            von einem Monat zum Ende der Laufzeit gekündigt wird. Bei der Erstbuchung fallen einmalig 990 € netto
+            Implementierungskosten an. Die monatlichen Credits werden zu Beginn des Abrechnungszeitraums gutgeschrieben;
+            Top-up-Credits werden separat abgerechnet.
           </p>
           <p className="mx-auto max-w-2xl text-xs text-muted-foreground mt-2">
             Es gelten unsere{' '}
@@ -227,7 +228,7 @@ const Pricing = () => {
                     ))}
                   </ul>
                   <p className="text-[11px] text-muted-foreground mb-3">
-                    zzgl. einmalig 990 € netto Implementierung
+                    zzgl. einmalig 990 € netto Implementierung · 12 Monate Mindestlaufzeit
                   </p>
                   {isActivePlan ? (
                     <Button variant="outline" size="sm" disabled className="border-accent/30 text-accent">
@@ -353,16 +354,32 @@ const Pricing = () => {
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {EXTRA_PACKAGES.map((extra) => (
                   <div key={extra.label} className="rounded-xl border border-border p-3 flex flex-col">
-                    <p className="font-semibold text-foreground text-sm flex-1">{extra.label}</p>
+                    <div className="flex items-start justify-between gap-2 flex-1">
+                      <p className="font-semibold text-foreground text-sm">{extra.label}</p>
+                      {extra.onRequest && (
+                        <span className="shrink-0 rounded-full border border-border px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+                          Nur auf Anfrage
+                        </span>
+                      )}
+                    </div>
                     <p className="text-sm font-bold text-accent mt-1">
                       {extra.price} <span className="text-xs font-normal text-muted-foreground">{extra.unit} netto</span>
                     </p>
+                    {extra.onRequest && (
+                      <Link
+                        to="/fahrzeug-testen"
+                        className="mt-2 text-xs text-muted-foreground underline underline-offset-2"
+                      >
+                        Anfragen
+                      </Link>
+                    )}
                   </div>
                 ))}
               </div>
               <p className="text-xs text-muted-foreground mt-3">
-                Whitelabel-Automarkt und Flipping-Plugin buchen wir individuell für dich –{' '}
-                <Link to="/fahrzeug-testen" className="underline underline-offset-2">hier anfragen</Link>.
+                Whitelabel-Automarkt und Flipping-Plugin sind derzeit nicht direkt buchbar – wir richten sie nach
+                individueller Abstimmung ein.{' '}
+                <Link to="/fahrzeug-testen" className="underline underline-offset-2">Hier anfragen</Link>.
               </p>
             </div>
           </div>
@@ -509,9 +526,13 @@ const Pricing = () => {
             <p className="text-muted-foreground text-sm">
               Plane dein Budget und sieh, wie viele Bilder, Banner, Videos und Landingpages du erstellen kannst.
             </p>
+            <p className="text-xs text-muted-foreground mt-2">
+              Paketgrößen: Basic 600 · Advanced 1.000 · Premium 2.000 · Ultra 4.000 Credits pro Monat. Ein komplettes
+              Fahrzeug mit 16 Perspektiven kostet 16 Credits.
+            </p>
           </div>
           <div className="max-w-3xl mx-auto">
-            <CreditSlider defaultCredits={1000} />
+            <CreditSlider defaultCredits={1000} min={100} max={4000} />
           </div>
         </div>
 
