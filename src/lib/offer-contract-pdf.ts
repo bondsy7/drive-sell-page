@@ -36,7 +36,7 @@ export function allInclContractInput(slug: string): OfferContractInput | null {
       `Bis zu ca. ${pkg.vehiclesPerMonth} Fahrzeuge pro Monat (16 Perspektiven je Fahrzeug)`,
       `${pkg.credits.toLocaleString('de-DE')} Credits pro Abrechnungsmonat`,
       ...pkg.included,
-      'Zugang zur AUTO3-Plattform für die Nutzerinnen und Nutzer des Auftraggebers',
+       'Zugang zur autohaus.ai-Plattform für die Nutzerinnen und Nutzer des Auftraggebers',
     ],
   };
 }
@@ -126,8 +126,13 @@ export function buildOfferContractDoc(input: OfferContractInput) {
 
   // Kopf
   doc.setFont('helvetica', 'bold');
+  doc.setTextColor(33, 91, 230);
+  doc.setFontSize(20);
+  doc.text('autohaus.ai', M, y);
+  doc.setTextColor(0);
+  y += 8;
   doc.setFontSize(16);
-  doc.text('Auftrag und Vertrag über die Nutzung von AUTO3', M, y);
+  doc.text('Auftrag und Vertrag über die Nutzung von autohaus.ai', M, y);
   y += 7;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9.5);
@@ -238,5 +243,5 @@ export function buildOfferContractDoc(input: OfferContractInput) {
 }
 
 export function generateOfferContractPdf(input: OfferContractInput) {
-  buildOfferContractDoc(input).save(`AUTO3-Vertrag-${input.slug}.pdf`);
+  buildOfferContractDoc(input).save(`autohaus.ai-Vertrag-${input.slug}.pdf`);
 }

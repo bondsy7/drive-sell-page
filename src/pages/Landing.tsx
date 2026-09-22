@@ -1,329 +1,158 @@
 import { Link } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
+import {
+  ArrowRight,
+  BarChart3,
+  Camera,
+  Check,
+  FileText,
+  Images,
+  MessageSquareQuote,
+  MonitorSmartphone,
+  Play,
+  Share2,
+  Sparkles,
+  Video,
+  WandSparkles,
+} from 'lucide-react';
+import PublicHeader from '@/components/public/PublicHeader';
 import SiteFooter from '@/components/legal/SiteFooter';
 import { Button } from '@/components/ui/button';
-import {
-  Camera, Sparkles, Image, Globe, ArrowRight, ChevronRight,
-  Bot, Palette, BarChart3, Car, Users, LogOut, User,
-  LayoutDashboard, Video, FileText, Megaphone, Shield, ScanLine,
-  Smartphone, Zap, RotateCcw
-} from 'lucide-react';
-import auto3Logo from '@/assets/auto3-logo.png';
-import heroShowroom from '@/assets/hero-showroom.webp';
+import { useAuth } from '@/hooks/useAuth';
+import heroImage from '@/assets/autohaus-ai-hero.jpg';
 
-/* ─── POA Feature Cards ─── */
-const POA_STEPS = [
-  {
-    num: '01',
-    icon: Camera,
-    title: 'Ankunft am Hof',
-    subtitle: 'Handyfoto & VIN-Scan',
-    desc: 'Auto kommt an – Handy zücken, Foto machen. Unsere KI erkennt Marke, Modell und Ausstattung sofort per VIN/WMI-Lookup.',
-  },
-  {
-    num: '02',
-    icon: Sparkles,
-    title: 'KI-Veredelung',
-    subtitle: 'Fotorealistischer Showroom',
-    desc: 'In Sekunden generiert AUTO3 aus deinem Handyfoto 18+ fotorealistische Perspektiven im Premium-Showroom – inklusive 360°-Spin.',
-  },
-  {
-    num: '03',
-    icon: Megaphone,
-    title: 'Sofort vermarkten',
-    subtitle: 'Banner, Videos & Landing Pages',
-    desc: 'Banner für Social Media, Reels-Videos und SEO-optimierte Angebotsseiten – alles vollautomatisch in Minuten fertig.',
-  },
+const STEPS = [
+  { num: '01', icon: Camera, title: 'Fahrzeug fotografieren', text: 'Ein einfaches Foto genügt. Direkt vom Hof, ohne Studio und ohne Spezialausrüstung.' },
+  { num: '02', icon: WandSparkles, title: 'KI optimiert das Motiv', text: 'autohaus.ai remastert das Fahrzeug originalgetreu und setzt es in deinen gewählten Showroom.' },
+  { num: '03', icon: Share2, title: 'Inhalte automatisch erstellen', text: 'Bilder, Banner, Videos und Verkaufsseiten entstehen aus denselben Fahrzeugdaten.' },
+  { num: '04', icon: BarChart3, title: 'Schneller vermarkten', text: 'Freigeben, herunterladen und auf deinen Kanälen veröffentlichen – konsistent in deiner Marke.' },
 ];
 
-const TOOLS = [
-  {
-    icon: Image,
-    title: 'Visual AI Engine',
-    desc: 'Fotorealistische Showroom-Bilder aus einfachen Handyfotos. 18+ Perspektiven, Innenraum & Außenansicht.',
-  },
-  {
-    icon: RotateCcw,
-    title: '360° Spin Generator',
-    desc: 'Interaktive 360°-Fahrzeugansichten aus Bildern oder Videos. Bis zu 72 Frames für maximale Immersion.',
-  },
-  {
-    icon: Palette,
-    title: 'Banner Architect',
-    desc: 'Verkaufsfertige Werbemittel für alle Social-Media-Formate. Instagram, Facebook, TikTok – ein Klick.',
-  },
-  {
-    icon: Video,
-    title: 'Cinematic Video Engine',
-    desc: 'Dynamische Showroom-Videos für Reels & Stories. Maximale Aufmerksamkeit auf allen Kanälen.',
-  },
-  {
-    icon: FileText,
-    title: 'PDF Intelligence Converter',
-    desc: 'Einkaufs-PDFs werden zu SEO-optimierten HTML-Landingpages mit CO₂-Label, Finanzrechner und Kontaktformular.',
-  },
-  {
-    icon: Bot,
-    title: 'KI-Verkaufsassistent',
-    desc: 'Lead-Management & automatisierte Kundenkommunikation rund um die Uhr. CRM inklusive.',
-  },
+const PRODUCTS = [
+  { icon: Images, title: 'Fahrzeugbilder', text: 'Professionelle Außen- und Innenansichten im einheitlichen Showroom.' },
+  { icon: Share2, title: 'Social Media', text: 'Passende Posts und Banner in den relevanten Formaten.' },
+  { icon: Video, title: 'Video & 360°', text: 'Bewegte Präsentationen und interaktive Rundumansichten.' },
+  { icon: FileText, title: 'Verkaufsseiten', text: 'Fahrzeugdaten und Medien auf einer klaren Angebotsseite.' },
 ];
 
-const AUDIENCES = [
-  { icon: Car, title: 'Autohäuser', desc: 'Maximiere deine Marge durch minimale Standzeiten und professionelle CI-Pipelines.' },
-  { icon: BarChart3, title: 'Freie Händler', desc: 'Nutze High-End-Technologie ohne teure Agenturkosten.' },
-  { icon: Users, title: 'Gebrauchtwagenzentren', desc: 'Standortübergreifend einheitliche Fahrzeugbilder und Marketingprozesse.' },
-];
-
-const Landing = () => {
-  const { user, signOut } = useAuth();
+export default function Landing() {
+  const { user } = useAuth();
+  const destination = user ? '/generator' : '/auth?plan=free';
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* ── Navigation ── */}
-      <header className="border-b border-border/60 bg-background/90 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center">
-            <img src={auto3Logo} alt="AUTO3" className="h-8 sm:h-10" />
-          </Link>
-          <nav className="hidden md:flex items-center gap-8">
-            <a href="#poa" className="text-foreground/60 hover:text-foreground text-sm font-medium transition-colors">So funktioniert's</a>
-            <a href="#tools" className="text-foreground/60 hover:text-foreground text-sm font-medium transition-colors">Werkzeuge</a>
-            <Link to="/pricing" className="text-foreground/60 hover:text-foreground text-sm font-medium transition-colors">Preise</Link>
-          </nav>
-          <div className="flex items-center gap-2">
-            {user ? (
-              <>
-                <Link to="/generator">
-                  <Button size="sm" className="gradient-accent text-accent-foreground gap-1.5 text-xs sm:text-sm">
-                    <Sparkles className="w-3.5 h-3.5" /> Generator
-                  </Button>
-                </Link>
-                <Link to="/dashboard" className="hidden sm:inline-flex">
-                  <Button variant="ghost" size="sm" className="gap-1.5 text-foreground/60 hover:text-foreground">
-                    <LayoutDashboard className="w-3.5 h-3.5" /> <span className="hidden md:inline">Dashboard</span>
-                  </Button>
-                </Link>
-                <Link to="/profile" className="hidden sm:inline-flex">
-                  <Button variant="ghost" size="icon" className="text-foreground/60 hover:text-foreground">
-                    <User className="w-4 h-4" />
-                  </Button>
-                </Link>
-                <Button variant="ghost" size="icon" onClick={signOut} className="text-foreground/60 hover:text-foreground">
-                  <LogOut className="w-4 h-4" />
-                </Button>
-              </>
-            ) : (
-              <>
-                <Link to="/auth" className="hidden sm:inline-flex">
-                  <Button variant="ghost" size="sm" className="text-foreground/60 hover:text-foreground">Anmelden</Button>
-                </Link>
-                <Link to="/auth">
-                  <Button size="sm" className="gradient-accent text-accent-foreground text-xs sm:text-sm">
-                    Kostenlos starten
-                  </Button>
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-background text-foreground">
+      <PublicHeader />
 
-      {/* ── Hero ── */}
-      <section className="relative overflow-hidden min-h-[90vh] flex items-center">
-        {/* Hero background image */}
-        <div className="absolute inset-0">
-          <img
-            src={heroShowroom}
-            alt="KI-generierte Showroom-Perspektiven"
-            className="w-full h-full object-cover scale-105"
-          />
-          {/* Refined multi-layer overlay */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/60 to-black/85" />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-black/30" />
-          {/* Subtle radial spotlight on center content */}
-          <div className="absolute inset-0" style={{
-            background: 'radial-gradient(ellipse 60% 50% at 50% 55%, transparent 0%, rgba(0,0,0,0.35) 100%)',
-          }} />
-        </div>
-
-        <div className="relative max-w-7xl mx-auto px-4 py-28 md:py-40 z-10">
-          <div className="max-w-3xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 border border-white/15 text-white/90 text-xs font-semibold mb-10 tracking-widest uppercase backdrop-blur-md">
-              <Zap className="w-3.5 h-3.5 text-accent" />
-              POA – Point of Arrival
-            </div>
-            <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-5 leading-[1.05] tracking-tight drop-shadow-lg">
-              Verwandle die Ankunft
-              <span className="block mt-1 bg-gradient-to-r from-red-500 via-accent to-red-400 bg-clip-text text-transparent">in ein Erlebnis.</span>
-            </h1>
-            <p className="text-base md:text-lg text-white/70 mb-12 max-w-xl mx-auto leading-relaxed font-light">
-              Ein Handyfoto. Fotorealistische Showroom-Bilder. Minimale Standzeiten, maximale Marge – durch KI-gestützte Ästhetik.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link to={user ? '/generator' : '/auth'}>
-                <Button size="lg" className="gradient-accent text-white text-lg px-12 h-[56px] gap-3 shadow-[0_0_30px_hsl(0_100%_45%/0.35)] hover:shadow-[0_0_40px_hsl(0_100%_45%/0.5)] hover:scale-[1.03] transition-all duration-300 font-bold rounded-xl">
-                  <Sparkles className="w-5 h-5" />
-                  {user ? 'Zum Generator' : 'Jetzt kostenlos starten'}
-                  <ArrowRight className="w-5 h-5" />
-                </Button>
-              </Link>
-              <a href="#poa">
-                <Button variant="outline" size="lg" className="text-base px-8 h-[56px] bg-white/90 border-white text-black font-semibold hover:bg-white hover:text-black rounded-xl transition-all duration-300">
-                  So funktioniert's
-                </Button>
-              </a>
-            </div>
-            <div className="flex items-center justify-center gap-6 mt-8 text-white/40 text-xs">
-              <span>✦ 10 kostenlose Credits</span>
-              <span>✦ Kein Abo nötig</span>
-              <span>✦ Sofort loslegen</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Stats Strip ── */}
-      <section className="border-y border-border bg-card">
-        <div className="max-w-5xl mx-auto px-4 py-8 grid grid-cols-2 md:grid-cols-4 gap-6">
-          {[
-            { value: '< 30s', label: 'Verarbeitungszeit' },
-            { value: '18+', label: 'KI-Perspektiven' },
-            { value: '360°', label: 'Interaktive Spins' },
-            { value: '100%', label: 'WLTP-konform' },
-          ].map((s) => (
-            <div key={s.label} className="text-center">
-              <div className="font-display text-2xl md:text-3xl font-bold text-accent">{s.value}</div>
-              <div className="text-sm text-muted-foreground mt-1">{s.label}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── POA Workflow ── */}
-      <section id="poa" className="py-20 md:py-28">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/8 text-accent text-xs font-bold mb-4 tracking-wide uppercase">
-              <Smartphone className="w-3.5 h-3.5" />
-              Der POA-Workflow
-            </div>
-            <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-3">
-              Vom Hof ins Internet in 3 Akten
-            </h2>
-            <p className="text-muted-foreground max-w-lg mx-auto">
-              Point of Arrival – das Fahrzeug kommt an und alles passiert automatisch.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {POA_STEPS.map((step) => (
-              <div key={step.num} className="relative group">
-                <div className="bg-card border border-border rounded-2xl p-8 h-full transition-all hover:shadow-elevated hover:border-accent/25">
-                  <div className="text-accent/15 font-display text-6xl font-bold mb-3 leading-none">{step.num}</div>
-                  <div className="w-11 h-11 rounded-xl gradient-accent flex items-center justify-center mb-4">
-                    <step.icon className="w-5 h-5 text-accent-foreground" />
-                  </div>
-                  <h3 className="font-display font-bold text-foreground text-lg mb-1">{step.title}</h3>
-                  <p className="text-accent text-sm font-medium mb-3">{step.subtitle}</p>
-                  <p className="text-muted-foreground text-sm leading-relaxed">{step.desc}</p>
-                </div>
+      <main>
+        <section className="relative overflow-hidden border-b border-border bg-white">
+          <div className="mx-auto grid min-h-[680px] max-w-7xl items-center gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[0.88fr_1.12fr] lg:py-20">
+            <div className="relative z-10 max-w-xl">
+              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs font-semibold text-primary">
+                <Sparkles className="h-3.5 w-3.5" /> KI-Fahrzeugmarketing für den Handel
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Tool Suite ── */}
-      <section id="tools" className="py-20 md:py-28 bg-card">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/8 text-accent text-xs font-bold mb-4 tracking-wide uppercase">
-              <Sparkles className="w-3.5 h-3.5" />
-              Die Werkzeuge
-            </div>
-            <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-3">
-              Marketing & Sales Intelligence
-            </h2>
-            <p className="text-muted-foreground max-w-lg mx-auto">
-              Alles, was du brauchst – von der Bildveredelung bis zum Verkaufsabschluss.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {TOOLS.map((tool) => (
-              <div
-                key={tool.title}
-                className="bg-background border border-border rounded-2xl p-6 transition-all hover:shadow-elevated hover:border-accent/25 group"
-              >
-                <div className="w-11 h-11 rounded-xl bg-accent/8 flex items-center justify-center mb-4 group-hover:gradient-accent transition-all">
-                  <tool.icon className="w-5 h-5 text-accent group-hover:text-accent-foreground transition-colors" />
-                </div>
-                <h3 className="font-display font-bold text-foreground mb-2">{tool.title}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">{tool.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Audiences ── */}
-      <section className="py-20 md:py-28">
-        <div className="max-w-5xl mx-auto px-4">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/8 text-accent text-xs font-bold mb-4 tracking-wide uppercase">
-              <Shield className="w-3.5 h-3.5" />
-              Perfekt für die Automobilbranche
-            </div>
-            <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground">
-              Unsere Zielgruppen
-            </h2>
-          </div>
-          <div className="grid md:grid-cols-3 gap-6">
-            {AUDIENCES.map((a) => (
-              <div key={a.title} className="bg-card border border-border rounded-2xl p-8 text-center transition-all hover:shadow-elevated">
-                <div className="w-14 h-14 rounded-xl gradient-accent flex items-center justify-center mx-auto mb-5">
-                  <a.icon className="w-7 h-7 text-accent-foreground" />
-                </div>
-                <h3 className="font-display font-bold text-foreground text-lg mb-2">{a.title}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">{a.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── CTA ── */}
-      <section className="py-20 md:py-28">
-        <div className="max-w-3xl mx-auto px-4">
-          <div className="relative rounded-3xl overflow-hidden">
-            <div className="absolute inset-0 gradient-hero" />
-            <div className="absolute inset-0 opacity-[0.04]" style={{
-              backgroundImage: `radial-gradient(circle at 1px 1px, hsl(var(--accent)) 1px, transparent 0)`,
-              backgroundSize: '24px 24px',
-            }} />
-            <div className="relative p-12 md:p-16 text-center">
-              <h2 className="font-display text-3xl md:text-4xl font-bold text-primary-foreground mb-4">
-                Bereit für den Start?
-              </h2>
-              <p className="text-primary-foreground/70 mb-8 max-w-md mx-auto">
-                10 kostenlose Credits – kein Abo, keine Kreditkarte. Erlebe POA live in unter 2 Minuten.
+              <h1 className="font-display text-4xl font-bold leading-[1.05] tracking-[-0.04em] sm:text-5xl lg:text-6xl">
+                Aus einem Foto wird dein gesamtes Fahrzeugmarketing.
+              </h1>
+              <p className="mt-6 max-w-lg text-base leading-7 text-muted-foreground sm:text-lg">
+                Professionelle Fahrzeugbilder, Social-Media-Inhalte, Videos und Verkaufsseiten – schnell, einheitlich und passend zu deinem Autohaus.
               </p>
-              <Link to={user ? '/generator' : '/auth'}>
-                <Button size="lg" className="gradient-accent text-accent-foreground text-base px-8 h-12 gap-2 shadow-glow">
-                  <Sparkles className="w-5 h-5" />
-                  {user ? 'Zum Generator' : 'Kostenlos starten'}
-                  <ChevronRight className="w-4 h-4" />
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <Button asChild size="lg" className="h-12 px-6 shadow-glow">
+                  <Link to={destination}>Kostenlos testen <ArrowRight className="h-4 w-4" /></Link>
                 </Button>
-              </Link>
+                <Button asChild size="lg" variant="outline" className="h-12 px-6 bg-white">
+                  <a href="#produkte"><Play className="h-4 w-4 fill-current" /> Produkte ansehen</a>
+                </Button>
+              </div>
+              <div className="mt-8 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted-foreground">
+                {['10 Credits zum Start', 'Keine Kreditkarte nötig', 'Ausschließlich für Unternehmen'].map((item) => (
+                  <span key={item} className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-primary" />{item}</span>
+                ))}
+              </div>
+            </div>
+
+            <div className="relative lg:-mr-28">
+              <div className="absolute -inset-10 -z-10 rounded-full bg-primary/5 blur-3xl" />
+              <img
+                src={heroImage}
+                alt="Schwarzes Fahrzeug im hellen virtuellen Showroom"
+                width={1600}
+                height={1000}
+                className="aspect-[8/5] w-full rounded-lg border border-border object-cover shadow-elevated"
+              />
+              <div className="absolute bottom-5 left-5 right-5 flex items-center justify-between rounded-md border border-white/70 bg-white/90 px-4 py-3 shadow-card backdrop-blur">
+                <div><p className="text-xs text-muted-foreground">KI-Remastering</p><p className="text-sm font-semibold">Showroom-Aufnahme fertig</p></div>
+                <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">Bereit</span>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
+        <section className="border-b border-border bg-slate-50/70 py-7">
+          <div className="mx-auto grid max-w-6xl grid-cols-2 gap-6 px-4 text-center sm:px-6 md:grid-cols-4">
+            {[['6', 'Fahrzeugklassen'], ['16+', 'Perspektiven'], ['360°', 'Fahrzeugansicht'], ['1', 'zentrale Plattform']].map(([value, label]) => (
+              <div key={label}><p className="text-2xl font-bold tracking-tight">{value}</p><p className="mt-1 text-xs text-muted-foreground">{label}</p></div>
+            ))}
+          </div>
+        </section>
+
+        <section id="produkte" className="py-20 sm:py-28">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6">
+            <div className="max-w-2xl">
+              <p className="text-sm font-semibold text-primary">So funktioniert autohaus.ai</p>
+              <h2 className="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">Vom Fahrzeug zur fertigen Kampagne.</h2>
+              <p className="mt-4 text-muted-foreground">Ein klarer Prozess ohne Medienbruch – entwickelt für den täglichen Einsatz im Fahrzeughandel.</p>
+            </div>
+            <div className="mt-12 grid gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-2 lg:grid-cols-4">
+              {STEPS.map((step) => (
+                <article key={step.num} className="group bg-card p-7 transition-colors hover:bg-primary/[0.025]">
+                  <div className="flex items-center justify-between"><step.icon className="h-5 w-5 text-primary" /><span className="text-xs font-bold text-primary/50">{step.num}</span></div>
+                  <h3 className="mt-10 font-semibold">{step.title}</h3>
+                  <p className="mt-3 text-sm leading-6 text-muted-foreground">{step.text}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="border-y border-border bg-slate-50/70 py-20 sm:py-28">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6">
+            <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+              <div className="max-w-2xl"><p className="text-sm font-semibold text-primary">Eine Plattform</p><h2 className="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">Alles für deine digitale Fahrzeugpräsentation.</h2></div>
+              <Button asChild variant="outline"><Link to="/pricing">Pakete vergleichen <ArrowRight className="h-4 w-4" /></Link></Button>
+            </div>
+            <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {PRODUCTS.map((product) => (
+                <article key={product.title} className="rounded-lg border border-border bg-white p-6 shadow-card">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary text-white"><product.icon className="h-5 w-5" /></div>
+                  <h3 className="mt-6 font-semibold">{product.title}</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">{product.text}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="referenzen" className="py-20 sm:py-28">
+          <div className="mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 lg:grid-cols-2 lg:items-center">
+            <div className="overflow-hidden rounded-lg border border-border bg-slate-50 p-3 shadow-card">
+              <img src={heroImage} alt="Professionelle Fahrzeugdarstellung mit autohaus.ai" loading="lazy" width={1600} height={1000} className="aspect-[4/3] w-full rounded-md object-cover" />
+            </div>
+            <div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary"><MessageSquareQuote className="h-5 w-5" /></div>
+              <blockquote className="mt-6 font-display text-2xl font-semibold leading-snug sm:text-3xl">„Ein einheitlicher Auftritt für jedes Fahrzeug – ohne zusätzliches Fotostudio und ohne komplizierte Agenturprozesse.“</blockquote>
+              <p className="mt-5 text-sm leading-6 text-muted-foreground">autohaus.ai verbindet Fahrzeugdaten, Bildbearbeitung und Vermarktung in einem nachvollziehbaren Arbeitsablauf.</p>
+              <div className="mt-7 flex items-center gap-3 text-sm font-semibold"><MonitorSmartphone className="h-4 w-4 text-primary" /> Für Autohäuser, Händler und Fahrzeuggruppen</div>
+            </div>
+          </div>
+        </section>
+
+        <section id="unternehmen" className="px-4 pb-20 sm:px-6 sm:pb-28">
+          <div className="mx-auto max-w-7xl overflow-hidden rounded-lg bg-primary px-6 py-12 text-white sm:px-12 lg:flex lg:items-center lg:justify-between">
+            <div className="max-w-2xl"><h2 className="font-display text-3xl font-bold tracking-tight">Bereit für modernes Fahrzeugmarketing?</h2><p className="mt-3 text-sm leading-6 text-white/75">Starte mit 10 Credits und erlebe den vollständigen Ablauf direkt mit deinem Fahrzeug.</p></div>
+            <Button asChild size="lg" className="mt-7 bg-white text-primary hover:bg-white/90 lg:mt-0"><Link to={destination}>Jetzt kostenlos testen <ArrowRight className="h-4 w-4" /></Link></Button>
+          </div>
+        </section>
+      </main>
       <SiteFooter />
     </div>
   );
-};
-
-export default Landing;
+}

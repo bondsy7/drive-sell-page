@@ -7,7 +7,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { Button } from '@/components/ui/button';
 import { Check, Zap, Loader2, Plus, Crown, Calendar, AlertTriangle, RefreshCw, CreditCard, ArrowUpDown, XCircle, FileDown } from 'lucide-react';
 import CancelSubscriptionDialog from '@/components/CancelSubscriptionDialog';
-import AppHeader from '@/components/AppHeader';
+import PublicHeader from '@/components/public/PublicHeader';
 import SiteFooter from '@/components/legal/SiteFooter';
 import CreditSlider from '@/components/CreditSlider';
 import {
@@ -140,12 +140,13 @@ const Pricing = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <AppHeader />
+      <PublicHeader />
 
-      <main className="max-w-5xl mx-auto px-3 sm:px-4 py-8 sm:py-16">
+      <main className="max-w-7xl mx-auto px-3 sm:px-6 py-12 sm:py-20">
         <div className="text-center mb-8 sm:mb-10">
-          <h1 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-3">
-            Einfach. Transparent. Komplett.
+          <p className="mb-3 text-sm font-semibold text-primary">Preise für professionelles Fahrzeugmarketing</p>
+          <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-4 tracking-tight">
+            Das passende Paket für dein Autohaus.
           </h1>
           <p className="text-muted-foreground max-w-2xl mx-auto mb-4 text-sm sm:text-base">
             Wähle zwischen reinem <strong className="text-foreground">Fotoservice</strong> und der{' '}
@@ -195,11 +196,11 @@ const Pricing = () => {
               return (
                 <div
                   key={pkg.slug}
-                  className={`relative rounded-2xl border-2 p-5 flex flex-col transition-all ${
+                  className={`relative rounded-lg border p-6 flex flex-col transition-all shadow-card ${
                     isActivePlan
-                      ? 'border-accent shadow-glow bg-card ring-2 ring-accent/20'
+                      ? 'border-primary shadow-glow bg-card ring-1 ring-primary/20'
                       : pkg.recommended
-                        ? 'border-accent/60 bg-card'
+                        ? 'border-primary bg-card'
                         : 'border-border bg-card'
                   }`}
                 >
