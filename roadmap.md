@@ -49,7 +49,7 @@
 - [x] Startseite eng an die neue Referenz mit Bildplatzhaltern, Kennzahlen, vier Schritten und Kundenstimme angleichen
 
 ## Rechtliche Informationsarchitektur (22.09.2026)
-- [ ] Footer auf fünf primäre Rechtszugänge reduzieren
+- [ ] Footer auf fünf primäre Rechtszugänge reduzieren (in Arbeit)
 - [ ] Öffentliche Übersicht /rechtliches mit zentralen Dokumentständen erstellen
 - [ ] LegalLayout-Navigation und Rückweg vereinheitlichen
 - [ ] KI-Transparenz in das gemeinsame LegalLayout überführen
