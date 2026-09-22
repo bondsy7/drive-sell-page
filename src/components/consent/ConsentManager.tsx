@@ -73,7 +73,7 @@ export default function ConsentManager() {
                 Datenschutzeinstellungen
               </p>
               <p className="text-xs leading-relaxed text-muted-foreground">
-                Wir verwenden notwendige Funktionen, damit AUTO3 nutzbar ist. Optionale Dienste für
+                Wir verwenden notwendige Funktionen, damit autohaus.ai nutzbar ist. Optionale Dienste für
                 Analyse und Marketing setzen wir ausschließlich mit deiner Einwilligung ein – vorher
                 werden keine Daten an diese Anbieter übertragen. Du kannst deine Auswahl jederzeit
                 über „Cookie-Einstellungen“ im Seitenfuß ändern oder widerrufen. Details in der{' '}

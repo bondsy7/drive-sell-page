@@ -5,8 +5,8 @@ export default function Impressum() {
   return (
     <LegalLayout
       title="Impressum"
-      metaTitle="Impressum – AUTO3 | Breadcrumb Marketing GmbH"
-      metaDescription="Anbieterkennzeichnung nach § 5 DDG für AUTO3, ein Produkt der Breadcrumb Marketing GmbH in Hanau."
+      metaTitle="Impressum – autohaus.ai | Breadcrumb Marketing GmbH"
+      metaDescription="Anbieterkennzeichnung nach § 5 DDG für autohaus.ai, ein Produkt der Breadcrumb Marketing GmbH in Hanau."
       canonicalPath="/impressum"
       intro={<p>Angaben gemäß § 5 DDG.</p>}
     >
@@ -20,7 +20,7 @@ export default function Impressum() {
           <br />
           {LEGAL.country}
         </p>
-        <p>AUTO3 ist ein Produkt der {LEGAL.company}.</p>
+        <p>autohaus.ai ist ein Produkt der {LEGAL.company}.</p>
       </LegalSection>
 
       <LegalSection title="Vertretungsberechtigt">
@@ -66,7 +66,7 @@ export default function Impressum() {
 
       <LegalSection title="Zielgruppe">
         <p>
-          AUTO3 richtet sich ausschließlich an Unternehmer im Sinne des § 14 BGB, juristische
+          autohaus.ai richtet sich ausschließlich an Unternehmer im Sinne des § 14 BGB, juristische
           Personen des öffentlichen Rechts und öffentlich-rechtliche Sondervermögen. Ein
           Vertragsschluss mit Verbrauchern ist ausgeschlossen. Mindestalter: 18 Jahre.
         </p>

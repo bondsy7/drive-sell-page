@@ -47,8 +47,8 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
 
 export default function FahrzeugTesten() {
   usePageMeta({
-    title: 'Autohaus.ai mit einem Fahrzeug testen',
-    description: 'Laden Sie ein Fahrzeugfoto aus Ihrem Bestand hoch und testen Sie Autohaus.ai als gewerblicher Fahrzeughändler.',
+    title: 'autohaus.ai mit einem Fahrzeug testen',
+    description: 'Laden Sie ein Fahrzeugfoto aus Ihrem Bestand hoch und testen Sie autohaus.ai als gewerblicher Fahrzeughändler.',
     canonicalPath: '/fahrzeug-testen',
   });
 
@@ -163,7 +163,7 @@ export default function FahrzeugTesten() {
   return (
     <FunnelLayout ctaHref="/fahrzeug-testen" ctaLabel="Fahrzeug testen" showMobileCta={false}>
       <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
-        <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Testen Sie Autohaus.ai mit einem echten Fahrzeug.</h1>
+        <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Testen Sie autohaus.ai mit einem echten Fahrzeug.</h1>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground sm:text-base">
           Laden Sie ein Fahrzeugfoto aus Ihrem Bestand hoch und senden Sie uns die wichtigsten Angaben zu Ihrem
           Autohaus. So können wir den Test passend zu Ihrem Einsatz beurteilen.

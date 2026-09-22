@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { openConsentSettings } from '@/lib/consent';
 import { LEGAL } from '@/lib/legal-config';
+import BrandLogo from '@/components/brand/BrandLogo';
 
 const LINKS = [
   { to: '/impressum', label: 'Impressum' },
@@ -24,7 +25,8 @@ export default function SiteFooter({ compact = false }: SiteFooterProps) {
       className={`border-t border-border bg-card/40 ${compact ? 'py-4' : 'py-8'}`}
       aria-label="Rechtliche Informationen"
     >
-      <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 text-xs text-muted-foreground sm:px-6">
+      <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 text-xs text-muted-foreground sm:px-6">
+        {!compact && <BrandLogo className="h-6" />}
         <nav className="flex flex-wrap items-center gap-x-4 gap-y-2" aria-label="Rechtliche Seiten">
           {LINKS.map((l) => (
             <Link
@@ -45,12 +47,12 @@ export default function SiteFooter({ compact = false }: SiteFooterProps) {
         </nav>
         {!compact && (
           <p>
-            AUTO3 ist ein Produkt der {LEGAL.company}. Angebot ausschließlich für Unternehmer
+            autohaus.ai ist ein Produkt der {LEGAL.company}. Angebot ausschließlich für Unternehmer
             i. S. d. § 14 BGB, juristische Personen des öffentlichen Rechts und
             öffentlich-rechtliche Sondervermögen.
           </p>
         )}
-        <p>© {new Date().getFullYear()} AUTO3 · ein Produkt der {LEGAL.company}</p>
+        <p>© {new Date().getFullYear()} autohaus.ai · ein Produkt der {LEGAL.company}</p>
       </div>
     </footer>
   );

@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import { Checkbox } from '@/components/ui/checkbox';
 import { LEGAL_VERSIONS, TERMS_DOCUMENT, B2B_CONFIRM_TEXT } from '@/lib/legal-config';
 import { recordTermsAcceptance } from '@/lib/legal-acceptance';
-import auto3Logo from '@/assets/auto3-logo.png';
+import BrandLogo from '@/components/brand/BrandLogo';
 import SiteFooter from '@/components/legal/SiteFooter';
 import { customerErrorMessage } from '@/lib/customer-error-message';
 
@@ -123,10 +123,10 @@ const Auth = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <div className="flex-1 flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-sm space-y-6">
+      <div className="w-full max-w-md space-y-6 rounded-lg border border-border bg-card p-6 shadow-card sm:p-8">
         <div className="text-center space-y-4">
           <Link to="/">
-            <img src={auto3Logo} alt="AUTO3" className="h-14 mx-auto" />
+            <BrandLogo className="h-9 mx-auto" />
           </Link>
           <p className="text-sm text-muted-foreground">
             {isLogin ? 'Melde dich an' : 'Erstelle deinen Account'}
@@ -183,7 +183,7 @@ const Auth = () => {
                 <span>
                   Ich habe die{' '}
                   <Link to="/agb" target="_blank" className="font-medium text-accent underline underline-offset-2">AGB</Link>{' '}
-                  für AUTO3 gelesen und akzeptiere sie. *
+                  für autohaus.ai gelesen und akzeptiere sie. *
                 </span>
               </label>
               <p className="text-xs text-muted-foreground">

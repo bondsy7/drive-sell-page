@@ -5,15 +5,15 @@ export default function Avv() {
   return (
     <LegalLayout
       title="Auftragsverarbeitungsvertrag (Art. 28 DSGVO)"
-      metaTitle="AVV – Auftragsverarbeitung AUTO3 | Breadcrumb Marketing GmbH"
-      metaDescription="Rahmenvertrag zur Auftragsverarbeitung nach Art. 28 DSGVO zwischen AUTO3-Geschäftskunden als Verantwortlichem und der Breadcrumb Marketing GmbH als Auftragsverarbeiter."
+      metaTitle="AVV – Auftragsverarbeitung autohaus.ai | Breadcrumb Marketing GmbH"
+      metaDescription="Rahmenvertrag zur Auftragsverarbeitung nach Art. 28 DSGVO zwischen autohaus.ai-Geschäftskunden als Verantwortlichem und der Breadcrumb Marketing GmbH als Auftragsverarbeiter."
       canonicalPath="/avv"
       toc
       intro={
         <p>
-          Dieser Rahmenvertrag gilt zwischen dem jeweiligen AUTO3-Geschäftskunden
+          Dieser Rahmenvertrag gilt zwischen dem jeweiligen autohaus.ai-Geschäftskunden
           („Verantwortlicher“) und der {LEGAL.company}, {LEGAL.street}, {LEGAL.city}
-          („Auftragsverarbeiter“). Er wird mit Abschluss des AUTO3-Nutzungsvertrags elektronisch
+          („Auftragsverarbeiter“). Er wird mit Abschluss des autohaus.ai-Nutzungsvertrags elektronisch
           einbezogen, soweit personenbezogene Daten im Auftrag verarbeitet werden. Anlage 1:
           Unterauftragsverarbeiter. Anlage 2: technische und organisatorische Maßnahmen (TOMs).
         </p>
@@ -22,7 +22,7 @@ export default function Avv() {
       <LegalSection title="1. Gegenstand, Umfang und Dauer">
         <p>
           Gegenstand ist die Verarbeitung personenbezogener Daten durch den Auftragsverarbeiter im
-          Rahmen der Bereitstellung und des Betriebs der SaaS-Plattform AUTO3. Die Dauer entspricht
+          Rahmen der Bereitstellung und des Betriebs der SaaS-Plattform autohaus.ai. Die Dauer entspricht
           der Laufzeit des Nutzungsvertrags; die Pflichten dieses Vertrags gelten bis zur
           Rückgabe/Löschung der Daten fort.
         </p>

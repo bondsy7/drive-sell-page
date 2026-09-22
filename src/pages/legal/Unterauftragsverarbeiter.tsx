@@ -105,8 +105,8 @@ export default function Unterauftragsverarbeiter() {
   return (
     <LegalLayout
       title="Unterauftragsverarbeiter und weitere Empfänger"
-      metaTitle="Unterauftragsverarbeiter – AUTO3"
-      metaDescription="Anlage 1 zum Auftragsverarbeitungsvertrag: eingesetzte Unterauftragsverarbeiter, weitere Empfänger und offene Punkte für AUTO3."
+      metaTitle="Unterauftragsverarbeiter – autohaus.ai"
+      metaDescription="Anlage 1 zum Auftragsverarbeitungsvertrag: eingesetzte Unterauftragsverarbeiter, weitere Empfänger und offene Punkte für autohaus.ai."
       canonicalPath="/unterauftragsverarbeiter"
       toc
       intro={
@@ -115,7 +115,7 @@ export default function Unterauftragsverarbeiter() {
           <a className="underline underline-offset-2" href="/avv">
             Auftragsverarbeitungsvertrag
           </a>
-          . Die Übersicht beruht auf der tatsächlich eingesetzten Infrastruktur von AUTO3. Wo der
+          . Die Übersicht beruht auf der tatsächlich eingesetzten Infrastruktur von autohaus.ai. Wo der
           Vertrags- oder Kontostand nicht technisch überprüfbar ist, ist dies ausdrücklich als „zu
           verifizieren“ ausgewiesen.
         </p>

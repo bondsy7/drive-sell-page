@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import auto3Logo from '@/assets/auto3-logo.png';
+import BrandLogo from '@/components/brand/BrandLogo';
 import SiteFooter from '@/components/legal/SiteFooter';
 
 interface FunnelNavAnchor {
@@ -31,8 +31,8 @@ export default function FunnelLayout({
       <header className="sticky top-0 z-50 border-b border-border/70 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
           <Link to="/" className="flex items-center gap-2 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
-            <img src={auto3Logo} alt="Autohaus.ai" className="h-7 w-auto" />
-            <span className="sr-only">Autohaus.ai Startseite</span>
+            <BrandLogo className="h-7" />
+            <span className="sr-only">autohaus.ai Startseite</span>
           </Link>
 
           <nav aria-label="Seitenbereiche" className="hidden items-center gap-6 md:flex">

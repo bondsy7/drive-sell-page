@@ -1106,7 +1106,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         try {
           new Notification('Pipeline fertig! ✅', {
             body: `${allResults.length} Bilder erfolgreich generiert.`,
-            icon: '/favicon.ico',
+            icon: '/favicon.png',
           });
         } catch { /* ignore */ }
       }

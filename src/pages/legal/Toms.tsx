@@ -5,8 +5,8 @@ export default function Toms() {
   return (
     <LegalLayout
       title="Technische und organisatorische Maßnahmen (TOMs)"
-      metaTitle="TOMs – Sicherheitsmaßnahmen AUTO3"
-      metaDescription="Anlage 2 zum Auftragsverarbeitungsvertrag: technische und organisatorische Maßnahmen nach Art. 32 DSGVO für die Plattform AUTO3."
+      metaTitle="TOMs – Sicherheitsmaßnahmen autohaus.ai"
+      metaDescription="Anlage 2 zum Auftragsverarbeitungsvertrag: technische und organisatorische Maßnahmen nach Art. 32 DSGVO für die Plattform autohaus.ai."
       canonicalPath="/toms"
       toc
       intro={
@@ -16,7 +16,7 @@ export default function Toms() {
             Auftragsverarbeitungsvertrag
           </a>
           . Beschrieben sind die derzeit umgesetzten bzw. verbindlich zugesagten Maßnahmen nach
-          Art. 32 DSGVO für AUTO3 der {LEGAL.company}. Maßnahmen, die noch offen sind, sind
+          Art. 32 DSGVO für autohaus.ai der {LEGAL.company}. Maßnahmen, die noch offen sind, sind
           ausdrücklich als offen gekennzeichnet.
         </p>
       }

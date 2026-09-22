@@ -1,5 +1,6 @@
 import { jsPDF } from 'jspdf';
 import { LEGAL, LEGAL_VERSIONS } from '@/lib/legal-config';
+import brandLogo from '@/assets/brand/autohaus-ai-logo.png';
 import {
   ALL_INCL_PACKAGES,
   FOTO_PACKAGES,
@@ -36,7 +37,7 @@ export function allInclContractInput(slug: string): OfferContractInput | null {
       `Bis zu ca. ${pkg.vehiclesPerMonth} Fahrzeuge pro Monat (16 Perspektiven je Fahrzeug)`,
       `${pkg.credits.toLocaleString('de-DE')} Credits pro Abrechnungsmonat`,
       ...pkg.included,
-      'Zugang zur AUTO3-Plattform für die Nutzerinnen und Nutzer des Auftraggebers',
+       'Zugang zur autohaus.ai-Plattform für die Nutzerinnen und Nutzer des Auftraggebers',
     ],
   };
 }
@@ -59,7 +60,7 @@ export function fotoContractInput(slug: string): OfferContractInput | null {
   };
 }
 
-export function buildOfferContractDoc(input: OfferContractInput) {
+export function buildOfferContractDoc(input: OfferContractInput, logoDataUrl?: string) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const M = 18;
   const W = 210 - M * 2;
@@ -125,9 +126,13 @@ export function buildOfferContractDoc(input: OfferContractInput) {
   };
 
   // Kopf
+  if (logoDataUrl) {
+    doc.addImage(logoDataUrl, 'PNG', M, y, 47, 9);
+    y += 14;
+  }
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(16);
-  doc.text('Auftrag und Vertrag über die Nutzung von AUTO3', M, y);
+  doc.text('Auftrag und Vertrag über die Nutzung von autohaus.ai', M, y);
   y += 7;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9.5);
@@ -237,6 +242,18 @@ export function buildOfferContractDoc(input: OfferContractInput) {
   return doc;
 }
 
-export function generateOfferContractPdf(input: OfferContractInput) {
-  buildOfferContractDoc(input).save(`AUTO3-Vertrag-${input.slug}.pdf`);
+export async function generateOfferContractPdf(input: OfferContractInput) {
+  let logoDataUrl: string | undefined;
+  try {
+    const blob = await fetch(brandLogo).then((response) => response.blob());
+    logoDataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    // Der Vertrag bleibt auch bei einem fehlgeschlagenen Logo-Abruf vollständig nutzbar.
+  }
+  buildOfferContractDoc(input, logoDataUrl).save(`autohaus.ai-Vertrag-${input.slug}.pdf`);
 }

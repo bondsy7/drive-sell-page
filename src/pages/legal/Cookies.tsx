@@ -45,12 +45,12 @@ export default function Cookies() {
   return (
     <LegalLayout
       title="Cookies und lokale Speicherung"
-      metaTitle="Cookies und Einwilligungen – AUTO3"
-      metaDescription="Übersicht über technisch notwendige Speicherung, Analyse- und Marketing-Technologien in AUTO3 sowie Verwaltung der Einwilligung."
+      metaTitle="Cookies und Einwilligungen – autohaus.ai"
+      metaDescription="Übersicht über technisch notwendige Speicherung, Analyse- und Marketing-Technologien in autohaus.ai sowie Verwaltung der Einwilligung."
       canonicalPath="/cookies"
       intro={
         <p>
-          AUTO3 setzt Analyse- und Marketing-Technologien ausschließlich nach deiner Einwilligung
+          autohaus.ai setzt Analyse- und Marketing-Technologien ausschließlich nach deiner Einwilligung
           ein. Vor einer Einwilligung wird kein Google-Dienst geladen und es wird kein Request an
           Google ausgelöst. Technisch notwendige Speicherung (z. B. Anmeldesitzung) ist für den
           Betrieb erforderlich und nicht abwählbar.

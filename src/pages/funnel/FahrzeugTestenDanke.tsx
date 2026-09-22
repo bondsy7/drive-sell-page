@@ -18,7 +18,7 @@ const STEPS = [
 
 export default function FahrzeugTestenDanke() {
   usePageMeta({
-    title: 'Vielen Dank – Ihr Fahrzeug ist angekommen | Autohaus.ai',
+    title: 'Vielen Dank – Ihr Fahrzeug ist angekommen | autohaus.ai',
     description: 'Ihre Testanfrage ist eingegangen. Wir prüfen Fahrzeug und Einsatzziel und melden uns mit den nächsten Schritten.',
     canonicalPath: '/fahrzeug-testen/danke',
     noIndex: true,
@@ -56,7 +56,7 @@ export default function FahrzeugTestenDanke() {
   };
 
   return (
-    <FunnelLayout ctaHref="/" ctaLabel="Zurück zu Autohaus.ai" showMobileCta={false}>
+    <FunnelLayout ctaHref="/" ctaLabel="Zurück zu autohaus.ai" showMobileCta={false}>
       <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6">
         <span className="inline-flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1 text-xs font-semibold text-accent">
           <CheckCircle2 className="h-4 w-4" aria-hidden="true" /> Anfrage eingegangen
@@ -66,7 +66,7 @@ export default function FahrzeugTestenDanke() {
         </h1>
         <p className="mt-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
           Wir prüfen Ihre Angaben und das hochgeladene Fahrzeug. Im nächsten Schritt zeigen wir Ihnen, wie
-          Autohaus.ai in Ihrem Händlerprozess eingesetzt werden kann.
+          autohaus.ai in Ihrem Händlerprozess eingesetzt werden kann.
         </p>
 
         <h2 className="mt-10 text-lg font-semibold text-foreground">Die nächsten Schritte</h2>
@@ -88,7 +88,7 @@ export default function FahrzeugTestenDanke() {
             {requested ? 'Demo-Interesse vermerkt' : '15-Minuten-Demo anfragen'}
           </Button>
           <Button asChild size="lg" variant="outline">
-            <Link to="/">Zurück zu Autohaus.ai <ArrowRight className="ml-2 h-4 w-4" /></Link>
+            <Link to="/">Zurück zu autohaus.ai <ArrowRight className="ml-2 h-4 w-4" /></Link>
           </Button>
         </div>
       </div>

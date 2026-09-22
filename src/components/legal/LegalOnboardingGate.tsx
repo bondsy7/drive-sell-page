@@ -89,7 +89,7 @@ export default function LegalOnboardingGate({ children }: { children: React.Reac
         <div className="space-y-2">
           <h1 className="font-display text-xl font-bold text-foreground">Kurze Bestätigung nötig</h1>
           <p className="text-sm text-muted-foreground">
-            AUTO3 richtet sich ausschließlich an Unternehmen. Bitte ergänze deine Firmenangabe und
+            autohaus.ai richtet sich ausschließlich an Unternehmen. Bitte ergänze deine Firmenangabe und
             bestätige die AGB, um fortzufahren.
           </p>
         </div>
@@ -118,7 +118,7 @@ export default function LegalOnboardingGate({ children }: { children: React.Reac
             <Link to="/agb" target="_blank" className="font-medium text-accent underline underline-offset-2">
               AGB
             </Link>{' '}
-            für AUTO3 gelesen und akzeptiere sie.
+            für autohaus.ai gelesen und akzeptiere sie.
           </span>
         </label>
 
