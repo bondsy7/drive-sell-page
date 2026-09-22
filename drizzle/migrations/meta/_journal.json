@@ -15,6 +15,13 @@
       "when": 1790059892868,
       "tag": "0001_autohaus_pricing_packages",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790074908739,
+      "tag": "0002_add_credit_action_types",
+      "breakpoints": true
     }
   ]
 }
