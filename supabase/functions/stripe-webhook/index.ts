@@ -232,10 +232,10 @@ serve(async (req) => {
 
         const credits = PLAN_CREDITS[planSlug] || 0;
         if (credits > 0) {
-          await supabase.rpc("add_credits", {
+          // Monatsguthaben setzen: alte Abo-Credits verfallen, gekaufte bleiben.
+          await supabase.rpc("reset_monthly_credits", {
             _user_id: userId,
-            _amount: credits,
-            _action_type: "subscription_reset",
+            _plan_credits: credits,
             _description: `${planSlug} Abo aktiviert – ${credits} Credits`,
           });
         }
@@ -330,10 +330,10 @@ serve(async (req) => {
 
         const credits = PLAN_CREDITS[planSlug] || 0;
         if (credits > 0) {
-          await supabase.rpc("add_credits", {
+          // Verlängerung: nicht verbrauchte Abo-Credits verfallen zum Periodenende.
+          await supabase.rpc("reset_monthly_credits", {
             _user_id: found.userId,
-            _amount: credits,
-            _action_type: "subscription_reset",
+            _plan_credits: credits,
             _description: `${planSlug} Abo verlängert – ${credits} Credits`,
           });
         }
