@@ -263,6 +263,16 @@ const Pricing = () => {
                   >
                     Unverbindlich anfragen
                   </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const input = allInclContractInput(pkg.slug);
+                      if (input) generateOfferContractPdf(input);
+                    }}
+                    className="mt-2 inline-flex items-center justify-center gap-1 text-xs text-accent underline underline-offset-2"
+                  >
+                    <FileDown className="w-3.5 h-3.5" /> Vertrag als PDF
+                  </button>
                 </div>
               );
             })}
@@ -335,6 +345,16 @@ const Pricing = () => {
                     >
                       Paket anfragen
                     </Link>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const input = fotoContractInput(pkg.slug);
+                        if (input) generateOfferContractPdf(input);
+                      }}
+                      className="mt-2 inline-flex items-center justify-center gap-1 text-xs text-accent underline underline-offset-2"
+                    >
+                      <FileDown className="w-3.5 h-3.5" /> Vertrag als PDF
+                    </button>
                   </div>
                 );
               })}
