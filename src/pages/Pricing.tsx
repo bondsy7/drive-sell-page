@@ -45,6 +45,7 @@ const Pricing = () => {
   // Es gibt ausschließlich Monatsprodukte – kein Jahrespreis vortäuschen.
   const yearly = false;
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [loadingSlug, setLoadingSlug] = useState<string | null>(null);
   const { balance, costs } = useCredits();
   const { user } = useAuth();
