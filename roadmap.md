@@ -46,3 +46,4 @@
 - [x] Marke von AUTO3 auf autohaus.ai umstellen, inklusive Logo, E-Mails und Angebots-PDF
 - [x] Öffentliche Seiten nach gelieferter Designreferenz neu gestalten
 - [x] Desktop- und Mobilansicht sowie PDF-Download prüfen
+- [x] Startseite eng an die neue Referenz mit Bildplatzhaltern, Kennzahlen, vier Schritten und Kundenstimme angleichen
