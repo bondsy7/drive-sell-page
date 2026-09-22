@@ -370,7 +370,7 @@ const Checkout = () => {
                 </div>
                 {firstBooking !== false && (
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Einrichtung (einmalig, nur Erstbuchung)</span>
+                    <span>Einrichtung (einmalig bei Erstbuchung, separat berechnet)</span>
                     <span>990,00 €</span>
                   </div>
                 )}
