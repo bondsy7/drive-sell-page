@@ -34,3 +34,10 @@
 - [ ] Stripe: Basis-Produkt-Mapping ergänzen, create-checkout Preis-Allowlist
 - [ ] docs/LEGAL_GO_LIVE_CHECKLIST.md pflegen
 - [ ] Diese Runde ohne Stripe-/Auth-/DB-Änderungen: nur Rechtsseiten, Footer, Consent, Checkliste
+
+## Preismodell autohaus.ai (22.09.2026)
+- [x] Pakete Basic/Advanced/Premium/Ultra und Fotoservice 1/25/50/100/200 in Stripe und Datenbank
+- [x] Einmalige Implementierung 990 € netto bei Erstbuchung
+- [x] Preisseite mit Umschalter Fotoservice / All-Incl-Marketing, Zusatzapplikationen, Zusatzpakete
+- [x] Credit-Verbrauch vereinheitlicht (Banner/Post 5, Video 17, Landingpage 19)
+- [ ] Offen: Entscheidung zu Mindestlaufzeit (monatlich vs. 12 Monate) und Selbstbuchung von Whitelabel/Flipping
