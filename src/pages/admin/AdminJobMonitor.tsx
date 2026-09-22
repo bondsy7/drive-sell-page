@@ -223,7 +223,7 @@ export default function AdminJobMonitor() {
                           <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => cancelJob(j.id, 'img')}>Abbrechen</Button>
                         )}
                         {j.status === 'failed' && (
-                          <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => retryJob(j.id, 'img')}>Retry</Button>
+                          <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => retryJob(j.id, 'img')}>Erneut versuchen</Button>
                         )}
                       </div>
                     </TableCell>
@@ -262,7 +262,7 @@ export default function AdminJobMonitor() {
                           <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => cancelJob(j.id, 'spin')}>Abbrechen</Button>
                         )}
                         {j.status === 'failed' && (
-                          <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => retryJob(j.id, 'spin')}>Retry</Button>
+                          <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => retryJob(j.id, 'spin')}>Erneut versuchen</Button>
                         )}
                       </div>
                     </TableCell>

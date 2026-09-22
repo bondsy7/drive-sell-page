@@ -88,7 +88,7 @@ export const EmailFooter = () => (
   <Section style={{ padding: '0 42px 30px' }}>
     <Hr style={{ borderColor: '#dedbd7', margin: '0 0 22px' }} />
     <Text style={{ color: '#737373', fontSize: '11px', lineHeight: '1.6', margin: '0 0 10px' }}>
-      AUTO3 ist ein Produkt der Breadcrumb Marketing GmbH, Corniceliusstraße 8, 63450 Hanau.
+      AUTO3 ist ein Produkt der Breadcrumb Marketing GmbH, Corniceliusstraße 8, 63450 Hanau.<br />
       Geschäftsführung: Leonhard Paul · Amtsgericht Hanau, HRB 91223 · USt-IdNr. DE 237 914 287
     </Text>
     <Text style={{ color: '#737373', fontSize: '11px', lineHeight: '1.8', margin: '0' }}>

@@ -316,7 +316,7 @@ const Profile = () => {
     <div className="min-h-screen bg-background">
       <AppHeader leftActions={
         <Button onClick={handleSave} disabled={saving} size="sm" className="gap-1.5 text-xs sm:text-sm">
-          <Save className="w-4 h-4" /> <span className="hidden sm:inline">{saving ? 'Speichern...' : 'Speichern'}</span><span className="sm:hidden">{saving ? '...' : 'Save'}</span>
+          <Save className="w-4 h-4" /> <span className="hidden sm:inline">{saving ? 'Speichern...' : 'Speichern'}</span><span className="sm:hidden">{saving ? '...' : 'Speichern'}</span>
         </Button>
       } />
 

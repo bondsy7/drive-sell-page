@@ -51,7 +51,7 @@ const STEPS: { id: Step; title: string; subtitle: string }[] = [
   { id: 2, title: "Bild", subtitle: "Hintergrund" },
   { id: 3, title: "Text", subtitle: "Inhalte" },
   { id: 4, title: "Layout", subtitle: "Anordnung" },
-  { id: 5, title: "Export", subtitle: "Download" },
+  { id: 5, title: "Ausgabe", subtitle: "Herunterladen" },
 ];
 
 const SMALL_FORMATS = new Set(["g-medrect", "g-leader", "g-skyscraper"]);
