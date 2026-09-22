@@ -19,6 +19,7 @@ export const LEGAL = {
     name: 'Der Hessische Beauftragte für Datenschutz und Informationsfreiheit',
     address: 'Wilhelmstraße 7, 65185 Wiesbaden',
   },
+  /** Fallback für ältere Verwendungen; dokumentbezogene Stände stehen in LEGAL_DOCUMENT_DATES. */
   versionDate: '16.09.2026',
 } as const;
 
@@ -26,6 +27,22 @@ export const LEGAL_VERSIONS = {
   agb: '2026-09-16',
   privacy: '2026-09-16',
   consent: '2026-09-16',
+  avv: '2026-09-16',
+  toms: '2026-09-16',
+  subprocessors: '2026-09-16',
+  aiTransparency: '2026-09-16',
+} as const;
+
+/** Öffentlich sichtbarer Stand je Dokument; getrennt von Annahme- und Consent-Versionen. */
+export const LEGAL_DOCUMENT_DATES = {
+  agb: '16.09.2026',
+  privacy: '16.09.2026',
+  consent: '16.09.2026',
+  avv: '16.09.2026',
+  toms: '16.09.2026',
+  subprocessors: '16.09.2026',
+  aiTransparency: '16.09.2026',
+  overview: '22.09.2026',
 } as const;
 
 /** Dokument-Keys für die serverseitig dokumentierten Bestätigungen. */

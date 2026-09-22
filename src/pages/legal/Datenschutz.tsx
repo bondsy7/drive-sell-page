@@ -1,5 +1,5 @@
 import LegalLayout, { LegalList, LegalSection } from '@/components/legal/LegalLayout';
-import { LEGAL, LEGAL_VERSIONS } from '@/lib/legal-config';
+import { LEGAL, LEGAL_DOCUMENT_DATES, LEGAL_VERSIONS } from '@/lib/legal-config';
 import { openConsentSettings } from '@/lib/consent';
 
 export default function Datenschutz() {
@@ -9,6 +9,7 @@ export default function Datenschutz() {
       metaTitle="Datenschutzerklärung – autohaus.ai"
       metaDescription="Wie autohaus.ai (Breadcrumb Marketing GmbH) personenbezogene Daten verarbeitet: Konten, Zahlungen, KI-Verarbeitung, Einwilligungen, Rechte der Betroffenen."
       canonicalPath="/datenschutz"
+      versionDate={LEGAL_DOCUMENT_DATES.privacy}
       toc
       intro={
         <p>
@@ -30,8 +31,7 @@ export default function Datenschutz() {
           </a>
         </p>
         <p>
-          Ein Datenschutzbeauftragter ist derzeit nicht benannt bzw. noch nicht veröffentlicht.
-          Anfragen zum Datenschutz richten Sie bitte an die oben genannte Adresse.
+          Datenschutzanfragen richten Sie bitte an die oben genannten Kontaktdaten.
         </p>
       </LegalSection>
 
@@ -397,7 +397,7 @@ export default function Datenschutz() {
         <p>
           Wir passen diese Erklärung an, wenn sich Funktionen, Dienstleister oder die Rechtslage
           ändern. Es gilt die jeweils hier veröffentlichte Fassung. Aktuelle Version:{' '}
-          {LEGAL_VERSIONS.privacy}, Stand {LEGAL.versionDate}.
+          {LEGAL_VERSIONS.privacy}, Stand {LEGAL_DOCUMENT_DATES.privacy}.
         </p>
         <p className="text-xs">
           Hinweis: Diese Erklärung ist eine sorgfältig erstellte, compliance-orientierte Fassung.

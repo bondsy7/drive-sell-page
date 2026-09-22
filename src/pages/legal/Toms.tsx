@@ -1,5 +1,5 @@
 import LegalLayout, { LegalList, LegalSection } from '@/components/legal/LegalLayout';
-import { LEGAL } from '@/lib/legal-config';
+import { LEGAL, LEGAL_DOCUMENT_DATES, LEGAL_VERSIONS } from '@/lib/legal-config';
 
 export default function Toms() {
   return (
@@ -8,6 +8,7 @@ export default function Toms() {
       metaTitle="TOMs – Sicherheitsmaßnahmen autohaus.ai"
       metaDescription="Anlage 2 zum Auftragsverarbeitungsvertrag: technische und organisatorische Maßnahmen nach Art. 32 DSGVO für die Plattform autohaus.ai."
       canonicalPath="/toms"
+      versionDate={LEGAL_DOCUMENT_DATES.toms}
       toc
       intro={
         <p>
@@ -152,7 +153,7 @@ export default function Toms() {
         <p>
           Die Maßnahmen werden anlassbezogen sowie risikoorientiert überprüft und an den Stand der
           Technik angepasst. Das Schutzniveau wird dabei nicht unterschritten. Stand:{' '}
-          {LEGAL.versionDate}.
+          {LEGAL_DOCUMENT_DATES.toms} · Version {LEGAL_VERSIONS.toms}.
         </p>
       </LegalSection>
     </LegalLayout>

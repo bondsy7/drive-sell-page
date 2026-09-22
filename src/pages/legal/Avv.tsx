@@ -1,5 +1,5 @@
 import LegalLayout, { LegalList, LegalSection } from '@/components/legal/LegalLayout';
-import { LEGAL } from '@/lib/legal-config';
+import { LEGAL, LEGAL_DOCUMENT_DATES, LEGAL_VERSIONS } from '@/lib/legal-config';
 
 export default function Avv() {
   return (
@@ -8,6 +8,7 @@ export default function Avv() {
       metaTitle="AVV – Auftragsverarbeitung autohaus.ai | Breadcrumb Marketing GmbH"
       metaDescription="Rahmenvertrag zur Auftragsverarbeitung nach Art. 28 DSGVO zwischen autohaus.ai-Geschäftskunden als Verantwortlichem und der Breadcrumb Marketing GmbH als Auftragsverarbeiter."
       canonicalPath="/avv"
+      versionDate={LEGAL_DOCUMENT_DATES.avv}
       toc
       intro={
         <p>
@@ -192,11 +193,11 @@ export default function Avv() {
 
       <LegalSection title="16. Kontakt">
         <p>
-          Operative Anfragen zu diesem Vertrag und zum Datenschutz richten Sie an{' '}
+          Operative Anfragen zu diesem Vertrag und Datenschutzanfragen richten Sie an{' '}
           <a className="underline underline-offset-2" href={`mailto:${LEGAL.email}`}>
             {LEGAL.email}
           </a>
-          . Ein Datenschutzbeauftragter ist derzeit nicht benannt bzw. nicht veröffentlicht.
+          .
         </p>
       </LegalSection>
 
@@ -206,7 +207,7 @@ export default function Avv() {
           Regelungen dieses Vertrags für die Auftragsverarbeitung vor.
         </p>
         <p className="text-xs">
-          Compliance-orientierte Fassung, Stand {LEGAL.versionDate}; abschließende rechtliche Prüfung
+          Version {LEGAL_VERSIONS.avv}, Stand {LEGAL_DOCUMENT_DATES.avv}; abschließende rechtliche Prüfung
           und Verifikation der Anbieterverträge stehen aus.
         </p>
       </LegalSection>

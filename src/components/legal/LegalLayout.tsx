@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Library } from 'lucide-react';
 import SiteFooter from '@/components/legal/SiteFooter';
 import { usePageMeta } from '@/hooks/usePageMeta';
 import { LEGAL } from '@/lib/legal-config';
@@ -82,10 +82,10 @@ export default function LegalLayout({
           <div className="flex items-center justify-between border-b border-border pb-5">
             <Link to="/" aria-label="autohaus.ai Startseite"><BrandLogo className="h-7" /></Link>
             <Link
-              to="/"
+              to="/rechtliches"
               className="inline-flex items-center gap-2 rounded-md text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             >
-              <ArrowLeft className="h-4 w-4" /> Zurück
+              <Library className="h-4 w-4" /> Rechtliches
             </Link>
           </div>
 
@@ -122,6 +122,17 @@ export default function LegalLayout({
           <div ref={contentRef} className="space-y-8">
             {children}
           </div>
+
+          {toc && (
+            <nav aria-label="Zurück zur Rechtsübersicht" className="border-t border-border pt-6">
+              <Link
+                to="/rechtliches"
+                className="inline-flex items-center gap-2 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <ArrowLeft className="h-4 w-4" /> Zurück zu Rechtliches
+              </Link>
+            </nav>
+          )}
         </div>
       </main>
       <SiteFooter />
