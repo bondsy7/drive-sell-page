@@ -226,7 +226,7 @@ export default function Landing() {
                 <p className="mt-2 text-xs text-muted-foreground">Beispiel für eine Kundenstimme · wird nach Lieferung deiner Referenzen ersetzt</p>
               </div>
               <Button asChild variant="ghost" className="justify-start text-primary sm:justify-center">
-                <a href="#leistungen">Produkte ansehen <ArrowRight className="h-4 w-4" /></a>
+                <Link to="/referenzen">Referenzen ansehen <ArrowRight className="h-4 w-4" /></Link>
               </Button>
             </div>
           </div>

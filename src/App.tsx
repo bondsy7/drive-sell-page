@@ -148,6 +148,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Landing />} />
               <Route path="/produkte" element={<Produkte />} />
+              <Route path="/referenzen" element={<Referenzen />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/qr-login" element={<QrLogin />} />
               {/* Öffentlicher B2B-Paid-Funnel */}
