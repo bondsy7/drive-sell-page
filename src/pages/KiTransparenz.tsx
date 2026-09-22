@@ -1,45 +1,29 @@
-import React from "react";
-import { Link } from "react-router-dom";
-import { Sparkles, ShieldCheck, FileText, ArrowLeft } from "lucide-react";
+import { Sparkles, ShieldCheck, FileText } from "lucide-react";
+import LegalLayout, { LegalSection } from "@/components/legal/LegalLayout";
 import { AI_DISCLOSURE_LABEL_DE, AI_DISCLOSURE_LONG_DE } from "@/lib/ai-disclosure";
-
-const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
-  <section className="space-y-3">
-    <h2 className="font-display text-xl font-semibold text-foreground">{title}</h2>
-    <div className="space-y-3 text-sm leading-relaxed text-muted-foreground">{children}</div>
-  </section>
-);
+import { LEGAL_DOCUMENT_DATES, LEGAL_VERSIONS } from "@/lib/legal-config";
 
 const KiTransparenz: React.FC = () => {
-  React.useEffect(() => {
-    document.title = "KI-Transparenz – Kennzeichnung KI-generierter Inhalte | autohaus.ai";
-    const desc =
-      "So kennzeichnet autohaus.ai KI-generierte Fahrzeugbilder, Videos und Audios gemäß EU AI Act Art. 50 – Verfahren, Modelle und Hinweise.";
-    let meta = document.querySelector('meta[name="description"]');
-    if (!meta) {
-      meta = document.createElement("meta");
-      meta.setAttribute("name", "description");
-      document.head.appendChild(meta);
-    }
-    meta.setAttribute("content", desc);
-  }, []);
-
   return (
-    <main className="min-h-screen bg-background px-5 py-12">
-      <div className="mx-auto w-full max-w-3xl space-y-10">
-        <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-4 w-4" /> Zurück
-        </Link>
-
-        <header className="space-y-4">
+    <LegalLayout
+      title="KI-Transparenz"
+      metaTitle="KI-Transparenz – Kennzeichnung KI-generierter Inhalte | autohaus.ai"
+      metaDescription="So kennzeichnet autohaus.ai KI-generierte Fahrzeugbilder, Videos und Audios gemäß EU AI Act Art. 50 – Verfahren, Modelle und Hinweise."
+      canonicalPath="/ki-transparenz"
+      versionDate={LEGAL_DOCUMENT_DATES.aiTransparency}
+      toc
+      intro={
+        <div className="space-y-3">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">
-            <Sparkles className="h-3.5 w-3.5" /> {AI_DISCLOSURE_LABEL_DE}
+            <Sparkles className="h-3.5 w-3.5" aria-hidden="true" /> {AI_DISCLOSURE_LABEL_DE}
           </span>
-          <h1 className="font-display text-3xl font-bold text-foreground">KI-Transparenz</h1>
-          <p className="text-sm leading-relaxed text-muted-foreground">{AI_DISCLOSURE_LONG_DE}</p>
-        </header>
+          <p>{AI_DISCLOSURE_LONG_DE}</p>
+          <p className="text-xs">Version: {LEGAL_VERSIONS.aiTransparency}</p>
+        </div>
+      }
+    >
 
-        <Section title="Warum diese Seite?">
+        <LegalSection title="Warum diese Seite?">
           <p>
             Artikel 50 der Verordnung (EU) 2024/1689 (EU AI Act) regelt Transparenzpflichten für
             KI-Systeme und gilt grundsätzlich seit dem 2. August 2026. Die Pflichten sind dabei
@@ -53,9 +37,9 @@ const KiTransparenz: React.FC = () => {
             Übergangsregelung für Art. 50 Abs. 2 eine Frist bis zum 2. Dezember 2026 vor. Unabhängig
             davon setzt autohaus.ai zusätzliche sichtbare Transparenzlabels ein.
           </p>
-        </Section>
+        </LegalSection>
 
-        <Section title="Was wir kennzeichnen">
+        <LegalSection title="Was wir kennzeichnen">
           <ul className="list-disc space-y-1.5 pl-5">
             <li>Aufbereitete Fahrzeugfotos (Remastering, Szenenwechsel, Freisteller)</li>
             <li>Generierte Banner, Anzeigenmotive und Landingpage-Bilder</li>
@@ -63,35 +47,35 @@ const KiTransparenz: React.FC = () => {
             <li>Schadensvisualisierungen („Nachher“-Bilder) – zusätzlich als unverbindlich gekennzeichnet</li>
             <li>KI-generierte Videos und Musik</li>
           </ul>
-        </Section>
+        </LegalSection>
 
-        <Section title="Wie wir kennzeichnen">
+        <LegalSection title="Wie wir kennzeichnen">
           <ul className="list-disc space-y-1.5 pl-5">
             <li>Sichtbares Label „{AI_DISCLOSURE_LABEL_DE}“ direkt auf Bild, Banner und Viewer</li>
             <li>Hinweiszeile im Footer jeder Angebots- und Landingpage sowie im PDF-Export</li>
             <li>Automatischer Hinweis inkl. #KIgeneriert in Captions beim Veröffentlichen in sozialen Netzwerken</li>
             <li>Erweiterte Alt-Texte für Screenreader</li>
           </ul>
-        </Section>
+        </LegalSection>
 
-        <Section title="Eingesetzte KI-Systeme">
+        <LegalSection title="Eingesetzte KI-Systeme">
           <p>
             Für Bild-, Video- und Audioerzeugung setzen wir Modelle von Google (Gemini, Veo) und OpenAI ein.
             Von den Anbietern gesetzte unsichtbare Wasserzeichen und Metadaten (z. B. SynthID, Content Credentials)
             werden von uns nicht entfernt.
           </p>
-        </Section>
+        </LegalSection>
 
-        <Section title="Prüfpflicht der Nutzerinnen und Nutzer">
+        <LegalSection title="Prüfpflicht der Nutzerinnen und Nutzer">
           <p>
             KI-Ergebnisse sind probabilistisch und können fehlerhaft sein. Inhalte – insbesondere Fahrzeug-,
             Preis-, Finanzierungs- sowie WLTP-/Pkw-EnVKV-relevante Angaben – müssen vor der Veröffentlichung
             auf Richtigkeit und Vollständigkeit geprüft werden. Die Verantwortung für veröffentlichte Inhalte
             liegt beim jeweiligen Unternehmen.
           </p>
-        </Section>
+        </LegalSection>
 
-        <Section title="Maschinenlesbare Kennzeichnung">
+        <LegalSection title="Maschinenlesbare Kennzeichnung">
           <p>
             Soweit gesetzlich erforderlich und technisch möglich, kennzeichnen wir KI-generierte und erheblich
             KI-bearbeitete Inhalte zusätzlich maschinenlesbar – etwa über von den Modellanbietern gesetzte
@@ -99,9 +83,9 @@ const KiTransparenz: React.FC = () => {
             maschinenlesbar markiert bleibt: Metadaten können bei Weiterverarbeitung, Konvertierung oder beim
             Upload auf Drittplattformen verloren gehen. Die sichtbare Kennzeichnung bleibt daher maßgeblich.
           </p>
-        </Section>
+        </LegalSection>
 
-        <Section title="Noch offen">
+        <LegalSection title="Noch offen">
           <p className="flex gap-2">
             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
             <span>
@@ -109,16 +93,15 @@ const KiTransparenz: React.FC = () => {
               Vorbereitung und noch nicht aktiv.
             </span>
           </p>
-        </Section>
+        </LegalSection>
 
-        <Section title="Kontakt">
+        <LegalSection title="Kontakt">
           <p className="flex gap-2">
             <FileText className="mt-0.5 h-4 w-4 shrink-0" />
             <span>Fragen zur KI-Kennzeichnung beantworten wir schriftlich – bitte per E-Mail an uns wenden.</span>
           </p>
-        </Section>
-      </div>
-    </main>
+        </LegalSection>
+    </LegalLayout>
   );
 };
 
