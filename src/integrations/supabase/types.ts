@@ -3544,6 +3544,7 @@ export type Database = {
         | "chat_message"
         | "banner_reframe"
         | "credit_refund"
+        | "video_generate"
       subscription_status: "active" | "cancelled" | "past_due" | "trialing"
     }
     CompositeTypes: {
@@ -3693,6 +3694,7 @@ export const Constants = {
         "chat_message",
         "banner_reframe",
         "credit_refund",
+        "video_generate",
       ],
       subscription_status: ["active", "cancelled", "past_due", "trialing"],
     },
