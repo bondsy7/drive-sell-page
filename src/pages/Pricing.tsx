@@ -27,7 +27,20 @@ import {
 
 import { toast } from 'sonner';
 
+// Funktionsvergleich der All-Incl-Pakete (rein visuelle Übersicht, keine Abrechnungslogik)
+const COMPARISON_ROWS: Array<{ label: string; plans: string[] }> = [
+  { label: 'Fahrzeugbilder (KI-optimiert)', plans: ['basic', 'advanced', 'premium', 'ultra'] },
+  { label: 'Social-Media-Vorlagen', plans: ['basic', 'advanced', 'premium', 'ultra'] },
+  { label: 'Banner', plans: ['basic', 'advanced', 'premium', 'ultra'] },
+  { label: 'Video-Erstellung', plans: ['advanced', 'premium', 'ultra'] },
+  { label: 'Landingpages', plans: ['premium', 'ultra'] },
+  { label: 'KI-Verkaufsassistent', plans: ['advanced', 'premium', 'ultra'] },
+  { label: 'Multi-Standorte', plans: ['ultra'] },
+  { label: 'API-Zugang', plans: ['ultra'] },
+];
+
 const Pricing = () => {
+
   const [tab, setTab] = useState<'foto' | 'allincl'>('allincl');
   // Es gibt ausschließlich Monatsprodukte – kein Jahrespreis vortäuschen.
   const yearly = false;
