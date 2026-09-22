@@ -65,24 +65,23 @@ const Checkout = () => {
   useEffect(() => {
     if (!user) return;
     setEmail((e) => e || user.email || '');
-    supabase
-      .from('profiles')
-      .select('company_name, contact_name, phone, email')
-      .eq('user_id', user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (!data) return;
+    void (async () => {
+      const { data } = await (supabase.from('profiles') as any)
+        .select('company_name, contact_name, phone, email')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (data) {
         setCompany((v) => v || data.company_name || '');
         setContact((v) => v || data.contact_name || '');
         setPhone((v) => v || data.phone || '');
         setEmail((v) => v || data.email || user.email || '');
-      });
-    supabase
-      .from('subscriptions')
-      .select('id')
-      .eq('user_id', user.id)
-      .limit(1)
-      .then(({ data, error }) => setFirstBooking(error ? null : (data?.length ?? 0) === 0));
+      }
+      const { data: subs, error } = await (supabase.from('user_subscriptions') as any)
+        .select('id')
+        .eq('user_id', user.id)
+        .limit(1);
+      setFirstBooking(error ? null : (subs?.length ?? 0) === 0);
+    })();
   }, [user]);
 
   const dataComplete = company.trim().length > 1 && contact.trim().length > 1 && /\S+@\S+\.\S+/.test(email);
