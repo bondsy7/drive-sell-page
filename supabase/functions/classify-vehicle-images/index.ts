@@ -207,6 +207,8 @@ serve(async (req) => {
 
     return jsonResponse({ items });
   } catch (e) {
+    const ce = creditErrorResponse(e, corsHeaders);
+    if (ce) return ce;
     console.error("classify-vehicle-images error:", e);
     return errorResponse(e instanceof Error ? e.message : "Unknown error", 500);
   }

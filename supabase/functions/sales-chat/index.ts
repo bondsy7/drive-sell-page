@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecret } from "../_shared/get-secret.ts";
+import { chargeCredits, creditErrorResponse } from "../_shared/credit-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -36,6 +37,8 @@ serve(async (req) => {
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) throw new Error("Not authenticated");
+
+    await chargeCredits(req, "chat_message", { description: "Verkaufsassistent-Nachricht" });
 
     const { messages } = await req.json();
 

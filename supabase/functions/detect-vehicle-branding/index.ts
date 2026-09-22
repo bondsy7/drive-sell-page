@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecret } from "../_shared/get-secret.ts";
+import { chargeCredits, creditErrorResponse } from "../_shared/credit-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -133,6 +134,8 @@ serve(async (req) => {
     }
     const userId = claimsData.claims.sub;
 
+    await chargeCredits(req, "image_analysis", { description: "Beklebungs-Erkennung" });
+
     const { imageBase64, imageFileUri } = await req.json();
     if (!imageBase64 && !imageFileUri?.uri) {
       return new Response(JSON.stringify({ error: "imageBase64 or imageFileUri required" }), {
@@ -205,6 +208,8 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
+    const ce = creditErrorResponse(e, corsHeaders);
+    if (ce) return ce;
     console.error("[detect-vehicle-branding] fatal:", e);
     return new Response(JSON.stringify({ items: [], error: e instanceof Error ? e.message : "unknown" }), {
       status: 200,

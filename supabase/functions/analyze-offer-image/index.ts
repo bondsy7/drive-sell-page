@@ -389,6 +389,8 @@ Wenn ein Feld nicht erkennbar ist, setze es auf null. Extrahiere so viel wie mö
 
     return jsonResponse({ extracted: parsed });
   } catch (e) {
+    const ce = creditErrorResponse(e, corsHeaders);
+    if (ce) return ce;
     console.error("analyze-offer-image error:", e);
     return errorResponse(e instanceof Error ? e.message : "Unknown error", 500);
   }

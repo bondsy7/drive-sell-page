@@ -4,6 +4,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, handleCors, jsonResponse, errorResponse } from "../_shared/cors.ts";
 import { getSecret } from "../_shared/get-secret.ts";
+import { chargeCredits, creditErrorResponse } from "../_shared/credit-guard.ts";
 
 const ALLOWED_OVERLAY = ["none", "left", "right", "top", "bottom", "full-soft"];
 const ALLOWED_POS = ["top-left", "top-right", "top-center", "center", "bottom-left", "bottom-right", "bottom-center"];
@@ -26,6 +27,8 @@ Deno.serve(async (req) => {
     );
     const { data: claimsData, error: claimsErr } = await sb.auth.getClaims(token);
     if (claimsErr || !claimsData?.claims?.sub) return errorResponse("unauthorized", 401);
+
+    await chargeCredits(req, "text_generate", { description: "Banner-Layout-Vorschlag" });
 
     const body = await req.json().catch(() => ({}));
     const imageDataUrl: string | undefined = body?.imageDataUrl;
@@ -100,6 +103,8 @@ Wähle die Positionen so, dass Texte auf einer ruhigen Bildregion liegen und das
 
     return jsonResponse(safe);
   } catch (e) {
+    const ce = creditErrorResponse(e, corsHeaders);
+    if (ce) return ce;
     console.error("suggest-banner-layout error", e);
     return errorResponse(e instanceof Error ? e.message : "unknown error", 500);
   }

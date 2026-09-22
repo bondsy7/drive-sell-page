@@ -6,7 +6,8 @@
 // ISOLATION: dedicated to Canvas Banner Studio.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { handleCors, jsonResponse, errorResponse } from "../_shared/cors.ts";
+import { corsHeaders, handleCors, jsonResponse, errorResponse } from "../_shared/cors.ts";
+import { chargeCredits, creditErrorResponse } from "../_shared/credit-guard.ts";
 import { getSecret } from "../_shared/get-secret.ts";
 
 const PROMPT = `Du bist Werbetexter:in für Auto-Banner. Du erhältst das Foto/Scan eines Fahrzeug-Datenblatts oder Angebots.
@@ -60,6 +61,8 @@ Deno.serve(async (req) => {
     );
     const { data: claims, error: authErr } = await sb.auth.getClaims(token);
     if (authErr || !claims?.claims?.sub) return errorResponse("unauthorized", 401);
+
+    await chargeCredits(req, "text_generate", { description: "Banner-Datenextraktion" });
 
     const body = await req.json().catch(() => ({}));
     const fileDataUrl: string | undefined = body?.fileDataUrl;
@@ -195,6 +198,8 @@ Deno.serve(async (req) => {
 
     return jsonResponse({ fields: out });
   } catch (e) {
+    const ce = creditErrorResponse(e, corsHeaders);
+    if (ce) return ce;
     console.error("extract-banner-data error", e);
     return errorResponse(e instanceof Error ? e.message : "unknown error", 500);
   }
