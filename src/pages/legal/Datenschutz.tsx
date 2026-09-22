@@ -6,14 +6,14 @@ export default function Datenschutz() {
   return (
     <LegalLayout
       title="Datenschutzerklärung"
-      metaTitle="Datenschutzerklärung – AUTO3"
-      metaDescription="Wie AUTO3 (Breadcrumb Marketing GmbH) personenbezogene Daten verarbeitet: Konten, Zahlungen, KI-Verarbeitung, Einwilligungen, Rechte der Betroffenen."
+      metaTitle="Datenschutzerklärung – autohaus.ai"
+      metaDescription="Wie autohaus.ai (Breadcrumb Marketing GmbH) personenbezogene Daten verarbeitet: Konten, Zahlungen, KI-Verarbeitung, Einwilligungen, Rechte der Betroffenen."
       canonicalPath="/datenschutz"
       toc
       intro={
         <p>
           Diese Erklärung informiert über die Verarbeitung personenbezogener Daten bei der Nutzung
-          von AUTO3 sowie der zugehörigen Webseiten und Funnel-Seiten. Version:{' '}
+          von autohaus.ai sowie der zugehörigen Webseiten und Funnel-Seiten. Version:{' '}
           {LEGAL_VERSIONS.privacy}.
         </p>
       }
@@ -48,7 +48,7 @@ export default function Datenschutz() {
 
       <LegalSection title="3. Zielgruppe und Mindestalter">
         <p>
-          AUTO3 ist ein reines B2B-Angebot für Unternehmer i. S. d. § 14 BGB, juristische Personen
+          autohaus.ai ist ein reines B2B-Angebot für Unternehmer i. S. d. § 14 BGB, juristische Personen
           des öffentlichen Rechts und öffentlich-rechtliche Sondervermögen. Nutzerinnen und Nutzer
           müssen mindestens 18 Jahre alt sein. Verbraucherverträge werden nicht geschlossen.
         </p>
@@ -165,7 +165,7 @@ export default function Datenschutz() {
 
       <LegalSection title="12. CRM, Leads, Probefahrten und Vertriebsdaten">
         <p>
-          AUTO3 enthält Funktionen für Lead-Erfassung, CRM-Pipeline, Probefahrt-Buchungen,
+          autohaus.ai enthält Funktionen für Lead-Erfassung, CRM-Pipeline, Probefahrt-Buchungen,
           Angebote und Inzahlungnahme-Bewertungen. Dabei verarbeiten wir die von Ihnen oder Ihren
           Interessenten eingegebenen Kontakt-, Fahrzeug- und Vorgangsdaten. Diese Verarbeitung
           erfolgt in Ihrem Auftrag; Sie bleiben für die Rechtsgrundlage der Erhebung bei Ihren
@@ -272,7 +272,7 @@ export default function Datenschutz() {
         <p>
           Wir versenden vertragsbezogene und betriebsnotwendige E-Mails (z. B. Bestätigungen,
           Statusmeldungen, Rechnungs- und Sicherheitsinformationen). Eine automatisierte
-          Newsletter- oder Marketing-Automation betreiben wir in AUTO3 derzeit nicht.
+          Newsletter- oder Marketing-Automation betreiben wir in autohaus.ai derzeit nicht.
         </p>
       </LegalSection>
 

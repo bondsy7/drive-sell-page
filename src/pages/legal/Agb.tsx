@@ -4,23 +4,23 @@ import { LEGAL, LEGAL_VERSIONS } from '@/lib/legal-config';
 export default function Agb() {
   return (
     <LegalLayout
-      title="Allgemeine Geschäftsbedingungen (AUTO3)"
-      metaTitle="AGB – AUTO3 | Breadcrumb Marketing GmbH"
-      metaDescription="Allgemeine Geschäftsbedingungen für die Nutzung der SaaS-Plattform AUTO3 durch Unternehmer – Leistungen, Credits, Laufzeit, Haftung."
+      title="Allgemeine Geschäftsbedingungen (autohaus.ai)"
+      metaTitle="AGB – autohaus.ai | Breadcrumb Marketing GmbH"
+      metaDescription="Allgemeine Geschäftsbedingungen für die Nutzung der SaaS-Plattform autohaus.ai durch Unternehmer – Leistungen, Credits, Laufzeit, Haftung."
       canonicalPath="/agb"
       toc
       intro={
         <p>
-          Diese Bedingungen gelten für die Nutzung der SaaS-Plattform AUTO3 der {LEGAL.company}.
-          Sie sind eigenständig und ersetzen für AUTO3 etwaige Agenturbedingungen der{' '}
+          Diese Bedingungen gelten für die Nutzung der SaaS-Plattform autohaus.ai der {LEGAL.company}.
+          Sie sind eigenständig und ersetzen für autohaus.ai etwaige Agenturbedingungen der{' '}
           {LEGAL.company}. Version: {LEGAL_VERSIONS.agb}.
         </p>
       }
     >
       <LegalSection title="§ 1 Anbieter, Geltungsbereich, Zielgruppe">
         <p>
-          Anbieter ist die {LEGAL.company}, {LEGAL.street}, {LEGAL.city} („Anbieter“). AUTO3 ist ein
-          Produkt des Anbieters. Diese AGB gelten für alle Verträge über die Nutzung von AUTO3.
+          Anbieter ist die {LEGAL.company}, {LEGAL.street}, {LEGAL.city} („Anbieter“). autohaus.ai ist ein
+          Produkt des Anbieters. Diese AGB gelten für alle Verträge über die Nutzung von autohaus.ai.
         </p>
         <p>
           Das Angebot richtet sich ausschließlich an Unternehmer i. S. d. § 14 BGB, juristische
@@ -37,7 +37,7 @@ export default function Agb() {
 
       <LegalSection title="§ 2 Leistungsgegenstand">
         <p>
-          AUTO3 ist eine webbasierte Software zur Erstellung und Verwaltung von Fahrzeug-Marketing:
+          autohaus.ai ist eine webbasierte Software zur Erstellung und Verwaltung von Fahrzeug-Marketing:
           unter anderem Bildaufbereitung und -erzeugung, 360°-Ansichten, Banner, Videos, Musik,
           Angebots- und Landingpages, Dokumentenanalyse, Fahrzeugdaten, Vertriebs- und
           CRM-Funktionen sowie Veröffentlichungs- und Exportwege.
@@ -155,7 +155,7 @@ export default function Agb() {
 
       <LegalSection title="§ 12 Kennzeichnung von KI-Inhalten">
         <p>
-          AUTO3 stellt für KI-erzeugte und KI-veränderte Inhalte sichtbare Kennzeichnungen sowie,
+          autohaus.ai stellt für KI-erzeugte und KI-veränderte Inhalte sichtbare Kennzeichnungen sowie,
           soweit technisch verfügbar und gesetzlich erforderlich, maschinenlesbare Kennzeichnungen
           bereit.
         </p>
@@ -185,7 +185,7 @@ export default function Agb() {
           Vorgaben entsprechen, insbesondere zu Pflichtangaben nach Pkw-EnVKV/WLTP,
           Verbrauchs-, Emissions- und Effizienzangaben, Preisangaben, Finanzierungs- und
           Leasingangaben nach PAngV sowie Kennzeichnungs- und Werbevorgaben. Angaben, Berechnungen
-          und Vorlagen in AUTO3 sind Hilfsmittel und vor Veröffentlichung zu prüfen.
+          und Vorlagen in autohaus.ai sind Hilfsmittel und vor Veröffentlichung zu prüfen.
         </p>
       </LegalSection>
 
@@ -239,7 +239,7 @@ export default function Agb() {
         </p>
       </LegalSection>
 
-      <LegalSection title="§ 20 Rechte des Anbieters an AUTO3">
+      <LegalSection title="§ 20 Rechte des Anbieters an autohaus.ai">
         <p>
           Sämtliche Rechte an der Software, an Oberflächen, Vorlagen, Prompt-Systemen, Datenbanken
           und Marken verbleiben beim Anbieter bzw. seinen Lizenzgebern. Der Kunde erhält ein

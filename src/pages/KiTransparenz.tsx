@@ -12,9 +12,9 @@ const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title
 
 const KiTransparenz: React.FC = () => {
   React.useEffect(() => {
-    document.title = "KI-Transparenz – Kennzeichnung KI-generierter Inhalte | AUTO3";
+    document.title = "KI-Transparenz – Kennzeichnung KI-generierter Inhalte | autohaus.ai";
     const desc =
-      "So kennzeichnet AUTO3 KI-generierte Fahrzeugbilder, Videos und Audios gemäß EU AI Act Art. 50 – Verfahren, Modelle und Hinweise.";
+      "So kennzeichnet autohaus.ai KI-generierte Fahrzeugbilder, Videos und Audios gemäß EU AI Act Art. 50 – Verfahren, Modelle und Hinweise.";
     let meta = document.querySelector('meta[name="description"]');
     if (!meta) {
       meta = document.createElement("meta");
@@ -51,7 +51,7 @@ const KiTransparenz: React.FC = () => {
           <p>
             Für Systeme, die vor dem 2. August 2026 in Verkehr gebracht wurden, sieht die aktuelle
             Übergangsregelung für Art. 50 Abs. 2 eine Frist bis zum 2. Dezember 2026 vor. Unabhängig
-            davon setzt AUTO3 zusätzliche sichtbare Transparenzlabels ein.
+            davon setzt autohaus.ai zusätzliche sichtbare Transparenzlabels ein.
           </p>
         </Section>
 
