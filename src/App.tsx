@@ -17,6 +17,7 @@ import DownloadGuardBridge from "@/components/DownloadGuardBridge";
 
 const Landing = lazy(() => import("./pages/Landing"));
 const Produkte = lazy(() => import("./pages/Produkte"));
+const Referenzen = lazy(() => import("./pages/Referenzen"));
 const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -147,6 +148,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Landing />} />
               <Route path="/produkte" element={<Produkte />} />
+              <Route path="/referenzen" element={<Referenzen />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/qr-login" element={<QrLogin />} />
               {/* Öffentlicher B2B-Paid-Funnel */}
