@@ -18,7 +18,7 @@ import PublicHeader from '@/components/public/PublicHeader';
 import SiteFooter from '@/components/legal/SiteFooter';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
-import heroImage from '@/assets/autohaus-ai-hero.jpg';
+import heroImage from '@/assets/hero-autohaus-ai.png.asset.json';
 
 const BENEFITS = [
   'In wenigen Minuten startklar',
