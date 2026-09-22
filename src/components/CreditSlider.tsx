@@ -2,102 +2,79 @@ import { useMemo, useState } from "react";
 import { Slider } from "@/components/ui/slider";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  CATALOG, CATEGORY_META, effectiveCredits, type ActionTier, type Category,
-} from "@/lib/credit-economics";
-import { useCredits } from "@/hooks/useCredits";
+import { PRODUCT_CREDIT_ITEMS } from "@/lib/credit-prices";
 
-// Eine Repräsentations-Aktion pro Kategorie (für Mix-Auflösung):
-// nimmt die "mittlere" / verbreitetste Variante.
-const REPR_PER_CATEGORY: Partial<Record<Category, string>> = {
-  image:    "image-qualitaet",
-  banner:   "banner-studio-qualitaet",
-  video:    "video-standard",
-  landing:  "landing-standard",
-  damage:   "damage-analysis",
-  analysis: "pdf-analysis",
+const ITEMS = PRODUCT_CREDIT_ITEMS.filter((i) => i.inCalculator);
+
+const DEFAULT_MIX: Record<string, number> = {
+  vehicle: 50,
+  social: 15,
+  banner: 10,
+  landing: 15,
+  video: 10,
+  "single-image": 0,
 };
 
-const MIX_CATEGORIES: Category[] = ["image", "banner", "video", "landing", "damage", "analysis"];
-
 export default function CreditSlider({
-  defaultCredits = 200,
-  min = 10,
-  max = 1000,
+  defaultCredits = 1000,
+  min = 100,
+  max = 4000,
 }: { defaultCredits?: number; min?: number; max?: number }) {
   const [credits, setCredits] = useState(defaultCredits);
-  const { costs } = useCredits();
 
-  // Prozent-Verteilung pro Kategorie
-  const [mix, setMix] = useState<Record<Category, number>>(() => {
+  const [mix, setMix] = useState<Record<string, number>>(() => {
     const init: Record<string, number> = {};
-    MIX_CATEGORIES.forEach((c) => (init[c] = 0));
-    init.image = 50;
-    init.banner = 20;
-    init.video = 15;
-    init.landing = 10;
-    init.damage = 5;
-    return init as Record<Category, number>;
+    ITEMS.forEach((i) => (init[i.key] = DEFAULT_MIX[i.key] ?? 0));
+    return init;
   });
 
-  const total = 100;
+  const rows = useMemo(
+    () =>
+      ITEMS.map((item) => {
+        const pct = mix[item.key] || 0;
+        const allocated = Math.floor((credits * pct) / 100);
+        return {
+          item,
+          pct,
+          allocated,
+          count: Math.floor(allocated / item.credits),
+        };
+      }),
+    [credits, mix],
+  );
 
-  const reprMap = useMemo(() => {
-    const m: Partial<Record<Category, ActionTier>> = {};
-    MIX_CATEGORIES.forEach((c) => {
-      const id = REPR_PER_CATEGORY[c];
-      m[c] = CATALOG.find((t) => t.id === id);
-    });
-    return m;
-  }, []);
+  const usedCredits = rows.reduce((s, r) => s + r.count * r.item.credits, 0);
 
-  // Aufteilung der Credits gemäß Mix → Anzahl Stück pro Kategorie
-  const rows = MIX_CATEGORIES.map((c) => {
-    const tier = reprMap[c];
-    if (!tier) return null;
-    const pct = (mix[c] || 0) / total;
-    const allocated = Math.floor(credits * pct);
-    const perItem = effectiveCredits(tier, costs);
-    const count = Math.floor(allocated / perItem);
-    return { cat: c, tier, pct: Math.round(pct * 100), allocated, perItem, count };
-  }).filter(Boolean) as Array<{ cat: Category; tier: ActionTier; pct: number; allocated: number; perItem: number; count: number }>;
-
-  // Auto-Balance: erhöht der Nutzer einen Wert, schrumpfen die anderen
-  // proportional, sodass die Summe immer = 100 % bleibt.
-  const setPct = (target: Category, newVal: number) => {
+  // Auto-Balance: Summe bleibt immer 100 %
+  const setPct = (target: string, newVal: number) => {
     setMix((m) => {
       const clamped = Math.max(0, Math.min(100, newVal));
       const remaining = 100 - clamped;
-      const others = MIX_CATEGORIES.filter((c) => c !== target);
-      const othersSum = others.reduce((s, c) => s + (m[c] || 0), 0);
+      const others = ITEMS.map((i) => i.key).filter((k) => k !== target);
+      const othersSum = others.reduce((s, k) => s + (m[k] || 0), 0);
       const next: Record<string, number> = { [target]: clamped };
       if (othersSum === 0) {
-        // Gleichmäßig auf alle anderen verteilen
         const share = remaining / others.length;
-        others.forEach((c) => (next[c] = share));
+        others.forEach((k) => (next[k] = share));
       } else {
-        others.forEach((c) => {
-          next[c] = ((m[c] || 0) / othersSum) * remaining;
+        others.forEach((k) => {
+          next[k] = ((m[k] || 0) / othersSum) * remaining;
         });
       }
-      // Auf ganze Zahlen runden, Rest dem größten "other" zuschlagen
       const rounded: Record<string, number> = {};
-      let sumRounded = 0;
-      MIX_CATEGORIES.forEach((c) => {
-        rounded[c] = Math.round(next[c] || 0);
-        sumRounded += rounded[c];
+      let sum = 0;
+      ITEMS.forEach((i) => {
+        rounded[i.key] = Math.round(next[i.key] || 0);
+        sum += rounded[i.key];
       });
-      const diff = 100 - sumRounded;
+      const diff = 100 - sum;
       if (diff !== 0) {
-        const biggestOther = others.reduce((a, b) =>
-          (rounded[a] >= rounded[b] ? a : b),
-        );
-        rounded[biggestOther] = Math.max(0, rounded[biggestOther] + diff);
+        const biggest = others.reduce((a, b) => (rounded[a] >= rounded[b] ? a : b));
+        rounded[biggest] = Math.max(0, rounded[biggest] + diff);
       }
-      return rounded as Record<Category, number>;
+      return rounded;
     });
   };
-
 
   return (
     <Card className="p-6 md:p-8 bg-card border-border/50 rounded-2xl">
@@ -106,7 +83,8 @@ export default function CreditSlider({
           Was kann ich mit meinen Credits machen?
         </h3>
         <p className="text-sm text-muted-foreground">
-          Stell oben dein Budget ein, dann verteil unten die Prozente auf die Bereiche – du siehst live, wie viele Inhalte rauskommen.
+          Budget einstellen, Prozente verteilen – du siehst sofort, wie viele Fahrzeuge, Posts,
+          Banner, Landingpages und Videos damit möglich sind.
         </p>
       </div>
 
@@ -120,7 +98,7 @@ export default function CreditSlider({
           value={[credits]}
           min={min}
           max={max}
-          step={10}
+          step={50}
           onValueChange={(v) => setCredits(v[0])}
           className="my-4"
         />
@@ -129,7 +107,7 @@ export default function CreditSlider({
         </div>
       </div>
 
-      {/* Mix-Allokator */}
+      {/* Verteilung */}
       <div className="mt-8 space-y-4">
         <div className="flex items-center justify-between">
           <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
@@ -140,52 +118,59 @@ export default function CreditSlider({
           </Badge>
         </div>
 
-        {rows.map((r) => {
-          const meta = CATEGORY_META[r.cat];
-          return (
-            <div
-              key={r.cat}
-              className={`p-4 rounded-xl border border-border/40 bg-gradient-to-br ${meta.color}`}
-            >
-              <div className="flex items-center gap-3 mb-3">
-                <span className="text-2xl">{meta.icon}</span>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold">{meta.label}</div>
-                  <div className="text-[11px] text-muted-foreground">
-                    {r.tier.label} · {r.perItem} Cr/Stück
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-3xl font-bold tabular-nums leading-none">{r.count}</div>
-                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground mt-1">
-                    Stück
-                  </div>
+        {rows.map((r) => (
+          <div
+            key={r.item.key}
+            className={`p-4 rounded-xl border border-border/40 bg-gradient-to-br ${r.item.color}`}
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <span className="text-2xl">{r.item.icon}</span>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-semibold">{r.item.label}</div>
+                <div className="text-[11px] text-muted-foreground">
+                  {r.item.credits} Credits · {r.item.hint}
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <Slider
-                  value={[mix[r.cat] || 0]}
-                  min={0}
-                  max={100}
-                  step={5}
-                  onValueChange={(v) => setPct(r.cat, v[0])}
-                  className="flex-1"
-                />
-                <span className="text-xs font-mono w-14 text-right tabular-nums">
-                  {r.pct}%
-                </span>
-              </div>
-              <div className="text-[10px] text-muted-foreground mt-1">
-                ≈ {r.allocated} Credits zugeteilt
+              <div className="text-right">
+                <div className="text-3xl font-bold tabular-nums leading-none">{r.count}</div>
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground mt-1">
+                  {r.item.unit}
+                </div>
               </div>
             </div>
-          );
-        })}
+            <div className="flex items-center gap-3">
+              <Slider
+                value={[r.pct]}
+                min={0}
+                max={100}
+                step={5}
+                onValueChange={(v) => setPct(r.item.key, v[0])}
+                className="flex-1"
+              />
+              <span className="text-xs font-mono w-14 text-right tabular-nums">{r.pct}%</span>
+            </div>
+            <div className="text-[10px] text-muted-foreground mt-1">
+              ≈ {r.allocated} Credits zugeteilt
+            </div>
+          </div>
+        ))}
       </div>
 
-      <p className="text-[11px] text-muted-foreground/70 mt-6 leading-relaxed">
-        Hinweis: Eine Landingpage erzeugt automatisch 6–8 KI-Bilder, eine Schadensanalyse
-        beinhaltet annotierte Fotos. Tatsächlicher Verbrauch hängt vom gewählten Qualitäts-Modell ab.
+      <div className="mt-6 rounded-xl bg-muted/50 p-4 text-sm">
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">Verplant</span>
+          <span className="font-semibold tabular-nums">{usedCredits} Credits</span>
+        </div>
+        <div className="flex justify-between mt-1">
+          <span className="text-muted-foreground">Rest</span>
+          <span className="font-semibold tabular-nums">{credits - usedCredits} Credits</span>
+        </div>
+      </div>
+
+      <p className="text-[11px] text-muted-foreground/70 mt-4 leading-relaxed">
+        Preise je Leistung: Fahrzeugserie 16 · Social-Post 5 · Banner 5 · Landingpage 19 · Video 17 ·
+        Einzelbild 1 Credit. Nicht verbrauchte Paket-Credits verfallen zum Ende des Abrechnungsmonats,
+        separat nachgekaufte Credits bleiben erhalten.
       </p>
     </Card>
   );
