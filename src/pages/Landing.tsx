@@ -177,7 +177,7 @@ export default function Landing() {
               <div className="absolute bottom-3 left-3 right-3 grid grid-cols-4 gap-2 sm:bottom-5 sm:left-16 sm:right-6">
                 {[0, 1, 2, 3].map((item) => (
                   <div key={item} className="aspect-[4/3] overflow-hidden rounded-md border-2 border-card bg-card shadow-card">
-                    <img src={heroImage} alt="" className="h-full w-full object-cover" />
+                    <img src={stepPlaceholderImage} alt="" className="h-full w-full object-cover" />
                   </div>
                 ))}
               </div>
