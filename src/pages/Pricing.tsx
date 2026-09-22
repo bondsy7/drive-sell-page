@@ -142,44 +142,32 @@ const Pricing = () => {
     <div className="min-h-screen bg-background">
       <PublicHeader />
 
-      <main className="max-w-7xl mx-auto px-3 sm:px-6 py-12 sm:py-20">
-        <div className="text-center mb-8 sm:mb-10">
-          <p className="mb-3 text-sm font-semibold text-primary">Preise für professionelles Fahrzeugmarketing</p>
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+        <div className="text-center mb-10">
+          <p className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-primary">
+            Fair · Transparent · Planbar
+          </p>
           <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-4 tracking-tight">
-            Das passende Paket für dein Autohaus.
+            Die passende Lösung für jedes Autohaus.
           </h1>
-          <p className="text-muted-foreground max-w-2xl mx-auto mb-4 text-sm sm:text-base">
-            Wähle zwischen reinem <strong className="text-foreground">Fotoservice</strong> und der{' '}
-            <strong className="text-foreground">Komplettlösung inklusive Marketing</strong>. Alle Portal-Gebühren und
-            API-Kosten sind enthalten. Brauchst du mehr, lädst du jederzeit{' '}
-            <strong className="text-foreground">200 Credits für 100 € netto</strong> nach.
-          </p>
-          <p className="mx-auto max-w-2xl text-xs leading-relaxed text-muted-foreground">
-            Alle Preise verstehen sich netto zzgl. der gesetzlichen Umsatzsteuer. Das Angebot richtet sich ausschließlich
-            an Unternehmer im Sinne des § 14 BGB. Die Mindestvertragslaufzeit beträgt 12 Monate, die Abrechnung erfolgt
-            monatlich im Voraus. Der Vertrag verlängert sich um jeweils weitere 12 Monate, wenn er nicht mit einer Frist
-            von einem Monat zum Ende der Laufzeit gekündigt wird. Bei der Erstbuchung fallen einmalig 990 € netto
-            Implementierungskosten an. Die monatlichen Credits werden zu Beginn des Abrechnungszeitraums gutgeschrieben;
-            Top-up-Credits werden separat abgerechnet.
-          </p>
-          <p className="mx-auto max-w-2xl text-xs text-muted-foreground mt-2">
-            Es gelten unsere{' '}
-            <Link to="/agb" className="underline underline-offset-2">AGB</Link>,{' '}
-            die <Link to="/datenschutz" className="underline underline-offset-2">Datenschutzerklärung</Link>{' '}
-            und der <Link to="/avv" className="underline underline-offset-2">Auftragsverarbeitungsvertrag</Link>.
+          <p className="text-muted-foreground max-w-2xl mx-auto text-sm sm:text-base">
+            Wähle den Tarif, der zu deinem Bedarf passt. Alle Pakete enthalten alle Funktionen für professionelles
+            Fahrzeugmarketing – Portal-Gebühren und API-Kosten inklusive.
           </p>
         </div>
 
         {/* Umschalter */}
-        <div className="flex justify-center mb-8">
-          <div className="inline-flex rounded-full border border-border bg-card p-1">
-            {(['foto', 'allincl'] as const).map((key) => (
+        <div className="flex justify-center mb-10">
+          <div className="inline-flex rounded-full border border-border bg-muted/50 p-1">
+            {(['allincl', 'foto'] as const).map((key) => (
               <button
                 key={key}
                 type="button"
                 onClick={() => setTab(key)}
-                className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors ${
-                  tab === key ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground'
+                className={`px-5 py-2 text-sm font-semibold rounded-full transition-all ${
+                  tab === key
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 {key === 'foto' ? 'Fotoservice' : 'All-Incl-Marketing'}
@@ -189,96 +177,164 @@ const Pricing = () => {
         </div>
 
         {tab === 'allincl' && (
-          <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 items-start">
             {ALL_INCL_PACKAGES.map((pkg) => {
               const isActivePlan = activePlanSlug === pkg.slug;
               const isLoading = loadingSlug === pkg.slug;
+              const highlight = pkg.recommended || isActivePlan;
               return (
                 <div
                   key={pkg.slug}
-                  className={`relative rounded-lg border p-6 flex flex-col transition-all shadow-card ${
-                    isActivePlan
-                      ? 'border-primary shadow-glow bg-card ring-1 ring-primary/20'
-                      : pkg.recommended
-                        ? 'border-primary bg-card'
-                        : 'border-border bg-card'
+                  className={`relative rounded-2xl border bg-card p-6 flex flex-col transition-all ${
+                    highlight
+                      ? 'border-primary shadow-lg ring-1 ring-primary/15 lg:-mt-3 lg:pb-8'
+                      : 'border-border shadow-sm hover:shadow-md hover:-translate-y-0.5'
                   }`}
                 >
                   {isActivePlan ? (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-accent text-accent-foreground text-[10px] font-bold uppercase tracking-wide flex items-center gap-1">
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-wide flex items-center gap-1 whitespace-nowrap">
                       <Crown className="w-3 h-3" /> Dein Plan
                     </div>
                   ) : pkg.recommended ? (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-accent text-accent-foreground text-[10px] font-bold uppercase tracking-wide">
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-wide whitespace-nowrap">
                       Empfohlen
                     </div>
                   ) : null}
-                  <h3 className="font-display font-bold text-foreground text-lg">{pkg.name}</h3>
-                  {pkg.subtitle && <p className="text-xs text-muted-foreground mb-2">{pkg.subtitle}</p>}
-                  <div className="mt-2 mb-1">
-                    <span className="text-3xl font-bold text-foreground">{(pkg.priceCents / 100).toFixed(0)}€</span>
-                    <span className="text-xs text-muted-foreground"> /Monat netto</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mb-3">
-                    ca. {pkg.vehiclesPerMonth} Fahrzeuge mtl. · {(pkg.effectivePerVehicleCents / 100).toFixed(2)}€ je Fahrzeug
+
+                  <h3 className="font-display font-bold text-foreground text-xl">{pkg.name}</h3>
+                  <p className="text-xs text-muted-foreground mt-1 min-h-[2rem]">
+                    {pkg.subtitle ?? `Für ca. ${pkg.vehiclesPerMonth} Fahrzeuge im Monat`}
                   </p>
-                  <div className="flex items-center gap-1.5 mb-3 text-sm text-accent font-semibold">
-                    <Zap className="w-4 h-4" />
-                    {pkg.credits.toLocaleString('de-DE')} Credits/Monat
+
+                  <div className="mt-4 flex items-end gap-1">
+                    <span className="font-display text-4xl font-bold text-foreground leading-none">
+                      {(pkg.priceCents / 100).toLocaleString('de-DE')} €
+                    </span>
                   </div>
-                  <ul className="space-y-1.5 mb-4 flex-1">
+                  <p className="text-xs text-muted-foreground mt-1">
+                    pro Monat netto · {(pkg.effectivePerVehicleCents / 100).toFixed(2).replace('.', ',')} € je Fahrzeug
+                  </p>
+
+                  <div className="my-5 h-px bg-border" />
+
+                  <ul className="space-y-2.5 flex-1">
+                    <li className="flex items-start gap-2 text-sm font-semibold text-foreground">
+                      <Zap className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                      {pkg.credits.toLocaleString('de-DE')} Credits / Monat
+                    </li>
                     {pkg.included.map((f) => (
                       <li key={f} className="flex items-start gap-2 text-sm text-muted-foreground">
-                        <Check className="w-4 h-4 text-accent shrink-0 mt-0.5" />
+                        <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                         {f}
                       </li>
                     ))}
                   </ul>
-                  <p className="text-[11px] text-muted-foreground mb-3">
+
+                  <p className="text-[11px] leading-relaxed text-muted-foreground mt-5">
                     zzgl. einmalig 990 € netto Implementierung · 12 Monate Mindestlaufzeit
                   </p>
-                  {isActivePlan ? (
-                    <Button variant="outline" size="sm" disabled className="border-accent/30 text-accent">
-                      <Crown className="w-3.5 h-3.5 mr-1" /> Aktueller Plan
-                    </Button>
-                  ) : !user ? (
-                    <Link to={`/auth?plan=${pkg.slug}&cycle=monthly`}>
-                      <Button className="w-full gradient-accent text-accent-foreground" size="sm">
-                        Verbindlich buchen
+
+                  <div className="mt-4">
+                    {isActivePlan ? (
+                      <Button variant="outline" disabled className="w-full border-primary/30 text-primary">
+                        <Crown className="w-3.5 h-3.5 mr-1" /> Aktueller Plan
                       </Button>
+                    ) : !user ? (
+                      <Link to={`/auth?plan=${pkg.slug}&cycle=monthly`} className="block">
+                        <Button className="w-full" variant={highlight ? 'default' : 'outline'}>
+                          Jetzt starten
+                        </Button>
+                      </Link>
+                    ) : (
+                      <Button
+                        className="w-full"
+                        variant={highlight ? 'default' : 'outline'}
+                        disabled={isLoading}
+                        onClick={() => handleCheckout(pkg.slug)}
+                      >
+                        {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                        {isLoading ? 'Weiterleitung…' : 'Jetzt starten'}
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-center gap-3 text-xs">
+                    <Link to={`/fahrzeug-testen?paket=${pkg.slug}`} className="text-muted-foreground hover:text-foreground underline underline-offset-2">
+                      Anfragen
                     </Link>
-                  ) : (
-                    <Button
-                      className="gradient-accent text-accent-foreground"
-                      size="sm"
-                      disabled={isLoading}
-                      onClick={() => handleCheckout(pkg.slug)}
+                    <span className="text-border">·</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const input = allInclContractInput(pkg.slug);
+                        if (input) generateOfferContractPdf(input);
+                      }}
+                      className="inline-flex items-center gap-1 text-primary hover:underline underline-offset-2"
                     >
-                      {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
-                      {isLoading ? 'Weiterleitung…' : 'Verbindlich buchen'}
-                    </Button>
-                  )}
-                  <Link
-                    to={`/fahrzeug-testen?paket=${pkg.slug}`}
-                    className="mt-2 text-center text-xs text-muted-foreground underline underline-offset-2"
-                  >
-                    Unverbindlich anfragen
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const input = allInclContractInput(pkg.slug);
-                      if (input) generateOfferContractPdf(input);
-                    }}
-                    className="mt-2 inline-flex items-center justify-center gap-1 text-xs text-accent underline underline-offset-2"
-                  >
-                    <FileDown className="w-3.5 h-3.5" /> Vertrag als PDF
-                  </button>
+                      <FileDown className="w-3.5 h-3.5" /> Vertrag
+                    </button>
+                  </div>
                 </div>
               );
             })}
           </div>
         )}
+
+        {tab === 'allincl' && (
+          <div className="mt-10 overflow-hidden rounded-2xl border border-border bg-card">
+            <h2 className="font-display text-lg font-bold text-foreground text-center px-6 py-5">
+              Alle Funktionen im Vergleich
+            </h2>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[560px] text-sm">
+                <thead>
+                  <tr className="bg-muted/50 text-left">
+                    <th className="px-5 py-3 font-semibold text-foreground">Funktion</th>
+                    {ALL_INCL_PACKAGES.map((p) => (
+                      <th key={p.slug} className="px-4 py-3 text-center font-semibold text-foreground">
+                        {p.name}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {COMPARISON_ROWS.map((row) => (
+                    <tr key={row.label} className="border-t border-border">
+                      <td className="px-5 py-3 text-muted-foreground">{row.label}</td>
+                      {ALL_INCL_PACKAGES.map((p) => (
+                        <td key={p.slug} className="px-4 py-3 text-center">
+                          {row.plans.includes(p.slug) ? (
+                            <Check className="mx-auto h-4 w-4 text-primary" />
+                          ) : (
+                            <span className="text-muted-foreground/50">–</span>
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        <div className="mt-10 rounded-2xl border border-border bg-muted/30 p-6 text-center">
+          <p className="mx-auto max-w-3xl text-xs leading-relaxed text-muted-foreground">
+            Alle Preise verstehen sich netto zzgl. der gesetzlichen Umsatzsteuer. Das Angebot richtet sich ausschließlich
+            an Unternehmer im Sinne des § 14 BGB. Die Mindestvertragslaufzeit beträgt 12 Monate, die Abrechnung erfolgt
+            monatlich im Voraus. Der Vertrag verlängert sich um jeweils weitere 12 Monate, wenn er nicht mit einer Frist
+            von einem Monat zum Ende der Laufzeit gekündigt wird. Bei der Erstbuchung fallen einmalig 990 € netto
+            Implementierungskosten an. Die monatlichen Credits werden zu Beginn des Abrechnungszeitraums gutgeschrieben;
+            Top-up-Credits werden separat abgerechnet.
+          </p>
+          <p className="mx-auto max-w-2xl text-xs text-muted-foreground mt-3">
+            Es gelten unsere{' '}
+            <Link to="/agb" className="underline underline-offset-2">AGB</Link>,{' '}
+            die <Link to="/datenschutz" className="underline underline-offset-2">Datenschutzerklärung</Link>{' '}
+            und der <Link to="/avv" className="underline underline-offset-2">Auftragsverarbeitungsvertrag</Link>.
+          </p>
+        </div>
+
 
         {tab === 'foto' && (
           <div className="space-y-6">
