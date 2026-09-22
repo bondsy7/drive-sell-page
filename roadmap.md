@@ -41,3 +41,8 @@
 - [x] Preisseite mit Umschalter Fotoservice / All-Incl-Marketing, Zusatzapplikationen, Zusatzpakete
 - [x] Credit-Verbrauch vereinheitlicht (Banner/Post 5, Video 17, Landingpage 19)
 - [x] Mindestlaufzeit 12 Monate (AGB § 7 + Preisseite); Whitelabel/Flipping nur auf Anfrage
+
+## Markenwechsel und öffentliche Seiten (22.09.2026)
+- [ ] Marke von AUTO3 auf autohaus.ai umstellen, inklusive Logo, E-Mails und Angebots-PDF
+- [ ] Öffentliche Seiten nach gelieferter Designreferenz neu gestalten
+- [ ] Desktop- und Mobilansicht sowie PDF-Download prüfen
