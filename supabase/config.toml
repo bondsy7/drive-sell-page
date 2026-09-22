@@ -1,80 +1,57 @@
 project_id = "rauzclzphdnhzflovrya"
 
-[functions.analyze-pdf]
-verify_jwt = false
-
-[functions.generate-vehicle-image]
-verify_jwt = false
-
-[functions.submit-lead]
-verify_jwt = false
-
-[functions.create-checkout]
-verify_jwt = false
-
-[functions.customer-portal]
-verify_jwt = false
-
-[functions.stripe-webhook]
-verify_jwt = false
-
-[functions.buy-credits]
-verify_jwt = false
-
-[functions.api-vehicles]
-verify_jwt = false
-
-[functions.ftp-upload]
-verify_jwt = false
-
-[functions.admin-delete-user]
-verify_jwt = false
-
-[functions.admin-stripe]
-verify_jwt = false
-
-[functions.generate-video]
-verify_jwt = false
-
-[functions.generate-banner]
-verify_jwt = false
-
-[functions.generate-landing-page]
-verify_jwt = false
-
-[functions.generate-sales-response]
-verify_jwt = false
-
-[functions.ingest-sales-knowledge]
-verify_jwt = false
-
-[functions.sales-chat]
-verify_jwt = false
-
-[functions.auto-process-lead]
-verify_jwt = false
-
-[functions.detect-vehicle-brand]
-verify_jwt = false
-
-[functions.generate-360-spin]
-verify_jwt = false
-
-[functions.cleanup-orphaned-storage]
-verify_jwt = false
-
-[functions.remove-background]
-verify_jwt = false
-
-[functions.reference-v2-upload-file]
-verify_jwt = true
-
-[functions.reference-v2-analyze-image]
-verify_jwt = true
-
-[functions.submit-b2b-lead]
-verify_jwt = false
-
-[functions.request-b2b-demo]
-verify_jwt = false
-
+[functions]
+  [functions.admin-delete-user]
+    verify_jwt = false
+  [functions.admin-stripe]
+    verify_jwt = false
+  [functions.analyze-pdf]
+    verify_jwt = false
+  [functions.api-vehicles]
+    verify_jwt = false
+  [functions.auth-email-hook]
+    verify_jwt = false
+  [functions.auto-process-lead]
+    verify_jwt = false
+  [functions.buy-credits]
+    verify_jwt = false
+  [functions.cleanup-orphaned-storage]
+    verify_jwt = false
+  [functions.create-checkout]
+    verify_jwt = false
+  [functions.customer-portal]
+    verify_jwt = false
+  [functions.detect-vehicle-brand]
+    verify_jwt = false
+  [functions.ftp-upload]
+    verify_jwt = false
+  [functions.generate-360-spin]
+    verify_jwt = false
+  [functions.generate-banner]
+    verify_jwt = false
+  [functions.generate-landing-page]
+    verify_jwt = false
+  [functions.generate-sales-response]
+    verify_jwt = false
+  [functions.generate-vehicle-image]
+    verify_jwt = false
+  [functions.generate-video]
+    verify_jwt = false
+  [functions.ingest-sales-knowledge]
+    verify_jwt = false
+  [functions.reference-v2-analyze-image]
+    verify_jwt = true
+  [functions.reference-v2-upload-file]
+    verify_jwt = true
+  [functions.remove-background]
+    verify_jwt = false
+  [functions.request-b2b-demo]
+    verify_jwt = false
+  [functions.sales-chat]
+    verify_jwt = false
+  [functions.stripe-webhook]
+    verify_jwt = false
+  [functions.submit-b2b-lead]
+    verify_jwt = false
+  [functions.submit-lead]
+    verify_jwt = false
