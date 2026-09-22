@@ -10,25 +10,20 @@ import CancelSubscriptionDialog from '@/components/CancelSubscriptionDialog';
 import AppHeader from '@/components/AppHeader';
 import SiteFooter from '@/components/legal/SiteFooter';
 import CreditSlider from '@/components/CreditSlider';
-import { STRIPE_PRICES, CREDIT_PACKS } from '@/lib/stripe-plans';
+import {
+  STRIPE_PRICES,
+  CREDIT_PACKS,
+  ALL_INCL_PACKAGES,
+  FOTO_PACKAGES,
+  FOTO_ADDONS,
+  EXTRA_PACKAGES,
+} from '@/lib/stripe-plans';
 
 import { toast } from 'sonner';
 
-interface Plan {
-  id: string;
-  name: string;
-  slug: string;
-  monthly_credits: number;
-  price_monthly_cents: number;
-  price_yearly_cents: number;
-  extra_credit_price_cents: number;
-  features: string[];
-  sort_order: number;
-}
-
 const Pricing = () => {
-  const [plans, setPlans] = useState<Plan[]>([]);
-  // Aktuell existiert nur ein echtes Monatsprodukt – kein Jahrespreis vortäuschen.
+  const [tab, setTab] = useState<'foto' | 'allincl'>('allincl');
+  // Es gibt ausschließlich Monatsprodukte – kein Jahrespreis vortäuschen.
   const yearly = false;
   const [searchParams] = useSearchParams();
   const [loadingSlug, setLoadingSlug] = useState<string | null>(null);
@@ -36,16 +31,6 @@ const Pricing = () => {
   const { user } = useAuth();
   const { planSlug: activePlanSlug, planName: activePlanName, billingCycle, periodEnd, loading: subLoading } = useSubscription();
 
-  useEffect(() => {
-    supabase
-      .from('subscription_plans')
-      .select('*')
-      .eq('active', true)
-      .order('sort_order')
-      .then(({ data }) => {
-        if (data) setPlans(data as any);
-      });
-  }, []);
 
   useEffect(() => {
     if (searchParams.get('success') === 'true') {
@@ -152,24 +137,24 @@ const Pricing = () => {
       <AppHeader />
 
       <main className="max-w-5xl mx-auto px-3 sm:px-4 py-8 sm:py-16">
-        <div className="text-center mb-8 sm:mb-12">
+        <div className="text-center mb-8 sm:mb-10">
           <h1 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-3">
             Einfach. Transparent. Komplett.
           </h1>
-          <p className="text-muted-foreground max-w-xl mx-auto mb-4 text-sm sm:text-base">
-            <strong className="text-foreground">Ein Grundpaket</strong> – 1.000 Credits pro Monat für{' '}
-            <strong className="text-foreground">490 € netto/Monat zzgl. gesetzlicher USt.</strong> Alle Portal-Gebühren und
-            API-Kosten sind enthalten. Brauchst du mehr? Lade nach Bedarf{' '}
-            <strong className="text-foreground">200 Credits – 100 € netto zzgl. gesetzlicher USt.</strong> nach.
+          <p className="text-muted-foreground max-w-2xl mx-auto mb-4 text-sm sm:text-base">
+            Wähle zwischen reinem <strong className="text-foreground">Fotoservice</strong> und der{' '}
+            <strong className="text-foreground">Komplettlösung inklusive Marketing</strong>. Alle Portal-Gebühren und
+            API-Kosten sind enthalten. Brauchst du mehr, lädst du jederzeit{' '}
+            <strong className="text-foreground">200 Credits für 100 € netto</strong> nach.
           </p>
-          <p className="mx-auto max-w-xl text-xs leading-relaxed text-muted-foreground">
+          <p className="mx-auto max-w-2xl text-xs leading-relaxed text-muted-foreground">
             Alle Preise verstehen sich netto zzgl. der gesetzlichen Umsatzsteuer. Das Angebot richtet sich ausschließlich
             an Unternehmer im Sinne des § 14 BGB. Abrechnungszeitraum ist ein Monat; das Abonnement verlängert sich
             automatisch um jeweils einen weiteren Monat und kann zum Ende des laufenden Abrechnungszeitraums gekündigt
-            werden. Die monatlichen Credits werden zu Beginn des Abrechnungszeitraums gutgeschrieben; Top-up-Credits
-            werden separat abgerechnet.
+            werden. Bei der Erstbuchung fallen einmalig 990 € netto Implementierungskosten an. Die monatlichen Credits
+            werden zu Beginn des Abrechnungszeitraums gutgeschrieben; Top-up-Credits werden separat abgerechnet.
           </p>
-          <p className="mx-auto max-w-xl text-xs text-muted-foreground">
+          <p className="mx-auto max-w-2xl text-xs text-muted-foreground mt-2">
             Es gelten unsere{' '}
             <Link to="/agb" className="underline underline-offset-2">AGB</Link>,{' '}
             die <Link to="/datenschutz" className="underline underline-offset-2">Datenschutzerklärung</Link>{' '}
@@ -177,100 +162,212 @@ const Pricing = () => {
           </p>
         </div>
 
-
-        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 max-w-3xl mx-auto">
-          {plans.map((plan) => {
-            const price = yearly ? Math.round(plan.price_yearly_cents / 12) : plan.price_monthly_cents;
-            const isPro = plan.slug === 'pro';
-            const isFree = plan.slug === 'free';
-            const isLoading = loadingSlug === plan.slug;
-            const isActivePlan = activePlanSlug === plan.slug;
-            const isUpgrade = !isActivePlan && !isFree;
-            return (
-              <div
-                key={plan.id}
-                className={`relative rounded-2xl border-2 p-6 flex flex-col transition-all ${
-                  isActivePlan
-                    ? 'border-accent shadow-glow bg-card ring-2 ring-accent/20'
-                    : isPro
-                      ? 'border-accent/50 shadow-glow/50 bg-card'
-                      : 'border-border bg-card'
+        {/* Umschalter */}
+        <div className="flex justify-center mb-8">
+          <div className="inline-flex rounded-full border border-border bg-card p-1">
+            {(['foto', 'allincl'] as const).map((key) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setTab(key)}
+                className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors ${
+                  tab === key ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                {isActivePlan && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-accent text-accent-foreground text-[10px] font-bold uppercase tracking-wide flex items-center gap-1">
-                    <Crown className="w-3 h-3" /> Dein Plan
-                  </div>
-                )}
-                {isPro && !isActivePlan && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-accent text-accent-foreground text-[10px] font-bold uppercase tracking-wide">
-                    Beliebt
-                  </div>
-                )}
-                <h3 className="font-display font-bold text-foreground text-lg mb-1">{plan.name}</h3>
-                <div className="mb-4">
-                  <span className="text-3xl font-bold text-foreground">
-                    {price === 0 ? '0' : (price / 100).toFixed(0)}€
-                  </span>
-                  {price > 0 && <span className="text-sm text-muted-foreground">/Monat netto zzgl. USt.</span>}
-                </div>
-                <div className="flex items-center gap-1.5 mb-4 text-sm text-accent font-semibold">
-                  <Zap className="w-4 h-4" />
-                  {plan.monthly_credits > 0 ? `${plan.monthly_credits} Credits/Monat` : '10 Credits einmalig'}
-                </div>
-                {plan.extra_credit_price_cents > 0 && (
-                  <p className="text-xs text-muted-foreground mb-4">
-                    Zusätzliche Credits: {(plan.extra_credit_price_cents / 100).toFixed(2)}€/Credit
-                  </p>
-                )}
-                <ul className="space-y-2 mb-6 flex-1">
-                  {(plan.features as string[]).map((f, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-                      <Check className="w-4 h-4 text-accent shrink-0 mt-0.5" />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                {isActivePlan ? (
-                  <Button variant="outline" size="sm" disabled className="border-accent/30 text-accent">
-                    <Crown className="w-3.5 h-3.5 mr-1" /> Aktueller Plan
-                  </Button>
-                ) : isFree && !user ? (
-                  <Link to={`/auth?plan=free&cycle=monthly`}>
-                    <Button variant="outline" size="sm" className="w-full">
-                      Kostenlos starten
-                    </Button>
-                  </Link>
-                ) : isFree && user ? (
-                  <Button variant="outline" size="sm" disabled className="opacity-50">
-                    Kostenlos
-                  </Button>
-                ) : !user ? (
-                  <Link to={`/auth?plan=${plan.slug}&cycle=${yearly ? 'yearly' : 'monthly'}`}>
-                    <Button
-                      className={isPro ? 'gradient-accent text-accent-foreground w-full' : 'w-full'}
-                      variant={isPro ? 'default' : 'outline'}
-                      size="sm"
-                    >
-                      Jetzt buchen
-                    </Button>
-                  </Link>
-                ) : (
-                  <Button
-                    className={isPro ? 'gradient-accent text-accent-foreground' : ''}
-                    variant={isPro ? 'default' : 'outline'}
-                    size="sm"
-                    disabled={isLoading}
-                    onClick={() => handleCheckout(plan.slug)}
-                  >
-                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
-                    {isLoading ? 'Weiterleitung…' : 'Upgrade'}
-                  </Button>
-                )}
-              </div>
-            );
-          })}
+                {key === 'foto' ? 'Fotoservice' : 'All-Incl-Marketing'}
+              </button>
+            ))}
+          </div>
         </div>
+
+        {tab === 'allincl' && (
+          <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+            {ALL_INCL_PACKAGES.map((pkg) => {
+              const isActivePlan = activePlanSlug === pkg.slug;
+              const isLoading = loadingSlug === pkg.slug;
+              return (
+                <div
+                  key={pkg.slug}
+                  className={`relative rounded-2xl border-2 p-5 flex flex-col transition-all ${
+                    isActivePlan
+                      ? 'border-accent shadow-glow bg-card ring-2 ring-accent/20'
+                      : pkg.recommended
+                        ? 'border-accent/60 bg-card'
+                        : 'border-border bg-card'
+                  }`}
+                >
+                  {isActivePlan ? (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-accent text-accent-foreground text-[10px] font-bold uppercase tracking-wide flex items-center gap-1">
+                      <Crown className="w-3 h-3" /> Dein Plan
+                    </div>
+                  ) : pkg.recommended ? (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-accent text-accent-foreground text-[10px] font-bold uppercase tracking-wide">
+                      Empfohlen
+                    </div>
+                  ) : null}
+                  <h3 className="font-display font-bold text-foreground text-lg">{pkg.name}</h3>
+                  {pkg.subtitle && <p className="text-xs text-muted-foreground mb-2">{pkg.subtitle}</p>}
+                  <div className="mt-2 mb-1">
+                    <span className="text-3xl font-bold text-foreground">{(pkg.priceCents / 100).toFixed(0)}€</span>
+                    <span className="text-xs text-muted-foreground"> /Monat netto</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    ca. {pkg.vehiclesPerMonth} Fahrzeuge mtl. · {(pkg.effectivePerVehicleCents / 100).toFixed(2)}€ je Fahrzeug
+                  </p>
+                  <div className="flex items-center gap-1.5 mb-3 text-sm text-accent font-semibold">
+                    <Zap className="w-4 h-4" />
+                    {pkg.credits.toLocaleString('de-DE')} Credits/Monat
+                  </div>
+                  <ul className="space-y-1.5 mb-4 flex-1">
+                    {pkg.included.map((f) => (
+                      <li key={f} className="flex items-start gap-2 text-sm text-muted-foreground">
+                        <Check className="w-4 h-4 text-accent shrink-0 mt-0.5" />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-[11px] text-muted-foreground mb-3">
+                    zzgl. einmalig 990 € netto Implementierung
+                  </p>
+                  {isActivePlan ? (
+                    <Button variant="outline" size="sm" disabled className="border-accent/30 text-accent">
+                      <Crown className="w-3.5 h-3.5 mr-1" /> Aktueller Plan
+                    </Button>
+                  ) : !user ? (
+                    <Link to={`/auth?plan=${pkg.slug}&cycle=monthly`}>
+                      <Button className="w-full gradient-accent text-accent-foreground" size="sm">
+                        Verbindlich buchen
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Button
+                      className="gradient-accent text-accent-foreground"
+                      size="sm"
+                      disabled={isLoading}
+                      onClick={() => handleCheckout(pkg.slug)}
+                    >
+                      {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                      {isLoading ? 'Weiterleitung…' : 'Verbindlich buchen'}
+                    </Button>
+                  )}
+                  <Link
+                    to={`/fahrzeug-testen?paket=${pkg.slug}`}
+                    className="mt-2 text-center text-xs text-muted-foreground underline underline-offset-2"
+                  >
+                    Unverbindlich anfragen
+                  </Link>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {tab === 'foto' && (
+          <div className="space-y-6">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
+              {FOTO_PACKAGES.map((pkg) => {
+                const isActivePlan = activePlanSlug === pkg.slug;
+                const isLoading = loadingSlug === pkg.slug;
+                return (
+                  <div
+                    key={pkg.slug}
+                    className={`relative rounded-2xl border-2 p-5 flex flex-col transition-all ${
+                      isActivePlan
+                        ? 'border-accent shadow-glow bg-card ring-2 ring-accent/20'
+                        : pkg.recommended
+                          ? 'border-accent/60 bg-card'
+                          : 'border-border bg-card'
+                    }`}
+                  >
+                    {pkg.recommended && !isActivePlan && (
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-accent text-accent-foreground text-[10px] font-bold uppercase tracking-wide">
+                        Empfohlen
+                      </div>
+                    )}
+                    <h3 className="font-display font-bold text-foreground text-base">
+                      {pkg.vehicles} {pkg.vehicles === 1 ? 'Fahrzeug' : 'Fahrzeuge'}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mb-2">pro Monat · 16 Perspektiven je Fahrzeug</p>
+                    <div className="mb-1">
+                      <span className="text-2xl font-bold text-foreground">
+                        {(pkg.pricePerVehicleCents / 100).toFixed(2).replace('.', ',')}€
+                      </span>
+                      <span className="text-xs text-muted-foreground"> /Fahrzeug netto</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      = {(pkg.monthlyCents / 100).toFixed(2).replace('.', ',')}€ mtl. netto
+                    </p>
+                    <div className="flex items-center gap-1.5 mb-4 text-sm text-accent font-semibold flex-1">
+                      <Zap className="w-4 h-4" />
+                      {pkg.credits.toLocaleString('de-DE')} Credits/Monat
+                    </div>
+                    {isActivePlan ? (
+                      <Button variant="outline" size="sm" disabled className="border-accent/30 text-accent">
+                        <Crown className="w-3.5 h-3.5 mr-1" /> Aktueller Plan
+                      </Button>
+                    ) : !user ? (
+                      <Link to={`/auth?plan=${pkg.slug}&cycle=monthly`}>
+                        <Button className="w-full" variant="outline" size="sm">
+                          Paket buchen
+                        </Button>
+                      </Link>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={isLoading}
+                        onClick={() => handleCheckout(pkg.slug)}
+                      >
+                        {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                        {isLoading ? 'Weiterleitung…' : 'Paket buchen'}
+                      </Button>
+                    )}
+                    <Link
+                      to={`/fahrzeug-testen?paket=${pkg.slug}`}
+                      className="mt-2 text-center text-xs text-muted-foreground underline underline-offset-2"
+                    >
+                      Paket anfragen
+                    </Link>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="rounded-2xl border border-border bg-card p-5">
+              <h3 className="font-display font-bold text-foreground mb-3">Zusatzapplikationen</h3>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {FOTO_ADDONS.map((addon) => (
+                  <div key={addon.label} className="rounded-xl border border-border p-3">
+                    <p className="font-semibold text-foreground text-sm">{addon.label}</p>
+                    <p className="text-xs text-muted-foreground">{addon.hint}</p>
+                    <p className="text-sm font-bold text-accent mt-1">
+                      {addon.price} <span className="text-xs font-normal text-muted-foreground">{addon.unit} netto</span>
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-border bg-card p-5">
+              <h3 className="font-display font-bold text-foreground mb-3">Einzelsets & Zusatzpakete</h3>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {EXTRA_PACKAGES.map((extra) => (
+                  <div key={extra.label} className="rounded-xl border border-border p-3 flex flex-col">
+                    <p className="font-semibold text-foreground text-sm flex-1">{extra.label}</p>
+                    <p className="text-sm font-bold text-accent mt-1">
+                      {extra.price} <span className="text-xs font-normal text-muted-foreground">{extra.unit} netto</span>
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-3">
+                Whitelabel-Automarkt und Flipping-Plugin buchen wir individuell für dich –{' '}
+                <Link to="/fahrzeug-testen" className="underline underline-offset-2">hier anfragen</Link>.
+              </p>
+            </div>
+          </div>
+        )}
+
 
         {/* Subscription Management */}
         {user && activePlanSlug && activePlanSlug !== 'free' && (
