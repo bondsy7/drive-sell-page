@@ -21,6 +21,7 @@ import { useAuth } from '@/hooks/useAuth';
 import heroImage from '@/assets/hero-autohaus-ai.png.asset.json';
 import stepPlaceholderImage from '@/assets/fahrzeug-perspektiven.webp.asset.json';
 import stepFotoAufnehmen from '@/assets/foto-aufnehmen.webp.asset.json';
+import stepFormateImage from '@/assets/marketing-formate.webp.asset.json';
 
 const BENEFITS = [
   'In wenigen Minuten startklar',
