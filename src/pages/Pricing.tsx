@@ -5,7 +5,7 @@ import { useCredits } from '@/hooks/useCredits';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { Button } from '@/components/ui/button';
-import { Check, Zap, Loader2, Plus, Crown, Calendar, AlertTriangle, RefreshCw, CreditCard, ArrowUpDown, XCircle } from 'lucide-react';
+import { Check, Zap, Loader2, Plus, Crown, Calendar, AlertTriangle, RefreshCw, CreditCard, ArrowUpDown, XCircle, FileDown } from 'lucide-react';
 import CancelSubscriptionDialog from '@/components/CancelSubscriptionDialog';
 import AppHeader from '@/components/AppHeader';
 import SiteFooter from '@/components/legal/SiteFooter';
@@ -18,6 +18,12 @@ import {
   FOTO_ADDONS,
   EXTRA_PACKAGES,
 } from '@/lib/stripe-plans';
+
+import {
+  generateOfferContractPdf,
+  allInclContractInput,
+  fotoContractInput,
+} from '@/lib/offer-contract-pdf';
 
 import { toast } from 'sonner';
 
@@ -257,6 +263,16 @@ const Pricing = () => {
                   >
                     Unverbindlich anfragen
                   </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const input = allInclContractInput(pkg.slug);
+                      if (input) generateOfferContractPdf(input);
+                    }}
+                    className="mt-2 inline-flex items-center justify-center gap-1 text-xs text-accent underline underline-offset-2"
+                  >
+                    <FileDown className="w-3.5 h-3.5" /> Vertrag als PDF
+                  </button>
                 </div>
               );
             })}
@@ -329,6 +345,16 @@ const Pricing = () => {
                     >
                       Paket anfragen
                     </Link>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const input = fotoContractInput(pkg.slug);
+                        if (input) generateOfferContractPdf(input);
+                      }}
+                      className="mt-2 inline-flex items-center justify-center gap-1 text-xs text-accent underline underline-offset-2"
+                    >
+                      <FileDown className="w-3.5 h-3.5" /> Vertrag als PDF
+                    </button>
                   </div>
                 );
               })}
