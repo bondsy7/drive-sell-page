@@ -21,6 +21,7 @@ import { useAuth } from '@/hooks/useAuth';
 import heroImage from '@/assets/hero-autohaus-ai.png.asset.json';
 import stepPlaceholderImage from '@/assets/fahrzeug-perspektiven.webp.asset.json';
 import stepFotoAufnehmen from '@/assets/foto-aufnehmen.webp.asset.json';
+import stepFormateImage from '@/assets/marketing-formate.webp.asset.json';
 
 const BENEFITS = [
   'In wenigen Minuten startklar',
@@ -90,10 +91,8 @@ function StepVisual({ kind }: { kind: (typeof STEPS)[number]['kind'] }) {
 
   if (kind === 'grid') {
     return (
-      <div className="mt-6 grid h-36 grid-cols-2 gap-1.5 overflow-hidden rounded-md bg-secondary p-1.5">
-        {[0, 1, 2, 3].map((item) => (
-          <img key={item} src={stepPlaceholderImage.url} alt="" className="h-full min-h-0 w-full rounded-sm object-cover" />
-        ))}
+      <div className="mt-6 h-36 overflow-hidden rounded-md bg-secondary">
+        <img src={stepFormateImage.url} alt="Erstellte Marketing-Formate: Fahrzeugbilder, Social Post, Verkaufsanzeige und Video" className="h-full w-full object-cover" />
       </div>
     );
   }
