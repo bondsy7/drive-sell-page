@@ -46,7 +46,7 @@ export class ErrorBoundary extends Component<Props, State> {
             Fehler im {this.props.moduleName || 'Modul'}
           </h3>
           <p className="text-sm text-muted-foreground mb-4 max-w-md">
-            {this.state.error?.message || 'Ein unerwarteter Fehler ist aufgetreten.'}
+            Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.
           </p>
           <Button variant="outline" size="sm" onClick={this.handleReset}>
             <RefreshCw className="w-4 h-4 mr-1.5" />

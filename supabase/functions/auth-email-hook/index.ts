@@ -17,12 +17,12 @@ const corsHeaders = {
 }
 
 const EMAIL_SUBJECTS: Record<string, string> = {
-  signup: 'Confirm your email',
-  invite: "You've been invited",
-  magiclink: 'Your login link',
-  recovery: 'Reset your password',
-  email_change: 'Confirm your new email',
-  reauthentication: 'Your verification code',
+  signup: 'E-Mail-Adresse bestätigen | AUTO3',
+  invite: 'Ihre Einladung zu AUTO3',
+  magiclink: 'Ihr Anmeldelink für AUTO3',
+  recovery: 'Passwort für AUTO3 zurücksetzen',
+  email_change: 'Neue E-Mail-Adresse bestätigen | AUTO3',
+  reauthentication: 'Ihr Bestätigungscode für AUTO3',
 }
 
 // Template mapping
@@ -36,7 +36,7 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 }
 
 // Configuration
-const SITE_NAME = "MarketingHUB"
+const SITE_NAME = "AUTO3"
 const SENDER_DOMAIN = "notify.autohaus.ai"
 const ROOT_DOMAIN = "autohaus.ai"
 const FROM_DOMAIN = "autohaus.ai" // Domain shown in From address (may be root or sender subdomain)
@@ -102,7 +102,7 @@ async function handlePreview(req: Request): Promise<Response> {
   const authHeader = req.headers.get('Authorization')
 
   if (!apiKey || authHeader !== `Bearer ${apiKey}`) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+    return new Response(JSON.stringify({ error: 'Nicht autorisiert' }), {
       status: 401,
       headers: { ...previewCorsHeaders, 'Content-Type': 'application/json' },
     })
@@ -113,7 +113,7 @@ async function handlePreview(req: Request): Promise<Response> {
     const body = await req.json()
     type = body.type
   } catch (error) {
-    return new Response(JSON.stringify({ error: 'Invalid JSON in request body' }), {
+    return new Response(JSON.stringify({ error: 'Ungültige Anfrage' }), {
       status: 400,
       headers: { ...previewCorsHeaders, 'Content-Type': 'application/json' },
     })
@@ -122,7 +122,7 @@ async function handlePreview(req: Request): Promise<Response> {
   const EmailTemplate = EMAIL_TEMPLATES[type]
 
   if (!EmailTemplate) {
-    return new Response(JSON.stringify({ error: `Unknown email type: ${type}` }), {
+    return new Response(JSON.stringify({ error: `Unbekannter E-Mail-Typ: ${type}` }), {
       status: 400,
       headers: { ...previewCorsHeaders, 'Content-Type': 'application/json' },
     })
@@ -144,7 +144,7 @@ async function handleWebhook(req: Request): Promise<Response> {
   if (!apiKey) {
     console.error('LOVABLE_API_KEY not configured')
     return new Response(
-      JSON.stringify({ error: 'Server configuration error' }),
+      JSON.stringify({ error: 'Fehler in der Serverkonfiguration' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
@@ -168,7 +168,7 @@ async function handleWebhook(req: Request): Promise<Response> {
         case 'invalid_timestamp':
         case 'stale_timestamp':
           console.error('Invalid webhook signature', { error: error.message })
-          return new Response(JSON.stringify({ error: 'Invalid signature' }), {
+          return new Response(JSON.stringify({ error: 'Ungültige Signatur' }), {
             status: 401,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           })
@@ -176,7 +176,7 @@ async function handleWebhook(req: Request): Promise<Response> {
         case 'invalid_json':
           console.error('Invalid webhook payload', { error: error.message })
           return new Response(
-            JSON.stringify({ error: 'Invalid webhook payload' }),
+            JSON.stringify({ error: 'Ungültige E-Mail-Anfrage' }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
       }
@@ -184,7 +184,7 @@ async function handleWebhook(req: Request): Promise<Response> {
 
     console.error('Webhook verification failed', { error })
     return new Response(
-      JSON.stringify({ error: 'Invalid webhook payload' }),
+      JSON.stringify({ error: 'Ungültige E-Mail-Anfrage' }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
@@ -192,7 +192,7 @@ async function handleWebhook(req: Request): Promise<Response> {
   if (!run_id) {
     console.error('Webhook payload missing run_id')
     return new Response(
-      JSON.stringify({ error: 'Invalid webhook payload' }),
+      JSON.stringify({ error: 'Ungültige E-Mail-Anfrage' }),
       {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -203,7 +203,7 @@ async function handleWebhook(req: Request): Promise<Response> {
   if (payload.version !== '1') {
     console.error('Unsupported payload version', { version: payload.version, run_id })
     return new Response(
-      JSON.stringify({ error: `Unsupported payload version: ${payload.version}` }),
+      JSON.stringify({ error: `Nicht unterstützte Anfrageversion: ${payload.version}` }),
       {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -220,7 +220,7 @@ async function handleWebhook(req: Request): Promise<Response> {
   if (!EmailTemplate) {
     console.error('Unknown email type', { emailType, run_id })
     return new Response(
-      JSON.stringify({ error: `Unknown email type: ${emailType}` }),
+      JSON.stringify({ error: `Unbekannter E-Mail-Typ: ${emailType}` }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
@@ -267,7 +267,7 @@ async function handleWebhook(req: Request): Promise<Response> {
       to: payload.data.email,
       from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
       sender_domain: SENDER_DOMAIN,
-      subject: EMAIL_SUBJECTS[emailType] || 'Notification',
+      subject: EMAIL_SUBJECTS[emailType] || 'Mitteilung von AUTO3',
       html,
       text,
       purpose: 'transactional',
@@ -288,9 +288,9 @@ async function handleWebhook(req: Request): Promise<Response> {
       template_name: emailType,
       recipient_email: payload.data.email,
       status: 'failed',
-      error_message: 'Failed to enqueue email',
+      error_message: 'E-Mail konnte nicht in die Versandwarteschlange gestellt werden',
     })
-    return new Response(JSON.stringify({ error: 'Failed to enqueue email' }), {
+    return new Response(JSON.stringify({ error: 'E-Mail-Versand konnte nicht vorbereitet werden' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
@@ -322,7 +322,7 @@ Deno.serve(async (req) => {
     return await handleWebhook(req)
   } catch (error) {
     console.error('Webhook handler error:', error)
-    const message = error instanceof Error ? error.message : 'Unknown error'
+    const message = error instanceof Error ? error.message : 'Unbekannter Fehler'
     return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

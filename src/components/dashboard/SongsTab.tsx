@@ -125,7 +125,7 @@ export default function SongsTab() {
                 </p>
               </div>
               <div className="flex gap-1 shrink-0">
-                <Button size="icon" variant="ghost" onClick={() => handleDownload(s)} title="Download">
+                <Button size="icon" variant="ghost" onClick={() => handleDownload(s)} title="Herunterladen">
                   <Download className="w-4 h-4" />
                 </Button>
                 <Button size="icon" variant="ghost" onClick={() => handleDelete(s)} title="Löschen">

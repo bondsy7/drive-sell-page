@@ -13,6 +13,7 @@ import { LEGAL_VERSIONS, TERMS_DOCUMENT, B2B_CONFIRM_TEXT } from '@/lib/legal-co
 import { recordTermsAcceptance } from '@/lib/legal-acceptance';
 import auto3Logo from '@/assets/auto3-logo.png';
 import SiteFooter from '@/components/legal/SiteFooter';
+import { customerErrorMessage } from '@/lib/customer-error-message';
 
 const Auth = () => {
   const { user, loading } = useAuth();
@@ -86,7 +87,7 @@ const Auth = () => {
         }
       }
     } catch (err: any) {
-      toast.error(err.message || 'Ein Fehler ist aufgetreten');
+      toast.error(customerErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
@@ -105,10 +106,10 @@ const Auth = () => {
           : window.location.origin,
       });
       if (result.error) {
-        toast.error(`Google Login fehlgeschlagen: ${result.error.message ?? ''}`);
+        toast.error(customerErrorMessage(result.error, 'Die Anmeldung mit Google ist fehlgeschlagen.'));
       }
     } catch (e: any) {
-      toast.error(`Google Login fehlgeschlagen: ${e?.message ?? ''}`);
+      toast.error(customerErrorMessage(e, 'Die Anmeldung mit Google ist fehlgeschlagen.'));
     }
   };
 

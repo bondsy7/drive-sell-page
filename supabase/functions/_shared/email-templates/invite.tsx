@@ -5,7 +5,6 @@ import * as React from 'npm:react@18.3.1'
 import {
   Body,
   Button,
-  Container,
   Head,
   Heading,
   Html,
@@ -13,6 +12,7 @@ import {
   Preview,
   Text,
 } from 'npm:@react-email/components@0.0.22'
+import { EmailFrame, emailStyles } from './email-layout.tsx'
 
 interface InviteEmailProps {
   siteName: string
@@ -25,66 +25,30 @@ export const InviteEmail = ({
   siteUrl,
   confirmationUrl,
 }: InviteEmailProps) => (
-  <Html lang="en" dir="ltr">
-    <Head>
-      <style>{darkModeCss}</style>
-    </Head>
-    <Preview>You've been invited to join {siteName}</Preview>
-    <Body style={main}>
-      <Container style={container}>
-        <Heading style={h1}>You've been invited</Heading>
-        <Text style={text}>
-          You've been invited to join{' '}
+  <Html lang="de" dir="ltr">
+    <Head />
+    <Preview>Ihre Einladung zu {siteName}</Preview>
+    <Body style={emailStyles.body}>
+      <EmailFrame>
+        <Heading style={emailStyles.heading}>Sie wurden eingeladen</Heading>
+        <Text style={emailStyles.text}>
+          Sie wurden zur Nutzung von{' '}
           <Link href={siteUrl} style={link}>
             <strong>{siteName}</strong>
           </Link>
-          . Click the button below to accept the invitation and create your
-          account.
+          {' '}eingeladen. Nehmen Sie die Einladung an, um Ihr Konto einzurichten.
         </Text>
-        <Button className="dm-btn" style={button} href={confirmationUrl}>
-          Accept Invitation
+        <Button style={emailStyles.button} href={confirmationUrl}>
+          Einladung annehmen
         </Button>
-        <Text style={footer}>
-          If you weren't expecting this invitation, you can safely ignore this
-          email.
+        <Text style={emailStyles.note}>
+          Falls Sie keine Einladung erwartet haben, können Sie diese Nachricht ignorieren.
         </Text>
-      </Container>
+      </EmailFrame>
     </Body>
   </Html>
 )
 
 export default InviteEmail
 
-const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
-const container = { padding: '20px 25px' }
-const h1 = {
-  fontSize: '22px',
-  fontWeight: 'bold' as const,
-  color: '#000000',
-  margin: '0 0 20px',
-}
-const text = {
-  fontSize: '14px',
-  color: '#55575d',
-  lineHeight: '1.5',
-  margin: '0 0 25px',
-}
-const link = { color: 'inherit', textDecoration: 'underline' }
-const button = {
-  backgroundColor: '#000000',
-  color: '#ffffff',
-  fontSize: '14px',
-  border: '1px solid #000000',
-  borderRadius: '8px',
-  padding: '12px 20px',
-  textDecoration: 'none',
-}
-const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }
-// Rendered as a text child, which React may HTML-escape: keep this CSS free of >, &, and quotes.
-const darkModeCss = `
-  @media (prefers-color-scheme: dark) {
-    .dm-btn { background-color: #ffffff !important; color: #000000 !important; }
-  }
-  [data-ogsc] .dm-btn { background-color: #ffffff !important; color: #000000 !important; }
-  [data-ogsb] .dm-btn { background-color: #ffffff !important; color: #000000 !important; }
-`
+const link = emailStyles.link
