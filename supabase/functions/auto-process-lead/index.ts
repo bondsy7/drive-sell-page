@@ -42,12 +42,12 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const GEMINI_API_KEY = await getSecret("GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
+    if (!GEMINI_API_KEY) throw new Error("KI-Dienst ist nicht konfiguriert");
 
     const adminSupabase = createClient(supabaseUrl, serviceKey);
 
     const { leadId, dealerUserId } = await req.json();
-    if (!leadId || !dealerUserId) throw new Error("leadId and dealerUserId required");
+    if (!leadId || !dealerUserId) throw new Error("Anfrage und Autohaus müssen angegeben werden");
 
     // Load dealer's autopilot profile
     const { data: profile } = await adminSupabase
@@ -73,7 +73,7 @@ serve(async (req) => {
 
     // Load lead data
     const { data: lead } = await adminSupabase.from('leads').select('*').eq('id', leadId).single();
-    if (!lead) throw new Error("Lead not found");
+    if (!lead) throw new Error("Kundenanfrage wurde nicht gefunden");
 
     // Load vehicle context from project if linked
     let vehicleContext: any = {};
@@ -162,7 +162,7 @@ ${Object.keys(vehicleContext).length > 0 ? `\nFahrzeugdaten: ${JSON.stringify(ve
 
     const aiResult = await aiResponse.json();
     const generatedText = aiResult.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    if (!generatedText) throw new Error("No response generated");
+    if (!generatedText) throw new Error("Es konnte keine Antwort erstellt werden");
 
     // Generate subject line
     const subjectPrompt = `Erstelle eine kurze, professionelle E-Mail-Betreffzeile für diese Antwort an einen Kunden der sich für "${vehicleTitle || 'ein Fahrzeug'}" interessiert. Nur den Betreff, keine Anführungszeichen.`;
@@ -307,7 +307,7 @@ ${Object.keys(vehicleContext).length > 0 ? `\nFahrzeugdaten: ${JSON.stringify(ve
     });
   } catch (e) {
     console.error("auto-process-lead error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
+    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unbekannter Fehler" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

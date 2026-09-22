@@ -91,7 +91,7 @@ export default function SalesMailboxTab() {
   };
 
   const saveEdit = async (emailId: string) => {
-    const bodyHtml = `<div style=\"font-family:sans-serif;line-height:1.6;white-space:pre-wrap\">${editBody.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>`;
+    const bodyHtml = `<div lang=\"de\" style=\"font-family:Arial,Helvetica,sans-serif;line-height:1.65;white-space:pre-wrap\">${editBody.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>`;
 
     const { error } = await supabase.from('sales_email_outbox').update({
       subject: editSubject,
