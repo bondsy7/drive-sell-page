@@ -145,15 +145,16 @@ export default function Landing() {
             </div>
 
             <div className="relative min-h-[400px] lg:-mr-20 lg:min-h-[520px]">
-              <div className="absolute inset-0 overflow-hidden rounded-l-lg bg-secondary">
+              <div className="absolute inset-0 overflow-hidden rounded-l-lg bg-card">
                 <img
                   src={heroImage}
-                  alt="Platzhalter für ein professionell aufbereitetes Fahrzeugbild"
+                  alt="Professionell aufbereitetes Fahrzeug im hellen Studio"
                   width={1600}
                   height={1000}
                   className="h-full w-full object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-r from-card/70 via-card/5 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-r from-card via-card/55 via-35% to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-card/40 via-transparent to-transparent" />
               </div>
 
               <div className="absolute right-4 top-5 max-w-[180px] rounded-lg border border-border bg-card px-5 py-4 shadow-elevated sm:right-9 sm:top-8">
