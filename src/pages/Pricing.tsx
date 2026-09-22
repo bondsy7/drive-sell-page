@@ -570,33 +570,52 @@ const Pricing = () => {
         )}
 
         {/* Credit Packs */}
-        <div className="mt-16">
-          <h2 className="font-display text-xl font-bold text-foreground text-center mb-2">Credits nachkaufen</h2>
-          <p className="text-muted-foreground text-center text-sm mb-6">Einmalig – kein Abo nötig</p>
-          <div className="grid gap-4 md:grid-cols-3 max-w-2xl mx-auto">
-            {CREDIT_PACKS.map((pack) => (
-              <div key={pack.priceId} className="relative rounded-xl border border-border bg-card p-5 flex flex-col items-center text-center md:col-span-3 max-w-sm mx-auto w-full">
-                <Zap className="w-6 h-6 text-accent mb-2" />
-                <span className="font-display font-bold text-foreground text-lg">{pack.label}</span>
-                <span className="text-2xl font-bold text-foreground mt-1">{(pack.priceCents / 100).toFixed(0)}€</span>
-                <span className="text-xs text-muted-foreground mb-4">
-                  {(pack.priceCents / pack.credits / 100).toFixed(2)}€ / Credit
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  disabled={loadingCredit === pack.priceId}
-                  onClick={() => handleBuyCredits(pack.priceId)}
-                >
-                  {loadingCredit === pack.priceId ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Plus className="w-4 h-4 mr-1" />}
-                  Nachkaufen
-                </Button>
+        <div className="mt-14">
+          {CREDIT_PACKS.map((pack) => (
+            <div
+              key={pack.priceId}
+              className="rounded-2xl border border-border bg-card p-6 sm:p-8 grid gap-6 md:grid-cols-[auto,1fr,auto] md:items-center"
+            >
+              <div className="flex items-center gap-4">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
+                  <Zap className="h-7 w-7 text-primary" />
+                </div>
+                <div>
+                  <h2 className="font-display text-lg font-bold text-foreground">Zusätzliche Credits nachkaufen</h2>
+                  <p className="font-display text-2xl font-bold text-foreground mt-1">
+                    {pack.label} · {(pack.priceCents / 100).toFixed(0)} €
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {(pack.priceCents / pack.credits / 100).toFixed(2).replace('.', ',')} € / Credit netto
+                  </p>
+                </div>
               </div>
-            ))}
 
-          </div>
+              <ul className="grid gap-2 sm:grid-cols-2 text-sm text-muted-foreground">
+                {['Sofort verfügbar', 'Für alle Tarife', 'Keine Vertragsbindung', 'Einfach & sicher'].map((t) => (
+                  <li key={t} className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-primary shrink-0" />
+                    {t}
+                  </li>
+                ))}
+              </ul>
+
+              <Button
+                disabled={loadingCredit === pack.priceId}
+                onClick={() => handleBuyCredits(pack.priceId)}
+                className="w-full md:w-auto"
+              >
+                {loadingCredit === pack.priceId ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                ) : (
+                  <Plus className="w-4 h-4 mr-1" />
+                )}
+                Credits kaufen
+              </Button>
+            </div>
+          ))}
         </div>
+
 
 
 
