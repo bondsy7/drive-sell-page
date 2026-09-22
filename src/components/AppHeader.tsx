@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Plus, CreditCard, LogIn, MessageSquare, Home } from 'lucide-react';
-import auto3Logo from '@/assets/auto3-logo.png';
+import BrandLogo from '@/components/brand/BrandLogo';
 import CreditBadge from '@/components/CreditBadge';
 import DownloadLimitBadge from '@/components/DownloadLimitBadge';
 import UserMenuSheet from '@/components/UserMenuSheet';
@@ -42,7 +42,7 @@ export default function AppHeader({ leftActions, variant = 'card' }: AppHeaderPr
         <div className="max-w-7xl mx-auto px-3 sm:px-4 h-14 flex items-center justify-between">
           {/* Left: Logo (non-clickable image) */}
           <div className="flex items-center shrink-0">
-            <img src={auto3Logo} alt="AUTO3" className="h-7 sm:h-8" />
+            <BrandLogo className="h-7 sm:h-8" />
           </div>
 
           {/* Right: actions */}

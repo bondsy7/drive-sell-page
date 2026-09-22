@@ -1,9 +1,9 @@
 /**
- * Zentrale Rechts-Stammdaten für AUTO3 (Produkt der Breadcrumb Marketing GmbH).
+ * Zentrale Rechts-Stammdaten für autohaus.ai (Produkt der Breadcrumb Marketing GmbH).
  * Diese Werte werden auf allen Rechtsseiten und im Registrierungsflow verwendet.
  */
 export const LEGAL = {
-  product: 'AUTO3',
+  product: 'autohaus.ai',
   company: 'Breadcrumb Marketing GmbH',
   street: 'Corniceliusstraße 8',
   city: '63450 Hanau',
@@ -33,7 +33,7 @@ export const TERMS_DOCUMENT = 'agb';
 export const B2B_DOCUMENT = 'b2b_confirmation';
 
 export const TERMS_CONFIRM_TEXT =
-  'Ich habe die AGB für AUTO3 gelesen und akzeptiere sie.';
+  'Ich habe die AGB für autohaus.ai gelesen und akzeptiere sie.';
 
 export const B2B_CONFIRM_TEXT =
   'Ich bestätige, dass ich mindestens 18 Jahre alt bin, als Unternehmer im Sinne des § 14 BGB und nicht als Verbraucher handle und zur Vertretung des angegebenen Unternehmens berechtigt bin.';

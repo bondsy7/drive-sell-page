@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import SiteFooter from '@/components/legal/SiteFooter';
 import { usePageMeta } from '@/hooks/usePageMeta';
 import { LEGAL } from '@/lib/legal-config';
+import BrandLogo from '@/components/brand/BrandLogo';
 
 interface LegalLayoutProps {
   title: string;
@@ -78,17 +79,20 @@ export default function LegalLayout({
     <div className="flex min-h-screen flex-col bg-background">
       <main className="flex-1 px-4 py-10 sm:px-6 sm:py-14">
         <div className="mx-auto w-full max-w-3xl space-y-9">
-          <Link
-            to="/"
-            className="inline-flex items-center gap-2 rounded-md text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-          >
-            <ArrowLeft className="h-4 w-4" /> Zurück
-          </Link>
+          <div className="flex items-center justify-between border-b border-border pb-5">
+            <Link to="/" aria-label="autohaus.ai Startseite"><BrandLogo className="h-7" /></Link>
+            <Link
+              to="/"
+              className="inline-flex items-center gap-2 rounded-md text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              <ArrowLeft className="h-4 w-4" /> Zurück
+            </Link>
+          </div>
 
           <header className="space-y-2">
             <h1 className="font-display text-2xl font-bold text-foreground sm:text-3xl">{title}</h1>
             <p className="text-xs text-muted-foreground">
-              Stand: {versionDate ?? LEGAL.versionDate} · AUTO3 ist ein Produkt der {LEGAL.company}
+              Stand: {versionDate ?? LEGAL.versionDate} · autohaus.ai ist ein Produkt der {LEGAL.company}
             </p>
           </header>
 
