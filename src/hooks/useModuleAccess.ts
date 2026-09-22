@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { planBlockedModules } from '@/lib/plan-modules';
 
 export const MODULE_KEYS = [
   'photos',
@@ -103,6 +104,10 @@ export function useModuleAccess() {
           if (row.enabled) disabled.delete(key);
           else disabled.add(key);
         }
+        // Tarifgrenze überschreibt individuelle Freigaben
+        for (const key of planBlockedModules(planSlug, MODULE_KEYS)) {
+          disabled.add(key);
+        }
         // Parent aus => alle Kinder ebenfalls gesperrt
         for (const [parent, children] of Object.entries(MODULE_CHILDREN)) {
           if (disabled.has(parent as ModuleKey)) {
@@ -110,9 +115,11 @@ export function useModuleAccess() {
           }
         }
         setDisabledModules(disabled);
-
         setLoading(false);
-      });
+      }
+    };
+
+    load();
   }, [user]);
 
   return { disabledModules, loading };
