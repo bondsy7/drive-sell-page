@@ -123,6 +123,7 @@ Deno.serve(async (req) => {
         lastErr = (await resp.text()).slice(0, 200);
         console.warn(`ideogram v3 attempt ${attempt} failed ${resp.status}: ${lastErr}`);
         if (![502, 503, 504, 524, 408, 429].includes(resp.status)) {
+          await charge.refund(`Ideogram-Fehler ${resp.status}`);
           return errorResponse(`ideogram error ${resp.status}: ${lastErr}`, 502);
         }
       } catch (e) {
