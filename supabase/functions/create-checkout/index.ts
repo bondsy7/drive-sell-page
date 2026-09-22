@@ -10,8 +10,22 @@ const corsHeaders = {
 
 // Nur bekannte Abo-Preise akzeptieren – keine beliebigen Client-Preis-IDs.
 const ALLOWED_SUBSCRIPTION_PRICE_IDS = new Set<string>([
-  "price_1Tl8cuP3eWRHEALNPuSwqIZe", // Basis (aktuelles Grundpaket)
+  "price_1Tl8cuP3eWRHEALNPuSwqIZe", // Basis (Legacy-Grundpaket)
+  // All-Incl-Marketing
+  "price_1UINXLP3eWRHEALNd9tA3iGO", // Basic
+  "price_1UINXNP3eWRHEALN7RYf2qNH", // Advanced
+  "price_1UINXOP3eWRHEALNuZ9k9ZJD", // Premium
+  "price_1UINXQP3eWRHEALNMoIszMxo", // Ultra
+  // Fotoservice
+  "price_1UINXUP3eWRHEALNEKwVan7t", // 1 Fahrzeug
+  "price_1UINXWP3eWRHEALNnycuH46I", // 25 Fahrzeuge
+  "price_1UINXYP3eWRHEALNnVc7lPwS", // 50 Fahrzeuge
+  "price_1UINXZP3eWRHEALNxbIQuvkO", // 100 Fahrzeuge
+  "price_1UINXaP3eWRHEALNHnFqWkJs", // 200 Fahrzeuge
 ]);
+
+// Einmalige Implementierungskosten (990 € netto) – nur bei der allerersten Buchung.
+const SETUP_FEE_PRICE_ID = "price_1UINXcP3eWRHEALNRW9nMcih";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -64,11 +78,25 @@ serve(async (req) => {
       customerId = customers.data[0].id;
     }
 
+    // Einrichtungsgebühr nur, wenn der Kunde noch nie ein Abo hatte.
+    let chargeSetupFee = true;
+    if (customerId) {
+      const existingSubs = await stripe.subscriptions.list({
+        customer: customerId,
+        status: "all",
+        limit: 1,
+      });
+      chargeSetupFee = existingSubs.data.length === 0;
+    }
+
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : userEmail,
       line_items: [{ price: priceId, quantity: 1 }],
       mode: "subscription",
+      ...(chargeSetupFee
+        ? { subscription_data: { add_invoice_items: [{ price: SETUP_FEE_PRICE_ID, quantity: 1 }] } }
+        : {}),
       success_url: `${req.headers.get("origin")}/pricing?success=true`,
       cancel_url: `${req.headers.get("origin")}/pricing?canceled=true`,
       metadata: { user_id: userId || "" },

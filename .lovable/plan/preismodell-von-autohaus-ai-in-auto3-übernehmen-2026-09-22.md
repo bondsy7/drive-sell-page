@@ -6,39 +6,45 @@ Grundlage: interne Einkaufskosten je Aktion (Bildmodell ca. 0,05 € inkl. Infra
 
 ### All-Incl-Marketing (monatlich, netto)
 
-| Paket | Preis/Monat | Inkl. Credits | Kosten bildlastig | Kosten mit 10 % Video | Kosten videolastig (30 %) | Gewinn (realistisch) | Marge |
-|---|---|---|---|---|---|---|---|
-| Basic | 399 € | 600 | ca. 33 € | ca. 47 € | ca. 71 € | ca. 352 € | 88 % |
-| Advanced | 499 € | 1.000 | ca. 58 € | ca. 80 € | ca. 120 € | ca. 419 € | 84 % |
-| Premium | 899 € | 2.000 | ca. 118 € | ca. 160 € | ca. 240 € | ca. 739 € | 82 % |
-| Ultra | 1.598 € | 4.000 | ca. 236 € | ca. 320 € | ca. 480 € | ca. 1.278 € | 80 % |
 
-Zusätzlich: 990 € einmalige Einrichtung sind fast vollständig Deckungsbeitrag (nur interne Arbeitszeit).
+| Paket    | Preis/Monat | Inkl. Credits | Kosten bildlastig | Kosten mit 10 % Video | Kosten videolastig (30 %) | Gewinn (realistisch) | Marge |
+| -------- | ----------- | ------------- | ----------------- | --------------------- | ------------------------- | -------------------- | ----- |
+| Basic    | 399 €       | 600           | ca. 33 €          | ca. 47 €              | ca. 71 €                  | ca. 352 €            | 88 %  |
+| Advanced | 499 €       | 1.000         | ca. 58 €          | ca. 80 €              | ca. 120 €                 | ca. 419 €            | 84 %  |
+| Premium  | 899 €       | 2.000         | ca. 118 €         | ca. 160 €             | ca. 240 €                 | ca. 739 €            | 82 %  |
+| Ultra    | 1.598 €     | 4.000         | ca. 236 €         | ca. 320 €             | ca. 480 €                 | ca. 1.278 €          | 80 %  |
+
+
+Zusätzlich: 990 € einmalige Einrichtung sind fast vollständig Deckungsbeitrag (nur interne Arbeitszeit).  
 Wichtig: Weil jede Nachgenerierung Credits verbraucht, ist das Kontingent die Kostenbremse – anders als bei „unbegrenzt“ ist kein Ausreißer möglich.
 
 ### Fotoservice (pro Fahrzeug, 16 Perspektiven)
 
+
 | Staffel | Preis/Fahrzeug | Kosten/Fahrzeug | Gewinn | Marge |
-|---|---|---|---|---|
-| 1 | 9,99 € | ca. 1,20 € | 8,79 € | 88 % |
-| 25 | 7,99 € | ca. 1,20 € | 6,79 € | 85 % |
-| 50 | 6,99 € | ca. 1,20 € | 5,79 € | 83 % |
-| 100 | 5,99 € | ca. 1,20 € | 4,79 € | 80 % |
-| 200 | 5,49 € | ca. 1,20 € | 4,29 € | 78 % |
+| ------- | -------------- | --------------- | ------ | ----- |
+| 1       | 9,99 €         | ca. 1,20 €      | 8,79 € | 88 %  |
+| 25      | 7,99 €         | ca. 1,20 €      | 6,79 € | 85 %  |
+| 50      | 6,99 €         | ca. 1,20 €      | 5,79 € | 83 %  |
+| 100     | 5,99 €         | ca. 1,20 €      | 4,79 € | 80 %  |
+| 200     | 5,49 €         | ca. 1,20 €      | 4,29 € | 78 %  |
+
 
 Monatsbeispiel 100 Fahrzeuge: 599 € Umsatz, ca. 120 € Kosten inkl. Speicher, ca. 479 € Gewinn.
 
 ### Zusatzleistungen
 
-| Leistung | Preis | Kosten | Marge | Bewertung |
-|---|---|---|---|---|
-| Instagram-/Facebook-Post | 2,50 € | ca. 0,10 € | 96 % | sehr gut |
-| Google-Banner | 2,50 € | ca. 0,10 € | 96 % | sehr gut |
-| Landingpage | 9,50 € / 14,90 € | ca. 0,35 € | 96 % | sehr gut |
-| Video 8 Sek. | 8,50 € | ca. 2,96 € | 65 % | okay |
-| Video-Paket „ab 6,90 €, 1× Wiederholung“ | 6,90 € | bis 5,92 € | **14 %** | **kritisch** |
-| Whitelabel-Automarkt | 299 €/Monat | wenige Euro | >95 % | gut, Supportaufwand einplanen |
-| Flipping-Plugin | 199 €/Monat | wenige Euro | >95 % | gut |
+
+| Leistung                                 | Preis            | Kosten      | Marge    | Bewertung                     |
+| ---------------------------------------- | ---------------- | ----------- | -------- | ----------------------------- |
+| Instagram-/Facebook-Post                 | 2,50 €           | ca. 0,10 €  | 96 %     | sehr gut                      |
+| Google-Banner                            | 2,50 €           | ca. 0,10 €  | 96 %     | sehr gut                      |
+| Landingpage                              | 9,50 € / 14,90 € | ca. 0,35 €  | 96 %     | sehr gut                      |
+| Video 8 Sek.                             | 8,50 €           | ca. 2,96 €  | 65 %     | okay                          |
+| Video-Paket „ab 6,90 €, 1× Wiederholung“ | 6,90 €           | bis 5,92 €  | **14 %** | **kritisch**                  |
+| Whitelabel-Automarkt                     | 299 €/Monat      | wenige Euro | >95 %    | gut, Supportaufwand einplanen |
+| Flipping-Plugin                          | 199 €/Monat      | wenige Euro | >95 %    | gut                           |
+
 
 **Einzige echte Problemstelle:** das Video-Einstiegsangebot mit inkludierter Wiederholung. Empfehlung: entweder das schnelle Videomodell als Standard nutzen (Kosten ca. 0,40 €), oder die kostenlose Wiederholung auf technische Fehler begrenzen, oder Einstiegspreis auf 8,50 € vereinheitlichen.
 
