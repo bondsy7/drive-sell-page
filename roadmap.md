@@ -49,9 +49,9 @@
 - [x] Startseite eng an die neue Referenz mit Bildplatzhaltern, Kennzahlen, vier Schritten und Kundenstimme angleichen
 
 ## Rechtliche Informationsarchitektur (22.09.2026)
-- [ ] Footer auf fünf primäre Rechtszugänge reduzieren (in Arbeit)
-- [ ] Öffentliche Übersicht /rechtliches mit zentralen Dokumentständen erstellen
-- [ ] LegalLayout-Navigation und Rückweg vereinheitlichen
-- [ ] KI-Transparenz in das gemeinsame LegalLayout überführen
-- [ ] Unverifizierte DSB-Aussage in der Datenschutzerklärung neutralisieren
+- [x] Footer auf fünf primäre Rechtszugänge reduzieren
+- [x] Öffentliche Übersicht /rechtliches mit zentralen Dokumentständen erstellen
+- [x] LegalLayout-Navigation und Rückweg vereinheitlichen
+- [x] KI-Transparenz in das gemeinsame LegalLayout überführen
+- [x] Unverifizierte DSB-Aussage in der Datenschutzerklärung neutralisieren
 - [ ] TypeScript, Build und responsive Preview prüfen
