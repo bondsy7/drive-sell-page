@@ -19,7 +19,7 @@ import SiteFooter from '@/components/legal/SiteFooter';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import heroImage from '@/assets/hero-autohaus-ai.png.asset.json';
-import stepPlaceholderImage from '@/assets/autohaus-ai-hero.jpg';
+import stepPlaceholderImage from '@/assets/fahrzeug-perspektiven.webp.asset.json';
 import stepFotoAufnehmen from '@/assets/foto-aufnehmen.webp.asset.json';
 
 const BENEFITS = [
