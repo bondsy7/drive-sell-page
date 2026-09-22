@@ -18,7 +18,8 @@ import PublicHeader from '@/components/public/PublicHeader';
 import SiteFooter from '@/components/legal/SiteFooter';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
-import heroImage from '@/assets/autohaus-ai-hero.jpg';
+import heroImage from '@/assets/hero-autohaus-ai.png.asset.json';
+import stepPlaceholderImage from '@/assets/autohaus-ai-hero.jpg';
 
 const BENEFITS = [
   'In wenigen Minuten startklar',
@@ -73,9 +74,9 @@ function StepVisual({ kind }: { kind: (typeof STEPS)[number]['kind'] }) {
   if (kind === 'phone') {
     return (
       <div className="relative mx-auto mt-6 h-36 w-full overflow-hidden rounded-md bg-secondary">
-        <img src={heroImage} alt="Platzhalter für eine Fahrzeugaufnahme mit dem Smartphone" className="h-full w-full object-cover" />
+        <img src={stepPlaceholderImage} alt="Platzhalter für eine Fahrzeugaufnahme mit dem Smartphone" className="h-full w-full object-cover" />
         <div className="absolute inset-y-3 left-1/2 w-16 -translate-x-1/2 rounded-lg border-[3px] border-foreground bg-card p-1 shadow-elevated">
-          <img src={heroImage} alt="" className="h-full w-full rounded-sm object-cover" />
+          <img src={stepPlaceholderImage} alt="" className="h-full w-full rounded-sm object-cover" />
         </div>
       </div>
     );
@@ -84,7 +85,7 @@ function StepVisual({ kind }: { kind: (typeof STEPS)[number]['kind'] }) {
   if (kind === 'single') {
     return (
       <div className="mt-6 h-36 overflow-hidden rounded-md bg-secondary">
-        <img src={heroImage} alt="Platzhalter für ein KI-veredeltes Fahrzeugbild" className="h-full w-full object-cover" />
+        <img src={stepPlaceholderImage} alt="Platzhalter für ein KI-veredeltes Fahrzeugbild" className="h-full w-full object-cover" />
       </div>
     );
   }
@@ -93,7 +94,7 @@ function StepVisual({ kind }: { kind: (typeof STEPS)[number]['kind'] }) {
     return (
       <div className="mt-6 grid h-36 grid-cols-2 gap-1.5 overflow-hidden rounded-md bg-secondary p-1.5">
         {[0, 1, 2, 3].map((item) => (
-          <img key={item} src={heroImage} alt="" className="h-full min-h-0 w-full rounded-sm object-cover" />
+          <img key={item} src={stepPlaceholderImage} alt="" className="h-full min-h-0 w-full rounded-sm object-cover" />
         ))}
       </div>
     );
@@ -147,38 +148,13 @@ export default function Landing() {
             <div className="relative min-h-[400px] lg:-mr-20 lg:min-h-[520px]">
               <div className="absolute inset-0 overflow-hidden rounded-l-lg bg-card">
                 <img
-                  src={heroImage}
-                  alt="Professionell aufbereitetes Fahrzeug im hellen Studio"
+                  src={heroImage.url}
+                  alt="Professionell aufbereitetes Fahrzeug mit Produktübersicht"
                   width={1600}
                   height={1000}
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-cover object-center"
                 />
-                <div className="absolute inset-0 bg-gradient-to-r from-card via-card/55 via-35% to-transparent" />
-                <div className="absolute inset-0 bg-gradient-to-t from-card/40 via-transparent to-transparent" />
-              </div>
-
-              <div className="absolute right-4 top-5 max-w-[180px] rounded-lg border border-border bg-card px-5 py-4 shadow-elevated sm:right-9 sm:top-8">
-                <p className="font-display text-lg font-bold italic leading-tight">Ein Foto.<br />Viele Möglichkeiten.</p>
-                <span className="absolute -bottom-2 right-8 h-4 w-4 rotate-45 border-b border-r border-border bg-card" />
-              </div>
-
-              <div className="absolute right-4 top-32 w-[190px] rounded-lg border border-border bg-card/95 p-4 shadow-elevated backdrop-blur sm:right-9 sm:top-36">
-                <div className="space-y-3.5">
-                  {OUTPUTS.map((output) => (
-                    <div key={output.label} className="flex items-center gap-3 text-xs font-medium">
-                      <output.icon className="h-4 w-4 text-primary" />
-                      <span>{output.label}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="absolute bottom-3 left-3 right-3 grid grid-cols-4 gap-2 sm:bottom-5 sm:left-16 sm:right-6">
-                {[0, 1, 2, 3].map((item) => (
-                  <div key={item} className="aspect-[4/3] overflow-hidden rounded-md border-2 border-card bg-card shadow-card">
-                    <img src={heroImage} alt="" className="h-full w-full object-cover" />
-                  </div>
-                ))}
+                <div className="absolute inset-0 bg-gradient-to-r from-card/80 via-transparent to-transparent lg:from-card/50" />
               </div>
             </div>
           </div>
