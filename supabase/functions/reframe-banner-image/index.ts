@@ -5,6 +5,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, handleCors, jsonResponse, errorResponse } from "../_shared/cors.ts";
 import { getSecret } from "../_shared/get-secret.ts";
+import { chargeCredits, creditErrorResponse } from "../_shared/credit-guard.ts";
 
 // Officially supported Ideogram v3 reframe resolutions.
 const V3_RESOLUTIONS: Array<[number, number]> = [
@@ -67,6 +68,12 @@ Deno.serve(async (req) => {
 
     const apiKey = await getSecret("IDEOGRAM_API_KEY");
     if (!apiKey) return errorResponse("IDEOGRAM_API_KEY missing", 500);
+
+    // Credits vor dem Anbieteraufruf abziehen.
+    const charge = await chargeCredits(req, "banner_reframe", {
+      description: "Banner-Neuzuschnitt",
+    });
+
 
     const m = imageDataUrl.match(/^data:([^;]+);base64,(.+)$/);
     if (!m) return errorResponse("invalid imageDataUrl", 400);
