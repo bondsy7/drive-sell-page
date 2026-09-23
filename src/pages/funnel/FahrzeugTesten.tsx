@@ -162,7 +162,7 @@ export default function FahrzeugTesten() {
 
   return (
     <FunnelLayout ctaHref="/fahrzeug-testen" ctaLabel="Fahrzeug testen" showMobileCta={false}>
-      <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
+      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
         <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Testen Sie autohaus.ai mit einem echten Fahrzeug.</h1>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground sm:text-base">
           Laden Sie ein Fahrzeugfoto aus Ihrem Bestand hoch und senden Sie uns die wichtigsten Angaben zu Ihrem

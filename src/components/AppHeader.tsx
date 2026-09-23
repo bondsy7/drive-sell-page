@@ -39,20 +39,20 @@ export default function AppHeader({ leftActions, variant = 'card' }: AppHeaderPr
   return (
     <>
       <header className={`${headerBg} sticky top-0 z-50`}>
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 h-14 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-3 sm:px-4 h-14 flex min-w-0 items-center justify-between gap-2">
           {/* Left: Logo (non-clickable image) */}
-          <div className="flex items-center shrink-0">
-            <BrandLogo className="h-7 sm:h-8" />
+          <div className="flex min-w-0 items-center">
+            <BrandLogo className="h-7 max-w-[140px] sm:h-8 sm:max-w-none" />
           </div>
 
           {/* Right: actions */}
-          <div className="flex items-center gap-1 sm:gap-1.5">
+          <div className="flex min-w-0 shrink-0 items-center gap-1 sm:gap-1.5">
             {leftActions}
 
             {user ? (
               <>
                 {/* New Vehicle */}
-                <Link to="/generator">
+                <Link to="/generator" className="shrink-0">
                   <Button size="sm" className="gap-1.5 text-xs sm:text-sm">
                     <Plus className="w-3.5 h-3.5" />
                     <span className="hidden sm:inline">Neues Fahrzeug</span>
@@ -61,7 +61,7 @@ export default function AppHeader({ leftActions, variant = 'card' }: AppHeaderPr
                 </Link>
 
                 {/* Dashboard Home */}
-                <Link to="/dashboard">
+                <Link to="/dashboard" className="hidden shrink-0 min-[430px]:block">
                   <Button variant="ghost" size="icon" className={ghostClass} title="Dashboard">
                     <Home className={iconClass} />
                   </Button>
@@ -71,7 +71,7 @@ export default function AppHeader({ leftActions, variant = 'card' }: AppHeaderPr
                 <Button
                   variant="ghost"
                   size="icon"
-                  className={`relative ${ghostClass}`}
+                  className={`relative hidden shrink-0 min-[360px]:inline-flex ${ghostClass}`}
                   title="KI Verkaufsassistent"
                   onClick={() => setChatOpen(true)}
                 >
@@ -84,10 +84,10 @@ export default function AppHeader({ leftActions, variant = 'card' }: AppHeaderPr
                 </Button>
 
                 {/* Credits */}
-                <CreditBadge />
+                <span className="hidden shrink-0 min-[340px]:inline-flex"><CreditBadge /></span>
 
                 {/* Download-Limit (nur sichtbar wenn konfiguriert) */}
-                <DownloadLimitBadge />
+                <span className="hidden shrink-0 sm:inline-flex"><DownloadLimitBadge /></span>
 
                 {/* Tabbed user menu */}
                 <UserMenuSheet

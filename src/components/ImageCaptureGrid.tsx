@@ -1152,7 +1152,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   };
 
   return (
-    <div className="mx-auto w-full min-w-0 max-w-[736px] overflow-x-hidden pb-24 sm:pb-6">
+    <div className="mx-auto w-full min-w-0 max-w-6xl overflow-x-hidden pb-24 sm:pb-6">
       {/* Kopfbereich */}
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
@@ -1547,7 +1547,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
 
       {/* Mobile Bottom Bar */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 px-3 py-2.5 backdrop-blur sm:hidden">
-        <div className="mx-auto flex max-w-[736px] items-center gap-3">
+        <div className="mx-auto flex max-w-6xl items-center gap-3">
           <div className="min-w-0">
             <p className="text-[10px] text-muted-foreground">Qualität</p>
             <p className="text-xs font-semibold text-foreground">{modelTier || 'Qualität'} · 1 Credit</p>

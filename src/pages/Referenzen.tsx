@@ -117,7 +117,7 @@ export default function Referenzen() {
 
       <main>
         <section className="border-b border-border bg-card">
-          <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-20">
+          <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
             <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
               <div>
                 <p className="text-xs font-bold uppercase text-primary">Echte Ergebnisse</p>
@@ -167,7 +167,7 @@ export default function Referenzen() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20">
+        <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
           <h2 className="font-display text-3xl font-bold sm:text-4xl">Der Unterschied auf einen Blick</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
             Links das Originalfoto vom Hof, rechts das Ergebnis nach der KI-Veredelung mit autohaus.ai.
@@ -192,7 +192,7 @@ export default function Referenzen() {
         </section>
 
         <section id="werbemittel" className="border-y border-border bg-secondary/60 py-16 sm:py-20">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
               <div>
                 <h2 className="font-display text-3xl font-bold sm:text-4xl">Beispiele für erstellte Werbemittel</h2>
@@ -262,7 +262,7 @@ export default function Referenzen() {
         </section>
 
         <section className="px-4 py-16 sm:px-6 sm:py-20">
-          <div className="mx-auto flex max-w-7xl flex-col justify-between gap-7 rounded-lg bg-primary px-6 py-10 text-primary-foreground sm:px-10 lg:flex-row lg:items-center">
+          <div className="mx-auto flex max-w-6xl flex-col justify-between gap-7 rounded-lg bg-primary px-6 py-10 text-primary-foreground sm:px-10 lg:flex-row lg:items-center">
             <div className="max-w-2xl">
               <h2 className="font-display text-3xl font-bold">Überzeuge dich selbst</h2>
               <p className="mt-3 text-sm leading-6 text-primary-foreground/75">Lade dein erstes Fahrzeug hoch und sieh das Ergebnis mit eigenen Augen.</p>

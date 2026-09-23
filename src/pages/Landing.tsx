@@ -118,7 +118,7 @@ export default function Landing() {
 
       <main>
         <section className="overflow-hidden border-b border-border bg-card">
-          <div className="mx-auto grid max-w-7xl gap-10 px-4 pb-10 pt-12 sm:px-6 sm:pt-16 lg:min-h-[620px] lg:grid-cols-[0.84fr_1.16fr] lg:items-center lg:gap-4 lg:pb-14 lg:pt-14">
+          <div className="mx-auto grid max-w-6xl gap-10 px-4 pb-10 pt-12 sm:px-6 sm:pt-16 lg:min-h-[620px] lg:grid-cols-[0.84fr_1.16fr] lg:items-center lg:gap-4 lg:pb-14 lg:pt-14">
             <div className="relative z-10 max-w-xl lg:pr-3">
               <p className="text-xs font-bold uppercase text-primary">Für Autohäuser. Für mehr Umsatz.</p>
               <h1 className="mt-6 font-display text-4xl font-bold leading-[1.08] sm:text-5xl lg:text-[3.6rem]">
@@ -158,7 +158,7 @@ export default function Landing() {
         </section>
 
         <section className="relative -mt-px bg-card px-4 pb-10 sm:px-6">
-          <div className="mx-auto grid max-w-7xl grid-cols-2 overflow-hidden rounded-lg border border-border bg-card shadow-card md:grid-cols-4">
+          <div className="mx-auto grid max-w-6xl grid-cols-2 overflow-hidden rounded-lg border border-border bg-card shadow-card md:grid-cols-4">
             {[
               ['Wenige Min.', 'bis zum Ergebnis'],
               ['18+', 'Perspektiven'],
@@ -174,7 +174,7 @@ export default function Landing() {
         </section>
 
         <section id="produkte" className="py-16 sm:py-20">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <h2 className="font-display text-3xl font-bold sm:text-4xl">So einfach funktioniert autohaus.ai</h2>
             <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {STEPS.map((step) => (
@@ -190,7 +190,7 @@ export default function Landing() {
         </section>
 
         <section id="referenzen" className="pb-16 sm:pb-20">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <div className="flex flex-col gap-6 rounded-lg border border-border bg-card p-6 shadow-card sm:flex-row sm:items-center sm:px-8">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <MessageSquareQuote className="h-5 w-5" />
@@ -207,7 +207,7 @@ export default function Landing() {
         </section>
 
         <section id="leistungen" className="border-y border-border bg-secondary/60 py-16 sm:py-20">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
               <div className="max-w-2xl">
                 <p className="text-sm font-semibold text-primary">Eine Plattform</p>
@@ -228,7 +228,7 @@ export default function Landing() {
         </section>
 
         <section id="unternehmen" className="px-4 py-16 sm:px-6 sm:py-20">
-          <div className="mx-auto flex max-w-7xl flex-col justify-between gap-7 rounded-lg bg-primary px-6 py-10 text-primary-foreground sm:px-10 lg:flex-row lg:items-center">
+          <div className="mx-auto flex max-w-6xl flex-col justify-between gap-7 rounded-lg bg-primary px-6 py-10 text-primary-foreground sm:px-10 lg:flex-row lg:items-center">
             <div className="max-w-2xl">
               <h2 className="font-display text-3xl font-bold">Bereit für modernes Fahrzeugmarketing?</h2>
               <p className="mt-3 text-sm leading-6 text-primary-foreground/75">Starte mit deinen eigenen Fahrzeugfotos und erlebe den vollständigen Ablauf direkt.</p>

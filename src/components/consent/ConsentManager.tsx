@@ -67,7 +67,7 @@ export default function ConsentManager() {
           aria-label="Einwilligung zu optionalen Diensten"
           className="fixed inset-x-0 bottom-0 z-[60] border-t border-border bg-card/98 backdrop-blur"
         >
-          <div className="mx-auto max-w-5xl space-y-4 px-4 py-5 sm:px-6">
+          <div className="mx-auto max-w-6xl space-y-4 px-4 py-5 sm:px-6">
             <div className="space-y-2">
               <p className="font-display text-sm font-semibold text-foreground">
                 Datenschutzeinstellungen

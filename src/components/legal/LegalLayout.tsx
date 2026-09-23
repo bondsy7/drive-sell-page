@@ -78,7 +78,7 @@ export default function LegalLayout({
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <main className="flex-1 px-4 py-10 sm:px-6 sm:py-14">
-        <div className="mx-auto w-full max-w-3xl space-y-9">
+        <div className="mx-auto w-full max-w-6xl space-y-9">
           <div className="flex items-center justify-between border-b border-border pb-5">
             <Link to="/" aria-label="autohaus.ai Startseite"><BrandLogo className="h-7" /></Link>
             <Link

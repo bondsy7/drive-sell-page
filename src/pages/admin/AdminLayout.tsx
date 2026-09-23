@@ -176,7 +176,9 @@ export default function AdminLayout() {
       )}
 
       <main className="flex-1 overflow-y-auto md:pt-0 pt-14">
-        <Outlet />
+        <div className="mx-auto w-full max-w-6xl">
+          <Outlet />
+        </div>
       </main>
     </div>
   );

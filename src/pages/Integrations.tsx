@@ -175,7 +175,7 @@ export default function Integrations() {
     <div className="min-h-screen bg-background">
       <AppHeader />
 
-      <main className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+      <main className="max-w-6xl mx-auto px-4 py-8 space-y-6">
         <div className="flex items-center gap-3">
           <Link to="/dashboard"><Button variant="ghost" size="icon"><ArrowLeft className="w-4 h-4" /></Button></Link>
           <div>

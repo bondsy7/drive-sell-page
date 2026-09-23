@@ -57,7 +57,7 @@ export default function FahrzeugTestenDanke() {
 
   return (
     <FunnelLayout ctaHref="/" ctaLabel="Zurück zu autohaus.ai" showMobileCta={false}>
-      <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6">
+      <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
         <span className="inline-flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1 text-xs font-semibold text-accent">
           <CheckCircle2 className="h-4 w-4" aria-hidden="true" /> Anfrage eingegangen
         </span>

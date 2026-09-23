@@ -72,7 +72,7 @@ export default function AutohausMarketing() {
       anchors={[{ href: '#workflow', label: 'So funktioniert es' }, { href: '#module', label: 'Funktionen' }]}
     >
       <section className="border-b border-border/60 bg-card/30">
-        <div className="mx-auto max-w-4xl px-4 py-16 text-center sm:px-6 lg:py-24">
+        <div className="mx-auto max-w-6xl px-4 py-16 text-center sm:px-6 lg:py-24">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Fahrzeugmarketing für Autohäuser</p>
           <h1 className="mt-4 text-3xl font-bold leading-tight text-foreground sm:text-4xl lg:text-5xl">
             Ein Fahrzeug. Ein Prozess. Alle Marketingkanäle.
@@ -191,7 +191,7 @@ export default function AutohausMarketing() {
 
       {/* FAQ */}
       <section className="border-t border-border/60 bg-card/30">
-        <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6">
+        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
           <h2 className="text-2xl font-bold text-foreground sm:text-3xl">Fragen größerer Händlergruppen</h2>
           <Accordion type="single" collapsible className="mt-6">
             {FAQ.map((item, i) => (
@@ -204,7 +204,7 @@ export default function AutohausMarketing() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-4xl px-4 py-16 text-center sm:px-6">
+      <section className="mx-auto max-w-6xl px-4 py-16 text-center sm:px-6">
         <h2 className="text-2xl font-bold text-foreground sm:text-3xl">
           Mit einem echten Fahrzeug aus Ihrem Bestand testen.
         </h2>

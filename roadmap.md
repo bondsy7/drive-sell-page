@@ -55,3 +55,8 @@
 - [x] KI-Transparenz in das gemeinsame LegalLayout überführen
 - [x] Unverifizierte DSB-Aussage in der Datenschutzerklärung neutralisieren
 - [x] TypeScript, Build und responsive Preview prüfen
+## Einheitliche Desktopbreite (23.09.2026)
+- [x] Reguläre Seiten und Unterseiten auf eine gemeinsame 1120-px-Nutzbreite ausrichten
+- [x] Generator und Fahrzeugaufnahme von 768/736 px auf die gemeinsame Desktopbreite erweitern
+- [x] Desktop- und Mobilansicht sowie Build prüfen
+

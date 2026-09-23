@@ -816,7 +816,7 @@ const Index = () => {
         <div className="flex h-[calc(100vh-56px)]">
           <TemplateSidebar selectedTemplate={selectedTemplate} onSelectTemplate={setSelectedTemplate} vehicleData={vehicleData} />
           <main className="flex-1 overflow-y-auto px-4 py-10">
-            <div className="max-w-5xl mx-auto">
+            <div className="max-w-6xl mx-auto">
               <LandingPagePreview
                 vehicleData={vehicleData} imageBase64={imageBase64}
                 galleryImages={galleryImages} onReset={handleReset}
@@ -828,7 +828,7 @@ const Index = () => {
           </main>
         </div>
       ) : (
-        <main className="max-w-3xl mx-auto px-4 py-12">
+        <main className="max-w-6xl mx-auto px-4 py-12">
           {/* ─── Hub ─── */}
           {appState === 'hub' && (
             <>

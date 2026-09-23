@@ -300,7 +300,7 @@ const ApiDocs = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border/50 bg-primary/95 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link to="/" className="flex items-center">
               <img src={logoDark} alt="Autohaus.AI" className="h-8" />
@@ -316,7 +316,7 @@ const ApiDocs = () => {
         </div>
       </header>
 
-      <div className="max-w-5xl mx-auto px-4 py-12">
+      <div className="max-w-6xl mx-auto px-4 py-12">
         {/* Title */}
         <div className="mb-12">
           <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/10 text-accent text-xs font-semibold mb-4">
@@ -499,7 +499,7 @@ html = requests.get(
 
       {/* Footer */}
       <footer className="border-t border-border bg-card py-8">
-        <div className="max-w-5xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
+        <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <span>© {new Date().getFullYear()} Autohaus.AI</span>
           <div className="flex gap-4">
             <Link to="/" className="hover:text-foreground transition-colors">Startseite</Link>

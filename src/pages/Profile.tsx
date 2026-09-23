@@ -315,12 +315,12 @@ const Profile = () => {
   return (
     <div className="min-h-screen bg-background">
       <AppHeader leftActions={
-        <Button onClick={handleSave} disabled={saving} size="sm" className="gap-1.5 text-xs sm:text-sm">
-          <Save className="w-4 h-4" /> <span className="hidden sm:inline">{saving ? 'Speichern...' : 'Speichern'}</span><span className="sm:hidden">{saving ? '...' : 'Speichern'}</span>
+        <Button onClick={handleSave} disabled={saving} size="sm" className="gap-1.5 px-2 text-xs sm:px-3 sm:text-sm">
+          <Save className="w-4 h-4" /> <span className="hidden min-[430px]:inline">{saving ? 'Speichern...' : 'Speichern'}</span>
         </Button>
       } />
 
-      <main className="max-w-3xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
+      <main className="max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
         <div className="mb-5">
           <h1 className="font-display text-xl sm:text-2xl font-bold text-foreground">Profil & Einstellungen</h1>
           <p className="text-sm text-muted-foreground mt-1">Verwalte dein Autohaus-Profil, Kontakte, Finanzdaten und Konto.</p>
