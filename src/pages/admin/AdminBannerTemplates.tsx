@@ -1049,7 +1049,7 @@ export default function AdminBannerTemplates() {
   const selectedLayer = draft?.layers.find((l) => l.id === selectedId) ?? null;
 
   return (
-    <div className="p-4 md:p-6 space-y-4 max-w-[1600px]">
+    <div className="mx-auto max-w-6xl space-y-4 p-4 md:p-6">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Banner-Templates</h1>
         <p className="text-sm text-muted-foreground">

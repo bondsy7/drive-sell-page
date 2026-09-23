@@ -225,7 +225,7 @@ export default function AutohausFahrzeugbilder() {
 
       {/* FAQ */}
       <section className="border-t border-border/60 bg-card/30">
-        <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6">
+        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
           <h2 className="text-2xl font-bold text-foreground sm:text-3xl">Häufige Fragen</h2>
           <Accordion type="single" collapsible className="mt-6">
             {FAQ.map((item, i) => (
@@ -239,7 +239,7 @@ export default function AutohausFahrzeugbilder() {
       </section>
 
       {/* Schluss-CTA */}
-      <section className="mx-auto max-w-4xl px-4 py-16 text-center sm:px-6">
+      <section className="mx-auto max-w-6xl px-4 py-16 text-center sm:px-6">
         <h2 className="text-2xl font-bold text-foreground sm:text-3xl">
           Testen Sie autohaus.ai mit einem Fahrzeug aus Ihrem Bestand.
         </h2>
