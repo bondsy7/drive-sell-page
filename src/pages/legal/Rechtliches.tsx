@@ -95,7 +95,7 @@ export default function Rechtliches() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <main className="flex-1 px-4 py-10 sm:px-6 sm:py-14">
-        <div className="mx-auto w-full max-w-5xl">
+        <div className="mx-auto w-full max-w-6xl">
           <header className="border-b border-border pb-8">
             <Link
               to="/"

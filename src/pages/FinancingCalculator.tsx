@@ -69,7 +69,7 @@ const FinancingCalculator = () => {
     <div className="min-h-screen bg-background">
       <AppHeader />
 
-      <main className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+      <main className="max-w-6xl mx-auto px-4 py-8 space-y-6">
         <Card>
           <CardHeader>
             <CardTitle className="text-lg font-['Space_Grotesk']">Fahrzeugdaten eingeben</CardTitle>

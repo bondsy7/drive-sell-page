@@ -225,7 +225,7 @@ export default function AdminCreditEconomics() {
   const lossActions = rows.filter((r) => r.margeBasis < 0);
 
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Credit-Ökonomie</h1>
         <p className="text-muted-foreground text-sm mt-1">

@@ -1976,7 +1976,7 @@ export default function ArchitectureDoc() {
     <div className="min-h-screen bg-background">
       {/* Header - hidden in print */}
       <div className="print:hidden sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between flex-wrap gap-2">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between flex-wrap gap-2">
           <Link to="/dashboard" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="w-4 h-4" />
             <span className="text-sm">Zurück</span>
@@ -2014,7 +2014,7 @@ export default function ArchitectureDoc() {
       </div>
 
       {/* Content */}
-      <div className="max-w-5xl mx-auto px-6 py-10 print:px-0 print:py-0 print:max-w-none">
+      <div className="max-w-6xl mx-auto px-6 py-10 print:px-0 print:py-0 print:max-w-none">
         {lang === 'de' ? <DeContent /> : <EnContent />}
 
         {/* Footer */}

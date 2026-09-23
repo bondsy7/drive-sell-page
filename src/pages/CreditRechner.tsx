@@ -5,7 +5,7 @@ const CreditRechner = () => {
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
-      <main className="max-w-3xl mx-auto px-3 sm:px-4 py-8 sm:py-16">
+      <main className="max-w-6xl mx-auto px-3 sm:px-4 py-8 sm:py-16">
         <div className="text-center mb-8">
           <h1 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-3">
             Credit-Rechner

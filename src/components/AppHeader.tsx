@@ -39,7 +39,7 @@ export default function AppHeader({ leftActions, variant = 'card' }: AppHeaderPr
   return (
     <>
       <header className={`${headerBg} sticky top-0 z-50`}>
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 h-14 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-3 sm:px-4 h-14 flex items-center justify-between">
           {/* Left: Logo (non-clickable image) */}
           <div className="flex items-center shrink-0">
             <BrandLogo className="h-7 sm:h-8" />

@@ -320,7 +320,7 @@ const Profile = () => {
         </Button>
       } />
 
-      <main className="max-w-3xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
+      <main className="max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
         <div className="mb-5">
           <h1 className="font-display text-xl sm:text-2xl font-bold text-foreground">Profil & Einstellungen</h1>
           <p className="text-sm text-muted-foreground mt-1">Verwalte dein Autohaus-Profil, Kontakte, Finanzdaten und Konto.</p>

@@ -228,7 +228,7 @@ export default function Produkte() {
 
       <main>
         <section className="border-b border-border bg-card">
-          <div className="mx-auto max-w-7xl px-4 py-14 text-center sm:px-6 sm:py-20">
+          <div className="mx-auto max-w-6xl px-4 py-14 text-center sm:px-6 sm:py-20">
             <p className="text-xs font-bold uppercase text-primary">Eine Plattform. Alle Werbemittel.</p>
             <h1 className="mx-auto mt-5 max-w-3xl font-display text-3xl font-bold leading-tight sm:text-5xl">
               Leistungsstarke Tools für modernes Fahrzeugmarketing.
@@ -240,7 +240,7 @@ export default function Produkte() {
         </section>
 
         <section className="py-12 sm:py-16">
-          <div className="mx-auto grid max-w-7xl gap-5 px-4 sm:grid-cols-2 sm:px-6">
+          <div className="mx-auto grid max-w-6xl gap-5 px-4 sm:grid-cols-2 sm:px-6">
             {MODULES.map((module) => (
               <article
                 key={module.id}
@@ -276,7 +276,7 @@ export default function Produkte() {
         </section>
 
         <section className="border-t border-border bg-secondary/60 px-4 py-12 sm:px-6">
-          <div className="mx-auto flex max-w-7xl items-start gap-4 rounded-lg border border-border bg-card p-6 shadow-card sm:items-center sm:p-8">
+          <div className="mx-auto flex max-w-6xl items-start gap-4 rounded-lg border border-border bg-card p-6 shadow-card sm:items-center sm:p-8">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
               <Sparkles className="h-5 w-5" />
             </span>
@@ -287,7 +287,7 @@ export default function Produkte() {
         </section>
 
         <section className="px-4 py-16 sm:px-6 sm:py-20">
-          <div className="mx-auto flex max-w-7xl flex-col justify-between gap-7 rounded-lg bg-primary px-6 py-10 text-primary-foreground sm:px-10 lg:flex-row lg:items-center">
+          <div className="mx-auto flex max-w-6xl flex-col justify-between gap-7 rounded-lg bg-primary px-6 py-10 text-primary-foreground sm:px-10 lg:flex-row lg:items-center">
             <div className="max-w-2xl">
               <h2 className="font-display text-3xl font-bold">Bereit für modernes Fahrzeugmarketing?</h2>
               <p className="mt-3 text-sm leading-6 text-primary-foreground/75">Starte mit deinen eigenen Fahrzeugfotos und erlebe alle Module direkt im Portal.</p>

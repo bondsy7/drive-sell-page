@@ -22,7 +22,7 @@ export default function SiteFooter({ compact = false }: SiteFooterProps) {
       className={`border-t border-border bg-card/40 ${compact ? 'py-4' : 'py-6'}`}
       aria-label="Rechtliche Informationen"
     >
-      <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 text-xs text-muted-foreground sm:px-6">
+      <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 text-xs text-muted-foreground sm:px-6">
         {!compact && <BrandLogo className="h-5" />}
         <nav className="flex flex-wrap items-center gap-x-3 gap-y-2 sm:gap-x-4" aria-label="Rechtliche Seiten">
           {LINKS.slice(0, 3).map((link) => (

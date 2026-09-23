@@ -791,7 +791,7 @@ const QuickShell: React.FC<Props> = ({ onSwitchToPro }) => {
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
-      <div className="container mx-auto px-4 py-6 max-w-5xl">
+      <div className="container mx-auto px-4 py-6 max-w-6xl">
         <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")}>

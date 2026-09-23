@@ -21,7 +21,7 @@ export default function SalesAssistant() {
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
-      <div className="container mx-auto px-4 py-6 max-w-7xl">
+      <div className="container mx-auto px-4 py-6 max-w-6xl">
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-2">
