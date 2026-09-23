@@ -24,7 +24,7 @@ const MotorhomeWizard: React.FC<MotorhomeWizardProps> = ({ value, onSelect }) =>
           type="button"
           variant="outline"
           onClick={() => onSelect(o.key)}
-          className={`relative aspect-[4/3] h-auto min-w-0 whitespace-normal rounded-lg p-2 text-center shadow-none transition-colors ${
+          className={`relative h-auto min-h-[152px] min-w-0 whitespace-normal rounded-lg p-2 text-center shadow-none transition-colors sm:min-h-[190px] ${
             active
               ? 'border-accent bg-accent/5 ring-1 ring-accent'
               : 'border-border bg-card hover:border-accent/60 hover:bg-muted/30'
@@ -35,7 +35,13 @@ const MotorhomeWizard: React.FC<MotorhomeWizardProps> = ({ value, onSelect }) =>
               <Check className="h-3 w-3 text-accent-foreground" />
             </span>
           )}
-          <span className="flex min-w-0 flex-col items-center justify-center gap-1">
+          <span className="flex min-w-0 flex-col items-center justify-center gap-1.5">
+            <img
+              src={o.image}
+              alt={o.label}
+              className="h-20 w-full object-contain sm:h-28"
+              loading="lazy"
+            />
             <span className="line-clamp-2 w-full break-words text-[11px] font-semibold leading-tight text-foreground sm:text-xs">
               {o.label}
             </span>
