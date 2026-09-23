@@ -6,17 +6,17 @@
  * (Wohnwagen: kein Fahrerhaus/Cockpit).
  */
 import type { CaptureSlot, VehicleClassProfile } from '../vehicle-class-types';
-import front34Asset from '@/assets/motorhome-perspectives/34front.png.asset.json';
-import sideLeftAsset from '@/assets/motorhome-perspectives/side-left.png.asset.json';
-import sideRightAsset from '@/assets/motorhome-perspectives/side-right.png.asset.json';
-import rearAsset from '@/assets/motorhome-perspectives/rear.png.asset.json';
-import cockpitAsset from '@/assets/motorhome-perspectives/cockpit.png.asset.json';
-import livingAsset from '@/assets/motorhome-perspectives/living.png.asset.json';
-import kitchenAsset from '@/assets/motorhome-perspectives/kitchen.png.asset.json';
-import bathAsset from '@/assets/motorhome-perspectives/bath.png.asset.json';
-import bedAsset from '@/assets/motorhome-perspectives/bed.png.asset.json';
-import garageAsset from '@/assets/motorhome-perspectives/garage.png.asset.json';
-import vinReferenceAsset from '@/assets/capture-perspectives/vin.png.asset.json';
+import front34Asset from '@/assets/motorhome-perspectives/34front.webp.asset.json';
+import sideLeftAsset from '@/assets/motorhome-perspectives/side-left.webp.asset.json';
+import sideRightAsset from '@/assets/motorhome-perspectives/side-right.webp.asset.json';
+import rearAsset from '@/assets/motorhome-perspectives/rear.webp.asset.json';
+import cockpitAsset from '@/assets/motorhome-perspectives/cockpit.webp.asset.json';
+import livingAsset from '@/assets/motorhome-perspectives/living.webp.asset.json';
+import kitchenAsset from '@/assets/motorhome-perspectives/kitchen.webp.asset.json';
+import bathAsset from '@/assets/motorhome-perspectives/bath.webp.asset.json';
+import bedAsset from '@/assets/motorhome-perspectives/bed.webp.asset.json';
+import garageAsset from '@/assets/motorhome-perspectives/garage.webp.asset.json';
+import vinReferenceAsset from '@/assets/capture-perspectives/vin.webp.asset.json';
 
 export const MOTORHOME_CAPTURE_SLOTS: CaptureSlot[] = [
   {

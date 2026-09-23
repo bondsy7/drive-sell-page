@@ -2,12 +2,12 @@ import React from 'react';
 import { Check } from 'lucide-react';
 import { getActiveProfiles } from '@/config/vehicle-classes';
 import type { ActiveVehicleClassKey } from '@/config/vehicle-class-types';
-import carAsset from '@/assets/vehicle-classes/car.png.asset.json';
-import truckAsset from '@/assets/vehicle-classes/truck.png.asset.json';
-import motorcycleAsset from '@/assets/vehicle-classes/motorcycle.png.asset.json';
-import motorhomeAsset from '@/assets/vehicle-classes/motorhome.png.asset.json';
-import vanAsset from '@/assets/vehicle-classes/van.png.asset.json';
-import machineryAsset from '@/assets/vehicle-classes/machinery.png.asset.json';
+import carAsset from '@/assets/vehicle-classes/car.webp.asset.json';
+import truckAsset from '@/assets/vehicle-classes/truck.webp.asset.json';
+import motorcycleAsset from '@/assets/vehicle-classes/motorcycle.webp.asset.json';
+import motorhomeAsset from '@/assets/vehicle-classes/motorhome.webp.asset.json';
+import vanAsset from '@/assets/vehicle-classes/van.webp.asset.json';
+import machineryAsset from '@/assets/vehicle-classes/machinery.webp.asset.json';
 
 const CLASS_VISUAL: Record<string, { image: string; title: string; examples: string }> = {
   car: { image: carAsset.url, title: 'PKW', examples: 'Limousine, Kombi, SUV, Coupé' },
@@ -42,16 +42,16 @@ const VehicleClassStrip: React.FC<VehicleClassStripProps> = ({ value, onChange, 
             type="button"
             disabled={disabled}
             onClick={() => onChange(p.key as ActiveVehicleClassKey)}
-            className={`relative flex min-h-[90px] w-full min-w-0 flex-col items-center justify-end gap-1 rounded-lg border bg-card p-2 text-center transition-colors sm:min-h-[132px] ${
+            className={`relative flex min-h-[104px] w-full min-w-0 flex-col items-center justify-end gap-1 rounded-lg border bg-card p-2 text-center transition-colors sm:min-h-[148px] ${
               active ? 'border-accent bg-accent/5' : 'border-border hover:border-accent/60 hover:bg-muted/40'
             } ${disabled ? 'pointer-events-none opacity-60' : ''}`}
           >
-            <span className="flex h-11 w-full min-w-0 items-center justify-center overflow-hidden rounded-md bg-muted/30 sm:h-20">
+            <span className="flex h-14 w-full min-w-0 items-center justify-center overflow-hidden rounded-md bg-muted/30 sm:h-24">
               <img
                 src={visual.image}
                 alt={visual.title}
                 loading="lazy"
-                className="h-full w-full object-contain p-1"
+                className="h-full w-full object-contain"
               />
             </span>
             <span className="min-w-0 w-full">
