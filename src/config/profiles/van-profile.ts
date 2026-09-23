@@ -5,15 +5,15 @@
  * Reisemobil nicht. Kein Wizard – die Slots sind für alle Transporter gleich.
  */
 import type { CaptureSlot, VehicleClassProfile } from '../vehicle-class-types';
-import front34Asset from '@/assets/van-perspectives/34front.png.asset.json';
-import sideLeftAsset from '@/assets/van-perspectives/side-left.png.asset.json';
-import sideRightAsset from '@/assets/van-perspectives/side-right.png.asset.json';
-import rearAsset from '@/assets/van-perspectives/rear.png.asset.json';
-import frontAsset from '@/assets/van-perspectives/front.png.asset.json';
-import cockpitAsset from '@/assets/van-perspectives/cockpit.png.asset.json';
-import cargoAsset from '@/assets/van-perspectives/cargo.png.asset.json';
-import slidingDoorAsset from '@/assets/van-perspectives/sliding-door.png.asset.json';
-import vinReferenceAsset from '@/assets/capture-perspectives/vin.png.asset.json';
+import front34Asset from '@/assets/van-perspectives/34front.webp.asset.json';
+import sideLeftAsset from '@/assets/van-perspectives/side-left.webp.asset.json';
+import sideRightAsset from '@/assets/van-perspectives/side-right.webp.asset.json';
+import rearAsset from '@/assets/van-perspectives/rear.webp.asset.json';
+import frontAsset from '@/assets/van-perspectives/front.webp.asset.json';
+import cockpitAsset from '@/assets/van-perspectives/cockpit.webp.asset.json';
+import cargoAsset from '@/assets/van-perspectives/cargo.webp.asset.json';
+import slidingDoorAsset from '@/assets/van-perspectives/sliding-door.webp.asset.json';
+import vinReferenceAsset from '@/assets/capture-perspectives/vin.webp.asset.json';
 
 export const VAN_CAPTURE_SLOTS: CaptureSlot[] = [
   {

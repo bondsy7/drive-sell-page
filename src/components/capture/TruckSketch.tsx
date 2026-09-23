@@ -1,35 +1,35 @@
 import React from 'react';
-import imgTractorUnitAsset from '@/assets/truck/tractor_unit.png.asset.json';
-import imgRigidTruckAsset from '@/assets/truck/rigid_truck.png.asset.json';
-import imgRigidTruckTrailerAsset from '@/assets/truck/rigid_truck_with_trailer.png.asset.json';
-import imgSemiTruckAsset from '@/assets/truck/semi_truck.png.asset.json';
-import imgSemiTruckTrailerAsset from '@/assets/truck/semi_truck_with_trailer.png.asset.json';
-import imgTrailerOnlyAsset from '@/assets/truck/trailer_only.png.asset.json';
-import imgBodyBoxClosed from '@/assets/truck/body_box_closed.png';
-import imgBodyPlatformOpen from '@/assets/truck/body_platform_open.png';
-import imgBodyTipper from '@/assets/truck/body_tipper.png';
-import imgBodyTank from '@/assets/truck/body_tank.png';
-import imgBodyLowLoader from '@/assets/truck/body_low_loader.png';
-import imgBodyVehicleTransport from '@/assets/truck/body_vehicle_transport.png';
-import imgBodyUnknown from '@/assets/truck/body_unknown.png';
-import imgCargoEmpty from '@/assets/truck/cargo_empty.png';
-import imgCargoLoaded from '@/assets/truck/cargo_loaded.png';
-import imgCargoClosed from '@/assets/truck/cargo_closed.png';
-import imgSlotCab34FrontLeftAsset from '@/assets/truck/slot_cab_34_front_left.png.asset.json';
-import imgSlotCabSideLeftAsset from '@/assets/truck/slot_cab_side_left.png.asset.json';
-import imgSlotCabSideRightAsset from '@/assets/truck/slot_cab_side_right.png.asset.json';
-import imgSlotCabFrontAsset from '@/assets/truck/slot_cab_front.png.asset.json';
-import imgSlotMirrorDetailAsset from '@/assets/truck/slot_mirror_detail.png.asset.json';
-import imgSlotCabInterior from '@/assets/truck/slot_cab_interior.png';
-import imgSlotDriverSeatAsset from '@/assets/truck/slot_driver_seat.png.asset.json';
-import imgSlotPassengerSeatAsset from '@/assets/truck/slot_passenger_seat.png.asset.json';
-import imgSlotSleeperCabinAsset from '@/assets/truck/slot_sleeper_cabin.png.asset.json';
-import imgSlotFifthWheelAsset from '@/assets/truck/slot_fifth_wheel.png.asset.json';
-import imgSlotBodySideLeft from '@/assets/truck/slot_body_side_left.png';
-import imgSlotBodyRear from '@/assets/truck/slot_body_rear.png';
-import imgSlotBody34RearRight from '@/assets/truck/slot_body_34_rear_right.png';
-import imgSlotCargoArea from '@/assets/truck/slot_cargo_area.png';
-import imgSlotVinPlate from '@/assets/truck/slot_vin_plate.png';
+import imgTractorUnitAsset from '@/assets/truck/tractor_unit.webp.asset.json';
+import imgRigidTruckAsset from '@/assets/truck/rigid_truck.webp.asset.json';
+import imgRigidTruckTrailerAsset from '@/assets/truck/rigid_truck_with_trailer.webp.asset.json';
+import imgSemiTruckAsset from '@/assets/truck/semi_truck.webp.asset.json';
+import imgSemiTruckTrailerAsset from '@/assets/truck/semi_truck_with_trailer.webp.asset.json';
+import imgTrailerOnlyAsset from '@/assets/truck/trailer_only.webp.asset.json';
+import imgBodyBoxClosed from '@/assets/truck/body_box_closed.webp.asset.json';
+import imgBodyPlatformOpen from '@/assets/truck/body_platform_open.webp.asset.json';
+import imgBodyTipper from '@/assets/truck/body_tipper.webp.asset.json';
+import imgBodyTank from '@/assets/truck/body_tank.webp.asset.json';
+import imgBodyLowLoader from '@/assets/truck/body_low_loader.webp.asset.json';
+import imgBodyVehicleTransport from '@/assets/truck/body_vehicle_transport.webp.asset.json';
+import imgBodyUnknown from '@/assets/truck/body_unknown.webp.asset.json';
+import imgCargoEmpty from '@/assets/truck/cargo_empty.webp.asset.json';
+import imgCargoLoaded from '@/assets/truck/cargo_loaded.webp.asset.json';
+import imgCargoClosed from '@/assets/truck/cargo_closed.webp.asset.json';
+import imgSlotCab34FrontLeftAsset from '@/assets/truck/slot_cab_34_front_left.webp.asset.json';
+import imgSlotCabSideLeftAsset from '@/assets/truck/slot_cab_side_left.webp.asset.json';
+import imgSlotCabSideRightAsset from '@/assets/truck/slot_cab_side_right.webp.asset.json';
+import imgSlotCabFrontAsset from '@/assets/truck/slot_cab_front.webp.asset.json';
+import imgSlotMirrorDetailAsset from '@/assets/truck/slot_mirror_detail.webp.asset.json';
+import imgSlotCabInterior from '@/assets/truck/slot_cab_interior.webp.asset.json';
+import imgSlotDriverSeatAsset from '@/assets/truck/slot_driver_seat.webp.asset.json';
+import imgSlotPassengerSeatAsset from '@/assets/truck/slot_passenger_seat.webp.asset.json';
+import imgSlotSleeperCabinAsset from '@/assets/truck/slot_sleeper_cabin.webp.asset.json';
+import imgSlotFifthWheelAsset from '@/assets/truck/slot_fifth_wheel.webp.asset.json';
+import imgSlotBodySideLeft from '@/assets/truck/slot_body_side_left.webp.asset.json';
+import imgSlotBodyRear from '@/assets/truck/slot_body_rear.webp.asset.json';
+import imgSlotBody34RearRight from '@/assets/truck/slot_body_34_rear_right.webp.asset.json';
+import imgSlotCargoArea from '@/assets/truck/slot_cargo_area.webp.asset.json';
+import imgSlotVinPlate from '@/assets/truck/slot_vin_plate.webp.asset.json';
 
 
 /**
@@ -337,32 +337,32 @@ const CONFIG_IMAGES: Record<string, string> = {
   semi_truck: imgSemiTruckAsset.url,
   semi_truck_with_trailer: imgSemiTruckTrailerAsset.url,
   trailer_only: imgTrailerOnlyAsset.url,
-  body_box_closed: imgBodyBoxClosed,
-  body_platform_open: imgBodyPlatformOpen,
-  body_tipper: imgBodyTipper,
-  body_tank: imgBodyTank,
-  body_low_loader: imgBodyLowLoader,
-  body_vehicle_transport: imgBodyVehicleTransport,
-  body_unknown: imgBodyUnknown,
-  cargo_empty: imgCargoEmpty,
-  cargo_loaded_accessible: imgCargoLoaded,
-  cargo_not_accessible: imgCargoClosed,
+  body_box_closed: imgBodyBoxClosed.url,
+  body_platform_open: imgBodyPlatformOpen.url,
+  body_tipper: imgBodyTipper.url,
+  body_tank: imgBodyTank.url,
+  body_low_loader: imgBodyLowLoader.url,
+  body_vehicle_transport: imgBodyVehicleTransport.url,
+  body_unknown: imgBodyUnknown.url,
+  cargo_empty: imgCargoEmpty.url,
+  cargo_loaded_accessible: imgCargoLoaded.url,
+  cargo_not_accessible: imgCargoClosed.url,
   // ── Aufnahme-Slots (gleicher Skizzenstil) ──
   cab_34_front_left: imgSlotCab34FrontLeftAsset.url,
   cab_side_left: imgSlotCabSideLeftAsset.url,
   cab_side_right: imgSlotCabSideRightAsset.url,
   cab_front: imgSlotCabFrontAsset.url,
   mirror_detail: imgSlotMirrorDetailAsset.url,
-  cab_interior: imgSlotCabInterior,
+  cab_interior: imgSlotCabInterior.url,
   driver_seat: imgSlotDriverSeatAsset.url,
   passenger_seat: imgSlotPassengerSeatAsset.url,
   sleeper_cabin: imgSlotSleeperCabinAsset.url,
   fifth_wheel: imgSlotFifthWheelAsset.url,
-  body_side_left: imgSlotBodySideLeft,
-  body_rear: imgSlotBodyRear,
-  body_34_rear_right: imgSlotBody34RearRight,
-  cargo_area: imgSlotCargoArea,
-  vin_plate: imgSlotVinPlate,
+  body_side_left: imgSlotBodySideLeft.url,
+  body_rear: imgSlotBodyRear.url,
+  body_34_rear_right: imgSlotBody34RearRight.url,
+  cargo_area: imgSlotCargoArea.url,
+  vin_plate: imgSlotVinPlate.url,
 };
 
 /** Skizzen, die horizontal gespiegelt dargestellt werden (rechte Fahrzeugseite). */

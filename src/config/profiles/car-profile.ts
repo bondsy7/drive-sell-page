@@ -7,11 +7,11 @@
  * funktional, visuell und qualitativ identisch.
  */
 import type { CaptureSlot, VehicleClassProfile } from '../vehicle-class-types';
-import frontThreeQuarterIcon from '@/assets/capture-perspectives/34front.png.asset.json';
-import sideIcon from '@/assets/capture-perspectives/seite.png.asset.json';
-import rearIcon from '@/assets/capture-perspectives/back.png.asset.json';
-import cockpitIcon from '@/assets/capture-perspectives/cockpit.png.asset.json';
-import rearSeatIcon from '@/assets/capture-perspectives/rucksitz.png.asset.json';
+import frontThreeQuarterIcon from '@/assets/capture-perspectives/34front.webp.asset.json';
+import sideIcon from '@/assets/capture-perspectives/seite.webp.asset.json';
+import rearIcon from '@/assets/capture-perspectives/back.webp.asset.json';
+import cockpitIcon from '@/assets/capture-perspectives/cockpit.webp.asset.json';
+import rearSeatIcon from '@/assets/capture-perspectives/rucksitz.webp.asset.json';
 
 export const CAR_CAPTURE_SLOTS: CaptureSlot[] = [
   {

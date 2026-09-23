@@ -2,9 +2,9 @@ import React from 'react';
 import { ArrowRight } from 'lucide-react';
 import { getActiveProfiles } from '@/config/vehicle-classes';
 import type { ActiveVehicleClassKey } from '@/config/vehicle-class-types';
-import carAsset from '@/assets/vehicle-classes/car.png.asset.json';
-import truckAsset from '@/assets/vehicle-classes/truck.png.asset.json';
-import motorcycleAsset from '@/assets/vehicle-classes/motorcycle.png.asset.json';
+import carAsset from '@/assets/vehicle-classes/car.webp.asset.json';
+import truckAsset from '@/assets/vehicle-classes/truck.webp.asset.json';
+import motorcycleAsset from '@/assets/vehicle-classes/motorcycle.webp.asset.json';
 
 const CLASS_VISUAL: Record<string, { image: string; title: string; examples: string }> = {
   car: {

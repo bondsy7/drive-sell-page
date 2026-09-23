@@ -43,7 +43,7 @@ import { usePipeline } from '@/contexts/PipelineContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { createPipelineWorkflowKey } from '@/lib/pipeline-workflow';
 import tireReferenceAsset from '@/assets/tire-reference.png.asset.json';
-import vinReferenceAsset from '@/assets/capture-perspectives/vin.png.asset.json';
+import vinReferenceAsset from '@/assets/capture-perspectives/vin.webp.asset.json';
 
 interface ImageCaptureGridProps {
   vehicleDescription: string;
@@ -1123,9 +1123,9 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
             className="w-full h-full min-w-0 flex flex-col items-center justify-center gap-1 p-2 hover:bg-muted/40 transition-colors"
           >
             {slot.icon ? (
-              <img src={slot.icon} alt={slot.label} className="h-10 w-20 shrink-0 object-contain lg:h-8" />
+              <img src={slot.icon} alt={slot.label} className="h-14 w-[88%] shrink-0 object-contain sm:h-16" />
             ) : (
-              <TruckSketch id={slot.sketch} className="h-10 w-20 shrink-0 text-muted-foreground lg:h-8" />
+              <TruckSketch id={slot.sketch} className="h-14 w-[88%] shrink-0 text-muted-foreground sm:h-16" />
             )}
             <span className="line-clamp-2 w-full break-words text-center text-[10px] font-semibold leading-tight text-foreground sm:text-[11px]">
               {slot.label}

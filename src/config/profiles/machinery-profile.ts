@@ -5,15 +5,15 @@
  * Reisemobil und Transporter nicht. Kein Wizard.
  */
 import type { CaptureSlot, VehicleClassProfile } from '../vehicle-class-types';
-import front34Asset from '@/assets/machinery-perspectives/34front.png.asset.json';
-import sideLeftAsset from '@/assets/machinery-perspectives/side-left.png.asset.json';
-import sideRightAsset from '@/assets/machinery-perspectives/side-right.png.asset.json';
-import rearAsset from '@/assets/machinery-perspectives/rear.png.asset.json';
-import frontAsset from '@/assets/machinery-perspectives/front.png.asset.json';
-import cabinAsset from '@/assets/machinery-perspectives/cabin.png.asset.json';
-import controlsAsset from '@/assets/machinery-perspectives/controls.png.asset.json';
-import undercarriageAsset from '@/assets/machinery-perspectives/undercarriage.png.asset.json';
-import vinReferenceAsset from '@/assets/capture-perspectives/vin.png.asset.json';
+import front34Asset from '@/assets/machinery-perspectives/34front.webp.asset.json';
+import sideLeftAsset from '@/assets/machinery-perspectives/side-left.webp.asset.json';
+import sideRightAsset from '@/assets/machinery-perspectives/side-right.webp.asset.json';
+import rearAsset from '@/assets/machinery-perspectives/rear.webp.asset.json';
+import frontAsset from '@/assets/machinery-perspectives/front.webp.asset.json';
+import cabinAsset from '@/assets/machinery-perspectives/cabin.webp.asset.json';
+import controlsAsset from '@/assets/machinery-perspectives/controls.webp.asset.json';
+import undercarriageAsset from '@/assets/machinery-perspectives/undercarriage.webp.asset.json';
+import vinReferenceAsset from '@/assets/capture-perspectives/vin.webp.asset.json';
 
 export const MACHINERY_CAPTURE_SLOTS: CaptureSlot[] = [
   {
