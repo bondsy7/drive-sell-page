@@ -66,7 +66,7 @@
 
 
 ## Paid-Funnel Redesign nach Referenz (24.09.2026)
-- [ ] Gemeinsamen Funnel-Rahmen und Vorher/Nachher-Bühne umsetzen
-- [ ] /autohaus-fahrzeugbilder und /autohaus-marketing nach Vorlagen überarbeiten
-- [ ] /fahrzeug-testen und Danke-Seite nach Vorlagen überarbeiten
-- [ ] Desktop, Mobil, Formulare und Tracking prüfen
+- [x] Gemeinsamen Funnel-Rahmen und Vorher/Nachher-Bühne umsetzen
+- [x] /autohaus-fahrzeugbilder und /autohaus-marketing nach Vorlagen überarbeiten
+- [x] /fahrzeug-testen und Danke-Seite nach Vorlagen überarbeiten
+- [x] Desktop, Mobil, Formulare und Tracking prüfen
