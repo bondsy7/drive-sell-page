@@ -41,11 +41,32 @@ export const GOAL_OPTIONS = [
 
 export const STATUS_OPTIONS = [
   { value: 'new', label: 'Neu' },
+  { value: 'validated', label: 'Validiert' },
   { value: 'contacted', label: 'Kontaktiert' },
+  { value: 'demo_requested', label: 'Demo gewünscht' },
   { value: 'demo_booked', label: 'Demo gebucht' },
-  { value: 'qualified', label: 'Qualifiziert' },
+  { value: 'demo_held', label: 'Demo stattgefunden' },
+  { value: 'sql', label: 'SQL (qualifiziert)' },
+  { value: 'proposal', label: 'Angebot' },
   { value: 'won', label: 'Gewonnen' },
   { value: 'lost', label: 'Verloren' },
+] as const;
+
+/** Statuswechsel → Ereignisname (GA4-Empfehlung für Lead-Funnel). */
+export const STATUS_EVENT: Record<string, string> = {
+  validated: 'working_lead',
+  contacted: 'working_lead',
+  demo_booked: 'demo_booked',
+  demo_held: 'demo_held',
+  sql: 'qualify_lead',
+  proposal: 'proposal_sent',
+  won: 'close_convert_lead',
+  lost: 'close_unconvert_lead',
+};
+
+export const LOST_REASONS = [
+  'Kein Bedarf', 'Preis / Budget', 'Falscher Zeitpunkt', 'Wettbewerber gewählt',
+  'Nicht erreichbar', 'Kein Entscheider', 'Kein Händler / Spam', 'Sonstiges',
 ] as const;
 
 export const LEAD_CLASS_LABELS: Record<string, string> = {
