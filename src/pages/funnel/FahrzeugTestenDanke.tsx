@@ -9,6 +9,8 @@ import { toast } from '@/hooks/use-toast';
 import FunnelLayout from '@/components/funnel/FunnelLayout';
 import { usePageMeta } from '@/hooks/usePageMeta';
 import { supabase } from '@/integrations/supabase/client';
+import LeadDetailsStep from '@/components/funnel/LeadDetailsStep';
+import { trackFunnelEvent } from '@/lib/funnel-tracking';
 
 const STEPS = [
   { title: 'Fahrzeug und Einsatzziel prüfen', desc: 'Wir sehen uns Ihr Fahrzeugbild und Ihre Angaben zum Betrieb an.' },
@@ -26,6 +28,9 @@ export default function FahrzeugTestenDanke() {
 
   const [searchParams] = useSearchParams();
   const leadId = searchParams.get('lead');
+  const token = searchParams.get('t');
+  const isProcessCheck = searchParams.get('typ') === 'prozess';
+  const [detailsDone, setDetailsDone] = useState(false);
 
   const [open, setOpen] = useState(false);
   const [preferredContact, setPreferredContact] = useState('');
@@ -48,8 +53,9 @@ export default function FahrzeugTestenDanke() {
         return;
       }
       setRequested(true);
+      trackFunnelEvent('demo_requested', {}, { eventId: `demo_requested:${leadId}`, leadId });
       setOpen(false);
-      toast({ title: 'Demo-Interesse vermerkt', description: 'Wir melden uns zur Terminabstimmung bei Ihnen.' });
+      toast({ title: 'Demo-Wunsch vermerkt', description: 'Wir melden uns per E-Mail mit Terminvorschlägen.' });
     } finally {
       setSending(false);
     }
@@ -68,6 +74,10 @@ export default function FahrzeugTestenDanke() {
           Wir prüfen Ihre Angaben und das hochgeladene Fahrzeug. Im nächsten Schritt zeigen wir Ihnen, wie
           autohaus.ai in Ihrem Händlerprozess eingesetzt werden kann.
         </p>
+
+        {leadId && token && !detailsDone && (
+          <LeadDetailsStep leadId={leadId} token={token} askVolume={!isProcessCheck} onDone={() => setDetailsDone(true)} />
+        )}
 
         <h2 className="mt-10 text-lg font-semibold text-foreground">Die nächsten Schritte</h2>
         <ol className="mt-4 space-y-3">

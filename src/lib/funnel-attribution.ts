@@ -18,6 +18,8 @@ export const ATTRIBUTION_PARAMS = [
   'utm_content',
   'utm_term',
   'gclid',
+  'gbraid',
+  'wbraid',
   'msclkid',
   'fbclid',
   'li_fat_id',
@@ -110,6 +112,36 @@ export function captureAttribution(sourceLabel?: string): FunnelAttribution {
 
   persist(next);
   return next;
+}
+
+/** Last Touch: Kampagnenparameter des aktuellen Aufrufs (nur im Speicher, außer bei Marketing-Einwilligung). */
+const LAST_KEY = 'auto3_b2b_last_touch_v1';
+let memoryLastTouch: FunnelAttribution = {};
+
+export function captureLastTouch(): FunnelAttribution {
+  if (typeof window === 'undefined') return {};
+  const params = new URLSearchParams(window.location.search);
+  const incoming: FunnelAttribution = {};
+  for (const key of ATTRIBUTION_PARAMS) {
+    const value = params.get(key);
+    if (value) incoming[key] = value.slice(0, 300);
+  }
+  if (Object.keys(incoming).length === 0) return getLastTouch();
+  const next = { ...incoming, landing_page: window.location.pathname + window.location.search, captured_at: new Date().toISOString() };
+  memoryLastTouch = next;
+  if (marketingAllowed()) {
+    try { window.localStorage.setItem(LAST_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+  }
+  return next;
+}
+
+export function getLastTouch(): FunnelAttribution {
+  if (typeof window === 'undefined') return {};
+  if (Object.keys(memoryLastTouch).length > 0 || !marketingAllowed()) return memoryLastTouch;
+  try {
+    const raw = window.localStorage.getItem(LAST_KEY);
+    return raw ? (JSON.parse(raw) as FunnelAttribution) : {};
+  } catch { return {}; }
 }
 
 export function getAttribution(): FunnelAttribution {

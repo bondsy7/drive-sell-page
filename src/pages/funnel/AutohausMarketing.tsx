@@ -7,6 +7,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import FunnelLayout from '@/components/funnel/FunnelLayout';
+import ProcessCheckForm from '@/components/funnel/ProcessCheckForm';
 import { usePageMeta } from '@/hooks/usePageMeta';
 import { captureAttribution } from '@/lib/funnel-attribution';
 
@@ -86,7 +87,7 @@ export default function AutohausMarketing() {
               <Link to={TEST_URL}>Mit einem Fahrzeug testen <ArrowRight className="ml-2 h-4 w-4" /></Link>
             </Button>
             <Button asChild size="lg" variant="outline">
-              <a href="#workflow">Workflow ansehen</a>
+              <a href="#prozess-check">Prozesscheck für Gruppen</a>
             </Button>
           </div>
           <p className="mt-4 text-xs text-muted-foreground">
@@ -214,6 +215,14 @@ export default function AutohausMarketing() {
         <Button asChild size="lg" className="mt-8">
           <Link to={TEST_URL}>Mit einem Fahrzeug testen <ArrowRight className="ml-2 h-4 w-4" /></Link>
         </Button>
+      </section>
+
+      <section id="prozess-check" className="mx-auto max-w-3xl scroll-mt-20 px-4 pb-16 sm:px-6">
+        <h2 className="mb-2 text-xl font-bold text-foreground sm:text-2xl">Mehrere Standorte?</h2>
+        <p className="mb-5 text-sm text-muted-foreground">
+          Für Händlergruppen ist ein kurzer Prozesscheck oft der bessere erste Schritt: Bestand, Standorte, Systeme und Freigaben – ohne Bild-Upload.
+        </p>
+        <ProcessCheckForm />
       </section>
     </FunnelLayout>
   );

@@ -1,5 +1,7 @@
-import { ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { ReactNode, useEffect, MouseEvent } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { trackFunnelEvent } from '@/lib/funnel-tracking';
+import { captureLastTouch } from '@/lib/funnel-attribution';
 import { Button } from '@/components/ui/button';
 import BrandLogo from '@/components/brand/BrandLogo';
 import SiteFooter from '@/components/legal/SiteFooter';
@@ -26,8 +28,26 @@ export default function FunnelLayout({
   anchors = [],
   showMobileCta = true,
 }: FunnelLayoutProps) {
+  const location = useLocation();
+  useEffect(() => {
+    captureLastTouch();
+    trackFunnelEvent('page_view', { page_path: location.pathname });
+  }, [location.pathname]);
+
+  // Alle CTA-Klicks im Funnel zentral erfassen (Links zum Test / Prozesscheck)
+  const onClickCapture = (e: MouseEvent<HTMLDivElement>) => {
+    const el = (e.target as HTMLElement).closest('a,button') as HTMLElement | null;
+    if (!el) return;
+    const href = el.getAttribute('href') ?? '';
+    const ctaId = el.dataset.cta || (href.includes('/fahrzeug-testen') ? 'fahrzeug_testen' : href === '#prozess-check' ? 'prozess_check' : '');
+    if (!ctaId) return;
+    trackFunnelEvent('cta_click', { cta_id: ctaId, cta_label: (el.textContent ?? '').trim().slice(0, 60) }, {
+      eventId: `cta_click:${crypto.randomUUID()}`,
+    });
+  };
+
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground" onClickCapture={onClickCapture}>
       <header className="sticky top-0 z-50 border-b border-border/70 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
           <Link to="/" className="flex items-center gap-2 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">

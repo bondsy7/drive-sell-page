@@ -55,3 +55,9 @@ project_id = "rauzclzphdnhzflovrya"
     verify_jwt = false
   [functions.submit-lead]
     verify_jwt = false
+
+[functions.update-b2b-lead-step2]
+verify_jwt = false
+
+[functions.track-marketing-event]
+verify_jwt = false

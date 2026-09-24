@@ -212,6 +212,23 @@ export default function Datenschutz() {
           ausdrücklich aktiviert und hier ergänzt werden. Ohne Einwilligung erfolgt keine
           Übertragung an Google.
         </p>
+        <p>
+          Haben Sie in „Marketing“ eingewilligt und über eine Google-Anzeige eine Testanfrage
+          gesendet, speichern wir die Google-Klick-ID (gclid, gbraid oder wbraid) mit Ihrer Anfrage.
+          Erreicht die Anfrage später eine Vertriebsstufe (z. B. „qualifiziert“ oder „Vertrag
+          abgeschlossen“), übermitteln wir an Google Ads nur diese Klick-ID, die Stufe, den
+          Zeitpunkt und ggf. den Netto-Vertragswert – keine Namen, E-Mail-Adressen oder
+          Telefonnummern. Zweck ist die Erfolgsmessung unserer Anzeigen; Empfänger ist Google
+          Ireland Limited. Ohne Marketing-Einwilligung findet diese Übermittlung nicht statt. Einen
+          Widerruf können Sie jederzeit über „Cookie-Einstellungen“ erklären; er gilt für künftige
+          Übermittlungen.
+        </p>
+        <p>
+          Unabhängig davon zählen wir auf unseren Kampagnenseiten anonyme Schritte (z. B.
+          Seitenaufruf, Klick auf „Test starten“) mit einer zufälligen Sitzungskennung und den
+          Kampagnenparametern der Seite, ohne personenbezogene Angaben. Ohne Einwilligung wird dafür nichts in Ihrem Browser gespeichert. Dies
+          dient der Auswertung unserer Anfrage-Strecke (Art. 6 Abs. 1 lit. f DSGVO).
+        </p>
       </LegalSection>
 
       <LegalSection title="17. Einwilligungsverwaltung und Consent Mode V2">
