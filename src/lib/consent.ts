@@ -200,6 +200,7 @@ let adsConfigured = false;
 let remoteGaId: string | null | undefined; // undefined = noch nicht geladen
 let remoteGaPromise: Promise<string | null> | null = null;
 /** Analyse-Events, die vor fertiger GA4-Konfiguration ausgelöst wurden (nur mit Einwilligung). */
+let gaPageViewSent = false;
 const pendingAnalytics: Array<[string, Record<string, unknown>]> = [];
 
 /** GA4-Mess-ID: Build-Variable oder serverseitig hinterlegte ID. */
@@ -278,8 +279,13 @@ function loadGoogleTagsIfConfigured(state: ConsentState) {
       send_page_view: false,
       ...(isDebugMode() ? { debug_mode: true } : {}),
     });
+    // Seitenaufruf, der vor der Einwilligung stattfand, einmalig nachreichen (ohne Doppelung).
+    if (!pendingAnalytics.some(([n]) => n === 'page_view') && !gaPageViewSent) {
+      pendingAnalytics.unshift(['page_view', { page_path: window.location.pathname }]);
+    }
     while (pendingAnalytics.length) {
       const [n, p] = pendingAnalytics.shift()!;
+      if (n === 'page_view') gaPageViewSent = true;
       window.gtag?.('event', n, p);
     }
   }
@@ -298,6 +304,7 @@ export function trackAnalyticsEvent(name: string, params?: Record<string, unknow
   const consent = readConsent();
   if (!consent?.analytics) return;
   const p = params ?? {};
+  if (name === 'page_view') gaPageViewSent = true;
   if (gaConfigured) {
     window.gtag?.('event', name, p);
   } else if (remoteGaId !== null || getGaId()) {
