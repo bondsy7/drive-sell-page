@@ -46,6 +46,8 @@ interface B2bLead {
   landing_page: string | null;
   first_referrer: string | null;
   last_touch: Record<string, string> | null;
+  consent_marketing: boolean;
+  consent_id: string | null;
   status: string;
   source_label: string;
   demo_requested: boolean;
@@ -266,6 +268,7 @@ export default function AdminB2bLeads() {
     const rows: unknown[][] = [];
     for (const l of leads) {
       if (!l.gclid && !l.gbraid && !l.wbraid) continue;
+      if (!l.consent_marketing) continue; // nur mit Marketing-Einwilligung an Google übermitteln
       for (const s of stages) {
         const t = l[s.ts] as string | null;
         if (!t) continue;
@@ -274,7 +277,7 @@ export default function AdminB2bLeads() {
       }
     }
     if (rows.length === 0) {
-      toast({ title: 'Keine Daten', description: 'Noch keine qualifizierten oder gewonnenen Leads mit Google-Klick-ID.' });
+      toast({ title: 'Keine Daten', description: 'Noch keine qualifizierten oder gewonnenen Leads mit Google-Klick-ID und Marketing-Einwilligung.' });
       return;
     }
     downloadCsv(`google-ads-offline-${new Date().toISOString().slice(0, 10)}.csv`,
@@ -561,6 +564,7 @@ export default function AdminB2bLeads() {
                       ['utm_campaign', selected.utm_campaign], ['utm_content', selected.utm_content], ['utm_term', selected.utm_term],
                       ['gclid', selected.gclid], ['gbraid', selected.gbraid], ['wbraid', selected.wbraid], ['msclkid', selected.msclkid],
                       ['fbclid', selected.fbclid], ['li_fat_id', selected.li_fat_id], ['Landingpage', selected.landing_page], ['Referrer', selected.first_referrer],
+                      ['Marketing-Einwilligung', selected.consent_marketing ? `ja (${selected.consent_id ?? 'ohne ID'})` : 'nein'],
                     ] as [string, string | null][]).map(([k, v]) => (
                       <div key={k} className="contents"><dt className="text-muted-foreground">{k}</dt><dd className="truncate text-foreground" title={v ?? ''}>{v || '–'}</dd></div>
                     ))}

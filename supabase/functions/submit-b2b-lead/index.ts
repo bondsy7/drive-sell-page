@@ -165,6 +165,9 @@ Deno.serve(async (req) => {
         lead_class: leadClass,
         ...attr,
         last_touch: lastTouch,
+        // Marketing-Einwilligung zum Zeitpunkt der Anfrage (Voraussetzung für Google-Ads-Offline-Import)
+        consent_marketing: clean(form.get("consent_marketing"), 5) === "true",
+        consent_id: clean(form.get("consent_id"), 80) || null,
         source_label: clean(form.get("source_label"), 60) || "paid_funnel",
       })
       .select("id, step2_token")

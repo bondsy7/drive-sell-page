@@ -149,6 +149,8 @@ export type Database = {
           business_email: string
           client_fingerprint: string | null
           company_name: string
+          consent_id: string | null
+          consent_marketing: boolean
           contacted_at: string | null
           created_at: string
           demo_booked_at: string | null
@@ -209,6 +211,8 @@ export type Database = {
           business_email: string
           client_fingerprint?: string | null
           company_name: string
+          consent_id?: string | null
+          consent_marketing?: boolean
           contacted_at?: string | null
           created_at?: string
           demo_booked_at?: string | null
@@ -269,6 +273,8 @@ export type Database = {
           business_email?: string
           client_fingerprint?: string | null
           company_name?: string
+          consent_id?: string | null
+          consent_marketing?: boolean
           contacted_at?: string | null
           created_at?: string
           demo_booked_at?: string | null
