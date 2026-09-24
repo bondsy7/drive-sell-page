@@ -409,11 +409,12 @@ export default function AdminB2bLeads() {
               <th className="px-3 py-2 text-left">Verantwortlich</th>
               <th className="px-3 py-2 text-left">Nächster Schritt</th>
               <th className="px-3 py-2 text-left">Eingang</th>
+              <th className="px-3 py-2 text-right" aria-label="Aktionen" />
             </tr>
           </thead>
           <tbody>
-            {loading && <tr><td colSpan={8} className="px-3 py-8 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" /></td></tr>}
-            {!loading && filtered.length === 0 && <tr><td colSpan={8} className="px-3 py-8 text-center text-muted-foreground">Keine Leads gefunden.</td></tr>}
+            {loading && <tr><td colSpan={9} className="px-3 py-8 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" /></td></tr>}
+            {!loading && filtered.length === 0 && <tr><td colSpan={9} className="px-3 py-8 text-center text-muted-foreground">Keine Leads gefunden.</td></tr>}
             {filtered.map((l) => (
               <tr
                 key={l.id}
@@ -439,6 +440,17 @@ export default function AdminB2bLeads() {
                   {l.next_step_date ? new Date(l.next_step_date).toLocaleDateString('de-DE') : needsNextStep(l) ? 'fehlt' : '–'}
                 </td>
                 <td className="px-3 py-2 text-xs text-muted-foreground">{formatDate(l.created_at)}</td>
+                <td className="px-3 py-2 text-right">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    aria-label={`Lead von ${l.company_name} löschen`}
+                    onClick={(e) => { e.stopPropagation(); void deleteLead(l); }}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                  </Button>
+                </td>
               </tr>
             ))}
           </tbody>
