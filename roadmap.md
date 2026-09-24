@@ -63,7 +63,7 @@
 ## Generator-Bento-Redesign (24.09.2026)
 - [x] Generator-Startseite in die gewählte grafische Bento-Struktur überführen
 - [x] Alle bestehenden Werkzeuge, Berechtigungen und Klickpfade erhalten
-- [ ] Desktop- und Mobilansicht sowie zentrale Klickpfade prüfen
+- [x] Desktop- und Mobilansicht sowie zentrale Klickpfade prüfen
 
 ## Generator-Grafiken (23.09.2026)
 - [x] Fahrzeugarten und Aufnahmegrafiken zuschneiden, als WebP optimieren und größer darstellen
