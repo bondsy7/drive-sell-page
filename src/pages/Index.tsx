@@ -828,7 +828,7 @@ const Index = () => {
           </main>
         </div>
       ) : (
-        <main className="max-w-6xl mx-auto px-4 py-12">
+        <main className="max-w-6xl mx-auto px-4 py-7 sm:py-10">
           {/* ─── Hub ─── */}
           {appState === 'hub' && (
             <>

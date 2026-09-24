@@ -60,6 +60,11 @@
 - [x] Generator und Fahrzeugaufnahme von 768/736 px auf die gemeinsame Desktopbreite erweitern
 - [x] Desktop- und Mobilansicht sowie Build prüfen
 
+## Generator-Bento-Redesign (24.09.2026)
+- [ ] Generator-Startseite in die gewählte grafische Bento-Struktur überführen
+- [ ] Alle bestehenden Werkzeuge, Berechtigungen und Klickpfade erhalten
+- [ ] Desktop- und Mobilansicht sowie zentrale Klickpfade prüfen
+
 ## Generator-Grafiken (23.09.2026)
 - [x] Fahrzeugarten und Aufnahmegrafiken zuschneiden, als WebP optimieren und größer darstellen
 - [x] Reisemobil-Aufbautypen mit den fünf gelieferten, optimierten WebP-Bildern ausstatten
