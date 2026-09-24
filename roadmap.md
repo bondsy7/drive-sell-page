@@ -64,3 +64,9 @@
 - [x] Fahrzeugarten und Aufnahmegrafiken zuschneiden, als WebP optimieren und größer darstellen
 - [x] Reisemobil-Aufbautypen mit den fünf gelieferten, optimierten WebP-Bildern ausstatten
 
+
+## Paid-Funnel Redesign nach Referenz (24.09.2026)
+- [ ] Gemeinsamen Funnel-Rahmen und Vorher/Nachher-Bühne umsetzen
+- [ ] /autohaus-fahrzeugbilder und /autohaus-marketing nach Vorlagen überarbeiten
+- [ ] /fahrzeug-testen und Danke-Seite nach Vorlagen überarbeiten
+- [ ] Desktop, Mobil, Formulare und Tracking prüfen
