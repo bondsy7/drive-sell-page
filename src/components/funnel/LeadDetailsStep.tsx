@@ -44,7 +44,7 @@ export default function LeadDetailsStep({ leadId, token, askVolume, onDone }: Pr
   };
 
   return (
-    <form onSubmit={submit} noValidate className="mt-8 rounded-xl border border-accent/40 bg-card p-5">
+    <form onSubmit={submit} noValidate className="mx-auto mt-10 max-w-3xl rounded-lg border border-accent/40 bg-card p-5 shadow-card sm:p-6">
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Schritt 2 von 2 · optional, aber hilfreich</p>
       <h2 className="mt-1 text-lg font-semibold text-foreground">Damit wir den Test passend vorbereiten</h2>
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
