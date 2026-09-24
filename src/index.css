@@ -239,6 +239,31 @@
   .shadow-glow {
     box-shadow: var(--shadow-glow);
   }
+
+  .funnel-after-frame {
+    opacity: 0;
+    animation: funnel-after-cycle 17s infinite;
+  }
+
+  .funnel-section-tint {
+    background: linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--secondary) / 0.7) 100%);
+  }
+}
+
+@keyframes funnel-after-cycle {
+  0%, 18% { opacity: 1; }
+  20%, 98% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .funnel-after-frame {
+    animation: none;
+    opacity: 0;
+  }
+  .funnel-after-frame:first-child {
+    opacity: 1;
+  }
 }
 
 @media print {

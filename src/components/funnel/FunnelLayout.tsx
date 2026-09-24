@@ -55,20 +55,20 @@ export default function FunnelLayout({
             <span className="sr-only">autohaus.ai Startseite</span>
           </Link>
 
-          <nav aria-label="Seitenbereiche" className="hidden items-center gap-6 md:flex">
+          <nav aria-label="Seitenbereiche" className="hidden items-center gap-7 md:flex">
             {anchors.map((a) => (
               <a
                 key={a.href}
                 href={a.href}
-                className="rounded-md text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                className="rounded-md text-xs font-semibold text-foreground/75 transition-colors hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               >
                 {a.label}
               </a>
             ))}
           </nav>
 
-          <Button asChild size="sm" className="shrink-0">
-            <Link to={ctaHref}>{ctaLabel}</Link>
+          <Button asChild size="sm" className="shrink-0 shadow-glow">
+            <Link to={ctaHref}>{ctaLabel} <span aria-hidden="true">→</span></Link>
           </Button>
         </div>
       </header>
