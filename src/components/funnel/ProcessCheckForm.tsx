@@ -63,7 +63,7 @@ export default function ProcessCheckForm() {
   };
 
   return (
-    <form onSubmit={submit} onFocus={onStart} noValidate className="rounded-xl border border-border bg-card p-5 text-left">
+    <form onSubmit={submit} onFocus={onStart} noValidate className="rounded-lg border border-border bg-card p-5 text-left shadow-card sm:p-6">
       <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
         <Building2 className="h-4 w-4 text-accent" aria-hidden="true" /> 15-Minuten-Prozesscheck für Gruppen
       </div>
