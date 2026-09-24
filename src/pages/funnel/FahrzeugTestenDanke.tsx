@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { CheckCircle2, ArrowRight, Loader2, CalendarClock, Mail, SearchCheck, Sparkles } from 'lucide-react';
+import { CheckCircle2, ArrowRight, Loader2, CalendarClock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
