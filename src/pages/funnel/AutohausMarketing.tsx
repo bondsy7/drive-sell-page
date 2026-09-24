@@ -1,229 +1,30 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  ArrowRight, Car, Camera, Images, Megaphone, CheckCircle2, AlertTriangle,
-  RotateCcw, Video, FileText, Plug, Building2, Network,
-} from 'lucide-react';
+import { ArrowRight, Camera, Car, Check, FileText, Images, Megaphone, Network, Plug, RotateCcw, Video } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import FunnelLayout from '@/components/funnel/FunnelLayout';
+import BeforeAfterShowcase from '@/components/funnel/BeforeAfterShowcase';
 import ProcessCheckForm from '@/components/funnel/ProcessCheckForm';
 import { usePageMeta } from '@/hooks/usePageMeta';
 import { captureAttribution } from '@/lib/funnel-attribution';
 
-const TEST_URL = '/fahrzeug-testen?source=marketing';
+const TEST_URL='/fahrzeug-testen?source=marketing';
+const FLOW=[[Car,'Fahrzeug kommt an','Der Prozess startet direkt bei der Fahrzeugannahme.'],[Camera,'Foto & Daten','Aufnahmen und Fahrzeugdaten werden einmalig erfasst.'],[Images,'Professionelle Bilder','Einheitliche Fahrzeugbilder für alle Ausspielwege.'],[Megaphone,'Kanäle bespielen','Banner, Social, Video, Verkaufsseiten und 360°.']] as const;
+const MODULES=[[Images,'Fahrzeugbilder','Einheitliche Außen- und Innenaufnahmen aus vorhandenen Fotos.'],[RotateCcw,'360°-Ansicht','Interaktive Rundumansichten auf Basis derselben Aufnahmen.'],[Megaphone,'Banner & Social','Werbemittel in den passenden Formaten für Ihre Kanäle.'],[Video,'Video','Kurze Fahrzeugvideos für Reels, Stories und Portale.'],[FileText,'Verkaufsseiten','Fahrzeugseiten inklusive Pflichtangaben und Kontaktstrecke.'],[Plug,'Integrationen & API','Übergabe an bestehende Systeme und digitale Ausspielwege.']] as const;
+const FAQ=[['Lässt sich der Prozess über mehrere Betriebe ausrollen?','Ja. Der Ablauf ist für jeden Standort identisch und schafft eine vergleichbare Bild- und Contentqualität.'],['Können bestehende Systeme angebunden werden?','Je nach Setup stehen API, WordPress, FTP/SFTP und Einbettungsmöglichkeiten zur Verfügung.'],['Wer erstellt die Inhalte im Betrieb?','Die Aufnahmen entstehen im Betrieb, die Verarbeitung übernimmt autohaus.ai. Zusätzliche Bildbearbeitungskenntnisse sind nicht erforderlich.'],['Wie starten wir am besten?','Mit einem echten Fahrzeug aus Ihrem Bestand oder einem kurzen Prozesscheck für Ihre Händlergruppe.']];
 
-const FLOW = [
-  { icon: Car, title: 'Fahrzeug kommt an', desc: 'Der Prozess startet direkt bei der Fahrzeugannahme.' },
-  { icon: Camera, title: 'Foto & Daten', desc: 'Aufnahmen und Fahrzeugdaten werden einmalig erfasst.' },
-  { icon: Images, title: 'Professionelle Bilder', desc: 'Einheitliche Fahrzeugbilder für alle Ausspielwege.' },
-  { icon: Megaphone, title: 'Kanäle bespielen', desc: 'Banner, Social, Video, Angebotsseiten und 360°-Ansicht.' },
-];
-
-const PROBLEMS = [
-  'Manuelle Medienbrüche zwischen Einkauf, Aufbereitung und Marketing',
-  'Unterschiedliche Bild- und Contentqualität je Standort',
-  'Hoher Agentur- und Personalaufwand für wiederkehrende Aufgaben',
-  'Fahrzeuge stehen zu lange ohne vollständigen Online-Auftritt',
-];
-
-const ROLES = [
-  { title: 'Gebrauchtwagenleitung', desc: 'Fahrzeuge schneller und vollständig online bringen, ohne auf externe Dienstleister zu warten.' },
-  { title: 'Marketing & Digital', desc: 'Einheitliche Bildsprache und wiederverwendbare Assets für alle Kanäle.' },
-  { title: 'Geschäftsführung', desc: 'Ein nachvollziehbarer Prozess statt individueller Insellösungen je Betrieb.' },
-  { title: 'Autohausgruppen', desc: 'Gleicher Standard über mehrere Standorte hinweg – zentral steuerbar.' },
-];
-
-const MODULES = [
-  { icon: Images, title: 'Fahrzeugbilder', desc: 'Einheitliche Außen- und Innenaufnahmen aus vorhandenen Fotos.' },
-  { icon: RotateCcw, title: '360°-Ansicht', desc: 'Interaktive Rundumansicht auf Basis derselben Aufnahmen.' },
-  { icon: Megaphone, title: 'Banner', desc: 'Werbemittel in gängigen Formaten für Social Media und Website.' },
-  { icon: Video, title: 'Video', desc: 'Kurze Fahrzeugvideos für Reels, Stories und Portale.' },
-  { icon: FileText, title: 'Angebots- & Landingpages', desc: 'Fahrzeugseiten inklusive Pflichtangaben und Kontaktstrecke.' },
-  { icon: Plug, title: 'Integrationen & API', desc: 'Anbindung an bestehende Systeme über die vorhandenen Schnittstellen.' },
-];
-
-const INTEGRATIONS = [
-  { title: 'API', desc: 'Programmatischer Zugriff auf Fahrzeuge und Ergebnisse.' },
-  { title: 'WordPress', desc: 'Einbindung erzeugter Fahrzeugseiten in bestehende Websites.' },
-  { title: 'FTP / SFTP & Embed', desc: 'Automatisierte Übergabe von Medien sowie Einbettung per Embed-Skript.' },
-];
-
-const FAQ = [
-  { q: 'Lässt sich der Prozess über mehrere Betriebe ausrollen?', a: 'Ja. Der Ablauf ist für jeden Standort identisch, sodass die Ergebnisse vergleichbar bleiben.' },
-  { q: 'Können bestehende Systeme angebunden werden?', a: 'autohaus.ai bietet eine API sowie Übergabewege per WordPress, FTP/SFTP und Embed. Welche Variante sinnvoll ist, klären wir anhand Ihres Setups.' },
-  { q: 'Wer erstellt die Inhalte im Betrieb?', a: 'Die Aufnahmen entstehen im Betrieb, die Verarbeitung übernimmt autohaus.ai. Zusätzliche Fotografie- oder Bildbearbeitungskenntnisse sind nicht erforderlich.' },
-  { q: 'Wie starten wir am besten?', a: 'Mit einem echten Fahrzeug aus Ihrem Bestand. Daran lässt sich der Nutzen für Ihren konkreten Prozess am schnellsten beurteilen.' },
-  { q: 'Gibt es feste Bearbeitungszeiten?', a: 'Wir nennen bewusst keine pauschalen Zeitangaben. Im Testlauf besprechen wir realistische Durchlaufzeiten für Ihren Bestand.' },
-];
-
-export default function AutohausMarketing() {
-  usePageMeta({
-    title: 'Fahrzeugmarketing für Autohäuser | autohaus.ai',
-    description: 'Ein Prozess von der Fahrzeugankunft bis zum fertigen Online-Auftritt: Bilder, 360°, Banner, Video und Angebotsseiten für Autohäuser und Händlergruppen.',
-    canonicalPath: '/autohaus-marketing',
-  });
-
-  useEffect(() => { captureAttribution('lp_marketing'); }, []);
-
-  return (
-    <FunnelLayout
-      ctaHref={TEST_URL}
-      ctaLabel="Mit einem Fahrzeug testen"
-      anchors={[{ href: '#workflow', label: 'So funktioniert es' }, { href: '#module', label: 'Funktionen' }]}
-    >
-      <section className="border-b border-border/60 bg-card/30">
-        <div className="mx-auto max-w-6xl px-4 py-16 text-center sm:px-6 lg:py-24">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Fahrzeugmarketing für Autohäuser</p>
-          <h1 className="mt-4 text-3xl font-bold leading-tight text-foreground sm:text-4xl lg:text-5xl">
-            Ein Fahrzeug. Ein Prozess. Alle Marketingkanäle.
-          </h1>
-          <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-            autohaus.ai verbindet Fahrzeugbilder, Content und digitale Vermarktung in einem skalierbaren
-            Workflow – vom eintreffenden Fahrzeug bis zum fertigen Online-Auftritt.
-          </p>
-          <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-            <Button asChild size="lg">
-              <Link to={TEST_URL}>Mit einem Fahrzeug testen <ArrowRight className="ml-2 h-4 w-4" /></Link>
-            </Button>
-            <Button asChild size="lg" variant="outline">
-              <a href="#prozess-check">Prozesscheck für Gruppen</a>
-            </Button>
-          </div>
-          <p className="mt-4 text-xs text-muted-foreground">
-            Für gewerbliche Fahrzeughändler · unverbindlicher Test · eigenes Fahrzeug verwenden
-          </p>
-        </div>
-      </section>
-
-      {/* Workflow */}
-      <section id="workflow" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-14 sm:px-6">
-        <h2 className="text-2xl font-bold text-foreground sm:text-3xl">Der Workflow im Überblick</h2>
-        <ol className="mt-8 grid gap-4 md:grid-cols-4">
-          {FLOW.map((f, i) => (
-            <li key={f.title} className="relative rounded-xl border border-border bg-card p-5">
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/10 text-accent">
-                <f.icon className="h-5 w-5" aria-hidden="true" />
-              </span>
-              <p className="mt-4 text-xs font-semibold text-muted-foreground">Schritt {i + 1}</p>
-              <h3 className="mt-1 text-base font-semibold text-foreground">{f.title}</h3>
-              <p className="mt-2 text-sm text-muted-foreground">{f.desc}</p>
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      {/* Problem */}
-      <section className="border-y border-border/60 bg-card/30">
-        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
-          <h2 className="text-2xl font-bold text-foreground sm:text-3xl">Wo größere Händlergruppen Zeit verlieren</h2>
-          <ul className="mt-6 grid gap-3 sm:grid-cols-2">
-            {PROBLEMS.map((p) => (
-              <li key={p} className="flex gap-3 rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-                <span>{p}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      {/* Rollen */}
-      <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
-        <h2 className="text-2xl font-bold text-foreground sm:text-3xl">Nutzen je Verantwortungsbereich</h2>
-        <div className="mt-8 grid gap-4 sm:grid-cols-2">
-          {ROLES.map((r) => (
-            <article key={r.title} className="rounded-xl border border-border bg-card p-5">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-accent" aria-hidden="true" />
-                <h3 className="text-sm font-semibold text-foreground">{r.title}</h3>
-              </div>
-              <p className="mt-2 text-sm text-muted-foreground">{r.desc}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      {/* Module */}
-      <section id="module" className="border-y border-border/60 bg-card/30 scroll-mt-20">
-        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
-          <h2 className="text-2xl font-bold text-foreground sm:text-3xl">Modulare Funktionen</h2>
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {MODULES.map((m) => (
-              <article key={m.title} className="rounded-xl border border-border bg-card p-5">
-                <m.icon className="h-5 w-5 text-accent" aria-hidden="true" />
-                <h3 className="mt-4 text-sm font-semibold text-foreground">{m.title}</h3>
-                <p className="mt-2 text-sm text-muted-foreground">{m.desc}</p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Skalierung + Integrationen */}
-      <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
-        <div className="grid gap-8 lg:grid-cols-2">
-          <div className="rounded-xl border border-border bg-card p-6">
-            <Network className="h-5 w-5 text-accent" aria-hidden="true" />
-            <h2 className="mt-4 text-xl font-bold text-foreground sm:text-2xl">Ein Prozess für einen Standort oder viele Betriebe</h2>
-            <p className="mt-3 text-sm text-muted-foreground">
-              Der Ablauf bleibt identisch, unabhängig davon, ob ein Betrieb oder eine Gruppe damit arbeitet.
-              Dadurch bleibt die Qualität vergleichbar und neue Standorte lassen sich ohne eigenen Sonderweg anbinden.
-            </p>
-            <div className="mt-5 flex items-center gap-2 text-sm text-foreground">
-              <Building2 className="h-4 w-4 text-accent" aria-hidden="true" />
-              Gedacht für gewerbliche Händler – nicht für private Fahrzeugverkäufe.
-            </div>
-          </div>
-
-          <div>
-            <h2 className="text-xl font-bold text-foreground sm:text-2xl">Integrationen</h2>
-            <ul className="mt-4 space-y-3">
-              {INTEGRATIONS.map((i) => (
-                <li key={i.title} className="rounded-lg border border-border bg-card p-4">
-                  <p className="text-sm font-semibold text-foreground">{i.title}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">{i.desc}</p>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ */}
-      <section className="border-t border-border/60 bg-card/30">
-        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
-          <h2 className="text-2xl font-bold text-foreground sm:text-3xl">Fragen größerer Händlergruppen</h2>
-          <Accordion type="single" collapsible className="mt-6">
-            {FAQ.map((item, i) => (
-              <AccordionItem key={item.q} value={`faq-${i}`}>
-                <AccordionTrigger className="text-left text-sm font-semibold">{item.q}</AccordionTrigger>
-                <AccordionContent className="text-sm text-muted-foreground">{item.a}</AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-6xl px-4 py-16 text-center sm:px-6">
-        <h2 className="text-2xl font-bold text-foreground sm:text-3xl">
-          Mit einem echten Fahrzeug aus Ihrem Bestand testen.
-        </h2>
-        <p className="mx-auto mt-4 max-w-2xl text-sm text-muted-foreground sm:text-base">
-          Wir prüfen Fahrzeug und Einsatzziel und zeigen anschließend, wie sich der Ablauf in Ihrem Betrieb einsetzen lässt.
-        </p>
-        <Button asChild size="lg" className="mt-8">
-          <Link to={TEST_URL}>Mit einem Fahrzeug testen <ArrowRight className="ml-2 h-4 w-4" /></Link>
-        </Button>
-      </section>
-
-      <section id="prozess-check" className="mx-auto max-w-3xl scroll-mt-20 px-4 pb-16 sm:px-6">
-        <h2 className="mb-2 text-xl font-bold text-foreground sm:text-2xl">Mehrere Standorte?</h2>
-        <p className="mb-5 text-sm text-muted-foreground">
-          Für Händlergruppen ist ein kurzer Prozesscheck oft der bessere erste Schritt: Bestand, Standorte, Systeme und Freigaben – ohne Bild-Upload.
-        </p>
-        <ProcessCheckForm />
-      </section>
-    </FunnelLayout>
-  );
+export default function AutohausMarketing(){
+ usePageMeta({title:'Fahrzeugmarketing für Autohäuser | autohaus.ai',description:'Ein Prozess von der Fahrzeugankunft bis zum fertigen Online-Auftritt: Bilder, 360°, Banner, Video und Verkaufsseiten.',canonicalPath:'/autohaus-marketing'});
+ useEffect(()=>{captureAttribution('lp_marketing');},[]);
+ return <FunnelLayout ctaHref={TEST_URL} ctaLabel="Mit Fahrzeug testen" anchors={[{href:'#workflow',label:'Workflow'},{href:'#module',label:'Funktionen'},{href:'#prozess-check',label:'Prozesscheck'},{href:'#faq',label:'FAQ'}]}>
+  <section className="border-b border-border bg-card"><div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[.9fr_1.1fr] lg:py-16"><div><p className="text-xs font-bold uppercase tracking-[0.16em] text-accent">Fahrzeugmarketing für Autohäuser</p><h1 className="mt-4 font-display text-4xl font-bold leading-[1.04] sm:text-5xl">Ein Fahrzeug. Ein Prozess. Alle Marketingkanäle.</h1><p className="mt-5 text-base leading-7 text-muted-foreground">autohaus.ai verbindet Fahrzeugbilder, Inhalte und digitale Vermarktung – vom eintreffenden Fahrzeug bis zum vollständigen Online-Auftritt.</p><div className="mt-7 flex flex-col gap-3 sm:flex-row"><Button asChild size="lg"><Link to={TEST_URL}>Mit einem Fahrzeug testen <ArrowRight className="h-4 w-4" /></Link></Button><Button asChild size="lg" variant="outline"><a href="#prozess-check">Prozesscheck für Gruppen</a></Button></div><div className="mt-5 flex flex-wrap gap-4 text-xs text-muted-foreground">{['Einmal erfassen','Mehrfach ausspielen','Standortübergreifend'].map(x=><span key={x} className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-accent"/>{x}</span>)}</div></div><BeforeAfterShowcase /></div></section>
+  <section id="workflow" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-14 sm:px-6"><p className="text-xs font-bold uppercase tracking-[.16em] text-accent">Vom Point of Arrival zum Verkauf</p><h2 className="mt-2 font-display text-3xl font-bold">Der vollständige Workflow im Überblick</h2><div className="mt-7 grid gap-4 md:grid-cols-4">{FLOW.map(([Icon,title,text],i)=><article key={title} className="rounded-lg border border-border bg-card p-5 shadow-card"><span className="flex h-10 w-10 items-center justify-center rounded-full bg-accent/10 text-accent"><Icon className="h-5 w-5"/></span><p className="mt-5 text-xs font-bold text-accent">0{i+1}</p><h3 className="mt-1 font-bold">{title}</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">{text}</p></article>)}</div></section>
+  <section className="funnel-section-tint border-y border-border py-14"><div className="mx-auto grid max-w-6xl gap-5 px-4 sm:px-6 lg:grid-cols-2"><div className="rounded-lg border border-destructive/20 bg-destructive/5 p-6"><h2 className="font-display text-xl font-bold">Wo Händlergruppen Zeit verlieren</h2><ul className="mt-5 space-y-3 text-sm text-muted-foreground">{['Medienbrüche zwischen Einkauf, Aufbereitung und Marketing','Unterschiedliche Qualität je Standort','Hoher Agentur- und Personalaufwand','Fahrzeuge ohne vollständigen Online-Auftritt'].map(x=><li key={x} className="flex gap-3"><span className="font-bold text-destructive">×</span>{x}</li>)}</ul></div><div className="rounded-lg border border-accent/20 bg-accent/5 p-6"><h2 className="font-display text-xl font-bold">Ein Prozess statt Insellösungen</h2><ul className="mt-5 space-y-3 text-sm text-muted-foreground">{['Einheitliche Standards über alle Betriebe','Wiederverwendbare Assets für jeden Kanal','Nachvollziehbarer Ablauf vom Foto bis zur Ausgabe','Zentral steuerbar und standortübergreifend einsetzbar'].map(x=><li key={x} className="flex gap-3"><Check className="h-4 w-4 shrink-0 text-accent"/>{x}</li>)}</ul></div></div></section>
+  <section id="module" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-14 sm:px-6"><h2 className="font-display text-3xl font-bold">Alle Bausteine für Ihre Fahrzeugvermarktung</h2><p className="mt-2 text-sm text-muted-foreground">Eine Plattform, modular passend zu Ihrem Betrieb und Ihren Kanälen.</p><div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{MODULES.map(([Icon,title,text])=><article key={title} className="rounded-lg border border-border bg-card p-5 shadow-card"><Icon className="h-5 w-5 text-accent"/><h3 className="mt-4 font-bold">{title}</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">{text}</p></article>)}</div></section>
+  <section className="border-y border-border bg-secondary/45 py-14"><div className="mx-auto grid max-w-6xl gap-8 px-4 sm:px-6 lg:grid-cols-2"><div><Network className="h-7 w-7 text-accent"/><h2 className="mt-4 font-display text-2xl font-bold">Für einen Standort oder eine ganze Gruppe</h2><p className="mt-3 text-sm leading-6 text-muted-foreground">Der Ablauf bleibt identisch und schafft einen verlässlichen Standard, unabhängig von Betrieb, Mitarbeiter oder Fahrzeugmenge.</p></div><div className="grid gap-3 sm:grid-cols-3">{[['API','Programmatischer Zugriff'],['WordPress','Einbindung in Websites'],['FTP / SFTP','Automatisierte Übergabe']].map(([a,b])=><div key={a} className="rounded-lg border border-border bg-card p-4"><p className="font-bold">{a}</p><p className="mt-1 text-xs leading-5 text-muted-foreground">{b}</p></div>)}</div></div></section>
+  <section id="prozess-check" className="mx-auto grid max-w-6xl scroll-mt-20 gap-8 px-4 py-14 sm:px-6 lg:grid-cols-[.75fr_1.25fr]"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-accent">Für Händlergruppen</p><h2 className="mt-2 font-display text-3xl font-bold">Passt der Ablauf zu Ihrer Organisation?</h2><p className="mt-3 text-sm leading-6 text-muted-foreground">Mit vier Angaben prüfen wir Volumen und Standortstruktur. Ein Bild-Upload ist dafür nicht nötig.</p></div><ProcessCheckForm/></section>
+  <section id="faq" className="border-t border-border bg-card py-14"><div className="mx-auto grid max-w-6xl gap-8 px-4 sm:px-6 lg:grid-cols-[.7fr_1.3fr]"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-accent">Häufige Fragen</p><h2 className="mt-2 font-display text-3xl font-bold">Fragen zum Einsatz</h2></div><Accordion type="single" collapsible>{FAQ.map(([q,a],i)=><AccordionItem key={q} value={`f${i}`}><AccordionTrigger className="text-left text-sm font-semibold">{q}</AccordionTrigger><AccordionContent className="text-sm leading-6 text-muted-foreground">{a}</AccordionContent></AccordionItem>)}</Accordion></div></section>
+  <section className="px-4 py-12 sm:px-6"><div className="gradient-hero mx-auto flex max-w-6xl flex-col justify-between gap-6 rounded-lg px-6 py-8 text-primary-foreground lg:flex-row lg:items-center"><div><h2 className="font-display text-2xl font-bold">Starten Sie mit einem echten Fahrzeug aus Ihrem Bestand.</h2><p className="mt-2 text-sm text-primary-foreground/80">So sehen Sie direkt, wie der Ablauf zu Ihrem Betrieb passt.</p></div><Button asChild size="lg" variant="secondary"><Link to={TEST_URL}>Fahrzeug testen <ArrowRight className="h-4 w-4"/></Link></Button></div></section>
+ </FunnelLayout>;
 }
