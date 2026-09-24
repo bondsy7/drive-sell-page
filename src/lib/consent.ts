@@ -41,16 +41,15 @@ declare global {
   }
 }
 
-function pushGtag(...args: unknown[]) {
-  window.dataLayer = window.dataLayer || [];
-  window.dataLayer.push(args);
-}
-
 function ensureGtagStub() {
   if (typeof window === 'undefined') return;
   window.dataLayer = window.dataLayer || [];
   if (!window.gtag) {
-    window.gtag = (...args: unknown[]) => pushGtag(...args);
+    // gtag.js verarbeitet nur echte `arguments`-Objekte, keine Arrays.
+    window.gtag = function gtag() {
+      // eslint-disable-next-line prefer-rest-params
+      window.dataLayer!.push(arguments);
+    } as (...args: unknown[]) => void;
   }
 }
 
@@ -197,21 +196,64 @@ export function applyConsent(state: ConsentState) {
 let tagsLoaded = false;
 let gaConfigured = false;
 let adsConfigured = false;
+let remoteGaId: string | null | undefined; // undefined = noch nicht geladen
+let remoteGaPromise: Promise<string | null> | null = null;
+/** Analyse-Events, die vor fertiger GA4-Konfiguration ausgelöst wurden (nur mit Einwilligung). */
+let gaPageViewSent = false;
+const pendingAnalytics: Array<[string, Record<string, unknown>]> = [];
 
-/** GA4-Mess-ID aus der Konfiguration, sonst leer. */
+/** GA4-Mess-ID: Build-Variable oder serverseitig hinterlegte ID. */
 function getGaId() {
-  return (
+  const env = (
     (import.meta.env.VITE_GA4_MEASUREMENT_ID as string | undefined) ??
     (import.meta.env.VITE_GA_MEASUREMENT_ID as string | undefined)
   )?.trim();
+  return env || remoteGaId || undefined;
 }
 
-/** Google-Ads-Konto-ID aus der Konfiguration, sonst leer. */
+/** Lädt die GA4-Mess-ID vom eigenen Backend (kein Google-Request). */
+function fetchRemoteGaId(): Promise<string | null> {
+  if (remoteGaId !== undefined) return Promise.resolve(remoteGaId);
+  if (!remoteGaPromise) {
+    remoteGaPromise = supabase.functions
+      .invoke('public-analytics-config', { method: 'GET' })
+      .then(({ data }) => {
+        const id = (data as { ga4MeasurementId?: string | null } | null)?.ga4MeasurementId ?? null;
+        remoteGaId = id;
+        return id;
+      })
+      .catch(() => {
+        remoteGaId = null;
+        return null;
+      });
+  }
+  return remoteGaPromise;
+}
+
+/** Google-Ads bewusst deaktiviert, bis AW-ID und Conversion-Label vorliegen (nur per Build-Variable). */
 function getAdsId() {
   return (import.meta.env.VITE_GOOGLE_ADS_ID as string | undefined)?.trim();
 }
 
+function isDebugMode() {
+  try {
+    const q = new URLSearchParams(window.location.search);
+    if (q.get('ga_debug') === '1') sessionStorage.setItem('auto3_ga_debug', '1');
+    return sessionStorage.getItem('auto3_ga_debug') === '1';
+  } catch {
+    return false;
+  }
+}
+
 function loadGoogleTagsIfConfigured(state: ConsentState) {
+  if (state.analytics && !getGaId() && remoteGaId === undefined) {
+    void fetchRemoteGaId().then(() => {
+      const current = readConsent();
+      if (current?.analytics) loadGoogleTagsIfConfigured(current);
+    });
+    return;
+  }
+
   const gaId = getGaId();
   const adsId = getAdsId();
 
@@ -219,7 +261,7 @@ function loadGoogleTagsIfConfigured(state: ConsentState) {
   const primaryId = (state.analytics && gaId) || (state.marketing && adsId) || '';
   if (!primaryId) return;
 
-  // Script nur einmal laden, Konfiguration aber bei erweiterter Einwilligung nachziehen.
+  // Genau eine gtag.js-Installation, kein GTM-Container.
   if (!tagsLoaded) {
     tagsLoaded = true;
     const script = document.createElement('script');
@@ -231,7 +273,20 @@ function loadGoogleTagsIfConfigured(state: ConsentState) {
 
   if (state.analytics && gaId && !gaConfigured) {
     gaConfigured = true;
-    window.gtag?.('config', gaId);
+    // page_view sendet der Funnel selbst (einmal pro Route) -> automatischen Seitenaufruf abschalten.
+    window.gtag?.('config', gaId, {
+      send_page_view: false,
+      ...(isDebugMode() ? { debug_mode: true } : {}),
+    });
+    // Seitenaufruf, der vor der Einwilligung stattfand, einmalig nachreichen (ohne Doppelung).
+    if (!pendingAnalytics.some(([n]) => n === 'page_view') && !gaPageViewSent) {
+      pendingAnalytics.unshift(['page_view', { page_path: window.location.pathname }]);
+    }
+    while (pendingAnalytics.length) {
+      const [n, p] = pendingAnalytics.shift()!;
+      if (n === 'page_view') gaPageViewSent = true;
+      window.gtag?.('event', n, p);
+    }
   }
   if (state.marketing && adsId && !adsConfigured) {
     adsConfigured = true;
@@ -241,14 +296,19 @@ function loadGoogleTagsIfConfigured(state: ConsentState) {
 
 /**
  * Analyse-Event – wird nur gesendet, wenn aktuell eine Analyse-Einwilligung
- * vorliegt und eine GA4-Mess-ID konfiguriert ist. Es werden keine
- * personenbezogenen Parameter automatisch ergänzt.
+ * vorliegt. Solange GA4 noch konfiguriert wird, werden Events kurz gepuffert.
  */
 export function trackAnalyticsEvent(name: string, params?: Record<string, unknown>) {
   if (typeof window === 'undefined') return;
   const consent = readConsent();
-  if (!consent?.analytics || !getGaId() || !tagsLoaded) return;
-  window.gtag?.('event', name, params ?? {});
+  if (!consent?.analytics) return;
+  const p = params ?? {};
+  if (name === 'page_view') gaPageViewSent = true;
+  if (gaConfigured) {
+    window.gtag?.('event', name, p);
+  } else if (remoteGaId !== null || getGaId()) {
+    if (pendingAnalytics.length < 20) pendingAnalytics.push([name, p]);
+  }
 }
 
 /**
