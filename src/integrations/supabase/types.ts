@@ -149,27 +149,48 @@ export type Database = {
           business_email: string
           client_fingerprint: string | null
           company_name: string
+          contacted_at: string | null
           created_at: string
+          demo_booked_at: string | null
+          demo_held_at: string | null
           demo_requested: boolean
+          demo_requested_at: string | null
+          demo_scheduled_for: string | null
           fbclid: string | null
           first_name: string
           first_referrer: string | null
+          funnel_type: string
+          gbraid: string | null
           gclid: string | null
           goals: Json
           id: string
           landing_page: string | null
           last_name: string
+          last_touch: Json | null
           lead_class: string
           lead_score: number
           li_fat_id: string | null
+          license_id: string | null
+          license_qty: number | null
           location_count: string
+          lost_at: string | null
+          lost_reason: string | null
           monthly_vehicle_volume: string
           msclkid: string | null
+          net_contract_value: number | null
+          next_step: string | null
+          next_step_date: string | null
           note: string | null
+          opportunity_id: string | null
+          owner: string | null
           phone: string | null
+          proposal_at: string | null
           role: string
           source_label: string
+          sql_at: string | null
           status: string
+          step2_completed_at: string | null
+          step2_token: string | null
           submitted_at: string
           updated_at: string
           uploaded_image_path: string | null
@@ -178,34 +199,58 @@ export type Database = {
           utm_medium: string | null
           utm_source: string | null
           utm_term: string | null
+          validated_at: string | null
+          wbraid: string | null
           website: string | null
+          won_at: string | null
         }
         Insert: {
           admin_note?: string | null
           business_email: string
           client_fingerprint?: string | null
           company_name: string
+          contacted_at?: string | null
           created_at?: string
+          demo_booked_at?: string | null
+          demo_held_at?: string | null
           demo_requested?: boolean
+          demo_requested_at?: string | null
+          demo_scheduled_for?: string | null
           fbclid?: string | null
           first_name: string
           first_referrer?: string | null
+          funnel_type?: string
+          gbraid?: string | null
           gclid?: string | null
           goals?: Json
           id?: string
           landing_page?: string | null
           last_name: string
+          last_touch?: Json | null
           lead_class?: string
           lead_score?: number
           li_fat_id?: string | null
+          license_id?: string | null
+          license_qty?: number | null
           location_count: string
+          lost_at?: string | null
+          lost_reason?: string | null
           monthly_vehicle_volume: string
           msclkid?: string | null
+          net_contract_value?: number | null
+          next_step?: string | null
+          next_step_date?: string | null
           note?: string | null
+          opportunity_id?: string | null
+          owner?: string | null
           phone?: string | null
+          proposal_at?: string | null
           role: string
           source_label?: string
+          sql_at?: string | null
           status?: string
+          step2_completed_at?: string | null
+          step2_token?: string | null
           submitted_at?: string
           updated_at?: string
           uploaded_image_path?: string | null
@@ -214,34 +259,58 @@ export type Database = {
           utm_medium?: string | null
           utm_source?: string | null
           utm_term?: string | null
+          validated_at?: string | null
+          wbraid?: string | null
           website?: string | null
+          won_at?: string | null
         }
         Update: {
           admin_note?: string | null
           business_email?: string
           client_fingerprint?: string | null
           company_name?: string
+          contacted_at?: string | null
           created_at?: string
+          demo_booked_at?: string | null
+          demo_held_at?: string | null
           demo_requested?: boolean
+          demo_requested_at?: string | null
+          demo_scheduled_for?: string | null
           fbclid?: string | null
           first_name?: string
           first_referrer?: string | null
+          funnel_type?: string
+          gbraid?: string | null
           gclid?: string | null
           goals?: Json
           id?: string
           landing_page?: string | null
           last_name?: string
+          last_touch?: Json | null
           lead_class?: string
           lead_score?: number
           li_fat_id?: string | null
+          license_id?: string | null
+          license_qty?: number | null
           location_count?: string
+          lost_at?: string | null
+          lost_reason?: string | null
           monthly_vehicle_volume?: string
           msclkid?: string | null
+          net_contract_value?: number | null
+          next_step?: string | null
+          next_step_date?: string | null
           note?: string | null
+          opportunity_id?: string | null
+          owner?: string | null
           phone?: string | null
+          proposal_at?: string | null
           role?: string
           source_label?: string
+          sql_at?: string | null
           status?: string
+          step2_completed_at?: string | null
+          step2_token?: string | null
           submitted_at?: string
           updated_at?: string
           uploaded_image_path?: string | null
@@ -250,7 +319,10 @@ export type Database = {
           utm_medium?: string | null
           utm_source?: string | null
           utm_term?: string | null
+          validated_at?: string | null
+          wbraid?: string | null
           website?: string | null
+          won_at?: string | null
         }
         Relationships: []
       }
@@ -1087,6 +1159,74 @@ export type Database = {
           version?: string
         }
         Relationships: []
+      }
+      marketing_events: {
+        Row: {
+          consent_analytics: boolean
+          consent_marketing: boolean
+          created_at: string
+          event_id: string
+          event_name: string
+          has_click_id: boolean
+          id: string
+          lead_id: string | null
+          metadata: Json
+          page: string | null
+          session_id: string | null
+          source: string
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+        }
+        Insert: {
+          consent_analytics?: boolean
+          consent_marketing?: boolean
+          created_at?: string
+          event_id: string
+          event_name: string
+          has_click_id?: boolean
+          id?: string
+          lead_id?: string | null
+          metadata?: Json
+          page?: string | null
+          session_id?: string | null
+          source?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Update: {
+          consent_analytics?: boolean
+          consent_marketing?: boolean
+          created_at?: string
+          event_id?: string
+          event_name?: string
+          has_click_id?: boolean
+          id?: string
+          lead_id?: string | null
+          metadata?: Json
+          page?: string | null
+          session_id?: string | null
+          source?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_events_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "b2b_marketing_leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pipeline_timing_logs: {
         Row: {

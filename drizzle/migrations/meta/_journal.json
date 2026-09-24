@@ -43,6 +43,13 @@
       "when": 1790076393067,
       "tag": "0005_credit_monthly_expiry",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790239583546,
+      "tag": "0006_b2b_funnel_tracking",
+      "breakpoints": true
     }
   ]
 }
