@@ -96,7 +96,12 @@ export default function FahrzeugTesten() {
       const { data, error } = await supabase.functions.invoke('submit-b2b-lead', { body });
       const p = data as { success?: boolean; leadId?: string; token?: string; error?: string } | null;
       if (error || !p?.success) {
-        toast({ title: 'Senden nicht möglich', description: p?.error || 'Bitte versuchen Sie es in einem Moment erneut.', variant: 'destructive' });
+        let msg = p?.error;
+        try {
+          const ctx = (error as { context?: Response } | null)?.context;
+          if (!msg && ctx && typeof ctx.json === 'function') msg = (await ctx.json())?.error;
+        } catch { /* ignore */ }
+        toast({ title: 'Senden nicht möglich', description: msg || 'Bitte versuchen Sie es in einem Moment erneut.', variant: 'destructive' });
         return;
       }
       // Nur bei erfolgreichem Speichern: Lead-Conversion (einmal pro Lead)
