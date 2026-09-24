@@ -235,6 +235,10 @@ function getAdsId() {
   return (import.meta.env.VITE_GOOGLE_ADS_ID as string | undefined)?.trim();
 }
 
+function withDebug(p: Record<string, unknown>) {
+  return isDebugMode() ? { ...p, debug_mode: true } : p;
+}
+
 function isDebugMode() {
   try {
     const q = new URLSearchParams(window.location.search);
@@ -285,7 +289,7 @@ function loadGoogleTagsIfConfigured(state: ConsentState) {
     while (pendingAnalytics.length) {
       const [n, p] = pendingAnalytics.shift()!;
       if (n === 'page_view') gaPageViewSent = true;
-      window.gtag?.('event', n, p);
+      window.gtag?.('event', n, withDebug(p));
     }
   }
   if (state.marketing && adsId && !adsConfigured) {
@@ -305,7 +309,7 @@ export function trackAnalyticsEvent(name: string, params?: Record<string, unknow
   const p = params ?? {};
   if (name === 'page_view') gaPageViewSent = true;
   if (gaConfigured) {
-    window.gtag?.('event', name, p);
+    window.gtag?.('event', name, withDebug(p));
   } else if (remoteGaId !== null || getGaId()) {
     if (pendingAnalytics.length < 20) pendingAnalytics.push([name, p]);
   }
