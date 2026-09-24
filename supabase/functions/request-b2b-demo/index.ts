@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
 
     const { data: lead } = await supabase
       .from("b2b_marketing_leads")
-      .select("id, note")
+      .select("id, note, status")
       .eq("id", leadId)
       .maybeSingle();
 
@@ -41,7 +41,8 @@ Deno.serve(async (req) => {
       .from("b2b_marketing_leads")
       .update({
         demo_requested: true,
-        status: "demo_booked",
+        // Nur ein Wunsch – "demo_booked" setzt erst der Vertrieb mit Termin.
+        ...(["new", "validated", "contacted"].includes(lead.status) ? { status: "demo_requested" } : {}),
         note: `${lead.note ?? ""}${noteSuffix}`.trim().slice(0, 1200) || null,
       })
       .eq("id", leadId);
@@ -50,6 +51,13 @@ Deno.serve(async (req) => {
       console.error("[request-b2b-demo] update failed", error);
       return json({ error: "Demo-Anfrage konnte nicht gespeichert werden." }, 500);
     }
+
+    await supabase.from("marketing_events").insert({
+      event_name: "demo_requested",
+      event_id: `demo_requested:${leadId}`,
+      lead_id: leadId,
+      source: "server",
+    });
 
     console.log(`[request-b2b-demo] event=demo_requested lead=${leadId}`);
     return json({ success: true });
