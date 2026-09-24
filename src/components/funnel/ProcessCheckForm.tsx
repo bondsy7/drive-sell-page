@@ -45,7 +45,12 @@ export default function ProcessCheckForm() {
       const { data, error } = await supabase.functions.invoke('submit-b2b-lead', { body });
       const p = data as { success?: boolean; leadId?: string; token?: string; error?: string } | null;
       if (error || !p?.success) {
-        toast({ title: 'Senden nicht möglich', description: p?.error || 'Bitte später erneut versuchen.', variant: 'destructive' });
+        let msg = p?.error;
+        try {
+          const ctx = (error as { context?: Response } | null)?.context;
+          if (!msg && ctx && typeof ctx.json === 'function') msg = (await ctx.json())?.error;
+        } catch { /* ignore */ }
+        toast({ title: 'Senden nicht möglich', description: msg || 'Bitte später erneut versuchen.', variant: 'destructive' });
         return;
       }
       if (p.leadId) {
