@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Download, Loader2, Search, ExternalLink, AlertTriangle, FileSpreadsheet } from 'lucide-react';
+import { Download, Loader2, Search, ExternalLink, AlertTriangle, FileSpreadsheet, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -139,6 +139,17 @@ export default function AdminB2bLeads() {
     setLoading(false);
   }, []);
   useEffect(() => { void load(); }, [load]);
+
+  const deleteLead = async (lead: B2bLead) => {
+    if (!window.confirm(`Lead von „${lead.company_name}“ wirklich endgültig löschen?`)) return;
+    const { error } = await supabase.from('b2b_marketing_leads').delete().eq('id', lead.id);
+    if (error) {
+      toast({ title: 'Löschen fehlgeschlagen', description: error.message, variant: 'destructive' });
+      return;
+    }
+    setLeads((prev) => prev.filter((l) => l.id !== lead.id));
+    toast({ title: 'Lead gelöscht' });
+  };
 
   const campaigns = useMemo(() => Array.from(new Set(leads.map(campaignOf))).sort(), [leads]);
   const months = useMemo(() => Array.from(new Set(leads.map((l) => l.created_at.slice(0, 7)))).sort().reverse(), [leads]);
@@ -398,11 +409,12 @@ export default function AdminB2bLeads() {
               <th className="px-3 py-2 text-left">Verantwortlich</th>
               <th className="px-3 py-2 text-left">Nächster Schritt</th>
               <th className="px-3 py-2 text-left">Eingang</th>
+              <th className="px-3 py-2 text-right" aria-label="Aktionen" />
             </tr>
           </thead>
           <tbody>
-            {loading && <tr><td colSpan={8} className="px-3 py-8 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" /></td></tr>}
-            {!loading && filtered.length === 0 && <tr><td colSpan={8} className="px-3 py-8 text-center text-muted-foreground">Keine Leads gefunden.</td></tr>}
+            {loading && <tr><td colSpan={9} className="px-3 py-8 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" /></td></tr>}
+            {!loading && filtered.length === 0 && <tr><td colSpan={9} className="px-3 py-8 text-center text-muted-foreground">Keine Leads gefunden.</td></tr>}
             {filtered.map((l) => (
               <tr
                 key={l.id}
@@ -428,6 +440,17 @@ export default function AdminB2bLeads() {
                   {l.next_step_date ? new Date(l.next_step_date).toLocaleDateString('de-DE') : needsNextStep(l) ? 'fehlt' : '–'}
                 </td>
                 <td className="px-3 py-2 text-xs text-muted-foreground">{formatDate(l.created_at)}</td>
+                <td className="px-3 py-2 text-right">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    aria-label={`Lead von ${l.company_name} löschen`}
+                    onClick={(e) => { e.stopPropagation(); void deleteLead(l); }}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                  </Button>
+                </td>
               </tr>
             ))}
           </tbody>
