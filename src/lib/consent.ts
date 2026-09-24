@@ -41,16 +41,15 @@ declare global {
   }
 }
 
-function pushGtag(...args: unknown[]) {
-  window.dataLayer = window.dataLayer || [];
-  window.dataLayer.push(args);
-}
-
 function ensureGtagStub() {
   if (typeof window === 'undefined') return;
   window.dataLayer = window.dataLayer || [];
   if (!window.gtag) {
-    window.gtag = (...args: unknown[]) => pushGtag(...args);
+    // gtag.js verarbeitet nur echte `arguments`-Objekte, keine Arrays.
+    window.gtag = function gtag() {
+      // eslint-disable-next-line prefer-rest-params
+      window.dataLayer!.push(arguments);
+    } as (...args: unknown[]) => void;
   }
 }
 
