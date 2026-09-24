@@ -1,134 +1,66 @@
 import React from 'react';
-import { Camera, FileText, Layout, Image, Video, Sparkles, Lock, Zap, Wrench, Search, Music, RotateCw, Scissors, Database } from 'lucide-react';
+import {
+  ArrowRight, Camera, Coins, Database, FileText, Image, Layout, Lock,
+  Music, RotateCw, Scissors, Search, Sparkles, Video, Wand2, Wrench, Zap,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { useCredits } from '@/hooks/useCredits';
 import { useModuleAccess, type ModuleKey } from '@/hooks/useModuleAccess';
+import { cn } from '@/lib/utils';
+import beforeAsset from '@/assets/funnel/before.webp.asset.json';
+import afterAsset from '@/assets/funnel/after1.webp.asset.json';
+import photoAsset from '@/assets/foto-aufnehmen.webp.asset.json';
+import marketingAsset from '@/assets/marketing-formate.webp.asset.json';
+import cityAsset from '@/assets/scene-previews/city.webp.asset.json';
 
-/** Kacheln des Generators auf Modul-Schlüssel abbilden (Admin-Verwaltung) */
-const TILE_MODULE_KEY: Partial<Record<HubAction, ModuleKey>> = {
-  'spin360': 'photos-spin360',
-};
+export type HubAction =
+  | 'studio'
+  | 'photos'
+  | 'background-swap'
+  | 'pdf-landing'
+  | 'manual-landing'
+  | 'banner'
+  | 'canvas-banner-studio'
+  | 'video'
+  | 'music-studio'
+  | 'spin360'
+  | 'damage-repair'
+  | 'damage-analysis'
+  | 'sales-assistant'
+  | 'reference-v2';
 
-
-export type HubAction = 
-  | 'studio'          // 🚀 One-Shot Studio (Beta) — Bilder + Banner + Video in einem Rutsch
-  | 'photos'          // Fotos aufnehmen & remastern
-  | 'background-swap' // Hintergrund freistellen & tauschen (remove.bg)
-  | 'pdf-landing'     // PDF → Landing Page
-  | 'manual-landing'  // Landing Page ohne PDF
-  | 'banner'          // Banner Generator
-  | 'canvas-banner-studio' // Deterministischer Canvas-Banner-Editor
-  | 'video'           // Video Erstellung
-  | 'music-studio'    // Musik mit Lyria 3 generieren
-  | 'spin360'         // 360° Spin (Beta)
-  | 'damage-repair'    // Schadensreparatur – KI repariert Schäden auf Fahrzeugbildern
-  | 'damage-analysis'  // Schadensanalyse – KI bewertet Schäden + erstellt Bericht
-  | 'sales-assistant' // KI Verkaufsassistent
-  | 'reference-v2';   // Referenz-Bibliothek V2 (Admin, im Aufbau)
-
-
+type ToolGroup = 'fahrzeugbilder' | 'werbung' | 'verkauf' | 'analyse' | 'assistenten';
 
 interface ActionTile {
   id: HubAction;
   icon: React.ReactNode;
   title: string;
   description: string;
+  group: ToolGroup;
   badge?: string;
+  image?: string;
   disabled?: boolean;
 }
 
+const TILE_MODULE_KEY: Partial<Record<HubAction, ModuleKey>> = {
+  spin360: 'photos-spin360',
+};
+
 const TILES: ActionTile[] = [
-  {
-    id: 'studio',
-    icon: <Zap className="w-7 h-7" />,
-    title: 'One-Shot Studio',
-    description: 'Power-Button: Fahrzeugfotos + komplettes Bilderset + Banner & Video in einem Rutsch.',
-    badge: 'BETA',
-  },
-  {
-    id: 'photos',
-    icon: <Camera className="w-7 h-7" />,
-    title: 'Fotos & Remastering',
-    description: 'Fahrzeugfotos aufnehmen oder hochladen – KI verwandelt sie in professionelle Showroom-Bilder.',
-  },
-  {
-    id: 'background-swap',
-    icon: <Scissors className="w-7 h-7" />,
-    title: 'Hintergrund tauschen',
-    description: 'Fahrzeug pixelgenau freistellen und auf Showroom, eigenen Hintergrund, Farbe oder KI-Szene setzen.',
-    badge: 'NEU',
-  },
-
-  {
-    id: 'pdf-landing',
-    icon: <FileText className="w-7 h-7" />,
-    title: 'PDF → Angebotsseite',
-    description: 'Angebots-PDF hochladen, KI liest alle Daten aus und erstellt eine fertige Landing Page.',
-  },
-  {
-    id: 'manual-landing',
-    icon: <Layout className="w-7 h-7" />,
-    title: 'Landing Page manuell',
-    description: 'Fahrzeugdaten selbst eingeben und eine Angebotsseite ohne PDF erstellen.',
-  },
-  {
-    id: 'banner',
-    icon: <Image className="w-7 h-7" />,
-    title: 'Banner Generator',
-    description: 'Werbebanner für Social Media & Anzeigen aus Fahrzeugdaten erstellen.',
-  },
-  {
-    id: 'canvas-banner-studio',
-    icon: <Layout className="w-7 h-7" />,
-    title: 'Banner Studio',
-    description: 'Exakte Multi-Format-Banner mit editierbaren Text-, Logo- und Pflichtangaben-Ebenen. KI nur fürs Bild.',
-    badge: 'NEU',
-  },
-  {
-    id: 'video',
-    icon: <Video className="w-7 h-7" />,
-    title: 'Video Erstellung',
-    description: 'Fahrzeugbild hochladen und ein professionelles Showroom-Video per KI erstellen.',
-  },
-  {
-    id: 'music-studio',
-    icon: <Music className="w-7 h-7" />,
-    title: 'Musik Studio',
-    description: 'Eigene Musik, Jingles & Spot-Soundtracks per KI komponieren – mit Gesang, Lyrics & Instrumenten.',
-    badge: 'NEU',
-  },
-  {
-    id: 'spin360',
-    icon: <RotateCw className="w-7 h-7" />,
-    title: '360° Spin',
-    description: 'Aus 4+ Fahrzeugfotos einen interaktiven 360°-Rundumblick mit 48 Frames erzeugen.',
-    badge: 'BETA',
-  },
-  {
-    id: 'damage-repair',
-
-    icon: <Wrench className="w-7 h-7" />,
-    title: 'Schadensreparatur',
-    description: 'Bilder hochladen – KI repariert Dellen, Kratzer, Steinschläge & Co. Optional direkt in den Showroom stellen.',
-  },
-  {
-    id: 'damage-analysis',
-    icon: <Search className="w-7 h-7" />,
-    title: 'Schadensanalyse',
-    description: 'Bilder analysieren – KI markiert Schäden, schätzt Kosten und erstellt einen professionellen Sachverständigenbericht.',
-  },
-  {
-    id: 'reference-v2',
-    icon: <Database className="w-7 h-7" />,
-    title: 'Referenz-Bibliothek V2',
-    description: 'Neue Strict-Reference-Pipeline: Fahrzeug-Referenzen aufnehmen, Perspektiven planen und Abdeckung prüfen (im Aufbau).',
-    badge: 'NEU',
-  },
-  {
-    id: 'sales-assistant',
-    icon: <Sparkles className="w-7 h-7" />,
-    title: 'KI Verkaufsassistent',
-    description: 'Hilft mit passenden Antworten, Follow-ups und Empfehlungen dabei, Fahrzeuge schneller zu verkaufen.',
-  },
+  { id: 'studio', icon: <Zap />, title: 'One-Shot Studio', description: 'Fahrzeugfotos, komplettes Bilderset, Banner und Video in einem Durchgang.', group: 'fahrzeugbilder', badge: 'Beta', image: afterAsset.url },
+  { id: 'photos', icon: <Camera />, title: 'Fotos & Remastering', description: 'Fahrzeugfotos aufnehmen oder hochladen und als professionelle Showroom-Bilder aufbereiten.', group: 'fahrzeugbilder', image: photoAsset.url },
+  { id: 'background-swap', icon: <Scissors />, title: 'Hintergrund tauschen', description: 'Fahrzeug freistellen und auf Showroom, eigenen Hintergrund, Farbe oder KI-Szene setzen.', group: 'fahrzeugbilder', badge: 'Neu', image: cityAsset.url },
+  { id: 'spin360', icon: <RotateCw />, title: '360° Spin', description: 'Aus vier oder mehr Fahrzeugfotos einen interaktiven Rundumblick mit 48 Bildern erzeugen.', group: 'fahrzeugbilder', badge: 'Beta', image: afterAsset.url },
+  { id: 'banner', icon: <Image />, title: 'Banner Generator', description: 'Werbebanner für soziale Medien und Anzeigen aus Fahrzeugdaten erstellen.', group: 'werbung', image: marketingAsset.url },
+  { id: 'canvas-banner-studio', icon: <Layout />, title: 'Banner Studio', description: 'Banner in mehreren Formaten mit editierbaren Texten, Logos und Pflichtangaben gestalten.', group: 'werbung', badge: 'Neu' },
+  { id: 'video', icon: <Video />, title: 'Video erstellen', description: 'Fahrzeugbilder in ein professionelles Showroom-Video verwandeln.', group: 'werbung', image: afterAsset.url },
+  { id: 'music-studio', icon: <Music />, title: 'Musik Studio', description: 'Musik, Jingles und Spot-Soundtracks mit Gesang oder Instrumenten komponieren.', group: 'werbung', badge: 'Neu' },
+  { id: 'pdf-landing', icon: <FileText />, title: 'PDF → Angebotsseite', description: 'Angebots-PDF hochladen, Daten auslesen und eine fertige Angebotsseite erstellen.', group: 'verkauf' },
+  { id: 'manual-landing', icon: <Layout />, title: 'Landing Page manuell', description: 'Fahrzeugdaten eingeben und eine Angebotsseite ohne PDF erstellen.', group: 'verkauf' },
+  { id: 'damage-repair', icon: <Wrench />, title: 'Schadensreparatur', description: 'Dellen, Kratzer und Steinschläge auf Fahrzeugbildern digital reparieren.', group: 'analyse', image: beforeAsset.url },
+  { id: 'damage-analysis', icon: <Search />, title: 'Schadensanalyse', description: 'Schäden markieren, Kosten schätzen und einen Sachverständigenbericht erstellen.', group: 'analyse', image: beforeAsset.url },
+  { id: 'reference-v2', icon: <Database />, title: 'Referenz-Bibliothek V2', description: 'Fahrzeugreferenzen aufnehmen, Perspektiven planen und Abdeckung prüfen.', group: 'assistenten', badge: 'Neu' },
+  { id: 'sales-assistant', icon: <Sparkles />, title: 'KI Verkaufsassistent', description: 'Passende Antworten, Follow-ups und Empfehlungen für den Fahrzeugverkauf formulieren.', group: 'assistenten' },
 ];
 
 interface ActionHubProps {
@@ -139,73 +71,102 @@ const ActionHub: React.FC<ActionHubProps> = ({ onSelect }) => {
   const { balance } = useCredits();
   const { disabledModules } = useModuleAccess();
 
-  return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="text-center">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/10 text-accent text-xs font-semibold mb-4">
-          <Sparkles className="w-3.5 h-3.5" />
-          Was möchtest du tun?
+  const availableTiles = TILES.filter((tile) => {
+    const key = TILE_MODULE_KEY[tile.id] ?? (tile.id as ModuleKey);
+    return !disabledModules.has(key);
+  });
+
+  const renderTool = (tile: ActionTile, featured = false) => {
+    const moduleKey = TILE_MODULE_KEY[tile.id] ?? (tile.id as ModuleKey);
+    const isDisabled = Boolean(tile.disabled || disabledModules.has(moduleKey));
+
+    return (
+      <Button
+        key={tile.id}
+        variant="outline"
+        onClick={() => !isDisabled && onSelect(tile.id)}
+        disabled={isDisabled}
+        className={cn(
+          'group relative h-full min-h-40 w-full items-stretch justify-start overflow-hidden rounded-lg border-border bg-card p-0 text-left whitespace-normal shadow-card transition-all duration-300',
+          'hover:-translate-y-0.5 hover:border-primary/40 hover:bg-card hover:text-card-foreground hover:shadow-elevated',
+          featured && 'min-h-64 border-primary/20 bg-primary/10 hover:bg-primary/10',
+        )}
+      >
+        <div className={cn('relative z-10 flex w-full flex-col p-5', featured && 'sm:w-[54%] sm:p-7')}>
+          <div className="mb-4 flex items-start justify-between gap-3">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground [&>svg]:size-5">
+              {tile.icon}
+            </span>
+            <span className="flex items-center gap-2">
+              {tile.badge && <span className="rounded-full bg-secondary px-2.5 py-1 text-[10px] font-bold uppercase text-secondary-foreground">{tile.badge}</span>}
+              {isDisabled ? <Lock className="size-4 text-muted-foreground" /> : <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary" />}
+            </span>
+          </div>
+          <h3 className={cn('font-display text-lg font-bold text-foreground', featured && 'text-2xl sm:text-3xl')}>{tile.title}</h3>
+          <p className={cn('mt-2 max-w-md text-xs leading-relaxed text-muted-foreground', featured && 'text-sm')}>{tile.description}</p>
+          {featured && (
+            <span className="mt-6 inline-flex w-fit items-center gap-2 rounded-md bg-foreground px-4 py-2 text-xs font-semibold text-background transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+              Studio öffnen <ArrowRight className="size-3.5" />
+            </span>
+          )}
         </div>
-        <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-3">
-          Aktion wählen
-        </h1>
-        <p className="text-muted-foreground text-sm max-w-md mx-auto">
-          Wähle einen Prozess – die Ergebnisse werden automatisch für andere Aktionen verfügbar.
-        </p>
-      </div>
+        {tile.image && (
+          <div className={cn('relative mt-auto h-28 w-full overflow-hidden border-t border-border/70', featured && 'sm:absolute sm:inset-y-0 sm:right-0 sm:h-full sm:w-[46%] sm:border-l sm:border-t-0')}>
+            <img src={tile.image} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
+            <div className="absolute inset-0 bg-gradient-to-t from-foreground/15 to-transparent" />
+          </div>
+        )}
+      </Button>
+    );
+  };
 
-      {/* Credit Balance */}
-      <div className="flex justify-center">
-        <span className="text-xs text-muted-foreground">
-          Guthaben: <strong className="text-foreground">{balance} Credits</strong>
-        </span>
-      </div>
+  const hero = availableTiles.find((tile) => tile.id === 'studio');
+  const backgroundSwap = availableTiles.find((tile) => tile.id === 'background-swap');
+  const remainingPhotoTiles = availableTiles.filter((tile) => tile.group === 'fahrzeugbilder' && tile.id !== 'studio' && tile.id !== 'background-swap');
+  const remainingTiles = availableTiles.filter((tile) => tile.group !== 'fahrzeugbilder');
 
-      {/* Tile Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {TILES.filter((tile) => {
-          const key = TILE_MODULE_KEY[tile.id] ?? (tile.id as ModuleKey);
-          return !disabledModules.has(key);
-        }).map((tile) => {
-          const moduleKey = TILE_MODULE_KEY[tile.id] ?? (tile.id as ModuleKey);
-          const isDisabledByAdmin = disabledModules.has(moduleKey);
-          const isDisabled = tile.disabled || isDisabledByAdmin;
+  return (
+    <div className="space-y-8 pb-8">
+      <header className="flex flex-col gap-5 border-b border-border pb-7 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <div className="mb-3 inline-flex items-center gap-2 text-xs font-bold uppercase text-primary">
+            <Wand2 className="size-3.5" /> autohaus.ai Generator
+          </div>
+          <h1 className="max-w-3xl font-display text-3xl font-bold text-foreground sm:text-4xl lg:text-5xl">Was möchten Sie heute erstellen?</h1>
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">Fahrzeugbilder, Videos, Anzeigen und Verkaufsunterlagen – zentral mit KI erstellen.</p>
+        </div>
+        <div className="flex shrink-0 items-center gap-2 rounded-lg border border-primary/20 bg-primary/10 px-4 py-3">
+          <Coins className="size-4 text-primary" />
+          <span className="text-xs text-muted-foreground">Guthaben</span>
+          <strong className="text-sm text-foreground">{balance} Credits</strong>
+        </div>
+      </header>
 
+      <section aria-labelledby="generator-photo-tools" className="space-y-4">
+        <div>
+          <h2 id="generator-photo-tools" className="font-display text-xl font-bold text-foreground">Fahrzeugbilder</h2>
+          <p className="text-xs text-muted-foreground">Aufnahmen optimieren und neue Perspektiven erstellen</p>
+        </div>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+          {hero && <div className="lg:col-span-8">{renderTool(hero, true)}</div>}
+          {backgroundSwap && <div className="lg:col-span-4">{renderTool(backgroundSwap)}</div>}
+          {remainingPhotoTiles.map((tile) => <div key={tile.id} className="lg:col-span-6">{renderTool(tile)}</div>)}
+        </div>
+      </section>
 
-          return (
-            <button
-              key={tile.id}
-              onClick={() => !isDisabled && onSelect(tile.id)}
-              disabled={isDisabled}
-              className={`relative group text-left p-5 rounded-xl border transition-all duration-200 ${
-                isDisabled
-                  ? 'border-border/50 bg-muted/30 opacity-60 cursor-not-allowed'
-                  : 'border-border bg-card hover:border-accent/50 hover:shadow-lg hover:shadow-accent/5 hover:-translate-y-0.5 cursor-pointer'
-              }`}
-            >
-              {isDisabledByAdmin && (
-                <span className="absolute top-3 right-3">
-                  <Lock className="w-4 h-4 text-muted-foreground" />
-                </span>
-              )}
-              {tile.badge && !isDisabledByAdmin && (
-                <span className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-[10px] font-medium">
-                  {tile.badge}
-                </span>
-              )}
-              <div className={`w-12 h-12 rounded-lg flex items-center justify-center mb-3 transition-colors ${
-                isDisabled
-                  ? 'bg-muted text-muted-foreground'
-                  : 'bg-accent/10 text-accent group-hover:bg-accent group-hover:text-accent-foreground'
-              }`}>
-                {tile.icon}
-              </div>
-              <h3 className="font-semibold text-foreground text-sm mb-1">{tile.title}</h3>
-              <p className="text-muted-foreground text-xs leading-relaxed">{tile.description}</p>
-            </button>
-          );
-        })}
+      <section aria-labelledby="generator-more-tools" className="space-y-4">
+        <div>
+          <h2 id="generator-more-tools" className="font-display text-xl font-bold text-foreground">Weitere Werkzeuge</h2>
+          <p className="text-xs text-muted-foreground">Werbung, Verkaufsseiten, Analyse und Beratung</p>
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {remainingTiles.map((tile) => renderTool(tile))}
+        </div>
+      </section>
+
+      <div className="flex flex-col gap-3 border-t border-border pt-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+        <span>Ergebnisse stehen automatisch für passende Folgeaktionen bereit.</span>
+        <span className="inline-flex items-center gap-2 font-semibold text-foreground"><span className="size-2 rounded-full bg-primary" /> Systeme verfügbar</span>
       </div>
     </div>
   );
