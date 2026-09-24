@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Download, Loader2, Search, ExternalLink, AlertTriangle, FileSpreadsheet } from 'lucide-react';
+import { Download, Loader2, Search, ExternalLink, AlertTriangle, FileSpreadsheet, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -139,6 +139,17 @@ export default function AdminB2bLeads() {
     setLoading(false);
   }, []);
   useEffect(() => { void load(); }, [load]);
+
+  const deleteLead = async (lead: B2bLead) => {
+    if (!window.confirm(`Lead von „${lead.company_name}“ wirklich endgültig löschen?`)) return;
+    const { error } = await supabase.from('b2b_marketing_leads').delete().eq('id', lead.id);
+    if (error) {
+      toast({ title: 'Löschen fehlgeschlagen', description: error.message, variant: 'destructive' });
+      return;
+    }
+    setLeads((prev) => prev.filter((l) => l.id !== lead.id));
+    toast({ title: 'Lead gelöscht' });
+  };
 
   const campaigns = useMemo(() => Array.from(new Set(leads.map(campaignOf))).sort(), [leads]);
   const months = useMemo(() => Array.from(new Set(leads.map((l) => l.created_at.slice(0, 7)))).sort().reverse(), [leads]);
