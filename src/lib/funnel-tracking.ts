@@ -68,8 +68,9 @@ export function trackFunnelEvent(name: FunnelEventName, params: Record<string, u
   const page = window.location.pathname;
   // Dedup-Schlüssel ohne Sitzungs-ID, damit ein Wechsel der Sitzungs-ID (z. B. nach Einwilligung) keine Dubletten erzeugt.
   const dedupKey = `${name}:${page}:${String(params.cta_id ?? params.step ?? '')}`;
-  if (sentIds.has(dedupKey) && !opts.eventId) return;
-  if (!opts.eventId) sentIds.add(dedupKey);
+  const useKey = !opts.eventId && name !== 'page_view';
+  if (useKey && sentIds.has(dedupKey)) return;
+  if (useKey) sentIds.add(dedupKey);
   const eventId = opts.eventId ?? `${name}:${sessionId()}:${page}:${String(params.cta_id ?? params.step ?? '')}`;
   if (sentIds.has(eventId)) return;
   sentIds.add(eventId);
