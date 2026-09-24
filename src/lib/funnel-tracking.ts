@@ -27,16 +27,21 @@ const SERVER_EVENTS = new Set<FunnelEventName>([
 const SESSION_KEY = 'auto3_funnel_session';
 const sentIds = new Set<string>();
 
+let memorySession: string | null = null;
+
+/** Ohne Analyse-Einwilligung nur im Arbeitsspeicher (nichts im Browser gespeichert, § 25 TDDDG). */
 function sessionId(): string {
+  if (!memorySession) memorySession = crypto.randomUUID();
+  if (readConsent()?.analytics !== true) return memorySession;
   try {
     let id = window.sessionStorage.getItem(SESSION_KEY);
     if (!id) {
-      id = crypto.randomUUID();
+      id = memorySession;
       window.sessionStorage.setItem(SESSION_KEY, id);
     }
     return id;
   } catch {
-    return 'no-session';
+    return memorySession;
   }
 }
 

@@ -226,7 +226,7 @@ export default function Datenschutz() {
         <p>
           Unabhängig davon zählen wir auf unseren Kampagnenseiten anonyme Schritte (z. B.
           Seitenaufruf, Klick auf „Test starten“) mit einer zufälligen Sitzungskennung und den
-          Kampagnenparametern der Seite, ohne Cookies und ohne personenbezogene Angaben. Dies
+          Kampagnenparametern der Seite, ohne personenbezogene Angaben. Ohne Einwilligung wird dafür nichts in Ihrem Browser gespeichert. Dies
           dient der Auswertung unserer Anfrage-Strecke (Art. 6 Abs. 1 lit. f DSGVO).
         </p>
       </LegalSection>
