@@ -137,10 +137,10 @@ export default function SmartphoneRevealDemo() {
                 draggable={false}
                 className={`absolute max-w-none object-cover transition-opacity duration-300 ${activeIndex === index ? 'opacity-100' : 'opacity-0'}`}
                 style={{
-                  left: -position.x + 6,
-                  top: -position.y + 6,
-                  width: `calc(${stageRef.current?.clientWidth ?? 0}px - 12px)`,
-                  height: `calc(${stageRef.current?.clientHeight ?? 0}px - 12px)`,
+                  left: -position.x - 6,
+                  top: -position.y - 6,
+                  width: `${stageRef.current?.clientWidth ?? 0}px`,
+                  height: `${stageRef.current?.clientHeight ?? 0}px`,
                 }}
               />
             ))}
