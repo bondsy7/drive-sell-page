@@ -79,4 +79,4 @@
 ## Smartphone-Reveal im Fahrzeugbilder-Hero (25.09.2026)
 - [x] Verschiebbare Smartphone-Maske mit feststehendem Ergebnisbild umsetzen
 - [x] Fünf konfigurierbare Bearbeitungsvarianten mit Überblendung ergänzen
-- [ ] Desktop, Mobil, Bewegungsgrenzen und reduzierte Animation prüfen
+- [x] Desktop, Mobil, Bewegungsgrenzen und reduzierte Animation prüfen

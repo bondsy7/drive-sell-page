@@ -98,7 +98,7 @@ export default function SmartphoneRevealDemo() {
   };
 
   return (
-    <section className="overflow-hidden rounded-lg border border-border bg-card shadow-elevated" aria-label="Interaktiver Vorher-Nachher-Vergleich">
+    <section className="min-w-0 max-w-full overflow-hidden rounded-lg border border-border bg-card shadow-elevated" aria-label="Interaktiver Vorher-Nachher-Vergleich">
       <div
         ref={stageRef}
         className="relative aspect-[1.18] min-h-[310px] select-none overflow-hidden bg-secondary sm:min-h-0"
@@ -156,7 +156,7 @@ export default function SmartphoneRevealDemo() {
       </div>
 
       <div className="border-t border-border bg-card p-2.5 sm:p-3">
-        <div className="flex gap-1.5 overflow-x-auto" role="tablist" aria-label="Bearbeitete Version wählen">
+        <div className="flex w-full min-w-0 gap-1.5 overflow-x-auto" role="tablist" aria-label="Bearbeitete Version wählen">
           {REVEAL_VARIANTS.map((variant, index) => (
             <Button
               key={variant.label}
