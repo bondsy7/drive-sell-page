@@ -11,10 +11,10 @@ import after5Asset from '@/assets/funnel/after5.webp.asset.json';
 // Zum Austauschen eines Zustands nur die jeweilige Bildquelle hier ändern.
 const REVEAL_VARIANTS = [
   { label: 'Aufbereitung', image: after1Asset.url },
-  { label: 'Showroom', image: after2Asset.url },
+  { label: 'Branding', image: after5Asset.url },
   { label: 'Lackierung', image: after3Asset.url },
   { label: 'Felgen', image: after4Asset.url },
-  { label: 'Branding', image: after5Asset.url },
+  { label: 'Showroom', image: after2Asset.url },
 ] as const;
 
 type Position = { x: number; y: number };
