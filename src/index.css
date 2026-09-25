@@ -256,6 +256,16 @@
   100% { opacity: 1; }
 }
 
+@keyframes funnel-phone-intro {
+  0%, 100% { transform: translateX(0); }
+  35% { transform: translateX(-18px); }
+  70% { transform: translateX(12px); }
+}
+
+.funnel-phone-intro {
+  animation: funnel-phone-intro 1.8s ease-in-out 0.35s 1;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .funnel-after-frame {
     animation: none;
@@ -263,6 +273,9 @@
   }
   .funnel-after-frame:first-child {
     opacity: 1;
+  }
+  .funnel-phone-intro {
+    animation: none;
   }
 }
 

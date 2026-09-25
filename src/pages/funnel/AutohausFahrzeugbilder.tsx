@@ -4,7 +4,7 @@ import { ArrowRight, Camera, Check, CirclePlay, Clock3, Image, Images, Layers3, 
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import FunnelLayout from '@/components/funnel/FunnelLayout';
-import BeforeAfterShowcase from '@/components/funnel/BeforeAfterShowcase';
+import SmartphoneRevealDemo from '@/components/funnel/SmartphoneRevealDemo';
 import { usePageMeta } from '@/hooks/usePageMeta';
 import { captureAttribution } from '@/lib/funnel-attribution';
 import after2Asset from '@/assets/funnel/after2.webp.asset.json';
@@ -51,7 +51,7 @@ export default function AutohausFahrzeugbilder() {
               {['Kein Fotostudio nötig', 'Keine manuelle Nachbearbeitung', 'Für Händler und Gruppen'].map((item) => <span key={item} className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-accent" />{item}</span>)}
             </div>
           </div>
-          <BeforeAfterShowcase />
+          <SmartphoneRevealDemo />
         </div>
       </section>
 

@@ -75,3 +75,8 @@
 - [x] /autohaus-fahrzeugbilder und /autohaus-marketing nach Vorlagen überarbeiten
 - [x] /fahrzeug-testen und Danke-Seite nach Vorlagen überarbeiten
 - [x] Desktop, Mobil, Formulare und Tracking prüfen
+
+## Smartphone-Reveal im Fahrzeugbilder-Hero (25.09.2026)
+- [x] Verschiebbare Smartphone-Maske mit feststehendem Ergebnisbild umsetzen
+- [x] Fünf konfigurierbare Bearbeitungsvarianten mit Überblendung ergänzen
+- [ ] Desktop, Mobil, Bewegungsgrenzen und reduzierte Animation prüfen
