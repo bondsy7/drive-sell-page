@@ -458,11 +458,20 @@ serve(async (req) => {
   const diag: {
     engine?: string;
     model?: string;
+    requestedModel?: string;
     tier?: string;
     attempts: number;
     providerStatus?: number | null;
     providerMessage?: string | null;
+    /** Echte Token-Zahlen des Anbieters (Gemini usageMetadata / OpenAI usage). */
+    usage?: Record<string, unknown> | null;
+    inlineImageCount?: number;
+    fileImageCount?: number;
+    requestBytes?: number;
   } = { attempts: 0 };
+  /** Für Rückbuchung, wenn kein Bild geliefert wird. */
+  let chargedUserId: string | null = null;
+  let chargedCost = 0;
 
   try {
     // 1. Auth & credits
@@ -493,11 +502,14 @@ serve(async (req) => {
     const authResult = await authenticateAndDeductCredits(req, "image_remaster", cost);
     if (authResult instanceof Response) return authResult;
     const costUserId = (authResult as any).userId as string | undefined;
+    chargedUserId = costUserId ?? null;
+    chargedCost = cost;
 
     // Engine routing per user-selected tier (binding, no cross-engine fallback)
+    // gemini-2.5-flash-image wird am 02.10.2026 abgeschaltet → nicht mehr verwenden.
     interface EngineConfig { engine: 'gemini' | 'openai'; model: string }
     const ENGINE_MAP: Record<string, EngineConfig> = {
-      schnell:   { engine: 'gemini', model: 'gemini-2.5-flash-image' },
+      schnell:   { engine: 'gemini', model: 'gemini-3.1-flash-lite-image' },
       qualitaet: { engine: 'gemini', model: 'gemini-3.1-flash-image-preview' },
       premium:   { engine: 'gemini', model: 'gemini-3-pro-image-preview' },
       turbo:     { engine: 'openai', model: 'gpt-image-1' },
