@@ -856,7 +856,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         }
       }
 
-      if (resolvedVehicleId) {
+      // Originale im Hintergrund sichern – blockiert den Generierungsstart nicht mehr.
+      if (resolvedVehicleId) void (async () => {
         try {
           const normalOriginals = (cfg.originalImages?.length ? cfg.originalImages : cfg.inputImages) || [];
           // Felgenreferenz NUR für die Persistenz anhängen – sie darf niemals
@@ -881,7 +882,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         } catch (e) {
           console.warn('[pipeline] originals upload skipped:', e);
         }
-      }
+      })();
 
       const { data: existingImages } = cfg.projectId
         ? await supabase.from('project_images').select('sort_order').eq('project_id', cfg.projectId)

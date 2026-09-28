@@ -55,29 +55,21 @@ serve(async (req) => {
 
     const uploadUrl = `https://generativelanguage.googleapis.com/upload/v1beta/files?key=${GEMINI_API_KEY}`;
 
-    const fileUris: { uri: string; mimeType: string }[] = [];
-
-    for (const dataUrl of images) {
+    const t0 = Date.now();
+    const uploadOne = async (dataUrl: string, idx: number): Promise<{ uri: string; mimeType: string } | null> => {
       try {
-        // Parse data URL
         const isDataUrl = dataUrl.startsWith("data:");
         let mimeType = "image/jpeg";
         let raw = dataUrl;
-
         if (isDataUrl) {
           const match = dataUrl.match(/^data:(image\/\w+);base64,/);
           if (match) mimeType = match[1];
           raw = dataUrl.split(",")[1];
         }
-
-        // Decode base64 to bytes
         const binaryStr = atob(raw);
         const bytes = new Uint8Array(binaryStr.length);
-        for (let i = 0; i < binaryStr.length; i++) {
-          bytes[i] = binaryStr.charCodeAt(i);
-        }
+        for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
 
-        // Upload via resumable upload (start)
         const startResp = await fetch(uploadUrl, {
           method: "POST",
           headers: {
@@ -87,25 +79,14 @@ serve(async (req) => {
             "X-Goog-Upload-Header-Content-Type": mimeType,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            file: { display_name: `pipeline_${Date.now()}_${fileUris.length}` },
-          }),
+          body: JSON.stringify({ file: { display_name: `pipeline_${Date.now()}_${idx}` } }),
         });
-
         if (!startResp.ok) {
-          const errText = await startResp.text();
-          console.error(`File API start failed: ${startResp.status}`, errText);
-          // Skip this image but continue
-          continue;
+          console.error(`File API start failed: ${startResp.status}`, await startResp.text());
+          return null;
         }
-
         const uploadUri = startResp.headers.get("X-Goog-Upload-URL");
-        if (!uploadUri) {
-          console.error("No upload URI returned");
-          continue;
-        }
-
-        // Upload the bytes
+        if (!uploadUri) return null;
         const uploadResp = await fetch(uploadUri, {
           method: "PUT",
           headers: {
@@ -115,25 +96,35 @@ serve(async (req) => {
           },
           body: bytes,
         });
-
         if (!uploadResp.ok) {
-          const errText = await uploadResp.text();
-          console.error(`File API upload failed: ${uploadResp.status}`, errText);
-          continue;
+          console.error(`File API upload failed: ${uploadResp.status}`, await uploadResp.text());
+          return null;
         }
-
         const uploadResult = await uploadResp.json();
-        const fileUri = uploadResult?.file?.uri;
-        if (fileUri) {
-          fileUris.push({ uri: fileUri, mimeType });
-          console.log(`[upload-pipeline-images] Uploaded ${Math.round(bytes.length / 1024)}KB → ${fileUri}`);
-        }
+        const uri = uploadResult?.file?.uri;
+        return uri ? { uri, mimeType } : null;
       } catch (err) {
         console.error("[upload-pipeline-images] Single upload error:", err);
+        return null;
       }
-    }
+    };
 
-    console.log(`[upload-pipeline-images] Uploaded ${fileUris.length}/${images.length} images`);
+    // Parallel (max 8 gleichzeitig), Reihenfolge bleibt erhalten; Fehlversuche 1× wiederholen.
+    const results: ({ uri: string; mimeType: string } | null)[] = new Array(images.length).fill(null);
+    const CONCURRENCY = 8;
+    let next = 0;
+    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, images.length) }, async () => {
+      while (next < images.length) {
+        const i = next++;
+        results[i] = (await uploadOne(images[i], i)) ?? (await uploadOne(images[i], i));
+      }
+    }));
+
+    // Nur vollständige, indexgenaue Ergebnisse zurückgeben – sonst Fallback im Client.
+    const complete = results.every(Boolean);
+    const fileUris = complete ? (results as { uri: string; mimeType: string }[]) : [];
+
+    console.log(`[upload-pipeline-images] Uploaded ${results.filter(Boolean).length}/${images.length} images in ${Date.now() - t0}ms (complete=${complete})`);
 
     return new Response(JSON.stringify({ fileUris }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
