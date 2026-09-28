@@ -1138,6 +1138,7 @@ REPRODUCTION RULES (ZERO DEVIATION):
       }
 
       const data = await resp.json();
+      diag.usage = (data as any)?.usage ?? null;
       const output: any[] = Array.isArray(data?.output) ? data.output : [];
       const imageCall = output.find((o: any) => o?.type === 'image_generation_call' && o?.result);
       const b64 = imageCall?.result;
@@ -1324,6 +1325,7 @@ REPRODUCTION RULES (ZERO DEVIATION):
             continue;
           }
           const data = await resp.json();
+          diag.usage = (data as any)?.usage ?? null;
           const b64 = data?.data?.[0]?.b64_json;
           if (b64) {
             resultImage = `data:image/png;base64,${b64}`;
@@ -1384,15 +1386,19 @@ REPRODUCTION RULES (ZERO DEVIATION):
     // GEMINI ENGINE (schnell / qualitaet / premium) — original path
     // Same-engine fallback only (never crosses to OpenAI)
     // ─────────────────────────────────────────────────────────────
-    const FALLBACK_ORDER: Record<string, string[]> = {
-      'gemini-3-pro-image-preview': ['gemini-3.1-flash-image-preview', 'gemini-2.5-flash-image'],
-      'gemini-3.1-flash-image-preview': ['gemini-2.5-flash-image'],
-      'gemini-2.5-flash-image': ['gemini-3.1-flash-image-preview'],
+    // Kein Qualitätswechsel mehr: Qualität/Premium bleiben beim gewählten Modell
+    // (sonst Mischqualität im Satz). Nur wenn ein Modell beim Anbieter nicht
+    // existiert (404), wird auf das Qualitätsmodell ausgewichen.
+    const MODEL_MISSING_FALLBACK: Record<string, string> = {
+      'gemini-3.1-flash-lite-image': 'gemini-3.1-flash-image-preview',
     };
-    const modelsToTry = Array.from(new Set([geminiModel, ...(FALLBACK_ORDER[geminiModel] || ['gemini-3.1-flash-image-preview'])])).slice(0, 2);
+    const modelsToTry = [geminiModel, ...(MODEL_MISSING_FALLBACK[geminiModel] ? [MODEL_MISSING_FALLBACK[geminiModel]] : [])];
+    diag.requestedModel = geminiModel;
+    diag.inlineImageCount = parts.filter((p: any) => p.inlineData).length;
+    diag.fileImageCount = parts.filter((p: any) => p.file_data).length;
     const maxRetries = 2;
     const startedAt = Date.now();
-    const HARD_BUDGET_MS = 130_000; // stay under 150s edge limit
+    const HARD_BUDGET_MS = 140_000; // stay under 150s edge limit
 
     for (const currentModel of modelsToTry) {
       if (resultImage) break;
@@ -1407,18 +1413,21 @@ REPRODUCTION RULES (ZERO DEVIATION):
             lastError = lastError || 'Zeitbudget erschöpft';
             break;
           }
-          const perCallTimeout = Math.min(50_000, remaining - 2_000);
+          // Erster Versuch bekommt großzügig Zeit (statt Modellwechsel nach 50 s).
+          const perCallTimeout = attempt === 0 ? Math.min(95_000, remaining - 2_000) : remaining - 2_000;
           console.log(`Remaster model=${currentModel} attempt ${attempt + 1}/${maxRetries}, parts: ${parts.length}, timeout=${perCallTimeout}ms`);
+          const requestBody = JSON.stringify({
+            contents: [{ parts }],
+            generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
+          });
+          diag.requestBytes = requestBody.length;
           const response = await fetchWithTimeout(geminiUrl, {
             method: "POST",
             headers: {
               "x-goog-api-key": GEMINI_API_KEY!,
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({
-              contents: [{ parts }],
-              generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
-            }),
+            body: requestBody,
           }, perCallTimeout);
 
           if (!response.ok) {
@@ -1436,17 +1445,25 @@ REPRODUCTION RULES (ZERO DEVIATION):
               await sleep(delay);
               continue;
             }
-            console.warn(`Model ${currentModel} exhausted (${response.status}), trying fallback...`);
+            if (response.status === 404 && MODEL_MISSING_FALLBACK[currentModel]) {
+              console.warn(`Model ${currentModel} not available (404), using ${MODEL_MISSING_FALLBACK[currentModel]}`);
+              break;
+            }
+            // Kein Modellwechsel bei Überlast/Fehler – Qualität bleibt einheitlich.
+            modelsToTry.length = 0;
             break;
           }
 
           const data = await response.json();
+          diag.attempts = attempt + 1;
+          diag.usage = data?.usageMetadata ?? null;
           const respParts = data.candidates?.[0]?.content?.parts;
           if (respParts) {
             for (const part of respParts) {
               if (part.inlineData?.data) {
                 const mime = part.inlineData.mimeType || "image/png";
                 resultImage = `data:${mime};base64,${part.inlineData.data}`;
+                diag.model = currentModel; // tatsächlich genutztes Modell protokollieren
                 if (currentModel !== geminiModel) {
                   console.log(`Fallback success: used ${currentModel} instead of ${geminiModel}`);
                 }
@@ -1519,6 +1536,20 @@ REPRODUCTION RULES (ZERO DEVIATION):
   } catch (e) {
     console.error("remaster-vehicle-image error:", e);
     const msg = e instanceof Error ? e.message : "Unknown error";
+    // Kein Bild geliefert → abgebuchte Credits zurückbuchen.
+    let refunded = false;
+    if (chargedUserId && chargedCost > 0) {
+      try {
+        const { error: refundErr } = await createServiceClient().rpc("add_credits", {
+          _user_id: chargedUserId,
+          _amount: chargedCost,
+          _action_type: "credit_refund",
+          _description: `Rückbuchung image_remaster: ${msg.slice(0, 120)}`,
+        });
+        refunded = !refundErr;
+        if (refundErr) console.error("[remaster] Rückbuchung fehlgeschlagen:", refundErr.message);
+      } catch (re) { console.error("[remaster] Rückbuchung fehlgeschlagen:", re); }
+    }
     const overloaded = /überlastet|503|UNAVAILABLE|Zeitüberschreitung|budget exhausted|overload/i.test(msg);
     // Return 200 with structured error so supabase.functions.invoke doesn't throw
     // and the frontend can show a friendly toast instead of crashing.
@@ -1547,7 +1578,8 @@ REPRODUCTION RULES (ZERO DEVIATION):
         fallback: overloaded,
         errorCode,
         retryable: overloaded || errorCode === 'rate_limited' || errorCode === 'reference_upload_failed' || errorCode === 'timeout',
-        diagnostics: { ...diag, durationMs: Date.now() - startedAt, errorCode, errorMessage: msg.slice(0, 500) },
+        refunded,
+        diagnostics: { ...diag, durationMs: Date.now() - startedAt, errorCode, errorMessage: msg.slice(0, 500), refunded },
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
