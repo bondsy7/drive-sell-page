@@ -172,7 +172,7 @@ async function uploadUserImage(supabase: any, base64: string, userId: string, in
 
 // ─── Generate a single image via Gemini ───
 async function generateImage(apiKey: string, prompt: string, aspectHint: string): Promise<string | null> {
-  const models = ["gemini-2.5-flash-image"];
+  const models = ["gemini-3.1-flash-image-preview"];
   const professionalPhotoLock = `Professional automotive commercial photograph. The vehicle must be naturally integrated into the NEW scene with visible light-source logic: ceiling LEDs/window bands/sun/streetlights create soft believable highlights on hood, roof, windshield, side glass, chrome, rims and body panels. Render subtle natural floor/ground contact shadows, ambient occlusion at the tires, and faint lower-body floor reflections where the surface is polished or wet. All reflections must belong ONLY to the described scene; no foreign reflections, no old showroom/street, no other cars, no people, no photographer, no watermarks, no text/logos unless explicitly requested. Photorealistic, premium dealership/editorial quality, not CGI, not pasted.`;
   
   for (const model of models) {
