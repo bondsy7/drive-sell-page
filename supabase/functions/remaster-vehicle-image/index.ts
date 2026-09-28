@@ -1413,8 +1413,9 @@ REPRODUCTION RULES (ZERO DEVIATION):
             lastError = lastError || 'Zeitbudget erschöpft';
             break;
           }
-          // Erster Versuch bekommt großzügig Zeit (statt Modellwechsel nach 50 s).
-          const perCallTimeout = attempt === 0 ? Math.min(95_000, remaining - 2_000) : remaining - 2_000;
+          // Gemessen: Median ~15 s, fast alle Bilder < 30 s. Hängende Anfragen
+          // (Ausreißer > 45 s) werden abgebrochen und sofort neu gestellt, statt 95 s zu warten.
+          const perCallTimeout = attempt === 0 ? Math.min(45_000, remaining - 2_000) : remaining - 2_000;
           console.log(`Remaster model=${currentModel} attempt ${attempt + 1}/${maxRetries}, parts: ${parts.length}, timeout=${perCallTimeout}ms`);
           const requestBody = JSON.stringify({
             contents: [{ parts }],
