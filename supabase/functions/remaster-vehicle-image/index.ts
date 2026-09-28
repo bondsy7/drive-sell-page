@@ -1496,8 +1496,10 @@ REPRODUCTION RULES (ZERO DEVIATION):
 
     // ── Leichtgewichtige Felgen-Verifikation ──
     // Vergleicht Speichenzahl/Finish des Ergebnisses mit der Felgenreferenz.
-    let wheelCheck: { match: boolean; reason?: string } | null = null;
+    // Läuft im Hintergrund (nur Protokoll) – blockiert die Bildauslieferung nicht mehr.
+    const wheelCheck: { match: boolean; reason?: string } | null = null;
     if (hasWheelReference && GEMINI_API_KEY) {
+      const bgCheck = (async () => {
       try {
         const refPart = wheelReferenceFileUri?.uri
           ? { file_data: { mime_type: wheelReferenceFileUri.mimeType || 'image/jpeg', file_uri: wheelReferenceFileUri.uri } }
@@ -1522,13 +1524,14 @@ REPRODUCTION RULES (ZERO DEVIATION):
           const raw = cj?.candidates?.[0]?.content?.parts?.find((p: any) => p.text)?.text;
           if (raw) {
             const parsed = JSON.parse(raw);
-            wheelCheck = { match: !!parsed.match, reason: parsed.reason };
-            console.log(`[remaster][wheel] verification match=${wheelCheck.match} reason=${wheelCheck.reason ?? ''}`);
+            console.log(`[remaster][wheel] verification match=${!!parsed.match} reason=${parsed.reason ?? ''}`);
           }
         }
       } catch (verifyErr) {
         console.warn('[remaster][wheel] verification skipped:', verifyErr);
       }
+      })();
+      try { (globalThis as any).EdgeRuntime?.waitUntil?.(bgCheck); } catch { /* ignore */ }
     }
 
     return new Response(JSON.stringify({ imageBase64: resultImage, ...(wheelCheck ? { wheelCheck } : {}), engine: diag.engine, model: diag.model, diagnostics: { ...diag, durationMs: Date.now() - startedAt } }), {
