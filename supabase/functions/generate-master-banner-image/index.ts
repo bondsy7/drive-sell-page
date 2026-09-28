@@ -85,7 +85,7 @@ Deno.serve(async (req) => {
       generationConfig: { responseModalities: ["IMAGE"] },
     };
 
-    const model = "gemini-2.5-flash-image";
+    const model = "gemini-3.1-flash-image-preview";
     let r: Response | null = null;
     let lastStatus = 0;
     let lastBody = "";

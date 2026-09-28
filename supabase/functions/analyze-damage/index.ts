@@ -208,7 +208,7 @@ REGELN:
     generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
   });
 
-  const models = ["gemini-3.1-flash-image-preview", "gemini-2.5-flash-image"];
+  const models = ["gemini-3.1-flash-image-preview"];
   for (const model of models) {
     try {
       const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {

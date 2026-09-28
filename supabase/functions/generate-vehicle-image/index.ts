@@ -14,7 +14,7 @@ interface ModelConfig {
 }
 
 const MODEL_MAP: Record<string, ModelConfig> = {
-  schnell:   { engine: "gemini", model: "gemini-2.5-flash-image", defaultCost: 3 },
+  schnell:   { engine: "gemini", model: "gemini-3.1-flash-image-preview", defaultCost: 3 },
   qualitaet: { engine: "gemini", model: "gemini-3.1-flash-image-preview", defaultCost: 5 },
   premium:   { engine: "gemini", model: "gemini-3-pro-image-preview", defaultCost: 8 },
   turbo:     { engine: "openai", model: "gpt-image-1", defaultCost: 6 },
@@ -22,7 +22,7 @@ const MODEL_MAP: Record<string, ModelConfig> = {
   neu:       { engine: "openai", model: "gpt-image-2", defaultCost: 12 },
   flare:     { engine: "openai", model: "gpt-image-2.5-flare", defaultCost: 12 },
   // Legacy fallbacks
-  standard:  { engine: "gemini", model: "gemini-2.5-flash-image", defaultCost: 3 },
+  standard:  { engine: "gemini", model: "gemini-3.1-flash-image-preview", defaultCost: 3 },
   pro:       { engine: "gemini", model: "gemini-3-pro-image-preview", defaultCost: 8 },
 };
 

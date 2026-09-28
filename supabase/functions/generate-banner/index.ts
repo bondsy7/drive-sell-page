@@ -46,7 +46,7 @@ interface ModelConfig {
 }
 
 const MODEL_MAP: Record<string, ModelConfig> = {
-  schnell:   { engine: "gemini", model: "gemini-2.5-flash-image", cost: 3 },
+  schnell:   { engine: "gemini", model: "gemini-3.1-flash-image-preview", cost: 3 },
   qualitaet: { engine: "gemini", model: "gemini-3.1-flash-image-preview", cost: 5 },
   premium:   { engine: "gemini", model: "gemini-3-pro-image-preview", cost: 8 },
   turbo:     { engine: "openai", model: "gpt-image-1", cost: 6, supportsSize: true },
@@ -58,7 +58,7 @@ const MODEL_MAP: Record<string, ModelConfig> = {
 };
 
 const EDGE_DEADLINE_MS = 145_000;
-const GEMINI_FAST_FALLBACK = "gemini-2.5-flash-image";
+const GEMINI_FAST_FALLBACK = "gemini-3.1-flash-image-preview";
 
 const PROFESSIONAL_BANNER_IMAGE_LOCK = `
 

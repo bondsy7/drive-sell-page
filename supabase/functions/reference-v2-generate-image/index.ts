@@ -35,8 +35,8 @@ const MAX_REFERENCES = 4; // 1 primary + max 3 secondary
 const MAX_TOTAL_BYTES = 24 * 1024 * 1024;
 
 const MODEL_CHAIN: Record<string, readonly string[]> = {
-  economy: ["gemini-2.5-flash-image", "gemini-3.1-flash-image-preview"],
-  standard: ["gemini-3.1-flash-image-preview", "gemini-2.5-flash-image"],
+  economy: ["gemini-3.1-flash-image-preview"],
+  standard: ["gemini-3.1-flash-image-preview"],
   premium: ["gemini-3-pro-image-preview", "gemini-3.1-flash-image-preview"],
 };
 

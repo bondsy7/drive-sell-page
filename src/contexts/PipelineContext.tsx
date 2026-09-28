@@ -333,7 +333,9 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     dealerLogo: { uri: string; mimeType: string } | null;
     /** Dedizierte Felgenreferenz – separat gecacht (File API First). */
     wheel: { uri: string; mimeType: string } | null;
-  }>({ references: [], showroom: null, plate: null, manufacturerLogo: null, dealerLogo: null, wheel: null });
+    /** Detailbilder (cfg.additionalImages) – ebenfalls einmal hochgeladen. */
+    additional: { uri: string; mimeType: string }[];
+  }>({ references: [], showroom: null, plate: null, manufacturerLogo: null, dealerLogo: null, wheel: null, additional: [] });
 
   // Cached OpenAI Files API IDs – uploaded ONCE for Responses image tiers and
   // reused for ALL pipeline jobs (never re-sent as base64 per perspective).
@@ -560,13 +562,32 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
 
     const fileUriCache = cachedFileUrisRef.current;
+    // Detailbilder mit vorhandenem Datei-Link nicht mehr einbetten.
+    if (inlineSupportingImages && inlineSupportingImages.length > 0 && fileUriCache.additional.length > 0) {
+      const addImgs = cfg.additionalImages || [];
+      const stillInline: string[] = [];
+      const stillInlineRoles: string[] = [];
+      inlineSupportingImages.forEach((img, i) => {
+        const idx = addImgs.indexOf(img);
+        const fu = idx >= 0 ? fileUriCache.additional[idx] : undefined;
+        if (fu) {
+          additionalFileUris = [...(additionalFileUris || []), fu];
+          additionalFileUriRoles = [...(additionalFileUriRoles || []), additionalImageRoles?.[i] || 'detail reference'];
+        } else {
+          stillInline.push(img);
+          stillInlineRoles.push(additionalImageRoles?.[i] || 'detail reference');
+        }
+      });
+      inlineSupportingImages = stillInline;
+      additionalImageRoles = stillInlineRoles;
+    }
     const plateFileUri = isInteriorJob ? null : fileUriCache.plate;
     const mfgLogoFileUri = cfg.remasterConfig.showManufacturerLogo ? fileUriCache.manufacturerLogo : null;
     const dealerLogoFileUri2 = cfg.remasterConfig.showDealerLogo ? fileUriCache.dealerLogo : null;
 
     const { data, error } = await invokeRemasterVehicleImage({
       classContext: cfg.classContext ?? null,
-      imageBase64: mainImageOpenAIFile ? null : primaryReference,
+      imageBase64: (mainImageOpenAIFile || mainImageFileUri) ? null : primaryReference,
       mainImageRole: primaryReferenceRole,
       additionalImages: inlineSupportingImages && inlineSupportingImages.length > 0 ? inlineSupportingImages : undefined,
       additionalFileUris: additionalFileUris && additionalFileUris.length > 0 ? additionalFileUris : undefined,
@@ -623,6 +644,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       model: diagnostics.model ?? (data as any)?.model ?? null,
       attempts: diagnostics.attempts || 1,
       durationMs: Date.now() - attemptStartedAt,
+      providerResponse: diagnostics,
     };
   }, [fetchUrlToBase64]);
 
@@ -726,7 +748,7 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       // ── Phase 4: Upload images to Gemini File API ONCE ──
       // This avoids sending MB of base64 with every single job request
-      cachedFileUrisRef.current = { references: [], showroom: null, plate: null, manufacturerLogo: null, dealerLogo: null, wheel: null };
+      cachedFileUrisRef.current = { references: [], showroom: null, plate: null, manufacturerLogo: null, dealerLogo: null, wheel: null, additional: [] };
       cachedOpenAIFilesRef.current = { references: [], additional: [], showroom: null, plate: null, manufacturerLogo: null, dealerLogo: null, wheel: null };
       try {
         const referenceImages = cfg.inputImages.length > 0 ? cfg.inputImages : cfg.originalImages;
@@ -760,7 +782,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const useOpenAIFiles = tierUsesOpenAIFiles(cfg.modelTier);
         // OpenAI track additionally uploads the detail images ONCE so detail jobs
         // never resend them as base64.
-        const additionalForOpenAI = useOpenAIFiles ? (cfg.additionalImages || []) : [];
+        // Gemini track ebenso: Detailbilder einmal per Datei-Link statt je Anfrage eingebettet.
+        const additionalForOpenAI = cfg.additionalImages || [];
         const additionalStartIdx = additionalForOpenAI.length > 0 ? imagesToUpload.length : -1;
         if (additionalForOpenAI.length > 0) imagesToUpload.push(...additionalForOpenAI);
 
@@ -800,6 +823,10 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             if (wheelIdx >= 0 && fileUris[wheelIdx]) {
               cachedFileUrisRef.current.wheel = fileUris[wheelIdx];
               console.log('[Pipeline] Wheel reference cached via File API ✓');
+            }
+            if (additionalStartIdx >= 0) {
+              const add = fileUris.slice(additionalStartIdx, additionalStartIdx + additionalForOpenAI.length);
+              if (add.length === additionalForOpenAI.length) cachedFileUrisRef.current.additional = add;
             }
           } else {
             console.warn('[Pipeline] File API upload failed, falling back to inline_data:', uploadError);
@@ -923,7 +950,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               errorCode: result.base64 ? null : (result.errorCode || 'unknown'),
               errorMessage: result.base64 ? null : (result.error || null),
               providerStatus: result.providerStatus ?? null,
-              providerResponse: result.base64 ? null : result.providerResponse,
+              // Auch bei Erfolg: echte Token-Zahlen (usage) + genutztes Modell.
+              providerResponse: result.providerResponse ?? null,
               retryable: result.retryable ?? null,
             });
             if (result.base64) {

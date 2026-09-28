@@ -188,6 +188,19 @@ export default function AdminGenerationLogs() {
                     <p>Fahrzeug: {log.vehicle_id || '—'} · Projekt: {log.project_id || '—'}</p>
                     <p>Stufe/Modell: {log.model_tier || '—'} · {log.engine || '—'} · {log.model || '—'}</p>
                     <p>Bild-Index: {log.prompt_index ?? '—'}</p>
+                    {(() => {
+                      const u = (log.provider_response as { usage?: Record<string, number> } | null)?.usage;
+                      if (!u) return null;
+                      const input = u.promptTokenCount ?? u.input_tokens;
+                      const output = u.candidatesTokenCount ?? u.output_tokens;
+                      const thoughts = u.thoughtsTokenCount;
+                      const total = u.totalTokenCount ?? u.total_tokens;
+                      return (
+                        <p className="font-medium text-foreground">
+                          Tokens (echt): Eingabe {input ?? '—'} · Ausgabe {output ?? '—'}{thoughts != null ? ` · Denken ${thoughts}` : ''} · Gesamt {total ?? '—'}
+                        </p>
+                      );
+                    })()}
                     <p>Anbieter-Status: {log.provider_status ?? '—'}</p>
                     {log.error_message && <p>Meldung: {log.error_message}</p>}
                     {log.provider_response != null && (
