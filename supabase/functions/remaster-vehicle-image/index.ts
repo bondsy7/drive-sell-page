@@ -1415,7 +1415,8 @@ REPRODUCTION RULES (ZERO DEVIATION):
           }
           // Gemessen: Median ~15 s, fast alle Bilder < 30 s. Hängende Anfragen
           // (Ausreißer > 45 s) werden abgebrochen und sofort neu gestellt, statt 95 s zu warten.
-          const perCallTimeout = attempt === 0 ? Math.min(45_000, remaining - 2_000) : remaining - 2_000;
+          // Gemessen: normale Bilder 8–17 s, max. 28 s. Hänger früher abbrechen und neu starten.
+          const perCallTimeout = attempt === 0 ? Math.min(32_000, remaining - 2_000) : remaining - 2_000;
           console.log(`Remaster model=${currentModel} attempt ${attempt + 1}/${maxRetries}, parts: ${parts.length}, timeout=${perCallTimeout}ms`);
           const requestBody = JSON.stringify({
             contents: [{ parts }],
