@@ -13,11 +13,13 @@ interface Props {
   leadId: string;
   token: string;
   askVolume: boolean;
-  onDone: () => void;
+  onDone: (data: { first_name: string; last_name: string; role: string; phone: string; website: string }) => void;
+  className?: string;
+  hideHeader?: boolean;
 }
 
 /** Schritt 2: ergänzende Angaben zu einem bereits gespeicherten Lead. */
-export default function LeadDetailsStep({ leadId, token, askVolume, onDone }: Props) {
+export default function LeadDetailsStep({ leadId, token, askVolume, onDone, className, hideHeader }: Props) {
   const [f, setF] = useState({ first_name: '', last_name: '', role: '', monthly_vehicle_volume: '', location_count: '', website: '', phone: '', note: '' });
   const [sending, setSending] = useState(false);
   const set = (k: keyof typeof f, v: string) => setF((p) => ({ ...p, [k]: v }));
@@ -37,16 +39,16 @@ export default function LeadDetailsStep({ leadId, token, askVolume, onDone }: Pr
         return;
       }
       toast({ title: 'Danke – Angaben ergänzt' });
-      onDone();
+      onDone(f);
     } finally {
       setSending(false);
     }
   };
 
   return (
-    <form onSubmit={submit} noValidate className="mx-auto mt-10 max-w-3xl rounded-lg border border-accent/40 bg-card p-5 shadow-card sm:p-6">
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Schritt 2 von 2 · optional, aber hilfreich</p>
-      <h2 className="mt-1 text-lg font-semibold text-foreground">Damit wir den Test passend vorbereiten</h2>
+    <form onSubmit={submit} noValidate className={className ?? "mx-auto mt-10 max-w-3xl rounded-lg border border-accent/40 bg-card p-5 shadow-card sm:p-6"}>
+      {!hideHeader && <><p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Schritt 2 von 2 · optional, aber hilfreich</p>
+      <h2 className="mt-1 text-lg font-semibold text-foreground">Damit wir den Test passend vorbereiten</h2></>}
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <div><Label htmlFor="s2-fn">Vorname *</Label><Input id="s2-fn" value={f.first_name} onChange={(e) => set('first_name', e.target.value)} maxLength={80} autoComplete="given-name" /></div>
         <div><Label htmlFor="s2-ln">Nachname *</Label><Input id="s2-ln" value={f.last_name} onChange={(e) => set('last_name', e.target.value)} maxLength={80} autoComplete="family-name" /></div>
