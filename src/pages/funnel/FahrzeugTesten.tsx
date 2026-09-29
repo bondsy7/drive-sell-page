@@ -20,7 +20,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { GOAL_OPTIONS, MAX_UPLOAD_BYTES, ACCEPTED_IMAGE_TYPES } from '@/lib/b2b-funnel-options';
 import BeforeAfterShowcase from '@/components/funnel/BeforeAfterShowcase';
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[a-zA-Z2,]+$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
 
 /** Auswahl-Kacheln „Was möchten Sie verbessern?" – Werte identisch mit GOAL_OPTIONS (Lead-Funktion). */
