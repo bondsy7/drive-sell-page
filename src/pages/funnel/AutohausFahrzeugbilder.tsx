@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Camera, Check, CirclePlay, Clock3, Image, Images, Layers3, RotateCcw, ShieldCheck, Sparkles, Users } from 'lucide-react';
+import { ArrowRight, Camera, Check, CirclePlay, Clock3, Image, Images, Layers3, RotateCcw, ShieldCheck, Sparkles, Users, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import FunnelLayout from '@/components/funnel/FunnelLayout';
@@ -77,9 +77,24 @@ export default function AutohausFahrzeugbilder() {
       </section>
 
       <section id="ergebnisse" className="funnel-section-tint border-y border-border py-14">
-        <div className="mx-auto grid max-w-6xl gap-5 px-4 sm:px-6 lg:grid-cols-2">
-          <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-6"><h2 className="font-display text-xl font-bold">Die typischen Herausforderungen im Fahrzeugbild-Alltag</h2><ul className="mt-5 space-y-3 text-sm text-muted-foreground">{['Uneinheitliche Bildqualität je Standort und Mitarbeiter', 'Aufwendige Nachbearbeitung oder externe Dienstleister', 'Unterschiedliche Hintergründe und Perspektiven', 'Zeitverlust, bis Fahrzeuge online sind'].map((x) => <li key={x} className="flex gap-3"><span className="font-bold text-destructive">×</span>{x}</li>)}</ul></div>
-          <div className="rounded-lg border border-accent/20 bg-accent/5 p-6"><h2 className="font-display text-xl font-bold">Das ändert sich mit autohaus.ai</h2><ul className="mt-5 space-y-3 text-sm text-muted-foreground">{['Professionelle Fahrzeugbilder im einheitlichen Showroom-Look', 'Automatische Verarbeitung in einem klaren Ablauf', 'Saubere, konsistente Hintergründe und Perspektiven', 'Einheitlicher Auftritt über alle Standorte hinweg'].map((x) => <li key={x} className="flex gap-3"><Check className="mt-0.5 h-4 w-4 shrink-0 text-accent" />{x}</li>)}</ul></div>
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <div className="relative grid gap-5 lg:grid-cols-2 lg:gap-10">
+            <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-6">
+              <div className="flex items-start gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-card"><X className="h-5 w-5" strokeWidth={3} /></span>
+                <h2 className="font-display text-xl font-bold leading-snug">Die typischen Herausforderungen im Fahrzeugbild-Alltag</h2>
+              </div>
+              <ul className="mt-5 space-y-3 text-sm text-muted-foreground">{['Uneinheitliche Bildqualität je Standort und Mitarbeiter', 'Aufwendige Nachbearbeitung oder externe Dienstleister', 'Unterschiedliche Hintergründe und Perspektiven', 'Zeitverlust, bis Fahrzeuge online sind'].map((x) => <li key={x} className="flex gap-3"><X className="mt-0.5 h-4 w-4 shrink-0 text-destructive" strokeWidth={2.5} />{x}</li>)}</ul>
+            </div>
+            <div className="rounded-lg border border-accent/20 bg-accent/5 p-6">
+              <div className="flex items-start gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent text-primary-foreground shadow-card"><Check className="h-5 w-5" strokeWidth={3} /></span>
+                <h2 className="font-display text-xl font-bold leading-snug">Das ändert sich mit autohaus.ai</h2>
+              </div>
+              <ul className="mt-5 space-y-3 text-sm text-muted-foreground">{['Professionelle Fahrzeugbilder im einheitlichen Showroom-Look', 'Automatische Verarbeitung in einem klaren Ablauf', 'Saubere, konsistente Hintergründe und Perspektiven', 'Einheitlicher Auftritt über alle Standorte hinweg'].map((x) => <li key={x} className="flex gap-3"><Check className="mt-0.5 h-4 w-4 shrink-0 text-accent" strokeWidth={2.5} />{x}</li>)}</ul>
+            </div>
+            <div className="pointer-events-none absolute left-1/2 top-1/2 hidden h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card text-accent shadow-card lg:flex"><ArrowRight className="h-5 w-5" /></div>
+          </div>
         </div>
       </section>
 
