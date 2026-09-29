@@ -147,6 +147,8 @@
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
+    --star: 38 92% 50%;
+
     --border: 214 24% 89%;
     --input: 214 24% 86%;
     --ring: 170.77 100% 33.14%;
@@ -194,6 +196,8 @@
     --accent-foreground: 0 0% 100%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
+
+    --star: 38 92% 55%;
     --border: 0 0% 18%;
     --input: 0 0% 18%;
     --ring: 170.77 100% 33.14%;

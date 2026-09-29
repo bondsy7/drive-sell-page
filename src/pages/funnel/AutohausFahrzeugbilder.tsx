@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Camera, Check, CirclePlay, Clock3, Image, Images, Layers3, RotateCcw, ShieldCheck, Sparkles, Users, X } from 'lucide-react';
+import { ArrowRight, Camera, Check, CirclePlay, Clock3, Image, Images, Layers3, Quote, RotateCcw, ShieldCheck, Sparkles, Star, Users, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import FunnelLayout from '@/components/funnel/FunnelLayout';
@@ -26,6 +26,11 @@ const FEATURES = [
   { icon: Layers3, title: 'Hintergrund & Showroom', text: 'Einheitliche Umgebungen und eine konsistente Bildsprache über den gesamten Bestand.', image: showroomAsset.url },
   { icon: ShieldCheck, title: 'Kennzeichen & CI', text: 'Kennzeichen neutralisieren und Markenauftritt passend zum Autohaus konfigurieren.', image: kennzeichenAsset.url },
   { icon: RotateCcw, title: '360° & weitere Formate', text: 'Auf Basis derselben Aufnahmen zusätzliche Assets für digitale Kanäle erzeugen.', image: spin360Asset.url },
+];
+const TESTIMONIALS = [
+  { quote: '„Wir sparen enorm viel Zeit und haben endlich eine einheitliche Aufnahmequalität über alle Standorte hinweg. Die Bildqualität ist überzeugend."', name: 'Thomas R.', role: 'Geschäftsführer, Mehrmarken-Autohaus', initials: 'TR' },
+  { quote: '„Die Bedienung ist super einfach und die Ergebnisse sehen aus wie aus dem Fotostudio. Unsere Fahrzeuge sind jetzt viel schneller online."', name: 'Julia M.', role: 'Inhaberin, freier Kfz-Handel', initials: 'JM' },
+  { quote: '„Gerade für unsere Händlergruppe ist autohaus.ai die perfekte Lösung. Einheitliche Qualität, weniger Aufwand und zufriedene Kunden."', name: 'Markus K.', role: 'Leiter Vertrieb, Händlergruppe', initials: 'MK' },
 ];
 const FAQ = [
   ['Brauche ich eine professionelle Kamera?', 'Nein. Aufnahmen mit einem aktuellen Smartphone genügen. Wichtig sind vollständige Perspektiven und ein frei stehendes Fahrzeug.'],
@@ -106,7 +111,51 @@ export default function AutohausFahrzeugbilder() {
 
       <section className="border-y border-border bg-secondary/45 py-14"><div className="mx-auto max-w-6xl px-4 sm:px-6"><p className="text-xs font-bold uppercase tracking-[0.16em] text-accent">Für professionellen Fahrzeughandel</p><h2 className="mt-2 font-display text-3xl font-bold">Ein konsistenter Auftritt für Ihren gesamten Bestand.</h2><div className="mt-7 grid gap-4 sm:grid-cols-3">{['Einheitliche Ergebnisse statt wechselnder Bildqualität', 'Ein Ablauf für einzelne Händler und mehrere Standorte', 'Direkt einsetzbare Bilder für Ihre Verkaufskanäle'].map((text, i) => <div key={text} className="rounded-lg border border-border bg-card p-5 shadow-card"><span className="text-4xl font-bold text-accent/20">0{i + 1}</span><p className="mt-3 text-sm font-semibold leading-6">{text}</p></div>)}</div></div></section>
 
-      <section id="faq" className="mx-auto grid max-w-6xl scroll-mt-20 gap-8 px-4 py-14 sm:px-6 lg:grid-cols-[.7fr_1.3fr]"><div><p className="text-xs font-bold uppercase tracking-[0.16em] text-accent">Häufige Fragen</p><h2 className="mt-2 font-display text-3xl font-bold">Noch Fragen?</h2><p className="mt-3 text-sm leading-6 text-muted-foreground">Hier finden Sie Antworten rund um den Fahrzeugtest und den Einsatz im Autohaus.</p></div><Accordion type="single" collapsible>{FAQ.map(([q, a], i) => <AccordionItem key={q} value={`faq-${i}`}><AccordionTrigger className="text-left text-sm font-semibold">{q}</AccordionTrigger><AccordionContent className="text-sm leading-6 text-muted-foreground">{a}</AccordionContent></AccordionItem>)}</Accordion></section>
+      <section id="bewertungen" className="border-b border-border/60 py-14">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent">Das sagen unsere Kunden</p>
+          <h2 className="mt-2 font-display text-3xl font-bold">Bereits erfolgreiche Autohäuser setzen auf autohaus.ai</h2>
+          <p className="mt-2 text-sm text-muted-foreground">Schneller, einheitlicher und professioneller – so vermarkten unsere Kunden ihre Fahrzeuge.</p>
+          <div className="mt-8 grid gap-4 md:grid-cols-3">
+            {TESTIMONIALS.map((t) => (
+              <figure key={t.name} className="flex flex-col rounded-lg border border-border bg-card p-6 shadow-card">
+                <Quote className="h-7 w-7 text-accent/25" aria-hidden="true" />
+                <blockquote className="mt-3 flex-1 text-sm leading-6 text-foreground">{t.quote}</blockquote>
+                <figcaption className="mt-5 flex items-center gap-3">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent/10 text-sm font-bold text-accent">{t.initials}</span>
+                  <div>
+                    <p className="text-sm font-bold">{t.name}</p>
+                    <p className="text-xs text-muted-foreground">{t.role}</p>
+                    <div className="mt-1 flex gap-0.5" aria-label="5 von 5 Sternen">
+                      {Array.from({ length: 5 }).map((_, i) => <Star key={i} className="h-3.5 w-3.5 fill-star text-star" aria-hidden="true" />)}
+                    </div>
+                  </div>
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="faq" className="bg-secondary/45 py-14">
+        <div className="mx-auto grid max-w-6xl scroll-mt-20 gap-8 px-4 sm:px-6 lg:grid-cols-[.7fr_1.3fr]">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent">Häufige Fragen</p>
+            <h2 className="mt-2 font-display text-3xl font-bold">Noch Fragen?</h2>
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">Hier finden Sie Antworten auf die häufigsten Fragen zu autohaus.ai.</p>
+          </div>
+          <div>
+            <Accordion type="single" collapsible className="space-y-3">
+              {FAQ.map(([q, a], i) => (
+                <AccordionItem key={q} value={`faq-${i}`} className="rounded-lg border border-border bg-card px-5 shadow-card last:border-b">
+                  <AccordionTrigger className="text-left text-sm font-semibold hover:no-underline">{q}</AccordionTrigger>
+                  <AccordionContent className="text-sm leading-6 text-muted-foreground">{a}</AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </div>
+        </div>
+      </section>
 
       <section className="px-4 pb-14 sm:px-6"><div className="gradient-hero mx-auto flex max-w-6xl flex-col justify-between gap-6 rounded-lg px-6 py-8 text-primary-foreground sm:px-8 lg:flex-row lg:items-center"><div><h2 className="font-display text-2xl font-bold">Testen Sie autohaus.ai mit einem Fahrzeug aus Ihrem Bestand.</h2><p className="mt-2 text-sm text-primary-foreground/80">Ein Fahrzeugfoto, wenige Angaben – und Sie erhalten eine Einschätzung für Ihren Einsatz.</p></div><Button asChild size="lg" variant="secondary" className="shrink-0"><Link to={TEST_URL}>1 Fahrzeug kostenlos testen <ArrowRight className="h-4 w-4" /></Link></Button></div></section>
     </FunnelLayout>
