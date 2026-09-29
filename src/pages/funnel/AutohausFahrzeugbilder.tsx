@@ -7,9 +7,12 @@ import FunnelLayout from '@/components/funnel/FunnelLayout';
 import SmartphoneRevealDemo from '@/components/funnel/SmartphoneRevealDemo';
 import { usePageMeta } from '@/hooks/usePageMeta';
 import { captureAttribution } from '@/lib/funnel-attribution';
+import perspektivenAsset from '@/assets/funnel/fun-funktion-perspektiven.png.asset.json';
+import showroomAsset from '@/assets/funnel/fun-funktion-showroom.png.asset.json';
+import kennzeichenAsset from '@/assets/funnel/fun-funktion-kennzeichen.png.asset.json';
+import spin360Asset from '@/assets/funnel/fun-funktion-360.png.asset.json';
 import after2Asset from '@/assets/funnel/after2.webp.asset.json';
 import after3Asset from '@/assets/funnel/after3.webp.asset.json';
-import after4Asset from '@/assets/funnel/after4.webp.asset.json';
 
 const TEST_URL = '/fahrzeug-testen?source=fahrzeugbilder';
 const STEPS = [
@@ -18,10 +21,10 @@ const STEPS = [
   { icon: Images, title: 'Bilder sofort vermarkten', text: 'Fertige Motive für Website, Marktplätze und Social Media aus einem einheitlichen Ablauf.', image: after2Asset.url },
 ];
 const FEATURES = [
-  { icon: Images, title: 'Perspektiven', text: 'Definierte Außen- und Innenansichten für eine vollständige Fahrzeugpräsentation.', image: after4Asset.url },
-  { icon: Layers3, title: 'Hintergrund & Showroom', text: 'Einheitliche Umgebungen und eine konsistente Bildsprache über den gesamten Bestand.', image: after2Asset.url },
-  { icon: ShieldCheck, title: 'Kennzeichen & CI', text: 'Kennzeichen neutralisieren und Markenauftritt passend zum Autohaus konfigurieren.', image: after3Asset.url },
-  { icon: RotateCcw, title: '360° & weitere Formate', text: 'Auf Basis derselben Aufnahmen zusätzliche Assets für digitale Kanäle erzeugen.', image: after4Asset.url },
+  { icon: Images, title: 'Perspektiven', text: 'Definierte Außen- und Innenansichten für eine vollständige Fahrzeugpräsentation.', image: perspektivenAsset.url },
+  { icon: Layers3, title: 'Hintergrund & Showroom', text: 'Einheitliche Umgebungen und eine konsistente Bildsprache über den gesamten Bestand.', image: showroomAsset.url },
+  { icon: ShieldCheck, title: 'Kennzeichen & CI', text: 'Kennzeichen neutralisieren und Markenauftritt passend zum Autohaus konfigurieren.', image: kennzeichenAsset.url },
+  { icon: RotateCcw, title: '360° & weitere Formate', text: 'Auf Basis derselben Aufnahmen zusätzliche Assets für digitale Kanäle erzeugen.', image: spin360Asset.url },
 ];
 const FAQ = [
   ['Brauche ich eine professionelle Kamera?', 'Nein. Aufnahmen mit einem aktuellen Smartphone genügen. Wichtig sind vollständige Perspektiven und ein frei stehendes Fahrzeug.'],
