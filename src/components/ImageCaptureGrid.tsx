@@ -1448,26 +1448,36 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
                 <input
                   ref={detailFileRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/*,.heic,.heif"
                   multiple
                   className="hidden"
                   onChange={async (e) => {
                     const files = Array.from(e.target.files || []);
                     e.target.value = '';
+                    if (files.length === 0) return;
                     const remaining = 10 - detailImages.length;
                     const toProcess = files.slice(0, remaining);
                     const newImages: string[] = [];
+                    let skipped = 0;
                     for (const file of toProcess) {
-                      if (!file.type.startsWith('image/') || file.size > 10 * 1024 * 1024) continue;
+                      const isImage = file.type.startsWith('image/') || /\.(jpe?g|png|webp|heic|heif|avif)$/i.test(file.name);
+                      if (!isImage || file.size > 25 * 1024 * 1024) { skipped++; continue; }
                       try {
                         const raw = await fileToBase64(file);
-                        const compressed = await compressImage(raw);
-                        newImages.push(compressed);
-                      } catch { /* skip */ }
+                        let img = raw;
+                        try { img = await compressImage(raw); } catch { /* HEIC o.ä.: Original verwenden */ }
+                        newImages.push(img);
+                      } catch { skipped++; }
                     }
                     if (newImages.length > 0) {
-                      setDetailImages(prev => [...prev, ...newImages]);
+                      setDetailImages(prev => [...prev, ...newImages].slice(0, 10));
                       toast.success(`${newImages.length} Detailbild${newImages.length > 1 ? 'er' : ''} hinzugefügt`);
+                    }
+                    if (skipped > 0) {
+                      toast.error(`${skipped} Foto${skipped > 1 ? 's' : ''} konnte${skipped > 1 ? 'n' : ''} nicht übernommen werden (kein Bild oder größer als 25 MB).`);
+                    }
+                    if (files.length > remaining) {
+                      toast.info('Maximal 10 Detailaufnahmen möglich.');
                     }
                   }}
                 />
