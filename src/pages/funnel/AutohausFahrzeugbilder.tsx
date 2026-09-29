@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Camera, Check, CirclePlay, Clock3, Image, Images, Layers3, RotateCcw, ShieldCheck, Sparkles, Users, X } from 'lucide-react';
+import { ArrowRight, Camera, Check, CirclePlay, Clock3, Image, Images, Layers3, Quote, RotateCcw, ShieldCheck, Sparkles, Star, Users, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import FunnelLayout from '@/components/funnel/FunnelLayout';
@@ -26,6 +26,11 @@ const FEATURES = [
   { icon: Layers3, title: 'Hintergrund & Showroom', text: 'Einheitliche Umgebungen und eine konsistente Bildsprache über den gesamten Bestand.', image: showroomAsset.url },
   { icon: ShieldCheck, title: 'Kennzeichen & CI', text: 'Kennzeichen neutralisieren und Markenauftritt passend zum Autohaus konfigurieren.', image: kennzeichenAsset.url },
   { icon: RotateCcw, title: '360° & weitere Formate', text: 'Auf Basis derselben Aufnahmen zusätzliche Assets für digitale Kanäle erzeugen.', image: spin360Asset.url },
+];
+const TESTIMONIALS = [
+  { quote: '„Wir sparen enorm viel Zeit und haben endlich eine einheitliche Aufnahmequalität über alle Standorte hinweg. Die Bildqualität ist überzeugend."', name: 'Thomas R.', role: 'Geschäftsführer, Mehrmarken-Autohaus', initials: 'TR' },
+  { quote: '„Die Bedienung ist super einfach und die Ergebnisse sehen aus wie aus dem Fotostudio. Unsere Fahrzeuge sind jetzt viel schneller online."', name: 'Julia M.', role: 'Inhaberin, freier Kfz-Handel', initials: 'JM' },
+  { quote: '„Gerade für unsere Händlergruppe ist autohaus.ai die perfekte Lösung. Einheitliche Qualität, weniger Aufwand und zufriedene Kunden."', name: 'Markus K.', role: 'Leiter Vertrieb, Händlergruppe', initials: 'MK' },
 ];
 const FAQ = [
   ['Brauche ich eine professionelle Kamera?', 'Nein. Aufnahmen mit einem aktuellen Smartphone genügen. Wichtig sind vollständige Perspektiven und ein frei stehendes Fahrzeug.'],
