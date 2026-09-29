@@ -63,6 +63,7 @@ Deno.serve(async (req) => {
     const funnelType = clean(form.get("funnel_type"), 30) === "process_check" ? "process_check" : "vehicle_test";
     const companyName = clean(form.get("company_name"), 160);
     const businessEmail = clean(form.get("business_email"), 255).toLowerCase();
+    const note = clean(form.get("note"), 500) || null;
     const volume = clean(form.get("monthly_vehicle_volume"), 20);
     const locations = clean(form.get("location_count"), 20);
 
@@ -80,7 +81,6 @@ Deno.serve(async (req) => {
 
     const file = form.get("image");
     if (funnelType === "vehicle_test") {
-      if (goals.length === 0) errors.push("Bitte mindestens ein Ziel auswählen.");
       if (!(file instanceof File)) {
         errors.push("Fahrzeugbild fehlt.");
       } else {
@@ -160,6 +160,7 @@ Deno.serve(async (req) => {
         location_count: locations,
         role: "",
         goals,
+        note,
         uploaded_image_path: storagePath,
         lead_score: score,
         lead_class: leadClass,
