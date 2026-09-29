@@ -11,8 +11,8 @@ import perspektivenAsset from '@/assets/funnel/fun-funktion-perspektiven.png.ass
 import showroomAsset from '@/assets/funnel/fun-funktion-showroom.png.asset.json';
 import kennzeichenAsset from '@/assets/funnel/fun-funktion-kennzeichen.png.asset.json';
 import spin360Asset from '@/assets/funnel/fun-funktion-360.png.asset.json';
-import after2Asset from '@/assets/funnel/after2.webp.asset.json';
 import after3Asset from '@/assets/funnel/after3.webp.asset.json';
+import vermarktenAsset from '@/assets/funnel/fun-step-vermarkten.webp.asset.json';
 import fotoSchritt1Asset from '@/assets/funnel/fun-step-fahrzeug-fotografieren.webp.asset.json';
 
 const TEST_URL = '/fahrzeug-testen?source=fahrzeugbilder';
