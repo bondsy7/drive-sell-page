@@ -19,7 +19,7 @@ const TEST_URL = '/fahrzeug-testen?source=fahrzeugbilder';
 const STEPS = [
   { icon: Camera, title: 'Fahrzeug fotografieren', text: 'Aufnahmen mit dem Smartphone direkt auf dem Hof – ohne Studio und Spezialausrüstung.', image: fotoSchritt1Asset.url },
   { icon: Sparkles, title: 'Automatisch verarbeiten', text: 'autohaus.ai erzeugt eine konsistente Bildsprache und bereitet die Aufnahmen professionell auf.', image: after3Asset.url },
-  { icon: Images, title: 'Bilder sofort vermarkten', text: 'Fertige Motive für Website, Marktplätze und Social Media aus einem einheitlichen Ablauf.', image: after2Asset.url },
+  { icon: Images, title: 'Bilder sofort vermarkten', text: 'Fertige Motive für Website, Marktplätze und Social Media aus einem einheitlichen Ablauf.', image: vermarktenAsset.url },
 ];
 const FEATURES = [
   { icon: Images, title: 'Perspektiven', text: 'Definierte Außen- und Innenansichten für eine vollständige Fahrzeugpräsentation.', image: perspektivenAsset.url },
