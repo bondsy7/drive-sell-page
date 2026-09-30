@@ -191,6 +191,9 @@ export function applyConsent(state: ConsentState) {
   });
 
   if (state.analytics || state.marketing) loadGoogleTagsIfConfigured(state);
+
+  // Meta-Pixel nur mit Marketing-Einwilligung; bei Widerruf sofort stoppen.
+  void import('./meta-pixel').then((m) => (state.marketing ? m.loadMetaPixelIfAllowed() : m.revokeMetaPixel()));
 }
 
 let tagsLoaded = false;

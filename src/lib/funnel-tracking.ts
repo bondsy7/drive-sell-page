@@ -10,18 +10,21 @@
 import { supabase } from '@/integrations/supabase/client';
 import { readConsent, trackAnalyticsEvent, trackGoogleAdsConversion } from './consent';
 import { getAttribution, getLastTouch } from './funnel-attribution';
+import { trackMetaEvent } from './meta-pixel';
 
 export type FunnelEventName =
   | 'page_view'
   | 'cta_click'
+  | 'scroll_depth'
   | 'form_start'
   | 'vehicle_test_started'
   | 'process_check_started'
   | 'generate_lead'
+  | 'lead_details_completed'
   | 'demo_requested';
 
 const SERVER_EVENTS = new Set<FunnelEventName>([
-  'page_view', 'cta_click', 'form_start', 'vehicle_test_started', 'demo_requested', 'process_check_started',
+  'page_view', 'cta_click', 'scroll_depth', 'form_start', 'vehicle_test_started', 'demo_requested', 'process_check_started', 'lead_details_completed',
 ]);
 
 const SESSION_KEY = 'auto3_funnel_session';
@@ -80,10 +83,17 @@ export function trackFunnelEvent(name: FunnelEventName, params: Record<string, u
 
   // 1) Google – nur mit Einwilligung (Prüfung in consent.ts)
   trackAnalyticsEvent(name, { ...clean, event_id: eventId });
+  const adsId = (import.meta.env.VITE_GOOGLE_ADS_ID as string | undefined)?.trim();
   if (name === 'generate_lead') {
     const label = (import.meta.env.VITE_GOOGLE_ADS_GENERATE_LEAD_LABEL as string | undefined)?.trim();
-    const adsId = (import.meta.env.VITE_GOOGLE_ADS_ID as string | undefined)?.trim();
     trackGoogleAdsConversion(label && adsId ? `${adsId}/${label}` : undefined, { transaction_id: eventId });
+    trackMetaEvent('Lead', eventId);
+  }
+  if (name === 'demo_requested') {
+    // Zweites, wertvolleres Ziel: nur mit eigenem Label, nie als Haupt-Conversion.
+    const label = (import.meta.env.VITE_GOOGLE_ADS_DEMO_LABEL as string | undefined)?.trim();
+    if (label && adsId) trackGoogleAdsConversion(`${adsId}/${label}`, { transaction_id: eventId });
+    trackMetaEvent('Schedule', eventId);
   }
 
   // 2) Interne, anonyme Zählung (generate_lead wird serverseitig beim Speichern erfasst)
