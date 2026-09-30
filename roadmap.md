@@ -92,4 +92,4 @@
 ## Standtage-Seite: Prozessmotiv und Feinschliff (30.09.2026)
 - [x] Gelieferte Prozessgrafik ohne fremde Logos und überladene Beschriftungen als Bildgeschichte aufbereiten
 - [x] Vergleich prominent direkt nach dem Einstieg platzieren und mobil in zwei lesbare Bildhälften aufteilen
-- [ ] Darstellung und Bildladen auf Desktop und Smartphone prüfen
+- [x] Darstellung und Bildladen auf Desktop und Smartphone prüfen
