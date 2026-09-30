@@ -192,26 +192,30 @@ export default function StandtageVermeiden() {
         </div>
       </section>
 
-      {/* S2 · Problem: was zwischen Ankunft und Anzeige passiert */}
-      <section className="border-b border-border bg-secondary/55 py-14">
+      {/* S2 · Problem und Vergleich in einem Block */}
+      <section className="border-b border-border bg-card py-14">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <h2 className="font-display text-3xl font-bold">Zwischen Ankunft und Anzeige liegen Stunden.</h2>
+          <h2 className="font-display text-3xl font-bold">Zwischen Ankunft und Anzeige liegen zu viele Schritte.</h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-            Sobald ein Fahrzeug da ist, beginnt der eigentliche Aufwand: ein Weg durch mehrere Abteilungen, Personen und Termine – bevor überhaupt ein Bild entsteht.
+            Der klassische Prozess ist zeitaufwendig, personalintensiv und kostet bares Geld – bei jedem einzelnen Fahrzeug.
           </p>
 
           <ol className="mt-7 -mx-4 flex snap-x gap-2 overflow-x-auto px-4 pb-2 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
-            {CLASSIC_STEPS.map((step, i) => (
-              <li key={step} className="flex shrink-0 snap-start items-center gap-2 rounded-lg border border-border bg-card px-3 py-2.5 text-xs font-semibold shadow-card">
-                <span className="text-muted-foreground">{i + 1}</span>{step}
-              </li>
-            ))}
+            {CLASSIC_STEPS.map((step, i) => {
+              const StepIcon = STEP_ICONS[i];
+              return (
+                <li key={step} className="flex shrink-0 snap-start items-center gap-2 rounded-lg border border-border bg-secondary/60 px-3 py-2.5 text-xs font-semibold shadow-card">
+                  <StepIcon className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
+                  <span className="text-muted-foreground">{i + 1}</span>{step}
+                </li>
+              );
+            })}
           </ol>
 
-          <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {DEPENDENCIES.map((d) => (
-              <div key={d.title} className="rounded-lg border border-border bg-card p-5 shadow-card">
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-foreground"><d.icon className="h-4 w-4" /></span>
+              <div key={d.title} className="rounded-lg border border-border bg-secondary/40 p-5 shadow-card">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-card text-accent shadow-card"><d.icon className="h-4 w-4" /></span>
                 <p className="mt-3 text-sm font-bold">{d.title}</p>
                 <p className="mt-1 text-xs leading-5 text-muted-foreground">{d.text}</p>
               </div>
