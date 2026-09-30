@@ -1,0 +1,1 @@
+Use the existing FunnelLayout and funnel attribution/tracking utilities for new paid landing pages, because consistent consent handling and conversion measurement must be preserved.
