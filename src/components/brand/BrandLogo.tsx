@@ -1,4 +1,4 @@
-import brandLogo from '@/assets/brand/autohaus-ai-logo.png';
+import brandLogo from '@/assets/brand/autohaus-ai-logo.svg';
 import { cn } from '@/lib/utils';
 
 interface BrandLogoProps {
