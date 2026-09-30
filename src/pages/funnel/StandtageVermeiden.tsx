@@ -31,6 +31,26 @@ const CLASSIC_STEPS = [
   'online stellen',
 ];
 
+/** Icons der Klassik-Kette, in derselben Reihenfolge wie CLASSIC_STEPS. */
+const STEP_ICONS = [Truck, Droplets, Shuffle, Warehouse, Ruler, Lightbulb, Camera, ClipboardCheck, Globe];
+
+/** Zusammenfassung des klassischen Wegs für die rote Vergleichskarte. */
+const CLASSIC_CARD_ITEMS = [
+  'Fahrzeug wird angeliefert und aufbereitet.',
+  'Fahrzeug zum Aufnahmeplatz oder zur Fotobox bringen.',
+  'Fahrzeug ausrichten und beleuchten.',
+  'Viele Fotos aus verschiedenen Perspektiven aufnehmen.',
+  'Bilder sichten, bearbeiten und freigeben.',
+  'Freigabe abwarten, dann online stellen.',
+];
+
+/** Die drei Schritte mit autohaus.ai für die grüne Vergleichskarte. */
+const AI_STEPS: [string, string][] = [
+  ['Fahrzeug kommt an', 'Direkt vom Transporter – ohne Umweg über Hof oder Aufnahmeplatz.'],
+  ['Smartphone-Fotos aufnehmen', 'Wenige Aufnahmen direkt am Fahrzeug, das ohnehin angeliefert wird.'],
+  ['autohaus.ai erstellt Verkaufsbilder', 'Automatisch, im einheitlichen Showroom- und CI-Look.'],
+];
+
 const DROP_CHIPS = ['Aufbereitung', 'Fotograf', 'Fotobox', 'Ausrichten', 'Beleuchten', 'Warteschlange', 'Nachbearbeitung'];
 
 const DEPENDENCIES = [
