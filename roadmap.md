@@ -104,3 +104,8 @@
 ## Landingpage „Werbemittel" (30.09.2026)
 - [x] /autohaus-werbemittel mit Hero-Formatcollage, Problem, Vergleich, Marketing-Wall, Nutzen, Praxis, CI-Welten, Test, FAQ, Abschluss-CTA
 - [x] CTA → /fahrzeug-testen?source=werbemittel, Herkunft lp_werbemittel, Scrolltiefe und Klicks gemessen
+
+## Paid-Funnel „Fahrzeug-Landingpages“ (30.09.2026)
+- [x] Eigenständige Seite /autohaus-landingpages mit Fahrzeugseite, Verkaufsassistent, Datenfluss, Kampagnen, FAQ und Testweg erstellen
+- [x] Bestehende Consent-, CTA-, Scroll- und Quellenmessung für lp_landingpages wiederverwenden
+- [ ] Desktop/Mobil, CTA-Ziel und Vorschau prüfen; nicht veröffentlichen
