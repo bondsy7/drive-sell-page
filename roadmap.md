@@ -100,3 +100,7 @@
 - [ ] Google-Ads-Konto verbinden und Conversions anlegen (wartet auf Nutzer)
 - [ ] Meta-Pixel-ID hinterlegen (wartet auf Nutzer)
 - [ ] Seite veröffentlichen, bevor Anzeigen laufen
+
+## Landingpage „Werbemittel" (30.09.2026)
+- [x] /autohaus-werbemittel mit Hero-Formatcollage, Problem, Vergleich, Marketing-Wall, Nutzen, Praxis, CI-Welten, Test, FAQ, Abschluss-CTA
+- [x] CTA → /fahrzeug-testen?source=werbemittel, Herkunft lp_werbemittel, Scrolltiefe und Klicks gemessen
