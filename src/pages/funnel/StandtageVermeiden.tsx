@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ArrowRight, Building2, Camera, Check, ChevronRight, Clock3, CloudRain, FileCheck,
-  Images, Layers3, Quote, ShieldCheck, Sparkles, Truck, Users, Warehouse, X, Zap,
+  ArrowRight, Building2, Camera, Check, ChevronRight, ClipboardCheck, Clock3, CloudRain,
+  Droplets, FileCheck, Globe, Images, Layers3, Lightbulb, Quote, Ruler, ShieldCheck,
+  Shuffle, Sparkles, Truck, Users, Warehouse, X, Zap,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -13,6 +14,7 @@ import { captureAttribution } from '@/lib/funnel-attribution';
 import arrivalImage from '@/assets/funnel/standtage-arrival-local.webp';
 import showroomImage from '@/assets/funnel/standtage-showroom-local.webp';
 import processImage from '@/assets/funnel/standtage-frueher-heute.webp';
+import phonePhoto from '@/assets/funnel/fun-step-fahrzeug-fotografieren.webp.asset.json';
 
 const TEST_URL = '/fahrzeug-testen?source=standtage';
 
@@ -27,6 +29,26 @@ const CLASSIC_STEPS = [
   'fotografieren',
   'kontrollieren & freigeben',
   'online stellen',
+];
+
+/** Icons der Klassik-Kette, in derselben Reihenfolge wie CLASSIC_STEPS. */
+const STEP_ICONS = [Truck, Droplets, Shuffle, Warehouse, Ruler, Lightbulb, Camera, ClipboardCheck, Globe];
+
+/** Zusammenfassung des klassischen Wegs für die rote Vergleichskarte. */
+const CLASSIC_CARD_ITEMS = [
+  'Fahrzeug wird angeliefert und aufbereitet.',
+  'Fahrzeug zum Aufnahmeplatz oder zur Fotobox bringen.',
+  'Fahrzeug ausrichten und beleuchten.',
+  'Viele Fotos aus verschiedenen Perspektiven aufnehmen.',
+  'Bilder sichten, bearbeiten und freigeben.',
+  'Freigabe abwarten, dann online stellen.',
+];
+
+/** Die drei Schritte mit autohaus.ai für die grüne Vergleichskarte. */
+const AI_STEPS: [string, string][] = [
+  ['Fahrzeug kommt an', 'Direkt vom Transporter – ohne Umweg über Hof oder Aufnahmeplatz.'],
+  ['Smartphone-Fotos aufnehmen', 'Wenige Aufnahmen direkt am Fahrzeug, das ohnehin angeliefert wird.'],
+  ['autohaus.ai erstellt Verkaufsbilder', 'Automatisch, im einheitlichen Showroom- und CI-Look.'],
 ];
 
 const DROP_CHIPS = ['Aufbereitung', 'Fotograf', 'Fotobox', 'Ausrichten', 'Beleuchten', 'Warteschlange', 'Nachbearbeitung'];
@@ -170,26 +192,30 @@ export default function StandtageVermeiden() {
         </div>
       </section>
 
-      {/* S2 · Problem: was zwischen Ankunft und Anzeige passiert */}
-      <section className="border-b border-border bg-secondary/55 py-14">
+      {/* S2 · Problem und Vergleich in einem Block */}
+      <section className="border-b border-border bg-card py-14">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <h2 className="font-display text-3xl font-bold">Zwischen Ankunft und Anzeige liegen Stunden.</h2>
+          <h2 className="font-display text-3xl font-bold">Zwischen Ankunft und Anzeige liegen zu viele Schritte.</h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-            Sobald ein Fahrzeug da ist, beginnt der eigentliche Aufwand: ein Weg durch mehrere Abteilungen, Personen und Termine – bevor überhaupt ein Bild entsteht.
+            Der klassische Prozess ist zeitaufwendig, personalintensiv und kostet bares Geld – bei jedem einzelnen Fahrzeug.
           </p>
 
           <ol className="mt-7 -mx-4 flex snap-x gap-2 overflow-x-auto px-4 pb-2 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
-            {CLASSIC_STEPS.map((step, i) => (
-              <li key={step} className="flex shrink-0 snap-start items-center gap-2 rounded-lg border border-border bg-card px-3 py-2.5 text-xs font-semibold shadow-card">
-                <span className="text-muted-foreground">{i + 1}</span>{step}
-              </li>
-            ))}
+            {CLASSIC_STEPS.map((step, i) => {
+              const StepIcon = STEP_ICONS[i];
+              return (
+                <li key={step} className="flex shrink-0 snap-start items-center gap-2 rounded-lg border border-border bg-secondary/60 px-3 py-2.5 text-xs font-semibold shadow-card">
+                  <StepIcon className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
+                  <span className="text-muted-foreground">{i + 1}</span>{step}
+                </li>
+              );
+            })}
           </ol>
 
-          <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {DEPENDENCIES.map((d) => (
-              <div key={d.title} className="rounded-lg border border-border bg-card p-5 shadow-card">
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-foreground"><d.icon className="h-4 w-4" /></span>
+              <div key={d.title} className="rounded-lg border border-border bg-secondary/40 p-5 shadow-card">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-card text-accent shadow-card"><d.icon className="h-4 w-4" /></span>
                 <p className="mt-3 text-sm font-bold">{d.title}</p>
                 <p className="mt-1 text-xs leading-5 text-muted-foreground">{d.text}</p>
               </div>
@@ -205,43 +231,56 @@ export default function StandtageVermeiden() {
       {/* S3 · Prozessvergleich klassisch vs. autohaus.ai */}
       <section className="funnel-section-tint border-b border-border py-14">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <h2 className="font-display text-3xl font-bold">Vom LKW ins Netz – in drei Schritten.</h2>
-          <p className="mt-2 text-sm text-muted-foreground">Ein Handgriff statt eines Hoftermins.</p>
-
-          <div className="relative mt-7 grid gap-5 lg:grid-cols-2 lg:gap-10">
-            <div className="rounded-lg border border-border bg-card p-6 shadow-card">
-              <h3 className="font-display text-lg font-bold">Der klassische Weg</h3>
-              <ul className="mt-5 space-y-3 text-sm text-muted-foreground">
-                {CLASSIC_STEPS.map((step) => (
-                  <li key={step} className="flex gap-3"><X className="mt-0.5 h-4 w-4 shrink-0 text-destructive" strokeWidth={2.5}/>{step}</li>
-                ))}
-              </ul>
-            </div>
-            <div className="rounded-lg border border-accent/30 bg-card p-6 shadow-card">
-              <h3 className="font-display text-lg font-bold text-accent">Mit autohaus.ai</h3>
-              <ul className="mt-5 space-y-4 text-sm">
-                {[
-                  ['Ankommen und fotografieren', 'Ein Smartphone genügt – am Standort, direkt am Fahrzeug.'],
-                  ['autohaus.ai verarbeitet', 'Aus den Aufnahmen werden einheitliche Motive im Showroom- und CI-Look.'],
-                  ['Vermarkten', 'Bilder für Website, Marktplätze und Social Media aus einem Ablauf.'],
-                ].map(([title, text]) => (
-                  <li key={title} className="flex gap-3">
-                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-accent" strokeWidth={2.5} />
-                    <span><span className="block font-bold text-foreground">{title}</span><span className="mt-0.5 block text-xs leading-5 text-muted-foreground">{text}</span></span>
+          <div className="relative grid gap-5 lg:grid-cols-2 lg:gap-10">
+            <div className="rounded-lg border border-destructive/25 bg-destructive/5 p-6 shadow-card">
+              <div className="flex items-center gap-3">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-destructive/10 text-destructive"><X className="h-5 w-5" strokeWidth={2.5} /></span>
+                <div>
+                  <h3 className="font-display text-lg font-bold">Der klassische Weg</h3>
+                  <p className="text-xs text-muted-foreground">Viele Schritte, hoher Aufwand, lange Standzeiten.</p>
+                </div>
+              </div>
+              <ol className="mt-5 space-y-3 text-sm">
+                {CLASSIC_CARD_ITEMS.map((item, i) => (
+                  <li key={item} className="flex gap-3 text-muted-foreground">
+                    <X className="mt-0.5 h-4 w-4 shrink-0 text-destructive" strokeWidth={2.5} />
+                    <span><span className="mr-1.5 font-bold text-destructive">{i + 1}</span>{item}</span>
                   </li>
                 ))}
-              </ul>
+              </ol>
+            </div>
+            <div className="rounded-lg border border-accent/30 bg-accent/5 p-6 shadow-card">
+              <div className="flex items-center gap-3">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-accent text-accent-foreground"><Check className="h-5 w-5" strokeWidth={2.5} /></span>
+                <div>
+                  <h3 className="font-display text-lg font-bold text-accent">Mit autohaus.ai</h3>
+                  <p className="text-xs text-muted-foreground">Vom Hoftermin zum Verkaufsbild – in nur 3 Schritten.</p>
+                </div>
+              </div>
+              <div className="mt-5 grid items-center gap-4 sm:grid-cols-[1fr_auto]">
+                <ol className="space-y-4 text-sm">
+                  {AI_STEPS.map(([title, text], i) => (
+                    <li key={title} className="flex gap-3">
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent font-display text-xs font-bold text-accent-foreground">{i + 1}</span>
+                      <span><span className="block font-bold text-foreground">{title}</span><span className="mt-0.5 block text-xs leading-5 text-muted-foreground">{text}</span></span>
+                    </li>
+                  ))}
+                </ol>
+                <img src={phonePhoto.url} alt="Mitarbeiter fotografiert ein Fahrzeug direkt mit dem Smartphone" className="hidden w-40 rounded-lg border border-border object-cover shadow-card sm:block" loading="lazy" />
+              </div>
             </div>
             <div className="pointer-events-none absolute left-1/2 top-1/2 hidden h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card text-accent shadow-card lg:flex">
               <ArrowRight className="h-5 w-5" />
             </div>
           </div>
 
-          <div className="mt-7 rounded-lg border border-border bg-card p-5 shadow-card">
+          <div className="mt-8 rounded-lg border border-border bg-secondary/40 p-5 shadow-card">
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">Fällt weg</p>
             <div className="mt-3 flex flex-wrap gap-2">
               {DROP_CHIPS.map((chip) => (
-                <span key={chip} className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-1.5 text-xs font-semibold text-muted-foreground line-through decoration-destructive/60">{chip}</span>
+                <span key={chip} className="flex items-center gap-1.5 rounded-md border border-destructive/20 bg-card px-3 py-1.5 text-xs font-semibold text-muted-foreground">
+                  <X className="h-3.5 w-3.5 text-destructive" strokeWidth={2.5} />{chip}
+                </span>
               ))}
             </div>
           </div>
