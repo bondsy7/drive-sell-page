@@ -108,4 +108,4 @@
 ## Paid-Funnel „Fahrzeug-Landingpages“ (30.09.2026)
 - [x] Eigenständige Seite /autohaus-landingpages mit Fahrzeugseite, Verkaufsassistent, Datenfluss, Kampagnen, FAQ und Testweg erstellen
 - [x] Bestehende Consent-, CTA-, Scroll- und Quellenmessung für lp_landingpages wiederverwenden
-- [ ] Desktop/Mobil, CTA-Ziel und Vorschau prüfen; nicht veröffentlichen
+- [x] Desktop/Mobil, CTA-Ziel und Vorschau geprüft; nicht veröffentlicht
