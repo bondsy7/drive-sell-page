@@ -316,3 +316,19 @@
 .ci-main-text { color: hsl(var(--ci-main)); }
 .ci-world-black .ci-body-text { color: hsl(0 0% 92%); }
 .ci-world-blue .ci-body-text, .ci-world-red .ci-body-text { color: hsl(var(--foreground)); }
+
+/* Illustrierte Video-Konzepte: dezente Kamerafahrt, kein angeblich abspielbarer Clip. */
+@keyframes video-concept-camera {
+  0%, 100% { transform: scale(1.04) translateX(-1%); }
+  50% { transform: scale(1.15) translateX(2%); }
+}
+@keyframes video-concept-progress {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+.video-concept-image { animation: video-concept-camera 8s ease-in-out infinite; }
+.video-concept-progress { animation: video-concept-progress 8s linear infinite; }
+.video-concept-frame:nth-child(even) .video-concept-image { animation-direction: reverse; }
+@media (prefers-reduced-motion: reduce) {
+  .video-concept-image, .video-concept-progress { animation: none; }
+}
