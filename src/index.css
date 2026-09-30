@@ -1,6 +1,14 @@
 /* Keine externen Schriftdienste: datenschutzfreundlicher System-Font-Stack (siehe tailwind.config.ts). */
 
 @font-face {
+  font-family: 'Dessau';
+  src: url('/__l5e/assets-v1/10d76db3-ea55-411e-9a47-141723c76f38/dessau-bold.woff2') format('woff2');
+  font-weight: 400 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
   font-family: 'VW Headline';
   src: url('/fonts/volkswagen/VWHeadlineOT-Book.ttf') format('truetype');
   font-weight: 400;
@@ -123,6 +131,7 @@
 
 @layer base {
   :root {
+    --font-display: 'Dessau';
     --background: 210 20% 99%;
     --foreground: 215 28% 12%;
 
@@ -224,6 +233,7 @@
 @layer utilities {
   .font-display {
     font-family: var(--font-display, ui-sans-serif), system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    letter-spacing: 0;
   }
   .gradient-hero {
     background: var(--gradient-hero);

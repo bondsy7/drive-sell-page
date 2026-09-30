@@ -1,6 +1,6 @@
 import { jsPDF } from 'jspdf';
 import { LEGAL, LEGAL_VERSIONS } from '@/lib/legal-config';
-import brandLogo from '@/assets/brand/autohaus-ai-logo.png';
+import brandLogo from '@/assets/brand/autohaus-ai-logo-pdf.png.asset.json';
 import {
   ALL_INCL_PACKAGES,
   FOTO_PACKAGES,
@@ -245,7 +245,7 @@ export function buildOfferContractDoc(input: OfferContractInput, logoDataUrl?: s
 export async function generateOfferContractPdf(input: OfferContractInput) {
   let logoDataUrl: string | undefined;
   try {
-    const blob = await fetch(brandLogo).then((response) => response.blob());
+    const blob = await fetch(brandLogo.url).then((response) => response.blob());
     logoDataUrl = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(String(reader.result));
