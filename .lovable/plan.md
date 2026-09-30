@@ -1,24 +1,12 @@
-# Bestandsaudit: „Keinen Lead mehr verlieren“
+# Logo und Überschriftenschrift aktualisieren
 
-## Ziel und Grenzen
-Eine belegte Bestandsaufnahme des heutigen autohaus.ai-Systems erstellen – ohne Code-, Datenbank-, Konfigurations- oder Veröffentlichungsänderungen. „Vorhanden“, „im Produkt verwendbar“, „automatisch verbunden“ und „nur vorbereitet“ werden ausdrücklich getrennt. Das Ergebnis ist ein Auditbericht im Chat mit konkreten Routen, Dateien, Funktionen, Tabellen und Prioritäten; keine neue Funnel-Seite und keine Integration.
+## Umsetzung
+- Das bisherige zentrale Rasterlogo durch die gelieferte originale SVG ersetzen, sodass Kopfzeilen, Fußbereich, Anmeldung und weitere bestehende Logo-Platzierungen automatisch die neue Version nutzen.
+- Aus derselben SVG ein quadratisches Favicon ableiten und die Browser-Verknüpfung darauf umstellen.
+- Die gelieferte Dessau-Bold-Schrift datensparsam lokal einbinden und zunächst ausschließlich auf bestehende `font-display`-Überschriften anwenden; Fließtexte und Bedienelemente bleiben unverändert lesbar.
+- Direkte Logo-Nutzung im Angebots-PDF auf die SVG umstellen, sofern dessen Bildverarbeitung SVG unterstützt; andernfalls eine passend abgeleitete Rasterversion verwenden.
 
-## Bereits verifizierte Ausgangslage
-- Zwei unterschiedliche Lead-Stränge existieren: öffentliche B2B-Testanfragen über `submit-b2b-lead` → `b2b_marketing_leads` → `/admin/b2b-leads`; Fahrzeuginteressenten über `submit-lead` → `leads` → Sales-Assistent. Der B2B-Strang löst nicht automatisch den Fahrzeug-Lead-Autopiloten aus.
-- Die Live-Datenbank enthält zum Prüfzeitpunkt 5 B2B-Testanfragen, 12 Fahrzeug-Leads, 310 Fahrzeuge, 8 Sales-Konversationen, 11 Sales-Nachrichten, 2 aktive Autopilot-Profile, 1 Probefahrt und 7 Outbox-Einträge (5 `queued`, 2 `sent`). Das sind Existenznachweise, keine Belege für durchgängig funktionierenden End-to-End-Betrieb oder echte Kundenherkunft.
-- Verkaufsassistent und ausgehender E-Mail-Versand sind technisch implementiert. Die Wissensbasis speichert Dokumente/Chunks, erstellt aber keine Embeddings und führt keine Ähnlichkeitssuche aus; aktuell sind 0 Wissensdokumente und 0 Chunks gespeichert.
-- Terminverwaltung ist intern vorhanden, Kalender-Synchronisation ist nur vorbereitet: `calendar_sync_configs` hat 0 Einträge; der Kalender-Einstellungsbildschirm zeigt noch „bald verfügbar“. Das Demo-Calendly-Widget im B2B-Funnel ist von Probefahrten und interner Kalenderverwaltung getrennt.
-- Für Lead-/E-Mail-Verarbeitung ergab die Abfrage der laufenden `cron.job`-Einträge keinen passenden Job. Der Fahrzeug-Lead-Autopilot legt zwar E-Mails in die Warteschlange, ruft den eigentlichen Versand dort aber nicht selbst auf; insbesondere die 5 wartenden Outbox-Einträge sind ein konkretes Betriebsrisiko. Externe, hier nicht einsehbare Auslöser bleiben als Prüfgrenze kenntlich.
-
-## Auditbericht: Aufbau
-1. **Ist-Zustand-Matrix:** neun angefragte Bereiche mit Unterscheidung „wirklich implementiert“, „teilweise“, „UI/Vorbereitung“ und „nicht belegt“, jeweils mit Quellverweis und klaren Grenzen der Produktivitätsaussage.
-2. **Daten und Wege:** B2B-Funnel und Fahrzeug-Lead-Strom getrennt als Eingabe → Speicherung → Bearbeitung → Antwort/Termin darstellen; bestehende Statusmodelle, Adminseiten und Attributions-/Consent-Pfade auflisten. Tatsächliche Tabellenbelegung nur aggregiert nennen, keine personenbezogenen Datensätze ausgeben.
-3. **Kanal-Audit:** ausgehende E-Mail gegenüber fehlendem automatischen E-Mail-Eingang; WhatsApp-Link/Textbausteine gegenüber fehlender Business-API; Telefon ohne Telefonie; FTP/Export-API gegenüber fehlenden Portal-Lead-Webhooks und CRM/DMS-Synchronisation; Demo-Calendly gegenüber fehlender Probefahrt-Kalendersynchronisierung differenzieren.
-4. **Fehlende Daten und Bausteine:** verbindliche Händler-/Fahrzeugzuordnung, Live-Verfügbarkeit, Kontakteinwilligung, Kanal-IDs, Eingangs- und Ausgangsereignisse, Dubletten-/Identitätsabgleich, echte Wissensretrieval-Pipeline, zuverlässige Zustellung mit Wiederholung/Monitoring, Terminbestätigung und Übergabe an Menschen dokumentieren.
-5. **Zielarchitektur:** kanalbezogene Adapter → validierte, idempotente Eingangsschicht → einheitlicher Lead-/Konversationsverlauf → Händler-/Bestandszuordnung und qualifizierte Wissensabfrage → Antwortentwurf mit Freigabe-/Sicherheitsregeln → zuverlässiger Versand → Probefahrt/CRM-Synchronisation → Audit, Messung und Löschung. Bestehende Komponenten wiederverwenden, nicht Parallelstrukturen ungeprüft zusammenlegen.
-6. **Risiken und MVP:** offene anonyme `leads`-Erfassung, mögliche Kostenbelastung, falsche Angebots-/Verfügbarkeitsaussagen, fehlende Zustellgarantie, Datenschutz und Drittlanddienste, Werbe-/Kontaktrecht und menschliche Eskalation bewerten. Stufen: zuerst bestehende Website-Leads und E-Mail-Ausgang absichern, danach geprüfter E-Mail-Eingang und Fahrzeugbezug, dann echte Wissenssuche und Probefahrt, erst danach WhatsApp/Portale/CRM-DMS mit jeweils eigenen Freigaben und Schnittstellen.
-
-## Technische Prüfkriterien
-- Aussagen mit konkreten Pfaden und möglichst Zeilen belegen (`src/App.tsx`, `src/pages/funnel/*`, `src/pages/admin/*`, `src/components/sales/*`, `src/lib/funnel-*`, `supabase/functions/*`, relevante Migrationen).
-- Live-Abfragen bleiben lesend und aggregiert; RLS-/Rechte- und Statusbehauptungen nur nach Sichtung der jeweiligen Definitionen. Keine Schlüssel, Kontaktdaten oder einzelnen Lead-Inhalte ausgeben.
-- Widersprüche zwischen UI-Text, Funktionscode und tatsächlicher Auslösung ausdrücklich benennen; Funktionsdatei und gesetztes Secret allein nicht als erfolgreichen Versand bezeichnen.
+## Prüfung
+- Startseite und eine Funnel-Seite auf Desktop und Smartphone visuell prüfen: Logo-Proportionen, Überschriftenumbrüche, Sonderzeichen und Überläufe.
+- Anmeldung und Produktkopf stichprobenartig prüfen.
+- Vorschaufehler und Buildstatus kontrollieren; nicht veröffentlichen.
