@@ -10,8 +10,8 @@ import FunnelLayout from '@/components/funnel/FunnelLayout';
 import BeforeAfterShowcase from '@/components/funnel/BeforeAfterShowcase';
 import { usePageMeta } from '@/hooks/usePageMeta';
 import { captureAttribution } from '@/lib/funnel-attribution';
-import arrivalAsset from '@/assets/funnel/standtage-arrival.webp.asset.json';
-import showroomAsset from '@/assets/funnel/standtage-showroom.webp.asset.json';
+import arrivalImage from '@/assets/funnel/standtage-arrival-local.webp';
+import showroomImage from '@/assets/funnel/standtage-showroom-local.webp';
 import processImage from '@/assets/funnel/standtage-prozessbild.webp';
 
 const TEST_URL = '/fahrzeug-testen?source=standtage';
@@ -109,13 +109,13 @@ export default function StandtageVermeiden() {
           <div className="min-w-0">
             <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
               <figure className="relative overflow-hidden rounded-lg border border-border bg-secondary shadow-card">
-                <img src={arrivalAsset.url} alt="Fahrzeug auf dem Anhänger eines Autotransporters, direkt nach der Ankunft" className="aspect-[4/3] w-full object-cover" loading="eager" />
+                <img src={arrivalImage} alt="Fahrzeug auf dem Anhänger eines Autotransporters, direkt nach der Ankunft" className="aspect-[4/3] w-full object-cover" loading="eager" />
                 <figcaption className="absolute left-2 top-2 rounded-md bg-foreground/85 px-2.5 py-1.5 text-[10px] font-semibold leading-tight text-background shadow-card sm:left-3 sm:top-3 sm:text-xs">
                   Ankunft<br /><span className="font-normal opacity-80">auf dem Anhänger</span>
                 </figcaption>
               </figure>
               <figure className="relative overflow-hidden rounded-lg border border-accent/50 bg-card shadow-elevated">
-                <img src={showroomAsset.url} alt="Dasselbe Fahrzeug als professionelles Showroom-Motiv" className="aspect-[4/3] w-full object-cover" loading="eager" />
+                <img src={showroomImage} alt="Dasselbe Fahrzeug als professionelles Showroom-Motiv" className="aspect-[4/3] w-full object-cover" loading="eager" />
                 <figcaption className="absolute right-2 top-2 rounded-md bg-accent px-2.5 py-1.5 text-[10px] font-semibold leading-tight text-accent-foreground shadow-card sm:right-3 sm:top-3 sm:text-xs">
                   Online<br /><span className="font-normal opacity-90">im Showroom-Look</span>
                 </figcaption>
