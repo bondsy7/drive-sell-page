@@ -12,6 +12,7 @@ import { usePageMeta } from '@/hooks/usePageMeta';
 import { captureAttribution } from '@/lib/funnel-attribution';
 import arrivalAsset from '@/assets/funnel/standtage-arrival.webp.asset.json';
 import showroomAsset from '@/assets/funnel/standtage-showroom.webp.asset.json';
+import processImage from '@/assets/funnel/standtage-prozessbild.webp';
 
 const TEST_URL = '/fahrzeug-testen?source=standtage';
 
@@ -83,7 +84,7 @@ export default function StandtageVermeiden() {
       {/* S1 · Hero: Kontrast zwischen Ankunft und Online in einem Blick */}
       <section className="border-b border-border bg-card">
         <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[.9fr_1.1fr] lg:py-16">
-          <div>
+          <div className="min-w-0">
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent">Für Autohäuser, Fahrzeughändler und Händlergruppen</p>
             <h1 className="mt-4 font-display text-4xl font-bold leading-[1.04] text-foreground sm:text-5xl">Jeder Standtag kostet Geld.</h1>
             <p className="mt-3 font-display text-lg font-bold text-accent sm:text-xl">Vom LKW ins Netz – noch am selben Tag online.</p>
@@ -105,7 +106,7 @@ export default function StandtageVermeiden() {
             </div>
           </div>
 
-          <div>
+          <div className="min-w-0">
             <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
               <figure className="relative overflow-hidden rounded-lg border border-border bg-secondary shadow-card">
                 <img src={arrivalAsset.url} alt="Fahrzeug auf dem Anhänger eines Autotransporters, direkt nach der Ankunft" className="aspect-[4/3] w-full object-cover" loading="eager" />
@@ -130,6 +131,42 @@ export default function StandtageVermeiden() {
               </span>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Der gelieferte Vorher/Heute-Vergleich als große, bereinigte Bildgeschichte */}
+      <section id="ablauf" className="scroll-mt-20 border-b border-border bg-secondary/45 py-12 sm:py-16">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <div className="mb-6 flex flex-col justify-between gap-3 md:flex-row md:items-end">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent">Der Unterschied im Alltag</p>
+              <h2 className="mt-2 max-w-2xl font-display text-3xl font-bold leading-tight sm:text-4xl">Vom Hoftermin zum Handgriff.</h2>
+            </div>
+            <p className="max-w-sm text-sm leading-6 text-muted-foreground">Dasselbe Ziel, ein kürzerer Weg: vom angelieferten Fahrzeug zu Bildern für den Verkauf.</p>
+          </div>
+          <figure>
+            <div className="hidden overflow-hidden rounded-lg border border-border bg-card shadow-elevated sm:block">
+              <img src={processImage} alt="Vergleich: Links aufwendige Fahrzeugaufbereitung und Fotografie bei Regen, rechts Smartphone-Aufnahmen direkt am angelieferten Fahrzeug" className="aspect-[16/9] w-full object-cover" loading="eager" />
+            </div>
+            <div className="grid gap-3 sm:hidden">
+              <div className="relative aspect-[4/3] overflow-hidden rounded-lg border border-border bg-card">
+                <img src={processImage} alt="Klassischer Prozess: Reinigung und professionelle Fotografie im Regen am Autohaus" className="absolute left-0 top-0 h-full w-[200%] max-w-none object-cover" loading="eager" />
+              </div>
+              <div className="relative aspect-[4/3] overflow-hidden rounded-lg border border-border bg-card">
+                <img src={processImage} alt="Mit autohaus.ai: Mitarbeiter fotografiert das angelieferte Fahrzeug direkt mit dem Smartphone" className="absolute right-0 top-0 h-full w-[200%] max-w-none object-cover" loading="eager" />
+              </div>
+            </div>
+            <figcaption className="mt-4 grid gap-3 sm:grid-cols-2 sm:gap-5">
+              <div className="flex items-start gap-3 border-l-2 border-destructive pl-4">
+                <X className="mt-0.5 h-5 w-5 shrink-0 text-destructive" aria-hidden="true" />
+                <div><strong className="block text-sm">Klassisch: erst vorbereiten, dann fotografieren.</strong><span className="mt-1 block text-xs leading-5 text-muted-foreground">Aufbereitung, Aufnahmeplatz, Beleuchtung und Freigaben kosten Zeit.</span></div>
+              </div>
+              <div className="flex items-start gap-3 border-l-2 border-accent pl-4">
+                <Check className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden="true" />
+                <div><strong className="block text-sm">Mit autohaus.ai: direkt am Fahrzeug aufnehmen.</strong><span className="mt-1 block text-xs leading-5 text-muted-foreground">Smartphone-Fotos am Standort werden zu einheitlichen Verkaufsbildern.</span></div>
+              </div>
+            </figcaption>
+          </figure>
         </div>
       </section>
 
@@ -166,7 +203,7 @@ export default function StandtageVermeiden() {
       </section>
 
       {/* S3 · Prozessvergleich klassisch vs. autohaus.ai */}
-      <section id="ablauf" className="funnel-section-tint scroll-mt-20 border-b border-border py-14">
+      <section className="funnel-section-tint border-b border-border py-14">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <h2 className="font-display text-3xl font-bold">Vom LKW ins Netz – in drei Schritten.</h2>
           <p className="mt-2 text-sm text-muted-foreground">Ein Handgriff statt eines Hoftermins.</p>
