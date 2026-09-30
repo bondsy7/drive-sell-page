@@ -113,4 +113,4 @@
 ## Paid-Funnel „Fahrzeugvideos“ (30.09.2026)
 - [x] Eigenständige Seite /autohaus-videos mit Formaten, Prozessvergleich, Stilen, Kanälen, Testweg und FAQ erstellen
 - [x] Bestehende Consent-, CTA-, Scroll- und Quellenmessung für lp_videos wiederverwenden
-- [ ] Desktop/Mobil, CTA-Ziel und Vorschau prüfen; nicht veröffentlichen
+- [x] Desktop/Mobil, CTA-Ziel und Vorschau prüfen; nicht veröffentlichen
