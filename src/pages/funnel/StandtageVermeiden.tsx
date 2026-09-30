@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ArrowRight, Building2, Camera, Check, ChevronRight, Clock3, CloudRain, FileCheck,
-  Images, Layers3, Quote, ShieldCheck, Sparkles, Truck, Users, Warehouse, X, Zap,
+  ArrowRight, Building2, Camera, Check, ChevronRight, ClipboardCheck, Clock3, CloudRain,
+  Droplets, FileCheck, Globe, Images, Layers3, Lightbulb, Quote, Ruler, ShieldCheck,
+  Shuffle, Sparkles, Truck, Users, Warehouse, X, Zap,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -13,6 +14,7 @@ import { captureAttribution } from '@/lib/funnel-attribution';
 import arrivalImage from '@/assets/funnel/standtage-arrival-local.webp';
 import showroomImage from '@/assets/funnel/standtage-showroom-local.webp';
 import processImage from '@/assets/funnel/standtage-frueher-heute.webp';
+import phonePhoto from '@/assets/funnel/fun-step-fahrzeug-fotografieren.webp.asset.json';
 
 const TEST_URL = '/fahrzeug-testen?source=standtage';
 
