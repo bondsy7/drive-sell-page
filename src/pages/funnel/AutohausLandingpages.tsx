@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Check, ChevronRight, CarFront, FileText, Image as ImageIcon, BadgeEuro, MapPin, MessageCircle, CalendarDays, Search, ShieldCheck, Globe2, Megaphone, Smartphone, ClipboardList, CircleHelp, Sparkle, Clock3 } from 'lucide-react';
+import { ArrowRight, Check, ChevronRight, CarFront, FileText, MessageCircle, CalendarDays, Search, ShieldCheck, Globe2, Megaphone, Smartphone, ClipboardList } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import FunnelLayout from '@/components/funnel/FunnelLayout';
@@ -61,8 +61,10 @@ function DealerPage({ hero = false }: { hero?: boolean }) {
     <div className="flex items-center justify-between border-b border-border px-4 py-2.5"><span className="font-display text-sm font-bold">AUTOHAUS MUSTER</span><span className="text-[10px] text-muted-foreground">Fahrzeuge · Angebote · Kontakt</span></div>
     <div className="relative"><img src={carImage} alt="Beispielhaftes Fahrzeug im Showroom" className={`w-full object-cover ${hero ? 'aspect-[16/9]' : 'aspect-[2.4/1]'}`} /> <span className="absolute bottom-3 left-3 rounded bg-card/95 px-2 py-1 text-[10px] font-semibold shadow-card">Beispiel einer Fahrzeugseite</span></div>
     <div className="p-4 sm:p-6"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-[10px] font-bold uppercase text-accent">Im Bestand · Beispiel</p><h3 className="font-display text-lg font-bold sm:text-2xl">BMW X3 · Ihr nächstes Fahrzeug</h3><p className="text-xs text-muted-foreground">Komfort · Ausstattung · Fahrfreude</p></div><div className="text-left sm:text-right"><p className="text-lg font-bold">Preis auf Anfrage</p><p className="text-xs text-muted-foreground">Finanzierung & Leasing auf Anfrage</p></div></div>
+    {hero ? <div className="mt-4 rounded bg-accent px-3 py-2 text-center text-xs font-bold text-accent-foreground">Probefahrt anfragen</div> : <>
     <div className="mt-4 flex flex-wrap gap-2">{['Ausstattung', 'Galerie', 'Finanzierung', 'Leasing', 'Verbrauch & CO₂'].map(t => <span key={t} className="rounded border border-border bg-secondary/50 px-2 py-1 text-[10px] font-medium">{t}</span>)}</div>
     <div className="mt-5 grid gap-3 border-t border-border pt-4 sm:grid-cols-2"><div className="space-y-3"><p className="text-xs font-bold">Fahrzeug-Highlights & Galerie</p><div className="grid grid-cols-3 gap-1.5">{[0,1,2].map(i => <img key={i} src={carImage} alt="" className="aspect-[4/3] w-full rounded object-cover" />)}</div><p className="text-[11px] text-muted-foreground">Ausstattung · Standort · Ansprechpartner</p></div><div className="rounded-md bg-secondary/60 p-3"><p className="text-xs font-bold">Ihr Angebot auf einen Blick</p><p className="mt-1 text-[11px] text-muted-foreground">Finanzierungsrechner · Leasingoptionen · Konditionen</p><p className="mt-2 text-[11px] text-muted-foreground">WLTP-Verbrauch und CO₂-Werte entsprechend den Fahrzeugdaten; Pflichtangaben vor Veröffentlichung prüfen.</p><span className="mt-3 block rounded bg-accent px-3 py-2 text-center text-xs font-bold text-accent-foreground">Probefahrt anfragen</span></div></div>
+    </>}
     </div>
   </div>;
 }
