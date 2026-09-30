@@ -12,7 +12,7 @@ import { usePageMeta } from '@/hooks/usePageMeta';
 import { captureAttribution } from '@/lib/funnel-attribution';
 import arrivalImage from '@/assets/funnel/standtage-arrival-local.webp';
 import showroomImage from '@/assets/funnel/standtage-showroom-local.webp';
-import processImage from '@/assets/funnel/standtage-prozessbild.webp';
+import processImage from '@/assets/funnel/standtage-frueher-heute.webp';
 
 const TEST_URL = '/fahrzeug-testen?source=standtage';
 
