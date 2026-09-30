@@ -10,7 +10,8 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import FunnelLayout from '@/components/funnel/FunnelLayout';
 import BeforeAfterShowcase from '@/components/funnel/BeforeAfterShowcase';
 import { usePageMeta } from '@/hooks/usePageMeta';
-import { captureAttribution } from '@/lib/funnel-attribution';
+import { captureAttribution, captureLastTouch } from '@/lib/funnel-attribution';
+import { trackFunnelEvent } from '@/lib/funnel-tracking';
 import arrivalImage from '@/assets/funnel/standtage-arrival-local.webp';
 import showroomImage from '@/assets/funnel/standtage-showroom-local.webp';
 import processImage from '@/assets/funnel/standtage-frueher-heute.webp';
@@ -95,7 +96,25 @@ export default function StandtageVermeiden() {
     canonicalPath: '/standtage-vermeiden',
   });
 
-  useEffect(() => { captureAttribution('lp_standtage'); }, []);
+  useEffect(() => { captureAttribution('lp_standtage'); captureLastTouch(); }, []);
+
+  // Scrolltiefe (50 % / 90 %) – zeigt, ob Paid-Besucher die Argumente wirklich lesen.
+  useEffect(() => {
+    const sent = new Set<number>();
+    const onScroll = () => {
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      if (max <= 0) return;
+      const pct = (window.scrollY / max) * 100;
+      for (const t of [50, 90]) {
+        if (pct >= t && !sent.has(t)) {
+          sent.add(t);
+          trackFunnelEvent('scroll_depth', { step: `scroll_${t}`, percent: t });
+        }
+      }
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   return (
     <FunnelLayout
