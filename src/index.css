@@ -306,3 +306,13 @@
     size: A4;
   }
 }
+
+/* Beispiel-CI-Welten für die Werbemittel-Landingpage (nur Illustration, keine echten Marken) */
+.ci-world-blue { --ci-bg: 214 60% 96%; --ci-main: 214 70% 38%; --ci-on: 0 0% 100%; }
+.ci-world-black { --ci-bg: 0 0% 10%; --ci-main: 40 45% 62%; --ci-on: 0 0% 8%; }
+.ci-world-red { --ci-bg: 0 0% 98%; --ci-main: 356 72% 46%; --ci-on: 0 0% 100%; }
+.ci-bg { background-color: hsl(var(--ci-bg)); }
+.ci-main-bg { background-color: hsl(var(--ci-main)); color: hsl(var(--ci-on)); }
+.ci-main-text { color: hsl(var(--ci-main)); }
+.ci-world-black .ci-body-text { color: hsl(0 0% 92%); }
+.ci-world-blue .ci-body-text, .ci-world-red .ci-body-text { color: hsl(var(--foreground)); }
