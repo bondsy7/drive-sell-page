@@ -88,3 +88,8 @@
 - [x] Problemkette, Prozessvergleich „klassisch vs. autohaus.ai", Nutzenkarten und Beweisbereich umgesetzt
 - [x] Kurz-FAQ und Abschluss-CTA ergänzt, CTA-Ziel auf den Fahrzeugtest mit Quelle standtage
 - [x] Desktop, Mobil, Formularablauf und Build geprüft – nicht veröffentlicht
+
+## Standtage-Seite: Prozessmotiv und Feinschliff (30.09.2026)
+- [x] Gelieferte Prozessgrafik ohne fremde Logos und überladene Beschriftungen als Bildgeschichte aufbereiten
+- [x] Vergleich prominent direkt nach dem Einstieg platzieren und mobil in zwei lesbare Bildhälften aufteilen
+- [x] Darstellung und Bildladen auf Desktop und Smartphone prüfen
