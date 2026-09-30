@@ -48,6 +48,7 @@ const FahrzeugTestenDanke = lazy(() => import("./pages/funnel/FahrzeugTestenDank
 const StandtageVermeiden = lazy(() => import("./pages/funnel/StandtageVermeiden"));
 const AutohausWerbemittel = lazy(() => import("./pages/funnel/AutohausWerbemittel"));
 const AutohausLandingpages = lazy(() => import("./pages/funnel/AutohausLandingpages"));
+const AutohausVideos = lazy(() => import("./pages/funnel/AutohausVideos"));
 
 // Rechtsseiten (öffentlich)
 const Impressum = lazy(() => import("./pages/legal/Impressum"));
@@ -165,6 +166,7 @@ const App = () => (
               <Route path="/standtage-vermeiden" element={<StandtageVermeiden />} />
               <Route path="/autohaus-werbemittel" element={<AutohausWerbemittel />} />
               <Route path="/autohaus-landingpages" element={<AutohausLandingpages />} />
+              <Route path="/autohaus-videos" element={<AutohausVideos />} />
               <Route path="/impressum" element={<Impressum />} />
               <Route path="/datenschutz" element={<Datenschutz />} />
               <Route path="/agb" element={<Agb />} />
