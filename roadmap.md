@@ -83,8 +83,8 @@
 
 ## Landingpage „Standtage vermeiden" (30.09.2026)
 - [x] Screenlayout und Seitenkonzept als fokussierte Paid-Landingpage erstellt
-- [ ] Umsetzung nach Freigabe: neue öffentliche Seite im FunnelLayout mit Meta und Attribution
-- [ ] Hero-Motive produzieren: Fahrzeug auf dem Anhänger und dasselbe Fahrzeug als Showroom-Motiv, als WebP
-- [ ] Problemkette, Prozessvergleich „klassisch vs. autohaus.ai", Nutzenkarten und Beweisbereich umsetzen
-- [ ] Kurz-FAQ und Abschluss-CTA ergänzen, CTA-Ziel auf den Fahrzeugtest mit Quelle standtage
-- [ ] Desktop, Mobil und Build prüfen
+- [x] Seite /standtage-vermeiden im FunnelLayout mit Meta und Attribution umgesetzt
+- [x] Hero-Motive produziert: Fahrzeug auf dem Anhänger und dasselbe Fahrzeug als Showroom-Motiv, als WebP
+- [x] Problemkette, Prozessvergleich „klassisch vs. autohaus.ai", Nutzenkarten und Beweisbereich umgesetzt
+- [x] Kurz-FAQ und Abschluss-CTA ergänzt, CTA-Ziel auf den Fahrzeugtest mit Quelle standtage
+- [x] Desktop, Mobil, Formularablauf und Build geprüft – nicht veröffentlicht
