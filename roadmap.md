@@ -109,3 +109,8 @@
 - [x] Eigenständige Seite /autohaus-landingpages mit Fahrzeugseite, Verkaufsassistent, Datenfluss, Kampagnen, FAQ und Testweg erstellen
 - [x] Bestehende Consent-, CTA-, Scroll- und Quellenmessung für lp_landingpages wiederverwenden
 - [x] Desktop/Mobil, CTA-Ziel und Vorschau geprüft; nicht veröffentlicht
+
+## Paid-Funnel „Fahrzeugvideos“ (30.09.2026)
+- [x] Eigenständige Seite /autohaus-videos mit Formaten, Prozessvergleich, Stilen, Kanälen, Testweg und FAQ erstellen
+- [x] Bestehende Consent-, CTA-, Scroll- und Quellenmessung für lp_videos wiederverwenden
+- [ ] Desktop/Mobil, CTA-Ziel und Vorschau prüfen; nicht veröffentlichen
