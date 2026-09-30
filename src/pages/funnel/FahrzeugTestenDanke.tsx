@@ -299,7 +299,10 @@ export default function FahrzeugTestenDanke() {
                     askVolume={!isProcessCheck}
                     hideHeader
                     className="mt-4 rounded-lg border border-accent/30 bg-accent/5 p-4"
-                    onDone={(d) => setDetails(d)}
+                    onDone={(d) => {
+                      setDetails(d);
+                      trackFunnelEvent('lead_details_completed', { funnel_type: isProcessCheck ? 'process_check' : 'vehicle_test' }, { eventId: `lead_details_completed:${leadId}`, leadId: leadId ?? undefined });
+                    }}
                   />
                 </>
               ) : (

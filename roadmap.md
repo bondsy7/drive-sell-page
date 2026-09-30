@@ -93,3 +93,10 @@
 - [x] Gelieferte Prozessgrafik ohne fremde Logos und überladene Beschriftungen als Bildgeschichte aufbereiten
 - [x] Vergleich prominent direkt nach dem Einstieg platzieren und mobil in zwei lesbare Bildhälften aufteilen
 - [x] Darstellung und Bildladen auf Desktop und Smartphone prüfen
+
+## Standtage-Funnel: Tracking für Ads (30.09.2026)
+- [x] Scrolltiefe, Klicks auf Test-Buttons, ergänzte Kontaktdaten und Demo-Buchung messen
+- [x] Meta-Pixel nur mit Marketing-Einwilligung; Lead + Terminbuchung auch an Google Ads (sobald Konto verbunden)
+- [ ] Google-Ads-Konto verbinden und Conversions anlegen (wartet auf Nutzer)
+- [ ] Meta-Pixel-ID hinterlegen (wartet auf Nutzer)
+- [ ] Seite veröffentlichen, bevor Anzeigen laufen
