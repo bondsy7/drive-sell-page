@@ -241,7 +241,7 @@ function getInteriorReferenceIndices(availableCount: number, referenceRoles: str
   return [];
 }
 
-function buildTaskOutputLock(job: PipelineJob | undefined): string {
+export function buildTaskOutputLock(job: PipelineJob | undefined): string {
   const jobName = job?.labelDe || job?.label || 'angeforderte Pipeline-Ansicht';
   const signature = `${job?.key || ''} ${job?.label || ''} ${job?.labelDe || ''}`;
   const frontIdentityLock = FRONT_REFERENCE_PATTERNS.test(signature) ? `
