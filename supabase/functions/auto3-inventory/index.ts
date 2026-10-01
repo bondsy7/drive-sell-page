@@ -83,6 +83,7 @@ const tdGet = (td: Raw, ...labels: string[]): string => {
     if (k && str(td[k])) return str(td[k]);
   }
   for (const l of labels) {
+    if (l.length < 5) continue; // short labels (HU, kW, HSN) only match exactly
     const k = keys.find((x) => x.toLowerCase().includes(l.toLowerCase()));
     if (k && str(td[k])) return str(td[k]);
   }
@@ -133,7 +134,7 @@ export function mapAuto3Record(d: Raw, vin: string): Record<string, string> {
     mileage: str(d.mileage),
     firstRegistration: str(d.firstRegistration) || tdGet(td, "Erstzulassung"),
     previousOwners: tdGet(td, "Vorbesitzer", "Anzahl Fahrzeughalter"),
-    inspectionUntil: tdGet(td, "HU", "Hauptuntersuchung"),
+    inspectionUntil: tdGet(td, "HU", "HU/AU bis", "Hauptuntersuchung"),
     condition: str(d.condition) || tdGet(td, "Zustand"),
     warranty: td["Garantie"] === true ? "Ja" : tdGet(td, "Garantie"),
     consumptionCombined: num(fuel.combined),
