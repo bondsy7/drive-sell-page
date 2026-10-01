@@ -13,6 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Save, Building2, MapPin, Phone, Globe, Facebook, Instagram, Youtube, FileText, Landmark, Upload, X, Image, Zap, History, TrendingDown, TrendingUp, Lock, KeyRound, Chrome, Share2, CreditCard, Plus } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
 import SocialCredentialsSection from '@/components/profile/SocialCredentialsSection';
+import { useModuleAccess } from '@/hooks/useModuleAccess';
 import { toast } from 'sonner';
 
 interface ProfileData {
@@ -98,6 +99,8 @@ interface BankEntry {
 const Profile = () => {
   const { user } = useAuth();
   const { balance, lifetimeUsed, loading: creditsLoading } = useCredits();
+  const { disabledModules } = useModuleAccess();
+  const canPublishWebsite = !disabledModules.has('website-publishing');
   const [profile, setProfile] = useState<ProfileData>(emptyProfile);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -513,6 +516,16 @@ const Profile = () => {
               </p>
               <SocialCredentialsSection />
             </Section>
+
+            {canPublishWebsite && (
+              <Section icon={<Globe className="w-4 h-4" />} title="Website-Verbindung · Auto Schmitt">
+                <p className="text-xs text-muted-foreground -mt-2 mb-2">
+                  Dein Konto ist mit der Website von Auto Schmitt verbunden. Freigegebene Bilder veröffentlichst du je Fahrzeug im Reiter „Website-Bilder“.
+                  Nur Fahrzeuge mit gültiger VIN können zugeordnet und veröffentlicht werden.
+                </p>
+                <Badge variant="secondary">Verbunden</Badge>
+              </Section>
+            )}
 
             <Section icon={<Share2 className="w-4 h-4" />} title="Auto3-Integration">
               <p className="text-xs text-muted-foreground -mt-2 mb-2">

@@ -21,6 +21,7 @@ export const MODULE_KEYS = [
   'reference-v2',
   'sales-assistant',
   'remaster-cleanup',
+  'website-publishing',
 ] as const;
 
 export type ModuleKey = typeof MODULE_KEYS[number];
@@ -43,6 +44,7 @@ export const MODULE_LABELS: Record<ModuleKey, string> = {
   'reference-v2': 'Referenz-Bibliothek V2',
   'sales-assistant': 'KI Verkaufsassistent',
   'remaster-cleanup': 'Spezifische Bereinigung (Remaster)',
+  'website-publishing': 'Website-Veröffentlichung (Auto Schmitt)',
 };
 
 /** Sub-modules grouped under a parent module */
@@ -56,6 +58,7 @@ export const MODULE_CHILDREN: Partial<Record<ModuleKey, ModuleKey[]>> = {
  */
 export const MODULE_DEFAULT_DISABLED: Set<ModuleKey> = new Set<ModuleKey>([
   'remaster-cleanup',
+  'website-publishing',
 ]);
 
 

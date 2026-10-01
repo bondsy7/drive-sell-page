@@ -70,6 +70,12 @@ export function publicationStatusLabel(p: Pick<WebsitePublication, 'status' | 'l
   return 'Auto3';
 }
 
+/** Real VIN = present, not an internal AUTO3- fallback, 5-17 alphanumeric chars. */
+export function isRealVin(vin: string | null | undefined): boolean {
+  const v = (vin || '').trim().toUpperCase();
+  return !!v && !v.startsWith('AUTO3-') && /^[A-Z0-9]{5,17}$/.test(v);
+}
+
 export interface ImportExternalVehicleInput {
   externalVehicleId: string;
   vin?: string | null;
@@ -87,6 +93,7 @@ export async function importExternalVehicle(userId: string, input: ImportExterna
   const extId = input.externalVehicleId.trim();
   if (!extId) throw new Error('Auto3-ID fehlt');
   const vin = (input.vin || '').trim().toUpperCase();
+  if (!isRealVin(vin)) throw new Error('Ohne gültige VIN wird kein Import durchgeführt.');
   const images = (input.imageUrls || []).map((u) => u.trim()).filter((u) => /^https?:\/\//i.test(u));
   const externalImages = images.map((url, i) => ({ url, sortOrder: i }));
 
@@ -120,7 +127,7 @@ export async function importExternalVehicle(userId: string, input: ImportExterna
 
   const { data, error } = await supabase.from('vehicles').insert([{
     user_id: userId,
-    vin: vin || `AUTO3-${extId}`,
+    vin,
     title: input.title?.trim() || null,
     vehicle_data: {} as never,
     cover_image_url: images[0] || null,
