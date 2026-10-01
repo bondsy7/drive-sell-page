@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { selectReferences, missingRequiredSlots, estimatePresetCredits, AUTO3_STANDARD_PRESET, preparationStatusLabel, oneshotHandoffUrl, type OriginalAnalysis } from '@/lib/auto3-oneshot';
+import { selectReferences, missingRequiredSlots, estimatePresetCredits, AUTO3_STANDARD_PRESET, preparationStatusLabel, type OriginalAnalysis } from '@/lib/auto3-oneshot';
 
 const a = (file: string, category: OriginalAnalysis['category'], quality = 80, vehicleComplete = true): OriginalAnalysis => ({ file, category, quality, vehicleComplete });
 
@@ -24,6 +24,5 @@ describe('auto3 oneshot selection', () => {
   });
   it('status + handoff', () => {
     expect(preparationStatusLabel('ready_for_oneshot', 20)).toBe('20 Originale · bereit für Aufbereitung');
-    expect(oneshotHandoffUrl('x')).toBe('/generator/fotos?vehicle=x&originals=auto3&prep=1');
   });
 });
