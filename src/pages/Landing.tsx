@@ -1,113 +1,8 @@
-import { Link } from 'react-router-dom';
-import {
-  ArrowRight,
-  BarChart3,
-  Camera,
-  Check,
-  CirclePlay,
-  FileText,
-  Images,
-  LayoutTemplate,
-  MessageSquareQuote,
-  Share2,
-  Sparkles,
-  Video,
-  WandSparkles,
-} from 'lucide-react';
 import HomeHeader from '@/components/home/HomeHeader';
 import HomeHero from '@/components/home/HomeHero';
+import { HomeBenefits, HomeClosingCta, HomeProcess, HomeQuality, HomeResults } from '@/components/home/HomeSections';
 import SiteFooter from '@/components/legal/SiteFooter';
-import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
-import heroImage from '@/assets/hero-autohaus-ai.png.asset.json';
-import stepPlaceholderImage from '@/assets/fahrzeug-perspektiven.webp.asset.json';
-import stepFotoAufnehmen from '@/assets/foto-aufnehmen.webp.asset.json';
-import stepFormateImage from '@/assets/marketing-formate.webp.asset.json';
-
-const BENEFITS = [
-  'In wenigen Minuten startklar',
-  'Keine Installation',
-  'Für Autohäuser und Händler',
-];
-
-const OUTPUTS = [
-  { icon: Camera, label: 'Fahrzeugbilder' },
-  { icon: Share2, label: 'Social Media' },
-  { icon: LayoutTemplate, label: 'Banner' },
-  { icon: FileText, label: 'Verkaufsseiten' },
-  { icon: Video, label: 'Video & 360°' },
-  { icon: Sparkles, label: 'KI-Verkaufsassistent' },
-];
-
-const STEPS = [
-  {
-    num: '01',
-    title: 'Foto aufnehmen',
-    text: 'Mit dem Smartphone oder direkt aus deinem Bestand.',
-    kind: 'phone',
-  },
-  {
-    num: '02',
-    title: 'KI-Veredelung',
-    text: 'Unsere KI optimiert Bilder und ergänzt Perspektiven.',
-    kind: 'single',
-  },
-  {
-    num: '03',
-    title: 'Formate erstellen',
-    text: 'Bilder, Videos, Social Media, Banner und Verkaufsseiten.',
-    kind: 'grid',
-  },
-  {
-    num: '04',
-    title: 'Mehr verkaufen',
-    text: 'Schneller online. Mehr Anfragen. Höhere Sichtbarkeit.',
-    kind: 'chart',
-  },
-] as const;
-
-const PRODUCTS = [
-  { icon: Images, title: 'Fahrzeugbilder', text: 'Professionelle Außen- und Innenansichten im einheitlichen Showroom.' },
-  { icon: Share2, title: 'Social Media', text: 'Passende Posts und Banner in allen wichtigen Formaten.' },
-  { icon: Video, title: 'Video & 360°', text: 'Bewegte Präsentationen und interaktive Rundumansichten.' },
-  { icon: FileText, title: 'Verkaufsseiten', text: 'Fahrzeugdaten und Medien auf einer klaren Angebotsseite.' },
-];
-
-function StepVisual({ kind }: { kind: (typeof STEPS)[number]['kind'] }) {
-  if (kind === 'phone') {
-    return (
-      <div className="relative mx-auto mt-6 h-44 w-full overflow-hidden rounded-md bg-secondary">
-        <img src={stepFotoAufnehmen.url} alt="Fahrzeugaufnahme mit dem Smartphone auf dem Hof" className="h-full w-full object-cover" />
-      </div>
-    );
-  }
-
-  if (kind === 'single') {
-    return (
-<div className="mt-6 h-44 overflow-hidden rounded-md bg-secondary">
-        <img src={stepPlaceholderImage.url} alt="KI-veredeltes Fahrzeugbild in verschiedenen Perspektiven" className="h-full w-full object-cover" />
-      </div>
-    );
-  }
-
-  if (kind === 'grid') {
-    return (
-      <div className="mt-6 h-44 overflow-hidden rounded-md bg-secondary">
-        <img src={stepFormateImage.url} alt="Erstellte Marketing-Formate: Fahrzeugbilder, Social Post, Verkaufsanzeige und Video" className="h-full w-full object-cover" />
-      </div>
-    );
-  }
-
-  return (
-    <div className="relative mt-6 flex h-44 flex-col justify-end overflow-hidden rounded-md bg-primary/5 px-5 pb-4">
-      <svg viewBox="0 0 180 72" className="h-16 w-full text-primary" aria-hidden="true">
-        <polyline points="4,58 40,32 74,43 110,18 142,26 176,5" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M164 5h12v12" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
-      </svg>
-      <p className="mt-1 text-2xl font-bold text-primary">Mehr Sichtbarkeit</p>
-    </div>
-  );
-}
 
 export default function Landing() {
   const { user } = useAuth();
@@ -119,86 +14,11 @@ export default function Landing() {
 
       <main>
         <HomeHero />
-
-        <section className="relative -mt-px bg-card px-4 pb-10 sm:px-6">
-          <div className="mx-auto grid max-w-6xl grid-cols-2 overflow-hidden rounded-lg border border-border bg-card shadow-card md:grid-cols-4">
-            {[
-              ['Wenige Min.', 'bis zum Ergebnis'],
-              ['18+', 'Perspektiven'],
-              ['Professionelle', 'Ergebnisse'],
-              ['WLTP-konform', 'für relevante Portale'],
-            ].map(([value, label], index) => (
-              <div key={value} className={`px-4 py-6 text-center ${index % 2 !== 0 ? 'border-l border-border' : ''} ${index > 1 ? 'border-t border-border md:border-t-0' : ''} md:border-l md:first:border-l-0`}>
-                <p className="text-xl font-bold sm:text-2xl">{value}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{label}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section id="so-funktionierts" className="scroll-mt-20 py-16 sm:py-20">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <h2 className="font-display text-3xl font-bold sm:text-4xl">So einfach funktioniert autohaus.ai</h2>
-            <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {STEPS.map((step) => (
-                <article key={step.num} className="flex min-h-[390px] flex-col rounded-lg border border-border bg-card p-5 shadow-card">
-                  <span className="text-3xl font-bold text-muted-foreground/30">{step.num}</span>
-                  <h3 className="mt-2 text-lg font-bold">{step.title}</h3>
-                  <p className="mt-2 min-h-12 text-sm leading-6 text-muted-foreground">{step.text}</p>
-                  <div className="mt-auto"><StepVisual kind={step.kind} /></div>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section id="referenzen" className="pb-16 sm:pb-20">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <div className="flex flex-col gap-6 rounded-lg border border-border bg-card p-6 shadow-card sm:flex-row sm:items-center sm:px-8">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <MessageSquareQuote className="h-5 w-5" />
-              </div>
-              <div className="flex-1">
-                <blockquote className="font-display text-lg font-semibold leading-7 sm:text-xl">„Mit autohaus.ai sparen wir pro Fahrzeug wertvolle Zeit und präsentieren unseren Bestand durchgehend professionell.“</blockquote>
-                <p className="mt-2 text-xs text-muted-foreground">Beispiel für eine Kundenstimme · wird nach Lieferung deiner Referenzen ersetzt</p>
-              </div>
-              <Button asChild variant="ghost" className="justify-start text-primary sm:justify-center">
-                <Link to="/referenzen">Referenzen ansehen <ArrowRight className="h-4 w-4" /></Link>
-              </Button>
-            </div>
-          </div>
-        </section>
-
-        <section id="ergebnisse" className="scroll-mt-20 border-y border-border bg-secondary/60 py-16 sm:py-20">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-              <div className="max-w-2xl">
-                <p className="text-sm font-semibold text-primary">Eine Plattform</p>
-                <h2 className="mt-3 font-display text-3xl font-bold sm:text-4xl">Alles für deine digitale Fahrzeugpräsentation.</h2>
-              </div>
-              <Button asChild variant="outline"><Link to="/pricing">Pakete vergleichen <ArrowRight className="h-4 w-4" /></Link></Button>
-            </div>
-            <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {PRODUCTS.map((product) => (
-                <article key={product.title} className="rounded-lg border border-border bg-card p-6 shadow-card">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary text-primary-foreground"><product.icon className="h-5 w-5" /></div>
-                  <h3 className="mt-6 font-semibold">{product.title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-muted-foreground">{product.text}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section id="unternehmen" className="px-4 py-16 sm:px-6 sm:py-20">
-          <div className="mx-auto flex max-w-6xl flex-col justify-between gap-7 rounded-lg bg-primary px-6 py-10 text-primary-foreground sm:px-10 lg:flex-row lg:items-center">
-            <div className="max-w-2xl">
-              <h2 className="font-display text-3xl font-bold">Bereit für modernes Fahrzeugmarketing?</h2>
-              <p className="mt-3 text-sm leading-6 text-primary-foreground/75">Starte mit deinen eigenen Fahrzeugfotos und erlebe den vollständigen Ablauf direkt.</p>
-            </div>
-            <Button asChild size="lg" variant="secondary"><Link to={destination}>Jetzt starten <ArrowRight className="h-4 w-4" /></Link></Button>
-          </div>
-        </section>
+        <HomeBenefits />
+        <HomeProcess />
+        <HomeResults />
+        <HomeQuality />
+        <HomeClosingCta destination={destination} />
       </main>
 
       <SiteFooter />
