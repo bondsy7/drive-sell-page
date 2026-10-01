@@ -34,6 +34,7 @@ import SpinViewerModal from '@/components/dashboard/SpinViewerModal';
 import EditVehicleDialog from '@/components/vehicle/EditVehicleDialog';
 import CoverPickerDialog from '@/components/vehicle/CoverPickerDialog';
 import { getImageSrc } from '@/components/dashboard/types';
+import { downloadMediaFile } from '@/lib/download-file';
 import type { Project, ProjectImage, Lead, Spin360Job, BannerFile, VideoFile } from '@/components/dashboard/types';
 
 type TabKey = 'originals' | 'gallery' | 'data' | 'projects' | 'landings' | 'banners' | 'videos' | 'spin360' | 'leads';
@@ -186,19 +187,9 @@ export default function VehicleView() {
 
   const downloadFile = async (url: string, name: string) => {
     try {
-      const res = await fetch(url);
-      const blob = await res.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = blobUrl;
-      a.download = name;
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 3000);
+      await downloadMediaFile(url, name);
     } catch {
-      window.open(url, '_blank');
+      toast.error('Die Datei konnte nicht heruntergeladen werden. Bitte erneut versuchen.');
     }
   };
 

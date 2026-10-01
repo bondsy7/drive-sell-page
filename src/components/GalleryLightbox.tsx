@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import { invokeRemasterVehicleImage } from '@/lib/remaster-invoke';
 import { useDeleteGalleryImage } from '@/hooks/useDashboardData';
 import { ALL_PIPELINE_JOBS } from '@/lib/pipeline-jobs';
+import { downloadMediaFile } from '@/lib/download-file';
 
 interface LightboxImage {
   id: string;
@@ -47,6 +48,7 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
   const [pickerTab, setPickerTab] = useState<'originals' | 'gallery'>('originals');
   const [extraPrompt, setExtraPrompt] = useState('');
   const [selectedRef, setSelectedRef] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState(false);
 
   const deleteImage = useDeleteGalleryImage();
 
@@ -97,11 +99,16 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
   const current = images[index];
   if (!open || !current) return null;
 
-  const download = () => {
-    const a = document.createElement('a');
-    a.href = current.src;
-    a.download = `${current.perspective || 'bild'}.png`;
-    a.click();
+  const download = async () => {
+    if (downloading) return;
+    setDownloading(true);
+    try {
+      await downloadMediaFile(current.src, current.perspective || 'fahrzeugbild');
+    } catch {
+      toast.error('Das Bild konnte nicht heruntergeladen werden. Bitte erneut versuchen.');
+    } finally {
+      setDownloading(false);
+    }
   };
 
   const handleDelete = () => {
@@ -206,8 +213,9 @@ const GalleryLightbox: React.FC<GalleryLightboxProps> = ({ images, initialIndex,
         {/* Top bar */}
         <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
           <span className="text-sm text-background/70">{index + 1} / {images.length}</span>
-          <Button variant="secondary" size="sm" onClick={download} className="gap-1.5">
-            <Download className="w-4 h-4" /> Download
+          <Button variant="secondary" size="sm" onClick={download} disabled={downloading} className="gap-1.5">
+            {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            {downloading ? 'Wird geladen…' : 'Download'}
           </Button>
           <Button
             variant="secondary"
