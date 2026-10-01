@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useProcessingProfile, prepareAuto3Job, startAuto3Job, retryAuto3Job } from '@/hooks/useProcessingProfile';
-import { DATASHEET_LABELS, RUNNING_STATUSES, estimateJobCost, jobStatusLabel, type Datasheet, type JobRow } from '@/lib/auto3-processing';
+import { DATASHEET_LABELS, formatDatasheetValue, RUNNING_STATUSES, estimateJobCost, jobStatusLabel, type Datasheet, type JobRow } from '@/lib/auto3-processing';
 
 export const auto3JobQueryKey = (vehicleId: string) => ['auto3-job', vehicleId];
 
@@ -119,7 +119,7 @@ export default function Auto3JobCard({ vehicleId, compact = false }: { vehicleId
           <div className="min-w-[200px] flex-1">
             <p className="text-xs font-medium mb-1">Datenblatt aus Auto3</p>
             <dl className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs">
-              {sheet.filter(([k]) => k !== 'consumption').map(([k, v]) => (<Fragment key={k}><dt className="text-muted-foreground">{DATASHEET_LABELS[k]}</dt><dd className="truncate">{v}</dd></Fragment>))}
+              {sheet.filter(([k]) => k !== 'consumption').map(([k, v]) => (<Fragment key={k}><dt className="text-muted-foreground">{DATASHEET_LABELS[k]}</dt><dd className="truncate" title={v}>{formatDatasheetValue(k, v)}</dd></Fragment>))}
             </dl>
           </div>
         </div>
@@ -140,7 +140,7 @@ export default function Auto3JobCard({ vehicleId, compact = false }: { vehicleId
           )}
           {job.status === 'ready_for_review' && <Button asChild size="sm" variant="outline"><Link to={`/vehicle/${vehicleId}`}>Ergebnisse prüfen</Link></Button>}
           {compact && <Button asChild size="sm" variant="ghost"><Link to={`/vehicle/${vehicleId}`}>Job ansehen</Link></Button>}
-          {canStart && !prof?.approved && <span className="text-xs text-muted-foreground">Start erst nach Freigabe des Aufbereitungsprofils im Profil.</span>}
+          {canStart && !prof?.approved && <span className="text-xs text-muted-foreground">Start erst nach Freigabe des Aufbereitungsprofils: <Link className="underline" to="/profile">Profil → Fahrzeug-Aufbereitung → „Profil freigeben“</Link>.</span>}
           {canStart && prof?.approved && cost && balance < cost.total && <span className="text-xs text-destructive">Guthaben {balance} Credits reicht nicht – der Job würde pausieren.</span>}
         </div>
       )}
