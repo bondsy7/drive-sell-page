@@ -7,9 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useAuto3AutopilotMode } from '@/components/profile/Auto3AutopilotSetting';
-import Auto3PrepCard, { analyzeAuto3Originals } from '@/components/vehicle/Auto3PrepCard';
-import { preparationStatusLabel, type PreparationStatus } from '@/lib/auto3-oneshot';
+import Auto3JobCard from '@/components/vehicle/Auto3JobCard';
+import { useCredits } from '@/hooks/useCredits';
+import { useVehicleMakes } from '@/hooks/useVehicleMakes';
+import { useProcessingProfile, prepareAuto3Job, startAuto3Job } from '@/hooks/useProcessingProfile';
+import { jobStatusLabel, type JobRow } from '@/lib/auto3-processing';
 
 type Status = 'no_vin' | 'not_imported' | 'imported' | 'assets' | 'website_draft' | 'website_live';
 interface Item {
@@ -31,8 +33,20 @@ export default function Auto3InventoryPanel() {
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState<'all' | 'open' | 'imported' | 'no_vin'>('all');
   const [sel, setSel] = useState<Set<string>>(new Set());
-  const [autopilot] = useAuto3AutopilotMode();
-  const [preps, setPreps] = useState<Record<string, { status: PreparationStatus; originals_count: number }>>({});
+  const { data: prof } = useProcessingProfile();
+  const autopilot = prof?.mode || 'off';
+  const { getCost } = useCredits();
+  const { getLogoForMake } = useVehicleMakes();
+  const [jobs, setJobs] = useState<Record<string, JobRow & { originals: number }>>({});
+  const loadJobs = async (vids: string[]) => {
+    if (!vids.length) return;
+    const [{ data: rows }, { data: preps }] = await Promise.all([
+      supabase.from('auto3_processing_jobs').select('id, vehicle_id, status, master_file, master_reason, progress_done, progress_total, progress_label, pause_reason, error, cost_estimate, credits_spent, updated_at').in('vehicle_id', vids),
+      supabase.from('auto3_oneshot_preparations').select('vehicle_id, originals_count').in('vehicle_id', vids),
+    ]);
+    const counts = Object.fromEntries((preps || []).map((p) => [p.vehicle_id, p.originals_count]));
+    setJobs(Object.fromEntries((rows || []).map((r) => [r.vehicle_id, { ...(r as unknown as JobRow), originals: counts[r.vehicle_id] || 0 }])));
+  };
 
   const load = async () => {
     setLoading(true);
@@ -41,10 +55,7 @@ export default function Auto3InventoryPanel() {
     if (error || data?.error) { toast.error(data?.error || 'Auto3-Bestand konnte nicht geladen werden.'); return; }
     setItems(data.items); setSel(new Set());
     const vids = (data.items as Item[]).map((i) => i.vehicleId).filter(Boolean) as string[];
-    if (vids.length) {
-      const { data: rows } = await supabase.from('auto3_oneshot_preparations').select('vehicle_id, status, originals_count').in('vehicle_id', vids);
-      setPreps(Object.fromEntries((rows || []).map((r) => [r.vehicle_id, { status: r.status as PreparationStatus, originals_count: r.originals_count }])));
-    }
+    await loadJobs(vids);
   };
 
   const [phase, setPhase] = useState<string | null>(null);
@@ -72,8 +83,15 @@ export default function Auto3InventoryPanel() {
       }
       const have = stored + skipped;
       if (have > 0 && autopilot !== 'off') {
-        setPhase(`${label}: ${have} Originale werden analysiert (Perspektive & Qualität) …`);
-        try { await analyzeAuto3Originals(r.vehicleId); } catch (e) { toast.warning(`${label}: ${e instanceof Error ? e.message : 'Bildanalyse fehlgeschlagen'} – in der Fahrzeugakte erneut starten.`); }
+        setPhase(`${label}: ${have} Originale werden analysiert, Masterbild wird gewählt …`);
+        try {
+          await prepareAuto3Job(r.vehicleId, { reanalyze: true });
+          if (autopilot === 'full' && prof?.approved && prof.profile) {
+            setPhase(`${label}: Aufbereitung wird im Hintergrund gestartet …`);
+            const st = await startAuto3Job({ vehicleId: r.vehicleId, settings: prof.profile.settings, getCost, getLogoForMake });
+            if (st.status === 'paused') toast.warning(`${label}: Pausiert – Credits erforderlich.`);
+          }
+        } catch (e) { toast.warning(`${label}: ${e instanceof Error ? e.message : 'Vorbereitung fehlgeschlagen'} – in der Fahrzeugakte erneut starten.`); }
       }
       if (warnings.length) toast.warning(`${label}: ${warnings.length} Bild(er) nicht übernommen – ${warnings.slice(0, 2).join('; ')}`);
       toast.success(`${label}: ${r.fieldCount} Datenfelder und ${have}/${total} Originalbilder übernommen.`);
@@ -108,7 +126,7 @@ export default function Auto3InventoryPanel() {
         <div key={r.vehicleId} className="flex flex-wrap items-center gap-2 rounded-md border border-primary/30 bg-primary/5 p-2 text-sm">
           <span className="flex-1 min-w-0"><b>{r.label}</b> · {r.stored}/{r.total} Originale gespeichert</span>
           <Button asChild size="sm" variant="ghost"><Link to={`/vehicle/${r.vehicleId}`}>Fahrzeugakte</Link></Button>
-          <div className="basis-full"><Auto3PrepCard vehicleId={r.vehicleId} /></div>
+          <div className="basis-full"><Auto3JobCard vehicleId={r.vehicleId} compact /></div>
         </div>
       ))}
       {loading && !items && <p className="text-xs text-muted-foreground">Lade Bestand und prüfe VINs … das kann einige Sekunden dauern.</p>}
@@ -138,11 +156,14 @@ export default function Auto3InventoryPanel() {
                     {i.vinMasked ? ` · VIN ${i.vinMasked}` : ''}
                   </div>
                   {i.conflict && <div className="text-xs text-destructive">{i.conflict}</div>}
-                  {i.vehicleId && preps[i.vehicleId] && <div className="text-xs text-primary">{preparationStatusLabel(preps[i.vehicleId].status, preps[i.vehicleId].originals_count)}</div>}
+                  {i.vehicleId && jobs[i.vehicleId] && <div className={`text-xs ${['paused', 'failed'].includes(jobs[i.vehicleId].status) ? 'text-destructive' : 'text-primary'}`}>{jobStatusLabel(jobs[i.vehicleId], jobs[i.vehicleId].originals)}</div>}
                 </div>
                 <Badge variant={i.status === 'website_live' ? 'default' : i.status === 'no_vin' ? 'outline' : 'secondary'} className="shrink-0">{STATUS_LABEL[i.status]}</Badge>
-                {i.vehicleId && preps[i.vehicleId]?.status === 'ready_for_oneshot' && <Button asChild size="sm"><Link to={`/vehicle/${i.vehicleId}`}>Aufbereitung starten</Link></Button>}
-                {i.vehicleId && <Button asChild size="sm" variant="ghost"><Link to={`/vehicle/${i.vehicleId}`}>Öffnen</Link></Button>}
+                {i.vehicleId && i.status !== 'no_vin' && (
+                  <Button asChild size="sm" variant={jobs[i.vehicleId] ? 'default' : 'outline'}>
+                    <Link to={`/vehicle/${i.vehicleId}`}>{!jobs[i.vehicleId] ? 'Masterbild bestimmen' : jobs[i.vehicleId].status === 'master_selected' ? 'Jetzt automatisch aufbereiten' : ['paused', 'failed'].includes(jobs[i.vehicleId].status) ? 'Erneut versuchen' : 'Job ansehen'}</Link>
+                  </Button>
+                )}
                 {importable(i) && (
                   <Button size="sm" variant="outline" disabled={importing} onClick={() => run([i.externalVehicleId])}>{i.vehicleId ? 'Daten & Bilder abgleichen' : 'In autohaus.ai übernehmen'}</Button>
                 )}
@@ -150,7 +171,7 @@ export default function Auto3InventoryPanel() {
             ))}
             {!visible.length && <li className="p-3 text-xs text-muted-foreground">Keine Fahrzeuge für diesen Filter.</li>}
           </ul>
-          <p className="text-[11px] text-muted-foreground">Übernehmen schreibt alle Auto3-Fahrzeugdaten in die Fahrzeugakte, speichert die Originalbilder und bereitet die Aufbereitung vor. Gestartet wird nach Ihrer Kostenbestätigung; auf der Website wird nichts veröffentlicht.</p>
+          <p className="text-[11px] text-muted-foreground">Übernehmen schreibt alle Auto3-Fahrzeugdaten in die Fahrzeugakte, speichert die Originalbilder und wählt automatisch ein Masterbild. Die OneShot-Aufbereitung läuft im Hintergrund – nur mit freigegebenem Aufbereitungsprofil; auf der Website wird nichts veröffentlicht.</p>
         </>
       )}
     </div>

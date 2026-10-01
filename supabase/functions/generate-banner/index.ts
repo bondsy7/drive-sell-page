@@ -1,5 +1,6 @@
 // generate-banner v4 – structured logging + stage tracking
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { resolveInternalActor } from "../_shared/internal-actor.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecret } from "../_shared/get-secret.ts";
 
@@ -123,8 +124,9 @@ async function authenticateAndCheckCredits(req: Request, cost: number): Promise<
   const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
     global: { headers: { Authorization: authHeader } },
   });
+  const internalUser = resolveInternalActor(req);
   const token = authHeader.replace(/^Bearer\s+/i, "");
-  const { data, error } = await sb.auth.getClaims(token);
+  const { data, error } = internalUser ? { data: { claims: { sub: internalUser } }, error: null } : await sb.auth.getClaims(token);
   const userId = data?.claims?.sub;
   if (error || !userId) {
     return new Response(JSON.stringify({ error: "Nicht authentifiziert" }), {

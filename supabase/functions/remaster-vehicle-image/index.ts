@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { resolveInternalActor } from "../_shared/internal-actor.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecret } from "../_shared/get-secret.ts";
 import { DEKRA_LOGO_BASE64, DEKRA_LOGO_MIME } from "../_shared/dekra-logo.ts";
@@ -409,6 +410,16 @@ FINAL CHECK: If the output violates this scope, regenerate before returning.
 }
 
 async function authenticateAndDeductCredits(req: Request, actionType: string, cost: number): Promise<{ userId: string; email?: string } | Response> {
+  const internalUser = resolveInternalActor(req);
+  if (internalUser) {
+    const { data: result, error: deductError } = await createServiceClient().rpc("deduct_credits", {
+      _user_id: internalUser, _amount: cost, _action_type: actionType, _description: `${actionType} (Auto3-Hintergrundjob)`,
+    });
+    if (deductError) return new Response(JSON.stringify({ error: "Credit-Fehler: " + deductError.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const r = result as any;
+    if (!r?.success) return new Response(JSON.stringify({ error: "insufficient_credits", balance: r?.balance || 0, cost: r?.cost || cost }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return { userId: internalUser };
+  }
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
     return new Response(JSON.stringify({ error: "Nicht authentifiziert" }), {
