@@ -13,7 +13,7 @@ import { SCENE_OPTIONS, LICENSE_PLATE_OPTIONS } from '@/lib/remaster-prompt';
 import { ONESHOT_BANNER_FORMATS, type BannerFormatId } from '@/components/oneshot/oneshot-types';
 import { useProcessingProfile } from '@/hooks/useProcessingProfile';
 import {
-  DEFAULT_PROCESSING_SETTINGS, MODEL_TIER_OPTIONS, ONESHOT_PERSPECTIVE_JOBS, estimateJobCost, settingsHash,
+  AUTO_SCHMITT_STANDARD, AUTO_SCHMITT_STANDARD_NAME, MODEL_TIER_OPTIONS, ONESHOT_PERSPECTIVE_JOBS, estimateJobCost, settingsHash,
   type AutomationMode, type ProcessingSettings,
 } from '@/lib/auto3-processing';
 
@@ -35,7 +35,7 @@ export default function VehicleProcessingProfileCard() {
   const { getCost, balance } = useCredits();
   const { data, refresh } = useProcessingProfile();
   const [name, setName] = useState('Auto Schmitt Standard');
-  const [s, setS] = useState<ProcessingSettings>(DEFAULT_PROCESSING_SETTINGS);
+  const [s, setS] = useState<ProcessingSettings>(AUTO_SCHMITT_STANDARD);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -49,6 +49,7 @@ export default function VehicleProcessingProfileCard() {
 
   const save = async (approve?: boolean) => {
     if (!user) return;
+    if (approve && !window.confirm(`Profil „${name}“ freigeben?\n\nSie erlauben damit, dass die automatische Aufbereitung je Fahrzeug bis zu ${cost.total} Credits verbraucht. Website-Veröffentlichung bleibt manuell.`)) return;
     setSaving(true);
     const hash = settingsHash(s);
     const keepApproval = !approve && data?.profile?.approved_settings_hash === hash && !!data.profile.approved_at;
@@ -92,6 +93,8 @@ export default function VehicleProcessingProfileCard() {
         {approved ? <Badge><ShieldCheck className="w-3 h-3 mr-1" />Freigegeben · {data?.profile?.approved_max_credits_per_job} Credits/Fahrzeug</Badge>
           : <Badge variant="secondary">Nicht freigegeben</Badge>}
       </div>
+
+      <Button type="button" size="sm" variant="outline" onClick={() => { setName(AUTO_SCHMITT_STANDARD_NAME); setS(AUTO_SCHMITT_STANDARD); }}>Standard „Auto Schmitt“ einsetzen</Button>
 
       <label className="block text-xs font-medium">Profilname
         <Input className="mt-1 h-8" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} />
@@ -155,16 +158,17 @@ export default function VehicleProcessingProfileCard() {
 
       <div className="rounded-md bg-muted/40 p-2 text-sm space-y-0.5">
         <div className="flex justify-between"><span>{cost.images} Fahrzeugbilder × {cost.perImage} Credits</span><span>{cost.imageCost}</span></div>
-        {cost.banners > 0 && <div className="flex justify-between"><span>{cost.banners} Banner</span><span>{cost.bannerCost}</span></div>}
+        <div className="text-xs text-muted-foreground">1 Masterbild + {cost.images - 1} Perspektiven</div>
+        {cost.banners > 0 && <div className="flex justify-between"><span>{cost.banners} Banner × {Math.round(cost.bannerCost / cost.banners)} Credits</span><span>{cost.bannerCost}</span></div>}
         {cost.video > 0 && <div className="flex justify-between"><span>Video</span><span>{cost.video}</span></div>}
-        <div className="flex justify-between border-t border-border pt-1 font-semibold"><span>Kosten pro Fahrzeug</span><span>{cost.total} Credits</span></div>
+        <div className="flex justify-between border-t border-border pt-1 font-semibold"><span>Maximal pro Fahrzeug</span><span>{cost.total} Credits</span></div>
         <div className="text-xs text-muted-foreground">Guthaben: {balance} Credits. Reicht das Guthaben nicht, pausiert der Job und meldet sich.</div>
       </div>
 
       <div className="flex flex-wrap gap-2">
         <Button size="sm" variant="outline" onClick={() => save(false)} disabled={saving}>{saving ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <Save className="w-4 h-4 mr-1.5" />}Profil speichern</Button>
         <Button size="sm" onClick={() => save(true)} disabled={saving || !s.perspectiveKeys.length && cost.images < 1}>
-          <ShieldCheck className="w-4 h-4 mr-1.5" />Für automatische Verarbeitung freigeben ({cost.total} Credits/Fahrzeug)
+          <ShieldCheck className="w-4 h-4 mr-1.5" />Profil freigeben – automatische Aufbereitung bis {cost.total} Credits je Fahrzeug erlauben
         </Button>
         {data?.profile?.approved_at && <Button size="sm" variant="ghost" onClick={revoke}>Freigabe zurückziehen</Button>}
       </div>

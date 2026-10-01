@@ -44,6 +44,24 @@ export const DEFAULT_PROCESSING_SETTINGS: ProcessingSettings = {
   websiteTarget: 'autoschmitt',
 };
 
+/** Practical dealer default "Auto Schmitt Standard" – only options the OneShot flow really offers. */
+export const AUTO_SCHMITT_STANDARD_NAME = 'Auto Schmitt Standard';
+export const AUTO_SCHMITT_STANDARD: ProcessingSettings = {
+  ...DEFAULT_PROCESSING_SETTINGS,
+  scene: 'showroom-1',
+  licensePlate: 'remove',
+  perspectiveKeys: ['EXT_34_FRONT_RIGHT', 'EXT_SIDE_LEFT', 'EXT_34_REAR_LEFT', 'EXT_REAR', 'INT_DASHBOARD'],
+  modelTier: 'qualitaet',
+  showManufacturerLogo: false,
+  bannerEnabled: true,
+  bannerFormats: ['hero'],
+  bannerStyle: 'premium',
+  socialSet: false,
+  videoEnabled: false,
+  videoPrompt: '',
+  websiteTarget: 'autoschmitt',
+};
+
 export const MODEL_TIER_OPTIONS: { value: ModelTierOption; label: string }[] = [
   { value: 'schnell', label: 'Schnell' },
   { value: 'qualitaet', label: 'Qualität (Standard)' },
@@ -104,16 +122,30 @@ const formatPrice = (p: string) => {
   return Number.isFinite(n) && n > 0 ? `${Math.round(n).toLocaleString('de-DE')} €` : '';
 };
 
+/** German display formatting for datasheet values; raw values stay stored unchanged. */
+export function formatDatasheetValue(key: keyof Datasheet, raw: string): string {
+  const v = String(raw ?? '').trim();
+  if (!v) return v;
+  if (key === 'price') return formatPrice(v) || v;
+  if (key === 'mileage') { const n = Number(v.replace(/\./g, '').replace(',', '.')); return Number.isFinite(n) && /^[\d.,]+$/.test(v) ? `${Math.round(n).toLocaleString('de-DE')} km` : v; }
+  if (key === 'power' && /^\d+(\.\d+)?$/.test(v)) { const kw = Math.round(Number(v)); return `${kw} kW (${Math.round(kw * 1.35962)} PS)`; }
+  if (key === 'firstRegistration') {
+    const m = v.match(/^(\d{4})-(\d{2})/); if (m) return `${m[2]}/${m[1]}`;
+    const d = v.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/); if (d) return `${d[2].padStart(2, '0')}/${d[3]}`;
+  }
+  return v;
+}
+
 /** OneShot marketing form filled exclusively from the Auto3 datasheet. Missing fields stay empty and are omitted from the banner. */
 export function marketingFormFromDatasheet(d: Datasheet, s: ProcessingSettings): MarketingForm {
   const title = [d.brand, d.model, d.variant].filter(Boolean).join(' ');
-  const km = d.mileage && Number(d.mileage) > 0 ? `${Number(d.mileage).toLocaleString('de-DE')} km` : '';
+  const km = d.mileage && Number(d.mileage) > 0 ? formatDatasheetValue('mileage', d.mileage) : '';
   return {
     ...DEFAULT_FORM,
     brand: d.brand || '', model: d.model || '', variant: d.variant || '', vehicleTitle: title,
     priceType: 'buy', occasion: 'buy', priceText: d.price ? formatPrice(d.price) : '',
     headline: [d.brand, d.model].filter(Boolean).join(' '),
-    subline: [d.power, d.year ? `Baujahr ${d.year}` : '', km].filter(Boolean).join(' · '),
+    subline: [d.power ? formatDatasheetValue('power', d.power) : '', d.year ? `Baujahr ${d.year}` : '', km].filter(Boolean).join(' · '),
     legalText: d.consumption || '',
     style: s.bannerStyle, scene: 'showroom',
   };
