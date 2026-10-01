@@ -1,2 +1,3 @@
 Use the existing FunnelLayout and funnel attribution/tracking utilities for new paid landing pages, because consistent consent handling and conversion measurement must be preserved.
 Use the locally hosted Dessau font only through `font-display` headings; retain the system sans stack for body text to preserve readability.
+Use `downloadMediaFile` for browser media downloads, because local Blob URLs reliably trigger file saving on desktop and mobile.
