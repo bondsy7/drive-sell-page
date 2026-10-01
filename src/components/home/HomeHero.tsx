@@ -1,6 +1,12 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  getAiDisclosureLabelAlt,
+  getAiDisclosureLabelAsset,
+  getAiDisclosureText,
+} from '@/lib/ai-disclosure';
+import heroShowroomAsset from '@/assets/home/hero-showroom.webp.asset.json';
 import originalDealerAsset from '@/assets/home/original-dealer.png.asset.json';
 import ImagePlaceholder from './ImagePlaceholder';
 
