@@ -143,6 +143,68 @@ export type Database = {
         }
         Relationships: []
       }
+      auto3_oneshot_preparations: {
+        Row: {
+          analysis: Json
+          analyzed_at: string | null
+          created_at: string
+          detail_selection: Json
+          error: string | null
+          id: string
+          options: Json
+          originals_count: number
+          preset_key: string
+          selection: Json
+          started_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          vehicle_id: string
+        }
+        Insert: {
+          analysis?: Json
+          analyzed_at?: string | null
+          created_at?: string
+          detail_selection?: Json
+          error?: string | null
+          id?: string
+          options?: Json
+          originals_count?: number
+          preset_key?: string
+          selection?: Json
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          vehicle_id: string
+        }
+        Update: {
+          analysis?: Json
+          analyzed_at?: string | null
+          created_at?: string
+          detail_selection?: Json
+          error?: string | null
+          id?: string
+          options?: Json
+          originals_count?: number
+          preset_key?: string
+          selection?: Json
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auto3_oneshot_preparations_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: true
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       b2b_marketing_leads: {
         Row: {
           admin_note: string | null
@@ -1453,6 +1515,7 @@ export type Database = {
           address: string | null
           api_key: string | null
           auto3_account_email: string | null
+          auto3_autopilot_mode: string
           auto3_channels_default: string[]
           auto3_default_caption: string | null
           auto3_default_cta_url: string | null
@@ -1489,6 +1552,7 @@ export type Database = {
           address?: string | null
           api_key?: string | null
           auto3_account_email?: string | null
+          auto3_autopilot_mode?: string
           auto3_channels_default?: string[]
           auto3_default_caption?: string | null
           auto3_default_cta_url?: string | null
@@ -1525,6 +1589,7 @@ export type Database = {
           address?: string | null
           api_key?: string | null
           auto3_account_email?: string | null
+          auto3_autopilot_mode?: string
           auto3_channels_default?: string[]
           auto3_default_caption?: string | null
           auto3_default_cta_url?: string | null

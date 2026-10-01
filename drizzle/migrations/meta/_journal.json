@@ -71,6 +71,13 @@
       "when": 1790888712014,
       "tag": "0009_website_publishing_access_guard",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790891071816,
+      "tag": "0010_auto3_oneshot_preparations",
+      "breakpoints": true
     }
   ]
 }
