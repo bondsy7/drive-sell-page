@@ -1,6 +1,12 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  getAiDisclosureLabelAlt,
+  getAiDisclosureLabelAsset,
+  getAiDisclosureText,
+} from '@/lib/ai-disclosure';
+import heroShowroomAsset from '@/assets/home/hero-showroom.webp.asset.json';
 import originalDealerAsset from '@/assets/home/original-dealer.png.asset.json';
 import ImagePlaceholder from './ImagePlaceholder';
 
@@ -27,8 +33,20 @@ export default function HomeHero() {
         </div>
 
         <div className="relative">
-          <ImagePlaceholder label="Aufbereitetes Fahrzeugbild (Showroom)" ratio="16/10" className="bg-secondary" />
-          <div className="absolute -top-4 left-3 w-[42%] rotate-[-4deg] rounded-lg bg-card p-1.5 shadow-card sm:left-6 sm:w-[38%]">
+          <div className="relative overflow-hidden rounded-lg border border-border bg-secondary shadow-card">
+            <img
+              src={heroShowroomAsset.url}
+              alt="Aufbereitetes Fahrzeugbild im Showroom – mit KI verändert"
+              className="aspect-[16/10] w-full object-cover"
+            />
+            <img
+              src={getAiDisclosureLabelAsset('landing')}
+              alt={getAiDisclosureLabelAlt('landing')}
+              title={getAiDisclosureText('landing')}
+              className="pointer-events-none absolute right-3 top-3 h-5 w-auto"
+            />
+          </div>
+          <div className="absolute -top-5 left-2 w-[36%] rotate-[-4deg] rounded-lg bg-card p-1.5 shadow-card sm:left-4 sm:w-[32%]">
             <p className="px-1 pb-1 text-[10px] font-semibold text-muted-foreground">Dein Foto</p>
             <img
               src={originalDealerAsset.url}
