@@ -26,7 +26,7 @@ export const LEGAL = {
 export const LEGAL_VERSIONS = {
   agb: '2026-09-16',
   privacy: '2026-09-16',
-  consent: '2026-09-16',
+  consent: '2026-10-01',
   avv: '2026-09-16',
   toms: '2026-09-16',
   subprocessors: '2026-09-16',
@@ -37,7 +37,7 @@ export const LEGAL_VERSIONS = {
 export const LEGAL_DOCUMENT_DATES = {
   agb: '16.09.2026',
   privacy: '01.10.2026',
-  consent: '16.09.2026',
+  consent: '01.10.2026',
   avv: '16.09.2026',
   toms: '16.09.2026',
   subprocessors: '01.10.2026',

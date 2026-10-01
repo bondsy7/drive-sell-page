@@ -141,7 +141,7 @@ export default function ConsentManager() {
               <div>
                 <p className="text-sm font-semibold text-foreground">Marketing</p>
                 <p className="text-xs text-muted-foreground">
-                  Messung und Ausspielung von Werbung, inklusive Conversion-Messung (Google Ads, Meta-Pixel).
+                  Conversion-Messung, Werbeerfolgsmessung und Remarketing für Google Ads sowie Meta (Facebook/Instagram) über den Meta-Pixel.
                 </p>
               </div>
               <Switch checked={marketing} onCheckedChange={setMarketing} aria-label="Marketing erlauben" />
