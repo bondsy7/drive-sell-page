@@ -46,7 +46,7 @@ export default function HomeHero() {
               className="pointer-events-none absolute right-3 top-3 h-5 w-auto"
             />
           </div>
-          <div className="absolute -top-4 left-3 w-[42%] rotate-[-4deg] rounded-lg bg-card p-1.5 shadow-card sm:left-6 sm:w-[38%]">
+          <div className="absolute -top-5 left-2 w-[36%] rotate-[-4deg] rounded-lg bg-card p-1.5 shadow-card sm:left-4 sm:w-[32%]">
             <p className="px-1 pb-1 text-[10px] font-semibold text-muted-foreground">Dein Foto</p>
             <img
               src={originalDealerAsset.url}
