@@ -100,6 +100,24 @@ let pendingViewContent: { path: string; name: string; category: string } | null 
 const sentViewContentPaths = new Set<string>();
 
 /**
+ * Sitzungskennung für ViewContent-Event-IDs: einmal pro Browser-Sitzung
+ * (sessionStorage), ohne personenbezogene Daten. Neue Sitzung = neue Kennung
+ * = neue Event-ID für denselben Seitenaufruf.
+ */
+function viewContentSessionId(): string {
+  try {
+    let id = sessionStorage.getItem('vc_sid');
+    if (!id) {
+      id = crypto.randomUUID();
+      sessionStorage.setItem('vc_sid', id);
+    }
+    return id;
+  } catch {
+    return 'nosession';
+  }
+}
+
+/**
  * ViewContent für Kampagnen-Landingpages: genau einmal pro Seitenaufruf,
  * nur technische, stabile Parameter (Grundlage für Custom Audiences).
  * Wird nachgereicht, sobald der Pixel nach Einwilligung geladen ist.
@@ -119,7 +137,12 @@ function flushViewContent() {
   if (window.location.pathname !== pendingViewContent.path) return;
   if (sentViewContentPaths.has(pendingViewContent.path)) return;
   sentViewContentPaths.add(pendingViewContent.path);
-  trackMetaEvent('ViewContent', `view_content:${pendingViewContent.path}`, {
+  // Eindeutige Event-ID pro tatsächlichem ViewContent: Sitzung + Pfad + Zufalls-UUID.
+  // Zwei Besucher derselben Seite und ein erneuter Aufruf in neuer Sitzung erhalten
+  // unterschiedliche IDs; innerhalb dieses Vorgangs wird nur einmal gesendet (Dedup oben).
+  // Eine spätere serverseitige Conversions-API-Kopie kann exakt dieselbe ID verwenden.
+  const eventId = `view_content:${viewContentSessionId()}:${pendingViewContent.path}:${crypto.randomUUID()}`;
+  trackMetaEvent('ViewContent', eventId, {
     content_name: pendingViewContent.name,
     content_category: pendingViewContent.category,
   });
