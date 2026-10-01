@@ -505,8 +505,18 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       const auto3 = (files || []).filter(f => f.name.startsWith('auto3-')).sort((a, b) => a.name.localeCompare(b.name));
       if (!auto3.length) { toast.error('Keine Auto3-Originale in der Fahrzeugakte gefunden.'); return; }
       const free = vehicleSlots.filter(sl => !sl.isVin);
+      // Auto3-Vorbereitung: KI-gewählte Referenzen je Slot (nur Perspektive/Qualität; Fahrzeugdaten bleiben aus Auto3).
+      const { data: prep } = await supabase.from('auto3_oneshot_preparations')
+        .select('status, selection, detail_selection').eq('vehicle_id', owned).maybeSingle();
+      const prepSlots = (prep?.status === 'ready_for_oneshot' || prep?.status === 'started') ? (prep.selection as Record<string, string> || {}) : {};
+      const prepDetails = Array.isArray(prep?.detail_selection) ? (prep!.detail_selection as string[]) : [];
+      const names = new Set(auto3.map(f => f.name));
+      const slotFiles = free.map(sl => (prepSlots[sl.key] && names.has(prepSlots[sl.key])) ? prepSlots[sl.key] : null);
+      const useAnalysis = slotFiles.some(Boolean);
       const max = free.length + 10;
-      const picked = auto3.slice(0, max);
+      const picked = useAnalysis
+        ? [...slotFiles.filter((n): n is string => !!n), ...prepDetails.filter(n => names.has(n))].map(name => ({ name }))
+        : auto3.slice(0, max);
       const images: string[] = [];
       for (let i = 0; i < picked.length; i++) {
         setPrefillStatus(`Auto3-Originale werden geladen (${i + 1}/${picked.length}) …`);
@@ -518,6 +528,19 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
         } catch (e) { console.warn('[capture] auto3 prefill failed', e); }
       }
       images.forEach(img => prefilledOriginalsRef.current.add(img));
+      const byName = new Map(picked.map((p, i) => [p.name, images[i]] as const));
+      if (useAnalysis) {
+        setCaptures(prev => {
+          const next = { ...prev };
+          free.forEach((sl, i) => { const n = slotFiles[i]; const img = n ? byName.get(n) : undefined; if (!next[sl.key] && img) next[sl.key] = { base64: img, status: 'captured' }; });
+          return next;
+        });
+        const det = prepDetails.map(n => byName.get(n)).filter((x): x is string => !!x).slice(0, 10);
+        if (det.length) setDetailImages(prev => [...prev, ...det].slice(0, 10));
+        setPrefillStatus(null);
+        toast.success(`${images.length} analysierte Auto3-Referenzen übernommen. Showroom wählen und Aufbereitung starten – Kosten werden vorher bestätigt.`);
+        return;
+      }
       setCaptures(prev => {
         const next = { ...prev };
         let k = 0;
