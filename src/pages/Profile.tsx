@@ -514,6 +514,16 @@ const Profile = () => {
               <SocialCredentialsSection />
             </Section>
 
+            {canPublishWebsite && (
+              <Section icon={<Globe className="w-4 h-4" />} title="Website-Verbindung · Auto Schmitt">
+                <p className="text-xs text-muted-foreground -mt-2 mb-2">
+                  Dein Konto ist mit der Website von Auto Schmitt verbunden. Freigegebene Bilder veröffentlichst du je Fahrzeug im Reiter „Website-Bilder“.
+                  Nur Fahrzeuge mit gültiger VIN können zugeordnet und veröffentlicht werden.
+                </p>
+                <Badge variant="secondary">Verbunden</Badge>
+              </Section>
+            )}
+
             <Section icon={<Share2 className="w-4 h-4" />} title="Auto3-Integration">
               <p className="text-xs text-muted-foreground -mt-2 mb-2">
                 Banner aus dem Dashboard direkt an dein Auto3-Konto pushen (Listing-Banner, Instagram, Facebook).
