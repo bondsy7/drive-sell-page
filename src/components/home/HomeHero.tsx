@@ -54,8 +54,8 @@ export default function HomeHero() {
               className="aspect-[4/3] w-full rounded-md object-cover"
             />
           </div>
-          <div className="mt-4 grid grid-cols-2 gap-4">
-            <ImagePlaceholder label="Social-Media-Beispiel" ratio="4/3" className="bg-card shadow-card" />
+          <div className="mt-4 grid grid-cols-2 items-end gap-4">
+            <ImagePlaceholder label="Social-Media-Beispiel" ratio="9/16" className="bg-card shadow-card" />
             <ImagePlaceholder label="Video-Beispiel" ratio="4/3" className="bg-card shadow-card" />
           </div>
         </div>
