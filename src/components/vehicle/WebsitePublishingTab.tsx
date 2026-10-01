@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  AUTO3_SOURCE, DEFAULT_TARGET, buildSnapshot, importExternalVehicle, isPublishableUrl, publicationStatusLabel,
+  AUTO3_SOURCE, DEFAULT_TARGET, buildSnapshot, importExternalVehicle, isPublishableUrl, isRealVin, publicationStatusLabel,
   type CoverMode, type GalleryMode, type PublicationItem, type WebsitePublication,
 } from '@/lib/website-publishing';
 
@@ -70,9 +70,8 @@ export default function WebsitePublishingTab({ vehicle }: { vehicle: ExtVehicle 
   const saveLink = async () => {
     if (!user) return;
     try {
-      const isFallbackVin = vehicle.vin.startsWith('AUTO3-');
       await importExternalVehicle(user.id, {
-        externalVehicleId: extId, vin: isFallbackVin ? null : vehicle.vin, internalNumber: intNo,
+        externalVehicleId: extId, vin: vehicle.vin, internalNumber: intNo,
         imageUrls: urls.split(/\s+/),
       });
       toast.success('Auto3-Zuordnung gespeichert');
@@ -128,6 +127,14 @@ export default function WebsitePublishingTab({ vehicle }: { vehicle: ExtVehicle 
   const sorted = [...items].sort((a, b) => a.sortOrder - b.sortOrder);
 
   if (isLoading) return <Loader2 className="w-5 h-5 animate-spin" />;
+  if (!isRealVin(vehicle.vin)) {
+    return (
+      <div className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">
+        Dieses Fahrzeug hat keine gültige VIN. Ohne VIN findet keine Auto3-Zuordnung und keine Website-Veröffentlichung statt.
+        Bitte zuerst unter „Daten“ die echte VIN eintragen.
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

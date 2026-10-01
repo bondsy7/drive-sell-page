@@ -98,6 +98,8 @@ interface BankEntry {
 const Profile = () => {
   const { user } = useAuth();
   const { balance, lifetimeUsed, loading: creditsLoading } = useCredits();
+  const { disabledModules } = useModuleAccess();
+  const canPublishWebsite = !disabledModules.has('website-publishing');
   const [profile, setProfile] = useState<ProfileData>(emptyProfile);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
