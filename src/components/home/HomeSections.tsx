@@ -75,7 +75,7 @@ export function HomeProcess() {
 
         <div className="mt-5 grid overflow-hidden rounded-lg border border-border bg-secondary/60 lg:grid-cols-[1fr_18rem]">
           <div className="p-4 sm:p-6 lg:p-8">
-            <ImagePlaceholder label={step.label} ratio="16/9" className="min-h-64 bg-card sm:min-h-96" />
+            <ImagePlaceholder label={step.label} ratio="16/9" className="w-full bg-card" />
           </div>
           <div className="flex flex-col justify-end border-t border-border p-6 lg:border-l lg:border-t-0 lg:p-8">
             <step.icon className="size-7 text-primary" />
@@ -108,7 +108,7 @@ export function HomeResults() {
           ))}
         </div>
         <div className="mt-4 rounded-lg border border-border bg-card p-4 shadow-card sm:p-6">
-          <ImagePlaceholder label={result.label} ratio={result.ratio} className="min-h-72 w-full sm:min-h-[30rem]" />
+          <ImagePlaceholder label={result.label} ratio={result.ratio} className="w-full" />
         </div>
       </div>
     </section>
@@ -122,7 +122,7 @@ export function HomeQuality() {
     <section className="py-20 sm:py-28">
       <div className="mx-auto grid max-w-6xl gap-12 px-4 sm:px-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
         <div className="relative pb-10 pr-0 sm:pr-20">
-          <ImagePlaceholder label={`${activeLook} · großes Fahrzeugbild`} ratio="4/3" className="min-h-96 bg-secondary" />
+          <ImagePlaceholder label={`${activeLook} · großes Fahrzeugbild`} ratio="4/3" className="w-full bg-secondary" />
           <div className="absolute bottom-0 right-0 hidden w-52 rounded-lg border border-border bg-card p-3 shadow-elevated sm:block">
             <ImagePlaceholder label="Fahrzeugdetail" ratio="1/1" />
           </div>
