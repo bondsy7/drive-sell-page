@@ -205,6 +205,105 @@ export type Database = {
           },
         ]
       }
+      auto3_processing_jobs: {
+        Row: {
+          attempts: number
+          cost_estimate: number
+          created_at: string
+          credits_spent: number
+          datasheet: Json
+          error: string | null
+          finished_at: string | null
+          id: string
+          lease_until: string | null
+          master_alternatives: Json
+          master_file: string | null
+          master_reason: string | null
+          next_run_at: string | null
+          pause_reason: string | null
+          plan: Json | null
+          profile_id: string | null
+          progress_done: number
+          progress_label: string | null
+          progress_total: number
+          started_at: string | null
+          status: string
+          steps: Json
+          updated_at: string
+          user_id: string
+          vehicle_id: string
+        }
+        Insert: {
+          attempts?: number
+          cost_estimate?: number
+          created_at?: string
+          credits_spent?: number
+          datasheet?: Json
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          lease_until?: string | null
+          master_alternatives?: Json
+          master_file?: string | null
+          master_reason?: string | null
+          next_run_at?: string | null
+          pause_reason?: string | null
+          plan?: Json | null
+          profile_id?: string | null
+          progress_done?: number
+          progress_label?: string | null
+          progress_total?: number
+          started_at?: string | null
+          status?: string
+          steps?: Json
+          updated_at?: string
+          user_id: string
+          vehicle_id: string
+        }
+        Update: {
+          attempts?: number
+          cost_estimate?: number
+          created_at?: string
+          credits_spent?: number
+          datasheet?: Json
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          lease_until?: string | null
+          master_alternatives?: Json
+          master_file?: string | null
+          master_reason?: string | null
+          next_run_at?: string | null
+          pause_reason?: string | null
+          plan?: Json | null
+          profile_id?: string | null
+          progress_done?: number
+          progress_label?: string | null
+          progress_total?: number
+          started_at?: string | null
+          status?: string
+          steps?: Json
+          updated_at?: string
+          user_id?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auto3_processing_jobs_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_processing_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "auto3_processing_jobs_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: true
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       b2b_marketing_leads: {
         Row: {
           admin_note: string | null
@@ -3533,6 +3632,45 @@ export type Database = {
           updated_at?: string
           user_id?: string
           vin?: string
+        }
+        Relationships: []
+      }
+      vehicle_processing_profiles: {
+        Row: {
+          approved_at: string | null
+          approved_max_credits_per_job: number | null
+          approved_settings_hash: string | null
+          cost_per_job: number
+          created_at: string
+          id: string
+          name: string
+          settings: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_max_credits_per_job?: number | null
+          approved_settings_hash?: string | null
+          cost_per_job?: number
+          created_at?: string
+          id?: string
+          name?: string
+          settings?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_max_credits_per_job?: number | null
+          approved_settings_hash?: string | null
+          cost_per_job?: number
+          created_at?: string
+          id?: string
+          name?: string
+          settings?: Json
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

@@ -78,6 +78,13 @@
       "when": 1790891071816,
       "tag": "0010_auto3_oneshot_preparations",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1790892226438,
+      "tag": "0011_auto3_processing_profiles_jobs",
+      "breakpoints": true
     }
   ]
 }
