@@ -28,6 +28,7 @@ import LeadsTab from '@/components/dashboard/LeadsTab';
 import OriginalsTab from '@/components/vehicle/OriginalsTab';
 import DataTab from '@/components/vehicle/DataTab';
 import WebsitePublishingTab from '@/components/vehicle/WebsitePublishingTab';
+import { useModuleAccess } from '@/hooks/useModuleAccess';
 import ExportChoiceDialog, { type ExportMode } from '@/components/ExportChoiceDialog';
 import GalleryLightbox from '@/components/GalleryLightbox';
 import VideoPlayerModal from '@/components/dashboard/VideoPlayerModal';
@@ -54,6 +55,8 @@ export default function VehicleView() {
   const deleteSpin360 = useDeleteSpin360();
 
   const [tab, setTab] = useState<TabKey>('originals');
+  const { disabledModules } = useModuleAccess();
+  const canPublishWebsite = !disabledModules.has('website-publishing');
 
   // Modals
   const [lightboxIndex, setLightboxIndex] = useState(-1);
@@ -275,7 +278,7 @@ export default function VehicleView() {
     { key: 'videos', label: 'Videos', icon: Video, count: videos.length },
     { key: 'spin360', label: '360° Spins', icon: RotateCw, count: spinJobs.length },
     { key: 'leads', label: 'Anfragen', icon: MessageSquare, count: leads.length },
-    { key: 'website', label: 'Website-Bilder', icon: Globe, count: 0 },
+    ...(canPublishWebsite ? [{ key: 'website' as TabKey, label: 'Website-Bilder', icon: Globe, count: 0 }] : []),
   ];
 
   const renderTab = () => {
@@ -285,6 +288,7 @@ export default function VehicleView() {
       case 'data':
         return <DataTab vehicle={vehicle} />;
       case 'website':
+        if (!canPublishWebsite) return null;
         return <WebsitePublishingTab vehicle={vehicle as never} />;
       case 'gallery':
         return (
