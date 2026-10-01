@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { X, ChevronLeft, ChevronRight, RotateCcw, Loader2, Download, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSwipeNavigation } from '@/hooks/use-swipe-navigation';
+import { downloadMediaFile } from '@/lib/download-file';
+import { toast } from 'sonner';
 
 interface PreviewImage {
   id: string;
@@ -24,6 +26,7 @@ const ImagePreviewLightbox: React.FC<ImagePreviewLightboxProps> = ({
   images, initialIndex, open, onClose, onRegenerate, onDelete, regeneratingIds,
 }) => {
   const [index, setIndex] = useState(initialIndex);
+  const [downloading, setDownloading] = useState(false);
   const goPrev = () => setIndex(i => Math.max(i - 1, 0));
   const goNext = () => setIndex(i => Math.min(i + 1, images.length - 1));
   const swipeHandlers = useSwipeNavigation({
@@ -50,11 +53,16 @@ const ImagePreviewLightbox: React.FC<ImagePreviewLightboxProps> = ({
 
   const isRegenerating = regeneratingIds?.has(current.id) ?? false;
 
-  const download = () => {
-    const a = document.createElement('a');
-    a.href = current.src;
-    a.download = `${current.label || 'bild'}.png`;
-    a.click();
+  const download = async () => {
+    if (downloading) return;
+    setDownloading(true);
+    try {
+      await downloadMediaFile(current.src, current.label || 'fahrzeugbild');
+    } catch {
+      toast.error('Das Bild konnte nicht heruntergeladen werden. Bitte erneut versuchen.');
+    } finally {
+      setDownloading(false);
+    }
   };
 
   return (
@@ -63,8 +71,9 @@ const ImagePreviewLightbox: React.FC<ImagePreviewLightboxProps> = ({
         {/* Top bar */}
         <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
           <span className="text-sm text-background/70">{index + 1} / {images.length}</span>
-          <Button variant="secondary" size="sm" onClick={download} className="gap-1.5">
-            <Download className="w-4 h-4" /> Download
+          <Button variant="secondary" size="sm" onClick={download} disabled={downloading} className="gap-1.5">
+            {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            {downloading ? 'Wird geladen…' : 'Download'}
           </Button>
           {onRegenerate && (
             <Button
