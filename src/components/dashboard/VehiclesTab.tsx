@@ -46,6 +46,17 @@ export default function VehiclesTab() {
     prefetchPage,
   } = useVehiclesPage(page);
   const prefetchNext = () => prefetchPage(page + 1);
+  const vehicleIds = vehicles.map((v) => v.id);
+  const { data: pubs } = useQuery({
+    queryKey: ['website-publications', vehicleIds.join(',')],
+    enabled: vehicleIds.length > 0,
+    queryFn: async () => {
+      const { data } = await supabase.from('website_publications')
+        .select('vehicle_id, status, live_snapshot').in('vehicle_id', vehicleIds);
+      return (data || []) as unknown as Pick<WebsitePublication, 'vehicle_id' | 'status' | 'live_snapshot'>[];
+    },
+  });
+  const pubMap = new Map((pubs || []).map((p) => [p.vehicle_id, p]));
 
   // Wenn die aktuelle Seite (z. B. nach dem Löschen) leer ist, eine Seite zurück.
   useEffect(() => {
