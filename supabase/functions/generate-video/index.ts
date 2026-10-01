@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { resolveInternalActor } from "../_shared/internal-actor.ts";
 import { getSecret } from "../_shared/get-secret.ts";
 
 const corsHeaders = {
@@ -31,6 +32,8 @@ async function getCustomPrompt(key: string, defaultPrompt: string): Promise<stri
 }
 
 async function authenticateUser(req: Request): Promise<{ userId: string } | Response> {
+  const internalUser = resolveInternalActor(req);
+  if (internalUser) return { userId: internalUser };
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) {
     return new Response(JSON.stringify({ error: "Nicht authentifiziert" }), {
