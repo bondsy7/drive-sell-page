@@ -64,6 +64,13 @@
       "when": 1790887324214,
       "tag": "0008_website_publishing",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790888712014,
+      "tag": "0009_website_publishing_access_guard",
+      "breakpoints": true
     }
   ]
 }
