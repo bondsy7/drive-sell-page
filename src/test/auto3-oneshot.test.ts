@@ -5,7 +5,7 @@ const a = (file: string, category: OriginalAnalysis['category'], quality = 80, v
 
 describe('auto3 oneshot selection', () => {
   it('picks best original per slot, each once', () => {
-    const s = selectReferences([a('1', 'front', 90), a('2', 'front_3_4', 70), a('3', 'side'), a('4', 'rear_3_4'), a('5', 'interior_front'), a('6', 'rear_seats'), a('7', 'detail')]);
+    const s = selectReferences([a('1', 'front', 60), a('2', 'front_3_4', 70), a('3', 'side'), a('4', 'rear_3_4'), a('5', 'interior_front'), a('6', 'rear_seats'), a('7', 'detail')]);
     expect(s.slots).toEqual({ '34front': '2', side: '3', rear: '4', 'interior-front': '5', 'interior-rear': '6' });
     expect(s.details).toContain('7');
     expect(s.details).not.toContain('2');

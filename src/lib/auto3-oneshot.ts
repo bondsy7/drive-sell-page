@@ -73,7 +73,7 @@ export function selectReferences(analysis: OriginalAnalysis[], slotKeys: string[
     if (!prefs) continue;
     let best: { file: string; s: number } | null = null;
     for (const a of analysis) {
-      if (used.has(a.file) || !isUsable(a)) continue;
+      if (used.has(a.file) || !isUsable(a) || (EXTERIOR.includes(a.category) && !a.vehicleComplete)) continue;
       const rank = prefs.indexOf(a.category);
       if (rank < 0) continue;
       const s = score(a, rank);
