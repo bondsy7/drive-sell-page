@@ -1,7 +1,8 @@
 /**
  * Meta-Pixel (Facebook/Instagram) – nur mit Marketing-Einwilligung.
- * Ohne `VITE_META_PIXEL_ID` passiert bewusst nichts.
- * Keine personenbezogenen Daten (kein Advanced Matching).
+ * Pixel-ID ist öffentlich; `VITE_META_PIXEL_ID` kann sie überschreiben.
+ * Keine personenbezogenen Daten (kein Advanced Matching, autoConfig aus).
+ * Seitenaufrufe kommen aus dem Funnel (`page_view`), nicht automatisch vom Router.
  */
 import { readConsent } from './consent';
 
@@ -11,10 +12,31 @@ declare global {
   interface Window { fbq?: Fbq; _fbq?: Fbq }
 }
 
+const DEFAULT_PIXEL_ID = '1491394502834323';
+/** Query-Parameter, die nie an Meta gehen dürfen (Lead-Zugang, Kontaktdaten). */
+const SENSITIVE_PARAMS = ['lead', 't', 'token', 'email', 'name', 'phone'];
+
 let loaded = false;
+let lastPagePath: string | null = null;
 
 function pixelId() {
-  return (import.meta.env.VITE_META_PIXEL_ID as string | undefined)?.trim();
+  return ((import.meta.env.VITE_META_PIXEL_ID as string | undefined)?.trim()) || DEFAULT_PIXEL_ID;
+}
+
+/** Entfernt sensible Parameter aus der sichtbaren Adresse, bevor Meta sie lesen kann. */
+export function stripSensitiveParams() {
+  if (typeof window === 'undefined') return;
+  const url = new URL(window.location.href);
+  let changed = false;
+  for (const p of SENSITIVE_PARAMS) {
+    if (url.searchParams.has(p)) { url.searchParams.delete(p); changed = true; }
+  }
+  if (changed) window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
+}
+
+function hasSensitiveParams() {
+  const sp = new URLSearchParams(window.location.search);
+  return SENSITIVE_PARAMS.some((p) => sp.has(p));
 }
 
 export function loadMetaPixelIfAllowed() {
@@ -37,13 +59,25 @@ export function loadMetaPixelIfAllowed() {
   s.src = 'https://connect.facebook.net/en_US/fbevents.js';
   document.head.appendChild(s);
   f('consent', 'grant');
+  f('set', 'autoConfig', false, id);
   f('init', id);
-  f('track', 'PageView');
+  trackMetaPageView();
 }
 
 /** Bei Widerruf: keine weiteren Sendungen. */
 export function revokeMetaPixel() {
   if (typeof window !== 'undefined' && loaded) window.fbq?.('consent', 'revoke');
+}
+
+/** Genau ein PageView pro Route; nie mit sensiblen Parametern in der Adresse. */
+export function trackMetaPageView() {
+  if (typeof window === 'undefined' || !loaded) return;
+  if (readConsent()?.marketing !== true) return;
+  if (hasSensitiveParams()) return; // Seite bereinigt die Adresse und meldet sich erneut
+  const path = window.location.pathname;
+  if (lastPagePath === path) return;
+  lastPagePath = path;
+  window.fbq?.('track', 'PageView');
 }
 
 export function trackMetaEvent(name: 'PageView' | 'Lead' | 'Schedule' | 'ViewContent', eventId?: string, params: Record<string, string | number> = {}) {
