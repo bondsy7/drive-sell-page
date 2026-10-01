@@ -137,7 +137,12 @@ function flushViewContent() {
   if (window.location.pathname !== pendingViewContent.path) return;
   if (sentViewContentPaths.has(pendingViewContent.path)) return;
   sentViewContentPaths.add(pendingViewContent.path);
-  trackMetaEvent('ViewContent', `view_content:${pendingViewContent.path}`, {
+  // Eindeutige Event-ID pro tatsächlichem ViewContent: Sitzung + Pfad + Zufalls-UUID.
+  // Zwei Besucher derselben Seite und ein erneuter Aufruf in neuer Sitzung erhalten
+  // unterschiedliche IDs; innerhalb dieses Vorgangs wird nur einmal gesendet (Dedup oben).
+  // Eine spätere serverseitige Conversions-API-Kopie kann exakt dieselbe ID verwenden.
+  const eventId = `view_content:${viewContentSessionId()}:${pendingViewContent.path}:${crypto.randomUUID()}`;
+  trackMetaEvent('ViewContent', eventId, {
     content_name: pendingViewContent.name,
     content_category: pendingViewContent.category,
   });
