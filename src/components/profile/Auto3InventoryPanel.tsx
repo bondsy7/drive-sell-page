@@ -37,16 +37,36 @@ export default function Auto3InventoryPanel() {
     setItems(data.items); setSel(new Set());
   };
 
+  const [phase, setPhase] = useState<string | null>(null);
+  const [ready, setReady] = useState<{ vehicleId: string; label: string; stored: number; total: number }[]>([]);
+
   const run = async (ids: string[]) => {
     if (!ids.length) return;
-    setImporting(true);
-    const { data, error } = await supabase.functions.invoke('auto3-inventory', { body: { action: 'import', externalVehicleIds: ids } });
-    setImporting(false);
-    if (error || data?.error) { toast.error(data?.error || 'Import fehlgeschlagen'); return; }
-    const res = data.results as { externalVehicleId: string; ok: boolean; error?: string }[];
-    const ok = res.filter((r) => r.ok).length;
-    if (ok) toast.success(`${ok} Fahrzeug(e) übernommen – keine Pipeline gestartet, nichts veröffentlicht.`);
-    res.filter((r) => !r.ok).forEach((r) => toast.error(`Auto3-ID ${r.externalVehicleId}: ${r.error}`));
+    setImporting(true); setReady([]);
+    const done: typeof ready = [];
+    for (const extId of ids) {
+      const item = items?.find((i) => i.externalVehicleId === extId);
+      const label = [item?.brand, item?.model].filter(Boolean).join(' ') || `Auto3-ID ${extId}`;
+      setPhase(`${label}: Fahrzeugdaten werden übernommen …`);
+      const { data, error } = await supabase.functions.invoke('auto3-inventory', { body: { action: 'import', externalVehicleIds: [extId] } });
+      const r = data?.results?.[0];
+      if (error || data?.error || !r?.ok) { toast.error(`${label}: ${r?.error || data?.error || 'Import fehlgeschlagen'}`); continue; }
+      const total: number = r.mediaTotal || 0;
+      let offset = 0; let stored = 0; let skipped = 0; const warnings: string[] = [];
+      while (offset < total) {
+        setPhase(`${label}: Originalbilder werden gespeichert (${offset}/${total}) …`);
+        const { data: b, error: be } = await supabase.functions.invoke('auto3-inventory', { body: { action: 'import_images', externalVehicleId: extId, offset, limit: 4 } });
+        if (be || b?.error) { warnings.push(b?.error || 'Bildimport unterbrochen'); break; }
+        stored += b.stored; skipped += b.skipped; warnings.push(...(b.warnings || []));
+        offset = b.processed;
+      }
+      setPhase(`${label}: Aufbereitung wird vorbereitet …`);
+      const have = stored + skipped;
+      if (warnings.length) toast.warning(`${label}: ${warnings.length} Bild(er) nicht übernommen – ${warnings.slice(0, 2).join('; ')}`);
+      toast.success(`${label}: ${r.fieldCount} Datenfelder und ${have}/${total} Originalbilder übernommen.`);
+      if (have > 0) done.push({ vehicleId: r.vehicleId, label, stored: have, total });
+    }
+    setImporting(false); setPhase(null); setReady(done);
     load();
   };
 
@@ -58,7 +78,7 @@ export default function Auto3InventoryPanel() {
     return s.includes(q.toLowerCase());
   }), [items, q, filter]);
 
-  const importable = (i: Item) => i.vinValid && i.status === 'not_imported' && !i.conflict;
+  const importable = (i: Item) => i.vinValid && !i.conflict && ['not_imported', 'imported'].includes(i.status);
   const toggle = (id: string) => setSel((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
   return (
@@ -70,6 +90,14 @@ export default function Auto3InventoryPanel() {
         </Button>
         {items && <span className="text-xs text-muted-foreground">{items.length} Fahrzeuge · {items.filter((i) => !i.vinValid).length} ohne gültige VIN</span>}
       </div>
+      {phase && <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 p-2 text-xs"><Loader2 className="w-4 h-4 animate-spin" />{phase}</div>}
+      {ready.map((r) => (
+        <div key={r.vehicleId} className="flex flex-wrap items-center gap-2 rounded-md border border-primary/30 bg-primary/5 p-2 text-sm">
+          <span className="flex-1 min-w-0"><b>{r.label}</b> ist bereit zur Aufbereitung · {r.stored}/{r.total} Originale gespeichert</span>
+          <Button asChild size="sm"><Link to={`/generator/fotos?vehicle=${r.vehicleId}&originals=auto3`}>Aufbereitung fortsetzen</Link></Button>
+          <Button asChild size="sm" variant="ghost"><Link to={`/vehicle/${r.vehicleId}`}>Fahrzeugakte</Link></Button>
+        </div>
+      ))}
       {loading && !items && <p className="text-xs text-muted-foreground">Lade Bestand und prüfe VINs … das kann einige Sekunden dauern.</p>}
       {items && (
         <>
@@ -99,16 +127,15 @@ export default function Auto3InventoryPanel() {
                   {i.conflict && <div className="text-xs text-destructive">{i.conflict}</div>}
                 </div>
                 <Badge variant={i.status === 'website_live' ? 'default' : i.status === 'no_vin' ? 'outline' : 'secondary'} className="shrink-0">{STATUS_LABEL[i.status]}</Badge>
-                {i.vehicleId ? (
-                  <Button asChild size="sm" variant="ghost"><Link to={`/vehicle/${i.vehicleId}`}>Öffnen</Link></Button>
-                ) : (
-                  <Button size="sm" variant="outline" disabled={!importable(i) || importing} onClick={() => run([i.externalVehicleId])}>In autohaus.ai übernehmen</Button>
+                {i.vehicleId && <Button asChild size="sm" variant="ghost"><Link to={`/vehicle/${i.vehicleId}`}>Öffnen</Link></Button>}
+                {importable(i) && (
+                  <Button size="sm" variant="outline" disabled={importing} onClick={() => run([i.externalVehicleId])}>{i.vehicleId ? 'Daten & Bilder abgleichen' : 'In autohaus.ai übernehmen'}</Button>
                 )}
               </li>
             ))}
             {!visible.length && <li className="p-3 text-xs text-muted-foreground">Keine Fahrzeuge für diesen Filter.</li>}
           </ul>
-          <p className="text-[11px] text-muted-foreground">Übernehmen legt nur die Fahrzeugakte mit Auto3-Originalbildern an. Es startet keine Aufbereitung und es wird nichts veröffentlicht.</p>
+          <p className="text-[11px] text-muted-foreground">Übernehmen schreibt alle Auto3-Fahrzeugdaten in die Fahrzeugakte, speichert die Originalbilder und bereitet die Aufbereitung vor. Gestartet wird nach Ihrer Kostenbestätigung; auf der Website wird nichts veröffentlicht.</p>
         </>
       )}
     </div>

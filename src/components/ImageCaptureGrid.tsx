@@ -487,6 +487,49 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
   const vehicleSlots = slots.filter(s => !s.isVin);
   const capturedVehicleImages = vehicleSlots.filter(s => captures[s.key]);
   const [lightboxSlotKey, setLightboxSlotKey] = useState<string | null>(null);
+
+  // ── Auto3-Handoff: ?originals=auto3 belegt die Aufnahmeplätze mit den bereits gespeicherten Originalen vor.
+  // Startet nichts automatisch – Kostenbestätigung und Pipeline-Start bleiben im bestehenden Ablauf.
+  const prefilledOriginalsRef = useRef<Set<string>>(new Set());
+  const prefillDoneRef = useRef(false);
+  const [prefillStatus, setPrefillStatus] = useState<string | null>(null);
+  useEffect(() => {
+    if (prefillDoneRef.current || !user || !vehicleId || !vehicleSlots.length) return;
+    if (new URLSearchParams(window.location.search).get('originals') !== 'auto3') return;
+    prefillDoneRef.current = true;
+    (async () => {
+      const owned = await getOwnedVehicleId(user.id, vehicleId);
+      if (!owned) return;
+      const prefix = `${user.id}/${owned}`;
+      const { data: files } = await supabase.storage.from('originals').list(prefix, { limit: 200, sortBy: { column: 'name', order: 'asc' } });
+      const auto3 = (files || []).filter(f => f.name.startsWith('auto3-')).sort((a, b) => a.name.localeCompare(b.name));
+      if (!auto3.length) { toast.error('Keine Auto3-Originale in der Fahrzeugakte gefunden.'); return; }
+      const free = vehicleSlots.filter(sl => !sl.isVin);
+      const max = free.length + 10;
+      const picked = auto3.slice(0, max);
+      const images: string[] = [];
+      for (let i = 0; i < picked.length; i++) {
+        setPrefillStatus(`Auto3-Originale werden geladen (${i + 1}/${picked.length}) …`);
+        try {
+          const { data: blob } = await supabase.storage.from('originals').download(`${prefix}/${picked[i].name}`);
+          if (!blob) continue;
+          const raw = await new Promise<string>((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result as string); r.onerror = rej; r.readAsDataURL(blob); });
+          images.push(raw);
+        } catch (e) { console.warn('[capture] auto3 prefill failed', e); }
+      }
+      images.forEach(img => prefilledOriginalsRef.current.add(img));
+      setCaptures(prev => {
+        const next = { ...prev };
+        let k = 0;
+        for (const sl of free) { if (!next[sl.key] && k < images.length) next[sl.key] = { base64: images[k++], status: 'captured' }; }
+        return next;
+      });
+      const rest = images.slice(free.length, free.length + 10);
+      if (rest.length) setDetailImages(prev => [...prev, ...rest].slice(0, 10));
+      setPrefillStatus(null);
+      toast.success(`${images.length} Auto3-Originale vorbelegt. Bitte Zuordnung der Perspektiven prüfen und Aufbereitung starten.`);
+    })();
+  }, [user, vehicleId, vehicleSlots]);
   const lightboxImages = useMemo(
     () => vehicleSlots
       .filter(s => captures[s.key])
@@ -904,7 +947,7 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
       ...doneSlots.map(s => captures[s.key].base64),
       ...detailImages,
       ...(wheelReference?.image ? [wheelReference.image] : []),
-    ];
+    ].filter(img => !prefilledOriginalsRef.current.has(img)); // Auto3-Originale liegen bereits im Speicher
     // Immer dasselbe Fahrzeug verwenden wie ein evtl. bereits gestarteter
     // Pipeline-Lauf – sonst entstehen zwei getrennte Fahrzeugakten.
     let targetVehicleId: string | null = ensuredVehicleId || vehicleId || null;
@@ -1153,6 +1196,11 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
 
   return (
     <div className="mx-auto w-full min-w-0 max-w-6xl overflow-x-hidden pb-24 sm:pb-6">
+      {prefillStatus && (
+        <div className="mb-3 flex items-center gap-2 rounded-md border border-border bg-muted/40 p-2 text-xs">
+          <Loader2 className="h-4 w-4 animate-spin" />{prefillStatus}
+        </div>
+      )}
       {/* Kopfbereich */}
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
