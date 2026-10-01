@@ -11,7 +11,7 @@ import Auto3JobCard from '@/components/vehicle/Auto3JobCard';
 import { useCredits } from '@/hooks/useCredits';
 import { useVehicleMakes } from '@/hooks/useVehicleMakes';
 import { useProcessingProfile, prepareAuto3Job, startAuto3Job } from '@/hooks/useProcessingProfile';
-import { RUNNING_STATUSES, jobStatusLabel, type JobRow } from '@/lib/auto3-processing';
+import { jobStatusLabel, type JobRow } from '@/lib/auto3-processing';
 
 type Status = 'no_vin' | 'not_imported' | 'imported' | 'assets' | 'website_draft' | 'website_live';
 interface Item {

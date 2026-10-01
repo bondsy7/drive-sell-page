@@ -127,8 +127,3 @@ export function preparationStatusLabel(status: PreparationStatus | null | undefi
     default: return originals ? `${originals} Originale · importiert` : 'Importiert';
   }
 }
-
-/** Handoff URL into the existing capture → PipelineRunner flow (cost confirmation + start guard live there). */
-export function oneshotHandoffUrl(vehicleId: string): string {
-  return `/generator/fotos?vehicle=${vehicleId}&originals=auto3&prep=1`;
-}
