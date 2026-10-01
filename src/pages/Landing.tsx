@@ -114,48 +114,10 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <PublicHeader />
+      <HomeHeader />
 
       <main>
-        <section className="overflow-hidden border-b border-border bg-card">
-          <div className="mx-auto grid max-w-6xl gap-10 px-4 pb-10 pt-12 sm:px-6 sm:pt-16 lg:min-h-[620px] lg:grid-cols-[0.84fr_1.16fr] lg:items-center lg:gap-4 lg:pb-14 lg:pt-14">
-            <div className="relative z-10 max-w-xl lg:pr-3">
-              <p className="text-xs font-bold uppercase text-primary">Für Autohäuser. Für mehr Umsatz.</p>
-              <h1 className="mt-6 font-display text-4xl font-bold leading-[1.08] sm:text-5xl lg:text-[3.6rem]">
-                Aus Fahrzeugfotos wird verkaufsstarkes Marketing.
-              </h1>
-              <p className="mt-6 max-w-lg text-base leading-7 text-muted-foreground sm:text-lg">
-                autohaus.ai erstellt aus deinen Fahrzeugfotos professionelle Bilder, Videos, Social-Media-Posts, Banner und Verkaufsseiten – automatisch, in Minuten, in deiner CI.
-              </p>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Button asChild size="lg" className="h-12 px-6 shadow-glow">
-                  <Link to={destination}>Jetzt starten <ArrowRight className="h-4 w-4" /></Link>
-                </Button>
-                <Button asChild size="lg" variant="outline" className="h-12 px-6">
-                  <Link to="/produkte"><CirclePlay className="h-4 w-4" /> Produkte ansehen</Link>
-                </Button>
-              </div>
-              <div className="mt-7 grid gap-2 text-sm text-muted-foreground">
-                {BENEFITS.map((item) => (
-                  <span key={item} className="flex items-center gap-2"><Check className="h-4 w-4 text-primary" />{item}</span>
-                ))}
-              </div>
-            </div>
-
-            <div className="relative min-h-[400px] lg:-mr-20 lg:min-h-[520px]">
-              <div className="absolute inset-0 overflow-hidden rounded-l-lg bg-card">
-                <img
-                  src={heroImage.url}
-                  alt="Professionell aufbereitetes Fahrzeug mit Produktübersicht"
-                  width={1600}
-                  height={1000}
-                  className="h-full w-full object-cover object-center"
-                />
-                <div className="absolute inset-0 bg-gradient-to-r from-card/80 via-transparent to-transparent lg:from-card/50" />
-              </div>
-            </div>
-          </div>
-        </section>
+        <HomeHero />
 
         <section className="relative -mt-px bg-card px-4 pb-10 sm:px-6">
           <div className="mx-auto grid max-w-6xl grid-cols-2 overflow-hidden rounded-lg border border-border bg-card shadow-card md:grid-cols-4">
