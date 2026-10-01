@@ -10,6 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Car, FileText, Image as ImageIcon, LayoutGrid, MessageSquare, Link2, Loader2, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { useDeleteVehicle } from '@/hooks/useVehicles';
+import { useQuery } from '@tanstack/react-query';
+import { publicationStatusLabel, type WebsitePublication } from '@/lib/website-publishing';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -210,6 +212,7 @@ export default function VehiclesTab() {
       </div>
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {vehicles.map(v => {
+        const pub = pubMap.get(v.id);
         const title =
           v.title ||
           [v.brand, v.model, v.year].filter(Boolean).join(' ') ||
@@ -251,6 +254,12 @@ export default function VehiclesTab() {
                     <p className="text-xs text-muted-foreground font-mono mt-0.5">
                       {v.vin}
                     </p>
+                    {pub && (
+                      <div className="flex gap-1 mt-1">
+                        <Badge variant="secondary" className="text-[10px]">Website: {publicationStatusLabel(pub)}</Badge>
+                        <Badge variant={pub.status === 'live' ? 'default' : 'outline'} className="text-[10px]">{pub.status === 'live' ? 'Live' : pub.status === 'disabled' ? 'Aus' : 'Draft'}</Badge>
+                      </div>
+                    )}
                     <p className="text-[10px] text-muted-foreground mt-1">
                       {wasEdited ? 'Zuletzt bearbeitet' : 'Angelegt'} {editedLabel}
                     </p>
