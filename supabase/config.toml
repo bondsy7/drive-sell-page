@@ -61,3 +61,6 @@ verify_jwt = false
 
 [functions.track-marketing-event]
 verify_jwt = false
+
+[functions.website-media]
+verify_jwt = false
