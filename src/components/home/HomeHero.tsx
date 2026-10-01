@@ -8,6 +8,7 @@ import {
 } from '@/lib/ai-disclosure';
 import heroShowroomAsset from '@/assets/home/hero-showroom.webp.asset.json';
 import originalDealerAsset from '@/assets/home/original-dealer.png.asset.json';
+import socialStoryAsset from '@/assets/home/social-story.webp.asset.json';
 import ImagePlaceholder from './ImagePlaceholder';
 
 export default function HomeHero() {
