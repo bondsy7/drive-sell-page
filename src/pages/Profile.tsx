@@ -13,6 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Save, Building2, MapPin, Phone, Globe, Facebook, Instagram, Youtube, FileText, Landmark, Upload, X, Image, Zap, History, TrendingDown, TrendingUp, Lock, KeyRound, Chrome, Share2, CreditCard, Plus } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
 import SocialCredentialsSection from '@/components/profile/SocialCredentialsSection';
+import { useModuleAccess } from '@/hooks/useModuleAccess';
 import { toast } from 'sonner';
 
 interface ProfileData {
