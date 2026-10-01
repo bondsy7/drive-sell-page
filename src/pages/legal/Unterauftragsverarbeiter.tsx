@@ -56,9 +56,15 @@ const RECIPIENTS: Row[] = [
   },
   {
     provider: 'Meta Platforms Ireland Limited (Instagram, Facebook)',
-    purpose: 'Veröffentlichung von Inhalten auf Veranlassung des Kunden',
+    purpose: 'Veröffentlichung von Inhalten auf Veranlassung des Kunden; Werbemessung per Meta-Pixel nur nach Marketing-Einwilligung',
     regions: 'EU/USA',
-    status: 'Für die veröffentlichten Inhalte je Dienst eigene bzw. eigenständige Verantwortlichkeit',
+    status: 'Für veröffentlichte Inhalte eigenständige Verantwortlichkeit; beim Meta-Pixel gemeinsame Verantwortlichkeit (Art. 26 DSGVO)',
+  },
+  {
+    provider: 'Calendly LLC',
+    purpose: 'Terminbuchung für Demo-Termine, erst nach Klick auf „Kalender laden“',
+    regions: 'USA (EU-U.S. Data Privacy Framework)',
+    status: 'Vertrag/DPA vor produktivem Einsatz zu prüfen',
   },
   {
     provider: 'X Internet Unlimited Company',

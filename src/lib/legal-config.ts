@@ -36,11 +36,11 @@ export const LEGAL_VERSIONS = {
 /** Öffentlich sichtbarer Stand je Dokument; getrennt von Annahme- und Consent-Versionen. */
 export const LEGAL_DOCUMENT_DATES = {
   agb: '16.09.2026',
-  privacy: '16.09.2026',
+  privacy: '01.10.2026',
   consent: '16.09.2026',
   avv: '16.09.2026',
   toms: '16.09.2026',
-  subprocessors: '16.09.2026',
+  subprocessors: '01.10.2026',
   aiTransparency: '16.09.2026',
   overview: '22.09.2026',
 } as const;

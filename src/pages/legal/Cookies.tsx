@@ -35,6 +35,18 @@ const ENTRIES: Entry[] = [
     note: 'Wird ausschließlich nach Einwilligung in die Kategorie „Marketing“ geladen. Speicherdauern variieren je nach Google-Konfiguration.',
   },
   {
+    name: 'Meta-Pixel (_fbp)',
+    category: 'Marketing',
+    purpose: 'Messung des Erfolgs von Anzeigen auf Facebook und Instagram (Seitenaufruf, Testanfrage, Terminbuchung).',
+    note: 'Wird ausschließlich nach Einwilligung in die Kategorie „Marketing“ geladen. Anbieter: Meta Platforms Ireland Limited. Das Cookie _fbp wird bis zu 90 Tage gespeichert.',
+  },
+  {
+    name: 'Calendly (Terminkalender)',
+    category: 'Notwendig',
+    purpose: 'Buchung eines Demo-Termins auf der Danke-Seite.',
+    note: 'Wird erst geladen, wenn du auf „Kalender laden“ klickst. Calendly kann dabei eigene Cookies setzen.',
+  },
+  {
     name: 'Google OAuth (Anmeldung mit Google)',
     category: 'Authentifizierung',
     purpose: 'Von dir bewusst ausgelöste Anmeldung über dein Google-Konto.',

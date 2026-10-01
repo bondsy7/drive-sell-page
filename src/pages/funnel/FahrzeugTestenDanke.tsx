@@ -12,6 +12,7 @@ import { usePageMeta } from '@/hooks/usePageMeta';
 import { supabase } from '@/integrations/supabase/client';
 import LeadDetailsStep from '@/components/funnel/LeadDetailsStep';
 import { trackFunnelEvent } from '@/lib/funnel-tracking';
+import { stripSensitiveParams, trackMetaPageView } from '@/lib/meta-pixel';
 import { ROLE_OPTIONS } from '@/lib/b2b-funnel-options';
 
 /** Calendly-Terminseite – Farben an das Designsystem angepasst (Primär #00A98F). */
@@ -52,7 +53,9 @@ declare global {
 
 function CalendlyInline({ prefillName }: { prefillName?: string }) {
   const ref = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState(false);
   useEffect(() => {
+    if (!active) return;
     const url = prefillName ? `${CALENDLY_URL}&name=${encodeURIComponent(prefillName)}` : CALENDLY_URL;
     const init = () => {
       if (!ref.current || !window.Calendly) return;
@@ -70,7 +73,18 @@ function CalendlyInline({ prefillName }: { prefillName?: string }) {
     }
     s.addEventListener('load', init);
     return () => s?.removeEventListener('load', init);
-  }, [prefillName]);
+  }, [prefillName, active]);
+  if (!active) {
+    return (
+      <div className="flex min-h-[320px] flex-col items-center justify-center gap-4 rounded-lg bg-muted/40 p-6 text-center">
+        <p className="max-w-sm text-sm text-muted-foreground">
+          Der Terminkalender wird von Calendly bereitgestellt. Beim Laden werden Daten an Calendly übertragen – mehr dazu in der{' '}
+          <Link to="/datenschutz" className="underline hover:text-accent">Datenschutzerklärung</Link>.
+        </p>
+        <Button type="button" onClick={() => setActive(true)} data-cta="calendly_laden">Kalender laden</Button>
+      </div>
+    );
+  }
   return <div ref={ref} className="h-[700px] min-w-[300px] overflow-hidden rounded-lg" aria-label="Terminkalender" />;
 }
 
@@ -87,9 +101,14 @@ export default function FahrzeugTestenDanke() {
   });
 
   const [searchParams] = useSearchParams();
-  const leadId = searchParams.get('lead');
-  const token = searchParams.get('t');
-  const isProcessCheck = searchParams.get('typ') === 'prozess';
+  // Lead-ID und Token einmalig übernehmen, dann aus der Adresse entfernen (nie an Dritte)
+  const [leadId] = useState(() => searchParams.get('lead'));
+  const [token] = useState(() => searchParams.get('t'));
+  const [isProcessCheck] = useState(() => searchParams.get('typ') === 'prozess');
+  useEffect(() => {
+    stripSensitiveParams();
+    trackMetaPageView();
+  }, []);
   const [details, setDetails] = useState<Details | null>(null);
   const [booked, setBooked] = useState(false);
   const [sending, setSending] = useState(false);

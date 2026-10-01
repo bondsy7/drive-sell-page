@@ -10,7 +10,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { readConsent, trackAnalyticsEvent, trackGoogleAdsConversion } from './consent';
 import { getAttribution, getLastTouch } from './funnel-attribution';
-import { trackMetaEvent } from './meta-pixel';
+import { trackMetaEvent, trackMetaPageView } from './meta-pixel';
 
 export type FunnelEventName =
   | 'page_view'
@@ -83,6 +83,7 @@ export function trackFunnelEvent(name: FunnelEventName, params: Record<string, u
 
   // 1) Google – nur mit Einwilligung (Prüfung in consent.ts)
   trackAnalyticsEvent(name, { ...clean, event_id: eventId });
+  if (name === 'page_view') trackMetaPageView();
   const adsId = (import.meta.env.VITE_GOOGLE_ADS_ID as string | undefined)?.trim();
   if (name === 'generate_lead') {
     const label = (import.meta.env.VITE_GOOGLE_ADS_GENERATE_LEAD_LABEL as string | undefined)?.trim();
