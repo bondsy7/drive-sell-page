@@ -8,6 +8,7 @@ import {
 } from '@/lib/ai-disclosure';
 import heroShowroomAsset from '@/assets/home/hero-showroom.webp.asset.json';
 import originalDealerAsset from '@/assets/home/original-dealer.png.asset.json';
+import socialStoryAsset from '@/assets/home/social-story.webp.asset.json';
 import ImagePlaceholder from './ImagePlaceholder';
 
 export default function HomeHero() {
@@ -55,7 +56,17 @@ export default function HomeHero() {
             />
           </div>
           <div className="mt-4 grid grid-cols-2 items-start gap-4">
-            <ImagePlaceholder label="Social-Media-Beispiel" ratio="9/16" className="bg-card shadow-card" />
+            <div className="relative overflow-hidden rounded-lg border border-border bg-secondary shadow-card">
+              <img
+                src={socialStoryAsset.url}
+                alt="Beispiel einer Social-Media-Story: Fahrzeugangebot mit Preisangabe und Anfrage-Button – mit KI erstellt"
+                className="aspect-[9/16] w-full object-cover"
+                loading="lazy"
+              />
+              <span className="absolute left-2 top-2 rounded-full bg-card/90 px-2 py-0.5 text-[10px] font-semibold text-foreground">
+                Beispiel
+              </span>
+            </div>
             <ImagePlaceholder label="Video-Beispiel" ratio="9/16" className="bg-card shadow-card" />
           </div>
         </div>
