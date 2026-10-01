@@ -52,6 +52,9 @@ export function loadMetaPixelIfAllowed() {
   f.loaded = true;
   f.version = '2.0';
   f.push = f;
+  // Meta-eigene SPA-Erkennung (pushState/popstate) abschalten – sonst zweiter PageView pro Routenwechsel.
+  (f as Fbq & { disablePushState?: boolean; allowDuplicatePageViews?: boolean }).disablePushState = true;
+  (f as Fbq & { allowDuplicatePageViews?: boolean }).allowDuplicatePageViews = false;
   window.fbq = f;
   window._fbq = f;
   const s = document.createElement('script');
@@ -78,7 +81,11 @@ export function trackMetaPageView() {
   const path = window.location.pathname;
   if (lastPagePath === path) return;
   lastPagePath = path;
-  window.fbq?.('track', 'PageView');
+  // Nur origin + pathname – niemals Query/Hash (lead, t, Token, Formularwerte).
+  window.fbq?.('track', 'PageView', {
+    page_path: path,
+    page_location: window.location.origin + path,
+  });
   flushViewContent();
 }
 
