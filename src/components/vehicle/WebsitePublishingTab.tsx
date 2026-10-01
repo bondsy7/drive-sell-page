@@ -157,15 +157,15 @@ export default function WebsitePublishingTab({ vehicle }: { vehicle: ExtVehicle 
         </div>
       </section>
 
-      <section className="rounded-lg border border-border bg-card p-4 space-y-3">
-        <h4 className="font-medium text-sm">Auto3-Zuordnung</h4>
+      <details className="rounded-lg border border-border bg-card p-4 space-y-3">
+        <summary className="font-medium text-sm cursor-pointer">Manuelle Auto3-Zuordnung (Fallback) – Hauptweg: Profil → Auto3 Fahrzeugbestand</summary>
         <div className="grid gap-3 sm:grid-cols-2">
           <Input placeholder="Auto3-Fahrzeug-ID" value={extId} onChange={(e) => setExtId(e.target.value)} />
           <Input placeholder="Interne Nummer (optional)" value={intNo} onChange={(e) => setIntNo(e.target.value)} />
         </div>
         <Textarea rows={3} placeholder="Auto3-Originalbild-URLs (eine pro Zeile, erstes = Titelbild)" value={urls} onChange={(e) => setUrls(e.target.value)} />
         <Button size="sm" variant="outline" onClick={saveLink} disabled={!extId.trim()}>Zuordnung speichern</Button>
-      </section>
+      </details>
 
       <section className="rounded-lg border border-border bg-card p-4 space-y-4">
         <div>
