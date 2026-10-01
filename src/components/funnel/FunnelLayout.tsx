@@ -43,6 +43,8 @@ export default function FunnelLayout({
   useEffect(() => {
     captureLastTouch();
     trackFunnelEvent('page_view', { page_path: location.pathname });
+    const vc = VIEW_CONTENT_BY_PATH[location.pathname];
+    if (vc) trackMetaViewContent(vc.name, vc.category);
   }, [location.pathname]);
 
   // Alle CTA-Klicks im Funnel zentral erfassen (Links zum Test / Prozesscheck)
