@@ -27,7 +27,7 @@ import Spin360Tab from '@/components/dashboard/Spin360Tab';
 import LeadsTab from '@/components/dashboard/LeadsTab';
 import OriginalsTab from '@/components/vehicle/OriginalsTab';
 import DataTab from '@/components/vehicle/DataTab';
-import Auto3PrepCard from '@/components/vehicle/Auto3PrepCard';
+import Auto3JobCard from '@/components/vehicle/Auto3JobCard';
 import WebsitePublishingTab from '@/components/vehicle/WebsitePublishingTab';
 import { useModuleAccess } from '@/hooks/useModuleAccess';
 import ExportChoiceDialog, { type ExportMode } from '@/components/ExportChoiceDialog';
@@ -287,7 +287,7 @@ export default function VehicleView() {
       case 'originals':
         return (
           <div className="space-y-3">
-            {canPublishWebsite && (vehicle as { source_system?: string | null }).source_system === 'auto3' && <Auto3PrepCard vehicleId={vehicle.id} />}
+            {canPublishWebsite && (vehicle as { source_system?: string | null }).source_system === 'auto3' && <Auto3JobCard vehicleId={vehicle.id} />}
             <OriginalsTab vehicleId={vehicle.id} />
           </div>
         );

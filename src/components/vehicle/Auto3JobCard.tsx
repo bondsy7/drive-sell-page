@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -119,7 +119,7 @@ export default function Auto3JobCard({ vehicleId, compact = false }: { vehicleId
           <div className="min-w-[200px] flex-1">
             <p className="text-xs font-medium mb-1">Datenblatt aus Auto3</p>
             <dl className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs">
-              {sheet.filter(([k]) => k !== 'consumption').map(([k, v]) => (<><dt key={`${k}-l`} className="text-muted-foreground">{DATASHEET_LABELS[k]}</dt><dd key={`${k}-v`} className="truncate">{v}</dd></>))}
+              {sheet.filter(([k]) => k !== 'consumption').map(([k, v]) => (<Fragment key={k}><dt className="text-muted-foreground">{DATASHEET_LABELS[k]}</dt><dd className="truncate">{v}</dd></Fragment>))}
             </dl>
           </div>
         </div>
