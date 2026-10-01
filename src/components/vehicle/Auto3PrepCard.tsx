@@ -115,7 +115,7 @@ export default function Auto3PrepCard({ vehicleId, compact = false }: { vehicleI
         <Badge variant={ready ? 'default' : 'secondary'}>{preparationStatusLabel(status, prep?.originals_count || originals)}</Badge>
         <div className="flex-1" />
         {compact && ready && <Button size="sm" variant="ghost" onClick={() => setExpanded((e) => !e)}>{expanded ? 'Weniger' : 'Auswahl prüfen'}</Button>}
-        {(!ready || status === 'analysis_failed') && status !== 'analyzing_originals' && (
+        {!ready && status !== 'analyzing_originals' && (
           <Button size="sm" variant="outline" onClick={runAnalysis} disabled={analyzing}>
             {analyzing ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-1.5" />}Originale analysieren
           </Button>
