@@ -56,7 +56,7 @@ export default function HomeHero() {
           </div>
           <div className="mt-4 grid grid-cols-2 items-start gap-4">
             <ImagePlaceholder label="Social-Media-Beispiel" ratio="9/16" className="bg-card shadow-card" />
-            <ImagePlaceholder label="Video-Beispiel" ratio="4/3" className="bg-card shadow-card" />
+            <ImagePlaceholder label="Video-Beispiel" ratio="9/16" className="bg-card shadow-card" />
           </div>
         </div>
       </div>
