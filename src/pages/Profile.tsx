@@ -14,6 +14,7 @@ import { Save, Building2, MapPin, Phone, Globe, Facebook, Instagram, Youtube, Fi
 import AppHeader from '@/components/AppHeader';
 import SocialCredentialsSection from '@/components/profile/SocialCredentialsSection';
 import { useModuleAccess } from '@/hooks/useModuleAccess';
+import Auto3InventoryPanel from '@/components/profile/Auto3InventoryPanel';
 import { toast } from 'sonner';
 
 interface ProfileData {
@@ -524,6 +525,7 @@ const Profile = () => {
                   Nur Fahrzeuge mit gültiger VIN können zugeordnet und veröffentlicht werden.
                 </p>
                 <Badge variant="secondary">Verbunden</Badge>
+                <div className="mt-4"><h4 className="text-sm font-medium mb-2">Auto3 Fahrzeugbestand</h4><Auto3InventoryPanel /></div>
               </Section>
             )}
 
