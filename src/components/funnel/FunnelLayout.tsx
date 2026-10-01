@@ -2,9 +2,20 @@ import { ReactNode, useEffect, MouseEvent } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { trackFunnelEvent } from '@/lib/funnel-tracking';
 import { captureLastTouch } from '@/lib/funnel-attribution';
+import { trackMetaViewContent } from '@/lib/meta-pixel';
 import { Button } from '@/components/ui/button';
 import BrandLogo from '@/components/brand/BrandLogo';
 import SiteFooter from '@/components/legal/SiteFooter';
+
+/** Meta ViewContent je Kampagnen-Landingpage – nur technische, stabile Werte (Custom-Audience-Grundlage). */
+const VIEW_CONTENT_BY_PATH: Record<string, { name: string; category: string }> = {
+  '/autohaus-fahrzeugbilder': { name: 'autohaus_fahrzeugbilder', category: 'fahrzeugbilder' },
+  '/standtage-vermeiden': { name: 'standtage_vermeiden', category: 'fahrzeugverkauf' },
+  '/autohaus-werbemittel': { name: 'autohaus_werbemittel', category: 'werbemittel' },
+  '/autohaus-marketing': { name: 'autohaus_marketing', category: 'fahrzeugmarketing' },
+  '/autohaus-videos': { name: 'autohaus_videos', category: 'video_marketing' },
+  '/fahrzeug-testen': { name: 'fahrzeug_testen', category: 'lead_funnel' },
+};
 
 interface FunnelNavAnchor {
   href: string;
