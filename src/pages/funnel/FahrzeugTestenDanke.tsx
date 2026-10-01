@@ -12,6 +12,7 @@ import { usePageMeta } from '@/hooks/usePageMeta';
 import { supabase } from '@/integrations/supabase/client';
 import LeadDetailsStep from '@/components/funnel/LeadDetailsStep';
 import { trackFunnelEvent } from '@/lib/funnel-tracking';
+import { stripSensitiveParams, trackMetaPageView } from '@/lib/meta-pixel';
 import { ROLE_OPTIONS } from '@/lib/b2b-funnel-options';
 
 /** Calendly-Terminseite – Farben an das Designsystem angepasst (Primär #00A98F). */

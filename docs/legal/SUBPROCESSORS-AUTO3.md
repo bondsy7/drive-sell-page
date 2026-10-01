@@ -21,7 +21,7 @@ dort maßgeblich; er ist aus dem Code nicht belastbar feststellbar.
 | --- | --- | --- | --- |
 | Stripe | Zahlungsabwicklung, Abonnements, Rechnungen | Name, E-Mail, Zahlungs- und Vertragsdaten | Teilweise eigenständig verantwortlich (Zahlungsverkehr, Betrugsprävention); DPA zu prüfen |
 | Google Analytics 4 / Google Ads | Reichweiten- und Werbemessung – **nur nach Einwilligung** und nur bei gesetzter Kennung | Nutzungsdaten, Online-Kennungen | Derzeit keine Kennung hinterlegt; Rolle (gemeinsame Verantwortlichkeit bei Ads) vor Aktivierung klären |
-| Meta (Instagram, Facebook) | Veröffentlichung von Inhalten auf Veranlassung des Kunden | Veröffentlichte Medien und Texte | Eigenständige Plattform/Empfänger, kein klassischer Unterauftragsverarbeiter |
+| Meta (Instagram, Facebook) | Veröffentlichung von Inhalten auf Veranlassung des Kunden; Meta-Pixel-Werbemessung nur nach Marketing-Einwilligung (gemeinsame Verantwortlichkeit) | Veröffentlichte Medien und Texte | Eigenständige Plattform/Empfänger, kein klassischer Unterauftragsverarbeiter |
 | X | Veröffentlichung von Inhalten auf Veranlassung des Kunden | Veröffentlichte Medien und Texte | Eigenständige Plattform/Empfänger |
 | OutVin (VIN-/Fahrzeugdatenabfrage, `lookup-vin`) | Ermittlung technischer Fahrzeugdaten zu einer FIN | FIN und daraus abgeleitete Fahrzeugdaten | **Weiterer Empfänger / Fachdienst.** Rolle, Vertrag und Region sind nicht verifizierbar und vor produktivem Einsatz zu klären |
 
@@ -31,3 +31,4 @@ Wesentliche neue oder ausgetauschte Unterauftragsverarbeiter werden Geschäftsku
 vorab in Textform oder durch Aktualisierung dieser Übersicht mitgeteilt. Kunden können
 aus datenschutzrechtlichen Gründen innerhalb angemessener Frist widersprechen. Eine
 automatisierte E-Mail-Benachrichtigung ist derzeit nicht eingerichtet.
+| Calendly LLC | Demo-Terminbuchung, Laden erst nach Klick | IP, Gerätedaten, Termindaten | USA (DPF); DPA zu prüfen |

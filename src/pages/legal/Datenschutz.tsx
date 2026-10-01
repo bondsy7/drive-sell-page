@@ -231,6 +231,33 @@ export default function Datenschutz() {
         </p>
       </LegalSection>
 
+      <LegalSection title="16a. Meta-Pixel (Facebook/Instagram)">
+        <p>
+          Auf unseren Werbe-Landingpages setzen wir den Meta-Pixel der Meta Platforms Ireland
+          Limited, Merrion Road, Dublin 4, Irland, ein – ausschließlich nach Ihrer Einwilligung in
+          die Kategorie „Marketing“ (Art. 6 Abs. 1 lit. a DSGVO, § 25 Abs. 1 TDDDG). Zweck ist die
+          Messung des Erfolgs unserer Anzeigen auf Facebook und Instagram. Übermittelt werden
+          Seitenaufrufe sowie die Ereignisse „Testanfrage gesendet“ und „Termin gebucht“, jeweils mit
+          Seitenadresse, technischen Gerätedaten und einer zufälligen Ereignis-ID. Namen,
+          E-Mail-Adressen, Telefonnummern oder Formularinhalte übermitteln wir nicht; ein
+          automatischer Datenabgleich („Advanced Matching“) ist deaktiviert. Meta kann die Daten in
+          die USA übermitteln; Meta ist unter dem EU-U.S. Data Privacy Framework zertifiziert. Für
+          die Erhebung und Übermittlung sind wir mit Meta gemeinsam verantwortlich (Art. 26 DSGVO).
+          Sie können Ihre Einwilligung jederzeit über „Cookie-Einstellungen“ im Seitenfuß widerrufen.
+        </p>
+      </LegalSection>
+
+      <LegalSection title="16b. Terminbuchung über Calendly">
+        <p>
+          Für die Buchung eines Demo-Termins binden wir auf Wunsch den Kalender der Calendly LLC,
+          271 17th St NW, Atlanta, GA 30363, USA, ein. Der Kalender wird erst geladen, wenn Sie auf
+          „Kalender laden“ klicken. Dabei werden Ihre IP-Adresse, technische Gerätedaten und die von
+          Ihnen eingegebenen Termindaten an Calendly übertragen; Calendly kann eigene Cookies setzen.
+          Rechtsgrundlage ist die Durchführung vorvertraglicher Maßnahmen auf Ihre Anfrage (Art. 6
+          Abs. 1 lit. b DSGVO). Calendly ist unter dem EU-U.S. Data Privacy Framework zertifiziert.
+        </p>
+      </LegalSection>
+
       <LegalSection title="17. Einwilligungsverwaltung und Consent Mode V2">
         <p>
           Wir betreiben eine eigene Einwilligungsverwaltung mit den Kategorien „Notwendig“,
