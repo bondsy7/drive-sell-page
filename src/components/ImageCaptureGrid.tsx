@@ -1196,6 +1196,11 @@ const ImageCaptureGrid: React.FC<ImageCaptureGridProps> = ({ vehicleDescription,
 
   return (
     <div className="mx-auto w-full min-w-0 max-w-6xl overflow-x-hidden pb-24 sm:pb-6">
+      {prefillStatus && (
+        <div className="mb-3 flex items-center gap-2 rounded-md border border-border bg-muted/40 p-2 text-xs">
+          <Loader2 className="h-4 w-4 animate-spin" />{prefillStatus}
+        </div>
+      )}
       {/* Kopfbereich */}
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
