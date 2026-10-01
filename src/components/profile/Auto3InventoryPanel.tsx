@@ -7,6 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useAuto3AutopilotMode } from '@/components/profile/Auto3AutopilotSetting';
+import Auto3PrepCard, { analyzeAuto3Originals } from '@/components/vehicle/Auto3PrepCard';
+import { preparationStatusLabel, type PreparationStatus } from '@/lib/auto3-oneshot';
 
 type Status = 'no_vin' | 'not_imported' | 'imported' | 'assets' | 'website_draft' | 'website_live';
 interface Item {
@@ -28,6 +31,8 @@ export default function Auto3InventoryPanel() {
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState<'all' | 'open' | 'imported' | 'no_vin'>('all');
   const [sel, setSel] = useState<Set<string>>(new Set());
+  const [autopilot] = useAuto3AutopilotMode();
+  const [preps, setPreps] = useState<Record<string, { status: PreparationStatus; originals_count: number }>>({});
 
   const load = async () => {
     setLoading(true);
@@ -35,6 +40,11 @@ export default function Auto3InventoryPanel() {
     setLoading(false);
     if (error || data?.error) { toast.error(data?.error || 'Auto3-Bestand konnte nicht geladen werden.'); return; }
     setItems(data.items); setSel(new Set());
+    const vids = (data.items as Item[]).map((i) => i.vehicleId).filter(Boolean) as string[];
+    if (vids.length) {
+      const { data: rows } = await supabase.from('auto3_oneshot_preparations').select('vehicle_id, status, originals_count').in('vehicle_id', vids);
+      setPreps(Object.fromEntries((rows || []).map((r) => [r.vehicle_id, { status: r.status as PreparationStatus, originals_count: r.originals_count }])));
+    }
   };
 
   const [phase, setPhase] = useState<string | null>(null);
@@ -60,8 +70,11 @@ export default function Auto3InventoryPanel() {
         stored += b.stored; skipped += b.skipped; warnings.push(...(b.warnings || []));
         offset = b.processed;
       }
-      setPhase(`${label}: Aufbereitung wird vorbereitet …`);
       const have = stored + skipped;
+      if (have > 0 && autopilot !== 'off') {
+        setPhase(`${label}: ${have} Originale werden analysiert (Perspektive & Qualität) …`);
+        try { await analyzeAuto3Originals(r.vehicleId); } catch (e) { toast.warning(`${label}: ${e instanceof Error ? e.message : 'Bildanalyse fehlgeschlagen'} – in der Fahrzeugakte erneut starten.`); }
+      }
       if (warnings.length) toast.warning(`${label}: ${warnings.length} Bild(er) nicht übernommen – ${warnings.slice(0, 2).join('; ')}`);
       toast.success(`${label}: ${r.fieldCount} Datenfelder und ${have}/${total} Originalbilder übernommen.`);
       if (have > 0) done.push({ vehicleId: r.vehicleId, label, stored: have, total });
@@ -93,9 +106,9 @@ export default function Auto3InventoryPanel() {
       {phase && <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 p-2 text-xs"><Loader2 className="w-4 h-4 animate-spin" />{phase}</div>}
       {ready.map((r) => (
         <div key={r.vehicleId} className="flex flex-wrap items-center gap-2 rounded-md border border-primary/30 bg-primary/5 p-2 text-sm">
-          <span className="flex-1 min-w-0"><b>{r.label}</b> ist bereit zur Aufbereitung · {r.stored}/{r.total} Originale gespeichert</span>
-          <Button asChild size="sm"><Link to={`/generator/fotos?vehicle=${r.vehicleId}&originals=auto3`}>Aufbereitung fortsetzen</Link></Button>
+          <span className="flex-1 min-w-0"><b>{r.label}</b> · {r.stored}/{r.total} Originale gespeichert</span>
           <Button asChild size="sm" variant="ghost"><Link to={`/vehicle/${r.vehicleId}`}>Fahrzeugakte</Link></Button>
+          <div className="basis-full"><Auto3PrepCard vehicleId={r.vehicleId} /></div>
         </div>
       ))}
       {loading && !items && <p className="text-xs text-muted-foreground">Lade Bestand und prüfe VINs … das kann einige Sekunden dauern.</p>}
@@ -125,8 +138,10 @@ export default function Auto3InventoryPanel() {
                     {i.vinMasked ? ` · VIN ${i.vinMasked}` : ''}
                   </div>
                   {i.conflict && <div className="text-xs text-destructive">{i.conflict}</div>}
+                  {i.vehicleId && preps[i.vehicleId] && <div className="text-xs text-primary">{preparationStatusLabel(preps[i.vehicleId].status, preps[i.vehicleId].originals_count)}</div>}
                 </div>
                 <Badge variant={i.status === 'website_live' ? 'default' : i.status === 'no_vin' ? 'outline' : 'secondary'} className="shrink-0">{STATUS_LABEL[i.status]}</Badge>
+                {i.vehicleId && preps[i.vehicleId]?.status === 'ready_for_oneshot' && <Button asChild size="sm"><Link to={`/vehicle/${i.vehicleId}`}>Aufbereitung starten</Link></Button>}
                 {i.vehicleId && <Button asChild size="sm" variant="ghost"><Link to={`/vehicle/${i.vehicleId}`}>Öffnen</Link></Button>}
                 {importable(i) && (
                   <Button size="sm" variant="outline" disabled={importing} onClick={() => run([i.externalVehicleId])}>{i.vehicleId ? 'Daten & Bilder abgleichen' : 'In autohaus.ai übernehmen'}</Button>

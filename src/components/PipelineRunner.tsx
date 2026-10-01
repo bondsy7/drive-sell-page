@@ -15,6 +15,7 @@ import type { VehicleClassContext } from '@/config/vehicle-class-types';
 import { getVehicleClassProfile } from '@/config/vehicle-classes';
 import { toast } from 'sonner';
 import CreditConfirmDialog from '@/components/CreditConfirmDialog';
+import { PIPELINE_CREDIT_COST_PER_IMAGE } from '@/lib/auto3-oneshot';
 import {
   getPipelineJobsForVehicleClass,
   getJobsForProfile,
@@ -54,7 +55,7 @@ interface PipelineRunnerProps {
 }
 
 /* ─── Constants ─── */
-const CREDIT_COST_PER_IMAGE = 2;
+const CREDIT_COST_PER_IMAGE = PIPELINE_CREDIT_COST_PER_IMAGE;
 
 /* ─── Component ─── */
 const PipelineRunner: React.FC<PipelineRunnerProps> = ({
