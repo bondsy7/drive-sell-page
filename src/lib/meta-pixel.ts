@@ -62,6 +62,7 @@ export function loadMetaPixelIfAllowed() {
   f('set', 'autoConfig', false, id);
   f('init', id);
   trackMetaPageView();
+  flushViewContent();
 }
 
 /** Bei Widerruf: keine weiteren Sendungen. */
@@ -78,6 +79,7 @@ export function trackMetaPageView() {
   if (lastPagePath === path) return;
   lastPagePath = path;
   window.fbq?.('track', 'PageView');
+  flushViewContent();
 }
 
 export function trackMetaEvent(name: 'PageView' | 'Lead' | 'Schedule' | 'ViewContent', eventId?: string, params: Record<string, string | number> = {}) {
