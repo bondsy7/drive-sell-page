@@ -13,7 +13,7 @@ import { SCENE_OPTIONS, LICENSE_PLATE_OPTIONS } from '@/lib/remaster-prompt';
 import { ONESHOT_BANNER_FORMATS, type BannerFormatId } from '@/components/oneshot/oneshot-types';
 import { useProcessingProfile } from '@/hooks/useProcessingProfile';
 import {
-  AUTO_SCHMITT_STANDARD, AUTO_SCHMITT_STANDARD_NAME, DEFAULT_PROCESSING_SETTINGS, MODEL_TIER_OPTIONS, ONESHOT_PERSPECTIVE_JOBS, estimateJobCost, settingsHash,
+  AUTO_SCHMITT_STANDARD, AUTO_SCHMITT_STANDARD_NAME, MODEL_TIER_OPTIONS, ONESHOT_PERSPECTIVE_JOBS, estimateJobCost, settingsHash,
   type AutomationMode, type ProcessingSettings,
 } from '@/lib/auto3-processing';
 
