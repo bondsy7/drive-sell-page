@@ -14,7 +14,8 @@ import {
   Video,
   WandSparkles,
 } from 'lucide-react';
-import PublicHeader from '@/components/public/PublicHeader';
+import HomeHeader from '@/components/home/HomeHeader';
+import HomeHero from '@/components/home/HomeHero';
 import SiteFooter from '@/components/legal/SiteFooter';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
@@ -135,7 +136,7 @@ export default function Landing() {
           </div>
         </section>
 
-        <section id="produkte" className="py-16 sm:py-20">
+        <section id="so-funktionierts" className="scroll-mt-20 py-16 sm:py-20">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <h2 className="font-display text-3xl font-bold sm:text-4xl">So einfach funktioniert autohaus.ai</h2>
             <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -168,7 +169,7 @@ export default function Landing() {
           </div>
         </section>
 
-        <section id="leistungen" className="border-y border-border bg-secondary/60 py-16 sm:py-20">
+        <section id="ergebnisse" className="scroll-mt-20 border-y border-border bg-secondary/60 py-16 sm:py-20">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
               <div className="max-w-2xl">
