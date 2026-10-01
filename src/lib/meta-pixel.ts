@@ -85,3 +85,34 @@ export function trackMetaEvent(name: 'PageView' | 'Lead' | 'Schedule' | 'ViewCon
   if (readConsent()?.marketing !== true) return;
   window.fbq?.('track', name, params, eventId ? { eventID: eventId } : undefined);
 }
+
+/** Gemerkter ViewContent-Wunsch, falls die Einwilligung erst nach dem Seitenaufruf kommt. */
+let pendingViewContent: { path: string; name: string; category: string } | null = null;
+const sentViewContentPaths = new Set<string>();
+
+/**
+ * ViewContent für Kampagnen-Landingpages: genau einmal pro Seitenaufruf,
+ * nur technische, stabile Parameter (Grundlage für Custom Audiences).
+ * Wird nachgereicht, sobald der Pixel nach Einwilligung geladen ist.
+ */
+export function trackMetaViewContent(contentName: string, contentCategory: string) {
+  if (typeof window === 'undefined') return;
+  const path = window.location.pathname;
+  if (sentViewContentPaths.has(path)) return;
+  pendingViewContent = { path, name: contentName, category: contentCategory };
+  flushViewContent();
+}
+
+function flushViewContent() {
+  if (!pendingViewContent || !loaded) return;
+  if (readConsent()?.marketing !== true) return;
+  if (hasSensitiveParams()) return;
+  if (window.location.pathname !== pendingViewContent.path) return;
+  if (sentViewContentPaths.has(pendingViewContent.path)) return;
+  sentViewContentPaths.add(pendingViewContent.path);
+  trackMetaEvent('ViewContent', `view_content:${pendingViewContent.path}`, {
+    content_name: pendingViewContent.name,
+    content_category: pendingViewContent.category,
+  });
+  pendingViewContent = null;
+}

@@ -26,7 +26,7 @@ export const LEGAL = {
 export const LEGAL_VERSIONS = {
   agb: '2026-09-16',
   privacy: '2026-09-16',
-  consent: '2026-09-16',
+  consent: '2026-10-01',
   avv: '2026-09-16',
   toms: '2026-09-16',
   subprocessors: '2026-09-16',
