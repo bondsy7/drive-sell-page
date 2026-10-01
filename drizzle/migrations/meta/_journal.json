@@ -57,6 +57,13 @@
       "when": 1790239902634,
       "tag": "0007_b2b_lead_marketing_consent",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790887324214,
+      "tag": "0008_website_publishing",
+      "breakpoints": true
     }
   ]
 }

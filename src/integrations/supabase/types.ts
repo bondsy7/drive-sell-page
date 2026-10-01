@@ -3477,8 +3477,12 @@ export type Database = {
           color: string | null
           cover_image_url: string | null
           created_at: string
+          external_images: Json
+          external_internal_number: string | null
+          external_vehicle_id: string | null
           id: string
           model: string | null
+          source_system: string | null
           title: string | null
           updated_at: string
           user_id: string
@@ -3491,8 +3495,12 @@ export type Database = {
           color?: string | null
           cover_image_url?: string | null
           created_at?: string
+          external_images?: Json
+          external_internal_number?: string | null
+          external_vehicle_id?: string | null
           id?: string
           model?: string | null
+          source_system?: string | null
           title?: string | null
           updated_at?: string
           user_id: string
@@ -3505,8 +3513,12 @@ export type Database = {
           color?: string | null
           cover_image_url?: string | null
           created_at?: string
+          external_images?: Json
+          external_internal_number?: string | null
+          external_vehicle_id?: string | null
           id?: string
           model?: string | null
+          source_system?: string | null
           title?: string | null
           updated_at?: string
           user_id?: string
@@ -3515,6 +3527,68 @@ export type Database = {
           year?: number | null
         }
         Relationships: []
+      }
+      website_publications: {
+        Row: {
+          cover_asset_id: string | null
+          cover_mode: string
+          created_at: string
+          draft_items: Json
+          external_vehicle_id: string
+          gallery_mode: string
+          id: string
+          live_snapshot: Json | null
+          published_at: string | null
+          source_system: string
+          status: string
+          target: string
+          updated_at: string
+          user_id: string
+          vehicle_id: string
+        }
+        Insert: {
+          cover_asset_id?: string | null
+          cover_mode?: string
+          created_at?: string
+          draft_items?: Json
+          external_vehicle_id: string
+          gallery_mode?: string
+          id?: string
+          live_snapshot?: Json | null
+          published_at?: string | null
+          source_system: string
+          status?: string
+          target: string
+          updated_at?: string
+          user_id: string
+          vehicle_id: string
+        }
+        Update: {
+          cover_asset_id?: string | null
+          cover_mode?: string
+          created_at?: string
+          draft_items?: Json
+          external_vehicle_id?: string
+          gallery_mode?: string
+          id?: string
+          live_snapshot?: Json | null
+          published_at?: string | null
+          source_system?: string
+          status?: string
+          target?: string
+          updated_at?: string
+          user_id?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "website_publications_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
