@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import originalDealerAsset from '@/assets/home/original-dealer.png.asset.json';
 import ImagePlaceholder from './ImagePlaceholder';
 
 export default function HomeHero() {
@@ -27,9 +28,13 @@ export default function HomeHero() {
 
         <div className="relative">
           <ImagePlaceholder label="Aufbereitetes Fahrzeugbild (Showroom)" ratio="16/10" className="bg-secondary" />
-          <div className="absolute -top-4 left-3 w-[28%] rotate-[-4deg] rounded-xl bg-card p-1.5 shadow-card sm:left-6">
+          <div className="absolute -top-4 left-3 w-[42%] rotate-[-4deg] rounded-lg bg-card p-1.5 shadow-card sm:left-6 sm:w-[38%]">
             <p className="px-1 pb-1 text-[10px] font-semibold text-muted-foreground">Dein Foto</p>
-            <ImagePlaceholder label="Originalfoto Hof" ratio="3/4" />
+            <img
+              src={originalDealerAsset.url}
+              alt="Originalaufnahme eines Fahrzeugs auf dem Händlerhof"
+              className="aspect-[4/3] w-full rounded-md object-cover"
+            />
           </div>
           <div className="mt-4 grid grid-cols-2 gap-4">
             <ImagePlaceholder label="Social-Media-Beispiel" ratio="4/3" className="bg-card shadow-card" />
