@@ -27,6 +27,7 @@ import Spin360Tab from '@/components/dashboard/Spin360Tab';
 import LeadsTab from '@/components/dashboard/LeadsTab';
 import OriginalsTab from '@/components/vehicle/OriginalsTab';
 import DataTab from '@/components/vehicle/DataTab';
+import WebsitePublishingTab from '@/components/vehicle/WebsitePublishingTab';
 import ExportChoiceDialog, { type ExportMode } from '@/components/ExportChoiceDialog';
 import GalleryLightbox from '@/components/GalleryLightbox';
 import VideoPlayerModal from '@/components/dashboard/VideoPlayerModal';
@@ -37,7 +38,7 @@ import { getImageSrc } from '@/components/dashboard/types';
 import { downloadMediaFile } from '@/lib/download-file';
 import type { Project, ProjectImage, Lead, Spin360Job, BannerFile, VideoFile } from '@/components/dashboard/types';
 
-type TabKey = 'originals' | 'gallery' | 'data' | 'projects' | 'landings' | 'banners' | 'videos' | 'spin360' | 'leads';
+type TabKey = 'originals' | 'website' | 'gallery' | 'data' | 'projects' | 'landings' | 'banners' | 'videos' | 'spin360' | 'leads';
 
 export default function VehicleView() {
   const { id } = useParams<{ id: string }>();
@@ -274,6 +275,7 @@ export default function VehicleView() {
     { key: 'videos', label: 'Videos', icon: Video, count: videos.length },
     { key: 'spin360', label: '360° Spins', icon: RotateCw, count: spinJobs.length },
     { key: 'leads', label: 'Anfragen', icon: MessageSquare, count: leads.length },
+    { key: 'website', label: 'Website-Bilder', icon: Globe, count: 0 },
   ];
 
   const renderTab = () => {
@@ -282,6 +284,8 @@ export default function VehicleView() {
         return <OriginalsTab vehicleId={vehicle.id} />;
       case 'data':
         return <DataTab vehicle={vehicle} />;
+      case 'website':
+        return <WebsitePublishingTab vehicle={vehicle as never} />;
       case 'gallery':
         return (
           <GalleryTab
