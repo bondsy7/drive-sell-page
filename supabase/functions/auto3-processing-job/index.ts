@@ -286,7 +286,8 @@ async function runTick(sb: SupabaseClient, jobId: string, hop: number) {
     }
   }
 
-  const spent = job.credits_spent + (next.kind === "video" ? 0 : (next.kind !== "hero" && next.kind === "perspective" && steps.perspectives[next.item.key]?.status === "skipped" ? 0 : stepCost));
+  const skipped = next.kind === "perspective" && steps.perspectives[next.item.key]?.status === "skipped";
+  const spent = job.credits_spent + (skipped ? 0 : stepCost);
   await release({ steps, credits_spent: spent, attempts: 0, error: null, ...progressOf(job, steps) });
   if (hop < MAX_HOPS) kick(job.id, hop + 1);
   else await update(sb, job.id, { progress_label: "Wartet auf Fortsetzung" });
@@ -302,7 +303,20 @@ Deno.serve(async (req) => {
     const internal = req.headers.get("x-internal-job") === "auto3-processing" && token === SERVICE_KEY;
 
     if (internal && body?.action === "tick" && isUuid(body.jobId)) {
-      return json(await runTick(sb, body.jobId, Number(body.hop) || 0));
+      const hop = Number(body.hop) || 0;
+      try {
+        return json(await runTick(sb, body.jobId, hop));
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Schritt fehlgeschlagen";
+        console.error("[auto3-job] tick crashed", msg);
+        const { data: j } = await sb.from("auto3_processing_jobs").select("attempts").eq("id", body.jobId).maybeSingle();
+        const attempts = (j?.attempts ?? 0) + 1;
+        await update(sb, body.jobId, attempts < MAX_ATTEMPTS
+          ? { attempts, lease_until: null, error: `Vorübergehender Fehler: ${msg}`.slice(0, 300) }
+          : { attempts, lease_until: null, status: "failed", error: msg.slice(0, 300) });
+        if (attempts < MAX_ATTEMPTS && hop < MAX_HOPS) kick(body.jobId, hop + 1, 20_000 * attempts);
+        return json({ error: msg }, 500);
+      }
     }
 
     if (!token) return json({ error: "Nicht angemeldet" }, 401);
