@@ -1,104 +1,103 @@
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  ArrowRight, Building2, Camera, Check, ChevronRight, ClipboardCheck, Clock3, CloudRain,
-  Droplets, FileCheck, Globe, Images, Layers3, Lightbulb, Quote, Ruler, ShieldCheck,
-  Shuffle, Sparkles, Truck, Users, Warehouse, X, Zap,
-} from 'lucide-react';
+import { ArrowDown, ArrowRight, Car, CheckCircle2, Clock, Layers, Rocket, UserRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import FunnelLayout from '@/components/funnel/FunnelLayout';
-import BeforeAfterShowcase from '@/components/funnel/BeforeAfterShowcase';
 import { usePageMeta } from '@/hooks/usePageMeta';
 import { captureAttribution, captureLastTouch } from '@/lib/funnel-attribution';
 import { trackFunnelEvent } from '@/lib/funnel-tracking';
-import arrivalImage from '@/assets/funnel/standtage-arrival-local.webp';
-import showroomImage from '@/assets/funnel/standtage-showroom-local.webp';
-import processImage from '@/assets/funnel/standtage-frueher-heute.webp';
-import phonePhoto from '@/assets/funnel/fun-step-fahrzeug-fotografieren.webp.asset.json';
+import { AI_DISCLOSURE_OVERLAY_CLASS, getAiDisclosureLabelAlt, getAiDisclosureLabelVector, getAiDisclosureText } from '@/lib/ai-disclosure';
+import heroAsset from '@/assets/funnel/standtage/st-01-hero.webp.asset.json';
+import ankunftAsset from '@/assets/funnel/standtage/st-02-ankunft.webp.asset.json';
+import aufbereitungAsset from '@/assets/funnel/standtage/st-03-aufbereitung.webp.asset.json';
+import rangierenAsset from '@/assets/funnel/standtage/st-04-rangieren.webp.asset.json';
+import fototerminAsset from '@/assets/funnel/standtage/st-05-fototermin.webp.asset.json';
+import bilderstellungAsset from '@/assets/funnel/standtage/st-06-bilderstellung.webp.asset.json';
+import inseratAsset from '@/assets/funnel/standtage/st-07-inserat.webp.asset.json';
+import ctaCarAsset from '@/assets/funnel/standtage/st-08-cta-fahrzeug.webp.asset.json';
 
 const TEST_URL = '/fahrzeug-testen?source=standtage';
 
-/** Der klassische Weg vom Wareneingang bis zur Anzeige – neun Schritte, viele Abhängigkeiten. */
-const CLASSIC_STEPS = [
-  'abladen',
-  'reinigen / aufbereiten',
-  'rangieren & platzieren',
-  'Aufnahmeplatz finden',
-  'ausrichten',
-  'beleuchten',
-  'fotografieren',
-  'kontrollieren & freigeben',
-  'online stellen',
+const CLASSIC = [
+  { title: 'Ankunft', text: 'Fahrzeug trifft auf dem Hof ein.', img: ankunftAsset.url, alt: 'Unaufbereitetes Fahrzeug auf dem Hof', staff: false },
+  { title: 'Aufbereitung', text: 'Reinigung und Aufbereitung.', img: aufbereitungAsset.url, alt: 'Mitarbeiter reinigt ein Fahrzeug', staff: true },
+  { title: 'Fotoplatz & Rangieren', text: 'Fahrzeug zum Fotoplatz bringen und rangieren.', img: rangierenAsset.url, alt: 'Fahrzeug wird zum Fotoplatz gebracht', staff: true },
+  { title: 'Fototermin & Bearbeitung', text: 'Fotos aufnehmen und bearbeiten.', img: fototerminAsset.url, alt: 'Fotograf und Bildbearbeitung am Rechner', staff: true },
+  { title: 'Inserat', text: 'Fahrzeug online präsentieren.', img: inseratAsset.url, alt: 'Fahrzeuginserat mit Bildern', staff: false },
 ];
 
-/** Icons der Klassik-Kette, in derselben Reihenfolge wie CLASSIC_STEPS. */
-const STEP_ICONS = [Truck, Droplets, Shuffle, Warehouse, Ruler, Lightbulb, Camera, ClipboardCheck, Globe];
-
-/** Zusammenfassung des klassischen Wegs für die rote Vergleichskarte. */
-const CLASSIC_CARD_ITEMS = [
-  'Fahrzeug wird angeliefert und aufbereitet.',
-  'Fahrzeug zum Aufnahmeplatz oder zur Fotobox bringen.',
-  'Fahrzeug ausrichten und beleuchten.',
-  'Viele Fotos aus verschiedenen Perspektiven aufnehmen.',
-  'Bilder sichten, bearbeiten und freigeben.',
-  'Freigabe abwarten, dann online stellen.',
-];
-
-/** Die drei Schritte mit autohaus.ai für die grüne Vergleichskarte. */
-const AI_STEPS: [string, string][] = [
-  ['Fahrzeug kommt an', 'Direkt vom Transporter – ohne Umweg über Hof oder Aufnahmeplatz.'],
-  ['Smartphone-Fotos aufnehmen', 'Wenige Aufnahmen direkt am Fahrzeug, das ohnehin angeliefert wird.'],
-  ['autohaus.ai erstellt Verkaufsbilder', 'Automatisch, im einheitlichen Showroom- und CI-Look.'],
-];
-
-const DROP_CHIPS = ['Aufbereitung', 'Fotograf', 'Fotobox', 'Ausrichten', 'Beleuchten', 'Warteschlange', 'Nachbearbeitung'];
-
-const DEPENDENCIES = [
-  { icon: CloudRain, title: 'Hängt am Wetter.', text: 'Regen, Sonne und Dunkelheit entscheiden über den Zeitpunkt.' },
-  { icon: Users, title: 'Hängt an Personen.', text: 'Wer fotografieren kann oder darf, ist oft gerade beschäftigt.' },
-  { icon: Warehouse, title: 'Hängt an Plätzen.', text: 'Die Fotobox ist besetzt oder der Hof ist voll.' },
-  { icon: FileCheck, title: 'Hängt an Freigaben.', text: 'Bilder müssen kontrolliert werden, bevor etwas passiert.' },
+const AI_FLOW = [
+  { title: 'Ankunft & Smartphone-Fotos', text: 'Direkt bei der Ankunft Fotos mit dem Smartphone aufnehmen.', img: heroAsset.url, alt: 'Mitarbeiter fotografiert das Fahrzeug mit dem Smartphone', pos: '40% 50%' },
+  { title: 'Verkaufsbilder erstellen', text: 'autohaus.ai erstellt aus deinen Aufnahmen professionelle Verkaufsbilder.', img: bilderstellungAsset.url, alt: 'Verkaufsbilder werden in autohaus.ai erstellt', pos: '50% 50%' },
+  { title: 'Inserat veröffentlichen', text: 'Bilder herunterladen und für dein Inserat nutzen.', img: inseratAsset.url, alt: 'Inserat mit den erstellten Verkaufsbildern', pos: '50% 50%' },
 ];
 
 const BENEFITS = [
-  { icon: Zap, title: 'Verkaufsfähig, während es noch auf dem Hof steht.', text: 'Die Bilder entstehen dort, wo das Fahrzeug ohnehin steht.' },
-  { icon: Clock3, title: 'Unabhängig von Wetter, Fotograf und freien Plätzen.', text: 'Niemand muss warten, bis ein Aufnahmeplatz frei wird.' },
-  { icon: Layers3, title: 'Ein einheitlicher Auftritt über den gesamten Bestand.', text: 'Alle Fahrzeuge im selben Look, über Mitarbeiter und Standorte hinweg.' },
-  { icon: Building2, title: 'Weniger Aufwand im Tagesgeschäft.', text: 'Wer ablädt, kann direkt fotografieren; der Rest läuft automatisch.' },
-];
-
-const TEST_STEPS = [
-  { title: 'Ein konkretes Beispiel-Ergebnis', text: 'Ihr Fahrzeug in professioneller Qualität – angezeigt im autohaus.ai Look.' },
-  { title: 'Eine kurze Prozesseinschätzung', text: 'Wie Sie autohaus.ai in Ihrem Autohaus einsetzen können – individuell auf Ihre Situation.' },
-  { title: 'Eine Empfehlung für Ihren Einsatzfall', text: 'Konkrete nächste Schritte und Antworten auf Ihre Fragen im weiteren schriftlichen Austausch.' },
-];
-
-const TRUST = [
-  'Angebot ausschließlich für Unternehmer i. S. d. § 14 BGB',
-  'Das hochgeladene Bild wird nur für die Testanfrage verwendet und nicht veröffentlicht',
-  'Rückmeldung in der Regel innerhalb eines Werktags',
-  'KI-generierte Medien werden gekennzeichnet',
-  'Ein Produkt der Breadcrumb Marketing GmbH, Hanau',
+  { icon: Rocket, title: 'Früher online', text: 'Vermarktung schon vor der Aufbereitung.' },
+  { icon: Clock, title: 'Weniger Personalaufwand', text: 'Kein separater Fototermin und kein Rangieren zum Fotoplatz.' },
+  { icon: Layers, title: 'Einheitlicher Auftritt', text: 'Ein passender Bildlook für deinen Bestand.' },
 ];
 
 const FAQ = [
-  ['Brauche ich eine bestimmte Kamera?', 'Nein. Ein aktuelles Smartphone genügt. Wichtig sind vollständige Perspektiven und ein frei stehendes Fahrzeug.'],
-  ['Wer fotografiert bei uns?', 'Jede Person, die das Fahrzeug ohnehin anfasst. Eine Schulung ist nicht nötig, der Ablauf ist immer identisch.'],
-  ['Funktioniert das auch für Transporter, Motorrad oder LKW?', 'Ja. Die Aufnahmeabläufe sind je Fahrzeugart aufgebaut und unterscheiden sich in den benötigten Ansichten.'],
-  ['Was passiert mit meinem Bild?', 'Das Bild wird ausschließlich zur Bearbeitung Ihrer Testanfrage verwendet und nicht öffentlich zugänglich gespeichert.'],
+  ['Reicht ein Smartphone?', 'Ja. Du kannst dein Fahrzeug direkt auf dem Hof mit dem Smartphone fotografieren. Für mehrere Ansichten nimm entsprechende Fotos aus verschiedenen Perspektiven auf.'],
+  ['Muss ich das Fahrzeug vorher aufbereiten?', 'Für den Start der Bilderstellung musst du nicht auf die Aufbereitung warten. Die tatsächliche Fahrzeugaufbereitung kann parallel zur Vermarktung erfolgen.'],
+  ['Veröffentlicht autohaus.ai das Inserat automatisch?', 'Nein. Du lädst die erstellten Bilder herunter und nutzt sie für dein Inserat.'],
 ];
+
+function AiMark() {
+  return (
+    <img
+      src={getAiDisclosureLabelVector('landing')}
+      alt={getAiDisclosureLabelAlt('landing')}
+      title={getAiDisclosureText('landing')}
+      className={AI_DISCLOSURE_OVERLAY_CLASS}
+    />
+  );
+}
+
+function WaitConnector() {
+  return (
+    <div className="flex shrink-0 flex-row items-center justify-center gap-2 py-1 text-destructive/80 lg:flex-col lg:gap-1 lg:px-1 lg:py-0" aria-hidden="true">
+      <Clock className="h-5 w-5" />
+      <span className="text-[11px] font-medium">Warten</span>
+      <ArrowRight className="hidden h-4 w-4 lg:block" />
+      <ArrowDown className="h-4 w-4 lg:hidden" />
+    </div>
+  );
+}
+
+function FlowArrow() {
+  return (
+    <div className="flex shrink-0 items-center justify-center text-accent" aria-hidden="true">
+      <ArrowRight className="hidden h-8 w-8 lg:block" strokeWidth={2.25} />
+      <ArrowDown className="h-7 w-7 lg:hidden" strokeWidth={2.25} />
+    </div>
+  );
+}
+
+function Lane({ tone, label, sub, children }: { tone: 'classic' | 'ai'; label: string; sub: string; children: ReactNode }) {
+  const classic = tone === 'classic';
+  return (
+    <div className={classic ? 'rounded-xl border border-destructive/20 bg-destructive/[0.04] p-4 sm:p-5' : 'rounded-xl border border-accent/25 bg-accent/[0.06] p-4 sm:p-5'}>
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+        <h3 className={classic ? 'w-fit rounded-md bg-destructive/75 px-3 py-1.5 font-display text-base font-bold text-destructive-foreground' : 'w-fit rounded-md bg-accent px-3 py-1.5 font-display text-base font-bold text-accent-foreground'}>{label}</h3>
+        <p className={classic ? 'text-sm text-destructive' : 'text-sm text-accent'}>{sub}</p>
+      </div>
+      {children}
+    </div>
+  );
+}
 
 export default function StandtageVermeiden() {
   usePageMeta({
-    title: 'Standtage vermeiden – Fahrzeugbilder direkt vom Hof | autohaus.ai',
-    description: 'Jeder Standtag kostet Geld. autohaus.ai macht aus Smartphone-Aufnahmen direkt am Fahrzeug professionelle, einheitliche Fahrzeugbilder – ohne Aufbereitung, Fotograf oder Fotobox.',
+    title: 'Weniger Standtage. Früher im Verkauf. | autohaus.ai',
+    description: 'Starte die Vermarktung direkt nach der Ankunft: Smartphone-Fotos vom Hof, professionelle Verkaufsbilder aus autohaus.ai – ohne Fototermin und ohne Fahrt zum Fotoplatz.',
     canonicalPath: '/standtage-vermeiden',
   });
 
   useEffect(() => { captureAttribution('lp_standtage'); captureLastTouch(); }, []);
 
-  // Scrolltiefe (50 % / 90 %) – zeigt, ob Paid-Besucher die Argumente wirklich lesen.
   useEffect(() => {
     const sent = new Set<number>();
     const onScroll = () => {
@@ -119,290 +118,163 @@ export default function StandtageVermeiden() {
   return (
     <FunnelLayout
       ctaHref={TEST_URL}
-      ctaLabel="Fahrzeug kostenlos testen"
+      ctaLabel="Kostenlos testen"
       anchors={[{ href: '#ablauf', label: 'Ablauf' }, { href: '#fragen', label: 'Fragen' }]}
     >
-      {/* S1 · Hero: Kontrast zwischen Ankunft und Online in einem Blick */}
-      <section className="border-b border-border bg-card">
-        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[.9fr_1.1fr] lg:py-16">
+      {/* Hero */}
+      <section className="overflow-hidden border-b border-border bg-secondary/40">
+        <div className="mx-auto grid max-w-6xl items-center gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[.85fr_1.15fr] lg:gap-10 lg:py-14">
           <div className="min-w-0">
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent">Für Autohäuser, Fahrzeughändler und Händlergruppen</p>
-            <h1 className="mt-4 font-display text-4xl font-bold leading-[1.04] text-foreground sm:text-5xl">Jeder Standtag kostet Geld.</h1>
-            <p className="mt-3 font-display text-lg font-bold text-accent sm:text-xl">Vom LKW ins Netz – noch am selben Tag online.</p>
-            <p className="mt-5 max-w-xl text-base leading-7 text-muted-foreground">
-              Wenn der Autotransporter vorfährt, beginnt der Verkauf. Ihre Mitarbeiter machen wenige Smartphone-Aufnahmen direkt am Fahrzeug – autohaus.ai erzeugt daraus professionelle, einheitliche Bilder im Showroom- und CI-Look. Kein Reinigen, kein Fotograf, keine Fotobox.
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-accent">Standtage vermeiden</p>
+            <h1 className="mt-3 font-display text-4xl font-bold leading-[1.04] text-foreground sm:text-5xl">
+              Weniger Standtage.<br />Früher im Verkauf.
+            </h1>
+            <p className="mt-5 max-w-lg text-base leading-7 text-muted-foreground sm:text-lg">
+              Starte die Vermarktung direkt nach der Ankunft. Mit Smartphone-Fotos vom Hof und professionellen Verkaufsbildern aus autohaus.ai.
             </p>
-            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-              <Button asChild size="lg" className="shadow-glow">
-                <Link to={TEST_URL}>Ein Fahrzeug kostenlos testen <ArrowRight className="h-4 w-4" /></Link>
-              </Button>
-              <Button asChild size="lg" variant="outline">
-                <a href="#ablauf">So läuft es ab <ChevronRight className="h-4 w-4" /></a>
-              </Button>
-            </div>
-            <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted-foreground">
-              {['Kein Fotostudio nötig', 'Keine manuelle Nachbearbeitung', 'Für Händler und Gruppen'].map((item) => (
-                <span key={item} className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-accent" />{item}</span>
-              ))}
-            </div>
+            <Button asChild size="lg" className="mt-7 w-full shadow-glow sm:w-auto">
+              <Link to={TEST_URL}>Mit eigenem Fahrzeug testen <ArrowRight className="h-4 w-4" /></Link>
+            </Button>
+            <p className="mt-3 text-sm text-muted-foreground">Ohne Fototermin. Ohne Fahrt zum Fotoplatz.</p>
           </div>
 
-          <div className="min-w-0">
-            <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
-              <figure className="relative overflow-hidden rounded-lg border border-border bg-secondary shadow-card">
-                <img src={arrivalImage} alt="Fahrzeug auf dem Anhänger eines Autotransporters, direkt nach der Ankunft" className="aspect-[4/3] w-full object-cover" loading="eager" />
-                <figcaption className="absolute left-2 top-2 rounded-md bg-foreground/85 px-2.5 py-1.5 text-[10px] font-semibold leading-tight text-background shadow-card sm:left-3 sm:top-3 sm:text-xs">
-                  Ankunft<br /><span className="font-normal opacity-80">auf dem Anhänger</span>
-                </figcaption>
-              </figure>
-              <figure className="relative overflow-hidden rounded-lg border border-accent/50 bg-card shadow-elevated">
-                <img src={showroomImage} alt="Dasselbe Fahrzeug als professionelles Showroom-Motiv" className="aspect-[4/3] w-full object-cover" loading="eager" />
-                <figcaption className="absolute right-2 top-2 rounded-md bg-accent px-2.5 py-1.5 text-[10px] font-semibold leading-tight text-accent-foreground shadow-card sm:right-3 sm:top-3 sm:text-xs">
-                  Online<br /><span className="font-normal opacity-90">im Showroom-Look</span>
-                </figcaption>
-              </figure>
+          <div className="relative min-w-0 pb-10 sm:pb-12">
+            <div className="relative overflow-hidden rounded-xl shadow-elevated">
+              <img
+                src={heroAsset.url}
+                alt="Mitarbeiter fotografiert ein unaufbereitetes Fahrzeug direkt auf dem Hof mit dem Smartphone"
+                width={1600}
+                height={800}
+                className="aspect-[2/1] w-full object-cover"
+                loading="eager"
+                fetchPriority="high"
+              />
+              <AiMark />
             </div>
-            <div className="mt-3 flex flex-wrap items-center justify-center gap-2 rounded-lg border border-border bg-secondary/50 px-3 py-2.5 text-xs">
-              <span className="flex items-center gap-2 rounded-md border border-border bg-card px-2.5 py-1.5 font-semibold text-muted-foreground">
-                <Truck className="h-3.5 w-3.5" aria-hidden="true" /> {CLASSIC_STEPS.length} Schritte
-              </span>
-              <ArrowRight className="h-4 w-4 text-accent" aria-hidden="true" />
-              <span className="flex items-center gap-2 rounded-md border border-accent/40 bg-accent/5 px-2.5 py-1.5 font-semibold text-foreground">
-                <Camera className="h-3.5 w-3.5 text-accent" aria-hidden="true" /> 3 Schritte
-              </span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Der gelieferte Vorher/Heute-Vergleich als große, bereinigte Bildgeschichte */}
-      <section id="ablauf" className="scroll-mt-20 border-b border-border bg-secondary/45 py-12 sm:py-16">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="mb-6 flex flex-col justify-between gap-3 md:flex-row md:items-end">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent">Der Unterschied im Alltag</p>
-              <h2 className="mt-2 max-w-2xl font-display text-3xl font-bold leading-tight sm:text-4xl">Vom Hoftermin zum Handgriff.</h2>
-            </div>
-            <p className="max-w-sm text-sm leading-6 text-muted-foreground">Dasselbe Ziel, ein kürzerer Weg: vom angelieferten Fahrzeug zu Bildern für den Verkauf.</p>
-          </div>
-          <figure>
-            <div className="hidden overflow-hidden rounded-lg border border-border bg-card shadow-elevated sm:block">
-              <img src={processImage} alt="Vergleich: Links aufwendige Fahrzeugaufbereitung und Fotografie bei Regen, rechts Smartphone-Aufnahmen direkt am angelieferten Fahrzeug" className="aspect-[16/9] w-full object-cover" loading="eager" />
-            </div>
-            <div className="grid gap-3 sm:hidden">
-              <div className="relative aspect-[4/3] overflow-hidden rounded-lg border border-border bg-card">
-                <img src={processImage} alt="Klassischer Prozess: Reinigung und professionelle Fotografie im Regen am Autohaus" className="absolute left-0 top-0 h-full w-[200%] max-w-none object-cover" loading="eager" />
-              </div>
-              <div className="relative aspect-[4/3] overflow-hidden rounded-lg border border-border bg-card">
-                <img src={processImage} alt="Mit autohaus.ai: Mitarbeiter fotografiert das angelieferte Fahrzeug direkt mit dem Smartphone" className="absolute right-0 top-0 h-full w-[200%] max-w-none object-cover" loading="eager" />
-              </div>
-            </div>
-            <figcaption className="mt-4 grid gap-3 sm:grid-cols-2 sm:gap-5">
-              <div className="flex items-start gap-3 border-l-2 border-destructive pl-4">
-                <X className="mt-0.5 h-5 w-5 shrink-0 text-destructive" aria-hidden="true" />
-                <div><strong className="block text-sm">Klassisch: erst vorbereiten, dann fotografieren.</strong><span className="mt-1 block text-xs leading-5 text-muted-foreground">Aufbereitung, Aufnahmeplatz, Beleuchtung und Freigaben kosten Zeit.</span></div>
-              </div>
-              <div className="flex items-start gap-3 border-l-2 border-accent pl-4">
-                <Check className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden="true" />
-                <div><strong className="block text-sm">Mit autohaus.ai: direkt am Fahrzeug aufnehmen.</strong><span className="mt-1 block text-xs leading-5 text-muted-foreground">Smartphone-Fotos am Standort werden zu einheitlichen Verkaufsbildern.</span></div>
-              </div>
-            </figcaption>
-          </figure>
-        </div>
-      </section>
-
-      {/* S2 · Problem und Vergleich in einem Block */}
-      <section className="border-b border-border bg-card py-14">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <h2 className="font-display text-3xl font-bold">Zwischen Ankunft und Anzeige liegen zu viele Schritte.</h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-            Der klassische Prozess ist zeitaufwendig, personalintensiv und kostet bares Geld – bei jedem einzelnen Fahrzeug.
-          </p>
-
-          <ol className="mt-7 -mx-4 flex snap-x gap-2 overflow-x-auto px-4 pb-2 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
-            {CLASSIC_STEPS.map((step, i) => {
-              const StepIcon = STEP_ICONS[i];
-              return (
-                <li key={step} className="flex shrink-0 snap-start items-center gap-2 rounded-lg border border-border bg-secondary/60 px-3 py-2.5 text-xs font-semibold shadow-card">
-                  <StepIcon className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-                  <span className="text-muted-foreground">{i + 1}</span>{step}
-                </li>
-              );
-            })}
-          </ol>
-
-          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {DEPENDENCIES.map((d) => (
-              <div key={d.title} className="rounded-lg border border-border bg-secondary/40 p-5 shadow-card">
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-card text-accent shadow-card"><d.icon className="h-4 w-4" /></span>
-                <p className="mt-3 text-sm font-bold">{d.title}</p>
-                <p className="mt-1 text-xs leading-5 text-muted-foreground">{d.text}</p>
-              </div>
-            ))}
-          </div>
-
-          <p className="mt-7 text-sm font-semibold text-foreground">
-            In dieser Zeit steht das Fahrzeug. Es ist bezahlt, finanziert und noch nicht sichtbar.
-          </p>
-        </div>
-      </section>
-
-      {/* S3 · Prozessvergleich klassisch vs. autohaus.ai */}
-      <section className="funnel-section-tint border-b border-border py-14">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="relative grid gap-5 lg:grid-cols-2 lg:gap-10">
-            <div className="rounded-lg border border-destructive/25 bg-destructive/5 p-6 shadow-card">
-              <div className="flex items-center gap-3">
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-destructive/10 text-destructive"><X className="h-5 w-5" strokeWidth={2.5} /></span>
-                <div>
-                  <h3 className="font-display text-lg font-bold">Der klassische Weg</h3>
-                  <p className="text-xs text-muted-foreground">Viele Schritte, hoher Aufwand, lange Standzeiten.</p>
+            {/* Native Inseratsvorschau – sitzt unterhalb des Fahrzeugs, verdeckt weder Auto noch Smartphone */}
+            <div className="absolute bottom-0 right-2 w-48 rounded-lg border border-border bg-card p-2.5 shadow-elevated sm:right-4 sm:w-60">
+              <div className="flex gap-2.5">
+                <img src={inseratAsset.url} alt="" className="h-14 w-20 shrink-0 rounded object-cover sm:h-16 sm:w-24" loading="eager" />
+                <div className="min-w-0 flex-1">
+                  <span className="inline-flex items-center gap-1 rounded bg-accent px-1.5 py-0.5 text-[10px] font-semibold text-accent-foreground">
+                    <CheckCircle2 className="h-3 w-3" aria-hidden="true" /> Bereit fürs Inserat
+                  </span>
+                  <div className="mt-2 h-1.5 w-full rounded bg-muted" />
+                  <div className="mt-1.5 h-1.5 w-2/3 rounded bg-muted" />
                 </div>
               </div>
-              <ol className="mt-5 space-y-3 text-sm">
-                {CLASSIC_CARD_ITEMS.map((item, i) => (
-                  <li key={item} className="flex gap-3 text-muted-foreground">
-                    <X className="mt-0.5 h-4 w-4 shrink-0 text-destructive" strokeWidth={2.5} />
-                    <span><span className="mr-1.5 font-bold text-destructive">{i + 1}</span>{item}</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Ablauf */}
+      <section id="ablauf" className="scroll-mt-20 bg-background py-12 sm:py-16">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <div className="mx-auto max-w-3xl text-center">
+            <h2 className="font-display text-3xl font-bold leading-tight text-foreground sm:text-4xl">Wo sonst Tage vergehen, startet deine Vermarktung.</h2>
+            <p className="mt-3 text-base text-muted-foreground sm:text-lg">Wartezeiten und Personalaufwand entstehen oft schon vor dem ersten Inserat.</p>
+          </div>
+
+          <div className="mt-8 space-y-5">
+            <Lane tone="classic" label="Der klassische Weg" sub="Mehr Termine. Mehr Beteiligte. Wiederholte Wartezeiten.">
+              <ol className="flex flex-col items-stretch gap-2 lg:flex-row lg:gap-1">
+                {CLASSIC.map((s, i) => (
+                  <li key={s.title} className="contents">
+                    <div className="flex min-w-0 flex-1 flex-col rounded-lg border border-border bg-card p-3 text-center shadow-card">
+                      <h4 className="text-sm font-semibold text-foreground">{s.title}</h4>
+                      <img src={s.img} alt={s.alt} loading="lazy" className="mt-2 aspect-[4/3] w-full rounded object-cover" />
+                      <p className="mt-2 text-xs leading-5 text-muted-foreground">{s.text}</p>
+                      {s.staff && (
+                        <span className="mx-auto mt-2 inline-flex items-center gap-1 rounded border border-destructive/25 bg-destructive/10 px-2 py-0.5 text-[11px] text-destructive">
+                          <UserRound className="h-3 w-3" aria-hidden="true" /> Personalaufwand
+                        </span>
+                      )}
+                    </div>
+                    {i < CLASSIC.length - 1 && <WaitConnector />}
                   </li>
                 ))}
               </ol>
-            </div>
-            <div className="rounded-lg border border-accent/30 bg-accent/5 p-6 shadow-card">
-              <div className="flex items-center gap-3">
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-accent text-accent-foreground"><Check className="h-5 w-5" strokeWidth={2.5} /></span>
+              <div className="mt-4 flex items-center gap-3 text-xs font-medium text-destructive" aria-hidden="false">
+                <span className="h-3 w-px bg-destructive/60" aria-hidden="true" />
+                <span className="h-px flex-1 bg-destructive/40" aria-hidden="true" />
+                <span>Zeit bis zum Vermarktungsstart</span>
+                <span className="h-px flex-1 bg-destructive/40" aria-hidden="true" />
+                <span className="h-3 w-px bg-destructive/60" aria-hidden="true" />
+              </div>
+            </Lane>
+
+            <Lane tone="ai" label="Mit autohaus.ai" sub="Direkt am Fahrzeug. Ein kurzer Ablauf.">
+              <ol className="flex flex-col items-stretch gap-3 lg:flex-row lg:gap-4">
+                {AI_FLOW.map((s, i) => (
+                  <li key={s.title} className="contents">
+                    <div className="flex min-w-0 flex-1 flex-col rounded-lg border border-border bg-card p-4 text-center shadow-card">
+                      <h4 className="text-sm font-semibold text-foreground sm:text-base">{s.title}</h4>
+                      <div className="relative mt-3 overflow-hidden rounded">
+                        <img src={s.img} alt={s.alt} loading="lazy" className="aspect-[16/10] w-full object-cover" style={{ objectPosition: s.pos }} />
+                      </div>
+                      <p className="mt-3 text-xs leading-5 text-muted-foreground sm:text-sm">{s.text}</p>
+                    </div>
+                    {i < AI_FLOW.length - 1 && <FlowArrow />}
+                  </li>
+                ))}
+              </ol>
+              <div className="mt-4 grid gap-3 rounded-lg border border-accent/20 bg-card/70 px-4 py-3 text-sm text-foreground md:grid-cols-2 md:divide-x md:divide-accent/20">
+                <p className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden="true" />Aufbereitung und Fototermin müssen den Vermarktungsstart nicht mehr verzögern.</p>
+                <p className="flex items-start gap-2 md:pl-4"><Car className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden="true" />Die Fahrzeugaufbereitung kann parallel weiterlaufen.</p>
+              </div>
+            </Lane>
+          </div>
+        </div>
+      </section>
+
+      {/* Vorteile */}
+      <section className="bg-background pb-12 sm:pb-16">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <h2 className="text-center font-display text-3xl font-bold text-foreground sm:text-4xl">Weniger warten. Früher sichtbar sein.</h2>
+          <div className="mt-8 grid gap-6 md:grid-cols-3 md:divide-x md:divide-border">
+            {BENEFITS.map(({ icon: Icon, title, text }) => (
+              <div key={title} className="flex items-start gap-4 md:px-6">
+                <Icon className="h-10 w-10 shrink-0 text-accent" strokeWidth={1.6} aria-hidden="true" />
                 <div>
-                  <h3 className="font-display text-lg font-bold text-accent">Mit autohaus.ai</h3>
-                  <p className="text-xs text-muted-foreground">Vom Hoftermin zum Verkaufsbild – in nur 3 Schritten.</p>
+                  <h3 className="font-display text-lg font-bold text-foreground">{title}</h3>
+                  <p className="mt-1 text-sm leading-6 text-muted-foreground">{text}</p>
                 </div>
               </div>
-              <div className="mt-5 grid items-center gap-4 sm:grid-cols-[1fr_auto]">
-                <ol className="space-y-4 text-sm">
-                  {AI_STEPS.map(([title, text], i) => (
-                    <li key={title} className="flex gap-3">
-                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent font-display text-xs font-bold text-accent-foreground">{i + 1}</span>
-                      <span><span className="block font-bold text-foreground">{title}</span><span className="mt-0.5 block text-xs leading-5 text-muted-foreground">{text}</span></span>
-                    </li>
-                  ))}
-                </ol>
-                <img src={phonePhoto.url} alt="Mitarbeiter fotografiert ein Fahrzeug direkt mit dem Smartphone" className="hidden w-40 rounded-lg border border-border object-cover shadow-card sm:block" loading="lazy" />
-              </div>
-            </div>
-            <div className="pointer-events-none absolute left-1/2 top-1/2 hidden h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card text-accent shadow-card lg:flex">
-              <ArrowRight className="h-5 w-5" />
-            </div>
-          </div>
-
-          <div className="mt-8 rounded-lg border border-border bg-secondary/40 p-5 shadow-card">
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">Fällt weg</p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {DROP_CHIPS.map((chip) => (
-                <span key={chip} className="flex items-center gap-1.5 rounded-md border border-destructive/20 bg-card px-3 py-1.5 text-xs font-semibold text-muted-foreground">
-                  <X className="h-3.5 w-3.5 text-destructive" strokeWidth={2.5} />{chip}
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* S4 · Nutzen */}
-      <section className="border-b border-border py-14">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <h2 className="font-display text-3xl font-bold">Was sich für Ihren Bestand ändert.</h2>
-          <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {BENEFITS.map((b) => (
-              <article key={b.title} className="rounded-lg border border-border bg-card p-5 shadow-card">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-accent/10 text-accent"><b.icon className="h-5 w-5" /></span>
-                <h3 className="mt-4 text-sm font-bold leading-snug">{b.title}</h3>
-                <p className="mt-2 text-xs leading-5 text-muted-foreground">{b.text}</p>
-              </article>
             ))}
           </div>
-          <div className="mt-4 flex flex-col gap-4 rounded-lg border border-border bg-secondary/40 p-6 sm:flex-row sm:items-center">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent"><Images className="h-5 w-5" /></span>
-            <div>
-              <h3 className="text-sm font-bold">Skaliert mit dem Wareneingang.</h3>
-              <p className="mt-1 text-xs leading-5 text-muted-foreground">Mehrere Fahrzeuge nacheinander folgen demselben Ablauf, ohne dass der Prozess jedes Mal neu gestartet wird.</p>
-            </div>
+        </div>
+      </section>
+
+      {/* Abschluss-CTA */}
+      <section className="px-4 pb-12 sm:px-6 sm:pb-16">
+        <div className="mx-auto grid max-w-6xl items-center gap-4 overflow-hidden rounded-xl bg-accent px-6 pt-8 text-accent-foreground shadow-elevated md:grid-cols-[1fr_1fr] md:py-0 md:pl-12 md:pt-0">
+          <div className="md:py-10">
+            <h2 className="font-display text-3xl font-bold leading-tight sm:text-4xl">Mach dein nächstes Fahrzeug zum Test.</h2>
+            <p className="mt-2 text-base opacity-90 sm:text-lg">Sieh, was aus deinen Smartphone-Fotos wird.</p>
+            <Button asChild size="lg" variant="secondary" className="mt-6 w-full sm:w-auto">
+              <Link to={TEST_URL}>Mein Fahrzeugfoto testen <ArrowRight className="h-4 w-4" /></Link>
+            </Button>
+            <p className="mt-3 text-xs opacity-85">Persönliche Rückmeldung in der Regel innerhalb eines Werktags.</p>
+          </div>
+          <div className="relative">
+            <img src={ctaCarAsset.url} alt="Fahrzeug als professionelles Verkaufsbild" loading="lazy" className="mx-auto w-full max-w-md object-contain md:max-w-none" />
           </div>
         </div>
       </section>
 
-      {/* S5 · Beweise und Vertrauen */}
-      <section className="funnel-section-tint border-b border-border py-14">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <h2 className="font-display text-3xl font-bold">So sieht das Ergebnis aus.</h2>
-          <div className="mt-7 grid items-start gap-8 lg:grid-cols-[1.05fr_.95fr]">
-            <div>
-              <BeforeAfterShowcase />
-              <p className="mt-3 text-xs leading-5 text-muted-foreground">
-                Das Ergebnis hängt von der Qualität Ihrer Aufnahme ab. Im Test zeigen wir es an einem Ihrer eigenen Fahrzeuge.
-              </p>
-            </div>
-            <div className="space-y-5">
-              <div className="rounded-lg border border-border bg-card p-6 shadow-card">
-                <h3 className="font-display text-lg font-bold">So läuft der Test ab</h3>
-                <ol className="mt-5 space-y-4">
-                  {TEST_STEPS.map((s, i) => (
-                    <li key={s.title} className="flex gap-3">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent/10 font-display text-sm font-bold text-accent">{i + 1}</span>
-                      <div>
-                        <p className="text-sm font-bold leading-tight">{s.title}</p>
-                        <p className="mt-1 text-xs leading-5 text-muted-foreground">{s.text}</p>
-                      </div>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-              <figure className="rounded-lg border border-accent/25 bg-accent/5 p-5">
-                <Quote className="h-6 w-6 text-accent/40" aria-hidden="true" />
-                <blockquote className="mt-2 text-sm italic leading-6 text-foreground">„Wir sparen enorm viel Zeit und haben endlich eine einheitliche Aufnahmequalität über alle Standorte hinweg. Die Bildqualität ist überzeugend."</blockquote>
-                <figcaption className="mt-3 text-xs text-muted-foreground"><span className="font-bold text-foreground">Thomas R.</span> · Geschäftsführer, Mehrmarken-Autohaus</figcaption>
-              </figure>
-            </div>
-          </div>
-
-          <ul className="mt-8 grid gap-2 rounded-lg border border-border bg-card p-5 shadow-card sm:grid-cols-2 lg:grid-cols-3">
-            {TRUST.map((t) => (
-              <li key={t} className="flex gap-2 text-xs leading-5 text-muted-foreground"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-accent" />{t}</li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      {/* S6 · Kurz-FAQ */}
-      <section id="fragen" className="scroll-mt-20 border-b border-border bg-secondary/45 py-14">
-        <div className="mx-auto grid max-w-6xl gap-8 px-4 sm:px-6 lg:grid-cols-[.7fr_1.3fr]">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent">Häufige Fragen</p>
-            <h2 className="mt-2 font-display text-3xl font-bold">Noch Fragen?</h2>
-            <p className="mt-3 text-sm leading-6 text-muted-foreground">Kurze Antworten zum Ablauf bei Ihnen im Haus.</p>
-          </div>
-          <Accordion type="single" collapsible className="space-y-3">
+      {/* FAQ */}
+      <section id="fragen" className="scroll-mt-20 bg-background pb-16">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6">
+          <h2 className="text-center font-display text-3xl font-bold text-foreground">Noch Fragen?</h2>
+          <Accordion type="single" collapsible className="mt-6 space-y-3">
             {FAQ.map(([q, a], i) => (
-              <AccordionItem key={q} value={`faq-${i}`} className="rounded-lg border border-border bg-card px-5 shadow-card last:border-b">
-                <AccordionTrigger className="text-left text-sm font-semibold hover:no-underline">{q}</AccordionTrigger>
+              <AccordionItem key={q} value={`f${i}`} className="rounded-lg border border-border bg-card px-4">
+                <AccordionTrigger className="text-left text-sm font-semibold">{q}</AccordionTrigger>
                 <AccordionContent className="text-sm leading-6 text-muted-foreground">{a}</AccordionContent>
               </AccordionItem>
             ))}
           </Accordion>
-        </div>
-      </section>
-
-      {/* S7 · Abschluss-CTA */}
-      <section className="px-4 py-14 sm:px-6">
-        <div className="gradient-hero mx-auto flex max-w-6xl flex-col justify-between gap-6 rounded-lg px-6 py-8 text-primary-foreground sm:px-8 lg:flex-row lg:items-center">
-          <div>
-            <h2 className="font-display text-2xl font-bold">Machen Sie Ihr nächstes Fahrzeug zum Test.</h2>
-            <p className="mt-2 text-sm text-primary-foreground/80">Ein Smartphone-Foto vom Hof genügt. Sie sehen das Ergebnis und entscheiden dann.</p>
-          </div>
-          <div className="shrink-0">
-            <Button asChild size="lg" variant="secondary">
-              <Link to={TEST_URL}>Ein Fahrzeug kostenlos testen <ArrowRight className="h-4 w-4" /></Link>
-            </Button>
-            <p className="mt-2 text-xs text-primary-foreground/70">Dauert nur eine Minute · Rückmeldung innerhalb eines Werktags</p>
-          </div>
         </div>
       </section>
     </FunnelLayout>
