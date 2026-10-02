@@ -18,6 +18,7 @@ import resultImage1Asset from '@/assets/home/results/web-1.jpeg.asset.json';
 import showroomLookAsset from '@/assets/home/looks/showroom-look.jpeg.asset.json';
 import outdoorLookAsset from '@/assets/home/looks/outdoor-look.webp.asset.json';
 import brandingLookAsset from '@/assets/home/looks/branding-look.webp.asset.json';
+import kennzeichenLookAsset from '@/assets/home/looks/kennzeichen-look.webp.asset.json';
 import fahrzeugdetailAsset from '@/assets/home/looks/fahrzeugdetail.jpeg.asset.json';
 import resultImage2Asset from '@/assets/home/results/web-2.jpeg.asset.json';
 import resultImage3Asset from '@/assets/home/results/web-3.jpeg.asset.json';
@@ -498,6 +499,11 @@ const LOOK_IMAGES: Record<string, { src: string; alt: string; aiContext?: AiDisc
   Branding: {
     src: brandingLookAsset.url,
     alt: 'Silbernes SUV im Showroom vor einer Wand mit der Aufschrift autohaus.ai – mit KI erstellt',
+    aiContext: 'landing',
+  },
+  Kennzeichen: {
+    src: kennzeichenLookAsset.url,
+    alt: 'Silbernes SUV in der Dreiviertelansicht von vorne mit dem Kennzeichen autohaus.ai – mit KI erstellt',
     aiContext: 'landing',
   },
 };
