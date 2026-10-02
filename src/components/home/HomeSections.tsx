@@ -7,6 +7,7 @@ import ImagePlaceholder from './ImagePlaceholder';
 import type { AiDisclosureContext } from '@/lib/ai-disclosure';
 import originalDealerAsset from '@/assets/home/original-dealer-2.webp.asset.json';
 import remasterShowroomAsset from '@/assets/home/remaster-suv-showroom.jpg.asset.json';
+import marketingBannerAsset from '@/assets/home/marketing-banner-neon.png.asset.json';
 
 const BENEFITS = [
   { title: 'Smartphone-Foto', text: 'Direkt auf dem Hof starten.' },
