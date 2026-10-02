@@ -3740,7 +3740,11 @@ export type Database = {
           external_vehicle_id: string
           gallery_mode: string
           id: string
+          last_action: string | null
+          last_action_at: string | null
+          last_error: string | null
           live_snapshot: Json | null
+          live_updated_at: string | null
           published_at: string | null
           source_system: string
           status: string
@@ -3748,6 +3752,7 @@ export type Database = {
           updated_at: string
           user_id: string
           vehicle_id: string
+          version: number
         }
         Insert: {
           cover_asset_id?: string | null
@@ -3757,7 +3762,11 @@ export type Database = {
           external_vehicle_id: string
           gallery_mode?: string
           id?: string
+          last_action?: string | null
+          last_action_at?: string | null
+          last_error?: string | null
           live_snapshot?: Json | null
+          live_updated_at?: string | null
           published_at?: string | null
           source_system: string
           status?: string
@@ -3765,6 +3774,7 @@ export type Database = {
           updated_at?: string
           user_id: string
           vehicle_id: string
+          version?: number
         }
         Update: {
           cover_asset_id?: string | null
@@ -3774,7 +3784,11 @@ export type Database = {
           external_vehicle_id?: string
           gallery_mode?: string
           id?: string
+          last_action?: string | null
+          last_action_at?: string | null
+          last_error?: string | null
           live_snapshot?: Json | null
+          live_updated_at?: string | null
           published_at?: string | null
           source_system?: string
           status?: string
@@ -3782,6 +3796,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           vehicle_id?: string
+          version?: number
         }
         Relationships: [
           {
@@ -3951,6 +3966,11 @@ export type Database = {
         }
         Returns: undefined
       }
+      website_media_missing_urls: {
+        Args: { _urls: string[] }
+        Returns: string[]
+      }
+      website_media_url_ok: { Args: { _u: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
