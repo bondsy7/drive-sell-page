@@ -19,7 +19,10 @@ import showroomLookAsset from '@/assets/home/looks/showroom-look.jpeg.asset.json
 import outdoorLookAsset from '@/assets/home/looks/outdoor-look.webp.asset.json';
 import brandingLookAsset from '@/assets/home/looks/branding-look.webp.asset.json';
 import kennzeichenLookAsset from '@/assets/home/looks/kennzeichen-look.webp.asset.json';
-import fahrzeugdetailAsset from '@/assets/home/looks/fahrzeugdetail.jpeg.asset.json';
+import showroomDetailAsset from '@/assets/home/looks/showroom-detail.webp.asset.json';
+import outdoorDetailAsset from '@/assets/home/looks/outdoor-detail.webp.asset.json';
+import brandingDetailAsset from '@/assets/home/looks/branding-detail.webp.asset.json';
+import kennzeichenDetailAsset from '@/assets/home/looks/kennzeichen-detail.webp.asset.json';
 import resultImage2Asset from '@/assets/home/results/web-2.jpeg.asset.json';
 import resultImage3Asset from '@/assets/home/results/web-3.jpeg.asset.json';
 import resultImage4Asset from '@/assets/home/results/web-4.jpeg.asset.json';
@@ -485,26 +488,50 @@ export function HomeResults() {
   );
 }
 
-const LOOK_IMAGES: Record<string, { src: string; alt: string; aiContext?: AiDisclosureContext }> = {
+type LookEntry = {
+  src: string;
+  alt: string;
+  aiContext?: AiDisclosureContext;
+  /** Kleines Detailbild im überlagernden Kasten – wechselt mit der Kategorie. */
+  detail: { src: string; alt: string };
+};
+
+const LOOK_IMAGES: Record<string, LookEntry> = {
   Showroom: {
     src: showroomLookAsset.url,
     alt: 'Silbernes SUV im Showroom – mit KI erstellt',
     aiContext: 'landing',
+    detail: {
+      src: showroomDetailAsset.url,
+      alt: 'Detailaufnahme von Kühlergrill und Scheinwerfer des silbernen SUVs im Showroom – mit KI erstellt',
+    },
   },
   Outdoor: {
     src: outdoorLookAsset.url,
     alt: 'Silbernes SUV von der Seite auf einem Parkplatz im Abendlicht – mit KI erstellt',
     aiContext: 'landing',
+    detail: {
+      src: outdoorDetailAsset.url,
+      alt: 'Detailaufnahme des Vorderrads mit Leichtmetallfelge im Abendlicht – mit KI erstellt',
+    },
   },
   Branding: {
     src: brandingLookAsset.url,
     alt: 'Silbernes SUV im Showroom vor einer Wand mit der Aufschrift autohaus.ai – mit KI erstellt',
     aiContext: 'landing',
+    detail: {
+      src: brandingDetailAsset.url,
+      alt: 'Detailaufnahme der Wand mit dem Schriftzug autohaus.ai – mit KI erstellt',
+    },
   },
   Kennzeichen: {
     src: kennzeichenLookAsset.url,
     alt: 'Silbernes SUV in der Dreiviertelansicht von vorne mit dem Kennzeichen autohaus.ai – mit KI erstellt',
     aiContext: 'landing',
+    detail: {
+      src: kennzeichenDetailAsset.url,
+      alt: 'Detailaufnahme des Kennzeichens mit der Aufschrift autohaus.ai – mit KI erstellt',
+    },
   },
 };
 
@@ -525,7 +552,7 @@ export function HomeQuality() {
             aiContext={lookImage?.aiContext}
           />
           <div className="absolute bottom-0 right-0 hidden w-52 rounded-lg border border-border bg-card p-3 shadow-elevated sm:block">
-            <ImagePlaceholder label="Fahrzeugdetail" ratio="1/1" src={fahrzeugdetailAsset.url} alt="Scheinwerfer-Detail eines silbernen SUVs – mit KI erstellt" aiContext="landing" />
+            <ImagePlaceholder label="Fahrzeugdetail" ratio="1/1" src={lookImage?.detail.src} alt={lookImage?.detail.alt} aiContext="landing" />
           </div>
         </div>
         <div>
