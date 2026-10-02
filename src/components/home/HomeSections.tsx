@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Camera, Check, Images, LayoutTemplate, Palette, Share2, Video } from 'lucide-react';
+import { ArrowRight, Camera, Check, ChevronLeft, ChevronRight, Images, LayoutTemplate, Palette, Share2, Video, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import ImagePlaceholder from './ImagePlaceholder';
-import type { AiDisclosureContext } from '@/lib/ai-disclosure';
+import { getAiDisclosureLabelAlt, getAiDisclosureLabelAsset, getAiDisclosureText, type AiDisclosureContext } from '@/lib/ai-disclosure';
 import originalDealerAsset from '@/assets/home/original-dealer-2.webp.asset.json';
 import remasterShowroomAsset from '@/assets/home/remaster-suv-showroom.jpg.asset.json';
 import marketingBannerAsset from '@/assets/home/marketing-banner-neon.png.asset.json';
@@ -250,7 +251,22 @@ function SocialFormatCollage() {
 
 export function HomeResults() {
   const [active, setActive] = useState(0);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const result = RESULT_TABS[active];
+  const lightboxCount = RESULT_IMAGES.length;
+
+  useEffect(() => {
+    if (lightboxIndex === null) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'ArrowLeft') {
+        setLightboxIndex((current) => (current === null ? current : (current - 1 + lightboxCount) % lightboxCount));
+      } else if (event.key === 'ArrowRight') {
+        setLightboxIndex((current) => (current === null ? current : (current + 1) % lightboxCount));
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [lightboxIndex, lightboxCount]);
 
   return (
     <section id="ergebnisse" className="scroll-mt-20 border-y border-border bg-secondary/60 py-20 sm:py-28">
@@ -272,15 +288,22 @@ export function HomeResults() {
               <p className="mb-3 text-xs font-bold uppercase text-muted-foreground">12 Perspektiven · Ergebnisse</p>
               <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3">
                 {Array.from({ length: RESULT_TILE_COUNT }, (_, index) => (
-                  <ImagePlaceholder
+                  <button
                     key={index}
-                    label={`Perspektive ${index + 1}`}
-                    ratio="16/9"
-                    className="bg-secondary/70"
-                    src={RESULT_IMAGES[index]}
-                    alt={RESULT_IMAGES[index] ? `Fahrzeugansicht ${index + 1} im Showroom – mit KI erstellt` : undefined}
-                    aiContext={RESULT_IMAGES[index] ? 'landing' : undefined}
-                  />
+                    type="button"
+                    onClick={() => RESULT_IMAGES[index] && setLightboxIndex(index)}
+                    aria-label={RESULT_IMAGES[index] ? `Fahrzeugansicht ${index + 1} vergrößern` : undefined}
+                    className={cn('text-left', RESULT_IMAGES[index] && 'cursor-zoom-in transition-transform duration-200 hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring')}
+                  >
+                    <ImagePlaceholder
+                      label={`Perspektive ${index + 1}`}
+                      ratio="16/9"
+                      className="bg-secondary/70"
+                      src={RESULT_IMAGES[index]}
+                      alt={RESULT_IMAGES[index] ? `Fahrzeugansicht ${index + 1} im Showroom – mit KI erstellt` : undefined}
+                      aiContext={RESULT_IMAGES[index] ? 'landing' : undefined}
+                    />
+                  </button>
                 ))}
               </div>
             </div>
@@ -291,6 +314,61 @@ export function HomeResults() {
           )}
         </div>
       </div>
+      <Dialog open={lightboxIndex !== null} onOpenChange={(open) => !open && setLightboxIndex(null)}>
+        <DialogContent className="max-w-5xl border-none bg-transparent p-0 shadow-none sm:max-w-5xl [&>button]:hidden">
+          <DialogTitle className="sr-only">
+            {lightboxIndex !== null ? `Fahrzeugansicht ${lightboxIndex + 1} von ${lightboxCount}` : 'Fahrzeugansicht'}
+          </DialogTitle>
+          {lightboxIndex !== null ? (
+            <div className="relative">
+              <img
+                src={RESULT_IMAGES[lightboxIndex]}
+                alt={`Fahrzeugansicht ${lightboxIndex + 1} im Showroom – mit KI erstellt`}
+                className="max-h-[85vh] w-full rounded-lg object-contain"
+              />
+              <img
+                src={getAiDisclosureLabelAsset('landing')}
+                alt={getAiDisclosureLabelAlt('landing')}
+                title={getAiDisclosureText('landing')}
+                className="pointer-events-none absolute right-3 top-3 h-[1.125rem] w-auto"
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                size="icon"
+                onClick={() => setLightboxIndex(null)}
+                aria-label="Detailansicht schließen"
+                className="absolute -right-2 -top-2 z-10 rounded-full shadow-lg sm:-right-3 sm:-top-3"
+              >
+                <X className="size-5" />
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="icon"
+                onClick={() => setLightboxIndex((lightboxIndex - 1 + lightboxCount) % lightboxCount)}
+                aria-label="Vorheriges Bild"
+                className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full shadow-lg"
+              >
+                <ChevronLeft className="size-5" />
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="icon"
+                onClick={() => setLightboxIndex((lightboxIndex + 1) % lightboxCount)}
+                aria-label="Nächstes Bild"
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full shadow-lg"
+              >
+                <ChevronRight className="size-5" />
+              </Button>
+              <p className="mt-3 text-center text-sm font-medium text-primary-foreground">
+                {lightboxIndex + 1} / {lightboxCount}
+              </p>
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }
