@@ -201,50 +201,46 @@ const SOCIAL_ORDER = [SOCIAL_FORMATS.story, SOCIAL_FORMATS.post, SOCIAL_FORMATS.
 function SocialFormatCollage() {
   return (
     <div className="grid aspect-[4/3] w-full">
-      <div className="flex h-full items-center gap-3 overflow-x-auto sm:hidden">
+      <div className="flex h-full snap-x snap-mandatory items-center gap-3 overflow-x-auto sm:hidden">
         {SOCIAL_ORDER.map((format) => (
           <img
             key={format.alt}
             src={format.src}
             alt={format.alt}
             loading="lazy"
-            className="h-[86%] w-auto max-w-none shrink-0 rounded-lg border border-border object-cover"
+            className="h-[86%] w-auto max-w-none shrink-0 snap-start rounded-lg border border-border"
           />
         ))}
       </div>
       <div className="hidden h-full items-center gap-3 sm:flex">
-        <ImagePlaceholder
-          label="Story"
-          ratio="9/16"
-          className="w-[38%] shrink-0"
+        <img
           src={SOCIAL_FORMATS.story.src}
           alt={SOCIAL_FORMATS.story.alt}
+          loading="lazy"
+          className="h-[88%] w-auto max-w-none shrink-0 rounded-lg border border-border"
         />
         <div className="flex min-w-0 flex-1 flex-col gap-3">
-          <ImagePlaceholder
-            label="Werbeanzeige"
-            ratio="1200/628"
-            className="w-full"
+          <img
             src={SOCIAL_FORMATS.fbAd.src}
             alt={SOCIAL_FORMATS.fbAd.alt}
+            loading="lazy"
+            className="w-full rounded-lg border border-border"
+            style={{ aspectRatio: '1200 / 628' }}
           />
-          <div className="flex items-start justify-between gap-3">
-            <ImagePlaceholder
-              label="Post"
-              ratio="1/1"
-              className="w-[62%]"
-              src={SOCIAL_FORMATS.post.src}
-              alt={SOCIAL_FORMATS.post.alt}
-            />
-            <ImagePlaceholder
-              label="Schmales Hochformat"
-              ratio="160/600"
-              className="w-[14%]"
-              src={SOCIAL_FORMATS.skyscraper.src}
-              alt={SOCIAL_FORMATS.skyscraper.alt}
-            />
-          </div>
+          <img
+            src={SOCIAL_FORMATS.post.src}
+            alt={SOCIAL_FORMATS.post.alt}
+            loading="lazy"
+            className="w-full rounded-lg border border-border"
+            style={{ aspectRatio: '1 / 1' }}
+          />
         </div>
+        <img
+          src={SOCIAL_FORMATS.skyscraper.src}
+          alt={SOCIAL_FORMATS.skyscraper.alt}
+          loading="lazy"
+          className="h-[88%] w-auto max-w-none shrink-0 rounded-lg border border-border"
+        />
       </div>
     </div>
   );
