@@ -69,7 +69,7 @@ const PROCESS_STEPS: ProcessStep[] = [
   {
     number: '03',
     title: 'Marketing erstellen',
-    text: 'Posts, Banner, Videos und Verkaufsseiten daraus erstellen.',
+    text: 'Posts, Banner, Videos und Verkaufsseiten daraus erstellen und direkt Posten.',
     label: 'Marketingformate aus demselben Fahrzeug',
     icon: LayoutTemplate,
     image: marketingBannerAsset.url,
