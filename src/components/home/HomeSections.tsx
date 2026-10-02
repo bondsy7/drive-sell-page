@@ -122,7 +122,7 @@ export function HomeProcess() {
           <div className="p-4 sm:p-6 lg:p-8">
             <ImagePlaceholder
               label={step.label}
-              ratio="16/9"
+              ratio={step.ratio ?? '16/9'}
               className="w-full bg-card"
               src={step.image}
               alt={step.alt}
