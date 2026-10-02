@@ -18,6 +18,8 @@ import resultImage7Asset from '@/assets/home/results/web-7.jpeg.asset.json';
 import resultImage8Asset from '@/assets/home/results/web-8.jpeg.asset.json';
 import resultImage9Asset from '@/assets/home/results/web-9.jpeg.asset.json';
 import resultImage10Asset from '@/assets/home/results/web-10.jpeg.asset.json';
+import resultImage11Asset from '@/assets/home/results/web-11.jpeg.asset.json';
+import resultImage12Asset from '@/assets/home/results/web-12.jpeg.asset.json';
 
 const BENEFITS = [
   { title: 'Smartphone-Foto', text: 'Direkt auf dem Hof starten.' },
@@ -86,6 +88,8 @@ const RESULT_IMAGES = [
   resultImage8Asset.url,
   resultImage9Asset.url,
   resultImage10Asset.url,
+  resultImage11Asset.url,
+  resultImage12Asset.url,
 ];
 
 const RESULT_TABS = [
