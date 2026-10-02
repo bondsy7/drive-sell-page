@@ -8,6 +8,16 @@ import type { AiDisclosureContext } from '@/lib/ai-disclosure';
 import originalDealerAsset from '@/assets/home/original-dealer-2.webp.asset.json';
 import remasterShowroomAsset from '@/assets/home/remaster-suv-showroom.jpg.asset.json';
 import marketingBannerAsset from '@/assets/home/marketing-banner-neon.png.asset.json';
+import resultImage1Asset from '@/assets/home/results/web-1.jpeg.asset.json';
+import resultImage2Asset from '@/assets/home/results/web-2.jpeg.asset.json';
+import resultImage3Asset from '@/assets/home/results/web-3.jpeg.asset.json';
+import resultImage4Asset from '@/assets/home/results/web-4.jpeg.asset.json';
+import resultImage5Asset from '@/assets/home/results/web-5.jpeg.asset.json';
+import resultImage6Asset from '@/assets/home/results/web-6.jpeg.asset.json';
+import resultImage7Asset from '@/assets/home/results/web-7.jpeg.asset.json';
+import resultImage8Asset from '@/assets/home/results/web-8.jpeg.asset.json';
+import resultImage9Asset from '@/assets/home/results/web-9.jpeg.asset.json';
+import resultImage10Asset from '@/assets/home/results/web-10.jpeg.asset.json';
 
 const BENEFITS = [
   { title: 'Smartphone-Foto', text: 'Direkt auf dem Hof starten.' },
@@ -64,6 +74,19 @@ const PROCESS_STEPS: ProcessStep[] = [
 ];
 
 const RESULT_TILE_COUNT = 12;
+
+const RESULT_IMAGES = [
+  resultImage1Asset.url,
+  resultImage2Asset.url,
+  resultImage3Asset.url,
+  resultImage4Asset.url,
+  resultImage5Asset.url,
+  resultImage6Asset.url,
+  resultImage7Asset.url,
+  resultImage8Asset.url,
+  resultImage9Asset.url,
+  resultImage10Asset.url,
+];
 
 const RESULT_TABS = [
   { title: 'Fahrzeugbilder', label: 'Große Fahrzeugansicht · Ergebnisse folgen', icon: Images, ratio: '16/9' },
@@ -173,6 +196,9 @@ export function HomeResults() {
                     label={`Perspektive ${index + 1}`}
                     ratio="16/9"
                     className="bg-secondary/70"
+                    src={RESULT_IMAGES[index]}
+                    alt={RESULT_IMAGES[index] ? `Fahrzeugansicht ${index + 1} im Showroom – mit KI erstellt` : undefined}
+                    aiContext={RESULT_IMAGES[index] ? 'landing' : undefined}
                   />
                 ))}
               </div>
