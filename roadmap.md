@@ -129,3 +129,8 @@
 - [x] Kacheln 11 und 12 mit web_11/web_12 füllen; Hinweiszeile auf „12 Perspektiven · Ergebnisse" stellen
 - [x] Kacheln 6 und 7 tauschen (Scheinwerfer-Detail nach 6, 2×2-Collage nach 7)
 - [x] Heckleuchten-Detail und Frontansicht (web_11/web_12) vor die Seiten-/Heck-/Rückbank-Kacheln ziehen
+
+## Startseite: Social-Media-Formate im Ergebnis-Bereich (02.10.2026)
+- [x] Story, quadratischer Beitrag, Werbeanzeige und schmales Hochformat als schlanke WebP in die Medienablage legen
+- [x] Reiter „Social Media" mit den vier Motiven in ihren echten Seitenverhältnissen befüllen (dreispaltige Collage, Kasten bleibt 1104 × 840)
+- [x] Mobil als wischbare Leiste mit Rastsprung; alle Höhenkanten bündig, kein Beschnitt
