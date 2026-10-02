@@ -271,6 +271,11 @@ const RESULT_IMAGE_ITEMS = RESULT_IMAGES.filter((src): src is string => Boolean(
   alt: `Fahrzeugansicht ${index + 1} im Showroom – mit KI erstellt`,
 }));
 
+const VERKAUFSSEITE_ITEM = {
+  src: verkaufsseiteAsset.url,
+  alt: 'Beispiel einer automatisch erstellten Verkaufsseite mit Fahrzeugbild, Finanzierungsangebot und Anfrageformular – mit KI erstellt',
+};
+
 interface LightboxItem {
   src: string;
   alt: string;
